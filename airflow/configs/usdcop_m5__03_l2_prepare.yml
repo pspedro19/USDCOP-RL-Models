@@ -1,0 +1,77 @@
+version: 1
+
+dag:
+  id: usdcop_m5__03_l2_prepare
+  schedule: "0 2 * * *"  # 2 AM UTC daily
+  owner: data-platform
+  retries: 2
+  start_date: "2024-01-01"
+  tags: ["l2", "prepare", "clean", "premium", "usdcop", "m5"]
+  description: "L2 Prepare - Limpieza de anomalías y filtro Premium Only (91.4% completitud)"
+
+minio:
+  bucket: ds-usdcop-prepare
+  prefix: "{{ dag.id }}"
+  partitions:
+    market: usdcop
+    timeframe: m5
+  macros:
+    date: "{{ ds }}"
+    run_id: "{{ ti.xcom_pull(task_ids='generate_run_id') }}"
+
+io:
+  inputs:
+    - bucket: ds-usdcop-standardize
+      path: "usdcop_m5__02_l1_standardize/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/date={{ minio.macros.date }}/session=*/run_id=*/data.parquet"
+      required_signal: "usdcop_m5__02_l1_standardize/_control/date={{ minio.macros.date }}/*/READY"
+      
+  outputs:
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/session=premium/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/data_premium.parquet"
+    - quality_report: "{{ dag.id }}/_quality/session=premium/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/quality_report.json"
+    - signal_ready: "{{ dag.id }}/_control/session=premium/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/READY"
+
+contracts:
+  rules:
+    # Filtro Premium Only - DECISIÓN CRÍTICA
+    session_filter: premium_only
+    premium_justification: |
+      Basado en análisis de 145,218 registros:
+      - Premium: 91.4% completitud ✅
+      - London: 54.3% completitud ❌
+      - Afternoon: 58.8% completitud ❌
+    
+    # Limpieza de anomalías
+    fix_ohlc_violations: true
+    clip_outliers:
+      price_min: 2000
+      price_max: 5500
+    smooth_spikes:
+      max_change_pct: 2.0
+    impute_gaps:
+      max_minutes: 30
+      method: linear
+      
+    # Exclusión de festivos
+    exclude_holidays:
+      - US
+      - CO
+      
+    # Calidad mínima
+    min_daily_completeness: 0.5
+    expected_completeness: 0.914
+    bars_per_day: 72  # 6 horas * 12 barras/hora
+    
+params:
+  premium_session:
+    days: [0, 1, 2, 3, 4]  # Mon-Fri
+    hours_utc: [13, 19]     # 13:00-19:00 UTC
+    hours_cot: [8, 14]      # 08:00-14:00 COT
+    
+lineage:
+  consumes: ["usdcop_m5__02_l1_standardize"]
+  produces: ["usdcop_m5__04_l3_feature"]
+
+validation:
+  completeness_check: "completeness >= 0.90"
+  gaps_check: "gaps_over_30min == 0"
+  spread_check: "spread < 50"

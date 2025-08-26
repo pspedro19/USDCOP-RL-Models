@@ -1,0 +1,227 @@
+# Chaos Engineering Configuration
+# =============================
+# Configuration for Phase 6 Chaos Engineering
+
+# Experiment Schedules
+schedules:
+  # Daily experiments (low severity)
+  daily:
+    delay: 86400  # 24 hours
+    repeat: true
+    interval: 86400
+    experiments:
+      - "network_delay_localhost_100ms"
+      - "resource_limit_memory_1G"
+  
+  # Weekly experiments (medium severity)
+  weekly:
+    delay: 604800  # 7 days
+    repeat: true
+    interval: 604800
+    experiments:
+      - "network_delay_localhost_500ms"
+      - "resource_limit_cpu_75%"
+      - "market_crash_volatility_spike"
+  
+  # Monthly experiments (high severity)
+  monthly:
+    delay: 2592000  # 30 days
+    repeat: true
+    interval: 2592000
+    experiments:
+      - "kill_service_trading-app"
+      - "kill_service_redis"
+      - "market_crash_flash_crash"
+
+# Experiment Definitions
+experiments:
+  # Service Failure Experiments
+  kill_service_trading-app:
+    type: "service_failure"
+    severity: "high"
+    description: "Kill the main trading application container"
+    container_name: "trading-app"
+    rollback_strategy: "auto_restart"
+    expected_recovery_time: 30
+    monitoring:
+      - "service_health"
+      - "response_time"
+      - "error_rate"
+  
+  kill_service_redis:
+    type: "service_failure"
+    severity: "high"
+    description: "Kill the Redis container"
+    container_name: "trading-redis"
+    rollback_strategy: "auto_restart"
+    expected_recovery_time: 15
+    monitoring:
+      - "cache_hit_rate"
+      - "response_time"
+      - "connection_errors"
+  
+  # Network Experiments
+  network_delay_localhost_100ms:
+    type: "network_delay"
+    severity: "low"
+    description: "Introduce 100ms network delay"
+    target_host: "localhost"
+    delay_ms: 100
+    duration: 60
+    rollback_strategy: "automatic"
+    monitoring:
+      - "latency"
+      - "throughput"
+      - "timeout_errors"
+  
+  network_delay_localhost_500ms:
+    type: "network_delay"
+    severity: "medium"
+    description: "Introduce 500ms network delay"
+    target_host: "localhost"
+    delay_ms: 500
+    duration: 120
+    rollback_strategy: "automatic"
+    monitoring:
+      - "latency"
+      - "throughput"
+      - "timeout_errors"
+  
+  # Resource Experiments
+  resource_limit_memory_1G:
+    type: "resource_limit"
+    severity: "low"
+    description: "Limit memory to 1GB"
+    resource_type: "memory"
+    limit_value: "1G"
+    duration: 300
+    rollback_strategy: "automatic"
+    monitoring:
+      - "memory_usage"
+      - "swap_usage"
+      - "performance_metrics"
+  
+  resource_limit_cpu_75%:
+    type: "resource_limit"
+    severity: "medium"
+    description: "Limit CPU to 75%"
+    resource_type: "cpu"
+    limit_value: "75%"
+    duration: 600
+    rollback_strategy: "automatic"
+    monitoring:
+      - "cpu_usage"
+      - "response_time"
+      - "throughput"
+  
+  # Market Experiments
+  market_crash_volatility_spike:
+    type: "market_crash"
+    severity: "medium"
+    description: "Simulate market volatility spike"
+    crash_type: "volatility_spike"
+    duration: 600
+    rollback_strategy: "manual"
+    monitoring:
+      - "price_volatility"
+      - "trading_volume"
+      - "order_fill_rate"
+  
+  market_crash_flash_crash:
+    type: "market_crash"
+    severity: "critical"
+    description: "Simulate flash crash scenario"
+    crash_type: "flash_crash"
+    duration: 300
+    rollback_strategy: "manual"
+    monitoring:
+      - "price_movement"
+      - "liquidity"
+      - "risk_metrics"
+
+# Rollback Strategies
+rollback_strategies:
+  auto_restart:
+    description: "Automatically restart the failed service"
+    actions:
+      - "wait_for_health_check"
+      - "restart_container"
+      - "verify_recovery"
+    timeout: 120
+  
+  automatic:
+    description: "Automatic rollback using built-in mechanisms"
+    actions:
+      - "execute_rollback"
+      - "verify_cleanup"
+    timeout: 60
+  
+  manual:
+    description: "Manual intervention required"
+    actions:
+      - "notify_team"
+      - "wait_for_manual_action"
+      - "verify_recovery"
+    timeout: 1800  # 30 minutes
+
+# Monitoring and Alerting
+monitoring:
+  metrics:
+    - "response_time"
+    - "error_rate"
+    - "throughput"
+    - "resource_usage"
+    - "business_metrics"
+  
+  thresholds:
+    response_time_increase: 200  # 200% increase
+    error_rate_threshold: 5.0   # 5% error rate
+    resource_usage_threshold: 90  # 90% resource usage
+  
+  alerting:
+    channels:
+      - "slack"
+      - "email"
+      - "pagerduty"
+    escalation:
+      - delay: 300    # 5 minutes
+        level: "warning"
+      - delay: 900    # 15 minutes
+        level: "critical"
+
+# Safety Controls
+safety:
+  business_hours_only: false
+  max_concurrent_experiments: 2
+  required_approval: false
+  emergency_stop: true
+  
+  # Blackout periods (no experiments during these times)
+  blackout_periods:
+    - start: "09:30"
+      end: "16:00"
+      days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+      reason: "Trading hours"
+  
+  # Dependencies that must be healthy
+  required_services:
+    - "database"
+    - "monitoring"
+    - "alerting"
+
+# Reporting and Analysis
+reporting:
+  experiment_logs: true
+  metrics_collection: true
+  rollback_logs: true
+  business_impact: true
+  
+  output_formats:
+    - "json"
+    - "html"
+    - "pdf"
+  
+  retention:
+    logs: "30d"
+    metrics: "90d"
+    reports: "1y"

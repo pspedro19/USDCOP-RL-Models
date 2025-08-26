@@ -1,0 +1,371 @@
+version: 2.1
+# L1 Standardization Pipeline - Optimized for TwelveData Integration
+
+dag:
+  id: usdcop_m5__02_l1_standardize
+  schedule: null  # Triggered by L0 completion sensor
+  owner: data-platform
+  retries: 2
+  retry_delay: 5m
+  start_date: "2024-01-01"
+  tags: ["l1", "standardize", "premium", "twelvedata", "v2.1"]
+  description: "L1 Standardize v2.1 - Optimized TwelveData processing with premium window focus"
+
+# MinIO configuration aligned with L0 output
+minio:
+  connection_id: minio_conn
+  input_bucket: "00-raw-usdcop-marketdata"
+  output_bucket: "01-l1-ds-usdcop-standardize"
+  prefix: "l1-standardize"
+  partitions:
+    market: usdcop
+    timeframe: m5
+    source: twelvedata
+  macros:
+    date: "{{ ds }}"
+    year: "{{ execution_date.year }}"
+    month: "{{ execution_date.month }}"
+    day: "{{ execution_date.day }}"
+    run_id: "{{ run_id }}"
+    ts: "{{ ts_nodash }}"
+
+# L1 Processing Configuration
+l1_config:
+  # Timezone handling
+  source_tz: "UTC"                 # TwelveData provides UTC timestamps
+  target_tz: "America/Bogota"      # Colombia Time (COT)
+  
+  # Premium window definition
+  premium_window:
+    start_hour_cot: 8             # 8:00 AM COT
+    end_hour_cot: 14              # 2:00 PM COT (last bar at 13:55)
+    start_hour_utc: 13            # 1:00 PM UTC
+    end_hour_utc: 19              # 7:00 PM UTC
+    days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  
+  # Processing mode
+  mode: "strict_premium"           # Only process premium hours
+  imputation: false                # No data imputation
+  
+  # Grid alignment
+  grid:
+    frequency: "5min"
+    alignment: "floor"            # Align to 5-minute boundaries
+    tolerance: "30s"              # Maximum deviation from grid
+  
+  # Statistics configuration
+  stats:
+    lookback_days: 90             # Rolling window for baselines
+    min_samples_per_hour: 500     # Minimum for valid statistics
+    fallback_strategy: "global"   # Use global stats if insufficient data
+    
+  # Quality thresholds
+  acceptance:
+    completeness_min: 0.95        # 57/60 bars minimum
+    completeness_target: 0.98     # 59/60 bars target
+    max_consecutive_gaps: 1       # Maximum 1 consecutive missing bar
+    ohlc_violations_max: 0        # Zero tolerance for OHLC violations
+    grid_violations_max: 0        # Perfect grid alignment required
+    stale_rate_max: 0.02          # Maximum 2% stale bars
+
+# Input/Output Configuration
+io:
+  inputs:
+    # Primary input from L0
+    - type: parquet
+      source: l0_acquire
+      path_pattern: "l0-acquire/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/source={{ minio.partitions.source }}/year={{ minio.macros.year }}/month={{ '%02d'|format(minio.macros.month) }}/day={{ '%02d'|format(minio.macros.day) }}/data_*.parquet"
+      required: true
+      
+    # L0 ready signal
+    - type: signal
+      path: "l0-acquire/_control/date={{ minio.macros.date }}/READY_*"
+      required: true
+      
+    # L0 quality report for validation
+    - type: json
+      path: "l0-acquire/_quality/date={{ minio.macros.date }}/quality_report_*.json"
+      required: false
+      
+    # Historical statistics for normalization
+    - type: cache
+      path: "{{ minio.prefix }}/_statistics/hod_baseline_latest.parquet"
+      required: false
+      
+  outputs:
+    # Standardized data output
+    - type: parquet
+      path: "{{ minio.prefix }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/year={{ minio.macros.year }}/month={{ '%02d'|format(minio.macros.month) }}/day={{ '%02d'|format(minio.macros.day) }}/standardized_{{ minio.macros.ts }}.parquet"
+      compression: snappy
+      schema_evolution: merge
+      
+    # Hour-of-day statistics
+    - type: parquet
+      path: "{{ minio.prefix }}/_statistics/date={{ minio.macros.date }}/hod_baseline_{{ minio.macros.run_id }}.parquet"
+      
+    # Quality reports
+    - type: csv
+      path: "{{ minio.prefix }}/_reports/date={{ minio.macros.date }}/episode_quality_{{ minio.macros.run_id }}.csv"
+      
+    - type: json
+      path: "{{ minio.prefix }}/_reports/date={{ minio.macros.date }}/quality_summary_{{ minio.macros.run_id }}.json"
+      
+    # Schema documentation
+    - type: json
+      path: "{{ minio.prefix }}/_schemas/schema_v2.1_{{ minio.macros.date }}.json"
+      
+    # Ready signal for downstream
+    - type: signal
+      path: "{{ minio.prefix }}/_control/date={{ minio.macros.date }}/READY_{{ minio.macros.run_id }}"
+
+# Output Schema Definition
+schema:
+  version: "v2.1"
+  
+  # Core time columns
+  time:
+    - name: timestamp_utc
+      type: "datetime64[ns, UTC]"
+      required: true
+      unique: true
+      description: "UTC timestamp, 5-min grid aligned"
+      
+    - name: timestamp_cot
+      type: "datetime64[ns, America/Bogota]"
+      required: true
+      description: "Colombia time (COT)"
+      
+  # Episode structure (for RL)
+  episode:
+    - name: episode_id
+      type: string
+      format: "YYYY-MM-DD"
+      required: true
+      description: "Daily episode identifier"
+      
+    - name: step_in_episode
+      type: int16
+      range: [0, 71]  # 6 hours * 12 bars/hour
+      required: true
+      description: "Position within episode"
+      
+    - name: is_terminal
+      type: bool
+      required: true
+      description: "End of episode flag"
+      
+  # Market data
+  ohlcv:
+    - name: open
+      type: float64
+      required: true
+      min: 3000
+      max: 5500
+      
+    - name: high
+      type: float64
+      required: true
+      
+    - name: low
+      type: float64
+      required: true
+      
+    - name: close
+      type: float64
+      required: true
+      
+    - name: volume
+      type: float64
+      required: false
+      default: 0
+      
+  # Data quality flags
+  quality:
+    - name: ohlc_valid
+      type: bool
+      required: true
+      description: "OHLC coherence check passed"
+      
+    - name: is_stale
+      type: bool
+      required: true
+      description: "Flat bar detection (O=H=L=C)"
+      
+    - name: is_imputed
+      type: bool
+      required: true
+      description: "Data was imputed (always false in strict mode)"
+      
+    - name: grid_aligned
+      type: bool
+      required: true
+      description: "Perfectly aligned to 5-min grid"
+      
+  # Temporal features
+  temporal:
+    - name: hour_cot
+      type: int8
+      range: [8, 13]
+      required: true
+      
+    - name: minute_cot
+      type: int8
+      domain: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+      required: true
+      
+    - name: day_of_week
+      type: int8
+      range: [0, 4]  # Monday=0, Friday=4
+      required: true
+      
+    - name: is_premium
+      type: bool
+      const: true
+      required: true
+      
+  # Metadata
+  metadata:
+    - name: source
+      type: string
+      const: "twelvedata"
+      required: true
+      
+    - name: ingest_run_id
+      type: string
+      required: true
+      
+    - name: pipeline_version
+      type: string
+      const: "2.1"
+      required: true
+
+# Data Validation Rules
+validation_rules:
+  # Critical validations (fail pipeline)
+  critical:
+    - name: "OHLC Coherence"
+      rule: "high >= max(open, close) AND min(open, close) >= low"
+      action: "reject_record"
+      
+    - name: "Grid Alignment"
+      rule: "timestamp.minute % 5 == 0 AND timestamp.second == 0"
+      action: "reject_record"
+      
+    - name: "Time Uniqueness"
+      rule: "COUNT(DISTINCT timestamp_utc) == COUNT(*)"
+      action: "reject_batch"
+      
+    - name: "Episode Completeness"
+      rule: "COUNT(*) >= 57 per episode"  # 95% minimum
+      action: "reject_episode"
+      
+  # Warning validations (log but continue)
+  warnings:
+    - name: "Stale Rate"
+      rule: "SUM(is_stale) / COUNT(*) <= 0.02"
+      action: "log_warning"
+      
+    - name: "Volume Present"
+      rule: "SUM(volume > 0) / COUNT(*) >= 0.50"
+      action: "log_info"
+
+# Hour-of-Day Baseline Calculation
+hod_baseline:
+  enabled: true
+  
+  # Hours to calculate baselines for
+  hours: [8, 9, 10, 11, 12, 13]
+  
+  # Metrics to calculate
+  metrics:
+    - name: median_return_5m
+      formula: "MEDIAN(LN(close/close.shift(1)))"
+      
+    - name: mad_return_5m
+      formula: "MEDIAN(ABS(return - median_return))"
+      
+    - name: median_range_bps
+      formula: "MEDIAN((high-low)/close * 10000)"
+      
+    - name: p95_range_bps
+      formula: "PERCENTILE(range_bps, 95)"
+      
+    - name: typical_volume
+      formula: "MEDIAN(volume) WHERE volume > 0"
+      
+    - name: observation_count
+      formula: "COUNT(*)"
+      
+  # Update strategy
+  update:
+    method: "rolling_window"
+    window_days: 90
+    min_observations: 500
+    fallback: "use_previous"
+
+# Data Lineage
+lineage:
+  upstream:
+    - dag_id: "usdcop_m5__01_l0_acquire"
+      output: "l0-acquire/market=usdcop/timeframe=m5"
+      
+  downstream:
+    - dag_id: "usdcop_m5__03_l2_prepare"
+      input: "l1-standardize/market=usdcop/timeframe=m5"
+
+# Monitoring Configuration
+monitoring:
+  # Metrics to track
+  metrics:
+    - name: episode_completeness
+      type: gauge
+      unit: percentage
+      
+    - name: records_processed
+      type: counter
+      
+    - name: processing_time_seconds
+      type: histogram
+      
+    - name: ohlc_violations
+      type: counter
+      
+    - name: stale_bars
+      type: counter
+      
+  # Alerting thresholds
+  alerts:
+    - condition: "episode_completeness < 95"
+      severity: warning
+      channel: slack
+      
+    - condition: "episode_completeness < 90"
+      severity: critical
+      channel: pagerduty
+      
+    - condition: "processing_time_seconds > 1800"
+      severity: warning
+      message: "L1 processing exceeding 30 minutes"
+      
+  # SLA definitions
+  sla:
+    expected_runtime_minutes: 15
+    max_runtime_minutes: 30
+    expected_output_size_mb: [50, 200]
+    data_freshness_hours: 24
+
+# Audit Trail
+audit:
+  enabled: true
+  retention_days: 90
+  
+  capture:
+    - input_record_count
+    - output_record_count
+    - rejected_record_count
+    - episode_count
+    - completeness_by_episode
+    - processing_duration
+    - memory_usage_mb
+    
+  report_location: "{{ minio.prefix }}/_audit/date={{ minio.macros.date }}/audit_{{ minio.macros.run_id }}.json"

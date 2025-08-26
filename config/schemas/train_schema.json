@@ -1,0 +1,63 @@
+{
+  "schema_version": "v1.0",
+  "created_at": "2025-08-22T05:24:40.014228+00:00",
+  "identifiers": [
+    "episode_id",
+    "t_in_episode",
+    "time_utc",
+    "time_cot",
+    "is_feature_warmup"
+  ],
+  "label": "y_next",
+  "features": [
+    "return_1",
+    "return_3",
+    "return_6",
+    "atr_14_norm",
+    "range_norm",
+    "rsi_14",
+    "bollinger_pct_b",
+    "clv",
+    "ema_slope_6",
+    "macd_histogram",
+    "body_ratio",
+    "return_12",
+    "stoch_k"
+  ],
+  "excluded_from_training": [
+    "ret_winsor_flag",
+    "is_outlier_ret",
+    "is_outlier_range",
+    "is_premium",
+    "is_valid_bar",
+    "is_stale",
+    "ohlc_valid",
+    "hour_cos",
+    "parkinson_vol",
+    "spread_corwin_schultz_60m",
+    "gap_open_bps",
+    "hurst_20"
+  ],
+  "collinearity_notes": {
+    "hour_sin_cos": "Dropped hour_cos (95.2% correlation). Using hour_sin only.",
+    "volatility": "Using atr_14_norm, dropped parkinson_vol (redundant)"
+  },
+  "leakage_gate": {
+    "median_threshold": 0.15,
+    "p95_threshold": 0.40,
+    "method": "spearman_correlation_with_future_return",
+    "note": "Realistic thresholds based on baseline autocorrelation (0.145/0.322)"
+  },
+  "missingness_policy": "Features with >20% NaN post-warmup are excluded",
+  "usage_notes": "L4 must refuse any feature not in the 'features' list",
+  "auditor_compliance": {
+    "date": "2025-08-22",
+    "recommendations_implemented": [
+      "Frozen training column whitelist",
+      "Collinearity treatment (dropped hour_cos)",
+      "Processing flags excluded from training",
+      "Hurst excluded due to missingness",
+      "Leakage gate tightened to 0.10"
+    ]
+  }
+}

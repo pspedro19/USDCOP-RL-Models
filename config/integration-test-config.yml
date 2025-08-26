@@ -1,0 +1,95 @@
+# Integration Test Configuration
+# =============================
+# Configuration for Phase 6 Integration Testing
+
+# Service Integration Tests
+services:
+  trading-app:
+    base_url: "http://localhost:8000"
+    dependencies:
+      - "http://localhost:8000/health"
+      - "http://localhost:8000/metrics"
+      - "redis://localhost:6379"
+  
+  data-pipeline:
+    base_url: "http://localhost:8001"
+    dependencies:
+      - "http://localhost:8001/health"
+      - "http://localhost:8001/status"
+  
+  trading-engine:
+    base_url: "http://localhost:8002"
+    dependencies:
+      - "http://localhost:8002/health"
+      - "http://localhost:8002/status"
+
+# Workflow Integration Tests
+workflows:
+  - "trading-workflow"
+  - "data-pipeline-workflow"
+  - "risk-management-workflow"
+  - "order-execution-workflow"
+
+# Performance Test Configuration
+performance:
+  load-test:
+    description: "Basic load testing for trading endpoints"
+    target_rps: 100
+    duration: 300
+    ramp_up: 60
+  
+  stress-test:
+    description: "Stress testing to find breaking points"
+    target_rps: 500
+    duration: 600
+    ramp_up: 120
+  
+  endurance-test:
+    description: "Long-running test for stability"
+    target_rps: 50
+    duration: 3600
+    ramp_up: 300
+
+# Test Environment
+environment:
+  timeout: 30
+  retries: 3
+  parallel_tests: 5
+  
+# Test Data
+test_data:
+  trading_pairs:
+    - "USDCOP"
+    - "EURUSD"
+    - "GBPUSD"
+  
+  order_sizes:
+    - 1000
+    - 5000
+    - 10000
+  
+  market_conditions:
+    - "normal"
+    - "volatile"
+    - "low_liquidity"
+
+# Assertions and Thresholds
+thresholds:
+  response_time:
+    p50: 100    # 50th percentile should be under 100ms
+    p95: 500    # 95th percentile should be under 500ms
+    p99: 1000   # 99th percentile should be under 1s
+  
+  error_rate:
+    max: 1.0    # Maximum 1% error rate
+  
+  availability:
+    min: 99.9   # Minimum 99.9% availability
+
+# Reporting
+reporting:
+  output_format: "html"
+  include_screenshots: true
+  include_logs: true
+  save_artifacts: true
+  artifacts_path: "./test-artifacts"

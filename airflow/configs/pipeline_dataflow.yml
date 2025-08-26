@@ -1,0 +1,150 @@
+version: 1.0
+description: "Pipeline dataflow configuration for seamless L0->L1->L2->L3 integration"
+
+# MinIO bucket structure with prefixes for better organization
+buckets:
+  l0_acquire: 00-raw-usdcop-marketdata
+  l1_standardize: 01-l1-ds-usdcop-standardize
+  l2_prepare: 02-l2-ds-usdcop-prepare
+  l3_feature: 03-l3-ds-usdcop-feature
+  l4_rlready: 04-l4-ds-usdcop-rlready
+  l5_serving: 05-l5-ds-usdcop-serving
+  # Common buckets
+  common_models: 99-common-trading-models
+  common_reports: 99-common-trading-reports
+  common_backups: 99-common-trading-backups
+
+# Pipeline data contracts
+pipelines:
+  # L0: Data Acquisition
+  usdcop_m5__01_l0_acquire:
+    layer: L0
+    bucket: 00-raw-usdcop-marketdata
+    outputs:
+      data:
+        - path: "{{ dag_id }}/market={{ market }}/timeframe={{ timeframe }}/source={{ source }}/date={{ date }}/data.parquet"
+        - path: "{{ dag_id }}/market={{ market }}/timeframe={{ timeframe }}/source={{ source }}/date={{ date }}/data.csv"
+      control:
+        - path: "{{ dag_id }}/_control/date={{ date }}/run_id={{ run_id }}/READY"
+      reports:
+        - path: "{{ dag_id }}/_reports/date={{ date }}/quality_report.json"
+    schema:
+      columns: [time, open, high, low, close, volume]
+      dtypes: 
+        time: datetime
+        open: float64
+        high: float64
+        low: float64
+        close: float64
+        volume: float64
+    
+  # L1: Standardization
+  usdcop_m5__02_l1_standardize:
+    layer: L1
+    bucket: 01-l1-ds-usdcop-standardize
+    consumes:
+      from: usdcop_m5__01_l0_acquire
+      signal: "{{ from.dag_id }}/_control/date={{ date }}/*/READY"
+      data_patterns:
+        - "{{ from.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/source=*/date={{ date }}/*.parquet"
+        - "{{ from.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*.parquet"
+        # Fallback patterns for existing data
+        - "premium_data/date={{ date }}/*.parquet"
+        - "premium_data/date={{ date }}/*.csv"
+    outputs:
+      data:
+        - path: "{{ dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/run_id={{ run_id }}/standardized_data.parquet"
+      statistics:
+        - path: "{{ dag_id }}/_statistics/date={{ date }}/hod_baseline.parquet"
+      control:
+        - path: "{{ dag_id }}/_control/date={{ date }}/run_id={{ run_id }}/READY"
+      reports:
+        - path: "{{ dag_id }}/_reports/date={{ date }}/daily_quality_60.csv"
+        - path: "{{ dag_id }}/_reports/date={{ date }}/quality_summary.json"
+    schema:
+      inherit_from: l1_standardize_schema_v2
+      
+  # L2: Data Preparation
+  usdcop_m5__03_l2_prepare:
+    layer: L2
+    bucket: 02-l2-ds-usdcop-prepare
+    consumes:
+      from: usdcop_m5__02_l1_standardize
+      signal: "{{ from.dag_id }}/_control/date={{ date }}/*/READY"
+      data: "{{ from.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*/standardized_data.parquet"
+      statistics: "{{ from.dag_id }}/_statistics/date={{ date }}/hod_baseline.parquet"
+    outputs:
+      data:
+        - path: "{{ dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/run_id={{ run_id }}/prepared_data.parquet"
+      control:
+        - path: "{{ dag_id }}/_control/date={{ date }}/run_id={{ run_id }}/READY"
+        
+  # L3: Feature Engineering
+  usdcop_m5__04_l3_features:
+    layer: L3
+    bucket: 03-l3-ds-usdcop-feature
+    consumes:
+      from: usdcop_m5__03_l2_prepare
+      signal: "{{ from.dag_id }}/_control/date={{ date }}/*/READY"
+      data: "{{ from.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*/prepared_data.parquet"
+    outputs:
+      data:
+        - path: "{{ dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/run_id={{ run_id }}/features.parquet"
+      control:
+        - path: "{{ dag_id }}/_control/date={{ date }}/run_id={{ run_id }}/READY"
+      metadata:
+        - path: "{{ dag_id }}/_metadata/feature_schema.json"
+
+# Data patterns for existing files
+migration:
+  existing_data:
+    csv_premium:
+      source_path: "data/processed/l1_standardized/L1_PREMIUM_ONLY_*.csv"
+      target_bucket: 00-l0-ds-usdcop-acquire
+      target_path: "premium_data/date={{ date }}/premium_data.csv"
+      
+    parquet_files:
+      source_pattern: "data/**/USDCOP/M5/**/*.parquet"
+      target_bucket: 00-l0-ds-usdcop-acquire
+      target_path: "historical_data/market=usdcop/timeframe=m5/date={{ date }}/data.parquet"
+
+# Connection patterns
+connections:
+  L0_to_L1:
+    retry_patterns:
+      # Try these patterns in order until data is found
+      - "{{ l0.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/source=twelvedata/date={{ date }}/*.parquet"
+      - "{{ l0.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*.parquet"
+      - "premium_data/date={{ date }}/*.csv"
+      - "premium_data/date={{ date }}/*.parquet"
+      - "historical_data/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*.parquet"
+    
+    wait_timeout: 3600  # 1 hour
+    poke_interval: 300   # 5 minutes
+    
+  L1_to_L2:
+    signal: "{{ l1.dag_id }}/_control/date={{ date }}/*/READY"
+    data: "{{ l1.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*/standardized_data.parquet"
+    
+  L2_to_L3:
+    signal: "{{ l2.dag_id }}/_control/date={{ date }}/*/READY"
+    data: "{{ l2.dag_id }}/market={{ market }}/timeframe={{ timeframe }}/date={{ date }}/*/prepared_data.parquet"
+
+# Quality gates
+quality_gates:
+  L0:
+    min_records: 50
+    required_columns: [time, open, high, low, close]
+    
+  L1:
+    completeness_min: 0.98
+    max_gap_bars: 1
+    required_bars_per_episode: 60
+    
+  L2:
+    outliers_max_pct: 0.01
+    missing_features_max: 0
+    
+  L3:
+    feature_count_min: 20
+    correlation_max: 0.99

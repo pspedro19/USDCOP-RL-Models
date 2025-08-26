@@ -1,0 +1,278 @@
+version: 1
+
+dag:
+  id: usdcop_m5__06_l5_serving
+  schedule: "0 4 * * *"  # 4 AM UTC daily
+  owner: ml-platform
+  retries: 1
+  start_date: "2024-01-01"
+  tags: ["l5", "serving", "rl-training", "model-selection", "usdcop", "m5"]
+  description: "L5 Serving - RL Model Training, Selection & Production Serving for USDCOP M5"
+
+minio:
+  bucket: 05-l5-ds-usdcop-serving
+  prefix: "{{ dag.id }}"
+  partitions:
+    market: usdcop
+    timeframe: m5
+  macros:
+    date: "{{ ds }}"
+    run_id: "{{ ti.xcom_pull(task_ids='generate_run_id') }}"
+    model_version: latest
+
+io:
+  inputs:
+    - bucket: 04-l4-ds-usdcop-rlready
+      path: "usdcop_m5__05_l4_mlready/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/version=*/run_id=*/replay_dataset.parquet"
+      required_signal: "usdcop_m5__05_l4_mlready/_control/version=*/*/VALIDATED"
+      contracts:
+        - env_spec.json
+        - action_spec.json  
+        - reward_spec.json
+        - split_spec.json
+        - normalization_ref.json
+        - cost_model.json
+      
+  outputs:
+    # Model Registry (Training Artifacts)
+    - model_registry: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}"
+    - model_artifacts: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}/model"
+    - model_contracts: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}/contracts"
+    - data_lineage: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}/data_lineage"
+    - reports: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}/reports"
+    - checks: "{{ dag.id }}/model_registry/run_id={{ minio.macros.run_id }}/checks"
+    
+    # Serving Bundle (Production)
+    - serving_bundle: "{{ dag.id }}/serving_bundle/release_id={{ minio.macros.run_id }}_v1/bundle"
+    - runtime_artifacts: "{{ dag.id }}/serving_bundle/release_id={{ minio.macros.run_id }}_v1/runtime"
+    - serving_logs: "{{ dag.id }}/serving_bundle/release_id={{ minio.macros.run_id }}_v1/logs"
+    - serving_alerts: "{{ dag.id }}/serving_bundle/release_id={{ minio.macros.run_id }}_v1/alerts"
+    
+    # Legacy exports for dashboards
+    - export_csv: "{{ dag.id }}/exports/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/date={{ minio.macros.date }}/predictions.csv"
+    - dashboard_data: "{{ dag.id }}/dashboards/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/date={{ minio.macros.date }}/summary.parquet"
+    - signal_ready: "{{ dag.id }}/_control/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/READY"
+
+# RL Training Configuration - USDCOP M5 Optimized
+training:
+  # Environment Specs (USDCOP M5)
+  episodes: 900  # ~54,000 5-min bars
+  episode_length: 60  # steps per episode
+  observation_space: 17  # obs_00..obs_16
+  action_space: 3  # {-1, 0, 1} with persistence
+  observation_bounds: [-5.0, 5.0]  # clip range
+  observation_dtype: "float32"
+  
+  # Data splits (walk-forward with embargo)
+  splits:
+    train: 0.6  # 540 episodes
+    val: 0.15   # 135 episodes  
+    test: 0.15  # 135 episodes
+    holdout: 0.1  # 90 episodes
+  embargo_days: 5  # episode-level embargo
+  
+  # Model configurations
+  models:
+    ppo_lstm:
+      type: "PPO"
+      architecture: "LSTM"
+      config:
+        gamma: 0.99
+        gae_lambda: 0.95
+        clip_range: 0.2
+        learning_rate: 3e-4
+        ent_coef: 0.0
+        vf_coef: 0.5
+        max_grad_norm: 0.5
+        n_steps: 60  # episode length
+        n_epochs: 10
+        target_kl: 0.03
+        advantage_norm: true
+        value_clip: true
+        network:
+          lstm_hidden: 64
+          lstm_layers: 1
+          mlp_layers: [64, 64]
+          activation: "tanh"
+      grid_search:
+        lstm_hidden: [64, 128]
+        learning_rate: [1e-4, 3e-4]
+        clip_range: [0.1, 0.2]
+        ent_coef: [0.0, 0.002]
+        
+    ppo_mlp:
+      type: "PPO"
+      architecture: "MLP"
+      config:
+        gamma: 0.99
+        gae_lambda: 0.95
+        clip_range: 0.2
+        learning_rate: 3e-4
+        ent_coef: 0.0
+        vf_coef: 0.5
+        max_grad_norm: 0.5
+        batch_size: 1024
+        n_epochs: 10
+        target_kl: 0.03
+        advantage_norm: true
+        value_clip: true
+        network:
+          mlp_layers: [128, 128]
+          activation: "tanh"
+      grid_search:
+        mlp_layers: [[64, 64], [128, 128], [64, 64, 64]]
+        learning_rate: [1e-4, 3e-4]
+        clip_range: [0.1, 0.2]
+        
+    qr_dqn:
+      type: "QR-DQN"
+      architecture: "Dueling"
+      config:
+        gamma: 0.99
+        n_step: 3
+        learning_rate: 1e-4
+        batch_size: 512
+        replay_size: 54000  # full dataset
+        target_update_freq: 1000
+        target_soft_tau: 0.005
+        per_alpha: 0.6
+        per_beta_start: 0.4
+        per_beta_end: 1.0
+        epsilon_min: 0.01
+        quantiles: 51
+        network:
+          mlp_layers: [128, 128]
+          dueling: true
+      grid_search:
+        quantiles: [21, 51]
+        batch_size: [256, 512]
+        n_step: [1, 3]
+        target_soft_tau: [0.002, 0.005]
+        
+    iql:
+      type: "IQL"
+      architecture: "MLP"
+      config:
+        gamma: 0.99
+        expectile_tau: 0.8
+        beta: 3.0
+        learning_rate: 1e-4
+        batch_size: 512
+        temperature: 1.0
+        network:
+          mlp_layers: [128, 128]
+      grid_search:
+        expectile_tau: [0.7, 0.8, 0.9]
+        beta: [2, 3, 5]
+        learning_rate: [1e-4, 3e-4]
+  
+  # Training process
+  early_stopping:
+    metric: "sortino_val"
+    patience: 5
+    min_delta: 0.01
+  
+  selection_criteria:
+    primary: "sortino_test"
+    tiebreakers: ["max_drawdown_test", "calmar_test"]
+  
+  cost_sensitivity:
+    stress_factor: 1.25  # +25% cost increase
+    max_cagr_drop: 0.20  # 20% max drop in net CAGR
+
+# Audit Gates (GO/NO-GO Criteria)
+audit_gates:
+  performance:
+    sortino_min: 1.3
+    max_drawdown_max: 0.15  # 15%
+    calmar_min: 0.8
+  
+  generalization:
+    sharpe_diff_max: 0.5  # |Sharpe(train) - Sharpe(test)| <= 0.5
+  
+  observations:
+    clip_rate_max: 0.005  # 0.5% per obs
+    value_range_max: 5.0  # max |obs| <= 5
+    dtype_required: "float32"
+  
+  costs:
+    spread_p95_max: 20.0  # bps, well below 25
+    peg_rate_target: 0.0  # ~0%
+    cost_sensitivity_pass: true
+  
+  holdout_validation:
+    metrics_maintained: 2  # out of 3 key metrics (Sortino/MaxDD/Calmar)
+
+# Monitoring & Circuit Breakers  
+monitoring:
+  circuit_breakers:
+    latency_max_ms: 100
+    peg_rate_max: 0.05  # 5%
+    drawdown_max: 0.20  # 20%
+    clip_rate_max: 0.01  # 1%
+    drift_psi_max: 0.25
+    drift_kl_max: 0.1
+  
+  alerts:
+    low_confidence:
+      threshold: 0.7
+      action: "warning"
+    signal_imbalance:
+      buy_ratio_min: 0.2
+      buy_ratio_max: 0.8
+      action: "info"
+    no_predictions:
+      threshold: 0
+      action: "error"
+
+# Contract Validation
+contracts:
+  env_spec:
+    obs_space_dim: 17
+    obs_bounds: [-5.0, 5.0]
+    obs_dtype: "float32"
+    timing: "close_t -> open_t+1"
+    
+  action_spec:
+    action_space: "Discrete(3)"
+    actions: [-1, 0, 1]
+    persistence: true
+    
+  reward_spec:
+    formula: "ret_forward_1 - (spread/2 + slippage + fees)"
+    components: ["mid_t", "mid_t1", "mid_t2", "ret_forward_1", "spread_proxy_bps_t1", "turn_cost_t1"]
+    
+  cost_model:
+    spread_bounds: [2, 25]  # bps
+    slippage_model: "linear"
+    fees_fixed: true
+    
+  split_spec:
+    method: "walk_forward"
+    embargo_days: 5
+    level: "episode"
+
+# Output Requirements
+output_specs:
+  model_registry:
+    policy_formats: ["pt", "onnx"]
+    metadata_files: ["model_config.json", "feature_map.json", "inference_signature.json"]
+    contract_files: ["env_spec.json", "action_spec.json", "reward_spec.json", "obs_normalization_ref.json", "cost_model.json"]
+    lineage_files: ["l4_digests.json", "split_spec.json"]
+    report_files: ["metrics_summary.json", "stress_cost_sensitivity.json", "feature_drift_train_vs_test.json"]
+    check_files: ["acceptance_report.json", "reproducibility_check.txt"]
+    
+  serving_bundle:
+    runtime_files: ["health.json", "warmup_samples.parquet"]
+    log_formats: ["decisions_*.parquet", "metrics_*.json"]
+    alert_files: ["events_*.json"]
+
+lineage:
+  consumes: ["usdcop_m5__05_l4_mlready"]
+  produces: []  # Final stage
+
+validation:
+  dataset_integrity: "episode_count == 900 and steps_per_episode == 60"
+  observation_quality: "clip_rate_per_obs < 0.005 and max_abs_obs <= 5.0"
+  split_compliance: "embargo_respected and walk_forward_valid"
+  contract_parity: "l4_contracts_verified and reward_recomputed_match"

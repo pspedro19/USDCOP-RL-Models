@@ -1,0 +1,152 @@
+version: 1
+
+dag:
+  id: usdcop_m5__01_l0_acquire
+  schedule: "0 1 * * *"  # 1 AM UTC daily
+  owner: data-platform
+  retries: 2
+  start_date: "2024-01-01"
+  tags: ["l0", "acquire", "usdcop", "m5", "twelvedata"]
+  description: "L0 Acquire - Ingesta incremental inteligente desde TwelveData API"
+
+# MinIO configuration with proper Airflow integration
+minio:
+  connection_id: minio_conn  # Airflow connection ID
+  endpoint: "http://minio:9000"  # Internal Docker network endpoint
+  bucket: "00-raw-usdcop-marketdata"
+  prefix: "l0-acquire"
+  partitions:
+    market: usdcop
+    timeframe: m5
+    source: twelvedata
+  macros:
+    date: "{{ ds }}"
+    year: "{{ execution_date.year }}"
+    month: "{{ execution_date.month }}"
+    day: "{{ execution_date.day }}"
+    run_id: "{{ run_id }}"
+    ts: "{{ ts_nodash }}"
+
+# Data source configuration (TwelveData only)
+data_sources:
+  twelvedata:
+    api_endpoint: "https://api.twelvedata.com/time_series"
+    symbol: "USD/COP"
+    interval: "5min"
+    timezone: "America/Bogota"
+    outputsize: 5000
+    premium_hours:
+      start: 8  # 8 AM COT
+      end: 14   # 2 PM COT
+    batch_size: 5000
+    max_retries: 3
+
+io:
+  inputs:
+    - type: external_api  
+      source: twelvedata_api
+      endpoint: "{{ data_sources.twelvedata.api_endpoint }}"
+    - type: cache
+      bucket: "{{ minio.bucket }}"
+      path: "{{ minio.prefix }}/_cache/latest_timestamp.json"
+      
+  outputs:
+    # Main data output with proper partitioning
+    - type: parquet
+      path: "{{ minio.prefix }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/source={{ minio.partitions.source }}/year={{ minio.macros.year }}/month={{ '%02d'|format(minio.macros.month) }}/day={{ '%02d'|format(minio.macros.day) }}/data_{{ minio.macros.ts }}.parquet"
+      compression: snappy
+      
+    # CSV backup for debugging
+    - type: csv
+      path: "{{ minio.prefix }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/source={{ minio.partitions.source }}/year={{ minio.macros.year }}/month={{ '%02d'|format(minio.macros.month) }}/day={{ '%02d'|format(minio.macros.day) }}/data_{{ minio.macros.ts }}.csv"
+      
+    # Quality report
+    - type: json
+      path: "{{ minio.prefix }}/_quality/date={{ minio.macros.date }}/quality_report_{{ minio.macros.run_id }}.json"
+      
+    # Manifest for lineage tracking
+    - type: manifest
+      path: "{{ minio.prefix }}/_control/date={{ minio.macros.date }}/manifest_{{ minio.macros.run_id }}.json"
+      
+    # Ready signal for downstream dependencies
+    - type: signal
+      path: "{{ minio.prefix }}/_control/date={{ minio.macros.date }}/READY_{{ minio.macros.run_id }}"
+
+# Data quality contracts
+contracts:
+  rules:
+    max_spread_pips: 100
+    price_range: [3800, 4600]  # Updated realistic range for USD/COP
+    duplicate_detection: timestamp_hash
+    incremental_mode: true
+    required_completeness: 80  # Minimum acceptable completeness %
+    
+  validation:
+    - name: spread_check
+      rule: "(ask - bid) / bid * 10000 < {{ contracts.rules.max_spread_pips }}"
+      severity: warning
+      
+    - name: price_check
+      rule: "close >= {{ contracts.rules.price_range[0] }} and close <= {{ contracts.rules.price_range[1] }}"
+      severity: error
+      
+    - name: ohlc_check
+      rule: "low <= close and close <= high and low <= open and open <= high"
+      severity: error
+      
+    - name: volume_check
+      rule: "volume >= 0"
+      severity: warning
+      
+    - name: timestamp_check
+      rule: "timestamp is not null"
+      severity: error
+
+# Processing parameters
+params:
+  lookback_days: 7  # Days to look back for incremental loads
+  batch_months: 6   # Process 6 months at a time for historical loads
+  max_parallel_requests: 3
+  request_delay_seconds: 1
+  
+# Data lineage
+lineage:
+  upstream: []  # No upstream dependencies (source layer)
+  downstream: 
+    - "usdcop_m5__02_l1_standardize"
+    - "usdcop_m5__03_l2_transform"
+  
+# Monitoring and alerting
+monitoring:
+  metrics:
+    - name: records_processed
+      type: counter
+      
+    - name: data_completeness
+      type: gauge
+      threshold: 80
+      alert_below: true
+      
+    - name: processing_time
+      type: histogram
+      
+  alerts:
+    - condition: "completeness < 80"
+      severity: warning
+      channel: slack
+      
+    - condition: "records_processed == 0"
+      severity: critical
+      channel: pagerduty
+
+# Audit and compliance
+audit:
+  enabled: true
+  retention_days: 90
+  log_level: INFO
+  capture_metrics:
+    - completeness
+    - duplicates
+    - gaps
+    - quality_score
+    - processing_time

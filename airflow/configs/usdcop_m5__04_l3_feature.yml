@@ -1,0 +1,107 @@
+version: 1
+
+dag:
+  id: usdcop_m5__04_l3_feature
+  schedule: "30 2 * * *"  # 2:30 AM UTC daily
+  owner: ml-engineering
+  retries: 1
+  start_date: "2024-01-01"
+  tags: ["l3", "feature", "engineering", "usdcop", "m5"]
+  description: "L3 Feature - Feature engineering con 50+ indicadores técnicos"
+
+minio:
+  bucket: ds-usdcop-feature
+  prefix: "{{ dag.id }}"
+  partitions:
+    market: usdcop
+    timeframe: m5
+  macros:
+    date: "{{ ds }}"
+    run_id: "{{ ti.xcom_pull(task_ids='generate_run_id') }}"
+    feature_set: v1
+
+io:
+  inputs:
+    - bucket: ds-usdcop-prepare
+      path: "usdcop_m5__03_l2_prepare/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/session=premium/date={{ minio.macros.date }}/run_id=*/data_premium.parquet"
+      required_signal: "usdcop_m5__03_l2_prepare/_control/session=premium/date={{ minio.macros.date }}/*/READY"
+      
+  outputs:
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/feature_set={{ minio.macros.feature_set }}/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/features.parquet"
+    - spec: "{{ dag.id }}/_specs/feature_set={{ minio.macros.feature_set }}/spec.json"
+    - signal_ready: "{{ dag.id }}/_control/feature_set={{ minio.macros.feature_set }}/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/READY"
+
+contracts:
+  features:
+    technical_indicators:
+      - rsi_14
+      - macd
+      - macd_signal
+      - macd_histogram
+      - bollinger_upper
+      - bollinger_middle
+      - bollinger_lower
+      - atr_14
+      - stochastic_k
+      - stochastic_d
+      - adx_14
+      - cci_20
+      - williams_r
+      
+    moving_averages:
+      - sma_10
+      - sma_20
+      - sma_50
+      - sma_200
+      - ema_12
+      - ema_26
+      - vwap
+      
+    microstructure:
+      - spread_pips
+      - spread_rolling_mean
+      - volume_profile
+      - order_flow_imbalance
+      - bid_ask_ratio
+      
+    price_patterns:
+      - returns_1
+      - returns_5
+      - returns_10
+      - log_returns
+      - volatility_20
+      - price_momentum
+      - price_acceleration
+      
+    temporal:
+      - hour_of_day
+      - day_of_week
+      - day_of_month
+      - week_of_year
+      - is_month_start
+      - is_month_end
+      - distance_to_holiday
+      
+    lags:
+      - close_lag_1
+      - close_lag_5
+      - close_lag_10
+      - volume_lag_1
+      
+  rules:
+    forbid_future_leakage: true
+    drop_warmup_na: true
+    min_history_bars: 200
+    
+params:
+  feature_set_version: v1
+  parallel_processing: true
+  
+lineage:
+  consumes: ["usdcop_m5__03_l2_prepare"]
+  produces: ["usdcop_m5__05_l4_mlready"]
+
+validation:
+  feature_count: "features >= 50"
+  no_nulls: "nulls == 0"
+  no_inf: "inf_values == 0"

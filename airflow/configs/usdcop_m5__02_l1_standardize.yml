@@ -1,0 +1,258 @@
+version: 2.0
+
+dag:
+  id: 01_usdcop_m5__l1_standardize
+  schedule: null  # Manual trigger only
+  owner: data-platform
+  retries: 2
+  start_date: "2024-01-01"
+  tags: ["l1", "standardize", "premium", "strict", "v2"]
+  description: "L1 Standardize v2 - Strict mode, premium window, TwelveData only"
+
+minio:
+  input_bucket: 00-raw-usdcop-marketdata
+  output_bucket: 01-standardized-usdcop
+  prefix: "{{ dag.id }}"
+  partitions:
+    market: usdcop
+    timeframe: m5
+  macros:
+    date: "{{ ds }}"
+    run_id: "{{ ti.xcom_pull(task_ids='generate_run_id') }}"
+
+l1_config:
+  tz_source: "UTC"                 # TwelveData typically comes in UTC
+  cot_tz: "America/Bogota"
+  premium_window: ["08:00", "12:55"]
+  grid: "5min"
+  mode: "A_strict"                 # Strict mode - no imputation
+  source: "twelvedata_only"        # Single source
+  
+  stats:
+    lookback_days: 90              # Rolling window for HOD baselines
+    min_count_per_hour: 500        # Minimum observations for valid baseline
+    
+  acceptance:                      # Quality gating thresholds
+    completeness_min: 0.98         # Allows 59/60 as WARN
+    max_gap_bars: 1                # Maximum consecutive gaps
+    ohlc_invariants_violations: 0  # Zero tolerance
+    grid_violations: 0             # Zero tolerance
+    stale_rate_pct_max_warn: 2.0  # Warning threshold
+    stale_rate_pct_max_fail: 2.0  # Failure threshold
+    
+  placeholders:
+    allow_placeholder_missing_bar: false  # Mode B disabled (can activate later)
+
+io:
+  inputs:
+    - bucket: 00-raw-usdcop-marketdata
+      path: "00_usdcop_m5__l0_acquire/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/date={{ minio.macros.date }}/*.parquet"
+      required_signal: "00_usdcop_m5__l0_acquire/_control/date={{ minio.macros.date }}/*/READY"
+      
+  outputs:
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/standardized_data.parquet"
+    - statistics: "{{ dag.id }}/_statistics/date={{ minio.macros.date }}/hod_baseline.parquet"
+    - reports: 
+        - "{{ dag.id }}/_reports/date={{ minio.macros.date }}/daily_quality_60.csv"
+        - "{{ dag.id }}/_reports/date={{ minio.macros.date }}/quality_summary.json"
+        - "{{ dag.id }}/_reports/date={{ minio.macros.date }}/failure_summary.json"  # Only if failed
+    - schema: "{{ dag.id }}/_schemas/schema_v2.0.json"
+    - signal_ready: "{{ dag.id }}/_control/date={{ minio.macros.date }}/run_id={{ minio.macros.run_id }}/READY"
+
+schema:
+  version: "v2.0"
+  frequency: "5min"
+  price_unit: "COP per USD"
+  
+  columns:
+    - name: time_utc
+      type: "datetime64[ns, UTC]"
+      required: true
+      unique: true
+      description: "Timestamp in UTC, M5 grid aligned"
+      
+    - name: time_cot
+      type: "datetime64[ns, America/Bogota]"
+      required: true
+      description: "Same timestamp in Colombia time (COT)"
+      
+    - name: episode_id
+      type: string
+      format: "YYYY-MM-DD"
+      required: true
+      description: "RL episode identifier (one per day)"
+      
+    - name: t_in_episode
+      type: int16
+      range: [0, 59]
+      required: true
+      description: "Step within episode (0=08:00, 59=12:55)"
+      
+    - name: is_terminal
+      type: bool
+      required: true
+      description: "True only at t_in_episode=59"
+      
+    - name: hour_cot
+      type: int8
+      range: [8, 12]
+      required: true
+      
+    - name: minute_cot
+      type: int8
+      domain: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+      required: true
+      
+    - name: is_premium
+      type: bool
+      const: true
+      required: true
+      
+    - name: open
+      type: float64
+      unit: "COP/USD"
+      required: true
+      description: "Opening price (untouched from source)"
+      
+    - name: high
+      type: float64
+      unit: "COP/USD"
+      required: true
+      description: "High price (untouched from source)"
+      
+    - name: low
+      type: float64
+      unit: "COP/USD"
+      required: true
+      description: "Low price (untouched from source)"
+      
+    - name: close
+      type: float64
+      unit: "COP/USD"
+      required: true
+      description: "Closing price (untouched from source)"
+      
+    - name: ohlc_valid
+      type: bool
+      required: true
+      description: "True if OHLC coherence is valid"
+      
+    - name: is_stale
+      type: bool
+      required: true
+      description: "True if O=H=L=C (flat bar)"
+      
+    - name: day_of_week
+      type: int8
+      range: [0, 6]
+      required: true
+      description: "0=Monday, 6=Sunday"
+      
+    - name: is_holiday
+      type: bool
+      required: true
+      description: "US or Colombia holiday marker"
+      
+    - name: ingest_run_id
+      type: string
+      required: true
+      description: "Traceability UUID"
+      
+    - name: dataset_version
+      type: string
+      required: true
+      description: "Schema version"
+
+invariants:
+  - "high >= max(open, close)"
+  - "min(open, close) >= low"
+  - "time_utc is unique"
+  - "(episode_id, t_in_episode) is unique"
+  - "is_terminal == True only at t_in_episode == max(t_in_episode)"
+  - "minute_cot in {0, 5, 10, ..., 55}"
+  - "time_diff == 300 seconds between consecutive bars"
+  - "is_premium == True for all records"
+
+hod_baseline:
+  description: "Hour-of-day statistics with 90-day rolling window"
+  hours: [8, 9, 10, 11, 12]
+  metrics:
+    - median_ret_log_5m: "Median 5-minute log return"
+    - mad_ret_log_5m: "Median Absolute Deviation of returns"
+    - p95_range_bps: "95th percentile of intrabar range in bps"
+    - count: "Number of observations"
+    - fallback_used: "True if global fallback was applied"
+
+quality_reports:
+  daily_quality_60:
+    columns:
+      - episode_id
+      - n_bars_08_13
+      - completeness_60
+      - max_gap_bars_08_13
+      - stale_rate_08_13
+      - ohlc_violations
+      - grid_violations
+      - quality_flag
+      - published
+      
+  quality_summary:
+    metrics:
+      - total_records
+      - episode_id
+      - quality_flag
+      - quality_metrics
+      - returns_abs_bps: [p50, p95, p99, p99.9]
+      - range_bps: [p50, p95, p99]
+      - gating_thresholds
+      - stats_config
+      - hod_baseline_available
+
+validation_rules:
+  - name: "Episode completeness"
+    check: "At least 59/60 bars per episode"
+    fail_action: "reject_episode"
+    
+  - name: "Grid M5 perfection"
+    check: "All timestamps aligned to 5-minute grid with 300s delta"
+    fail_action: "reject_episode"
+    
+  - name: "OHLC coherence"
+    check: "high >= max(open,close) >= min(open,close) >= low"
+    fail_action: "reject_episode"
+    
+  - name: "No consecutive gaps > 1"
+    check: "Maximum 1 consecutive missing bar"
+    fail_action: "reject_episode"
+    
+  - name: "Stale rate check"
+    check: "Stale rate <= 2%"
+    fail_action: "warn_or_reject"
+    
+  - name: "Unique constraints"
+    check: "(episode_id, t_in_episode) unique, time_utc unique"
+    fail_action: "reject_all"
+
+lineage:
+  consumes: ["00_usdcop_m5__l0_acquire"]
+  produces: ["02_usdcop_m5__l2_prepare"]
+  
+monitoring:
+  alerts:
+    - type: "completeness"
+      threshold: 0.95
+      message: "Episode completeness below 95%"
+    - type: "stale_rate"
+      threshold: 0.05
+      message: "Stale rate above 5%"
+    - type: "ohlc_violations"
+      threshold: 1
+      message: "OHLC violations detected"
+    - type: "grid_violations"
+      threshold: 1
+      message: "Grid alignment violations detected"
+      
+  sla:
+    expected_runtime_minutes: 30
+    max_runtime_minutes: 60
+    expected_output_size_mb: [10, 100]

@@ -1,0 +1,227 @@
+# L4 RL-Ready Configuration
+# Transforms L3 features into RL-ready replay dataset
+
+dag:
+  dag_id: "usdcop_m5__05_l4_rlready"
+  description: "L4 RL-Ready - Episode replay dataset and environment specs"
+  schedule_interval: null
+  start_date: "2024-01-01"
+  catchup: false
+  tags:
+    - usdcop
+    - l4
+    - rlready
+    - replay
+
+# Data sources
+data:
+  input_bucket: "03-l3-ds-usdcop-feature"
+  output_bucket: "04-l4-ds-usdcop-rlready"
+  
+  # L3 paths
+  l3_base_path: "usdcop_m5__04_l3_feature/latest"
+  l3_features_file: "features.parquet"
+  l3_train_schema: "_metadata/train_schema.json"
+  l3_metadata: "_metadata/metadata.json"
+  
+  # L2 paths (for normalization)
+  l2_bucket: "02-l2-ds-usdcop-prepare"
+  l2_normalization_ref: "usdcop_m5__03_l2_prepare/_statistics/normalization_ref.json"
+  
+  # Output structure
+  output_path_template: "usdcop_m5__05_l4_rlready/market={market}/timeframe={timeframe}/date={date}/run_id={run_id}"
+
+# Feature configuration
+features:
+  # From train_schema.json - 13 trainable features
+  trainable_features:
+    - return_1
+    - return_3
+    - return_6
+    - atr_14_norm
+    - range_norm
+    - rsi_14
+    - bollinger_pct_b
+    - clv
+    - ema_slope_6
+    - macd_histogram
+    - body_ratio
+    - return_12
+    - stoch_k
+  
+  # Excluded from training (but kept in file)
+  excluded_features:
+    - ret_winsor_flag
+    - is_outlier_ret
+    - is_outlier_range
+    - is_premium
+    - is_valid_bar
+    - is_stale
+    - ohlc_valid
+    - hour_cos
+    - parkinson_vol
+    - spread_corwin_schultz_60m
+    - gap_open_bps
+    - hurst_20
+
+# Normalization settings
+normalization:
+  method: "robust_zscore_by_hod"  # Hour of day
+  window_days: 90
+  min_samples: 1000
+  fallback: "global_robust"
+  
+# Cost model parameters
+cost_model:
+  spread:
+    model: "corwin_schultz_60m"
+    min_bps: 2
+    max_bps: 15
+    fallback_bps: 5
+  
+  slippage:
+    model: "k_atr"
+    k_factor: 0.10  # 10% of ATR
+    
+  fees:
+    fixed_bps: 0.5  # 0.5 bps per side
+    
+# Reward specification
+reward:
+  formula: "position * log_return - turnover_cost - fees"
+  mid_price: "ohlc4"  # (open + high + low + close) / 4
+  execution_lag: 1  # bars from decision to execution
+  reward_window: 1  # bars to measure return
+  blocked_behavior: "no_trade_zero_reward"
+  
+# Action space
+actions:
+  space_type: "discrete_3"
+  mapping:
+    -1: "short"
+    0: "flat"
+    1: "long"
+  position_persistence: true
+  
+# Split configuration
+splits:
+  scheme: "walk_forward"
+  embargo_days: 5
+  
+  # Define folds
+  folds:
+    - fold_id: 1
+      train_start: "2020-01-01"
+      train_end: "2022-12-31"
+      val_start: "2023-01-01"
+      val_end: "2023-06-30"
+      test_start: "2023-07-01"
+      test_end: "2023-12-31"
+      
+    - fold_id: 2
+      train_start: "2020-07-01"
+      train_end: "2023-06-30"
+      val_start: "2023-07-01"
+      val_end: "2023-12-31"
+      test_start: "2024-01-01"
+      test_end: "2024-06-30"
+      
+  skip_fail_episodes: true
+  min_episodes_per_fold: 100
+
+# Quality gates
+quality_gates:
+  # Data quality
+  min_episodes: 500
+  min_rows: 30000
+  max_gap_bars: 1
+  max_blocked_rate: 0.05  # 5%
+  
+  # Anti-leakage
+  max_feature_future_corr: 0.10
+  
+  # Cost realism
+  spread_p95_range: [2, 15]  # bps
+  slippage_p95_max: 10  # bps
+  
+  # Determinism
+  random_seed: 42
+  require_hashes: true
+  
+# Processing parameters
+processing:
+  chunk_size: 10000
+  dtype_features: "float32"
+  dtype_prices: "float64"
+  decimal_places_prices: 6
+  decimal_places_features: 4
+  
+# Output files
+outputs:
+  # Core files
+  replay_dataset: "replay_dataset.parquet"
+  episodes_index: "episodes_index.parquet"
+  
+  # Specification files
+  env_spec: "env_spec.json"
+  cost_model: "cost_model.json"
+  reward_spec: "reward_spec.json"
+  action_spec: "action_spec.json"
+  split_spec: "split_spec.json"
+  
+  # Reports
+  checks_report: "checks_report.json"
+  cost_realism: "_reports/cost_realism.json"
+  leakage_summary: "_reports/leakage_summary.json"
+  episode_quality: "_reports/episode_quality.csv"
+  
+  # Statistics
+  state_stats: "_statistics/state_stats.parquet"
+  coverage_by_hour: "_statistics/coverage_by_hour.csv"
+  
+  # Metadata
+  metadata: "_metadata/metadata.json"
+  ready_flag: "_control/READY"
+  
+# Task configuration
+tasks:
+  load_and_validate:
+    retries: 2
+    retry_delay_minutes: 5
+    
+  build_features:
+    validate_against_schema: true
+    
+  normalization:
+    use_l2_params: true
+    fallback_to_l4_calc: true
+    
+  cost_model:
+    validate_bounds: true
+    
+  replay_assembly:
+    validate_alignment: true
+    check_future_leak: true
+    
+  splits:
+    validate_no_overlap: true
+    
+  checks:
+    fail_on_gate_violation: true
+    
+  save:
+    compress_parquet: "snappy"
+    generate_csv: false  # Optional CSV export
+    
+# Monitoring
+monitoring:
+  log_level: "INFO"
+  profile_memory: false
+  track_computation_time: true
+  alert_on_failure: true
+  
+# Dependencies
+dependencies:
+  wait_for_l3: true
+  l3_dag_id: "usdcop_m5__04_l3_feature"
+  max_wait_hours: 2

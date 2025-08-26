@@ -1,0 +1,570 @@
+# ============================================================================
+# MASTER PIPELINE CONFIGURATION - USDCOP Trading System
+# ============================================================================
+# Version: 2.0
+# Description: Centralized MLOps configuration following best practices
+# Author: MLOps Team
+# Last Updated: 2024
+
+# ============================================================================
+# GLOBAL CONFIGURATION
+# ============================================================================
+global:
+  project_name: "usdcop-trading-rl"
+  version: "2.0.0"
+  environment: "${ENVIRONMENT:-development}"  # development | staging | production
+  
+  # Feature flags for gradual rollout
+  feature_flags:
+    enable_ml_monitoring: true
+    enable_data_drift_detection: true
+    enable_model_versioning: true
+    enable_ab_testing: false
+    enable_circuit_breakers: true
+    enable_auto_retrain: false
+    
+  # SLA Requirements
+  sla:
+    data_freshness_minutes: 10
+    pipeline_latency_p99_ms: 5000
+    model_inference_p99_ms: 100
+    availability_target: 0.999
+    
+  # Resource limits
+  resources:
+    max_memory_gb: 16
+    max_cpu_cores: 8
+    max_gpu_count: 1
+    disk_space_gb: 100
+
+# ============================================================================
+# DATA CONTRACTS
+# ============================================================================
+data_contracts:
+  # Schema versioning
+  schema_version: "3.0.0"
+  
+  # Layer 0 - Raw Data Contract
+  l0_raw:
+    schema:
+      required_columns:
+        - name: time
+          type: datetime64[ns, UTC]
+          nullable: false
+        - name: open
+          type: float64
+          nullable: false
+          constraints:
+            min: 2000
+            max: 6000
+        - name: high
+          type: float64
+          nullable: false
+        - name: low
+          type: float64
+          nullable: false
+        - name: close
+          type: float64
+          nullable: false
+        - name: volume
+          type: float64
+          nullable: true
+    
+    quality_rules:
+      - rule: "high >= max(open, close)"
+        severity: critical
+      - rule: "low <= min(open, close)"
+        severity: critical
+      - rule: "volume >= 0 or volume is null"
+        severity: warning
+        
+  # Layer 1 - Standardized Contract
+  l1_standardized:
+    inherits: l0_raw
+    additional_columns:
+      - name: episode_id
+        type: string
+        format: "YYYY-MM-DD"
+      - name: t_in_episode
+        type: int16
+        constraints:
+          min: 0
+          max: 59
+      - name: is_terminal
+        type: bool
+      - name: is_stale
+        type: bool
+        
+  # Layer 2-5 contracts...
+  l2_prepared:
+    inherits: l1_standardized
+    feature_engineering:
+      - returns_5m
+      - returns_15m
+      - returns_30m
+      - volume_ratio
+      - price_momentum
+      
+  l3_features:
+    inherits: l2_prepared
+    ml_features:
+      technical_indicators: 15
+      market_microstructure: 8
+      regime_indicators: 5
+      
+  l4_mlready:
+    inherits: l3_features
+    rl_specific:
+      - obs_00_to_obs_16: "normalized[-5,5]"
+      - action_space: "Discrete(3)"
+      - reward_signal: true
+      
+  l5_serving:
+    model_contract:
+      input_shape: [17]
+      output_shape: [3]
+      latency_sla_ms: 50
+
+# ============================================================================
+# PIPELINE ORCHESTRATION
+# ============================================================================
+pipelines:
+  # Dynamic pipeline configuration
+  00_l0_acquire:
+    schedule: "${L0_SCHEDULE:-0 1 * * *}"
+    timeout_hours: 2
+    retries: 3
+    retry_delay_minutes: 5
+    
+    triggers:
+      - type: schedule
+      - type: external_api
+        endpoint: "/trigger/l0"
+        
+    inputs:
+      sources:
+        - name: twelvedata
+          priority: 1
+          fallback: mt5
+          config:
+            api_key: "${TWELVEDATA_API_KEY}"
+            rate_limit: 100
+            timeout_seconds: 30
+        - name: mt5
+          priority: 2
+          config:
+            server: "${MT5_SERVER}"
+            login: "${MT5_LOGIN}"
+            
+    outputs:
+      bucket: "00-raw-usdcop-marketdata"
+      partitioning:
+        - market
+        - timeframe
+        - date
+      formats:
+        - parquet
+        - csv  # for backup
+        
+    monitoring:
+      metrics:
+        - data_completeness
+        - acquisition_latency
+        - source_availability
+      alerts:
+        - condition: "completeness < 0.95"
+          severity: high
+          channel: slack
+          
+  01_l1_standardize:
+    depends_on: ["00_l0_acquire"]
+    schedule: null  # Triggered by upstream
+    
+    quality_gates:
+      - name: completeness_check
+        threshold: 0.98
+        action: reject_on_fail
+      - name: schema_validation
+        strict: true
+      - name: duplicate_check
+        tolerance: 0
+        
+    transformations:
+      - harmonize_schema
+      - validate_timestamps
+      - detect_stale_bars
+      - episode_assignment
+      
+  02_l2_prepare:
+    depends_on: ["01_l1_standardize"]
+    
+    feature_engineering:
+      window_sizes: [5, 15, 30, 60]
+      indicators:
+        - returns
+        - volatility
+        - volume_metrics
+        
+  03_l3_feature:
+    depends_on: ["02_l2_prepare"]
+    
+    advanced_features:
+      technical:
+        - rsi
+        - macd
+        - bollinger_bands
+      microstructure:
+        - bid_ask_spread
+        - order_flow_imbalance
+      regime:
+        - volatility_regime
+        - trend_strength
+        
+  04_l4_mlready:
+    depends_on: ["03_l3_feature"]
+    
+    rl_preparation:
+      normalization:
+        method: "median_mad_hourly"
+        clip_range: [-5, 5]
+      episode_config:
+        length: 60
+        overlap: 0
+      reward_engineering:
+        components:
+          - forward_returns
+          - transaction_costs
+          - risk_penalty
+          
+  05_l5_serving:
+    depends_on: ["04_l4_mlready"]
+    
+    model_training:
+      algorithms:
+        - name: ppo_lstm
+          hyperparameters:
+            learning_rate: [1e-4, 3e-4]
+            lstm_units: [64, 128]
+        - name: qr_dqn
+          hyperparameters:
+            n_quantiles: [21, 51]
+        - name: iql
+          hyperparameters:
+            expectile: [0.7, 0.8, 0.9]
+            
+    model_selection:
+      metric: sortino_ratio
+      validation_strategy: walk_forward
+      embargo_days: 5
+      
+    deployment:
+      strategy: blue_green
+      canary_percentage: 10
+      rollback_threshold: 0.8
+
+# ============================================================================
+# EXPERIMENT TRACKING
+# ============================================================================
+experiment_tracking:
+  backend: mlflow
+  tracking_uri: "${MLFLOW_TRACKING_URI:-http://mlflow:5000}"
+  
+  experiment_config:
+    name_template: "{algorithm}_{date}_{version}"
+    tags:
+      - market
+      - timeframe
+      - data_version
+      
+  metrics_to_track:
+    training:
+      - loss
+      - learning_rate
+      - gradient_norm
+    validation:
+      - sharpe_ratio
+      - sortino_ratio
+      - max_drawdown
+      - calmar_ratio
+    production:
+      - daily_pnl
+      - trade_count
+      - win_rate
+      
+  artifacts_to_log:
+    - model_weights
+    - training_config
+    - feature_importance
+    - backtest_results
+
+# ============================================================================
+# MODEL REGISTRY
+# ============================================================================
+model_registry:
+  backend: mlflow
+  
+  stages:
+    - name: staging
+      promotion_criteria:
+        sortino_ratio: ">= 1.3"
+        max_drawdown: "<= 0.15"
+        backtest_days: ">= 30"
+        
+    - name: production
+      promotion_criteria:
+        paper_trading_days: ">= 7"
+        live_sharpe: ">= 1.0"
+        approval: manual
+        
+  versioning:
+    strategy: semantic  # major.minor.patch
+    auto_increment: patch
+    
+  metadata:
+    required_tags:
+      - training_data_version
+      - feature_set_version
+      - algorithm
+      - hyperparameters
+
+# ============================================================================
+# MONITORING & OBSERVABILITY
+# ============================================================================
+monitoring:
+  # Data Quality Monitoring
+  data_quality:
+    checks:
+      - missing_values
+      - schema_drift
+      - statistical_drift
+      - outlier_detection
+    
+    drift_detection:
+      method: "psi"  # Population Stability Index
+      threshold: 0.2
+      window_size: 1000
+      
+  # Model Performance Monitoring
+  model_monitoring:
+    metrics:
+      - prediction_drift
+      - feature_importance_shift
+      - performance_degradation
+      
+    thresholds:
+      performance_drop: 0.2  # 20% drop triggers alert
+      drift_score: 0.3
+      
+  # System Monitoring
+  system_monitoring:
+    infrastructure:
+      - cpu_usage
+      - memory_usage
+      - disk_io
+      - network_latency
+      
+    application:
+      - request_rate
+      - error_rate
+      - response_time_p99
+      
+  # Alerting
+  alerting:
+    channels:
+      slack:
+        webhook: "${SLACK_WEBHOOK}"
+        enabled: true
+      email:
+        smtp_server: "${SMTP_SERVER}"
+        recipients: ["${ALERT_EMAIL}"]
+        enabled: false
+      pagerduty:
+        api_key: "${PAGERDUTY_KEY}"
+        enabled: false
+
+# ============================================================================
+# CI/CD CONFIGURATION
+# ============================================================================
+cicd:
+  # Continuous Integration
+  ci:
+    triggers:
+      - push_to_main
+      - pull_request
+      - scheduled_daily
+      
+    stages:
+      - name: lint
+        tools: [black, flake8, mypy]
+      - name: test
+        coverage_threshold: 80
+      - name: security_scan
+        tools: [bandit, safety]
+      - name: build
+        dockerfile: Dockerfile
+        
+  # Continuous Deployment
+  cd:
+    environments:
+      development:
+        auto_deploy: true
+        approval: none
+      staging:
+        auto_deploy: true
+        approval: none
+        smoke_tests: true
+      production:
+        auto_deploy: false
+        approval: manual
+        canary_duration_hours: 24
+        
+    deployment_strategy:
+      type: blue_green
+      health_check_path: "/health"
+      rollback_on_failure: true
+
+# ============================================================================
+# DATA GOVERNANCE
+# ============================================================================
+data_governance:
+  # Data Lineage
+  lineage_tracking:
+    enabled: true
+    backend: datahub
+    capture_level: column
+    
+  # Data Catalog
+  catalog:
+    enabled: true
+    auto_discovery: true
+    metadata_store: hive_metastore
+    
+  # Privacy & Compliance
+  compliance:
+    data_retention_days: 90
+    pii_detection: false
+    encryption_at_rest: true
+    encryption_in_transit: true
+    
+  # Audit Trail
+  audit:
+    log_all_transformations: true
+    log_model_predictions: true
+    retention_days: 365
+
+# ============================================================================
+# TESTING STRATEGY
+# ============================================================================
+testing:
+  # Unit Tests
+  unit_tests:
+    coverage_target: 85
+    frameworks: [pytest, unittest]
+    
+  # Integration Tests
+  integration_tests:
+    test_data_path: "tests/fixtures"
+    mock_external_apis: true
+    
+  # Contract Tests
+  contract_tests:
+    validate_schemas: true
+    validate_api_contracts: true
+    
+  # Performance Tests
+  performance_tests:
+    load_test_users: 100
+    response_time_sla_ms: 200
+    
+  # Chaos Engineering
+  chaos_tests:
+    enabled: false
+    scenarios:
+      - network_latency
+      - service_failure
+      - data_corruption
+
+# ============================================================================
+# COST OPTIMIZATION
+# ============================================================================
+cost_optimization:
+  # Resource Management
+  auto_scaling:
+    enabled: true
+    min_replicas: 1
+    max_replicas: 10
+    target_cpu_percent: 70
+    
+  # Data Lifecycle
+  data_lifecycle:
+    raw_data_ttl_days: 30
+    processed_data_ttl_days: 90
+    model_artifacts_ttl_days: 180
+    
+  # Compute Optimization
+  spot_instances:
+    enabled: true
+    on_demand_percentage: 20
+    
+  # Storage Optimization
+  compression:
+    enabled: true
+    algorithm: snappy
+    
+  tiering:
+    hot_tier_days: 7
+    warm_tier_days: 30
+    cold_tier_days: 90
+
+# ============================================================================
+# SECURITY CONFIGURATION
+# ============================================================================
+security:
+  # Authentication
+  authentication:
+    provider: oauth2
+    token_expiry_hours: 24
+    
+  # Authorization
+  authorization:
+    rbac_enabled: true
+    default_role: viewer
+    
+  # Secrets Management
+  secrets:
+    backend: hashicorp_vault
+    path: "secret/data/usdcop-trading"
+    
+  # Network Security
+  network:
+    vpc_enabled: true
+    private_subnets: true
+    nat_gateway: true
+    
+  # Compliance
+  compliance:
+    standards: ["SOC2", "ISO27001"]
+    audit_logs: true
+    
+# ============================================================================
+# DISASTER RECOVERY
+# ============================================================================
+disaster_recovery:
+  # Backup Strategy
+  backup:
+    enabled: true
+    frequency: daily
+    retention_days: 30
+    destinations:
+      - s3
+      - glacier
+      
+  # Recovery Targets
+  rto_hours: 4  # Recovery Time Objective
+  rpo_hours: 1  # Recovery Point Objective
+  
+  # Failover Configuration
+  failover:
+    automatic: false
+    secondary_region: "us-west-2"
+    health_check_interval_seconds: 60

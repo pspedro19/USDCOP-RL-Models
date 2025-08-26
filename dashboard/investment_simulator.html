@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDCOP Trading System - Simulador de Inversión Profesional</title>
+    
+    <!-- Fuentes Profesionales -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        :root {
+            /* Colores de Performance */
+            --success-green: #00FF41;
+            --warning-orange: #FFB800;
+            --danger-red: #FF0033;
+            
+            /* Colores de Benchmark */
+            --cdt-blue: #00D9FF;
+            --market-purple: #B026FF;
+            --usdcop-gold: #FFD700;
+            
+            /* Colores de UI */
+            --bg-dark: #0A0A0F;
+            --bg-panel: #1A1A1A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #CCCCCC;
+            --border-color: #2A2A2A;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #0A0A0F 0%, #1A1A1A 100%);
+            padding: 60px 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--success-green), var(--usdcop-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+        
+        .hero-metrics {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin-top: 40px;
+        }
+        
+        .metric-card {
+            background: var(--bg-panel);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            min-width: 200px;
+        }
+        
+        .metric-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--success-green);
+            margin-bottom: 10px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-comparison {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--cdt-blue);
+        }
+        
+        /* Simulator Section */
+        .simulator-section {
+            padding: 60px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .simulator-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 40px;
+        }
+        
+        .input-panel {
+            background: var(--bg-panel);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--success-green);
+        }
+        
+        .strategy-selector {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .strategy-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .strategy-btn:hover {
+            border-color: var(--success-green);
+        }
+        
+        .strategy-btn.active {
+            background: var(--success-green);
+            color: var(--bg-dark);
+            border-color: var(--success-green);
+            font-weight: 600;
+        }
+        
+        .simulate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, var(--success-green), var(--usdcop-gold));
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-dark);
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-top: 20px;
+        }
+        
+        .simulate-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results-panel {
+            background: var(--bg-panel);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .final-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--success-green);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .return-percentage {
+            font-size: 1.8rem;
+            color: var(--success-green);
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .comparison-card {
+            background: var(--bg-dark);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .comparison-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        
+        .comparison-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        
+        .vs-cdt {
+            color: var(--cdt-blue);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 30px;
+        }
+        
+        /* Benchmark Comparison */
+        .benchmark-section {
+            padding: 60px 40px;
+            background: var(--bg-panel);
+            margin-top: 60px;
+        }
+        
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .benchmark-card {
+            background: var(--bg-dark);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .benchmark-card.highlight {
+            border-color: var(--success-green);
+        }
+        
+        .benchmark-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .benchmark-return {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 10px;
+        }
+        
+        .benchmark-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <h1 class="hero-title">Sistema de Trading USDCOP</h1>
+        <p class="hero-subtitle">Superando el CDT tradicional con inteligencia artificial</p>
+        
+        <div class="hero-metrics">
+            <div class="metric-card">
+                <div class="metric-value">30.8%</div>
+                <div class="metric-label">Retorno Anual</div>
+                <div class="metric-comparison">vs CDT 12%: +2.57x</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">95%</div>
+                <div class="metric-label">Consistencia</div>
+                <div class="metric-comparison">Meses positivos</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">1.42</div>
+                <div class="metric-label">Sharpe Ratio</div>
+                <div class="metric-comparison">Riesgo optimizado</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">-8.5%</div>
+                <div class="metric-label">Max Drawdown</div>
+                <div class="metric-comparison">Recuperación: 2.3 meses</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Investment Simulator -->
+    <section class="simulator-section">
+        <h2 class="section-title">Simula Tu Inversión</h2>
+        
+        <div class="simulator-container">
+            <div class="input-panel">
+                <div class="input-group">
+                    <label class="input-label">Capital Inicial (USD)</label>
+                    <input type="number" class="input-field" id="initialCapital" value="100000" min="1000" max="10000000">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Estrategia de Inversión</label>
+                    <div class="strategy-selector">
+                        <button class="strategy-btn" data-strategy="conservative">Conservador</button>
+                        <button class="strategy-btn active" data-strategy="balanced">Balanceado</button>
+                        <button class="strategy-btn" data-strategy="aggressive">Agresivo</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Período (Meses)</label>
+                    <input type="range" class="input-field" id="investmentPeriod" min="3" max="36" value="12">
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span style="color: var(--text-secondary);">3M</span>
+                        <span id="periodDisplay" style="color: var(--success-green); font-weight: 600;">12M</span>
+                        <span style="color: var(--text-secondary);">36M</span>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Tasa CDT Comparación (%)</label>
+                    <input type="number" class="input-field" id="cdtRate" value="12" min="8" max="15" step="0.5">
+                </div>
+                
+                <button class="simulate-btn" onclick="runSimulation()">SIMULAR INVERSIÓN</button>
+            </div>
+            
+            <div class="results-panel">
+                <div class="result-header">
+                    <div>
+                        <div style="color: var(--text-secondary); margin-bottom: 10px;">Valor Final Estimado</div>
+                        <div class="final-value" id="finalValue">$130,799</div>
+                    </div>
+                    <div>
+                        <div class="return-percentage" id="returnPercentage">+30.8%</div>
+                        <div style="color: var(--text-secondary);">Retorno Total</div>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-card">
+                        <div class="comparison-title">vs CDT 12%</div>
+                        <div class="comparison-value vs-cdt" id="vsCdt">+$18,799</div>
+                    </div>
+                    <div class="comparison-card">
+                        <div class="comparison-title">Outperformance</div>
+                        <div class="comparison-value" style="color: var(--success-green);" id="outperformance">2.57x</div>
+                    </div>
+                    <div class="comparison-card">
+                        <div class="comparison-title">Ganancia Extra</div>
+                        <div class="comparison-value" style="color: var(--usdcop-gold);" id="extraGain">+18.8%</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Benchmark Comparison -->
+    <section class="benchmark-section">
+        <h2 class="section-title">Comparación con Benchmarks</h2>
+        
+        <div class="benchmark-grid">
+            <div class="benchmark-card highlight">
+                <div class="benchmark-name" style="color: var(--success-green);">USDCOP Trading</div>
+                <div class="benchmark-return" style="color: var(--success-green);">30.8%</div>
+                <div class="benchmark-label">Retorno Anualizado</div>
+            </div>
+            <div class="benchmark-card">
+                <div class="benchmark-name" style="color: var(--cdt-blue);">CDT 12% E.A.</div>
+                <div class="benchmark-return" style="color: var(--cdt-blue);">12.0%</div>
+                <div class="benchmark-label">Tasa Fija</div>
+            </div>
+            <div class="benchmark-card">
+                <div class="benchmark-name" style="color: var(--market-purple);">S&P 500</div>
+                <div class="benchmark-return" style="color: var(--market-purple);">8.5%</div>
+                <div class="benchmark-label">Índice USA</div>
+            </div>
+            <div class="benchmark-card">
+                <div class="benchmark-name" style="color: var(--warning-orange);">Dollar Index</div>
+                <div class="benchmark-return" style="color: var(--warning-orange);">2.1%</div>
+                <div class="benchmark-label">Divisa</div>
+            </div>
+        </div>
+    </section>
+    
+    <script>
+        // Chart configuration
+        let performanceChart = null;
+        
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'USDCOP Trading',
+                            data: [],
+                            borderColor: '#00FF41',
+                            backgroundColor: 'rgba(0, 255, 65, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'CDT 12%',
+                            data: [],
+                            borderColor: '#00D9FF',
+                            backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#FFFFFF',
+                                font: {
+                                    size: 14,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#1A1A1A',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#CCCCCC',
+                            borderColor: '#2A2A2A',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#2A2A2A',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#CCCCCC'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#2A2A2A',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#CCCCCC',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Strategy selection
+        document.querySelectorAll('.strategy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Period slider
+        document.getElementById('investmentPeriod').addEventListener('input', function() {
+            document.getElementById('periodDisplay').textContent = this.value + 'M';
+        });
+        
+        // Run simulation
+        function runSimulation() {
+            const capital = parseFloat(document.getElementById('initialCapital').value);
+            const period = parseInt(document.getElementById('investmentPeriod').value);
+            const cdtRate = parseFloat(document.getElementById('cdtRate').value) / 100;
+            const strategy = document.querySelector('.strategy-btn.active').dataset.strategy;
+            
+            // Strategy multipliers
+            const strategyReturns = {
+                'conservative': 0.20,
+                'balanced': 0.308,
+                'aggressive': 0.45
+            };
+            
+            const annualReturn = strategyReturns[strategy];
+            const monthlyReturn = Math.pow(1 + annualReturn, 1/12) - 1;
+            const cdtMonthlyReturn = Math.pow(1 + cdtRate, 1/12) - 1;
+            
+            // Calculate final values
+            const finalValue = capital * Math.pow(1 + monthlyReturn, period);
+            const cdtFinalValue = capital * Math.pow(1 + cdtMonthlyReturn, period);
+            const difference = finalValue - cdtFinalValue;
+            const outperformance = finalValue / cdtFinalValue;
+            
+            // Update display
+            document.getElementById('finalValue').textContent = '$' + finalValue.toLocaleString('en-US', {maximumFractionDigits: 0});
+            document.getElementById('returnPercentage').textContent = '+' + ((finalValue - capital) / capital * 100).toFixed(1) + '%';
+            document.getElementById('vsCdt').textContent = (difference >= 0 ? '+' : '') + '$' + difference.toLocaleString('en-US', {maximumFractionDigits: 0});
+            document.getElementById('outperformance').textContent = outperformance.toFixed(2) + 'x';
+            document.getElementById('extraGain').textContent = '+' + ((outperformance - 1) * 100).toFixed(1) + '%';
+            
+            // Update chart
+            updateChart(capital, period, monthlyReturn, cdtMonthlyReturn);
+        }
+        
+        // Update chart with simulation data
+        function updateChart(capital, period, monthlyReturn, cdtMonthlyReturn) {
+            const labels = [];
+            const usdcopData = [];
+            const cdtData = [];
+            
+            for (let i = 0; i <= period; i++) {
+                labels.push('Mes ' + i);
+                usdcopData.push(capital * Math.pow(1 + monthlyReturn, i));
+                cdtData.push(capital * Math.pow(1 + cdtMonthlyReturn, i));
+            }
+            
+            performanceChart.data.labels = labels;
+            performanceChart.data.datasets[0].data = usdcopData;
+            performanceChart.data.datasets[1].data = cdtData;
+            performanceChart.update();
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', function() {
+            initChart();
+            runSimulation();
+        });
+    </script>
+</body>
+</html>

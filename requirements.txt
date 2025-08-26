@@ -1,0 +1,60 @@
+# =====================================================
+# USDCOP Trading System - Production Dependencies
+# =====================================================
+# Core Python packages required for production operation
+# =====================================================
+
+# Data Processing & Analysis
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.2.0
+statsmodels>=0.14.0
+
+# Financial Analysis & Technical Indicators  
+ta>=0.10.0
+ta-lib>=0.4.25
+pandas-ta>=0.3.14b0
+
+# Data Storage & Serialization
+pyarrow>=10.0.0
+fastparquet>=0.8.0
+
+# Database Connectivity
+psycopg2-binary>=2.9.0
+sqlalchemy>=2.0.0
+
+# Time & Date Handling
+python-dateutil>=2.8.0
+pytz>=2023.3
+holidays>=0.30
+
+# API & HTTP
+requests>=2.31.0
+fastapi>=0.110.0
+uvicorn>=0.29.0
+
+# Cloud Storage (MinIO/S3)
+boto3>=1.26.0
+minio>=7.0.0
+
+# Caching & Message Broker
+redis>=5.0.0
+
+# Configuration & Environment
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# Logging & Monitoring
+python-json-logger>=2.0.7
+
+# Service Discovery
+python-consul2>=0.1.0
+
+# Type Hints & Validation
+pydantic>=2.0.0
+typing-extensions>=4.5.0
+
+# Utilities
+hashlib-compat>=1.0.0
+pathlib2>=2.3.0

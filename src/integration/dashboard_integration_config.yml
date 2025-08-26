@@ -1,0 +1,351 @@
+# ============================================================================
+# Dashboard Integration Configuration
+# ============================================================================
+# Defines API contracts and data mappings between pipeline outputs and dashboards
+# Version: 1.0
+# Last Updated: 2024
+
+# ============================================================================
+# API CONTRACTS - Pipeline to Dashboard
+# ============================================================================
+
+api_contracts:
+  # L0 Raw Data → Market Bar Channel
+  l0_to_market_bar:
+    source:
+      bucket: "00-raw-usdcop-marketdata"
+      path_pattern: "00_usdcop_m5__l0_acquire/market={market}/timeframe={timeframe}/date={date}/*.parquet"
+      columns: ["time", "open", "high", "low", "close", "volume"]
+    
+    target:
+      channel: "market.bar"
+      schema:
+        timestamp: "string (ISO 8601 UTC)"
+        open: "float"
+        high: "float"
+        low: "float"
+        close: "float"
+        volume: "float"
+        episode_id: "string"
+        t_in_episode: "integer"
+    
+    transformation:
+      - rename: {"time": "timestamp"}
+      - add_episode_id: "from_date"
+      - add_t_in_episode: "calculate_from_time"
+  
+  # L1 Standardized → Quality Metrics
+  l1_to_quality:
+    source:
+      bucket: "01-standardized-usdcop"
+      path_pattern: "01_usdcop_m5__l1_standardize/market={market}/timeframe={timeframe}/date={date}/*/standardized_data.parquet"
+      quality_report: "_reports/date={date}/quality_summary.json"
+    
+    target:
+      endpoint: "/api/data/quality"
+      schema:
+        completeness: "float (0-1)"
+        gaps_over_5min: "integer"
+        stale_rate: "float (0-1)"
+        quality_score: "float (0-100)"
+        violations: "array[string]"
+        layer: "string"
+        status: "string (PASS|WARN|FAIL)"
+  
+  # L3 Features → Feature Channel
+  l3_to_features:
+    source:
+      bucket: "03-features-usdcop"
+      path_pattern: "03_usdcop_m5__l3_feature/market={market}/timeframe={timeframe}/date={date}/*/features.parquet"
+      columns: ["episode_id", "t_in_episode", "returns_5m", "volatility", "rsi", "macd", "spread_proxy"]
+    
+    target:
+      channel: "features.v1"
+      schema:
+        episode_id: "string"
+        t: "integer"
+        features: "array[float]"
+        feature_names: "array[string]"
+        timestamp: "string"
+  
+  # L4 ML Ready → Observations Channel
+  l4_to_observations:
+    source:
+      bucket: "04-mlready-usdcop-rldata"
+      path_pattern: "04_usdcop_m5__l4_mlready/market={market}/timeframe={timeframe}/version=*/run_id=*/replay_dataset.parquet"
+      columns: ["episode_id", "t_in_episode", "obs_00", "obs_01", "...", "obs_16"]
+      contracts:
+        - "env_spec.json"
+        - "obs_normalization_ref.json"
+    
+    target:
+      channel: "obs.v1"
+      schema:
+        episode_id: "string"
+        t: "integer"
+        obs: "array[float] (length=17, range=[-5,5])"
+        abs_max: "float"
+        timestamp: "string"
+    
+    validation:
+      - check_range: [-5, 5]
+      - check_dtype: "float32"
+      - check_order: "obs_00 to obs_16"
+  
+  # L5 Serving → Model Decision Channel
+  l5_to_decision:
+    source:
+      bucket: "05-serving-usdcop-models"
+      model_path: "serving_bundle/release_id={release_id}/bundle/policy.onnx"
+      inference_endpoint: "http://model-server:8501/v1/models/usdcop:predict"
+    
+    target:
+      channel: "model.decision"
+      schema:
+        timestamp_decide: "string (ISO 8601)"
+        execution_at: "string (t+1 open)"
+        action: "integer (-1|0|1)"
+        probabilities: "array[float] (length=3)"
+        confidence: "float (0-1)"
+        run_id: "string"
+        model_name: "string"
+        latency_ms: "float"
+    
+    sla:
+      max_latency_ms: 50
+      min_confidence: 0.4
+
+# ============================================================================
+# DASHBOARD ENDPOINTS MAPPING
+# ============================================================================
+
+dashboard_endpoints:
+  # Professional Dashboard (port 5002)
+  professional:
+    base_url: "http://localhost:5002"
+    endpoints:
+      - path: "/api/status"
+        source: "unified_data_bus"
+        refresh_interval: 5000
+      
+      - path: "/api/institutional-metrics"
+        source: "metrics.snapshot"
+        fields_mapping:
+          sortino: "sortino"
+          sharpe: "sharpe"
+          calmar: "calmar"
+          max_drawdown: "max_drawdown"
+          var_95: "calculated"
+          volatility: "calculated"
+      
+      - path: "/api/current-data"
+        source: ["market.bar", "model.decision"]
+        combine: true
+  
+  # Premium Dashboard (port 5001)
+  premium:
+    base_url: "http://localhost:5001"
+    endpoints:
+      - path: "/api/data/info"
+        source: "l1_quality_report"
+        
+      - path: "/api/data/quality"
+        source: "audit.status"
+        
+    websocket:
+      namespace: "/socket.io"
+      events:
+        - name: "live_data"
+          source: "market.bar"
+          throttle_ms: 1000
+  
+  # Backtest Dashboard (port 5003)
+  backtest:
+    base_url: "http://localhost:5003"
+    endpoints:
+      - path: "/api/backtest/results"
+        source: "metrics.snapshot"
+        fields_mapping:
+          final_value: "calculate_from_pnl"
+          total_return: "pnl"
+          vs_cdt_ratio: "vs_cdt_ratio"
+          vs_cdt_abs_usd: "pnl * 1000"
+          consistency_score: "win_rate * 100"
+          max_drawdown: "max_drawdown"
+          sharpe_ratio: "sharpe"
+
+# ============================================================================
+# WEBSOCKET CHANNELS
+# ============================================================================
+
+websocket_channels:
+  market.bar:
+    description: "Real-time market OHLC data"
+    frequency: "5min (on bar close)"
+    subscribers: ["professional", "premium", "backtest"]
+    
+  obs.v1:
+    description: "Normalized observations vector"
+    frequency: "5min (after market.bar)"
+    subscribers: ["professional"]
+    
+  model.decision:
+    description: "Model trading decision"
+    frequency: "5min (after obs.v1)"
+    subscribers: ["professional", "backtest"]
+    
+  metrics.snapshot:
+    description: "Performance metrics update"
+    frequency: "5min rolling"
+    subscribers: ["professional", "premium", "backtest"]
+    
+  audit.status:
+    description: "Data quality and audit status"
+    frequency: "On change or 5min"
+    subscribers: ["premium"]
+    
+  system.health:
+    description: "System health metrics"
+    frequency: "30s"
+    subscribers: ["professional"]
+
+# ============================================================================
+# DATA FLOW SEQUENCE
+# ============================================================================
+
+data_flow:
+  sequence:
+    1_market_close:
+      trigger: "Every 5 minutes at :00, :05, :10, etc."
+      actions:
+        - fetch: "L0 new bar from source"
+        - publish: "market.bar"
+    
+    2_standardization:
+      trigger: "On market.bar received"
+      actions:
+        - process: "L1 standardization"
+        - validate: "Quality checks"
+        - publish: "audit.status"
+    
+    3_feature_engineering:
+      trigger: "After standardization"
+      actions:
+        - calculate: "L3 features"
+        - publish: "features.v1"
+    
+    4_normalization:
+      trigger: "After features"
+      actions:
+        - normalize: "L4 observations [-5,5]"
+        - validate: "Clip rate < 0.5%"
+        - publish: "obs.v1"
+    
+    5_model_inference:
+      trigger: "On obs.v1 received"
+      actions:
+        - predict: "L5 model decision"
+        - measure: "Latency"
+        - publish: "model.decision"
+    
+    6_metrics_update:
+      trigger: "After decision"
+      actions:
+        - calculate: "Performance metrics"
+        - compare: "vs CDT benchmark"
+        - publish: "metrics.snapshot"
+
+# ============================================================================
+# ERROR HANDLING
+# ============================================================================
+
+error_handling:
+  missing_data:
+    strategy: "Use last known value"
+    max_stale_minutes: 15
+    fallback: "Set action=0 (hold)"
+    
+  high_latency:
+    threshold_ms: 100
+    action: "Log warning"
+    fallback: "Use cached decision"
+    
+  low_confidence:
+    threshold: 0.4
+    action: "Override to action=0"
+    alert: true
+    
+  connection_lost:
+    retry_attempts: 3
+    retry_delay_ms: 1000
+    fallback: "Switch to backup data source"
+
+# ============================================================================
+# MONITORING & ALERTS
+# ============================================================================
+
+monitoring:
+  metrics_to_track:
+    - name: "data_freshness"
+      threshold: "10 minutes"
+      alert_channel: "slack"
+      
+    - name: "inference_latency_p99"
+      threshold: "100ms"
+      alert_channel: "pagerduty"
+      
+    - name: "websocket_connections"
+      min_threshold: 1
+      alert_channel: "email"
+      
+    - name: "api_error_rate"
+      threshold: "1%"
+      window: "5 minutes"
+      alert_channel: "slack"
+  
+  dashboards:
+    grafana:
+      url: "http://localhost:3000"
+      dashboards:
+        - "Pipeline Health"
+        - "API Performance"
+        - "WebSocket Metrics"
+        - "Model Performance"
+    
+    mlflow:
+      url: "http://localhost:5000"
+      experiments:
+        - "usdcop-trading"
+
+# ============================================================================
+# DEPLOYMENT CONFIGURATION
+# ============================================================================
+
+deployment:
+  services:
+    unified_data_bus:
+      port: 5005
+      replicas: 2
+      health_check: "/health"
+      
+    professional_dashboard:
+      port: 5002
+      static_files: "dashboard/dashboard-trading-profesional.html"
+      
+    premium_dashboard:
+      port: 5001
+      static_files: "dashboard/premium_dashboard.html"
+      
+    backtest_dashboard:
+      port: 5003
+      static_files: "dashboard/realtime_backtest_dashboard.html"
+  
+  load_balancer:
+    type: "nginx"
+    config: "/etc/nginx/sites-available/trading-dashboard"
+    ssl: true
+    
+  docker_compose:
+    file: "docker-compose-dashboards.yml"
+    networks:
+      - "trading-network"

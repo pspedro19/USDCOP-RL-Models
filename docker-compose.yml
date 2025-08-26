@@ -1,0 +1,593 @@
+version: '3.9'
+name: trading-system
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Trading System Docker Stack
+# ═══════════════════════════════════════════════════════════════════════════════
+# This stack includes:
+# - PostgreSQL (main database + Airflow database)
+# - Kafka (KRaft mode - no Zookeeper needed)
+# - MinIO (S3-compatible object storage)
+# - Redis (caching and Celery broker)
+# - Airflow (workflow orchestration)
+# - Prometheus + Grafana (monitoring)
+# - Trading App + Dashboard
+# ═══════════════════════════════════════════════════════════════════════════════
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.2
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DB_PASSWORD:-airflow123}@postgres:5432/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:${AIRFLOW_DB_PASSWORD:-airflow123}@postgres:5432/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?Please set AIRFLOW_FERNET_KEY in .env}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:?Please set AIRFLOW_SECRET_KEY in .env}
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-apache-airflow-providers-amazon boto3 scipy pandas numpy scikit-learn matplotlib seaborn}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # DATABASE LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  postgres:
+    image: postgres:16-alpine
+    container_name: trading-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/01-init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql
+      - ./init-scripts/02-trading-schema.sql:/docker-entrypoint-initdb.d/02-trading-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trading-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: trading-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trading-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STREAMING LAYER (Kafka in KRaft mode - no Zookeeper)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: trading-kafka
+    restart: unless-stopped
+    environment:
+      # KRaft mode settings
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      # Listeners
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      # Performance settings
+      KAFKA_CFG_NUM_PARTITIONS: "3"
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_MIN_INSYNC_REPLICAS: "1"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "${KAFKA_PORT:-9094}:9094"
+      - "9092:9092"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - trading-network
+
+  kafka-init:
+    image: bitnami/kafka:3.7
+    container_name: trading-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: |
+      echo "Creating Kafka topics..."
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.prices --partitions 3 --replication-factor 1
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.signals --partitions 3 --replication-factor 1
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.trades --partitions 3 --replication-factor 1
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.events --partitions 3 --replication-factor 1
+      echo "Topics created successfully"
+    networks:
+      - trading-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: trading-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: trading-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "${KAFKA_UI_PORT:-8080}:8080"
+    networks:
+      - trading-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SERVICE DISCOVERY LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  consul:
+    image: hashicorp/consul:latest
+    container_name: trading-consul
+    restart: unless-stopped
+    command: agent -server -bootstrap -ui -client=0.0.0.0
+    ports:
+      - "8500:8500"      # HTTP API
+      - "8600:8600"      # DNS
+    volumes:
+      - consul_data:/consul/data
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "consul", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STORAGE LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  minio:
+    image: minio/minio:latest
+    container_name: trading-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - trading-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: trading-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      echo 'Creating ONLY strictly required pipeline buckets...'
+      echo 'L0: Data Acquisition'
+      mc mb -p local/00-l0-ds-usdcop-acquire || true
+      echo 'L1: Standardization'
+      mc mb -p local/01-l1-ds-usdcop-standardize || true
+      echo 'L2: Data Preparation'
+      mc mb -p local/02-l2-ds-usdcop-prepare || true
+      echo 'L3: Feature Engineering'
+      mc mb -p local/03-l3-ds-usdcop-feature || true
+      echo 'L4: RL Ready'
+      mc mb -p local/04-l4-ds-usdcop-rlready || true
+      echo 'L5: Model Serving'
+      mc mb -p local/05-l5-ds-usdcop-serving || true
+      echo 'Common: Models and Reports'
+      mc mb -p local/99-common-trading-models || true
+      mc mb -p local/99-common-trading-reports || true
+      mc mb -p local/99-common-trading-backups || true
+      echo 'Setting public access for serving and reports...'
+      mc anonymous set download local/05-l5-ds-usdcop-serving || true
+      mc anonymous set download local/99-common-trading-reports || true
+      echo 'Successfully created exactly 9 buckets: 6 pipeline (L0-L5) + 3 common'
+    networks:
+      - trading-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CACHING LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  redis:
+    image: redis:7-alpine
+    container_name: trading-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - trading-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ORCHESTRATION LAYER (Airflow)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  airflow-init:
+    <<: *airflow-common
+    container_name: trading-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID:-50000}:0" /sources/{logs,dags,plugins}
+        exec /entrypoint airflow version
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin123}
+    user: "0:0"
+    volumes:
+      - ./airflow:/sources
+    networks:
+      - trading-network
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: trading-airflow-webserver
+    command: webserver
+    ports:
+      - "${AIRFLOW_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - trading-network
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: trading-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--hostname", "$${HOSTNAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - trading-network
+
+  airflow-worker:
+    <<: *airflow-common
+    container_name: trading-airflow-worker
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - trading-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # OBSERVABILITY & MONITORING LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: trading-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      COLLECTOR_OTLP_HTTP_ENABLED: "true"
+      COLLECTOR_OTLP_GRPC_ENABLED: "true"
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    volumes:
+      - jaeger_data:/tmp
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16686/api/services"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: trading-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - trading-network
+
+  # Visualization & Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: trading-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - trading-network
+
+  # Centralized Logging
+  loki:
+    image: grafana/loki:latest
+    container_name: trading-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: trading-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ../logs:/var/log/app:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - trading-network
+    depends_on:
+      - loki
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # APPLICATION LAYER
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  trading-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: trading-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # App settings
+      APP_ENV: ${APP_ENV:-production}
+      APP_CONFIG: ${APP_CONFIG:-/app/configs/config.yaml}
+      TZ: ${TZ:-UTC}
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: trading_db
+      DB_USER: trading_user
+      DB_PASSWORD: ${DB_PASSWORD:-trading123}
+      
+      # Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_PRICES: trading.prices
+      KAFKA_TOPIC_SIGNALS: trading.signals
+      KAFKA_TOPIC_TRADES: trading.trades
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+      
+      # MinIO
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_DATA: trading-data
+      MINIO_BUCKET_MODELS: trading-models
+      MINIO_BUCKET_REPORTS: trading-reports
+      
+      # MT5 (if applicable)
+      MT5_LOGIN: ${MT5_LOGIN:-}
+      MT5_PASSWORD: ${MT5_PASSWORD:-}
+      MT5_SERVER: ${MT5_SERVER:-}
+      MT5_PATH: ${MT5_PATH:-}
+      
+      # Service Discovery
+      CONSUL_HTTP_ADDR: http://consul:8500
+      SERVICE_NAME: usdcop-trading-system
+      APP_API_PORT: 8000
+      APP_VERSION: 1.0.0
+      REGION: us-east
+      INSTANCE_ID: 1
+      
+      # Observability
+      OTEL_SERVICE_NAME: usdcop-trading-system
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: 0.25
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=${APP_ENV:-production},service.version=${APP_VERSION:-1.0.0}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ../src:/app/src
+      - ../configs:/app/configs
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../models:/app/models
+    command: python scripts/run_system.py --mode production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - trading-network
+
+  trading-dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: trading-dashboard
+    restart: unless-stopped
+    depends_on:
+      trading-app:
+        condition: service_started
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: trading_db
+      DB_USER: trading_user
+      DB_PASSWORD: ${DB_PASSWORD:-trading123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - ../src:/app/src
+      - ../configs:/app/configs
+      - ../logs:/app/logs
+    ports:
+      - "${DASHBOARD_PORT:-8050}:8050"
+    command: python scripts/run_dashboard.py --host 0.0.0.0 --port 8050
+    networks:
+      - trading-network
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  kafka_data:
+    driver: local
+  minio_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  consul_data:
+    driver: local
+  jaeger_data:
+    driver: local
+  loki_data:
+    driver: local
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NETWORKS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+networks:
+  trading-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

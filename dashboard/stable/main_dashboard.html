@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDCOP Trading System - Professional Dashboard</title>
+    
+    <!-- Professional Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    
+    <style>
+        /* RESET & BASE STYLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* Professional Color System */
+        :root {
+            --bg-black: #000000;
+            --bg-primary: #0A0A0F;
+            --bg-secondary: #111111;
+            --bg-panel: #1A1A1A;
+            --bg-hover: #252525;
+            
+            --green-profit: #00FF41;
+            --red-loss: #FF0033;
+            --yellow-neutral: #FFB800;
+            --blue-data: #00D9FF;
+            --purple-premium: #B026FF;
+            
+            --text-primary: #FFFFFF;
+            --text-secondary: #CCCCCC;
+            --text-muted: #888888;
+            --text-dim: #555555;
+            
+            --border-default: #333333;
+            --border-active: #555555;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-black);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+        
+        /* MAIN CONTAINER */
+        .dashboard-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: 80px 1fr 320px;
+            grid-template-rows: 60px 40px 140px 160px 1fr 200px;
+            grid-template-areas:
+                "nav header header"
+                "nav ticker ticker"
+                "nav metrics risk"
+                "nav benchmark benchmark"
+                "nav charts orderbook"
+                "nav positions positions";
+            gap: 1px;
+            background: var(--border-default);
+            overflow: hidden;
+        }
+        
+        /* NAVIGATION */
+        .nav-sidebar {
+            grid-area: nav;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            gap: 16px;
+            overflow: hidden;
+        }
+        
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-size: 20px;
+        }
+        
+        .nav-icon:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            transform: scale(1.05);
+        }
+        
+        .nav-icon.active {
+            background: var(--blue-data);
+            color: var(--text-primary);
+        }
+        
+        /* HEADER */
+        .header {
+            grid-area: header;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-default);
+            overflow: hidden;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .header button {
+            background: var(--blue-data);
+            color: var(--bg-black);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 12px;
+            transition: background 0.2s ease;
+        }
+        
+        .header button:hover {
+            background: var(--purple-premium);
+        }
+        
+        /* TICKER */
+        .ticker {
+            grid-area: ticker;
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            overflow: hidden;
+        }
+        
+        .ticker span {
+            margin-right: 16px;
+        }
+        
+        .ticker .positive {
+            color: var(--green-profit);
+        }
+        
+        .ticker .negative {
+            color: var(--red-loss);
+        }
+        
+        /* METRICS */
+        .metrics {
+            grid-area: metrics;
+            background: var(--bg-panel);
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            overflow: hidden;
+        }
+        
+        .metric-card {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-default);
+            overflow: hidden;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .metric-change {
+            font-size: 11px;
+        }
+        
+        .metric-change.positive {
+            color: var(--green-profit);
+        }
+        
+        .metric-change.negative {
+            color: var(--red-loss);
+        }
+        
+        /* RISK */
+        .risk {
+            grid-area: risk;
+            background: var(--bg-panel);
+            padding: 16px;
+            overflow: hidden;
+        }
+        
+        .risk h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .risk-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        /* BENCHMARK */
+        .benchmark {
+            grid-area: benchmark;
+            background: var(--bg-panel);
+            padding: 16px;
+            overflow: hidden;
+        }
+        
+        .benchmark h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .benchmark-highlight {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 2px solid var(--green-profit);
+        }
+        
+        /* CHARTS */
+        .charts {
+            grid-area: charts;
+            background: var(--bg-panel);
+            padding: 16px;
+            overflow: hidden;
+        }
+        
+        .charts h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .timeframe-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .timeframe-btn {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            border: 1px solid var(--border-default);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .timeframe-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .timeframe-btn.active {
+            background: var(--blue-data);
+            color: var(--bg-black);
+            border-color: var(--blue-data);
+        }
+        
+        .chart-container {
+            height: 200px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* ORDERBOOK */
+        .orderbook {
+            grid-area: orderbook;
+            background: var(--bg-panel);
+            padding: 16px;
+            overflow: hidden;
+        }
+        
+        .orderbook h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .orderbook-section {
+            margin-bottom: 16px;
+        }
+        
+        .orderbook-label {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .orderbook-label.sell {
+            color: var(--red-loss);
+        }
+        
+        .orderbook-label.buy {
+            color: var(--green-profit);
+        }
+        
+        .spread-info {
+            margin: 16px 0;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        /* POSITIONS */
+        .positions {
+            grid-area: positions;
+            background: var(--bg-panel);
+            padding: 16px;
+            overflow: hidden;
+        }
+        
+        .positions h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .positions-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .positions-table {
+            max-height: 120px;
+            overflow-y: auto;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            padding: 8px;
+        }
+        
+        /* STATUS BAR */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-default);
+            padding: 8px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green-profit);
+        }
+        
+        .status-dot.disconnected {
+            background: var(--red-loss);
+        }
+        
+        /* NOTIFICATION */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-active);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--text-primary);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-color: var(--green-profit);
+        }
+        
+        .notification.error {
+            border-color: var(--red-loss);
+        }
+        
+        .notification.info {
+            border-color: var(--blue-data);
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: 80px 1fr 280px;
+            }
+        }
+        
+        @media (max-width: 1000px) {
+            .dashboard-container {
+                grid-template-columns: 80px 1fr;
+                grid-template-areas:
+                    "nav header"
+                    "nav ticker"
+                    "nav metrics"
+                    "nav risk"
+                    "nav benchmark"
+                    "nav charts"
+                    "nav orderbook"
+                    "nav positions";
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Navigation Sidebar -->
+        <nav class="nav-sidebar">
+            <div class="nav-icon active" title="Dashboard">📊</div>
+            <div class="nav-icon" title="Trading">💹</div>
+            <div class="nav-icon" title="Analytics">📈</div>
+            <div class="nav-icon" title="Risk">⚠️</div>
+            <div class="nav-icon" title="Settings">⚙️</div>
+        </nav>
+        
+        <!-- Header -->
+        <header class="header">
+            <div>
+                <h1>USDCOP Trading System</h1>
+                <p>Professional Trading Dashboard - Stable Version</p>
+            </div>
+            <div>
+                <button id="connectBtn" onclick="toggleConnection()">Connect</button>
+                <button id="modeBtn" onclick="toggleMode()">Backtest</button>
+            </div>
+        </header>
+        
+        <!-- Ticker -->
+        <div class="ticker">
+            <span>USD/COP: <span id="currentPrice">4,164.67</span></span>
+            <span> | </span>
+            <span>Change: <span id="priceChange" class="positive">+12.45 (+0.30%)</span></span>
+            <span> | </span>
+            <span>Volume: <span id="volume">1,234,567</span></span>
+        </div>
+        
+        <!-- Metrics -->
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-label">Current Price</div>
+                <div class="metric-value" id="priceMetric">$4,164.67</div>
+                <div class="metric-change positive" id="priceChangeMetric">+12.45 (+0.30%)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Gain (2M)</div>
+                <div class="metric-value" id="gainMetric">+$320</div>
+                <div class="metric-change positive">+3.2% of capital</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Balance</div>
+                <div class="metric-value" id="balanceMetric">$10,320.00</div>
+                <div class="metric-change">Initial: $10,000</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Return 2 Months</div>
+                <div class="metric-value" id="returnMetric">+3.2%</div>
+                <div class="metric-change positive">60% better than CDT (2%)</div>
+            </div>
+        </div>
+        
+        <!-- Risk Management -->
+        <div class="risk">
+            <h3>Risk Management</h3>
+            <div class="risk-grid">
+                <div>
+                    <div class="metric-label">VaR 95%</div>
+                    <div class="metric-value">-$180</div>
+                </div>
+                <div>
+                    <div class="metric-label">Sharpe Ratio</div>
+                    <div class="metric-value">1.42</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Benchmark Comparison -->
+        <div class="benchmark">
+            <h3>Market Comparison</h3>
+            <div class="benchmark-grid">
+                <div>
+                    <div class="metric-label">Official TRM</div>
+                    <div class="metric-value">$4,165.23</div>
+                </div>
+                <div>
+                    <div class="metric-label">CDT Rate (BANREP)</div>
+                    <div class="metric-value">12% E.A.</div>
+                </div>
+            </div>
+            <div class="benchmark-highlight">
+                <div class="metric-label">Your Return 2 Months</div>
+                <div class="metric-value" style="color: var(--green-profit);">3.2% (1.6x CDT)</div>
+                <div style="color: var(--green-profit); margin-top: 8px; font-size: 12px;">✓ Consistent superior performance</div>
+            </div>
+        </div>
+        
+        <!-- Charts Area -->
+        <div class="charts">
+            <h3>USD/COP - Main Chart</h3>
+            <div class="timeframe-buttons">
+                <button class="timeframe-btn" onclick="setTimeframe('1M')">1M</button>
+                <button class="timeframe-btn" onclick="setTimeframe('5M')">5M</button>
+                <button class="timeframe-btn active" onclick="setTimeframe('15M')">15M</button>
+                <button class="timeframe-btn" onclick="setTimeframe('1H')">1H</button>
+                <button class="timeframe-btn" onclick="setTimeframe('1D')">1D</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Order Book -->
+        <div class="orderbook">
+            <h3>Order Book - Depth</h3>
+            <div class="orderbook-section">
+                <div class="orderbook-label sell">SELL ORDERS</div>
+                <div id="sellOrders">No data available</div>
+            </div>
+            <div class="spread-info">
+                <div style="font-size: 12px; color: var(--text-muted);">SPREAD</div>
+                <div id="spread">$0.11 (0.003%)</div>
+            </div>
+            <div class="orderbook-section">
+                <div class="orderbook-label buy">BUY ORDERS</div>
+                <div id="buyOrders">No data available</div>
+            </div>
+        </div>
+        
+        <!-- Positions -->
+        <div class="positions">
+            <h3>Active Positions & Orders</h3>
+            <div class="positions-summary">
+                <span>Open: <span id="openCount">3</span></span>
+                <span>Active P&L: <span id="activePnL" style="color: var(--green-profit);">+$164.95</span></span>
+                <span>Total P&L: <span id="totalPnL" style="color: var(--green-profit);">+$320.00</span></span>
+                <span>Margin: <span id="marginUsed">40%</span></span>
+            </div>
+            <div class="positions-table" id="positionsTable">
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                    No active positions
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="connectionText">DISCONNECTED - MARKET CLOSED</span>
+        </div>
+        <div>
+            <span id="marketTime">COL: --:--:--</span>
+            <span> | </span>
+            <span id="performanceIndicator">--% > --% CDT</span>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+    
+    <script>
+        // Global state
+        let socket = null;
+        let isConnected = false;
+        let currentMode = 'backtest';
+        let priceChart = null;
+        
+        // Initialize Socket.IO connection
+        function initializeSocket() {
+            try {
+                socket = io();
+                
+                socket.on('connect', () => {
+                    console.log('Connected to server');
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    showNotification('Connected to trading server', 'success');
+                });
+                
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                    showNotification('Disconnected from server', 'error');
+                });
+                
+                socket.on('live_data', (data) => {
+                    updateLiveData(data);
+                });
+                
+                socket.on('backtest_update', (data) => {
+                    updateBacktestData(data);
+                });
+                
+                socket.on('backtest_complete', (data) => {
+                    showNotification('Backtest completed', 'info');
+                    console.log('Backtest results:', data);
+                });
+                
+                socket.on('model_loaded', (data) => {
+                    showNotification(`Model loaded: ${data.model}`, 'success');
+                });
+                
+            } catch (error) {
+                console.error('Socket initialization error:', error);
+                showNotification('Failed to connect to server', 'error');
+            }
+        }
+        
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('statusDot');
+            const connectionText = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusDot.classList.remove('disconnected');
+                connectionText.textContent = 'CONNECTED - MARKET OPEN';
+            } else {
+                statusDot.classList.add('disconnected');
+                connectionText.textContent = 'DISCONNECTED - MARKET CLOSED';
+            }
+        }
+        
+        // Toggle connection
+        function toggleConnection() {
+            if (isConnected) {
+                socket.disconnect();
+            } else {
+                initializeSocket();
+            }
+        }
+        
+        // Toggle mode
+        function toggleMode() {
+            currentMode = currentMode === 'backtest' ? 'live' : 'backtest';
+            const modeBtn = document.getElementById('modeBtn');
+            modeBtn.textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+            
+            if (currentMode === 'live' && isConnected) {
+                socket.emit('request_live_data');
+            } else if (currentMode === 'live' && !isConnected) {
+                showNotification('Please connect first', 'error');
+                currentMode = 'backtest';
+                modeBtn.textContent = 'Backtest';
+            }
+        }
+        
+        // Update live data
+        function updateLiveData(data) {
+            if (data.price) {
+                document.getElementById('currentPrice').textContent = data.price.toFixed(2);
+                document.getElementById('priceMetric').textContent = `$${data.price.toFixed(2)}`;
+            }
+            
+            if (data.volume) {
+                document.getElementById('volume').textContent = data.volume.toLocaleString();
+            }
+            
+            if (data.signal) {
+                console.log('Trading signal:', data.signal);
+            }
+        }
+        
+        // Update backtest data
+        function updateBacktestData(data) {
+            if (data.price) {
+                document.getElementById('currentPrice').textContent = data.price.toFixed(2);
+            }
+            
+            if (data.portfolio_value) {
+                document.getElementById('balanceMetric').textContent = `$${data.portfolio_value.toFixed(2)}`;
+            }
+        }
+        
+        // Set timeframe
+        function setTimeframe(timeframe) {
+            console.log('Setting timeframe:', timeframe);
+            
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize price chart
+        function initializeChart() {
+            try {
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                
+                const labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
+                const data = [4160, 4165, 4162, 4168, 4164, 4167];
+                
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'USD/COP Price',
+                            data: data,
+                            borderColor: 'var(--blue-data)',
+                            backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'var(--blue-data)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'var(--text-muted)',
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            y: {
+                                display: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'var(--text-muted)',
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Chart initialization error:', error);
+                showNotification('Failed to initialize chart', 'error');
+            }
+        }
+        
+        // Update market time
+        function updateMarketTime() {
+            try {
+                const now = new Date();
+                const colombiaTime = now.toLocaleTimeString('es-CO', {
+                    timeZone: 'America/Bogota',
+                    hour12: false
+                });
+                document.getElementById('marketTime').textContent = `COL: ${colombiaTime}`;
+            } catch (error) {
+                console.error('Time update error:', error);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                initializeSocket();
+                initializeChart();
+                
+                setInterval(updateMarketTime, 1000);
+                
+                setTimeout(() => {
+                    showNotification('USDCOP Trading Dashboard loaded successfully', 'success');
+                }, 1000);
+                
+                console.log('Dashboard initialized successfully');
+                
+            } catch (error) {
+                console.error('Dashboard initialization error:', error);
+                showNotification('Failed to initialize dashboard', 'error');
+            }
+        });
+        
+        // Error handling
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            showNotification('An error occurred', 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            showNotification('Connection error', 'error');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+version: 1
+
+dag:
+  id: usdcop_m5__05_l4_mlready
+  schedule: "0 3 * * 1"  # 3 AM UTC every Monday (weekly)
+  owner: ml-platform
+  retries: 1
+  start_date: "2024-01-01"
+  tags: ["l4", "mlready", "train", "split", "usdcop", "m5"]
+  description: "L4 ML-Ready - Split temporal, escalado y preparación final para ML"
+
+minio:
+  bucket: ds-usdcop-mlready
+  prefix: "{{ dag.id }}"
+  partitions:
+    market: usdcop
+    timeframe: m5
+  macros:
+    date: "{{ ds }}"
+    run_id: "{{ ti.xcom_pull(task_ids='generate_run_id') }}"
+    version: "v{{ ds_nodash }}"
+
+io:
+  inputs:
+    - bucket: ds-usdcop-feature
+      path: "usdcop_m5__04_l3_feature/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/feature_set=v1/date=*/run_id=*/features.parquet"
+      required_signal: "usdcop_m5__04_l3_feature/_control/feature_set=v1/date=*/*/READY"
+      
+  outputs:
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/train.parquet"
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/valid.parquet"
+    - path: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/test.parquet"
+    - artifact: "{{ dag.id }}/market={{ minio.partitions.market }}/timeframe={{ minio.partitions.timeframe }}/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/scaler.pkl"
+    - schema: "{{ dag.id }}/_schema/version={{ minio.macros.version }}/schema.json"
+    - dict: "{{ dag.id }}/_dicts/version={{ minio.macros.version }}/data_dictionary.yaml"
+    - signal_ready: "{{ dag.id }}/_control/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/READY"
+    - signal_validated: "{{ dag.id }}/_control/version={{ minio.macros.version }}/run_id={{ minio.macros.run_id }}/VALIDATED"
+
+contracts:
+  split:
+    method: time_series_split
+    train_ratio: 0.70
+    valid_ratio: 0.15
+    test_ratio: 0.15
+    preserve_order: true
+    
+  scaling:
+    method: standard  # StandardScaler
+    fit_on_train_only: true
+    features_to_scale:
+      - all_numeric_except_categorical
+    preserve_stats: true
+    
+  validation:
+    check_data_leakage: true
+    check_distribution_shift: true
+    check_class_balance: true
+    check_temporal_order: true
+    min_samples_per_split: 1000
+    
+  schema:
+    lock: true
+    version_control: true
+    backward_compatible: true
+    
+params:
+  target_column: returns_1  # or price_direction
+  feature_selection:
+    method: importance_threshold
+    threshold: 0.001
+  handle_outliers:
+    method: clip
+    percentile: [1, 99]
+    
+lineage:
+  consumes: ["usdcop_m5__04_l3_feature"]
+  produces: ["usdcop_m5__06_l5_serving"]
+
+validation:
+  train_size: "train_samples >= 50000"
+  valid_size: "valid_samples >= 10000"
+  test_size: "test_samples >= 10000"
+  no_leakage: "data_leakage == False"
+  schema_valid: "schema_validation == True"
