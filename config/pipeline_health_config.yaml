@@ -1,0 +1,75 @@
+# Pipeline Health Monitoring Configuration
+# ======================================
+
+# Project settings
+project_root: "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP_Trading_RL"
+environment: "development"
+
+# Monitoring intervals
+health_check_interval: 30  # seconds
+metrics_retention_hours: 168  # 1 week
+
+# Database configuration
+database:
+  host: "localhost"
+  port: 5432
+  database: "trading_db"
+  user: "trading_user" 
+  password: "trading123"
+
+# Redis configuration  
+redis:
+  host: "localhost"
+  port: 6379
+  password: "redis123"
+
+# S3/MinIO configuration
+s3:
+  endpoint: "http://localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin123"
+
+# Airflow configuration
+airflow:
+  base_url: "http://localhost:8081"
+  username: "admin"
+  password: "admin123"
+
+# Alert thresholds
+alerts:
+  data_freshness_hours: 2.0
+  error_rate_threshold: 0.05  # 5%
+  completeness_threshold: 0.8  # 80%
+  processing_time_threshold: 300  # 5 minutes
+
+# Pipeline stage buckets mapping
+stage_buckets:
+  L0_ACQUIRE: "00-l0-ds-usdcop-acquire"
+  L1_STANDARDIZE: "01-l1-ds-usdcop-standardize"
+  L2_PREPARE: "02-l2-ds-usdcop-prepare"
+  L3_FEATURE: "03-l3-ds-usdcop-feature"
+  L4_RLREADY: "04-l4-ds-usdcop-rlready"
+  L5_SERVING: "05-l5-ds-usdcop-serving"
+
+# DAG mapping
+dag_mapping:
+  L0_ACQUIRE: "usdcop_m5__01_l0_acquire"
+  L1_STANDARDIZE: "usdcop_m5__02_l1_standardize"
+  L2_PREPARE: "usdcop_m5__03_l2_prepare"
+  L3_FEATURE: "usdcop_m5__04_l3_feature"
+  L4_RLREADY: "usdcop_m5__05_l4_rlready"
+  L5_SERVING: "usdcop_m5__06_l5_serving"
+  L6_BACKTEST: "usdcop_m5__07_l6_backtest_referencia"
+
+# Quality score weights
+quality_weights:
+  audit_status: 0.4      # 40%
+  completeness: 0.3      # 30%
+  freshness: 0.2         # 20%
+  error_rate: 0.1        # 10%
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/pipeline_health_monitor.log"

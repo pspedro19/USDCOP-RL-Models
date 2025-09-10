@@ -1,6 +1,6 @@
 """
 TwelveData API Client for USDCOP Trading
-Real connection to TwelveData API
+Real connection to TwelveData API with Enhanced Monitoring
 """
 
 import requests
@@ -11,6 +11,12 @@ import logging
 from typing import Optional, Dict, List
 import time
 import pytz
+try:
+    from ..utils.enhanced_api_monitor import api_monitor
+    ENHANCED_MONITORING = True
+except ImportError:
+    ENHANCED_MONITORING = False
+    logging.warning("Enhanced API monitoring not available")
 
 class TwelveDataClient:
     """TwelveData API client for fetching forex data"""
@@ -82,14 +88,47 @@ class TwelveDataClient:
                     'output_size': 5000
                 }
                 
-                # Make API request
+                # Make API request with monitoring
                 endpoint = f"{self.base_url}/time_series"
                 
                 logging.info(f"Fetching REAL TwelveData for {current_start.date()} to {current_end.date()}")
                 logging.info(f"  API Key: {self.api_key[:10]}...")
                 logging.info(f"  Symbol: {self.symbol}")
                 
-                response = requests.get(endpoint, params=params, timeout=30)
+                # Record API call start time for monitoring
+                start_time = time.time()
+                
+                try:
+                    response = requests.get(endpoint, params=params, timeout=30)
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    
+                    # Record successful API call
+                    if ENHANCED_MONITORING:
+                        api_monitor.record_api_call(
+                            api_name='twelvedata',
+                            endpoint='time_series',
+                            key_id=f"key_{self.api_key[-4:]}",  # Use last 4 chars as key identifier
+                            success=(response.status_code == 200),
+                            response_time_ms=response_time_ms,
+                            status_code=response.status_code,
+                            response_size=len(response.content) if hasattr(response, 'content') else None
+                        )
+                
+                except Exception as e:
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    
+                    # Record failed API call
+                    if ENHANCED_MONITORING:
+                        api_monitor.record_api_call(
+                            api_name='twelvedata',
+                            endpoint='time_series',
+                            key_id=f"key_{self.api_key[-4:]}",
+                            success=False,
+                            response_time_ms=response_time_ms,
+                            status_code=0,
+                            error_message=str(e)
+                        )
+                    raise e
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -366,6 +405,7 @@ class TwelveDataClient:
         
     def get_latest_price(self) -> Optional[Dict]:
         """Get latest price for USD/COP"""
+        start_time = time.time()
         try:
             endpoint = f"{self.base_url}/price"
             params = {
@@ -374,6 +414,19 @@ class TwelveDataClient:
             }
             
             response = requests.get(endpoint, params=params, timeout=10)
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Record API call
+            if ENHANCED_MONITORING:
+                api_monitor.record_api_call(
+                    api_name='twelvedata',
+                    endpoint='price',
+                    key_id=f"key_{self.api_key[-4:]}",
+                    success=(response.status_code == 200),
+                    response_time_ms=response_time_ms,
+                    status_code=response.status_code,
+                    response_size=len(response.content) if hasattr(response, 'content') else None
+                )
             
             if response.status_code == 200:
                 data = response.json()
@@ -384,22 +437,84 @@ class TwelveDataClient:
                 }
                 
         except Exception as e:
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Record failed API call
+            if ENHANCED_MONITORING:
+                api_monitor.record_api_call(
+                    api_name='twelvedata',
+                    endpoint='price',
+                    key_id=f"key_{self.api_key[-4:]}",
+                    success=False,
+                    response_time_ms=response_time_ms,
+                    status_code=0,
+                    error_message=str(e)
+                )
+            
             logging.error(f"Error getting latest price: {e}")
             
         return None
         
     def check_api_usage(self) -> Optional[Dict]:
         """Check API usage and limits"""
+        start_time = time.time()
         try:
             endpoint = f"{self.base_url}/api_usage"
             params = {'apikey': self.api_key}
             
             response = requests.get(endpoint, params=params, timeout=10)
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Record API call
+            if ENHANCED_MONITORING:
+                api_monitor.record_api_call(
+                    api_name='twelvedata',
+                    endpoint='api_usage',
+                    key_id=f"key_{self.api_key[-4:]}",
+                    success=(response.status_code == 200),
+                    response_time_ms=response_time_ms,
+                    status_code=response.status_code,
+                    response_size=len(response.content) if hasattr(response, 'content') else None
+                )
             
             if response.status_code == 200:
                 return response.json()
                 
         except Exception as e:
+            response_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Record failed API call
+            if ENHANCED_MONITORING:
+                api_monitor.record_api_call(
+                    api_name='twelvedata',
+                    endpoint='api_usage',
+                    key_id=f"key_{self.api_key[-4:]}",
+                    success=False,
+                    response_time_ms=response_time_ms,
+                    status_code=0,
+                    error_message=str(e)
+                )
+            
             logging.error(f"Error checking API usage: {e}")
             
         return None
+    
+    def get_monitoring_status(self) -> Dict:
+        """Get comprehensive monitoring status from enhanced monitor"""
+        if not ENHANCED_MONITORING:
+            return {"error": "Enhanced monitoring not available"}
+        
+        try:
+            key_id = f"key_{self.api_key[-4:]}"
+            key_status = api_monitor.get_key_status(key_id)
+            health_metrics = api_monitor.get_api_health_metrics('twelvedata')
+            
+            return {
+                "key_status": key_status.__dict__ if key_status else None,
+                "health_metrics": health_metrics.__dict__ if health_metrics else None,
+                "all_keys": [status.__dict__ for status in api_monitor.get_all_key_statuses()],
+                "best_available_key": api_monitor.get_best_available_key('twelvedata')
+            }
+        except Exception as e:
+            logging.error(f"Error getting monitoring status: {e}")
+            return {"error": str(e)}

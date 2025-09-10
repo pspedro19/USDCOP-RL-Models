@@ -93,8 +93,9 @@ BARS_PER_HOUR = 12        # For 5-minute frequency
 EXPECTED_BARS_PER_DAY = (BUSINESS_HOURS_END - BUSINESS_HOURS_START) * BARS_PER_HOUR  # 72 bars
 
 # Data quality thresholds
-MIN_COMPLETENESS = 80  # Minimum acceptable completeness %
+MIN_COMPLETENESS = 95  # Minimum acceptable completeness % (audit requirement)
 MIN_RECORDS_PER_BATCH = 50  # Minimum records to consider batch valid
+MAX_STALE_RATE = 0.02  # Maximum 2% repeated/stale OHLC allowed
 
 # Historical data range
 START_DATE = datetime(2020, 1, 1)  # Start from 2020 for comprehensive backtesting
@@ -319,7 +320,7 @@ def fetch_twelvedata_historical(**context):
         raise ValueError("No data available from TwelveData API. Pipeline requires real data.")
 
 def calculate_quality_metrics(df, batch_start, batch_end):
-    """Calculate quality metrics for a data batch"""
+    """Calculate quality metrics for a data batch including stale/repeated OHLC detection"""
     
     # Calculate expected vs actual bars
     business_days = pd.bdate_range(start=batch_start, end=batch_end, freq='B')
@@ -346,6 +347,19 @@ def calculate_quality_metrics(df, batch_start, batch_end):
     else:
         gap_count = 0
     
+    # Calculate repeated/stale OHLC rate
+    stale_count = 0
+    if len(premium_df) > 1:
+        # Check if consecutive bars have identical OHLC
+        ohlc_cols = ['open', 'high', 'low', 'close']
+        if all(col in premium_df.columns for col in ohlc_cols):
+            premium_df_sorted = premium_df.sort_values('time')
+            for i in range(1, len(premium_df_sorted)):
+                if all(premium_df_sorted.iloc[i][col] == premium_df_sorted.iloc[i-1][col] for col in ohlc_cols):
+                    stale_count += 1
+    
+    stale_rate = (stale_count / len(premium_df) * 100) if len(premium_df) > 0 else 0
+    
     return {
         'batch_start': str(batch_start),
         'batch_end': str(batch_end),
@@ -354,19 +368,19 @@ def calculate_quality_metrics(df, batch_start, batch_end):
         'premium_bars': actual_premium_bars,
         'completeness': completeness,
         'gap_count': gap_count,
-        'trading_days': len(trading_days)
+        'trading_days': len(trading_days),
+        'stale_count': stale_count,
+        'stale_rate': stale_rate
     }
 
 def save_batch_to_s3(df, batch_start, batch_end, run_id, s3_hook, context):
     """Save data batch to S3"""
     
-    # Generate file path
-    year = batch_start.year
-    month = f"{batch_start.month:02d}"
-    day = f"{batch_start.day:02d}"
+    # Generate file path - using date=YYYY-MM-DD format for L1 compatibility
+    date_str = batch_start.strftime('%Y-%m-%d')
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    file_key = f"{DAG_ID}/market=usdcop/timeframe=m5/source=twelvedata/year={year}/month={month}/day={day}/data_{timestamp}.parquet"
+    file_key = f"{DAG_ID}/market=usdcop/timeframe=m5/source=twelvedata/date={date_str}/run_id={run_id}/premium_data_{timestamp}.parquet"
     
     # Convert to parquet
     table = pa.Table.from_pandas(df)

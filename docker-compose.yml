@@ -6,11 +6,10 @@ name: trading-system
 # ═══════════════════════════════════════════════════════════════════════════════
 # This stack includes:
 # - PostgreSQL (main database + Airflow database)
-# - Kafka (KRaft mode - no Zookeeper needed)
 # - MinIO (S3-compatible object storage)
 # - Redis (caching and Celery broker)
 # - Airflow (workflow orchestration)
-# - Prometheus + Grafana (monitoring)
+# - Prometheus (monitoring)
 # - Trading App + Dashboard
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -83,76 +82,6 @@ services:
     networks:
       - trading-network
 
-  # ═══════════════════════════════════════════════════════════════════════════
-  # STREAMING LAYER (Kafka in KRaft mode - no Zookeeper)
-  # ═══════════════════════════════════════════════════════════════════════════
-  
-  kafka:
-    image: bitnami/kafka:3.7
-    container_name: trading-kafka
-    restart: unless-stopped
-    environment:
-      # KRaft mode settings
-      KAFKA_ENABLE_KRAFT: "yes"
-      KAFKA_CFG_NODE_ID: "1"
-      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
-      # Listeners
-      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
-      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT"
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
-      # Performance settings
-      KAFKA_CFG_NUM_PARTITIONS: "3"
-      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
-      KAFKA_CFG_MIN_INSYNC_REPLICAS: "1"
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-    ports:
-      - "${KAFKA_PORT:-9094}:9094"
-      - "9092:9092"
-    volumes:
-      - kafka_data:/bitnami/kafka
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - trading-network
-
-  kafka-init:
-    image: bitnami/kafka:3.7
-    container_name: trading-kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      echo "Creating Kafka topics..."
-      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.prices --partitions 3 --replication-factor 1
-      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.signals --partitions 3 --replication-factor 1
-      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.trades --partitions 3 --replication-factor 1
-      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic trading.events --partitions 3 --replication-factor 1
-      echo "Topics created successfully"
-    networks:
-      - trading-network
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: trading-kafka-ui
-    restart: unless-stopped
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: trading-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    ports:
-      - "${KAFKA_UI_PORT:-8080}:8080"
-    networks:
-      - trading-network
 
   # ═══════════════════════════════════════════════════════════════════════════
   # SERVICE DISCOVERY LAYER
@@ -385,24 +314,6 @@ services:
     networks:
       - trading-network
 
-  # Visualization & Dashboards
-  grafana:
-    image: grafana/grafana:latest
-    container_name: trading-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
-      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
-    ports:
-      - "${GRAFANA_PORT:-3000}:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./config/grafana/provisioning:/etc/grafana/provisioning
-    depends_on:
-      - prometheus
-    networks:
-      - trading-network
 
   # Centralized Logging
   loki:
@@ -430,7 +341,7 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
-      - ../logs:/var/log/app:ro
+      - ./logs:/var/log/app:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
       - trading-network
@@ -443,16 +354,14 @@ services:
   
   trading-app:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: trading-app
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -468,12 +377,6 @@ services:
       DB_NAME: trading_db
       DB_USER: trading_user
       DB_PASSWORD: ${DB_PASSWORD:-trading123}
-      
-      # Kafka
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_TOPIC_PRICES: trading.prices
-      KAFKA_TOPIC_SIGNALS: trading.signals
-      KAFKA_TOPIC_TRADES: trading.trades
       
       # Redis
       REDIS_HOST: redis
@@ -512,11 +415,11 @@ services:
       
       PYTHONUNBUFFERED: 1
     volumes:
-      - ../src:/app/src
-      - ../configs:/app/configs
-      - ../data:/app/data
-      - ../logs:/app/logs
-      - ../models:/app/models
+      - ./src:/app/src
+      - ./configs:/app/configs
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
     command: python scripts/run_system.py --mode production
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/overview"]
@@ -528,8 +431,8 @@ services:
 
   trading-dashboard:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: trading-dashboard
     restart: unless-stopped
     depends_on:
@@ -546,9 +449,9 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
     volumes:
-      - ../src:/app/src
-      - ../configs:/app/configs
-      - ../logs:/app/logs
+      - ./src:/app/src
+      - ./configs:/app/configs
+      - ./logs:/app/logs
     ports:
       - "${DASHBOARD_PORT:-8050}:8050"
     command: python scripts/run_dashboard.py --host 0.0.0.0 --port 8050
@@ -564,15 +467,11 @@ volumes:
     driver: local
   pgadmin_data:
     driver: local
-  kafka_data:
-    driver: local
   minio_data:
     driver: local
   redis_data:
     driver: local
   prometheus_data:
-    driver: local
-  grafana_data:
     driver: local
   consul_data:
     driver: local

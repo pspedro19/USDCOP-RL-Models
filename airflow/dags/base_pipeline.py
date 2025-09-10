@@ -48,7 +48,7 @@ class BasePipeline:
         self.output_config = get_output_config(layer)
         
         # Initialize S3 hook
-        self.s3_hook = S3Hook(aws_conn_id=self.config['minio_conn_id'])
+        self.s3_hook = S3Hook(aws_conn_id='minio_conn')
         
         # Parse date components
         self.year, self.month, self.day = self.execution_date.split('-')
@@ -300,7 +300,7 @@ class BasePipeline:
             bucket_name=config['bucket_name'],
             bucket_key=config['bucket_key'](self.execution_date),
             wildcard_match=config['wildcard_match'],
-            aws_conn_id=self.config['minio_conn_id'],
+            aws_conn_id='minio_conn',
             timeout=config['timeout'],
             poke_interval=config['poke_interval'],
             soft_fail=config['soft_fail']

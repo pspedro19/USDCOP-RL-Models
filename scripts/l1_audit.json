@@ -1,0 +1,9 @@
+{
+  "acceptance": "60/60 only, repeated_ohlc=0%",
+  "grid_300s": true,
+  "premium_window": "08:00–12:55 COT",
+  "outputs": ["standardized_data_accepted.parquet", "hod_baseline.csv"],
+  "violations": [],
+  "warnings": [],
+  "status": "PASS"
+}

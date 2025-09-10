@@ -1,0 +1,67 @@
+#!/bin/bash
+# Check Docker Services Status
+# =============================
+
+echo "=========================================="
+echo "DOCKER SERVICES STATUS"
+echo "=========================================="
+echo ""
+
+# Check containers
+echo "RUNNING CONTAINERS:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+echo ""
+echo "=========================================="
+echo "SERVICE ENDPOINTS:"
+echo "=========================================="
+echo ""
+echo "📊 Airflow Web UI:     http://localhost:8080"
+echo "   Username: airflow"
+echo "   Password: airflow"
+echo ""
+echo "🧪 MLflow UI:          http://localhost:5000"
+echo ""
+echo "📦 MinIO Console:      http://localhost:9001"
+echo "   Username: minioadmin"
+echo "   Password: minioadmin123"
+echo ""
+echo "🗄️ PostgreSQL:         localhost:5432"
+echo "   Database: trading_db"
+echo "   Username: postgres"
+echo "   Password: postgres123"
+echo ""
+echo "🔄 Redis:              localhost:6379"
+echo "   Password: redis123"
+echo ""
+
+echo "=========================================="
+echo "AIRFLOW DAGS:"
+echo "=========================================="
+docker exec usdcop-airflow-webserver airflow dags list 2>/dev/null || echo "Airflow not ready yet"
+
+echo ""
+echo "=========================================="
+echo "MINIO BUCKETS:"
+echo "=========================================="
+docker run --rm --network trading-network minio/mc:latest sh -c "
+mc alias set minio http://trading-minio:9000 minioadmin minioadmin123 2>/dev/null && 
+mc ls minio/ 2>/dev/null | head -10
+" || echo "MinIO not accessible"
+
+echo ""
+echo "=========================================="
+echo "QUICK COMMANDS:"
+echo "=========================================="
+echo ""
+echo "# Trigger L5 pipeline:"
+echo "docker exec usdcop-airflow-webserver airflow dags trigger usdcop_m5__06_l5_serving"
+echo ""
+echo "# Check logs:"
+echo "docker logs usdcop-airflow-scheduler --tail 50"
+echo ""
+echo "# Stop all services:"
+echo "docker compose -f docker-compose-core.yml down"
+echo ""
+echo "# Restart services:"
+echo "docker compose -f docker-compose-core.yml restart"

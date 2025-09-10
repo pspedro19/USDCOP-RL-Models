@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-01-01",
+  "file": "usdcop_m5__06_l5_serving.py",
+  "status": "READY_TO_RUN",
+  "instrumentation": [
+    "Monitor wrappers (lines 364-365, 739, 759-763)",
+    "Sortino-based gates (lines 774, 783-786)",
+    "L4-based cost stress (lines 746-756)",
+    "Git fallbacks (lines 97-98)",
+    "Latency benches (lines 778-779)",
+    "Manifest with lineage (lines 1004-1008)"
+  ],
+  "hardening_tweaks_applied": [
+    {
+      "line": 1188,
+      "change": "Reward RMSE > 0.001 now raises ValueError (hard fail)",
+      "reason": "Never train on drifted rewards"
+    },
+    {
+      "line": 749,
+      "change": "Added cost_model presence guard",
+      "reason": "Prevent silent default in stress test"
+    }
+  ],
+  "configuration": {
+    "total_timesteps": 1000000,
+    "ppo_n_steps": 2048,
+    "ppo_batch_size": 256,
+    "ppo_learning_rate": "3e-4",
+    "ppo_ent_coef": 0.01,
+    "eval_episodes": {
+      "in_loop": 15,
+      "gates": 100
+    }
+  },
+  "gates": {
+    "sortino_threshold": 1.3,
+    "max_dd_threshold": 0.15,
+    "calmar_threshold": 0.8,
+    "sortino_diff_threshold": 0.5,
+    "cost_stress_multiplier": 1.25,
+    "cagr_drop_threshold": 0.20,
+    "inference_p99_ms": 20,
+    "e2e_p99_ms": 100
+  },
+  "violations": [],
+  "warnings": [],
+  "expected_behavior": {
+    "training": "No Monitor warnings, 1M timesteps, checkpoints every 100k",
+    "gates": "Sortino-based evaluation with L4 cost stress",
+    "bundle": "Complete manifest with git SHA and L4 lineage"
+  },
+  "action_required": [
+    "Run: chmod +x set_l5_variables.sh && ./set_l5_variables.sh",
+    "Clear DAG from prepare_training_environment to end",
+    "Trigger usdcop_m5__06_l5_serving manually"
+  ]
+}
