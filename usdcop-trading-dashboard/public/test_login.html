@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login - USD/COP Trading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #ffe6e6;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            color: #27ae60;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #e8f8f5;
+            border-radius: 5px;
+            display: none;
+        }
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        .status {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .no-metamask {
+            color: #27ae60;
+        }
+        .has-metamask {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>USD/COP Trading Dashboard</h2>
+        
+        <div class="status" id="metamask-status">
+            Checking for Web3 wallets...
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit">Sign In</button>
+        </form>
+        
+        <div class="error" id="error-message"></div>
+        <div class="success" id="success-message"></div>
+        
+        <div class="hint">
+            Use credentials: admin / admin
+        </div>
+    </div>
+
+    <script>
+        // Check for MetaMask/Web3 wallets
+        window.addEventListener('load', function() {
+            const statusDiv = document.getElementById('metamask-status');
+            
+            // Check if any Web3 wallet is present
+            const hasWeb3 = typeof window.ethereum !== 'undefined' || 
+                           typeof window.web3 !== 'undefined' ||
+                           typeof window.tronWeb !== 'undefined' ||
+                           typeof window.solana !== 'undefined';
+            
+            if (hasWeb3) {
+                statusDiv.innerHTML = '<span class="has-metamask">⚠️ Web3 wallet detected - may interfere with login</span>';
+                
+                // Try to block it
+                try {
+                    delete window.ethereum;
+                    delete window.web3;
+                    statusDiv.innerHTML += '<br><span class="no-metamask">✅ Successfully blocked Web3 injection</span>';
+                } catch (e) {
+                    statusDiv.innerHTML += '<br><span class="has-metamask">❌ Could not block Web3 injection</span>';
+                }
+            } else {
+                statusDiv.innerHTML = '<span class="no-metamask">✅ No Web3 wallets detected - login should work normally</span>';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            
+            // Hide messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            // Simple validation
+            if (username === 'admin' && password === 'admin') {
+                // Store auth in both storages for redundancy
+                try {
+                    sessionStorage.setItem('isAuthenticated', 'true');
+                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('loginTime', new Date().toISOString());
+                } catch (e) {
+                    console.error('SessionStorage error:', e);
+                }
+                
+                try {
+                    localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('loginTime', new Date().toISOString());
+                } catch (e) {
+                    console.error('LocalStorage error:', e);
+                }
+                
+                successDiv.textContent = 'Login successful! Redirecting to dashboard...';
+                successDiv.style.display = 'block';
+                
+                // Redirect after 1.5 seconds
+                setTimeout(function() {
+                    window.location.href = 'http://localhost:3014/';
+                }, 1500);
+            } else {
+                errorDiv.textContent = 'Invalid username or password';
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

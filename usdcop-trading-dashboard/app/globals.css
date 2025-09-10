@@ -1,0 +1,1549 @@
+@import "tailwindcss";
+
+/* Bloomberg Terminal Professional Theme - Enhanced Glassmorphism System */
+:root {
+  /* === Enhanced Base Surface Hierarchy with Glassmorphism === */
+  --bg-primary: radial-gradient(ellipse at center, #0A0E27 0%, #050816 100%);
+  --bg-elevated: rgba(15, 20, 27, 0.85);     /* Enhanced transparency */
+  --bg-overlay: rgba(20, 27, 36, 0.90);      /* Modal backgrounds */
+  --bg-interactive: rgba(28, 33, 66, 0.75);  /* Hover states with glassmorphism */
+  --bg-glass-primary: rgba(10, 14, 39, 0.40); /* Primary glassmorphism */
+  --bg-glass-secondary: rgba(15, 20, 27, 0.60); /* Secondary glassmorphism */
+  --bg-glass-accent: rgba(6, 182, 212, 0.08); /* Accent glassmorphism */
+  
+  /* === Advanced Backdrop Blur System === */
+  --blur-sm: blur(4px);
+  --blur-md: blur(8px);
+  --blur-lg: blur(16px);
+  --blur-xl: blur(24px);
+  --blur-2xl: blur(40px);
+  --blur-3xl: blur(64px);
+  
+  /* === Professional Gradient System === */
+  --gradient-primary: linear-gradient(135deg, #06B6D4 0%, #3B82F6 35%, #8B5CF6 100%);
+  --gradient-secondary: linear-gradient(135deg, #10B981 0%, #06B6D4 50%, #3B82F6 100%);
+  --gradient-accent: linear-gradient(135deg, #F59E0B 0%, #EF4444 50%, #EC4899 100%);
+  --gradient-surface: linear-gradient(135deg, rgba(15, 20, 27, 0.95) 0%, rgba(20, 27, 36, 0.90) 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.10) 50%, rgba(139, 92, 246, 0.15) 100%);
+  --gradient-border: linear-gradient(135deg, rgba(6, 182, 212, 0.5) 0%, rgba(139, 92, 246, 0.3) 100%);
+  
+  /* === Enhanced Market Semantics === */
+  --market-up: #00D395;          /* Bullish - optimized green */
+  --market-down: #FF3B69;        /* Bearish - optimized red */
+  --market-neutral: #8B92A8;     /* Unchanged */
+  --market-up-glow: 0 0 20px rgba(0, 211, 149, 0.4);
+  --market-down-glow: 0 0 20px rgba(255, 59, 105, 0.4);
+  
+  /* === Enhanced Intensity System === */
+  --up-05: rgba(0, 211, 149, 0.05);
+  --up-10: rgba(0, 211, 149, 0.1);
+  --up-20: rgba(0, 211, 149, 0.2);
+  --up-30: rgba(0, 211, 149, 0.3);
+  --up-40: rgba(0, 211, 149, 0.4);
+  --down-05: rgba(255, 59, 105, 0.05);
+  --down-10: rgba(255, 59, 105, 0.1);
+  --down-20: rgba(255, 59, 105, 0.2);
+  --down-30: rgba(255, 59, 105, 0.3);
+  --down-40: rgba(255, 59, 105, 0.4);
+  
+  /* === Professional Status Indicators === */
+  --status-live: #10B981;
+  --status-live-glow: 0 0 16px rgba(16, 185, 129, 0.5);
+  --status-delayed: #F59E0B;
+  --status-delayed-glow: 0 0 16px rgba(245, 158, 11, 0.5);
+  --status-offline: #EF4444;
+  --status-offline-glow: 0 0 16px rgba(239, 68, 68, 0.5);
+  --status-replay: #8B5CF6;
+  --status-replay-glow: 0 0 16px rgba(139, 92, 246, 0.5);
+  
+  /* === Enhanced Chart System === */
+  --chart-grid: rgba(6, 182, 212, 0.15);
+  --chart-axis: #64748B;
+  --chart-volume: rgba(139, 146, 168, 0.35);
+  --candle-wick: #4B5563;
+  --chart-bg: rgba(10, 14, 39, 0.30);
+  --chart-overlay: rgba(6, 182, 212, 0.05);
+  
+  /* === Advanced Typography === */
+  --text-primary: #F8FAFC;       /* Enhanced primary text */
+  --text-secondary: #CBD5E1;     /* Enhanced secondary text */
+  --text-tertiary: #94A3B8;      /* Enhanced tertiary text */
+  --text-inverse: #0A0E27;
+  --text-glow: 0 0 8px rgba(248, 250, 252, 0.3);
+  --text-accent-glow: 0 0 12px rgba(6, 182, 212, 0.6);
+  
+  /* === Enhanced Interactive States === */
+  --focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.4);
+  --focus-ring-inset: inset 0 0 0 2px rgba(6, 182, 212, 0.6);
+  --selection: rgba(59, 130, 246, 0.25);
+  --hover-glow: 0 4px 20px rgba(6, 182, 212, 0.15);
+  --hover-lift: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --active-press: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  
+  /* === Professional Shadow System === */
+  --shadow-glass-sm: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(6, 182, 212, 0.1);
+  --shadow-glass-md: 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(6, 182, 212, 0.15);
+  --shadow-glass-lg: 0 8px 32px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(6, 182, 212, 0.2);
+  --shadow-glass-xl: 0 16px 64px rgba(0, 0, 0, 0.25), 0 8px 32px rgba(6, 182, 212, 0.25);
+  --shadow-glow-cyan: 0 0 20px rgba(6, 182, 212, 0.4);
+  --shadow-glow-purple: 0 0 20px rgba(139, 92, 246, 0.4);
+  --shadow-glow-mixed: 0 0 30px rgba(6, 182, 212, 0.3), 0 0 60px rgba(139, 92, 246, 0.2);
+  
+  /* === Advanced Border System === */
+  --border-glass: 1px solid rgba(6, 182, 212, 0.2);
+  --border-glass-strong: 1px solid rgba(6, 182, 212, 0.4);
+  --border-gradient: linear-gradient(135deg, rgba(6, 182, 212, 0.4) 0%, rgba(139, 92, 246, 0.2) 100%);
+  
+  /* === Legacy Compatibility === */
+  --terminal-bg: var(--bg-primary);
+  --terminal-surface: var(--bg-elevated);
+  --terminal-surface-variant: var(--bg-overlay);
+  --terminal-border: var(--chart-grid);
+  --terminal-accent: #06B6D4;
+  --terminal-accent-dim: #0891B2;
+  --terminal-text: var(--text-primary);
+  --terminal-text-dim: var(--text-secondary);
+  --terminal-text-muted: var(--text-tertiary);
+  --hover-opacity: 0.12;
+  
+  /* Legacy mappings for backwards compatibility */
+  --terminal-bg: var(--bg-primary);
+  --terminal-surface: var(--bg-elevated);
+  --terminal-surface-variant: var(--bg-overlay);
+  --terminal-border: var(--chart-grid);
+  --terminal-accent: var(--status-delayed);
+  --terminal-accent-dim: #d97706;
+  --terminal-text: var(--text-primary);
+  --terminal-text-dim: var(--text-secondary);
+  --terminal-text-muted: var(--text-tertiary);
+  
+  /* Enhanced Status Colors (Bloomberg-inspired with WCAG AA compliance) */
+  --positive: #22c55e;      /* Brighter green for gains */
+  --positive-dim: #15803d;
+  --positive-bg: rgba(34, 197, 94, 0.1);
+  --negative: #ef4444;      /* Red for losses */
+  --negative-dim: #b91c1c;
+  --negative-bg: rgba(239, 68, 68, 0.1);
+  --neutral: #a16207;       /* Amber for unchanged */
+  --neutral-bg: rgba(161, 98, 7, 0.1);
+  --info-blue: #3b82f6;     /* For tooltips/metrics */
+  --info-blue-bg: rgba(59, 130, 246, 0.1)
+  
+  /* Legacy support */
+  --success: var(--positive);
+  --success-dim: var(--positive-dim);
+  --warning: #f59e0b;
+  --warning-dim: #d97706;
+  --error: var(--negative);
+  --error-dim: var(--negative-dim);
+  --info: var(--info-blue);
+  --info-dim: #2563eb;
+  
+  /* Color-Blind Safe Mode */
+  --cb-positive: #60a5fa;   /* Blue for gains */
+  --cb-negative: #f97316;   /* Orange for losses */
+  
+  /* High Contrast Mode */
+  --hc-text: #ffffff;
+  --hc-border: #ffffff;
+  
+  /* Enhanced Gradients for Depth and Visual Interest */
+  --gradient-primary: linear-gradient(135deg, var(--terminal-accent) 0%, var(--terminal-accent-dim) 100%);
+  --gradient-surface: linear-gradient(135deg, var(--terminal-surface) 0%, var(--terminal-surface-variant) 100%);
+  --gradient-positive: linear-gradient(135deg, var(--positive) 0%, var(--positive-dim) 100%);
+  --gradient-negative: linear-gradient(135deg, var(--negative) 0%, var(--negative-dim) 100%);
+  --gradient-info: linear-gradient(135deg, var(--info-blue) 0%, #2563eb 100%);
+  
+  /* Typography */
+  --font-terminal: 'Courier New', 'Monaco', 'Menlo', monospace;
+  --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* === Enhanced Professional Animations & Visual Feedback === */
+
+/* Advanced background animation */
+@keyframes backgroundPulse {
+  0%, 100% { 
+    opacity: 0.3;
+    transform: scale(1) rotate(0deg);
+  }
+  33% { 
+    opacity: 0.5;
+    transform: scale(1.1) rotate(1deg);
+  }
+  66% { 
+    opacity: 0.4;
+    transform: scale(0.95) rotate(-0.5deg);
+  }
+}
+
+/* Professional glassmorphism entrance */
+@keyframes glassSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    backdrop-filter: var(--blur-lg);
+  }
+}
+
+/* Enhanced price flash animations with glassmorphism */
+@keyframes price-flash-up-glass {
+  0% { 
+    background: var(--up-20);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-glass-md), var(--market-up-glow);
+    backdrop-filter: var(--blur-md);
+  }
+  50% {
+    background: var(--up-30);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-glass-lg), var(--market-up-glow);
+  }
+  100% { 
+    background: var(--up-05);
+    transform: scale(1);
+    box-shadow: var(--shadow-glass-sm);
+    backdrop-filter: var(--blur-sm);
+  }
+}
+
+@keyframes price-flash-down-glass {
+  0% { 
+    background: var(--down-20);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-glass-md), var(--market-down-glow);
+    backdrop-filter: var(--blur-md);
+  }
+  50% {
+    background: var(--down-30);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-glass-lg), var(--market-down-glow);
+  }
+  100% { 
+    background: var(--down-05);
+    transform: scale(1);
+    box-shadow: var(--shadow-glass-sm);
+    backdrop-filter: var(--blur-sm);
+  }
+}
+
+/* Professional status pulse with glow */
+@keyframes status-pulse-pro {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: var(--shadow-glass-sm);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.15);
+    box-shadow: var(--shadow-glass-md), var(--status-live-glow);
+  }
+}
+
+/* Advanced glassmorphism shimmer */
+@keyframes shimmer-glass {
+  0% {
+    background-position: -200% center;
+    backdrop-filter: var(--blur-sm);
+  }
+  50% {
+    backdrop-filter: var(--blur-md);
+  }
+  100% {
+    background-position: 200% center;
+    backdrop-filter: var(--blur-sm);
+  }
+}
+
+/* Professional hover glow with glassmorphism */
+@keyframes hover-glow-glass {
+  0% {
+    box-shadow: var(--shadow-glass-sm);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: var(--shadow-glass-lg), var(--shadow-glow-cyan);
+    transform: translateY(-2px);
+  }
+  100% {
+    box-shadow: var(--shadow-glass-md), var(--hover-glow);
+    transform: translateY(-1px);
+  }
+}
+
+/* Advanced slide animations */
+@keyframes slide-in-right-glass {
+  0% {
+    transform: translateX(30px) scale(0.95);
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    backdrop-filter: var(--blur-md);
+  }
+}
+
+@keyframes slide-in-left-glass {
+  0% {
+    transform: translateX(-30px) scale(0.95);
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    backdrop-filter: var(--blur-md);
+  }
+}
+
+@keyframes slide-in-up-glass {
+  0% {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    backdrop-filter: var(--blur-md);
+  }
+}
+
+/* Professional floating animation */
+@keyframes float-glass {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    box-shadow: var(--shadow-glass-md);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-glass-lg), var(--hover-glow);
+  }
+}
+
+/* Gradient animation for borders */
+@keyframes gradient-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Data visualization glow effect */
+@keyframes data-glow {
+  0%, 100% {
+    box-shadow: var(--shadow-glass-sm);
+  }
+  50% {
+    box-shadow: var(--shadow-glass-md), var(--shadow-glow-mixed);
+  }
+}
+
+/* Professional spinner with glassmorphism */
+@keyframes spin-glass {
+  0% {
+    transform: rotate(0deg) scale(1);
+    box-shadow: var(--shadow-glass-sm);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.05);
+    box-shadow: var(--shadow-glass-md), var(--shadow-glow-cyan);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    box-shadow: var(--shadow-glass-sm);
+  }
+}
+
+/* === Professional Glassmorphism Utility Classes === */
+
+/* Glass Surface System */
+.glass-surface-primary {
+  background: var(--bg-glass-primary);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-glass-md);
+}
+
+.glass-surface-secondary {
+  background: var(--bg-glass-secondary);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: var(--border-glass);
+  box-shadow: var(--shadow-glass-sm);
+}
+
+.glass-surface-elevated {
+  background: var(--bg-elevated);
+  backdrop-filter: var(--blur-xl);
+  -webkit-backdrop-filter: var(--blur-xl);
+  border: var(--border-glass-strong);
+  box-shadow: var(--shadow-glass-lg);
+}
+
+/* Professional Card Variants */
+.glass-card {
+  background: var(--gradient-surface);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border: var(--border-glass);
+  border-radius: 24px;
+  box-shadow: var(--shadow-glass-md);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--gradient-border);
+  opacity: 0.8;
+}
+
+.glass-card:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: var(--shadow-glass-lg), var(--hover-glow);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.glass-card-interactive {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-interactive:hover {
+  animation: hover-glow-glass 0.6s ease-out;
+}
+
+.glass-card-interactive:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--active-press), var(--shadow-glass-sm);
+}
+
+/* Professional Button System */
+.glass-button {
+  background: var(--gradient-glass);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: var(--border-glass);
+  border-radius: 16px;
+  padding: 12px 24px;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.glass-button:hover::before {
+  left: 100%;
+}
+
+.glass-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glass-lg), var(--hover-glow);
+  border-color: rgba(6, 182, 212, 0.6);
+}
+
+.glass-button:active {
+  transform: translateY(1px);
+  box-shadow: var(--active-press);
+}
+
+.glass-button-primary {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow-cyan);
+  color: white;
+}
+
+.glass-button-secondary {
+  background: var(--gradient-secondary);
+  box-shadow: var(--shadow-glow-mixed);
+  color: white;
+}
+
+/* Enhanced Animation Classes */
+.price-update-up-glass {
+  animation: price-flash-up-glass 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.price-update-down-glass {
+  animation: price-flash-down-glass 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-indicator-pro {
+  animation: status-pulse-pro 2s ease-in-out infinite;
+}
+
+.loading-shimmer-glass {
+  background: linear-gradient(
+    90deg,
+    var(--bg-glass-primary) 25%,
+    var(--bg-glass-accent) 50%,
+    var(--bg-glass-primary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-glass 2s infinite;
+}
+
+.interactive-hover-glass:hover {
+  animation: hover-glow-glass 0.8s ease-in-out;
+}
+
+.data-point-new-glass {
+  animation: slide-in-right-glass 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-entrance {
+  animation: glassSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-float {
+  animation: float-glass 6s ease-in-out infinite;
+}
+
+.data-visualization-glow {
+  animation: data-glow 4s ease-in-out infinite;
+}
+
+.spinner-glass {
+  animation: spin-glass 2s linear infinite;
+}
+
+/* Professional Text Enhancements */
+.text-glow {
+  text-shadow: var(--text-glow);
+}
+
+.text-accent-glow {
+  text-shadow: var(--text-accent-glow);
+  color: #06B6D4;
+}
+
+.text-gradient-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-secondary {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Professional Focus States */
+.glass-focus:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), var(--shadow-glass-md);
+  border-color: rgba(6, 182, 212, 0.8);
+}
+
+.glass-focus:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px solid rgba(6, 182, 212, 0.4);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Professional Backdrop Variations */
+.backdrop-blur-professional {
+  backdrop-filter: var(--blur-xl) saturate(1.5) brightness(1.1);
+  -webkit-backdrop-filter: var(--blur-xl) saturate(1.5) brightness(1.1);
+}
+
+.backdrop-blur-intense {
+  backdrop-filter: var(--blur-2xl) saturate(1.8) contrast(1.1);
+  -webkit-backdrop-filter: var(--blur-2xl) saturate(1.8) contrast(1.1);
+}
+
+/* Legacy compatibility with enhanced glassmorphism */
+.price-update-up {
+  animation: price-flash-up-glass 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.price-update-down {
+  animation: price-flash-down-glass 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-indicator {
+  animation: status-pulse-pro 2s ease-in-out infinite;
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-glass-primary) 25%,
+    var(--bg-glass-accent) 50%,
+    var(--bg-glass-primary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-glass 2s infinite;
+}
+
+.interactive-hover:hover {
+  animation: hover-glow-glass 0.8s ease-in-out;
+}
+
+.data-point-new {
+  animation: slide-in-right-glass 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === Interactive States === */
+
+.interactive-element {
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-element:hover {
+  background: rgba(255, 255, 255, var(--hover-opacity));
+}
+
+.interactive-element:active {
+  transform: scale(0.98);
+}
+
+/* Focus states for accessibility */
+.focusable:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--selection);
+  color: var(--text-primary);
+}
+
+@theme inline {
+  --color-background: var(--terminal-bg);
+  --color-foreground: var(--terminal-text);
+  --color-surface: var(--terminal-surface);
+  --color-accent: var(--terminal-accent);
+  --font-mono: var(--font-terminal);
+  --font-sans: var(--font-system);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-system);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  position: relative;
+  
+  /* Enhanced Bloomberg Terminal Grid Pattern with Glassmorphism */
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(6, 182, 212, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.12) 0%, transparent 25%),
+    linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
+  background-size: 800px 800px, 600px 600px, 40px 40px, 40px 40px;
+  background-position: 0 0, 100% 100%, 0 0, 0 0;
+  
+  /* Advanced backdrop effects */
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+}
+
+/* Enhanced glassmorphism background overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -2;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+    radial-gradient(ellipse at 40% 60%, rgba(16, 185, 129, 0.05) 0%, transparent 30%);
+  animation: backgroundPulse 20s ease-in-out infinite;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: var(--gradient-glass);
+  opacity: 0.3;
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+}
+
+/* Modern Terminal-style scrollbars with gradient effects */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  margin: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%);
+  border-radius: 6px;
+  border: 2px solid var(--bg-elevated);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 1) 0%, rgba(59, 130, 246, 1) 100%);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.5);
+  transform: scale(1.05);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 1) 0%, rgba(6, 182, 212, 1) 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--bg-elevated);
+}
+
+/* Modern Firefox scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.8) var(--bg-elevated);
+}
+
+/* Terminal animations */
+@keyframes terminal-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@keyframes terminal-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes data-flow {
+  0% { opacity: 0; transform: translateX(-10px); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(10px); }
+}
+
+/* Bloomberg Terminal Effects */
+.terminal-glow {
+  box-shadow: 
+    0 0 5px rgba(245, 158, 11, 0.3),
+    0 0 10px rgba(245, 158, 11, 0.2),
+    0 0 15px rgba(245, 158, 11, 0.1);
+}
+
+.terminal-text-glow {
+  text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+}
+
+.terminal-border {
+  border: 1px solid var(--terminal-border);
+  border-image: linear-gradient(45deg, var(--terminal-accent), transparent, var(--terminal-accent)) 1;
+}
+
+/* Professional data table styling */
+.data-table {
+  font-family: var(--font-terminal);
+  font-size: 0.875rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.data-table th {
+  background: var(--terminal-surface-variant);
+  color: var(--terminal-accent);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid var(--terminal-border);
+}
+
+.data-table td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--terminal-border);
+  color: var(--terminal-text);
+}
+
+.data-table tr:nth-child(even) {
+  background: rgba(21, 25, 34, 0.5);
+}
+
+.data-table tr:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Professional card styling */
+.terminal-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+}
+
+/* Status indicators */
+.status-online {
+  color: var(--success);
+  animation: terminal-blink 2s infinite;
+}
+
+.status-warning {
+  color: var(--warning);
+}
+
+.status-error {
+  color: var(--error);
+  animation: terminal-blink 1s infinite;
+}
+
+.status-info {
+  color: var(--info);
+}
+
+/* Professional buttons */
+.terminal-button {
+  background: var(--gradient-primary);
+  border: 1px solid var(--terminal-accent);
+  color: var(--terminal-bg);
+  font-family: var(--font-terminal);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.terminal-button:hover {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+}
+
+.terminal-button:active {
+  transform: translateY(0);
+}
+
+/* Market data feed styling */
+.market-feed {
+  font-family: var(--font-terminal);
+  color: var(--terminal-accent);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.market-ticker {
+  display: inline-block;
+  animation: data-flow 3s linear infinite;
+}
+
+/* Professional charts */
+.chart-container {
+  background: var(--terminal-surface);
+  border: 1px solid var(--terminal-border);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.chart-grid {
+  stroke: var(--terminal-border);
+  stroke-dasharray: 2,2;
+}
+
+.chart-axis {
+  stroke: var(--terminal-text-muted);
+  font-family: var(--font-terminal);
+  font-size: 0.75rem;
+}
+
+/* === Enhanced Responsive Design System === */
+
+/* Safe area support for mobile devices */
+.safe-area-padding-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.h-safe-area-inset-bottom {
+  height: env(safe-area-inset-bottom);
+}
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-inset-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-inset-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .glass-button,
+  .glass-button-primary,
+  .glass-button-secondary {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 16px 24px;
+  }
+  
+  .interactive-element {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger tap targets for mobile */
+  button, 
+  [role="button"],
+  .clickable {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+  
+  /* Reduce hover effects on touch devices */
+  .glass-card:hover,
+  .interactive-hover:hover,
+  .glass-button:hover {
+    transform: none;
+    box-shadow: var(--shadow-glass-md);
+  }
+}
+
+/* Mobile Breakpoint (320px - 640px) */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    background-size: 20px 20px;
+    background-position: 0 0, 50% 50%, 0 0, 0 0;
+  }
+  
+  /* Compact navigation */
+  .navigation-compact {
+    padding: 8px;
+  }
+  
+  .navigation-compact .nav-item {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  /* Mobile-first layouts */
+  .mobile-stack {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .mobile-full-width {
+    width: 100%;
+    max-width: none;
+  }
+  
+  /* Chart adaptations */
+  .chart-container {
+    padding: 8px;
+    border-radius: 8px;
+  }
+  
+  .chart-mobile {
+    height: 250px;
+    min-height: 200px;
+  }
+  
+  /* Data table mobile */
+  .data-table {
+    font-size: 0.75rem;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+    min-width: 100px;
+  }
+  
+  /* Mobile cards */
+  .mobile-card {
+    padding: 12px;
+    margin: 8px 0;
+  }
+  
+  /* Compact status indicators */
+  .status-mobile {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Tablet Breakpoint (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Tablet-specific optimizations */
+  .tablet-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  /* Sidebar behavior on tablet */
+  .sidebar-tablet {
+    width: 320px;
+    transform: translateX(0);
+  }
+  
+  /* Chart sizing for tablet */
+  .chart-tablet {
+    height: 400px;
+  }
+  
+  /* Navigation improvements */
+  .nav-tablet {
+    padding: 16px;
+  }
+  
+  .nav-tablet .nav-item {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+}
+
+/* Desktop Breakpoint (1025px+) */
+@media (min-width: 1025px) {
+  /* Desktop optimizations */
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  
+  .desktop-four-column {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  
+  /* Full sidebar */
+  .sidebar-desktop {
+    position: relative;
+    transform: none;
+    width: auto;
+  }
+  
+  /* Chart full size */
+  .chart-desktop {
+    height: 600px;
+  }
+}
+
+/* Ultra-wide screens (1920px+) */
+@media (min-width: 1920px) {
+  .ultrawide-layout {
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+  
+  .ultrawide-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Portrait orientation specific */
+@media (orientation: portrait) {
+  .portrait-stack {
+    flex-direction: column;
+  }
+  
+  .chart-portrait {
+    height: 300px;
+    width: 100%;
+  }
+  
+  /* Adjust sidebar for portrait */
+  .sidebar-portrait {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+  }
+}
+
+/* Landscape orientation specific */
+@media (orientation: landscape) and (max-height: 640px) {
+  /* Compact layout for landscape mobile */
+  .landscape-compact {
+    padding: 8px 16px;
+  }
+  
+  .landscape-header {
+    height: 48px;
+    padding: 8px 16px;
+  }
+  
+  .chart-landscape {
+    height: calc(100vh - 120px);
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Enhance for high DPI */
+  .glass-card {
+    border-width: 0.5px;
+  }
+  
+  .chart-container {
+    border-width: 0.5px;
+  }
+  
+  /* Sharper text rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .glass-entrance,
+  .glass-float,
+  .price-update-up-glass,
+  .price-update-down-glass,
+  .status-pulse-pro,
+  .loading-shimmer-glass {
+    animation: none;
+  }
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Enhance contrast for dark mode */
+    --text-primary: #FFFFFF;
+    --text-secondary: #E2E8F0;
+    --bg-primary: #000000;
+  }
+}
+
+/* Light mode adjustments (for future light theme) */
+@media (prefers-color-scheme: light) {
+  .light-mode-adaptive {
+    --bg-primary: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --terminal-bg: #F8FAFC;
+  }
+}
+
+/* Container queries for component-level responsiveness */
+@container (max-width: 400px) {
+  .responsive-container {
+    padding: 8px;
+  }
+  
+  .responsive-container .card-title {
+    font-size: 14px;
+  }
+}
+
+@container (min-width: 600px) {
+  .responsive-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Print optimizations */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-full-width {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Optimize charts for print */
+  .chart-container {
+    border: 1px solid black !important;
+    break-inside: avoid;
+  }
+  
+  /* Hide interactive elements */
+  button,
+  .sidebar,
+  .nav-menu {
+    display: none !important;
+  }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+  :root {
+    --terminal-bg: #000000;
+    --terminal-text: #ffffff;
+    --terminal-accent: #ffff00;
+    --terminal-border: #ffffff;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .terminal-blink,
+  .terminal-scan,
+  .data-flow,
+  .market-ticker {
+    animation: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+    background-image: none;
+  }
+  
+  .terminal-card {
+    border: 1px solid black;
+    box-shadow: none;
+  }
+  
+  .terminal-glow,
+  .terminal-text-glow {
+    box-shadow: none;
+    text-shadow: none;
+  }
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--terminal-accent);
+  outline-offset: 2px;
+}
+
+/* Selection styling */
+::selection {
+  background: var(--terminal-accent);
+  color: var(--terminal-bg);
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(245, 158, 11, 0.1) 50%, 
+    transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Professional tooltip styling */
+.terminal-tooltip {
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-accent);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: var(--font-terminal);
+  font-size: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Error boundary styling */
+.error-boundary {
+  background: var(--terminal-surface);
+  border: 2px solid var(--error);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--error);
+  font-family: var(--font-terminal);
+}
+
+/* Bloomberg-style header */
+.terminal-header {
+  background: var(--terminal-bg);
+  border-bottom: 2px solid var(--terminal-accent);
+  color: var(--terminal-accent);
+  font-family: var(--font-terminal);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
+  padding: 1rem;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.terminal-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  animation: data-flow 2s linear infinite;
+}
+
+/* Success styles for completed operations */
+.operation-success {
+  border-left: 4px solid var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+/* Connection status indicator */
+.connection-status {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  font-family: var(--font-terminal);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.connection-online {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.connection-offline {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--error);
+  color: var(--error);
+  animation: terminal-blink 1s infinite;
+}
+
+/* === Accessibility Modes === */
+
+/* Color-Blind Safe Mode (Deuteranopia/Protanopia friendly) */
+html[data-color-mode="color-blind"],
+.color-blind-mode {
+  --market-up: #3B82F6;         /* Blue instead of green */
+  --market-down: #F97316;       /* Orange instead of red */
+  --up-10: rgba(59, 130, 246, 0.12);
+  --up-20: rgba(59, 130, 246, 0.2);
+  --up-30: rgba(59, 130, 246, 0.3);
+  --down-10: rgba(249, 115, 22, 0.12);
+  --down-20: rgba(249, 115, 22, 0.2);
+  --down-30: rgba(249, 115, 22, 0.3);
+  
+  --positive: var(--market-up);
+  --negative: var(--market-down);
+  --status-live: #3B82F6;
+  --status-offline: #F97316;
+  
+  --gradient-positive: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  --gradient-negative: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  
+  /* Legacy support */
+  --terminal-accent: #3B82F6;
+  --success: #3B82F6;
+  --error: #F97316;
+}
+
+/* Pattern overlays for color-blind mode */
+.color-blind-mode .positive-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(96, 165, 250, 0.1) 10px,
+    rgba(96, 165, 250, 0.1) 20px
+  );
+}
+
+.color-blind-mode .negative-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(249, 115, 22, 0.1) 10px,
+    rgba(249, 115, 22, 0.1) 20px
+  );
+}
+
+/* High Contrast Mode for Better Visibility */
+html[data-color-mode="high-contrast"],
+.high-contrast-mode {
+  --bg-primary: #000000;
+  --bg-elevated: #0a0a0a;
+  --bg-overlay: #1a1a1a;
+  --bg-interactive: #2a2a2a;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #c0c0c0;
+  
+  --market-up: #00ff00;
+  --market-down: #ff0000;
+  --market-neutral: #ffff00;
+  
+  --chart-grid: rgba(255, 255, 255, 0.3);
+  --chart-axis: #ffffff;
+  
+  --focus-ring: rgba(255, 255, 0, 0.8);
+  
+  /* Stronger borders and contrast */
+  --terminal-bg: #000000;
+  --terminal-surface: #0a0a0a;
+  --terminal-text: #ffffff;
+  --terminal-border: #ffffff;
+  --terminal-accent: #ffff00;
+  --positive: #00ff00;
+  --negative: #ff0000;
+  
+  filter: contrast(1.25);
+}
+
+html[data-color-mode="high-contrast"] * {
+  font-weight: 500;
+}
+
+/* Improved focus indicators for accessibility */
+:focus-visible {
+  outline: 3px solid var(--terminal-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip to content link for keyboard navigation */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--terminal-accent);
+  color: var(--terminal-bg);
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100000;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
