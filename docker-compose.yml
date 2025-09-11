@@ -5,7 +5,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.28.0.0/16
+        - subnet: 172.29.0.0/16
 
 volumes:
   postgres_data:
@@ -20,12 +20,13 @@ volumes:
 services:
   # Infrastructure Services
   postgres:
-    image: postgres:15
-    container_name: usdcop-postgres
+    image: timescale/timescaledb:latest-pg15
+    container_name: usdcop-postgres-timescale
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
       POSTGRES_DB: ${POSTGRES_DB:-usdcop_trading}
+      TIMESCALEDB_TELEMETRY: 'off'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -224,6 +225,111 @@ services:
       - usdcop-trading-network
     healthcheck:
       test: ["CMD-SHELL", "celery --app airflow.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Real-time Data Service
+  realtime-data-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.realtime
+    container_name: usdcop-realtime-data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      LOG_LEVEL: INFO
+      MARKET_HOURS_START: "08:00"
+      MARKET_HOURS_END: "12:55"
+      UPDATE_INTERVAL: 300  # 5 minutes in seconds
+    ports:
+      - "8081:8080"
+    networks:
+      - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Health Monitor Service
+  health-monitor:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.health
+    container_name: usdcop-health-monitor
+    environment:
+      LOG_LEVEL: INFO
+    ports:
+      - "8083:8080"
+    networks:
+      - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock  # For Docker commands
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # WebSocket Service
+  websocket-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.websocket
+    container_name: usdcop-websocket
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:80"
+    ports:
+      - "8082:8080"
+    networks:
+      - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: usdcop-pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@trading.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgpass:ro
+    ports:
+      - "5050:80"
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "-q", "--spider", "http://localhost/misc/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
