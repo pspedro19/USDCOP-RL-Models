@@ -1,8 +1,0 @@
-{
-  "key_metric_1": "Pre-run contracts enforced (L4 READY, obs float32 in [-5,5], reward RMSE check)",
-  "key_metric_2": "Gates wired (Sortino≥1.3, MaxDD≤0.15, Calmar≥0.8, +25% cost stress, p99 latency)",
-  "violations": [],
-  "warnings": [],
-  "status": "PASS",
-  "notes": "Fixed S3Hook.download_file issue - now using get_key for correct file handling"
-}

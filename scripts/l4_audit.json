@@ -1,8 +1,0 @@
-{
-  "key_metric_1": "obs range/clip: [-5,5], max clip-rate ≤ 0.5% (+ε) with final safeguards",
-  "key_metric_2": "READY marker written after all gates; splits w/ 5-day embargo",
-  "violations": [],
-  "warnings": [],
-  "status": "PASS",
-  "notes": "Double safeguard: EPS_RATE=1e-5 for FP tolerance + final micro-guard ensures all obs p99.5≤4.99"
-}

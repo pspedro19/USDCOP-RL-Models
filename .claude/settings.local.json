@@ -37,7 +37,9 @@
       "Bash(mc rb:*)",
       "Bash(find:*)",
       "Bash(python3:*)",
-      "Bash(ufw:*)"
+      "Bash(ufw:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

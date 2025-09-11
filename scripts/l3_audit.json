@@ -1,9 +1,0 @@
-{
-  "features_declared": 16,
-  "anti_leakage": "IC_spearman median/p95 bajo umbral",
-  "corr_gate": "|rho|<0.95",
-  "train_schema": "presente",
-  "violations": [],
-  "warnings": [],
-  "status": "PASS"
-}

@@ -1,9 +1,0 @@
-{
-  "coverage_gate_config_pct": 95,
-  "s3_partitioning": "date=YYYY-MM-DD (aligned with L1)",
-  "stale_rate_metrics": "implemented (MAX_STALE_RATE=2%)",
-  "missing_metrics": ["cross_source_diff_p95 (no 2nd source yet)"],
-  "violations": [],
-  "warnings": [],
-  "status": "PASS"
-}

@@ -1,9 +1,0 @@
-{
-  "winsorization": "returns-only, 4σ",
-  "hod_deseasonalization": "robust z-score por hora",
-  "datasets": ["STRICT_60/60", "FLEX_59/60_padded"],
-  "nan_gate_strict": "<=0.5%",
-  "violations": [],
-  "warnings": [],
-  "status": "PASS"
-}
