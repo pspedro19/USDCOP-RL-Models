@@ -1,0 +1,48 @@
+# Professional Working Dashboard - Captures working state
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache curl dumb-init
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Copy the working .next directory that was generated locally
+# This ensures we have all the files that made it work
+COPY .next ./.next
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Create nextjs user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check for the professional dashboard
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the development server which works perfectly
+CMD ["npm", "run", "dev"]

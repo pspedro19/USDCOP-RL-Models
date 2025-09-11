@@ -1,28 +1,10 @@
 -- =====================================================
 -- Initialize Databases for USDCOP Trading System
+-- PostgreSQL initialization script
 -- =====================================================
 
--- Create main trading database
-CREATE DATABASE IF NOT EXISTS trading_db;
-
--- Create Airflow database
-CREATE DATABASE IF NOT EXISTS airflow;
-
--- Create MLflow database  
-CREATE DATABASE IF NOT EXISTS mlflow;
-
--- Create users
-CREATE USER IF NOT EXISTS 'trading'@'%' IDENTIFIED BY 'trading123';
-CREATE USER IF NOT EXISTS 'airflow'@'%' IDENTIFIED BY 'airflow123';
-CREATE USER IF NOT EXISTS 'mlflow'@'%' IDENTIFIED BY 'mlflow123';
-
--- Grant privileges
-GRANT ALL PRIVILEGES ON trading_db.* TO 'trading'@'%';
-GRANT ALL PRIVILEGES ON airflow.* TO 'airflow'@'%';
-GRANT ALL PRIVILEGES ON mlflow.* TO 'mlflow'@'%';
-
--- For PostgreSQL syntax (if using PostgreSQL instead of MySQL)
-\c postgres
+-- Connect to default postgres database
+\c postgres;
 
 -- Create databases
 CREATE DATABASE trading_db;

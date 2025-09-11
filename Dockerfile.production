@@ -1,0 +1,325 @@
+# =====================================================
+# USDCOP Trading Application - Production Dockerfile
+# =====================================================
+# Multi-stage production build for the trading application
+# Optimized for security, performance, and minimal size
+
+# Build Arguments
+ARG PYTHON_VERSION=3.11
+ARG BUILD_ENV=production
+
+# =====================================================
+# Base Stage - Python Environment
+# =====================================================
+FROM python:${PYTHON_VERSION}-slim-bullseye as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Create non-root user for security
+RUN groupadd --system --gid 1001 trading && \
+    useradd --system --uid 1001 --gid trading --create-home --shell /bin/bash trading
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    build-essential \
+    gcc \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install build dependencies
+RUN pip install --upgrade pip setuptools wheel
+
+# =====================================================
+# Dependencies Stage - Install Python packages
+# =====================================================
+FROM base as dependencies
+
+# Copy requirements files
+COPY requirements.txt /tmp/requirements.txt
+COPY requirements.production.txt /tmp/requirements.production.txt 2>/dev/null || echo "# No production requirements" > /tmp/requirements.production.txt
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+    pip install --no-cache-dir -r /tmp/requirements.production.txt
+
+# Install additional production dependencies
+RUN pip install --no-cache-dir \
+    gunicorn[gevent]==21.2.0 \
+    prometheus-client==0.18.0 \
+    opentelemetry-api==1.20.0 \
+    opentelemetry-sdk==1.20.0 \
+    opentelemetry-instrumentation==0.41b0 \
+    opentelemetry-exporter-otlp==1.20.0 \
+    psycopg2-binary==2.9.7 \
+    redis==5.0.1 \
+    boto3==1.29.7 \
+    pydantic==2.4.2 \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0
+
+# =====================================================
+# Builder Stage - Prepare application
+# =====================================================
+FROM dependencies as builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy application source
+COPY --chown=trading:trading . /app/
+
+# Create necessary directories
+RUN mkdir -p /app/{data,logs,models,configs} && \
+    chown -R trading:trading /app
+
+# Remove development files
+RUN rm -rf \
+    .git \
+    .pytest_cache \
+    __pycache__ \
+    *.pyc \
+    tests/ \
+    docs/ \
+    .env.* \
+    docker-compose*.yml \
+    Dockerfile* \
+    .dockerignore
+
+# =====================================================
+# Production Stage - Final runtime image
+# =====================================================
+FROM python:${PYTHON_VERSION}-slim-bullseye as production
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    DEBIAN_FRONTEND=noninteractive \
+    APP_ENV=production \
+    WORKERS=4 \
+    TIMEOUT=120 \
+    KEEPALIVE=2 \
+    MAX_REQUESTS=1000 \
+    MAX_REQUESTS_JITTER=100
+
+# Create non-root user
+RUN groupadd --system --gid 1001 trading && \
+    useradd --system --uid 1001 --gid trading --create-home --shell /bin/bash trading
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from dependencies stage
+COPY --from=dependencies /opt/venv /opt/venv
+
+# Copy application from builder stage
+COPY --from=builder --chown=trading:trading /app /app
+
+# Set working directory
+WORKDIR /app
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/{data,logs,models,tmp} && \
+    chown -R trading:trading /app && \
+    chmod -R 755 /app
+
+# Create entrypoint script
+RUN cat > /app/entrypoint.sh << 'EOF'
+#!/bin/bash
+set -e
+
+# Function to log messages
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Wait for dependencies
+wait_for_service() {
+    local host=$1
+    local port=$2
+    local service=$3
+    local timeout=${4:-30}
+    
+    log "Waiting for $service at $host:$port..."
+    
+    for i in $(seq 1 $timeout); do
+        if nc -z "$host" "$port" 2>/dev/null; then
+            log "$service is ready!"
+            return 0
+        fi
+        log "Waiting for $service... ($i/$timeout)"
+        sleep 1
+    done
+    
+    log "ERROR: $service is not available after $timeout seconds"
+    return 1
+}
+
+# Wait for required services
+if [ "${WAIT_FOR_SERVICES:-true}" = "true" ]; then
+    wait_for_service "${DB_HOST:-postgres}" "${DB_PORT:-5432}" "PostgreSQL" 60
+    wait_for_service "${REDIS_HOST:-redis}" "${REDIS_PORT:-6379}" "Redis" 30
+    
+    if [ -n "${MINIO_ENDPOINT}" ]; then
+        # Extract host from MinIO endpoint
+        MINIO_HOST=$(echo "${MINIO_ENDPOINT}" | sed 's|http[s]*://||' | cut -d':' -f1)
+        MINIO_PORT=$(echo "${MINIO_ENDPOINT}" | sed 's|http[s]*://||' | cut -d':' -f2)
+        wait_for_service "${MINIO_HOST}" "${MINIO_PORT:-9000}" "MinIO" 30
+    fi
+fi
+
+# Initialize application if needed
+if [ "${INITIALIZE_APP:-true}" = "true" ]; then
+    log "Initializing application..."
+    
+    # Run database migrations if script exists
+    if [ -f "scripts/migrate_db.py" ]; then
+        log "Running database migrations..."
+        python scripts/migrate_db.py
+    fi
+    
+    # Load initial data if script exists
+    if [ -f "scripts/load_initial_data.py" ]; then
+        log "Loading initial data..."
+        python scripts/load_initial_data.py
+    fi
+fi
+
+# Health check function
+health_check() {
+    local port="${APP_PORT:-8000}"
+    curl -f "http://localhost:$port/health" > /dev/null 2>&1
+}
+
+# Start application based on mode
+case "${APP_MODE:-api}" in
+    "api")
+        log "Starting Trading API server..."
+        exec gunicorn \
+            --bind "0.0.0.0:${APP_PORT:-8000}" \
+            --workers "${WORKERS}" \
+            --worker-class gevent \
+            --worker-connections 1000 \
+            --timeout "${TIMEOUT}" \
+            --keepalive "${KEEPALIVE}" \
+            --max-requests "${MAX_REQUESTS}" \
+            --max-requests-jitter "${MAX_REQUESTS_JITTER}" \
+            --preload \
+            --access-logfile - \
+            --error-logfile - \
+            --log-level info \
+            --capture-output \
+            "app.main:app"
+        ;;
+    "worker")
+        log "Starting Trading worker..."
+        exec python scripts/run_worker.py
+        ;;
+    "scheduler")
+        log "Starting Trading scheduler..."
+        exec python scripts/run_scheduler.py
+        ;;
+    "migrate")
+        log "Running database migrations..."
+        exec python scripts/migrate_db.py
+        ;;
+    *)
+        log "Starting in custom mode: ${APP_MODE}"
+        exec "$@"
+        ;;
+esac
+EOF
+
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh
+
+# Create health check script
+RUN cat > /app/healthcheck.py << 'EOF'
+#!/usr/bin/env python3
+import sys
+import urllib.request
+import urllib.error
+import os
+
+def check_health():
+    """Simple health check for the application"""
+    try:
+        port = os.getenv('APP_PORT', '8000')
+        url = f'http://localhost:{port}/health'
+        
+        with urllib.request.urlopen(url, timeout=5) as response:
+            if response.status == 200:
+                return True
+    except (urllib.error.URLError, Exception):
+        pass
+    
+    return False
+
+if __name__ == '__main__':
+    if check_health():
+        print("Health check passed")
+        sys.exit(0)
+    else:
+        print("Health check failed")
+        sys.exit(1)
+EOF
+
+RUN chmod +x /app/healthcheck.py
+
+# Install netcat for service waiting
+RUN apt-get update && apt-get install -y --no-install-recommends netcat \
+    && rm -rf /var/lib/apt/lists/*
+
+# Security: Remove unnecessary packages and files
+RUN apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Switch to non-root user
+USER trading
+
+# Expose application port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python /app/healthcheck.py
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command
+CMD ["api"]
+
+# Metadata
+LABEL maintainer="USDCOP Trading Team" \
+      version="1.0.0" \
+      description="USDCOP RL Trading System - Production Application" \
+      org.opencontainers.image.title="USDCOP Trading App" \
+      org.opencontainers.image.description="Production-ready USDCOP reinforcement learning trading application" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="USDCOP Trading Team" \
+      org.opencontainers.image.licenses="MIT"

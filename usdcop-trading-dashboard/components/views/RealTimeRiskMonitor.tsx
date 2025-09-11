@@ -353,10 +353,20 @@ export default function RealTimeRiskMonitor() {
     );
   }
 
-  if (!riskMetrics) return null;
+  if (!riskMetrics) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-amber-500 mb-2">Cargando Risk Monitor</h2>
+          <p className="text-slate-400">Inicializando métricas de riesgo en tiempo real...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const leverageRisk = getRiskLevel(riskMetrics.leverage, [2, 3, 4]);
-  const varRisk = getRiskLevel(riskMetrics.portfolioVaR95 / riskMetrics.portfolioValue, [0.02, 0.05, 0.08]);
+  const leverageRisk = riskMetrics ? getRiskLevel(riskMetrics.leverage, [2, 3, 4]) : 'loading';
+  const varRisk = riskMetrics ? getRiskLevel(riskMetrics.portfolioVaR95 / riskMetrics.portfolioValue, [0.02, 0.05, 0.08]) : 'loading';
 
   return (
     <div className="space-y-6 p-6 bg-slate-950 min-h-screen">
@@ -481,7 +491,7 @@ export default function RealTimeRiskMonitor() {
                 <div className="text-center p-4 bg-slate-800 rounded-lg">
                   <div className="text-slate-400 text-sm mb-1">Portfolio Leverage</div>
                   <div className="text-2xl font-bold text-amber-400 font-mono">
-                    {riskMetrics.leverage.toFixed(2)}x
+                    {riskMetrics?.leverage?.toFixed(2) || '0.00'}x
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     Gross: {formatCurrency(riskMetrics.grossExposure)}
@@ -516,11 +526,11 @@ export default function RealTimeRiskMonitor() {
                       <Progress value={riskMetrics.liquidityScore * 100} className="h-3" />
                     </div>
                     <span className="text-green-400 font-mono text-sm">
-                      {(riskMetrics.liquidityScore * 100).toFixed(0)}%
+                      {((riskMetrics?.liquidityScore || 0) * 100).toFixed(0)}%
                     </span>
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
-                    Liquidation: {riskMetrics.timeToLiquidate.toFixed(1)}d
+                    Liquidation: {riskMetrics?.timeToLiquidate?.toFixed(1) || '0.0'}d
                   </div>
                 </div>
               </div>
@@ -549,7 +559,7 @@ export default function RealTimeRiskMonitor() {
                     <span className={`text-sm font-mono ${
                       condition.change >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {condition.change >= 0 ? '+' : ''}{condition.change.toFixed(1)}%
+                      {condition.change >= 0 ? '+' : ''}{condition?.change?.toFixed(1) || '0.0'}%
                     </span>
                   </div>
                   <div className="text-xs text-slate-400">{condition.description}</div>
@@ -584,7 +594,7 @@ export default function RealTimeRiskMonitor() {
                   contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '6px' }}
                   labelFormatter={(value) => formatDate(new Date(value), 'HH:mm:ss')}
                   formatter={(value: any, name) => [
-                    name === 'var95' ? formatCurrency(value) : `${value.toFixed(2)}x`,
+                    name === 'var95' ? formatCurrency(value) : `${(value || 0).toFixed(2)}x`,
                     name === 'var95' ? 'VaR 95%' : 'Leverage'
                   ]}
                 />
@@ -631,19 +641,19 @@ export default function RealTimeRiskMonitor() {
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div className="text-center">
                       <div className="text-slate-400">VaR</div>
-                      <div className="text-white font-mono">{item.var95.toFixed(0)}</div>
+                      <div className="text-white font-mono">{item?.var95?.toFixed(0) || '0'}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-slate-400">Leverage</div>
-                      <div className="text-white font-mono">{item.leverage.toFixed(0)}</div>
+                      <div className="text-white font-mono">{item?.leverage?.toFixed(0) || '0'}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-slate-400">Liquidity</div>
-                      <div className="text-white font-mono">{item.liquidity.toFixed(0)}</div>
+                      <div className="text-white font-mono">{item?.liquidity?.toFixed(0) || '0'}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-slate-400">Conc.</div>
-                      <div className="text-white font-mono">{item.concentration.toFixed(0)}</div>
+                      <div className="text-white font-mono">{item?.concentration?.toFixed(0) || '0'}</div>
                     </div>
                   </div>
                   
@@ -670,7 +680,7 @@ export default function RealTimeRiskMonitor() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {Object.entries(riskMetrics.stressTestResults).slice(0, 4).map(([scenario, impact], index) => (
+            {Object.entries(riskMetrics?.stressTestResults || {}).slice(0, 4).map(([scenario, impact], index) => (
               <div key={index} className="bg-slate-800 p-4 rounded-lg text-center">
                 <div className="text-slate-400 text-sm mb-2">{scenario}</div>
                 <div className={`text-xl font-bold font-mono mb-1 ${

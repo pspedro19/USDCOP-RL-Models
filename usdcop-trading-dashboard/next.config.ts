@@ -19,7 +19,12 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     // Improve cold start times
     webVitalsAttribution: ['CLS', 'LCP', 'FCP'],
+    // Optimize for trading dashboard
+    optimizePackageImports: ['recharts', 'framer-motion', 'lucide-react'],
   },
+
+  // External packages for server components
+  serverExternalPackages: ['lightweight-charts', 'd3'],
 
   // Bundle optimization
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
@@ -99,6 +104,57 @@ const nextConfig: NextConfig = {
   
   // PoweredBy header removal for security
   poweredByHeader: false,
+
+  // Output configuration for deployment
+  output: 'standalone',
+  
+  // Enable gzip compression
+  compress: true,
+  
+  // SWC minification is enabled by default in Next.js 15
+  
+  // Environment-specific configurations
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+  
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // Redirects for SEO and performance
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

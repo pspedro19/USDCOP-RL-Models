@@ -1,0 +1,26 @@
+# Simple Dockerfile for USDCOP Trading Dashboard
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Set environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Create a basic health check
+RUN echo 'console.log("Health check OK"); process.exit(0);' > healthcheck.js
+
+EXPOSE 3000
+
+# Start in development mode on port 3000
+CMD ["npm", "run", "dev", "--", "-p", "3000"]

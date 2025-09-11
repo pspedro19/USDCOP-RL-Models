@@ -1,0 +1,52 @@
+# Professional Dashboard - Auto-building version
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache curl dumb-init
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Ensure .next directory exists and create required files
+RUN mkdir -p .next/cache .next/server .next/static \
+    && echo '{"version":1,"config":{},"appDir":"app","files":[],"ignore":[]}' > .next/required-server-files.json \
+    && echo '{"version":4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":{"previewModeId":"dev","previewModeSigningKey":"dev","previewModeEncryptionKey":"dev"}}' > .next/prerender-manifest.json \
+    && echo '{}' > .next/react-loadable-manifest.json \
+    && echo '{"pages":{"/_app":[]},"devFiles":[],"ampDevFiles":[],"lowPriorityFiles":[],"rootMainFiles":[],"rootMainFilesTree":{},"ampFirstPages":[]}' > .next/build-manifest.json \
+    && echo '{"pages":{"/layout":[]}}' > .next/app-build-manifest.json
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Create nextjs user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check for the professional dashboard
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the development server which will build automatically
+CMD ["npm", "run", "dev"]

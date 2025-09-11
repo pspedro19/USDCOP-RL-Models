@@ -1,0 +1,82 @@
+# Production Airflow Dockerfile for USDCOP RL Trading System
+# Includes all ML dependencies required for the trading DAGs
+
+FROM apache/airflow:2.8.1-python3.11
+
+# Switch to root to install system dependencies
+USER root
+
+# Install system dependencies required for ML libraries
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    gfortran \
+    libffi-dev \
+    libssl-dev \
+    libpq-dev \
+    libblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    pkg-config \
+    cmake \
+    build-essential \
+    git \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to airflow user
+USER airflow
+
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
+
+# Copy requirements file
+COPY requirements.txt /requirements.txt
+
+# Install Python dependencies with increased timeout and retries
+RUN pip install --no-cache-dir \
+    --timeout 1000 \
+    --retries 5 \
+    --trusted-host pypi.org \
+    --trusted-host pypi.python.org \
+    --trusted-host files.pythonhosted.org \
+    -r /requirements.txt
+
+# Install additional dependencies that might be needed
+RUN pip install --no-cache-dir \
+    psycopg2-binary \
+    redis \
+    boto3 \
+    requests \
+    pydantic \
+    fastapi \
+    httpx
+
+# Verify critical imports work
+RUN python -c "import scipy; import gymnasium; import torch; import pandas; import numpy; print('All dependencies imported successfully')"
+
+# Set environment variables for better performance
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
+ENV AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+ENV AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+
+# Create directories for DAGs, logs, and plugins
+USER root
+RUN mkdir -p /opt/airflow/dags /opt/airflow/logs /opt/airflow/plugins \
+    && chown -R airflow:root /opt/airflow
+
+# Copy and set up entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown airflow:root /entrypoint.sh
+
+USER airflow
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1

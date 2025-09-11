@@ -567,112 +567,124 @@ export default function PipelineHealth() {
       </div>
 
       {/* Key Metrics Dashboard */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
+      {/* Critical Pipeline Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+        <Card className="bg-slate-900 border-amber-500/20 p-6">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg text-amber-500 font-mono flex items-center justify-between">
               Pipeline Status
-              <Activity className="h-4 w-4" />
+              <Activity className="h-6 w-6" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-xl font-bold font-mono ${
+            <div className={`text-3xl font-bold font-mono mb-2 ${
               pipelineOverallStatus === 'critical' ? 'text-red-400' :
               pipelineOverallStatus === 'warning' ? 'text-yellow-400' : 'text-green-400'
             }`}>
               {pipelineOverallStatus.toUpperCase()}
             </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {dagNodes.filter(n => n.status === 'success').length}/{dagNodes.length} healthy
+            <div className="text-sm text-slate-400">
+              {dagNodes.filter(n => n.status === 'success').length}/{dagNodes.length} nodes healthy
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              SLA Compliance
-              <Shield className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-400 font-mono">
-              {formatPercent(slaMetrics.find(m => m.metric === 'Pipeline Completion Time')?.current || 0)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Target: {formatPercent(slaMetrics.find(m => m.metric === 'Pipeline Completion Time')?.target || 0)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
+        <Card className="bg-slate-900 border-green-500/20 p-6">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg text-green-400 font-mono flex items-center justify-between">
               Data Quality
-              <Database className="h-4 w-4" />
+              <Database className="h-6 w-6" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-green-400 font-mono">
+            <div className="text-3xl font-bold text-green-400 font-mono mb-2">
               {formatPercent(qualityChecks.reduce((sum, q) => sum + q.score, 0) / qualityChecks.length)}
             </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {qualityChecks.filter(q => q.status === 'pass').length}/{qualityChecks.length} checks pass
+            <div className="text-sm text-slate-400">
+              {qualityChecks.filter(q => q.status === 'pass').length}/{qualityChecks.length} checks passing
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Resource Usage
-              <Cpu className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-white font-mono">
-              {formatPercent(resourceMetrics[resourceMetrics.length - 1]?.cpuUsage || 0)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Memory: {formatPercent(resourceMetrics[resourceMetrics.length - 1]?.memoryUsage || 0)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
+        <Card className="bg-slate-900 border-red-500/20 p-6">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg text-red-400 font-mono flex items-center justify-between">
               Active Alerts
-              <Bell className="h-4 w-4" />
+              <Bell className="h-6 w-6" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold text-red-400 font-mono">
+            <div className="text-3xl font-bold text-red-400 font-mono mb-2">
               {alerts.filter(a => !a.acknowledged && a.severity === 'critical').length}
             </div>
-            <div className="text-xs text-slate-400 mt-1">
+            <div className="text-sm text-slate-400">
               {alerts.filter(a => !a.acknowledged).length} unacknowledged
             </div>
           </CardContent>
         </Card>
-
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Uptime
-              <Clock className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-400 font-mono">
-              {formatPercent(slaMetrics.find(m => m.metric === 'System Availability')?.current || 0)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Last 24h
-            </div>
-          </CardContent>
-        </Card>
       </div>
+      
+      {/* Secondary Metrics - Expandable */}
+      <details className="group mb-6">
+        <summary className="cursor-pointer list-none mb-4">
+          <div className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+            <span className="text-sm font-medium">SLA Performance & System Resources</span>
+            <div className="group-open:rotate-90 transition-transform">▶</div>
+          </div>
+        </summary>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Card className="bg-slate-900 border-amber-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-amber-500 font-mono flex items-center justify-between">
+                SLA Compliance
+                <Shield className="h-6 w-6" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-400 font-mono mb-2">
+                {formatPercent(slaMetrics.find(m => m.metric === 'Pipeline Completion Time')?.current || 0)}
+              </div>
+              <div className="text-sm text-slate-400">
+                Target: {formatPercent(slaMetrics.find(m => m.metric === 'Pipeline Completion Time')?.target || 0)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900 border-amber-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-white font-mono flex items-center justify-between">
+                Resource Usage
+                <Cpu className="h-6 w-6" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white font-mono mb-2">
+                {formatPercent(resourceMetrics[resourceMetrics.length - 1]?.cpuUsage || 0)}
+              </div>
+              <div className="text-sm text-slate-400">
+                Memory: {formatPercent(resourceMetrics[resourceMetrics.length - 1]?.memoryUsage || 0)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900 border-green-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-green-400 font-mono flex items-center justify-between">
+                System Uptime
+                <Clock className="h-6 w-6" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-400 font-mono mb-2">
+                {formatPercent(slaMetrics.find(m => m.metric === 'System Availability')?.current || 0)}
+              </div>
+              <div className="text-sm text-slate-400">
+                Last 24h uptime
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </details>
 
       {/* DAG View */}
       {selectedView === 'dag' && (

@@ -1,13 +1,13 @@
-scipy
-torch
-stable-baselines3
-gymnasium
-minio
-mlflow
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-onnx==1.16.2
-onnxruntime==1.18.1
+# CRITICAL: Only the essential dependencies to fix DAG import errors
+scipy>=1.11.0
+gymnasium>=0.29.0
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0
+
+# ML frameworks (minimal versions to avoid conflicts)
+torch>=2.0.0
+stable-baselines3>=2.0.0
+
+# Storage and database
+minio>=7.0.0
+psycopg2-binary>=2.9.0

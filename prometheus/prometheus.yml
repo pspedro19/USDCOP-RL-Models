@@ -1,0 +1,121 @@
+# Prometheus configuration for USDCOP RL Trading System monitoring
+
+global:
+  scrape_interval: 15s # How frequently to scrape targets by default
+  evaluation_interval: 15s # How frequently to evaluate rules
+  external_labels:
+    monitor: 'usdcop-trading-monitor'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'
+rule_files:
+  - "alert_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape
+scrape_configs:
+  # Trading Dashboard Metrics
+  - job_name: 'trading-dashboard'
+    static_configs:
+      - targets: ['trading-dashboard:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Backend API Metrics
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # PostgreSQL Metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis Metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # MinIO Metrics
+  - job_name: 'minio'
+    static_configs:
+      - targets: ['minio:9000']
+    metrics_path: '/minio/v2/metrics/cluster'
+    scrape_interval: 30s
+
+  # Airflow Metrics
+  - job_name: 'airflow'
+    static_configs:
+      - targets: ['airflow-webserver:8080']
+    metrics_path: '/admin/metrics'
+    scrape_interval: 60s
+
+  # InfluxDB Metrics
+  - job_name: 'influxdb'
+    static_configs:
+      - targets: ['influxdb:8086']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Custom RL Model Metrics
+  - job_name: 'rl-models'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/api/v1/models/metrics'
+    scrape_interval: 60s
+    scrape_timeout: 30s
+
+  # Trading Performance Metrics
+  - job_name: 'trading-performance'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/api/v1/trading/metrics'
+    scrape_interval: 30s
+
+  # Risk Management Metrics
+  - job_name: 'risk-metrics'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/api/v1/risk/metrics'
+    scrape_interval: 60s
+
+  # Data Pipeline Quality Metrics
+  - job_name: 'pipeline-quality'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/api/v1/pipeline/metrics'
+    scrape_interval: 30s
+
+  # Compliance and Audit Metrics
+  - job_name: 'compliance-metrics'
+    static_configs:
+      - targets: ['backend-api:8000']
+    metrics_path: '/api/v1/audit/metrics'
+    scrape_interval: 300s # 5 minutes - less frequent for compliance
+
+# Remote write configuration for long-term storage
+remote_write:
+  - url: "http://influxdb:8086/api/v1/prom/write?db=prometheus"
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'go_.*'
+        action: drop

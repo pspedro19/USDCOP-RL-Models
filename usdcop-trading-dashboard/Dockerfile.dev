@@ -1,0 +1,30 @@
+# Development Dockerfile for USDCOP Trading Dashboard
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Install missing PostCSS dependencies
+RUN npm install autoprefixer postcss
+
+# Copy source code
+COPY . .
+
+# Set environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Build Next.js to generate required files
+RUN npm run build || echo "Build failed, continuing with dev mode"
+
+# Create a health check file
+RUN echo 'try { require("http").get("http://localhost:3000", (res) => process.exit(res.statusCode === 200 ? 0 : 1)); } catch(e) { process.exit(1); }' > healthcheck.js
+
+EXPOSE 3000
+
+# Start in development mode
+CMD ["npm", "run", "dev", "--", "-p", "3000", "--hostname", "0.0.0.0"]

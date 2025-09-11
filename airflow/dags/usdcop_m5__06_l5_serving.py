@@ -3758,6 +3758,7 @@ with TaskGroup("ppo_training", dag=dag) as ppo_group:
             python_callable=train_dispatch,  # Use dispatcher instead of direct function
             op_kwargs={'seed': seed},
             execution_timeout=timedelta(hours=timeout_hours),
+            dag=dag,
         )
 
 # Step 4: Gate evaluation

@@ -1,826 +1,794 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ScatterChart, Scatter, BarChart, Bar, ComposedChart, Cell, Heatmap, Legend
-} from 'recharts';
-import { metricsCalculator, HedgeFundMetrics } from '@/lib/services/hedge-fund-metrics';
-import { minioClient } from '@/lib/services/minio-client';
-import { realTimeRiskEngine, RealTimeRiskMetrics } from '@/lib/services/real-time-risk-engine';
-import { 
-  Shield, AlertTriangle, TrendingDown, DollarSign, Activity, 
-  Zap, Target, BarChart3, Users, Clock, Gauge, AlertOctagon,
-  Download, Settings, RefreshCw, Radio
+  Shield, AlertTriangle, TrendingDown, TrendingUp, Activity, 
+  Target, BarChart3, Clock, Zap, Globe, Gauge, Timer,
+  AlertCircle, CheckCircle, XCircle, Eye, Settings,
+  ArrowUp, ArrowDown, Minus, DollarSign, Percent,
+  Flame, Snowflake, Wind, Mountain, Waves
 } from 'lucide-react';
 
-interface RiskMetrics {
-  // VaR Metrics
-  var95_1d: number;
-  var99_1d: number;
-  cvar95_1d: number;
-  cvar99_1d: number;
-  var95_10d: number;
-  
-  // Portfolio Risk
-  portfolioValue: number;
-  maxDrawdown: number;
-  currentDrawdown: number;
-  volatility: number;
-  beta: number;
-  correlation: number;
-  
-  // Position Risk
-  totalExposure: number;
-  netExposure: number;
-  grossExposure: number;
-  leverage: number;
-  concentration: number;
-  
-  // Liquidity Risk
-  liquidityScore: number;
-  timeToLiquidate: number;
-  marginUsed: number;
-  marginAvailable: number;
-  
-  // Market Risk
-  deltaEquivalent: number;
-  gamma: number;
-  vega: number;
-  theta: number;
-  
-  // Credit Risk
-  counterpartyRisk: number;
-  settlementRisk: number;
-}
-
-interface StressScenario {
-  name: string;
-  description: string;
-  shockMagnitude: number;
-  portfolioImpact: number;
-  probability: number;
-  category: 'market' | 'credit' | 'liquidity' | 'operational';
-}
-
-interface CorrelationData {
-  asset1: string;
-  asset2: string;
-  correlation: number;
-  period: string;
-}
-
-interface RiskAlert {
-  id: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  category: string;
-  message: string;
-  timestamp: Date;
-  acknowledged: boolean;
-  recommendation?: string;
-}
-
-export default function RiskManagement() {
-  const [riskMetrics, setRiskMetrics] = useState<RiskMetrics | null>(null);
-  const [stressScenarios, setStressScenarios] = useState<StressScenario[]>([]);
-  const [correlationMatrix, setCorrelationMatrix] = useState<CorrelationData[]>([]);
-  const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
-  const [varHistory, setVarHistory] = useState<any[]>([]);
-  const [drawdownData, setDrawdownData] = useState<any[]>([]);
-  const [monteCarloResults, setMonteCarloResults] = useState<any[]>([]);
-  const [positionSizing, setPositionSizing] = useState<any[]>([]);
-  const [selectedTimeHorizon, setSelectedTimeHorizon] = useState<'1D' | '1W' | '1M' | '1Y'>('1D');
-  const [confidenceLevel, setConfidenceLevel] = useState<95 | 99>(95);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-
-  // Generate realistic risk data
-  const generateRiskData = useCallback(() => {
-    const basePortfolioValue = 10000000; // $10M portfolio
-    
-    // Generate VaR metrics using proper calculations
-    const returns = Array.from({ length: 252 }, () => (Math.random() - 0.5) * 0.04); // Daily returns
-    const var95 = Math.abs(metricsCalculator.calculateVaR(returns, 0.95)) * basePortfolioValue;
-    const var99 = Math.abs(metricsCalculator.calculateVaR(returns, 0.99)) * basePortfolioValue;
-    const cvar95 = Math.abs(metricsCalculator.calculateCVaR(returns, 0.95)) * basePortfolioValue;
-    const cvar99 = Math.abs(metricsCalculator.calculateCVaR(returns, 0.99)) * basePortfolioValue;
-    
-    const mockRiskMetrics: RiskMetrics = {
-      // VaR Metrics
-      var95_1d: var95,
-      var99_1d: var99,
-      cvar95_1d: cvar95,
-      cvar99_1d: cvar99,
-      var95_10d: var95 * Math.sqrt(10), // Scaling rule
-      
-      // Portfolio Risk
-      portfolioValue: basePortfolioValue,
-      maxDrawdown: 0.087, // 8.7%
-      currentDrawdown: 0.023, // 2.3%
-      volatility: 0.145, // 14.5% annualized
-      beta: 0.78,
-      correlation: 0.65,
-      
-      // Position Risk
-      totalExposure: basePortfolioValue * 1.25,
-      netExposure: basePortfolioValue * 0.85,
-      grossExposure: basePortfolioValue * 2.1,
-      leverage: 2.1,
-      concentration: 0.15, // 15% in largest position
-      
-      // Liquidity Risk
-      liquidityScore: 0.82, // 0-1 scale
-      timeToLiquidate: 2.5, // days
-      marginUsed: 0.35, // 35%
-      marginAvailable: 0.65, // 65%
-      
-      // Market Risk
-      deltaEquivalent: basePortfolioValue * 0.92,
-      gamma: 12500,
-      vega: 8750,
-      theta: -125,
-      
-      // Credit Risk
-      counterpartyRisk: 0.02, // 2%
-      settlementRisk: 0.005, // 0.5%
-    };
-    
-    // Generate stress scenarios
-    const scenarios: StressScenario[] = [
-      {
-        name: 'Central Bank Policy Shift',
-        description: '200 bps interest rate increase by Banco de la República',
-        shockMagnitude: 0.02,
-        portfolioImpact: -0.065,
-        probability: 0.15,
-        category: 'market'
+// Risk Management Data Simulation
+const useRiskManagement = () => {
+  const [riskData, setRiskData] = useState({
+    var: {
+      var95: 2.34,
+      var99: 3.78,
+      cvar95: 3.12,
+      cvar99: 4.95,
+      method: 'Historical + Monte Carlo'
+    },
+    stressTests: {
+      copDevaluation: {
+        scenario: 'COP -20% Crisis',
+        impact: -15.6,
+        probability: 0.05,
+        status: 'pass'
       },
-      {
-        name: 'Fed Hawkish Surprise',
-        description: 'Unexpected 100 bps Fed rate hike',
-        shockMagnitude: 0.01,
-        portfolioImpact: -0.042,
-        probability: 0.08,
-        category: 'market'
-      },
-      {
-        name: 'Commodity Price Shock',
-        description: 'Oil price drops 40% affecting COP',
-        shockMagnitude: -0.4,
-        portfolioImpact: -0.078,
+      wtiShock: {
+        scenario: 'WTI ±30% Oil Shock', 
+        impact: -12.3,
         probability: 0.12,
-        category: 'market'
+        status: 'pass'
       },
-      {
-        name: 'Political Uncertainty',
-        description: 'Colombian election volatility surge',
-        shockMagnitude: 0.25,
-        portfolioImpact: -0.055,
-        probability: 0.20,
-        category: 'market'
+      dxyStrength: {
+        scenario: 'DXY +10% USD Rally',
+        impact: -8.9,
+        probability: 0.18,
+        status: 'pass'
       },
-      {
-        name: 'Counterparty Default',
-        description: 'Major broker insolvency',
-        shockMagnitude: 0.5,
-        portfolioImpact: -0.015,
-        probability: 0.02,
-        category: 'credit'
+      costStress: {
+        scenario: 'Costs +25% Operational',
+        impact: -16.2,
+        probability: 0.25,
+        status: 'pass'
       },
-      {
-        name: 'Liquidity Crisis',
-        description: 'Market freeze - no USDCOP trading',
-        shockMagnitude: 0.8,
-        portfolioImpact: -0.095,
-        probability: 0.01,
-        category: 'liquidity'
+      banrepIntervention: {
+        scenario: 'Surprise BanRep Action',
+        impact: -11.4,
+        probability: 0.08,
+        status: 'pass'
       }
-    ];
-    
-    // Generate correlation matrix
-    const assets = ['USDCOP', 'Oil WTI', 'Colombian Bonds', 'USD Index', 'EM Currencies', 'S&P 500'];
-    const correlationData: CorrelationData[] = [];
-    assets.forEach((asset1, i) => {
-      assets.forEach((asset2, j) => {
-        if (i !== j) {
-          correlationData.push({
-            asset1,
-            asset2,
-            correlation: asset1 === 'USDCOP' && asset2 === 'Oil WTI' ? -0.72 :
-                        asset1 === 'USDCOP' && asset2 === 'Colombian Bonds' ? 0.85 :
-                        asset1 === 'USDCOP' && asset2 === 'USD Index' ? 0.58 :
-                        asset1 === 'USDCOP' && asset2 === 'EM Currencies' ? 0.67 :
-                        asset1 === 'USDCOP' && asset2 === 'S&P 500' ? -0.31 :
-                        Math.random() * 2 - 1, // Random for others
-            period: '252D'
-          });
-        }
-      });
-    });
-    
-    // Generate risk alerts
-    const alerts: RiskAlert[] = [
+    },
+    dynamicMonitoring: {
+      usdcopWtiCorr: 0.73,
+      corrBreakAlert: false,
+      drawdownRecovery: 18,
+      implementationShortfall: 7.2,
+      attribution: {
+        trend: 45.3,
+        microstructure: 32.1,
+        costs: 22.6
+      }
+    },
+    exposures: {
+      netExposure: 125000,
+      grossExposure: 845000,
+      leverage: 1.85,
+      concentrationRisk: 0.23,
+      sectorExposure: {
+        currency: 78.5,
+        commodities: 12.3,
+        rates: 9.2
+      }
+    },
+    limits: {
+      maxDrawdown: { limit: 15.0, current: 12.3, utilization: 82.0 },
+      var95: { limit: 3.5, current: 2.34, utilization: 66.9 },
+      leverage: { limit: 2.0, current: 1.85, utilization: 92.5 },
+      concentration: { limit: 0.30, current: 0.23, utilization: 76.7 }
+    },
+    alerts: [
       {
-        id: 'var-breach-001',
-        severity: 'high',
-        category: 'Market Risk',
-        message: 'VaR 95% exceeded by 12% in last trading session',
-        timestamp: subMinutes(new Date(), 15),
-        acknowledged: false,
-        recommendation: 'Reduce position size by 15% or implement hedging strategy'
+        id: 1,
+        type: 'warning',
+        title: 'High Leverage Utilization',
+        message: 'Leverage at 92.5% of limit (1.85/2.0)',
+        timestamp: new Date(Date.now() - 300000),
+        acknowledged: false
       },
       {
-        id: 'concentration-002',
-        severity: 'medium',
-        category: 'Concentration',
-        message: 'Single position exceeds 15% portfolio limit',
-        timestamp: subMinutes(new Date(), 45),
-        acknowledged: false,
-        recommendation: 'Divest 3% of position to maintain compliance'
-      },
-      {
-        id: 'correlation-003',
-        severity: 'medium',
-        category: 'Correlation',
-        message: 'Asset correlation spiked to 0.89 - diversification breakdown',
-        timestamp: subMinutes(new Date(), 120),
-        acknowledged: true,
-        recommendation: 'Review portfolio diversification strategy'
-      },
-      {
-        id: 'liquidity-004',
-        severity: 'low',
-        category: 'Liquidity',
-        message: 'Market liquidity below normal - increased bid-ask spreads',
-        timestamp: subMinutes(new Date(), 200),
+        id: 2,
+        type: 'info',
+        title: 'WTI Correlation Strong',
+        message: 'USD/COP ↔ WTI correlation at 0.73 (normal range)',
+        timestamp: new Date(Date.now() - 600000),
         acknowledged: true
       }
-    ];
-    
-    return { mockRiskMetrics, scenarios, correlationData, alerts };
-  }, []);
-  
+    ]
+  });
+
   useEffect(() => {
-    setLoading(true);
-    
-    const { mockRiskMetrics, scenarios, correlationData, alerts } = generateRiskData();
-    setRiskMetrics(mockRiskMetrics);
-    setStressScenarios(scenarios);
-    setCorrelationMatrix(correlationData);
-    setRiskAlerts(alerts);
-    
-    // Generate historical VaR data
-    const varHistoryData = Array.from({ length: 30 }, (_, i) => {
-      const date = subDays(new Date(), 29 - i);
-      return {
-        date: formatDate(date, 'MM/dd'),
-        var95: mockRiskMetrics.var95_1d * (0.8 + Math.random() * 0.4),
-        var99: mockRiskMetrics.var99_1d * (0.8 + Math.random() * 0.4),
-        actual: mockRiskMetrics.var95_1d * (0.5 + Math.random() * 0.6),
-        limit: mockRiskMetrics.var95_1d * 1.2
-      };
-    });
-    setVarHistory(varHistoryData);
-    
-    // Generate drawdown data
-    const drawdownData = Array.from({ length: 90 }, (_, i) => {
-      const date = subDays(new Date(), 89 - i);
-      return {
-        date: formatDate(date, 'MM/dd'),
-        drawdown: Math.random() * mockRiskMetrics.maxDrawdown * 100,
-        underwater: Math.random() < 0.3 ? Math.random() * 5 : 0
-      };
-    });
-    setDrawdownData(drawdownData);
-    
-    // Generate Monte Carlo simulation results
-    const monteCarloData = Array.from({ length: 1000 }, (_, i) => ({
-      scenario: i + 1,
-      pnl: (Math.random() - 0.5) * mockRiskMetrics.portfolioValue * 0.1,
-      probability: Math.random()
-    })).sort((a, b) => a.pnl - b.pnl);
-    setMonteCarloResults(monteCarloData);
-    
-    // Generate position sizing recommendations
-    const positions = [
-      { symbol: 'USDCOP Long', currentSize: 0.15, optimalSize: 0.12, kellySize: 0.08, risk: 'medium' },
-      { symbol: 'Oil Hedge', currentSize: 0.05, optimalSize: 0.07, kellySize: 0.06, risk: 'low' },
-      { symbol: 'Rate Spread', currentSize: 0.08, optimalSize: 0.06, kellySize: 0.04, risk: 'high' },
-      { symbol: 'Volatility Play', currentSize: 0.03, optimalSize: 0.04, kellySize: 0.02, risk: 'medium' }
-    ];
-    setPositionSizing(positions);
-    
-    setLastUpdate(new Date());
-    setLoading(false);
-  }, [generateRiskData, selectedTimeHorizon, confidenceLevel]);
-  
-  const formatCurrency = useCallback((value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    const interval = setInterval(() => {
+      setRiskData(prev => ({
+        ...prev,
+        var: {
+          ...prev.var,
+          var95: Math.max(1.5, Math.min(4.0, prev.var.var95 + (Math.random() - 0.5) * 0.2)),
+          var99: Math.max(2.5, Math.min(6.0, prev.var.var99 + (Math.random() - 0.5) * 0.3))
+        },
+        dynamicMonitoring: {
+          ...prev.dynamicMonitoring,
+          usdcopWtiCorr: Math.max(0.4, Math.min(0.9, prev.dynamicMonitoring.usdcopWtiCorr + (Math.random() - 0.5) * 0.05)),
+          implementationShortfall: Math.max(3, Math.min(15, prev.dynamicMonitoring.implementationShortfall + (Math.random() - 0.5) * 1))
+        },
+        exposures: {
+          ...prev.exposures,
+          leverage: Math.max(1.2, Math.min(2.1, prev.exposures.leverage + (Math.random() - 0.5) * 0.05))
+        }
+      }));
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
-  
-  const formatPercent = useCallback((value: number, decimals = 2) => {
-    return `${value >= 0 ? '+' : ''}${(value * 100).toFixed(decimals)}%`;
-  }, []);
-  
-  const getRiskLevel = useCallback((value: number, thresholds: { low: number; medium: number; high: number }) => {
-    if (value < thresholds.low) return { level: 'Low', color: 'text-green-400', bg: 'bg-green-950' };
-    if (value < thresholds.medium) return { level: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-950' };
-    if (value < thresholds.high) return { level: 'High', color: 'text-orange-400', bg: 'bg-orange-950' };
-    return { level: 'Critical', color: 'text-red-400', bg: 'bg-red-950' };
-  }, []);
-  
-  const getSeverityColor = useCallback((severity: string) => {
-    switch (severity) {
-      case 'low': return 'border-blue-400 bg-blue-950/30';
-      case 'medium': return 'border-yellow-400 bg-yellow-950/30';
-      case 'high': return 'border-orange-400 bg-orange-950/30';
-      case 'critical': return 'border-red-400 bg-red-950/30';
-      default: return 'border-slate-400 bg-slate-950/30';
-    }
-  }, []);
-  
-  // Custom date formatting function
-  const formatDate = (date: Date, pattern: string): string => {
-    const months = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
-    ];
+
+  return riskData;
+};
+
+interface RiskMetricCardProps {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  status: 'optimal' | 'warning' | 'critical';
+  icon: React.ComponentType<any>;
+  limit?: string;
+  utilization?: number;
+  format?: 'currency' | 'percentage' | 'ratio' | 'number' | 'bps';
+}
+
+const RiskMetricCard: React.FC<RiskMetricCardProps> = ({ 
+  title, value, subtitle, status, icon: Icon, limit, utilization, format = 'number' 
+}) => {
+  const formatValue = (val: string | number) => {
+    if (typeof val === 'string') return val;
     
-    const monthsFull = [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-    ];
-    
-    const day = date.getDate();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-    const pad = (num: number) => num.toString().padStart(2, '0');
-    
-    switch (pattern) {
-      case 'MM/dd':
-        return `${pad(month + 1)}/${pad(day)}`;
-      case 'HH:mm:ss':
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-      case 'HH:mm':
-        return `${pad(hours)}:${pad(minutes)}`;
-      case 'dd/MM':
-        return `${pad(day)}/${pad(month + 1)}`;
-      case 'yyyy-MM-dd HH:mm:ss':
-        return `${year}-${pad(month + 1)}-${pad(day)} ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-      case 'PPpp':
-        return `${day} de ${monthsFull[month]} de ${year} a las ${pad(hours)}:${pad(minutes)}`;
+    switch (format) {
+      case 'currency':
+        return `$${val.toLocaleString()}`;
+      case 'percentage':
+        return `${val.toFixed(2)}%`;
+      case 'ratio':
+        return val.toFixed(3);
+      case 'bps':
+        return `${val.toFixed(1)} bps`;
       default:
-        return date.toLocaleDateString('es-ES');
+        return val.toLocaleString();
     }
   };
-  
-  // Custom date manipulation functions
-  const subDays = (date: Date, days: number): Date => {
-    return new Date(date.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const statusColors = {
+    optimal: 'border-market-up text-market-up shadow-market-up',
+    warning: 'border-fintech-purple-400 text-fintech-purple-400 shadow-glow-purple',
+    critical: 'border-market-down text-market-down shadow-market-down'
   };
-  
-  function subMinutes(date: Date, minutes: number): Date {
-    return new Date(date.getTime() - minutes * 60000);
-  }
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96 bg-slate-950 rounded-lg border border-amber-500/20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-500/20 border-t-amber-500 mx-auto mb-4"></div>
-          <p className="text-amber-500 font-mono text-sm">Loading Professional Risk Analytics...</p>
+
+  const bgColors = {
+    optimal: 'from-market-up/10 to-market-up/5',
+    warning: 'from-fintech-purple-400/10 to-fintech-purple-400/5',
+    critical: 'from-market-down/10 to-market-down/5'
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`glass-surface p-6 rounded-xl border ${statusColors[status]} bg-gradient-to-br ${bgColors[status]}`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Icon className="w-5 h-5" />
+          <span className="text-sm font-medium text-white">{title}</span>
+        </div>
+        <div className={`w-2 h-2 rounded-full ${
+          status === 'optimal' ? 'bg-market-up animate-pulse' :
+          status === 'warning' ? 'bg-fintech-purple-400 animate-pulse' :
+          'bg-market-down animate-pulse'
+        }`} />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="text-2xl font-bold text-white">
+          {formatValue(value)}
+        </div>
+        <div className="text-xs text-fintech-dark-300">{subtitle}</div>
+        
+        {limit && (
+          <div className="text-xs text-fintech-dark-400">
+            Limit: <span className="font-medium">{limit}</span>
+          </div>
+        )}
+        
+        {utilization !== undefined && (
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-fintech-dark-300 mb-1">
+              <span>Utilization</span>
+              <span>{utilization.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-fintech-dark-800 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  utilization >= 90 ? 'bg-market-down' :
+                  utilization >= 75 ? 'bg-fintech-purple-400' :
+                  'bg-market-up'
+                }`}
+                style={{ width: `${Math.min(100, utilization)}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const StressTestCard: React.FC<{
+  title: string;
+  scenario: string;
+  impact: number;
+  probability: number;
+  status: 'pass' | 'fail';
+  icon: React.ComponentType<any>;
+}> = ({ title, scenario, impact, probability, status, icon: Icon }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`glass-surface p-6 rounded-xl border ${
+        status === 'pass' 
+          ? 'border-market-up shadow-market-up bg-gradient-to-r from-market-up/10 to-market-up/5'
+          : 'border-market-down shadow-market-down bg-gradient-to-r from-market-down/10 to-market-down/5'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Icon className={`w-5 h-5 ${status === 'pass' ? 'text-market-up' : 'text-market-down'}`} />
+          <span className="text-sm font-medium text-white">{scenario}</span>
+        </div>
+        {status === 'pass' ? (
+          <CheckCircle className="w-5 h-5 text-market-up" />
+        ) : (
+          <XCircle className="w-5 h-5 text-market-down" />
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <span className="text-xs text-fintech-dark-300">Impact:</span>
+          <span className={`text-sm font-bold ${impact < 0 ? 'text-market-down' : 'text-market-up'}`}>
+            {impact > 0 ? '+' : ''}{impact.toFixed(1)}%
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-xs text-fintech-dark-300">Probability:</span>
+          <span className="text-sm font-medium text-white">{(probability * 100).toFixed(1)}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-xs text-fintech-dark-300">Status:</span>
+          <span className={`text-sm font-bold ${status === 'pass' ? 'text-market-up' : 'text-market-down'}`}>
+            {status.toUpperCase()}
+          </span>
         </div>
       </div>
-    );
-  }
-  
-  if (!riskMetrics) return null;
-  
-  const leverageRisk = getRiskLevel(riskMetrics.leverage, { low: 1.5, medium: 2.5, high: 4 });
-  const concentrationRisk = getRiskLevel(riskMetrics.concentration, { low: 0.1, medium: 0.2, high: 0.3 });
-  const liquidityRisk = getRiskLevel(1 - riskMetrics.liquidityScore, { low: 0.2, medium: 0.4, high: 0.6 });
+    </motion.div>
+  );
+};
+
+const ExposureBreakdown: React.FC<{ data: any }> = ({ data }) => {
+  const totalExposure = data.sectorExposure.currency + data.sectorExposure.commodities + data.sectorExposure.rates;
   
   return (
-    <div className="space-y-6 p-6 bg-slate-950 min-h-screen">
+    <div className="glass-surface p-6 rounded-xl">
+      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <Target className="w-5 h-5 text-fintech-cyan-500" />
+        Portfolio Exposure Analysis
+      </h3>
+      
+      <div className="grid grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <span className="text-fintech-dark-300">Net Exposure:</span>
+            <span className="text-white font-bold">${data.netExposure.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-fintech-dark-300">Gross Exposure:</span>
+            <span className="text-white font-bold">${data.grossExposure.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-fintech-dark-300">Leverage Ratio:</span>
+            <span className={`font-bold ${data.leverage < 1.8 ? 'text-market-up' : data.leverage < 1.95 ? 'text-fintech-purple-400' : 'text-market-down'}`}>
+              {data.leverage.toFixed(2)}x
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-fintech-dark-300">Concentration:</span>
+            <span className={`font-bold ${data.concentrationRisk < 0.25 ? 'text-market-up' : 'text-fintech-purple-400'}`}>
+              {(data.concentrationRisk * 100).toFixed(1)}%
+            </span>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="text-sm text-fintech-dark-300 mb-2">Sector Breakdown:</div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-fintech-dark-300">Currency (USD/COP):</span>
+              <span className="text-fintech-cyan-400 font-medium">{data.sectorExposure.currency.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-fintech-dark-800 rounded-full h-2">
+              <div 
+                className="h-2 bg-fintech-cyan-400 rounded-full"
+                style={{ width: `${(data.sectorExposure.currency / totalExposure) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-fintech-dark-300">Commodities (WTI):</span>
+              <span className="text-fintech-purple-400 font-medium">{data.sectorExposure.commodities.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-fintech-dark-800 rounded-full h-2">
+              <div 
+                className="h-2 bg-fintech-purple-400 rounded-full"
+                style={{ width: `${(data.sectorExposure.commodities / totalExposure) * 100}%` }}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-fintech-dark-300">Interest Rates:</span>
+              <span className="text-market-up font-medium">{data.sectorExposure.rates.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-fintech-dark-800 rounded-full h-2">
+              <div 
+                className="h-2 bg-market-up rounded-full"
+                style={{ width: `${(data.sectorExposure.rates / totalExposure) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AlertsPanel: React.FC<{ alerts: any[] }> = ({ alerts }) => {
+  const [filter, setFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
+
+  const filteredAlerts = alerts.filter(alert => 
+    filter === 'all' || alert.type === filter
+  );
+
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case 'critical': return AlertTriangle;
+      case 'warning': return AlertCircle;
+      case 'info': return Eye;
+      default: return AlertCircle;
+    }
+  };
+
+  const getAlertColor = (type: string) => {
+    switch (type) {
+      case 'critical': return 'text-market-down border-market-down';
+      case 'warning': return 'text-fintech-purple-400 border-fintech-purple-400';
+      case 'info': return 'text-fintech-cyan-400 border-fintech-cyan-400';
+      default: return 'text-fintech-dark-400 border-fintech-dark-400';
+    }
+  };
+
+  return (
+    <div className="glass-surface p-6 rounded-xl">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-fintech-purple-400" />
+          Risk Alerts Center
+        </h3>
+        
+        <div className="flex items-center gap-2">
+          {['all', 'critical', 'warning', 'info'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilter(type as any)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                filter === type
+                  ? 'bg-fintech-cyan-500 text-white'
+                  : 'bg-fintech-dark-800 text-fintech-dark-400 hover:text-white'
+              }`}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      <div className="space-y-3 max-h-64 overflow-y-auto">
+        {filteredAlerts.map((alert) => {
+          const AlertIcon = getAlertIcon(alert.type);
+          const colorClass = getAlertColor(alert.type);
+          
+          return (
+            <motion.div
+              key={alert.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`p-3 rounded-lg border ${colorClass} ${
+                alert.acknowledged ? 'opacity-60' : ''
+              } bg-gradient-to-r from-fintech-dark-900/40 to-fintech-dark-800/40`}
+            >
+              <div className="flex items-start gap-3">
+                <AlertIcon className="w-4 h-4 mt-0.5" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-white">{alert.title}</div>
+                  <div className="text-xs text-fintech-dark-300 mt-1">{alert.message}</div>
+                  <div className="text-xs text-fintech-dark-400 mt-2">
+                    {alert.timestamp.toLocaleString()}
+                  </div>
+                </div>
+                {!alert.acknowledged && (
+                  <div className="w-2 h-2 bg-fintech-cyan-400 rounded-full animate-pulse" />
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default function RiskManagement() {
+  const riskData = useRiskManagement();
+  const [selectedStressTest, setSelectedStressTest] = useState<string | null>(null);
+
+  const varMetrics = [
+    {
+      title: 'VaR 95%',
+      value: riskData.var.var95,
+      subtitle: 'Historical + Monte Carlo',
+      status: riskData.var.var95 <= 3.0 ? 'optimal' as const : riskData.var.var95 <= 3.5 ? 'warning' as const : 'critical' as const,
+      icon: Shield,
+      limit: '≤3.5%',
+      utilization: (riskData.var.var95 / 3.5) * 100,
+      format: 'percentage' as const
+    },
+    {
+      title: 'CVaR 95%',
+      value: riskData.var.cvar95,
+      subtitle: 'Expected Shortfall',
+      status: riskData.var.cvar95 <= 4.0 ? 'optimal' as const : riskData.var.cvar95 <= 5.0 ? 'warning' as const : 'critical' as const,
+      icon: TrendingDown,
+      limit: '≤5.0%',
+      utilization: (riskData.var.cvar95 / 5.0) * 100,
+      format: 'percentage' as const
+    },
+    {
+      title: 'VaR 99%',
+      value: riskData.var.var99,
+      subtitle: 'Tail Risk Measure',
+      status: riskData.var.var99 <= 5.0 ? 'optimal' as const : riskData.var.var99 <= 6.0 ? 'warning' as const : 'critical' as const,
+      icon: AlertTriangle,
+      limit: '≤6.0%',
+      utilization: (riskData.var.var99 / 6.0) * 100,
+      format: 'percentage' as const
+    },
+    {
+      title: 'CVaR 99%',
+      value: riskData.var.cvar99,
+      subtitle: 'Extreme Loss Scenario',
+      status: riskData.var.cvar99 <= 6.0 ? 'optimal' as const : riskData.var.cvar99 <= 8.0 ? 'warning' as const : 'critical' as const,
+      icon: Flame,
+      limit: '≤8.0%',
+      utilization: (riskData.var.cvar99 / 8.0) * 100,
+      format: 'percentage' as const
+    }
+  ];
+
+  const dynamicMetrics = [
+    {
+      title: 'USD/COP ↔ WTI Correlation',
+      value: riskData.dynamicMonitoring.usdcopWtiCorr,
+      subtitle: 'Critical relationship monitoring',
+      status: Math.abs(riskData.dynamicMonitoring.usdcopWtiCorr) > 0.6 ? 'optimal' as const : 'warning' as const,
+      icon: Globe,
+      format: 'ratio' as const
+    },
+    {
+      title: 'Drawdown Recovery',
+      value: riskData.dynamicMonitoring.drawdownRecovery,
+      subtitle: 'Days to recovery (target <30)',
+      status: riskData.dynamicMonitoring.drawdownRecovery <= 30 ? 'optimal' as const : 'warning' as const,
+      icon: Clock,
+      format: 'number' as const
+    },
+    {
+      title: 'Implementation Shortfall',
+      value: riskData.dynamicMonitoring.implementationShortfall,
+      subtitle: 'Execution cost (target <10bps)',
+      status: riskData.dynamicMonitoring.implementationShortfall <= 10 ? 'optimal' as const : 'warning' as const,
+      icon: Target,
+      format: 'bps' as const
+    }
+  ];
+
+  const limitMetrics = [
+    {
+      title: 'Max Drawdown',
+      value: riskData.limits.maxDrawdown.current,
+      subtitle: 'Peak-to-trough decline',
+      status: riskData.limits.maxDrawdown.utilization <= 80 ? 'optimal' as const : riskData.limits.maxDrawdown.utilization <= 95 ? 'warning' as const : 'critical' as const,
+      icon: TrendingDown,
+      limit: `${riskData.limits.maxDrawdown.limit}%`,
+      utilization: riskData.limits.maxDrawdown.utilization,
+      format: 'percentage' as const
+    },
+    {
+      title: 'Leverage Ratio',
+      value: riskData.limits.leverage.current,
+      subtitle: 'Position sizing multiplier',
+      status: riskData.limits.leverage.utilization <= 80 ? 'optimal' as const : riskData.limits.leverage.utilization <= 95 ? 'warning' as const : 'critical' as const,
+      icon: Gauge,
+      limit: `${riskData.limits.leverage.limit}x`,
+      utilization: riskData.limits.leverage.utilization,
+      format: 'ratio' as const
+    }
+  ];
+
+  const stressTests = [
+    {
+      title: 'COP Crisis',
+      ...riskData.stressTests.copDevaluation,
+      icon: TrendingDown
+    },
+    {
+      title: 'Oil Shock',
+      ...riskData.stressTests.wtiShock,
+      icon: Flame
+    },
+    {
+      title: 'USD Strength',
+      ...riskData.stressTests.dxyStrength,
+      icon: TrendingUp
+    },
+    {
+      title: 'Cost Stress',
+      ...riskData.stressTests.costStress,
+      icon: DollarSign
+    },
+    {
+      title: 'BanRep Action',
+      ...riskData.stressTests.banrepIntervention,
+      icon: AlertCircle
+    }
+  ];
+
+  return (
+    <div className="w-full bg-fintech-dark-950 p-6">
       {/* Header */}
-      <div className="flex justify-between items-center border-b border-amber-500/20 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-amber-500 font-mono">PROFESSIONAL RISK MANAGEMENT</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Institutional Risk Analytics • Portfolio: {formatCurrency(riskMetrics.portfolioValue)} • 
-            Last Update: {formatDate(lastUpdate, 'HH:mm:ss')}
-          </p>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Risk Management</h1>
+            <p className="text-fintech-dark-300">
+              USD/COP Specific Risk Metrics • VaR/CVaR • Stress Testing • Dynamic Monitoring
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="glass-surface px-4 py-2 rounded-xl border border-fintech-cyan-500 shadow-glow-cyan">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-fintech-cyan-400" />
+                <span className="text-fintech-cyan-400 font-medium">Risk Monitoring Active</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex rounded-lg border border-amber-500/20 overflow-hidden">
-            {(['1D', '1W', '1M', '1Y'] as const).map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedTimeHorizon(period)}
-                className={`px-3 py-2 text-sm font-mono transition-colors ${
-                  selectedTimeHorizon === period
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'bg-slate-900 text-amber-500 hover:bg-amber-500/10'
-                }`}
+      </motion.div>
+
+      {/* VaR/CVaR Metrics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-8"
+      >
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
+          <Shield className="w-6 h-6 text-fintech-cyan-500" />
+          VaR/CVaR Analysis (Fat Tails)
+        </h2>
+        
+        {/* Critical VaR Metrics - Always Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+          {varMetrics.slice(0, 3).map((metric, index) => (
+            <motion.div
+              key={metric.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + index * 0.05 }}
+            >
+              <RiskMetricCard {...metric} />
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Secondary Tail Risk - Expandable */}
+        <details className="group">
+          <summary className="cursor-pointer list-none mb-4">
+            <div className="flex items-center gap-3 text-fintech-dark-300 hover:text-white transition-colors">
+              <span className="text-sm font-medium">Tail Risk Analysis</span>
+              <div className="group-open:rotate-90 transition-transform">▶</div>
+            </div>
+          </summary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {varMetrics.slice(3).map((metric, index) => (
+              <motion.div
+                key={metric.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
               >
-                {period}
-              </button>
+                <RiskMetricCard {...metric} />
+              </motion.div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-2 bg-slate-900 border border-amber-500/20 text-amber-500 rounded-lg hover:bg-amber-500/10 transition-colors flex items-center gap-2 text-sm">
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
-            <button className="px-3 py-2 bg-slate-900 border border-amber-500/20 text-amber-500 rounded-lg hover:bg-amber-500/10 transition-colors flex items-center gap-2 text-sm">
-              <Download className="h-4 w-4" />
-              Export
-            </button>
+        </details>
+      </motion.div>
+
+      {/* Stress Tests */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mb-8"
+      >
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
+          <AlertTriangle className="w-6 h-6 text-market-down" />
+          USD/COP Specific Stress Tests
+        </h2>
+        
+        {/* Critical Stress Tests - Always Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+          {stressTests.slice(0, 3).map((test, index) => (
+            <motion.div
+              key={test.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
+            >
+              <StressTestCard {...test} />
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Additional Stress Scenarios - Expandable */}
+        <details className="group">
+          <summary className="cursor-pointer list-none mb-4">
+            <div className="flex items-center gap-3 text-fintech-dark-300 hover:text-white transition-colors">
+              <span className="text-sm font-medium">Additional Stress Scenarios</span>
+              <div className="group-open:rotate-90 transition-transform">▶</div>
+            </div>
+          </summary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {stressTests.slice(3).map((test, index) => (
+              <motion.div
+                key={test.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+              >
+                <StressTestCard {...test} />
+              </motion.div>
+            ))}
+          </div>
+        </details>
+      </motion.div>
+
+      {/* Dynamic Monitoring & Limits */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
+      >
+        {/* Dynamic Monitoring */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-fintech-purple-400" />
+            Dynamic Monitoring
+          </h3>
+          
+          {dynamicMetrics.map((metric, index) => (
+            <motion.div
+              key={metric.title}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 + index * 0.1 }}
+            >
+              <RiskMetricCard {...metric} />
+            </motion.div>
+          ))}
+          
+          {/* P&L Attribution */}
+          <div className="glass-surface p-4 rounded-xl">
+            <h4 className="text-md font-semibold text-white mb-3">P&L Attribution</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Trend Capture:</span>
+                <span className="text-market-up font-medium">{riskData.dynamicMonitoring.attribution.trend.toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Microstructure:</span>
+                <span className="text-fintech-cyan-400 font-medium">{riskData.dynamicMonitoring.attribution.microstructure.toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Transaction Costs:</span>
+                <span className="text-market-down font-medium">-{riskData.dynamicMonitoring.attribution.costs.toFixed(1)}%</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Key Risk Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              VaR {confidenceLevel}%
-              <Shield className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-red-400 font-mono">
-              {formatCurrency(confidenceLevel === 95 ? riskMetrics.var95_1d : riskMetrics.var99_1d)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              CVaR: {formatCurrency(confidenceLevel === 95 ? riskMetrics.cvar95_1d : riskMetrics.cvar99_1d)}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Leverage
-              <Activity className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-xl font-bold text-white font-mono">{riskMetrics.leverage.toFixed(1)}x</div>
-              <Badge className={`${leverageRisk.bg} ${leverageRisk.color} text-xs px-1`}>
-                {leverageRisk.level}
-              </Badge>
-            </div>
-            <Progress value={Math.min((riskMetrics.leverage / 5) * 100, 100)} className="h-2" />
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Max Drawdown
-              <TrendingDown className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-red-400 font-mono">
-              {formatPercent(riskMetrics.maxDrawdown)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Current: {formatPercent(riskMetrics.currentDrawdown)}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Volatility
-              <BarChart3 className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-amber-400 font-mono">
-              {formatPercent(riskMetrics.volatility)}
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              Beta: {riskMetrics.beta.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Concentration
-              <Target className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-xl font-bold text-white font-mono">
-                {formatPercent(riskMetrics.concentration, 1)}
+
+        {/* Risk Limits */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Target className="w-5 h-5 text-fintech-cyan-400" />
+            Risk Limits
+          </h3>
+          
+          {limitMetrics.map((metric, index) => (
+            <motion.div
+              key={metric.title}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 + index * 0.1 }}
+            >
+              <RiskMetricCard {...metric} />
+            </motion.div>
+          ))}
+          
+          {/* Additional Risk Metrics */}
+          <div className="glass-surface p-4 rounded-xl">
+            <h4 className="text-md font-semibold text-white mb-3">Additional Metrics</h4>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Correlation Break Alert:</span>
+                <span className={`font-medium ${
+                  riskData.dynamicMonitoring.corrBreakAlert ? 'text-market-down' : 'text-market-up'
+                }`}>
+                  {riskData.dynamicMonitoring.corrBreakAlert ? 'ACTIVE' : 'NORMAL'}
+                </span>
               </div>
-              <Badge className={`${concentrationRisk.bg} ${concentrationRisk.color} text-xs px-1`}>
-                {concentrationRisk.level}
-              </Badge>
-            </div>
-            <Progress value={riskMetrics.concentration * 100} className="h-2" />
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono flex items-center justify-between">
-              Liquidity
-              <Zap className="h-4 w-4" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-xl font-bold text-green-400 font-mono">
-                {(riskMetrics.liquidityScore * 100).toFixed(0)}%
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Method:</span>
+                <span className="text-white font-medium">{riskData.var.method}</span>
               </div>
-              <Badge className={`${liquidityRisk.bg} ${liquidityRisk.color} text-xs px-1`}>
-                {liquidityRisk.level}
-              </Badge>
-            </div>
-            <div className="text-xs text-slate-400 mt-1">
-              {riskMetrics.timeToLiquidate.toFixed(1)}d to exit
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Risk Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* VaR History */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">VaR Backtesting & Model Performance</CardTitle>
-            <p className="text-slate-400 text-sm">Historical VaR vs Actual P&L • Model Validation</p>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={varHistory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="date" stroke="#64748B" fontSize={10} />
-                <YAxis stroke="#64748B" fontSize={10} tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '6px' }}
-                  formatter={(value: any, name: string) => [formatCurrency(value), name]}
-                />
-                <Bar dataKey="actual" fill="#10B981" name="Actual P&L" opacity={0.7} />
-                <Line type="monotone" dataKey="var95" stroke="#EF4444" strokeWidth={2} dot={false} name="VaR 95%" />
-                <Line type="monotone" dataKey="var99" stroke="#DC2626" strokeWidth={2} strokeDasharray="5 5" dot={false} name="VaR 99%" />
-                <Line type="monotone" dataKey="limit" stroke="#F59E0B" strokeWidth={1} strokeDasharray="2 2" dot={false} name="Risk Limit" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        {/* Monte Carlo Simulation */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">Monte Carlo Risk Simulation</CardTitle>
-            <p className="text-slate-400 text-sm">1,000 Scenarios • Tail Risk Distribution</p>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monteCarloResults.slice(0, 100)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="scenario" stroke="#64748B" fontSize={10} />
-                <YAxis stroke="#64748B" fontSize={10} tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '6px' }}
-                  formatter={(value: any) => [formatCurrency(value), 'P&L']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="pnl" 
-                  stroke="#8B5CF6" 
-                  fill="#8B5CF6" 
-                  fillOpacity={0.3}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Stress Testing */}
-      <Card className="bg-slate-900 border-amber-500/20">
-        <CardHeader>
-          <CardTitle className="text-amber-500 font-mono">Advanced Stress Testing</CardTitle>
-          <p className="text-slate-400 text-sm">Scenario Analysis • Tail Risk Assessment • Crisis Simulation</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {stressScenarios.map((scenario, index) => (
-              <div key={index} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-semibold text-white text-sm">{scenario.name}</h4>
-                  <Badge className={`${scenario.category === 'market' ? 'bg-blue-950 text-blue-400' :
-                                     scenario.category === 'credit' ? 'bg-red-950 text-red-400' :
-                                     scenario.category === 'liquidity' ? 'bg-yellow-950 text-yellow-400' :
-                                     'bg-purple-950 text-purple-400'}`}>
-                    {scenario.category}
-                  </Badge>
-                </div>
-                <p className="text-slate-400 text-xs mb-3">{scenario.description}</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Portfolio Impact:</span>
-                    <span className={`font-mono ${scenario.portfolioImpact < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                      {formatPercent(scenario.portfolioImpact)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Probability:</span>
-                    <span className="font-mono text-amber-400">{formatPercent(scenario.probability, 1)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Expected Loss:</span>
-                    <span className="font-mono text-red-400">
-                      {formatCurrency(riskMetrics.portfolioValue * scenario.portfolioImpact)}
-                    </span>
-                  </div>
-                </div>
-                <Progress 
-                  value={Math.abs(scenario.portfolioImpact) * 1000} 
-                  className="mt-3 h-2" 
-                />
+              <div className="flex justify-between">
+                <span className="text-fintech-dark-300">Update Frequency:</span>
+                <span className="text-fintech-cyan-400 font-medium">Real-time</span>
               </div>
-            ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-      
-      {/* Position Sizing & Greeks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Position Sizing Recommendations */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">Optimal Position Sizing</CardTitle>
-            <p className="text-slate-400 text-sm">Kelly Criterion • Risk Parity • Capital Allocation</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {positionSizing.map((position, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      position.risk === 'low' ? 'bg-green-400' :
-                      position.risk === 'medium' ? 'bg-yellow-400' : 'bg-red-400'
-                    }`}></div>
-                    <div>
-                      <div className="text-white font-semibold text-sm">{position.symbol}</div>
-                      <div className="text-slate-400 text-xs">Current: {formatPercent(position.currentSize)}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-amber-400 font-mono text-sm">
-                      Optimal: {formatPercent(position.optimalSize)}
-                    </div>
-                    <div className="text-slate-400 font-mono text-xs">
-                      Kelly: {formatPercent(position.kellySize)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Greeks Dashboard */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">Risk Sensitivities (Greeks)</CardTitle>
-            <p className="text-slate-400 text-sm">Portfolio Greeks • Risk Factor Sensitivities</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-slate-800 rounded-lg">
-                <div className="text-slate-400 text-xs mb-1">Delta Equivalent</div>
-                <div className="text-white font-bold font-mono text-lg">
-                  {formatCurrency(riskMetrics.deltaEquivalent)}
-                </div>
-                <div className="text-green-400 text-xs mt-1">92% of NAV</div>
-              </div>
-              <div className="text-center p-3 bg-slate-800 rounded-lg">
-                <div className="text-slate-400 text-xs mb-1">Gamma</div>
-                <div className="text-white font-bold font-mono text-lg">
-                  {riskMetrics.gamma.toLocaleString()}
-                </div>
-                <div className="text-amber-400 text-xs mt-1">Per 1% move</div>
-              </div>
-              <div className="text-center p-3 bg-slate-800 rounded-lg">
-                <div className="text-slate-400 text-xs mb-1">Vega</div>
-                <div className="text-white font-bold font-mono text-lg">
-                  {riskMetrics.vega.toLocaleString()}
-                </div>
-                <div className="text-blue-400 text-xs mt-1">Per vol point</div>
-              </div>
-              <div className="text-center p-3 bg-slate-800 rounded-lg">
-                <div className="text-slate-400 text-xs mb-1">Theta</div>
-                <div className="text-red-400 font-bold font-mono text-lg">
-                  {riskMetrics.theta.toLocaleString()}
-                </div>
-                <div className="text-red-400 text-xs mt-1">Daily decay</div>
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-slate-800 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 text-sm">Credit & Settlement Risk</span>
-                <div className="text-right">
-                  <div className="text-amber-400 font-mono text-sm">
-                    {formatPercent(riskMetrics.counterpartyRisk + riskMetrics.settlementRisk)}
-                  </div>
-                  <div className="text-slate-500 text-xs">
-                    Counterparty: {formatPercent(riskMetrics.counterpartyRisk)} | Settlement: {formatPercent(riskMetrics.settlementRisk)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Risk Alerts */}
-      <Card className="bg-slate-900 border-amber-500/20">
-        <CardHeader>
-          <CardTitle className="text-amber-500 font-mono flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Real-Time Risk Alerts & Compliance Monitoring
-          </CardTitle>
-          <p className="text-slate-400 text-sm">Active Alerts: {riskAlerts.filter(a => !a.acknowledged).length} | Critical: {riskAlerts.filter(a => a.severity === 'critical').length}</p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {riskAlerts.map((alert) => (
-              <Alert key={alert.id} className={`${getSeverityColor(alert.severity)} ${alert.acknowledged ? 'opacity-60' : ''}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <AlertOctagon className={`h-4 w-4 mt-0.5 ${
-                      alert.severity === 'critical' ? 'text-red-400' :
-                      alert.severity === 'high' ? 'text-orange-400' :
-                      alert.severity === 'medium' ? 'text-yellow-400' : 'text-blue-400'
-                    }`} />
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-white text-sm">{alert.category}</span>
-                        <Badge className={`text-xs ${
-                          alert.severity === 'critical' ? 'bg-red-950 text-red-400' :
-                          alert.severity === 'high' ? 'bg-orange-950 text-orange-400' :
-                          alert.severity === 'medium' ? 'bg-yellow-950 text-yellow-400' : 'bg-blue-950 text-blue-400'
-                        }`}>
-                          {alert.severity.toUpperCase()}
-                        </Badge>
-                        {alert.acknowledged && <Badge className="bg-green-950 text-green-400 text-xs">ACK</Badge>}
-                      </div>
-                      <AlertDescription className="text-slate-300 text-sm mb-2">
-                        {alert.message}
-                      </AlertDescription>
-                      {alert.recommendation && (
-                        <div className="text-amber-400 text-xs">
-                          <strong>Recommendation:</strong> {alert.recommendation}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right text-slate-500">
-                    <div className="text-xs">{formatDate(alert.timestamp, 'HH:mm')}</div>
-                    <div className="text-xs">{formatDate(alert.timestamp, 'dd/MM')}</div>
-                  </div>
-                </div>
-              </Alert>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Footer */}
-      <div className="text-center py-6 border-t border-amber-500/20">
-        <p className="text-slate-500 text-xs font-mono">
-          Professional Risk Management • Generated {formatDate(new Date(), 'PPpp')} • 
-          VaR Model: Historical Simulation (1Y) • Confidence Level: {confidenceLevel}% • 
-          Compliance: Basel III Standards
-        </p>
-      </div>
+        </div>
+      </motion.div>
+
+      {/* Exposure Analysis & Alerts */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        <ExposureBreakdown data={riskData.exposures} />
+        <AlertsPanel alerts={riskData.alerts} />
+      </motion.div>
     </div>
   );
 }

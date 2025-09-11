@@ -470,132 +470,168 @@ export default function BacktestResults() {
         )}
       </motion.div>
       
-      {/* Key Performance Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-500 font-mono">CAGR</CardTitle>
-            <TrendingUp className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white font-mono">
-              {formatPercent(hedgeFundMetrics?.cagr * 100 || 0)}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">vs Benchmark: {formatPercent(12.0)}</p>
-          </CardContent>
-        </Card>
+      {/* Critical Performance Metrics */}
+      <div className="mb-8">
+        <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+          <TrendingUp className="w-5 h-5 text-amber-500" />
+          Core Performance
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+          <Card className="bg-slate-900 border-amber-500/20 p-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-lg font-medium text-amber-500 font-mono">CAGR</CardTitle>
+              <TrendingUp className="h-6 w-6 text-amber-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white font-mono mb-2">
+                {formatPercent(hedgeFundMetrics?.cagr * 100 || 0)}
+              </div>
+              <p className="text-sm text-slate-400">vs Benchmark: {formatPercent(12.0)}</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-500 font-mono">Sharpe Ratio</CardTitle>
-            <Target className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white font-mono">
-              {hedgeFundMetrics?.sharpeRatio.toFixed(3) || '0.000'}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Sortino: {hedgeFundMetrics?.sortinoRatio.toFixed(3)}</p>
-          </CardContent>
-        </Card>
+          <Card className="bg-slate-900 border-amber-500/20 p-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-lg font-medium text-amber-500 font-mono">Sharpe Ratio</CardTitle>
+              <Target className="h-6 w-6 text-amber-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-white font-mono mb-2">
+                {hedgeFundMetrics?.sharpeRatio.toFixed(3) || '0.000'}
+              </div>
+              <p className="text-sm text-slate-400">Sortino: {hedgeFundMetrics?.sortinoRatio.toFixed(3)}</p>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-500 font-mono">Max Drawdown</CardTitle>
-            <TrendDown className="h-4 w-4 text-red-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-400 font-mono">
-              {formatPercent(hedgeFundMetrics?.maxDrawdown * 100 || 0)}
+          <Card className="bg-slate-900 border-red-500/20 p-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-lg font-medium text-red-400 font-mono">Max Drawdown</CardTitle>
+              <TrendDown className="h-6 w-6 text-red-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-400 font-mono mb-2">
+                {formatPercent(hedgeFundMetrics?.maxDrawdown * 100 || 0)}
+              </div>
+              <p className="text-sm text-slate-400">Calmar: {hedgeFundMetrics?.calmarRatio.toFixed(3)}</p>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Secondary Metrics - Expandable */}
+        <details className="group">
+          <summary className="cursor-pointer list-none mb-4">
+            <div className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+              <span className="text-sm font-medium">Alpha Generation & Risk-Adjusted Returns</span>
+              <div className="group-open:rotate-90 transition-transform">▶</div>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Calmar: {hedgeFundMetrics?.calmarRatio.toFixed(3)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-amber-500 font-mono">Alpha Generation</CardTitle>
-            <Shield className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400 font-mono">
-              {formatPercent(hedgeFundMetrics?.jensenAlpha * 100 || 0)}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Info Ratio: {hedgeFundMetrics?.informationRatio.toFixed(3)}</p>
-          </CardContent>
-        </Card>
+          </summary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="bg-slate-900 border-green-500/20 p-6">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-lg font-medium text-green-400 font-mono">Alpha Generation</CardTitle>
+                <Shield className="h-6 w-6 text-green-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-400 font-mono mb-2">
+                  {formatPercent(hedgeFundMetrics?.jensenAlpha * 100 || 0)}
+                </div>
+                <p className="text-sm text-slate-400">Info Ratio: {hedgeFundMetrics?.informationRatio.toFixed(3)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </details>
       </div>
       
-      {/* Advanced Risk Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono">VaR (95%)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-red-400 font-mono mb-1">
-              {formatPercent(hedgeFundMetrics?.var95 * 100 || 0)}
-            </div>
-            <div className="text-xs text-slate-400">
-              CVaR: {formatPercent(hedgeFundMetrics?.cvar95 * 100 || 0)}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Risk & Trading Metrics */}
+      <div className="mb-8">
+        <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+          <Shield className="w-5 h-5 text-red-400" />
+          Risk Profile
+        </h3>
         
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono">Beta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-white font-mono mb-1">
-              {hedgeFundMetrics?.betaToMarket.toFixed(3) || '0.000'}
-            </div>
-            <div className="text-xs text-slate-400">
-              Correlation: {hedgeFundMetrics?.correlation.toFixed(3)}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Critical Risk Metrics - Always Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+          <Card className="bg-slate-900 border-red-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-red-400 font-mono">VaR (95%)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-400 font-mono mb-2">
+                {formatPercent(hedgeFundMetrics?.var95 * 100 || 0)}
+              </div>
+              <div className="text-sm text-slate-400">
+                CVaR: {formatPercent(hedgeFundMetrics?.cvar95 * 100 || 0)}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-slate-900 border-green-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-green-400 font-mono">Win Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-400 font-mono mb-2">
+                {formatPercent(hedgeFundMetrics?.winRate * 100 || 0, 1)}
+              </div>
+              <div className="text-sm text-slate-400">
+                {trades.filter(t => t.pnl > 0).length} / {trades.length} trades
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-slate-900 border-amber-500/20 p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg text-amber-400 font-mono">Volatility</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-amber-400 font-mono mb-2">
+                {formatPercent(hedgeFundMetrics?.volatility * 100 || 0, 1)}
+              </div>
+              <div className="text-sm text-slate-400">
+                Tracking Error: {formatPercent(hedgeFundMetrics?.trackingError * 100 || 0, 1)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono">Win Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-400 font-mono mb-1">
-              {formatPercent(hedgeFundMetrics?.winRate * 100 || 0, 1)}
+        {/* Secondary Metrics - Expandable */}
+        <details className="group">
+          <summary className="cursor-pointer list-none mb-4">
+            <div className="flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+              <span className="text-sm font-medium">Market Beta & Advanced Trading Metrics</span>
+              <div className="group-open:rotate-90 transition-transform">▶</div>
             </div>
-            <div className="text-xs text-slate-400">
-              {trades.filter(t => t.pnl > 0).length} / {trades.length}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono">Profit Factor</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-green-400 font-mono mb-1">
-              {hedgeFundMetrics?.profitFactor.toFixed(2) || '0.00'}
-            </div>
-            <div className="text-xs text-slate-400">
-              Kelly: {formatPercent(hedgeFundMetrics?.kellyFraction * 100 || 0, 1)}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-500 font-mono">Volatility</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-amber-400 font-mono mb-1">
-              {formatPercent(hedgeFundMetrics?.volatility * 100 || 0, 1)}
-            </div>
-            <div className="text-xs text-slate-400">
-              Tracking Error: {formatPercent(hedgeFundMetrics?.trackingError * 100 || 0, 1)}
-            </div>
-          </CardContent>
-        </Card>
+          </summary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="bg-slate-900 border-amber-500/20 p-6">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg text-white font-mono">Beta</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-white font-mono mb-2">
+                  {hedgeFundMetrics?.betaToMarket.toFixed(3) || '0.000'}
+                </div>
+                <div className="text-sm text-slate-400">
+                  Correlation: {hedgeFundMetrics?.correlation.toFixed(3)}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-slate-900 border-green-500/20 p-6">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg text-green-400 font-mono">Profit Factor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-400 font-mono mb-2">
+                  {hedgeFundMetrics?.profitFactor.toFixed(2) || '0.00'}
+                </div>
+                <div className="text-sm text-slate-400">
+                  Kelly: {formatPercent(hedgeFundMetrics?.kellyFraction * 100 || 0, 1)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </details>
       </div>
 
       {/* Performance Charts */}

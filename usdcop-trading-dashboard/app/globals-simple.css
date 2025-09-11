@@ -1,0 +1,49 @@
+/* Simple CSS for basic functionality */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0a0a0a;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 10px 0;
+}
+
+.btn {
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #0052a3;
+}
+
+h1, h2, h3 {
+  margin-bottom: 1rem;
+  color: #00ff88;
+}
+
+.text-success { color: #00ff88; }
+.text-error { color: #ff4444; }
+.text-warning { color: #ffaa00; }
