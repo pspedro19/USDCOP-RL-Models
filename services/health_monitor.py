@@ -103,9 +103,9 @@ class HealthMonitor:
                     }
                     
             elif service_name == 'redis':
-                # Check redis using docker exec
+                # Check redis using docker exec with password
                 process = await asyncio.create_subprocess_exec(
-                    'docker', 'exec', 'usdcop-redis', 'redis-cli', 'ping',
+                    'docker', 'exec', 'usdcop-redis', 'redis-cli', '-a', 'redis123', 'ping',
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )
