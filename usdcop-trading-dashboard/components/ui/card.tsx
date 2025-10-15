@@ -94,11 +94,11 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
 
   const MotionDiv = motion.div;
   
-  const cardVariants = animated ? {
-    ...motionLibrary.components.hoverCard,
+  const cardVariants = animated && motionLibrary?.components?.hoverCard ? {
+    ...(motionLibrary?.components?.hoverCard || {}),
     ...(loading && {
       animate: {
-        ...motionLibrary.components.hoverCard.initial,
+        ...(motionLibrary?.components?.hoverCard?.initial || {}),
         backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
         transition: {
           backgroundPosition: {
@@ -131,7 +131,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       {loading && (
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-          variants={motionLibrary.loading.shimmer}
+          variants={motionLibrary?.loading?.shimmer || {}}
           animate="animate"
         />
       )}
@@ -176,12 +176,12 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
       {...(animated && {
         initial: { opacity: 0, y: -10 },
         animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, ease: motionLibrary.presets.easing.smooth }
+        transition: { duration: 0.3, ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1] }
       })}
       {...props}
     >
       <motion.div
-        variants={animated ? motionLibrary.utils.createSlideAnimation('up', 5) : {}}
+        variants={animated && motionLibrary?.utils?.createSlideAnimation ? motionLibrary?.utils?.createSlideAnimation('up', 5) : {}}
         initial={animated ? "initial" : undefined}
         animate={animated ? "animate" : undefined}
         transition={{ delay: 0.1 }}
@@ -231,7 +231,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
         animate: { opacity: 1, x: 0 },
         transition: { 
           duration: 0.4, 
-          ease: motionLibrary.presets.easing.smooth,
+          ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
           delay: 0.15
         }
       })}
@@ -260,7 +260,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionPr
           animate: { opacity: 1, y: 0 },
           transition: { 
             duration: 0.3, 
-            ease: motionLibrary.presets.easing.smooth,
+            ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
             delay: 0.25 
           }
         })}
@@ -289,7 +289,7 @@ const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
         y: 0,
         transition: {
           duration: 0.4,
-          ease: motionLibrary.presets.easing.smooth,
+          ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
           delay: 0.3,
           ...(staggerChildren && {
             staggerChildren: 0.1,
@@ -309,11 +309,11 @@ const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
         {...props}
       >
         {staggerChildren ? (
-          <motion.div variants={motionLibrary.lists.container}>
+          <motion.div variants={motionLibrary?.lists?.container || {}}>
             {React.Children.map(children, (child, index) => (
               <motion.div
                 key={index}
-                variants={motionLibrary.lists.item}
+                variants={motionLibrary?.lists?.item || {}}
                 className="mb-4 last:mb-0"
               >
                 {child}
@@ -352,7 +352,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
           animate: { opacity: 1, y: 0 },
           transition: { 
             duration: 0.3, 
-            ease: motionLibrary.presets.easing.smooth,
+            ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
             delay: 0.45,
             ...(staggerChildren && {
               staggerChildren: 0.1,
@@ -364,13 +364,13 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
       >
         {staggerChildren ? (
           <motion.div 
-            variants={motionLibrary.lists.container}
+            variants={motionLibrary?.lists?.container || {}}
             className="flex items-center gap-4 w-full"
           >
             {React.Children.map(children, (child, index) => (
               <motion.div
                 key={index}
-                variants={motionLibrary.lists.item}
+                variants={motionLibrary?.lists?.item || {}}
               >
                 {child}
               </motion.div>

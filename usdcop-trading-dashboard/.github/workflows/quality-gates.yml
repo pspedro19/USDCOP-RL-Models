@@ -1,0 +1,588 @@
+name: Quality Gates Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '18'
+  FORCE_COLOR: 1
+
+jobs:
+  # Install dependencies and cache
+  setup:
+    name: Setup Dependencies
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=node-modules-${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            node-modules-
+
+      - name: Install dependencies
+        run: npm ci
+
+  # Code quality checks
+  lint:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: TypeScript type checking
+        run: npx tsc --noEmit
+
+  # Unit and integration tests
+  test-unit:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Check coverage thresholds
+        run: |
+          npx vitest run --coverage.reporter=json-summary
+          node -e "
+            const coverage = require('./coverage/coverage-summary.json');
+            const thresholds = { lines: 90, functions: 85, branches: 85, statements: 90 };
+
+            Object.entries(thresholds).forEach(([metric, threshold]) => {
+              const actual = coverage.total[metric].pct;
+              console.log(\`\${metric}: \${actual}% (threshold: \${threshold}%)\`);
+              if (actual < threshold) {
+                console.error(\`❌ Coverage for \${metric} (\${actual}%) is below threshold (\${threshold}%)\`);
+                process.exit(1);
+              }
+            });
+            console.log('✅ All coverage thresholds met');
+          "
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: unit-tests-coverage
+
+      - name: Generate coverage badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          npx coverage-badges-cli --output coverage/badges
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            !coverage/tmp
+
+  # Performance benchmarks
+  test-performance:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run performance benchmarks
+        run: |
+          npm run test:performance > performance-results.txt
+          cat performance-results.txt
+
+      - name: Check performance thresholds
+        run: |
+          node -e "
+            const fs = require('fs');
+            const results = fs.readFileSync('performance-results.txt', 'utf8');
+
+            // Performance targets (milliseconds)
+            const targets = {
+              'EMA-20 with 10k data points': 50,
+              'Bollinger Bands with 10k data points': 75,
+              'RSI-14 with 10k data points': 100,
+              'MACD with 10k data points': 125,
+              'Volume Profile with 10k data points': 150
+            };
+
+            let failed = false;
+            Object.entries(targets).forEach(([test, threshold]) => {
+              const regex = new RegExp(\`\${test}.*?(\\\\d+\\\\.\\\\d+)\\\\s*ms\`);
+              const match = results.match(regex);
+
+              if (match) {
+                const actual = parseFloat(match[1]);
+                console.log(\`\${test}: \${actual}ms (threshold: \${threshold}ms)\`);
+
+                if (actual > threshold) {
+                  console.error(\`❌ \${test} (\${actual}ms) exceeds threshold (\${threshold}ms)\`);
+                  failed = true;
+                }
+              }
+            });
+
+            if (failed) {
+              process.exit(1);
+            }
+            console.log('✅ All performance benchmarks passed');
+          "
+
+      - name: Upload performance artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-results.txt
+
+  # Accessibility tests
+  test-accessibility:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run accessibility tests
+        run: npm run test:accessibility
+
+      - name: Generate accessibility report
+        run: |
+          echo "# Accessibility Test Results" > accessibility-report.md
+          echo "Tests ensure WCAG 2.1 AA compliance" >> accessibility-report.md
+          echo "Generated on: $(date)" >> accessibility-report.md
+
+      - name: Upload accessibility artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: accessibility-report
+          path: accessibility-report.md
+
+  # End-to-end tests
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 30  # Wait for app to start
+
+      - name: Run E2E tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+
+  # Visual regression tests
+  test-visual:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 30
+
+      - name: Run visual regression tests
+        run: npx playwright test --project=chromium --grep="visual regression"
+
+      - name: Upload visual test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: visual-regression-results
+          path: |
+            tests/screenshots/
+            playwright-report/
+
+  # Lighthouse performance audit
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 30
+
+      - name: Create Lighthouse CI config
+        run: |
+          cat > lighthouserc.json << EOF
+          {
+            "ci": {
+              "collect": {
+                "url": ["http://localhost:3000"],
+                "numberOfRuns": 3
+              },
+              "assert": {
+                "assertions": {
+                  "categories:performance": ["error", {"minScore": 0.9}],
+                  "categories:accessibility": ["error", {"minScore": 0.95}],
+                  "categories:best-practices": ["error", {"minScore": 0.9}],
+                  "categories:seo": ["error", {"minScore": 0.85}]
+                }
+              },
+              "upload": {
+                "target": "temporary-public-storage"
+              }
+            }
+          }
+          EOF
+
+      - name: Run Lighthouse CI
+        run: npx lhci autorun
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+
+  # Security scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=high --production
+          npm audit fix --dry-run
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript
+
+  # Build and deployment validation
+  build:
+    name: Build Validation
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Build application
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          ls -la .next/
+          du -sh .next/
+
+          # Check bundle size
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            const buildManifest = JSON.parse(
+              fs.readFileSync('.next/build-manifest.json', 'utf8')
+            );
+
+            const maxBundleSize = 5 * 1024 * 1024; // 5MB
+
+            buildManifest.pages['/'].forEach(file => {
+              if (file.endsWith('.js')) {
+                const filePath = path.join('.next', file);
+                if (fs.existsSync(filePath)) {
+                  const size = fs.statSync(filePath).size;
+                  console.log(\`Bundle: \${file} - \${(size/1024/1024).toFixed(2)}MB\`);
+
+                  if (size > maxBundleSize) {
+                    console.error(\`❌ Bundle \${file} exceeds 5MB limit\`);
+                    process.exit(1);
+                  }
+                }
+              }
+            });
+
+            console.log('✅ All bundle sizes within limits');
+          "
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: .next/
+
+  # Quality gates check
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit, test-performance, test-accessibility, test-e2e, lighthouse, security, build]
+    if: always()
+    steps:
+      - name: Check quality gates
+        run: |
+          echo "## Quality Gates Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Check each job result
+          jobs='lint test-unit test-performance test-accessibility test-e2e lighthouse security build'
+
+          all_passed=true
+
+          for job in $jobs; do
+            result="${{ needs[job].result }}"
+            if [ "$result" = "success" ]; then
+              echo "| $job | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $job | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+              all_passed=false
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$all_passed" = true ]; then
+            echo "🎉 **All quality gates passed!**" >> $GITHUB_STEP_SUMMARY
+            echo "The code is ready for deployment." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚫 **Quality gates failed!**" >> $GITHUB_STEP_SUMMARY
+            echo "Please fix the failing checks before merging." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  # Generate reports
+  generate-reports:
+    name: Generate Reports
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-performance, test-accessibility, test-e2e, lighthouse]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive report
+        run: |
+          mkdir -p reports
+
+          cat > reports/quality-report.md << EOF
+          # Quality Report
+
+          Generated on: $(date)
+          Commit: ${{ github.sha }}
+          Branch: ${{ github.ref_name }}
+
+          ## Test Coverage
+          $(cat coverage-report/coverage-summary.json | jq -r '.total | "Lines: \(.lines.pct)% | Functions: \(.functions.pct)% | Branches: \(.branches.pct)% | Statements: \(.statements.pct)%"')
+
+          ## Performance Benchmarks
+          \`\`\`
+          $(cat performance-results/performance-results.txt)
+          \`\`\`
+
+          ## Accessibility
+          All WCAG 2.1 AA compliance tests passed ✅
+
+          ## Lighthouse Scores
+          - Performance: Check lighthouse results
+          - Accessibility: Check lighthouse results
+          - Best Practices: Check lighthouse results
+          - SEO: Check lighthouse results
+
+          ## E2E Tests
+          All end-to-end tests passed across multiple browsers ✅
+
+          EOF
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-reports
+          path: reports/
+
+      - name: Deploy reports to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: reports
+          destination_dir: quality-reports

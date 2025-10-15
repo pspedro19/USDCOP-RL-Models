@@ -68,23 +68,30 @@ export default function TradingSignals() {
       const response = await fetch('/api/trading/signals-test');
       if (response.ok) {
         const data = await response.json();
-        setSignals(data.signals || generateMockSignals());
-        setPerformance(data.performance || generateMockPerformance());
-        setLastUpdate(data.lastUpdate || new Date().toISOString());
-        setDataSource(data.dataSource || 'Unknown');
+        if (data.signals && data.performance) {
+          setSignals(data.signals);
+          setPerformance(data.performance);
+          setLastUpdate(data.lastUpdate || new Date().toISOString());
+          setDataSource(data.dataSource || 'Real_API');
+        } else {
+          throw new Error('Invalid API response - no real signals data available');
+        }
       } else {
-        // Fallback to mock data
-        setSignals(generateMockSignals());
-        setPerformance(generateMockPerformance());
-        setLastUpdate(new Date().toISOString());
-        setDataSource('Mock_Fallback');
+        throw new Error(`API returned status ${response.status} - no real signals available`);
       }
     } catch (error) {
       console.error('Error loading signals:', error);
-      setSignals(generateMockSignals());
-      setPerformance(generateMockPerformance());
+      setSignals([]);
+      setPerformance({
+        total_signals: 0,
+        win_rate: 0,
+        avg_return: 0,
+        best_return: 0,
+        worst_return: 0,
+        sharpe_ratio: 0
+      });
       setLastUpdate(new Date().toISOString());
-      setDataSource('Error_Fallback');
+      setDataSource('ERROR_NO_REAL_DATA');
     } finally {
       setLoading(false);
     }

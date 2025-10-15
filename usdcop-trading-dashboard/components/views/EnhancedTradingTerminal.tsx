@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  TrendingUp, TrendingDown, Activity, Clock, Target, Zap, 
+  TrendingUp, TrendingDown, Activity, Clock, Target, Zap,
   BarChart3, AlertTriangle, Play, Pause, RotateCcw, Download,
   Signal, Database, Globe, Layers, Eye, EyeOff
 } from 'lucide-react';
+import RealDataTradingChart from '../charts/RealDataTradingChart';
+import RealTimePriceDisplay from '../realtime/RealTimePriceDisplay';
 
 // KPI Mock Data Generator
 const generateKPIData = () => ({
@@ -45,7 +47,7 @@ const generateKPIData = () => ({
 const EnhancedTradingTerminal: React.FC = () => {
   const [kpiData, setKpiData] = useState(generateKPIData());
   const [isReplaying, setIsReplaying] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
 
   // Update data every 5 seconds
   useEffect(() => {
@@ -81,12 +83,6 @@ const EnhancedTradingTerminal: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`p-2 rounded-lg transition-all ${showAdvanced ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-800/50 text-slate-400 hover:text-white'}`}
-          >
-            {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
           
           <button
             onClick={() => setIsReplaying(!isReplaying)}
@@ -276,28 +272,29 @@ const EnhancedTradingTerminal: React.FC = () => {
           </div>
         </div>
 
-        {/* Advanced View */}
-        <AnimatePresence>
-          {showAdvanced && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30"
-            >
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-orange-400" />
-                Vista Avanzada
-              </h3>
-              
-              <div className="text-center text-slate-400 py-8">
-                <BarChart3 className="w-16 h-16 mx-auto mb-4 text-slate-600" />
-                <p>Métricas avanzadas, gráficos detallados y análisis en tiempo real</p>
-                <p className="text-sm mt-2">Chart integrado, order book, y controles de replay</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Real-Time Price Display */}
+        <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-orange-400" />
+            Precio USD/COP en Tiempo Real
+          </h3>
+          <RealTimePriceDisplay symbol="USDCOP" />
+        </div>
+
+        {/* Real Trading Chart - SIEMPRE VISIBLE */}
+        <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-orange-400" />
+            Gráfico USD/COP - Datos Históricos Reales (92,936 registros)
+          </h3>
+
+          <RealDataTradingChart
+            symbol="USDCOP"
+            timeframe="5m"
+            height={500}
+            className="w-full"
+          />
+        </div>
       </div>
     </div>
   );

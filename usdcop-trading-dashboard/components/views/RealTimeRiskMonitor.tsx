@@ -221,20 +221,37 @@ export default function RealTimeRiskMonitor() {
 
   const updateRiskMetrics = useCallback(async () => {
     try {
+      // Check if risk engine is available
+      if (!realTimeRiskEngine) {
+        console.warn('RealTimeRiskEngine not available');
+        setIsConnected(false);
+        return;
+      }
+
       // Simulate real-time data update
       const positions = mockPositions();
-      
-      // Update positions in risk engine
-      positions.forEach(position => {
-        realTimeRiskEngine.updatePosition(position);
-      });
-      
-      // Get updated metrics
-      const metrics = realTimeRiskEngine.getRiskMetrics();
+
+      // Update positions in risk engine with error handling
+      if (typeof realTimeRiskEngine.updatePosition === 'function') {
+        positions.forEach(position => {
+          try {
+            realTimeRiskEngine.updatePosition(position);
+          } catch (positionError) {
+            console.error('Error updating position:', position.symbol, positionError);
+          }
+        });
+      }
+
+      // Get updated metrics with error handling
+      let metrics = null;
+      if (typeof realTimeRiskEngine.getRiskMetrics === 'function') {
+        metrics = realTimeRiskEngine.getRiskMetrics();
+      }
+
       if (metrics) {
         setRiskMetrics(metrics);
         metricsRef.current = metrics;
-        
+
         // Update portfolio history
         setPortfolioHistory(prev => {
           const newSnapshot: PortfolioSnapshot = {
@@ -250,26 +267,36 @@ export default function RealTimeRiskMonitor() {
               'Commodities': 300000
             }
           };
-          
+
           // Keep last 100 snapshots
           const updated = [...prev, newSnapshot];
           return updated.slice(-100);
         });
-        
+
         // Update risk heatmap
         setRiskHeatmap(generateRiskHeatmap(metrics));
-        
-        // Update alerts count
-        const alerts = realTimeRiskEngine.getAlerts(true); // unacknowledged only
-        setAlertsCount(alerts.length);
+
+        // Update alerts count with error handling
+        try {
+          if (typeof realTimeRiskEngine.getAlerts === 'function') {
+            const alerts = realTimeRiskEngine.getAlerts(true); // unacknowledged only
+            setAlertsCount(alerts.length);
+          }
+        } catch (alertsError) {
+          console.error('Error getting alerts:', alertsError);
+          setAlertsCount(0);
+        }
+      } else {
+        console.warn('No risk metrics available from engine');
+        setIsConnected(false);
       }
-      
+
       // Update market conditions
       setMarketConditions(generateMarketConditions());
-      
+
       setLastUpdate(new Date());
       setIsConnected(true);
-      
+
     } catch (error) {
       console.error('Failed to update risk metrics:', error);
       setIsConnected(false);
@@ -305,11 +332,29 @@ export default function RealTimeRiskMonitor() {
       setRiskMetrics(metrics);
       setLastUpdate(new Date());
     };
-    
-    realTimeRiskEngine.subscribeToUpdates(handleRiskUpdate);
-    
+
+    try {
+      // Attempt to subscribe to updates with error handling
+      if (realTimeRiskEngine && typeof realTimeRiskEngine.subscribeToUpdates === 'function') {
+        realTimeRiskEngine.subscribeToUpdates(handleRiskUpdate);
+        setIsConnected(true);
+      } else {
+        console.warn('RealTimeRiskEngine not available or subscribeToUpdates method missing');
+        setIsConnected(false);
+      }
+    } catch (error) {
+      console.error('Failed to subscribe to risk engine updates:', error);
+      setIsConnected(false);
+    }
+
     return () => {
-      realTimeRiskEngine.unsubscribeFromUpdates(handleRiskUpdate);
+      try {
+        if (realTimeRiskEngine && typeof realTimeRiskEngine.unsubscribeFromUpdates === 'function') {
+          realTimeRiskEngine.unsubscribeFromUpdates(handleRiskUpdate);
+        }
+      } catch (error) {
+        console.error('Error unsubscribing from risk engine updates:', error);
+      }
     };
   }, []);
 

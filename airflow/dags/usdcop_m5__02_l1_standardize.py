@@ -68,6 +68,14 @@ def _calendar_version(holiday_dates):
     h = hashlib.sha256(",".join(sorted(map(str, holiday_dates))).encode()).hexdigest()[:12]
     return f"US-CO-CUSTOM@{h}"
 
+# Import timezone handler
+try:
+    from utils.datetime_handler import UnifiedDatetimeHandler, timezone_safe
+    UNIFIED_DATETIME = True
+except ImportError:
+    logging.warning("UnifiedDatetimeHandler not available, using basic timezone handling")
+    UNIFIED_DATETIME = False
+
 # Import dynamic configuration
 try:
     from utils.pipeline_config import get_bucket_config
@@ -260,6 +268,7 @@ def load_and_clean_data(**context):
     
     # Handle different column naming conventions from L0
     column_mapping = {
+        'time': 'time_utc',
         'timestamp': 'time_utc',
         'timestamp_utc': 'time_utc',
         'timestamp_cot': 'time_cot',
@@ -511,11 +520,26 @@ def calculate_quality_metrics(**context):
                     'close': float(row['close']) if pd.notna(row['close']) else None
                 })
         
-        # IMPROVEMENT #2: Populate grid_300s_ok / window_premium_ok explicitly
-        # Compute grid check
+        # TIMEZONE FIX: Populate grid_300s_ok / window_premium_ok with proper timezone handling
+        # Compute grid check with timezone-aware time differences
         if 'time_utc' in df_day.columns and len(df_day) > 1:
             df_day_sorted = df_day.sort_values('t_in_episode')
-            time_diffs = df_day_sorted['time_utc'].diff().dropna().dt.total_seconds()
+
+            # TIMEZONE FIX: Ensure time_utc is timezone-aware before diff calculation
+            if UNIFIED_DATETIME:
+                df_day_sorted['time_utc'] = UnifiedDatetimeHandler.ensure_timezone_aware(
+                    df_day_sorted['time_utc'], 'UTC'
+                )
+                time_diffs = UnifiedDatetimeHandler.calculate_time_differences(
+                    df_day_sorted['time_utc'], expected_interval_minutes=5
+                ) * 60  # Convert to seconds
+            else:
+                # Fallback timezone handling
+                time_col = pd.to_datetime(df_day_sorted['time_utc'])
+                if time_col.dt.tz is None:
+                    time_col = time_col.dt.tz_localize('UTC')
+                time_diffs = time_col.diff().dropna().dt.total_seconds()
+
             grid_300s_ok = bool(time_diffs.eq(300).all())
         else:
             grid_300s_ok = True  # Default if can't compute

@@ -1,0 +1,7 @@
+===========================================================
+USDCOP Trading System - Comprehensive Network Analysis
+===========================================================
+[0;32m✓ Environment variables loaded from .env[0m
+
+[0;36m=== 1. Docker Network Infrastructure Test ===[0m
+[0;32m✓ PASS:[0m Docker network exists

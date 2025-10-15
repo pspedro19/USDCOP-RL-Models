@@ -114,7 +114,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const MotionButton = motion.button;
     
-    const buttonVariants = animated ? {
+    const buttonVariants = animated && motionLibrary?.components?.glassButton ? {
       ...motionLibrary.components.glassButton,
       initial: {
         scale: 1,
@@ -127,7 +127,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {loading && (
           <motion.div
             className="absolute inset-0 flex items-center justify-center"
-            variants={motionLibrary.loading.spinner}
+            variants={motionLibrary?.loading?.spinner || {}}
             animate="animate"
           >
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full" />

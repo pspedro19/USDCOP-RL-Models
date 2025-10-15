@@ -98,10 +98,13 @@ def convert_numpy_to_python(obj):
     else:
         return obj
 
-# Import reward_sentinel para métricas seguras y wrapper de entorno
+# Import dependency handler first
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'utils'))
+from dependency_handler import get_torch_handler, get_stable_baselines3_handler, get_sklearn_handler
+
+# Import reward_sentinel para métricas seguras y wrapper de entorno
 from reward_sentinel import (
-    SentinelTradingEnv, 
+    SentinelTradingEnv,
     CostCurriculumCallback,
     enhanced_sortino
 )
@@ -594,8 +597,14 @@ def train_ppo_production(seed: int, **context):
     ])
     
     import mlflow
-    import torch
-    import torch.nn as nn
+
+    # Use dependency handlers for safe imports
+    torch_handler = get_torch_handler()
+    torch = torch_handler.require_module("PyTorch is required for training")
+    torch_nn = torch.nn
+
+    sb3_handler = get_stable_baselines3_handler()
+    sb3 = sb3_handler.require_module("Stable Baselines3 is required for training")
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
     from stable_baselines3.common.monitor import Monitor  # CRITICAL: Import Monitor
@@ -624,7 +633,10 @@ def train_ppo_production(seed: int, **context):
     
     # STABILITY: Set reproducibility guards
     import random
-    import torch
+
+    # Use dependency handler for safe torch import
+    torch_handler = get_torch_handler()
+    torch = torch_handler.require_module("PyTorch is required for reproducibility")
     
     # MEJORA: Determinismo extra para máxima reproducibilidad
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -1151,7 +1163,12 @@ def export_to_onnx(model, observation_space, seed: int, temp_dir: str = "/tmp") 
     """Export model to ONNX format with proper wrapper"""
     # MEJORA: Idempotencia completa de dependencias
     _ensure_pkgs(["onnx==1.16.2", "onnxruntime==1.18.1"])
-    import torch, torch.nn as nn, onnx
+
+    # Use dependency handlers for safe imports
+    torch_handler = get_torch_handler()
+    torch = torch_handler.require_module("PyTorch is required for ONNX export")
+    nn = torch.nn
+    import onnx
     
     class ActorCriticONNX(nn.Module):
         """MEJORA: Compatible con todas las versiones SB3 sin drift de API"""
@@ -1327,8 +1344,11 @@ def train_ppo_lstm(seed: int, hp_override: dict = None, **context):
     ])
     
     import mlflow
-    import torch
-    import torch.nn as nn
+
+    # Use dependency handlers for safe imports
+    torch_handler = get_torch_handler()
+    torch = torch_handler.require_module("PyTorch is required for LSTM training")
+    nn = torch.nn
     from sb3_contrib import RecurrentPPO
     from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
     from stable_baselines3.common.monitor import Monitor
@@ -1654,7 +1674,10 @@ def train_qrdqn(seed: int, hp_override: dict = None, **context):
     ])
     
     import mlflow
-    import torch
+
+    # Use dependency handlers for safe imports
+    torch_handler = get_torch_handler()
+    torch = torch_handler.require_module("PyTorch is required for QR-DQN training")
     from sb3_contrib import QRDQN
     from stable_baselines3.common.vec_env import DummyVecEnv
     from stable_baselines3.common.monitor import Monitor
@@ -2151,7 +2174,10 @@ def evaluate_production_gates(**context):
             # FIX #4: Set seeds for reproducibility before creating environments
             import random
             import numpy as np
-            import torch
+
+            # Use dependency handler for safe torch import
+            torch_handler = get_torch_handler()
+            torch = torch_handler.require_module("PyTorch is required for seed setting")
             random.seed(seed)
             np.random.seed(seed)
             torch.manual_seed(seed)

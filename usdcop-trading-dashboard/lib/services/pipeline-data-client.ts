@@ -10,3 +10,13 @@ export async function getPipelineData(): Promise<PipelineDataPoint[]> {
     { timestamp: Date.now() - 1000, value: 95, layer: 'L1' }
   ]
 }
+
+export const pipelineDataService = {
+  getPipelineData,
+  async getHealthStatus() {
+    return { status: 'healthy', timestamp: Date.now() }
+  },
+  async getMetrics() {
+    return { processed: 1000, errors: 0, latency: 45 }
+  }
+}

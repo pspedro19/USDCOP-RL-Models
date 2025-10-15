@@ -13,3 +13,26 @@ export function getNextTradingSession(): Date {
   }
   return next
 }
+
+export function getTradingSessionInfo() {
+  const isOpen = isTradingHours()
+  const nextSession = getNextTradingSession()
+  const timeToOpen = nextSession.getTime() - Date.now()
+
+  return {
+    isOpen,
+    nextSession,
+    timeToOpen,
+    status: isOpen ? 'OPEN' : 'CLOSED'
+  }
+}
+
+export function formatTimeToOpen(timeMs: number): string {
+  const hours = Math.floor(timeMs / (1000 * 60 * 60))
+  const minutes = Math.floor((timeMs % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  }
+  return `${minutes}m`
+}

@@ -1,0 +1,192 @@
+apiVersion: 1
+
+# Grafana Dashboard Provisioning Configuration
+# This file configures automatic dashboard provisioning for the USD/COP Trading System
+
+providers:
+  # USD/COP Trading System Dashboards
+  - name: 'usdcop-trading-dashboards'
+    orgId: 1
+    folder: 'USD/COP Trading System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/usdcop
+
+# Dashboard files included in this provisioning
+dashboards:
+  - uid: l0-pipeline
+    title: "L0 Pipeline Monitoring"
+    file: "l0-pipeline-monitoring.json"
+    description: "Real-time monitoring of L0 raw data pipeline including status, backup health, ready signals, and API usage"
+    tags:
+      - "usdcop"
+      - "pipeline"
+      - "l0"
+      - "monitoring"
+    refresh: "30s"
+
+  - uid: pipeline-health
+    title: "Pipeline Health Overview"
+    file: "pipeline-health-overview.json"
+    description: "Comprehensive overview of all pipeline components (L0-L5) health, performance, and resource utilization"
+    tags:
+      - "usdcop"
+      - "pipeline"
+      - "health"
+      - "overview"
+    refresh: "30s"
+
+  - uid: alerts-dashboard
+    title: "Trading System Alerts"
+    file: "alerting-dashboard.json"
+    description: "Alert monitoring, notification channels, response times, and SLA tracking for the trading system"
+    tags:
+      - "usdcop"
+      - "alerts"
+      - "monitoring"
+      - "sla"
+    refresh: "1m"
+
+# Alert rules for critical trading system components
+alert_rules:
+  - name: "L0 Pipeline Critical"
+    rules:
+      - alert: "L0PipelineDown"
+        expr: "l0_pipeline_status == 0"
+        for: "2m"
+        labels:
+          severity: "critical"
+          component: "l0-pipeline"
+        annotations:
+          summary: "L0 Pipeline has failed"
+          description: "The L0 data pipeline has been in failed state for more than 2 minutes"
+
+      - alert: "L0DataGap"
+        expr: "increase(l0_data_gaps_total[5m]) > 0"
+        for: "1m"
+        labels:
+          severity: "critical"
+          component: "l0-pipeline"
+        annotations:
+          summary: "Data gap detected in L0 pipeline"
+          description: "Gap in L0 data detected - potential data loss"
+
+      - alert: "BackupIntegrityFailed"
+        expr: "backup_integrity_check == 0"
+        for: "1m"
+        labels:
+          severity: "critical"
+          component: "backup"
+        annotations:
+          summary: "Backup integrity check failed"
+          description: "Backup integrity verification has failed"
+
+      - alert: "APIRateLimitCritical"
+        expr: "api_usage_percentage > 95"
+        for: "5m"
+        labels:
+          severity: "critical"
+          component: "api"
+        annotations:
+          summary: "API rate limit critically high"
+          description: "API usage is above 95% of rate limit"
+
+      - alert: "WebSocketDown"
+        expr: "websocket_connected_clients == 0"
+        for: "3m"
+        labels:
+          severity: "critical"
+          component: "websocket"
+        annotations:
+          summary: "WebSocket has no connected clients"
+          description: "WebSocket server has no active connections for more than 3 minutes"
+
+  - name: "L0 Pipeline Warning"
+    rules:
+      - alert: "L0HighLatency"
+        expr: "l0_processing_latency_seconds > 30"
+        for: "5m"
+        labels:
+          severity: "warning"
+          component: "l0-pipeline"
+        annotations:
+          summary: "High latency in L0 pipeline"
+          description: "L0 pipeline processing latency is above 30 seconds"
+
+      - alert: "APIRateLimitWarning"
+        expr: "api_usage_percentage > 80"
+        for: "10m"
+        labels:
+          severity: "warning"
+          component: "api"
+        annotations:
+          summary: "API rate limit approaching threshold"
+          description: "API usage is above 80% of rate limit"
+
+      - alert: "BackupGapsDetected"
+        expr: "backup_gaps_detected > 0"
+        for: "1m"
+        labels:
+          severity: "warning"
+          component: "backup"
+        annotations:
+          summary: "Gaps detected in backup data"
+          description: "{{ $value }} gaps detected in backup data"
+
+# Notification channels configuration
+notification_channels:
+  - name: "critical-alerts"
+    type: "email"
+    settings:
+      addresses: ["trading-team@company.com", "ops-team@company.com"]
+      subject: "🚨 CRITICAL: USD/COP Trading System Alert"
+
+  - name: "warning-alerts"
+    type: "slack"
+    settings:
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#trading-alerts"
+      username: "Grafana"
+
+  - name: "ops-webhook"
+    type: "webhook"
+    settings:
+      url: "${WEBHOOK_URL}"
+      http_method: "POST"
+
+# Data source configuration references
+datasources:
+  - prometheus:
+      url: "http://prometheus:9090"
+      access: "proxy"
+      isDefault: true
+  - loki:
+      url: "http://loki:3100"
+      access: "proxy"
+
+# Default dashboard settings
+defaults:
+  time_range:
+    from: "now-6h"
+    to: "now"
+  refresh_intervals: ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+  timezone: "America/Bogota"
+
+# Folder structure for organizing dashboards
+folders:
+  - name: "USD/COP Trading System"
+    dashboards:
+      - "L0 Pipeline Monitoring"
+      - "Pipeline Health Overview"
+      - "Trading System Alerts"
+  - name: "Infrastructure"
+    dashboards:
+      - "System Resources"
+      - "Network Monitoring"
+  - name: "Business Metrics"
+    dashboards:
+      - "Trading Performance"
+      - "Risk Metrics"

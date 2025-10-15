@@ -5,6 +5,8 @@ import React from 'react';
 // Import all view components
 import TradingTerminalView from './views/TradingTerminalView';
 import EnhancedTradingTerminal from './views/EnhancedTradingTerminal';
+import ProfessionalTradingTerminal from './views/ProfessionalTradingTerminal';
+import ProfessionalTradingTerminalSimplified from './views/ProfessionalTradingTerminalSimplified';
 import RealTimeChart from './views/RealTimeChart';
 import TradingSignals from './views/TradingSignals';
 import BacktestResults from './views/BacktestResults';
@@ -22,50 +24,27 @@ import L5ModelDashboard from './views/L5ModelDashboard';
 import L6BacktestResults from './views/L6BacktestResults';
 import ExecutiveOverview from './views/ExecutiveOverview';
 import LiveTradingTerminal from './views/LiveTradingTerminal';
+import UltimateVisualDashboard from './views/UltimateVisualDashboard';
 import AuditCompliance from './views/AuditCompliance';
+import UnifiedTradingTerminal from './views/UnifiedTradingTerminal';
 
 interface ViewRendererProps {
   activeView: string;
 }
 
 const ViewRenderer: React.FC<ViewRendererProps> = ({ activeView }) => {
-  // Map of view IDs to components
+  // Map of view IDs to components - SOLO 2 VISTAS
   const viewComponents: Record<string, React.ComponentType> = {
-    // TRADING MODULE
-    'terminal': EnhancedTradingTerminal,
-    'terminal-advanced': TradingTerminalView,
-    'live-terminal': LiveTradingTerminal,
-    'realtime': RealTimeChart,
-    'signals': TradingSignals,
-    'backtest': BacktestResults,
-    'ml-analytics': RLModelHealth,
-    
-    // RISK MANAGEMENT
-    'portfolio': RiskManagement,
-    'realtime-risk': RealTimeRiskMonitor,
-    'exposure': PortfolioExposureAnalysis,
-    'alerts': RiskAlertsCenter,
-    
-    // DATA PIPELINE AVANZADO
-    'l0': L0RawDataDashboard,
-    'l1': L1FeatureStats,
-    'l2': DataPipelineQuality,
-    'l3': L3Correlations,
-    'l4': L4RLReadyData,
-    'l5': L5ModelDashboard,
-    'l6': L6BacktestResults,
-    
-    // EXECUTIVE & COMPLIANCE
-    'executive': ExecutiveOverview,
-    'audit': AuditCompliance,
+    'dashboard-home': UnifiedTradingTerminal,
+    'professional-terminal': UnifiedTradingTerminal,
   };
 
   // Get the component for the active view
   const ViewComponent = viewComponents[activeView];
 
-  // If no component found, show default enhanced trading terminal
+  // If no component found, show default UnifiedTradingTerminal
   if (!ViewComponent) {
-    return <EnhancedTradingTerminal />;
+    return <UnifiedTradingTerminal />;
   }
 
   return <ViewComponent />;

@@ -31,31 +31,9 @@ import {
 } from 'lucide-react';
 
 const views = [
-  // Trading views
-  { id: 'enhanced', name: 'Trading Terminal', icon: Activity, category: 'Trading', description: 'Advanced trading dashboard with replay controls', priority: 'high' },
-  { id: 'realtime', name: 'Real-Time Chart', icon: LineChart, category: 'Trading', description: 'Live market data visualization', priority: 'high' },
-  { id: 'signals', name: 'Trading Signals', icon: Signal, category: 'Trading', description: 'ML-powered trading signals', priority: 'medium' },
-  { id: 'backtest', name: 'Backtest Results', icon: TrendingUp, category: 'Trading', description: 'Strategy backtesting analysis', priority: 'high' },
-  { id: 'ml-analytics', name: 'ML Analytics', icon: Brain, category: 'Trading', description: 'ML model performance dashboard', priority: 'high' },
-  
-  // Risk Management views
-  { id: 'risk', name: 'Risk Management', icon: Shield, category: 'Risk', description: 'Portfolio risk monitoring & analytics', priority: 'high' },
-  { id: 'realtime-risk', name: 'Real-Time Risk Monitor', icon: Gauge, category: 'Risk', description: 'Live risk metrics dashboard', priority: 'high' },
-  { id: 'exposure-analysis', name: 'Exposure Analysis', icon: Target, category: 'Risk', description: 'Multi-dimensional exposure breakdown', priority: 'high' },
-  { id: 'risk-alerts', name: 'Risk Alerts Center', icon: Bell, category: 'Risk', description: 'Risk alert management & notifications', priority: 'high' },
-  
-  // Pipeline views
-  { id: 'l0-raw', name: 'L0 Raw Data', icon: Database, category: 'Pipeline', description: 'Raw market data ingestion', priority: 'medium' },
-  { id: 'l1-features', name: 'L1 Feature Stats', icon: BarChart3, category: 'Pipeline', description: 'Technical indicators', priority: 'medium' },
-  { id: 'l3-correlation', name: 'L3 Correlations', icon: GitBranch, category: 'Pipeline', description: 'Feature correlation analysis', priority: 'low' },
-  { id: 'l4-rl-ready', name: 'L4 RL Data', icon: Cpu, category: 'Pipeline', description: 'RL training data', priority: 'low' },
-  { id: 'l5-serving', name: 'L5 Model Serving', icon: Target, category: 'Pipeline', description: 'Model predictions', priority: 'high' },
-  { id: 'l6-backtest', name: 'L6 Backtests', icon: PieChart, category: 'Pipeline', description: 'Comprehensive backtests', priority: 'medium' },
-  
-  // System views
-  { id: 'pipeline-health', name: 'Pipeline Health', icon: Zap, category: 'System', description: 'Pipeline monitoring', priority: 'high' },
-  { id: 'api-usage', name: 'API Usage', icon: Key, category: 'System', description: 'API rate monitoring', priority: 'medium' },
-  { id: 'pipeline-monitor', name: 'Legacy Pipeline', icon: Database, category: 'System', description: 'Legacy tools', priority: 'low' },
+  // Trading views - Solo 2 vistas principales
+  { id: 'dashboard-home', name: 'Dashboard Home', icon: Activity, category: 'Trading', description: 'Professional USDCOP trading chart with full features', priority: 'high' },
+  { id: 'professional-terminal', name: 'Professional Terminal', icon: LineChart, category: 'Trading', description: 'Advanced professional trading terminal', priority: 'high' },
 ];
 
 const categoryConfig = {

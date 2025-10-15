@@ -43,7 +43,9 @@ env/
 *.ipynb
 
 # Data and Models
-data/
+data/raw/
+data/processed/
+!data/backups/
 !data/.gitkeep
 models/
 !models/.gitkeep

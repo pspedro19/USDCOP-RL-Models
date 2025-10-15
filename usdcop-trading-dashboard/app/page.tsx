@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ViewRenderer from '../components/ViewRenderer';
-import { 
+import EnhancedTradingDashboard from '../components/charts/EnhancedTradingDashboard';
+import {
   TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Shield, Settings, LogOut,
   Wifi, WifiOff, Clock, Target, AlertTriangle, Play, Pause, Square, Maximize2,
   Download, Share2, Camera, Volume2, Zap, Signal, Database, RefreshCw, MousePointer,
   Menu, X, ChevronLeft, ChevronRight, Home, LineChart, PieChart, Map, Users,
-  Bell, Search, Filter, Globe, Layers, GitBranch, Eye, EyeOff, Lock, Key
+  Bell, Search, Filter, Globe, Layers, GitBranch, Eye, EyeOff, Lock, Key, Sparkles
 } from 'lucide-react';
 
 // Real-time market data simulation
@@ -56,58 +57,16 @@ const useTradingStatus = () => {
   return status;
 };
 
-// Reorganized navigation items (max 5 groups, hierarchical)
+// Solo 2 vistas principales de trading
 const navigationItems = [
   {
-    section: 'DASHBOARD',
-    color: 'text-white',
-    priority: 'always-visible',
-    items: [
-      { id: 'terminal', icon: Home, label: 'Dashboard Home', active: true, status: 'healthy', hotkey: 'Alt+1' }
-    ]
-  },
-  {
     section: 'TRADING',
-    color: 'text-cyan-400', 
+    color: 'text-cyan-400',
     priority: 'critical',
     collapsed: false,
     items: [
-      { id: 'live-terminal', icon: Activity, label: 'Terminal', status: 'healthy', badge: null, hotkey: 'Alt+2', kpi: 'P&L: +$4.2K' },
-      { id: 'signals', icon: Zap, label: 'Signals', status: 'processing', badge: 3, hotkey: 'Alt+3', kpi: '3 señales activas' },
-      { id: 'backtest', icon: GitBranch, label: 'Backtest', status: 'healthy', badge: null, hotkey: 'Alt+4', kpi: 'ROI: 12.5%' }
-    ]
-  },
-  {
-    section: 'RISK',
-    color: 'text-red-400',
-    priority: 'critical', 
-    collapsed: false,
-    items: [
-      { id: 'realtime-risk', icon: AlertTriangle, label: 'Monitor', status: 'warning', badge: 2, kpi: 'VaR: $145K | DD: -2.3%' },
-      { id: 'alerts', icon: Bell, label: 'Alerts', status: 'critical', badge: 5, kpi: '5 alertas críticas' }
-    ]
-  },
-  {
-    section: 'PIPELINE',
-    color: 'text-purple-400',
-    priority: 'secondary',
-    collapsed: true,
-    items: [
-      { id: 'l0', icon: Database, label: 'L0 Raw Data', status: 'healthy', badge: null },
-      { id: 'l1', icon: BarChart3, label: 'L1 Features', status: 'healthy', badge: null },
-      { id: 'l2', icon: Shield, label: 'L2 Quality', status: 'warning', badge: 1 },
-      { id: 'l3', icon: Users, label: 'L3 Correlations', status: 'healthy', badge: null },
-      { id: 'l4', icon: Target, label: 'L4 RL Ready', status: 'healthy', badge: null },
-      { id: 'l5', icon: Layers, label: 'L5 Serving', status: 'healthy', badge: null }
-    ]
-  },
-  {
-    section: 'EXECUTIVE',
-    color: 'text-green-400',
-    priority: 'secondary',
-    collapsed: false,
-    items: [
-      { id: 'executive', icon: Globe, label: 'Overview', status: 'healthy', badge: null, kpi: 'Monthly: +8.7%' }
+      { id: 'dashboard-home', icon: Home, label: 'Dashboard Home', active: true, status: 'healthy', hotkey: 'Alt+1', kpi: 'Gráfica Profesional USDCOP' },
+      { id: 'professional-terminal', icon: Activity, label: 'Professional Terminal', status: 'healthy', badge: 'PRO', hotkey: 'Alt+2', kpi: 'Terminal Avanzado' }
     ]
   }
 ];
@@ -118,7 +77,7 @@ export default function ProfessionalTradingDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [activeView, setActiveView] = useState('terminal');
+  const [activeView, setActiveView] = useState('dashboard-home');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
@@ -585,11 +544,11 @@ export default function ProfessionalTradingDashboard() {
             </div>
           </div>
 
-          {/* Main Content Area - Dynamic Views */}
+          {/* Main Content Area - Enhanced Trading Dashboard */}
           <div className="flex-1 relative bg-slate-950/50">
-            {/* View Container */}
-            <div className="absolute inset-4 bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/30 overflow-y-auto overflow-x-hidden">
-              {/* Dynamic View Content */}
+            {/* Enhanced Dashboard Container */}
+            <div className="absolute inset-4 overflow-y-auto overflow-x-hidden">
+              {/* ViewRenderer with Spectacular Components */}
               <ViewRenderer activeView={activeView} />
             </div>
           </div>

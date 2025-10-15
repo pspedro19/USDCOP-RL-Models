@@ -1,7 +1,1 @@
-"""
-Utils module for USDCOP Trading Pipeline
-"""
-
-from .detailed_logger import DetailedLogger
-
-__all__ = ['DetailedLogger']
+# Utils package for USDCOP trading system

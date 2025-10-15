@@ -20,8 +20,25 @@ wait_for_db() {
 import psycopg2
 import os
 import time
+from urllib.parse import urlparse
 try:
-    conn = psycopg2.connect(os.environ['AIRFLOW__DATABASE__SQL_ALCHEMY_CONN'].replace('postgresql://', 'postgresql://'))
+    # Parse the connection URL properly
+    url = os.environ['AIRFLOW__DATABASE__SQL_ALCHEMY_CONN']
+    # Remove the postgresql+psycopg2:// prefix for psycopg2
+    if url.startswith('postgresql+psycopg2://'):
+        url = url.replace('postgresql+psycopg2://', 'postgresql://')
+
+    # Parse the URL
+    parsed = urlparse(url)
+
+    # Connect using individual parameters
+    conn = psycopg2.connect(
+        host=parsed.hostname,
+        port=parsed.port or 5432,
+        database=parsed.path.lstrip('/'),
+        user=parsed.username,
+        password=parsed.password
+    )
     conn.close()
     print('Database connection successful')
 except Exception as e:

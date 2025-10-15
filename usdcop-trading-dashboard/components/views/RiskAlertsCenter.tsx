@@ -253,14 +253,17 @@ export default function RiskAlertsCenter() {
     
     const stats = alerts.reduce((acc, alert) => {
       acc.total++;
-      acc[alert.severity as keyof AlertStats]++;
-      
+      const severity = alert.severity || 'low';
+      if (severity in acc) {
+        acc[severity as keyof AlertStats]++;
+      }
+
       if (!alert.acknowledged) {
         acc.unacknowledged++;
       } else if (alert.timestamp >= today) {
         acc.acknowledgedToday++;
       }
-      
+
       return acc;
     }, {
       total: 0,
@@ -314,7 +317,7 @@ export default function RiskAlertsCenter() {
     
     // Apply severity filter
     if (filter.severity.length < 4) {
-      filtered = filtered.filter(alert => filter.severity.includes(alert.severity));
+      filtered = filtered.filter(alert => alert.severity && filter.severity.includes(alert.severity));
     }
     
     // Apply acknowledgment filter
@@ -353,7 +356,9 @@ export default function RiskAlertsCenter() {
         return a.acknowledged ? 1 : -1;
       }
       if (a.severity !== b.severity) {
-        return severityOrder[a.severity] - severityOrder[b.severity];
+        const aSeverity = a.severity || 'low';
+        const bSeverity = b.severity || 'low';
+        return (severityOrder[aSeverity] || 3) - (severityOrder[bSeverity] || 3);
       }
       return b.timestamp.getTime() - a.timestamp.getTime();
     });
@@ -400,6 +405,10 @@ export default function RiskAlertsCenter() {
   }, [alerts]);
 
   const getSeverityIcon = (severity: string) => {
+    if (!severity) {
+      return <Bell className="h-4 w-4 text-slate-500" />;
+    }
+
     switch (severity) {
       case 'critical':
         return <AlertOctagon className="h-4 w-4 text-red-500" />;
@@ -415,6 +424,10 @@ export default function RiskAlertsCenter() {
   };
 
   const getSeverityColor = (severity: string) => {
+    if (!severity) {
+      return 'border-slate-500 bg-slate-950/30';
+    }
+
     switch (severity) {
       case 'critical':
         return 'border-red-500 bg-red-950/30';
@@ -617,7 +630,7 @@ export default function RiskAlertsCenter() {
                       : 'bg-slate-800 text-slate-400 border-slate-600'
                   }`}
                 >
-                  {severity.toUpperCase()}
+                  {severity ? severity.toUpperCase() : 'UNKNOWN'}
                 </Button>
               ))}
             </div>
@@ -696,7 +709,7 @@ export default function RiskAlertsCenter() {
                           alert.severity === 'medium' ? 'bg-yellow-950 text-yellow-400' :
                           'bg-blue-950 text-blue-400'
                         }`}>
-                          {alert.severity.toUpperCase()}
+                          {alert.severity ? alert.severity.toUpperCase() : 'UNKNOWN'}
                         </Badge>
                       </div>
                       
@@ -706,7 +719,7 @@ export default function RiskAlertsCenter() {
                           {alert.position && (
                             <div className="text-slate-300">Position: {alert.position}</div>
                           )}
-                          <div className="text-slate-300">Type: {alert.type.replace('_', ' ').toUpperCase()}</div>
+                          <div className="text-slate-300">Type: {alert.type ? alert.type.replace('_', ' ').toUpperCase() : 'N/A'}</div>
                           <div className="text-slate-300">
                             Time: {formatDate(alert.timestamp, 'HH:mm:ss')} 
                             <span className="text-slate-500 ml-2">

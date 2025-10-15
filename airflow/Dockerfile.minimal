@@ -1,0 +1,65 @@
+# Fast Airflow Dockerfile for USDCOP RL Trading System
+# Minimal build for quick startup - focuses on L0 pipeline functionality
+
+FROM apache/airflow:2.8.1-python3.11
+
+# Switch to root for system dependencies (minimal)
+USER root
+
+# Install only essential system dependencies
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to airflow user
+USER airflow
+
+# Upgrade pip
+RUN pip install --upgrade pip setuptools wheel
+
+# Copy minimal requirements
+COPY requirements.minimal.txt /requirements.txt
+
+# Install minimal Python dependencies with shorter timeout
+RUN pip install --no-cache-dir \
+    --timeout 300 \
+    --retries 3 \
+    -r /requirements.txt
+
+# Install additional core dependencies
+RUN pip install --no-cache-dir \
+    psycopg2-binary \
+    redis \
+    boto3 \
+    requests \
+    pydantic \
+    httpx
+
+# Set environment variables for better performance
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
+ENV AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+ENV AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+ENV AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+ENV AIRFLOW__LOGGING__LOGGING_LEVEL=INFO
+
+# Create directories
+USER root
+RUN mkdir -p /opt/airflow/dags /opt/airflow/logs /opt/airflow/plugins \
+    && chown -R airflow:root /opt/airflow
+
+# Copy entrypoint script
+COPY entrypoint.minimal.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown airflow:root /entrypoint.sh
+
+USER airflow
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Health check with shorter intervals
+HEALTHCHECK --interval=10s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1

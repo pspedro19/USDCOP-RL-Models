@@ -55,7 +55,7 @@ export function AnimatedList({
         opacity: 1,
         transition: {
           duration: 0.4,
-          ease: motionLibrary.presets.easing.smooth,
+          ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
         }
       },
       exit: { 
@@ -66,7 +66,7 @@ export function AnimatedList({
       }
     },
 
-    slide: motionLibrary.utils.createSlideAnimation(direction, 20),
+    slide: motionLibrary?.utils?.createSlideAnimation(direction, 20),
 
     scale: {
       initial: { opacity: 0, scale: 0.8 },
@@ -75,7 +75,7 @@ export function AnimatedList({
         scale: 1,
         transition: {
           duration: 0.4,
-          ease: motionLibrary.presets.easing.bounce,
+          ease: motionLibrary?.presets?.easing?.bounce || [0.68, -0.55, 0.265, 1.55],
         }
       },
       exit: {
@@ -101,7 +101,7 @@ export function AnimatedList({
         scale: 1,
         transition: {
           duration: 0.5,
-          ease: motionLibrary.presets.easing.smooth,
+          ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
         }
       },
       exit: {
@@ -111,7 +111,7 @@ export function AnimatedList({
         scale: 0.95,
         transition: {
           duration: 0.3,
-          ease: motionLibrary.presets.easing.professional,
+          ease: motionLibrary?.presets?.easing?.professional || [0.25, 0.46, 0.45, 0.94],
         }
       }
     }
@@ -131,7 +131,7 @@ export function AnimatedList({
           <motion.div
             key={index}
             className="glass-surface-secondary rounded-xl p-6 backdrop-blur-md"
-            variants={motionLibrary.loading.skeleton}
+            variants={motionLibrary?.loading?.skeleton || {}}
             animate="animate"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
@@ -239,7 +239,7 @@ export function AnimatedGrid({
       scale: 1,
       transition: {
         duration: 0.6,
-        ease: motionLibrary.presets.easing.smooth,
+        ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
         delay: index * staggerDelay,
       }
     })
@@ -257,7 +257,7 @@ export function AnimatedGrid({
             transition={{ 
               delay: index * 0.1,
               duration: 0.5,
-              ease: motionLibrary.presets.easing.smooth
+              ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1]
             }}
           >
             <div className="space-y-4">
@@ -294,7 +294,7 @@ export function AnimatedGrid({
             y: -4,
             transition: { 
               duration: 0.2, 
-              ease: motionLibrary.presets.easing.smooth 
+              ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1] 
             }
           }}
           whileTap={{
@@ -357,7 +357,7 @@ export function AnimatedMetricsList({
       scale: 1,
       transition: {
         duration: 0.4,
-        ease: motionLibrary.presets.easing.smooth,
+        ease: motionLibrary?.presets?.easing?.smooth || [0.4, 0, 0.2, 1],
       }
     }
   };

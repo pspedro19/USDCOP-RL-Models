@@ -9,14 +9,18 @@ import pandas as pd
 import logging
 from typing import Optional, Tuple, Dict, Any
 
-# Try importing gymnasium, fallback to creating compatible interface
-try:
-    import gymnasium as gym
+# Use dependency handler for gymnasium
+from .dependency_handler import GYMNASIUM_HANDLER
+
+# Check if gymnasium is available
+HAS_GYMNASIUM = GYMNASIUM_HANDLER.is_available
+
+if HAS_GYMNASIUM:
+    gym = GYMNASIUM_HANDLER.get_module()
     from gymnasium import spaces
-    HAS_GYMNASIUM = True
-except ImportError:
-    # Create minimal gymnasium-compatible interface
-    HAS_GYMNASIUM = False
+else:
+    gym = None
+    # Create minimal gymnasium-compatible interface for fallback
     
     class Env:
         """Minimal Gymnasium Env interface"""

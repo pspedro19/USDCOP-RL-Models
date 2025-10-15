@@ -514,10 +514,6 @@ const OptimizedChart: React.FC<OptimizedChartProps> = memo(({
           </ResponsiveContainer>
         </div>
       )}
-    </div>
-  );
-});
-
     </motion.div>
   );
 });

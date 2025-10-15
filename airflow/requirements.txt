@@ -1,4 +1,4 @@
-# CRITICAL: Only the essential dependencies to fix DAG import errors
+# CRITICAL: Essential dependencies to fix DAG import errors
 scipy>=1.11.0
 gymnasium>=0.29.0
 numpy>=1.24.0,<2.0.0
@@ -7,7 +7,26 @@ pandas>=2.0.0
 # ML frameworks (minimal versions to avoid conflicts)
 torch>=2.0.0
 stable-baselines3>=2.0.0
+scikit-learn>=1.3.0
 
 # Storage and database
 minio>=7.0.0
 psycopg2-binary>=2.9.0
+
+# Additional common dependencies
+requests>=2.28.0
+boto3>=1.26.0
+redis>=4.5.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+httpx>=0.24.0
+
+# Data processing
+pyarrow>=12.0.0
+openpyxl>=3.1.0
+
+# Trading specific (compatible with Python 3.11)
+yfinance>=0.2.0
+
+# Time series analysis
+statsmodels>=0.14.0

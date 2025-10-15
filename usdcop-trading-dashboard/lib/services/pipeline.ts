@@ -12,3 +12,11 @@ export async function getPipelineStatus(): Promise<PipelineData[]> {
     { layer: 'L2-Prepare', status: 'pending', records: 0, lastUpdate: new Date().toISOString() }
   ]
 }
+
+export async function fetchLatestPipelineOutput(): Promise<any> {
+  return {
+    status: 'success',
+    data: [],
+    lastUpdate: new Date().toISOString()
+  }
+}

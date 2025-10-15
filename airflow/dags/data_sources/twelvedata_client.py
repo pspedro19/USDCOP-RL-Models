@@ -1,6 +1,6 @@
 """
 TwelveData API Client for USDCOP Trading
-Real connection to TwelveData API with Enhanced Monitoring
+Real connection to TwelveData API with Enhanced Monitoring and Timezone Fixes
 """
 
 import requests
@@ -11,6 +11,18 @@ import logging
 from typing import Optional, Dict, List
 import time
 import pytz
+
+# Import unified datetime handler
+try:
+    from ..utils.datetime_handler import UnifiedDatetimeHandler, timezone_safe
+    UNIFIED_DATETIME = True
+except ImportError:
+    logging.warning("UnifiedDatetimeHandler not available, using basic timezone handling")
+    UNIFIED_DATETIME = False
+    # Define fallback timezone_safe decorator
+    def timezone_safe(func):
+        """Fallback timezone_safe decorator when UnifiedDatetimeHandler is not available"""
+        return func
 try:
     from ..utils.enhanced_api_monitor import api_monitor
     ENHANCED_MONITORING = True
@@ -36,14 +48,16 @@ class TwelveDataClient:
             # Get best available key from manager
             self.api_key, _ = self.api_key_manager.get_best_key()
         else:
-            # Use single key (backward compatibility) - UPDATED KEY
-            self.api_key = api_key or "3dd1bcf17c0846f6857b31d12a64e5f5"
+            # Use single key (backward compatibility) - Load from environment
+            import os
+            self.api_key = api_key or os.environ.get('TWELVEDATA_API_KEY_1', 'demo')
             
         self.base_url = "https://api.twelvedata.com"
         self.symbol = "USD/COP"
         self.exchange = "FOREX"
         self.timezone = "America/Bogota"  # Colombia time (UTC-5)
         
+    @timezone_safe
     def fetch_historical_data(
         self,
         start_date: datetime,
@@ -62,10 +76,21 @@ class TwelveDataClient:
             DataFrame with OHLCV data
         """
         try:
+            # TIMEZONE FIX: Ensure input dates are timezone-aware
+            if UNIFIED_DATETIME:
+                start_date = UnifiedDatetimeHandler.ensure_timezone_aware(start_date, 'America/Bogota')
+                end_date = UnifiedDatetimeHandler.ensure_timezone_aware(end_date, 'America/Bogota')
+            else:
+                # Fallback timezone handling
+                if start_date.tzinfo is None:
+                    start_date = pytz.timezone('America/Bogota').localize(start_date)
+                if end_date.tzinfo is None:
+                    end_date = pytz.timezone('America/Bogota').localize(end_date)
+
             # TwelveData has a limit of 5000 data points per request
             # For 5-minute data, that's about 17 days
             # We need to split large requests into chunks
-            
+
             all_data = []
             current_start = start_date
             chunk_days = 7  # REDUCED: Smaller chunks to avoid rate limits (1 week at a time)
@@ -183,22 +208,30 @@ class TwelveDataClient:
                         
                         # Convert timestamp to datetime
                         df_chunk['timestamp'] = pd.to_datetime(df_chunk['timestamp'])
-                        
-                        # CRITICAL: Ensure proper timezone handling
-                        # TwelveData returns data in the requested timezone (America/Bogota = COT)
-                        if df_chunk['timestamp'].dt.tz is None:
-                            # Data is naive, assume it's in COT as requested
-                            df_chunk['timestamp'] = df_chunk['timestamp'].dt.tz_localize('America/Bogota')
-                            logging.info(f"  🕒 Localized timestamps to America/Bogota (COT/UTC-5)")
+
+                        # TIMEZONE FIX: Use UnifiedDatetimeHandler for consistent timezone handling
+                        if UNIFIED_DATETIME:
+                            # Use unified datetime handler
+                            df_chunk['timestamp'] = UnifiedDatetimeHandler.ensure_timezone_aware(
+                                df_chunk['timestamp'], 'America/Bogota'
+                            )
+                            df_chunk = UnifiedDatetimeHandler.add_timezone_columns(df_chunk, 'timestamp')
+                            logging.info(f"  🕒 Applied unified timezone handling (COT/UTC-5)")
                         else:
-                            # If it has timezone, convert to COT
-                            df_chunk['timestamp'] = df_chunk['timestamp'].dt.tz_convert('America/Bogota')
-                            logging.info(f"  🕒 Converted timestamps to America/Bogota (COT/UTC-5)")
-                        
-                        # Store both COT and UTC for reference
-                        df_chunk['timestamp_cot'] = df_chunk['timestamp']
-                        df_chunk['timestamp_utc'] = df_chunk['timestamp'].dt.tz_convert('UTC')
-                        df_chunk['hour_cot'] = df_chunk['timestamp_cot'].dt.hour
+                            # Fallback: Basic timezone handling
+                            if df_chunk['timestamp'].dt.tz is None:
+                                # Data is naive, assume it's in COT as requested
+                                df_chunk['timestamp'] = df_chunk['timestamp'].dt.tz_localize('America/Bogota')
+                                logging.info(f"  🕒 Localized timestamps to America/Bogota (COT/UTC-5)")
+                            else:
+                                # If it has timezone, convert to COT
+                                df_chunk['timestamp'] = df_chunk['timestamp'].dt.tz_convert('America/Bogota')
+                                logging.info(f"  🕒 Converted timestamps to America/Bogota (COT/UTC-5)")
+
+                            # Store both COT and UTC for reference
+                            df_chunk['timestamp_cot'] = df_chunk['timestamp']
+                            df_chunk['timestamp_utc'] = df_chunk['timestamp'].dt.tz_convert('UTC')
+                            df_chunk['hour_cot'] = df_chunk['timestamp_cot'].dt.hour
                         
                         # CRITICAL FIX: Convert string prices to numeric BEFORE calculations
                         for col in ['open', 'high', 'low', 'close', 'volume']:

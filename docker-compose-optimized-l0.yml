@@ -1,0 +1,57 @@
+version: '3.8'
+
+networks:
+  usdcop-trading-network:
+    external: true
+    name: usdcop-rl-models_usdcop-trading-network
+
+services:
+  # Optimized L0 Validator Service with 16 API Keys
+  optimized-l0-validator:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.optimized-l0
+    container_name: usdcop-optimized-l0-validator
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@usdcop-postgres-timescale:5432/${POSTGRES_DB:-usdcop_trading}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@usdcop-redis:6379/0
+      # TwelveData API Keys - GRUPO 1
+      API_KEY_G1_1: ${API_KEY_G1_1:-7bb5ad48501b4a6ea9fbedba2b0247f9}
+      API_KEY_G1_2: ${API_KEY_G1_2:-21de7ed341dc4ad5a20c292cee4652cb}
+      API_KEY_G1_3: ${API_KEY_G1_3:-06f4622c4cfd4fd78795777367bb07d6}
+      API_KEY_G1_4: ${API_KEY_G1_4:-0cabdba116f2415c82f7922c704427d9}
+      API_KEY_G1_5: ${API_KEY_G1_5:-93104476650b4d25aaf033ce06585ba2}
+      API_KEY_G1_6: ${API_KEY_G1_6:-9c61d83999c949d9866d92661f0f7c25}
+      API_KEY_G1_7: ${API_KEY_G1_7:-3d465022bf0c489f84270d5f1cd771b9}
+      API_KEY_G1_8: ${API_KEY_G1_8:-46d5e594b4af4282a935e1b1da8edc19}
+      # TwelveData API Keys - GRUPO 2
+      API_KEY_G2_1: ${API_KEY_G2_1:-bf67096c644f4d20821540de2ad344dc}
+      API_KEY_G2_2: ${API_KEY_G2_2:-a752322b9f3d44328a61cb53c24666b6}
+      API_KEY_G2_3: ${API_KEY_G2_3:-69f2c0d75209451981be8d208204ea13}
+      API_KEY_G2_4: ${API_KEY_G2_4:-b3faeff15a634855aab906858d2c8486}
+      API_KEY_G2_5: ${API_KEY_G2_5:-e56b2aec322e4fe1b2b43bb419d5fde8}
+      API_KEY_G2_6: ${API_KEY_G2_6:-fabe96c251694ab38a0c4a794244ae58}
+      API_KEY_G2_7: ${API_KEY_G2_7:-c6d60eefb2b347f8a94f3cbc919fc33a}
+      API_KEY_G2_8: ${API_KEY_G2_8:-e0cd278e177a469ba91992f1487c9c0e}
+      # Service Configuration
+      LOG_LEVEL: INFO
+      PORT: 8086
+      TIMEZONE: America/Bogota
+      MARKET_START_HOUR: 8
+      MARKET_START_MINUTE: 0
+      MARKET_END_HOUR: 12
+      MARKET_END_MINUTE: 55
+      MIN_COMPLETENESS: 95.0
+      BATCH_SIZE: 1000
+    ports:
+      - "8086:8086"
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs

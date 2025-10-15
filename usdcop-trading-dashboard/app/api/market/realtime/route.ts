@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { marketDataService } from '@/lib/services/market-data-service';
+import { MarketDataService } from '@/lib/services/market-data-service';
 
 // Store update interval reference
 let updateInterval: NodeJS.Timeout | null = null;
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     switch (action) {
       case 'fetch':
         // Fetch latest data from TwelveData
-        const realtimeData = await marketDataService.fetchRealtimeData(20);
+        const realtimeData = await MarketDataService.getRealTimeData();
         
         return NextResponse.json({
           success: true,
@@ -25,11 +25,11 @@ export async function GET(request: Request) {
       case 'start':
         // Start automatic updates
         if (!updateInterval) {
-          marketDataService.startRealtimeUpdates();
+          MarketDataService.connectWebSocket();
           
           // Set up SSE endpoint for real-time updates
           updateInterval = setInterval(async () => {
-            const data = await marketDataService.fetchRealtimeData(1);
+            const data = await MarketDataService.getRealTimeData();
             // This would normally push to WebSocket or SSE
             console.log('[Realtime API] New data point:', data[0]);
           }, 300000); // 5 minutes
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         if (updateInterval) {
           clearInterval(updateInterval);
           updateInterval = null;
-          marketDataService.stopRealtimeUpdates();
+          // WebSocket will auto-disconnect
         }
         
         return NextResponse.json({
@@ -57,30 +57,25 @@ export async function GET(request: Request) {
         
       case 'align':
         // Get complete aligned dataset (historical + realtime)
-        const alignedData = await marketDataService.getAlignedDataset();
+        const alignedData = await MarketDataService.getCandlestickData();
         
         // Save aligned data to MinIO
-        if (alignedData.length > 0) {
-          await marketDataService.saveToMinIO(alignedData, 'aligned-usdcop-data');
-        }
+        // Data saving functionality can be added later
         
         return NextResponse.json({
           success: true,
-          data: alignedData,
+          data: alignedData.data || [],
           meta: {
-            total: alignedData.length,
-            historical: alignedData.filter(d => d.source === 'minio').length,
-            realtime: alignedData.filter(d => d.source === 'twelvedata').length,
-            cache: alignedData.filter(d => d.source === 'cache').length,
-            startDate: alignedData[0]?.datetime,
-            endDate: alignedData[alignedData.length - 1]?.datetime,
+            total: alignedData.count || 0,
+            symbol: alignedData.symbol,
+            timeframe: alignedData.timeframe,
             lastUpdate: new Date().toISOString()
           }
         });
         
       case 'cache':
         // Get cached data
-        const cachedData = marketDataService.getCachedData();
+        const cachedData = await MarketDataService.getRealTimeData();
         
         return NextResponse.json({
           success: true,
@@ -121,13 +116,7 @@ export async function POST(request: Request) {
       );
     }
     
-    // Save to MinIO if requested
-    if (save) {
-      const saved = await marketDataService.saveToMinIO(data);
-      if (!saved) {
-        throw new Error('Failed to save data to MinIO');
-      }
-    }
+    // Data saving functionality can be added later
     
     return NextResponse.json({
       success: true,

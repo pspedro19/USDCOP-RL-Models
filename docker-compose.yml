@@ -33,7 +33,10 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - usdcop-trading-network
+      usdcop-trading-network:
+        aliases:
+          - postgres
+          - usdcop-postgres-timescale
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin}"]
       interval: 30s
@@ -89,22 +92,34 @@ services:
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
-    command: >
-      sh -c "
-      mc alias set minio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin123} &&
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...' &&
+      sleep 5 &&
+      mc alias set minio http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY} &&
+      echo 'MinIO alias configured successfully' &&
+      echo 'Creating data pipeline buckets...' &&
       mc mb --ignore-existing minio/00-raw-usdcop-marketdata &&
       mc mb --ignore-existing minio/01-l1-ds-usdcop-standardize &&
       mc mb --ignore-existing minio/02-l2-ds-usdcop-prepare &&
       mc mb --ignore-existing minio/03-l3-ds-usdcop-feature &&
       mc mb --ignore-existing minio/04-l4-ds-usdcop-rlready &&
       mc mb --ignore-existing minio/05-l5-ds-usdcop-serving &&
+      echo 'Creating additional RL buckets...' &&
       mc mb --ignore-existing minio/usdcop-l4-rlready &&
       mc mb --ignore-existing minio/usdcop-l5-serving &&
       mc mb --ignore-existing minio/usdcop-l6-backtest &&
+      echo 'Creating common buckets...' &&
       mc mb --ignore-existing minio/99-common-trading-models &&
       mc mb --ignore-existing minio/99-common-trading-reports &&
       mc mb --ignore-existing minio/99-common-trading-backups &&
-      echo 'All buckets created successfully'
+      echo 'Setting bucket policies for public download access...' &&
+      mc anonymous set download minio/00-raw-usdcop-marketdata || true &&
+      mc anonymous set download minio/99-common-trading-reports || true &&
+      echo 'All buckets created successfully!' &&
+      echo 'Final bucket list:' &&
+      mc ls minio &&
+      echo 'MinIO initialization completed.'
       "
     networks:
       - usdcop-trading-network
@@ -112,7 +127,9 @@ services:
 
   # Airflow Services
   airflow-init:
-    image: apache/airflow:2.7.2-python3.11
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile.prod
     container_name: usdcop-airflow-init
     depends_on:
       postgres:
@@ -120,9 +137,9 @@ services:
       redis:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
@@ -145,18 +162,52 @@ services:
     restart: "no"
 
   airflow-scheduler:
-    image: apache/airflow:2.7.2-python3.11
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile.prod
     container_name: usdcop-airflow-scheduler
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
+      # TwelveData API Keys for L0 Pipeline
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+      TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2}
+      TWELVEDATA_API_KEY_3: ${TWELVEDATA_API_KEY_3}
+      TWELVEDATA_API_KEY_4: ${TWELVEDATA_API_KEY_4}
+      TWELVEDATA_API_KEY_5: ${TWELVEDATA_API_KEY_5}
+      TWELVEDATA_API_KEY_6: ${TWELVEDATA_API_KEY_6}
+      TWELVEDATA_API_KEY_7: ${TWELVEDATA_API_KEY_7}
+      TWELVEDATA_API_KEY_8: ${TWELVEDATA_API_KEY_8}
+      # Enhanced L0 Pipeline - Group 1 API Keys
+      API_KEY_G1_1: ${API_KEY_G1_1}
+      API_KEY_G1_2: ${API_KEY_G1_2}
+      API_KEY_G1_3: ${API_KEY_G1_3}
+      API_KEY_G1_4: ${API_KEY_G1_4}
+      API_KEY_G1_5: ${API_KEY_G1_5}
+      API_KEY_G1_6: ${API_KEY_G1_6}
+      API_KEY_G1_7: ${API_KEY_G1_7}
+      API_KEY_G1_8: ${API_KEY_G1_8}
+      # Enhanced L0 Pipeline - Group 2 API Keys
+      API_KEY_G2_1: ${API_KEY_G2_1}
+      API_KEY_G2_2: ${API_KEY_G2_2}
+      API_KEY_G2_3: ${API_KEY_G2_3}
+      API_KEY_G2_4: ${API_KEY_G2_4}
+      API_KEY_G2_5: ${API_KEY_G2_5}
+      API_KEY_G2_6: ${API_KEY_G2_6}
+      API_KEY_G2_7: ${API_KEY_G2_7}
+      API_KEY_G2_8: ${API_KEY_G2_8}
+      # MinIO/AWS Configuration for L0 Pipeline
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://minio:9000
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -166,25 +217,60 @@ services:
     networks:
       - usdcop-trading-network
     healthcheck:
-      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname '$${HOSTNAME}'"]
+      test: ["CMD", "/opt/airflow/configs/healthcheck.sh"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   airflow-webserver:
-    image: apache/airflow:2.7.2-python3.11
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile.prod
     container_name: usdcop-airflow-webserver
     depends_on:
       airflow-scheduler:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
+      # TwelveData API Keys for L0 Pipeline
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+      TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2}
+      TWELVEDATA_API_KEY_3: ${TWELVEDATA_API_KEY_3}
+      TWELVEDATA_API_KEY_4: ${TWELVEDATA_API_KEY_4}
+      TWELVEDATA_API_KEY_5: ${TWELVEDATA_API_KEY_5}
+      TWELVEDATA_API_KEY_6: ${TWELVEDATA_API_KEY_6}
+      TWELVEDATA_API_KEY_7: ${TWELVEDATA_API_KEY_7}
+      TWELVEDATA_API_KEY_8: ${TWELVEDATA_API_KEY_8}
+      # Enhanced L0 Pipeline - Group 1 API Keys
+      API_KEY_G1_1: ${API_KEY_G1_1}
+      API_KEY_G1_2: ${API_KEY_G1_2}
+      API_KEY_G1_3: ${API_KEY_G1_3}
+      API_KEY_G1_4: ${API_KEY_G1_4}
+      API_KEY_G1_5: ${API_KEY_G1_5}
+      API_KEY_G1_6: ${API_KEY_G1_6}
+      API_KEY_G1_7: ${API_KEY_G1_7}
+      API_KEY_G1_8: ${API_KEY_G1_8}
+      # Enhanced L0 Pipeline - Group 2 API Keys
+      API_KEY_G2_1: ${API_KEY_G2_1}
+      API_KEY_G2_2: ${API_KEY_G2_2}
+      API_KEY_G2_3: ${API_KEY_G2_3}
+      API_KEY_G2_4: ${API_KEY_G2_4}
+      API_KEY_G2_5: ${API_KEY_G2_5}
+      API_KEY_G2_6: ${API_KEY_G2_6}
+      API_KEY_G2_7: ${API_KEY_G2_7}
+      API_KEY_G2_8: ${API_KEY_G2_8}
+      # MinIO/AWS Configuration for L0 Pipeline
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://minio:9000
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -202,35 +288,79 @@ services:
       retries: 5
     restart: unless-stopped
 
-  airflow-worker:
-    image: apache/airflow:2.7.2-python3.11
-    container_name: usdcop-airflow-worker
+  # airflow-worker: Not needed with LocalExecutor - tasks run within scheduler process
+  # Commented out to prevent restart loops since LocalExecutor doesn't support celery worker command
+
+  # USDCOP Real-time Orchestrator (Main Service)
+  usdcop-realtime-orchestrator:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.orchestrator
+    container_name: usdcop-realtime-orchestrator
     depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       airflow-scheduler:
         condition: service_healthy
     environment:
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
-      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/configs:/opt/airflow/configs
-      - airflow_logs:/opt/airflow/logs
-      - airflow_plugins:/opt/airflow/plugins
-    command: airflow celery worker
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      LOG_LEVEL: INFO
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+      PORT: 8080
+    ports:
+      - "8085:8080"
     networks:
       - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
     healthcheck:
-      test: ["CMD-SHELL", "celery --app airflow.executors.celery_executor.app inspect ping -d celery@$${HOSTNAME}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # Enhanced USDCOP Real-time Service (Backup/Alternative)
+  usdcop-realtime-service:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.usdcop-realtime
+    container_name: usdcop-enhanced-realtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      LOG_LEVEL: INFO
+      MARKET_START_HOUR: 8
+      MARKET_END_HOUR: 12
+      MARKET_END_MINUTE: 55
+      SYNC_INTERVAL_MINUTES: 5
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+      PORT: 8080
+    ports:
+      - "8084:8080"
+    networks:
+      - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    profiles:
+      - backup  # Only start when backup profile is activated
 
-  # Real-time Data Service
+  # Legacy Real-time Data Service (kept for compatibility)
   realtime-data-service:
     build:
       context: ./services
@@ -246,20 +376,61 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       LOG_LEVEL: INFO
       MARKET_HOURS_START: "08:00"
-      MARKET_HOURS_END: "12:55"
-      UPDATE_INTERVAL: 300  # 5 minutes in seconds
+
+  # Optimized L0 Validator Service with 16 API Keys
+  optimized-l0-validator:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.optimized-l0
+    container_name: usdcop-optimized-l0-validator
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      # TwelveData API Keys - GRUPO 1
+      API_KEY_G1_1: ${API_KEY_G1_1:-7bb5ad48501b4a6ea9fbedba2b0247f9}
+      API_KEY_G1_2: ${API_KEY_G1_2:-21de7ed341dc4ad5a20c292cee4652cb}
+      API_KEY_G1_3: ${API_KEY_G1_3:-06f4622c4cfd4fd78795777367bb07d6}
+      API_KEY_G1_4: ${API_KEY_G1_4:-0cabdba116f2415c82f7922c704427d9}
+      API_KEY_G1_5: ${API_KEY_G1_5:-93104476650b4d25aaf033ce06585ba2}
+      API_KEY_G1_6: ${API_KEY_G1_6:-9c61d83999c949d9866d92661f0f7c25}
+      API_KEY_G1_7: ${API_KEY_G1_7:-3d465022bf0c489f84270d5f1cd771b9}
+      API_KEY_G1_8: ${API_KEY_G1_8:-46d5e594b4af4282a935e1b1da8edc19}
+      # TwelveData API Keys - GRUPO 2
+      API_KEY_G2_1: ${API_KEY_G2_1:-bf67096c644f4d20821540de2ad344dc}
+      API_KEY_G2_2: ${API_KEY_G2_2:-a752322b9f3d44328a61cb53c24666b6}
+      API_KEY_G2_3: ${API_KEY_G2_3:-69f2c0d75209451981be8d208204ea13}
+      API_KEY_G2_4: ${API_KEY_G2_4:-b3faeff15a634855aab906858d2c8486}
+      API_KEY_G2_5: ${API_KEY_G2_5:-e56b2aec322e4fe1b2b43bb419d5fde8}
+      API_KEY_G2_6: ${API_KEY_G2_6:-fabe96c251694ab38a0c4a794244ae58}
+      API_KEY_G2_7: ${API_KEY_G2_7:-c6d60eefb2b347f8a94f3cbc919fc33a}
+      API_KEY_G2_8: ${API_KEY_G2_8:-e0cd278e177a469ba91992f1487c9c0e}
+      # Service Configuration
+      LOG_LEVEL: INFO
+      PORT: 8086
+      TIMEZONE: America/Bogota
+      MARKET_START_HOUR: 8
+      MARKET_START_MINUTE: 0
+      MARKET_END_HOUR: 12
+      MARKET_END_MINUTE: 55
+      MIN_COMPLETENESS: 95.0
+      BATCH_SIZE: 1000
     ports:
-      - "8081:8080"
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - usdcop-trading-network
-    volumes:
-      - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
     restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
 
   # Health Monitor Service
   health-monitor:
@@ -295,7 +466,7 @@ services:
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       LOG_LEVEL: INFO
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:80"
+      CORS_ORIGINS: "http://localhost:5000,http://localhost:80"
     ports:
       - "8082:8080"
     networks:
@@ -350,16 +521,19 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
+      NEXT_PUBLIC_TRADING_API_URL: http://usdcop-trading-api:8000/api
+      TRADING_API_URL: http://usdcop-trading-api:8000
     ports:
-      - "3000:3000"
+      - "5000:3000"
     networks:
       - usdcop-trading-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   # Monitoring Services
@@ -398,7 +572,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     ports:
-      - "3001:3000"
+      - "3002:3000"
     networks:
       - usdcop-trading-network
     healthcheck:
@@ -408,6 +582,39 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Trading API Service
+  trading-api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.trading-api
+    container_name: usdcop-trading-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - CORS_ORIGINS=http://localhost:5000,http://localhost:3001
+    ports:
+      - "8000:8000"
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
@@ -416,6 +623,8 @@ services:
       dashboard:
         condition: service_healthy
       airflow-webserver:
+        condition: service_started
+      trading-api:
         condition: service_healthy
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -425,7 +634,7 @@ services:
     networks:
       - usdcop-trading-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0/health"]
       interval: 30s
       timeout: 10s
       retries: 5

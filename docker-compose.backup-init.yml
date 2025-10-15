@@ -1,0 +1,48 @@
+# =============================================================================
+# USDCOP Trading System - Backup & Auto-Initialization Service
+# =============================================================================
+# Este docker-compose adicional maneja la inicialización automática
+# y el sistema de backup/restore
+
+version: '3.8'
+
+services:
+  # Servicio de Auto-Inicialización y Backup
+  backup-init:
+    image: python:3.11-slim
+    container_name: usdcop-backup-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./scripts:/app/scripts
+      - ./backups:/app/backups
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    networks:
+      - usdcop-trading-network
+    entrypoint: >
+      /bin/bash -c "
+      echo '🚀 Installing required packages...' &&
+      apt-get update -qq &&
+      apt-get install -y -qq docker.io postgresql-client python3-pip &&
+      pip install --quiet psycopg2-binary pandas &&
+      echo '✅ Dependencies installed' &&
+      echo '🔄 Running auto-initialization...' &&
+      python3 /app/scripts/backup_restore_system.py auto-init &&
+      echo '📦 Creating initial backup...' &&
+      python3 /app/scripts/backup_restore_system.py backup &&
+      echo '✅ Backup/Init service completed successfully' &&
+      echo '💤 Service will exit (job completed)' &&
+      exit 0
+      "
+    restart: "no"  # Run once and exit
+
+networks:
+  usdcop-trading-network:
+    external: true
+
+# Para usar este servicio, ejecutar:
+# docker-compose -f docker-compose.backup-init.yml up --build
