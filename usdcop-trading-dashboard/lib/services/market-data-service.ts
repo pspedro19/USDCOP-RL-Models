@@ -45,7 +45,7 @@ export interface CandlestickResponse {
 }
 
 export class MarketDataService {
-  private static API_BASE_URL = process.env.NEXT_PUBLIC_TRADING_API_URL || (typeof window === 'undefined' ? 'http://usdcop-trading-api:8000/api' : '/api/proxy/trading')
+  private static API_BASE_URL = typeof window === 'undefined' ? 'http://localhost:8000/api' : '/api/proxy/trading'
   private static WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8082'
   private static websocket: WebSocket | null = null
   private static subscribers: Array<(data: MarketDataPoint) => void> = []

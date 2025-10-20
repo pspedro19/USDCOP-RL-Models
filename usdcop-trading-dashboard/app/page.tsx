@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ViewRenderer from '../components/ViewRenderer';
+import { EnhancedNavigationSidebar } from '../components/ui/EnhancedNavigationSidebar';
+import { NavigationProvider } from '../lib/contexts/NavigationContext';
 import EnhancedTradingDashboard from '../components/charts/EnhancedTradingDashboard';
+import { useMarketStats } from '../hooks/useMarketStats';
+import { useRealTimePrice } from '../hooks/useRealTimePrice';
 import {
   TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Shield, Settings, LogOut,
   Wifi, WifiOff, Clock, Target, AlertTriangle, Play, Pause, Square, Maximize2,
@@ -13,63 +17,7 @@ import {
   Bell, Search, Filter, Globe, Layers, GitBranch, Eye, EyeOff, Lock, Key, Sparkles
 } from 'lucide-react';
 
-// Real-time market data simulation
-const useMarketData = () => {
-  const [data, setData] = useState({
-    price: 4010.91,
-    change: 63.47,
-    changePercent: 1.58,
-    volume: 1847329,
-    high24h: 4165.50,
-    low24h: 3890.25,
-    spread: 0.08,
-    liquidity: 98.7,
-    volatility: 0.89,
-    timestamp: new Date()
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setData(prev => ({
-        ...prev,
-        price: prev.price + (Math.random() - 0.5) * 2,
-        change: prev.price * 0.001 * (Math.random() - 0.5) * 10,
-        timestamp: new Date()
-      }));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return data;
-};
-
-// Trading status hook
-const useTradingStatus = () => {
-  const [status, setStatus] = useState({
-    isConnected: true,
-    dataQuality: 'Premium',
-    latency: 4,
-    mode: 'Normal', // Normal, Contingency, Analysis, Simulation
-    marketStatus: 'OPEN'
-  });
-
-  return status;
-};
-
-// Solo 2 vistas principales de trading
-const navigationItems = [
-  {
-    section: 'TRADING',
-    color: 'text-cyan-400',
-    priority: 'critical',
-    collapsed: false,
-    items: [
-      { id: 'dashboard-home', icon: Home, label: 'Dashboard Home', active: true, status: 'healthy', hotkey: 'Alt+1', kpi: 'Gráfica Profesional USDCOP' },
-      { id: 'professional-terminal', icon: Activity, label: 'Professional Terminal', status: 'healthy', badge: 'PRO', hotkey: 'Alt+2', kpi: 'Terminal Avanzado' }
-    ]
-  }
-];
+// Removing hardcoded navigation - will use EnhancedNavigationSidebar
 
 export default function ProfessionalTradingDashboard() {
   const router = useRouter();
@@ -83,9 +31,14 @@ export default function ProfessionalTradingDashboard() {
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
-  
-  const marketData = useMarketData();
-  const tradingStatus = useTradingStatus();
+
+  // === REAL DATA FROM BACKEND - NO HARDCODED VALUES ===
+  const { stats: marketStats, isConnected: statsConnected } = useMarketStats('USDCOP', 30000);
+  const { currentPrice: realtimePrice, isConnected: priceConnected } = useRealTimePrice('USDCOP');
+
+  // Use real-time price if available, otherwise use stats price
+  const currentPrice = realtimePrice?.price || marketStats?.currentPrice || 0;
+  const isConnected = statsConnected || priceConnected;
 
   // Keyboard shortcuts and auto-hide logic
   useEffect(() => {
@@ -110,15 +63,7 @@ export default function ProfessionalTradingDashboard() {
         setSidebarCollapsed(true);
         setShowCommandPalette(false);
       }
-      // Alt+1-5: Direct section access
-      if (e.altKey && ['1', '2', '3', '4', '5'].includes(e.key)) {
-        e.preventDefault();
-        const sectionIndex = parseInt(e.key) - 1;
-        const section = navigationItems[sectionIndex];
-        if (section && section.items.length > 0) {
-          setActiveView(section.items[0].id);
-        }
-      }
+      // Alt+1-5: Direct section access (handled by EnhancedNavigationSidebar)
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -211,8 +156,12 @@ export default function ProfessionalTradingDashboard() {
 
   if (!isAuthenticated) return null;
 
-  const statusColor = tradingStatus.isConnected ? 'text-green-400' : 'text-red-400';
-  const qualityBadgeColor = tradingStatus.dataQuality === 'Premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400';
+  // Trading status derived from market stats
+  const statusColor = isConnected ? 'text-green-400' : 'text-red-400';
+  const dataQuality = marketStats?.source === 'backend_api' ? 'Premium' : 'Historical';
+  const qualityBadgeColor = dataQuality === 'Premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400';
+  const marketStatus = marketStats?.timestamp ? 'OPEN' : 'CLOSED';
+  const latency = isConnected ? 4 : 999;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
@@ -248,15 +197,15 @@ export default function ProfessionalTradingDashboard() {
 
             {/* Connection Status */}
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${tradingStatus.isConnected ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                {tradingStatus.isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${isConnected ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
                 <span className={`text-sm font-medium ${statusColor}`}>
-                  {tradingStatus.isConnected ? 'CONNECTED' : 'DISCONNECTED'}
+                  {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
                 </span>
               </div>
-              
+
               <div className={`px-2 py-1 rounded text-xs font-bold ${qualityBadgeColor}`}>
-                {tradingStatus.dataQuality}
+                {dataQuality}
               </div>
             </div>
           </div>
@@ -273,14 +222,14 @@ export default function ProfessionalTradingDashboard() {
             <div className="text-center">
               <div className="text-sm text-slate-400">Market</div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-lg font-bold text-green-400">{tradingStatus.marketStatus}</span>
+                <div className={`w-2 h-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'} rounded-full animate-pulse`}></div>
+                <span className={`text-lg font-bold ${isConnected ? 'text-green-400' : 'text-red-400'}`}>{marketStatus}</span>
               </div>
             </div>
 
             <div className="text-center">
               <div className="text-sm text-slate-400">Latency</div>
-              <div className="text-lg font-bold text-cyan-400">&lt;{tradingStatus.latency}ms</div>
+              <div className={`text-lg font-bold ${latency < 100 ? 'text-cyan-400' : 'text-yellow-400'}`}>&lt;{latency}ms</div>
             </div>
           </div>
 
@@ -304,151 +253,16 @@ export default function ProfessionalTradingDashboard() {
         </div>
       </header>
 
+      <NavigationProvider
+        initialView="dashboard-home"
+        onViewChange={(viewId) => setActiveView(viewId)}
+      >
       <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Sidebar - Navigation Hub */}
-        <motion.aside
-          initial={false}
-          animate={{ 
-            width: sidebarHidden ? 0 : (sidebarCollapsed ? 48 : 280),
-            opacity: sidebarHidden ? 0 : 1
-          }}
-          transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-          className="relative z-40 bg-slate-950/95 backdrop-blur-xl border-r border-slate-700/30 overflow-hidden group"
-          onMouseEnter={() => {
-            if (inactivityTimer) clearTimeout(inactivityTimer);
-          }}
-          onMouseLeave={() => {
-            // Auto-collapse after delay
-            const timer = setTimeout(() => setSidebarCollapsed(true), 3000);
-            setInactivityTimer(timer);
-          }}
-        >
-          <div className="p-2">
-            {/* Hamburger menu when collapsed */}
-            {sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center space-y-4 mb-6"
-              >
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="relative p-3 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 hover:from-cyan-500/30 hover:to-purple-500/30 rounded-xl border border-cyan-500/30 transition-all duration-300 group"
-                >
-                  <Menu className="w-6 h-6 text-cyan-400 group-hover:text-cyan-300" />
-                  
-                  {/* Floating tooltip */}
-                  <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-slate-800/95 backdrop-blur-sm text-cyan-400 text-sm font-medium px-3 py-2 rounded-lg border border-cyan-500/30 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none">
-                    Abrir Navegación
-                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-800 border-l border-t border-cyan-500/30 rotate-45"></div>
-                  </div>
-                </button>
-                
-                {/* Quick action indicators */}
-                <div className="flex flex-col space-y-2">
-                  <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" title="Trading Active"></div>
-                  <div className="w-2 h-2 bg-green-500 rounded-full" title="Systems Healthy"></div>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Processing"></div>
-                </div>
-              </motion.div>
-            )}
-            
-            {/* Full toggle button when expanded */}
-            {!sidebarCollapsed && (
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-full flex items-center justify-center p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-all mb-4"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-            )}
+        {/* Left Sidebar - Using EnhancedNavigationSidebar with all 16 views */}
+        <EnhancedNavigationSidebar />
 
-            {/* Collapsed state - icon-only navigation */}
-            {sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col space-y-3"
-              >
-                {navigationItems.map((section) => (
-                  <div key={section.section} className="space-y-2">
-                    {section.items.map((item) => (
-                      <div key={item.id} className="relative group">
-                        <button
-                          onClick={() => setActiveView(item.id)}
-                          className={`w-full p-3 rounded-lg transition-all duration-200 flex items-center justify-center relative ${
-                            item.active || activeView === item.id
-                              ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-400'
-                              : 'hover:bg-slate-800/50 text-slate-300 hover:text-cyan-400'
-                          }`}
-                        >
-                          <item.icon className="w-5 h-5" />
-                          {item.status && (
-                            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-900 ${
-                              item.status === 'healthy' ? 'bg-green-500' :
-                              item.status === 'warning' ? 'bg-yellow-500' :
-                              item.status === 'processing' ? 'bg-blue-500 animate-pulse' : 'bg-red-500'
-                            }`} />
-                          )}
-                        </button>
-                        
-                        {/* Floating tooltip */}
-                        <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-slate-800/95 backdrop-blur-sm text-white text-sm font-medium px-3 py-2 rounded-lg border border-slate-600/50 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
-                          {item.label}
-                          <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-800 border-l border-t border-slate-600/50 rotate-45"></div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Section divider */}
-                    <div className="h-px bg-slate-700/50 my-2"></div>
-                  </div>
-                ))}
-              </motion.div>
-            )}
-            
-            {/* Expanded state - full navigation */}
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                {navigationItems.map((section, sectionIndex) => (
-                  <div key={section.section}>
-                    <h3 className={`text-xs font-bold ${section.color} mb-3 tracking-wide`}>
-                      {section.section}
-                    </h3>
-                    <div className="space-y-1">
-                      {section.items.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveView(item.id)}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-left ${
-                            item.active || activeView === item.id
-                              ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-400'
-                              : 'hover:bg-slate-800/50 text-slate-300'
-                          }`}
-                        >
-                          <item.icon className="w-4 h-4 flex-shrink-0" />
-                          <span className="text-sm">{item.label}</span>
-                          {item.status && (
-                            <div className={`w-2 h-2 rounded-full ml-auto ${
-                              item.status === 'healthy' ? 'bg-green-500' :
-                              item.status === 'warning' ? 'bg-yellow-500' :
-                              item.status === 'processing' ? 'bg-blue-500 animate-pulse' : 'bg-red-500'
-                            }`} />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        </motion.aside>
+        {/* Old sidebar code has been completely removed and replaced with EnhancedNavigationSidebar
+           which contains all 16 professional trading views */}
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -461,19 +275,19 @@ export default function ProfessionalTradingDashboard() {
                 <div className="flex items-center gap-6">
                   <div>
                     <div className="text-4xl font-bold text-white leading-none">
-                      ${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-sm text-slate-400 mt-1">USD/COP</div>
                   </div>
-                  
-                  <div className={`flex items-center gap-3 ${marketData.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {marketData.change >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+
+                  <div className={`flex items-center gap-3 ${(Number(marketStats?.change24h) || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {(Number(marketStats?.change24h) || 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                     <div>
                       <div className="text-xl font-bold">
-                        {marketData.change >= 0 ? '+' : ''}{marketData.change.toFixed(2)}
+                        {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.change24h) || 0).toFixed(2)}
                       </div>
                       <div className="text-sm opacity-80">
-                        ({marketData.changePercent >= 0 ? '+' : ''}{marketData.changePercent.toFixed(2)}%)
+                        ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.changePercent) || 0).toFixed(2)}%)
                       </div>
                     </div>
                   </div>
@@ -482,7 +296,9 @@ export default function ProfessionalTradingDashboard() {
                 {/* P&L Session */}
                 <div className="px-4 py-3 bg-slate-800/40 rounded-lg border border-slate-600/30">
                   <div className="text-slate-400 text-sm">P&L Sesión</div>
-                  <div className="text-green-400 text-xl font-bold">+$1,247.85</div>
+                  <div className={`text-xl font-bold ${(marketStats?.sessionPnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {(marketStats?.sessionPnl || 0) >= 0 ? '+' : ''}${Math.abs(marketStats?.sessionPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
                 </div>
               </div>
 
@@ -511,35 +327,35 @@ export default function ProfessionalTradingDashboard() {
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Volume 24H</div>
                 <div className="text-white text-lg font-bold">
-                  {(marketData.volume / 1000000).toFixed(2)}M
+                  {((Number(marketStats?.volume24h) || 0) / 1000000).toFixed(2)}M
                 </div>
-                <div className="text-slate-500 text-xs mt-1">+12.5% vs avg</div>
+                <div className="text-slate-500 text-xs mt-1">Real-time data</div>
               </div>
-              
+
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Range 24H</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-red-400 font-bold">{marketData.low24h.toFixed(2)}</span>
+                  <span className="text-red-400 font-bold">{(Number(marketStats?.low24h) || 0).toFixed(2)}</span>
                   <span className="text-slate-500">-</span>
-                  <span className="text-green-400 font-bold">{marketData.high24h.toFixed(2)}</span>
+                  <span className="text-green-400 font-bold">{(Number(marketStats?.high24h) || 0).toFixed(2)}</span>
                 </div>
-                <div className="text-slate-500 text-xs mt-1">Rango: {(marketData.high24h - marketData.low24h).toFixed(0)} pips</div>
+                <div className="text-slate-500 text-xs mt-1">Rango: {((Number(marketStats?.high24h) || 0) - (Number(marketStats?.low24h) || 0)).toFixed(0)} pips</div>
               </div>
 
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Spread</div>
                 <div className="text-cyan-400 text-lg font-bold">
-                  {marketData.spread.toFixed(1)} bps
+                  {(Number(marketStats?.spread) || 0).toFixed(1)} COP
                 </div>
-                <div className="text-slate-500 text-xs mt-1">Target: &lt;21.5 bps</div>
+                <div className="text-slate-500 text-xs mt-1">High-Low 24h</div>
               </div>
 
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
-                <div className="text-slate-400 text-sm mb-1">Liquidity</div>
+                <div className="text-slate-400 text-sm mb-1">Volatility</div>
                 <div className="text-purple-400 text-lg font-bold">
-                  {marketData.liquidity.toFixed(1)}%
+                  {(Number(marketStats?.volatility) || 0).toFixed(2)}%
                 </div>
-                <div className="text-slate-500 text-xs mt-1">Optimal: &gt;95%</div>
+                <div className="text-slate-500 text-xs mt-1">24h range</div>
               </div>
             </div>
           </div>
@@ -557,30 +373,38 @@ export default function ProfessionalTradingDashboard() {
           <div className="bg-slate-900/80 backdrop-blur-xl border-t border-slate-700/50 px-6 py-3">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-6">
-                <span className="text-slate-400">Mode:</span>
-                <span className="text-cyan-400 font-bold">{tradingStatus.mode}</span>
-                
-                <span className="text-slate-400">P&L 24H:</span>
-                <span className="text-green-400 font-bold">+$4,250.75 (+1.06%)</span>
-                
-                <span className="text-slate-400">Drawdown:</span>
-                <span className="text-yellow-400 font-bold">-2.3%</span>
+                <span className="text-slate-400">Source:</span>
+                <span className="text-cyan-400 font-bold">{marketStats?.source || 'connecting...'}</span>
+
+                <span className="text-slate-400">Change 24H:</span>
+                <span className={`font-bold ${(Number(marketStats?.change24h) || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.change24h) || 0).toFixed(2)} COP ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.changePercent) || 0).toFixed(2)}%)
+                </span>
+
+                <span className="text-slate-400">Trend:</span>
+                <span className={`font-bold ${
+                  marketStats?.trend === 'up' ? 'text-green-400' :
+                  marketStats?.trend === 'down' ? 'text-red-400' : 'text-yellow-400'
+                }`}>{marketStats?.trend?.toUpperCase() || 'N/A'}</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-400">Live Data Stream</span>
+                  <div className={`w-2 h-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'} rounded-full animate-pulse`}></div>
+                  <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+                    {isConnected ? 'Live Data Stream' : 'Disconnected'}
+                  </span>
                 </div>
-                
+
                 <div className="text-slate-400">
-                  Last update: {new Date().toLocaleTimeString()}
+                  Last update: {marketStats?.timestamp ? new Date(marketStats.timestamp).toLocaleTimeString() : 'N/A'}
                 </div>
               </div>
             </div>
           </div>
         </main>
       </div>
+      </NavigationProvider>
     </div>
   );
 }

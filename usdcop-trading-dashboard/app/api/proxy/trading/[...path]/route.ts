@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-const TRADING_API_URL = process.env.TRADING_API_URL || 'http://usdcop-trading-api:8000'
+const TRADING_API_URL = process.env.TRADING_API_URL || 'http://localhost:8000'
 
 export async function GET(
   request: NextRequest,

@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import RealDataTradingChart from '@/components/charts/RealDataTradingChart';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRealTimePrice } from '@/hooks/useRealTimePrice';
+import { useRLMetrics } from '@/hooks/useAnalytics';
 import { MarketDataService } from '@/lib/services/market-data-service';
-import { 
-  Activity, TrendingUp, TrendingDown, Volume2, Clock, Target, 
+import {
+  Activity, TrendingUp, TrendingDown, Volume2, Clock, Target,
   BarChart3, Zap, Signal, AlertCircle, Play, Pause, Square,
   Maximize2, Download, Share2, Camera, MousePointer, Crosshair,
   LineChart, CandlestickChart, AreaChart, Settings, Filter,
@@ -310,14 +311,17 @@ export default function LiveTradingTerminal() {
     setActiveTimeframe(timeframe);
   }, []);
 
-  // RL Metrics (Discrete Actions: Sell/Hold/Buy)
-  const rlMetrics = {
-    tradesPerEpisode: 6,
-    avgHolding: 12,
-    actionBalance: { sell: 18.5, hold: 63.2, buy: 18.3 },
-    spreadCaptured: 19.8,
-    pegRate: 3.2,
-    vwapError: 2.8
+  // RL Metrics (Discrete Actions: Sell/Hold/Buy) - NOW DYNAMIC FROM API
+  const { metrics: rlMetricsData, isLoading: rlMetricsLoading } = useRLMetrics('USDCOP', 30);
+
+  // Use real data or fallback to defaults while loading
+  const rlMetrics = rlMetricsData || {
+    tradesPerEpisode: 0,
+    avgHolding: 0,
+    actionBalance: { sell: 0, hold: 0, buy: 0 },
+    spreadCaptured: 0,
+    pegRate: 0,
+    vwapError: 0
   };
 
   const getMetricStatus = (metric: string, value: number) => {

@@ -1,187 +1,213 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert } from '@/components/ui/alert';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { fetchLatestPipelineOutput } from '@/lib/services/pipeline';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Percent, AlertCircle } from 'lucide-react';
 
-interface Trade {
-  id: string;
-  timestamp: string;
-  action: 'BUY' | 'SELL';
-  price: number;
-  quantity: number;
-  pnl: number;
-  duration_minutes: number;
-  confidence: number;
-}
-
-interface BacktestResults {
-  summary: {
-    total_trades: number;
-    winning_trades: number;
-    losing_trades: number;
-    win_rate: number;
-    total_return: number;
-    sharpe_ratio: number;
-    max_drawdown: number;
-    profit_factor: number;
-  };
-  equity_curve: { timestamp: string; equity: number; drawdown: number }[];
-  trade_ledger: Trade[];
-  monthly_returns: { month: string; return_pct: number }[];
+interface BacktestMetrics {
+  sharpe_ratio: number;
+  sortino_ratio: number;
+  calmar_ratio: number;
+  max_drawdown: number;
+  win_rate: number;
+  profit_factor: number;
+  total_trades: number;
+  total_return: number;
+  avg_trade_pnl: number;
+  winning_trades: number;
+  losing_trades: number;
 }
 
 export default function L6BacktestResults() {
-  const [backtestData, setBacktestData] = useState<BacktestResults | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<BacktestMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchL6Data = async () => {
-    try {
-      setError(null);
-      const pipelineData = await fetchLatestPipelineOutput('L6');
-      
-      // Mock backtest results
-      const mockBacktestData: BacktestResults = {
-        summary: {
-          total_trades: 1247,
-          winning_trades: 776,
-          losing_trades: 471,
-          win_rate: 0.622,
-          total_return: 0.187,
-          sharpe_ratio: 1.87,
-          max_drawdown: 0.087,
-          profit_factor: 1.45,
-        },
-        equity_curve: Array.from({ length: 30 }, (_, i) => ({
-          timestamp: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString(),
-          equity: 10000 * (1 + (Math.random() - 0.3) * 0.05 + i * 0.006),
-          drawdown: Math.random() * 0.05,
-        })),
-        trade_ledger: Array.from({ length: 10 }, (_, i) => ({
-          id: `trade_${1247 - i}`,
-          timestamp: new Date(Date.now() - i * 2 * 60 * 60 * 1000).toISOString(),
-          action: i % 3 === 0 ? 'BUY' : 'SELL',
-          price: 4200 + Math.random() * 200,
-          quantity: Math.floor(Math.random() * 1000) + 100,
-          pnl: (Math.random() - 0.4) * 500,
-          duration_minutes: Math.floor(Math.random() * 300) + 30,
-          confidence: 0.5 + Math.random() * 0.5,
-        })),
-        monthly_returns: [
-          { month: '2025-06', return_pct: 3.2 },
-          { month: '2025-07', return_pct: -1.8 },
-          { month: '2025-08', return_pct: 5.7 },
-        ],
-      };
-      
-      setBacktestData(mockBacktestData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch L6 data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchL6Data();
-    const interval = setInterval(fetchL6Data, 300000);
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/pipeline/l6/backtest-results?split=test');
+        if (!response.ok) throw new Error('Failed to fetch backtest results');
+        const result = await response.json();
+        setData(result);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  if (isLoading) {
-    return <div className="animate-pulse h-96 bg-gray-200 rounded"></div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-slate-900 rounded-lg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-cyan-500/20 border-t-cyan-500 mx-auto mb-4"></div>
+          <p className="text-cyan-500 font-mono text-sm">Loading backtest results...</p>
+        </div>
+      </div>
+    );
   }
 
+  if (error) {
+    return (
+      <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6">
+        <div className="flex items-center gap-2 text-red-400">
+          <AlertCircle className="h-5 w-5" />
+          <p className="font-mono">Error: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const metrics = [
+    {
+      label: 'Sharpe Ratio',
+      value: data.sharpe_ratio.toFixed(2),
+      icon: TrendingUp,
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-400/10'
+    },
+    {
+      label: 'Sortino Ratio',
+      value: data.sortino_ratio.toFixed(2),
+      icon: Activity,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-400/10'
+    },
+    {
+      label: 'Calmar Ratio',
+      value: data.calmar_ratio.toFixed(2),
+      icon: TrendingUp,
+      color: 'text-green-400',
+      bgColor: 'bg-green-400/10'
+    },
+    {
+      label: 'Max Drawdown',
+      value: `${(data.max_drawdown * 100).toFixed(2)}%`,
+      icon: TrendingDown,
+      color: 'text-red-400',
+      bgColor: 'bg-red-400/10'
+    },
+    {
+      label: 'Win Rate',
+      value: `${(data.win_rate * 100).toFixed(1)}%`,
+      icon: Percent,
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-400/10'
+    },
+    {
+      label: 'Profit Factor',
+      value: data.profit_factor.toFixed(2),
+      icon: DollarSign,
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-400/10'
+    },
+    {
+      label: 'Total Trades',
+      value: data.total_trades.toLocaleString(),
+      icon: Activity,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-400/10'
+    },
+    {
+      label: 'Total Return',
+      value: `${(data.total_return * 100).toFixed(2)}%`,
+      icon: TrendingUp,
+      color: data.total_return >= 0 ? 'text-green-400' : 'text-red-400',
+      bgColor: data.total_return >= 0 ? 'bg-green-400/10' : 'bg-red-400/10'
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">L6 Backtest Results</h2>
-      
-      {error && <Alert><div className="text-red-600">Error: {error}</div></Alert>}
+    <div className="space-y-6 p-6 bg-slate-950 min-h-screen">
+      <div className="border-b border-cyan-500/20 pb-4">
+        <h1 className="text-2xl font-bold text-cyan-500 font-mono">L6 BACKTEST RESULTS</h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Test Split Performance Metrics • {data.total_trades} Trades •
+          {data.winning_trades} Wins / {data.losing_trades} Losses
+        </p>
+      </div>
 
-      {backtestData && (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-4 text-center">
-              <p className="text-sm text-gray-600">Total Return</p>
-              <p className="text-2xl font-bold text-green-600">
-                {(backtestData.summary.total_return * 100).toFixed(1)}%
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon;
+          return (
+            <Card
+              key={index}
+              className="bg-slate-900 border-cyan-500/20 p-6 hover:border-cyan-500/50 transition-all"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                  <Icon className={`h-6 w-6 ${metric.color}`} />
+                </div>
+              </div>
+              <p className="text-sm text-slate-400 font-mono mb-2">{metric.label}</p>
+              <p className={`text-3xl font-bold font-mono ${metric.color}`}>
+                {metric.value}
               </p>
             </Card>
-            <Card className="p-4 text-center">
-              <p className="text-sm text-gray-600">Win Rate</p>
-              <p className="text-2xl font-bold">{(backtestData.summary.win_rate * 100).toFixed(1)}%</p>
-            </Card>
-            <Card className="p-4 text-center">
-              <p className="text-sm text-gray-600">Sharpe Ratio</p>
-              <p className="text-2xl font-bold">{backtestData.summary.sharpe_ratio.toFixed(2)}</p>
-            </Card>
-            <Card className="p-4 text-center">
-              <p className="text-sm text-gray-600">Max Drawdown</p>
-              <p className="text-2xl font-bold text-red-600">
-                {(backtestData.summary.max_drawdown * 100).toFixed(1)}%
-              </p>
-            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-slate-900 border-cyan-500/20 p-6">
+          <h3 className="text-lg font-bold text-cyan-400 font-mono mb-4">Trade Statistics</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Total Trades</span>
+              <span className="text-white font-mono font-bold">{data.total_trades}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Winning Trades</span>
+              <span className="text-green-400 font-mono font-bold">{data.winning_trades}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Losing Trades</span>
+              <span className="text-red-400 font-mono font-bold">{data.losing_trades}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Avg Trade P&L</span>
+              <span className={`font-mono font-bold ${data.avg_trade_pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {data.avg_trade_pnl >= 0 ? '+' : ''}{data.avg_trade_pnl.toFixed(4)}
+              </span>
+            </div>
           </div>
+        </Card>
 
-          {/* Equity Curve */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Equity Curve</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={backtestData.equity_curve}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" tickFormatter={(value) => new Date(value).toLocaleDateString()} />
-                  <YAxis />
-                  <Tooltip labelFormatter={(value) => new Date(value).toLocaleString()} />
-                  <Line type="monotone" dataKey="equity" stroke="#2563eb" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+        <Card className="bg-slate-900 border-cyan-500/20 p-6">
+          <h3 className="text-lg font-bold text-cyan-400 font-mono mb-4">Risk Metrics</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Sharpe Ratio</span>
+              <span className="text-cyan-400 font-mono font-bold">{data.sharpe_ratio.toFixed(3)}</span>
             </div>
-          </Card>
-
-          {/* Recent Trades */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Trades</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Time</th>
-                    <th className="text-left p-2">Action</th>
-                    <th className="text-left p-2">Price</th>
-                    <th className="text-left p-2">Quantity</th>
-                    <th className="text-left p-2">P&L</th>
-                    <th className="text-left p-2">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {backtestData.trade_ledger.map((trade) => (
-                    <tr key={trade.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{new Date(trade.timestamp).toLocaleString()}</td>
-                      <td className="p-2">
-                        <Badge className={trade.action === 'BUY' ? 'bg-green-500' : 'bg-red-500'}>
-                          {trade.action}
-                        </Badge>
-                      </td>
-                      <td className="p-2">{trade.price.toFixed(2)}</td>
-                      <td className="p-2">{trade.quantity}</td>
-                      <td className={`p-2 font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${trade.pnl.toFixed(2)}
-                      </td>
-                      <td className="p-2">{trade.duration_minutes}m</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Sortino Ratio</span>
+              <span className="text-purple-400 font-mono font-bold">{data.sortino_ratio.toFixed(3)}</span>
             </div>
-          </Card>
-        </>
-      )}
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Calmar Ratio</span>
+              <span className="text-green-400 font-mono font-bold">{data.calmar_ratio.toFixed(3)}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
+              <span className="text-slate-300 font-mono text-sm">Max Drawdown</span>
+              <span className="text-red-400 font-mono font-bold">
+                {(data.max_drawdown * 100).toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -33,10 +33,28 @@ interface ViewRendererProps {
 }
 
 const ViewRenderer: React.FC<ViewRendererProps> = ({ activeView }) => {
-  // Map of view IDs to components - SOLO 2 VISTAS
+  // Map of view IDs to components - CLEANED: Removed duplicates
   const viewComponents: Record<string, React.ComponentType> = {
+    // Trading Views (5 total)
     'dashboard-home': UnifiedTradingTerminal,
-    'professional-terminal': UnifiedTradingTerminal,
+    'professional-terminal': ProfessionalTradingTerminal,
+    'live-terminal': LiveTradingTerminal,
+    'executive-overview': ExecutiveOverview,
+    'trading-signals': TradingSignals,
+
+    // Risk Management (2 total)
+    'risk-monitor': RealTimeRiskMonitor,
+    'risk-alerts': RiskAlertsCenter,
+
+    // Data Pipeline L0-L5 (5 total)
+    'l0-raw-data': L0RawDataDashboard,
+    'l1-features': L1FeatureStats,
+    'l3-correlations': L3Correlations,
+    'l4-rl-ready': L4RLReadyData,
+    'l5-model': L5ModelDashboard,
+
+    // Analysis & Backtest (1 total) - Merged L6 into backtest-results
+    'backtest-results': L6BacktestResults,
   };
 
   // Get the component for the active view

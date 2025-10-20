@@ -84,13 +84,56 @@ class RealTimeRiskEngine {
     this.startRealTimeUpdates();
   }
 
-  private initializeMetrics(): void {
+  private async initializeMetrics(): Promise<void> {
+    // Fetch risk metrics from analytics API
+    try {
+      const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
+      const portfolioValue = 10000000;
+      const response = await fetch(
+        `${ANALYTICS_API_URL}/api/analytics/risk-metrics?symbol=USDCOP&portfolio_value=${portfolioValue}&days=30`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const metrics = data.risk_metrics;
+
+        this.currentMetrics = {
+          portfolioValue: metrics.portfolioValue,
+          grossExposure: metrics.grossExposure,
+          netExposure: metrics.netExposure,
+          leverage: metrics.leverage,
+          portfolioVaR95: metrics.portfolioVaR95,
+          portfolioVaR99: metrics.portfolioVaR99,
+          expectedShortfall95: metrics.expectedShortfall95,
+          portfolioVolatility: metrics.portfolioVolatility,
+          currentDrawdown: metrics.currentDrawdown,
+          maximumDrawdown: metrics.maximumDrawdown,
+          liquidityScore: metrics.liquidityScore,
+          timeToLiquidate: metrics.timeToLiquidate,
+          bestCaseScenario: metrics.bestCaseScenario,
+          worstCaseScenario: metrics.worstCaseScenario,
+          stressTestResults: metrics.stressTestResults,
+          lastUpdated: new Date(),
+          calculationTime: 125 // ms
+        };
+      } else {
+        // Fallback to default values if API fails
+        this.setDefaultMetrics();
+      }
+    } catch (error) {
+      console.error('Failed to fetch risk metrics from API:', error);
+      // Fallback to default values
+      this.setDefaultMetrics();
+    }
+  }
+
+  private setDefaultMetrics(): void {
     this.currentMetrics = {
-      portfolioValue: 10000000, // $10M portfolio
+      portfolioValue: 10000000,
       grossExposure: 12000000,
       netExposure: 8500000,
       leverage: 1.2,
-      portfolioVaR95: 450000, // $450K daily VaR
+      portfolioVaR95: 450000,
       portfolioVaR99: 650000,
       expectedShortfall95: 720000,
       portfolioVolatility: 0.18,
@@ -107,7 +150,7 @@ class RealTimeRiskEngine {
         'Fed Rate Hike (+200bp)': -450000
       },
       lastUpdated: new Date(),
-      calculationTime: 125 // ms
+      calculationTime: 125
     };
   }
 

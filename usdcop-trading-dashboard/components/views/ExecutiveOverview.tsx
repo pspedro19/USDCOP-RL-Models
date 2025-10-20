@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, TrendingDown, Shield, AlertTriangle, CheckCircle, 
+import {
+  TrendingUp, TrendingDown, Shield, AlertTriangle, CheckCircle,
   XCircle, Clock, Target, BarChart3, Activity, Zap, Database,
   DollarSign, Percent, TrendingUp as TrendUp, LineChart
 } from 'lucide-react';
+import { usePerformanceKPIs, useProductionGates } from '@/hooks/useAnalytics';
 
 // KPI Calculation Functions
 const calculateSortinoRatio = (returns: number[], targetReturn: number = 0) => {
@@ -142,76 +143,30 @@ const ProductionGateCard: React.FC<{
 };
 
 export default function ExecutiveOverview() {
-  const [kpiData, setKpiData] = useState({
-    sortinoRatio: 1.47,
-    calmarRatio: 0.89,
-    maxDrawdown: 12.3,
-    profitFactor: 1.52,
-    benchmarkSpread: 8.7,
-    cagr: 18.4,
-    sharpeRatio: 1.33,
-    volatility: 11.8
-  });
+  // Fetch dynamic KPI data from analytics API
+  const { kpis: kpiDataFromAPI, isLoading: kpiLoading } = usePerformanceKPIs('USDCOP', 90);
+  const { gates: gatesFromAPI, isLoading: gatesLoading } = useProductionGates('USDCOP', 90);
 
-  const [productionGates, setProductionGates] = useState([
-    { 
-      title: 'Sortino Test', 
-      status: true, 
-      value: '1.47', 
-      threshold: '≥1.3',
-      description: 'Risk-adjusted returns vs downside deviation'
-    },
-    { 
-      title: 'Max Drawdown', 
-      status: true, 
-      value: '12.3%', 
-      threshold: '≤15%',
-      description: 'Maximum peak-to-trough decline'
-    },
-    { 
-      title: 'Calmar Ratio', 
-      status: true, 
-      value: '0.89', 
-      threshold: '≥0.8',
-      description: 'CAGR to Max Drawdown ratio'
-    },
-    { 
-      title: 'Stress Test', 
-      status: true, 
-      value: '16.2%', 
-      threshold: '≤20%',
-      description: 'CAGR drop under +25% cost stress'
-    },
-    { 
-      title: 'ONNX Latency', 
-      status: true, 
-      value: '15ms', 
-      threshold: '<20ms',
-      description: 'P99 inference latency'
-    },
-    { 
-      title: 'E2E Latency', 
-      status: true, 
-      value: '87ms', 
-      threshold: '<100ms',
-      description: 'End-to-end execution latency'
-    }
-  ]);
+  // Use real data or fallback to defaults while loading
+  const kpiData = kpiDataFromAPI || {
+    sortinoRatio: 0,
+    calmarRatio: 0,
+    maxDrawdown: 0,
+    profitFactor: 0,
+    benchmarkSpread: 0,
+    cagr: 0,
+    sharpeRatio: 0,
+    volatility: 0
+  };
 
-  // Simulate real-time data updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setKpiData(prev => ({
-        ...prev,
-        sortinoRatio: prev.sortinoRatio + (Math.random() - 0.5) * 0.02,
-        maxDrawdown: prev.maxDrawdown + (Math.random() - 0.5) * 0.1,
-        profitFactor: prev.profitFactor + (Math.random() - 0.5) * 0.01,
-        benchmarkSpread: prev.benchmarkSpread + (Math.random() - 0.5) * 0.2,
-      }));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Map API gates to component format
+  const productionGates = gatesFromAPI.map((gate) => ({
+    title: gate.title,
+    status: gate.status,
+    value: gate.value.toString(),
+    threshold: `${gate.operator}${gate.threshold}`,
+    description: gate.description
+  }));
 
   const kpiCards = [
     {

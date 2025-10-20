@@ -1,22 +1,9 @@
 'use client';
 
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigation, useNavigationPerformance } from '@/lib/contexts/NavigationContext';
-import { 
-  LineChart, 
-  Signal, 
-  TrendingUp, 
-  Database, 
-  Shield, 
-  Brain,
-  Activity,
-  BarChart3,
-  GitBranch,
-  Cpu,
-  Target,
-  PieChart,
-  Zap,
-  Key,
+import {
   ChevronRight,
   Sparkles,
   Clock,
@@ -24,46 +11,67 @@ import {
   ArrowLeft,
   Settings,
   Maximize2,
-  Minimize2,
-  AlertTriangle,
-  Bell,
-  Thermometer
+  Minimize2
 } from 'lucide-react';
 
-const views = [
-  // Trading views - Solo 2 vistas principales
-  { id: 'dashboard-home', name: 'Dashboard Home', icon: Activity, category: 'Trading', description: 'Professional USDCOP trading chart with full features', priority: 'high' },
-  { id: 'professional-terminal', name: 'Professional Terminal', icon: LineChart, category: 'Trading', description: 'Advanced professional trading terminal', priority: 'high' },
-];
+// Import dynamic configuration - NO HARDCODED VIEWS
+import {
+  getEnabledViews,
+  getViewsByCategory,
+  getCategoriesWithCounts,
+  CATEGORIES,
+  PRIORITY_CONFIG,
+  TOTAL_VIEWS
+} from '@/config/views.config';
 
-const categoryConfig = {
-  Trading: { color: 'from-cyan-400 to-blue-400', bgColor: 'from-cyan-500/10 to-blue-500/10' },
-  Risk: { color: 'from-red-400 to-orange-400', bgColor: 'from-red-500/10 to-orange-500/10' },
-  Pipeline: { color: 'from-green-400 to-emerald-400', bgColor: 'from-green-500/10 to-emerald-500/10' },
-  System: { color: 'from-purple-400 to-pink-400', bgColor: 'from-purple-500/10 to-pink-500/10' }
-};
-
-const priorityConfig = {
-  high: { indicator: 'bg-red-400', label: 'High Priority' },
-  medium: { indicator: 'bg-yellow-400', label: 'Medium Priority' },
-  low: { indicator: 'bg-green-400', label: 'Low Priority' }
-};
+// Get views from configuration
+const views = getEnabledViews();
+const categoriesWithCounts = getCategoriesWithCounts();
+const categoryConfig = CATEGORIES;
+const priorityConfig = PRIORITY_CONFIG;
 
 export function EnhancedNavigationSidebar() {
-  const { state, changeView, goBack, toggleSidebarExpansion } = useNavigation();
+  const navigation = useNavigation();
   const performance = useNavigationPerformance();
-  
-  const categories = ['Trading', 'Risk', 'Pipeline', 'System'];
-  const canGoBack = state.viewHistory.length > 1;
+  const [isHovering, setIsHovering] = React.useState(false);
+
+  // Handle case where context is not available
+  if (!navigation) {
+    return (
+      <div className="w-64 bg-slate-950 border-r border-slate-800 p-4">
+        <div className="text-white">Loading navigation...</div>
+      </div>
+    );
+  }
+
+  const { state, changeView, goBack, toggleSidebarExpansion } = navigation;
+  const categories = categoriesWithCounts.map(c => c.category); // Dynamic from config
+  const canGoBack = state?.viewHistory?.length > 1;
+
+  // Auto-expand on hover when collapsed
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    if (!state?.sidebarExpanded) {
+      toggleSidebarExpansion();
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
   
   // Get frequently used views
   const frequentViews = views
-    .filter(view => state.viewStates[view.id]?.lastVisited)
-    .sort((a, b) => (state.viewStates[b.id]?.lastVisited || 0) - (state.viewStates[a.id]?.lastVisited || 0))
+    .filter(view => state?.viewStates?.[view.id]?.lastVisited)
+    .sort((a, b) => (state?.viewStates?.[b.id]?.lastVisited || 0) - (state?.viewStates?.[a.id]?.lastVisited || 0))
     .slice(0, 3);
 
   return (
-    <div className={`${state.sidebarExpanded ? 'w-80' : 'w-16'} bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 h-full flex flex-col transition-all duration-300 relative overflow-hidden`}>
+    <div
+      className={`${state?.sidebarExpanded ? 'w-80' : 'w-40'} bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 h-full flex flex-col transition-all duration-300 relative overflow-hidden`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {/* Sidebar Glow Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5" />
       <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-blue-500/30 to-transparent" />
@@ -77,7 +85,7 @@ export function EnhancedNavigationSidebar() {
           whileTap={{ scale: 0.98 }}
         >
           <AnimatePresence>
-            {state.sidebarExpanded && (
+            {state?.sidebarExpanded && (
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -92,23 +100,23 @@ export function EnhancedNavigationSidebar() {
                 </div>
                 <div>
                   <h2 className="text-white font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">USD/COP Navigation</h2>
-                  <p className="text-xs text-slate-400">16 Professional Views</p>
+                  <p className="text-xs text-slate-400">{TOTAL_VIEWS} Professional Views</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
           <motion.div
-            animate={{ rotate: state.sidebarExpanded ? 0 : 180 }}
+            animate={{ rotate: state?.sidebarExpanded ? 0 : 180 }}
             transition={{ duration: 0.3 }}
           >
-            {state.sidebarExpanded ? <Minimize2 className="w-5 h-5 text-slate-400" /> : <Maximize2 className="w-5 h-5 text-slate-400" />}
+            {state?.sidebarExpanded ? <Minimize2 className="w-5 h-5 text-slate-400" /> : <Maximize2 className="w-5 h-5 text-slate-400" />}
           </motion.div>
         </motion.div>
       </div>
 
       {/* Quick Actions */}
       <AnimatePresence>
-        {state.sidebarExpanded && (
+        {state?.sidebarExpanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -129,9 +137,9 @@ export function EnhancedNavigationSidebar() {
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">Go Back</span>
-              {canGoBack && state.viewHistory[1] && (
+              {canGoBack && state?.viewHistory[1] && (
                 <span className="text-xs text-slate-500 ml-auto">
-                  {views.find(v => v.id === state.viewHistory[1])?.name || 'Previous'}
+                  {views.find(v => v.id === state?.viewHistory[1])?.name || 'Previous'}
                 </span>
               )}
             </motion.button>
@@ -169,7 +177,7 @@ export function EnhancedNavigationSidebar() {
 
       {/* Frequent Views */}
       <AnimatePresence>
-        {state.sidebarExpanded && frequentViews.length > 0 && (
+        {state?.sidebarExpanded && frequentViews.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -187,13 +195,13 @@ export function EnhancedNavigationSidebar() {
                   whileHover={{ scale: 1.02, x: 4 }}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
-                    state.activeView === view.id
+                    state?.activeView === view.id
                       ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300'
                       : 'hover:bg-slate-800/50 text-slate-300 hover:text-cyan-300'
                   }`}
                 >
                   <view.icon size={16} className={`${
-                    state.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
+                    state?.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
                   } transition-colors duration-200`} />
                   <span className="text-sm font-medium truncate">{view.name}</span>
                   <Clock className="w-3 h-3 text-slate-500 ml-auto" />
@@ -206,16 +214,16 @@ export function EnhancedNavigationSidebar() {
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto py-4 px-3">
-        {state.sidebarExpanded ? (
+        {state?.sidebarExpanded ? (
           // Expanded view with categories
           categories.map((category) => (
             <div key={category} className="mb-6">
-              <div className={`bg-gradient-to-r ${categoryConfig[category as keyof typeof categoryConfig].bgColor} rounded-lg p-3 mb-3`}>
-                <h3 className={`text-sm font-bold bg-gradient-to-r ${categoryConfig[category as keyof typeof categoryConfig].color} bg-clip-text text-transparent uppercase tracking-wide`}>
+              <div className={`bg-gradient-to-r ${categoryConfig[category].bgColor} rounded-lg p-3 mb-3`}>
+                <h3 className={`text-sm font-bold bg-gradient-to-r ${categoryConfig[category].color} bg-clip-text text-transparent uppercase tracking-wide`}>
                   {category}
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  {views.filter(view => view.category === category).length} views available
+                  {getViewsByCategory(category).length} views available
                 </p>
               </div>
               
@@ -227,22 +235,22 @@ export function EnhancedNavigationSidebar() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={() => changeView(view.id)}
-                    disabled={state.isTransitioning}
+                    disabled={state?.isTransitioning}
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
                     className={`w-full p-3 rounded-xl flex items-center gap-3 transition-all duration-200 group disabled:opacity-50 relative ${
-                      state.activeView === view.id 
+                      state?.activeView === view.id 
                         ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-500/30' 
                         : 'hover:bg-slate-800/50 text-slate-300 hover:text-cyan-300'
                     }`}
                   >
                     {/* Priority indicator */}
-                    <div className={`w-2 h-2 rounded-full ${priorityConfig[view.priority as keyof typeof priorityConfig].indicator} ${
+                    <div className={`w-2 h-2 rounded-full ${priorityConfig[view.priority].indicator} ${
                       view.priority === 'high' ? 'animate-pulse' : ''
                     }`} />
                     
                     <view.icon size={18} className={`${
-                      state.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
+                      state?.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
                     } transition-colors duration-200`} />
                     
                     <div className="text-left flex-1">
@@ -250,19 +258,19 @@ export function EnhancedNavigationSidebar() {
                       <div className="text-xs text-slate-500 group-hover:text-slate-400">{view.description}</div>
                     </div>
                     
-                    {state.activeView === view.id && (
+                    {state?.activeView === view.id && (
                       <motion.div
                         layoutId="activeViewIndicator"
                         className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
                       />
                     )}
                     
-                    {state.isTransitioning && state.activeView === view.id && (
+                    {state?.isTransitioning && state?.activeView === view.id && (
                       <div className="w-4 h-4 border-2 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin" />
                     )}
                     
                     {/* Last visited indicator */}
-                    {state.viewStates[view.id]?.lastVisited && (
+                    {state?.viewStates[view.id]?.lastVisited && (
                       <div className="absolute top-1 right-1 w-1 h-1 bg-green-400 rounded-full" />
                     )}
                   </motion.button>
@@ -280,16 +288,16 @@ export function EnhancedNavigationSidebar() {
                 whileTap={{ scale: 0.9 }}
                 onClick={() => changeView(view.id)}
                 className={`w-full p-3 rounded-lg flex justify-center relative group ${
-                  state.activeView === view.id ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/50'
+                  state?.activeView === view.id ? 'bg-cyan-500/20 border border-cyan-500/50' : 'hover:bg-slate-800/50'
                 }`}
                 title={view.name}
               >
                 <view.icon size={20} className={`${
-                  state.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
+                  state?.activeView === view.id ? 'text-cyan-400' : 'text-slate-400 group-hover:text-cyan-400'
                 } transition-colors duration-200`} />
-                
+
                 {/* Priority indicator for collapsed view */}
-                <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${priorityConfig[view.priority as keyof typeof priorityConfig].indicator} ${
+                <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${priorityConfig[view.priority].indicator} ${
                   view.priority === 'high' ? 'animate-pulse' : ''
                 }`} />
                 
@@ -305,7 +313,7 @@ export function EnhancedNavigationSidebar() {
 
       {/* Footer */}
       <AnimatePresence>
-        {state.sidebarExpanded && (
+        {state?.sidebarExpanded && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -324,16 +332,16 @@ export function EnhancedNavigationSidebar() {
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Active View</span>
                 <span className="text-cyan-400 font-mono">
-                  {views.find(v => v.id === state.activeView)?.name || 'Unknown'}
+                  {views.find(v => v.id === state?.activeView)?.name || 'Unknown'}
                 </span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Data Source</span>
                 <span className={`font-mono ${
-                  state.dataSource === 'l0' ? 'text-blue-400' :
-                  state.dataSource === 'l1' ? 'text-green-400' : 'text-purple-400'
+                  state?.dataSource === 'l0' ? 'text-blue-400' :
+                  state?.dataSource === 'l1' ? 'text-green-400' : 'text-purple-400'
                 }`}>
-                  {state.dataSource.toUpperCase()}
+                  {state?.dataSource?.toUpperCase() || 'N/A'}
                 </span>
               </div>
             </div>

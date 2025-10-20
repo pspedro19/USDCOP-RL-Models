@@ -23,43 +23,16 @@ import {
 
 import RealDataTradingChart from '../charts/RealDataTradingChart';
 import { useRealTimePrice } from '@/hooks/useRealTimePrice';
+import { useMarketStats } from '@/hooks/useMarketStats';
 import { MarketDataService } from '@/lib/services/market-data-service';
 import { Badge } from '@/components/ui/badge';
-
-interface UnifiedMetrics {
-  currentPrice: number;
-  change24h: number;
-  changePercent: number;
-  volume24h: number;
-  high24h: number;
-  low24h: number;
-  spread: number;
-  volatility: number;
-  liquidity: number;
-  trend: 'up' | 'down' | 'neutral';
-  timestamp: Date;
-}
 
 interface UnifiedSettings {
   timeframe: '5m' | '15m' | '30m' | '1h' | '1d';
 }
 
 export default function UnifiedTradingTerminal() {
-  // === ESTADO UNIFICADO ===
-  const [metrics, setMetrics] = useState<UnifiedMetrics>({
-    currentPrice: 4010.91,
-    change24h: 15.33,
-    changePercent: 0.38,
-    volume24h: 125430,
-    high24h: 4025.50,
-    low24h: 3990.25,
-    spread: 2.5,
-    volatility: 0.89,
-    liquidity: 98.7,
-    trend: 'up',
-    timestamp: new Date()
-  });
-
+  // === ESTADO UNIFICADO - 100% DATOS REALES DEL BACKEND ===
   const [settings, setSettings] = useState<UnifiedSettings>({
     timeframe: '1h'
   });
@@ -67,33 +40,13 @@ export default function UnifiedTradingTerminal() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // === DATOS EN TIEMPO REAL ===
-  const { price: realtimePrice, isConnected } = useRealTimePrice();
+  // === DATOS EN TIEMPO REAL DEL BACKEND ===
+  const { currentPrice: realtimePrice, isConnected: priceConnected } = useRealTimePrice('USDCOP');
+  const { stats: marketStats, isConnected: statsConnected, isLoading } = useMarketStats('USDCOP', 30000);
 
-  // === ACTUALIZACIÓN DE MÉTRICAS ===
-  useEffect(() => {
-    // Simple metrics update - the chart handles its own data
-    const updateMetrics = () => {
-      setMetrics(prev => ({
-        ...prev,
-        timestamp: new Date()
-      }));
-    };
-
-    const interval = setInterval(updateMetrics, 30000); // Update timestamp every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  // === ACTUALIZACIÓN EN TIEMPO REAL ===
-  useEffect(() => {
-    if (realtimePrice && realtimePrice !== metrics.currentPrice) {
-      setMetrics(prev => ({
-        ...prev,
-        currentPrice: realtimePrice,
-        timestamp: new Date()
-      }));
-    }
-  }, [realtimePrice, metrics.currentPrice]);
+  // Combine real-time price with market stats
+  const currentPrice = realtimePrice?.price || marketStats?.currentPrice || 0;
+  const isConnected = priceConnected || statsConnected;
 
 
   // === UTILIDADES ===
@@ -132,26 +85,26 @@ export default function UnifiedTradingTerminal() {
               </p>
             </div>
 
-            {/* Métricas Principales */}
+            {/* Métricas Principales - 100% DATOS REALES */}
             <div className="flex items-center space-x-6">
               <div className="text-center">
                 <div className="text-3xl font-mono font-bold text-white">
-                  {formatPrice(metrics.currentPrice)}
+                  {formatPrice(currentPrice)}
                 </div>
                 <div className="text-xs text-slate-400">Precio Actual</div>
               </div>
 
               <div className="text-center">
                 <div className={`text-lg font-mono font-bold flex items-center gap-1 ${
-                  metrics.change24h >= 0 ? 'text-emerald-400' : 'text-red-400'
+                  (marketStats?.change24h || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
                 }`}>
-                  {metrics.change24h >= 0 ?
+                  {(marketStats?.change24h || 0) >= 0 ?
                     <TrendingUp className="h-4 w-4" /> :
                     <TrendingDown className="h-4 w-4" />
                   }
-                  <span>{metrics.change24h >= 0 ? '+' : ''}{metrics.change24h.toFixed(4)}</span>
+                  <span>{(marketStats?.change24h || 0) >= 0 ? '+' : ''}{(marketStats?.change24h || 0).toFixed(4)}</span>
                   <span className="text-sm">
-                    ({metrics.change24h >= 0 ? '+' : ''}{metrics.changePercent.toFixed(2)}%)
+                    ({(marketStats?.changePercent || 0) >= 0 ? '+' : ''}{(marketStats?.changePercent || 0).toFixed(2)}%)
                   </span>
                 </div>
                 <div className="text-xs text-slate-400">Cambio 24h</div>
@@ -159,7 +112,7 @@ export default function UnifiedTradingTerminal() {
 
               <div className="text-center">
                 <div className="text-lg font-mono text-white">
-                  {formatVolume(metrics.volume24h)}
+                  {formatVolume(marketStats?.volume24h || 0)}
                 </div>
                 <div className="text-xs text-slate-400">Volumen 24h</div>
               </div>
@@ -193,18 +146,18 @@ export default function UnifiedTradingTerminal() {
           </div>
         </div>
 
-        {/* Métricas Secundarias */}
+        {/* Métricas Secundarias - DATOS REALES */}
         <div className="flex items-center justify-between mt-4 text-sm text-slate-400">
           <div className="flex items-center space-x-6">
-            <div>H: {formatPrice(metrics.high24h)}</div>
-            <div>L: {formatPrice(metrics.low24h)}</div>
-            <div>Spread: {metrics.spread.toFixed(2)} COP</div>
-            <div>Vol: {metrics.volatility.toFixed(2)}%</div>
-            <div>Liq: {metrics.liquidity.toFixed(1)}%</div>
+            <div>H: {formatPrice(marketStats?.high24h || 0)}</div>
+            <div>L: {formatPrice(marketStats?.low24h || 0)}</div>
+            <div>Spread: {(marketStats?.spread || 0).toFixed(2)} COP</div>
+            <div>Vol: {(marketStats?.volatility || 0).toFixed(2)}%</div>
+            <div>Source: <span className="text-cyan-400">{marketStats?.source || 'loading...'}</span></div>
           </div>
 
           <div className="text-slate-500">
-            Actualizado: {metrics.timestamp.toLocaleTimeString()}
+            Actualizado: {marketStats?.timestamp ? new Date(marketStats.timestamp).toLocaleTimeString() : 'N/A'}
           </div>
         </div>
       </div>

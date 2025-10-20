@@ -99,124 +99,133 @@ export default function RealTimeRiskMonitor() {
   const intervalRef = useRef<NodeJS.Timeout>();
   const metricsRef = useRef<RealTimeRiskMetrics | null>(null);
 
-  // Mock positions for demonstration
-  const mockPositions = useCallback((): Position[] => {
-    return [
-      {
-        symbol: 'USDCOP_SPOT',
-        quantity: 2000000,
-        marketValue: 8500000,
-        avgPrice: 4200,
-        currentPrice: 4250,
-        pnl: 100000,
-        weight: 0.85,
-        sector: 'FX',
-        country: 'Colombia',
-        currency: 'COP'
-      },
-      {
-        symbol: 'COP_BONDS',
-        quantity: 500000,
-        marketValue: 1200000,
-        avgPrice: 98.5,
-        currentPrice: 99.2,
-        pnl: 3500,
-        weight: 0.12,
-        sector: 'Fixed Income',
-        country: 'Colombia',
-        currency: 'COP'
-      },
-      {
-        symbol: 'OIL_HEDGE',
-        quantity: -50000,
-        marketValue: -300000,
-        avgPrice: 85.2,
-        currentPrice: 84.8,
-        pnl: 2000,
-        weight: 0.03,
-        sector: 'Commodities',
-        country: 'Global',
-        currency: 'USD'
+  // Fetch real positions from Trading API
+  const [positions, setPositions] = useState<Position[]>([]);
+
+  const fetchPositions = useCallback(async (): Promise<Position[]> => {
+    try {
+      const TRADING_API_URL = process.env.NEXT_PUBLIC_TRADING_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${TRADING_API_URL}/api/trading/positions?symbol=USDCOP`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch positions');
       }
-    ];
+
+      const data = await response.json();
+
+      // Transform API response to Position format
+      const positionsData: Position[] = data.positions.map((pos: any) => ({
+        symbol: pos.symbol,
+        quantity: pos.quantity,
+        marketValue: pos.marketValue,
+        avgPrice: pos.avgPrice,
+        currentPrice: pos.currentPrice,
+        pnl: pos.pnl,
+        weight: pos.weight,
+        sector: pos.sector,
+        country: pos.country,
+        currency: pos.currency
+      }));
+
+      setPositions(positionsData);
+      return positionsData;
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+      // Return fallback positions on error
+      return [
+        {
+          symbol: 'USDCOP_SPOT',
+          quantity: 2000000,
+          marketValue: 8500000,
+          avgPrice: 4200,
+          currentPrice: 4250,
+          pnl: 100000,
+          weight: 0.85,
+          sector: 'FX',
+          country: 'Colombia',
+          currency: 'COP'
+        }
+      ];
+    }
   }, []);
 
-  const generateRiskHeatmap = useCallback((metrics: RealTimeRiskMetrics): RiskHeatmapData[] => {
-    const positions = mockPositions();
-    
-    return positions.map(position => {
-      // Calculate risk scores for each dimension
-      const varScore = Math.random() * 100;
-      const leverageScore = position.weight * 100;
-      const liquidityScore = position.sector === 'FX' ? 90 : position.sector === 'Commodities' ? 70 : 80;
-      const concentrationScore = position.weight * 100;
-      
-      // Overall risk score (weighted average)
-      const riskScore = (varScore * 0.3 + leverageScore * 0.25 + (100 - liquidityScore) * 0.25 + concentrationScore * 0.20);
-      
-      // Color coding based on risk score
-      let color = '#10B981'; // Green
-      if (riskScore > 70) color = '#EF4444'; // Red
-      else if (riskScore > 50) color = '#F59E0B'; // Amber
-      else if (riskScore > 30) color = '#8B5CF6'; // Purple
-      
-      return {
-        position: position.symbol,
-        var95: varScore,
-        leverage: leverageScore,
-        liquidity: liquidityScore,
-        concentration: concentrationScore,
-        riskScore,
-        color
-      };
-    });
-  }, [mockPositions]);
+  const generateRiskHeatmap = useCallback(async (): Promise<RiskHeatmapData[]> => {
+    try {
+      const TRADING_API_URL = process.env.NEXT_PUBLIC_TRADING_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${TRADING_API_URL}/api/trading/positions?symbol=USDCOP`);
 
-  const generateMarketConditions = useCallback((): MarketCondition[] => {
-    return [
-      {
-        indicator: 'VIX Index',
-        value: 18.5,
-        status: 'normal',
-        change: -2.3,
-        description: 'Market volatility within normal range'
-      },
-      {
-        indicator: 'USD/COP Volatility',
-        value: 24.2,
-        status: 'warning',
-        change: 5.8,
-        description: 'Above average volatility in USDCOP'
-      },
-      {
-        indicator: 'Credit Spreads',
-        value: 145,
-        status: 'normal',
-        change: -3.2,
-        description: 'Colombian spreads tightening'
-      },
-      {
-        indicator: 'Oil Price',
-        value: 84.7,
-        status: 'critical',
-        change: -12.4,
-        description: 'Significant oil price decline affecting COP'
-      },
-      {
-        indicator: 'Fed Policy',
-        value: 5.25,
-        status: 'normal',
-        change: 0,
-        description: 'Fed funds rate unchanged'
-      },
-      {
-        indicator: 'EM Sentiment',
-        value: 42.1,
-        status: 'warning',
-        change: -8.7,
-        description: 'EM risk-off sentiment building'
+      if (!response.ok) {
+        throw new Error('Failed to fetch positions');
       }
-    ];
+
+      const data = await response.json();
+      const positionsData = data.positions || [];
+
+      return positionsData.map((position: any) => {
+        // Use risk scores from API if available, otherwise calculate
+        const varScore = position.riskScores?.var || position.weight * 100;
+        const leverageScore = position.riskScores?.leverage || position.weight * 100;
+        const liquidityScore = position.riskScores?.liquidity ||
+          (position.sector === 'FX' ? 90 : position.sector === 'Commodities' ? 70 : 80);
+        const concentrationScore = position.riskScores?.concentration || position.weight * 100;
+
+        // Overall risk score (weighted average)
+        const riskScore = (varScore * 0.3 + leverageScore * 0.25 + (100 - liquidityScore) * 0.25 + concentrationScore * 0.20);
+
+        // Color coding based on risk score
+        let color = '#10B981'; // Green
+        if (riskScore > 70) color = '#EF4444'; // Red
+        else if (riskScore > 50) color = '#F59E0B'; // Amber
+        else if (riskScore > 30) color = '#8B5CF6'; // Purple
+
+        return {
+          position: position.symbol,
+          var95: varScore,
+          leverage: leverageScore,
+          liquidity: liquidityScore,
+          concentration: concentrationScore,
+          riskScore,
+          color
+        };
+      });
+    } catch (error) {
+      console.error('Error generating risk heatmap:', error);
+      return [];
+    }
+  }, []);
+
+  const fetchMarketConditions = useCallback(async (): Promise<MarketCondition[]> => {
+    try {
+      const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
+      const response = await fetch(`${ANALYTICS_API_URL}/api/analytics/market-conditions?symbol=USDCOP&days=30`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch market conditions');
+      }
+
+      const data = await response.json();
+
+      return data.conditions || [];
+    } catch (error) {
+      console.error('Error fetching market conditions:', error);
+      // Return fallback data on error
+      return [
+        {
+          indicator: 'VIX Index',
+          value: 18.5,
+          status: 'normal' as const,
+          change: -2.3,
+          description: 'Market volatility within normal range'
+        },
+        {
+          indicator: 'USD/COP Volatility',
+          value: 24.2,
+          status: 'warning' as const,
+          change: 5.8,
+          description: 'Above average volatility in USDCOP'
+        }
+      ];
+    }
   }, []);
 
   const updateRiskMetrics = useCallback(async () => {
@@ -228,8 +237,8 @@ export default function RealTimeRiskMonitor() {
         return;
       }
 
-      // Simulate real-time data update
-      const positions = mockPositions();
+      // Fetch real positions from API
+      const positions = await fetchPositions();
 
       // Update positions in risk engine with error handling
       if (typeof realTimeRiskEngine.updatePosition === 'function') {
@@ -273,8 +282,9 @@ export default function RealTimeRiskMonitor() {
           return updated.slice(-100);
         });
 
-        // Update risk heatmap
-        setRiskHeatmap(generateRiskHeatmap(metrics));
+        // Update risk heatmap from API
+        const heatmapData = await generateRiskHeatmap();
+        setRiskHeatmap(heatmapData);
 
         // Update alerts count with error handling
         try {
@@ -291,8 +301,9 @@ export default function RealTimeRiskMonitor() {
         setIsConnected(false);
       }
 
-      // Update market conditions
-      setMarketConditions(generateMarketConditions());
+      // Fetch market conditions from API
+      const conditions = await fetchMarketConditions();
+      setMarketConditions(conditions);
 
       setLastUpdate(new Date());
       setIsConnected(true);
@@ -301,7 +312,7 @@ export default function RealTimeRiskMonitor() {
       console.error('Failed to update risk metrics:', error);
       setIsConnected(false);
     }
-  }, [mockPositions, generateRiskHeatmap, generateMarketConditions]);
+  }, [fetchPositions, generateRiskHeatmap, fetchMarketConditions]);
 
   useEffect(() => {
     const initialize = async () => {

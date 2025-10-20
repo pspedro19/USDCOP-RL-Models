@@ -10,50 +10,84 @@ import {
 import RealDataTradingChart from '../charts/RealDataTradingChart';
 import RealTimePriceDisplay from '../realtime/RealTimePriceDisplay';
 
-// KPI Mock Data Generator
-const generateKPIData = () => ({
-  session: {
-    timeRange: '08:00–12:55',
-    pnlIntraday: 1247.85,
-    pnlPercent: 2.34,
-    tradesEpisode: 7,
-    targetRange: '2–10',
-    avgHolding: 12,
-    holdingRange: '5–25 barras',
-    actionBalance: { sell: 45, buy: 55 },
-    drawdownIntraday: -2.1
-  },
-  execution: {
-    vwapVsFill: 1.2, // bps
-    spreadEffective: 4.8, // bps per hour
-    slippage: 2.1, // bps per hour
-    turnCost: 8.5, // bps per trade
-    fillRatio: 94.2 // %
-  },
-  latency: {
-    p50: 45, // ms
-    p95: 78, // ms
-    p99: 95, // ms
-    onnxP99: 12 // ms
-  },
-  marketState: {
-    status: 'OPEN',
-    latency: '<5ms',
-    clockSkew: '0.2ms',
-    lastUpdate: new Date().toLocaleTimeString()
+// KPI Data Generator with dynamic session P&L
+const generateKPIData = async () => {
+  // Fetch session P&L from Analytics API
+  let pnlIntraday = 0;
+  let pnlPercent = 0;
+
+  try {
+    const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
+    const response = await fetch(`${ANALYTICS_API_URL}/api/analytics/session-pnl?symbol=USDCOP`);
+
+    if (response.ok) {
+      const data = await response.json();
+      pnlIntraday = data.session_pnl || 0;
+      pnlPercent = data.session_pnl_percent || 0;
+    }
+  } catch (error) {
+    console.error('Error fetching session P&L:', error);
   }
-});
+
+  return {
+    session: {
+      timeRange: '08:00–12:55',
+      pnlIntraday,
+      pnlPercent,
+      tradesEpisode: 7,
+      targetRange: '2–10',
+      avgHolding: 12,
+      holdingRange: '5–25 barras',
+      actionBalance: { sell: 45, buy: 55 },
+      drawdownIntraday: -2.1
+    },
+    execution: {
+      vwapVsFill: 1.2, // bps
+      spreadEffective: 4.8, // bps per hour
+      slippage: 2.1, // bps per hour
+      turnCost: 8.5, // bps per trade
+      fillRatio: 94.2 // %
+    },
+    latency: {
+      p50: 45, // ms
+      p95: 78, // ms
+      p99: 95, // ms
+      onnxP99: 12 // ms
+    },
+    marketState: {
+      status: 'OPEN',
+      latency: '<5ms',
+      clockSkew: '0.2ms',
+      lastUpdate: new Date().toLocaleTimeString()
+    }
+  };
+};
 
 const EnhancedTradingTerminal: React.FC = () => {
-  const [kpiData, setKpiData] = useState(generateKPIData());
+  const [kpiData, setKpiData] = useState<any>({
+    session: { timeRange: '08:00–12:55', pnlIntraday: 0, pnlPercent: 0, tradesEpisode: 0, targetRange: '2–10', avgHolding: 0, holdingRange: '5–25 barras', actionBalance: { sell: 0, buy: 0 }, drawdownIntraday: 0 },
+    execution: { vwapVsFill: 0, spreadEffective: 0, slippage: 0, turnCost: 0, fillRatio: 0 },
+    latency: { p50: 0, p95: 0, p99: 0, onnxP99: 0 },
+    marketState: { status: 'LOADING', latency: '-', clockSkew: '-', lastUpdate: '-' }
+  });
   const [isReplaying, setIsReplaying] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(true);
 
-  // Update data every 5 seconds
+  // Load initial data and update every 5 seconds
   useEffect(() => {
+    const loadData = async () => {
+      const data = await generateKPIData();
+      setKpiData(data);
+    };
+
+    // Load immediately
+    loadData();
+
+    // Update every 5 seconds
     const interval = setInterval(() => {
-      setKpiData(generateKPIData());
+      loadData();
     }, 5000);
+
     return () => clearInterval(interval);
   }, []);
 

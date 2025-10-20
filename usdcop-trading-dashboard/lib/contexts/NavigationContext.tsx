@@ -1,6 +1,6 @@
 /**
  * NavigationContext - Context for managing navigation state and performance
- * This file was missing and causing compilation errors
+ * Enhanced to support EnhancedNavigationSidebar requirements
  */
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
@@ -20,42 +20,108 @@ export interface NavigationSection {
   priority?: 'always-visible' | 'critical' | 'secondary';
 }
 
-export interface NavigationContextType {
-  activeView: string;
-  setActiveView: (view: string) => void;
-  sidebarExpanded: boolean;
-  setSidebarExpanded: (expanded: boolean) => void;
-  navigationItems: NavigationSection[];
-  setNavigationItems: (items: NavigationSection[]) => void;
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
+export interface ViewState {
+  lastVisited: number;
+  visitCount: number;
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
+export interface NavigationState {
+  activeView: string;
+  viewHistory: string[];
+  sidebarExpanded: boolean;
+  isTransitioning: boolean;
+  viewStates: Record<string, ViewState>;
+  dataSource?: string;
+}
+
+export interface NavigationContextValue {
+  state: NavigationState;
+  changeView: (viewId: string) => void;
+  goBack: () => void;
+  toggleSidebarExpansion: () => void;
+}
+
+const NavigationContext = createContext<NavigationContextValue | undefined>(undefined);
 
 export interface NavigationProviderProps {
   children: ReactNode;
-  initialItems?: NavigationSection[];
+  initialView?: string;
+  onViewChange?: (viewId: string) => void;
 }
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   children,
-  initialItems = []
+  initialView = 'dashboard-home',
+  onViewChange
 }) => {
-  const [activeView, setActiveView] = useState('terminal');
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [navigationItems, setNavigationItems] = useState<NavigationSection[]>(initialItems);
-  const [isLoading, setIsLoading] = useState(false);
+  const [state, setState] = useState<NavigationState>({
+    activeView: initialView,
+    viewHistory: [initialView],
+    sidebarExpanded: true,
+    isTransitioning: false,
+    viewStates: {
+      [initialView]: {
+        lastVisited: Date.now(),
+        visitCount: 1
+      }
+    },
+    dataSource: 'l0'
+  });
 
-  const contextValue: NavigationContextType = {
-    activeView,
-    setActiveView,
-    sidebarExpanded,
-    setSidebarExpanded,
-    navigationItems,
-    setNavigationItems,
-    isLoading,
-    setIsLoading,
+  const changeView = useCallback((viewId: string) => {
+    if (state.isTransitioning || state.activeView === viewId) return;
+
+    setState(prev => ({
+      ...prev,
+      isTransitioning: true
+    }));
+
+    // Simulate transition delay for smooth UX
+    setTimeout(() => {
+      setState(prev => {
+        const newViewStates = {
+          ...prev.viewStates,
+          [viewId]: {
+            lastVisited: Date.now(),
+            visitCount: (prev.viewStates[viewId]?.visitCount || 0) + 1
+          }
+        };
+
+        return {
+          ...prev,
+          activeView: viewId,
+          viewHistory: [viewId, ...prev.viewHistory.filter(v => v !== viewId)].slice(0, 10),
+          isTransitioning: false,
+          viewStates: newViewStates
+        };
+      });
+
+      // Call optional callback
+      if (onViewChange) {
+        onViewChange(viewId);
+      }
+    }, 150);
+  }, [state.isTransitioning, state.activeView, onViewChange]);
+
+  const goBack = useCallback(() => {
+    if (state.viewHistory.length > 1) {
+      const previousView = state.viewHistory[1];
+      changeView(previousView);
+    }
+  }, [state.viewHistory, changeView]);
+
+  const toggleSidebarExpansion = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      sidebarExpanded: !prev.sidebarExpanded
+    }));
+  }, []);
+
+  const contextValue: NavigationContextValue = {
+    state,
+    changeView,
+    goBack,
+    toggleSidebarExpansion
   };
 
   return (
@@ -65,7 +131,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   );
 };
 
-export const useNavigation = (): NavigationContextType => {
+export const useNavigation = () => {
   const context = useContext(NavigationContext);
   if (context === undefined) {
     throw new Error('useNavigation must be used within a NavigationProvider');
@@ -75,26 +141,24 @@ export const useNavigation = (): NavigationContextType => {
 
 // Hook for navigation performance metrics
 export const useNavigationPerformance = () => {
-  const [metrics, setMetrics] = useState({
-    navigationCount: 0,
-    averageNavigationTime: 0,
-    lastNavigationTime: Date.now(),
-  });
+  const [totalTransitions, setTotalTransitions] = useState(0);
+  const [averageTransitionTime, setAverageTransitionTime] = useState(0);
+  const [transitionTimes, setTransitionTimes] = useState<number[]>([]);
 
-  const trackNavigation = useCallback((startTime: number) => {
-    const endTime = Date.now();
-    const navigationTime = endTime - startTime;
-
-    setMetrics(prev => ({
-      navigationCount: prev.navigationCount + 1,
-      averageNavigationTime: (prev.averageNavigationTime + navigationTime) / 2,
-      lastNavigationTime: endTime,
-    }));
+  const recordTransition = useCallback((duration: number) => {
+    setTotalTransitions(prev => prev + 1);
+    setTransitionTimes(prev => {
+      const newTimes = [...prev, duration].slice(-20); // Keep last 20
+      const avg = newTimes.reduce((sum, time) => sum + time, 0) / newTimes.length;
+      setAverageTransitionTime(avg);
+      return newTimes;
+    });
   }, []);
 
   return {
-    metrics,
-    trackNavigation,
+    totalTransitions,
+    averageTransitionTime,
+    recordTransition
   };
 };
 
