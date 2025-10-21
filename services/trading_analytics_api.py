@@ -785,3 +785,183 @@ if __name__ == "__main__":
         port=port,
         log_level="info"
     )
+
+
+# ==========================================
+# SPREAD CORWIN-SCHULTZ
+# ==========================================
+
+
+def calculate_spread_corwin_schultz(high: pd.Series, low: pd.Series) -> pd.Series:
+    """
+    Calcula spread proxy usando método Corwin-Schultz (2012)
+    Basado en el rango high-low de dos períodos consecutivos
+
+    Paper: "A Simple Way to Estimate Bid-Ask Spreads from Daily High and Low Prices"
+
+    Returns:
+        pd.Series: Spread estimado en basis points (bps)
+    """
+    # Beta: suma de cuadrados de log(high/low)
+    hl_ratio = np.log(high / low)
+    hl_ratio_prev = hl_ratio.shift(1)
+
+    beta = (hl_ratio ** 2) + (hl_ratio_prev ** 2)
+
+    # Gamma: cuadrado del log del rango máximo
+    max_high = pd.concat([high, high.shift(1)], axis=1).max(axis=1)
+    min_low = pd.concat([low, low.shift(1)], axis=1).min(axis=1)
+    gamma = (np.log(max_high / min_low)) ** 2
+
+    # Alpha (componente intermedio)
+    sqrt_2 = np.sqrt(2)
+    alpha = (np.sqrt(2 * beta) - np.sqrt(beta)) / (3 - 2 * sqrt_2) - np.sqrt(gamma / (3 - 2 * sqrt_2))
+
+    # Spread
+    spread = 2 * (np.exp(alpha) - 1) / (1 + np.exp(alpha))
+
+    # Convertir a basis points
+    spread_bps = spread * 10000
+
+    # Limpiar valores no válidos
+    spread_bps = spread_bps.replace([np.inf, -np.inf], np.nan)
+
+    return spread_bps
+
+
+@app.get("/api/analytics/spread-proxy")
+def get_spread_proxy(symbol: str = "USDCOP", days: int = 30):
+    """
+    Calcula spread proxy usando método Corwin-Schultz
+
+    Args:
+        symbol: Símbolo de trading
+        days: Días históricos para calcular
+
+    Returns:
+        Spread proxy en bps con estadísticas
+    """
+    try:
+        query = """
+        SELECT timestamp, high, low, close
+        FROM market_data
+        WHERE symbol = %s
+          AND timestamp > NOW() - INTERVAL '%s days'
+        ORDER BY timestamp
+        """
+
+        df = execute_query(query, (symbol, days))
+
+        if df.empty or len(df) < 2:
+            raise HTTPException(status_code=404, detail="Insufficient data")
+
+        # Calcular spread
+        df['spread_proxy_bps'] = calculate_spread_corwin_schultz(df['high'], df['low'])
+
+        # Estadísticas
+        spread_stats = {
+            "mean_bps": float(df['spread_proxy_bps'].mean()),
+            "median_bps": float(df['spread_proxy_bps'].median()),
+            "std_bps": float(df['spread_proxy_bps'].std()),
+            "p95_bps": float(df['spread_proxy_bps'].quantile(0.95)),
+            "min_bps": float(df['spread_proxy_bps'].min()),
+            "max_bps": float(df['spread_proxy_bps'].max()),
+            "current_bps": float(df['spread_proxy_bps'].iloc[-1])
+        }
+
+        # Serie temporal (últimos 100 puntos)
+        timeseries = df[['timestamp', 'spread_proxy_bps']].tail(100).to_dict('records')
+
+        return {
+            "symbol": symbol,
+            "method": "Corwin-Schultz (2012)",
+            "days": days,
+            "data_points": len(df),
+            "statistics": spread_stats,
+            "timeseries": timeseries,
+            "note": "Proxy estimate - not real bid-ask spread"
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating spread proxy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# SESSION PROGRESS
+# ==========================================
+
+
+def calculate_session_progress() -> Dict[str, Any]:
+    """
+    Calcula el progreso de la sesión de trading premium
+    Sesión: 08:00 - 12:55 COT (5 horas = 300 minutos = 60 barras M5)
+
+    Returns:
+        dict: Status, progreso %, barras elapsed/total, tiempo restante
+    """
+    import pytz
+    from datetime import datetime
+
+    # Timezone Colombia
+    cot = pytz.timezone('America/Bogota')
+    now = datetime.now(cot)
+
+    # Definir sesión
+    session_start = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    session_end = now.replace(hour=12, minute=55, second=0, microsecond=0)
+
+    # Verificar día de semana (lunes=0, domingo=6)
+    if now.weekday() >= 5:  # Sábado o domingo
+        return {
+            "status": "WEEKEND",
+            "progress": 0.0,
+            "bars_elapsed": 0,
+            "bars_total": 60,
+            "time_remaining_minutes": 0,
+            "session_start": session_start.isoformat(),
+            "session_end": session_end.isoformat()
+        }
+
+    # Calcular progreso
+    if now < session_start:
+        status = "PRE_MARKET"
+        progress = 0.0
+        bars_elapsed = 0
+        time_remaining = (session_end - session_start).total_seconds() / 60
+    elif now > session_end:
+        status = "CLOSED"
+        progress = 100.0
+        bars_elapsed = 60
+        time_remaining = 0
+    else:
+        status = "OPEN"
+        elapsed_seconds = (now - session_start).total_seconds()
+        total_seconds = (session_end - session_start).total_seconds()
+        progress = (elapsed_seconds / total_seconds) * 100
+        bars_elapsed = int(elapsed_seconds / 300)  # 300s = 5min
+        time_remaining = (session_end - now).total_seconds() / 60
+
+    return {
+        "status": status,
+        "progress": round(progress, 2),
+        "bars_elapsed": bars_elapsed,
+        "bars_total": 60,
+        "time_remaining_minutes": int(time_remaining),
+        "session_start": session_start.isoformat(),
+        "session_end": session_end.isoformat(),
+        "current_time": now.isoformat()
+    }
+
+
+@app.get("/api/analytics/session-progress")
+def get_session_progress():
+    """
+    Retorna progreso de la sesión de trading premium
+    Horario: 08:00 - 12:55 COT (60 barras M5)
+    """
+    try:
+        progress = calculate_session_progress()
+        return progress
+    except Exception as e:
+        logger.error(f"Error calculating session progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
