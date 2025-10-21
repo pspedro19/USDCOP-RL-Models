@@ -31,6 +31,31 @@ export async function GET(request: NextRequest) {
   const source = searchParams.get('source') || 'postgres';
 
   try {
+    // Call the Pipeline Data API backend service
+    const backendUrl = process.env.PIPELINE_DATA_API_URL || 'http://localhost:8004';
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    params.append('source', source);
+
+    const response = await fetch(`${backendUrl}/api/pipeline/l0/raw-data?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // If backend fails, use fallback logic
+    console.warn('[L0 API] Backend service unavailable, using fallback');
+
     let data: any[] = [];
     let metadata: any = {
       source: source,

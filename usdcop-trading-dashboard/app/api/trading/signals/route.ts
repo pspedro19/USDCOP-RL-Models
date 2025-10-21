@@ -259,10 +259,29 @@ function convertL5PredictionToSignal(prediction: L5Prediction, indicators: Techn
 
 export async function GET() {
   try {
-    // Fetch latest L5 predictions
+    // Call the Trading Signals API backend service
+    const backendUrl = process.env.TRADING_SIGNALS_API_URL || 'http://localhost:8003';
+    const response = await fetch(`${backendUrl}/api/trading/signals`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // If backend fails, try fallback logic
+    console.warn('[TradingSignals] Backend service unavailable, using fallback');
+
+    // Fetch latest L5 predictions as fallback
     const l5Response = await fetch('http://localhost:3000/api/data/l5');
     let l5Data = null;
-    
+
     if (l5Response.ok) {
       l5Data = await l5Response.json();
     }

@@ -175,18 +175,39 @@ class MinIOBacktestClient {
 
 /**
  * GET /api/backtest/results
- * 
+ *
  * Query parameters:
  * - runId: specific backtest run ID (optional, defaults to latest)
  * - split: test or val (optional, defaults to both)
  */
 export async function GET(request: NextRequest) {
   console.log('[BacktestAPI] GET /api/backtest/results');
-  
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const runId = searchParams.get('runId') || undefined;
     const split = searchParams.get('split') || undefined;
+
+    // Call the Backtest API backend service
+    const backendUrl = process.env.BACKTEST_API_URL || 'http://localhost:8006';
+    const params = new URLSearchParams();
+    if (split) params.append('split', split);
+
+    const response = await fetch(`${backendUrl}/api/backtest/results?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // If backend fails, try MinIO fallback
+    console.warn('[BacktestAPI] Backend service unavailable, using MinIO fallback');
 
     const client = new MinIOBacktestClient();
     const results = await client.getBacktestResults(runId);
@@ -211,7 +232,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[BacktestAPI] Error in GET /api/backtest/results:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch backtest results',

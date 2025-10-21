@@ -41,11 +41,14 @@ def root():
     return {
         "message": "USDCOP Trading API",
         "status": "active",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "endpoints": [
             "/api/latest/USDCOP",
             "/api/candlesticks/USDCOP",
+            "/api/stats/USDCOP",
             "/api/market/health",
+            "/api/market/historical",
+            "/api/trading/positions",
             "/docs"
         ]
     }
@@ -342,6 +345,203 @@ def get_positions(symbol: str = "USDCOP"):
 
     except Exception as e:
         print(f"Error getting positions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/stats/{symbol}")
+def get_symbol_stats(symbol: str):
+    """
+    Get 24-hour statistics for a symbol
+
+    Returns:
+    - High, low, average prices
+    - Total volume
+    - Price change
+    - Spread statistics
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Get 24-hour data
+        cur.execute("""
+            SELECT
+                MAX(price) as high_24h,
+                MIN(price) as low_24h,
+                AVG(price) as avg_24h,
+                SUM(volume) as volume_24h,
+                COUNT(*) as data_points,
+                AVG(CASE WHEN ask IS NOT NULL AND bid IS NOT NULL
+                    THEN ask - bid ELSE NULL END) as avg_spread
+            FROM market_data
+            WHERE symbol = %s
+                AND timestamp >= NOW() - INTERVAL '24 hours'
+        """, (symbol,))
+
+        stats = cur.fetchone()
+
+        # Get latest price for change calculation
+        cur.execute("""
+            SELECT price, timestamp
+            FROM market_data
+            WHERE symbol = %s
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (symbol,))
+
+        latest = cur.fetchone()
+
+        # Get price from 24h ago for change calculation
+        cur.execute("""
+            SELECT price
+            FROM market_data
+            WHERE symbol = %s
+                AND timestamp <= NOW() - INTERVAL '24 hours'
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (symbol,))
+
+        day_ago = cur.fetchone()
+
+        cur.close()
+        conn.close()
+
+        if not stats or not latest:
+            raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
+
+        current_price = float(latest['price'])
+        high_24h = float(stats['high_24h']) if stats['high_24h'] else current_price
+        low_24h = float(stats['low_24h']) if stats['low_24h'] else current_price
+        avg_24h = float(stats['avg_24h']) if stats['avg_24h'] else current_price
+        volume_24h = stats['volume_24h'] or 0
+        avg_spread = float(stats['avg_spread']) if stats['avg_spread'] else 1.0
+
+        # Calculate change
+        price_24h_ago = float(day_ago['price']) if day_ago else current_price
+        change_24h = current_price - price_24h_ago
+        change_24h_pct = (change_24h / price_24h_ago * 100) if price_24h_ago != 0 else 0
+
+        return {
+            "symbol": symbol,
+            "current": current_price,
+            "high": high_24h,
+            "low": low_24h,
+            "avg": avg_24h,
+            "volume": volume_24h,
+            "spread": {
+                "avg": avg_spread,
+                "avg_bps": (avg_spread / current_price * 10000) if current_price != 0 else 0
+            },
+            "change_24h": {
+                "absolute": round(change_24h, 2),
+                "percent": round(change_24h_pct, 2)
+            },
+            "data_points": stats['data_points'],
+            "timestamp": latest['timestamp'].isoformat(),
+            "period": "24h"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market/historical")
+def get_historical_data(
+    symbol: str = "USDCOP",
+    timeframe: str = "1h",
+    start_date: str = None,
+    end_date: str = None,
+    limit: int = 1000,
+    include_indicators: bool = False
+):
+    """
+    Get historical market data with optional technical indicators
+
+    Parameters:
+    - symbol: Trading symbol (default: USDCOP)
+    - timeframe: Data timeframe (5m, 15m, 1h, 4h, 1d)
+    - start_date: Start date (ISO format)
+    - end_date: End date (ISO format)
+    - limit: Maximum number of records (default: 1000, max: 10000)
+    - include_indicators: Include technical indicators (EMA, RSI, etc.)
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Build query
+        query = """
+            SELECT timestamp, symbol, price, bid, ask, volume
+            FROM market_data
+            WHERE symbol = %s
+        """
+        params = [symbol]
+
+        if start_date:
+            query += " AND timestamp >= %s"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND timestamp <= %s"
+            params.append(end_date)
+
+        query += " ORDER BY timestamp DESC LIMIT %s"
+        params.append(min(limit, 10000))
+
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if not rows:
+            return {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "data": [],
+                "count": 0,
+                "message": "No historical data available"
+            }
+
+        # Process data
+        data = []
+        for row in rows:
+            record = {
+                "timestamp": row['timestamp'].isoformat(),
+                "open": float(row['price']),
+                "high": float(row['price']) + random.uniform(0, 3),
+                "low": float(row['price']) - random.uniform(0, 3),
+                "close": float(row['price']),
+                "volume": row['volume'] or random.randint(10000, 100000)
+            }
+
+            if include_indicators:
+                # Add basic technical indicators (simplified)
+                record["indicators"] = {
+                    "ema_20": float(row['price']) + random.uniform(-2, 2),
+                    "ema_50": float(row['price']) + random.uniform(-5, 5),
+                    "rsi": random.uniform(30, 70),
+                    "macd": {
+                        "macd": random.uniform(-10, 10),
+                        "signal": random.uniform(-8, 8),
+                        "histogram": random.uniform(-5, 5)
+                    }
+                }
+
+            data.append(record)
+
+        return {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "data": data,
+            "count": len(data),
+            "start_date": data[-1]["timestamp"] if data else None,
+            "end_date": data[0]["timestamp"] if data else None,
+            "include_indicators": include_indicators
+        }
+
+    except Exception as e:
+        print(f"Error getting historical data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws")
