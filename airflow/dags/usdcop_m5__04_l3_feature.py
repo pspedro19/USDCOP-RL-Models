@@ -78,6 +78,14 @@ from typing import Dict, List, Optional, Tuple
 from scipy import stats
 from scipy.stats import spearmanr
 
+# Import manifest writer
+import sys
+import os as os_mod
+sys.path.insert(0, os_mod.path.join(os_mod.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # Setup logging
 logger = logging.getLogger(__name__)
 
@@ -2879,7 +2887,64 @@ def save_final_features(**context):
     logger.info(f"✅ Leakage Check: {'PASSED' if forward_ic_passed else 'FAILED'}")
     logger.info(f"📁 Output: s3://{BUCKET_OUTPUT}/{final_key}")
     logger.info("="*80)
-    
+
+    # ========== MANIFEST WRITING ==========
+    logger.info("\nWriting manifest for L3 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os_mod.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os_mod.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os_mod.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+
+        # Main features file
+        try:
+            metadata = create_file_metadata(s3_client, BUCKET_OUTPUT, final_key, row_count=len(df_final))
+            files_metadata.append(metadata)
+        except Exception as e:
+            logger.warning(f"Could not create metadata for features.parquet: {e}")
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=BUCKET_OUTPUT,
+                layer='l3',
+                run_id=run_id,
+                files=files_metadata,
+                status='success',
+                metadata={
+                    'started_at': datetime.now(pytz.UTC).isoformat(),
+                    'pipeline': DAG_ID,
+                    'airflow_dag_id': DAG_ID,
+                    'execution_date': execution_date,
+                    'total_rows': len(df_final),
+                    'total_episodes': int(df_final['episode_id'].nunique()),
+                    'total_features': total_features,
+                    'feature_list': feature_list,
+                    'quality_passed': quality_passed,
+                    'leakage_passed': forward_ic_passed,
+                    'quality_metrics': quality_metrics
+                }
+            )
+            logger.info(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            logger.warning("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return {
         'features_saved': total_features,
         'episodes': int(df_final['episode_id'].nunique()),
@@ -2894,7 +2959,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='L3 Feature Engineering for USD/COP M5 data',
-    schedule_interval=None,
+    schedule_interval='@daily',  # Run after L2 completes
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['usdcop', 'l3', 'features', 'ml'],

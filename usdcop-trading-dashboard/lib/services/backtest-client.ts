@@ -102,110 +102,60 @@ export const backtestClient = {
 
     // Fallback to mock data generation
     const now = new Date()
-    const mockDailyReturns: DailyReturn[] = []
-    const mockTrades: TradeRecord[] = []
+    // NO MOCK DATA - Return structure with empty arrays
+    console.error('[BacktestClient] Backtest data unavailable - API must be running');
+    console.error('[BacktestClient] Start Backtest API on port 8006');
 
-    // Generate 30 days of mock daily returns
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(now)
-      date.setDate(date.getDate() - (29 - i))
-      const dailyReturn = (Math.random() - 0.5) * 0.02 // Random daily return between -1% and 1%
-      const cumulativeReturn = i === 0 ? dailyReturn : mockDailyReturns[i-1].cumulativeReturn * (1 + dailyReturn)
-
-      mockDailyReturns.push({
-        date: date.toISOString().split('T')[0],
-        return: dailyReturn,
-        cumulativeReturn: cumulativeReturn,
-        price: 100000 * (1 + cumulativeReturn),
-        volume: Math.floor(Math.random() * 1000000)
-      })
-    }
-
-    // Generate mock trades
-    for (let i = 0; i < 50; i++) {
-      const date = new Date(now)
-      date.setDate(date.getDate() - Math.floor(Math.random() * 30))
-      const pnl = (Math.random() - 0.4) * 1000 // Slightly positive bias
-
-      mockTrades.push({
-        id: `trade_${i + 1}`,
-        timestamp: date.toISOString(),
-        symbol: 'USDCOP',
-        side: Math.random() > 0.5 ? 'buy' : 'sell',
-        quantity: Math.floor(Math.random() * 10000) + 1000,
-        price: 4000 + Math.random() * 200,
-        pnl: pnl,
-        commission: Math.abs(pnl) * 0.001,
-        duration: Math.floor(Math.random() * 3600) // seconds
-      })
-    }
-
-    const winningTrades = mockTrades.filter(t => t.pnl > 0)
-    const losingTrades = mockTrades.filter(t => t.pnl <= 0)
-    const totalPnl = mockTrades.reduce((sum, t) => sum + t.pnl, 0)
-    const winRate = winningTrades.length / mockTrades.length
-    const grossProfit = winningTrades.reduce((sum, t) => sum + t.pnl, 0)
-    const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0))
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : 0
-
-    const mockKPIs: BacktestKPIs = {
+    const emptyKPIs: BacktestKPIs = {
       top_bar: {
-        CAGR: 0.125, // 12.5% CAGR
-        Sharpe: 1.45,
-        Sortino: 1.78,
-        Calmar: 0.89,
-        MaxDD: -0.08, // -8% max drawdown
-        Vol_annualizada: 0.15 // 15% annualized volatility
+        CAGR: 0,
+        Sharpe: 0,
+        Sortino: 0,
+        Calmar: 0,
+        MaxDD: 0,
+        Vol_annualizada: 0
       },
       trading_micro: {
-        win_rate: winRate,
-        profit_factor: profitFactor,
-        payoff: winningTrades.length > 0 && losingTrades.length > 0 ?
-          (grossProfit / winningTrades.length) / (grossLoss / losingTrades.length) : 1,
-        expectancy_bps: (totalPnl / mockTrades.length) * 10000 // in basis points
+        win_rate: 0,
+        profit_factor: 0,
+        payoff: 0,
+        expectancy_bps: 0
       },
       colas_y_drawdowns: {
-        VaR_99_bps: -250, // -2.5% VaR in basis points
-        ES_97_5_bps: -380 // -3.8% Expected Shortfall in basis points
+        VaR_99_bps: 0,
+        ES_97_5_bps: 0
       },
       exposicion_capacidad: {
-        beta: 1.15
+        beta: 0
       },
       ejecucion_costos: {
-        cost_to_alpha_ratio: 0.02
+        cost_to_alpha_ratio: 0
       }
-    }
+    };
 
     return {
-      runId: `backtest_${Date.now()}`,
+      runId: 'no_data',
       timestamp: now.toISOString(),
       test: {
-        kpis: mockKPIs,
-        dailyReturns: mockDailyReturns,
-        trades: mockTrades,
+        kpis: emptyKPIs,
+        dailyReturns: [],
+        trades: [],
         manifest: {
-          policy: 'PPO_USDCOP_v2.1',
-          obs_cols: ['price', 'volume', 'rsi', 'macd', 'bollinger_upper', 'bollinger_lower'],
-          n_rows: mockDailyReturns.length,
-          n_days: 30
+          policy: 'N/A',
+          obs_cols: [],
+          n_rows: 0,
+          n_days: 0
         }
       },
       val: {
-        kpis: {
-          ...mockKPIs,
-          top_bar: {
-            ...mockKPIs.top_bar,
-            CAGR: 0.108, // Slightly different for validation
-            Sharpe: 1.32
-          }
-        },
-        dailyReturns: mockDailyReturns.slice(0, 20), // Shorter period for validation
-        trades: mockTrades.slice(0, 30),
+        kpis: emptyKPIs,
+        dailyReturns: [],
+        trades: [],
         manifest: {
-          policy: 'PPO_USDCOP_v2.1',
-          obs_cols: ['price', 'volume', 'rsi', 'macd', 'bollinger_upper', 'bollinger_lower'],
-          n_rows: 20,
-          n_days: 20
+          policy: 'N/A',
+          obs_cols: [],
+          n_rows: 0,
+          n_days: 0
         }
       }
     }

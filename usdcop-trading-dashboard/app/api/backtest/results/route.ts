@@ -248,28 +248,40 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   console.log('[BacktestAPI] POST /api/backtest/trigger');
-  
+
   try {
     const body = await request.json();
     const { force = false } = body;
 
-    // In production, this would trigger the Airflow DAG
-    // For now, return a mock response
-    const mockRunId = `L6_${new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14)}_${Math.random().toString(36).substr(2, 6)}`;
-    
-    console.log(`[BacktestAPI] Triggered backtest run: ${mockRunId}`);
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Backtest triggered successfully',
-      runId: mockRunId,
-      estimatedDuration: '5-10 minutes',
-      dagId: 'usdcop_m5__07_l6_backtest_referencia'
+    // Call the Backtest API backend service to trigger Airflow DAG
+    const backendUrl = process.env.BACKTEST_API_URL || 'http://localhost:8006';
+
+    const response = await fetch(`${backendUrl}/api/backtest/trigger`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ force }),
+      signal: AbortSignal.timeout(10000)
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      return NextResponse.json(data);
+    }
+
+    // NO MOCK DATA - Return error if backend unavailable
+    console.error('[BacktestAPI] Backend service unavailable - start Backtest API on port 8006');
+
+    return NextResponse.json({
+      success: false,
+      error: 'Backtest API unavailable',
+      details: 'Backend service not responding. Please ensure Backtest API is running on port 8006.'
+    }, { status: 503 });
 
   } catch (error) {
     console.error('[BacktestAPI] Error triggering backtest:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to trigger backtest',

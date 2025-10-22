@@ -2,129 +2,107 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Shield, AlertTriangle, TrendingDown, TrendingUp, Activity, 
+import useSWR from 'swr';
+import {
+  Shield, AlertTriangle, TrendingDown, TrendingUp, Activity,
   Target, BarChart3, Clock, Zap, Globe, Gauge, Timer,
   AlertCircle, CheckCircle, XCircle, Eye, Settings,
   ArrowUp, ArrowDown, Minus, DollarSign, Percent,
-  Flame, Snowflake, Wind, Mountain, Waves
+  Flame, Snowflake, Wind, Mountain, Waves, Loader2
 } from 'lucide-react';
 
-// Risk Management Data Simulation
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Risk Management Data from Real API
 const useRiskManagement = () => {
-  const [riskData, setRiskData] = useState({
+  const { data, error, isLoading } = useSWR(
+    '/api/analytics/risk-metrics?symbol=USDCOP',
+    fetcher,
+    {
+      refreshInterval: 5000, // Refresh every 5 seconds
+      revalidateOnFocus: true,
+      dedupingInterval: 2000
+    }
+  );
+
+  // Default fallback structure when API is loading or has no data
+  const defaultRiskData = {
     var: {
-      var95: 2.34,
-      var99: 3.78,
-      cvar95: 3.12,
-      cvar99: 4.95,
+      var95: 0,
+      var99: 0,
+      cvar95: 0,
+      cvar99: 0,
       method: 'Historical + Monte Carlo'
     },
     stressTests: {
       copDevaluation: {
         scenario: 'COP -20% Crisis',
-        impact: -15.6,
+        impact: 0,
         probability: 0.05,
-        status: 'pass'
+        status: 'pass' as const
       },
       wtiShock: {
-        scenario: 'WTI ±30% Oil Shock', 
-        impact: -12.3,
+        scenario: 'WTI ±30% Oil Shock',
+        impact: 0,
         probability: 0.12,
-        status: 'pass'
+        status: 'pass' as const
       },
       dxyStrength: {
         scenario: 'DXY +10% USD Rally',
-        impact: -8.9,
+        impact: 0,
         probability: 0.18,
-        status: 'pass'
+        status: 'pass' as const
       },
       costStress: {
         scenario: 'Costs +25% Operational',
-        impact: -16.2,
+        impact: 0,
         probability: 0.25,
-        status: 'pass'
+        status: 'pass' as const
       },
       banrepIntervention: {
         scenario: 'Surprise BanRep Action',
-        impact: -11.4,
+        impact: 0,
         probability: 0.08,
-        status: 'pass'
+        status: 'pass' as const
       }
     },
     dynamicMonitoring: {
-      usdcopWtiCorr: 0.73,
+      usdcopWtiCorr: 0,
       corrBreakAlert: false,
-      drawdownRecovery: 18,
-      implementationShortfall: 7.2,
+      drawdownRecovery: 0,
+      implementationShortfall: 0,
       attribution: {
-        trend: 45.3,
-        microstructure: 32.1,
-        costs: 22.6
+        trend: 0,
+        microstructure: 0,
+        costs: 0
       }
     },
     exposures: {
-      netExposure: 125000,
-      grossExposure: 845000,
-      leverage: 1.85,
-      concentrationRisk: 0.23,
+      netExposure: 0,
+      grossExposure: 0,
+      leverage: 0,
+      concentrationRisk: 0,
       sectorExposure: {
-        currency: 78.5,
-        commodities: 12.3,
-        rates: 9.2
+        currency: 0,
+        commodities: 0,
+        rates: 0
       }
     },
     limits: {
-      maxDrawdown: { limit: 15.0, current: 12.3, utilization: 82.0 },
-      var95: { limit: 3.5, current: 2.34, utilization: 66.9 },
-      leverage: { limit: 2.0, current: 1.85, utilization: 92.5 },
-      concentration: { limit: 0.30, current: 0.23, utilization: 76.7 }
+      maxDrawdown: { limit: 15.0, current: 0, utilization: 0 },
+      var95: { limit: 3.5, current: 0, utilization: 0 },
+      leverage: { limit: 2.0, current: 0, utilization: 0 },
+      concentration: { limit: 0.30, current: 0, utilization: 0 }
     },
-    alerts: [
-      {
-        id: 1,
-        type: 'warning',
-        title: 'High Leverage Utilization',
-        message: 'Leverage at 92.5% of limit (1.85/2.0)',
-        timestamp: new Date(Date.now() - 300000),
-        acknowledged: false
-      },
-      {
-        id: 2,
-        type: 'info',
-        title: 'WTI Correlation Strong',
-        message: 'USD/COP ↔ WTI correlation at 0.73 (normal range)',
-        timestamp: new Date(Date.now() - 600000),
-        acknowledged: true
-      }
-    ]
-  });
+    alerts: []
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRiskData(prev => ({
-        ...prev,
-        var: {
-          ...prev.var,
-          var95: Math.max(1.5, Math.min(4.0, prev.var.var95 + (Math.random() - 0.5) * 0.2)),
-          var99: Math.max(2.5, Math.min(6.0, prev.var.var99 + (Math.random() - 0.5) * 0.3))
-        },
-        dynamicMonitoring: {
-          ...prev.dynamicMonitoring,
-          usdcopWtiCorr: Math.max(0.4, Math.min(0.9, prev.dynamicMonitoring.usdcopWtiCorr + (Math.random() - 0.5) * 0.05)),
-          implementationShortfall: Math.max(3, Math.min(15, prev.dynamicMonitoring.implementationShortfall + (Math.random() - 0.5) * 1))
-        },
-        exposures: {
-          ...prev.exposures,
-          leverage: Math.max(1.2, Math.min(2.1, prev.exposures.leverage + (Math.random() - 0.5) * 0.05))
-        }
-      }));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return riskData;
+  return {
+    riskData: data || defaultRiskData,
+    isLoading,
+    error
+  };
 };
 
 interface RiskMetricCardProps {
@@ -442,8 +420,40 @@ const AlertsPanel: React.FC<{ alerts: any[] }> = ({ alerts }) => {
 };
 
 export default function RiskManagement() {
-  const riskData = useRiskManagement();
+  const { riskData, isLoading, error } = useRiskManagement();
   const [selectedStressTest, setSelectedStressTest] = useState<string | null>(null);
+
+  // Show loading state
+  if (isLoading && !riskData) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-fintech-cyan-400 animate-spin" />
+          <p className="text-fintech-dark-300">Loading risk metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="glass-surface p-8 rounded-xl border border-market-down max-w-md">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-8 h-8 text-market-down" />
+            <h2 className="text-xl font-bold text-white">Failed to Load Risk Metrics</h2>
+          </div>
+          <p className="text-fintech-dark-300 mb-4">
+            Unable to connect to the analytics API. Please check that the backend service is running.
+          </p>
+          <pre className="text-xs text-fintech-dark-400 bg-fintech-dark-900 p-3 rounded overflow-auto">
+            {error.message || 'Unknown error'}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   const varMetrics = [
     {

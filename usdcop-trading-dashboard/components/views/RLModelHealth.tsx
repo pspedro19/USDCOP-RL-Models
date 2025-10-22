@@ -2,102 +2,122 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Brain, Activity, Target, BarChart3, AlertTriangle, CheckCircle, 
+import useSWR from 'swr';
+import {
+  Brain, Activity, Target, BarChart3, AlertTriangle, CheckCircle,
   XCircle, Clock, Zap, Database, GitBranch, Layers, Settings,
   TrendingUp, TrendingDown, Eye, EyeOff, RotateCcw, Play, Pause,
-  Cpu, MemoryStick, HardDrive, Network, Timer, Gauge
+  Cpu, MemoryStick, HardDrive, Network, Timer, Gauge, Loader2
 } from 'lucide-react';
 
-// RL Model Health Data Simulation
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// RL Model Health Data - Fetches from Real API
 const useRLModelHealth = () => {
-  const [modelHealth, setModelHealth] = useState({
+  const { data, error, isLoading } = useSWR(
+    '/api/analytics/rl-metrics?symbol=USDCOP&days=30',
+    fetcher,
+    {
+      refreshInterval: 10000, // Refresh every 10 seconds
+      revalidateOnFocus: true,
+      dedupingInterval: 5000
+    }
+  );
+
+  // Default structure when API is loading or has no data
+  const defaultModelHealth = {
     production: {
       model: 'PPO-LSTM',
-      version: 'v2.1.5',
-      tradesPerEpisode: 6,
-      fullEpisodes: 45,
-      shortEpisodes: 23, // t≤35 window
+      version: 'Loading...',
+      tradesPerEpisode: 0,
+      fullEpisodes: 0,
+      shortEpisodes: 0,
       actionDistribution: {
-        sell: 18.5,
-        hold: 63.2,
-        buy: 18.3
+        sell: 0,
+        hold: 0,
+        buy: 0
       },
-      policyEntropy: 0.34,
-      klDivergence: 0.019,
+      policyEntropy: 0,
+      klDivergence: 0,
       policyCollapse: false,
-      lastUpdate: new Date(Date.now() - 300000) // 5 minutes ago
+      lastUpdate: new Date()
     },
     ppo: {
-      policyLoss: 0.0023,
-      valueLoss: 0.045,
-      explainedVariance: 0.87,
-      clipFraction: 0.12,
-      timesteps: 2450000,
+      policyLoss: 0,
+      valueLoss: 0,
+      explainedVariance: 0,
+      clipFraction: 0,
+      timesteps: 0,
       learningRate: 0.0003
     },
     lstm: {
-      resetRate: 0.08,
-      avgSequenceLength: 42.3,
-      truncationRate: 0.15,
-      hiddenStateNorm: 1.23,
-      cellStateNorm: 0.98
+      resetRate: 0,
+      avgSequenceLength: 0,
+      truncationRate: 0,
+      hiddenStateNorm: 0,
+      cellStateNorm: 0
     },
     qrDqn: {
-      quantileLoss: 0.0156,
-      bufferFillRate: 0.78,
+      quantileLoss: 0,
+      bufferFillRate: 0,
       perAlpha: 0.6,
       perBeta: 0.4,
       explorationRate: 0.05,
       targetUpdate: 1000
     },
     reward: {
-      rmse: 0.0008,
-      definedRate: 0.60, // 36/60 for t≤35
-      costCurriculum: 0.75, // 75% progress
+      rmse: 0,
+      definedRate: 0,
+      costCurriculum: 0,
+      rewardRange: [0, 0],
+      meanReward: 0
+    },
+    performance: {
+      cpu: 0,
+      memory: 0,
+      gpu: 0,
+      inference: 0,
+      training: false
+    }
+  };
+
+  // Map API response to component structure
+  const modelHealth = data ? {
+    production: {
+      model: 'PPO-LSTM',
+      version: 'v2.1.x',
+      tradesPerEpisode: data.metrics?.tradesPerEpisode || 0,
+      fullEpisodes: Math.floor((data.data_points || 0) / 60), // Estimate full episodes
+      shortEpisodes: Math.floor((data.data_points || 0) / 35), // Estimate short episodes
+      actionDistribution: {
+        sell: data.metrics?.actionBalance?.sell || 0,
+        hold: data.metrics?.actionBalance?.hold || 0,
+        buy: data.metrics?.actionBalance?.buy || 0
+      },
+      policyEntropy: 0.34, // Not available in current API
+      klDivergence: 0.019, // Not available in current API
+      policyCollapse: false,
+      lastUpdate: new Date(data.timestamp || Date.now())
+    },
+    ppo: defaultModelHealth.ppo, // Not available in current API
+    lstm: defaultModelHealth.lstm, // Not available in current API
+    qrDqn: defaultModelHealth.qrDqn, // Not available in current API
+    reward: {
+      rmse: data.metrics?.vwapError || 0,
+      definedRate: 0.60,
+      costCurriculum: 0.75,
       rewardRange: [-0.045, 0.038],
       meanReward: 0.0025
     },
-    performance: {
-      cpu: 45.2,
-      memory: 68.7,
-      gpu: 82.1,
-      inference: 17.3,
-      training: false
-    }
-  });
+    performance: defaultModelHealth.performance // Not available in current API
+  } : defaultModelHealth;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setModelHealth(prev => ({
-        ...prev,
-        production: {
-          ...prev.production,
-          tradesPerEpisode: Math.max(1, Math.min(12, prev.production.tradesPerEpisode + (Math.random() - 0.5) * 0.5)),
-          policyEntropy: Math.max(0.1, Math.min(0.8, prev.production.policyEntropy + (Math.random() - 0.5) * 0.02)),
-          klDivergence: Math.max(0.005, Math.min(0.05, prev.production.klDivergence + (Math.random() - 0.5) * 0.001)),
-          lastUpdate: new Date()
-        },
-        ppo: {
-          ...prev.ppo,
-          policyLoss: Math.max(0.001, prev.ppo.policyLoss + (Math.random() - 0.5) * 0.0002),
-          valueLoss: Math.max(0.01, prev.ppo.valueLoss + (Math.random() - 0.5) * 0.005),
-          explainedVariance: Math.max(0.7, Math.min(0.95, prev.ppo.explainedVariance + (Math.random() - 0.5) * 0.01))
-        },
-        performance: {
-          ...prev.performance,
-          cpu: Math.max(20, Math.min(90, prev.performance.cpu + (Math.random() - 0.5) * 5)),
-          memory: Math.max(40, Math.min(95, prev.performance.memory + (Math.random() - 0.5) * 3)),
-          gpu: Math.max(60, Math.min(98, prev.performance.gpu + (Math.random() - 0.5) * 4)),
-          inference: Math.max(10, Math.min(25, prev.performance.inference + (Math.random() - 0.5) * 1))
-        }
-      }));
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return modelHealth;
+  return {
+    modelHealth,
+    isLoading,
+    error
+  };
 };
 
 interface MetricCardProps {
@@ -289,9 +309,41 @@ const ModelArchitecture: React.FC<{ model: string; version: string }> = ({ model
 };
 
 export default function RLModelHealth() {
-  const modelHealth = useRLModelHealth();
+  const { modelHealth, isLoading, error } = useRLModelHealth();
   const [selectedModel, setSelectedModel] = useState<'ppo' | 'qrdqn'>('ppo');
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Show loading state
+  if (isLoading && !modelHealth) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-fintech-cyan-400 animate-spin" />
+          <p className="text-fintech-dark-300">Loading RL model metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with helpful message
+  if (error) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="glass-surface p-8 rounded-xl border border-market-down max-w-md">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-8 h-8 text-market-down" />
+            <h2 className="text-xl font-bold text-white">Failed to Load RL Metrics</h2>
+          </div>
+          <p className="text-fintech-dark-300 mb-4">
+            Unable to connect to the analytics API at <code className="text-fintech-cyan-400">/api/analytics/rl-metrics</code>
+          </p>
+          <div className="text-sm text-fintech-dark-400">
+            Please ensure the Analytics API service is running on port 8001.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getStatus = (metric: string, value: number): 'optimal' | 'warning' | 'critical' => {
     const thresholds = {

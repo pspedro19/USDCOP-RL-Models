@@ -30,6 +30,7 @@ export default function ProfessionalTradingDashboard() {
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [marketStatus, setMarketStatus] = useState('CLOSED');
   const sidebarRef = useRef<HTMLElement>(null);
 
   // === REAL DATA FROM BACKEND - NO HARDCODED VALUES ===
@@ -134,6 +135,34 @@ export default function ProfessionalTradingDashboard() {
     setIsLoading(false);
   }, [router]);
 
+  // Update market status based on Colombia time (UTC-5): 8:00 AM - 12:55 PM
+  useEffect(() => {
+    const updateMarketStatus = () => {
+      const now = new Date();
+      // Convert to Colombia time (UTC-5)
+      const colombiaOffset = -5 * 60; // -5 hours in minutes
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const colombiaTime = new Date(utcTime + (colombiaOffset * 60000));
+
+      const hours = colombiaTime.getHours();
+      const minutes = colombiaTime.getMinutes();
+
+      // Market hours: 8:00 AM (08:00) to 12:55 PM (12:55)
+      const isMarketOpen = (hours === 8 || hours === 9 || hours === 10 || hours === 11 ||
+                           (hours === 12 && minutes <= 55));
+
+      setMarketStatus(isMarketOpen ? 'OPEN' : 'CLOSED');
+    };
+
+    // Update immediately
+    updateMarketStatus();
+
+    // Update every 30 seconds to keep status fresh
+    const interval = setInterval(updateMarketStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = () => {
     sessionStorage.removeItem('isAuthenticated');
     localStorage.removeItem('isAuthenticated');
@@ -160,8 +189,12 @@ export default function ProfessionalTradingDashboard() {
   const statusColor = isConnected ? 'text-green-400' : 'text-red-400';
   const dataQuality = marketStats?.source === 'backend_api' ? 'Premium' : 'Historical';
   const qualityBadgeColor = dataQuality === 'Premium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400';
-  const marketStatus = marketStats?.timestamp ? 'OPEN' : 'CLOSED';
   const latency = isConnected ? 4 : 999;
+
+  // Market status colors
+  const marketIsOpen = marketStatus === 'OPEN';
+  const marketStatusColor = marketIsOpen ? 'text-green-400' : 'text-red-400';
+  const marketDotColor = marketIsOpen ? 'bg-green-500' : 'bg-red-500';
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
@@ -222,8 +255,8 @@ export default function ProfessionalTradingDashboard() {
             <div className="text-center">
               <div className="text-sm text-slate-400">Market</div>
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'} rounded-full animate-pulse`}></div>
-                <span className={`text-lg font-bold ${isConnected ? 'text-green-400' : 'text-red-400'}`}>{marketStatus}</span>
+                <div className={`w-2 h-2 ${marketDotColor} rounded-full animate-pulse`}></div>
+                <span className={`text-lg font-bold ${marketStatusColor}`}>{marketStatus}</span>
               </div>
             </div>
 

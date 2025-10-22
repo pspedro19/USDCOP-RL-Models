@@ -470,15 +470,38 @@ async def get_candlesticks(
     limit: int = Query(1000, description="Maximum number of records"),
     include_indicators: bool = Query(True, description="Include technical indicators")
 ):
-    """Get REAL candlestick data for charts"""
+    """Get REAL candlestick data for charts - with intelligent date fallback"""
     try:
         conn = get_db_connection()
 
-        # Default date range (last 7 days for performance)
-        if not end_date:
-            end_date = datetime.utcnow().isoformat()
-        if not start_date:
-            start_date = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        # If no dates specified, get the most recent data available
+        if not end_date or not start_date:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT MIN(timestamp), MAX(timestamp) FROM market_data WHERE symbol = %s",
+                (symbol,)
+            )
+            date_range = cursor.fetchone()
+
+            if date_range and date_range[1]:
+                # Use the most recent 7 days of available data
+                actual_end_date = date_range[1]
+                actual_start_date = date_range[1] - timedelta(days=7)
+
+                # But don't go before the oldest data
+                if date_range[0] and actual_start_date < date_range[0]:
+                    actual_start_date = date_range[0]
+
+                end_date = actual_end_date.isoformat() if not end_date else end_date
+                start_date = actual_start_date.isoformat() if not start_date else start_date
+
+                logger.info(f"Using available data range: {start_date} to {end_date}")
+            else:
+                # Fallback to current time if no data found
+                if not end_date:
+                    end_date = datetime.utcnow().isoformat()
+                if not start_date:
+                    start_date = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
         # Get raw tick data from market_data table
         query = """
@@ -593,45 +616,91 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/api/stats/{symbol}")
 async def get_symbol_stats(symbol: str = "USDCOP"):
-    """Get REAL symbol statistics"""
+    """Get REAL symbol statistics - with fallback to most recent data available"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Get 24h statistics from real data
-        query = """
+        # Try to get 24h statistics from real data
+        query_24h = """
         SELECT
             COUNT(*) as count,
             MIN(price) as low_24h,
             MAX(price) as max_24h,
             AVG(price) as avg_24h,
             SUM(COALESCE(volume, 0)) as volume_24h,
-            MAX(timestamp) as latest_timestamp
+            MAX(timestamp) as latest_timestamp,
+            MIN(timestamp) as oldest_timestamp
         FROM market_data
         WHERE symbol = %s
         AND timestamp >= NOW() - INTERVAL '24 hours'
         """
 
-        cursor.execute(query, (symbol,))
+        cursor.execute(query_24h, (symbol,))
         result = cursor.fetchone()
+
+        # If no data in last 24h, get the most recent data available
+        if not result or result[0] == 0:
+            logger.warning(f"No data in last 24h for {symbol}, using most recent available data")
+
+            query_recent = """
+            SELECT
+                COUNT(*) as count,
+                MIN(price) as low,
+                MAX(price) as high,
+                AVG(price) as avg,
+                SUM(COALESCE(volume, 0)) as volume,
+                MAX(timestamp) as latest_timestamp,
+                MIN(timestamp) as oldest_timestamp
+            FROM (
+                SELECT * FROM market_data
+                WHERE symbol = %s
+                ORDER BY timestamp DESC
+                LIMIT 288
+            ) recent_data
+            """
+
+            cursor.execute(query_recent, (symbol,))
+            result = cursor.fetchone()
+
+            if not result or result[0] == 0:
+                conn.close()
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No data found for {symbol}"
+                )
+
         conn.close()
 
-        if not result or result[0] == 0:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No real data found for {symbol} in the last 24 hours"
-            )
+        # Get current price from latest record
+        conn2 = get_db_connection()
+        cursor2 = conn2.cursor()
+        cursor2.execute(
+            "SELECT price, timestamp FROM market_data WHERE symbol = %s ORDER BY timestamp DESC LIMIT 1",
+            (symbol,)
+        )
+        latest = cursor2.fetchone()
+        conn2.close()
+
+        current_price = float(latest[0]) if latest else float(result[2])
+        open_price = float(result[2])  # Using avg as approximation for open
 
         return {
             "symbol": symbol,
-            "count_24h": result[0],
-            "low_24h": float(result[1]),
+            "price": current_price,
+            "open_24h": open_price,
             "high_24h": float(result[2]),
-            "avg_24h": float(result[3]),
+            "low_24h": float(result[1]),
             "volume_24h": float(result[4]),
-            "latest_timestamp": result[5].isoformat() if result[5] else None,
-            "data_source": "real",
-            "websocket_clients": len(websocket_connections)
+            "change_24h": current_price - open_price,
+            "change_percent_24h": ((current_price - open_price) / open_price * 100) if open_price > 0 else 0,
+            "timestamp": result[5].isoformat() if result[5] else None,
+            "data_range": {
+                "from": result[6].isoformat() if result[6] else None,
+                "to": result[5].isoformat() if result[5] else None,
+                "data_points": result[0]
+            },
+            "source": "database"
         }
 
     except HTTPException:

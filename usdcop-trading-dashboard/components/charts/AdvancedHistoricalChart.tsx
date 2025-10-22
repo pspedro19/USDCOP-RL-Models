@@ -7,7 +7,7 @@
  * - Area sombreada movible ███
  * - Mini context chart with sparkline
  * - Professional Bloomberg/TradingView level design
- * - Real-time data integration with 92,936 historical records
+ * - Real-time data integration with comprehensive historical records (dynamically loaded)
  * - Fluid animations and perfect user experience
  * - Doble click para centrar
  * - Scroll para zoom

@@ -16,6 +16,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { MarketDataService, CandlestickResponse, CandlestickData } from '@/lib/services/market-data-service'
 import { useRealTimePrice } from '@/hooks/useRealTimePrice'
+import { useDbStats } from '@/hooks/useDbStats'
 import {
   Activity, BarChart3, TrendingUp, Eye, EyeOff, RefreshCw, AlertCircle,
   Clock, ZoomIn, ZoomOut, Move, RotateCcw, Maximize2, Volume2,
@@ -79,6 +80,9 @@ export default function RealDataTradingChart({
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>({ x: 0, y: 0, candle: {} as any, index: 0, visible: false })
   const [crosshair, setCrosshair] = useState<CrosshairInfo>({ x: 0, y: 0, priceY: 0, timeIndex: 0, price: 0, visible: false })
 
+  // Get DB stats for dynamic record count
+  const { stats: dbStats } = useDbStats(60000) // Refresh every 60 seconds
+
   // Advanced chart settings
   const [chartSettings, setChartSettings] = useState<ChartSettings>({
     viewRange: { start: 0, end: 100 },
@@ -104,7 +108,7 @@ export default function RealDataTradingChart({
         selectedTimeframe,
         '2020-01-01',
         '2025-12-31',
-        92936, // Todos los registros disponibles
+        dbStats.totalRecords || 100000, // Dynamic: Get from API health endpoint
         showIndicators
       )
 
@@ -895,7 +899,7 @@ export default function RealDataTradingChart({
                 </span>
               </div>
               <div className="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded">
-                📊 {candlestickData.length} registros disponibles • Total en DB: 92,936
+                📊 {candlestickData.length} registros disponibles • Total en DB: {dbStats.totalRecords.toLocaleString()}
               </div>
             </div>
 

@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ComposedChart, Bar, ScatterChart, Scatter, PieChart, Pie, Cell
+  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { realTimeRiskEngine, RealTimeRiskMetrics, Position } from '@/lib/services/real-time-risk-engine';
+import { realTimeRiskEngine, RealTimeRiskMetrics } from '@/lib/services/real-time-risk-engine';
 import {
   Activity, AlertTriangle, Shield, TrendingUp, TrendingDown, DollarSign,
   Target, Zap, BarChart3, PieChart as PieChartIcon, Gauge, Thermometer,
@@ -55,26 +54,6 @@ const subMinutes = (date: Date, minutes: number): Date => {
   return new Date(date.getTime() - minutes * 60000);
 };
 
-interface PortfolioSnapshot {
-  timestamp: Date;
-  portfolioValue: number;
-  var95: number;
-  leverage: number;
-  drawdown: number;
-  volatility: number;
-  exposures: Record<string, number>;
-}
-
-interface RiskHeatmapData {
-  position: string;
-  var95: number;
-  leverage: number;
-  liquidity: number;
-  concentration: number;
-  riskScore: number;
-  color: string;
-}
-
 interface MarketCondition {
   indicator: string;
   value: number;
@@ -85,8 +64,6 @@ interface MarketCondition {
 
 export default function RealTimeRiskMonitor() {
   const [riskMetrics, setRiskMetrics] = useState<RealTimeRiskMetrics | null>(null);
-  const [portfolioHistory, setPortfolioHistory] = useState<PortfolioSnapshot[]>([]);
-  const [riskHeatmap, setRiskHeatmap] = useState<RiskHeatmapData[]>([]);
   const [marketConditions, setMarketConditions] = useState<MarketCondition[]>([]);
   const [isConnected, setIsConnected] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -99,105 +76,10 @@ export default function RealTimeRiskMonitor() {
   const intervalRef = useRef<NodeJS.Timeout>();
   const metricsRef = useRef<RealTimeRiskMetrics | null>(null);
 
-  // Fetch real positions from Trading API
-  const [positions, setPositions] = useState<Position[]>([]);
-
-  const fetchPositions = useCallback(async (): Promise<Position[]> => {
-    try {
-      const TRADING_API_URL = process.env.NEXT_PUBLIC_TRADING_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${TRADING_API_URL}/api/trading/positions?symbol=USDCOP`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch positions');
-      }
-
-      const data = await response.json();
-
-      // Transform API response to Position format
-      const positionsData: Position[] = data.positions.map((pos: any) => ({
-        symbol: pos.symbol,
-        quantity: pos.quantity,
-        marketValue: pos.marketValue,
-        avgPrice: pos.avgPrice,
-        currentPrice: pos.currentPrice,
-        pnl: pos.pnl,
-        weight: pos.weight,
-        sector: pos.sector,
-        country: pos.country,
-        currency: pos.currency
-      }));
-
-      setPositions(positionsData);
-      return positionsData;
-    } catch (error) {
-      console.error('Error fetching positions:', error);
-      // Return fallback positions on error
-      return [
-        {
-          symbol: 'USDCOP_SPOT',
-          quantity: 2000000,
-          marketValue: 8500000,
-          avgPrice: 4200,
-          currentPrice: 4250,
-          pnl: 100000,
-          weight: 0.85,
-          sector: 'FX',
-          country: 'Colombia',
-          currency: 'COP'
-        }
-      ];
-    }
-  }, []);
-
-  const generateRiskHeatmap = useCallback(async (): Promise<RiskHeatmapData[]> => {
-    try {
-      const TRADING_API_URL = process.env.NEXT_PUBLIC_TRADING_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${TRADING_API_URL}/api/trading/positions?symbol=USDCOP`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch positions');
-      }
-
-      const data = await response.json();
-      const positionsData = data.positions || [];
-
-      return positionsData.map((position: any) => {
-        // Use risk scores from API if available, otherwise calculate
-        const varScore = position.riskScores?.var || position.weight * 100;
-        const leverageScore = position.riskScores?.leverage || position.weight * 100;
-        const liquidityScore = position.riskScores?.liquidity ||
-          (position.sector === 'FX' ? 90 : position.sector === 'Commodities' ? 70 : 80);
-        const concentrationScore = position.riskScores?.concentration || position.weight * 100;
-
-        // Overall risk score (weighted average)
-        const riskScore = (varScore * 0.3 + leverageScore * 0.25 + (100 - liquidityScore) * 0.25 + concentrationScore * 0.20);
-
-        // Color coding based on risk score
-        let color = '#10B981'; // Green
-        if (riskScore > 70) color = '#EF4444'; // Red
-        else if (riskScore > 50) color = '#F59E0B'; // Amber
-        else if (riskScore > 30) color = '#8B5CF6'; // Purple
-
-        return {
-          position: position.symbol,
-          var95: varScore,
-          leverage: leverageScore,
-          liquidity: liquidityScore,
-          concentration: concentrationScore,
-          riskScore,
-          color
-        };
-      });
-    } catch (error) {
-      console.error('Error generating risk heatmap:', error);
-      return [];
-    }
-  }, []);
-
   const fetchMarketConditions = useCallback(async (): Promise<MarketCondition[]> => {
     try {
-      const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
-      const response = await fetch(`${ANALYTICS_API_URL}/api/analytics/market-conditions?symbol=USDCOP&days=30`);
+      // ✅ Use Next.js API proxy (no direct backend calls) to avoid CORS and caching issues
+      const response = await fetch(`/api/analytics/market-conditions?symbol=USDCOP&days=30`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch market conditions');
@@ -205,26 +87,18 @@ export default function RealTimeRiskMonitor() {
 
       const data = await response.json();
 
-      return data.conditions || [];
+      // Parse all numeric values to ensure they're numbers, not strings
+      const conditions = (data.conditions || []).map((condition: any) => ({
+        ...condition,
+        value: typeof condition.value === 'number' ? condition.value : parseFloat(condition.value) || 0,
+        change: typeof condition.change === 'number' ? condition.change : parseFloat(condition.change) || 0
+      }));
+
+      return conditions;
     } catch (error) {
       console.error('Error fetching market conditions:', error);
-      // Return fallback data on error
-      return [
-        {
-          indicator: 'VIX Index',
-          value: 18.5,
-          status: 'normal' as const,
-          change: -2.3,
-          description: 'Market volatility within normal range'
-        },
-        {
-          indicator: 'USD/COP Volatility',
-          value: 24.2,
-          status: 'warning' as const,
-          change: 5.8,
-          description: 'Above average volatility in USDCOP'
-        }
-      ];
+      // Return empty array on error - component will show "No data" message
+      return [];
     }
   }, []);
 
@@ -237,20 +111,6 @@ export default function RealTimeRiskMonitor() {
         return;
       }
 
-      // Fetch real positions from API
-      const positions = await fetchPositions();
-
-      // Update positions in risk engine with error handling
-      if (typeof realTimeRiskEngine.updatePosition === 'function') {
-        positions.forEach(position => {
-          try {
-            realTimeRiskEngine.updatePosition(position);
-          } catch (positionError) {
-            console.error('Error updating position:', position.symbol, positionError);
-          }
-        });
-      }
-
       // Get updated metrics with error handling
       let metrics = null;
       if (typeof realTimeRiskEngine.getRiskMetrics === 'function') {
@@ -260,31 +120,6 @@ export default function RealTimeRiskMonitor() {
       if (metrics) {
         setRiskMetrics(metrics);
         metricsRef.current = metrics;
-
-        // Update portfolio history
-        setPortfolioHistory(prev => {
-          const newSnapshot: PortfolioSnapshot = {
-            timestamp: new Date(),
-            portfolioValue: metrics.portfolioValue,
-            var95: metrics.portfolioVaR95,
-            leverage: metrics.leverage,
-            drawdown: metrics.currentDrawdown,
-            volatility: metrics.portfolioVolatility,
-            exposures: {
-              'FX': 8500000,
-              'Bonds': 1200000,
-              'Commodities': 300000
-            }
-          };
-
-          // Keep last 100 snapshots
-          const updated = [...prev, newSnapshot];
-          return updated.slice(-100);
-        });
-
-        // Update risk heatmap from API
-        const heatmapData = await generateRiskHeatmap();
-        setRiskHeatmap(heatmapData);
 
         // Update alerts count with error handling
         try {
@@ -312,7 +147,7 @@ export default function RealTimeRiskMonitor() {
       console.error('Failed to update risk metrics:', error);
       setIsConnected(false);
     }
-  }, [fetchPositions, generateRiskHeatmap, fetchMarketConditions]);
+  }, [fetchMarketConditions]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -412,10 +247,26 @@ export default function RealTimeRiskMonitor() {
   if (!riskMetrics) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-xl font-bold text-amber-500 mb-2">Cargando Risk Monitor</h2>
-          <p className="text-slate-400">Inicializando métricas de riesgo en tiempo real...</p>
+        <div className="text-center max-w-md">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-500 mb-2">❌ No Risk Data Available</h2>
+          <p className="text-slate-400 mb-4">Risk metrics cannot be displayed because Analytics API is not available.</p>
+          <div className="bg-slate-900 border border-red-500/20 rounded-lg p-4 text-left">
+            <p className="text-sm text-slate-300 mb-2"><strong>Required:</strong></p>
+            <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
+              <li>Analytics API must be running on http://localhost:8001</li>
+              <li>PostgreSQL database must have market data</li>
+              <li>Check API logs for errors</li>
+            </ul>
+          </div>
+          <div className="mt-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+            >
+              Retry Connection
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -603,190 +454,36 @@ export default function RealTimeRiskMonitor() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {marketConditions.map((condition, index) => (
-                <div key={index} className="bg-slate-800 p-3 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white text-sm font-semibold">{condition.indicator}</span>
-                    {getMarketConditionIcon(condition.status)}
+            {marketConditions.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                <p>No market conditions data available</p>
+                <p className="text-xs mt-1">Check Analytics API connection</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {marketConditions.map((condition, index) => (
+                  <div key={index} className="bg-slate-800 p-3 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white text-sm font-semibold">{condition.indicator}</span>
+                      {getMarketConditionIcon(condition.status)}
+                    </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xl font-mono text-white">{condition.value}</span>
+                      <span className={`text-sm font-mono ${
+                        condition.change >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {condition.change >= 0 ? '+' : ''}{condition?.change?.toFixed(1) || '0.0'}%
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400">{condition.description}</div>
                   </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xl font-mono text-white">{condition.value}</span>
-                    <span className={`text-sm font-mono ${
-                      condition.change >= 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {condition.change >= 0 ? '+' : ''}{condition?.change?.toFixed(1) || '0.0'}%
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-400">{condition.description}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Risk Visualization Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Portfolio Risk History */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">Real-Time Risk Evolution</CardTitle>
-            <p className="text-slate-400 text-sm">VaR 95% and Portfolio Leverage Over Time</p>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={portfolioHistory.slice(-50)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  stroke="#64748B" 
-                  fontSize={10}
-                  tickFormatter={(value) => formatDate(new Date(value), 'HH:mm')}
-                />
-                <YAxis yAxisId="left" stroke="#64748B" fontSize={10} />
-                <YAxis yAxisId="right" orientation="right" stroke="#64748B" fontSize={10} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '6px' }}
-                  labelFormatter={(value) => formatDate(new Date(value), 'HH:mm:ss')}
-                  formatter={(value: any, name) => [
-                    name === 'var95' ? formatCurrency(value) : `${(value || 0).toFixed(2)}x`,
-                    name === 'var95' ? 'VaR 95%' : 'Leverage'
-                  ]}
-                />
-                <Area
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="var95"
-                  stroke="#EF4444"
-                  fill="#EF4444"
-                  fillOpacity={0.1}
-                  strokeWidth={2}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="leverage"
-                  stroke="#F59E0B"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Risk Heatmap */}
-        <Card className="bg-slate-900 border-amber-500/20">
-          <CardHeader>
-            <CardTitle className="text-amber-500 font-mono">Position Risk Heatmap</CardTitle>
-            <p className="text-slate-400 text-sm">Multi-Dimensional Risk Analysis</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {riskHeatmap.map((item, index) => (
-                <div key={index} className="bg-slate-800 p-3 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-semibold text-sm">{item.position}</span>
-                    <div 
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    <div className="text-center">
-                      <div className="text-slate-400">VaR</div>
-                      <div className="text-white font-mono">{item?.var95?.toFixed(0) || '0'}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-slate-400">Leverage</div>
-                      <div className="text-white font-mono">{item?.leverage?.toFixed(0) || '0'}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-slate-400">Liquidity</div>
-                      <div className="text-white font-mono">{item?.liquidity?.toFixed(0) || '0'}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-slate-400">Conc.</div>
-                      <div className="text-white font-mono">{item?.concentration?.toFixed(0) || '0'}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-2">
-                    <Progress value={item.riskScore} className="h-2" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Stress Test & Scenario Analysis */}
-      <Card className="bg-slate-900 border-amber-500/20">
-        <CardHeader>
-          <CardTitle className="text-amber-500 font-mono flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Real-Time Stress Testing
-          </CardTitle>
-          <p className="text-slate-400 text-sm">
-            Live Scenario Impact Analysis • Tail Risk Assessment
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            {Object.entries(riskMetrics?.stressTestResults || {}).slice(0, 4).map(([scenario, impact], index) => (
-              <div key={index} className="bg-slate-800 p-4 rounded-lg text-center">
-                <div className="text-slate-400 text-sm mb-2">{scenario}</div>
-                <div className={`text-xl font-bold font-mono mb-1 ${
-                  impact < 0 ? 'text-red-400' : 'text-green-400'
-                }`}>
-                  {formatCurrency(impact)}
-                </div>
-                <div className="text-xs text-slate-500">
-                  {formatPercent(impact / riskMetrics.portfolioValue)}
-                </div>
-                <Progress 
-                  value={Math.min(Math.abs(impact / riskMetrics.portfolioValue) * 1000, 100)} 
-                  className="h-2 mt-2"
-                />
-              </div>
-            ))}
-          </div>
-          
-          {/* Monte Carlo Results */}
-          <div className="mt-6">
-            <h4 className="text-white font-semibold mb-3">Monte Carlo Simulation (1000 scenarios)</h4>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-slate-400 text-sm">Best Case</div>
-                <div className="text-green-400 font-mono text-lg">
-                  {formatCurrency(riskMetrics.bestCaseScenario)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-400 text-sm">Expected Shortfall</div>
-                <div className="text-orange-400 font-mono text-lg">
-                  {formatCurrency(riskMetrics.expectedShortfall95)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-400 text-sm">Worst Case</div>
-                <div className="text-red-400 font-mono text-lg">
-                  {formatCurrency(riskMetrics.worstCaseScenario)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-400 text-sm">Max Loss Estimate</div>
-                <div className="text-red-600 font-mono text-lg">
-                  {formatCurrency(Math.min(riskMetrics.worstCaseScenario * 1.2, -riskMetrics.portfolioValue * 0.15))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Footer */}
       <div className="text-center py-6 border-t border-amber-500/20">

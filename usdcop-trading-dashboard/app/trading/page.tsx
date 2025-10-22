@@ -10,9 +10,11 @@
 import RealDataTradingChart from '@/components/charts/RealDataTradingChart'
 import RealTimePriceDisplay from '@/components/realtime/RealTimePriceDisplay'
 import { useRealTimePrice } from '@/hooks/useRealTimePrice'
+import { useDbStats } from '@/hooks/useDbStats'
 
 export default function TradingPage() {
   const { formattedPrice, isConnected, currentPrice } = useRealTimePrice('USDCOP')
+  const { stats: dbStats } = useDbStats(60000) // Refresh every 60 seconds
 
   return (
     <div className="min-h-screen bg-fintech-dark-900 p-6">
@@ -49,7 +51,7 @@ export default function TradingPage() {
           <div className="bg-fintech-dark-800 rounded-lg p-4 border border-fintech-dark-700">
             <h3 className="text-lg font-semibold text-white mb-2">Datos Disponibles</h3>
             <div className="space-y-1">
-              <p className="text-sm text-white">✅ 92,936 registros históricos</p>
+              <p className="text-sm text-white">✅ {dbStats.totalRecords.toLocaleString()} registros históricos</p>
               <p className="text-sm text-white">✅ Indicadores técnicos</p>
               <p className="text-sm text-white">✅ WebSocket tiempo real</p>
             </div>
@@ -59,7 +61,7 @@ export default function TradingPage() {
         {/* Main Chart */}
         <div className="bg-fintech-dark-800 rounded-lg p-6 border border-fintech-dark-700">
           <h2 className="text-2xl font-bold text-white mb-4">
-            Gráfico USD/COP - Datos Históricos Reales (92,936 registros)
+            Gráfico USD/COP - Datos Históricos Reales ({dbStats.totalRecords.toLocaleString()} registros)
           </h2>
           <RealDataTradingChart
             symbol="USDCOP"
@@ -75,7 +77,7 @@ export default function TradingPage() {
             📊 Características del Gráfico
           </h3>
           <ul className="space-y-1 text-sm text-blue-300">
-            <li>• <strong>Datos históricos</strong>: 92,936 registros reales disponibles 24/7</li>
+            <li>• <strong>Datos históricos</strong>: {dbStats.totalRecords.toLocaleString()} registros reales disponibles 24/7</li>
             <li>• <strong>Indicadores técnicos</strong>: EMA 20/50, Bollinger Bands, RSI</li>
             <li>• <strong>Tiempo real</strong>: Solo durante horario de mercado (8AM-12:55PM COT)</li>
             <li>• <strong>Interactivo</strong>: Canvas HTML5 para máxima performance</li>

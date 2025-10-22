@@ -1,10 +1,11 @@
 /**
  * Enhanced Time Range Selector
  * Professional-grade time navigation with presets and custom ranges
- * Based on actual data: 2020-01-02 to 2025-10-10 (92,936 records)
+ * Data range dynamically loaded from database
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useDbStats } from '@/hooks/useDbStats';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -65,12 +66,20 @@ export default function EnhancedTimeRangeSelector({
 }: EnhancedTimeRangeSelectorProps) {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const { stats: dbStats } = useDbStats(60000); // Refresh every 60 seconds
 
   // Generar presets dinámicos basados en el rango de datos real
   const presets: TimeRangePreset[] = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    // Format record count for display (e.g., "92k registros")
+    const formatRecordCount = (count: number) => {
+      if (count >= 1000000) return `${(count / 1000000).toFixed(0)}M`;
+      if (count >= 1000) return `${(count / 1000).toFixed(0)}k`;
+      return `${count}`;
+    };
 
     return [
       // Intraday
@@ -152,7 +161,7 @@ export default function EnhancedTimeRangeSelector({
         label: 'Todo el Histórico',
         value: 'all',
         icon: <TrendingUp className="h-4 w-4" />,
-        description: '2020-2025 (92k registros)',
+        description: `2020-2025 (${formatRecordCount(dbStats.totalRecords)} registros)`,
         range: () => ({
           start: DATA_START,
           end: DATA_END,
@@ -161,7 +170,7 @@ export default function EnhancedTimeRangeSelector({
         })
       }
     ];
-  }, []);
+  }, [dbStats.totalRecords]);
 
   // Manejar selección de preset
   const handlePresetSelect = useCallback((preset: TimeRangePreset) => {
@@ -362,7 +371,7 @@ export default function EnhancedTimeRangeSelector({
       {/* Data Quality Indicator */}
       <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
         <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-        <span>Datos reales disponibles • Bid/Ask • 92,936 registros</span>
+        <span>Datos reales disponibles • Bid/Ask • {dbStats.totalRecords.toLocaleString()} registros</span>
       </div>
     </div>
   );

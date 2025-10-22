@@ -32,6 +32,14 @@ from datetime import datetime, timedelta, date
 import pytz
 import subprocess
 
+# Import manifest writer
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # --- AUDIT ADDITION: Holiday + calendar helpers ---
 try:
     import holidays as _hol
@@ -1137,7 +1145,83 @@ def save_all_outputs(**context):
     logger.info(f"Path: {prefix}")
     logger.info(f"Location: s3://{BUCKET_OUTPUT}/{prefix}")
     logger.info("="*70)
-    
+
+    # ========== MANIFEST WRITING ==========
+    logger.info("\nWriting manifest for L1 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+
+        # Main data files
+        for file_name in ['standardized_data_all.parquet', 'standardized_data_all.csv',
+                          'standardized_data_accepted.parquet', 'standardized_data_accepted.csv']:
+            try:
+                file_key = f"{prefix}{file_name}"
+                metadata = create_file_metadata(
+                    s3_client, BUCKET_OUTPUT, file_key,
+                    row_count=len(df_accepted) if 'accepted' in file_name else len(df)
+                )
+                files_metadata.append(metadata)
+            except Exception as e:
+                logger.warning(f"Could not create metadata for {file_name}: {e}")
+
+        # Report files
+        for file_name in ['_reports/daily_quality_60.csv', '_reports/failure_summary.csv',
+                          '_reports/accepted_summary.csv', '_statistics/hod_baseline.parquet',
+                          '_statistics/hod_baseline.csv', '_metadata.json']:
+            try:
+                file_key = f"{prefix}{file_name}"
+                metadata = create_file_metadata(s3_client, BUCKET_OUTPUT, file_key)
+                files_metadata.append(metadata)
+            except Exception as e:
+                # Optional files may not exist
+                pass
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=BUCKET_OUTPUT,
+                layer='l1',
+                run_id=cleaning_stats['run_id'],
+                files=files_metadata,
+                status='success',
+                metadata={
+                    'started_at': metadata.get('created_ts', datetime.utcnow().isoformat() + 'Z'),
+                    'pipeline': DAG_ID,
+                    'airflow_dag_id': DAG_ID,
+                    'execution_date': execution_date,
+                    'git_sha': GIT_SHA,
+                    'schema_version': SCHEMA_VERSION,
+                    'dataset_version': DATASET_VERSION,
+                    'total_rows': len(df),
+                    'accepted_rows': len(df_accepted),
+                    'total_episodes': int(df['episode_id'].nunique()),
+                    'accepted_episodes': len(ok_only_episodes),
+                    'quality_summary': quality_summary
+                }
+            )
+            logger.info(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            logger.warning("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return files_uploaded
 
 # Create DAG

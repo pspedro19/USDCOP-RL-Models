@@ -85,17 +85,40 @@ class RealTimeRiskEngine {
   }
 
   private async initializeMetrics(): Promise<void> {
-    // Fetch risk metrics from analytics API
+    // Only fetch on client-side (not during SSR/SSG build)
+    if (typeof window === 'undefined') {
+      console.log('[RiskEngine] Skipping metrics fetch during SSR/SSG build');
+      return;
+    }
+
+    // Fetch REAL risk metrics from Analytics API via local proxy
     try {
-      const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
-      const portfolioValue = 10000000;
+      // Use local API proxy route which forwards to Analytics API backend
+      // The proxy route at /api/analytics/[...path] handles the backend connection
+      const ANALYTICS_API_URL = '/api/analytics';
+
+      // Use environment variable for portfolio value or default to 10M
+      // This can be configured per deployment/environment
+      const portfolioValue = typeof window !== 'undefined' && (window as any).PORTFOLIO_VALUE
+        ? (window as any).PORTFOLIO_VALUE
+        : (process.env.NEXT_PUBLIC_PORTFOLIO_VALUE ? parseFloat(process.env.NEXT_PUBLIC_PORTFOLIO_VALUE) : 10000000);
+
+      console.log('[RiskEngine] Fetching risk metrics from:', `${ANALYTICS_API_URL}/risk-metrics`);
+      console.log('[RiskEngine] Using portfolio value:', portfolioValue);
+
       const response = await fetch(
-        `${ANALYTICS_API_URL}/api/analytics/risk-metrics?symbol=USDCOP&portfolio_value=${portfolioValue}&days=30`
+        `${ANALYTICS_API_URL}/risk-metrics?symbol=USDCOP&portfolio_value=${portfolioValue}&days=30`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
 
       if (response.ok) {
         const data = await response.json();
         const metrics = data.risk_metrics;
+
+        console.log('[RiskEngine] Successfully fetched REAL risk metrics from API');
 
         this.currentMetrics = {
           portfolioValue: metrics.portfolioValue,
@@ -112,46 +135,21 @@ class RealTimeRiskEngine {
           timeToLiquidate: metrics.timeToLiquidate,
           bestCaseScenario: metrics.bestCaseScenario,
           worstCaseScenario: metrics.worstCaseScenario,
-          stressTestResults: metrics.stressTestResults,
           lastUpdated: new Date(),
           calculationTime: 125 // ms
         };
       } else {
-        // Fallback to default values if API fails
-        this.setDefaultMetrics();
+        console.error(`[RiskEngine] ❌ Analytics API returned status ${response.status}`);
+        console.error('[RiskEngine] ❌ NO DATA AVAILABLE - API must be running to show risk metrics');
+        // DO NOT use fallback data - set to null so UI shows "No data"
+        this.currentMetrics = null;
       }
     } catch (error) {
-      console.error('Failed to fetch risk metrics from API:', error);
-      // Fallback to default values
-      this.setDefaultMetrics();
+      console.error('[RiskEngine] ❌ Failed to fetch risk metrics from API:', error);
+      console.error('[RiskEngine] ❌ NO DATA AVAILABLE - Check that Analytics API is running on http://localhost:8001');
+      // DO NOT use fallback data - set to null so UI shows "No data"
+      this.currentMetrics = null;
     }
-  }
-
-  private setDefaultMetrics(): void {
-    this.currentMetrics = {
-      portfolioValue: 10000000,
-      grossExposure: 12000000,
-      netExposure: 8500000,
-      leverage: 1.2,
-      portfolioVaR95: 450000,
-      portfolioVaR99: 650000,
-      expectedShortfall95: 720000,
-      portfolioVolatility: 0.18,
-      currentDrawdown: -0.03,
-      maximumDrawdown: -0.08,
-      liquidityScore: 0.85,
-      timeToLiquidate: 2.5,
-      bestCaseScenario: 2500000,
-      worstCaseScenario: -1800000,
-      stressTestResults: {
-        'Market Crash (-20%)': -1650000,
-        'COP Devaluation (-15%)': -1200000,
-        'Oil Price Shock (-25%)': -850000,
-        'Fed Rate Hike (+200bp)': -450000
-      },
-      lastUpdated: new Date(),
-      calculationTime: 125
-    };
   }
 
   // Update position in portfolio
@@ -250,13 +248,11 @@ class RealTimeRiskEngine {
   private calculatePortfolioVolatility(positions: Position[]): number {
     if (positions.length === 0) return 0;
 
-    // Simplified volatility calculation
-    // In reality, this would use covariance matrix
-    const weights = positions.map(pos => pos.weight);
-    const volatilities = positions.map(() => 0.15 + Math.random() * 0.1); // 15-25%
-
-    // Weighted average volatility (simplified)
-    return weights.reduce((sum, weight, i) => sum + weight * volatilities[i], 0);
+    // ⚠️ This is a placeholder - actual volatility should come from Analytics API
+    // For now, return 0 to avoid showing simulated data
+    console.warn('[RiskEngine] ⚠️ Portfolio volatility calculation not implemented - using 0');
+    console.warn('[RiskEngine] This should be provided by Analytics API risk-metrics endpoint');
+    return 0;
   }
 
   // Check for risk limit breaches
@@ -349,30 +345,59 @@ class RealTimeRiskEngine {
     }
   }
 
-  // Start real-time updates (simulated)
+  // Start real-time updates - periodically refresh metrics from API
   private startRealTimeUpdates(): void {
-    // Update every 10 seconds
+    // Refresh real metrics from Analytics API every 30 seconds
     this.updateInterval = setInterval(() => {
-      this.simulateMarketMovement();
-    }, 10000);
+      this.refreshMetricsFromAPI();
+    }, 30000); // 30 seconds
   }
 
-  // Simulate market movement for demo purposes
-  private simulateMarketMovement(): void {
-    if (!this.currentMetrics) return;
+  // Refresh metrics from Analytics API (replaces simulation)
+  private async refreshMetricsFromAPI(): void {
+    try {
+      // Use server-side env var (without NEXT_PUBLIC_ prefix) since this runs on server
+      // ANALYTICS_API_URL already includes /api/analytics path
+      const ANALYTICS_API_URL = process.env.ANALYTICS_API_URL || process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001/api/analytics';
+      const portfolioValue = this.currentMetrics?.portfolioValue || 10000000;
 
-    // Small random changes to simulate market movement
-    const changePercent = (Math.random() - 0.5) * 0.02; // ±1% change
+      const response = await fetch(
+        `${ANALYTICS_API_URL}/risk-metrics?symbol=USDCOP&portfolio_value=${portfolioValue}&days=30`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
 
-    this.currentMetrics = {
-      ...this.currentMetrics,
-      portfolioValue: this.currentMetrics.portfolioValue * (1 + changePercent),
-      portfolioVaR95: this.currentMetrics.portfolioVaR95 * (1 + changePercent * 0.5),
-      currentDrawdown: Math.min(0, this.currentMetrics.currentDrawdown + changePercent * 0.1),
-      lastUpdated: new Date()
-    };
+      if (response.ok) {
+        const data = await response.json();
+        const metrics = data.risk_metrics;
 
-    this.notifySubscribers();
+        this.currentMetrics = {
+          portfolioValue: metrics.portfolioValue,
+          grossExposure: metrics.grossExposure,
+          netExposure: metrics.netExposure,
+          leverage: metrics.leverage,
+          portfolioVaR95: metrics.portfolioVaR95,
+          portfolioVaR99: metrics.portfolioVaR99,
+          expectedShortfall95: metrics.expectedShortfall95,
+          portfolioVolatility: metrics.portfolioVolatility,
+          currentDrawdown: metrics.currentDrawdown,
+          maximumDrawdown: metrics.maximumDrawdown,
+          liquidityScore: metrics.liquidityScore,
+          timeToLiquidate: metrics.timeToLiquidate,
+          bestCaseScenario: metrics.bestCaseScenario,
+          worstCaseScenario: metrics.worstCaseScenario,
+          lastUpdated: new Date(),
+          calculationTime: 125
+        };
+
+        this.checkRiskAlerts();
+        this.notifySubscribers();
+      }
+    } catch (error) {
+      console.error('[RiskEngine] Failed to refresh metrics from API:', error);
+    }
   }
 
   // Cleanup resources
@@ -398,15 +423,12 @@ export interface RiskMetrics {
   positions: number;
 }
 
-export async function getRiskMetrics(): Promise<RiskMetrics> {
+export async function getRiskMetrics(): Promise<RiskMetrics | null> {
   const metrics = realTimeRiskEngine.getRiskMetrics();
   if (!metrics) {
-    return {
-      var: 0.05,
-      exposure: 0.75,
-      leverage: 2.5,
-      positions: 15
-    };
+    console.warn('[getRiskMetrics] ❌ No risk metrics available - Analytics API may not be running');
+    console.warn('[getRiskMetrics] Returning null to force UI to show "No data" state');
+    return null;
   }
 
   return {

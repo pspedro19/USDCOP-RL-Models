@@ -211,6 +211,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
+      - ./scripts:/opt/scripts
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     command: airflow scheduler
@@ -274,6 +275,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
+      - ./scripts:/opt/scripts
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     ports:
@@ -523,7 +525,9 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
       NEXT_PUBLIC_API_URL: http://localhost:5000/api
       NEXT_PUBLIC_TRADING_API_URL: http://usdcop-trading-api:8000/api
+      NEXT_PUBLIC_ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
       TRADING_API_URL: http://usdcop-trading-api:8000
+      ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
     ports:
       - "5000:3000"
     networks:
@@ -636,11 +640,106 @@ services:
     networks:
       - usdcop-trading-network
     restart: unless-stopped
+    # Healthcheck is defined in Dockerfile using Python/requests
+
+  # Compliance & Audit API Service
+  compliance-api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.compliance-api
+    container_name: usdcop-compliance-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - PORT=8003
+    ports:
+      - "8003:8003"
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/api/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+
+  # Pipeline Data API Service
+  pipeline-data-api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.pipeline-api
+    container_name: usdcop-pipeline-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - PORT=8002
+    ports:
+      - "8002:8002"
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MLflow Tracking Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.2
+    container_name: trading-mlflow
+    user: root
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-minioadmin}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - ./mlflow_data:/mlflow
+    entrypoint: >
+      /bin/sh -c "
+      apt-get update && apt-get install -y curl &&
+      pip install boto3 &&
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root s3://mlflow/
+      --host 0.0.0.0
+      --port 5000
+      "
+    ports:
+      - "5001:5000"
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - trading-mlflow
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 40s
 
   # Nginx Reverse Proxy

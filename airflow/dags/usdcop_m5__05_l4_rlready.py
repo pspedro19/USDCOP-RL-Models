@@ -31,6 +31,13 @@ import io
 from pathlib import Path
 import hashlib
 
+# Import manifest writer
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -3135,9 +3142,79 @@ def save_all_files_to_minio(**context):
     logger.info(f"Files saved: {files_saved}")
     logger.info(f"✅ Clip-rate validation PASSED: {max_clip_rate:.3%} < 0.5%")
     logger.info(f"[READY] L4 Pipeline READY - All auditor requirements met")
-    
+
     context['ti'].xcom_push(key='files_saved', value=files_saved)
-    
+
+    # ========== MANIFEST WRITING ==========
+    logger.info("\nWriting manifest for L4 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+        bucket = '04-l4-ds-usdcop-rlready'
+
+        # Add metadata for saved files
+        for file_key in files_saved:
+            try:
+                # Determine row count based on file type
+                row_count = None
+                if 'replay_dataset.parquet' in file_key:
+                    row_count = len(replay_df)
+                elif 'train_df.parquet' in file_key or 'val_df.parquet' in file_key or 'test_df.parquet' in file_key:
+                    # Try to get row count from parquet file
+                    try:
+                        obj = s3_hook.get_key(file_key, bucket_name=bucket)
+                        content = obj.get()['Body'].read()
+                        df_temp = pd.read_parquet(io.BytesIO(content))
+                        row_count = len(df_temp)
+                    except:
+                        pass
+
+                metadata = create_file_metadata(s3_client, bucket, file_key, row_count=row_count)
+                files_metadata.append(metadata)
+            except Exception as e:
+                logger.warning(f"Could not create metadata for {file_key}: {e}")
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=bucket,
+                layer='l4',
+                run_id=run_id,
+                files=files_metadata,
+                status='success',
+                metadata={
+                    'started_at': datetime.utcnow().isoformat() + 'Z',
+                    'pipeline': DAG_ID,
+                    'airflow_dag_id': DAG_ID,
+                    'execution_date': execution_date,
+                    'total_rows': len(replay_df),
+                    'total_episodes': int(replay_df['episode_id'].nunique()),
+                    'clip_rate_max': float(max_clip_rate),
+                    'ready_status': 'READY'
+                }
+            )
+            logger.info(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            logger.warning("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return {'status': 'success', 'files_saved': len(files_saved)}
 
 

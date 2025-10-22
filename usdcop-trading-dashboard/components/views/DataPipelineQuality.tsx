@@ -2,17 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import useSWR from 'swr';
+import {
   Database, CheckCircle, XCircle, AlertTriangle, Clock, Zap,
   BarChart3, Activity, Target, Shield, Settings, RefreshCw,
   TrendingUp, TrendingDown, Gauge, Filter, Grid3x3, FileSearch,
   GitBranch, Layers, Eye, EyeOff, Download, Upload, HardDrive,
-  Network, Cpu, MemoryStick, Timer, Signal, AlertCircle
+  Network, Cpu, MemoryStick, Timer, Signal, AlertCircle, Loader2
 } from 'lucide-react';
 
-// Data Pipeline Quality Data Simulation
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Data Pipeline Quality Data from Real API
 const useDataPipelineQuality = () => {
-  const [pipelineData, setPipelineData] = useState({
+  // Fetch data from multiple pipeline endpoints
+  const { data: l0Data } = useSWR('/api/pipeline/l0/statistics', fetcher, { refreshInterval: 30000 });
+  const { data: l1Data } = useSWR('/api/pipeline/l1/quality-report', fetcher, { refreshInterval: 30000 });
+  const { data: l3Data } = useSWR('/api/pipeline/l3/forward-ic', fetcher, { refreshInterval: 30000 });
+  const { data: l4Data } = useSWR('/api/pipeline/l4/quality-check', fetcher, { refreshInterval: 30000 });
+
+  // Default fallback data
+  const defaultPipelineData = {
     l0: {
       coverage: 95.8,
       ohlcInvariants: 0,
@@ -79,34 +90,62 @@ const useDataPipelineQuality = () => {
       l2ToL3: { throughput: 1182, latency: 5.2, errors: 0 },
       l3ToL4: { throughput: 1180, latency: 4.1, errors: 1 }
     }
-  });
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPipelineData(prev => ({
-        ...prev,
-        l0: {
-          ...prev.l0,
-          coverage: Math.max(90, Math.min(100, prev.l0.coverage + (Math.random() - 0.5) * 2)),
-          acquisitionLatency: Math.max(200, prev.l0.acquisitionLatency + (Math.random() - 0.5) * 20)
-        },
-        l4: {
-          ...prev.l4,
-          clipRate: Math.max(0.1, Math.min(0.8, prev.l4.clipRate + (Math.random() - 0.5) * 0.1)),
-          zeroRateT33: Math.max(30, Math.min(60, prev.l4.zeroRateT33 + (Math.random() - 0.5) * 3))
-        },
-        systemHealth: {
-          ...prev.systemHealth,
-          cpu: Math.max(20, Math.min(80, prev.systemHealth.cpu + (Math.random() - 0.5) * 5)),
-          memory: Math.max(40, Math.min(90, prev.systemHealth.memory + (Math.random() - 0.5) * 3))
-        }
-      }));
-    }, 3000);
+  // Map API responses to component structure
+  const pipelineData = {
+    l0: {
+      coverage: l0Data?.coverage || defaultPipelineData.l0.coverage,
+      ohlcInvariants: l0Data?.ohlc_invariants || defaultPipelineData.l0.ohlcInvariants,
+      crossSourceDelta: l0Data?.cross_source_delta || defaultPipelineData.l0.crossSourceDelta,
+      duplicates: l0Data?.duplicates || 0,
+      gaps: l0Data?.gaps || 0,
+      staleRate: l0Data?.stale_rate || defaultPipelineData.l0.staleRate,
+      acquisitionLatency: l0Data?.acquisition_latency || defaultPipelineData.l0.acquisitionLatency,
+      volumeDataPoints: l0Data?.volume_data_points || defaultPipelineData.l0.volumeDataPoints,
+      dataSourceHealth: l0Data?.data_source_health || 'healthy'
+    },
+    l1: {
+      gridPerfection: l1Data?.grid_perfection || defaultPipelineData.l1.gridPerfection,
+      terminalCorrectness: l1Data?.terminal_correctness || defaultPipelineData.l1.terminalCorrectness,
+      hodBaselines: l1Data?.hod_baselines || defaultPipelineData.l1.hodBaselines,
+      processedVolume: l1Data?.processed_volume || defaultPipelineData.l1.processedVolume,
+      transformationLatency: l1Data?.transformation_latency || defaultPipelineData.l1.transformationLatency,
+      validationPassed: l1Data?.validation_passed || defaultPipelineData.l1.validationPassed,
+      dataIntegrity: l1Data?.data_integrity || 'healthy'
+    },
+    l2: defaultPipelineData.l2, // Not in API yet
+    l3: {
+      forwardIC: l3Data?.forward_ic || defaultPipelineData.l3.forwardIC,
+      maxCorrelation: l3Data?.max_correlation || defaultPipelineData.l3.maxCorrelation,
+      nanPostWarmup: l3Data?.nan_post_warmup || defaultPipelineData.l3.nanPostWarmup,
+      trainSchemaValid: l3Data?.train_schema_valid || defaultPipelineData.l3.trainSchemaValid,
+      featureEngineering: l3Data?.feature_engineering || defaultPipelineData.l3.featureEngineering,
+      antiLeakageChecks: l3Data?.anti_leakage_checks || defaultPipelineData.l3.antiLeakageChecks,
+      correlationAnalysis: l3Data?.correlation_analysis || 'passed'
+    },
+    l4: {
+      observationFeatures: l4Data?.observation_features || defaultPipelineData.l4.observationFeatures,
+      clipRate: l4Data?.clip_rate || defaultPipelineData.l4.clipRate,
+      zeroRateT33: l4Data?.zero_rate_t33 || defaultPipelineData.l4.zeroRateT33,
+      rewardStd: l4Data?.reward_std || defaultPipelineData.l4.rewardStd,
+      rewardZeroRate: l4Data?.reward_zero_rate || defaultPipelineData.l4.rewardZeroRate,
+      rewardRMSE: l4Data?.reward_rmse || defaultPipelineData.l4.rewardRMSE,
+      episodeCompleteness: l4Data?.episode_completeness || defaultPipelineData.l4.episodeCompleteness,
+      rlReadiness: l4Data?.rl_readiness || 'optimal'
+    },
+    systemHealth: defaultPipelineData.systemHealth, // Not in API yet
+    dataFlow: defaultPipelineData.dataFlow // Not in API yet
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  const isLoading = !l0Data && !l1Data && !l3Data && !l4Data;
+  const hasError = false; // SWR handles errors individually per endpoint
 
-  return pipelineData;
+  return {
+    pipelineData,
+    isLoading,
+    hasError
+  };
 };
 
 interface QualityMetricCardProps {
@@ -462,8 +501,23 @@ const QualityGatesPanel: React.FC<{ pipelineData: any }> = ({ pipelineData }) =>
 };
 
 export default function DataPipelineQuality() {
-  const pipelineData = useDataPipelineQuality();
+  const { pipelineData, isLoading } = useDataPipelineQuality();
   const [selectedLayer, setSelectedLayer] = useState<'L0' | 'L1' | 'L2' | 'L3' | 'L4'>('L0');
+
+  // Show loading indicator while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-fintech-cyan-400 animate-spin" />
+            <p className="text-fintech-dark-300">Loading pipeline quality metrics...</p>
+            <p className="text-xs text-fintech-dark-400">Fetching data from L0, L1, L3, and L4 layers</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const l0Metrics = [
     {

@@ -29,6 +29,16 @@ import logging
 from pydantic import BaseModel
 import uvicorn
 import json
+import io
+
+# Import MinIO manifest reader
+from minio_manifest_reader import (
+    read_l5_manifest,
+    read_l6_manifest,
+    read_file_from_minio,
+    get_all_files_from_manifest,
+    get_manifest_metadata
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -92,6 +102,50 @@ def execute_query_df(query: str, params: tuple = None) -> pd.DataFrame:
         return df
     finally:
         conn.close()
+
+def query_market_data(
+    symbol: str = "USDCOP",
+    limit: int = 1000,
+    start_date: str = None,
+    end_date: str = None
+) -> pd.DataFrame:
+    """
+    Query market data from PostgreSQL database
+
+    Args:
+        symbol: Trading symbol (default: USDCOP)
+        limit: Maximum number of rows to return
+        start_date: Start date filter (ISO format)
+        end_date: End date filter (ISO format)
+
+    Returns:
+        DataFrame with columns: timestamp, price, bid, ask, volume, symbol
+    """
+    query = """
+        SELECT
+            timestamp,
+            price,
+            bid,
+            ask,
+            volume,
+            symbol
+        FROM market_data
+        WHERE symbol = %s
+    """
+    params = [symbol]
+
+    if start_date:
+        query += " AND timestamp >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " AND timestamp <= %s"
+        params.append(end_date)
+
+    query += " ORDER BY timestamp DESC LIMIT %s"
+    params.append(limit)
+
+    return execute_query_df(query, tuple(params))
 
 # ==========================================
 # HELPER FUNCTIONS
@@ -552,72 +606,64 @@ def get_l5_models():
     """
     Get available ML model artifacts from L5 layer
 
-    Returns list of trained models and their metadata
+    Returns list of trained models from MinIO manifest (NO MOCK DATA)
     """
     try:
-        # Mock model data (in production, this would come from MLflow or model registry)
-        models = [
-            {
-                "model_id": "ppo_lstm_v2_1",
-                "name": "PPO with LSTM",
-                "version": "2.1",
-                "algorithm": "PPO",
-                "architecture": "LSTM",
-                "training_date": (datetime.utcnow() - timedelta(days=2)).isoformat(),
-                "metrics": {
-                    "train_reward": 1250.5,
-                    "val_reward": 1180.3,
-                    "sharpe_ratio": 1.87,
-                    "win_rate": 0.685
-                },
-                "status": "active",
-                "file_path": "models/ppo_lstm_v2_1.pkl"
-            },
-            {
-                "model_id": "a2c_gru_v1_5",
-                "name": "A2C with GRU",
-                "version": "1.5",
-                "algorithm": "A2C",
-                "architecture": "GRU",
-                "training_date": (datetime.utcnow() - timedelta(days=5)).isoformat(),
-                "metrics": {
-                    "train_reward": 1150.2,
-                    "val_reward": 1100.5,
-                    "sharpe_ratio": 1.65,
-                    "win_rate": 0.672
-                },
-                "status": "inactive",
-                "file_path": "models/a2c_gru_v1_5.pkl"
-            },
-            {
-                "model_id": "sac_transformer_v3_0",
-                "name": "SAC with Transformer",
-                "version": "3.0",
-                "algorithm": "SAC",
-                "architecture": "Transformer",
-                "training_date": (datetime.utcnow() - timedelta(days=1)).isoformat(),
-                "metrics": {
-                    "train_reward": 1320.8,
-                    "val_reward": 1255.1,
-                    "sharpe_ratio": 2.05,
-                    "win_rate": 0.701
-                },
-                "status": "testing",
-                "file_path": "models/sac_transformer_v3_0.pkl"
-            }
-        ]
+        # Read manifest from MinIO (REAL DATA)
+        manifest = read_l5_manifest()
+
+        if not manifest:
+            logger.warning("L5 manifest not found in MinIO - DAG may not have run yet")
+            raise HTTPException(
+                status_code=404,
+                detail="L5 manifest not found. Please execute DAG L5 (usdcop_m5__06_l5_serving) first."
+            )
+
+        # Extract model metadata from manifest
+        models = manifest.get('models', [])
+        files = manifest.get('files', [])
+
+        # If models not explicitly in manifest, derive from files
+        if not models and files:
+            models = []
+            for file_info in files:
+                file_key = file_info.get('file_key', '')
+                metadata = file_info.get('metadata', {})
+
+                # Extract model info from file metadata
+                model_id = file_key.split('/')[-1].replace('.pkl', '').replace('.onnx', '')
+                models.append({
+                    "model_id": model_id,
+                    "name": metadata.get('model_name', model_id),
+                    "version": metadata.get('version', '1.0'),
+                    "algorithm": metadata.get('algorithm', 'Unknown'),
+                    "architecture": metadata.get('architecture', 'Unknown'),
+                    "training_date": file_info.get('created_at', datetime.utcnow().isoformat()),
+                    "metrics": metadata.get('metrics', {}),
+                    "status": metadata.get('status', 'active'),
+                    "file_path": file_key,
+                    "file_size_mb": file_info.get('size_bytes', 0) / (1024 * 1024)
+                })
+
+        manifest_metadata = get_manifest_metadata(manifest)
 
         return {
             "models": models,
             "count": len(models),
             "metadata": {
                 "layer": "L5",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": "minio_manifest",  # Indicates REAL data
+                "run_id": manifest_metadata.get('run_id'),
+                "manifest_timestamp": manifest_metadata.get('timestamp'),
+                "validation_status": manifest_metadata.get('validation_status')
             }
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching L5 models: {e}")
+        logger.error(f"Error fetching L5 models from MinIO: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ==========================================
@@ -631,61 +677,176 @@ def get_l6_backtest_results(
     """
     Get backtest results from L6 layer
 
-    Returns performance metrics from backtesting
+    Returns performance metrics from backtesting stored in MinIO (NO MOCK DATA, NO np.random())
     """
     try:
-        # Mock backtest data (in production, this would come from backtest database)
-        results = {
-            "run_id": f"backtest_{int(datetime.utcnow().timestamp())}",
+        # Read manifest from MinIO (REAL DATA)
+        manifest = read_l6_manifest()
+
+        if not manifest:
+            logger.warning("L6 manifest not found in MinIO - DAG may not have run yet")
+            raise HTTPException(
+                status_code=404,
+                detail="L6 manifest not found. Please execute DAG L6 (usdcop_m5__07_l6_backtest_referencia) first."
+            )
+
+        # Extract backtest results from manifest
+        backtest_data = manifest.get('backtest_results', {})
+        kpis = manifest.get('kpis', {})
+        statistics = manifest.get('statistics', {})
+
+        # If backtest_data not in manifest, try to read from parquet file
+        if not backtest_data and not kpis:
+            files = get_all_files_from_manifest(manifest)
+
+            # Look for backtest results file
+            for file_info in files:
+                file_key = file_info.get('file_key', '')
+
+                # Try to find KPI or summary file
+                if 'kpi' in file_key.lower() or 'summary' in file_key.lower() or 'backtest' in file_key.lower():
+                    try:
+                        # Read file from MinIO
+                        file_bytes = read_file_from_minio('usdcop-l6-backtest', file_key)
+
+                        if file_bytes:
+                            # If it's a parquet file, read it
+                            if file_key.endswith('.parquet'):
+                                df = pd.read_parquet(io.BytesIO(file_bytes))
+                                backtest_data = process_backtest_dataframe(df, split)
+                            # If it's JSON, parse it
+                            elif file_key.endswith('.json'):
+                                backtest_data = json.loads(file_bytes.decode('utf-8'))
+
+                            break
+                    except Exception as e:
+                        logger.error(f"Error reading backtest file {file_key}: {e}")
+                        continue
+
+        # Use data from manifest if available
+        if not backtest_data:
+            backtest_data = {
+                "kpis": kpis or statistics,
+                "daily_returns": [],
+                "trades": []
+            }
+
+        manifest_metadata = get_manifest_metadata(manifest)
+
+        return {
+            "run_id": manifest_metadata.get('run_id', f"backtest_{int(datetime.utcnow().timestamp())}"),
             "split": split,
-            "timestamp": datetime.utcnow().isoformat(),
-            "kpis": {
-                "top_bar": {
-                    "CAGR": 0.125,
-                    "Sharpe": 1.87,
-                    "Sortino": 2.15,
-                    "Calmar": 1.05,
-                    "MaxDD": -0.08,
-                    "Vol_annualizada": 0.15
-                },
-                "trading_micro": {
-                    "win_rate": 0.685,
-                    "profit_factor": 2.34,
-                    "payoff": 1.52,
-                    "expectancy_bps": 145.3,
-                    "total_trades": 247,
-                    "winning_trades": 169,
-                    "losing_trades": 78
-                },
-                "risk_metrics": {
-                    "max_drawdown": -0.08,
-                    "avg_drawdown": -0.023,
-                    "drawdown_duration_days": 5.2,
-                    "VaR_95": 0.015,
-                    "CVaR_95": 0.022
-                }
+            "timestamp": manifest_metadata.get('timestamp', datetime.utcnow().isoformat()),
+            "source": "minio_manifest",  # Indicates REAL data
+            "validation_status": manifest_metadata.get('validation_status'),
+            **backtest_data
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching L6 backtest results from MinIO: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def process_backtest_dataframe(df: pd.DataFrame, split: str) -> dict:
+    """
+    Process backtest dataframe and calculate KPIs from REAL data
+
+    Args:
+        df: Backtest results dataframe
+        split: 'test' or 'val'
+
+    Returns:
+        Dictionary with KPIs and metrics calculated from REAL data
+    """
+    try:
+        # Calculate returns from real PnL data
+        returns = df['pnl'].pct_change().dropna() if 'pnl' in df.columns else pd.Series([])
+
+        # Calculate key performance indicators from REAL data
+        kpis = {
+            "top_bar": {
+                "CAGR": float(calculate_cagr(df['cumulative_pnl'])) if 'cumulative_pnl' in df.columns else 0.0,
+                "Sharpe": float(calculate_sharpe_ratio(returns)) if len(returns) > 0 else 0.0,
+                "Sortino": float(calculate_sortino_ratio(returns)) if len(returns) > 0 else 0.0,
+                "Calmar": float(calculate_calmar_ratio(df)) if 'drawdown' in df.columns else 0.0,
+                "MaxDD": float(df['drawdown'].min()) if 'drawdown' in df.columns else 0.0,
+                "Vol_annualizada": float(returns.std() * np.sqrt(252)) if len(returns) > 0 else 0.0
             },
-            "daily_returns": [],
+            "trading_micro": {
+                "win_rate": float((df['pnl'] > 0).sum() / len(df)) if 'pnl' in df.columns else 0.0,
+                "profit_factor": float(
+                    df[df['pnl'] > 0]['pnl'].sum() / abs(df[df['pnl'] < 0]['pnl'].sum())
+                ) if 'pnl' in df.columns and (df['pnl'] < 0).any() else 0.0,
+                "total_trades": int(len(df)),
+                "winning_trades": int((df['pnl'] > 0).sum()) if 'pnl' in df.columns else 0,
+                "losing_trades": int((df['pnl'] < 0).sum()) if 'pnl' in df.columns else 0
+            },
+            "risk_metrics": {
+                "max_drawdown": float(df['drawdown'].min()) if 'drawdown' in df.columns else 0.0,
+                "avg_drawdown": float(df['drawdown'].mean()) if 'drawdown' in df.columns else 0.0
+            }
+        }
+
+        # Extract daily returns from REAL data
+        daily_returns = df.to_dict('records')[:100] if len(df) > 0 else []
+
+        return {
+            "kpis": kpis,
+            "daily_returns": daily_returns,
             "trades": []
         }
 
-        # Generate mock daily returns
-        base_price = 100000
-        for i in range(30):
-            daily_return = np.random.normal(0.001, 0.01)
-            base_price *= (1 + daily_return)
-            results["daily_returns"].append({
-                "date": (datetime.utcnow() - timedelta(days=30-i)).strftime("%Y-%m-%d"),
-                "return": round(daily_return, 6),
-                "cumulative_return": round((base_price - 100000) / 100000, 6),
-                "price": round(base_price, 2)
-            })
-
-        return results
-
     except Exception as e:
-        logger.error(f"Error fetching L6 backtest results: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing backtest dataframe: {e}")
+        return {"kpis": {}, "daily_returns": [], "trades": []}
+
+
+def calculate_cagr(cumulative_pnl):
+    """Calculate Compound Annual Growth Rate from cumulative PnL"""
+    try:
+        if len(cumulative_pnl) < 2:
+            return 0.0
+        total_return = cumulative_pnl.iloc[-1] / cumulative_pnl.iloc[0] if cumulative_pnl.iloc[0] != 0 else 1.0
+        years = len(cumulative_pnl) / 252  # Assuming 252 trading days per year
+        return (total_return ** (1 / years)) - 1 if years > 0 else 0.0
+    except:
+        return 0.0
+
+
+def calculate_sharpe_ratio(returns):
+    """Calculate Sharpe Ratio from returns"""
+    try:
+        if len(returns) == 0:
+            return 0.0
+        return returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0.0
+    except:
+        return 0.0
+
+
+def calculate_sortino_ratio(returns):
+    """Calculate Sortino Ratio from returns"""
+    try:
+        if len(returns) == 0:
+            return 0.0
+        downside_returns = returns[returns < 0]
+        downside_std = downside_returns.std() if len(downside_returns) > 0 else 0.0
+        return returns.mean() / downside_std * np.sqrt(252) if downside_std > 0 else 0.0
+    except:
+        return 0.0
+
+
+def calculate_calmar_ratio(df):
+    """Calculate Calmar Ratio"""
+    try:
+        if 'cumulative_pnl' not in df.columns or 'drawdown' not in df.columns:
+            return 0.0
+        cagr = calculate_cagr(df['cumulative_pnl'])
+        max_dd = abs(df['drawdown'].min())
+        return cagr / max_dd if max_dd > 0 else 0.0
+    except:
+        return 0.0
 
 # ==========================================
 # MAIN

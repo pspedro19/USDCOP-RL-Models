@@ -69,29 +69,11 @@ export class EnhancedDataService {
       console.warn('Main API not available, using fallback data');
     }
 
-    // Generate realistic mock data for USD/COP
-    const data: MarketData[] = [];
-    const basePrice = 4200; // USD/COP base price
-    let currentPrice = basePrice;
-
-    for (let i = 0; i < 100; i++) {
-      const change = (Math.random() - 0.5) * 20;
-      currentPrice += change;
-
-      data.push({
-        symbol,
-        price: Math.round(currentPrice * 100) / 100,
-        change: Math.round(change * 100) / 100,
-        changePercent: Math.round((change / currentPrice) * 10000) / 100,
-        timestamp: startTime + (i * 60000), // 1 minute intervals
-        volume: Math.floor(Math.random() * 10000000),
-        high: Math.round((currentPrice + Math.random() * 10) * 100) / 100,
-        low: Math.round((currentPrice - Math.random() * 10) * 100) / 100,
-        open: Math.round((currentPrice - change) * 100) / 100
-      });
-    }
-
-    return data;
+    // NO MOCK DATA - Return empty array if API fails
+    // UI should display "No historical data available - API unavailable"
+    console.error('[EnhancedDataService] Historical data unavailable - API must be running');
+    console.error('[EnhancedDataService] Start Trading API on port 8000');
+    return [];
   }
 
   async loadCompleteHistory(symbol: string = 'USDCOP'): Promise<EnhancedCandle[]> {
@@ -105,36 +87,11 @@ export class EnhancedDataService {
       console.warn('Complete history API not available, generating mock data');
     }
 
-    // Generate realistic OHLC data for charts
-    const data: EnhancedCandle[] = [];
-    const basePrice = 4200;
-    let currentPrice = basePrice;
-    const now = new Date();
-
-    // Generate 1000 5-minute candles (about 3.5 days of data)
-    for (let i = 999; i >= 0; i--) {
-      const candleTime = new Date(now.getTime() - (i * 5 * 60 * 1000));
-
-      const open = currentPrice;
-      const volatility = Math.random() * 30;
-      const high = open + Math.random() * volatility;
-      const low = open - Math.random() * volatility;
-      const close = low + Math.random() * (high - low);
-
-      currentPrice = close; // Next candle starts where this one ends
-
-      data.push({
-        datetime: candleTime.toISOString(),
-        open: Math.round(open * 100) / 100,
-        high: Math.round(high * 100) / 100,
-        low: Math.round(low * 100) / 100,
-        close: Math.round(close * 100) / 100,
-        volume: Math.floor(Math.random() * 5000000),
-        source: 'mock'
-      });
-    }
-
-    return data;
+    // NO MOCK DATA - Return empty array if API fails
+    // UI should display "No historical data available - API unavailable"
+    console.error('[EnhancedDataService] Complete history unavailable - API must be running');
+    console.error('[EnhancedDataService] Start Trading API on port 8000');
+    return [];
   }
 }
 

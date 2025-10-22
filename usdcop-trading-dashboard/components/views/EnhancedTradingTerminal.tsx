@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import RealDataTradingChart from '../charts/RealDataTradingChart';
 import RealTimePriceDisplay from '../realtime/RealTimePriceDisplay';
+import { useDbStats } from '@/hooks/useDbStats';
+import { MarketDataService } from '@/lib/services/market-data-service';
 
 // KPI Data Generator with dynamic session P&L
 const generateKPIData = async () => {
@@ -17,8 +19,8 @@ const generateKPIData = async () => {
   let pnlPercent = 0;
 
   try {
-    const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
-    const response = await fetch(`${ANALYTICS_API_URL}/api/analytics/session-pnl?symbol=USDCOP`);
+    // ✅ Use Next.js API proxy (no direct backend calls)
+    const response = await fetch(`/api/analytics/session-pnl?symbol=USDCOP`);
 
     if (response.ok) {
       const data = await response.json();
@@ -32,35 +34,55 @@ const generateKPIData = async () => {
   return {
     session: {
       timeRange: '08:00–12:55',
-      pnlIntraday,
-      pnlPercent,
-      tradesEpisode: 7,
+      pnlIntraday, // ✅ From /api/analytics/session-pnl
+      pnlPercent,  // ✅ From /api/analytics/session-pnl
+      tradesEpisode: 0, // ⚠️ TODO: Add to /api/analytics/session-pnl endpoint
       targetRange: '2–10',
-      avgHolding: 12,
+      avgHolding: 0, // ⚠️ TODO: Add to /api/analytics/session-pnl endpoint
       holdingRange: '5–25 barras',
-      actionBalance: { sell: 45, buy: 55 },
-      drawdownIntraday: -2.1
+      actionBalance: { sell: 0, buy: 0 }, // ⚠️ TODO: Add to /api/analytics/session-pnl endpoint
+      drawdownIntraday: 0 // ⚠️ TODO: Add to /api/analytics/session-pnl endpoint
     },
     execution: {
-      vwapVsFill: 1.2, // bps
-      spreadEffective: 4.8, // bps per hour
-      slippage: 2.1, // bps per hour
-      turnCost: 8.5, // bps per trade
-      fillRatio: 94.2 // %
+      vwapVsFill: 0, // ⚠️ TODO: Create /api/analytics/execution-metrics endpoint
+      spreadEffective: 0, // ⚠️ TODO: Create /api/analytics/execution-metrics endpoint
+      slippage: 0, // ⚠️ TODO: Create /api/analytics/execution-metrics endpoint
+      turnCost: 0, // ⚠️ TODO: Create /api/analytics/execution-metrics endpoint
+      fillRatio: 0 // ⚠️ TODO: Create /api/analytics/execution-metrics endpoint
     },
     latency: {
-      p50: 45, // ms
-      p95: 78, // ms
-      p99: 95, // ms
-      onnxP99: 12 // ms
+      p50: 0, // ⚠️ TODO: Create /api/analytics/latency-metrics endpoint
+      p95: 0, // ⚠️ TODO: Create /api/analytics/latency-metrics endpoint
+      p99: 0, // ⚠️ TODO: Create /api/analytics/latency-metrics endpoint
+      onnxP99: 0 // ⚠️ TODO: Create /api/analytics/latency-metrics endpoint
     },
     marketState: {
-      status: 'OPEN',
-      latency: '<5ms',
-      clockSkew: '0.2ms',
-      lastUpdate: new Date().toLocaleTimeString()
+      status: 'LOADING',
+      latency: '-',
+      clockSkew: '-',
+      lastUpdate: '-'
     }
   };
+
+  // Fetch market status from API (8AM-12:55PM COT dynamic check)
+  try {
+    const health = await MarketDataService.checkAPIHealth();
+    if (health.market_status) {
+      return {
+        ...baseData,
+        marketState: {
+          status: health.market_status.is_open ? 'OPEN' : 'CLOSED',
+          latency: health.response_time_ms ? `${health.response_time_ms}ms` : '-',
+          clockSkew: '-', // ⚠️ TODO: Add clock_skew to Trading API health endpoint
+          lastUpdate: new Date().toLocaleTimeString()
+        }
+      };
+    }
+  } catch (error) {
+    console.error('[EnhancedTradingTerminal] Error fetching market status:', error);
+  }
+
+  return baseData;
 };
 
 const EnhancedTradingTerminal: React.FC = () => {
@@ -72,6 +94,7 @@ const EnhancedTradingTerminal: React.FC = () => {
   });
   const [isReplaying, setIsReplaying] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(true);
+  const { stats: dbStats } = useDbStats(60000); // Refresh every 60 seconds
 
   // Load initial data and update every 5 seconds
   useEffect(() => {
@@ -319,7 +342,7 @@ const EnhancedTradingTerminal: React.FC = () => {
         <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700/30">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-orange-400" />
-            Gráfico USD/COP - Datos Históricos Reales (92,936 registros)
+            Gráfico USD/COP - Datos Históricos Reales ({dbStats.totalRecords.toLocaleString()} registros)
           </h3>
 
           <RealDataTradingChart

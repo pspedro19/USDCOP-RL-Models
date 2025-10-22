@@ -41,6 +41,13 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
+# Import manifest writer
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # =========================
 # Configuración del DAG
 # =========================
@@ -128,20 +135,33 @@ def _ulcer_index(dd: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.square(np.minimum(dd, 0.0)) * (-1))))
 
 def _sortino(returns: np.ndarray, target: float = 0.0) -> float:
+    """
+    Calculate annualized Sortino ratio.
+
+    Sortino = (mean_excess / downside_std) * sqrt(252)
+    where downside_std is computed only from negative excess returns.
+    """
     if returns.size == 0:
         return 0.0
     excess = returns - target
     dr = excess[excess < 0]
     down_std = np.std(dr) if dr.size else 1e-9
     mu = float(np.mean(excess))
-    return float(mu / down_std) if down_std > 1e-9 else 0.0
+    # FIXED: Added sqrt(252) for annualization
+    return float(mu / down_std * np.sqrt(252)) if down_std > 1e-9 else 0.0
 
 def _sharpe(returns: np.ndarray, risk_free: float = 0.0) -> float:
+    """
+    Calculate annualized Sharpe ratio.
+
+    Sharpe = (mean_excess / std_excess) * sqrt(252)
+    """
     if returns.size == 0:
         return 0.0
     excess = returns - risk_free
     mu, sd = float(np.mean(excess)), float(np.std(excess))
-    return float(mu / sd) if sd > 1e-9 else 0.0
+    # FIXED: Added sqrt(252) for annualization
+    return float(mu / sd * np.sqrt(252)) if sd > 1e-9 else 0.0
 
 def _calmar(returns: np.ndarray) -> float:
     if returns.size == 0:
@@ -824,8 +844,70 @@ def finalize_and_publish(**ctx):
         "splits_processed": list(index["paths"].keys())
     }
     _write_json_to_s3(s3, BUCKET_L6, f"{base}/_control/READY", ready_marker)
-    
+
     print(f"Backtest L6 finalizado y publicado: {run_id}")
+
+    # ========== MANIFEST WRITING ==========
+    print("\nWriting manifest for L6 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+
+        # Add files from index
+        for split, paths in index.get("paths", {}).items():
+            for path_type, path in paths.items():
+                try:
+                    metadata = create_file_metadata(s3_client, BUCKET_L6, path)
+                    files_metadata.append(metadata)
+                except Exception as e:
+                    print(f"Warning: Could not create metadata for {path}: {e}")
+
+        # Add index and ready marker
+        for file_key in [f"{base}/index.json", f"{base}/_control/READY"]:
+            try:
+                metadata = create_file_metadata(s3_client, BUCKET_L6, file_key)
+                files_metadata.append(metadata)
+            except Exception as e:
+                print(f"Warning: Could not create metadata for {file_key}: {e}")
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=BUCKET_L6,
+                layer='l6',
+                run_id=run_id,
+                files=files_metadata,
+                status='success',
+                metadata={
+                    'started_at': datetime.utcnow().isoformat() + 'Z',
+                    'pipeline': DAG_ID,
+                    'airflow_dag_id': DAG_ID,
+                    'splits_processed': list(index["paths"].keys()),
+                    'ready': True
+                }
+            )
+            print(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            print("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        print(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return {"ready": True, "run_id": run_id, "index_path": f"{base}/index.json"}
 
 # =========================

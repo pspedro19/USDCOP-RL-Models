@@ -559,7 +559,7 @@ export class TechnicalIndicatorBuffer {
     return [...this.data];
   }
 
-  getLastIndicators(config: any): any {
+  getLastIndicators(config: Record<string, unknown>): Record<string, unknown> | null {
     if (this.data.length < 20) return null;
 
     const indicators = calculateAllIndicators(this.data, config);

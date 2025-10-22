@@ -8,7 +8,7 @@
  * - Diseño visual premium (UltimateVisualDashboard)
  * - Sistema único consistente
  * - Slider de navegación histórica funcional
- * - 92,936 registros históricos disponibles
+ * - Registros históricos dinámicos (desde API)
  */
 
 'use client';
@@ -24,6 +24,7 @@ import {
 import RealDataTradingChart from '../charts/RealDataTradingChart';
 import { useRealTimePrice } from '@/hooks/useRealTimePrice';
 import { useMarketStats } from '@/hooks/useMarketStats';
+import { useDbStats } from '@/hooks/useDbStats';
 import { MarketDataService } from '@/lib/services/market-data-service';
 import { Badge } from '@/components/ui/badge';
 
@@ -43,6 +44,7 @@ export default function UnifiedTradingTerminal() {
   // === DATOS EN TIEMPO REAL DEL BACKEND ===
   const { currentPrice: realtimePrice, isConnected: priceConnected } = useRealTimePrice('USDCOP');
   const { stats: marketStats, isConnected: statsConnected, isLoading } = useMarketStats('USDCOP', 30000);
+  const { stats: dbStats } = useDbStats(60000); // Refresh every 60 seconds
 
   // Combine real-time price with market stats
   const currentPrice = realtimePrice?.price || marketStats?.currentPrice || 0;
@@ -81,7 +83,7 @@ export default function UnifiedTradingTerminal() {
                 </Badge>
               </div>
               <p className="text-sm text-slate-400 mt-1">
-                92,936 registros • Sistema Unificado Premium
+                {dbStats.totalRecords.toLocaleString()} registros • Sistema Unificado Premium
               </p>
             </div>
 
@@ -173,7 +175,7 @@ export default function UnifiedTradingTerminal() {
               <h3 className="text-amber-400 font-semibold text-sm">Estado de Datos Históricos</h3>
               <p className="text-amber-200 text-xs mt-1">
                 📊 Datos disponibles: Oct 6-10, 2025 (318 registros) •
-                🎯 Objetivo: 2020-2025 (92,936 registros) •
+                🎯 Objetivo: 2020-2025 ({dbStats.totalRecords.toLocaleString()} registros) •
                 ⚡ La navegación histórica muestra todo el rango disponible en la base de datos
               </p>
               <p className="text-amber-300 text-xs mt-2 font-medium">

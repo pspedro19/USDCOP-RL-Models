@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import RealDataTradingChart from '@/components/charts/RealDataTradingChart';
 import { motion, AnimatePresence } from 'framer-motion';
+import useSWR from 'swr';
 import { useRealTimePrice } from '@/hooks/useRealTimePrice';
 import { useRLMetrics } from '@/hooks/useAnalytics';
 import { MarketDataService } from '@/lib/services/market-data-service';
@@ -14,6 +15,28 @@ import {
   Eye, EyeOff, Layers, Grid, Ruler, Move, RotateCcw, Trash2
 } from 'lucide-react';
 
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Hook for execution metrics
+const useExecutionMetrics = () => {
+  const { data, error } = useSWR(
+    '/api/analytics/execution-metrics?symbol=USDCOP&days=7',
+    fetcher,
+    { refreshInterval: 30000 } // Refresh every 30 seconds
+  );
+
+  return {
+    vwap: data?.metrics?.vwap || 0,
+    effectiveSpread: data?.metrics?.effective_spread_bps || 0,
+    avgSlippage: data?.metrics?.avg_slippage_bps || 0,
+    turnoverCost: data?.metrics?.turnover_cost_bps || 0,
+    fillRatio: data?.metrics?.fill_ratio_pct || 0,
+    isLoading: !error && !data,
+    error
+  };
+};
+
 // Real-time market data using actual services
 const useRealTimeMarketData = () => {
   const realTimePrice = useRealTimePrice('USDCOP');
@@ -23,15 +46,15 @@ const useRealTimeMarketData = () => {
     high24h: 0,
     low24h: 0,
     spread: 0,
-    vwapError: 0,
-    pegRate: 0,
+    vwapError: 0, // From /api/analytics/rl-metrics
+    pegRate: 0, // From /api/analytics/rl-metrics
     orderFlow: {
-      buy: 50,
-      sell: 50,
+      buy: 0, // From /api/analytics/order-flow (window=60s)
+      sell: 0,
       imbalance: 0
     },
     technicals: {
-      rsi: 50,
+      rsi: 0, // From /api/candlesticks with include_indicators=true
       macd: 0,
       bollinger: {
         upper: 0,
@@ -75,6 +98,70 @@ const useRealTimeMarketData = () => {
             spread: stats.spread || prev.spread
           }));
         }
+
+        // Fetch latest candlestick with technical indicators
+        const candlestickData = await MarketDataService.getCandlestickData(
+          'USDCOP',
+          '5m',
+          undefined,
+          undefined,
+          1, // Just need the latest candle
+          true // Include technical indicators
+        );
+
+        if (candlestickData?.data && candlestickData.data.length > 0) {
+          const latestCandle = candlestickData.data[candlestickData.data.length - 1];
+          const indicators = latestCandle.indicators;
+
+          if (indicators) {
+            setAdditionalData(prev => ({
+              ...prev,
+              technicals: {
+                rsi: indicators.rsi || 0,
+                macd: indicators.macd || 0,
+                bollinger: {
+                  upper: indicators.bb_upper || 0,
+                  middle: indicators.bb_middle || 0,
+                  lower: indicators.bb_lower || 0
+                },
+                ema20: indicators.ema_20 || 0,
+                ema50: indicators.ema_50 || 0,
+                ema200: indicators.ema_200 || 0
+              }
+            }));
+          }
+        }
+
+        // Fetch RL metrics for vwapError and pegRate
+        // ✅ Use Next.js API proxy (no direct backend calls)
+        const rlMetricsResponse = await fetch(`/api/analytics/rl-metrics?symbol=USDCOP&days=30`);
+
+        if (rlMetricsResponse.ok) {
+          const rlMetrics = await rlMetricsResponse.json();
+          // API response structure: { symbol, period_days, metrics: { vwapError, pegRate, ... } }
+          setAdditionalData(prev => ({
+            ...prev,
+            vwapError: rlMetrics.metrics?.vwapError || 0,
+            pegRate: rlMetrics.metrics?.pegRate || 0
+          }));
+        }
+
+        // Fetch order flow metrics (buy/sell imbalance)
+        const orderFlowResponse = await fetch(`/api/analytics/order-flow?symbol=USDCOP&window=60`);
+
+        if (orderFlowResponse.ok) {
+          const orderFlowData = await orderFlowResponse.json();
+          if (orderFlowData.data_available) {
+            setAdditionalData(prev => ({
+              ...prev,
+              orderFlow: {
+                buy: orderFlowData.order_flow.buy_percent || 0,
+                sell: orderFlowData.order_flow.sell_percent || 0,
+                imbalance: orderFlowData.order_flow.imbalance || 0
+              }
+            }));
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch additional market data:', error);
       }
@@ -87,7 +174,7 @@ const useRealTimeMarketData = () => {
   }, []);
 
   return {
-    price: realTimePrice.currentPrice?.price || 4150.25,
+    price: realTimePrice.currentPrice?.price || 0,
     change: realTimePrice.priceChange || 0,
     changePercent: realTimePrice.priceChangePercent || 0,
     volume: additionalData.volume || realTimePrice.currentPrice?.volume || 0,
@@ -124,16 +211,36 @@ const useTradingSession = () => {
       try {
         const health = await MarketDataService.checkAPIHealth();
         if (health.market_status) {
+          // Calculate coverage dynamically from session progress
+          // Coverage = (bars collected / target bars) * 100
+          // Target: 60 bars (5 hours * 12 bars/hour for M5 timeframe)
+          let sessionCoverage = 0;
+
+          if (health.market_status.is_open && health.session_progress) {
+            // If API provides session_progress, use it
+            sessionCoverage = health.session_progress.coverage || 0;
+          } else if (health.market_status.is_open) {
+            // Fallback: estimate from time elapsed in session
+            // Premium window: 08:00-12:55 COT (295 minutes = ~59 bars in M5)
+            const now = new Date();
+            const sessionStart = new Date(now);
+            sessionStart.setHours(8, 0, 0, 0);  // 08:00 COT
+            const minutesElapsed = Math.max(0, (now.getTime() - sessionStart.getTime()) / (1000 * 60));
+            const barsCollected = Math.min(60, Math.floor(minutesElapsed / 5));
+            sessionCoverage = (barsCollected / 60) * 100;
+          }
+
           setSession(prev => ({
             ...prev,
             isActive: health.market_status.is_open,
             sessionType: health.market_status.is_open ? 'Market Open' : 'Market Closed',
             nextEvent: health.market_status.next_event_type === 'market_open' ? 'Market Open' : 'Market Close',
             hoursRemaining: health.market_status.time_to_next_event || '--',
-            coverage: health.market_status.is_open ? 95.8 : 0,
+            coverage: sessionCoverage,
             latency: {
-              inference: Math.floor(Math.random() * 30) + 10,
-              e2e: Math.floor(Math.random() * 50) + 50
+              // Get latency from API health response or set to 0
+              inference: health.latency?.inference || 0,
+              e2e: health.latency?.e2e || 0
             }
           }));
         }
@@ -295,6 +402,7 @@ const ChartToolbar: React.FC<{
 export default function LiveTradingTerminal() {
   const marketData = useRealTimeMarketData();
   const session = useTradingSession();
+  const executionMetrics = useExecutionMetrics(); // Get execution metrics from API
   const [activeTools, setActiveTools] = useState(['bollinger', 'ema', 'volume']);
   const [activeTimeframe, setActiveTimeframe] = useState('M5');
   const [isPlaying, setIsPlaying] = useState(true);
@@ -615,7 +723,11 @@ export default function LiveTradingTerminal() {
             
             <div className="flex items-center gap-2">
               <span className="text-fintech-dark-400">Slippage Est:</span>
-              <span className="text-white font-bold">2.3 bps</span>
+              <span className="text-white font-bold">
+                {executionMetrics.avgSlippage > 0
+                  ? `${executionMetrics.avgSlippage.toFixed(1)} bps`
+                  : '-- bps'}
+              </span>
             </div>
             
             <div className="flex items-center gap-2">

@@ -1,11 +1,12 @@
 /**
  * Custom hooks for Trading Analytics API
- * All data is fetched from the backend analytics service
+ * All data is fetched from the backend analytics service via local API proxy
  */
 
 import useSWR from 'swr';
 
-const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
+// Use local API proxy which forwards requests to Analytics API backend
+const ANALYTICS_API_URL = '/api/analytics';
 
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
@@ -44,7 +45,7 @@ export interface RLMetricsResponse {
 
 export function useRLMetrics(symbol: string = 'USDCOP', days: number = 30) {
   const { data, error, isLoading } = useSWR<RLMetricsResponse>(
-    `${ANALYTICS_API_URL}/api/analytics/rl-metrics?symbol=${symbol}&days=${days}`,
+    `${ANALYTICS_API_URL}/rl-metrics?symbol=${symbol}&days=${days}`,
     fetcher,
     {
       refreshInterval: 60000, // Refresh every minute
@@ -86,7 +87,7 @@ export interface PerformanceKPIsResponse {
 
 export function usePerformanceKPIs(symbol: string = 'USDCOP', days: number = 90) {
   const { data, error, isLoading } = useSWR<PerformanceKPIsResponse>(
-    `${ANALYTICS_API_URL}/api/analytics/performance-kpis?symbol=${symbol}&days=${days}`,
+    `${ANALYTICS_API_URL}/performance-kpis?symbol=${symbol}&days=${days}`,
     fetcher,
     {
       refreshInterval: 120000, // Refresh every 2 minutes
@@ -127,7 +128,7 @@ export interface ProductionGatesResponse {
 
 export function useProductionGates(symbol: string = 'USDCOP', days: number = 90) {
   const { data, error, isLoading } = useSWR<ProductionGatesResponse>(
-    `${ANALYTICS_API_URL}/api/analytics/production-gates?symbol=${symbol}&days=${days}`,
+    `${ANALYTICS_API_URL}/production-gates?symbol=${symbol}&days=${days}`,
     fetcher,
     {
       refreshInterval: 120000, // Refresh every 2 minutes
@@ -186,7 +187,7 @@ export function useRiskMetrics(
   days: number = 30
 ) {
   const { data, error, isLoading } = useSWR<RiskMetricsResponse>(
-    `${ANALYTICS_API_URL}/api/analytics/risk-metrics?symbol=${symbol}&portfolio_value=${portfolioValue}&days=${days}`,
+    `${ANALYTICS_API_URL}/risk-metrics?symbol=${symbol}&portfolio_value=${portfolioValue}&days=${days}`,
     fetcher,
     {
       refreshInterval: 60000, // Refresh every minute
@@ -221,7 +222,7 @@ export function useSessionPnL(symbol: string = 'USDCOP', sessionDate?: string) {
   const dateParam = sessionDate ? `&session_date=${sessionDate}` : '';
 
   const { data, error, isLoading } = useSWR<SessionPnL>(
-    `${ANALYTICS_API_URL}/api/analytics/session-pnl?symbol=${symbol}${dateParam}`,
+    `${ANALYTICS_API_URL}/session-pnl?symbol=${symbol}${dateParam}`,
     fetcher,
     {
       refreshInterval: 30000, // Refresh every 30 seconds

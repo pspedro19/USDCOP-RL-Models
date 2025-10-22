@@ -25,7 +25,9 @@ import {
   GitBranch,
   Brain,
   Cpu,
-  Target
+  Target,
+  Layers,
+  Settings
 } from 'lucide-react';
 
 export interface ViewConfig {
@@ -59,16 +61,6 @@ export const VIEWS: ViewConfig[] = [
     icon: Activity,
     category: 'Trading',
     description: 'Professional USDCOP trading chart with full features',
-    priority: 'high',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'professional-terminal',
-    name: 'Professional Terminal',
-    icon: LineChart,
-    category: 'Trading',
-    description: 'Advanced professional trading terminal',
     priority: 'high',
     enabled: true,
     requiresAuth: true
@@ -126,7 +118,17 @@ export const VIEWS: ViewConfig[] = [
     requiresAuth: true
   },
 
-  // ===== DATA PIPELINE L0-L5 (5) =====
+  // ===== DATA PIPELINE L0-L6 (6) =====
+  {
+    id: 'pipeline-status',
+    name: 'Pipeline Status',
+    icon: Layers,
+    category: 'Pipeline',
+    description: 'Real-time pipeline health monitoring (L0, L2, L4, L6)',
+    priority: 'high',
+    enabled: true,
+    requiresAuth: true
+  },
   {
     id: 'l0-raw-data',
     name: 'L0 - Raw Data',
@@ -143,6 +145,16 @@ export const VIEWS: ViewConfig[] = [
     icon: BarChart3,
     category: 'Pipeline',
     description: 'Feature statistics and analysis',
+    priority: 'medium',
+    enabled: true,
+    requiresAuth: true
+  },
+  {
+    id: 'l2-prepare',
+    name: 'L2 - Prepare',
+    icon: Settings,
+    category: 'Pipeline',
+    description: 'Data preparation and quality metrics',
     priority: 'medium',
     enabled: true,
     requiresAuth: true

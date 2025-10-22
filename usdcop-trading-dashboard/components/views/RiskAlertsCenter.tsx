@@ -135,118 +135,6 @@ export default function RiskAlertsCenter() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Generate mock alerts for demonstration
-  const generateMockAlerts = useCallback((): RiskAlert[] => {
-    const now = new Date();
-    return [
-      {
-        id: 'alert-001',
-        type: 'limit_breach',
-        severity: 'critical',
-        message: 'Portfolio VaR 95% exceeded limit by 23%',
-        details: {
-          currentValue: 615000,
-          limitValue: 500000,
-          breach: 115000,
-          metric: 'VaR95',
-          position: 'USDCOP_LONG'
-        },
-        timestamp: new Date(now.getTime() - 5 * 60000), // 5 minutes ago
-        acknowledged: false,
-        position: 'USDCOP Long Position',
-        currentValue: 615000,
-        limitValue: 500000,
-        recommendation: 'Immediately reduce position size by 20% or implement tail hedge'
-      },
-      {
-        id: 'alert-002',
-        type: 'correlation_spike',
-        severity: 'high',
-        message: 'Cross-asset correlation surge detected - diversification breakdown',
-        details: {
-          correlation: 0.94,
-          threshold: 0.85,
-          assets: ['USDCOP', 'Oil', 'EM_Currencies'],
-          timeframe: '1H'
-        },
-        timestamp: new Date(now.getTime() - 12 * 60000), // 12 minutes ago
-        acknowledged: false,
-        currentValue: 0.94,
-        limitValue: 0.85,
-        recommendation: 'Review portfolio construction and consider alternative diversifiers'
-      },
-      {
-        id: 'alert-003',
-        type: 'volatility_surge',
-        severity: 'high',
-        message: 'USDCOP implied volatility spike - 40% increase in 1 hour',
-        details: {
-          currentVol: 28.5,
-          previousVol: 20.3,
-          increase: 0.40,
-          timeframe: '1H'
-        },
-        timestamp: new Date(now.getTime() - 18 * 60000), // 18 minutes ago
-        acknowledged: false,
-        position: 'USDCOP Options',
-        currentValue: 28.5,
-        limitValue: 25.0,
-        recommendation: 'Monitor for potential volatility regime change, consider hedging gamma exposure'
-      },
-      {
-        id: 'alert-004',
-        type: 'limit_breach',
-        severity: 'medium',
-        message: 'Position concentration limit breached for Colombian assets',
-        details: {
-          concentration: 0.87,
-          limit: 0.80,
-          country: 'Colombia',
-          sectors: ['FX', 'Rates', 'Commodities']
-        },
-        timestamp: new Date(now.getTime() - 25 * 60000), // 25 minutes ago
-        acknowledged: true,
-        currentValue: 0.87,
-        limitValue: 0.80,
-        recommendation: 'Diversify geographically or reduce Colombian exposure by 7%'
-      },
-      {
-        id: 'alert-005',
-        type: 'liquidity_crisis',
-        severity: 'medium',
-        message: 'Market liquidity deterioration - bid-ask spreads widening',
-        details: {
-          avgSpread: 12.5,
-          normalSpread: 6.2,
-          increase: 1.02,
-          affectedPositions: 8
-        },
-        timestamp: new Date(now.getTime() - 35 * 60000), // 35 minutes ago
-        acknowledged: true,
-        currentValue: 12.5,
-        limitValue: 10.0,
-        recommendation: 'Reduce position sizes during illiquid periods'
-      },
-      {
-        id: 'alert-006',
-        type: 'model_break',
-        severity: 'low',
-        message: 'VaR model back-test exception - consider recalibration',
-        details: {
-          exceptions: 7,
-          expectedExceptions: 5,
-          testPeriod: '100D',
-          confidenceLevel: 0.95
-        },
-        timestamp: new Date(now.getTime() - 45 * 60000), // 45 minutes ago
-        acknowledged: false,
-        currentValue: 7,
-        limitValue: 5,
-        recommendation: 'Review risk model parameters and historical data quality'
-      }
-    ];
-  }, []);
-
   const calculateAlertStats = useCallback((alerts: RiskAlert[]): AlertStats => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -288,28 +176,25 @@ export default function RiskAlertsCenter() {
   useEffect(() => {
     const loadAlerts = async () => {
       setLoading(true);
-      
-      // Simulate loading delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Get alerts from risk engine and add mock alerts
+
+      // Get ONLY real alerts from risk engine (no mock data)
       const engineAlerts = realTimeRiskEngine.getAlerts() || [];
-      const mockAlerts = generateMockAlerts();
-      const allAlerts = [...engineAlerts, ...mockAlerts];
-      
-      setAlerts(allAlerts);
-      setAlertStats(calculateAlertStats(allAlerts));
+
+      console.log('[RiskAlertsCenter] Loaded real alerts:', engineAlerts.length);
+
+      setAlerts(engineAlerts);
+      setAlertStats(calculateAlertStats(engineAlerts));
       setLastUpdate(new Date());
       setLoading(false);
     };
 
     loadAlerts();
-    
+
     // Set up periodic refresh
     const interval = setInterval(loadAlerts, 30000); // Every 30 seconds
-    
+
     return () => clearInterval(interval);
-  }, [generateMockAlerts, calculateAlertStats]);
+  }, [calculateAlertStats]);
 
   // Filter and search alerts
   useEffect(() => {

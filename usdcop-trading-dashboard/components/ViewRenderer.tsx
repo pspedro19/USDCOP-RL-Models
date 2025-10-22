@@ -5,7 +5,6 @@ import React from 'react';
 // Import all view components
 import TradingTerminalView from './views/TradingTerminalView';
 import EnhancedTradingTerminal from './views/EnhancedTradingTerminal';
-import ProfessionalTradingTerminal from './views/ProfessionalTradingTerminal';
 import ProfessionalTradingTerminalSimplified from './views/ProfessionalTradingTerminalSimplified';
 import RealTimeChart from './views/RealTimeChart';
 import TradingSignals from './views/TradingSignals';
@@ -27,6 +26,7 @@ import LiveTradingTerminal from './views/LiveTradingTerminal';
 import UltimateVisualDashboard from './views/UltimateVisualDashboard';
 import AuditCompliance from './views/AuditCompliance';
 import UnifiedTradingTerminal from './views/UnifiedTradingTerminal';
+import PipelineStatus from './views/PipelineStatusV2';
 
 interface ViewRendererProps {
   activeView: string;
@@ -35,9 +35,8 @@ interface ViewRendererProps {
 const ViewRenderer: React.FC<ViewRendererProps> = ({ activeView }) => {
   // Map of view IDs to components - CLEANED: Removed duplicates
   const viewComponents: Record<string, React.ComponentType> = {
-    // Trading Views (5 total)
+    // Trading Views (4 total)
     'dashboard-home': UnifiedTradingTerminal,
-    'professional-terminal': ProfessionalTradingTerminal,
     'live-terminal': LiveTradingTerminal,
     'executive-overview': ExecutiveOverview,
     'trading-signals': TradingSignals,
@@ -46,9 +45,11 @@ const ViewRenderer: React.FC<ViewRendererProps> = ({ activeView }) => {
     'risk-monitor': RealTimeRiskMonitor,
     'risk-alerts': RiskAlertsCenter,
 
-    // Data Pipeline L0-L5 (5 total)
+    // Data Pipeline L0-L6 (7 total)
+    'pipeline-status': PipelineStatus,
     'l0-raw-data': L0RawDataDashboard,
     'l1-features': L1FeatureStats,
+    'l2-prepare': DataPipelineQuality,
     'l3-correlations': L3Correlations,
     'l4-rl-ready': L4RLReadyData,
     'l5-model': L5ModelDashboard,

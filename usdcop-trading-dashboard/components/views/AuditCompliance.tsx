@@ -2,16 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import useSWR from 'swr';
+import {
   Shield, FileText, CheckCircle, AlertTriangle, Clock, Download,
   Archive, Database, GitBranch, Key, Lock, Eye, FileSearch,
   Calendar, User, MapPin, Flag, Hash, Layers, Settings,
-  BarChart3, Activity, Target, Globe, BookOpen, Gavel
+  BarChart3, Activity, Target, Globe, BookOpen, Gavel, Loader2
 } from 'lucide-react';
 
-// Audit & Compliance Data Simulation
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Audit & Compliance Data from Real API
 const useAuditCompliance = () => {
-  const [auditData, setAuditData] = useState({
+  const { data, error, isLoading } = useSWR(
+    '/api/compliance/audit-metrics?symbol=USDCOP&days=30',
+    fetcher,
+    {
+      refreshInterval: 60000, // Refresh every minute
+      revalidateOnFocus: true
+    }
+  );
+
+  // Default fallback structure
+  const defaultAuditData = {
     traceability: {
       datasetHashes: {
         'L0_raw_dataset': 'sha256:a1b2c3d4e5f6...',
@@ -148,30 +162,40 @@ const useAuditCompliance = () => {
         severity: 'None'
       }
     ]
-  });
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAuditData(prev => ({
-        ...prev,
-        compliance: {
-          ...prev.compliance,
-          sfc: {
-            ...prev.compliance.sfc,
-            complianceScore: Math.max(95, Math.min(100, prev.compliance.sfc.complianceScore + (Math.random() - 0.5) * 0.5))
-          },
-          basel: {
-            ...prev.compliance.basel,
-            adequacyRatio: Math.max(1.1, Math.min(1.3, prev.compliance.basel.adequacyRatio + (Math.random() - 0.5) * 0.01))
-          }
-        }
-      }));
-    }, 10000);
+  // Map API response to component structure
+  const auditData = data ? {
+    traceability: defaultAuditData.traceability, // Keep as is (not in API yet)
+    compliance: {
+      sfc: defaultAuditData.compliance.sfc, // Keep as is (not in API yet)
+      basel: {
+        capitalRequirement: data.capital_adequacy?.total_capital_usd || 0,
+        currentCapital: data.capital_adequacy?.total_capital_usd || 0,
+        adequacyRatio: data.capital_adequacy?.capital_adequacy_ratio || 0,
+        riskWeightedAssets: data.capital_adequacy?.risk_weighted_assets || 0,
+        tier1Ratio: data.capital_adequacy?.tier1_ratio_pct || 0,
+        status: data.compliance_status === 'COMPLIANT' ? 'compliant' as const : 'warning' as const
+      },
+      tradeReconstruction: {
+        coverage: 100,
+        avgReconstructionTime: data.audit_metrics?.trade_reconstruction_time_ms || 0,
+        lastAudit: new Date().toISOString(),
+        failedReconstructions: 0,
+        totalTrades: data.audit_metrics?.trades_reconstructed || 0
+      },
+      logging: defaultAuditData.compliance.logging // Keep as is (not in API yet)
+    },
+    modelGovernance: defaultAuditData.modelGovernance, // Keep as is (not in API yet)
+    securityCompliance: defaultAuditData.securityCompliance, // Keep as is (not in API yet)
+    auditHistory: defaultAuditData.auditHistory // Keep as is (not in API yet)
+  } : defaultAuditData;
 
-    return () => clearInterval(interval);
-  }, []);
-
-  return auditData;
+  return {
+    auditData,
+    isLoading,
+    error
+  };
 };
 
 interface ComplianceMetricCardProps {
@@ -478,8 +502,40 @@ const AuditHistoryPanel: React.FC<{ auditHistory: any[] }> = ({ auditHistory }) 
 };
 
 export default function AuditCompliance() {
-  const auditData = useAuditCompliance();
+  const { auditData, isLoading, error } = useAuditCompliance();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'traceability' | 'regulatory' | 'security'>('overview');
+
+  // Show loading state
+  if (isLoading && !auditData) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-fintech-cyan-400 animate-spin" />
+          <p className="text-fintech-dark-300">Loading audit & compliance metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-full bg-fintech-dark-950 p-6 flex items-center justify-center min-h-screen">
+        <div className="glass-surface p-8 rounded-xl border border-market-down max-w-md">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-8 h-8 text-market-down" />
+            <h2 className="text-xl font-bold text-white">Failed to Load Compliance Data</h2>
+          </div>
+          <p className="text-fintech-dark-300 mb-4">
+            Unable to connect to the Compliance API at <code className="text-fintech-cyan-400">/api/compliance/audit-metrics</code>
+          </p>
+          <div className="text-sm text-fintech-dark-400">
+            Please ensure the Compliance API service is running on port 8003.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const complianceMetrics = [
     {

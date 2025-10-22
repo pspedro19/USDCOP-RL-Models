@@ -38,6 +38,14 @@ from typing import Dict, List, Tuple, Optional
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+# Import manifest writer
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # Import timezone handler
 try:
     from utils.datetime_handler import UnifiedDatetimeHandler, timezone_safe
@@ -2422,7 +2430,72 @@ def save_all_outputs(**context):
     logger.info(f"✅ Quality gate: {'PASS' if l2_metadata_clean.get('gating', {}).get('overall_pass', False) else 'WARN'}")
     logger.info(f"📁 Location: s3://{BUCKET_OUTPUT}/{DAG_ID}/")
     logger.info("="*80)
-    
+
+    # ========== MANIFEST WRITING ==========
+    logger.info("\nWriting manifest for L2 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+
+        # Main data files with row counts
+        main_files = {
+            f"{DAG_ID}/market={MARKET}/timeframe={TIMEFRAME}/date={execution_date}/run_id={run_id}/data_premium_strict.parquet": len(df_strict),
+            f"{DAG_ID}/market={MARKET}/timeframe={TIMEFRAME}/date={execution_date}/run_id={run_id}/data_premium_strict.csv": len(df_strict),
+            f"{DAG_ID}/market={MARKET}/timeframe={TIMEFRAME}/date={execution_date}/run_id={run_id}/data_premium_flexible.parquet": len(df_flex),
+            f"{DAG_ID}/market={MARKET}/timeframe={TIMEFRAME}/date={execution_date}/run_id={run_id}/data_premium_flexible.csv": len(df_flex),
+        }
+
+        for file_key, row_count in main_files.items():
+            try:
+                metadata = create_file_metadata(s3_client, BUCKET_OUTPUT, file_key, row_count=row_count)
+                files_metadata.append(metadata)
+            except Exception as e:
+                logger.warning(f"Could not create metadata for {file_key}: {e}")
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=BUCKET_OUTPUT,
+                layer='l2',
+                run_id=run_id,
+                files=files_metadata,
+                status='success',
+                metadata={
+                    'started_at': datetime.utcnow().isoformat() + 'Z',
+                    'pipeline': DAG_ID,
+                    'airflow_dag_id': DAG_ID,
+                    'execution_date': execution_date,
+                    'dataset_version': DATASET_VERSION,
+                    'total_rows_strict': len(df_strict),
+                    'total_rows_flex': len(df_flex),
+                    'total_episodes_strict': int(df_strict['episode_id'].nunique()),
+                    'total_episodes_flex': int(df_flex['episode_id'].nunique()),
+                    'gating_pass': bool(l2_metadata_clean.get('gating', {}).get('overall_pass', False)),
+                    'l2_metadata': l2_metadata_clean
+                }
+            )
+            logger.info(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            logger.warning("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return {
         'files_saved': int(len(file_hashes)),
         'strict_rows': int(len(df_strict)),
@@ -2435,7 +2508,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='L2 data preparation with deseasonalization and quality gating',
-    schedule_interval=None,
+    schedule_interval='@daily',  # Run after L1 completes
     start_date=days_ago(1),
     catchup=False,
     tags=['l2', 'prepare', 'features'],

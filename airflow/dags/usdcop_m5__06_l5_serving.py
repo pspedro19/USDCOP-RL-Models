@@ -40,6 +40,13 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+# Import manifest writer
+import sys as sys_mod
+sys_mod.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+from scripts.write_manifest_example import write_manifest, create_file_metadata
+import boto3
+from botocore.client import Config
+
 # ============================================================================
 # MLFLOW ARTIFACT HELPER (MODULE-LEVEL)
 # ============================================================================
@@ -3731,7 +3738,78 @@ def finalize_deployment(**context):
         logger.warning(f"  - Increasing training timesteps (currently {TOTAL_TIMESTEPS})")
         logger.warning("  - Tuning hyperparameters")
         logger.warning("  - Adjusting gate thresholds if too strict")
-    
+
+    # ========== MANIFEST WRITING ==========
+    logger.info("\nWriting manifest for L5 outputs...")
+
+    try:
+        # Create boto3 client for MinIO
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=os.getenv('MINIO_ENDPOINT', 'http://minio:9000'),
+            aws_access_key_id=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
+            aws_secret_access_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            config=Config(signature_version='s3v4'),
+            region_name='us-east-1'
+        )
+
+        # Create file metadata for all outputs
+        files_metadata = []
+
+        # Main bundle files
+        if bundle_results and bundle_results.get('bundle_path'):
+            bundle_path = bundle_results['bundle_path']
+            try:
+                # Add model bundle files
+                for file_name in ['policy.onnx', 'manifest.json', 'latency.json']:
+                    file_key = f"{bundle_path}/{file_name}"
+                    try:
+                        metadata = create_file_metadata(s3_client, l5_bucket, file_key)
+                        files_metadata.append(metadata)
+                    except Exception as e:
+                        logger.warning(f"Could not create metadata for {file_name}: {e}")
+            except Exception as e:
+                logger.warning(f"Could not process bundle files: {e}")
+
+        # Add deployment summary
+        try:
+            metadata = create_file_metadata(s3_client, l5_bucket, summary_key)
+            files_metadata.append(metadata)
+        except Exception as e:
+            logger.warning(f"Could not create metadata for summary: {e}")
+
+        # Write manifest
+        if files_metadata:
+            manifest = write_manifest(
+                s3_client=s3_client,
+                bucket=l5_bucket,
+                layer='l5',
+                run_id=summary['deployment_id'],
+                files=files_metadata,
+                status='success' if gates_passed else 'failed',
+                metadata={
+                    'started_at': datetime.now().isoformat(),
+                    'pipeline': 'usdcop_m5__06_l5_serving',
+                    'airflow_dag_id': 'usdcop_m5__06_l5_serving',
+                    'dag_run_id': context['dag_run'].run_id,
+                    'gates_passed': gates_passed,
+                    'deployment_status': summary['status'],
+                    'deployment_mode': summary.get('mode', 'N/A'),
+                    'best_seed': summary.get('best_seed', 'unknown'),
+                    'total_timesteps': TOTAL_TIMESTEPS,
+                    'git_sha': get_git_info()["sha"]
+                }
+            )
+            logger.info(f"✅ Manifest written successfully: {len(files_metadata)} files tracked")
+        else:
+            logger.warning("⚠ No files found to include in manifest")
+
+    except Exception as e:
+        logger.error(f"❌ Failed to write manifest: {e}")
+        # Don't fail the DAG if manifest writing fails
+        pass
+    # ========== END MANIFEST WRITING ==========
+
     return summary
 
 # ============================================================================

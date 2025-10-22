@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Database, Activity, RefreshCw, TrendingUp, Server, CheckCircle } from 'lucide-react';
+import { useDbStats } from '@/hooks/useDbStats';
 
 interface L0Record {
   timestamp: string;
@@ -42,6 +43,7 @@ export default function L0RawDataDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const { stats: dbStats } = useDbStats(60000); // Refresh every 60 seconds
 
   const fetchData = async () => {
     try {
@@ -94,7 +96,7 @@ export default function L0RawDataDashboard() {
         <div className="text-center">
           <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-400" />
           <p className="text-lg text-slate-300">Loading L0 data from PostgreSQL...</p>
-          <p className="text-sm text-slate-500 mt-2">Fetching 92,936 real OHLC records</p>
+          <p className="text-sm text-slate-500 mt-2">Fetching {dbStats.totalRecords.toLocaleString()} real OHLC records</p>
         </div>
       </div>
     );

@@ -91,14 +91,14 @@ export function useMarketStats(
       else if (backendStats.change_percent_24h < -0.1) trend = 'down';
 
       // Calculate liquidity score (based on volume relative to average)
-      // This is a simplified calculation - in production you'd compare to historical average
-      const liquidity = Math.min(100, Math.max(0, 95 + (Math.random() * 5))); // Placeholder
+      // Return 0 if no volume data - UI should show "N/A" or fetch from dedicated liquidity API
+      const liquidity = backendStats.volume_24h > 0 ? 0 : 0; // TODO: Implement real liquidity calculation or API endpoint
 
-      // Fetch session P&L from analytics API
+      // Fetch session P&L from analytics API via local proxy
       let sessionPnl = 0;
       try {
-        const ANALYTICS_API_URL = process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001';
-        const pnlResponse = await fetch(`${ANALYTICS_API_URL}/api/analytics/session-pnl?symbol=${symbol}`);
+        // Use local API proxy which forwards to Analytics API backend
+        const pnlResponse = await fetch(`/api/analytics/session-pnl?symbol=${symbol}`);
         if (pnlResponse.ok) {
           const pnlData = await pnlResponse.json();
           sessionPnl = pnlData.session_pnl || 0;
