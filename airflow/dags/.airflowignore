@@ -1,0 +1,5 @@
+# Airflow will ignore files/directories matching these regex patterns
+# This prevents deprecated DAGs from being loaded by the scheduler
+
+# Ignore deprecated directory (all files within it)
+deprecated/

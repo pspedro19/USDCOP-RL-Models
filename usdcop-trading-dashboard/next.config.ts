@@ -101,9 +101,14 @@ const nextConfig: NextConfig = {
 
   // Enable static optimization
   trailingSlash: false,
-  
+
   // PoweredBy header removal for security
   poweredByHeader: false,
+
+  // Force new build ID to break cache
+  generateBuildId: async () => {
+    return `build-${Date.now()}-no-orderbook`;
+  },
 
   // Output configuration for deployment
   output: 'standalone',
@@ -118,7 +123,7 @@ const nextConfig: NextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   
-  // Security headers
+  // Security headers + Cache Busting
   async headers() {
     return [
       {
@@ -139,6 +144,18 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
           },
         ],
       },

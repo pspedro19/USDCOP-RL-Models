@@ -62,7 +62,7 @@ export const VIEWS: ViewConfig[] = [
     category: 'Trading',
     description: 'Professional USDCOP trading chart with full features',
     priority: 'high',
-    enabled: true,
+    enabled: false,  // DISABLED - Replaced by Live Trading and Trading Signals
     requiresAuth: true
   },
   {
@@ -90,13 +90,14 @@ export const VIEWS: ViewConfig[] = [
     name: 'Trading Signals',
     icon: Zap,
     category: 'Trading',
-    description: 'AI-powered trading signals',
+    description: 'Multi-model trading signals (RL+ML+LLM) with equity curves',
     priority: 'high',
     enabled: true,
     requiresAuth: true
   },
 
   // ===== RISK MANAGEMENT (2) =====
+  // DISABLED - Not needed per user request
   {
     id: 'risk-monitor',
     name: 'Risk Monitor',
@@ -104,7 +105,7 @@ export const VIEWS: ViewConfig[] = [
     category: 'Risk',
     description: 'Real-time risk monitoring and alerts',
     priority: 'high',
-    enabled: true,
+    enabled: false,  // DISABLED
     requiresAuth: true
   },
   {
@@ -114,7 +115,7 @@ export const VIEWS: ViewConfig[] = [
     category: 'Risk',
     description: 'Risk alert management center',
     priority: 'medium',
-    enabled: true,
+    enabled: false,  // DISABLED
     requiresAuth: true
   },
 
@@ -213,12 +214,12 @@ export const CATEGORIES: Record<string, CategoryConfig> = {
     bgColor: 'from-cyan-500/10 to-blue-500/10',
     description: 'Real-time trading terminals and analysis'
   },
-  Risk: {
-    name: 'Risk',
-    color: 'from-red-400 to-orange-400',
-    bgColor: 'from-red-500/10 to-orange-500/10',
-    description: 'Risk management and monitoring'
-  },
+  // Risk: {  // REMOVED - Not needed per user request
+  //   name: 'Risk',
+  //   color: 'from-red-400 to-orange-400',
+  //   bgColor: 'from-red-500/10 to-orange-500/10',
+  //   description: 'Risk management and monitoring'
+  // },
   Pipeline: {
     name: 'Pipeline',
     color: 'from-green-400 to-emerald-400',

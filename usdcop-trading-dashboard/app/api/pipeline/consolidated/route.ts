@@ -1,140 +1,142 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Consolidated Pipeline Status API
- * Aggregates data from multiple backend APIs to provide real-time pipeline health
+ * Consolidated Pipeline Status API - 100% DYNAMIC
+ * NO HARDCODED VALUES - All data from real backend APIs
+ *
+ * Aggregates status from L0-L6 layers by calling individual status endpoints
  */
 
-// Backend API URLs (Docker internal network)
-const TRADING_API = process.env.TRADING_API_URL || 'http://usdcop-trading-api:8000';
-const ANALYTICS_API = process.env.ANALYTICS_API_URL || 'http://usdcop-analytics-api:8001';
+const INTERNAL_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+interface LayerStatus {
+  layer: string;
+  name: string;
+  status: 'pass' | 'fail' | 'warning' | 'unknown';
+  pass: boolean;
+  quality_metrics: Record<string, any>;
+  last_update: string;
+  data_shape?: Record<string, any>;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch data from multiple sources in parallel
-    const [tradingHealth, analyticsHealth] = await Promise.allSettled([
-      fetch(`${TRADING_API}/api/health`).then(r => r.ok ? r.json() : null),
-      fetch(`${ANALYTICS_API}/api/health`).then(r => r.ok ? r.json() : null),
+    // Fetch status from all layers in parallel
+    const [l0Res, l1Res, l2Res, l3Res, l4Res, l5Res, l6Res] = await Promise.allSettled([
+      fetch(`${INTERNAL_BASE}/api/pipeline/l0/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l1/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l2/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l3/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l4/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l5/status`, { cache: 'no-store' }),
+      fetch(`${INTERNAL_BASE}/api/pipeline/l6/status`, { cache: 'no-store' }),
     ]);
 
-    // Extract trading data
-    const tradingData = tradingHealth.status === 'fulfilled' ? tradingHealth.value : null;
-    const analyticsData = analyticsHealth.status === 'fulfilled' ? analyticsHealth.value : null;
+    // Parse responses
+    const parseResponse = async (result: PromiseSettledResult<Response>): Promise<LayerStatus | null> => {
+      if (result.status === 'fulfilled' && result.value.ok) {
+        try {
+          return await result.value.json();
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    };
 
-    // Build consolidated response with real data
+    const [l0Data, l1Data, l2Data, l3Data, l4Data, l5Data, l6Data] = await Promise.all([
+      parseResponse(l0Res),
+      parseResponse(l1Res),
+      parseResponse(l2Res),
+      parseResponse(l3Res),
+      parseResponse(l4Res),
+      parseResponse(l5Res),
+      parseResponse(l6Res),
+    ]);
+
+    // Calculate system health
+    const layers = [l0Data, l1Data, l2Data, l3Data, l4Data, l5Data, l6Data];
+    const passingLayers = layers.filter(l => l?.pass).length;
+    const totalLayers = 7;
+    const healthPercentage = (passingLayers / totalLayers) * 100;
+
+    let overallStatus = 'healthy';
+    if (healthPercentage < 60) overallStatus = 'critical';
+    else if (healthPercentage < 80) overallStatus = 'degraded';
+
+    // Build response with REAL data (no fallbacks to hardcoded values)
     const response = {
       success: true,
       timestamp: new Date().toISOString(),
       system_health: {
-        health_percentage: tradingData?.status === 'healthy' ? 100 : 50,
-        passing_layers: 7,
-        total_layers: 7,
-        status: tradingData?.status === 'healthy' ? 'healthy' : 'degraded'
+        health_percentage: healthPercentage,
+        passing_layers: passingLayers,
+        total_layers: totalLayers,
+        status: overallStatus
       },
       layers: {
-        // L0: Raw Data - From Trading API
-        l0: {
+        l0: l0Data || {
           layer: 'L0',
           name: 'Raw Data',
-          status: tradingData ? 'pass' : 'warning',
-          pass: !!tradingData,
-          quality_metrics: {
-            coverage_pct: tradingData ? 100 : 0,
-            data_points: tradingData?.total_records || 0,
-            ohlc_violations: 0,
-            stale_rate_pct: 0
-          },
-          data_shape: {
-            actual_bars: tradingData?.total_records || 0,
-            expected_bars: 318
-          },
-          last_update: tradingData?.latest_data || new Date().toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L0 status endpoint not available'
         },
-
-        // L1: Standardized
-        l1: {
+        l1: l1Data || {
           layer: 'L1',
           name: 'Standardized',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            rows: tradingData?.total_records || 50000,
-            columns: 8,
-            file_size_mb: 5.2
-          },
-          last_update: new Date(Date.now() - 5 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L1 status endpoint not available'
         },
-
-        // L2: Prepared
-        l2: {
+        l2: l2Data || {
           layer: 'L2',
           name: 'Prepared',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            indicators_count: 25,
-            winsorization_pct: 0.5,
-            missing_values_pct: 0.1
-          },
-          last_update: new Date(Date.now() - 10 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L2 not executed yet. Run: usdcop_m5__03_l2_prepare'
         },
-
-        // L3: Features
-        l3: {
+        l3: l3Data || {
           layer: 'L3',
           name: 'Features',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            features_count: 45,
-            correlations_computed: true,
-            rows: tradingData?.total_records || 50000
-          },
-          last_update: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L3 not executed yet. Run: usdcop_m5__04_l3_feature'
         },
-
-        // L4: RL-Ready
-        l4: {
+        l4: l4Data || {
           layer: 'L4',
           name: 'RL-Ready',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            episodes: 833,
-            rows_per_episode: Math.floor((tradingData?.total_records || 50000) / 833),
-            max_clip_rate_pct: 0.5,
-            reward_rmse: 0.02
-          },
-          last_update: new Date(Date.now() - 20 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L4 not executed yet. Run: usdcop_m5__05_l4_rlready'
         },
-
-        // L5: Serving
-        l5: {
+        l5: l5Data || {
           layer: 'L5',
           name: 'Serving',
-          status: analyticsData ? 'pass' : 'warning',
-          pass: !!analyticsData,
-          quality_metrics: {
-            active_models: 1,
-            inference_latency_ms: 12,
-            last_prediction: analyticsData ? new Date().toISOString() : null
-          },
-          last_update: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L5 not executed yet. Run: usdcop_m5__06_l5_serving'
         },
-
-        // L6: Backtest
-        l6: {
+        l6: l6Data || {
           layer: 'L6',
           name: 'Backtest',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            total_trades: 1267,
-            win_rate_pct: 63.4,
-            sharpe_ratio: 1.52,
-            sortino_ratio: 1.85
-          },
-          last_update: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+          status: 'unknown',
+          pass: false,
+          quality_metrics: {},
+          last_update: new Date().toISOString(),
+          error: 'L6 not executed yet. Run: usdcop_m5__07_l6_backtest_referencia'
         }
       }
     };
@@ -152,6 +154,7 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: 'Failed to fetch pipeline status',
+        message: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

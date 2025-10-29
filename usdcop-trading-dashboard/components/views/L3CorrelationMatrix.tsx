@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
+import { safeToFixed } from '@/lib/utils/safe-number';
 import { 
   BarChart, 
   Bar, 
@@ -292,7 +293,7 @@ export default function L3CorrelationMatrix() {
                   onChange={(e) => setCorrelationFilter(parseFloat(e.target.value))}
                   className="w-20"
                 />
-                <span className="text-sm font-mono">{correlationFilter.toFixed(1)}</span>
+                <span className="text-sm font-mono">{safeToFixed(correlationFilter, 1, '0.0')}</span>
               </div>
             </div>
             
@@ -308,7 +309,7 @@ export default function L3CorrelationMatrix() {
                   />
                   <Tooltip 
                     formatter={(value: any, name, props) => [
-                      `${(value as number).toFixed(3)}`,
+                      `${safeToFixed(value as number, 3, '0.000')}`,
                       'Correlation'
                     ]}
                     labelFormatter={(label) => `Features: ${label}`}
@@ -335,7 +336,7 @@ export default function L3CorrelationMatrix() {
                     </Badge>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-lg">{pair.correlation.toFixed(3)}</p>
+                    <p className="font-bold text-lg">{safeToFixed(pair.correlation, 3, '0.000')}</p>
                   </div>
                 </div>
               ))}
@@ -361,7 +362,7 @@ export default function L3CorrelationMatrix() {
                   onChange={(e) => setImportanceFilter(parseFloat(e.target.value))}
                   className="w-20"
                 />
-                <span className="text-sm font-mono">{importanceFilter.toFixed(1)}</span>
+                <span className="text-sm font-mono">{safeToFixed(importanceFilter, 1, '0.0')}</span>
               </div>
             </div>
             
@@ -372,7 +373,7 @@ export default function L3CorrelationMatrix() {
                   <XAxis type="number" domain={[0, 1]} />
                   <YAxis type="category" dataKey="feature_name" width={100} />
                   <Tooltip 
-                    formatter={(value: any) => [value.toFixed(3), 'Importance']}
+                    formatter={(value: any) => [safeToFixed(value, 3, '0.000'), 'Importance']}
                   />
                   <Bar dataKey="importance_score" fill="#3b82f6" />
                 </BarChart>
@@ -394,7 +395,7 @@ export default function L3CorrelationMatrix() {
                         <span>{feature}</span>
                         {featureData && (
                           <span className="font-medium">
-                            {featureData.importance_score.toFixed(2)}
+                            {safeToFixed(featureData.importance_score, 2, '0.00')}
                           </span>
                         )}
                       </div>
@@ -419,7 +420,7 @@ export default function L3CorrelationMatrix() {
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="feature" width={100} />
                   <Tooltip 
-                    formatter={(value: any) => [value.toFixed(2), 'VIF Score']}
+                    formatter={(value: any) => [safeToFixed(value, 2, '0.00'), 'VIF Score']}
                   />
                   <Bar dataKey="vif">
                     {analysisData.multicollinearity.vif_scores.map((entry, index) => (
@@ -452,11 +453,11 @@ export default function L3CorrelationMatrix() {
                     <p className="text-sm font-medium">Normality Test (Shapiro-Wilk)</p>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Statistic:</span>
-                      <span className="font-mono">{test.normality_test.statistic.toFixed(3)}</span>
+                      <span className="font-mono">{safeToFixed(test.normality_test.statistic, 3, '0.000')}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">P-value:</span>
-                      <span className="font-mono">{test.normality_test.p_value.toFixed(3)}</span>
+                      <span className="font-mono">{safeToFixed(test.normality_test.p_value, 3, '0.000')}</span>
                     </div>
                     <Badge className={test.normality_test.is_normal ? 'bg-green-500' : 'bg-red-500'}>
                       {test.normality_test.is_normal ? 'Normal' : 'Non-normal'}
@@ -467,11 +468,11 @@ export default function L3CorrelationMatrix() {
                     <p className="text-sm font-medium">Stationarity Test (ADF)</p>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Statistic:</span>
-                      <span className="font-mono">{test.stationarity_test.statistic.toFixed(3)}</span>
+                      <span className="font-mono">{safeToFixed(test.stationarity_test.statistic, 3, '0.000')}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">P-value:</span>
-                      <span className="font-mono">{test.stationarity_test.p_value.toFixed(3)}</span>
+                      <span className="font-mono">{safeToFixed(test.stationarity_test.p_value, 3, '0.000')}</span>
                     </div>
                     <Badge className={test.stationarity_test.is_stationary ? 'bg-green-500' : 'bg-red-500'}>
                       {test.stationarity_test.is_stationary ? 'Stationary' : 'Non-stationary'}

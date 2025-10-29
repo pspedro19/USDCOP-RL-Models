@@ -156,13 +156,13 @@ export default function L4RLReadyData() {
                       {split.num_timesteps.toLocaleString()}
                     </td>
                     <td className="p-3 font-mono text-slate-300">
-                      {split.avg_episode_length.toFixed(1)}
+                      {split.avg_episode_length?.toFixed(1) || 'N/A'}
                     </td>
                     <td className="p-3 font-mono text-green-400">
-                      {split.reward_mean.toFixed(6)}
+                      {split.reward_mean?.toFixed(6) || 'N/A'}
                     </td>
                     <td className="p-3 font-mono text-yellow-400">
-                      {split.reward_std.toFixed(6)}
+                      {split.reward_std?.toFixed(6) || 'N/A'}
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ export default function L4RLReadyData() {
               <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded">
                 <span className="text-slate-300 font-mono text-sm">Avg Length</span>
                 <span className="text-white font-mono font-bold">
-                  {split.avg_episode_length.toFixed(1)}
+                  {split.avg_episode_length?.toFixed(1) || 'N/A'}
                 </span>
               </div>
             </div>

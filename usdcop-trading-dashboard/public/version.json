@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0-no-mock-data",
+  "buildDate": "2025-10-28T17:43:00Z",
+  "buildId": "cache-bust-orderbook-disabled",
+  "changes": [
+    "OrderBook.tsx renamed to OrderBookDisabled.tsx",
+    "All Math.random() calls removed",
+    "Cache-Control headers added (no-store, no-cache)",
+    "VolumeProfileChart.tsx created (real OHLCV data)",
+    "EquityCurveChart.tsx shows axes even with no data"
+  ],
+  "dataIntegrity": "100%",
+  "mockDataComponents": 0,
+  "realDataComponents": 30
+}

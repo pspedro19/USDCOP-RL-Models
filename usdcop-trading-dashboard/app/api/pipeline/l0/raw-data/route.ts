@@ -3,7 +3,7 @@
  * GET /api/pipeline/l0/raw-data
  *
  * Provides access to raw OHLC market data from:
- * 1. PostgreSQL market_data table (primary source, 92K+ rows)
+ * 1. PostgreSQL usdcop_m5_ohlcv table (primary source, 81K+ rows)
  * 2. MinIO bucket: 00-raw-usdcop-marketdata (fallback/archive)
  * 3. TwelveData API (real-time/live data)
  *
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Call the Pipeline Data API backend service
-    const backendUrl = process.env.PIPELINE_DATA_API_URL || 'http://localhost:8004';
+    const backendUrl = process.env.PIPELINE_DATA_API_URL || 'http://pipeline-data-api:8002';
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
@@ -67,34 +67,35 @@ export async function GET(request: NextRequest) {
       try {
         let sqlQuery = `
           SELECT
-            timestamp,
+            time as timestamp,
             symbol,
-            price as close,
-            bid,
-            ask,
+            open,
+            high,
+            low,
+            close,
             volume,
             source,
             created_at
-          FROM market_data
-          WHERE symbol = 'USDCOP'
+          FROM usdcop_m5_ohlcv
+          WHERE symbol = 'USD/COP'
         `;
 
         const params: any[] = [];
         let paramCount = 1;
 
         if (startDate) {
-          sqlQuery += ` AND timestamp >= $${paramCount}::timestamptz`;
+          sqlQuery += ` AND time >= $${paramCount}::timestamptz`;
           params.push(startDate);
           paramCount++;
         }
 
         if (endDate) {
-          sqlQuery += ` AND timestamp <= $${paramCount}::timestamptz`;
+          sqlQuery += ` AND time <= $${paramCount}::timestamptz`;
           params.push(endDate);
           paramCount++;
         }
 
-        sqlQuery += ` ORDER BY timestamp DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+        sqlQuery += ` ORDER BY time DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
         params.push(limit, offset);
 
         const result = await pgQuery(sqlQuery, params);
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
         metadata.postgres = {
           count: data.length,
           hasMore: data.length === limit,
-          table: 'market_data',
+          table: 'usdcop_m5_ohlcv',
         };
 
         console.log(`[L0 API] Retrieved ${data.length} rows from PostgreSQL`);

@@ -1,0 +1,124 @@
+# Testing Requirements for USDCOP Trading System
+# ================================================
+
+# Core Testing Framework
+pytest==8.0.0
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0  # Parallel test execution
+
+# Test Coverage and Reporting
+coverage[toml]==7.4.1
+pytest-html==4.1.1  # HTML test reports
+
+# Database Testing
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Redis Testing
+redis==5.0.1
+fakeredis==2.21.1  # In-memory Redis for testing
+
+# HTTP/WebSocket Testing
+aiohttp==3.9.3
+websockets==12.0
+pytest-aiohttp==1.0.5
+python-socketio==5.11.0
+
+# Load Testing
+locust==2.20.0  # For WebSocket load testing
+websocket-client==1.7.0
+
+# Test Data Generation
+Faker==22.6.0
+factory-boy==3.3.0
+
+# Testcontainers (Optional - for isolated testing)
+testcontainers==3.7.1
+testcontainers-postgres==0.0.1rc1
+testcontainers-redis==0.0.1rc1
+
+# Mocking and Patching
+responses==0.24.1  # Mock HTTP requests
+freezegun==1.4.0  # Mock datetime
+pytest-freezegun==0.4.2
+
+# Performance and Monitoring
+psutil==5.9.8  # System resource monitoring
+memory-profiler==0.61.0  # Memory profiling
+
+# Time and Timezone Handling
+pytz==2024.1
+python-dateutil==2.8.2
+
+# Data Manipulation (for test data)
+pandas==2.2.0
+numpy==1.26.3
+
+# Decimal and Math
+decimal==1.0.0
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Assertions and Matchers
+pytest-benchmark==4.0.0  # Benchmark tests
+dirty-equals==0.7.1  # Flexible equality comparisons
+
+# API Testing
+httpx==0.26.0  # Modern HTTP client
+
+# Logging for Tests
+pytest-logger==0.5.1
+colorlog==6.8.2
+
+# Code Quality (for CI/CD)
+flake8==7.0.0
+black==24.1.1
+isort==5.13.2
+mypy==1.8.0
+
+# Documentation
+pytest-testdox==3.1.0  # BDD-style test output
+
+# Utilities
+pyyaml==6.0.1
+toml==0.10.2
+
+# Specific for USDCOP System
+# ---------------------------
+
+# Market Data APIs (for mocking)
+requests-mock==1.11.0
+
+# Time Series Testing
+hypothesis==6.98.3  # Property-based testing
+
+# JSON Schema Validation
+jsonschema==4.21.1
+
+# Concurrent Testing
+asynctest==0.13.0  # Async testing utilities
+
+# Network Testing
+pytest-socket==0.6.0  # Control socket connections in tests
+
+# Database Fixtures
+pytest-postgresql==5.0.0
+pytest-redis==3.0.2
+
+# Clean Code
+autopep8==2.0.4
+
+# Optional: Visual Testing
+pytest-sugar==1.0.0  # Better test output
+pytest-emoji==0.2.0  # Emoji in test output
+
+# Notes:
+# ------
+# - Use 'pip install -r requirements-test.txt' to install
+# - For isolated testing, consider Docker/testcontainers
+# - Some packages may need system dependencies (e.g., postgresql-dev)
+# - Adjust versions as needed for compatibility

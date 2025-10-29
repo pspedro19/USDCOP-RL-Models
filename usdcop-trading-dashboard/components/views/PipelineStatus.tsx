@@ -8,12 +8,13 @@ import {
 } from 'lucide-react';
 
 // Status badge component
-const StatusBadge = ({ status }: { status: 'pass' | 'fail' | 'warning' | 'loading' }) => {
+const StatusBadge = ({ status }: { status: 'pass' | 'fail' | 'warning' | 'loading' | 'unknown' }) => {
   const variants = {
     pass: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/50', icon: CheckCircle },
     fail: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/50', icon: XCircle },
     warning: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/50', icon: AlertTriangle },
-    loading: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50', icon: RefreshCw }
+    loading: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50', icon: RefreshCw },
+    unknown: { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/50', icon: AlertTriangle }
   };
 
   const variant = variants[status];
@@ -50,142 +51,98 @@ const MetricCard = ({ label, value, unit, icon: Icon, trend }: any) => (
 );
 
 export default function PipelineStatus() {
+  const [pipelineData, setPipelineData] = useState<any>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Generate mock data immediately - no fetch needed
-  const generateMockData = () => {
-    const l0DataPoints = 318;
-    const l0Coverage = 100;
+  /**
+   * Fetch real pipeline status from consolidated API
+   * NO MOCK DATA - All data from /api/pipeline/consolidated endpoint
+   */
+  const fetchPipelineStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const mockData = {
-      success: true,
-      timestamp: new Date().toISOString(),
-      system_health: {
-        health_percentage: 100,
-        passing_layers: 7,
-        total_layers: 7,
-        status: 'healthy'
-      },
-      layers: {
-        l0: {
-          layer: 'L0',
-          name: 'Raw Data',
-          status: l0Coverage >= 90 ? 'pass' : l0Coverage >= 70 ? 'warning' : 'fail',
-          pass: l0Coverage >= 90,
-          quality_metrics: {
-            coverage_pct: l0Coverage,
-            data_points: l0DataPoints,
-            ohlc_violations: 0,
-            stale_rate_pct: 0
-          },
-          data_shape: {
-            actual_bars: l0DataPoints,
-            expected_bars: 100
-          }
-        },
-        l1: {
-          layer: 'L1',
-          name: 'Standardized',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            rows: 50000,
-            columns: 8,
-            file_size_mb: 5.2
-          }
-        },
-        l2: {
-          layer: 'L2',
-          name: 'Prepared',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            indicator_count: 25,
-            winsorization_rate_pct: 0.5,
-            nan_rate_pct: 0.1
-          },
-          data_shape: {
-            rows: 50000,
-            columns: 33
-          }
-        },
-        l3: {
-          layer: 'L3',
-          name: 'Features',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            feature_count: 45,
-            correlation_computed: true
-          },
-          data_shape: {
-            rows: 50000,
-            columns: 45
-          }
-        },
-        l4: {
-          layer: 'L4',
-          name: 'RL-Ready',
-          status: 'pass',
-          pass: true,
-          quality_checks: {
-            max_clip_rate_pct: 0.5
-          },
-          reward_check: {
-            rmse: 0.02,
-            std: 1.5
-          },
-          data_shape: {
-            episodes: 833,
-            total_steps: 50000
-          }
-        },
-        l5: {
-          layer: 'L5',
-          name: 'Serving',
-          status: 'pass',
-          pass: true,
-          quality_metrics: {
-            model_available: true,
-            inference_ready: true
-          }
-        },
-        l6: {
-          layer: 'L6',
-          name: 'Backtest',
-          status: 'pass',
-          pass: true,
-          performance: {
-            sortino: 1.85,
-            sharpe: 1.52,
-            calmar: 1.23
-          },
-          trades: {
-            total: 145,
-            winning: 92,
-            losing: 53,
-            win_rate: 0.634
-          }
-        }
+      const response = await fetch('/api/pipeline/consolidated', {
+        cache: 'no-store'
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
-    };
 
-    return mockData;
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch pipeline status');
+      }
+
+      setPipelineData(data);
+      setLastUpdate(new Date());
+    } catch (err: any) {
+      console.error('[PipelineStatus] Error fetching data:', err);
+      setError(err.message || 'Failed to load pipeline status');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const pipelineData = generateMockData();
+  // Initial load
+  useEffect(() => {
+    fetchPipelineStatus();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchPipelineStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRefresh = () => {
-    setLoading(true);
-    setLastUpdate(new Date());
-    setTimeout(() => setLoading(false), 500);
+    fetchPipelineStatus();
   };
 
-  const getStatus = (data: any): 'pass' | 'fail' | 'warning' | 'loading' => {
-    if (!data) return 'loading';
-    return data.status || 'loading';
+  const getStatus = (data: any): 'pass' | 'fail' | 'warning' | 'loading' | 'unknown' => {
+    if (loading) return 'loading';
+    if (!data) return 'unknown';
+    return data.status || 'unknown';
   };
+
+  // Show loading state
+  if (loading && !pipelineData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-blue-400 animate-spin mx-auto mb-4" />
+          <p className="text-white text-lg font-medium">Loading Pipeline Status...</p>
+          <p className="text-slate-400 text-sm mt-2">Fetching real-time data from all layers</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !pipelineData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-8 max-w-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <XCircle className="w-8 h-8 text-red-400" />
+            <h2 className="text-2xl font-bold text-red-400">Failed to Load Pipeline Status</h2>
+          </div>
+          <p className="text-red-200 mb-4">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-medium transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const l0Data = pipelineData?.layers?.l0;
   const l1Data = pipelineData?.layers?.l1;
@@ -220,7 +177,6 @@ export default function PipelineStatus() {
         </div>
       </div>
 
-
       {/* System Health Summary */}
       {pipelineData?.system_health && (
         <div className="max-w-7xl mx-auto mb-6">
@@ -236,7 +192,11 @@ export default function PipelineStatus() {
                 <div className="text-3xl font-bold text-white">
                   {pipelineData.system_health.health_percentage.toFixed(0)}%
                 </div>
-                <div className="text-sm font-medium text-green-400">
+                <div className={`text-sm font-medium ${
+                  pipelineData.system_health.status === 'healthy' ? 'text-green-400' :
+                  pipelineData.system_health.status === 'degraded' ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
                   {pipelineData.system_health.status.toUpperCase()}
                 </div>
               </div>
@@ -284,10 +244,61 @@ export default function PipelineStatus() {
               />
             </div>
           )}
+
+          {l0Data?.error && (
+            <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-300 text-sm">{l0Data.error}</p>
+            </div>
+          )}
         </motion.div>
 
-        {/* L1-L6 cards would go here - simplified for brevity */}
-        {/* Add similar cards for L1 through L6 */}
+        {/* L1-L6 cards */}
+        {[l1Data, l2Data, l3Data, l4Data, l5Data, l6Data].map((layerData, idx) => {
+          const layerNum = idx + 1;
+          const layerNames = ['Standardized', 'Prepared', 'Features', 'RL-Ready', 'Serving', 'Backtest'];
+          const layerIcons = [Layers, BarChart3, Target, Activity, Zap, TrendingUp];
+          const LayerIcon = layerIcons[idx];
+
+          return (
+            <motion.div
+              key={`L${layerNum}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * (idx + 1) }}
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <LayerIcon className="w-6 h-6 text-blue-400" />
+                  <div>
+                    <h2 className="text-xl font-bold text-white">L{layerNum}: {layerNames[idx]}</h2>
+                    <p className="text-sm text-slate-400">{layerData?.name || layerNames[idx]}</p>
+                  </div>
+                </div>
+                <StatusBadge status={getStatus(layerData)} />
+              </div>
+
+              {layerData?.quality_metrics && Object.keys(layerData.quality_metrics).length > 0 && (
+                <div className="space-y-2">
+                  {Object.entries(layerData.quality_metrics).slice(0, 3).map(([key, value]: [string, any]) => (
+                    <div key={key} className="flex justify-between text-sm">
+                      <span className="text-slate-400 capitalize">{key.replace(/_/g, ' ')}:</span>
+                      <span className="text-white font-mono">
+                        {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {layerData?.error && (
+                <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <p className="text-yellow-300 text-xs">{layerData.error}</p>
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Quality Gates Summary */}
@@ -306,8 +317,12 @@ export default function PipelineStatus() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {[l0Data, l1Data, l2Data, l3Data, l4Data, l5Data, l6Data].map((layer, idx) => (
                 <div key={idx} className="text-center p-4 bg-slate-900/50 rounded-lg">
-                  <div className={`text-2xl font-bold ${layer?.pass ? 'text-green-400' : 'text-red-400'}`}>
-                    {layer?.pass ? '✓' : layer ? '✗' : '...'}
+                  <div className={`text-2xl font-bold ${
+                    layer?.pass ? 'text-green-400' :
+                    layer?.status === 'unknown' ? 'text-gray-400' :
+                    'text-red-400'
+                  }`}>
+                    {layer?.pass ? '✓' : layer?.status === 'unknown' ? '?' : '✗'}
                   </div>
                   <div className="text-sm text-slate-400 mt-1">L{idx}</div>
                 </div>
@@ -316,7 +331,14 @@ export default function PipelineStatus() {
           </div>
         </motion.div>
       )}
+
+      {/* Real Data Badge */}
+      <div className="max-w-7xl mx-auto mt-6 text-center">
+        <p className="text-xs text-slate-500 font-mono">
+          ✅ 100% Real Data • No Mock Values • Auto-refresh: 30s •
+          Data Source: /api/pipeline/consolidated • Last Update: {pipelineData?.timestamp}
+        </p>
+      </div>
     </div>
   );
 }
-// Force rebuild Wed Oct 22 01:52:51 UTC 2025

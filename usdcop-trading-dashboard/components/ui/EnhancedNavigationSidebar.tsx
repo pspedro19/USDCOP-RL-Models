@@ -215,8 +215,10 @@ export function EnhancedNavigationSidebar() {
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto py-4 px-3">
         {state?.sidebarExpanded ? (
-          // Expanded view with categories
-          categories.map((category) => (
+          // Expanded view with categories (filter out empty categories)
+          categories
+            .filter(category => getViewsByCategory(category).length > 0)
+            .map((category) => (
             <div key={category} className="mb-6">
               <div className={`bg-gradient-to-r ${categoryConfig[category].bgColor} rounded-lg p-3 mb-3`}>
                 <h3 className={`text-sm font-bold bg-gradient-to-r ${categoryConfig[category].color} bg-clip-text text-transparent uppercase tracking-wide`}>

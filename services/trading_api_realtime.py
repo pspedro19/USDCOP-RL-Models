@@ -223,11 +223,11 @@ async def get_latest_data():
 
         # Get latest record
         query = """
-        SELECT symbol, price, timestamp, COALESCE(volume, 0) as volume,
-               bid, ask, source
-        FROM market_data
-        WHERE symbol = 'USDCOP'
-        ORDER BY timestamp DESC
+        SELECT symbol, close as price, time as timestamp, COALESCE(volume, 0) as volume,
+               NULL as bid, NULL as ask, 'database' as source
+        FROM usdcop_m5_ohlcv
+        WHERE symbol = 'USD/COP'
+        ORDER BY time DESC
         LIMIT 1
         """
 
@@ -237,9 +237,9 @@ async def get_latest_data():
         if result:
             # Get previous price for change calculation
             cursor.execute("""
-                SELECT price FROM market_data
-                WHERE symbol = 'USDCOP' AND timestamp < %s
-                ORDER BY timestamp DESC LIMIT 1
+                SELECT close as price FROM usdcop_m5_ohlcv
+                WHERE symbol = 'USD/COP' AND time < %s
+                ORDER BY time DESC LIMIT 1
             """, (result[2],))
             prev_result = cursor.fetchone()
             prev_price = prev_result[0] if prev_result else result[1]
@@ -378,10 +378,10 @@ async def health_check():
         cursor = conn.cursor()
 
         # Check data availability
-        cursor.execute("SELECT COUNT(*) FROM market_data")
+        cursor.execute("SELECT COUNT(*) FROM usdcop_m5_ohlcv")
         count = cursor.fetchone()[0]
 
-        cursor.execute("SELECT MAX(timestamp) FROM market_data")
+        cursor.execute("SELECT MAX(time) FROM usdcop_m5_ohlcv")
         latest = cursor.fetchone()[0]
 
         conn.close()
@@ -427,15 +427,17 @@ async def get_latest_price(symbol: str = "USDCOP"):
         cursor = conn.cursor()
 
         query = """
-        SELECT symbol, price, timestamp, COALESCE(volume, 0) as volume,
-               bid, ask, source
-        FROM market_data
+        SELECT symbol, close as price, time as timestamp, COALESCE(volume, 0) as volume,
+               NULL as bid, NULL as ask, 'database' as source
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-        ORDER BY timestamp DESC
+        ORDER BY time DESC
         LIMIT 1
         """
 
-        cursor.execute(query, (symbol,))
+        # Convert symbol format (USDCOP -> USD/COP)
+        db_symbol = 'USD/COP' if symbol == 'USDCOP' else symbol
+        cursor.execute(query, (db_symbol,))
         result = cursor.fetchone()
         conn.close()
 
@@ -477,9 +479,11 @@ async def get_candlesticks(
         # If no dates specified, get the most recent data available
         if not end_date or not start_date:
             cursor = conn.cursor()
+            # Convert symbol format (USDCOP -> USD/COP)
+            db_symbol = 'USD/COP' if symbol == 'USDCOP' else symbol
             cursor.execute(
-                "SELECT MIN(timestamp), MAX(timestamp) FROM market_data WHERE symbol = %s",
-                (symbol,)
+                "SELECT MIN(time), MAX(time) FROM usdcop_m5_ohlcv WHERE symbol = %s",
+                (db_symbol,)
             )
             date_range = cursor.fetchone()
 
@@ -503,20 +507,22 @@ async def get_candlesticks(
                 if not start_date:
                     start_date = (datetime.utcnow() - timedelta(days=7)).isoformat()
 
-        # Get raw tick data from market_data table
+        # Get OHLCV data from usdcop_m5_ohlcv table
+        # Convert symbol format (USDCOP -> USD/COP)
+        db_symbol = 'USD/COP' if symbol == 'USDCOP' else symbol
         query = """
-        SELECT timestamp, symbol, price, COALESCE(volume, 0) as volume
-        FROM market_data
+        SELECT time as timestamp, symbol, open, high, low, close, COALESCE(volume, 0) as volume
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-        AND timestamp BETWEEN %s AND %s
-        ORDER BY timestamp ASC
+        AND time BETWEEN %s AND %s
+        ORDER BY time ASC
         LIMIT %s
         """
 
         df = pd.read_sql_query(
             query,
             conn,
-            params=(symbol, start_date, end_date, limit)
+            params=(db_symbol, start_date, end_date, limit)
         )
         conn.close()
 
@@ -526,16 +532,10 @@ async def get_candlesticks(
                 detail=f"No real data found for {symbol} between {start_date} and {end_date}"
             )
 
-        # Convert tick data to candlesticks
-        candlesticks_df = create_candlesticks_from_ticks(df, timeframe)
+        # Data is already in OHLCV format, no need to convert
+        candlesticks_df = df
 
-        if candlesticks_df.empty:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No candlestick data could be generated for {symbol}"
-            )
-
-        # Calculate technical indicators if requested and enough data
+        # Calculate technical indicators if requested (they are not stored in usdcop_m5_ohlcv)
         if include_indicators and len(candlesticks_df) >= 50:
             candlesticks_df = calculate_technical_indicators(candlesticks_df)
 
@@ -621,22 +621,25 @@ async def get_symbol_stats(symbol: str = "USDCOP"):
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Convert symbol format (USDCOP -> USD/COP)
+        db_symbol = 'USD/COP' if symbol == 'USDCOP' else symbol
+
         # Try to get 24h statistics from real data
         query_24h = """
         SELECT
             COUNT(*) as count,
-            MIN(price) as low_24h,
-            MAX(price) as max_24h,
-            AVG(price) as avg_24h,
+            MIN(close) as low_24h,
+            MAX(close) as max_24h,
+            AVG(close) as avg_24h,
             SUM(COALESCE(volume, 0)) as volume_24h,
-            MAX(timestamp) as latest_timestamp,
-            MIN(timestamp) as oldest_timestamp
-        FROM market_data
+            MAX(time) as latest_timestamp,
+            MIN(time) as oldest_timestamp
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-        AND timestamp >= NOW() - INTERVAL '24 hours'
+        AND time >= NOW() - INTERVAL '24 hours'
         """
 
-        cursor.execute(query_24h, (symbol,))
+        cursor.execute(query_24h, (db_symbol,))
         result = cursor.fetchone()
 
         # If no data in last 24h, get the most recent data available
@@ -646,21 +649,21 @@ async def get_symbol_stats(symbol: str = "USDCOP"):
             query_recent = """
             SELECT
                 COUNT(*) as count,
-                MIN(price) as low,
-                MAX(price) as high,
-                AVG(price) as avg,
+                MIN(close) as low,
+                MAX(close) as high,
+                AVG(close) as avg,
                 SUM(COALESCE(volume, 0)) as volume,
-                MAX(timestamp) as latest_timestamp,
-                MIN(timestamp) as oldest_timestamp
+                MAX(time) as latest_timestamp,
+                MIN(time) as oldest_timestamp
             FROM (
-                SELECT * FROM market_data
+                SELECT * FROM usdcop_m5_ohlcv
                 WHERE symbol = %s
-                ORDER BY timestamp DESC
+                ORDER BY time DESC
                 LIMIT 288
             ) recent_data
             """
 
-            cursor.execute(query_recent, (symbol,))
+            cursor.execute(query_recent, (db_symbol,))
             result = cursor.fetchone()
 
             if not result or result[0] == 0:
@@ -676,8 +679,8 @@ async def get_symbol_stats(symbol: str = "USDCOP"):
         conn2 = get_db_connection()
         cursor2 = conn2.cursor()
         cursor2.execute(
-            "SELECT price, timestamp FROM market_data WHERE symbol = %s ORDER BY timestamp DESC LIMIT 1",
-            (symbol,)
+            "SELECT close as price, time as timestamp FROM usdcop_m5_ohlcv WHERE symbol = %s ORDER BY time DESC LIMIT 1",
+            (db_symbol,)
         )
         latest = cursor2.fetchone()
         conn2.close()

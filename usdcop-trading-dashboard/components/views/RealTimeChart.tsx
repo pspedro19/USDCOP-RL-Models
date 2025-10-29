@@ -209,30 +209,76 @@ export default function RealTimeChart() {
     };
   }, [checkTradingHours]);
 
-  // Professional real-time updates with clean 5-minute intervals
+  // SMART real-time updates - ALIGNED to 5-minute intervals (:00, :05, :10, :15, etc.)
   useEffect(() => {
     const isInTradingHours = checkTradingHours();
     setIsAutoUpdating(isInTradingHours);
-    
+
     if (isInTradingHours) {
+      // Calculate next 5-minute interval in COT timezone
+      const calculateNextInterval = () => {
+        const now = new Date();
+        // Convert to COT to get correct minute alignment
+        const cotFormatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/Bogota',
+          hour: 'numeric',
+          minute: 'numeric',
+          second: 'numeric',
+          hour12: false
+        });
+
+        const parts = cotFormatter.formatToParts(now);
+        const currentMinute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+        const currentSecond = parseInt(parts.find(p => p.type === 'second')?.value || '0');
+
+        // Calculate minutes to next 5-minute mark
+        const minutesToNext = 5 - (currentMinute % 5);
+        const minutesOffset = minutesToNext === 5 ? 0 : minutesToNext;
+
+        // Seconds until next 5-minute mark + 10 second buffer for data availability
+        const secondsToNext = (minutesOffset * 60) - currentSecond + 10;
+
+        return secondsToNext > 0 ? secondsToNext : (300 + 10); // Next interval or 5min + buffer
+      };
+
       // Initial fetch
       fetchRealtimeData();
-      
-      // Set up clean 5-minute interval updates
-      autoUpdateInterval.current = setInterval(() => {
-        if (checkTradingHours()) {
-          fetchRealtimeData();
-        } else {
-          setIsAutoUpdating(false);
-        }
-      }, 5 * 60 * 1000);
-      
-      // Professional countdown timer
+
+      // Smart scheduling: Align to next :00, :05, :10, :15, etc. + 10s buffer
+      const secondsToNextInterval = calculateNextInterval();
+
+      console.log(`[RealTimeChart] Smart refresh: Next update in ${secondsToNextInterval}s (aligned to 5-min interval + 10s buffer)`);
+
+      // First aligned update
+      const alignedTimeout = setTimeout(() => {
+        fetchRealtimeData();
+
+        // After first aligned fetch, continue every 5 minutes exactly
+        autoUpdateInterval.current = setInterval(() => {
+          if (checkTradingHours()) {
+            fetchRealtimeData();
+          } else {
+            setIsAutoUpdating(false);
+          }
+        }, 5 * 60 * 1000); // Exactly 5 minutes
+      }, secondsToNextInterval * 1000);
+
+      // Professional countdown timer (updates every second)
       countdownInterval.current = setInterval(() => {
         setSecondsUntilNextUpdate(calculateSecondsToNextUpdate());
       }, 1000);
+
+      return () => {
+        clearTimeout(alignedTimeout);
+        if (autoUpdateInterval.current) {
+          clearInterval(autoUpdateInterval.current);
+        }
+        if (countdownInterval.current) {
+          clearInterval(countdownInterval.current);
+        }
+      };
     }
-    
+
     return () => {
       if (autoUpdateInterval.current) {
         clearInterval(autoUpdateInterval.current);

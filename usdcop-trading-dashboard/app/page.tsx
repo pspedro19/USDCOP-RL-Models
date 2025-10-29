@@ -9,6 +9,7 @@ import { NavigationProvider } from '../lib/contexts/NavigationContext';
 import EnhancedTradingDashboard from '../components/charts/EnhancedTradingDashboard';
 import { useMarketStats } from '../hooks/useMarketStats';
 import { useRealTimePrice } from '../hooks/useRealTimePrice';
+import { safeToFixed } from '../lib/utils/safe-number';
 import {
   TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Shield, Settings, LogOut,
   Wifi, WifiOff, Clock, Target, AlertTriangle, Play, Pause, Square, Maximize2,
@@ -25,7 +26,7 @@ export default function ProfessionalTradingDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [activeView, setActiveView] = useState('dashboard-home');
+  const [activeView, setActiveView] = useState('live-terminal');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
@@ -287,7 +288,7 @@ export default function ProfessionalTradingDashboard() {
       </header>
 
       <NavigationProvider
-        initialView="dashboard-home"
+        initialView="live-terminal"
         onViewChange={(viewId) => setActiveView(viewId)}
       >
       <div className="flex h-[calc(100vh-80px)]">
@@ -308,7 +309,7 @@ export default function ProfessionalTradingDashboard() {
                 <div className="flex items-center gap-6">
                   <div>
                     <div className="text-4xl font-bold text-white leading-none">
-                      ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${Number.isFinite(currentPrice) && currentPrice > 0 ? currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                     </div>
                     <div className="text-sm text-slate-400 mt-1">USD/COP</div>
                   </div>
@@ -317,10 +318,10 @@ export default function ProfessionalTradingDashboard() {
                     {(Number(marketStats?.change24h) || 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                     <div>
                       <div className="text-xl font-bold">
-                        {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.change24h) || 0).toFixed(2)}
+                        {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{safeToFixed(marketStats?.change24h, 2, '0.00')}
                       </div>
                       <div className="text-sm opacity-80">
-                        ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.changePercent) || 0).toFixed(2)}%)
+                        ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{safeToFixed(marketStats?.changePercent, 2, '0.00')}%)
                       </div>
                     </div>
                   </div>
@@ -329,8 +330,8 @@ export default function ProfessionalTradingDashboard() {
                 {/* P&L Session */}
                 <div className="px-4 py-3 bg-slate-800/40 rounded-lg border border-slate-600/30">
                   <div className="text-slate-400 text-sm">P&L Sesión</div>
-                  <div className={`text-xl font-bold ${(marketStats?.sessionPnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {(marketStats?.sessionPnl || 0) >= 0 ? '+' : ''}${Math.abs(marketStats?.sessionPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className={`text-xl font-bold ${(Number(marketStats?.sessionPnl) || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {(Number(marketStats?.sessionPnl) || 0) >= 0 ? '+' : ''}${safeToFixed(Math.abs(Number(marketStats?.sessionPnl) || 0), 2, '0.00')}
                   </div>
                 </div>
               </div>
@@ -360,7 +361,7 @@ export default function ProfessionalTradingDashboard() {
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Volume 24H</div>
                 <div className="text-white text-lg font-bold">
-                  {((Number(marketStats?.volume24h) || 0) / 1000000).toFixed(2)}M
+                  {safeToFixed((Number(marketStats?.volume24h) || 0) / 1000000, 2, '0.00')}M
                 </div>
                 <div className="text-slate-500 text-xs mt-1">Real-time data</div>
               </div>
@@ -368,17 +369,17 @@ export default function ProfessionalTradingDashboard() {
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Range 24H</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-red-400 font-bold">{(Number(marketStats?.low24h) || 0).toFixed(2)}</span>
+                  <span className="text-red-400 font-bold">{safeToFixed(marketStats?.low24h, 2, '0.00')}</span>
                   <span className="text-slate-500">-</span>
-                  <span className="text-green-400 font-bold">{(Number(marketStats?.high24h) || 0).toFixed(2)}</span>
+                  <span className="text-green-400 font-bold">{safeToFixed(marketStats?.high24h, 2, '0.00')}</span>
                 </div>
-                <div className="text-slate-500 text-xs mt-1">Rango: {((Number(marketStats?.high24h) || 0) - (Number(marketStats?.low24h) || 0)).toFixed(0)} pips</div>
+                <div className="text-slate-500 text-xs mt-1">Rango: {safeToFixed((Number(marketStats?.high24h) || 0) - (Number(marketStats?.low24h) || 0), 0, '0')} pips</div>
               </div>
 
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Spread</div>
                 <div className="text-cyan-400 text-lg font-bold">
-                  {(Number(marketStats?.spread) || 0).toFixed(1)} COP
+                  {safeToFixed(marketStats?.spread, 1, '0.0')} COP
                 </div>
                 <div className="text-slate-500 text-xs mt-1">High-Low 24h</div>
               </div>
@@ -386,7 +387,7 @@ export default function ProfessionalTradingDashboard() {
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-4 border border-slate-600/20">
                 <div className="text-slate-400 text-sm mb-1">Volatility</div>
                 <div className="text-purple-400 text-lg font-bold">
-                  {(Number(marketStats?.volatility) || 0).toFixed(2)}%
+                  {safeToFixed(marketStats?.volatility, 2, '0.00')}%
                 </div>
                 <div className="text-slate-500 text-xs mt-1">24h range</div>
               </div>
@@ -411,7 +412,7 @@ export default function ProfessionalTradingDashboard() {
 
                 <span className="text-slate-400">Change 24H:</span>
                 <span className={`font-bold ${(Number(marketStats?.change24h) || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.change24h) || 0).toFixed(2)} COP ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{(Number(marketStats?.changePercent) || 0).toFixed(2)}%)
+                  {(Number(marketStats?.change24h) || 0) >= 0 ? '+' : ''}{safeToFixed(marketStats?.change24h, 2, '0.00')} COP ({(Number(marketStats?.changePercent) || 0) >= 0 ? '+' : ''}{safeToFixed(marketStats?.changePercent, 2, '0.00')}%)
                 </span>
 
                 <span className="text-slate-400">Trend:</span>

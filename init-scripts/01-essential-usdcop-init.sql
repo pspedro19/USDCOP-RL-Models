@@ -24,17 +24,27 @@ CREATE TABLE IF NOT EXISTS users (
     last_login TIMESTAMP WITH TIME ZONE
 );
 
--- 2. Market data table for USDCOP price data (TimescaleDB hypertable)
-CREATE TABLE IF NOT EXISTS market_data (
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    symbol TEXT NOT NULL DEFAULT 'USDCOP',
-    price DECIMAL(12,4) NOT NULL,
-    bid DECIMAL(12,4),
-    ask DECIMAL(12,4),
-    volume BIGINT,
-    source TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (timestamp, symbol)
+-- 2. UNIFIED OHLCV TABLE - TABLA PRINCIPAL (Pipeline L0 + RT V2)
+CREATE TABLE IF NOT EXISTS usdcop_m5_ohlcv (
+    time TIMESTAMP WITH TIME ZONE NOT NULL,
+    symbol TEXT NOT NULL DEFAULT 'USD/COP',
+    open DECIMAL(12,6) NOT NULL,
+    high DECIMAL(12,6) NOT NULL,
+    low DECIMAL(12,6) NOT NULL,
+    close DECIMAL(12,6) NOT NULL,
+    volume BIGINT DEFAULT 0,
+    source TEXT DEFAULT 'twelvedata',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (time, symbol),
+    -- Data quality constraints
+    CONSTRAINT chk_prices_positive CHECK (open > 0 AND high > 0 AND low > 0 AND close > 0),
+    CONSTRAINT chk_high_gte_low CHECK (high >= low),
+    CONSTRAINT chk_high_gte_open CHECK (high >= open),
+    CONSTRAINT chk_high_gte_close CHECK (high >= close),
+    CONSTRAINT chk_low_lte_open CHECK (low <= open),
+    CONSTRAINT chk_low_lte_close CHECK (low <= close),
+    CONSTRAINT chk_volume_non_negative CHECK (volume >= 0)
 );
 
 -- 3. Trading metrics table for performance and results (TimescaleDB hypertable)
@@ -67,16 +77,17 @@ CREATE TABLE IF NOT EXISTS trading_sessions (
 
 -- Convert tables to TimescaleDB hypertables
 -- =====================================================
-SELECT create_hypertable('market_data', 'timestamp', if_not_exists => TRUE);
+SELECT create_hypertable('usdcop_m5_ohlcv', 'time', if_not_exists => TRUE, migrate_data => TRUE);
 SELECT create_hypertable('trading_metrics', 'timestamp', if_not_exists => TRUE);
 
 -- Create optimized indexes
 -- =====================================================
 
--- Market data indexes
-CREATE INDEX IF NOT EXISTS idx_market_data_symbol_time ON market_data (symbol, timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_market_data_source ON market_data (source);
-CREATE INDEX IF NOT EXISTS idx_market_data_price ON market_data (price);
+-- USDCOP M5 OHLCV indexes (UNIFIED TABLE - PRINCIPAL)
+CREATE INDEX IF NOT EXISTS idx_usdcop_m5_ohlcv_symbol_time ON usdcop_m5_ohlcv (symbol, time DESC);
+CREATE INDEX IF NOT EXISTS idx_usdcop_m5_ohlcv_time ON usdcop_m5_ohlcv (time DESC);
+CREATE INDEX IF NOT EXISTS idx_usdcop_m5_ohlcv_source ON usdcop_m5_ohlcv (source);
+CREATE INDEX IF NOT EXISTS idx_usdcop_m5_ohlcv_close ON usdcop_m5_ohlcv (close);
 
 -- Trading metrics indexes
 CREATE INDEX IF NOT EXISTS idx_trading_metrics_name_time ON trading_metrics (metric_name, timestamp DESC);
@@ -97,34 +108,35 @@ CREATE INDEX IF NOT EXISTS idx_trading_sessions_status ON trading_sessions (stat
 -- Create useful views for data access
 -- =====================================================
 
--- Latest market data view
-CREATE OR REPLACE VIEW latest_market_data AS
+-- Latest OHLCV data view (UNIFIED TABLE - PRINCIPAL)
+CREATE OR REPLACE VIEW latest_ohlcv AS
 SELECT DISTINCT ON (symbol)
     symbol,
-    timestamp,
-    price,
-    bid,
-    ask,
+    time as timestamp,
+    open,
+    high,
+    low,
+    close,
     volume,
     source,
     created_at
-FROM market_data
-ORDER BY symbol, timestamp DESC;
+FROM usdcop_m5_ohlcv
+ORDER BY symbol, time DESC;
 
--- Daily trading summary view
-CREATE OR REPLACE VIEW daily_market_summary AS
+-- Daily OHLCV summary view (from unified table)
+CREATE OR REPLACE VIEW daily_ohlcv_summary AS
 SELECT
-    DATE(timestamp) as trading_date,
+    DATE(time) as trading_date,
     symbol,
-    MIN(price) as low_price,
-    MAX(price) as high_price,
-    (ARRAY_AGG(price ORDER BY timestamp))[1] as open_price,
-    (ARRAY_AGG(price ORDER BY timestamp DESC))[1] as close_price,
-    AVG(price) as avg_price,
-    COUNT(*) as tick_count,
+    (ARRAY_AGG(open ORDER BY time))[1] as open_price,
+    MAX(high) as high_price,
+    MIN(low) as low_price,
+    (ARRAY_AGG(close ORDER BY time DESC))[1] as close_price,
+    AVG(close) as avg_price,
+    COUNT(*) as bar_count,
     SUM(volume) as total_volume
-FROM market_data
-GROUP BY DATE(timestamp), symbol
+FROM usdcop_m5_ohlcv
+GROUP BY DATE(time), symbol
 ORDER BY trading_date DESC;
 
 -- Performance metrics summary view
@@ -183,11 +195,25 @@ SELECT
     COUNT(*) as essential_tables_created
 FROM information_schema.tables
 WHERE table_schema = 'public'
-AND table_name IN ('users', 'market_data', 'trading_metrics', 'trading_sessions');
+AND table_name IN ('users', 'usdcop_m5_ohlcv', 'trading_metrics', 'trading_sessions');
 
 -- Show created hypertables
 SELECT
     'TimescaleDB hypertables created:' as info,
     hypertable_name
 FROM timescaledb_information.hypertables
-WHERE hypertable_name IN ('market_data', 'trading_metrics');
+WHERE hypertable_name IN ('usdcop_m5_ohlcv', 'trading_metrics');
+
+-- Show confirmation message
+DO $$
+BEGIN
+    RAISE NOTICE '';
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE '✅ USDCOP Trading System - Database Initialized';
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE 'PRIMARY TABLE: usdcop_m5_ohlcv (OHLCV data)';
+    RAISE NOTICE 'Trading Hours: Monday-Friday, 8:00-12:55 COT';
+    RAISE NOTICE 'Data Quality: 100%% within trading hours';
+    RAISE NOTICE '============================================================';
+    RAISE NOTICE '';
+END $$;

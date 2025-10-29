@@ -23,13 +23,15 @@ services:
     image: timescale/timescaledb:latest-pg15
     container_name: usdcop-postgres-timescale
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
-      POSTGRES_DB: ${POSTGRES_DB:-usdcop_trading}
+      # SECURITY: No default values - all credentials must be in .env file
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       TIMESCALEDB_TELEMETRY: 'off'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./data/backups:/docker-entrypoint-initdb.d/data-backups:ro
     ports:
       - "5432:5432"
     networks:
@@ -38,7 +40,7 @@ services:
           - postgres
           - usdcop-postgres-timescale
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -47,7 +49,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: usdcop-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    # SECURITY: No default password - must be set in .env file
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     ports:
@@ -55,7 +58,7 @@ services:
     networks:
       - usdcop-trading-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -66,8 +69,9 @@ services:
     container_name: usdcop-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+      # SECURITY: No default values - credentials must be in .env file
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
     ports:
@@ -90,8 +94,9 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      # SECURITY: Uses same credentials as MinIO service from .env
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
     entrypoint: >
       /bin/sh -c "
       echo 'Waiting for MinIO to be ready...' &&
@@ -128,8 +133,8 @@ services:
   # Airflow Services
   airflow-init:
     build:
-      context: ./airflow
-      dockerfile: Dockerfile.prod
+      context: ./docker
+      dockerfile: Dockerfile.airflow-ml
     container_name: usdcop-airflow-init
     depends_on:
       postgres:
@@ -137,15 +142,16 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # SECURITY: All Airflow credentials must be set in .env file
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
-      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER:-admin}
-      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD:-admin123}
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USER}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -154,7 +160,7 @@ services:
     command: >
       bash -c "
       airflow db init &&
-      airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@admin.com --password admin123 &&
+      airflow users create --username ${AIRFLOW_USER} --firstname Admin --lastname User --role Admin --email admin@admin.com --password ${AIRFLOW_PASSWORD} &&
       pip install -r /opt/airflow/configs/../requirements.txt || true
       "
     networks:
@@ -163,19 +169,20 @@ services:
 
   airflow-scheduler:
     build:
-      context: ./airflow
-      dockerfile: Dockerfile.prod
+      context: ./docker
+      dockerfile: Dockerfile.airflow-ml
     container_name: usdcop-airflow-scheduler
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     environment:
+      # SECURITY: All credentials from .env - no defaults
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
-      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       # TwelveData API Keys for L0 Pipeline
       TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
       TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2}
@@ -208,6 +215,12 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://minio:9000
+      # PostgreSQL Configuration for DWH Helper
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -227,19 +240,20 @@ services:
 
   airflow-webserver:
     build:
-      context: ./airflow
-      dockerfile: Dockerfile.prod
+      context: ./docker
+      dockerfile: Dockerfile.airflow-ml
     container_name: usdcop-airflow-webserver
     depends_on:
       airflow-scheduler:
         condition: service_healthy
     environment:
+      # SECURITY: All credentials from .env - no defaults
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-Fernet.generate_key()}
-      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:-your-secret-key}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       # TwelveData API Keys for L0 Pipeline
       TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
       TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2}
@@ -272,6 +286,12 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://minio:9000
+      # PostgreSQL Configuration for DWH Helper
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -293,194 +313,199 @@ services:
   # airflow-worker: Not needed with LocalExecutor - tasks run within scheduler process
   # Commented out to prevent restart loops since LocalExecutor doesn't support celery worker command
 
-  # USDCOP Real-time Orchestrator (Main Service)
-  usdcop-realtime-orchestrator:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.orchestrator
-    container_name: usdcop-realtime-orchestrator
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      airflow-scheduler:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      LOG_LEVEL: INFO
-      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
-      PORT: 8080
-    ports:
-      - "8085:8080"
-    networks:
-      - usdcop-trading-network
-    volumes:
-      - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    restart: unless-stopped
+  # REMOVED: Redundant service - Replaced by realtime-ingestion-v2 with improved architecture
+  # usdcop-realtime-orchestrator:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.orchestrator
+  #   container_name: usdcop-realtime-orchestrator
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     airflow-scheduler:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: All credentials from .env
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  #     LOG_LEVEL: INFO
+  #     TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+  #     PORT: 8080
+  #   ports:
+  #     - "8085:8080"
+  #   networks:
+  #     - usdcop-trading-network
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 60s
+  #   restart: unless-stopped
 
-  # Enhanced USDCOP Real-time Service (Backup/Alternative)
-  usdcop-realtime-service:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.usdcop-realtime
-    container_name: usdcop-enhanced-realtime
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      LOG_LEVEL: INFO
-      MARKET_START_HOUR: 8
-      MARKET_END_HOUR: 12
-      MARKET_END_MINUTE: 55
-      SYNC_INTERVAL_MINUTES: 5
-      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
-      PORT: 8080
-    ports:
-      - "8084:8080"
-    networks:
-      - usdcop-trading-network
-    volumes:
-      - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-    profiles:
-      - backup  # Only start when backup profile is activated
+  # REMOVED: Redundant service - Backup/alternative service no longer needed, superseded by realtime-ingestion-v2
+  # usdcop-realtime-service:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.usdcop-realtime
+  #   container_name: usdcop-enhanced-realtime
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: All credentials from .env
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  #     LOG_LEVEL: INFO
+  #     MARKET_START_HOUR: 8
+  #     MARKET_END_HOUR: 12
+  #     MARKET_END_MINUTE: 55
+  #     SYNC_INTERVAL_MINUTES: 5
+  #     TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+  #     PORT: 8080
+  #   ports:
+  #     - "8084:8080"
+  #   networks:
+  #     - usdcop-trading-network
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
+  #   profiles:
+  #     - backup  # Only start when backup profile is activated
 
-  # Legacy Real-time Data Service (kept for compatibility)
-  realtime-data-service:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.realtime
-    container_name: usdcop-realtime-data
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      LOG_LEVEL: INFO
-      MARKET_HOURS_START: "08:00"
+  # REMOVED: Redundant service - Legacy service replaced by realtime-ingestion-v2
+  # realtime-data-service:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.realtime
+  #   container_name: usdcop-realtime-data
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: All credentials from .env
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  #     LOG_LEVEL: INFO
+  #     MARKET_HOURS_START: "08:00"
 
-  # Optimized L0 Validator Service with 16 API Keys
-  optimized-l0-validator:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.optimized-l0
-    container_name: usdcop-optimized-l0-validator
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      # TwelveData API Keys - GRUPO 1
-      API_KEY_G1_1: ${API_KEY_G1_1:-7bb5ad48501b4a6ea9fbedba2b0247f9}
-      API_KEY_G1_2: ${API_KEY_G1_2:-21de7ed341dc4ad5a20c292cee4652cb}
-      API_KEY_G1_3: ${API_KEY_G1_3:-06f4622c4cfd4fd78795777367bb07d6}
-      API_KEY_G1_4: ${API_KEY_G1_4:-0cabdba116f2415c82f7922c704427d9}
-      API_KEY_G1_5: ${API_KEY_G1_5:-93104476650b4d25aaf033ce06585ba2}
-      API_KEY_G1_6: ${API_KEY_G1_6:-9c61d83999c949d9866d92661f0f7c25}
-      API_KEY_G1_7: ${API_KEY_G1_7:-3d465022bf0c489f84270d5f1cd771b9}
-      API_KEY_G1_8: ${API_KEY_G1_8:-46d5e594b4af4282a935e1b1da8edc19}
-      # TwelveData API Keys - GRUPO 2
-      API_KEY_G2_1: ${API_KEY_G2_1:-bf67096c644f4d20821540de2ad344dc}
-      API_KEY_G2_2: ${API_KEY_G2_2:-a752322b9f3d44328a61cb53c24666b6}
-      API_KEY_G2_3: ${API_KEY_G2_3:-69f2c0d75209451981be8d208204ea13}
-      API_KEY_G2_4: ${API_KEY_G2_4:-b3faeff15a634855aab906858d2c8486}
-      API_KEY_G2_5: ${API_KEY_G2_5:-e56b2aec322e4fe1b2b43bb419d5fde8}
-      API_KEY_G2_6: ${API_KEY_G2_6:-fabe96c251694ab38a0c4a794244ae58}
-      API_KEY_G2_7: ${API_KEY_G2_7:-c6d60eefb2b347f8a94f3cbc919fc33a}
-      API_KEY_G2_8: ${API_KEY_G2_8:-e0cd278e177a469ba91992f1487c9c0e}
-      # Service Configuration
-      LOG_LEVEL: INFO
-      PORT: 8086
-      TIMEZONE: America/Bogota
-      MARKET_START_HOUR: 8
-      MARKET_START_MINUTE: 0
-      MARKET_END_HOUR: 12
-      MARKET_END_MINUTE: 55
-      MIN_COMPLETENESS: 95.0
-      BATCH_SIZE: 1000
-    ports:
-      - "8086:8086"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - usdcop-trading-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    volumes:
-      - ./logs:/app/logs
+  # REMOVED: Redundant service - Validation logic integrated into Airflow L0 pipeline
+  # optimized-l0-validator:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.optimized-l0
+  #   container_name: usdcop-optimized-l0-validator
+  #   environment:
+  #     # SECURITY: All credentials must be in .env - NEVER use default values
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  #     # TwelveData API Keys - GRUPO 1 (MUST be set in .env file)
+  #     API_KEY_G1_1: ${API_KEY_G1_1}
+  #     API_KEY_G1_2: ${API_KEY_G1_2}
+  #     API_KEY_G1_3: ${API_KEY_G1_3}
+  #     API_KEY_G1_4: ${API_KEY_G1_4}
+  #     API_KEY_G1_5: ${API_KEY_G1_5}
+  #     API_KEY_G1_6: ${API_KEY_G1_6}
+  #     API_KEY_G1_7: ${API_KEY_G1_7}
+  #     API_KEY_G1_8: ${API_KEY_G1_8}
+  #     # TwelveData API Keys - GRUPO 2 (MUST be set in .env file)
+  #     API_KEY_G2_1: ${API_KEY_G2_1}
+  #     API_KEY_G2_2: ${API_KEY_G2_2}
+  #     API_KEY_G2_3: ${API_KEY_G2_3}
+  #     API_KEY_G2_4: ${API_KEY_G2_4}
+  #     API_KEY_G2_5: ${API_KEY_G2_5}
+  #     API_KEY_G2_6: ${API_KEY_G2_6}
+  #     API_KEY_G2_7: ${API_KEY_G2_7}
+  #     API_KEY_G2_8: ${API_KEY_G2_8}
+  #     # Service Configuration
+  #     LOG_LEVEL: INFO
+  #     PORT: 8086
+  #     TIMEZONE: America/Bogota
+  #     MARKET_START_HOUR: 8
+  #     MARKET_START_MINUTE: 0
+  #     MARKET_END_HOUR: 12
+  #     MARKET_END_MINUTE: 55
+  #     MIN_COMPLETENESS: 95.0
+  #     BATCH_SIZE: 1000
+  #   ports:
+  #     - "8086:8086"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - usdcop-trading-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./logs:/app/logs
 
-  # Health Monitor Service
-  health-monitor:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.health
-    container_name: usdcop-health-monitor
-    environment:
-      LOG_LEVEL: INFO
-    ports:
-      - "8083:8080"
-    networks:
-      - usdcop-trading-network
-    volumes:
-      - ./logs:/app/logs
-      - /var/run/docker.sock:/var/run/docker.sock  # For Docker commands
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+  # REMOVED: Redundant service - Health monitoring handled by Prometheus/Grafana stack
+  # health-monitor:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.health
+  #   container_name: usdcop-health-monitor
+  #   environment:
+  #     LOG_LEVEL: INFO
+  #   ports:
+  #     - "8083:8080"
+  #   networks:
+  #     - usdcop-trading-network
+  #   volumes:
+  #     - ./logs:/app/logs
+  #     - /var/run/docker.sock:/var/run/docker.sock  # For Docker commands
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
 
-  # WebSocket Service
-  websocket-service:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.websocket
-    container_name: usdcop-websocket
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
-      LOG_LEVEL: INFO
-      CORS_ORIGINS: "http://localhost:5000,http://localhost:80"
-    ports:
-      - "8082:8080"
-    networks:
-      - usdcop-trading-network
-    volumes:
-      - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+  # REMOVED: Redundant service - WebSocket functionality integrated into trading-api
+  # websocket-service:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.websocket
+  #   container_name: usdcop-websocket
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: Credentials from .env
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  #     LOG_LEVEL: INFO
+  #     CORS_ORIGINS: "http://localhost:5000,http://localhost:80"
+  #   ports:
+  #     - "8082:8080"
+  #   networks:
+  #     - usdcop-trading-network
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
 
   # pgAdmin for database management
   pgadmin:
@@ -490,8 +515,9 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@trading.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      # SECURITY: Credentials from .env
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     volumes:
@@ -520,9 +546,10 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # SECURITY: All credentials from .env
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       NEXT_PUBLIC_API_URL: http://localhost:5000/api
       NEXT_PUBLIC_TRADING_API_URL: http://usdcop-trading-api:8000/api
       NEXT_PUBLIC_ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
@@ -571,8 +598,9 @@ services:
       prometheus:
         condition: service_healthy
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      # SECURITY: Credentials from .env
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
     ports:
@@ -590,7 +618,10 @@ services:
   trading-api:
     build:
       context: ./services
-      dockerfile: Dockerfile.trading-api
+      dockerfile: Dockerfile.api
+      args:
+        APP_FILE: trading_api_realtime.py
+        PORT: 8000
     container_name: usdcop-trading-api
     depends_on:
       postgres:
@@ -598,14 +629,15 @@ services:
       redis:
         condition: service_healthy
     environment:
+      # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CORS_ORIGINS=http://localhost:5000,http://localhost:3001
     ports:
       - "8000:8000"
@@ -623,17 +655,21 @@ services:
   analytics-api:
     build:
       context: ./services
-      dockerfile: Dockerfile.analytics-api
+      dockerfile: Dockerfile.api
+      args:
+        APP_FILE: trading_analytics_api.py
+        PORT: 8001
     container_name: usdcop-analytics-api
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - PORT=8001
     ports:
       - "8001:8001"
@@ -642,39 +678,40 @@ services:
     restart: unless-stopped
     # Healthcheck is defined in Dockerfile using Python/requests
 
-  # Compliance & Audit API Service
-  compliance-api:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.compliance-api
-    container_name: usdcop-compliance-api
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
-      - PORT=8003
-    ports:
-      - "8003:8003"
-    networks:
-      - usdcop-trading-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/api/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # REMOVED: Redundant service - Compliance/audit features not required for current use case
+  # compliance-api:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.compliance-api
+  #   container_name: usdcop-compliance-api
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: All credentials from .env
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - PORT=8003
+  #   ports:
+  #     - "8003:8003"
+  #   networks:
+  #     - usdcop-trading-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/api/health')"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
   # Pipeline Data API Service
   pipeline-data-api:
     build:
       context: ./services
-      dockerfile: Dockerfile.pipeline-api
+      dockerfile: Dockerfile.pipeline
     container_name: usdcop-pipeline-api
     depends_on:
       postgres:
@@ -682,14 +719,15 @@ services:
       minio:
         condition: service_healthy
     environment:
+      # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-usdcop_trading}
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin123}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - PORT=8002
     ports:
       - "8002:8002"
@@ -703,6 +741,135 @@ services:
       retries: 3
       start_period: 40s
 
+  # BI API Service - Data Warehouse Queries
+  bi-api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.api
+      args:
+        APP_FILE: bi_api.py
+        PORT: 8007
+    container_name: usdcop-bi-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # SECURITY: All credentials from .env
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - BI_API_PORT=8007
+    ports:
+      - "8007:8007"
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # REMOVED: Redundant service - L0 contract data served by pipeline-data-api
+  # l0-contracts-api:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.l0-contracts-api
+  #   container_name: usdcop-l0-contracts-api
+  #   depends_on:
+  #     minio:
+  #       condition: service_healthy
+  #   environment:
+  #     # MinIO connection
+  #     - MINIO_ENDPOINT=minio:9000
+  #     - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+  #     - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+  #     - MINIO_SECURE=false
+  #     - PORT=8088
+  #   ports:
+  #     - "8088:8088"
+  #   networks:
+  #     - usdcop-trading-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8088/api/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+  # Multi-Model Trading API - RL + ML + LLM Strategies
+  multi-model-api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.api
+      args:
+        APP_FILE: multi_model_trading_api.py
+        PORT: 8006
+    container_name: usdcop-multi-model-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # SECURITY: All credentials from .env
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "8006:8006"
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - multi-model-api
+          - usdcop-multi-model-api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # REMOVED: Alpha Arena API - Not currently in use, conflicts with bi-api port 8007
+  # Infrastructure exists (DB tables) but no DAGs populate data, no dashboard integration
+  # alpha-arena-api:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.alpha-arena-api
+  #   container_name: usdcop-alpha-arena-api
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     # SECURITY: All credentials from .env
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     # LLM API Keys
+  #     - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+  #   ports:
+  #     - "8007:8007"
+  #   networks:
+  #     usdcop-trading-network:
+  #       aliases:
+  #         - alpha-arena-api
+  #         - usdcop-alpha-arena-api
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
   # MLflow Tracking Server
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.10.2
@@ -712,9 +879,10 @@ services:
       minio:
         condition: service_healthy
     environment:
+      # SECURITY: MinIO credentials from .env
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-minioadmin}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
       - AWS_DEFAULT_REGION=us-east-1
     volumes:
       - ./mlflow_data:/mlflow
@@ -742,27 +910,90 @@ services:
       retries: 5
       start_period: 40s
 
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: usdcop-nginx
+  # REMOVED: Redundant service - Direct port access to services, nginx proxy not needed for current setup
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: usdcop-nginx
+  #   depends_on:
+  #     dashboard:
+  #       condition: service_healthy
+  #     airflow-webserver:
+  #       condition: service_started
+  #     trading-api:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   networks:
+  #     - usdcop-trading-network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
+  # ================================================
+  # Real-time Market Ingestion V2 - Production Service
+  # ================================================
+  # Features:
+  # - Circuit Breaker for fault tolerance
+  # - Async Redis with connection pooling
+  # - Leader Election using Redis locks (HA support)
+  # - Intelligent ON CONFLICT resolution for OHLCV
+  # - Prometheus metrics
+  # - Structured logging
+  # - Graceful shutdown
+  realtime-ingestion-v2:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.api
+      args:
+        APP_FILE: realtime_market_ingestion_v2.py
+        PORT: 8087
+    container_name: usdcop-realtime-ingestion-v2
     depends_on:
-      dashboard:
+      postgres:
         condition: service_healthy
-      airflow-webserver:
-        condition: service_started
-      trading-api:
+      redis:
         condition: service_healthy
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Redis Configuration
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # TwelveData API Configuration
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
+      TWELVEDATA_BASE_URL: https://api.twelvedata.com
+      # Market Configuration
+      SYMBOL: USD/COP
+      INTERVAL: 5min
+      TIMEZONE: America/Bogota
+      # Service Configuration
+      POLLING_INTERVAL: 300  # 5 minutes (aligned with 5-min candles)
+      PORT: 8087
+      LOG_LEVEL: INFO
+      # Circuit Breaker Configuration
+      FAILURE_THRESHOLD: 5
+      RECOVERY_TIMEOUT: 300
+      # Leader Election Configuration
+      LEADER_LOCK_TTL: 360  # 6 minutes (300s polling + 60s buffer)
+      LEADER_RENEWAL_INTERVAL: 120  # Renew every 2 minutes
+      # Cache Configuration
+      CACHE_TTL: 300
+      # HTTP Configuration
+      HTTP_TIMEOUT: 30
     ports:
-      - "80:80"
-      - "443:443"
+      - "8087:8087"
     networks:
       - usdcop-trading-network
+    volumes:
+      - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+      start_period: 40s
     restart: unless-stopped

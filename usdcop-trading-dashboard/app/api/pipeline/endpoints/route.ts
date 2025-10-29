@@ -16,9 +16,9 @@ export async function GET() {
 
     layers: {
       L0: {
-        description: 'Raw market data layer - OHLC bars from TwelveData (92,936 records: 2020-01-02 to 2025-10-10)',
+        description: 'Raw market data layer - OHLC bars from TwelveData (81,864 records: 2020-01-02 to 2025-10-22, trading hours only)',
         bucket: '00-raw-usdcop-marketdata',
-        postgres_table: 'market_data',
+        postgres_table: 'usdcop_m5_ohlcv',
         endpoints: [
           {
             path: '/api/pipeline/l0/raw-data',
@@ -215,7 +215,7 @@ export async function GET() {
       postgresql: {
         host: 'localhost:5432',
         database: 'usdcop_trading',
-        table: 'market_data',
+        table: 'usdcop_m5_ohlcv',
         records: 92936,
         dateRange: '2020-01-02 to 2025-10-10',
         type: 'TimescaleDB',

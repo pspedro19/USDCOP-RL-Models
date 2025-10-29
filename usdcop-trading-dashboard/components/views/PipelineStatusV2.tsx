@@ -138,6 +138,8 @@ export default function PipelineStatus() {
 
   const getStatus = (data: LayerData | undefined): 'pass' | 'fail' | 'warning' | 'loading' => {
     if (!data) return 'loading';
+    // If status is 'unknown', treat as loading/pending (not error)
+    if (data.status === 'unknown') return 'loading';
     return data.status || 'loading';
   };
 
@@ -175,14 +177,15 @@ export default function PipelineStatus() {
       </div>
 
       {/* Error State */}
-      {error && (
+      {error && !pipelineData && (
         <div className="max-w-7xl mx-auto mb-6">
-          <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4">
+          <div className="bg-blue-900/20 border border-blue-500/50 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <XCircle className="w-5 h-5 text-red-400" />
+              <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
               <div>
-                <h3 className="text-red-400 font-medium">Error Loading Pipeline Data</h3>
-                <p className="text-sm text-red-300">{error}</p>
+                <h3 className="text-blue-400 font-medium">Pipelines Not Executed Yet</h3>
+                <p className="text-sm text-blue-300">Run DAGs L1-L6 in Airflow to populate pipeline data</p>
+                <code className="text-xs text-slate-400 block mt-1">http://localhost:8080</code>
               </div>
             </div>
           </div>
@@ -192,20 +195,37 @@ export default function PipelineStatus() {
       {/* System Health Summary */}
       {pipelineData?.system_health && (
         <div className="max-w-7xl mx-auto mb-6">
-          <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 backdrop-blur-sm border border-blue-500/30 rounded-xl p-6 shadow-xl">
+          <div className={`bg-gradient-to-r backdrop-blur-sm border rounded-xl p-6 shadow-xl ${
+            pipelineData.system_health.health_percentage >= 80
+              ? 'from-green-900/50 to-emerald-900/50 border-green-500/30'
+              : pipelineData.system_health.health_percentage > 0
+              ? 'from-yellow-900/50 to-orange-900/50 border-yellow-500/30'
+              : 'from-slate-900/50 to-slate-800/50 border-slate-500/30'
+          }`}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-white mb-1">System Health</h3>
                 <p className="text-sm text-slate-300">
                   {pipelineData.system_health.passing_layers} of {pipelineData.system_health.total_layers} layers passing
                 </p>
+                {pipelineData.system_health.passing_layers === 0 && (
+                  <p className="text-xs text-blue-400 mt-2">
+                    Pipeline not executed yet - Run DAGs in Airflow
+                  </p>
+                )}
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold text-white">
+                <div className={`text-3xl font-bold ${
+                  pipelineData.system_health.health_percentage >= 80 ? 'text-green-400' :
+                  pipelineData.system_health.health_percentage > 0 ? 'text-yellow-400' : 'text-slate-400'
+                }`}>
                   {pipelineData.system_health.health_percentage.toFixed(0)}%
                 </div>
-                <div className="text-sm font-medium text-green-400">
-                  {pipelineData.system_health.status.toUpperCase()}
+                <div className={`text-sm font-medium ${
+                  pipelineData.system_health.health_percentage >= 80 ? 'text-green-400' :
+                  pipelineData.system_health.health_percentage > 0 ? 'text-yellow-400' : 'text-slate-500'
+                }`}>
+                  {pipelineData.system_health.passing_layers === 0 ? 'PENDING' : pipelineData.system_health.status.toUpperCase()}
                 </div>
               </div>
             </div>

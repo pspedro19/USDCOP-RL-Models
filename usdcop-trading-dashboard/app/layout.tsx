@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { NotificationProvider } from "@/components/ui/notification-manager";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -88,7 +89,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body 
+      <body
         className={`${inter.className} antialiased`}
         suppressHydrationWarning
       >
@@ -97,7 +98,9 @@ export default function RootLayout({
           maxRetries={1}
           showDetails={true}
         >
-          {children}
+          <NotificationProvider maxNotifications={5} defaultDuration={6000}>
+            {children}
+          </NotificationProvider>
         </ErrorBoundary>
       </body>
     </html>

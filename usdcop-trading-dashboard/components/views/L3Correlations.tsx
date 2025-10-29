@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Network, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
+import { safeToFixed } from '@/lib/utils/safe-number';
 
 interface Feature {
   feature_name: string;
@@ -78,7 +79,7 @@ export default function L3Correlations() {
       <div className="border-b border-cyan-500/20 pb-4">
         <h1 className="text-2xl font-bold text-cyan-500 font-mono">L3 CORRELATIONS & IC ANALYSIS</h1>
         <p className="text-slate-400 text-sm mt-1">
-          17 Features • Avg IC: {data.avg_ic.toFixed(4)} •
+          17 Features • Avg IC: {safeToFixed(data.avg_ic, 4, '0.0000')} •
           High IC Features: {data.high_ic_count}
         </p>
       </div>
@@ -98,7 +99,7 @@ export default function L3Correlations() {
             <p className="text-sm text-slate-400 font-mono">Avg IC</p>
           </div>
           <p className="text-3xl font-bold text-green-400 font-mono">
-            {data.avg_ic.toFixed(4)}
+            {safeToFixed(data.avg_ic, 4, '0.0000')}
           </p>
         </Card>
 
@@ -156,18 +157,18 @@ export default function L3Correlations() {
                       Math.abs(feature.ic_mean) >= 0.02 ? 'text-yellow-400' :
                       'text-slate-400'
                     }`}>
-                      {feature.ic_mean.toFixed(5)}
+                      {safeToFixed(feature.ic_mean, 5, '0.00000')}
                     </span>
                   </td>
                   <td className="p-3 font-mono text-slate-300">
-                    {feature.ic_std.toFixed(5)}
+                    {safeToFixed(feature.ic_std, 5, '0.00000')}
                   </td>
                   <td className="p-3">
                     <span className={`font-mono ${
                       Math.abs(feature.rank_ic) >= 0.05 ? 'text-purple-400' :
                       'text-slate-400'
                     }`}>
-                      {feature.rank_ic.toFixed(5)}
+                      {safeToFixed(feature.rank_ic, 5, '0.00000')}
                     </span>
                   </td>
                   <td className="p-3">
@@ -176,17 +177,17 @@ export default function L3Correlations() {
                       Math.abs(feature.correlation_with_target) >= 0.1 ? 'text-orange-400' :
                       'text-slate-400'
                     }`}>
-                      {feature.correlation_with_target.toFixed(4)}
+                      {safeToFixed(feature.correlation_with_target, 4, '0.0000')}
                     </span>
                   </td>
                   <td className="p-3 font-mono text-slate-300 text-xs">
-                    {feature.mean.toFixed(4)}
+                    {safeToFixed(feature.mean, 4, '0.0000')}
                   </td>
                   <td className="p-3 font-mono text-slate-300 text-xs">
-                    {feature.std.toFixed(4)}
+                    {safeToFixed(feature.std, 4, '0.0000')}
                   </td>
                   <td className="p-3 font-mono text-slate-300 text-xs">
-                    [{feature.min.toFixed(2)}, {feature.max.toFixed(2)}]
+                    [{safeToFixed(feature.min, 2, '0.00')}, {safeToFixed(feature.max, 2, '0.00')}]
                   </td>
                 </tr>
               ))}

@@ -356,9 +356,9 @@ class RealTimeRiskEngine {
   // Refresh metrics from Analytics API (replaces simulation)
   private async refreshMetricsFromAPI(): void {
     try {
-      // Use server-side env var (without NEXT_PUBLIC_ prefix) since this runs on server
-      // ANALYTICS_API_URL already includes /api/analytics path
-      const ANALYTICS_API_URL = process.env.ANALYTICS_API_URL || process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8001/api/analytics';
+      // Use Next.js API proxy to avoid CORS issues
+      // Always use /api/analytics which proxies to the backend service
+      const ANALYTICS_API_URL = '/api/analytics';  // Use proxy, NOT localhost:8001
       const portfolioValue = this.currentMetrics?.portfolioValue || 10000000;
 
       const response = await fetch(

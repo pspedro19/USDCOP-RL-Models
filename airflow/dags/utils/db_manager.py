@@ -86,7 +86,10 @@ class DatabaseManager:
 
     def insert_market_data(self, df: pd.DataFrame, run_id: str, batch_id: str) -> int:
         """
-        Insert market data into the market_data table
+        DEPRECATED: Use insert_ohlcv_data() instead
+
+        This method references the old market_data table which has been removed.
+        Use insert_ohlcv_data() for the unified usdcop_m5_ohlcv table.
 
         Args:
             df: DataFrame with market data (time, open, high, low, close, volume, source)
@@ -96,6 +99,8 @@ class DatabaseManager:
         Returns:
             Number of records inserted
         """
+        logging.warning("⚠️ DEPRECATED: insert_market_data() references removed table. Use insert_ohlcv_data()")
+        raise DeprecationWarning("Table market_data has been removed. Use usdcop_m5_ohlcv instead.")
         try:
             if df.empty:
                 logging.warning("Empty dataframe provided for market data insertion")
@@ -331,38 +336,54 @@ class DatabaseManager:
             logging.error(f"❌ Error logging data quality check: {e}")
             raise
 
-    def get_latest_market_data(self, symbol: str = 'USDCOP', limit: int = 100) -> pd.DataFrame:
-        """Retrieve latest market data records"""
+    def get_latest_market_data(self, symbol: str = 'USD/COP', limit: int = 100) -> pd.DataFrame:
+        """
+        Retrieve latest market data records from usdcop_m5_ohlcv table
+
+        Updated to use unified table usdcop_m5_ohlcv instead of deprecated market_data
+        """
         try:
+            # Convert USDCOP to USD/COP for compatibility
+            if symbol == 'USDCOP':
+                symbol = 'USD/COP'
+
             query = """
-                SELECT * FROM market_data
+                SELECT * FROM usdcop_m5_ohlcv
                 WHERE symbol = %s
-                ORDER BY datetime DESC
+                ORDER BY time DESC
                 LIMIT %s
             """
 
             df = pd.read_sql(query, self.engine, params=(symbol, limit))
-            logging.info(f"✅ Retrieved {len(df)} latest market data records")
+            logging.info(f"✅ Retrieved {len(df)} latest OHLCV records from usdcop_m5_ohlcv")
             return df
 
         except Exception as e:
-            logging.error(f"❌ Error retrieving market data: {e}")
+            logging.error(f"❌ Error retrieving OHLCV data: {e}")
             return pd.DataFrame()
 
-    def get_market_data_stats(self, symbol: str = 'USDCOP') -> Dict:
-        """Get market data statistics"""
+    def get_market_data_stats(self, symbol: str = 'USD/COP') -> Dict:
+        """
+        Get market data statistics from usdcop_m5_ohlcv table
+
+        Updated to use unified table usdcop_m5_ohlcv instead of deprecated market_data
+        """
         try:
             from sqlalchemy import text
+
+            # Convert USDCOP to USD/COP for compatibility
+            if symbol == 'USDCOP':
+                symbol = 'USD/COP'
 
             with self.engine.connect() as conn:
                 result = conn.execute(text("""
                     SELECT
                         COUNT(*) as total_records,
-                        MIN(datetime) as earliest_date,
-                        MAX(datetime) as latest_date,
-                        COUNT(DISTINCT DATE(datetime)) as trading_days,
-                        AVG(CASE WHEN trading_session THEN 1.0 ELSE 0.0 END) * 100 as trading_session_pct
-                    FROM market_data
+                        MIN(time) as earliest_date,
+                        MAX(time) as latest_date,
+                        COUNT(DISTINCT DATE(time)) as trading_days,
+                        100.0 as trading_session_pct
+                    FROM usdcop_m5_ohlcv
                     WHERE symbol = :symbol
                 """), {"symbol": symbol}).fetchone()
 
@@ -372,15 +393,15 @@ class DatabaseManager:
                         'earliest_date': str(result[1]) if result[1] else None,
                         'latest_date': str(result[2]) if result[2] else None,
                         'trading_days': result[3],
-                        'trading_session_percentage': float(result[4]) if result[4] else 0.0
+                        'trading_session_percentage': 100.0  # All data is now within trading hours
                     }
-                    logging.info(f"✅ Retrieved market data stats for {symbol}")
+                    logging.info(f"✅ Retrieved OHLCV stats for {symbol} from usdcop_m5_ohlcv")
                     return stats
                 else:
                     return {}
 
         except Exception as e:
-            logging.error(f"❌ Error retrieving market data stats: {e}")
+            logging.error(f"❌ Error retrieving OHLCV stats: {e}")
             return {}
 
     def cleanup_old_data(self, days_to_keep: int = 365) -> Dict[str, int]:
@@ -468,7 +489,7 @@ class DatabaseManager:
     def setup_data_retention_policies(self) -> Dict[str, str]:
         """Setup and document data retention policies"""
         retention_policies = {
-            'market_data': 'Permanent retention (core trading data)',
+            'usdcop_m5_ohlcv': 'Permanent retention (core trading data)',
             'trading_signals': 'Permanent retention (performance analysis)',
             'trading_performance': 'Permanent retention (historical performance)',
             'pipeline_runs': '90 days (operational logs)',
@@ -539,25 +560,25 @@ class DatabaseManager:
                 result = conn.execute(text("""
                     SELECT
                         pg_size_pretty(pg_database_size(current_database())) as database_size,
-                        pg_size_pretty(pg_total_relation_size('market_data')) as market_data_size,
-                        pg_size_pretty(pg_indexes_size('market_data')) as market_data_index_size
+                        pg_size_pretty(pg_total_relation_size('usdcop_m5_ohlcv')) as ohlcv_table_size,
+                        pg_size_pretty(pg_indexes_size('usdcop_m5_ohlcv')) as ohlcv_index_size
                 """))
 
                 size_info = result.fetchone()
                 if size_info:
                     stats['database_size'] = {
                         'total_database_size': size_info.database_size,
-                        'market_data_table_size': size_info.market_data_size,
-                        'market_data_index_size': size_info.market_data_index_size
+                        'ohlcv_table_size': size_info.ohlcv_table_size,
+                        'ohlcv_index_size': size_info.ohlcv_index_size
                     }
 
                 # Recent activity summary
                 result = conn.execute(text("""
                     SELECT
-                        'market_data' as table_name,
+                        'usdcop_m5_ohlcv' as table_name,
                         COUNT(*) as recent_records,
                         MAX(created_at) as latest_record
-                    FROM market_data
+                    FROM usdcop_m5_ohlcv
                     WHERE created_at >= NOW() - INTERVAL '24 hours'
 
                     UNION ALL

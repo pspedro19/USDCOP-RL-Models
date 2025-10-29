@@ -3254,7 +3254,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='L4 RL Ready Pipeline - Auditor Compliant Version',
-    schedule_interval='@daily',
+    schedule_interval=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['l4', 'rl-ready', 'auditor-compliant'],

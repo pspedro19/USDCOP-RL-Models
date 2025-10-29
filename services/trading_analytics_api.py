@@ -59,6 +59,12 @@ app.add_middleware(
 # DATABASE CONNECTION
 # ==========================================
 
+def normalize_symbol(symbol: str) -> str:
+    """Normalize symbol format (USDCOP -> USD/COP)"""
+    if symbol == "USDCOP":
+        return "USD/COP"
+    return symbol
+
 def get_db_connection():
     """Get database connection"""
     try:
@@ -210,13 +216,14 @@ async def get_rl_metrics(
     - vwapError: VWAP error in bps
     """
     try:
+        symbol = normalize_symbol(symbol)
         # Get recent market data
         query = """
-        SELECT timestamp, price, bid, ask, volume
-        FROM market_data
+        SELECT time as timestamp, close as price, close as bid, close as ask, volume
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp >= NOW() - INTERVAL '%s days'
-        ORDER BY timestamp ASC
+          AND time >= NOW() - INTERVAL '%s days'
+        ORDER BY time ASC
         """
 
         df = execute_query(query, (symbol, days))
@@ -302,13 +309,14 @@ async def get_performance_kpis(
     - Benchmark Spread
     """
     try:
+        symbol = normalize_symbol(symbol)
         # Get historical data
         query = """
-        SELECT timestamp, price, bid, ask, volume
-        FROM market_data
+        SELECT time as timestamp, close as price, close as bid, close as ask, volume
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp >= NOW() - INTERVAL '%s days'
-        ORDER BY timestamp ASC
+          AND time >= NOW() - INTERVAL '%s days'
+        ORDER BY time ASC
         """
 
         df = execute_query(query, (symbol, days))
@@ -372,6 +380,7 @@ async def get_production_gates(
     - Latency metrics (measured from system)
     """
     try:
+        symbol = normalize_symbol(symbol)
         # Get performance KPIs first
         kpi_response = await get_performance_kpis(symbol, days)
         kpis = kpi_response["kpis"]
@@ -380,7 +389,7 @@ async def get_production_gates(
         import time
         start_time = time.perf_counter()
         test_query = """
-            SELECT COUNT(*) as cnt FROM market_data WHERE symbol = %s
+            SELECT COUNT(*) as cnt FROM usdcop_m5_ohlcv WHERE symbol = %s
         """
         execute_query(test_query, (symbol,))
         query_latency_ms = (time.perf_counter() - start_time) * 1000
@@ -390,9 +399,9 @@ async def get_production_gates(
         # For now, estimate based on data volume and system performance
         start_time = time.perf_counter()
         data_query = """
-            SELECT price FROM market_data
+            SELECT close as price FROM usdcop_m5_ohlcv
             WHERE symbol = %s
-            ORDER BY timestamp DESC
+            ORDER BY time DESC
             LIMIT 100
         """
         df = execute_query(data_query, (symbol,))
@@ -498,13 +507,14 @@ async def get_risk_metrics(
     - Stress Test Scenarios
     """
     try:
+        symbol = normalize_symbol(symbol)
         # Get historical data
         query = """
-        SELECT timestamp, price, bid, ask, volume
-        FROM market_data
+        SELECT time as timestamp, close as price, close as bid, close as ask, volume
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp >= NOW() - INTERVAL '%s days'
-        ORDER BY timestamp ASC
+          AND time >= NOW() - INTERVAL '%s days'
+        ORDER BY time ASC
         """
 
         df = execute_query(query, (symbol, days))
@@ -593,6 +603,7 @@ async def get_session_pnl(
     Returns session P&L based on actual price movements
     """
     try:
+        symbol = normalize_symbol(symbol)
         if session_date is None:
             # Use today's session
             session_date = datetime.now().strftime('%Y-%m-%d')
@@ -600,14 +611,14 @@ async def get_session_pnl(
         # Get session data (8:00 AM to 12:55 PM COT)
         query = """
         SELECT
-            (SELECT price FROM market_data
+            (SELECT close FROM usdcop_m5_ohlcv
              WHERE symbol = %s
-               AND DATE(timestamp) = %s
-             ORDER BY timestamp ASC LIMIT 1) as session_open,
-            (SELECT price FROM market_data
+               AND DATE(time AT TIME ZONE 'America/Bogota') = %s
+             ORDER BY time ASC LIMIT 1) as session_open,
+            (SELECT close FROM usdcop_m5_ohlcv
              WHERE symbol = %s
-               AND DATE(timestamp) = %s
-             ORDER BY timestamp DESC LIMIT 1) as session_close
+               AND DATE(time AT TIME ZONE 'America/Bogota') = %s
+             ORDER BY time DESC LIMIT 1) as session_close
         """
 
         df = execute_query(query, (symbol, session_date, symbol, session_date))
@@ -668,13 +679,14 @@ async def get_market_conditions(
     - EM Sentiment (from market movements)
     """
     try:
+        symbol = normalize_symbol(symbol)
         # Get recent market data
         query = """
-        SELECT timestamp, price, bid, ask, volume
-        FROM market_data
+        SELECT time as timestamp, close as price, close as bid, close as ask, volume
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp >= NOW() - INTERVAL '%s days'
-        ORDER BY timestamp ASC
+          AND time >= NOW() - INTERVAL '%s days'
+        ORDER BY time ASC
         """
 
         df = execute_query(query, (symbol, days))
@@ -867,12 +879,13 @@ def get_spread_proxy(symbol: str = "USDCOP", days: int = 30):
         Spread proxy en bps con estadísticas
     """
     try:
+        symbol = normalize_symbol(symbol)
         query = """
-        SELECT timestamp, high, low, close
-        FROM market_data
+        SELECT time as timestamp, high, low, close
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp > NOW() - INTERVAL '%s days'
-        ORDER BY timestamp
+          AND time > NOW() - INTERVAL '%s days'
+        ORDER BY time
         """
 
         df = execute_query(query, (symbol, days))
@@ -1010,6 +1023,7 @@ async def get_order_flow(
         - imbalance: buy_percent - sell_percent
     """
     try:
+        symbol = normalize_symbol(symbol)
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -1019,18 +1033,18 @@ async def get_order_flow(
 
         query = """
         SELECT
-            timestamp,
+            time as timestamp,
             open,
             high,
             low,
             close,
             volume
-        FROM market_data
+        FROM usdcop_m5_ohlcv
         WHERE symbol = %s
-          AND timestamp >= %s
-          AND timestamp <= %s
+          AND time >= %s
+          AND time <= %s
           AND volume > 0
-        ORDER BY timestamp DESC
+        ORDER BY time DESC
         """
 
         cursor.execute(query, (symbol, start_time, end_time))
@@ -1131,6 +1145,7 @@ async def get_execution_metrics(
     and overall transaction costs.
     """
     try:
+        symbol = normalize_symbol(symbol)
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -1141,17 +1156,17 @@ async def get_execution_metrics(
         # Query to get OHLCV data for calculations
         query = """
         SELECT
-            datetime,
+            time as datetime,
             open,
             high,
             low,
             close,
             volume
-        FROM usdcop_ohlcv
-        WHERE datetime >= %s
-          AND datetime <= %s
+        FROM usdcop_m5_ohlcv
+        WHERE time >= %s
+          AND time <= %s
           AND volume > 0
-        ORDER BY datetime ASC
+        ORDER BY time ASC
         """
 
         cursor.execute(query, (start_date, end_date))

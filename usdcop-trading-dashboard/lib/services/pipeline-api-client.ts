@@ -6,15 +6,15 @@
  * NO HARDCODED VALUES - All data fetched from real APIs
  *
  * Available APIs:
- * - Pipeline Data API (port 8004): L0-L6 pipeline data
- * - ML Analytics API (port 8005): Model analytics, health, predictions
+ * - Pipeline Data API (port 8002): L0-L6 pipeline data
+ * - Compliance API (port 8003): Compliance and regulations
  * - Trading Analytics API (port 8001): Trading metrics, RL performance
  * - Trading API (port 8000): Order execution, positions
  */
 
 const API_BASE_URLS = {
-  pipeline: process.env.NEXT_PUBLIC_PIPELINE_API_URL || 'http://localhost:8004',
-  mlAnalytics: process.env.NEXT_PUBLIC_ML_ANALYTICS_API_URL || 'http://localhost:8005',
+  pipeline: process.env.NEXT_PUBLIC_PIPELINE_API_URL || 'http://localhost:8002',
+  compliance: process.env.NEXT_PUBLIC_COMPLIANCE_API_URL || 'http://localhost:8003',
   tradingAnalytics: process.env.NEXT_PUBLIC_TRADING_ANALYTICS_API_URL || 'http://localhost:8001',
   trading: process.env.NEXT_PUBLIC_TRADING_API_URL || 'http://localhost:8000'
 };

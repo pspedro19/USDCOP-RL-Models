@@ -1,0 +1,131 @@
+# Dockerfile.airflow-ml
+# Custom Airflow image with ML/RL dependencies for L5A (RL Training)
+# Based on apache/airflow:2.8.1-python3.11 (matching existing setup)
+
+FROM apache/airflow:2.8.1-python3.11
+
+USER root
+
+# Install system dependencies for PyTorch and ML libraries
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    gfortran \
+    libffi-dev \
+    libssl-dev \
+    libpq-dev \
+    libblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    pkg-config \
+    cmake \
+    build-essential \
+    git \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
+
+# Copy requirements file from airflow directory
+COPY ../airflow/requirements.txt /requirements.txt
+
+# Install Python dependencies from requirements.txt (includes torch, stable-baselines3, etc.)
+RUN pip install --no-cache-dir \
+    --timeout 1000 \
+    --retries 5 \
+    --trusted-host pypi.org \
+    --trusted-host pypi.python.org \
+    --trusted-host files.pythonhosted.org \
+    -r /requirements.txt
+
+# ============================================================================
+# Additional ML/RL Dependencies (Not in requirements.txt)
+# ============================================================================
+
+# SB3 Contrib (RecurrentPPO for LSTM)
+RUN pip install --no-cache-dir \
+    sb3-contrib==2.4.0
+
+# MLflow (model tracking and registry)
+RUN pip install --no-cache-dir \
+    mlflow==2.10.2 \
+    protobuf==4.25.1
+
+# ONNX (model export)
+RUN pip install --no-cache-dir \
+    onnx==1.16.2 \
+    onnxruntime==1.18.1
+
+# LightGBM and XGBoost (for L5B)
+RUN pip install --no-cache-dir \
+    lightgbm==4.1.0 \
+    xgboost==2.0.3
+
+# Additional utilities
+RUN pip install --no-cache-dir \
+    psycopg2-binary \
+    redis \
+    boto3 \
+    requests \
+    pydantic \
+    fastapi \
+    httpx
+
+# ============================================================================
+# Verification
+# ============================================================================
+
+# Verify critical imports work
+RUN python -c "import scipy; print('scipy OK')" && \
+    python -c "import gymnasium; print('gymnasium OK')" && \
+    python -c "import torch; print(f'PyTorch {torch.__version__} OK')" && \
+    python -c "import stable_baselines3; print(f'SB3 {stable_baselines3.__version__} OK')" && \
+    python -c "import sb3_contrib; print(f'SB3-Contrib {sb3_contrib.__version__} OK')" && \
+    python -c "import mlflow; print(f'MLflow {mlflow.__version__} OK')" && \
+    python -c "import lightgbm; print(f'LightGBM {lightgbm.__version__} OK')" && \
+    python -c "import onnxruntime; print(f'ONNX Runtime {onnxruntime.__version__} OK')" && \
+    python -c "import pandas; import numpy; print('Data science stack OK')"
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+# Set environment variables for better performance
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
+ENV AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+ENV AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+
+# Create directories for DAGs, logs, and plugins
+USER root
+RUN mkdir -p /opt/airflow/dags /opt/airflow/logs /opt/airflow/plugins \
+    && chown -R airflow:root /opt/airflow
+
+# Copy entrypoint script from airflow directory
+COPY ../airflow/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown airflow:root /entrypoint.sh
+
+USER airflow
+
+# Set working directory
+WORKDIR /opt/airflow
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Labels
+LABEL maintainer="USDCOP Trading System"
+LABEL description="Airflow with ML/RL dependencies for L5A (RL training)"
+LABEL version="1.0"
+LABEL torch.version="2.3.1"
+LABEL stable-baselines3.version="2.4.0"
+LABEL mlflow.version="2.10.2"

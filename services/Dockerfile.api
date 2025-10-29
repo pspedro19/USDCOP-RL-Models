@@ -1,0 +1,54 @@
+# ================================================
+# Universal API Dockerfile
+# Used by: trading-api, analytics-api, bi-api, multi-model-api, realtime-ingestion-v2
+# ================================================
+# Build arguments:
+#   APP_FILE: Python script to run (e.g., bi_api.py)
+#   PORT: Exposed port (e.g., 8007)
+# ================================================
+
+FROM python:3.11-slim
+
+# Build arguments
+ARG APP_FILE
+ARG PORT=8000
+
+# Set working directory
+WORKDIR /app
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy unified requirements and install all dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY ${APP_FILE} ./app.py
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE ${PORT}
+
+# Health check (try multiple common health endpoints)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || \
+        curl -f http://localhost:${PORT}/api/health || \
+        exit 1
+
+# Run the application
+CMD ["python", "app.py"]

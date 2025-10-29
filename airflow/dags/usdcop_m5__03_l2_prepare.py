@@ -2508,7 +2508,7 @@ dag = DAG(
     DAG_ID,
     default_args=default_args,
     description='L2 data preparation with deseasonalization and quality gating',
-    schedule_interval='@daily',  # Run after L1 completes
+    schedule_interval=None,  # Run after L1 completes
     start_date=days_ago(1),
     catchup=False,
     tags=['l2', 'prepare', 'features'],
