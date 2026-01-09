@@ -100,6 +100,7 @@ airflow/*.cfg
 # Trading specific
 *.csv
 !sample_data.csv
+!usdcop-trading-dashboard/public/forecasting/*.csv
 reports/
 backtest_results/
 trades/
