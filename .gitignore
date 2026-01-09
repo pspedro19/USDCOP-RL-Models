@@ -101,6 +101,10 @@ airflow/*.cfg
 *.csv
 !sample_data.csv
 !usdcop-trading-dashboard/public/forecasting/*.csv
+
+# Allow trading data backups for deployment
+!data/backups/pre_v20_migration_20260109/*.csv.gz
+!data/backups/pre_v20_migration_20260109/*.sql.gz
 reports/
 backtest_results/
 trades/
