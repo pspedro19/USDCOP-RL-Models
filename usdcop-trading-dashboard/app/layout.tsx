@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { NotificationProvider } from "@/components/ui/notification-manager";
+import { ModelProvider } from "@/contexts/ModelContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -90,7 +91,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.className} antialiased`}
+        className={`${inter.className} antialiased bg-[#050816] text-slate-100`}
         suppressHydrationWarning
       >
         <ErrorBoundary
@@ -98,9 +99,11 @@ export default function RootLayout({
           maxRetries={1}
           showDetails={true}
         >
-          <NotificationProvider maxNotifications={5} defaultDuration={6000}>
-            {children}
-          </NotificationProvider>
+          <ModelProvider>
+            <NotificationProvider maxNotifications={5} defaultDuration={6000}>
+              {children}
+            </NotificationProvider>
+          </ModelProvider>
         </ErrorBoundary>
       </body>
     </html>

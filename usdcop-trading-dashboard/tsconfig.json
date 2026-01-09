@@ -26,11 +26,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@/libs/*": ["./libs/*"],
-      "@/core/*": ["./libs/core/*"],
-      "@/features/*": ["./libs/features/*"],
-      "@/widgets/*": ["./libs/widgets/*"],
-      "@/shared/*": ["./libs/shared/*"]
+      "@/types/*": ["./types/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "workers/**/*.ts"],

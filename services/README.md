@@ -1,22 +1,21 @@
 # Services Directory - Minimalist Architecture
 
-## 📁 Final Structure (87% reduction achieved)
+## 📁 Final Structure (90% reduction achieved)
 
 ```
 services/
-├── Dockerfile.api           → Universal (5 services: trading, analytics, bi, multi-model, realtime)
-├── Dockerfile.pipeline      → Specialized (pipeline-api with TA-Lib)
+├── Dockerfile.api           → Universal (all 6 services)
 ├── requirements.txt         → Unified dependencies (all services)
-├── bi_api.py               → Port 8007 - Data Warehouse API
-├── multi_model_trading_api.py → Port 8006 - Multi-strategy API
-├── pipeline_data_api.py    → Port 8002 - Pipeline data API
-├── realtime_market_ingestion_v2.py → Port 8087 - Real-time ingestion
-├── trading_analytics_api.py → Port 8001 - Analytics API
-├── trading_api_realtime.py → Port 8000 - Trading API
+├── bi_api.py               → Port 8007 - Data Warehouse API (INACTIVE)
+├── multi_model_trading_api.py → Port 8006 - Multi-strategy API (ACTIVE)
+├── pipeline_data_api.py    → Port 8002 - Pipeline data API (INACTIVE)
+├── realtime_market_ingestion_v2.py → Port 8087 - Real-time ingestion (ACTIVE)
+├── trading_analytics_api.py → Port 8001 - Analytics API (ACTIVE)
+├── trading_api_realtime.py → Port 8000 - Trading API (ACTIVE)
 └── README.md               → This file
 ```
 
-**Total: 10 files only**
+**Total: 8 files only**
 
 ---
 
@@ -28,18 +27,19 @@ services/
 - Dead code (orchestrators, strategies, utils)
 
 ### After Radical Cleanup
-- **10 files:** 2 Dockerfiles + 1 requirements + 6 APIs + 1 README
+- **8 files:** 1 Dockerfile + 1 requirements + 6 APIs + 1 README
 - Single source of truth for all dependencies
 - Zero dead code
+- Zero duplicate utilities (feature_calculator moved to src/core/services/feature_builder.py)
 
-**Result: 87% file reduction, 100% cleaner architecture**
+**Result: 90% file reduction, 100% cleaner architecture**
 
 ---
 
 ## 🐳 Docker Build Strategy
 
 ### Dockerfile.api (Universal)
-Uses build arguments for flexibility:
+Single Dockerfile for all services. Uses build arguments for flexibility:
 
 ```yaml
 build:
@@ -49,18 +49,15 @@ build:
     PORT: 8007             # Which port to expose
 ```
 
-**Used by:**
-- trading-api (port 8000)
-- analytics-api (port 8001)
-- bi-api (port 8007)
-- multi-model-api (port 8006)
-- realtime-ingestion-v2 (port 8087)
+**Used by all services:**
+- trading-api (port 8000) - ACTIVE
+- analytics-api (port 8001) - ACTIVE
+- pipeline-data-api (port 8002) - INACTIVE (commented in docker-compose)
+- multi-model-api (port 8006) - ACTIVE
+- bi-api (port 8007) - INACTIVE (commented in docker-compose)
+- realtime-ingestion-v2 (port 8087) - ACTIVE
 
-### Dockerfile.pipeline (Specialized)
-Compiles TA-Lib from source, then installs all dependencies.
-
-**Used by:**
-- pipeline-data-api (port 8002)
+**Note:** Dockerfile.pipeline was removed as pipeline-data-api is currently inactive and can use Dockerfile.api with TA-Lib installed via pip when needed.
 
 ---
 
@@ -103,10 +100,11 @@ docker-compose build --no-cache
 
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
-| Total files | 58 | 10 | **-83%** |
-| Dockerfiles | 9 | 2 | **-78%** |
+| Total files | 58 | 8 | **-86%** |
+| Dockerfiles | 9 | 1 | **-89%** |
 | Requirements | 9 | 1 | **-89%** |
 | Dead code | 7 files | 0 files | **-100%** |
+| Duplicate utilities | 1 file | 0 files | **-100%** |
 | Maintenance complexity | High | Low | ✅ |
 
 ---
@@ -124,10 +122,16 @@ docker-compose build --no-cache
 - `alpha_arena_backtest.py` - No DAGs populate data
 - Related Dockerfiles & requirements
 
+### Duplicate Utilities (consolidated)
+- `feature_calculator.py` - Moved to `src/core/services/feature_builder.py` (SSOT)
+
 ### Obsolete Services (replaced)
 - 20+ legacy Python services (websocket, health monitor, L0 validators, etc.)
 - 6+ old Dockerfiles
 - 6+ old requirements files
+
+### Redundant Docker Infrastructure
+- `Dockerfile.pipeline` - Specialized Dockerfile removed, can use Dockerfile.api with TA-Lib via pip if needed
 
 ---
 
@@ -135,9 +139,25 @@ docker-compose build --no-cache
 
 This minimal structure follows these principles:
 
-1. **DRY (Don't Repeat Yourself):** Single Dockerfile for similar services
+1. **DRY (Don't Repeat Yourself):** Single Dockerfile for all services
 2. **YAGNI (You Aren't Gonna Need It):** Remove unused code aggressively
-3. **Separation of Concerns:** Pipeline stays separate (TA-Lib compilation)
+3. **SSOT (Single Source of Truth):** Feature calculation logic consolidated in `src/core/services/feature_builder.py`
 4. **Pragmatism over Purity:** Accept minor dependency bloat for massive simplicity gain
 
 The system is now **production-ready, maintainable, and crystal clear**.
+
+---
+
+## 🔄 Service Status
+
+### Active Services (Running in Production)
+- **trading_api_realtime.py** (Port 8000) - Main trading API with real-time data
+- **trading_analytics_api.py** (Port 8001) - Analytics and metrics API
+- **multi_model_trading_api.py** (Port 8006) - Multi-strategy trading API
+- **realtime_market_ingestion_v2.py** (Port 8087) - Market data ingestion service
+
+### Inactive Services (Available but Not Deployed)
+- **bi_api.py** (Port 8007) - Business Intelligence API (commented in docker-compose.yml)
+- **pipeline_data_api.py** (Port 8002) - Pipeline data access API (commented in docker-compose.yml)
+
+**Note:** Inactive services are maintained in the codebase but not deployed. They can be activated by uncommenting their sections in `docker-compose.yml`.

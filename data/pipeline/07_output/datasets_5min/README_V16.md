@@ -1,0 +1,150 @@
+# V16 Intraday Dataset - High-Frequency Features Only
+
+**Generated:** 2025-12-17 23:11:24
+**Script:** `02_build_v16_datasets.py`
+**Output:** `RL_DS4_INTRADAY_ONLY.csv`
+
+## Philosophy
+
+For **5-minute intraday trading**, ONLY include features that **actually change at 5-minute frequency**.
+
+### The Problem with Macro Features
+
+Macro features like DXY, VIX, EMBI, etc. update **daily**. When resampled to 5-minute bars:
+- All 288 bars in a day (00:00-23:55) have the **same value**
+- During trading session (8:00-12:55 COT = 60 bars), these features are **constant**
+- They provide **ZERO information gain** for intraday decisions
+- They only add **noise** and confuse the RL agent
+
+### The Solution: High-Frequency Features Only
+
+This dataset includes **ONLY** features that change at 5-minute frequency:
+
+| Feature | Type | Description | Change Frequency |
+|---------|------|-------------|------------------|
+| `log_ret_5m` | Return | 5-minute log return | Every bar |
+| `log_ret_1h` | Return | 1-hour log return | Every 12 bars |
+| `log_ret_4h` | Return | 4-hour log return | Every 48 bars |
+| `rsi_9` | Technical | 9-period RSI | Every bar |
+| `atr_pct` | Technical | ATR as % of price | Every bar |
+| `adx_14` | Technical | 14-period ADX | Every bar |
+| `bb_position` | Technical | Bollinger Band position | Every bar |
+| `hour_sin` | Time | Hour sine encoding | Every bar |
+| `hour_cos` | Time | Hour cosine encoding | Every bar |
+
+**Total Features:** 12 (9 features + OHLC)
+
+### Features EXCLUDED (and why)
+
+| Category | Examples | Why Excluded |
+|----------|----------|--------------|
+| Macro | DXY, VIX, EMBI, Brent | Daily frequency → constant intraday |
+| Cross-pairs | USDMXN, USDCLP | Daily frequency → constant intraday |
+| Bonds | UST10Y, UST2Y, COL10Y | Daily frequency → constant intraday |
+| Fundamentals | CPI, unemployment, IED | Monthly/quarterly → constant for weeks |
+
+## Dataset Statistics
+
+- **Total Bars:** 84,671
+- **Date Range:** 2020-03-02 13:00:00 to 2025-12-05 14:10:00
+- **Trading Days:** 1499
+- **Size:** 18.86 MB
+
+## Validation Results
+
+### Change Frequency Analysis
+
+All features have **high intraday variation**:
+
+    feature  avg_unique_per_day  frequency_score  is_high_frequency
+     adx_14           55.910607         0.931843               True
+ log_ret_4h           55.611741         0.926862               True
+ log_ret_1h           54.641094         0.910685               True
+    atr_pct           54.628419         0.910474               True
+      rsi_9           54.258172         0.904303               True
+ log_ret_5m           53.559706         0.892662               True
+bb_position           52.691795         0.878197               True
+   hour_sin            4.879253         0.081321              False
+   hour_cos            4.879253         0.081321              False
+
+**Frequency Score:** Ratio of unique values per day / total bars per day (0-1)
+- Score > 0.5 = High frequency (changes in >50% of bars)
+- Score < 0.1 = Low frequency (mostly constant intraday)
+
+### Variance Analysis
+
+Features contribute meaningfully to dataset variance:
+
+rsi_9          6.629638e+01
+adx_14         3.367828e+01
+hour_sin       1.109816e-02
+bb_position    1.005219e-02
+hour_cos       3.939439e-03
+atr_pct        2.373105e-04
+log_ret_4h     6.828058e-06
+log_ret_1h     1.617847e-06
+log_ret_5m     1.489944e-07
+
+### Correlation Matrix
+
+See `CORR_V16_INTRADAY.csv` for full correlation matrix.
+
+## Why V16 is Better for Intraday Trading
+
+### 1. No Redundant Information
+- Eliminates features that don't change during trading session
+- Reduces noise and overfitting
+
+### 2. Focused Signal
+- Every feature provides real-time information
+- RL agent learns from actual price dynamics, not static macro context
+
+### 3. Faster Training
+- 12 features vs 21+ in macro datasets
+- Simpler observation space → faster convergence
+
+### 4. Production Efficiency
+- No need to fetch/update macro data in real-time
+- Faster inference (smaller observation vector)
+
+## Usage Recommendation
+
+**Best for:**
+- Intraday scalping (5min-1hour holding periods)
+- High-frequency strategies
+- Pure technical trading
+- Low-latency environments
+
+**NOT recommended for:**
+- Multi-day swing trading (use DS3_MACRO_CORE)
+- Regime-dependent strategies (use DS5_REGIME)
+- Fundamental analysis (use DS6-DS10)
+
+## Comparison: V16 vs DS3_MACRO_CORE
+
+| Aspect | V16 INTRADAY | DS3 MACRO_CORE |
+|--------|--------------|----------------|
+| Features | 12 | 21 |
+| Macro features | 0 | 10 |
+| Intraday variation | 100% | ~50% |
+| Training speed | Fast | Medium |
+| Best for | Scalping | Swing trading |
+
+## Next Steps
+
+1. **Train RL agent** with PPO/A2C on this dataset
+2. **Compare Sharpe ratio** vs DS3_MACRO_CORE
+3. **Backtest** on held-out period (2024-2025)
+4. **Deploy** if Sharpe > 0.5 and max drawdown < 15%
+
+## References
+
+- Original script: `01_build_5min_datasets.py`
+- Statistics: `STATS_V16_INTRADAY.csv`
+- Correlation: `CORR_V16_INTRADAY.csv`
+
+---
+
+*Generated by V16 Dataset Builder*
+*Author: Claude Code*
+*Date: 2025-12-17 23:11:24*

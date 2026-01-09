@@ -7,6 +7,16 @@ API REST + WebSocket para datos reales de trading USD/COP
 - REST API para datos históricos
 - WebSocket para datos en tiempo real cada 5 minutos
 - Solo datos reales de la base de datos
+
+SOLID Compliance:
+- SRP: Each endpoint handles one responsibility
+- OCP: Configurable via shared config modules
+- DIP: Uses dependency injection from common modules (database, config, validation)
+- DRY: Uses shared utilities from common/ directory
+
+Author: Pedro @ Lean Tech Solutions
+Version: 1.1.0
+Updated: 2025-12-17
 """
 
 from fastapi import FastAPI, WebSocket, HTTPException, Query, BackgroundTasks
@@ -30,21 +40,32 @@ import pytz
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuration from environment variables
-POSTGRES_CONFIG = {
-    'host': os.getenv('POSTGRES_HOST', 'usdcop-postgres-timescale'),
-    'port': int(os.getenv('POSTGRES_PORT', '5432')),
-    'database': os.getenv('POSTGRES_DB', 'usdcop_trading'),
-    'user': os.getenv('POSTGRES_USER', 'admin'),
-    'password': os.getenv('POSTGRES_PASSWORD', 'admin123')
-}
+# DRY: Use shared modules
+from common.database import get_db_config, get_db_connection
+from common.config import get_trading_hours
+from common.validation import (
+    validate_symbol,
+    validate_timeframe,
+    validate_limit,
+    validate_date_range,
+    SUPPORTED_TIMEFRAMES,
+    MAX_LIMIT,
+)
+from common.trading_calendar import TradingCalendar
 
-# Trading hours configuration (Colombian time)
-COT_TIMEZONE = pytz.timezone('America/Bogota')
-TRADING_START_HOUR = 8   # 8:00 AM COT
-TRADING_END_HOUR = 12    # 12:55 PM COT
-TRADING_END_MINUTE = 55
-TRADING_DAYS = [0, 1, 2, 3, 4]  # Monday=0 to Friday=4
+# Configuration from shared modules
+POSTGRES_CONFIG = get_db_config().to_dict()
+
+# Trading hours configuration (from shared config)
+_trading_hours = get_trading_hours()
+COT_TIMEZONE = pytz.timezone(_trading_hours.timezone)
+TRADING_START_HOUR = _trading_hours.start_hour
+TRADING_END_HOUR = _trading_hours.end_hour
+TRADING_END_MINUTE = _trading_hours.end_minute
+TRADING_DAYS = _trading_hours.trading_days
+
+# Initialize trading calendar for holiday/weekend validation
+trading_cal = TradingCalendar()
 
 # Global variables for WebSocket management
 websocket_connections: List[WebSocket] = []
@@ -149,14 +170,8 @@ def get_market_status() -> dict:
         "time_to_next_event": str(next_event - now_cot).split(".")[0]
     }
 
-def get_db_connection():
-    """Get PostgreSQL database connection"""
-    try:
-        conn = psycopg2.connect(**POSTGRES_CONFIG)
-        return conn
-    except Exception as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
+# REMOVED: Duplicate get_db_connection() - use the one from common.database (DRY principle)
+# The imported get_db_connection from common.database is used throughout this file
 
 def calculate_technical_indicators(df):
     """Calculate technical indicators using pandas"""
@@ -409,8 +424,32 @@ async def health_check():
 
 @app.get("/api/latest/{symbol}")
 async def get_latest_price(symbol: str = "USDCOP"):
-    """Get latest REAL price for symbol (only during market hours)"""
-    # Check if market is open
+    """Get latest REAL price for symbol (only during market hours on trading days)"""
+    # Validate input (Defensive Programming)
+    symbol = validate_symbol(symbol)
+
+    now = datetime.now(COT_TIMEZONE)
+
+    # Check if today is a trading day (not weekend/holiday)
+    if not trading_cal.is_trading_day(now):
+        # Get the reason why it's not a trading day
+        reason = trading_cal.get_violation_reason(now)
+        next_trading = trading_cal.get_next_trading_day(now)
+
+        raise HTTPException(
+            status_code=425,  # Too Early
+            detail={
+                "error": "Market is closed",
+                "message": reason,
+                "current_date": now.date().isoformat(),
+                "next_trading_day": next_trading.isoformat(),
+                "is_weekend": trading_cal.is_weekend(now),
+                "is_colombian_holiday": trading_cal.is_colombian_holiday(now),
+                "is_us_holiday": trading_cal.is_us_holiday(now)
+            }
+        )
+
+    # Check if market is open (time-based check)
     market_status = get_market_status()
     if not market_status["is_open"]:
         raise HTTPException(
@@ -466,13 +505,19 @@ async def get_latest_price(symbol: str = "USDCOP"):
 @app.get("/api/candlesticks/{symbol}")
 async def get_candlesticks(
     symbol: str = "USDCOP",
-    timeframe: str = Query("5m", description="Timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d)"),
+    timeframe: str = Query("5m", description=f"Timeframe. Supported: {SUPPORTED_TIMEFRAMES}"),
     start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
     end_date: Optional[str] = Query(None, description="End date (ISO format)"),
-    limit: int = Query(1000, description="Maximum number of records"),
+    limit: int = Query(1000, ge=1, le=MAX_LIMIT, description=f"Maximum records (1-{MAX_LIMIT})"),
     include_indicators: bool = Query(True, description="Include technical indicators")
 ):
     """Get REAL candlestick data for charts - with intelligent date fallback"""
+    # Validate inputs (Defensive Programming)
+    symbol = validate_symbol(symbol)
+    timeframe = validate_timeframe(timeframe)
+    limit = validate_limit(limit)
+    validate_date_range(start_date, end_date)
+
     try:
         conn = get_db_connection()
 
@@ -510,6 +555,27 @@ async def get_candlesticks(
         # Get OHLCV data from usdcop_m5_ohlcv table
         # Convert symbol format (USDCOP -> USD/COP)
         db_symbol = 'USD/COP' if symbol == 'USDCOP' else symbol
+
+        # Parse and adjust dates to ensure full day coverage
+        # If end_date is date-only (YYYY-MM-DD), extend to end of day (23:59:59)
+        try:
+            parsed_start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        except:
+            parsed_start = datetime.fromisoformat(start_date)
+
+        try:
+            parsed_end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+        except:
+            parsed_end = datetime.fromisoformat(end_date)
+
+        # If end_date has no time component (midnight), extend to end of day
+        if parsed_end.hour == 0 and parsed_end.minute == 0 and parsed_end.second == 0:
+            parsed_end = parsed_end.replace(hour=23, minute=59, second=59)
+            logger.info(f"Extended end_date to end of day: {parsed_end}")
+
+        # NOTE: Data is already filtered to trading hours at source (DAG acquisition)
+        # The stored UTC times (8:00-12:55 UTC) represent trading session times
+        # No additional hour filtering needed - data only contains valid trading bars
         query = """
         SELECT time as timestamp, symbol, open, high, low, close, COALESCE(volume, 0) as volume
         FROM usdcop_m5_ohlcv
@@ -522,14 +588,14 @@ async def get_candlesticks(
         df = pd.read_sql_query(
             query,
             conn,
-            params=(db_symbol, start_date, end_date, limit)
+            params=(db_symbol, parsed_start, parsed_end, limit)
         )
         conn.close()
 
         if df.empty:
             raise HTTPException(
                 status_code=404,
-                detail=f"No real data found for {symbol} between {start_date} and {end_date}"
+                detail=f"No real data found for {symbol} between {parsed_start.isoformat()} and {parsed_end.isoformat()}"
             )
 
         # Data is already in OHLCV format, no need to convert
@@ -571,8 +637,8 @@ async def get_candlesticks(
         return CandlestickResponse(
             symbol=symbol,
             timeframe=timeframe,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=parsed_start.isoformat(),
+            end_date=parsed_end.isoformat(),
             count=len(candlesticks),
             data=candlesticks
         )
@@ -617,6 +683,9 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/api/stats/{symbol}")
 async def get_symbol_stats(symbol: str = "USDCOP"):
     """Get REAL symbol statistics - with fallback to most recent data available"""
+    # Validate input (Defensive Programming)
+    symbol = validate_symbol(symbol)
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -673,17 +742,13 @@ async def get_symbol_stats(symbol: str = "USDCOP"):
                     detail=f"No data found for {symbol}"
                 )
 
-        conn.close()
-
-        # Get current price from latest record
-        conn2 = get_db_connection()
-        cursor2 = conn2.cursor()
-        cursor2.execute(
+        # Get current price from latest record (reuse same connection - DRY)
+        cursor.execute(
             "SELECT close as price, time as timestamp FROM usdcop_m5_ohlcv WHERE symbol = %s ORDER BY time DESC LIMIT 1",
             (db_symbol,)
         )
-        latest = cursor2.fetchone()
-        conn2.close()
+        latest = cursor.fetchone()
+        conn.close()
 
         current_price = float(latest[0]) if latest else float(result[2])
         open_price = float(result[2])  # Using avg as approximation for open
@@ -717,11 +782,83 @@ async def get_market_status_endpoint():
     """Get current market status and trading hours"""
     return get_market_status()
 
+@app.get("/api/v1/trading-calendar/is-trading-day")
+async def is_trading_day_endpoint(date: Optional[str] = Query(None, description="Date to check (YYYY-MM-DD format, defaults to today)")):
+    """
+    Check if a date is a valid trading day.
+
+    Returns information about whether the market is open, including:
+    - Whether it's a trading day
+    - If not, the reason (weekend or holiday name)
+    """
+    if date:
+        try:
+            check_date = datetime.strptime(date, "%Y-%m-%d")
+            # Localize to COT timezone
+            check_date = COT_TIMEZONE.localize(check_date.replace(hour=12, minute=0, second=0))
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid date format. Use YYYY-MM-DD (e.g., 2025-12-25)"
+            )
+    else:
+        check_date = datetime.now(COT_TIMEZONE)
+
+    is_trading = trading_cal.is_trading_day(check_date)
+
+    # Determine the reason if not a trading day
+    reason = trading_cal.get_violation_reason(check_date) if not is_trading else None
+
+    return {
+        "date": check_date.date().isoformat(),
+        "is_trading_day": is_trading,
+        "is_weekend": trading_cal.is_weekend(check_date),
+        "is_colombian_holiday": trading_cal.is_colombian_holiday(check_date),
+        "is_us_holiday": trading_cal.is_us_holiday(check_date),
+        "reason": reason,
+        "next_trading_day": trading_cal.get_next_trading_day(check_date).isoformat() if not is_trading else None
+    }
+
+@app.get("/api/v1/inference")
+async def get_inference():
+    """
+    Get trading inference - only available on trading days.
+
+    This endpoint checks if today is a valid trading day (not weekend/holiday)
+    before returning inference data.
+    """
+    now = datetime.now(COT_TIMEZONE)
+
+    # Check if today is a trading day
+    if not trading_cal.is_trading_day(now):
+        # Get the reason why it's not a trading day
+        reason = trading_cal.get_violation_reason(now)
+        next_trading = trading_cal.get_next_trading_day(now)
+
+        return {
+            "status": "market_closed",
+            "reason": reason,
+            "message": "No inference available - market is closed",
+            "current_date": now.date().isoformat(),
+            "next_trading_day": next_trading.isoformat(),
+            "is_weekend": trading_cal.is_weekend(now),
+            "is_colombian_holiday": trading_cal.is_colombian_holiday(now),
+            "is_us_holiday": trading_cal.is_us_holiday(now)
+        }
+
+    # TODO: Add actual inference logic here
+    # For now, return a placeholder response
+    return {
+        "status": "success",
+        "message": "Inference endpoint - implementation pending",
+        "timestamp": now.isoformat(),
+        "note": "This endpoint will return RL model predictions when implemented"
+    }
+
 if __name__ == "__main__":
     uvicorn.run(
-        "trading_api_realtime:app",
+        app,
         host="0.0.0.0",
         port=8000,
-        reload=True,
         log_level="info"
     )

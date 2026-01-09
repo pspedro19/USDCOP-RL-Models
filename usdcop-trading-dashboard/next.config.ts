@@ -162,16 +162,7 @@ const nextConfig: NextConfig = {
     ];
   },
   
-  // Redirects for SEO and performance
-  async redirects() {
-    return [
-      {
-        source: '/dashboard',
-        destination: '/',
-        permanent: true,
-      },
-    ];
-  },
+  // No redirects - each page serves its own purpose
 };
 
 export default nextConfig;

@@ -24,7 +24,14 @@ from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional, Tuple, Union
 import logging
 from functools import wraps
-import holidays
+
+# Optional holidays import
+try:
+    import holidays
+    HAS_HOLIDAYS = True
+except ImportError:
+    holidays = None
+    HAS_HOLIDAYS = False
 
 logger = logging.getLogger(__name__)
 

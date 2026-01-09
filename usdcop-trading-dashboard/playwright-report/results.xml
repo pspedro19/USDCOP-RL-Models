@@ -1,0 +1,66 @@
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="31.508791">
+<testsuite name="final-verification.spec.ts" timestamp="2026-01-09T08:45:00.554Z" hostname="chromium" tests="1" failures="0" skipped="0" time="27.361" errors="0">
+<testcase name="Final Dashboard Verification - v19 &amp; v20 Production Ready" classname="final-verification.spec.ts" time="27.361">
+<system-out>
+<![CDATA[
+=== MODELS CONFIGURATION ===
+
+PPO V19 Production (ppo_v19_prod)
+  Status: production
+  Real Data: true
+  Sharpe: 1.85
+  Win Rate: 0.58
+  Max DD: -12.3%
+  Test Period: 2024-01-01 to 2024-12-31
+
+PPO V20 Production (ppo_v20_prod)
+  Status: production
+  Real Data: true
+  Sharpe: 2.12
+  Win Rate: 0.712
+  Max DD: -6.8%
+  Test Period: 2024-01-01 to 2025-12-31
+
+SAC V1 Demo (sac_v1_demo)
+  Status: testing
+  Real Data: false
+  Sharpe: 1.62
+  Win Rate: 0.54
+  Max DD: -14.5%
+  Test Period: undefined
+
+LLM Claude Demo (llm_claude_demo)
+  Status: testing
+  Real Data: false
+  Sharpe: 1.38
+  Win Rate: 0.51
+  Max DD: -16.8%
+  Test Period: undefined
+
+Screenshot: final-v19-dashboard.png
+Screenshot: final-v20-dashboard.png
+
+=== ENDPOINT STATUS ===
+V19 Metrics: 200
+V20 Metrics: 200
+V19 Equity Curve: 200
+V20 Equity Curve: 200
+V19 Trades: 200
+V20 Trades: 200
+
+=== SUMMARY ===
+Production models configured:
+  - PPO V19 Production: REAL DATA
+  - PPO V20 Production: REAL DATA
+
+Console errors:
+  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)
+  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)
+  [ERROR] WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  [ERROR] WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

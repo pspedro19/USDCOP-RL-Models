@@ -1,0 +1,421 @@
+"""
+DAG: v3.l5_realtime_inference
+Layer 5: Realtime RL Model Inference (CRITICAL)
+
+MUST:
+1. Read feature_config.json for ALL config
+2. Build 15-dim observation: 13 features + position + time_normalized
+3. Load PPO model and generate signals every 5 minutes
+
+Validation (Defensive Programming):
+- bar_number must be in [1, BARS_PER_SESSION]
+- observation values must be in [-5, 5] after normalization
+- observation dimension must match expected (15)
+"""
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+import pandas as pd
+import numpy as np
+import psycopg2
+import os, logging, json
+import pytz
+
+# DRY: Using shared utilities (raise_on_error=False uses default config)
+from utils.dag_common import get_db_connection, load_feature_config
+
+CONFIG = load_feature_config(raise_on_error=False)
+DAG_ID = "v3.l5_realtime_inference"
+
+# SSOT: Model version from feature_config.json (DRY - single source)
+MODEL_VERSION = CONFIG.get("_meta", {}).get("model_id", "ppo_usdcop_v14")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), f"../../models/{MODEL_VERSION}_fold0.zip")
+
+FEATURES_ORDER = CONFIG["observation_space"]["order"]
+OBS_DIM_EXPECTED = CONFIG["observation_space"]["total_obs_dim"]
+BARS_PER_SESSION = CONFIG.get("trading", {}).get("bars_per_session", 60)
+OBS_CLIP_MIN = -5.0
+OBS_CLIP_MAX = 5.0
+
+# Cold Start Configuration (SSOT from feature_config.json)
+COLD_START_CONFIG = CONFIG.get("cold_start", {})
+MIN_WARMUP_BARS = COLD_START_CONFIG.get("min_warmup_bars", 50)
+MAX_OHLCV_STALENESS_MIN = COLD_START_CONFIG.get("max_ohlcv_staleness_minutes", 10)
+MAX_MACRO_STALENESS_HOURS = COLD_START_CONFIG.get("max_macro_staleness_hours", 48)
+
+
+def check_system_status() -> dict:
+    """
+    Check system readiness before inference (Cold Start Validation).
+
+    Returns dict with:
+    - status: 'READY', 'WARMUP', 'STALE', or 'ERROR'
+    - details: Human-readable explanation
+    - can_infer: Boolean - whether inference should proceed
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Check OHLCV data freshness
+        cur.execute("""
+            SELECT
+                COUNT(*) as total_bars,
+                MAX(time) as latest_time,
+                EXTRACT(EPOCH FROM (NOW() - MAX(time))) / 60 as age_minutes
+            FROM usdcop_m5_ohlcv
+            WHERE time > NOW() - INTERVAL '1 day'
+        """)
+        ohlcv_result = cur.fetchone()
+        total_bars, latest_ohlcv, ohlcv_age_min = ohlcv_result if ohlcv_result else (0, None, 999)
+
+        # Check macro data freshness
+        cur.execute("""
+            SELECT
+                MAX(fecha) as latest_date,
+                EXTRACT(EPOCH FROM (NOW() - MAX(fecha)::timestamp)) / 3600 as age_hours
+            FROM macro_indicators_daily
+        """)
+        macro_result = cur.fetchone()
+        latest_macro, macro_age_hours = macro_result if macro_result else (None, 999)
+
+        # Check inference features availability
+        cur.execute("""
+            SELECT COUNT(*)
+            FROM inference_features_5m
+            WHERE time > NOW() - INTERVAL '1 hour'
+        """)
+        recent_features = cur.fetchone()[0] or 0
+
+        # Determine status
+        ohlcv_age_min = ohlcv_age_min or 999
+        macro_age_hours = macro_age_hours or 999
+
+        if total_bars == 0 or latest_ohlcv is None:
+            return {
+                "status": "ERROR",
+                "details": "No OHLCV data available",
+                "can_infer": False,
+                "ohlcv_age_min": None,
+                "macro_age_hours": macro_age_hours,
+                "recent_features": recent_features
+            }
+
+        if ohlcv_age_min > MAX_OHLCV_STALENESS_MIN:
+            return {
+                "status": "STALE",
+                "details": f"OHLCV data is {ohlcv_age_min:.1f} min old (max: {MAX_OHLCV_STALENESS_MIN})",
+                "can_infer": False,
+                "ohlcv_age_min": ohlcv_age_min,
+                "macro_age_hours": macro_age_hours,
+                "recent_features": recent_features
+            }
+
+        if recent_features < MIN_WARMUP_BARS:
+            return {
+                "status": "WARMUP",
+                "details": f"Only {recent_features} features available (need {MIN_WARMUP_BARS} for RSI/ATR/ADX)",
+                "can_infer": True,  # Can still infer, but with degraded quality
+                "ohlcv_age_min": ohlcv_age_min,
+                "macro_age_hours": macro_age_hours,
+                "recent_features": recent_features
+            }
+
+        if macro_age_hours > MAX_MACRO_STALENESS_HOURS:
+            logging.warning(f"Macro data is {macro_age_hours:.1f}h old, using stale data")
+
+        return {
+            "status": "READY",
+            "details": f"System ready. OHLCV: {ohlcv_age_min:.1f}min ago, Macro: {macro_age_hours:.1f}h ago",
+            "can_infer": True,
+            "ohlcv_age_min": ohlcv_age_min,
+            "macro_age_hours": macro_age_hours,
+            "recent_features": recent_features
+        }
+
+    except Exception as e:
+        logging.error(f"Error checking system status: {e}")
+        return {
+            "status": "ERROR",
+            "details": str(e),
+            "can_infer": False,
+            "ohlcv_age_min": None,
+            "macro_age_hours": None,
+            "recent_features": 0
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+
+def validate_bar_number(bar_num: int) -> int:
+    """Validate bar_number is within expected range (Defensive Programming)."""
+    if bar_num < 1:
+        logging.warning(f"bar_number {bar_num} < 1, clamping to 1")
+        return 1
+    if bar_num > BARS_PER_SESSION:
+        logging.warning(f"bar_number {bar_num} > {BARS_PER_SESSION}, clamping to {BARS_PER_SESSION}")
+        return BARS_PER_SESSION
+    return bar_num
+
+
+def validate_observation(obs: np.ndarray) -> np.ndarray:
+    """Validate observation array (Defensive Programming)."""
+    # Check dimension
+    if len(obs) != OBS_DIM_EXPECTED:
+        raise ValueError(f"Observation dimension mismatch: {len(obs)} vs expected {OBS_DIM_EXPECTED}")
+
+    # Check for NaN/Inf
+    if np.any(np.isnan(obs)):
+        nan_indices = np.where(np.isnan(obs))[0]
+        logging.warning(f"NaN values in observation at indices {nan_indices}, replacing with 0")
+        obs = np.nan_to_num(obs, nan=0.0)
+
+    if np.any(np.isinf(obs)):
+        inf_indices = np.where(np.isinf(obs))[0]
+        logging.warning(f"Inf values in observation at indices {inf_indices}, clipping")
+        obs = np.clip(obs, OBS_CLIP_MIN, OBS_CLIP_MAX)
+
+    # Check value range
+    if np.any(obs < OBS_CLIP_MIN) or np.any(obs > OBS_CLIP_MAX):
+        logging.warning(f"Observation values outside [{OBS_CLIP_MIN}, {OBS_CLIP_MAX}], clipping")
+        obs = np.clip(obs, OBS_CLIP_MIN, OBS_CLIP_MAX)
+
+    return obs
+
+
+def get_bar_number():
+    """Calculate current bar number in trading session."""
+    cot_tz = pytz.timezone("America/Bogota")
+    now_cot = datetime.now(cot_tz)
+    market_start = now_cot.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now_cot < market_start:
+        return 1
+    elapsed = now_cot - market_start
+    bar_num = int(elapsed.total_seconds() / 300) + 1
+    return validate_bar_number(bar_num)
+
+def build_observation(**ctx):
+    logging.info(f"Building 15-dim observation. Expected features: {FEATURES_ORDER}")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # BUG FIX: Features are split across two tables:
+        # - inference_features_5m: 9 SQL features (returns, macro z-scores, macro changes)
+        # - python_features_5m: 4 Python features (rsi_9, atr_pct, adx_14, usdmxn_change_1d)
+        # We need to JOIN both tables to get all 13 features IN CORRECT ORDER
+
+        # Define which table each feature comes from (SSOT from feature_config.json)
+        sql_table_features = {'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
+                              'dxy_z', 'dxy_change_1d', 'vix_z', 'embi_z',
+                              'brent_change_1d', 'rate_spread'}
+        python_table_features = {'rsi_9', 'atr_pct', 'adx_14', 'usdmxn_change_1d'}
+
+        # Build SELECT in FEATURES_ORDER (critical for observation vector)
+        select_cols = []
+        for feature in FEATURES_ORDER:
+            if feature in sql_table_features:
+                select_cols.append(f"s.{feature}")
+            elif feature in python_table_features:
+                select_cols.append(f"p.{feature}")
+            else:
+                raise ValueError(f"Unknown feature source: {feature}")
+
+        feature_select = ", ".join(select_cols)
+
+        query = f"""
+            SELECT s.time, {feature_select}
+            FROM inference_features_5m s
+            LEFT JOIN python_features_5m p ON s.time = p.time
+            ORDER BY s.time DESC
+            LIMIT 1
+        """
+        cur.execute(query)
+
+        result = cur.fetchone()
+        if not result:
+            raise ValueError("No features available for inference")
+
+        # Features are now in FEATURES_ORDER (indices 1-13, index 0 is time)
+        feature_values = result[1:]
+
+        # Validate feature values (Defensive Programming)
+        for i, val in enumerate(feature_values):
+            if val is None:
+                logging.warning(f"Feature {FEATURES_ORDER[i]} is NULL, replacing with 0")
+                feature_values = list(feature_values)
+                feature_values[i] = 0.0
+
+        cur.execute("SELECT position FROM dw.fact_agent_actions ORDER BY timestamp DESC LIMIT 1")
+        pos_result = cur.fetchone()
+        position = pos_result[0] if pos_result else 0.0
+
+        # Validate position (Defensive Programming)
+        if position < -1.0 or position > 1.0:
+            logging.warning(f"Position {position} outside [-1, 1], clamping")
+            position = max(-1.0, min(1.0, position))
+
+        bar_num = get_bar_number()
+        time_normalized = (bar_num - 1) / float(BARS_PER_SESSION)
+
+        obs = np.array(list(feature_values) + [position, time_normalized], dtype=np.float32)
+
+        # Apply comprehensive validation
+        obs = validate_observation(obs)
+
+        logging.info(f"Observation (dim={len(obs)}): {obs}")
+
+        ctx["ti"].xcom_push(key="observation", value=obs.tolist())
+        ctx["ti"].xcom_push(key="bar_number", value=bar_num)
+
+        return {"status": "success", "dim": len(obs)}
+
+    finally:
+        cur.close()
+        conn.close()
+
+def run_inference(**ctx):
+    logging.info("Running model inference...")
+
+    try:
+        from stable_baselines3 import PPO
+    except ImportError:
+        logging.error("stable_baselines3 not installed")
+        raise
+
+    ti = ctx["ti"]
+    obs = ti.xcom_pull(task_ids="build_observation", key="observation")
+    bar_num = ti.xcom_pull(task_ids="build_observation", key="bar_number")
+
+    if not obs:
+        raise ValueError("No observation available")
+
+    obs_array = np.array(obs, dtype=np.float32)
+
+    # Validate observation before inference (Defensive Programming)
+    obs_array = validate_observation(obs_array)
+    bar_num = validate_bar_number(bar_num)
+
+    if not os.path.exists(MODEL_PATH):
+        raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
+
+    model = PPO.load(MODEL_PATH)
+    action, _ = model.predict(obs_array, deterministic=True)
+
+    # Validate action output (Defensive Programming)
+    action_float = float(action)
+    if not np.isfinite(action_float):
+        logging.error(f"Model produced invalid action: {action_float}")
+        raise ValueError(f"Invalid action from model: {action_float}")
+
+    logging.info(f"Action: {action_float} (bar {bar_num})")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""CREATE TABLE IF NOT EXISTS dw.fact_rl_inference (
+            id SERIAL PRIMARY KEY,
+            timestamp TIMESTAMPTZ DEFAULT NOW(),
+            bar_number INT,
+            action DOUBLE PRECISION
+        )""")
+
+        cur.execute("INSERT INTO dw.fact_rl_inference (bar_number, action) VALUES (%s, %s)",
+                    (bar_num, action_float))
+        conn.commit()
+
+    finally:
+        cur.close()
+        conn.close()
+
+    ti.xcom_push(key="action", value=action_float)
+    return {"status": "success", "action": action_float, "bar_number": bar_num}
+
+def validate_inference(**ctx):
+    ti = ctx["ti"]
+    action = ti.xcom_pull(task_ids="run_inference", key="action")
+    if action is None:
+        raise ValueError("Inference failed")
+    return {"status": "valid"}
+
+
+def check_cold_start(**ctx):
+    """
+    Cold Start Validation Task.
+
+    Checks system readiness before attempting inference.
+    Prevents garbage predictions during:
+    - System startup (insufficient warmup data)
+    - Data pipeline failures (stale OHLCV)
+    - Weekend/holiday gaps
+
+    Returns status and pushes to XCom for downstream tasks.
+    """
+    status = check_system_status()
+
+    logging.info(f"System Status: {status['status']} - {status['details']}")
+
+    # Push status for downstream logging/monitoring
+    ctx["ti"].xcom_push(key="system_status", value=status)
+
+    if not status["can_infer"]:
+        logging.error(f"Cannot proceed with inference: {status['details']}")
+        raise ValueError(f"Cold start check failed: {status['status']} - {status['details']}")
+
+    if status["status"] == "WARMUP":
+        logging.warning(f"System in WARMUP mode: {status['details']}. Inference may be degraded.")
+
+    return status
+
+
+default_args = {
+    "owner": "trading-team",
+    "start_date": datetime(2024, 1, 1),
+    "retries": 1,
+    "retry_delay": timedelta(minutes=1)
+}
+
+dag = DAG(
+    DAG_ID,
+    default_args=default_args,
+    description="V3 L5: Realtime inference (15-dim obs, config-driven)",
+    schedule_interval="*/5 13-17 * * 1-5",
+    catchup=False,
+    max_active_runs=1,
+    tags=["v3", "l5", "inference"]
+)
+
+with dag:
+    # Task 0: Cold Start Validation (prevents garbage predictions)
+    cold_start = PythonOperator(
+        task_id="check_cold_start",
+        python_callable=check_cold_start,
+        provide_context=True
+    )
+
+    # Task 1: Build 15-dim observation
+    build_obs = PythonOperator(
+        task_id="build_observation",
+        python_callable=build_observation,
+        provide_context=True
+    )
+
+    # Task 2: Run PPO model inference
+    infer = PythonOperator(
+        task_id="run_inference",
+        python_callable=run_inference,
+        provide_context=True
+    )
+
+    # Task 3: Validate inference output
+    validate = PythonOperator(
+        task_id="validate_inference",
+        python_callable=validate_inference,
+        provide_context=True
+    )
+
+    # Pipeline: cold_start -> build_obs -> infer -> validate
+    cold_start >> build_obs >> infer >> validate

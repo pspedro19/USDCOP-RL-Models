@@ -1547,3 +1547,39 @@ html[data-color-mode="high-contrast"] * {
 .skip-to-content:focus {
   top: 0;
 }
+
+/* ======================================
+   LANDING PAGE STYLES
+   Neutraliza los backgrounds asimétricos
+   del body para la landing page
+   ====================================== */
+
+/* Cuando el contenedor landing está presente,
+   oculta los pseudo-elementos del body */
+body:has(.landing-root) {
+  background: #0a0a0f !important;
+  background-image: none !important;
+}
+
+body:has(.landing-root)::before,
+body:has(.landing-root)::after {
+  display: none !important;
+}
+
+/* Clase utilitaria para el contenedor raíz de landing */
+.landing-root {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background-color: #0a0a0f;
+  isolation: isolate;
+}
+
+/* Reset cualquier offset del body/html */
+.landing-root * {
+  box-sizing: border-box;
+}

@@ -1,40 +1,25 @@
 /**
- * Views Configuration - Dynamic Navigation System
- * ==============================================
+ * Views Configuration - Professional Trading Dashboard
+ * =====================================================
  *
- * Configuración centralizada de todas las vistas del sistema
- * 100% configurable - NO hardcoded en componentes
- *
- * Benefits:
- * - Single source of truth para navegación
- * - Fácil agregar/remover vistas
- * - Configuración por roles (futuro)
- * - Puede extenderse para cargar desde API/database
+ * Configuración de las 4 vistas principales para usuarios finales
+ * 100% datos reales desde el backend
  */
 
 import {
   Activity,
-  LineChart,
   Signal,
   TrendingUp,
   Zap,
-  Shield,
-  AlertTriangle,
-  Database,
-  BarChart3,
-  GitBranch,
-  Brain,
-  Cpu,
   Target,
-  Layers,
-  Settings
+  BarChart2
 } from 'lucide-react';
 
 export interface ViewConfig {
   id: string;
   name: string;
   icon: any; // LucideIcon
-  category: 'Trading' | 'Risk' | 'Pipeline' | 'System';
+  category: 'Trading' | 'Analysis';
   description: string;
   priority: 'high' | 'medium' | 'low';
   enabled?: boolean;
@@ -50,154 +35,48 @@ export interface CategoryConfig {
 }
 
 /**
- * All available views in the system
- * Easy to modify, extend, or load from API
+ * Professional Trading Views - 4 vistas principales
  */
 export const VIEWS: ViewConfig[] = [
-  // ===== TRADING VIEWS (5) =====
-  {
-    id: 'dashboard-home',
-    name: 'Dashboard Home',
-    icon: Activity,
-    category: 'Trading',
-    description: 'Professional USDCOP trading chart with full features',
-    priority: 'high',
-    enabled: false,  // DISABLED - Replaced by Live Trading and Trading Signals
-    requiresAuth: true
-  },
+  // ===== TRADING (3 vistas) =====
   {
     id: 'live-terminal',
     name: 'Live Trading',
     icon: Signal,
     category: 'Trading',
-    description: 'Real-time trading terminal with live data',
-    priority: 'high',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'executive-overview',
-    name: 'Executive Overview',
-    icon: TrendingUp,
-    category: 'Trading',
-    description: 'Executive trading dashboard overview',
+    description: 'Real-time chart with live market data',
     priority: 'high',
     enabled: true,
     requiresAuth: true
   },
   {
     id: 'trading-signals',
-    name: 'Trading Signals',
+    name: 'Signals & Trades',
     icon: Zap,
     category: 'Trading',
-    description: 'Multi-model trading signals (RL+ML+LLM) with equity curves',
-    priority: 'high',
-    enabled: true,
-    requiresAuth: true
-  },
-
-  // ===== RISK MANAGEMENT (2) =====
-  // DISABLED - Not needed per user request
-  {
-    id: 'risk-monitor',
-    name: 'Risk Monitor',
-    icon: Shield,
-    category: 'Risk',
-    description: 'Real-time risk monitoring and alerts',
-    priority: 'high',
-    enabled: false,  // DISABLED
-    requiresAuth: true
-  },
-  {
-    id: 'risk-alerts',
-    name: 'Risk Alerts',
-    icon: AlertTriangle,
-    category: 'Risk',
-    description: 'Risk alert management center',
-    priority: 'medium',
-    enabled: false,  // DISABLED
-    requiresAuth: true
-  },
-
-  // ===== DATA PIPELINE L0-L6 (6) =====
-  {
-    id: 'pipeline-status',
-    name: 'Pipeline Status',
-    icon: Layers,
-    category: 'Pipeline',
-    description: 'Real-time pipeline health monitoring (L0, L2, L4, L6)',
+    description: 'Multi-model signals and trade history',
     priority: 'high',
     enabled: true,
     requiresAuth: true
   },
   {
-    id: 'l0-raw-data',
-    name: 'L0 - Raw Data',
-    icon: Database,
-    category: 'Pipeline',
-    description: 'Raw USDCOP market data visualization',
-    priority: 'medium',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'l1-features',
-    name: 'L1 - Features',
-    icon: BarChart3,
-    category: 'Pipeline',
-    description: 'Feature statistics and analysis',
-    priority: 'medium',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'l2-prepare',
-    name: 'L2 - Prepare',
-    icon: Settings,
-    category: 'Pipeline',
-    description: 'Data preparation and quality metrics',
-    priority: 'medium',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'l3-correlations',
-    name: 'L3 - Correlations',
-    icon: GitBranch,
-    category: 'Pipeline',
-    description: 'Correlation matrix and analysis',
-    priority: 'medium',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'l4-rl-ready',
-    name: 'L4 - RL Ready',
-    icon: Brain,
-    category: 'Pipeline',
-    description: 'RL-ready data preparation dashboard',
-    priority: 'medium',
-    enabled: true,
-    requiresAuth: true
-  },
-  {
-    id: 'l5-model',
-    name: 'L5 - Model',
-    icon: Cpu,
-    category: 'Pipeline',
-    description: 'Model performance and metrics',
-    priority: 'medium',
+    id: 'executive-overview',
+    name: 'Executive Dashboard',
+    icon: TrendingUp,
+    category: 'Trading',
+    description: 'Portfolio KPIs and performance metrics',
+    priority: 'high',
     enabled: true,
     requiresAuth: true
   },
 
-  // ===== SYSTEM (1) =====
+  // ===== ANALYSIS (1 vista) =====
   {
     id: 'backtest-results',
-    name: 'Backtest Results',
+    name: 'Performance & Backtest',
     icon: Target,
-    category: 'System',
-    description: 'Comprehensive backtest analysis and L6 results',
+    category: 'Analysis',
+    description: 'Equity curves and backtest analysis',
     priority: 'high',
     enabled: true,
     requiresAuth: true
@@ -205,32 +84,20 @@ export const VIEWS: ViewConfig[] = [
 ];
 
 /**
- * Category configuration
+ * Category configuration - Solo 2 categorías profesionales
  */
 export const CATEGORIES: Record<string, CategoryConfig> = {
   Trading: {
     name: 'Trading',
     color: 'from-cyan-400 to-blue-400',
     bgColor: 'from-cyan-500/10 to-blue-500/10',
-    description: 'Real-time trading terminals and analysis'
+    description: 'Real-time trading and monitoring'
   },
-  // Risk: {  // REMOVED - Not needed per user request
-  //   name: 'Risk',
-  //   color: 'from-red-400 to-orange-400',
-  //   bgColor: 'from-red-500/10 to-orange-500/10',
-  //   description: 'Risk management and monitoring'
-  // },
-  Pipeline: {
-    name: 'Pipeline',
-    color: 'from-green-400 to-emerald-400',
-    bgColor: 'from-green-500/10 to-emerald-500/10',
-    description: 'Data processing pipeline L0-L5'
-  },
-  System: {
-    name: 'System',
+  Analysis: {
+    name: 'Analysis',
     color: 'from-purple-400 to-pink-400',
     bgColor: 'from-purple-500/10 to-pink-500/10',
-    description: 'System analysis and backtesting'
+    description: 'Performance analysis and backtesting'
   }
 };
 

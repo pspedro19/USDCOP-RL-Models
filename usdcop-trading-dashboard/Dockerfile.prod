@@ -33,6 +33,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build optimizations
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# Dummy DB config for build time (actual values provided at runtime)
+ENV POSTGRES_HOST=localhost
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_DB=usdcop_trading
+ENV POSTGRES_USER=admin
+ENV POSTGRES_PASSWORD=build_placeholder
+ENV DATABASE_URL=postgresql://admin:build_placeholder@localhost:5432/usdcop_trading
+
 # Build the application (skip ESLint for faster builds)
 # Disable ESLint during build
 RUN echo '{"extends": "next/core-web-vitals", "rules": {"@typescript-eslint/no-explicit-any": "off", "@typescript-eslint/no-unused-vars": "off"}}' > .eslintrc.json

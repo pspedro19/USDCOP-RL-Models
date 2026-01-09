@@ -1,0 +1,204 @@
+"""
+DAG: v3.l0_macro_daily
+=======================
+Daily Macro Indicators Collection - PRE-SESSION
+
+Purpose:
+    Collects macro indicators BEFORE trading session starts (7:50am COT).
+    These values are then forward-filled by L1 into each 5-min bar.
+
+Schedule:
+    50 12 * * 1-5 (7:50am COT = 12:50 UTC, Mon-Fri)
+
+Data Collected:
+    - DXY (Dollar Index)
+    - VIX (Volatility Index)
+    - Brent Crude Oil
+    - USDMXN (for correlation)
+    - Treasury 2Y, 10Y (for rate_spread)
+
+Data Flow:
+    yfinance → macro_indicators_daily → (ffill by L1) → inference_features_5m
+"""
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.empty import EmptyOperator
+import pandas as pd
+import psycopg2
+from psycopg2.extras import execute_values
+import os, logging, json
+import yfinance as yf
+import sys
+from pathlib import Path
+
+# Trading calendar from utils
+from utils.trading_calendar import TradingCalendar
+
+# DRY: Using shared utilities
+from utils.dag_common import get_db_connection, load_feature_config
+
+DAG_ID = "v3.l0_macro_daily"
+CONFIG = load_feature_config()
+
+# Initialize trading calendar
+trading_cal = TradingCalendar()
+
+def should_run_today():
+    """Check if today is a valid trading day."""
+    today = datetime.now()
+    if not trading_cal.is_trading_day(today):
+        reason = trading_cal.get_violation_reason(today)
+        logging.info(f"Skipping - {today.date()}: {reason}")
+        return False
+    return True
+
+def fetch_macro_data():
+    data = {}
+    tickers = {"dxy": "^DXY", "vix": "^VIX", "brent": "BZ=F", "usdmxn": "USDMXN=X",
+               "treasury_2y": "^TNX", "treasury_10y": "^TYX"}
+    for name, ticker in tickers.items():
+        try:
+            hist = yf.Ticker(ticker).history(period="1d")
+            if not hist.empty:
+                data[name] = hist["Close"].iloc[-1]
+        except:
+            data[name] = None
+    return pd.DataFrame([{"date": datetime.now().date(), **data}])
+
+def insert_macro_data(df, conn):
+    if df.empty:
+        return 0
+    cur = conn.cursor()
+    try:
+        cur.execute("""CREATE TABLE IF NOT EXISTS macro_indicators_daily (
+            date DATE PRIMARY KEY,
+            dxy DOUBLE PRECISION,
+            vix DOUBLE PRECISION,
+            brent DOUBLE PRECISION,
+            treasury_2y DOUBLE PRECISION,
+            treasury_10y DOUBLE PRECISION,
+            usdmxn DOUBLE PRECISION,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )""")
+        values = [(row["date"], row.get("dxy"), row.get("vix"), row.get("brent"),
+                  row.get("treasury_2y"), row.get("treasury_10y"), row.get("usdmxn"))
+                  for _, row in df.iterrows()]
+        execute_values(cur, """INSERT INTO macro_indicators_daily
+            (date, dxy, vix, brent, treasury_2y, treasury_10y, usdmxn)
+            VALUES %s ON CONFLICT (date) DO UPDATE SET
+                dxy = EXCLUDED.dxy,
+                vix = EXCLUDED.vix,
+                brent = EXCLUDED.brent,
+                treasury_2y = EXCLUDED.treasury_2y,
+                treasury_10y = EXCLUDED.treasury_10y,
+                usdmxn = EXCLUDED.usdmxn,
+                created_at = NOW()""", values)
+        conn.commit()
+        return len(values)
+    finally:
+        cur.close()
+
+def collect_macro(**ctx):
+    df = fetch_macro_data()
+    conn = get_db_connection()
+    rows = insert_macro_data(df, conn)
+    conn.close()
+    return {"status": "success", "rows": rows}
+
+def validate_macro(**ctx):
+    """
+    Validate macro data and check for holiday/weekend data.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Check today's data
+        cur.execute("SELECT COUNT(*) FROM macro_indicators_daily WHERE date = CURRENT_DATE")
+        count = cur.fetchone()[0]
+
+        # Validate no holiday data exists (check last 7 days)
+        cur.execute("""
+            SELECT DISTINCT date
+            FROM macro_indicators_daily
+            WHERE date >= CURRENT_DATE - INTERVAL '7 days'
+            ORDER BY date DESC
+        """)
+
+        dates_with_data = [row[0] for row in cur.fetchall()]
+        invalid_dates = []
+
+        for trade_date in dates_with_data:
+            if not trading_cal.is_trading_day(trade_date):
+                reason = trading_cal.get_violation_reason(trade_date)
+                invalid_dates.append({
+                    'date': str(trade_date),
+                    'reason': reason
+                })
+
+        if invalid_dates:
+            logging.warning(f"Found macro data on {len(invalid_dates)} non-trading days: {invalid_dates}")
+
+        ctx['ti'].xcom_push(key='invalid_trading_dates', value=invalid_dates)
+
+        return {
+            "status": "ok" if count > 0 else "incomplete",
+            "invalid_dates_found": len(invalid_dates)
+        }
+
+    finally:
+        cur.close()
+        conn.close()
+
+default_args = {
+    "owner": "trading-team",
+    "start_date": datetime(2024, 1, 1),
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5)
+}
+
+dag = DAG(
+    DAG_ID,
+    default_args=default_args,
+    description="V3 L0: Daily macro indicators PRE-SESSION (7:50am COT)",
+    schedule_interval="50 12 * * 1-5",  # 7:50am COT = 12:50 UTC
+    catchup=False,
+    max_active_runs=1,
+    tags=["v3", "l0", "macro", "pre-session"]
+)
+
+with dag:
+    # Check if today is a trading day
+    def check_trading_day(**context):
+        """Branch task to skip processing on holidays/weekends."""
+        if should_run_today():
+            return 'collect_macro'
+        else:
+            return 'skip_processing'
+
+    task_check_trading_day = BranchPythonOperator(
+        task_id='check_trading_day',
+        python_callable=check_trading_day,
+        provide_context=True
+    )
+
+    task_skip = EmptyOperator(
+        task_id='skip_processing'
+    )
+
+    collect = PythonOperator(
+        task_id="collect_macro",
+        python_callable=collect_macro,
+        provide_context=True
+    )
+
+    validate = PythonOperator(
+        task_id="validate_macro",
+        python_callable=validate_macro,
+        provide_context=True
+    )
+
+    # Task dependencies
+    task_check_trading_day >> [collect, task_skip]
+    collect >> validate

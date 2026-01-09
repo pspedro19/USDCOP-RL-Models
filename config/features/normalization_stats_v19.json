@@ -1,0 +1,257 @@
+{
+  "_meta": {
+    "version": "V19",
+    "created_at": "2025-12-26",
+    "description": "Normalization statistics for quick loading during inference",
+    "source": "Training data 2020-03 to 2025-12",
+    "note": "These are EXACT values used during model training - DO NOT MODIFY"
+  },
+
+  "market_features": {
+    "log_ret_5m": {
+      "mean": 2.0e-06,
+      "std": 0.001138,
+      "clip_min": -0.05,
+      "clip_max": 0.05,
+      "method": "z_score"
+    },
+    "log_ret_1h": {
+      "mean": 2.3e-05,
+      "std": 0.003776,
+      "clip_min": -0.05,
+      "clip_max": 0.05,
+      "method": "z_score"
+    },
+    "log_ret_4h": {
+      "mean": 5.2e-05,
+      "std": 0.007768,
+      "clip_min": -0.05,
+      "clip_max": 0.05,
+      "method": "z_score"
+    },
+    "rsi_9": {
+      "mean": 49.27,
+      "std": 23.07,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "z_score"
+    },
+    "atr_pct": {
+      "mean": 0.062,
+      "std": 0.0446,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "z_score"
+    },
+    "adx_14": {
+      "mean": 32.01,
+      "std": 16.36,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "z_score"
+    },
+    "bb_position": {
+      "mean": null,
+      "std": null,
+      "clip_min": 0.0,
+      "clip_max": 1.0,
+      "method": "none"
+    },
+    "dxy_z": {
+      "mean": 100.21,
+      "std": 5.60,
+      "clip_min": -4,
+      "clip_max": 4,
+      "method": "z_score"
+    },
+    "dxy_change_1d": {
+      "mean": null,
+      "std": null,
+      "clip_min": -0.03,
+      "clip_max": 0.03,
+      "method": "clip_only"
+    },
+    "dxy_mom_5d": {
+      "mean": null,
+      "std": null,
+      "clip_min": -0.05,
+      "clip_max": 0.05,
+      "method": "clip_only"
+    },
+    "vix_z": {
+      "mean": 21.16,
+      "std": 7.89,
+      "clip_min": -4,
+      "clip_max": 4,
+      "method": "z_score"
+    },
+    "embi_z": {
+      "mean": 322.01,
+      "std": 62.68,
+      "clip_min": -4,
+      "clip_max": 4,
+      "method": "z_score"
+    },
+    "brent_change_1d": {
+      "mean": null,
+      "std": null,
+      "clip_min": -0.10,
+      "clip_max": 0.10,
+      "method": "clip_only"
+    },
+    "brent_vol_5d": {
+      "mean": null,
+      "std": null,
+      "clip_min": 0.0,
+      "clip_max": 0.05,
+      "method": "clip_only"
+    },
+    "rate_spread": {
+      "mean": 7.03,
+      "std": 1.41,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "z_score"
+    },
+    "usdmxn_change_1d": {
+      "mean": null,
+      "std": null,
+      "clip_min": -0.10,
+      "clip_max": 0.10,
+      "method": "clip_only"
+    },
+    "hour_sin": {
+      "mean": null,
+      "std": null,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "none"
+    },
+    "hour_cos": {
+      "mean": null,
+      "std": null,
+      "clip_min": null,
+      "clip_max": null,
+      "method": "none"
+    }
+  },
+
+  "state_features": {
+    "position": {
+      "method": "none",
+      "range": [-1.0, 1.0]
+    },
+    "unrealized_pnl": {
+      "method": "clip_normalize",
+      "divisor": 0.05,
+      "clip": [-1, 1]
+    },
+    "cumulative_return": {
+      "method": "clip_normalize",
+      "divisor": 0.10,
+      "clip": [-1, 1]
+    },
+    "current_drawdown": {
+      "method": "scale_negative",
+      "divisor_key": "max_drawdown_pct"
+    },
+    "max_drawdown_episode": {
+      "method": "scale_negative",
+      "divisor_key": "max_drawdown_pct"
+    },
+    "regime_encoded": {
+      "method": "none",
+      "range": [-0.5, 1.0]
+    },
+    "session_phase": {
+      "method": "none",
+      "range": [0.1, 0.8]
+    },
+    "volatility_regime": {
+      "method": "percentile",
+      "range": [0.0, 1.0]
+    },
+    "cost_regime": {
+      "method": "none",
+      "range": [0.0, 1.0]
+    },
+    "position_duration": {
+      "method": "min_scale",
+      "divisor": 100,
+      "clip": [0, 1]
+    },
+    "trade_count_normalized": {
+      "method": "min_scale",
+      "divisor": 50,
+      "clip": [0, 1]
+    },
+    "time_remaining": {
+      "method": "none",
+      "range": [0.0, 1.0]
+    }
+  },
+
+  "feature_order": {
+    "state_features": [
+      "position",
+      "unrealized_pnl",
+      "cumulative_return",
+      "current_drawdown",
+      "max_drawdown_episode",
+      "regime_encoded",
+      "session_phase",
+      "volatility_regime",
+      "cost_regime",
+      "position_duration",
+      "trade_count_normalized",
+      "time_remaining"
+    ],
+    "market_features": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "bb_position",
+      "dxy_z",
+      "dxy_change_1d",
+      "dxy_mom_5d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "brent_vol_5d",
+      "rate_spread",
+      "usdmxn_change_1d",
+      "hour_sin",
+      "hour_cos"
+    ]
+  },
+
+  "quick_reference": {
+    "returns_features": {
+      "log_ret_5m": {"mean": 2.0e-06, "std": 0.001138},
+      "log_ret_1h": {"mean": 2.3e-05, "std": 0.003776},
+      "log_ret_4h": {"mean": 5.2e-05, "std": 0.007768}
+    },
+    "technical_features": {
+      "rsi_9": {"mean": 49.27, "std": 23.07},
+      "atr_pct": {"mean": 0.062, "std": 0.0446},
+      "adx_14": {"mean": 32.01, "std": 16.36}
+    },
+    "macro_zscore_features": {
+      "dxy_z": {"mean": 100.21, "std": 5.60},
+      "vix_z": {"mean": 21.16, "std": 7.89},
+      "embi_z": {"mean": 322.01, "std": 62.68},
+      "rate_spread": {"mean": 7.03, "std": 1.41}
+    },
+    "clip_only_features": {
+      "dxy_change_1d": {"clip": [-0.03, 0.03]},
+      "dxy_mom_5d": {"clip": [-0.05, 0.05]},
+      "brent_change_1d": {"clip": [-0.10, 0.10]},
+      "brent_vol_5d": {"clip": [0.0, 0.05]},
+      "usdmxn_change_1d": {"clip": [-0.10, 0.10]},
+      "bb_position": {"clip": [0.0, 1.0]}
+    }
+  }
+}

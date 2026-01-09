@@ -1,0 +1,258 @@
+REPORTE DE ANALISIS - DATASETS RL
+============================================================
+Fecha: 2025-12-25 16:05:35
+
+------------------------------------------------------------
+DATASET: RL_DS1_MINIMAL.csv
+------------------------------------------------------------
+Columnas totales: 14
+Columnas OK: 9 (64.3%)
+
+Columnas recomendadas (10):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - rsi_9
+  - bb_position
+  - dxy_z
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS2_TECHNICAL_MTF.csv
+------------------------------------------------------------
+Columnas totales: 18
+Columnas OK: 11 (61.1%)
+
+Columnas recomendadas (12):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - rsi_9
+  - rsi_9_15m
+  - rsi_9_1h
+  - adx_14
+  - bb_position
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS3_MACRO_CORE.csv
+------------------------------------------------------------
+Columnas totales: 22
+Columnas OK: 14 (63.6%)
+
+Columnas recomendadas (16):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - rsi_9
+  - adx_14
+  - bb_position
+  - dxy_z
+  - dxy_change_1d
+  - dxy_mom_5d
+  - embi_z
+  - brent_change_1d
+  - rate_spread
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS4_COST_AWARE.csv
+------------------------------------------------------------
+Columnas totales: 20
+Columnas OK: 14 (70.0%)
+
+Columnas recomendadas (14):
+  - open
+  - high
+  - low
+  - close
+  - ret_atr_adj
+  - rsi_9
+  - rsi_extreme
+  - adx_14
+  - adx_strong
+  - atr_percentile
+  - vol_regime
+  - dxy_z
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS5_REGIME.csv
+------------------------------------------------------------
+Columnas totales: 29
+Columnas OK: 19 (65.5%)
+
+Columnas recomendadas (21):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - rsi_9
+  - adx_14
+  - bb_position
+  - dxy_z
+  - dxy_change_1d
+  - dxy_mom_5d
+  - vix_regime
+  - embi_z
+  - embi_change_5d
+  - brent_change_1d
+  - rate_spread
+  - curve_slope_z
+  - usdclp_change_1d
+  - hour_sin
+  - hour_cos
+  - dow_sin
+
+------------------------------------------------------------
+DATASET: RL_DS6_CARRY_TRADE.csv
+------------------------------------------------------------
+Columnas totales: 22
+Columnas OK: 16 (72.7%)
+
+Columnas recomendadas (17):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - spread_z_20d
+  - col_curve_normalized
+  - usa_curve_normalized
+  - usa_curve_inverted
+  - policy_spread_normalized
+  - ibr_tpm_normalized
+  - col_hiking
+  - fed_hiking
+  - embi_z
+  - vix_regime
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS7_COMMODITY_BASKET.csv
+------------------------------------------------------------
+Columnas totales: 21
+Columnas OK: 17 (81.0%)
+
+Columnas recomendadas (18):
+  - open
+  - high
+  - low
+  - close
+  - brent_z
+  - brent_change_1d
+  - brent_mom_5d
+  - wti_z
+  - brent_wti_spread_z
+  - coffee_z
+  - coffee_change_1d
+  - gold_z
+  - gold_change_1d
+  - colcap_z
+  - colcap_change_1d
+  - dxy_z
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS8_RISK_SENTIMENT.csv
+------------------------------------------------------------
+Columnas totales: 25
+Columnas OK: 18 (72.0%)
+
+Columnas recomendadas (20):
+  - open
+  - high
+  - low
+  - close
+  - vix_regime
+  - vix_change_1d
+  - vix_percentile_20d
+  - embi_z
+  - embi_change_1d
+  - embi_change_5d
+  - embi_percentile_20d
+  - usdmxn_z
+  - usdclp_change_1d
+  - gold_change_1d
+  - dxy_change_1d
+  - colcap_change_1d
+  - rsi_9
+  - bb_position
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS9_FED_WATCH.csv
+------------------------------------------------------------
+Columnas totales: 21
+Columnas OK: 13 (61.9%)
+
+Columnas recomendadas (15):
+  - open
+  - high
+  - low
+  - close
+  - log_ret_4h
+  - fed_hawkish
+  - cpi_accelerating
+  - labor_tight
+  - labor_weak
+  - rates_restrictive
+  - rates_accommodative
+  - usa_curve_normalized
+  - usa_curve_inverted
+  - hour_sin
+  - hour_cos
+
+------------------------------------------------------------
+DATASET: RL_DS10_FLOWS_FUNDAMENTALS.csv
+------------------------------------------------------------
+Columnas totales: 18
+Columnas OK: 16 (88.9%)
+
+Columnas recomendadas (16):
+  - open
+  - high
+  - low
+  - close
+  - ied_normalized
+  - ied_growing
+  - ca_normalized
+  - ca_improving
+  - exports_growing
+  - trade_improving
+  - itcr_deviation
+  - itcr_change_1m
+  - reserves_falling
+  - embi_z
+  - hour_sin
+  - hour_cos
+
+============================================================
+TABLA COMPARATIVA
+============================================================
+Dataset                        Total    OK       Remove   Score   
+------------------------------------------------------------
+RL_DS1_MINIMAL.csv             14       10       0        71.4%
+RL_DS2_TECHNICAL_MTF.csv       18       12       0        66.7%
+RL_DS3_MACRO_CORE.csv          22       16       0        72.7%
+RL_DS4_COST_AWARE.csv          20       14       0        70.0%
+RL_DS5_REGIME.csv              29       21       0        72.4%
+RL_DS6_CARRY_TRADE.csv         22       17       0        77.3%
+RL_DS7_COMMODITY_BASKET.csv    21       18       0        85.7%
+RL_DS8_RISK_SENTIMENT.csv      25       20       0        80.0%
+RL_DS9_FED_WATCH.csv           21       15       0        71.4%
+RL_DS10_FLOWS_FUNDAMENTALS.csv 18       16       0        88.9%

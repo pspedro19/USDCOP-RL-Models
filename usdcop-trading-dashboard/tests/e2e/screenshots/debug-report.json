@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-01-08T08:42:40.689Z",
+  "url": "http://localhost:3000/dashboard",
+  "consoleLogs": [
+    "[INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "[ERROR] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <InnerLayoutRouter url=\"/login\" tree={[...]} cacheNode={{lazyData:null, ...}} segmentPath={[...]}>\n      <SegmentViewNode type=\"page\" pagePath=\"login/page...\">\n        <SegmentTrieNode>\n        <ClientPageRoot Component={function LoginPage} searchParams={{}} params={{}}>\n          <LoginPage params={Promise} searchParams={Promise}>\n            <div className=\"min-h-scre...\">\n              <div>\n              <div>\n              <div className=\"flex-1 fle...\">\n                <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:0.6, ...}} ...>\n                  <div className=\"w-full max...\" style={{opacity:0, ...}} ref={function}>\n                    <div>\n                    <div className=\"glass-surf...\">\n                      <div>\n                      <form onSubmit={function handleLogin} className=\"p-4 sm:p-6...\">\n                        <div className=\"space-y-2\">\n                          <label>\n                          <div className=\"relative\">\n                            <input\n                              type=\"text\"\n                              value=\"\"\n                              onChange={function onChange}\n                              className=\"w-full px-4 py-3 bg-fintech-dark-800/50 border rounded-xl text-white placehol...\"\n                              placeholder=\"ej: TRD-20240915-001 o admin\"\n                              required={true}\n                              autoFocus={true}\n                              autoComplete=\"username\"\n                              aria-describedby=\"username-help\"\n-                             style={{caret-color:\"transparent\"}}\n                            >\n                          ...\n                        <div className=\"space-y-2\">\n                          <label>\n                          <div className=\"relative\">\n                            <input\n                              type=\"password\"\n                              value=\"\"\n                              onChange={function onChange}\n                              className=\"w-full px-4 py-3 pr-12 bg-fintech-dark-800/50 border rounded-xl text-white pl...\"\n                              placeholder=\"ej: admin (8+ caracteres)\"\n                              required={true}\n                              minLength={8}\n                              aria-describedby=\"password-strength\"\n-                             style={{caret-color:\"transparent\"}}\n                            >\n                            ...\n                        <div className=\"bg-fintech...\">\n                          <h4>\n                          <div className=\"space-y-3\">\n                            <div className=\"flex items...\">\n                              <input\n                                type=\"checkbox\"\n                                id=\"remember\"\n                                checked={true}\n                                onChange={function onChange}\n                                className=\"w-4 h-4 text-cyan-500 bg-fintech-dark-700 border-fintech-dark-600 rounded f...\"\n-                               style={{caret-color:\"transparent\"}}\n                              >\n                              ...\n                            <div className=\"flex items...\">\n                              <input\n                                type=\"checkbox\"\n                                id=\"secure\"\n                                checked={true}\n                                onChange={function onChange}\n                                className=\"w-4 h-4 text-purple-500 bg-fintech-dark-700 border-fintech-dark-600 rounded...\"\n-                               style={{caret-color:\"transparent\"}}\n                              >\n                              ...\n                        ...\n                    ...\n      ...\n",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: signals",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: trades",
+    "[LOG] [Fast Refresh] rebuilding",
+    "[LOG] [UnifiedWebSocket] Primary WebSocket connected",
+    "[DEBUG] [UnifiedWebSocket] No schema for message type: price_update",
+    "[LOG] [Fast Refresh] done in 2903ms",
+    "[INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: signals",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: trades",
+    "[ERROR] %o\n\n%s TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at BacktestMetricsPanel (webpack-internal:///(app-pages-browser)/./app/dashboard/page.tsx:401:39)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23584:20)\n    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:6793:22)\n    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9247:19)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10858:18)\n    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)\n    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)\n    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)\n    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15034:44)\n    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16816:7)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48) The above error occurred in the <BacktestMetricsPanel> component. It was handled by the <ErrorBoundary> error boundary.",
+    "[ERROR] [ErrorBoundary] Component error caught: {error: Cannot read properties of undefined (reading 'toFixed'), name: TypeError, stack: TypeError: Cannot read properties of undefined (re…led/scheduler/cjs/scheduler.development.js:45:48), componentStack: \n    at BacktestMetricsPanel (webpack-internal:///…ode_modules/next/dist/client/app-index.js:156:11), errorId: error_1767861751011_9jjhx4z5i}",
+    "[LOG] [ErrorBoundary] Scheduling retry 1 in 2000ms",
+    "[LOG] [UnifiedWebSocket] Primary WebSocket connected",
+    "[DEBUG] [UnifiedWebSocket] No schema for message type: price_update",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: signals",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: trades",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: signals",
+    "[LOG] [UnifiedWebSocket] Subscribed to channel: trades",
+    "[ERROR] %o\n\n%s TypeError: Cannot read properties of undefined (reading 'toFixed')\n    at BacktestMetricsPanel (webpack-internal:///(app-pages-browser)/./app/dashboard/page.tsx:401:39)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23584:20)\n    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:6793:22)\n    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9247:19)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10858:18)\n    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)\n    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)\n    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)\n    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15034:44)\n    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16816:7)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48) The above error occurred in the <BacktestMetricsPanel> component. It was handled by the <ErrorBoundary> error boundary.",
+    "[ERROR] [ErrorBoundary] Component error caught: {error: Cannot read properties of undefined (reading 'toFixed'), name: TypeError, stack: TypeError: Cannot read properties of undefined (re…led/scheduler/cjs/scheduler.development.js:45:48), componentStack: \n    at BacktestMetricsPanel (webpack-internal:///…ode_modules/next/dist/client/app-index.js:156:11), errorId: error_1767861753474_i7secdbes}",
+    "[LOG] [Fast Refresh] rebuilding",
+    "[LOG] [Fast Refresh] done in 2351ms",
+    "[LOG] [Fast Refresh] rebuilding"
+  ],
+  "errors": [
+    "[PAGE ERROR] Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  ...\n    <BacktestMetricsPanel>\n      <div className=\"grid grid-...\">\n        <KPICard>\n        <KPICard>\n        <KPICard>\n        <KPICard>\n        <KPICard title=\"Total Trades\" value=\"2,847\" subtitle=\"Backtest p...\" icon={<Activity>} color=\"#10B981\">\n          <_c className=\"bg-slate-9...\">\n            <motion.div ref={null} className=\"relative o...\" variants={{...}} initial=\"initial\" whileHover=\"hover\" ...>\n              <div className=\"relative o...\" tabIndex={0} style={{...}} ref={function}>\n                <motion.div className=\"relative z-10\" variants={{initial:{...}, ...}}>\n                  <div className=\"relative z-10\" style={{opacity:1}} ref={function}>\n                    <_c8 className=\"p-6\">\n                      <motion.div ref={null} className=\"p-6\" variants={{initial:{...}, ...}} initial=\"initial\" ...>\n                        <div className=\"p-6\" style={{opacity:0, ...}} ref={function}>\n                          <div>\n                          <div className=\"space-y-1\">\n                            <div className=\"text-3xl sm:text-4xl font-bold tracking-tight\" style={{color:\"#10B981\"}}>\n+                             2,847\n-                             2.847\n                            ...\n"
+  ],
+  "networkRequests": [
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/proxy/trading/stats/USDCOP",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/proxy/trading/candlesticks/USDCOP?limit=2&timeframe=5m",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/proxy/trading/candlesticks/USDCOP?limit=2&timeframe=5m",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/proxy/trading/candlesticks/USDCOP?limit=2&timeframe=5m",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "url": "http://localhost:3000/api/models",
+      "status": 200,
+      "method": "GET"
+    }
+  ],
+  "failedRequests": [],
+  "analysis": {
+    "kpiCards": 0,
+    "loadingElements": 0,
+    "errorElements": 0,
+    "hasRealData": true
+  }
+}

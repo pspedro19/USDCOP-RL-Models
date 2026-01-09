@@ -1,0 +1,99 @@
+# ================================================
+# Dockerfile.trading-api
+# Optimized multi-stage build for Trading API with ML models
+# Supports: RL inference, ML predictions, real-time trading signals
+# ================================================
+
+# ================================================
+# Stage 1: Build dependencies
+# ================================================
+FROM python:3.11-slim as builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    wget \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install TA-Lib C library
+RUN wget -q http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
+    tar -xzf ta-lib-0.4.0-src.tar.gz && \
+    cd ta-lib/ && \
+    ./configure --prefix=/usr/local && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+COPY services/requirements-multimodel.txt /build/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# ================================================
+# Stage 2: Runtime image
+# ================================================
+FROM python:3.11-slim as runtime
+
+LABEL maintainer="USDCOP Trading System"
+LABEL description="Optimized Trading API for multi-model inference"
+LABEL version="1.0"
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy TA-Lib from builder
+COPY --from=builder /usr/local/lib/libta_lib* /usr/local/lib/
+COPY --from=builder /usr/local/include/ta-lib /usr/local/include/ta-lib
+RUN ldconfig
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Create non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+
+# Create directories for models and config
+RUN mkdir -p /models /app/config /app/logs && \
+    chown -R appuser:appgroup /app /models
+
+# Copy shared modules
+COPY --chown=appuser:appgroup services/common/ /app/common/
+
+# Copy application code
+COPY --chown=appuser:appgroup services/multi_model_trading_api.py /app/app.py
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || curl -f http://localhost:8000/api/health || exit 1
+
+# Run the application
+CMD ["python", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

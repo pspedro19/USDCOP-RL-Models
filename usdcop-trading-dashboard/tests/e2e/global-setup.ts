@@ -1,20 +1,25 @@
-import { chromium, FullConfig } from '@playwright/test'
+import { FullConfig } from '@playwright/test'
 
 async function globalSetup(config: FullConfig) {
-  // Launch browser for global setup
-  const browser = await chromium.launch()
-  const page = await browser.newPage()
+  // Wait for the application to be ready using fetch
+  const baseURL = 'http://localhost:5000'
+  const maxRetries = 30
+  const retryDelay = 1000
 
-  // Wait for the application to be ready
-  try {
-    await page.goto('http://localhost:3000', { waitUntil: 'networkidle' })
-    console.log('✅ Application is ready for testing')
-  } catch (error) {
-    console.error('❌ Application failed to start:', error)
-    throw error
-  } finally {
-    await browser.close()
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(`${baseURL}/login`)
+      if (response.ok) {
+        console.log('✅ Application is ready for testing')
+        return
+      }
+    } catch (error) {
+      // Server not ready yet
+    }
+    await new Promise(resolve => setTimeout(resolve, retryDelay))
   }
+
+  throw new Error('❌ Application failed to start after 30 seconds')
 }
 
 export default globalSetup

@@ -1,0 +1,222 @@
+# DAG-MinIO Mapping Configuration
+# ================================
+# Convención: DAG_ID == Prefijo en MinIO
+# Patrón: <market>_<timeframe>__<nn>_<layer>_<proceso>
+
+buckets:
+  l0_acquire: "ds-usdcop-acquire"
+  l1_standardize: "ds-usdcop-standardize"
+  l2_prepare: "ds-usdcop-prepare"
+  l3_feature: "ds-usdcop-feature"
+  l4_mlready: "ds-usdcop-mlready"
+  l5_serving: "ds-usdcop-serving"
+
+# Pipeline completo con 9 DAGs principales
+pipelines:
+  
+  # ========== L0: ACQUIRE ==========
+  - dag_id: "usdcop_m5__01_l0_acquire_sync_incremental"
+    layer: "L0_ACQUIRE"
+    bucket: "ds-usdcop-acquire"
+    description: "Ingesta incremental desde MT5 y TwelveData con detección inteligente"
+    schedule: "0 1 * * *"  # 1 AM UTC diario
+    reads_from:
+      - source: "external_apis"
+        endpoints:
+          - "mt5_api"
+          - "twelvedata_api"
+      - source: "historical_cache"
+        path: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/_cache/"
+    writes_to:
+      data: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/market=usdcop/timeframe=m5/source={source}/date={date}/run_id={run_id}/part-{partition}.parquet"
+      control: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/_control/date={date}/run_id={run_id}/READY"
+      manifest: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/_control/date={date}/run_id={run_id}/manifest.json"
+    validations:
+      - "spread_check: < 100 pips"
+      - "price_range: 2000-5500"
+      - "duplicate_detection: MD5 hash"
+    
+  # ========== L1: STANDARDIZE ==========
+  - dag_id: "usdcop_m5__02_l1_standardize_time_sessions"
+    layer: "L1_STANDARDIZE"
+    bucket: "ds-usdcop-standardize"
+    description: "Conversión a UTC y clasificación por sesiones de trading"
+    schedule: "0 2 * * *"  # 2 AM UTC
+    reads_from:
+      - source: "acquire_output"
+        path: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/market=usdcop/timeframe=m5/source=*/date={date}/*.parquet"
+        signal: "minio://ds-usdcop-acquire/usdcop_m5__01_l0_acquire_sync_incremental/_control/date={date}/*/READY"
+    writes_to:
+      data: "minio://ds-usdcop-standardize/usdcop_m5__02_l1_standardize_time_sessions/market=usdcop/timeframe=m5/date={date}/session={session}/run_id={run_id}/data.parquet"
+      schema: "minio://ds-usdcop-standardize/usdcop_m5__02_l1_standardize_time_sessions/_schemas/schema_v1.json"
+      control: "minio://ds-usdcop-standardize/usdcop_m5__02_l1_standardize_time_sessions/_control/date={date}/run_id={run_id}/READY"
+    timezone_conversions:
+      mt5: "UTC+2 -> UTC"
+      twelvedata: "UTC-5 -> UTC"
+    sessions:
+      premium: "13:00-19:00 UTC (08:00-14:00 COT)"
+      london: "08:00-13:00 UTC (03:00-08:00 COT)"
+      afternoon: "19:00-22:00 UTC (14:00-17:00 COT)"
+      friday: "13:00-20:00 UTC (08:00-15:00 COT)"
+    
+  # ========== L2: PREPARE - CLEAN ==========
+  - dag_id: "usdcop_m5__03_l2_clean_anomalies"
+    layer: "L2_PREPARE"
+    bucket: "ds-usdcop-prepare"
+    description: "Limpieza de anomalías, corrección OHLC, imputación conservadora"
+    schedule: "0 3 * * *"  # 3 AM UTC
+    reads_from:
+      - source: "standardize_output"
+        path: "minio://ds-usdcop-standardize/usdcop_m5__02_l1_standardize_time_sessions/market=usdcop/timeframe=m5/date={date}/session=*/run_id=*/data.parquet"
+        signal: "minio://ds-usdcop-standardize/usdcop_m5__02_l1_standardize_time_sessions/_control/date={date}/*/READY"
+    writes_to:
+      data: "minio://ds-usdcop-prepare/usdcop_m5__03_l2_clean_anomalies/market=usdcop/timeframe=m5/date={date}/run_id={run_id}/data_clean.parquet"
+      quality: "minio://ds-usdcop-prepare/usdcop_m5__03_l2_clean_anomalies/_quality/date={date}/run_id={run_id}/quality_report.json"
+      control: "minio://ds-usdcop-prepare/usdcop_m5__03_l2_clean_anomalies/_control/date={date}/run_id={run_id}/READY"
+    cleaning_rules:
+      - "fix_ohlc_violations"
+      - "clip_outliers: 2000-5500"
+      - "smooth_spikes: max 2% change"
+      - "impute_gaps: max 30 minutes"
+    
+  # ========== L2: PREPARE - FILTER PREMIUM ==========
+  - dag_id: "usdcop_m5__04_l2_filter_premium"
+    layer: "L2_PREPARE"
+    bucket: "ds-usdcop-prepare"
+    description: "Filtro sesión Premium (91.4% completitud) + exclusión festivos"
+    schedule: "30 3 * * *"  # 3:30 AM UTC
+    reads_from:
+      - source: "clean_output"
+        path: "minio://ds-usdcop-prepare/usdcop_m5__03_l2_clean_anomalies/market=usdcop/timeframe=m5/date={date}/run_id=*/data_clean.parquet"
+        signal: "minio://ds-usdcop-prepare/usdcop_m5__03_l2_clean_anomalies/_control/date={date}/*/READY"
+    writes_to:
+      data: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/market=usdcop/timeframe=m5/session=premium/date={date}/run_id={run_id}/data_premium.parquet"
+      quality: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/_quality/session=premium/date={date}/run_id={run_id}/window_checks.json"
+      control: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/_control/session=premium/date={date}/run_id={run_id}/READY"
+    filter_criteria:
+      session: "premium_only"
+      hours_cot: "08:00-14:00"
+      days: "Mon-Fri"
+      exclude_holidays: ["US", "CO"]
+      expected_completeness: "91.4%"
+    
+  # ========== L3: FEATURE ENGINEERING ==========
+  - dag_id: "usdcop_m5__05_l3_features_core_v1"
+    layer: "L3_FEATURE"
+    bucket: "ds-usdcop-feature"
+    description: "Feature engineering - 50+ indicadores técnicos y microestructura"
+    schedule: "0 4 * * *"  # 4 AM UTC
+    reads_from:
+      - source: "premium_output"
+        path: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/market=usdcop/timeframe=m5/session=premium/date={date}/run_id=*/data_premium.parquet"
+        signal: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/_control/session=premium/date={date}/*/READY"
+    writes_to:
+      data: "minio://ds-usdcop-feature/usdcop_m5__05_l3_features_core_v1/market=usdcop/timeframe=m5/feature_set=v1/date={date}/run_id={run_id}/features.parquet"
+      specs: "minio://ds-usdcop-feature/usdcop_m5__05_l3_features_core_v1/_specs/feature_set=v1/spec.json"
+      control: "minio://ds-usdcop-feature/usdcop_m5__05_l3_features_core_v1/_control/feature_set=v1/date={date}/run_id={run_id}/READY"
+    features:
+      technical:
+        - "RSI_14"
+        - "MACD"
+        - "Bollinger_Bands"
+        - "ATR"
+        - "SMA_20_50_200"
+      microstructure:
+        - "spread_analysis"
+        - "volume_profile"
+        - "order_flow_imbalance"
+      temporal:
+        - "hour_of_day"
+        - "day_of_week"
+        - "distance_to_holiday"
+    
+  # ========== L4: ML-READY - SPLIT & SCALE ==========
+  - dag_id: "usdcop_m5__06_l4_mlready_split_scale"
+    layer: "L4_MLREADY"
+    bucket: "ds-usdcop-mlready"
+    description: "Train/Val/Test split + escalado + preservación de estadísticas"
+    schedule: "0 5 * * 1"  # Lunes 5 AM UTC (semanal)
+    reads_from:
+      - source: "features_output"
+        path: "minio://ds-usdcop-feature/usdcop_m5__05_l3_features_core_v1/market=usdcop/timeframe=m5/feature_set=v1/date=*/run_id=*/features.parquet"
+        signal: "minio://ds-usdcop-feature/usdcop_m5__05_l3_features_core_v1/_control/feature_set=v1/date=*/*/READY"
+    writes_to:
+      train: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/train.parquet"
+      valid: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/valid.parquet"
+      test: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/test.parquet"
+      scaler: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/scaler.pkl"
+      schema: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/_schema/version={version}/schema.json"
+      control: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/_control/version={version}/run_id={run_id}/READY"
+    split_config:
+      train: "70%"
+      validation: "15%"
+      test: "15%"
+      method: "time_series_split"
+    
+  # ========== L4: ML-READY - VALIDATE ==========
+  - dag_id: "usdcop_m5__07_l4_mlready_validate_lock"
+    layer: "L4_MLREADY"
+    bucket: "ds-usdcop-mlready"
+    description: "Validación exhaustiva + data leakage check + lock para producción"
+    schedule: "0 6 * * 1"  # Lunes 6 AM UTC
+    reads_from:
+      - source: "split_output"
+        path: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/market=usdcop/timeframe=m5/version={version}/run_id=*/{train,valid,test}.parquet"
+        signal: "minio://ds-usdcop-mlready/usdcop_m5__06_l4_mlready_split_scale/_control/version={version}/*/READY"
+    writes_to:
+      report: "minio://ds-usdcop-mlready/usdcop_m5__07_l4_mlready_validate_lock/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/validation_report.json"
+      control: "minio://ds-usdcop-mlready/usdcop_m5__07_l4_mlready_validate_lock/_control/version={version}/run_id={run_id}/VALIDATED"
+    validations:
+      - "no_data_leakage"
+      - "distribution_consistency"
+      - "feature_completeness"
+      - "temporal_ordering"
+    
+  # ========== L4: ML-READY - FINAL EXPORT ==========
+  - dag_id: "usdcop_m5__08_l4_mlready_final_export"
+    layer: "L4_MLREADY"
+    bucket: "ds-usdcop-mlready"
+    description: "Bundle final para serving - dataset completo ML-ready"
+    schedule: "0 7 * * 1"  # Lunes 7 AM UTC
+    reads_from:
+      - source: "validation_signal"
+        signal: "minio://ds-usdcop-mlready/usdcop_m5__07_l4_mlready_validate_lock/_control/version={version}/*/VALIDATED"
+    writes_to:
+      bundle: "minio://ds-usdcop-mlready/usdcop_m5__08_l4_mlready_final_export/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/mlready_bundle.tar.gz"
+      metadata: "minio://ds-usdcop-mlready/usdcop_m5__08_l4_mlready_final_export/market=usdcop/timeframe=m5/version={version}/run_id={run_id}/metadata.json"
+      control: "minio://ds-usdcop-mlready/usdcop_m5__08_l4_mlready_final_export/_control/version={version}/run_id={run_id}/READY_FOR_SERVING"
+    
+  # ========== L5: SERVING - BATCH PREDICT ==========
+  - dag_id: "usdcop_m5__09_l5_batch_predict_export"
+    layer: "L5_SERVING"
+    bucket: "ds-usdcop-serving"
+    description: "Predicción batch + export para dashboards"
+    schedule: "0 8 * * *"  # 8 AM UTC diario
+    reads_from:
+      - source: "mlready_bundle"
+        signal: "minio://ds-usdcop-mlready/usdcop_m5__08_l4_mlready_final_export/_control/version={version}/*/READY_FOR_SERVING"
+      - source: "latest_premium_data"
+        path: "minio://ds-usdcop-prepare/usdcop_m5__04_l2_filter_premium/market=usdcop/timeframe=m5/session=premium/date={date}/run_id=*/data_premium.parquet"
+    writes_to:
+      predictions: "minio://ds-usdcop-serving/usdcop_m5__09_l5_batch_predict_export/market=usdcop/timeframe=m5/date={date}/run_id={run_id}/predictions.parquet"
+      export_csv: "minio://ds-usdcop-serving/usdcop_m5__09_l5_batch_predict_export/exports/market=usdcop/timeframe=m5/date={date}/predictions.csv"
+      dashboard: "minio://ds-usdcop-serving/usdcop_m5__09_l5_batch_predict_export/dashboards/market=usdcop/timeframe=m5/date={date}/summary.parquet"
+      control: "minio://ds-usdcop-serving/usdcop_m5__09_l5_batch_predict_export/_control/date={date}/run_id={run_id}/READY"
+
+# Configuración global
+global_config:
+  run_id_format: "{timestamp}-{uuid[:8]}"
+  timestamp_format: "%Y%m%d%H%M%S"
+  version_format: "v%Y%m%d"
+  partition_size_mb: 128
+  compression: "snappy"
+  file_format: "parquet"
+  
+# Variables de entorno requeridas
+required_env_vars:
+  - "MINIO_ENDPOINT"
+  - "MINIO_ACCESS_KEY"
+  - "MINIO_SECRET_KEY"
+  - "MT5_SERVER"
+  - "MT5_LOGIN"
+  - "TWELVEDATA_API_KEY"

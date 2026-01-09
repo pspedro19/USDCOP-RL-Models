@@ -1,0 +1,19 @@
+{
+  "conversion_date": "2025-12-24T19:09:33.927752",
+  "source_frequency": "5min",
+  "target_frequency": "15min",
+  "market_hours": "08:00-12:55 COT (13:00-17:55 UTC)",
+  "bars_per_day": 20,
+  "datasets": [
+    {
+      "name": "RL_DS1_MINIMAL_15MIN.csv",
+      "rows": 27210,
+      "cols": 17
+    },
+    {
+      "name": "RL_DS3_MACRO_CORE_15MIN.csv",
+      "rows": 27210,
+      "cols": 24
+    }
+  ]
+}

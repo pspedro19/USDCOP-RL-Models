@@ -1,0 +1,364 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\playwright.config.ts",
+    "rootDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\global-setup.ts",
+    "globalTeardown": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "playwright-report/results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.0",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "final-verification.spec.ts",
+      "file": "final-verification.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Final Dashboard Verification - v19 & v20 Production Ready",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 27361,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "\n=== MODELS CONFIGURATION ===\n"
+                    },
+                    {
+                      "text": "\nPPO V19 Production (ppo_v19_prod)\n"
+                    },
+                    {
+                      "text": "  Status: production\n"
+                    },
+                    {
+                      "text": "  Real Data: true\n"
+                    },
+                    {
+                      "text": "  Sharpe: 1.85\n"
+                    },
+                    {
+                      "text": "  Win Rate: 0.58\n"
+                    },
+                    {
+                      "text": "  Max DD: -12.3%\n"
+                    },
+                    {
+                      "text": "  Test Period: 2024-01-01 to 2024-12-31\n"
+                    },
+                    {
+                      "text": "\nPPO V20 Production (ppo_v20_prod)\n"
+                    },
+                    {
+                      "text": "  Status: production\n"
+                    },
+                    {
+                      "text": "  Real Data: true\n"
+                    },
+                    {
+                      "text": "  Sharpe: 2.12\n"
+                    },
+                    {
+                      "text": "  Win Rate: 0.712\n"
+                    },
+                    {
+                      "text": "  Max DD: -6.8%\n"
+                    },
+                    {
+                      "text": "  Test Period: 2024-01-01 to 2025-12-31\n"
+                    },
+                    {
+                      "text": "\nSAC V1 Demo (sac_v1_demo)\n"
+                    },
+                    {
+                      "text": "  Status: testing\n"
+                    },
+                    {
+                      "text": "  Real Data: false\n"
+                    },
+                    {
+                      "text": "  Sharpe: 1.62\n"
+                    },
+                    {
+                      "text": "  Win Rate: 0.54\n"
+                    },
+                    {
+                      "text": "  Max DD: -14.5%\n"
+                    },
+                    {
+                      "text": "  Test Period: undefined\n"
+                    },
+                    {
+                      "text": "\nLLM Claude Demo (llm_claude_demo)\n"
+                    },
+                    {
+                      "text": "  Status: testing\n"
+                    },
+                    {
+                      "text": "  Real Data: false\n"
+                    },
+                    {
+                      "text": "  Sharpe: 1.38\n"
+                    },
+                    {
+                      "text": "  Win Rate: 0.51\n"
+                    },
+                    {
+                      "text": "  Max DD: -16.8%\n"
+                    },
+                    {
+                      "text": "  Test Period: undefined\n"
+                    },
+                    {
+                      "text": "\nScreenshot: final-v19-dashboard.png\n"
+                    },
+                    {
+                      "text": "Screenshot: final-v20-dashboard.png\n"
+                    },
+                    {
+                      "text": "\n=== ENDPOINT STATUS ===\n"
+                    },
+                    {
+                      "text": "V19 Metrics: 200\n"
+                    },
+                    {
+                      "text": "V20 Metrics: 200\n"
+                    },
+                    {
+                      "text": "V19 Equity Curve: 200\n"
+                    },
+                    {
+                      "text": "V20 Equity Curve: 200\n"
+                    },
+                    {
+                      "text": "V19 Trades: 200\n"
+                    },
+                    {
+                      "text": "V20 Trades: 200\n"
+                    },
+                    {
+                      "text": "\n=== SUMMARY ===\n"
+                    },
+                    {
+                      "text": "Production models configured:\n"
+                    },
+                    {
+                      "text": "  - PPO V19 Production: REAL DATA\n"
+                    },
+                    {
+                      "text": "  - PPO V20 Production: REAL DATA\n"
+                    },
+                    {
+                      "text": "\nConsole errors:\n"
+                    },
+                    {
+                      "text": "  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)\n"
+                    },
+                    {
+                      "text": "  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)\n"
+                    },
+                    {
+                      "text": "  [ERROR] WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                    },
+                    {
+                      "text": "  [ERROR] WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                    },
+                    {
+                      "text": "  [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found)\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-01-09T08:45:02.497Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "20d2b73116c6f80be102-5e82097de5a3082d17ff",
+          "file": "final-verification.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-01-09T08:44:58.677Z",
+    "duration": 31508.790999999997,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

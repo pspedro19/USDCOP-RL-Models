@@ -1,0 +1,235 @@
+{
+  "_meta": {
+    "version": "19.0.0",
+    "model_id": "ppo_usdcop_v19",
+    "created_at": "2025-12-26",
+    "description": "Feature configuration V19: 13 core features cleaned (no redundancy)",
+    "author": "Pedro @ Lean Tech Solutions / Claude Code",
+    "migration_notes": {
+      "from_v15": "Removed redundant features. Retained 13 core features with cleaned norm_stats.",
+      "validation_source": "RL_DS3_MACRO_CORE.csv (84,671 rows, 2020-03 to 2025-12)"
+    }
+  },
+  "observation_space": {
+    "dimension": 15,
+    "core_features": 13,
+    "state_features": 2,
+    "order": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "rate_spread",
+      "usdmxn_change_1d"
+    ],
+    "state_features_in_env": [
+      "position",
+      "time_normalized"
+    ],
+    "total_observation_dim": 15
+  },
+  "compute_strategy": {
+    "description": "Define where each feature is calculated for real-time inference",
+    "sql_features": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "rate_spread"
+    ],
+    "python_features": [
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "usdmxn_change_1d"
+    ]
+  },
+  "features": {
+    "returns": {
+      "items": [
+        {
+          "name": "log_ret_5m",
+          "formula": "ln(close / close[-1])",
+          "lookback_bars": 1,
+          "norm_stats": {
+            "mean": 1e-06,
+            "std": 0.001134
+          },
+          "clip": [
+            -0.05,
+            0.05
+          ]
+        },
+        {
+          "name": "log_ret_1h",
+          "formula": "ln(close / close[-12])",
+          "lookback_bars": 12,
+          "norm_stats": {
+            "mean": 1.2e-05,
+            "std": 0.003736
+          },
+          "clip": [
+            -0.05,
+            0.05
+          ]
+        },
+        {
+          "name": "log_ret_4h",
+          "formula": "ln(close / close[-48])",
+          "lookback_bars": 48,
+          "norm_stats": {
+            "mean": 5.7e-05,
+            "std": 0.007675
+          },
+          "clip": [
+            -0.05,
+            0.05
+          ]
+        }
+      ]
+    },
+    "technical": {
+      "items": [
+        {
+          "name": "rsi_9",
+          "indicator": "RSI",
+          "period": 9,
+          "norm_stats": {
+            "mean": 48.552482,
+            "std": 23.916683
+          }
+        },
+        {
+          "name": "atr_pct",
+          "indicator": "ATR_PCT",
+          "period": 10,
+          "norm_stats": {
+            "mean": 0.060818,
+            "std": 0.04525
+          }
+        },
+        {
+          "name": "adx_14",
+          "indicator": "ADX",
+          "period": 14,
+          "norm_stats": {
+            "mean": 32.297545,
+            "std": 17.046334
+          }
+        }
+      ]
+    },
+    "macro_zscore": {
+      "items": [
+        {
+          "name": "dxy_z",
+          "raw_column": "dxy",
+          "norm_stats": {
+            "mean": 0.02473,
+            "std": 0.99864
+          },
+          "clip": [
+            -4,
+            4
+          ]
+        },
+        {
+          "name": "vix_z",
+          "raw_column": "vix",
+          "norm_stats": {
+            "mean": -0.01413,
+            "std": 0.901167
+          },
+          "clip": [
+            -4,
+            4
+          ]
+        },
+        {
+          "name": "embi_z",
+          "raw_column": "embi",
+          "norm_stats": {
+            "mean": 0.001491,
+            "std": 1.002433
+          },
+          "clip": [
+            -4,
+            4
+          ]
+        }
+      ]
+    },
+    "macro_changes": {
+      "items": [
+        {
+          "name": "dxy_change_1d",
+          "raw_column": "dxy",
+          "periods": 1,
+          "clip": [
+            -0.03,
+            0.03
+          ]
+        },
+        {
+          "name": "brent_change_1d",
+          "raw_column": "brent",
+          "periods": 1,
+          "clip": [
+            -0.1,
+            0.1
+          ]
+        },
+        {
+          "name": "usdmxn_change_1d",
+          "raw_column": "usdmxn",
+          "periods": 12,
+          "clip": [
+            -0.1,
+            0.1
+          ]
+        }
+      ]
+    },
+    "macro_derived": {
+      "items": [
+        {
+          "name": "rate_spread",
+          "formula": "10.0 - treasury_10y",
+          "norm_stats": {
+            "mean": -0.014771,
+            "std": 0.998084
+          }
+        }
+      ]
+    }
+  },
+  "validation": {
+    "feature_count": 13,
+    "expected_order": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "rate_spread",
+      "usdmxn_change_1d"
+    ]
+  }
+}

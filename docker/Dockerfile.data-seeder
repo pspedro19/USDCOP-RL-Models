@@ -1,0 +1,42 @@
+# =============================================================================
+# USDCOP Trading System - Data Seeder Dockerfile
+# =============================================================================
+# Loads initial data into PostgreSQL/TimescaleDB on first startup:
+# 1. OHLCV 5-min data from backup (usdcop_m5_ohlcv_*.csv.gz)
+# 2. Macro daily data from MACRO_DAILY_CONSOLIDATED.csv
+#
+# Only seeds data if tables are empty (idempotent).
+# =============================================================================
+
+FROM python:3.11-slim
+
+LABEL maintainer="Pedro @ Lean Tech Solutions"
+LABEL description="Data Seeder for USDCOP Trading System"
+LABEL version="1.0.0"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    psycopg2-binary==2.9.9 \
+    pandas==2.1.4 \
+    requests==2.31.0
+
+# Copy seeding script (v15: renamed from 03- to 04- to avoid conflict with SQL views)
+COPY init-scripts/04-data-seeding.py /app/seed_data.py
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Healthcheck - exits after seeding completes
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=3 \
+    CMD test -f /app/.seeding_complete || exit 1
+
+# Run seeding script and create completion marker
+CMD ["sh", "-c", "python /app/seed_data.py && touch /app/.seeding_complete && echo 'Data seeding completed successfully' && sleep 5"]

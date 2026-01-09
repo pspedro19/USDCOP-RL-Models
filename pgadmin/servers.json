@@ -1,15 +1,14 @@
 {
-    "Servers": {
-        "1": {
-            "Name": "USDCOP Trading Database (TimescaleDB)",
-            "Group": "Servers",
-            "Host": "postgres",
-            "Port": 5432,
-            "MaintenanceDB": "usdcop_trading",
-            "Username": "admin",
-            "PassFile": "/pgpass",
-            "SSLMode": "prefer",
-            "Comment": "Main TimescaleDB database for USDCOP trading system"
-        }
+  "Servers": {
+    "1": {
+      "Name": "USDCOP Trading Database",
+      "Group": "Trading System",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "usdcop_trading",
+      "Username": "admin",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
     }
+  }
 }

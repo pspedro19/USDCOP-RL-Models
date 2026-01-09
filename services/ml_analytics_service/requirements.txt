@@ -1,0 +1,20 @@
+# ================================================
+# ML Analytics Service - Dependencies
+# ================================================
+
+# Core API Framework
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+
+# Database
+psycopg2-binary==2.9.9
+
+# Data Processing & Analysis
+numpy==1.26.4
+scipy==1.11.4
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2024.1
+python-dotenv==1.0.0

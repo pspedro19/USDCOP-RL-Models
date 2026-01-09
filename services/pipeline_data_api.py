@@ -44,14 +44,11 @@ from minio_manifest_reader import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database configuration
-POSTGRES_CONFIG = {
-    'host': os.getenv('POSTGRES_HOST', 'localhost'),
-    'port': int(os.getenv('POSTGRES_PORT', '5432')),
-    'database': os.getenv('POSTGRES_DB', 'usdcop_trading'),
-    'user': os.getenv('POSTGRES_USER', 'admin'),
-    'password': os.getenv('POSTGRES_PASSWORD', 'admin123')
-}
+# DRY: Use shared modules
+from common.database import get_db_config
+
+# Database configuration (from shared module)
+POSTGRES_CONFIG = get_db_config().to_dict()
 
 # Create FastAPI app
 app = FastAPI(

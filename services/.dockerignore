@@ -1,0 +1,70 @@
+# Python Services .dockerignore
+# Optimized for FastAPI/Python service builds
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+.hypothesis/
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+
+# Documentation
+README.md
+*.md
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+.env.*
+
+# Temporary
+*.tmp
+tmp/
+temp/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore

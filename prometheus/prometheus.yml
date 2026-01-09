@@ -2,44 +2,46 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'minio'
+  - job_name: 'trading-api'
     static_configs:
-      - targets: ['usdcop-minio:9000']
-    metrics_path: /minio/v2/metrics/cluster
+      - targets: ['trading-api:8000']
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  - job_name: 'analytics-api'
+    static_configs:
+      - targets: ['analytics-api:8001']
+    metrics_path: /metrics
+    scrape_timeout: 10s
+
+  - job_name: 'multi-model-api'
+    static_configs:
+      - targets: ['multi-model-api:8006']
+    metrics_path: /metrics
+    scrape_timeout: 10s
 
   - job_name: 'postgres'
     static_configs:
-      - targets: ['usdcop-postgres-timescale:5432']
+      - targets: ['postgres:5432']
 
   - job_name: 'redis'
     static_configs:
-      - targets: ['usdcop-redis:6379']
-
-  - job_name: 'dashboard'
-    static_configs:
-      - targets: ['usdcop-dashboard:3000']
+      - targets: ['redis:6379']
 
   - job_name: 'airflow'
     static_configs:
-      - targets: ['usdcop-airflow-scheduler:8080']
-
-  - job_name: 'websocket'
-    static_configs:
-      - targets: ['usdcop-websocket:8080']
-
-  - job_name: 'realtime-data'
-    static_configs:
-      - targets: ['usdcop-realtime-data:8080']
-
-  - job_name: 'health-monitor'
-    static_configs:
-      - targets: ['usdcop-health-monitor:8080']
+      - targets: ['airflow-webserver:8080']
+    metrics_path: /metrics
+    scrape_timeout: 10s

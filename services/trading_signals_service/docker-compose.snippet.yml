@@ -1,0 +1,69 @@
+# Trading Signals Service - Docker Compose Integration
+# =====================================================
+# Add this to your main docker-compose.yml file
+
+services:
+  trading-signals-service:
+    build:
+      context: ./services/trading_signals_service
+      dockerfile: Dockerfile
+    container_name: usdcop-trading-signals
+    ports:
+      - "8003:8003"
+    environment:
+      # Service Configuration
+      SIGNAL_SERVICE_HOST: 0.0.0.0
+      SIGNAL_SERVICE_PORT: 8003
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+
+      # Database (from .env)
+      POSTGRES_HOST: ${POSTGRES_HOST:-usdcop-postgres-timescale}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-usdcop_trading}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Redis (from .env)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # Model Configuration
+      MODEL_PATH: /app/models/ppo_lstm_v3.2.onnx
+      MODEL_VERSION: ppo_lstm_v3.2
+
+      # Risk Management
+      CONFIDENCE_THRESHOLD: 0.65
+      POSITION_SIZE_PCT: 0.02
+      ATR_MULTIPLIER_SL: 2.0
+      ATR_MULTIPLIER_TP: 3.0
+
+    volumes:
+      # Mount model directory (place your ONNX model here)
+      - ./models:/app/models:ro
+      # Mount logs directory
+      - ./services/trading_signals_service/logs:/app/logs
+
+    networks:
+      - usdcop-trading-network
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    restart: unless-stopped
+
+    labels:
+      - "com.usdcop.service=trading-signals"
+      - "com.usdcop.component=backend"
+      - "com.usdcop.version=1.0.0"

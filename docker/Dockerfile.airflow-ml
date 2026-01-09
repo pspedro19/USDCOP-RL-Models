@@ -22,8 +22,22 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     curl \
+    wget \
+    gnupg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# Chrome Installation for Selenium (BanRep scraper)
+# ============================================================================
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Chrome binary location for undetected-chromedriver
+ENV CHROME_BIN=/usr/bin/google-chrome
 
 USER airflow
 
@@ -31,7 +45,7 @@ USER airflow
 RUN pip install --upgrade pip setuptools wheel
 
 # Copy requirements file from airflow directory
-COPY ../airflow/requirements.txt /requirements.txt
+COPY ./airflow/requirements.txt /requirements.txt
 
 # Install Python dependencies from requirements.txt (includes torch, stable-baselines3, etc.)
 RUN pip install --no-cache-dir \
@@ -76,6 +90,27 @@ RUN pip install --no-cache-dir \
     httpx
 
 # ============================================================================
+# Macro Pipeline Dependencies (for l0_macro_pipeline DAG)
+# ============================================================================
+RUN pip install --no-cache-dir \
+    polars==1.17.1 \
+    fredapi==0.5.2 \
+    cloudscraper==1.2.71 \
+    aiohttp==3.11.11 \
+    beautifulsoup4==4.12.3 \
+    lxml==5.3.0 \
+    yfinance==0.2.50 \
+    colombian-holidays==1.0.0
+
+# ============================================================================
+# Selenium Dependencies (for BanRep SUAMECA scraper)
+# ============================================================================
+RUN pip install --no-cache-dir \
+    undetected-chromedriver==3.5.5 \
+    selenium==4.25.0 \
+    seleniumbase==4.32.6
+
+# ============================================================================
 # Verification
 # ============================================================================
 
@@ -106,17 +141,10 @@ USER root
 RUN mkdir -p /opt/airflow/dags /opt/airflow/logs /opt/airflow/plugins \
     && chown -R airflow:root /opt/airflow
 
-# Copy entrypoint script from airflow directory
-COPY ../airflow/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chown airflow:root /entrypoint.sh
-
 USER airflow
 
 # Set working directory
 WORKDIR /opt/airflow
-
-# Set the entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \

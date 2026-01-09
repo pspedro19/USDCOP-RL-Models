@@ -1,0 +1,168 @@
+{
+  "backup_timestamp": "2026-01-09T06:31:00Z",
+  "purpose": "Pre-V20 Migration Backup",
+  "database": "usdcop_trading",
+  "host": "usdcop-postgres-timescale",
+  "tables": [
+    {
+      "file": "public_usdcop_m5_ohlcv.csv.gz",
+      "schema": "public",
+      "table": "usdcop_m5_ohlcv",
+      "description": "OHLCV market data (5-minute candles)",
+      "rows": 90917,
+      "size_kb": 842,
+      "verified": true
+    },
+    {
+      "file": "public_macro_indicators_daily.csv.gz",
+      "schema": "public",
+      "table": "macro_indicators_daily",
+      "description": "Daily macro economic indicators (DXY, VIX, etc.)",
+      "rows": 10743,
+      "size_kb": 146,
+      "verified": true
+    },
+    {
+      "file": "config_models.csv.gz",
+      "schema": "config",
+      "table": "models",
+      "description": "Model configurations and thresholds",
+      "rows": 5,
+      "size_kb": 1.2,
+      "verified": true
+    },
+    {
+      "file": "config_feature_definitions.csv.gz",
+      "schema": "config",
+      "table": "feature_definitions",
+      "description": "Feature definitions for ML models",
+      "rows": 30,
+      "size_kb": 2.0,
+      "verified": true
+    },
+    {
+      "file": "public_trading_state.csv.gz",
+      "schema": "public",
+      "table": "trading_state",
+      "description": "Current trading state",
+      "rows": 1,
+      "size_kb": 0.2,
+      "verified": true
+    },
+    {
+      "file": "public_trades_history.csv.gz",
+      "schema": "public",
+      "table": "trades_history",
+      "description": "Historical trade records",
+      "rows": 57,
+      "size_kb": 2.8,
+      "verified": true
+    },
+    {
+      "file": "public_equity_snapshots.csv.gz",
+      "schema": "public",
+      "table": "equity_snapshots",
+      "description": "Equity curve snapshots",
+      "rows": 62,
+      "size_kb": 1.4,
+      "verified": true
+    },
+    {
+      "file": "trading_model_trades.csv.gz",
+      "schema": "trading",
+      "table": "model_trades",
+      "description": "Model-specific trade records",
+      "rows": 57,
+      "size_kb": 2.1,
+      "verified": true
+    },
+    {
+      "file": "trading_model_inferences.csv.gz",
+      "schema": "trading",
+      "table": "model_inferences",
+      "description": "Model inference results",
+      "rows": 0,
+      "size_kb": 0.2,
+      "verified": true
+    },
+    {
+      "file": "trading_model_states.csv.gz",
+      "schema": "trading",
+      "table": "model_states",
+      "description": "Model state persistence",
+      "rows": 0,
+      "size_kb": 0.1,
+      "verified": true
+    },
+    {
+      "file": "dw_fact_rl_inference.csv.gz",
+      "schema": "dw",
+      "table": "fact_rl_inference",
+      "description": "RL inference fact table",
+      "rows": 50,
+      "size_kb": 1.1,
+      "verified": true
+    },
+    {
+      "file": "dw_fact_strategy_performance.csv.gz",
+      "schema": "dw",
+      "table": "fact_strategy_performance",
+      "description": "Strategy performance metrics",
+      "rows": 6,
+      "size_kb": 0.5,
+      "verified": true
+    },
+    {
+      "file": "dw_fact_equity_curve_realtime.csv.gz",
+      "schema": "dw",
+      "table": "fact_equity_curve_realtime",
+      "description": "Real-time equity curve",
+      "rows": 0,
+      "size_kb": 0.1,
+      "verified": true
+    },
+    {
+      "file": "events_signals_stream.csv.gz",
+      "schema": "events",
+      "table": "signals_stream",
+      "description": "Trading signals stream",
+      "rows": 0,
+      "size_kb": 0.1,
+      "verified": true
+    },
+    {
+      "file": "metrics_model_performance.csv.gz",
+      "schema": "metrics",
+      "table": "model_performance",
+      "description": "Model performance metrics",
+      "rows": 0,
+      "size_kb": 0.3,
+      "verified": true
+    },
+    {
+      "file": "public_inference_features_5m.csv.gz",
+      "schema": "public",
+      "table": "inference_features_5m",
+      "description": "5-minute inference features",
+      "rows": 144,
+      "size_kb": 11,
+      "verified": true
+    },
+    {
+      "file": "schema_ddl.sql.gz",
+      "schema": "ALL",
+      "table": "SCHEMA_ONLY",
+      "description": "Complete database schema (DDL)",
+      "rows": null,
+      "size_kb": 57,
+      "verified": true
+    }
+  ],
+  "summary": {
+    "total_tables": 17,
+    "total_data_rows": 101967,
+    "total_size_mb": 1.1,
+    "all_verified": true
+  },
+  "restore_instructions": "gunzip -c <file>.csv.gz | psql -h localhost -U admin -d usdcop_trading -c 'COPY <schema>.<table> FROM STDIN WITH CSV HEADER'"
+}

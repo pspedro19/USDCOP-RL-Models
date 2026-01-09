@@ -1,0 +1,62 @@
+# ================================================
+# USDCOP Trading System - Multi-Model Dependencies
+# Specific dependencies for multi-model inference API
+# ================================================
+
+# Core API Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# Database - Async PostgreSQL
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+
+# Redis - Async support with streams
+redis>=5.0.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# ================================================
+# ML/RL Model Inference
+# ================================================
+
+# Stable Baselines 3 - RL Model Loading
+stable-baselines3>=2.2.0
+
+# PyTorch - Neural Network Backend
+torch>=2.1.0
+
+# ONNX Runtime - Optimized Model Inference
+onnxruntime>=1.16.0
+
+# ================================================
+# Technical Analysis (optional, for feature calculation)
+# ================================================
+ta-lib>=0.4.32
+
+# ================================================
+# HTTP & WebSocket
+# ================================================
+httpx>=0.25.0
+websockets>=12.0
+requests>=2.31.0
+
+# ================================================
+# Utilities
+# ================================================
+python-dateutil>=2.8.2
+pytz>=2023.3
+python-dotenv>=1.0.0
+
+# Trading Calendar - Colombian Holidays
+colombian-holidays>=1.0.0
+holidays>=0.37
+
+# Monitoring & Resilience
+prometheus-client>=0.19.0
+circuitbreaker>=2.0.0
