@@ -1,0 +1,27 @@
+{
+  "dataset_path": "data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv",
+  "norm_stats_path": "config/v19_norm_stats.json",
+  "output_dir": "models/ppo_v20_production",
+  "total_timesteps": 500000,
+  "episode_length": 1200,
+  "initial_balance": 10000,
+  "max_drawdown_pct": 15.0,
+  "threshold_long": 0.1,
+  "threshold_short": -0.1,
+  "ppo_config": {
+    "learning_rate": 0.0003,
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_range": 0.2,
+    "ent_coef": 0.01,
+    "vf_coef": 0.5,
+    "max_grad_norm": 0.5
+  },
+  "network_arch": [
+    64,
+    64
+  ]
+}

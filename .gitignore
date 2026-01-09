@@ -49,12 +49,15 @@ data/processed/
 !data/.gitkeep
 models/
 !models/.gitkeep
+!models/ppo_v1_*.zip
+!models/ppo_v20_production/
 *.pkl
 *.h5
 *.pt
 *.pth
-*.onnx
-*.zip
+# Allow production model files
+!models/**/*.onnx
+!models/**/*.zip
 *.tar.gz
 
 # Logs
