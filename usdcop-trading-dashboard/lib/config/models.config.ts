@@ -40,6 +40,11 @@ export type TradeStatus = 'OPEN' | 'CLOSED' | 'CANCELLED';
 export type ModelType = 'rl' | 'ml' | 'llm' | 'ensemble';
 
 /**
+ * Database status for model registry
+ */
+export type ModelDbStatus = 'registered' | 'deployed' | 'archived';
+
+/**
  * Model configuration from API
  */
 export interface ModelConfig {
@@ -55,6 +60,8 @@ export interface ModelConfig {
   updatedAt?: string;
   /** Whether this model uses real production data (true) or demo data (false) */
   isRealData?: boolean;
+  /** Raw database status from model_registry table */
+  dbStatus?: ModelDbStatus;
   config?: {
     episodeLength?: number;
     actionThreshold?: number;
@@ -232,6 +239,12 @@ export const modelsApiEndpoints = {
    * GET /api/models/compare?ids=ppo_v19,sac_v1&period=30d
    */
   compare: '/api/models/compare',
+
+  /**
+   * Promote a model to deployed status
+   * POST /api/models/{modelId}/promote
+   */
+  promote: (modelId: string) => `/api/models/${modelId}/promote`,
 } as const;
 
 // ============================================================================

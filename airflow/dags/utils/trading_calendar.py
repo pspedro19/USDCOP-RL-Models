@@ -3,7 +3,7 @@ Trading Calendar Validation for USD/COP (DAG Utils Version)
 ============================================================
 Simplified version for Airflow DAGs.
 
-V20 FIX: US holidays now included by default for USD/COP trading.
+US holidays now included by default for USD/COP trading.
 USD/COP trading is affected by US market holidays (reduced liquidity).
 
 Author: Pedro @ Lean Tech Solutions / Claude Code
@@ -30,7 +30,7 @@ WEEKEND_DAYS = {5, 6}  # Sat-Sun
 DEFAULT_MARKET_OPEN_HOUR = 8
 DEFAULT_MARKET_CLOSE_HOUR = 12
 
-# V20 FIX: Explicit US Federal Holidays 2025-2027 (fallback if holidays package unavailable)
+# Explicit US Federal Holidays 2025-2027 (fallback if holidays package unavailable)
 # These are days when US markets are closed, affecting USD liquidity
 US_FEDERAL_HOLIDAYS: Set[date] = {
     # 2025
@@ -76,13 +76,13 @@ class TradingCalendar:
     """
     Trading calendar for USD/COP validation.
 
-    V20 FIX: US holidays now included by default (affects USD liquidity).
+    US holidays now included by default (affects USD liquidity).
     """
 
     def __init__(
         self,
         timezone: str = 'America/Bogota',
-        include_us_holidays: bool = True,  # V20 FIX: Changed default from False to True
+        include_us_holidays: bool = True,  # Changed default from False to True
         market_open_hour: int = DEFAULT_MARKET_OPEN_HOUR,
         market_close_hour: int = DEFAULT_MARKET_CLOSE_HOUR
     ):

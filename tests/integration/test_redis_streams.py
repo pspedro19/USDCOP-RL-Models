@@ -90,7 +90,7 @@ async def async_redis_client(redis_url):
 def sample_signal() -> Dict[str, Any]:
     """Sample trading signal for testing"""
     return {
-        'model_id': 'ppo_v19',
+        'model_id': 'ppo_primary',
         'action': 0.75,
         'signal': 'buy',
         'confidence': 0.85,
@@ -104,7 +104,7 @@ def sample_signal() -> Dict[str, Any]:
 @pytest.fixture
 def stream_key() -> str:
     """Test stream key"""
-    return 'test:signals:ppo_v19'
+    return 'test:signals:ppo_primary'
 
 
 class MockRedisManager:
@@ -227,8 +227,8 @@ class TestPublishSignal:
     ):
         """Can publish to different model streams"""
         streams = [
-            'test:signals:ppo_v19',
-            'test:signals:ppo_v15',
+            'test:signals:ppo_primary',
+            'test:signals:ppo_secondary',
             'test:signals:xgb_v1'
         ]
 
@@ -569,7 +569,7 @@ class TestMessageSerialization:
     def test_json_complex_signal(self):
         """Complex signal with nested data can be serialized"""
         complex_signal = {
-            'model_id': 'ppo_v19',
+            'model_id': 'ppo_primary',
             'action': 0.75,
             'features': [0.1, 0.2, 0.3],
             'metadata': {'version': '1.0', 'timestamp': '2025-12-26'}

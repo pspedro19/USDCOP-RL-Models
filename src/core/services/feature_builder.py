@@ -38,17 +38,57 @@ CRITICAL UPDATES IN v2.0:
 
 import numpy as np
 import pandas as pd
+import sys
 from typing import Dict, List, Optional, Tuple, Union
 from pathlib import Path
 
-# Import from shared (using relative imports within src package)
-from ...shared.config_loader import get_config, ConfigLoader
-from ...shared.exceptions import (
-    ValidationError,
-    FeatureCalculationError,
-    ObservationDimensionError,
-    FeatureMissingError
-)
+# Add src to path for flexible imports (works both as package and standalone)
+_src_path = Path(__file__).parent.parent.parent
+if str(_src_path) not in sys.path:
+    sys.path.insert(0, str(_src_path))
+
+# Import from shared - use flexible import strategy
+def _import_shared_modules():
+    """Import shared modules with fallback for different import contexts."""
+    import importlib.util
+
+    # Try to find modules in src/shared
+    shared_path = _src_path / "shared"
+
+    # Import config_loader
+    config_spec = importlib.util.spec_from_file_location(
+        "config_loader", shared_path / "config_loader.py"
+    )
+    config_module = importlib.util.module_from_spec(config_spec)
+    config_spec.loader.exec_module(config_module)
+
+    # Import exceptions
+    exc_spec = importlib.util.spec_from_file_location(
+        "exceptions", shared_path / "exceptions.py"
+    )
+    exc_module = importlib.util.module_from_spec(exc_spec)
+    exc_spec.loader.exec_module(exc_module)
+
+    return config_module, exc_module
+
+try:
+    # Try relative imports first (when used as installed package)
+    from ...shared.config_loader import get_config, ConfigLoader
+    from ...shared.exceptions import (
+        ValidationError,
+        FeatureCalculationError,
+        ObservationDimensionError,
+        FeatureMissingError
+    )
+except (ImportError, ValueError):
+    # Fallback: direct file imports (avoids __init__.py circular deps)
+    _config_mod, _exc_mod = _import_shared_modules()
+    get_config = _config_mod.get_config
+    ConfigLoader = _config_mod.ConfigLoader
+    ValidationError = _exc_mod.ValidationError
+    FeatureCalculationError = _exc_mod.FeatureCalculationError
+    ObservationDimensionError = _exc_mod.ObservationDimensionError
+    FeatureMissingError = _exc_mod.FeatureMissingError
 
 
 class FeatureBuilder:
@@ -535,7 +575,7 @@ class FeatureBuilder:
         df['log_ret_1h'] = self._calc_log_return(df['close'], periods=12)
         df['log_ret_4h'] = self._calc_log_return(df['close'], periods=48)
 
-        # Save raw returns for reward calculation (V11 FIX)
+        # Save raw returns for reward calculation
         df['_raw_ret_5m'] = df['log_ret_5m'].copy()
 
         # =====================================================================

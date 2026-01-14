@@ -289,6 +289,11 @@ async def root():
         }
     }
 
+@app.get("/health")
+async def health():
+    """Docker healthcheck endpoint"""
+    return {"status": "healthy", "service": "multi-model-trading-api"}
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
@@ -1445,34 +1450,32 @@ class ModelMetricsResponse(BaseModel):
 
 
 # Strategy code to model_id mapping
-# Updated 2025-12-26: ppo_v1 is now production model
 STRATEGY_TO_MODEL = {
-    "RL_PPO": "ppo_v1",           # Production model (trained 2025-12-26)
-    "RL_PPO_LEGACY": "ppo_v15_legacy",  # Legacy model
-    "RL_SAC": "sac_v19_baseline",
-    "RL_TD3": "td3_v19_baseline",
-    "RL_A2C": "a2c_v19_baseline",
-    "ML_XGB": "xgb_v1",
-    "ML_LGBM": "lgbm_v1",
+    "RL_PPO": "ppo_primary",           # Production model
+    "RL_PPO_SECONDARY": "ppo_secondary",  # Secondary model
+    "RL_SAC": "sac_baseline",
+    "RL_TD3": "td3_baseline",
+    "RL_A2C": "a2c_baseline",
+    "ML_XGB": "xgb_primary",
+    "ML_LGBM": "lgbm_primary",
     "LLM_CLAUDE": "llm_claude",
-    "ENSEMBLE": "ensemble_v1"
+    "ENSEMBLE": "ensemble_primary"
 }
 
 MODEL_TO_STRATEGY = {v: k for k, v in STRATEGY_TO_MODEL.items()}
 
 # Model colors and metadata
-# Updated 2025-12-26: Added ppo_v1 as production
 MODEL_METADATA = {
-    "ppo_v1": {"name": "PPO USDCOP V1 (Production)", "algorithm": "PPO", "version": "V1", "status": "production", "color": "#10B981"},
-    "ppo_v15_legacy": {"name": "PPO V15 Legacy", "algorithm": "PPO", "version": "V15", "status": "deprecated", "color": "#6B7280"},
-    "ppo_v19_model_b": {"name": "PPO V19 Model B", "algorithm": "PPO", "version": "V19", "status": "deprecated", "color": "#3B82F6"},
-    "sac_v19_baseline": {"name": "SAC Baseline", "algorithm": "SAC", "version": "V19", "status": "inactive", "color": "#8B5CF6"},
-    "td3_v19_baseline": {"name": "TD3 Baseline", "algorithm": "TD3", "version": "V19", "status": "inactive", "color": "#F59E0B"},
-    "a2c_v19_baseline": {"name": "A2C Baseline", "algorithm": "A2C", "version": "V19", "status": "inactive", "color": "#EF4444"},
-    "xgb_v1": {"name": "XGBoost Classifier", "algorithm": "XGBoost", "version": "V1", "status": "testing", "color": "#EC4899"},
-    "lgbm_v1": {"name": "LightGBM Classifier", "algorithm": "LightGBM", "version": "V1", "status": "testing", "color": "#F472B6"},
-    "llm_claude": {"name": "LLM Claude Analysis", "algorithm": "LLM", "version": "V1", "status": "testing", "color": "#6366F1"},
-    "ensemble_v1": {"name": "Ensemble Voter", "algorithm": "Ensemble", "version": "V1", "status": "testing", "color": "#14B8A6"}
+    "ppo_primary": {"name": "PPO USDCOP Primary (Production)", "algorithm": "PPO", "version": "current", "status": "production", "color": "#10B981"},
+    "ppo_secondary": {"name": "PPO USDCOP Secondary", "algorithm": "PPO", "version": "current", "status": "standby", "color": "#6B7280"},
+    "ppo_legacy": {"name": "PPO USDCOP Legacy", "algorithm": "PPO", "version": "legacy", "status": "deprecated", "color": "#3B82F6"},
+    "sac_baseline": {"name": "SAC Baseline", "algorithm": "SAC", "version": "current", "status": "inactive", "color": "#8B5CF6"},
+    "td3_baseline": {"name": "TD3 Baseline", "algorithm": "TD3", "version": "current", "status": "inactive", "color": "#F59E0B"},
+    "a2c_baseline": {"name": "A2C Baseline", "algorithm": "A2C", "version": "current", "status": "inactive", "color": "#EF4444"},
+    "xgb_primary": {"name": "XGBoost Classifier", "algorithm": "XGBoost", "version": "current", "status": "testing", "color": "#EC4899"},
+    "lgbm_primary": {"name": "LightGBM Classifier", "algorithm": "LightGBM", "version": "current", "status": "testing", "color": "#F472B6"},
+    "llm_claude": {"name": "LLM Claude Analysis", "algorithm": "LLM", "version": "current", "status": "testing", "color": "#6366F1"},
+    "ensemble_primary": {"name": "Ensemble Voter", "algorithm": "Ensemble", "version": "current", "status": "testing", "color": "#14B8A6"}
 }
 
 
@@ -2438,7 +2441,7 @@ class TradesHistoryResponseSimplified(BaseModel):
     summary: dict
 
 @app.get("/api/state/live", response_model=LiveStateResponse)
-async def get_live_state(model_id: str = "ppo_v1"):
+async def get_live_state(model_id: str = "ppo_primary"):
     """
     Get aggregated live state for the dashboard.
     Combines RiskManager, DB, and Real-time data.
@@ -2562,7 +2565,7 @@ async def get_performance_summary(period: str = "out_of_sample"):
 @app.get("/api/trades/history", response_model=TradesHistoryResponseSimplified)
 async def get_trades_history_simplified(
     limit: int = 50,
-    model_id: str = "ppo_v1"
+    model_id: str = "ppo_primary"
 ):
     """
     Get simplified trade history for the table view.
@@ -2661,7 +2664,7 @@ async def get_trades_history_simplified(
 # ============================================================
 
 @app.get("/api/state/live")
-async def get_live_state(model_id: str = Query("ppo_v1", description="Model ID")):
+async def get_live_state(model_id: str = Query("ppo_primary", description="Model ID")):
     """
     Get live state of the trading model.
     Returns current position, equity, drawdown, and last signal.
@@ -2755,7 +2758,7 @@ async def get_live_state(model_id: str = Query("ppo_v1", description="Model ID")
 
 @app.get("/api/performance/summary")
 async def get_performance_summary(
-    model_id: str = Query("ppo_v1", description="Model ID"),
+    model_id: str = Query("ppo_primary", description="Model ID"),
     period: str = Query("out_of_sample", description="Period: out_of_sample, all")
 ):
     """
@@ -2874,7 +2877,7 @@ async def get_performance_summary(
 
 @app.get("/api/trades/history")
 async def get_trades_history_v2(
-    model_id: str = Query("ppo_v1", description="Model ID"),
+    model_id: str = Query("ppo_primary", description="Model ID"),
     period: str = Query("out_of_sample", description="Period filter"),
     limit: int = Query(50, description="Max trades to return", ge=1, le=500)
 ):
@@ -2954,7 +2957,7 @@ async def get_trades_history_v2(
 
 
 @app.get("/api/risk/status")
-async def get_risk_status(model_id: str = Query("ppo_v1", description="Model ID")):
+async def get_risk_status(model_id: str = Query("ppo_primary", description="Model ID")):
     """
     Get risk management status.
     Returns kill switch status, daily limits, and current metrics.
@@ -3059,7 +3062,7 @@ async def get_risk_status(model_id: str = Query("ppo_v1", description="Model ID"
 
 @app.get("/api/equity/curve")
 async def get_equity_curve(
-    model_id: str = Query("ppo_v1", description="Model ID"),
+    model_id: str = Query("ppo_primary", description="Model ID"),
     period: str = Query("7d", description="Period: 1d, 7d, 30d, all")
 ):
     """

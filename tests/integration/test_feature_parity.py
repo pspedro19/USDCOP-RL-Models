@@ -172,13 +172,13 @@ class TestEliminatedFeatures:
         """Verify hour_sin and hour_cos are NOT in feature order"""
         feature_order = feature_calculator.feature_order
 
-        assert 'hour_sin' not in feature_order, "hour_sin should be eliminated in v14"
-        assert 'hour_cos' not in feature_order, "hour_cos should be eliminated in v14"
+        assert 'hour_sin' not in feature_order, "hour_sin should be eliminated in current version"
+        assert 'hour_cos' not in feature_order, "hour_cos should be eliminated in current version"
 
     def test_bb_position_eliminated(self, feature_calculator):
         """Verify bb_position is NOT in feature order"""
         assert 'bb_position' not in feature_calculator.feature_order, \
-            "bb_position should be eliminated in v14"
+            "bb_position should be eliminated in current version"
 
     def test_eliminated_features_not_in_config(self, feature_config):
         """Verify eliminated features are not in observation order"""
@@ -189,7 +189,7 @@ class TestEliminatedFeatures:
 
         for feat in eliminated:
             assert feat not in observation_order, \
-                f"{feat} should not be in observation_space.order (eliminated in v14)"
+                f"{feat} should not be in observation_space.order (eliminated in current version)"
 
 
 @pytest.mark.integration

@@ -48,6 +48,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy shared modules first
 COPY common/ ./common/
 
+# Copy package directories for apps with relative imports
+# These use COPY with fallback to empty dirs via .dockerignore
+COPY mlops/ ./mlops/
+
 # Copy application code
 COPY ${APP_FILE} ./app.py
 

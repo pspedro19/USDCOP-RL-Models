@@ -2,7 +2,34 @@
 
 This directory contains archived files, deprecated code, and historical documentation that is no longer actively used but preserved for reference.
 
-**Last cleanup**: 2025-12-16 (Migration V14)
+**Last cleanup**: 2026-01-12 (V20 Consolidation - Clean Code Initiative)
+
+---
+
+## Recent Cleanup (2026-01-12)
+
+### V16/V17 Legacy (`v16_v17_legacy/`)
+Dataset builders and documentation from pre-V20:
+- `02_build_v16_datasets.py`
+- `03_build_v17_multifreq.py`
+- `04_build_v17_raw.py`
+- `dataset_builder_v17.py`
+- `generate_dataset_v17.py`
+- `test_colombia_features.py`
+- Documentation (`docs/`)
+
+### V19 Config (`v19_config/`)
+Configuration files superseded by V20:
+- `feature_config_v19.json`
+- `v19_norm_stats.json`
+- `feature_registry_v19.json`
+- `normalization_stats_v19.json`
+
+### Paper Trading Legacy (`paper_trading_legacy/`)
+Older paper trading implementations:
+- `paper_trading_simulation.py` (v1)
+- `paper_trading_simulation_v2.py` (v2)
+- `paper_trading_simulation_v3_real_macro.py` (v3)
 
 ---
 

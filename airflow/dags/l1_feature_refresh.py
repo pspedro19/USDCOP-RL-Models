@@ -8,8 +8,14 @@ Purpose:
     Macro data is forward-filled (ffill) from daily values to each 5-min bar.
 
 Schedule:
-    Every 5 minutes during trading hours (after L0 OHLCV acquisition)
-    */5 13-17 * * 1-5 (8:00-12:55 COT)
+    Event-driven: Uses NewOHLCVBarSensor to wait for new data from L0.
+    Fallback schedule: */5 13-17 * * 1-5 (8:00-12:55 COT)
+
+    Best Practice: Instead of running blindly every 5 minutes, the sensor
+    waits for actual new OHLCV data before processing. This prevents:
+    - Schedule drift
+    - Overlapping jobs
+    - Processing stale data
 
 Feature Calculation Strategy:
     1. Load OHLCV bars (last 100 for indicator warmup)
@@ -34,8 +40,8 @@ Data Flow:
     └─────────────────┘
 
 Author: Pedro @ Lean Tech Solutions
-Version: 3.1.0 (with ffill)
-Updated: 2025-12-17
+Version: 3.2.0 (with sensor-driven execution)
+Updated: 2025-01-12
 """
 
 from datetime import datetime, timedelta
@@ -52,6 +58,9 @@ import os
 # Trading calendar from DAG utils
 from utils.trading_calendar import TradingCalendar
 from utils.dag_common import get_db_connection, load_feature_config
+
+# Event-driven sensor (Best Practice: wait for actual data instead of fixed schedule)
+from sensors.new_bar_sensor import NewOHLCVBarSensor
 
 DAG_ID = 'v3.l1_feature_refresh'
 CONFIG = load_feature_config(raise_on_error=False)
@@ -198,7 +207,7 @@ def calc_macro_features(df: pd.DataFrame, df_macro: pd.DataFrame) -> pd.DataFram
     # Rate spread
     df['rate_spread'] = df['treasury_10y'] - df['treasury_2y']
 
-    # USDMXN daily change (v15: renamed from usdmxn_ret_1h)
+    # USDMXN daily change
     df['usdmxn_change_1d'] = np.log(df['usdmxn'] / df['usdmxn'].shift(12))
 
     # Clean up temp columns
@@ -319,7 +328,7 @@ def calculate_all_features(**context):
                 rsi_9 DOUBLE PRECISION,
                 atr_pct DOUBLE PRECISION,
                 adx_14 DOUBLE PRECISION,
-                -- Correlation (v15: renamed from usdmxn_ret_1h)
+                -- USDMXN correlation feature
                 usdmxn_change_1d DOUBLE PRECISION,
                 -- Metadata
                 updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -517,11 +526,11 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='V3 L1 Feature Refresh - All 13 features with macro FFILL',
-    schedule_interval='*/5 13-17 * * 1-5',  # Every 5min during trading hours (UTC)
+    description='V3 L1 Feature Refresh - Event-driven with NewOHLCVBarSensor',
+    schedule_interval='*/5 13-17 * * 1-5',  # Trigger schedule (sensor waits for actual data)
     catchup=False,
     max_active_runs=1,
-    tags=['v3', 'l1', 'features', 'realtime', 'ffill']
+    tags=['v3', 'l1', 'features', 'realtime', 'ffill', 'sensor-driven']
 )
 
 with dag:
@@ -529,7 +538,7 @@ with dag:
     def check_trading_day(**context):
         """Branch task to skip processing on holidays/weekends."""
         if should_run_today():
-            return 'calculate_all_features'
+            return 'wait_for_ohlcv'  # Changed: go to sensor first
         else:
             return 'skip_processing'
 
@@ -541,6 +550,18 @@ with dag:
 
     task_skip = EmptyOperator(
         task_id='skip_processing'
+    )
+
+    # EVENT-DRIVEN SENSOR: Wait for new OHLCV data instead of running blindly
+    # This prevents schedule drift and ensures L0 has completed before L1 runs
+    task_wait_ohlcv = NewOHLCVBarSensor(
+        task_id='wait_for_ohlcv',
+        table_name='usdcop_m5_ohlcv',
+        symbol='USD/COP',
+        max_staleness_minutes=10,  # Data must be < 10 minutes old
+        poke_interval=30,          # Check every 30 seconds
+        timeout=300,               # Max 5 minutes wait (matches schedule)
+        mode='poke',               # Keep worker while waiting
     )
 
     task_calculate = PythonOperator(
@@ -555,6 +576,22 @@ with dag:
         provide_context=True
     )
 
-    # Task dependencies
-    task_check >> [task_calculate, task_skip]
-    task_calculate >> task_validate
+    def mark_processed(**context):
+        """Mark OHLCV time as processed for next sensor check."""
+        ti = context['ti']
+        detected_time = ti.xcom_pull(key='detected_ohlcv_time', task_ids='wait_for_ohlcv')
+        if detected_time:
+            ti.xcom_push(key='last_processed_ohlcv_time', value=detected_time)
+            logging.info(f"Marked OHLCV time as processed: {detected_time}")
+
+    task_mark_processed = PythonOperator(
+        task_id='mark_processed',
+        python_callable=mark_processed,
+        provide_context=True,
+        trigger_rule='all_success'
+    )
+
+    # Task dependencies with sensor
+    # Trading day check -> (sensor wait OR skip) -> calculate -> validate -> mark
+    task_check >> [task_wait_ohlcv, task_skip]
+    task_wait_ohlcv >> task_calculate >> task_validate >> task_mark_processed

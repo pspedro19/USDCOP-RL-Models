@@ -143,11 +143,11 @@ class AuditLogger implements IAuditLogger {
       const result = await pgQuery(
         `SELECT id, user_id, event_type, event_description, ip_address, user_agent, metadata, created_at
         FROM auth_audit_log
-        WHERE created_at > NOW() - INTERVAL '${hours} hours'
+        WHERE created_at > NOW() - INTERVAL '1 hour' * $1
           AND event_type IN ('login_failure', 'account_locked', 'password_reset_request')
         ORDER BY created_at DESC
-        LIMIT $1`,
-        [limit]
+        LIMIT $2`,
+        [hours, limit]
       );
 
       return result.rows.map(this.mapRowToAuditEntry);
@@ -167,8 +167,8 @@ class AuditLogger implements IAuditLogger {
         FROM auth_audit_log
         WHERE ip_address = $1
           AND event_type = 'login_failure'
-          AND created_at > NOW() - INTERVAL '${hours} hours'`,
-        [ip]
+          AND created_at > NOW() - INTERVAL '1 hour' * $2`,
+        [ip, hours]
       );
 
       return parseInt(result.rows[0]?.count || '0');

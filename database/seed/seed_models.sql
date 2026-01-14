@@ -2,7 +2,7 @@
 -- Model Registry Seed Data
 -- ============================================================================
 -- This script creates the models schema and seeds the initial model registry
--- with PPO V19 (production), PPO V15 (deprecated), SAC V1 and TD3 V1 (testing)
+-- with PPO Primary (production), PPO Legacy (deprecated), SAC and TD3 (testing)
 -- ============================================================================
 
 -- Create schema if not exists
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS models.model_registry (
     policy_config JSONB,
     environment_config JSONB,
     model_path VARCHAR(500) NOT NULL,
-    feature_dim INTEGER NOT NULL DEFAULT 21,
+    feature_dim INTEGER NOT NULL DEFAULT 15,
     validation_metrics JSONB,
     risk_limits JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -99,7 +99,7 @@ CREATE TRIGGER update_model_registry_updated_at
     EXECUTE FUNCTION models.update_updated_at_column();
 
 -- ============================================================================
--- SEED DATA: PPO V19 (Production Model)
+-- SEED DATA: PPO Primary (Production Model)
 -- ============================================================================
 -- Configuration extracted from PRODUCTION_CONFIG.json
 -- This is the validated production model with stress tests passed
@@ -119,10 +119,10 @@ INSERT INTO models.model_registry (
     validation_metrics,
     risk_limits
 ) VALUES (
-    'ppo_v19_aggressive',
+    'ppo_primary',
     'Model B (Aggressive)',
     'PPO',
-    'V19',
+    'current',
     'production',
     -- Hyperparameters from PRODUCTION_CONFIG.json
     '{
@@ -145,7 +145,7 @@ INSERT INTO models.model_registry (
     }'::jsonb,
     -- Environment configuration
     '{
-        "class": "TradingEnvironmentV19",
+        "class": "TradingEnvironment",
         "initial_balance": 10000,
         "max_position": 1.0,
         "episode_length": 400,
@@ -154,7 +154,7 @@ INSERT INTO models.model_registry (
         "bars_per_day": 56
     }'::jsonb,
     -- Model path
-    'models/ppo_v19_aggressive.zip',
+    'models/ppo_primary.zip',
     -- Feature dimension
     21,
     -- Validation results from PRODUCTION_CONFIG.json
@@ -206,9 +206,9 @@ ON CONFLICT (model_id) DO UPDATE SET
     updated_at = NOW();
 
 -- ============================================================================
--- SEED DATA: PPO V15 (Deprecated Model)
+-- SEED DATA: PPO Legacy (Deprecated Model)
 -- ============================================================================
--- Previous production model, now deprecated after V19 validation
+-- Previous production model, now deprecated
 -- ============================================================================
 
 INSERT INTO models.model_registry (
@@ -225,10 +225,10 @@ INSERT INTO models.model_registry (
     validation_metrics,
     risk_limits
 ) VALUES (
-    'ppo_v15_balanced',
+    'ppo_legacy',
     'Model A (Balanced)',
     'PPO',
-    'V15',
+    'legacy',
     'deprecated',
     '{
         "learning_rate": 0.0003,
@@ -248,7 +248,7 @@ INSERT INTO models.model_registry (
         "activation_fn": "Tanh"
     }'::jsonb,
     '{
-        "class": "TradingEnvironmentV15",
+        "class": "TradingEnvironmentLegacy",
         "initial_balance": 10000,
         "max_position": 1.0,
         "episode_length": 288,
@@ -256,7 +256,7 @@ INSERT INTO models.model_registry (
         "use_regime_detection": false,
         "bars_per_day": 56
     }'::jsonb,
-    'models/ppo_v15_balanced.zip',
+    'models/ppo_legacy.zip',
     18,
     '{
         "stress_tests": {
@@ -273,7 +273,7 @@ INSERT INTO models.model_registry (
             "positive_sharpe_folds": 3
         },
         "validated_date": "2025-10-15",
-        "deprecation_reason": "Superseded by V19 with better stress test performance"
+        "deprecation_reason": "Superseded by current model with better stress test performance"
     }'::jsonb,
     '{
         "max_drawdown_threshold": 0.08,
@@ -286,7 +286,7 @@ ON CONFLICT (model_id) DO UPDATE SET
     updated_at = NOW();
 
 -- ============================================================================
--- SEED DATA: SAC V1 (Testing Model)
+-- SEED DATA: SAC (Testing Model)
 -- ============================================================================
 -- Soft Actor-Critic variant for comparison testing
 -- ============================================================================
@@ -305,10 +305,10 @@ INSERT INTO models.model_registry (
     validation_metrics,
     risk_limits
 ) VALUES (
-    'sac_v1_experimental',
+    'sac_experimental',
     'SAC Experimental',
     'SAC',
-    'V1',
+    'current',
     'testing',
     '{
         "learning_rate": 0.0003,
@@ -329,7 +329,7 @@ INSERT INTO models.model_registry (
         "activation_fn": "ReLU"
     }'::jsonb,
     '{
-        "class": "TradingEnvironmentV19",
+        "class": "TradingEnvironment",
         "initial_balance": 10000,
         "max_position": 1.0,
         "episode_length": 400,
@@ -337,7 +337,7 @@ INSERT INTO models.model_registry (
         "use_regime_detection": true,
         "bars_per_day": 56
     }'::jsonb,
-    'models/sac_v1_experimental.zip',
+    'models/sac_experimental.zip',
     21,
     '{
         "stress_tests": {
@@ -372,7 +372,7 @@ ON CONFLICT (model_id) DO UPDATE SET
     updated_at = NOW();
 
 -- ============================================================================
--- SEED DATA: TD3 V1 (Testing Model)
+-- SEED DATA: TD3 (Testing Model)
 -- ============================================================================
 -- Twin Delayed DDPG variant for comparison testing
 -- ============================================================================
@@ -391,10 +391,10 @@ INSERT INTO models.model_registry (
     validation_metrics,
     risk_limits
 ) VALUES (
-    'td3_v1_experimental',
+    'td3_experimental',
     'TD3 Experimental',
     'TD3',
-    'V1',
+    'current',
     'testing',
     '{
         "learning_rate": 0.001,
@@ -415,7 +415,7 @@ INSERT INTO models.model_registry (
         "activation_fn": "ReLU"
     }'::jsonb,
     '{
-        "class": "TradingEnvironmentV19",
+        "class": "TradingEnvironment",
         "initial_balance": 10000,
         "max_position": 1.0,
         "episode_length": 400,
@@ -423,7 +423,7 @@ INSERT INTO models.model_registry (
         "use_regime_detection": true,
         "bars_per_day": 56
     }'::jsonb,
-    'models/td3_v1_experimental.zip',
+    'models/td3_experimental.zip',
     21,
     '{
         "stress_tests": {

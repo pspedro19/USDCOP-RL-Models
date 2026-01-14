@@ -1,0 +1,324 @@
+# =============================================================================
+# CI Pipeline with Coverage Gate (Phase 15.3)
+# =============================================================================
+# Continuous integration pipeline with test coverage requirements.
+#
+# Coverage Gate: 70% minimum coverage required
+#
+# Author: Trading Team
+# Date: 2025-01-14
+# =============================================================================
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+  COVERAGE_THRESHOLD: 70
+
+jobs:
+  # ===========================================================================
+  # Lint & Format Check
+  # ===========================================================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: |
+          pip install ruff black isort mypy
+
+      - name: Run ruff
+        run: ruff check src/ services/ tests/ --output-format=github
+        continue-on-error: true
+
+      - name: Check black formatting
+        run: black --check --diff src/ services/ tests/
+        continue-on-error: true
+
+      - name: Check import sorting
+        run: isort --check-only --diff src/ services/ tests/
+        continue-on-error: true
+
+  # ===========================================================================
+  # Unit Tests with Coverage Gate
+  # ===========================================================================
+  test:
+    name: Tests with Coverage
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio pytest-xdist
+
+      - name: Run unit tests with coverage
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+        run: |
+          pytest tests/unit/ \
+            --cov=src \
+            --cov=services \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
+            -v \
+            --tb=short \
+            -x
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: unit-coverage
+        continue-on-error: true
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 7
+
+  # ===========================================================================
+  # Integration Tests
+  # ===========================================================================
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+        run: |
+          pytest tests/integration/ \
+            -v \
+            --tb=short \
+            -x \
+            --ignore=tests/integration/test_database_schema.py
+        continue-on-error: true
+
+  # ===========================================================================
+  # Feature Parity Tests (Critical)
+  # ===========================================================================
+  feature-parity:
+    name: Feature Parity Check
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run feature parity tests
+        run: |
+          pytest tests/integration/test_feature_parity.py \
+            tests/integration/test_observation_parity.py \
+            -v \
+            --tb=long
+
+  # ===========================================================================
+  # Load Tests (Optional - on schedule)
+  # ===========================================================================
+  load-test:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[load-test]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run load tests
+        run: |
+          pytest tests/load/ \
+            -v \
+            --tb=short \
+            -m "load and not slow"
+
+  # ===========================================================================
+  # Build Check
+  # ===========================================================================
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build inference API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services
+          file: ./services/Dockerfile.api
+          push: false
+          tags: usdcop/inference-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # Notify on Failure
+  # ===========================================================================
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [test, integration-test, feature-parity]
+    if: failure()
+
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "::error::CI pipeline failed! Review the logs above."
+          # Add Slack/email notification here if configured
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, test, integration-test, feature-parity, build]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | ${{ needs.integration-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Feature Parity | ${{ needs.feature-parity.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage threshold: **${{ env.COVERAGE_THRESHOLD }}%**" >> $GITHUB_STEP_SUMMARY

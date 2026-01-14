@@ -96,19 +96,6 @@ export async function protectApiRoute(
 ): Promise<AuthResult> {
   const { requiredRole, requiredPermission, rateLimit = true, strictRateLimit = false } = options;
 
-  // DEV MODE: Skip auth entirely when NEXT_PUBLIC_DEV_MODE is true
-  if (process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-    return {
-      authenticated: true,
-      user: {
-        id: 'dev-user',
-        username: 'admin',
-        email: 'admin@dev.local',
-        role: 'admin',
-      },
-    };
-  }
-
   // Check rate limit first (before auth to prevent DoS)
   if (rateLimit) {
     const clientIp = getClientIp(request);

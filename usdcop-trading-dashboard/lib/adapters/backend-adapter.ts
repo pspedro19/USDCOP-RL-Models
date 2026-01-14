@@ -4,7 +4,7 @@
  * Transforms data between backend API format and frontend expected format.
  *
  * KEY MAPPINGS:
- * - model_id (backend: ppo_v19) <-> strategy_code (frontend: RL_PPO)
+ * - model_id (backend: ppo_primary) <-> strategy_code (frontend: RL_PPO)
  * - signal: LONG/SHORT (backend) <-> BUY/SELL (frontend)
  * - Equity curves: by-strategy (backend) <-> pivoted columns (frontend)
  */
@@ -15,23 +15,20 @@
 
 /**
  * Maps frontend strategy_code to backend model_id
- * V19 and V20 are production models. Others are placeholders/demo.
  */
 export const STRATEGY_TO_MODEL: Record<string, string> = {
   // Production models
-  RL_PPO: 'ppo_v1',           // V19 Production (legacy)
-  RL_PPO_V19: 'ppo_v1',       // Explicit V19
-  RL_PPO_V20: 'ppo_v20_macro', // V20 Production (latest)
-  ppo_v19_prod: 'ppo_v1',     // Frontend model ID
-  ppo_v20_prod: 'ppo_v20_macro', // Frontend model ID (new)
-  ppo_v20_macro: 'ppo_v20_macro', // Frontend model ID
+  RL_PPO: 'ppo_primary',           // Primary production model
+  RL_PPO_SECONDARY: 'ppo_secondary', // Secondary model
+  ppo_primary: 'ppo_primary',       // Direct model ID
+  ppo_secondary: 'ppo_secondary',   // Direct model ID
   // Demo/placeholder models
-  RL_SAC: 'sac_v1',
-  RL_TD3: 'td3_v1',
-  RL_A2C: 'a2c_v1',
-  ML_XGB: 'xgb_v1',
-  ML_LGBM: 'lgbm_v1',
-  sac_v1_demo: 'sac_v1',
+  RL_SAC: 'sac_baseline',
+  RL_TD3: 'td3_baseline',
+  RL_A2C: 'a2c_baseline',
+  ML_XGB: 'xgb_primary',
+  ML_LGBM: 'lgbm_primary',
+  sac_demo: 'sac_baseline',
   llm_claude_demo: 'llm_claude',
 };
 
@@ -40,22 +37,21 @@ export const STRATEGY_TO_MODEL: Record<string, string> = {
  */
 export const MODEL_TO_STRATEGY: Record<string, string> = {
   // Production
-  ppo_v1: 'RL_PPO',           // V19
-  ppo_v20_macro: 'RL_PPO_V20', // V20
+  ppo_primary: 'RL_PPO',
+  ppo_secondary: 'RL_PPO_SECONDARY',
   // Demo
-  sac_v1: 'RL_SAC',
-  td3_v1: 'RL_TD3',
-  a2c_v1: 'RL_A2C',
-  xgb_v1: 'ML_XGB',
-  lgbm_v1: 'ML_LGBM',
-  sac_v19_baseline: 'RL_SAC',
+  sac_baseline: 'RL_SAC',
+  td3_baseline: 'RL_TD3',
+  a2c_baseline: 'RL_A2C',
+  xgb_primary: 'ML_XGB',
+  lgbm_primary: 'ML_LGBM',
   llm_claude: 'LLM_CLAUDE',
 };
 
 /**
  * Default model ID for production
  */
-export const DEFAULT_MODEL_ID = 'ppo_v1';
+export const DEFAULT_MODEL_ID = 'ppo_primary';
 export const DEFAULT_STRATEGY_CODE = 'RL_PPO';
 
 /**

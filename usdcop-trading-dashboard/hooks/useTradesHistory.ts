@@ -36,7 +36,7 @@ interface ApiResponse<T> {
     };
 }
 
-export function useTradesHistory(limit: number = 50, modelId: string = 'ppo_v1') {
+export function useTradesHistory(limit: number = 50, modelId: string = 'ppo_primary') {
     const { data: rawData, error, isLoading } = useSWR<ApiResponse<TradesHistoryResponse>>(
         `/api/trading/trades/history?limit=${limit}&model_id=${modelId}`,
         fetcher,

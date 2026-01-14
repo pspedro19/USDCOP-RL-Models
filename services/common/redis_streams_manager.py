@@ -468,7 +468,7 @@ class StreamProducer:
         Publish a signal to a model-specific stream.
 
         Args:
-            model_id: Model identifier (e.g., "ppo_v1", "xgboost_ensemble")
+            model_id: Model identifier (e.g., "ppo_primary", "xgboost_ensemble")
             signal_data: Signal data including type, confidence, etc.
 
         Returns:

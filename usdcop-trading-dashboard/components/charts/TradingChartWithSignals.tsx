@@ -55,8 +55,20 @@ interface TradingChartWithSignalsProps {
   showStopLossTakeProfit?: boolean
   enableRealTime?: boolean
   className?: string
-  startDate?: string  // New: custom start date
+  startDate?: string  // Custom start date
+  endDate?: Date      // Replay mode: end date for filtering candlesticks
   modelId?: string    // Model ID for filtering signals (ppo_v19_prod, ppo_v20_prod)
+  isReplayMode?: boolean  // Whether replay mode is active
+  replayVisibleTradeIds?: Set<string>  // Only show signals for these trade IDs during replay
+  replayTrades?: Array<{  // Trades to display as signals during replay mode
+    trade_id: number
+    timestamp?: string
+    entry_time?: string
+    side: string
+    entry_price: number
+    pnl?: number
+    status?: string
+  }>
 }
 
 // Signal overlay position type
@@ -71,6 +83,14 @@ interface SignalOverlay {
   visible: boolean
 }
 
+// P1-6: Helper para color de marker basado en confidence
+const getConfidenceColor = (confidence: number): string => {
+  if (confidence >= 90) return '#00C853'  // Alto - verde brillante
+  if (confidence >= 75) return '#4CAF50'  // Bueno - verde
+  if (confidence >= 60) return '#FFC107'  // Medio - amarillo
+  return '#FF5722'                         // Bajo - naranja
+}
+
 export default function TradingChartWithSignals({
   symbol = 'USDCOP',
   timeframe = '5m',
@@ -81,7 +101,11 @@ export default function TradingChartWithSignals({
   enableRealTime = false,
   className = '',
   startDate = '2024-02-01',  // Default: start from just before validation
-  modelId = 'ppo_v19_prod'   // Default: V19 production model
+  endDate,                    // Replay mode: end date for filtering candlesticks
+  modelId = 'ppo_v19_prod',  // Default: V19 production model
+  isReplayMode = false,       // Whether replay mode is active
+  replayVisibleTradeIds,       // Only show signals for these trade IDs during replay
+  replayTrades = []           // Trades to display as signals during replay mode
 }: TradingChartWithSignalsProps) {
   // Refs
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -114,8 +138,8 @@ export default function TradingChartWithSignals({
 
   // Integrated data hook
   const {
-    candlestickData,
-    signals,
+    candlestickData: rawCandlestickData,
+    signals: rawSignals,
     positions,
     isLoading,
     hasError,
@@ -125,13 +149,79 @@ export default function TradingChartWithSignals({
     symbol,
     timeframe,
     startDate,  // Pass custom start date to load historical data
-    enableSignals: showSignals,
+    // Don't pass endDate to hook - we fetch all data and filter client-side for display
+    enableSignals: showSignals && !isReplayMode,  // In replay mode, signals come from replayTrades
     enablePositions: showPositions,
-    enableRealTime,
-    refreshInterval: enableRealTime ? 5000 : 0,
+    enableRealTime: enableRealTime && !isReplayMode,  // Disable real-time in replay mode
+    refreshInterval: enableRealTime && !isReplayMode ? 5000 : 0,
     limit: 50000,  // Request more data to cover from 2024-02 to present
     modelId  // Pass model ID for filtering signals
   })
+
+  // Filter candlestick data by endDate for replay mode
+  // Note: API returns time in milliseconds, so we use milliseconds for comparison
+  const candlestickData = React.useMemo(() => {
+    if (!rawCandlestickData || rawCandlestickData.length === 0) {
+      return []
+    }
+    if (!endDate) {
+      return rawCandlestickData
+    }
+    const endTimestamp = endDate.getTime()
+    return rawCandlestickData.filter((candle: any) => {
+      const candleTime = typeof candle.time === 'number' ? candle.time : new Date(candle.time).getTime()
+      return candleTime <= endTimestamp
+    })
+  }, [rawCandlestickData, endDate])
+
+  // Filter signals by endDate and visible trade IDs for replay mode
+  // In replay mode, convert replayTrades to signals format instead of using API signals
+  const signals = React.useMemo(() => {
+    // In replay mode with trades, use those directly as signals
+    if (isReplayMode && replayTrades && replayTrades.length > 0) {
+      return replayTrades.map((trade) => ({
+        id: trade.trade_id,
+        trade_id: trade.trade_id,
+        timestamp: trade.timestamp || trade.entry_time || '',
+        time: trade.timestamp || trade.entry_time || '',
+        type: ['BUY', 'LONG'].includes((trade.side || '').toUpperCase()) ? 'BUY' : 'SELL',
+        price: trade.entry_price,
+        // P1-6 FIX: Use real confidence from trade data with proper fallback chain
+        confidence: trade.entry_confidence
+          ?? trade.confidence
+          ?? trade.model_metadata?.confidence
+          ?? 75,  // Fallback only when no confidence data available
+        stopLoss: trade.stop_loss ?? null,
+        takeProfit: trade.take_profit ?? null,
+        modelVersion: trade.model_version ?? 'unknown',
+        entropy: trade.model_metadata?.entropy ?? null,
+        featuresSnapshot: trade.features_snapshot ?? null,
+      }))
+    }
+
+    if (!rawSignals) return rawSignals
+
+    let filtered = rawSignals
+
+    // Filter by endDate if provided
+    if (endDate) {
+      filtered = filtered.filter((signal: any) => {
+        const signalTime = new Date(signal.timestamp || signal.time)
+        return signalTime <= endDate
+      })
+    }
+
+    // In replay mode with visible trade IDs, only show signals for visible trades
+    // This provides more precise control than just endDate filtering
+    if (isReplayMode && replayVisibleTradeIds && replayVisibleTradeIds.size > 0) {
+      filtered = filtered.filter((signal: any) => {
+        const tradeId = String(signal.trade_id || signal.tradeId || signal.id)
+        return replayVisibleTradeIds.has(tradeId)
+      })
+    }
+
+    return filtered
+  }, [rawSignals, endDate, isReplayMode, replayVisibleTradeIds, replayTrades])
 
   /**
    * Format timestamp to COT (Colombia Time) - Short format for axis
@@ -424,14 +514,15 @@ export default function TradingChartWithSignals({
     // Sort markers by time (required by lightweight-charts)
     markers.sort((a, b) => (a.time as number) - (b.time as number))
 
-    console.log(`[TradingChart] Setting ${markers.length} signal markers from ${signals.length} signals`)
+    console.log(`[TradingChart] Setting ${markers.length} signal markers from ${signals.length} signals (isReplayMode=${isReplayMode}, replayTrades=${replayTrades?.length || 0})`)
 
     try {
       series.setMarkers(markers)
     } catch (err) {
-      console.warn('[TradingChart] Error setting markers:', err)
+      console.warn('[TradingChart] Error setting markers (using HTML overlays instead):', err)
+      // The HTML overlays in the JSX will handle marker display as fallback
     }
-  }, [signals, showSignals, candlestickData])
+  }, [signals, showSignals, candlestickData, isReplayMode, replayTrades])
 
   /**
    * Calculate HTML overlay positions for signals
@@ -513,6 +604,7 @@ export default function TradingChartWithSignals({
           })
         })
 
+      console.log(`[TradingChart] Calculated ${overlays.length} HTML overlays from ${signals.length} signals (isReplayMode=${isReplayMode})`)
       setSignalOverlays(overlays)
     }
 
@@ -636,6 +728,11 @@ export default function TradingChartWithSignals({
                 <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-400 border-cyan-500/30">
                   COT (UTC-5)
                 </Badge>
+                {isReplayMode && (
+                  <Badge variant="outline" className="text-[10px] bg-cyan-500/20 text-cyan-400 border-cyan-500/40 animate-pulse">
+                    REPLAY
+                  </Badge>
+                )}
               </h3>
               <p className="text-sm text-slate-400">Horario Colombia • Lun-Vie 8:00-12:55</p>
             </div>

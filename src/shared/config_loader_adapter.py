@@ -9,8 +9,20 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-from typing import Dict, Any, List, Optional
-from ..core.interfaces.config_loader import IConfigLoader
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+# Handle import for both package and standalone execution
+try:
+    from core.interfaces.config_loader import IConfigLoader
+except ImportError:
+    try:
+        from ..core.interfaces.config_loader import IConfigLoader
+    except ImportError:
+        # Fallback: define a minimal interface for standalone use
+        class IConfigLoader:
+            """Minimal interface when core.interfaces is not available."""
+            pass
+
 from .config_loader import ConfigLoader
 
 

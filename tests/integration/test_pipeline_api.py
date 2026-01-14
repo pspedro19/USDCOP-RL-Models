@@ -311,10 +311,10 @@ class TestL5Models:
     def model_info(self):
         """Sample model information"""
         return {
-            'model_id': 'ppo_usdcop_v14_fold0',
+            'model_id': 'ppo_primary',
             'algorithm': 'PPO',
             'framework': 'stable-baselines3',
-            'version': 'v14',
+            'version': 'current',
             'fold': 0,
             'observation_dim': 15,
             'action_dim': 1,
@@ -325,7 +325,7 @@ class TestL5Models:
             },
             'training_date': '2025-12-01',
             'training_episodes': 50000,
-            'file_path': 'models/ppo_usdcop_v14_fold0.zip'
+            'file_path': 'models/ppo_primary.zip'
         }
 
     def test_model_info_validation(self, model_info):
@@ -343,9 +343,9 @@ class TestL5Models:
         model_list = {
             'count': 3,
             'models': [
-                {'id': 'ppo_v14_fold0', 'status': 'active'},
-                {'id': 'ppo_v14_fold1', 'status': 'active'},
-                {'id': 'ppo_v11_fold0', 'status': 'deprecated'}
+                {'id': 'ppo_primary', 'status': 'active'},
+                {'id': 'ppo_secondary', 'status': 'active'},
+                {'id': 'ppo_legacy', 'status': 'deprecated'}
             ]
         }
 
@@ -365,7 +365,7 @@ class TestL6Backtest:
         """Sample backtest result"""
         return {
             'backtest_id': 'BT_20251217_001',
-            'model_id': 'ppo_usdcop_v14_fold0',
+            'model_id': 'ppo_primary',
             'period': {
                 'start': '2025-01-01',
                 'end': '2025-12-17'

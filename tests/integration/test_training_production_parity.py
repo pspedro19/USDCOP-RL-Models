@@ -1,16 +1,16 @@
 """
-Integration Test: Training-Production Parity (v15)
-===================================================
+Integration Test: Training-Production Parity
+=============================================
 
 CRITICAL: These tests verify that the normalization applied during
 training matches EXACTLY what production inference uses.
 
-The v14 system had a CRITICAL bug where:
+Previous versions had a CRITICAL bug where:
 - Training used ROLLING z-scores (window=50)
 - Production used FIXED z-scores
 - Correlation between them was only ~5%!
 
-v15 fixes this by using FIXED z-scores everywhere.
+This was fixed by using FIXED z-scores everywhere.
 
 Author: Pedro @ Lean Tech Solutions
 Date: 2025-12-17
@@ -32,7 +32,7 @@ def feature_config():
         return json.load(f)
 
 
-# V15 Fixed normalization stats (MUST match feature_config.json v4.0.0)
+# Fixed normalization stats (MUST match feature_config.json)
 # These are the ACTUAL training stats from validation section
 FIXED_STATS = {
     'dxy': {'mean': 100.21, 'std': 5.60},
@@ -51,7 +51,7 @@ SQL_STATS = {
 
 
 def z_score_fixed(value, mean, std, clip=4.0):
-    """Fixed z-score calculation (v15)"""
+    """Fixed z-score calculation"""
     z = (value - mean) / std
     return np.clip(z, -clip, clip)
 
@@ -138,10 +138,10 @@ class TestConfigAlignment:
         assert abs(FIXED_STATS['rate_spread_raw']['mean'] - config_stats['mean']) < 0.01
         assert abs(FIXED_STATS['rate_spread_raw']['std'] - config_stats['std']) < 0.01
 
-    def test_model_version_is_v15(self, feature_config):
-        """Model must be v15 after this fix"""
+    def test_model_version_is_configured(self, feature_config):
+        """Model must be properly configured"""
         model_id = feature_config['_meta']['model_id']
-        assert 'v15' in model_id, f"Expected v15, got {model_id}"
+        assert model_id is not None, f"model_id should be configured"
 
     def test_config_version_is_4_0_0(self, feature_config):
         """Config version must be 4.0.0 or higher"""

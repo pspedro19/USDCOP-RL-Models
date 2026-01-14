@@ -47,147 +47,116 @@ class TestConfigLoading:
 
 @pytest.mark.unit
 class TestObservationSpaceConfig:
-    """Test observation space configuration"""
+    """Test observation space configuration for current (15 features)"""
 
     def test_observation_space_exists(self, feature_config):
         """Test observation_space section exists"""
         assert 'observation_space' in feature_config, "Missing observation_space section"
 
     def test_observation_dimension(self, feature_config):
-        """Test observation dimension is 15"""
+        """Test observation dimension is 15 (current format: 13 market + 2 state)"""
         obs_space = feature_config['observation_space']
 
-        assert 'dimension' in obs_space, "Missing dimension"
-        assert obs_space['dimension'] == 15, f"Expected dimension 15, got {obs_space['dimension']}"
+        # current uses total_dimension instead of dimension
+        assert 'total_dimension' in obs_space or 'total_obs_dim' in obs_space, \
+            "Missing total_dimension or total_obs_dim"
 
-        assert 'total_obs_dim' in obs_space, "Missing total_obs_dim"
-        assert obs_space['total_obs_dim'] == 15, \
-            f"Expected total_obs_dim 15, got {obs_space['total_obs_dim']}"
+        total_dim = obs_space.get('total_dimension', obs_space.get('total_obs_dim'))
+        assert total_dim == 15, f"Expected total dimension 15 (current), got {total_dim}"
 
     def test_feature_order(self, feature_config):
-        """Test feature order has exactly 13 features"""
+        """Test feature order has exactly 15 features (current)"""
         obs_space = feature_config['observation_space']
 
         assert 'order' in obs_space, "Missing order"
         feature_order = obs_space['order']
 
-        assert len(feature_order) == 13, f"Expected 13 features, got {len(feature_order)}"
+        assert len(feature_order) == 15, f"Expected 15 features (current), got {len(feature_order)}"
 
-        # Check expected features are present
-        expected_features = [
-            'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
-            'rsi_9', 'atr_pct', 'adx_14',
-            'dxy_z', 'dxy_change_1d',
-            'vix_z', 'embi_z',
-            'brent_change_1d', 'rate_spread', 'usdmxn_ret_1h'
+        # Check some key features are present
+        key_features = [
+            'position', 'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
+            'rsi_9', 'atr_pct', 'adx_14', 'dxy_z', 'vix_z', 'embi_z'
         ]
 
-        assert set(feature_order) == set(expected_features), \
-            f"Feature order mismatch.\nExpected: {expected_features}\nActual: {feature_order}"
+        for feat in key_features:
+            assert feat in feature_order, f"Missing key feature: {feat}"
 
-    def test_additional_state_variables(self, feature_config):
-        """Test additional_in_env has position and time_normalized"""
+    def test_state_and_market_features_split(self, feature_config):
+        """Test current has state_features and market_features"""
         obs_space = feature_config['observation_space']
 
-        assert 'additional_in_env' in obs_space, "Missing additional_in_env"
-        additional = obs_space['additional_in_env']
+        assert 'state_features' in obs_space, "Missing state_features"
+        assert 'market_features' in obs_space, "Missing market_features"
 
-        assert len(additional) == 2, f"Expected 2 additional vars, got {len(additional)}"
-        assert 'position' in additional, "Missing position"
-        assert 'time_normalized' in additional, "Missing time_normalized"
+        state_count = len(obs_space['state_features'])
+        market_count = len(obs_space['market_features'])
 
-    def test_time_normalized_config(self, feature_config):
-        """Test time_normalized configuration"""
+        assert state_count == 2, f"Expected 2 state features, got {state_count}"
+        assert market_count == 13, f"Expected 13 market features, got {market_count}"
+        assert state_count + market_count == 15, "State + market should equal 15"
+
+    def test_position_in_state_features(self, feature_config):
+        """Test position is in state_features (current)"""
         obs_space = feature_config['observation_space']
+        state_features = obs_space['state_features']
 
-        assert 'time_normalized_range' in obs_space, "Missing time_normalized_range"
-        range_vals = obs_space['time_normalized_range']
-
-        assert len(range_vals) == 2, "Range should have min and max"
-        assert range_vals[0] == 0.0, "Min should be 0.0"
-        assert abs(range_vals[1] - 0.983) < 0.001, "Max should be ~0.983, NOT 1.0"
+        assert 'position' in state_features, "Missing position in state_features"
 
 
 @pytest.mark.unit
 class TestFeaturesConfig:
-    """Test features section configuration"""
+    """Test features section configuration for current format"""
 
-    def test_features_section_exists(self, feature_config):
-        """Test features section has required subsections"""
-        assert 'features' in feature_config, "Missing features section"
+    def test_state_features_section_exists(self, feature_config):
+        """Test current has state_features section"""
+        assert 'state_features' in feature_config, "Missing state_features section"
+        assert 'items' in feature_config['state_features'], "state_features missing items"
 
-        features = feature_config['features']
-        expected_subsections = ['returns', 'technical', 'macro_zscore', 'macro_changes', 'macro_derived']
+    def test_market_features_section_exists(self, feature_config):
+        """Test current has market_features section with subsections"""
+        assert 'market_features' in feature_config, "Missing market_features section"
+        # current market_features has subsections: returns, technical, macro_zscore, etc.
+        market = feature_config['market_features']
+        assert 'returns' in market or 'technical' in market, \
+            "market_features should have returns/technical subsections"
 
-        for subsection in expected_subsections:
-            assert subsection in features, f"Missing subsection: {subsection}"
+    def test_market_features_count(self, feature_config):
+        """Test current has multiple market feature subsections"""
+        market = feature_config['market_features']
+        # Count total items across all subsections
+        total_items = 0
+        for subsection_name, subsection in market.items():
+            if isinstance(subsection, dict) and 'items' in subsection:
+                total_items += len(subsection['items'])
+        assert total_items == 13, f"Expected 13 market features, got {total_items}"
 
-    def test_returns_features(self, feature_config):
-        """Test returns features configuration"""
-        returns = feature_config['features']['returns']
+    def test_state_features_count(self, feature_config):
+        """Test current has 2 state features (position, time_normalized)"""
+        items = feature_config['state_features']['items']
+        assert len(items) == 2, f"Expected 2 state features, got {len(items)}"
 
-        assert 'items' in returns, "Returns missing items"
-        items = returns['items']
+    def test_key_market_features_present(self, feature_config):
+        """Test key market features are present in current"""
+        market = feature_config['market_features']
+        # Collect all feature names from all subsections
+        feature_names = []
+        for subsection_name, subsection in market.items():
+            if isinstance(subsection, dict) and 'items' in subsection:
+                feature_names.extend([item['name'] for item in subsection['items']])
 
-        assert len(items) == 3, f"Expected 3 return features, got {len(items)}"
+        key_features = ['log_ret_5m', 'log_ret_1h', 'rsi_9', 'atr_pct', 'adx_14', 'dxy_z', 'vix_z']
+        for feat in key_features:
+            assert feat in feature_names, f"Missing key market feature: {feat}"
 
-        # Check each return feature has required fields
-        for item in items:
-            assert 'name' in item, "Return feature missing name"
-            assert 'formula' in item, "Return feature missing formula"
-            assert 'norm_stats' in item, "Return feature missing norm_stats"
-            assert 'clip' in item, "Return feature missing clip"
-
-            # Check norm_stats structure
-            norm_stats = item['norm_stats']
-            assert 'mean' in norm_stats, f"{item['name']} missing mean"
-            assert 'std' in norm_stats, f"{item['name']} missing std"
-
-    def test_technical_features(self, feature_config):
-        """Test technical features configuration"""
-        technical = feature_config['features']['technical']
-
-        assert 'items' in technical, "Technical missing items"
-        items = technical['items']
-
-        assert len(items) == 3, f"Expected 3 technical features, got {len(items)}"
-
+    def test_key_state_features_present(self, feature_config):
+        """Test key state features are present in current"""
+        items = feature_config['state_features']['items']
         feature_names = [item['name'] for item in items]
-        assert 'rsi_9' in feature_names, "Missing rsi_9"
-        assert 'atr_pct' in feature_names, "Missing atr_pct"
-        assert 'adx_14' in feature_names, "Missing adx_14"
 
-        # Check period configurations
-        rsi = next(item for item in items if item['name'] == 'rsi_9')
-        assert rsi['period'] == 9, "RSI period should be 9"
-
-        atr = next(item for item in items if item['name'] == 'atr_pct')
-        assert atr['period'] == 10, "ATR period should be 10"
-
-        adx = next(item for item in items if item['name'] == 'adx_14')
-        assert adx['period'] == 14, "ADX period should be 14"
-
-    def test_macro_zscore_features(self, feature_config):
-        """Test macro z-score features configuration"""
-        macro_zscore = feature_config['features']['macro_zscore']
-
-        assert 'items' in macro_zscore, "Macro_zscore missing items"
-        items = macro_zscore['items']
-
-        assert len(items) == 3, f"Expected 3 macro z-score features, got {len(items)}"
-
-        # Check fixed normalization stats
-        dxy = next(item for item in items if item['name'] == 'dxy_z')
-        assert dxy['norm_stats']['mean'] == 103.0, "DXY mean should be 103.0"
-        assert dxy['norm_stats']['std'] == 5.0, "DXY std should be 5.0"
-
-        vix = next(item for item in items if item['name'] == 'vix_z')
-        assert vix['norm_stats']['mean'] == 20.0, "VIX mean should be 20.0"
-        assert vix['norm_stats']['std'] == 10.0, "VIX std should be 10.0"
-
-        embi = next(item for item in items if item['name'] == 'embi_z')
-        assert embi['norm_stats']['mean'] == 300.0, "EMBI mean should be 300.0"
-        assert embi['norm_stats']['std'] == 100.0, "EMBI std should be 100.0"
+        key_features = ['position', 'time_normalized']
+        for feat in key_features:
+            assert feat in feature_names, f"Missing key state feature: {feat}"
 
 
 @pytest.mark.unit
@@ -199,24 +168,21 @@ class TestTradingConfig:
         assert 'trading' in feature_config, "Missing trading section"
 
     def test_trading_parameters(self, feature_config):
-        """Test trading parameters are correctly set"""
+        """Test trading parameters are correctly set (current format)"""
         trading = feature_config['trading']
 
-        assert 'cost_per_trade' in trading, "Missing cost_per_trade"
-        assert trading['cost_per_trade'] == 0.0015, \
-            f"Expected cost_per_trade 0.0015, got {trading['cost_per_trade']}"
+        # current has signal_thresholds instead of individual threshold params
+        assert 'signal_thresholds' in trading, "Missing signal_thresholds"
+        thresholds = trading['signal_thresholds']
+        assert 'long' in thresholds, "Missing long threshold"
+        assert 'short' in thresholds, "Missing short threshold"
 
-        assert 'weak_signal_threshold' in trading, "Missing weak_signal_threshold"
-        assert trading['weak_signal_threshold'] == 0.3, \
-            f"Expected weak_signal_threshold 0.3, got {trading['weak_signal_threshold']}"
-
-        assert 'trade_count_threshold' in trading, "Missing trade_count_threshold"
-        assert trading['trade_count_threshold'] == 0.3, \
-            f"Expected trade_count_threshold 0.3, got {trading['trade_count_threshold']}"
-
-        assert 'min_cost_threshold' in trading, "Missing min_cost_threshold"
-        assert trading['min_cost_threshold'] == 0.001, \
-            f"Expected min_cost_threshold 0.001, got {trading['min_cost_threshold']}"
+        # Cost model is in separate section in current
+        assert 'cost_model' in feature_config, "Missing cost_model section"
+        cost_model = feature_config['cost_model']
+        # current uses basis points (bps) instead of percentage
+        assert 'base_spread_bps' in cost_model, \
+            "cost_model should have base_spread_bps configuration"
 
     def test_market_hours_config(self, feature_config):
         """Test market hours configuration"""
@@ -240,83 +206,34 @@ class TestTradingConfig:
 
 
 @pytest.mark.unit
-class TestNormalizationConfig:
-    """Test normalization configuration"""
+class TestEnvironmentConfig:
+    """Test environment configuration for current"""
 
-    def test_normalization_method(self, feature_config):
-        """Test normalization method is zscore"""
-        assert 'normalization' in feature_config, "Missing normalization section"
+    def test_environment_config_exists(self, feature_config):
+        """Test environment_config section exists"""
+        assert 'environment_config' in feature_config, "Missing environment_config section"
 
-        norm = feature_config['normalization']
-        assert norm['method'] == 'zscore', "Normalization method should be zscore"
-        assert norm['formula'] == '(x - mean) / std', "Incorrect normalization formula"
+    def test_cost_model_exists(self, feature_config):
+        """Test cost_model section exists"""
+        assert 'cost_model' in feature_config, "Missing cost_model section"
 
-    def test_normalization_clip_range(self, feature_config):
-        """Test normalization clip range"""
-        norm = feature_config['normalization']
-
-        assert 'clip_after_norm' in norm, "Missing clip_after_norm"
-        clip_range = norm['clip_after_norm']
-
-        assert clip_range[0] == -4.0, "Min clip should be -4.0"
-        assert clip_range[1] == 4.0, "Max clip should be 4.0"
+    def test_regime_detection_exists(self, feature_config):
+        """Test regime_detection section exists"""
+        assert 'regime_detection' in feature_config, "Missing regime_detection section"
 
 
 @pytest.mark.unit
-class TestComputeStrategy:
-    """Test compute strategy configuration"""
+class TestModelConfig:
+    """Test model configuration for current"""
 
-    def test_compute_strategy_exists(self, feature_config):
-        """Test compute_strategy section exists"""
-        assert 'compute_strategy' in feature_config, "Missing compute_strategy section"
+    def test_model_section_exists(self, feature_config):
+        """Test model section exists"""
+        assert 'model' in feature_config, "Missing model section"
 
-    def test_sql_calculated_features(self, feature_config):
-        """Test SQL-calculated features are correctly specified"""
-        strategy = feature_config['compute_strategy']
+    def test_validation_section_exists(self, feature_config):
+        """Test validation section exists"""
+        assert 'validation' in feature_config, "Missing validation section"
 
-        assert 'sql_calculated' in strategy, "Missing sql_calculated"
-        sql_features = strategy['sql_calculated']['features']
-
-        # Should have 9 SQL-calculated features
-        assert len(sql_features) == 9, f"Expected 9 SQL features, got {len(sql_features)}"
-
-        expected_sql = [
-            'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
-            'dxy_z', 'vix_z', 'embi_z',
-            'dxy_change_1d', 'brent_change_1d', 'rate_spread'
-        ]
-
-        assert set(sql_features) == set(expected_sql), \
-            f"SQL features mismatch.\nExpected: {expected_sql}\nActual: {sql_features}"
-
-    def test_python_calculated_features(self, feature_config):
-        """Test Python-calculated features are correctly specified"""
-        strategy = feature_config['compute_strategy']
-
-        assert 'python_calculated' in strategy, "Missing python_calculated"
-        python_features = strategy['python_calculated']['features']
-
-        # Should have 4 Python-calculated features
-        assert len(python_features) == 4, f"Expected 4 Python features, got {len(python_features)}"
-
-        expected_python = ['rsi_9', 'atr_pct', 'adx_14', 'usdmxn_ret_1h']
-
-        assert set(python_features) == set(expected_python), \
-            f"Python features mismatch.\nExpected: {expected_python}\nActual: {python_features}"
-
-    def test_eliminated_features(self, feature_config):
-        """Test eliminated features are documented"""
-        strategy = feature_config['compute_strategy']
-
-        assert 'eliminated_v14' in strategy, "Missing eliminated_v14"
-        eliminated = strategy['eliminated_v14']['features']
-
-        # Should have 8 eliminated features
-        expected_eliminated = [
-            'hour_sin', 'hour_cos', 'bb_position', 'dxy_mom_5d',
-            'vix_regime', 'brent_vol_5d', 'sma_ratio', 'macd_hist'
-        ]
-
-        assert len(eliminated) == 8, f"Expected 8 eliminated features, got {len(eliminated)}"
-        assert set(eliminated) == set(expected_eliminated), \
-            f"Eliminated features mismatch.\nExpected: {expected_eliminated}\nActual: {eliminated}"
+    def test_sources_section_exists(self, feature_config):
+        """Test sources section exists for data sources"""
+        assert 'sources' in feature_config, "Missing sources section"

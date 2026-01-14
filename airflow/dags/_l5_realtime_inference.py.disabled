@@ -28,8 +28,8 @@ CONFIG = load_feature_config(raise_on_error=False)
 DAG_ID = "v3.l5_realtime_inference"
 
 # SSOT: Model version from feature_config.json (DRY - single source)
-MODEL_VERSION = CONFIG.get("_meta", {}).get("model_id", "ppo_usdcop_v14")
-MODEL_PATH = os.path.join(os.path.dirname(__file__), f"../../models/{MODEL_VERSION}_fold0.zip")
+MODEL_VERSION = CONFIG.get("_meta", {}).get("model_id", "ppo_primary")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), f"../../models/{MODEL_VERSION}.zip")
 
 FEATURES_ORDER = CONFIG["observation_space"]["order"]
 OBS_DIM_EXPECTED = CONFIG["observation_space"]["total_obs_dim"]

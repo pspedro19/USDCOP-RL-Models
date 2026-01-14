@@ -1,5 +1,5 @@
 """
-Test de Paridad de Observacion V19
+Test de Paridad de Observacion
 ===================================
 
 PRUEBA CRITICA: Verifica que el vector de observacion generado en produccion
@@ -13,7 +13,7 @@ El desalineamiento de features causa:
 Este test debe PASAR antes de cualquier deployment a produccion.
 
 Author: Pedro @ Lean Tech Solutions
-Version: 19.0.0
+Version: 1.0.0
 """
 
 import pytest
@@ -26,7 +26,7 @@ from typing import Dict, List
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.core.builders.observation_builder_v19 import ObservationBuilderV19
+from src.core.builders.observation_builder import ObservationBuilder
 
 
 # ===========================================================================
@@ -52,7 +52,7 @@ TRAINING_SAMPLE = {
 
 # Expected normalized values (pre-calculated from training pipeline)
 # Formula: z = (x - mean) / std
-# Using actual norm stats from config/v19_norm_stats.json:
+# Using actual norm stats from config/norm_stats.json:
 # log_ret_5m:   mean=9.042127679274034e-07, std=0.0011338119633965713
 # log_ret_1h:   mean=1.2402473246226877e-05, std=0.003736154311053953
 # log_ret_4h:   mean=5.743994224498364e-05, std=0.007675464150035283
@@ -90,7 +90,7 @@ class TestObservationParity:
     @pytest.fixture
     def builder(self):
         """Create observation builder instance."""
-        return ObservationBuilderV19()
+        return ObservationBuilder()
 
     def test_observation_dimension(self, builder):
         """Test that observation has correct dimension (15)."""
@@ -211,15 +211,6 @@ class TestObservationParity:
         assert obs.shape == (15,)
         assert not np.any(np.isnan(obs))
 
-    def test_config_version_check(self, builder):
-        """Verify config version matches V19."""
-        config = builder.get_config()
-        meta = config.get("_meta", {})
-
-        version = meta.get("version", "")
-        assert version.startswith("19"), \
-            f"Config version mismatch! Expected V19.x.x, got {version}"
-
     def test_norm_stats_loaded(self, builder):
         """Verify normalization stats are properly loaded."""
         for feature in builder.CORE_FEATURES:
@@ -243,7 +234,7 @@ class TestParityWithDataset:
 
     @pytest.fixture
     def builder(self):
-        return ObservationBuilderV19()
+        return ObservationBuilder()
 
     @pytest.mark.parametrize("sample_idx", range(5))
     def test_dataset_sample_parity(self, builder, sample_idx):
@@ -273,7 +264,7 @@ class TestInferenceIntegration:
 
         PPO models expect observation_space.shape = (15,)
         """
-        builder = ObservationBuilderV19()
+        builder = ObservationBuilder()
         obs = builder.build(TRAINING_SAMPLE, position=0.0, time_normalized=0.5)
 
         expected_shape = (15,)
@@ -282,7 +273,7 @@ class TestInferenceIntegration:
 
     def test_observation_dtype(self):
         """Verify dtype is float32 (standard for SB3 models)."""
-        builder = ObservationBuilderV19()
+        builder = ObservationBuilder()
         obs = builder.build(TRAINING_SAMPLE, position=0.0, time_normalized=0.5)
 
         assert obs.dtype == np.float32, \
@@ -294,7 +285,7 @@ class TestNormalizationEdgeCases:
 
     @pytest.fixture
     def builder(self):
-        return ObservationBuilderV19()
+        return ObservationBuilder()
 
     def test_zero_input_normalization(self, builder):
         """Test normalization of zero values."""
@@ -336,7 +327,7 @@ class TestFeatureOrdering:
 
     @pytest.fixture
     def builder(self):
-        return ObservationBuilderV19()
+        return ObservationBuilder()
 
     def test_core_features_count(self, builder):
         """Verify exactly 13 core features."""
@@ -374,11 +365,11 @@ def generate_parity_report():
 
     This can be run manually to debug parity issues.
     """
-    builder = ObservationBuilderV19()
+    builder = ObservationBuilder()
     obs = builder.build(TRAINING_SAMPLE, position=0.0, time_normalized=0.5)
 
     print("\n" + "="*60)
-    print("OBSERVATION PARITY REPORT V19")
+    print("OBSERVATION PARITY REPORT")
     print("="*60)
 
     print(f"\nObservation shape: {obs.shape}")

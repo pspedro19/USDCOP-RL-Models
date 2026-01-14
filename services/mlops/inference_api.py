@@ -28,11 +28,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import numpy as np
 
-from .config import MLOpsConfig, get_config, SignalType, ModelConfig
-from .inference_engine import InferenceEngine, get_inference_engine, InferenceResult, EnsembleResult
-from .risk_manager import RiskManager, get_risk_manager, RiskCheckResult
-from .feature_cache import FeatureCache, get_feature_cache
-from .drift_monitor import DriftMonitor
+from mlops.config import MLOpsConfig, get_config, SignalType, ModelConfig
+from mlops.inference_engine import InferenceEngine, get_inference_engine, InferenceResult, EnsembleResult
+from mlops.risk_manager import RiskManager, get_risk_manager, RiskCheckResult
+from mlops.feature_cache import FeatureCache, get_feature_cache
+from mlops.drift_monitor import DriftMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -429,9 +429,11 @@ def create_inference_app(config: Optional[MLOpsConfig] = None) -> FastAPI:
 app = create_inference_app()
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8080):
+def run_server(host: str = "0.0.0.0", port: int = None):
     """Run the inference server."""
     import uvicorn
+    if port is None:
+        port = int(os.getenv("PORT", "8090"))
     uvicorn.run(app, host=host, port=port)
 
 

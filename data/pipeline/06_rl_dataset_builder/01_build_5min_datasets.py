@@ -222,12 +222,13 @@ df_macro_subset = df_macro[macro_cols_exist].copy()
 
 print(f"   Columnas macro disponibles: {len(macro_cols_exist) - 1}")
 
+# P0-11 FIX: Remove tolerance to prevent data leakage
 df = pd.merge_asof(
     df_ohlcv.sort_values('datetime'),
     df_macro_subset.sort_values('datetime'),
     on='datetime',
-    direction='backward',
-    tolerance=pd.Timedelta('1 day')
+    direction='backward'
+    # NO tolerance - strict temporal ordering prevents data leakage
 )
 
 print(f"   Despues de merge: {len(df):,} registros")
@@ -744,11 +745,13 @@ for col in MACRO_COLS_TO_FILL:
         if nan_count > 0:
             print(f"      {col}: {nan_count:,} ({nan_pct:.1f}%)")
 
-print("\n   Applying forward-fill (NO LIMIT)...")
+# P0-10 FIX: ffill with limit to prevent stale data propagation
+FFILL_LIMIT = 144  # 12 hours max (144 bars * 5 min)
+print(f"\n   Applying forward-fill (limit={FFILL_LIMIT} bars = 12 hours)...")
 for col in MACRO_COLS_TO_FILL:
     if col in df.columns:
         nans_pre = df[col].isna().sum()
-        df[col] = df[col].ffill()  # NO LIMIT
+        df[col] = df[col].ffill(limit=FFILL_LIMIT)  # P0-10: Limited ffill
         nans_post = df[col].isna().sum()
         nans_filled = nans_pre - nans_post
         if nans_filled > 0:

@@ -14,6 +14,7 @@ Features:
 
 from datetime import datetime, timedelta
 from typing import Dict, Any
+import os
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -26,6 +27,25 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Database connection from environment variables (not hardcoded)
+DB_HOST = os.environ.get('POSTGRES_HOST', 'postgres')
+DB_PORT = os.environ.get('POSTGRES_PORT', '5432')
+DB_NAME = os.environ.get('POSTGRES_DB', 'usdcop')
+DB_USER = os.environ.get('POSTGRES_USER', 'postgres')
+DB_PASSWORD = os.environ.get('POSTGRES_PASSWORD', '')
+
+def get_connection_string() -> str:
+    """Get database connection string from environment variables."""
+    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# Current 15-feature observation space (13 market + 2 state, but we only check market features for drift)
+DRIFT_FEATURES = [
+    "log_ret_5m", "log_ret_1h", "log_ret_4h",
+    "rsi_9", "atr_pct", "adx_14",
+    "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
+    "brent_change_1d", "rate_spread", "usdmxn_change_1d"
+]
 
 # ============================================================================
 # Default Arguments
@@ -45,32 +65,33 @@ default_args = {
 # ============================================================================
 
 def load_reference_data(**context) -> Dict[str, Any]:
-    """Load reference data from database (last 30 days of training data)."""
+    """Load reference data from database (last 30 days of training data).
+
+    Uses the current 15-feature observation space (13 market features for drift).
+    """
     import psycopg2
     from psycopg2.extras import RealDictCursor
 
     logger.info("Loading reference data...")
 
-    conn_string = "postgresql://postgres:postgres@postgres:5432/usdcop"
+    conn_string = get_connection_string()
 
-    query = """
-    SELECT
-        returns_5m, returns_15m, returns_1h,
-        volatility_5m, volatility_15m,
-        rsi_14, macd, macd_signal,
-        sma_ratio_20, ema_ratio_12,
-        volume_ratio, atr_14
-    FROM fact_features_5m
-    WHERE timestamp >= NOW() - INTERVAL '30 days'
-      AND timestamp < NOW() - INTERVAL '1 day'
-    ORDER BY timestamp
+    # Build feature list for query (13 market features - state features not needed for drift)
+    feature_cols = ", ".join(DRIFT_FEATURES)
+
+    query = f"""
+    SELECT {feature_cols}
+    FROM inference_features_5m
+    WHERE time >= NOW() - INTERVAL '30 days'
+      AND time < NOW() - INTERVAL '1 day'
+    ORDER BY time
     """
 
     try:
         with psycopg2.connect(conn_string) as conn:
             df = pd.read_sql(query, conn)
 
-        logger.info(f"Loaded {len(df)} reference samples")
+        logger.info(f"Loaded {len(df)} reference samples with {len(DRIFT_FEATURES)} features")
 
         # Store in XCom
         return {
@@ -85,30 +106,31 @@ def load_reference_data(**context) -> Dict[str, Any]:
 
 
 def load_current_data(**context) -> Dict[str, Any]:
-    """Load current production data (last hour)."""
+    """Load current production data (last hour).
+
+    Uses the current 15-feature observation space (13 market features for drift).
+    """
     import psycopg2
 
     logger.info("Loading current data...")
 
-    conn_string = "postgresql://postgres:postgres@postgres:5432/usdcop"
+    conn_string = get_connection_string()
 
-    query = """
-    SELECT
-        returns_5m, returns_15m, returns_1h,
-        volatility_5m, volatility_15m,
-        rsi_14, macd, macd_signal,
-        sma_ratio_20, ema_ratio_12,
-        volume_ratio, atr_14
-    FROM fact_features_5m
-    WHERE timestamp >= NOW() - INTERVAL '1 hour'
-    ORDER BY timestamp
+    # Build feature list for query (13 market features - state features not needed for drift)
+    feature_cols = ", ".join(DRIFT_FEATURES)
+
+    query = f"""
+    SELECT {feature_cols}
+    FROM inference_features_5m
+    WHERE time >= NOW() - INTERVAL '1 hour'
+    ORDER BY time
     """
 
     try:
         with psycopg2.connect(conn_string) as conn:
             df = pd.read_sql(query, conn)
 
-        logger.info(f"Loaded {len(df)} current samples")
+        logger.info(f"Loaded {len(df)} current samples with {len(DRIFT_FEATURES)} features")
 
         return {
             "num_samples": len(df),

@@ -29,8 +29,8 @@ class TestModelLoading:
         """Available model paths"""
         models_dir = Path(__file__).parent.parent.parent / 'models'
         return {
-            'v11': models_dir / 'ppo_usdcop_v11_fold0.zip',
-            'v14': models_dir / 'ppo_usdcop_v14_fold0.zip',
+            'legacy': models_dir / 'ppo_legacy.zip',
+            'primary': models_dir / 'ppo_primary.zip',
         }
 
     def test_model_file_exists(self, model_paths):
@@ -127,7 +127,7 @@ class TestModelPrediction:
 
         models_dir = Path(__file__).parent.parent.parent / 'models'
 
-        for version in ['v14', 'v11']:
+        for version in ['primary', 'legacy']:
             model_path = models_dir / f'ppo_usdcop_{version}_fold0.zip'
             if model_path.exists():
                 return PPO.load(str(model_path))
@@ -453,7 +453,7 @@ class TestInferencePerformance:
 
         models_dir = Path(__file__).parent.parent.parent / 'models'
 
-        for version in ['v14', 'v11']:
+        for version in ['primary', 'legacy']:
             model_path = models_dir / f'ppo_usdcop_{version}_fold0.zip'
             if model_path.exists():
                 return PPO.load(str(model_path))

@@ -7,6 +7,7 @@
 fastapi==0.115.4
 uvicorn[standard]==0.32.0
 pydantic==2.9.2
+pydantic-settings==2.6.1
 python-multipart==0.0.12
 
 # Database - Sync & Async
@@ -56,8 +57,13 @@ holidays>=0.37
 # MLOps - Production Inference & Monitoring
 # ================================================
 
+# Reinforcement Learning (PPO model)
+stable-baselines3==2.3.2
+gymnasium==0.29.1
+
 # ONNX Runtime for optimized inference
-onnxruntime==1.16.3
+# Updated from 1.16.3 to 1.19.2 to fix kernel compatibility issue
+onnxruntime==1.19.2
 
 # Data Drift Detection
 evidently==0.4.16

@@ -2,7 +2,7 @@
 Robust Macro Data Scraper with Fallbacks
 =========================================
 
-V20 Implementation: Macro data scraper with retry logic and multiple fallback sources.
+Macro data scraper with retry logic and multiple fallback sources.
 Ensures macro data (DXY, VIX, etc.) is always available for model inference.
 
 From: 09_Documento Maestro Completo.md Section 6.6

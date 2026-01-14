@@ -35,16 +35,16 @@ _model_monitors: Dict[str, Any] = {}
 
 # Model metadata (should match multi_model_trading_api.py)
 MODEL_METADATA = {
-    "ppo_v1": {"name": "PPO USDCOP V1 (Production)", "algorithm": "PPO", "version": "V1", "status": "production", "color": "#10B981"},
-    "ppo_v15_legacy": {"name": "PPO V15 Legacy", "algorithm": "PPO", "version": "V15", "status": "deprecated", "color": "#6B7280"},
-    "ppo_v19_model_b": {"name": "PPO V19 Model B", "algorithm": "PPO", "version": "V19", "status": "deprecated", "color": "#3B82F6"},
-    "sac_v19_baseline": {"name": "SAC Baseline", "algorithm": "SAC", "version": "V19", "status": "inactive", "color": "#8B5CF6"},
-    "td3_v19_baseline": {"name": "TD3 Baseline", "algorithm": "TD3", "version": "V19", "status": "inactive", "color": "#F59E0B"},
-    "a2c_v19_baseline": {"name": "A2C Baseline", "algorithm": "A2C", "version": "V19", "status": "inactive", "color": "#EF4444"},
-    "xgb_v1": {"name": "XGBoost Classifier", "algorithm": "XGBoost", "version": "V1", "status": "testing", "color": "#EC4899"},
-    "lgbm_v1": {"name": "LightGBM Classifier", "algorithm": "LightGBM", "version": "V1", "status": "testing", "color": "#F472B6"},
-    "llm_claude": {"name": "LLM Claude Analysis", "algorithm": "LLM", "version": "V1", "status": "testing", "color": "#6366F1"},
-    "ensemble_v1": {"name": "Ensemble Voter", "algorithm": "Ensemble", "version": "V1", "status": "testing", "color": "#14B8A6"}
+    "ppo_primary": {"name": "PPO USDCOP Primary (Production)", "algorithm": "PPO", "version": "current", "status": "production", "color": "#10B981"},
+    "ppo_secondary": {"name": "PPO USDCOP Secondary", "algorithm": "PPO", "version": "current", "status": "standby", "color": "#6B7280"},
+    "ppo_legacy": {"name": "PPO USDCOP Legacy", "algorithm": "PPO", "version": "legacy", "status": "deprecated", "color": "#3B82F6"},
+    "sac_baseline": {"name": "SAC Baseline", "algorithm": "SAC", "version": "current", "status": "inactive", "color": "#8B5CF6"},
+    "td3_baseline": {"name": "TD3 Baseline", "algorithm": "TD3", "version": "current", "status": "inactive", "color": "#F59E0B"},
+    "a2c_baseline": {"name": "A2C Baseline", "algorithm": "A2C", "version": "current", "status": "inactive", "color": "#EF4444"},
+    "xgb_primary": {"name": "XGBoost Classifier", "algorithm": "XGBoost", "version": "current", "status": "testing", "color": "#EC4899"},
+    "lgbm_primary": {"name": "LightGBM Classifier", "algorithm": "LightGBM", "version": "current", "status": "testing", "color": "#F472B6"},
+    "llm_claude": {"name": "LLM Claude Analysis", "algorithm": "LLM", "version": "current", "status": "testing", "color": "#6366F1"},
+    "ensemble_primary": {"name": "Ensemble Voter", "algorithm": "Ensemble", "version": "current", "status": "testing", "color": "#14B8A6"}
 }
 
 

@@ -1,0 +1,139 @@
+# =============================================================================
+# DVC Pipeline Configuration (Phase 11)
+# =============================================================================
+# Defines the data pipeline stages for reproducibility.
+#
+# Usage:
+#   dvc repro           - Run all stages
+#   dvc repro train     - Run specific stage
+#   dvc dag             - Show pipeline DAG
+#
+# Author: Trading Team
+# Date: 2025-01-14
+# =============================================================================
+
+stages:
+  # ---------------------------------------------------------------------------
+  # Stage 1: Prepare Training Data
+  # ---------------------------------------------------------------------------
+  # Merges OHLCV and macro data into training-ready datasets
+  prepare_data:
+    cmd: python data/pipeline/06_rl_dataset_builder/01_build_5min_datasets.py
+    deps:
+      - data/pipeline/06_rl_dataset_builder/01_build_5min_datasets.py
+      - config/feature_config.json
+    outs:
+      - data/pipeline/07_output/datasets_5min/:
+          persist: true
+
+  # ---------------------------------------------------------------------------
+  # Stage 2: Calculate Normalization Statistics
+  # ---------------------------------------------------------------------------
+  # Computes mean/std for z-score normalization
+  calculate_norm_stats:
+    cmd: >
+      python -c "
+      import pandas as pd
+      import json
+      from pathlib import Path
+
+      # Load dataset
+      df = pd.read_csv('data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv')
+
+      # Features to normalize
+      features = ['log_ret_5m', 'log_ret_1h', 'log_ret_4h', 'rsi_9', 'atr_pct', 'adx_14',
+                  'dxy_z', 'dxy_change_1d', 'vix_z', 'embi_z', 'brent_change_1d',
+                  'rate_spread', 'usdmxn_change_1d']
+
+      stats = {}
+      for feat in features:
+          if feat in df.columns:
+              stats[feat] = {
+                  'mean': float(df[feat].mean()),
+                  'std': float(df[feat].std()),
+                  'min': float(df[feat].min()),
+                  'max': float(df[feat].max()),
+                  'count': int(df[feat].count()),
+                  'null_pct': float(df[feat].isna().mean())
+              }
+
+      with open('config/norm_stats.json', 'w') as f:
+          json.dump(stats, f, indent=2)
+
+      print(f'Generated norm_stats.json with {len(stats)} features')
+      "
+    deps:
+      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
+      - config/feature_config.json
+    outs:
+      - config/norm_stats.json:
+          cache: false
+
+  # ---------------------------------------------------------------------------
+  # Stage 3: Train Model
+  # ---------------------------------------------------------------------------
+  # Trains PPO model using prepared data
+  train_model:
+    cmd: python notebooks/train_v20_production_parity.py
+    deps:
+      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
+      - config/norm_stats.json
+      - config/feature_config.json
+      - src/feature_store/core.py
+    params:
+      - config/mlops.yaml:
+          - training
+    outs:
+      - models/ppo_primary/:
+          persist: true
+    metrics:
+      - models/ppo_primary/training_metrics.json:
+          cache: false
+
+  # ---------------------------------------------------------------------------
+  # Stage 4: Export to ONNX
+  # ---------------------------------------------------------------------------
+  # Exports trained model to ONNX format for inference
+  export_onnx:
+    cmd: python scripts/export_to_onnx.py --model models/ppo_primary/final_model.zip --output models/ppo_primary/model.onnx
+    deps:
+      - models/ppo_primary/final_model.zip
+      - scripts/export_to_onnx.py
+    outs:
+      - models/ppo_primary/model.onnx:
+          persist: true
+
+  # ---------------------------------------------------------------------------
+  # Stage 5: Run Backtest
+  # ---------------------------------------------------------------------------
+  # Validates model performance on historical data
+  backtest:
+    cmd: python scripts/backtest.py --model models/ppo_primary --output results/backtest/
+    deps:
+      - models/ppo_primary/model.onnx
+      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
+      - config/norm_stats.json
+      - scripts/backtest.py
+    outs:
+      - results/backtest/:
+          persist: true
+    metrics:
+      - results/backtest/metrics.json:
+          cache: false
+    plots:
+      - results/backtest/equity_curve.csv:
+          x: timestamp
+          y: equity
+
+# =============================================================================
+# Plots Configuration
+# =============================================================================
+plots:
+  - results/backtest/equity_curve.csv:
+      x: timestamp
+      y: equity
+      title: "Backtest Equity Curve"
+  - results/backtest/drawdown.csv:
+      x: timestamp
+      y: drawdown_pct
+      title: "Drawdown Over Time"

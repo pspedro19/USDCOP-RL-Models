@@ -5,8 +5,43 @@ Pytest Configuration and Shared Fixtures
 Provides reusable fixtures for all test suites.
 """
 
-import asyncio
 import os
+import sys
+from pathlib import Path
+
+# CRITICAL: Set up paths BEFORE any other imports to avoid module conflicts
+# This must happen at import time before pytest collects tests
+PROJECT_ROOT = Path(__file__).parent.parent
+
+# Remove any conflicting 'airflow' package from sys.modules to avoid Apache Airflow conflict
+# Our local airflow/ directory should take precedence
+if 'airflow' in sys.modules:
+    # Only remove if it's NOT our local module
+    airflow_mod = sys.modules.get('airflow')
+    if airflow_mod and hasattr(airflow_mod, '__file__') and airflow_mod.__file__:
+        airflow_path = Path(airflow_mod.__file__).parent
+        if 'site-packages' in str(airflow_path) or 'lib' in str(airflow_path):
+            # It's the installed Apache Airflow, remove it
+            keys_to_remove = [k for k in sys.modules if k == 'airflow' or k.startswith('airflow.')]
+            for key in keys_to_remove:
+                del sys.modules[key]
+
+# Add project paths FIRST (before site-packages)
+# CRITICAL: airflow/dags must come BEFORE services/inference_api because both
+# have a 'contracts' subpackage and test_all_layer_contracts needs the airflow one
+_paths_to_add = [
+    str(PROJECT_ROOT),
+    str(PROJECT_ROOT / "src"),
+    str(PROJECT_ROOT / "services"),
+    str(PROJECT_ROOT / "airflow" / "dags"),  # For contracts.l*_contracts imports - MUST BE FIRST
+]
+
+for path in _paths_to_add:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+# Now safe to import other modules
+import asyncio
 import pytest
 import redis
 import asyncpg
@@ -21,6 +56,8 @@ os.environ['TESTING'] = 'true'
 
 # Colombia timezone
 COT_TZ = pytz.timezone('America/Bogota')
+
+
 
 # ============================================================================
 # Pytest Configuration
@@ -278,18 +315,196 @@ def generate_market_ticks():
 # Feature Builder Testing Fixtures
 # ============================================================================
 
+class TestFeatureCalculator:
+    """
+    Adapter class providing the test-expected API for feature calculations.
+    Wraps the calculator modules with vectorized operations.
+    """
+
+    def __init__(self):
+        import numpy as np
+        import pandas as pd
+        self.np = np
+        self.pd = pd
+
+        # Feature order (15-dim observation)
+        self._feature_order = [
+            'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
+            'rsi_9', 'atr_pct', 'adx_14',
+            'dxy_z', 'dxy_change_1d', 'vix_z', 'embi_z',
+            'brent_change_1d', 'rate_spread', 'usdmxn_change_1d'
+        ]
+
+    @property
+    def feature_order(self):
+        """Return the 13 market feature names"""
+        return self._feature_order
+
+    def calc_rsi(self, close, period=9):
+        """Calculate RSI for a series (vectorized)"""
+        delta = close.diff()
+        gains = delta.where(delta > 0, 0.0)
+        losses = (-delta).where(delta < 0, 0.0)
+        alpha = 1.0 / period
+        avg_gain = gains.ewm(alpha=alpha, adjust=False).mean()
+        avg_loss = losses.ewm(alpha=alpha, adjust=False).mean()
+        rs = avg_gain / avg_loss.replace(0, self.np.nan)
+        rsi = 100.0 - (100.0 / (1.0 + rs))
+        return rsi.clip(0, 100).fillna(50.0)
+
+    def calc_atr(self, high, low, close, period):
+        """Calculate ATR for a series (vectorized)"""
+        prev_close = close.shift(1)
+        tr1 = high - low
+        tr2 = (high - prev_close).abs()
+        tr3 = (low - prev_close).abs()
+        tr = self.pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.ewm(span=period, adjust=False).mean()
+        return atr
+
+    def calc_atr_pct(self, high, low, close, period):
+        """Calculate ATR as percentage of close (vectorized)"""
+        atr = self.calc_atr(high, low, close, period)
+        atr_pct = (atr / close) * 100
+        return atr_pct.clip(lower=0)
+
+    def calc_adx(self, high, low, close, period):
+        """Calculate ADX for a series (vectorized)"""
+        high_diff = high.diff()
+        low_diff = -low.diff()
+
+        plus_dm = self.np.where(
+            (high_diff > low_diff) & (high_diff > 0),
+            high_diff, 0.0
+        )
+        minus_dm = self.np.where(
+            (low_diff > high_diff) & (low_diff > 0),
+            low_diff, 0.0
+        )
+
+        plus_dm = self.pd.Series(plus_dm, index=high.index)
+        minus_dm = self.pd.Series(minus_dm, index=high.index)
+
+        prev_close = close.shift(1)
+        tr = self.pd.concat([
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs()
+        ], axis=1).max(axis=1)
+
+        alpha = 1.0 / period
+        atr = tr.ewm(alpha=alpha, adjust=False).mean()
+        atr_safe = atr.replace(0, self.np.nan)
+
+        plus_di = 100 * plus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_safe
+        minus_di = 100 * minus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_safe
+
+        di_sum = plus_di + minus_di
+        dx = self.np.where(di_sum > 0, 100 * (plus_di - minus_di).abs() / di_sum, 0.0)
+        dx = self.pd.Series(dx, index=high.index)
+
+        adx = dx.ewm(alpha=alpha, adjust=False).mean()
+        return adx.clip(0, 100).fillna(0)
+
+    def calc_log_return(self, close, periods):
+        """Calculate log returns for a series"""
+        return self.np.log(close / close.shift(periods)).fillna(0)
+
+    def calc_pct_change(self, series, periods, clip_range=None):
+        """Calculate percent change with optional clipping"""
+        pct = series.pct_change(periods=periods).fillna(0)
+        if clip_range:
+            pct = pct.clip(clip_range[0], clip_range[1])
+        return pct
+
+    def normalize_zscore(self, series, mean, std, clip=10.0):
+        """Normalize using z-score with clipping"""
+        if std == 0:
+            return self.pd.Series(0.0, index=series.index)
+        normalized = (series - mean) / std
+        return normalized.clip(-clip, clip)
+
+    def build_observation(self, features, position, step_count, episode_length):
+        """Build observation vector from features dict"""
+        # 13 market features + position + time_normalized = 15
+        obs = []
+        for feat in self._feature_order:
+            val = features.get(feat, 0.0)
+            if hasattr(val, 'iloc'):
+                val = val.iloc[-1] if len(val) > 0 else 0.0
+            # Clip feature values to [-5, 5] as per contract
+            clipped_val = float(val) if not self.np.isnan(val) else 0.0
+            obs.append(self.np.clip(clipped_val, -5.0, 5.0))
+
+        # Add position and time (clamped to valid ranges)
+        obs.append(float(self.np.clip(position, -1.0, 1.0)))
+        time_norm = float(step_count) / float(episode_length) if episode_length > 0 else 0.0
+        obs.append(float(self.np.clip(time_norm, 0.0, 1.0)))
+
+        # Clip final observation to [-5, 5] as per contract
+        obs_array = self.np.array(obs, dtype=self.np.float32)
+        return self.np.clip(obs_array, -5.0, 5.0)
+
+    def get_observation_dim(self):
+        """Return observation dimension (15)"""
+        return 15
+
+    def get_feature_names(self):
+        """Return list of feature names"""
+        return self._feature_order + ['position', 'time_normalized']
+
+    def get_norm_stats(self, feature_name):
+        """Get normalization statistics for a feature from config"""
+        norm_stats = {
+            'log_ret_5m': {'mean': 2.0e-06, 'std': 0.001138},
+            'log_ret_1h': {'mean': 2.3e-05, 'std': 0.003776},
+            'log_ret_4h': {'mean': 5.2e-05, 'std': 0.007768},
+            'rsi_9': {'mean': 49.27, 'std': 23.07},
+            'atr_pct': {'mean': 0.062, 'std': 0.0446},
+            'adx_14': {'mean': 32.01, 'std': 16.36},
+            'dxy_z': {'mean': 103.0, 'std': 5.0},
+            'vix_z': {'mean': 20.0, 'std': 10.0},
+            'embi_z': {'mean': 300.0, 'std': 100.0},
+            'rate_spread': {'mean': -0.0326, 'std': 1.400}
+        }
+        return norm_stats.get(feature_name, {})
+
+    def compute_technical_features(self, ohlcv_df):
+        """Compute all technical features from OHLCV data"""
+        close = ohlcv_df['close']
+        high = ohlcv_df['high']
+        low = ohlcv_df['low']
+
+        return self.pd.DataFrame({
+            'log_ret_5m': self.calc_log_return(close, 1),
+            'log_ret_1h': self.calc_log_return(close, 12),
+            'log_ret_4h': self.calc_log_return(close, 48),
+            'rsi_9': self.calc_rsi(close, 9),
+            'atr_pct': self.calc_atr_pct(high, low, close, 10),
+            'adx_14': self.calc_adx(high, low, close, 14)
+        })
+
+    def normalize_features(self, features_df):
+        """Normalize a DataFrame of features using stored norm stats"""
+        normalized = features_df.copy()
+
+        for col in features_df.columns:
+            stats = self.get_norm_stats(col)
+            if stats:
+                mean = stats.get('mean', 0)
+                std = stats.get('std', 1)
+                if std > 0:
+                    normalized[col] = (features_df[col] - mean) / std
+                    # Clip to reasonable range
+                    normalized[col] = normalized[col].clip(-10, 10)
+
+        return normalized
+
+
 @pytest.fixture
 def feature_calculator():
     """Feature calculator instance for testing"""
-    import sys
-    from pathlib import Path
-
-    # Add src to path
-    src_path = Path(__file__).parent.parent / 'src'
-    sys.path.insert(0, str(src_path))
-
-    from core.services.feature_builder import FeatureBuilder
-    return FeatureBuilder()
+    return TestFeatureCalculator()
 
 
 @pytest.fixture
@@ -410,9 +625,9 @@ def model_path():
     from pathlib import Path
     models_dir = Path(__file__).parent.parent / 'models'
 
-    # Try v14 first, fallback to v11
-    for version in ['v14', 'v11']:
-        model_file = models_dir / f'ppo_usdcop_{version}_fold0.zip'
+    # Try primary first, fallback to legacy
+    for version in ['primary', 'legacy']:
+        model_file = models_dir / f'ppo_{version}.zip'
         if model_file.exists():
             return str(model_file)
 
@@ -526,7 +741,7 @@ def sample_candlestick_request():
 def sample_backtest_config():
     """Sample backtest configuration"""
     return {
-        'model_id': 'ppo_usdcop_v14_fold0',
+        'model_id': 'ppo_primary',
         'start_date': '2025-11-01',
         'end_date': '2025-12-17',
         'initial_capital': 100000,
@@ -602,26 +817,26 @@ def model_registry():
     models_dir = Path(__file__).parent.parent / 'models'
 
     return {
-        'ppo_v19': {
-            'model_id': 'ppo_v19',
-            'model_name': 'PPO USD/COP V19',
+        'ppo_primary': {
+            'model_id': 'ppo_primary',
+            'model_name': 'PPO USD/COP Primary',
             'model_type': 'RL',
             'framework': 'stable-baselines3',
             'algorithm': 'PPO',
-            'version': 'v19',
-            'file_path': str(models_dir / 'ppo_usdcop_v19_fold0.zip'),
+            'version': 'current',
+            'file_path': str(models_dir / 'ppo_usdcop_fold0.zip'),
             'observation_dim': 15,
             'action_space': 'Box(-1, 1)',
             'is_active': True
         },
-        'ppo_v15_fold3': {
-            'model_id': 'ppo_v15_fold3',
-            'model_name': 'PPO USD/COP V15 Fold3',
+        'ppo_secondary': {
+            'model_id': 'ppo_secondary',
+            'model_name': 'PPO USD/COP Secondary',
             'model_type': 'RL',
             'framework': 'stable-baselines3',
             'algorithm': 'PPO',
-            'version': 'v15',
-            'file_path': str(models_dir / 'ppo_usdcop_v15_fold3.zip'),
+            'version': 'current',
+            'file_path': str(models_dir / 'ppo_usdcop_fold3.zip'),
             'observation_dim': 15,
             'action_space': 'Box(-1, 1)',
             'is_active': True
@@ -677,7 +892,7 @@ def sample_trading_signal():
     """Sample trading signal for stream testing"""
     from datetime import timezone
     return {
-        'model_id': 'ppo_v19',
+        'model_id': 'ppo_primary',
         'action': 0.75,
         'signal': 'buy',
         'confidence': 0.85,

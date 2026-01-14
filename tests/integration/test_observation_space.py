@@ -178,10 +178,10 @@ class TestModelCompatibility:
         from pathlib import Path
 
         models_dir = Path(__file__).parent.parent.parent / 'models'
-        # Try v14 first (current), fallback to v11 (legacy)
-        model_path = models_dir / 'ppo_usdcop_v14_fold0.zip'
+        # Try primary first, fallback to legacy
+        model_path = models_dir / 'ppo_primary.zip'
         if not model_path.exists():
-            model_path = models_dir / 'ppo_usdcop_v11_fold0.zip'
+            model_path = models_dir / 'ppo_legacy.zip'
 
         if not model_path.exists():
             pytest.skip("Model not available for testing")
@@ -203,10 +203,10 @@ class TestModelCompatibility:
         from pathlib import Path
 
         models_dir = Path(__file__).parent.parent.parent / 'models'
-        # Try v14 first (current), fallback to v11 (legacy)
-        model_path = models_dir / 'ppo_usdcop_v14_fold0.zip'
+        # Try primary first, fallback to legacy
+        model_path = models_dir / 'ppo_primary.zip'
         if not model_path.exists():
-            model_path = models_dir / 'ppo_usdcop_v11_fold0.zip'
+            model_path = models_dir / 'ppo_legacy.zip'
 
         if not model_path.exists():
             pytest.skip("Model not available for testing")
