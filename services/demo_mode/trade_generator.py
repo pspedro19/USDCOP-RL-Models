@@ -33,7 +33,7 @@ class DemoTradeGenerator:
         start_date: str,
         end_date: str,
         price_data: List[Dict[str, Any]],
-        initial_capital: float = 100000.0
+        initial_capital: float = 10000.0
     ) -> Dict[str, Any]:
         """
         Generate demo trades for the given date range.
@@ -71,14 +71,16 @@ class DemoTradeGenerator:
 
         return {
             "success": True,
-            "source": "demo_investor_mode",
+            "source": "generated",  # Must be 'database', 'generated', or 'error' for dashboard
             "model_id": self.config.model_id,
-            "start_date": start_date,
-            "end_date": end_date,
-            "initial_capital": initial_capital,
             "trade_count": len(trades),
             "trades": trades,
             "summary": metrics,
+            "processing_time_ms": 500.0,  # Simulated processing time
+            "date_range": {
+                "start": start_date,
+                "end": end_date
+            },
             "equity_curve": equity_curve,
             "metadata": {
                 "mode": "investor_demo",
@@ -244,9 +246,9 @@ class DemoTradeGenerator:
                 # Losers: use avg_loss_pct with variance
                 pnl_pct = -target_avg_loss * (0.7 + random.random() * 0.6)
 
-                # Occasional bigger loss (for realistic drawdowns)
-                if random.random() < 0.08:
-                    pnl_pct *= 2.2  # Bigger losses for realistic DD
+                # Occasional bigger loss (for realistic drawdowns ~-9%)
+                if random.random() < 0.10:
+                    pnl_pct *= 2.8  # Bigger losses for realistic DD
 
                 if side == "short":
                     exit_price = entry_price * (1 - pnl_pct)
@@ -354,8 +356,8 @@ class DemoTradeGenerator:
         else:
             sharpe = 0
 
-        # Adjust sharpe to be more realistic
-        sharpe = min(max(sharpe, 0), 3.0)  # Cap at 3.0
+        # Adjust sharpe to be more realistic (target ~2.1)
+        sharpe = min(max(sharpe * 0.55, 0), 2.3)  # Dampen and cap for credibility
 
         return {
             "total_trades": len(trades),
@@ -365,7 +367,7 @@ class DemoTradeGenerator:
             "total_pnl": round(total_pnl, 2),
             "total_return_pct": round(total_return * 100, 2),
             "profit_factor": round(profit_factor, 2),
-            "max_drawdown_pct": round(max_dd * 100, 2),
+            "max_drawdown_pct": abs(round(max_dd * 100, 2)),  # Must be positive for dashboard
             "sharpe_ratio": round(sharpe, 2),
             "avg_win": round(np.mean(wins), 2) if wins else 0,
             "avg_loss": round(np.mean(losses), 2) if losses else 0,
@@ -411,13 +413,16 @@ class DemoTradeGenerator:
         """Return empty result structure."""
         return {
             "success": True,
-            "source": "demo_investor_mode",
+            "source": "generated",
             "model_id": self.config.model_id,
-            "start_date": start_date,
-            "end_date": end_date,
             "trade_count": 0,
             "trades": [],
             "summary": self._empty_metrics(),
+            "processing_time_ms": 100.0,
+            "date_range": {
+                "start": start_date,
+                "end": end_date
+            },
             "equity_curve": [],
         }
 
