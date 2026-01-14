@@ -1094,7 +1094,7 @@ services:
       - ./models:/models:ro
       - ./config:/app/config:ro
       - ./data:/app/data:ro
-      - ./services/demo_mode:/app/demo_mode:ro
+      - ./services/demo_mode:/app/demo_mode
     ports:
       - "8003:8000"
     networks:

@@ -28,8 +28,8 @@ class DemoConfig:
 
     # Trade parameters
     trades_per_month: int = 18  # ~200 trades/year
-    avg_win_pct: float = 0.008  # 0.8% average win
-    avg_loss_pct: float = 0.004  # 0.4% average loss
+    avg_win_pct: float = 0.004  # 0.4% average win
+    avg_loss_pct: float = 0.0035  # 0.35% average loss (larger losses for realistic DD)
     max_position_duration_minutes: int = 300  # 5 hours max
     min_position_duration_minutes: int = 15
 
