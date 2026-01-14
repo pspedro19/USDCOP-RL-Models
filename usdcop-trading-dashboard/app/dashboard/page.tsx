@@ -12,7 +12,7 @@
  * - Recent trades table
  */
 
-import { Suspense, useState, useEffect, useMemo, lazy } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback, lazy } from "react";
 import { ModelProvider, useModel } from "@/contexts/ModelContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GlobalNavbar } from "@/components/navigation/GlobalNavbar";
@@ -30,7 +30,9 @@ import {
     LineChart,
     Table2,
     Percent,
-    DollarSign
+    DollarSign,
+    Play,
+    Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -50,6 +52,12 @@ const TradingChartWithSignals = lazy(() => import("@/components/charts/TradingCh
 import { TradingSummaryCard } from "@/components/trading/TradingSummaryCard";
 import { TradesTable } from "@/components/trading/TradesTable";
 
+// Replay system
+import { useReplay } from "@/hooks/useReplay";
+import { ReplayControlBarCollapsible } from "@/components/trading/ReplayControlBar";
+import { BacktestControlPanel } from "@/components/trading/BacktestControlPanel";
+import { BacktestResult } from "@/lib/contracts/backtest.contract";
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -62,11 +70,48 @@ interface BacktestMetrics {
 }
 
 // ============================================================================
-// Model Dropdown Selector
+// Model Dropdown Selector with Promote Button
 // ============================================================================
 function ModelDropdown() {
-    const { models, selectedModelId, selectedModel, setSelectedModel, isLoading } = useModel();
+    const { models, selectedModelId, selectedModel, setSelectedModel, isLoading, refreshModels } = useModel();
     const [isOpen, setIsOpen] = useState(false);
+    const [isPromoting, setIsPromoting] = useState(false);
+
+    // Promote a model to deployed status
+    const handlePromote = async (modelId: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent dropdown from selecting the model
+
+        if (isPromoting) return;
+
+        const confirmed = window.confirm(
+            `¿Promover "${modelId}" a producción?\n\nEsto demotará el modelo actualmente desplegado.`
+        );
+
+        if (!confirmed) return;
+
+        setIsPromoting(true);
+        try {
+            const response = await fetch(`/api/models/${modelId}/promote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                // Refresh models list to reflect new status
+                await refreshModels();
+            } else {
+                alert(`❌ Error: ${data.error || 'Failed to promote model'}`);
+            }
+        } catch (error) {
+            console.error('Error promoting model:', error);
+            alert('❌ Error de conexión al promover modelo');
+        } finally {
+            setIsPromoting(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -82,6 +127,9 @@ function ModelDropdown() {
             </div>
         );
     }
+
+    // Check if selected model can be promoted (dbStatus = 'registered')
+    const canPromote = selectedModel?.dbStatus === 'registered';
 
     return (
         <div className="relative w-full sm:w-auto sm:min-w-[280px]">
@@ -103,7 +151,9 @@ function ModelDropdown() {
                             {selectedModel?.name || 'Select Model'}
                         </div>
                         <div className="text-xs text-slate-400">
-                            {selectedModel?.isRealData ? 'Production Data' : 'Demo Data'}
+                            {selectedModel?.dbStatus === 'deployed' ? 'En Producción' :
+                             selectedModel?.dbStatus === 'registered' ? 'Registrado (Testing)' :
+                             selectedModel?.isRealData ? 'Production Data' : 'Demo Data'}
                         </div>
                     </div>
                 </div>
@@ -112,12 +162,16 @@ function ModelDropdown() {
                         variant="outline"
                         className={cn(
                             "text-[10px] font-bold",
-                            selectedModel?.isRealData
+                            selectedModel?.dbStatus === 'deployed'
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                : selectedModel?.dbStatus === 'registered'
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                : "bg-slate-500/10 text-slate-400 border-slate-500/30"
                         )}
                     >
-                        {selectedModel?.isRealData ? 'REAL' : 'DEMO'}
+                        {selectedModel?.dbStatus === 'deployed' ? 'DEPLOYED' :
+                         selectedModel?.dbStatus === 'registered' ? 'TESTING' :
+                         selectedModel?.isRealData ? 'REAL' : 'DEMO'}
                     </Badge>
                     <ChevronDown className={cn(
                         "w-4 h-4 text-slate-400 transition-transform",
@@ -129,17 +183,17 @@ function ModelDropdown() {
             {isOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
                     {models.map((model) => (
-                        <button
+                        <div
                             key={model.id}
+                            className={cn(
+                                "w-full flex items-center justify-between px-4 py-3",
+                                "hover:bg-slate-700/50 transition-colors cursor-pointer",
+                                model.id === selectedModelId && "bg-slate-700/30"
+                            )}
                             onClick={() => {
                                 setSelectedModel(model.id);
                                 setIsOpen(false);
                             }}
-                            className={cn(
-                                "w-full flex items-center justify-between px-4 py-3",
-                                "hover:bg-slate-700/50 transition-colors",
-                                model.id === selectedModelId && "bg-slate-700/30"
-                            )}
                         >
                             <div className="flex items-center gap-3">
                                 <span
@@ -148,18 +202,40 @@ function ModelDropdown() {
                                 />
                                 <span className="text-white font-medium text-sm">{model.name}</span>
                             </div>
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    "text-[10px]",
-                                    model.isRealData
-                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                        : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                            <div className="flex items-center gap-2">
+                                {/* Show promote button for registered models */}
+                                {model.dbStatus === 'registered' && (
+                                    <button
+                                        onClick={(e) => handlePromote(model.id, e)}
+                                        disabled={isPromoting}
+                                        className={cn(
+                                            "px-2 py-1 text-[10px] font-medium rounded",
+                                            "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+                                            "hover:bg-cyan-500/30 transition-colors",
+                                            isPromoting && "opacity-50 cursor-not-allowed"
+                                        )}
+                                        title="Promover a producción"
+                                    >
+                                        {isPromoting ? '...' : 'PROMOVER'}
+                                    </button>
                                 )}
-                            >
-                                {model.isRealData ? 'REAL' : 'DEMO'}
-                            </Badge>
-                        </button>
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "text-[10px]",
+                                        model.dbStatus === 'deployed'
+                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                            : model.dbStatus === 'registered'
+                                            ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                            : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+                                    )}
+                                >
+                                    {model.dbStatus === 'deployed' ? 'PROD' :
+                                     model.dbStatus === 'registered' ? 'TEST' :
+                                     model.isRealData ? 'REAL' : 'DEMO'}
+                                </Badge>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
@@ -232,7 +308,23 @@ function KPICard({ title, value, subtitle, icon, trend, color = '#10B981', isLoa
 // ============================================================================
 // Backtest Metrics Panel - Connected to Real API Data
 // ============================================================================
-function BacktestMetricsPanel() {
+interface BacktestMetricsPanelProps {
+    isReplayMode?: boolean;
+    /** Force showing empty/default values (used when dashboard is cleared) */
+    forceEmpty?: boolean;
+    replayVisibleTrades?: Array<{
+        pnl?: number;
+        pnl_usd?: number;
+        pnl_percent?: number;
+        pnl_pct?: number;
+        duration_minutes?: number;
+        hold_time_minutes?: number;
+        equity_at_entry?: number;
+        equity_at_exit?: number;
+    }>;
+}
+
+function BacktestMetricsPanel({ isReplayMode = false, forceEmpty = false, replayVisibleTrades = [] }: BacktestMetricsPanelProps) {
     const { selectedModel } = useModel();
     const [metricsData, setMetricsData] = useState<any>(null);
     const [equitySummary, setEquitySummary] = useState<any>(null);
@@ -280,14 +372,105 @@ function BacktestMetricsPanel() {
     // Fall back to trade-based max drawdown if equity curve not available
     const accurateMaxDD = equitySummary?.max_drawdown_pct ?? apiMetrics.max_drawdown_pct ?? 0;
 
-    // Use real data from database, with reasonable fallbacks
-    const metrics: BacktestMetrics = {
-        sharpe: liveMetrics.sharpe ?? apiMetrics.sharpe_ratio ?? 0,
-        maxDrawdown: -accurateMaxDD, // Use equity-curve-based max DD (negative value)
-        winRate: (liveMetrics.winRate ?? apiMetrics.win_rate ?? 0) / 100, // Convert to decimal
-        holdPercent: (apiMetrics.hold_pct ?? 40) / 100, // Estimate from data
-        totalTrades: liveMetrics.totalTrades ?? apiMetrics.total_trades ?? 0
+    // Calculate replay metrics from visible trades (progressive)
+    const calculateReplayMetrics = (): BacktestMetrics => {
+        if (replayVisibleTrades.length === 0) {
+            return {
+                sharpe: 0,
+                maxDrawdown: 0,
+                winRate: 0,
+                holdPercent: 0,
+                totalTrades: 0
+            };
+        }
+
+        const trades = replayVisibleTrades;
+        const pnls = trades.map(t => t.pnl ?? t.pnl_usd ?? 0);
+        const wins = pnls.filter(p => p > 0).length;
+        const totalPnl = pnls.reduce((sum, p) => sum + p, 0);
+
+        // Calculate max drawdown using equity_at_entry/exit if available
+        const initialEquity = 10000;
+        let peak = initialEquity;
+        let maxDD = 0;
+        let lastEquity = initialEquity;
+
+        for (const trade of trades) {
+            const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
+            const hasEquityFields = trade.equity_at_entry !== undefined && trade.equity_at_exit !== undefined;
+
+            let entryEquity: number;
+            let exitEquity: number;
+
+            if (hasEquityFields) {
+                entryEquity = trade.equity_at_entry as number;
+                exitEquity = trade.equity_at_exit as number;
+            } else {
+                // Fallback: use running total
+                entryEquity = lastEquity;
+                exitEquity = lastEquity + pnl;
+            }
+
+            // Update peak and calculate drawdown at entry and exit
+            peak = Math.max(peak, entryEquity, exitEquity);
+            const entryDD = peak > 0 ? ((peak - entryEquity) / peak) * 100 : 0;
+            const exitDD = peak > 0 ? ((peak - exitEquity) / peak) * 100 : 0;
+            maxDD = Math.max(maxDD, entryDD, exitDD);
+
+            lastEquity = exitEquity;
+        }
+
+        // Calculate Sharpe (simplified - annualized assuming daily returns)
+        const avgReturn = pnls.length > 0 ? totalPnl / pnls.length : 0;
+        const variance = pnls.length > 1
+            ? pnls.reduce((sum, p) => sum + Math.pow(p - avgReturn, 2), 0) / (pnls.length - 1)
+            : 0;
+        const stdDev = Math.sqrt(variance);
+        const sharpe = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
+
+        // Calculate average hold time
+        const holdTimes = trades.map(t => t.duration_minutes ?? t.hold_time_minutes ?? 0).filter(h => h > 0);
+        const avgHoldTime = holdTimes.length > 0 ? holdTimes.reduce((a, b) => a + b, 0) / holdTimes.length : 0;
+        const holdPercent = Math.min(avgHoldTime / 60, 1); // Normalize to percentage (cap at 100%)
+
+        return {
+            sharpe: Math.max(-5, Math.min(5, sharpe)), // Clamp to reasonable range
+            maxDrawdown: -maxDD,
+            winRate: trades.length > 0 ? wins / trades.length : 0,
+            holdPercent: holdPercent,
+            totalTrades: trades.length
+        };
     };
+
+    // Check if model is in testing mode (not yet promoted to production)
+    const isTestingMode = selectedModel?.dbStatus === 'registered';
+
+    // Use replay metrics when in replay mode, otherwise use API metrics
+    // Show zeros when model is in testing mode and no real data exists
+    // Or when forceEmpty is true (dashboard cleared)
+    const hasRealData = (liveMetrics.totalTrades ?? apiMetrics.total_trades ?? 0) > 0;
+
+    const emptyMetrics: BacktestMetrics = {
+        sharpe: 0,
+        maxDrawdown: 0,
+        winRate: 0,
+        holdPercent: 0,
+        totalTrades: 0
+    };
+
+    const metrics: BacktestMetrics = forceEmpty
+        ? emptyMetrics  // Dashboard cleared - show zeros
+        : isReplayMode
+            ? calculateReplayMetrics()
+            : (isTestingMode && !hasRealData)
+                ? emptyMetrics  // Model in testing, no backtest run yet - show zeros
+                : {
+                    sharpe: liveMetrics.sharpe ?? apiMetrics.sharpe_ratio ?? 0,
+                    maxDrawdown: -accurateMaxDD, // Use equity-curve-based max DD (negative value)
+                    winRate: (liveMetrics.winRate ?? apiMetrics.win_rate ?? 0) / 100, // Convert to decimal
+                    holdPercent: (apiMetrics.hold_pct ?? 0) / 100, // Default to 0, not 40%
+                    totalTrades: liveMetrics.totalTrades ?? apiMetrics.total_trades ?? 0
+                };
 
     const modelColor = selectedModel?.color || '#10B981';
 
@@ -341,9 +524,9 @@ function BacktestMetricsPanel() {
             <KPICard
                 title="Trades"
                 value={metrics.totalTrades.toLocaleString()}
-                subtitle="Real Data"
+                subtitle={isReplayMode ? "Replay Progress" : (hasRealData ? "Real Data" : "Sin backtest")}
                 icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
-                color={modelColor}
+                color={isReplayMode ? '#06B6D4' : (hasRealData ? modelColor : '#6B7280')}
             />
         </div>
     );
@@ -870,7 +1053,20 @@ function MiniMetricCard({
     );
 }
 
-function EquityCurveSection() {
+interface EquityCurveSectionProps {
+    isReplayMode?: boolean;
+    replayVisibleTrades?: Array<{
+        pnl?: number;
+        pnl_usd?: number;
+        timestamp?: string;
+        duration_minutes?: number;
+        side?: string;
+        equity_at_entry?: number;
+        equity_at_exit?: number;
+    }>;
+}
+
+function EquityCurveSection({ isReplayMode = false, replayVisibleTrades = [] }: EquityCurveSectionProps) {
     const { selectedModel } = useModel();
     const [data, setData] = useState<EquityCurveData[]>([]);
     const [summary, setSummary] = useState<EquityCurveSummary | null>(null);
@@ -962,8 +1158,191 @@ function EquityCurveSection() {
         return calculateMetrics(data, summary);
     }, [data, summary, apiMetrics]);
 
+    // Calculate replay equity curve from visible trades
+    // Creates TWO points per trade (entry + exit) for smooth real-time updates
+    const replayChartData = useMemo(() => {
+        if (!isReplayMode || replayVisibleTrades.length === 0) return [];
+
+        const initialEquity = 10000;
+        let peak = initialEquity;
+        const chartPoints: Array<{
+            date: string;
+            equity: number;
+            value: number;
+            drawdown: number;
+            drawdown_pct: number;
+            originalDate: string;
+            timestamp: string;
+            position?: string;
+        }> = [];
+
+        // Add initial point
+        const firstTradeTime = replayVisibleTrades[0]?.timestamp || new Date().toISOString();
+        chartPoints.push({
+            date: new Date(firstTradeTime).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }),
+            equity: initialEquity,
+            value: initialEquity,
+            drawdown: 0,
+            drawdown_pct: 0,
+            originalDate: firstTradeTime,
+            timestamp: firstTradeTime,
+            position: 'flat',
+        });
+
+        // Process each trade - create entry AND exit points
+        for (const trade of replayVisibleTrades) {
+            const entryTime = trade.timestamp || new Date().toISOString();
+            const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
+
+            // Use equity_at_entry/exit if available (check for both null and undefined), otherwise calculate from running total
+            const hasEquityFields = trade.equity_at_entry != null && trade.equity_at_exit != null;
+
+            let entryEquity: number;
+            let exitEquity: number;
+
+            if (hasEquityFields) {
+                entryEquity = trade.equity_at_entry as number;
+                exitEquity = trade.equity_at_exit as number;
+            } else {
+                // Fallback: use last point's equity as entry, add pnl for exit
+                const lastEquity = chartPoints.length > 0 ? chartPoints[chartPoints.length - 1].equity : initialEquity;
+                entryEquity = lastEquity;
+                exitEquity = lastEquity + pnl;
+            }
+
+            // Calculate exit time
+            const exitTime = trade.duration_minutes
+                ? new Date(new Date(entryTime).getTime() + (trade.duration_minutes * 60000)).toISOString()
+                : entryTime;
+
+            // Update peak for drawdown
+            peak = Math.max(peak, entryEquity, exitEquity);
+
+            // Entry point
+            const entryDrawdown = peak > 0 ? ((peak - entryEquity) / peak) * 100 : 0;
+            chartPoints.push({
+                date: new Date(entryTime).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                equity: entryEquity,
+                value: entryEquity,
+                drawdown: -entryDrawdown,
+                drawdown_pct: -entryDrawdown,
+                originalDate: entryTime,
+                timestamp: entryTime,
+                position: trade.side,
+            });
+
+            // Exit point (only if different from entry time)
+            if (exitTime !== entryTime) {
+                const exitDrawdown = peak > 0 ? ((peak - exitEquity) / peak) * 100 : 0;
+                chartPoints.push({
+                    date: new Date(exitTime).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                    equity: exitEquity,
+                    value: exitEquity,
+                    drawdown: -exitDrawdown,
+                    drawdown_pct: -exitDrawdown,
+                    originalDate: exitTime,
+                    timestamp: exitTime,
+                    position: 'flat',
+                });
+            }
+        }
+
+        return chartPoints;
+    }, [isReplayMode, replayVisibleTrades]);
+
+    // Calculate replay summary using equity_at_entry/exit for accuracy
+    const replaySummary = useMemo(() => {
+        if (!isReplayMode) return null;
+
+        const initialEquity = 10000;
+        if (replayVisibleTrades.length === 0) {
+            return {
+                start_equity: initialEquity,
+                end_equity: initialEquity,
+                total_return: 0,
+                total_return_pct: 0,
+                max_drawdown_pct: 0,
+            };
+        }
+
+        // Calculate max drawdown using equity_at_entry/exit if available
+        let peak = initialEquity;
+        let maxDD = 0;
+        let lastEquity = initialEquity;
+
+        for (const trade of replayVisibleTrades) {
+            const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
+            // Check for both null and undefined
+            const hasEquityFields = trade.equity_at_entry != null && trade.equity_at_exit != null;
+
+            let entryEquity: number;
+            let exitEquity: number;
+
+            if (hasEquityFields) {
+                entryEquity = trade.equity_at_entry as number;
+                exitEquity = trade.equity_at_exit as number;
+            } else {
+                entryEquity = lastEquity;
+                exitEquity = lastEquity + pnl;
+            }
+
+            // Check drawdown at entry and exit
+            peak = Math.max(peak, entryEquity, exitEquity);
+            const entryDD = peak > 0 ? ((peak - entryEquity) / peak) * 100 : 0;
+            const exitDD = peak > 0 ? ((peak - exitEquity) / peak) * 100 : 0;
+            maxDD = Math.max(maxDD, entryDD, exitDD);
+
+            lastEquity = exitEquity;
+        }
+
+        const totalPnl = lastEquity - initialEquity;
+
+        return {
+            start_equity: initialEquity,
+            end_equity: lastEquity,
+            total_return: totalPnl,
+            total_return_pct: (totalPnl / initialEquity) * 100,
+            max_drawdown_pct: -maxDD,
+        };
+    }, [isReplayMode, replayVisibleTrades]);
+
+    // Replay metrics
+    const replayMetrics = useMemo(() => {
+        if (!isReplayMode || replayVisibleTrades.length < 2) {
+            return {
+                sharpeRatio: 0,
+                profitFactor: 0,
+                avgReturn: 0,
+                volatility: 0,
+            };
+        }
+
+        const pnls = replayVisibleTrades.map(t => t.pnl ?? t.pnl_usd ?? 0);
+        const wins = pnls.filter(p => p > 0);
+        const losses = pnls.filter(p => p < 0);
+
+        const totalWins = wins.reduce((sum, p) => sum + p, 0);
+        const totalLosses = Math.abs(losses.reduce((sum, p) => sum + p, 0));
+        const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+
+        const avgReturn = pnls.reduce((sum, p) => sum + p, 0) / pnls.length;
+        const variance = pnls.reduce((sum, p) => sum + Math.pow(p - avgReturn, 2), 0) / (pnls.length - 1);
+        const stdDev = Math.sqrt(variance);
+        const sharpe = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
+
+        return {
+            sharpeRatio: Math.max(-5, Math.min(5, sharpe)),
+            profitFactor: Math.min(profitFactor, 99),
+            avgReturn: replaySummary?.total_return_pct ?? 0,
+            volatility: stdDev,
+        };
+    }, [isReplayMode, replayVisibleTrades, replaySummary]);
+
     // Prepare chart data with proper formatting
     const chartData = useMemo(() => {
+        // Use replay data when in replay mode
+        if (isReplayMode) return replayChartData;
+
         if (data.length === 0) return [];
 
         // Sample data if too many points (for performance)
@@ -976,7 +1355,7 @@ function EquityCurveSection() {
             // Invert drawdown for area chart (positive values for shading)
             drawdown_area: Math.abs(point.drawdown_pct),
         }));
-    }, [data]);
+    }, [data, isReplayMode, replayChartData]);
 
     // Calculate Y-axis domain with 20% padding
     const yDomain = useMemo(() => {
@@ -992,7 +1371,12 @@ function EquityCurveSection() {
     }, [chartData]);
 
     const modelColor = selectedModel?.color || '#10B981';
-    const isPositiveReturn = (summary?.total_return_pct || 0) >= 0;
+
+    // Use replay summary when in replay mode, otherwise use API summary
+    const displaySummary = isReplayMode ? replaySummary : summary;
+    const displayMetrics = isReplayMode ? replayMetrics : metrics;
+
+    const isPositiveReturn = (displaySummary?.total_return_pct || 0) >= 0;
     const gradientId = `equity-gradient-${selectedModel?.id || 'default'}`;
     const drawdownGradientId = `drawdown-gradient-${selectedModel?.id || 'default'}`;
 
@@ -1040,15 +1424,18 @@ function EquityCurveSection() {
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-500">Equity:</span>
                             <span className="font-mono text-sm text-white font-bold">
-                                ${(summary?.end_equity || 10000).toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                                ${(displaySummary?.end_equity || 10000).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                             </span>
+                            {isReplayMode && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">REPLAY</span>
+                            )}
                         </div>
                         <div className={cn(
                             "flex items-center gap-1 px-2 py-1 rounded-md text-sm font-bold",
                             isPositiveReturn ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
                         )}>
                             {isPositiveReturn ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                            {isPositiveReturn ? '+' : ''}{(summary?.total_return_pct || 0).toFixed(2)}%
+                            {isPositiveReturn ? '+' : ''}{(displaySummary?.total_return_pct || 0).toFixed(2)}%
                         </div>
                     </div>
                 </div>
@@ -1108,7 +1495,7 @@ function EquityCurveSection() {
 
                             {/* Reference line at initial capital */}
                             <ReferenceLine
-                                y={summary?.start_equity || 10000}
+                                y={displaySummary?.start_equity || 10000}
                                 stroke="#64748b"
                                 strokeDasharray="5 5"
                                 strokeWidth={1}
@@ -1137,26 +1524,26 @@ function EquityCurveSection() {
                 <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
                     <MiniMetricCard
                         label="Max DD"
-                        value={summary?.max_drawdown_pct || 0}
+                        value={displaySummary?.max_drawdown_pct || 0}
                         suffix="%"
                         icon={TrendingDown}
-                        isPositive={(summary?.max_drawdown_pct || 0) > -10}
+                        isPositive={(displaySummary?.max_drawdown_pct || 0) > -10}
                     />
                     <MiniMetricCard
                         label="Sharpe"
-                        value={metrics?.sharpeRatio || 0}
+                        value={displayMetrics?.sharpeRatio || 0}
                         icon={BarChart3}
-                        isPositive={metrics?.sharpeRatio ? metrics.sharpeRatio > 1 : null}
+                        isPositive={displayMetrics?.sharpeRatio ? displayMetrics.sharpeRatio > 1 : null}
                     />
                     <MiniMetricCard
                         label="P. Factor"
-                        value={metrics?.profitFactor || 0}
+                        value={displayMetrics?.profitFactor || 0}
                         icon={Target}
-                        isPositive={metrics?.profitFactor ? metrics.profitFactor > 1 : null}
+                        isPositive={displayMetrics?.profitFactor ? displayMetrics.profitFactor > 1 : null}
                     />
                     <MiniMetricCard
                         label="Volatility"
-                        value={metrics?.volatility || 0}
+                        value={displayMetrics?.volatility || 0}
                         suffix="%"
                         icon={Activity}
                         isPositive={null}
@@ -1234,8 +1621,51 @@ function SectionHeader({ title, subtitle, icon }: SectionHeaderProps) {
 // Dashboard Content
 // ============================================================================
 function DashboardContent() {
-    const { selectedModel } = useModel();
+    const { selectedModel, models, setSelectedModel } = useModel();
     const [lastUpdate, setLastUpdate] = useState<string>('--:--:--');
+    const [isReplayMode, setIsReplayMode] = useState(false);
+    const [isBacktestPanelExpanded, setIsBacktestPanelExpanded] = useState(true);
+    const [backtestDateRange, setBacktestDateRange] = useState<{ start: string; end: string } | null>(null);
+    const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+
+    // Animation state for animated backtest replay
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [animationBarIndex, setAnimationBarIndex] = useState(0);
+    const [animationSpeed, setAnimationSpeed] = useState(1); // bars per second
+    const [totalBars, setTotalBars] = useState(0);
+    const animationRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Clear key - changes when dashboard is cleared to force components to remount
+    const [clearKey, setClearKey] = useState(0);
+
+    // Track if dashboard was explicitly cleared (forces empty state until next backtest)
+    const [isDashboardCleared, setIsDashboardCleared] = useState(false);
+
+    // Map frontend model ID to backend model ID for inference
+    const inferenceModelId = useMemo(() => {
+        if (!selectedModel?.id) return 'ppo_v20';
+        // Map frontend model IDs to inference service model IDs
+        const modelMap: Record<string, string> = {
+            'ppo_v19_prod': 'ppo_v19',
+            'ppo_v20_prod': 'ppo_v20',
+        };
+        return modelMap[selectedModel.id] || 'ppo_v20';
+    }, [selectedModel?.id]);
+
+    // Replay system hook with hybrid timeline enabled
+    const replay = useReplay({
+        initialMode: 'validation',
+        autoLoad: false,
+        enableTimeline: true, // Enable hybrid replay with timeline-based navigation
+        modelId: inferenceModelId, // Use selected model for inference
+        forceRegenerate: true, // Force regeneration to ensure complete data
+        onTradeAppear: (trade) => {
+            console.log('[Replay] New trade appeared:', trade.trade_id);
+        },
+        onComplete: () => {
+            console.log('[Replay] Replay completed');
+        },
+    });
 
     // Set time only on client to avoid hydration mismatch
     useEffect(() => {
@@ -1246,48 +1676,298 @@ function DashboardContent() {
         return () => clearInterval(interval);
     }, []);
 
+    // Toggle replay mode
+    const toggleReplayMode = () => {
+        if (isReplayMode) {
+            replay.stop();
+            replay.reset();
+        }
+        setIsReplayMode(!isReplayMode);
+    };
+
+    // Clear dashboard - reset all state to clean slate
+    const handleClearDashboard = useCallback(() => {
+        console.log('[Dashboard] Clearing dashboard');
+        // Stop any running animation
+        if (animationRef.current) {
+            clearInterval(animationRef.current);
+            animationRef.current = null;
+        }
+        // Reset all state
+        setIsAnimating(false);
+        setAnimationBarIndex(0);
+        setTotalBars(0);
+        setBacktestResult(null);
+        setBacktestDateRange(null);
+        setIsReplayMode(false);
+        replay.stop();
+        replay.reset();
+        // Increment clear key to force components to remount with fresh state
+        setClearKey(prev => prev + 1);
+        // Mark dashboard as explicitly cleared (forces empty state)
+        setIsDashboardCleared(true);
+        console.log('[Dashboard] Dashboard cleared');
+    }, [replay]);
+
+    // Start animated replay
+    const startAnimatedReplay = useCallback((numBars: number) => {
+        console.log(`[Dashboard] Starting animated replay with ${numBars} bars`);
+        setTotalBars(numBars);
+        setAnimationBarIndex(0);
+        setIsAnimating(true);
+
+        // Clear any existing animation
+        if (animationRef.current) {
+            clearInterval(animationRef.current);
+        }
+
+        // Calculate step size to complete animation in ~30 seconds
+        // With 60fps updates (16ms interval), we need numBars / (30 * 60) bars per tick
+        const TARGET_DURATION_SECONDS = 30;
+        const TICK_INTERVAL_MS = 50; // 20 updates per second for smooth animation
+        const totalTicks = (TARGET_DURATION_SECONDS * 1000) / TICK_INTERVAL_MS;
+        const barsPerTick = Math.max(1, Math.ceil(numBars / totalTicks));
+
+        console.log(`[Dashboard] Animation: ${numBars} bars, ${barsPerTick} bars/tick, ~${TARGET_DURATION_SECONDS}s duration`);
+
+        // Start animation timer - advance multiple bars per tick for faster playback
+        animationRef.current = setInterval(() => {
+            setAnimationBarIndex(prev => {
+                const next = prev + (barsPerTick * animationSpeed);
+                if (next >= numBars) {
+                    // Animation complete
+                    if (animationRef.current) {
+                        clearInterval(animationRef.current);
+                        animationRef.current = null;
+                    }
+                    setIsAnimating(false);
+                    console.log('[Dashboard] Animated replay completed');
+                    return numBars;
+                }
+                return next;
+            });
+        }, TICK_INTERVAL_MS);
+    }, [animationSpeed]);
+
+    // Stop animation
+    const stopAnimation = useCallback(() => {
+        if (animationRef.current) {
+            clearInterval(animationRef.current);
+            animationRef.current = null;
+        }
+        setIsAnimating(false);
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (animationRef.current) {
+                clearInterval(animationRef.current);
+            }
+        };
+    }, []);
+
+    // Handle backtest completion - show results with animation
+    const handleBacktestComplete = useCallback((result: BacktestResult, startDate: string, endDate: string) => {
+        console.log(`[Dashboard] Backtest completed: ${result.trade_count} trades from ${startDate} to ${endDate}`);
+
+        // First, clear any existing data
+        handleClearDashboard();
+
+        // Small delay to ensure clean slate
+        setTimeout(() => {
+            // Store the date range for chart
+            setBacktestDateRange({ start: startDate, end: endDate });
+
+            // Store backtest result for display in other components
+            setBacktestResult(result);
+
+            // Clear the "dashboard cleared" flag since we have new data
+            setIsDashboardCleared(false);
+
+            // Activate replay mode to show trades on chart
+            if (result.trade_count > 0) {
+                setIsReplayMode(true);
+                console.log(`[Dashboard] Backtest mode activated with ${result.trades?.length || 0} trades`);
+
+                // Calculate number of bars in the date range (5-min bars, ~60 bars per day)
+                // Market hours: 8:00-12:55 COT = ~60 5-min bars per day
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                const tradingDays = Math.floor(days * 5 / 7); // Approximate trading days
+                const estimatedBars = tradingDays * 60; // ~60 bars per trading day
+
+                // Start animated replay
+                startAnimatedReplay(Math.min(estimatedBars, 5000)); // Cap at 5000 bars
+            }
+        }, 100);
+    }, [handleClearDashboard, startAnimatedReplay]);
+
+    // Compute animation date based on current bar index
+    // Each bar is 5 minutes, starting from the backtest start date
+    const animationEndDate = useMemo(() => {
+        if (!isAnimating || !backtestDateRange) return null;
+        const startDate = new Date(backtestDateRange.start + 'T08:00:00');
+        // Each bar = 5 minutes
+        const msPerBar = 5 * 60 * 1000;
+        const animationMs = animationBarIndex * msPerBar;
+        return new Date(startDate.getTime() + animationMs);
+    }, [isAnimating, backtestDateRange, animationBarIndex]);
+
+    // Filter trades to show only those up to the current animation point
+    const visibleAnimationTrades = useMemo(() => {
+        if (!backtestResult?.trades || !isAnimating || !animationEndDate) {
+            return backtestResult?.trades || [];
+        }
+        return backtestResult.trades.filter(trade => {
+            const tradeTime = new Date(trade.entry_time || trade.timestamp);
+            return tradeTime <= animationEndDate;
+        });
+    }, [backtestResult?.trades, isAnimating, animationEndDate]);
+
+    // Animation progress percentage
+    const animationProgress = totalBars > 0 ? Math.round((animationBarIndex / totalBars) * 100) : 0;
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#030712] via-[#0f172a] to-[#030712] overflow-x-hidden">
-            {/* Global Navigation */}
+            {/* Global Navigation (fixed position) */}
             <GlobalNavbar currentPage="dashboard" />
 
-            {/* Sticky Header - Below navbar */}
+            {/* Sticky Header - Compact single row */}
             <header className="sticky top-16 z-40 bg-[#030712]/95 backdrop-blur-xl border-b border-slate-800/50">
                 <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 sm:py-5">
-                        {/* Title - Centered on mobile */}
-                        <div className="text-center sm:text-left flex flex-col items-center sm:items-start">
-                            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                    <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
+                        {/* Left: Title + Badges */}
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
                                 USD/COP Trading
                             </h1>
-                            <div className="flex items-center justify-center gap-3 mt-2">
-                                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-3 py-1">
-                                    PAPER TRADING
+                            <div className="hidden sm:flex items-center gap-2">
+                                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px] px-2 py-0.5">
+                                    PAPER
                                 </Badge>
                                 <MarketStatusBadge />
                             </div>
                         </div>
 
-                        {/* Model Selector */}
-                        <ModelDropdown />
+                        {/* Center: Backtest Toggle */}
+                        <button
+                            onClick={() => setIsBacktestPanelExpanded(!isBacktestPanelExpanded)}
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+                                "border text-xs sm:text-sm font-medium",
+                                isBacktestPanelExpanded
+                                    ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
+                                    : "bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-white"
+                            )}
+                        >
+                            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span className="hidden xs:inline">Backtest</span>
+                            <ChevronDown className={cn(
+                                "w-3 h-3 transition-transform",
+                                isBacktestPanelExpanded && "rotate-180"
+                            )} />
+                        </button>
+
+                        {/* Right: Model Selector */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <ModelDropdown />
+                            {/* Replay button removed - backtest handles replay automatically */}
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content - Professional spacing */}
+            {/* Backtest Control Panel - Only rendered when expanded */}
+            {isBacktestPanelExpanded && (
+                <div className="sticky top-[7.5rem] z-30">
+                    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                        <BacktestControlPanel
+                            models={models.map(m => ({ id: m.id, name: m.name }))}
+                            selectedModelId={selectedModel?.id || 'ppo_v20'}
+                            onModelChange={(modelId) => setSelectedModel(modelId)}
+                            onBacktestComplete={handleBacktestComplete}
+                            onClearDashboard={handleClearDashboard}
+                            enableAnimatedReplay={true}
+                            expanded={true}
+                            onToggleExpand={() => setIsBacktestPanelExpanded(false)}
+                            hideHeader={true}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Animation Progress Bar - Shows during animated replay (Mobile-first) */}
+            {isAnimating && (
+                <div className="sticky top-[4rem] sm:top-[7.5rem] z-30 bg-slate-900/95 backdrop-blur border-b border-slate-700/50">
+                    <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
+                        {/* Mobile: 2 rows, Desktop: 1 row */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            {/* Row 1: Label + Progress bar + Stop button */}
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                    <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">Replay</span>
+                                </div>
+                                {/* Progress bar - takes remaining space */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="relative h-1.5 sm:h-2 bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                                            style={{ width: `${animationProgress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                {/* Percentage - always visible */}
+                                <span className="text-xs font-mono text-cyan-400 shrink-0">{animationProgress}%</span>
+                                {/* Stop button */}
+                                <button
+                                    onClick={stopAnimation}
+                                    className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-red-400 border border-red-500/30 rounded-full hover:bg-red-500/10 transition-colors shrink-0"
+                                >
+                                    Detener
+                                </button>
+                            </div>
+                            {/* Row 2 (mobile) / Inline (desktop): Stats */}
+                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-[10px] sm:text-xs text-slate-400">
+                                <span className="font-mono text-cyan-400">
+                                    {animationEndDate ? animationEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '-'}
+                                </span>
+                                <span className="hidden sm:inline">|</span>
+                                <span>{visibleAnimationTrades.length} trades</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Minimal spacer for fixed navbar */}
+            <div className="h-16" aria-hidden="true" />
+
+            {/* Main Content */}
             <main className="w-full overflow-x-hidden">
 
                 {/* ════════════════════════════════════════════════════════════════
                     Section 1: KPIs - Backtest Metrics
                 ════════════════════════════════════════════════════════════════ */}
-                <section className="w-full py-12 sm:py-16 lg:py-20 flex flex-col items-center">
+                <section className="w-full py-8 sm:py-10 lg:py-12 flex flex-col items-center">
                     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                         <SectionHeader
                             title="Backtest Metrics"
                             subtitle="Key performance indicators from historical backtesting"
                             icon={<BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />}
                         />
-                        <BacktestMetricsPanel />
+                        <BacktestMetricsPanel
+                            key={`metrics-${clearKey}`}
+                            isReplayMode={isReplayMode || !!backtestResult || isAnimating}
+                            forceEmpty={isDashboardCleared}
+                            replayVisibleTrades={
+                                isAnimating
+                                    ? visibleAnimationTrades
+                                    : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
+                            }
+                        />
                     </div>
                 </section>
 
@@ -1325,14 +2005,47 @@ function DashboardContent() {
                         <Suspense fallback={<ChartLoadingFallback />}>
                             <div className="rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
                                 <TradingChartWithSignals
-                                    key={`chart-${selectedModel?.id || 'default'}`}
+                                    key={`chart-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult ? '-backtest' : ''}${backtestDateRange?.start || ''}`}
                                     symbol="USDCOP"
                                     timeframe="5m"
                                     height={400}
                                     showSignals={true}
                                     showPositions={false}
-                                    enableRealTime={false}
+                                    enableRealTime={!isReplayMode && !backtestResult}
                                     modelId={selectedModel?.id || 'ppo_v19_prod'}
+                                    startDate={backtestDateRange ? backtestDateRange.start : undefined}
+                                    endDate={
+                                        // During animation, use the computed animation date
+                                        // When animation complete, show full backtest results
+                                        isAnimating && animationEndDate
+                                            ? animationEndDate
+                                            : replay.isPlaying && replay.state.currentDate
+                                                ? replay.state.currentDate
+                                                : backtestResult
+                                                    ? new Date(backtestDateRange?.end + 'T23:59:59')
+                                                    : undefined
+                                    }
+                                    isReplayMode={isReplayMode || !!backtestResult}
+                                    replayVisibleTradeIds={
+                                        // During animation, only show trades up to current point
+                                        isAnimating
+                                            ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
+                                            : isReplayMode
+                                                ? new Set(replay.visibleTrades.map(t => String(t.trade_id)))
+                                                : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined)
+                                    }
+                                    replayTrades={
+                                        // During animation, show trades progressively
+                                        (isAnimating ? visibleAnimationTrades : (replay.visibleTrades.length > 0 ? replay.visibleTrades : backtestResult?.trades || [])).map(t => ({
+                                            trade_id: t.trade_id,
+                                            timestamp: t.timestamp || t.entry_time,
+                                            entry_time: t.entry_time,
+                                            side: t.side || 'buy',
+                                            entry_price: t.entry_price,
+                                            pnl: t.pnl,
+                                            status: t.status,
+                                        }))
+                                    }
                                 />
                             </div>
                         </Suspense>
@@ -1351,10 +2064,45 @@ function DashboardContent() {
                         />
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
                             <div className="lg:col-span-2">
-                                <EquityCurveSection />
+                                <EquityCurveSection
+                                    isReplayMode={isReplayMode || !!backtestResult}
+                                    replayVisibleTrades={
+                                        // During animation, show trades progressively
+                                        isAnimating
+                                            ? visibleAnimationTrades
+                                            : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
+                                    }
+                                />
                             </div>
                             <div className="flex flex-col items-center lg:items-stretch">
-                                <TradingSummaryCard />
+                                <TradingSummaryCard
+                                    isReplayMode={isReplayMode || isAnimating}
+                                    forceEmpty={isDashboardCleared}
+                                    replayVisibleTrades={isAnimating ? visibleAnimationTrades : replay.visibleTrades}
+                                    backtestSummary={
+                                        // During animation, ALWAYS compute from visible trades (even if 0)
+                                        isAnimating
+                                            ? (() => {
+                                                const trades = visibleAnimationTrades;
+                                                const wins = trades.filter(t => (t.pnl || 0) > 0).length;
+                                                const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+                                                return {
+                                                    totalTrades: trades.length,
+                                                    winRate: trades.length > 0 ? (wins / trades.length) * 100 : 0,
+                                                    totalPnl,
+                                                    totalPnlPct: (totalPnl / 10000) * 100, // Assuming $10k initial
+                                                    tradingDays: Math.floor(animationBarIndex / 60), // ~60 bars per day
+                                                };
+                                            })()
+                                            : backtestResult?.summary ? {
+                                                totalTrades: backtestResult.summary.total_trades,
+                                                winRate: backtestResult.summary.win_rate,
+                                                totalPnl: backtestResult.summary.total_pnl,
+                                                totalPnlPct: backtestResult.summary.total_return_pct,
+                                                tradingDays: Math.ceil((new Date(backtestDateRange?.end || '').getTime() - new Date(backtestDateRange?.start || '').getTime()) / (1000 * 60 * 60 * 24)) || 0,
+                                            } : null
+                                    }
+                                />
                             </div>
                         </div>
                     </div>
@@ -1371,9 +2119,23 @@ function DashboardContent() {
                             icon={<Table2 className="w-5 h-5 sm:w-6 sm:h-6" />}
                         />
                         <TradesTable
-                            key={`trades-${selectedModel?.id || 'default'}`}
-                            initialLimit={10}
+                            key={`trades-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult ? '-backtest' : ''}`}
+                            initialLimit={isReplayMode || backtestResult || isAnimating ? 50 : 10}
                             compact={false}
+                            forceEmpty={isDashboardCleared}
+                            highlightedTradeIds={isAnimating ? new Set(visibleAnimationTrades.slice(-3).map(t => String(t.trade_id))) : (isReplayMode ? replay.highlightedTradeIds : undefined)}
+                            replayEndDate={isAnimating ? animationEndDate : (isReplayMode ? replay.state.currentDate : undefined)}
+                            isReplayMode={isReplayMode || !!backtestResult || isAnimating}
+                            replayVisibleTradeIds={
+                                isAnimating
+                                    ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
+                                    : (isReplayMode ? new Set(replay.visibleTrades.map(t => String(t.trade_id))) : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined))
+                            }
+                            replayTrades={
+                                isAnimating
+                                    ? visibleAnimationTrades
+                                    : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || undefined))
+                            }
                         />
                     </div>
                 </section>

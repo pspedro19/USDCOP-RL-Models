@@ -17,19 +17,43 @@ Design Patterns:
 - Builder Pattern (ObservationBuilder)
 - Template Method Pattern (BaseFeatureCalculator)
 - Adapter Pattern (ConfigLoaderAdapter)
+- Contract Pattern (FeatureContract)
+
+CANONICAL IMPORTS:
+    from src.features import FeatureBuilder, create_feature_builder
+    from src import FeatureBuilder  # Also works (re-exported here)
 
 Author: Pedro @ Lean Tech Solutions
-Version: 3.0.0
-Date: 2025-12-17
+Version: 4.0.0
+Date: 2026-01-12
 """
 
-# Original implementation (backward compatibility)
-from .core.services.feature_builder import FeatureBuilder, create_feature_builder
+# =============================================================================
+# CANONICAL FEATURE BUILDER (Contract-based, SSOT)
+# =============================================================================
+from .features.builder import (
+    FeatureBuilder,
+    create_feature_builder,
+    load_norm_stats,
+)
+from .features.contract import (
+    FeatureContract,
+    FEATURE_CONTRACT,
+    get_contract,
+    FEATURE_ORDER,
+    OBSERVATION_DIM,
+)
 
-# Refactored implementation with SOLID & Design Patterns
+# =============================================================================
+# LEGACY IMPORTS (for backward compatibility - marked for deprecation)
+# =============================================================================
+from .core.services.feature_builder import (
+    FeatureBuilder as FeatureBuilderLegacy,
+    create_feature_builder as create_feature_builder_legacy,
+)
 from .core.services.feature_builder_refactored import (
     FeatureBuilderRefactored,
-    create_feature_builder as create_feature_builder_refactored
+    create_feature_builder as create_feature_builder_refactored,
 )
 
 # Configuration
@@ -85,15 +109,18 @@ from .core.normalizers import (
 # Builders
 from .core.builders import ObservationBuilder
 
-# Model Management
-from .models import (
-    ModelRegistry,
-    ModelConfig,
-    ModelLoader,
-    InferenceEngine,
-    InferenceResult,
-    EnsembleResult,
-)
+# Model Management - Lazy imports to avoid ONNX loading on import
+# These are imported on-demand when accessed
+def __getattr__(name):
+    """Lazy import for model-related classes to avoid ONNX loading issues."""
+    _model_exports = {
+        'ModelRegistry', 'ModelConfig', 'ModelLoader',
+        'InferenceEngine', 'InferenceResult', 'EnsembleResult',
+    }
+    if name in _model_exports:
+        from . import models
+        return getattr(models, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 # Trading (Paper Trading)
 from .trading import (
@@ -102,15 +129,29 @@ from .trading import (
     TradeDirection,
 )
 
-__version__ = "3.2.0"
+__version__ = "4.0.0"
 
 __all__ = [
-    # Original (backward compatibility)
-    'FeatureBuilder',
-    'create_feature_builder',
+    # ==========================================================================
+    # CANONICAL FEATURE BUILDER (Contract-based, SSOT)
+    # ==========================================================================
+    'FeatureBuilder',           # Contract-based (CANONICAL)
+    'create_feature_builder',   # Factory for FeatureBuilder
+    'load_norm_stats',          # Utility to load norm stats
 
-    # Refactored
-    'FeatureBuilderRefactored',
+    # Feature Contract
+    'FeatureContract',
+    'FEATURE_CONTRACT',
+    'get_contract',
+    'FEATURE_ORDER',
+    'OBSERVATION_DIM',
+
+    # ==========================================================================
+    # LEGACY (backward compatibility - use canonical imports above)
+    # ==========================================================================
+    'FeatureBuilderLegacy',     # V2.1 legacy (use FeatureBuilder instead)
+    'create_feature_builder_legacy',
+    'FeatureBuilderRefactored', # V3.0 SOLID refactoring
     'create_feature_builder_refactored',
 
     # Configuration

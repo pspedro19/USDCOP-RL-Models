@@ -1,0 +1,174 @@
+version: '3.8'
+
+# =============================================================================
+# CANARY DEPLOYMENT CONFIGURATION
+# =============================================================================
+#
+# This configuration enables gradual rollouts by directing a percentage of
+# traffic to a new version while monitoring for issues.
+#
+# Strategy:
+# - Primary: Stable production version (90% traffic by default)
+# - Canary: New version being tested (10% traffic by default)
+# - Traffic split controlled by nginx weighted upstream
+#
+# Usage:
+#   1. Deploy canary: docker-compose -f docker-compose.canary.yml up -d inference-canary
+#   2. Monitor metrics: Check Prometheus/Grafana for error rates
+#   3. Increase traffic: Edit nginx/canary.conf weights
+#   4. Promote or rollback based on metrics
+#
+# Contract: CTR-DEPLOY-002
+# =============================================================================
+
+networks:
+  usdcop-trading-network:
+    external: true
+
+services:
+  # =========================================================================
+  # INFERENCE API - STABLE (Primary Production)
+  # =========================================================================
+  inference-stable:
+    build:
+      context: .
+      dockerfile: services/inference_api/Dockerfile
+      args:
+        VERSION: ${STABLE_VERSION:-latest}
+    container_name: usdcop-inference-stable
+    environment:
+      - DEPLOYMENT_TYPE=stable
+      - DEPLOYMENT_VERSION=${STABLE_VERSION:-latest}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MODEL_PATH=/models
+      - PYTHONPATH=/app
+      # Observability
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
+      - PROMETHEUS_ENABLED=true
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+    expose:
+      - "8003"
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - inference-stable
+    deploy:
+      replicas: 3  # More replicas for stable
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      - "deployment.type=stable"
+      - "deployment.service=inference"
+
+  # =========================================================================
+  # INFERENCE API - CANARY (New Version Testing)
+  # =========================================================================
+  inference-canary:
+    build:
+      context: .
+      dockerfile: services/inference_api/Dockerfile
+      args:
+        VERSION: ${CANARY_VERSION:-latest}
+    container_name: usdcop-inference-canary
+    environment:
+      - DEPLOYMENT_TYPE=canary
+      - DEPLOYMENT_VERSION=${CANARY_VERSION:-latest}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MODEL_PATH=/models
+      - PYTHONPATH=/app
+      # Observability
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
+      - PROMETHEUS_ENABLED=true
+      # Canary-specific flags
+      - CANARY_MODE=true
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+    expose:
+      - "8003"
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - inference-canary
+    deploy:
+      replicas: 1  # Fewer replicas for canary
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      - "deployment.type=canary"
+      - "deployment.service=inference"
+
+  # =========================================================================
+  # NGINX LOAD BALANCER - Canary Traffic Router
+  # =========================================================================
+  nginx-canary:
+    image: nginx:alpine
+    container_name: usdcop-nginx-canary
+    volumes:
+      - ./nginx/canary.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8090:80"  # Production inference endpoint
+    networks:
+      - usdcop-trading-network
+    depends_on:
+      - inference-stable
+      - inference-canary
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "deployment.component=canary-lb"
+
+  # =========================================================================
+  # JAEGER - Distributed Tracing
+  # =========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: usdcop-jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    ports:
+      - "16686:16686"  # UI
+      - "6831:6831/udp"  # Thrift compact protocol
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped

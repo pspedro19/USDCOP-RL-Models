@@ -2,6 +2,9 @@
 // =============================================================================
 // SHARED API CONTRACTS - FRONTEND IMPLEMENTATION
 // Consolidated types based on audit report
+//
+// NOTE: For new code, prefer importing from '@/types/schemas' which provides
+// Zod-validated types. This file is maintained for backwards compatibility.
 // =============================================================================
 
 // Re-export existing compatible types from trading.ts to avoid duplication
@@ -12,10 +15,14 @@ export { OrderSide as TradeSide }; // Alias for contract compatibility
 // Re-export interfaces that match or can be mapped
 export type { Position, Trade } from './trading';
 
-// -------------------- New/Consolidated Types --------------------
+// Import canonical SignalType from schemas (BUY/SELL/HOLD - matches backend)
+// Note: Legacy code may use LONG/SHORT, prefer BUY/SELL for new code
+import { SignalType as CanonicalSignalType } from './schemas';
+export type { CanonicalSignalType };
 
-// Consolidated SignalType (superset of all definitions)
-export type SignalType = 'LONG' | 'SHORT' | 'HOLD' | 'CLOSE';
+// Legacy SignalType for backwards compatibility
+// Deprecated: Use 'BUY' | 'SELL' | 'HOLD' from schemas.ts instead
+export type SignalType = 'LONG' | 'SHORT' | 'HOLD' | 'CLOSE' | 'BUY' | 'SELL';
 
 // -------------------- Signals API --------------------
 

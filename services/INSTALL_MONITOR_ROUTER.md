@@ -40,8 +40,8 @@ After adding the code, restart the API service and verify the endpoints are avai
 curl http://localhost:8006/api/monitor/health
 
 # Record an action
-curl -X POST "http://localhost:8006/api/monitor/ppo_v1/record-action?action=0.5"
+curl -X POST "http://localhost:8006/api/monitor/ppo_primary/record-action?action=0.5"
 
 # Get model-specific health
-curl http://localhost:8006/api/monitor/ppo_v1/health
+curl http://localhost:8006/api/monitor/ppo_primary/health
 ```

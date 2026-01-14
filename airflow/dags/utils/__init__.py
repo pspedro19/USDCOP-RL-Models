@@ -41,6 +41,13 @@ from .dependency_handler import (
 # API Monitoring
 from .enhanced_api_monitor import EnhancedAPIMonitor as APIMonitor
 
+# DAG Dependencies (GEMINI-T6)
+from .dag_dependencies import (
+    create_dag_dependency,
+    DAG_DEPENDENCIES,
+    get_upstream_sensors,
+)
+
 # Trading Calendar
 from .trading_calendar import TradingCalendar, get_calendar, is_trading_day
 
@@ -80,4 +87,9 @@ __all__ = [
     'TradingCalendar',
     'get_calendar',
     'is_trading_day',
+
+    # DAG Dependencies
+    'create_dag_dependency',
+    'DAG_DEPENDENCIES',
+    'get_upstream_sensors',
 ]

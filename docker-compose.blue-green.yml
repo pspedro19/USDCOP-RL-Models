@@ -1,0 +1,181 @@
+version: '3.8'
+
+# =============================================================================
+# BLUE-GREEN DEPLOYMENT CONFIGURATION
+# =============================================================================
+#
+# This configuration enables zero-downtime deployments with instant rollback.
+#
+# Strategy:
+# - Two identical environments: BLUE and GREEN
+# - Only one active at a time (controlled by nginx)
+# - New deployments go to inactive environment
+# - Switch is instant via nginx config reload
+#
+# Usage:
+#   1. Deploy new version: docker-compose -f docker-compose.blue-green.yml up -d inference-green
+#   2. Test green: curl http://localhost:8091/health
+#   3. Switch traffic: ./scripts/deploy_blue_green.sh --target=green
+#   4. Rollback if needed: ./scripts/deploy_blue_green.sh --target=blue
+#
+# Contract: CTR-DEPLOY-001
+# =============================================================================
+
+networks:
+  usdcop-trading-network:
+    external: true
+
+services:
+  # =========================================================================
+  # INFERENCE API - BLUE ENVIRONMENT
+  # =========================================================================
+  inference-blue:
+    build:
+      context: .
+      dockerfile: services/inference_api/Dockerfile
+      args:
+        VERSION: ${BLUE_VERSION:-latest}
+    container_name: usdcop-inference-blue
+    environment:
+      - DEPLOYMENT_COLOR=blue
+      - DEPLOYMENT_VERSION=${BLUE_VERSION:-latest}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MODEL_PATH=/models
+      - PYTHONPATH=/app
+      # Observability
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
+      - PROMETHEUS_ENABLED=true
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+    ports:
+      - "8091:8003"  # Blue on port 8091
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - inference-blue
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      - "deployment.color=blue"
+      - "deployment.service=inference"
+
+  # =========================================================================
+  # INFERENCE API - GREEN ENVIRONMENT
+  # =========================================================================
+  inference-green:
+    build:
+      context: .
+      dockerfile: services/inference_api/Dockerfile
+      args:
+        VERSION: ${GREEN_VERSION:-latest}
+    container_name: usdcop-inference-green
+    environment:
+      - DEPLOYMENT_COLOR=green
+      - DEPLOYMENT_VERSION=${GREEN_VERSION:-latest}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MODEL_PATH=/models
+      - PYTHONPATH=/app
+      # Observability
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=6831
+      - PROMETHEUS_ENABLED=true
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+    ports:
+      - "8092:8003"  # Green on port 8092
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - inference-green
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      - "deployment.color=green"
+      - "deployment.service=inference"
+
+  # =========================================================================
+  # NGINX LOAD BALANCER - Traffic Router
+  # =========================================================================
+  nginx-lb:
+    image: nginx:alpine
+    container_name: usdcop-nginx-lb
+    volumes:
+      - ./nginx/blue-green.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "8090:80"  # Production inference endpoint
+    networks:
+      - usdcop-trading-network
+    depends_on:
+      - inference-blue
+      - inference-green
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "deployment.component=load-balancer"
+
+  # =========================================================================
+  # JAEGER - Distributed Tracing (for FASE 8)
+  # =========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: usdcop-jaeger
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    ports:
+      - "16686:16686"  # UI
+      - "6831:6831/udp"  # Thrift compact protocol
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    labels:
+      - "deployment.component=observability"

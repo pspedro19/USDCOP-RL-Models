@@ -296,6 +296,12 @@ def get_config() -> MLOpsConfig:
             _config = MLOpsConfig.from_env()
             logger.info("Loaded config from environment")
 
+        # Always apply env var overrides (especially for secrets)
+        _config.redis.host = os.getenv("REDIS_HOST", _config.redis.host)
+        _config.redis.port = int(os.getenv("REDIS_PORT", str(_config.redis.port)))
+        _config.redis.password = os.getenv("REDIS_PASSWORD", _config.redis.password)
+        _config.log_level = os.getenv("MLOPS_LOG_LEVEL", _config.log_level)
+
         _config.setup_logging()
 
     return _config

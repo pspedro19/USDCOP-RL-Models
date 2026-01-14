@@ -1,5 +1,10 @@
 """
-Shared module - Configuration, exceptions, and utilities.
+Shared module - Configuration, exceptions, utilities, and schemas.
+
+Submodules:
+    - config_loader: Configuration loading utilities
+    - exceptions: Custom exception classes
+    - schemas: Shared Pydantic schemas for API contracts
 """
 
 from .config_loader import ConfigLoader, get_config, load_feature_config
@@ -16,6 +21,9 @@ from .exceptions import (
     NormalizationError
 )
 
+# Schemas submodule (import on demand to avoid circular imports)
+# Usage: from shared.schemas import TradeSchema, SignalType
+
 __all__ = [
     'ConfigLoader',
     'ConfigLoaderAdapter',
@@ -30,4 +38,6 @@ __all__ = [
     # Legacy
     'FeatureBuilderError',
     'NormalizationError',
+    # Schemas submodule
+    'schemas',
 ]

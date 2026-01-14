@@ -1,0 +1,244 @@
+# =============================================================================
+# Prometheus Alert Rules: Latency (Phase 12)
+# =============================================================================
+# Alert rules for monitoring inference API latency against SLA targets.
+#
+# SLA Targets:
+#   - p50 < 20ms
+#   - p95 < 50ms
+#   - p99 < 100ms
+#
+# Author: Trading Team
+# Date: 2025-01-14
+# =============================================================================
+
+groups:
+  - name: latency_alerts
+    interval: 30s
+    rules:
+      # =========================================================================
+      # Warning Alerts - Slack notification
+      # =========================================================================
+
+      - alert: InferenceLatencyP95Warning
+        expr: |
+          histogram_quantile(0.95,
+            rate(usdcop_inference_latency_seconds_bucket[5m])
+          ) > 0.075
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Inference p95 latency elevated"
+          description: |
+            p95 inference latency is {{ $value | humanizeDuration }} (warning threshold: 75ms).
+            This may indicate performance degradation.
+          runbook_url: "https://docs.example.com/runbooks/latency"
+
+      - alert: InferenceLatencyP99Warning
+        expr: |
+          histogram_quantile(0.99,
+            rate(usdcop_inference_latency_seconds_bucket[5m])
+          ) > 0.150
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Inference p99 latency elevated"
+          description: |
+            p99 inference latency is {{ $value | humanizeDuration }} (warning threshold: 150ms).
+            Consider investigating slow requests.
+
+      - alert: FeatureCalculationSlow
+        expr: |
+          histogram_quantile(0.95,
+            rate(usdcop_feature_calculation_seconds_bucket{feature_set="technical"}[5m])
+          ) > 0.040
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Feature calculation p95 latency high"
+          description: |
+            Feature calculation is taking {{ $value | humanizeDuration }} at p95.
+            Expected: < 40ms. Check for data issues or compute bottlenecks.
+
+      - alert: DatabaseQuerySlow
+        expr: |
+          histogram_quantile(0.95,
+            rate(usdcop_db_query_seconds_bucket[5m])
+          ) > 0.030
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Database query p95 latency high"
+          description: |
+            Database queries taking {{ $value | humanizeDuration }} at p95.
+            Check connection pool, query optimization, or database load.
+
+      # =========================================================================
+      # Critical Alerts - PagerDuty
+      # =========================================================================
+
+      - alert: InferenceLatencyP99Critical
+        expr: |
+          histogram_quantile(0.99,
+            rate(usdcop_inference_latency_seconds_bucket[5m])
+          ) > 0.200
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "🚨 Inference p99 latency SLA breach"
+          description: |
+            CRITICAL: p99 inference latency is {{ $value | humanizeDuration }}.
+            SLA threshold: 100ms. Current: > 200ms.
+            Immediate investigation required.
+          runbook_url: "https://docs.example.com/runbooks/latency-critical"
+
+      - alert: InferenceLatencyP50Critical
+        expr: |
+          histogram_quantile(0.50,
+            rate(usdcop_inference_latency_seconds_bucket[5m])
+          ) > 0.050
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "🚨 Inference median latency very high"
+          description: |
+            CRITICAL: Median inference latency is {{ $value | humanizeDuration }}.
+            This indicates systemic performance issues.
+
+      # =========================================================================
+      # Throughput Alerts
+      # =========================================================================
+
+      - alert: InferenceThroughputLow
+        expr: |
+          rate(usdcop_inference_requests_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Low inference throughput"
+          description: |
+            Inference requests rate is very low: {{ $value | humanize }}/sec.
+            This may indicate upstream issues or system problems.
+
+      - alert: InferenceErrorRateHigh
+        expr: |
+          rate(usdcop_inference_requests_total{status="error"}[5m])
+          /
+          rate(usdcop_inference_requests_total[5m])
+          > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "🚨 High inference error rate"
+          description: |
+            Error rate is {{ $value | humanizePercentage }}.
+            SLA threshold: < 0.1%. Immediate investigation required.
+
+  - name: feature_quality_alerts
+    interval: 30s
+    rules:
+      # =========================================================================
+      # Feature Quality Alerts
+      # =========================================================================
+
+      - alert: FeatureCircuitBreakerActivated
+        expr: usdcop_circuit_breaker_state == 1
+        for: 0s
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "🚨 Feature circuit breaker activated"
+          description: |
+            Circuit breaker has been triggered due to data quality issues.
+            Trading is paused. Check data pipeline and feature calculations.
+
+      - alert: FeatureNaNRatioHigh
+        expr: usdcop_feature_nan_ratio > 0.15
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "High NaN ratio in features"
+          description: |
+            Feature NaN ratio is {{ $value | humanizePercentage }}.
+            Warning threshold: 15%. Circuit breaker threshold: 20%.
+            Check data sources and feature calculations.
+
+      - alert: DataFreshnessStale
+        expr: usdcop_data_freshness_seconds > 600
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Market data is stale"
+          description: |
+            Latest market data is {{ $value | humanizeDuration }} old.
+            Expected: < 10 minutes. Check data pipeline.
+
+  - name: model_health_alerts
+    interval: 60s
+    rules:
+      # =========================================================================
+      # Model Health Alerts
+      # =========================================================================
+
+      - alert: ModelNotLoaded
+        expr: usdcop_active_models == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "🚨 No models loaded"
+          description: |
+            No inference models are currently loaded.
+            The service cannot generate trading signals.
+
+      - alert: ModelDriftHigh
+        expr: usdcop_feature_drift > 3.0
+        for: 15m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "High feature drift detected"
+          description: |
+            Feature drift z-score is {{ $value }}.
+            This may indicate data distribution shift.
+            Consider retraining or investigating data sources.
+
+      - alert: ConsecutiveLossesHigh
+        expr: usdcop_consecutive_losses >= 5
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Multiple consecutive losing trades"
+          description: |
+            {{ $value }} consecutive losing trades.
+            Risk management may trigger if this continues.

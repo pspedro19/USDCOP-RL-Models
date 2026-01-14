@@ -30,7 +30,7 @@ except ImportError:
     ort = None
     logging.warning("onnxruntime not installed. Install with: pip install onnxruntime")
 
-from .config import MLOpsConfig, get_config, SignalType, ModelConfig
+from mlops.config import MLOpsConfig, get_config, SignalType, ModelConfig
 
 logger = logging.getLogger(__name__)
 

@@ -42,27 +42,27 @@ def model_registry(models_dir) -> Dict[str, Dict[str, Any]]:
     Simulates what would be stored in database config.models table.
     """
     return {
-        'ppo_v19': {
-            'model_id': 'ppo_v19',
-            'model_name': 'PPO USD/COP V19',
+        'ppo_primary': {
+            'model_id': 'ppo_primary',
+            'model_name': 'PPO USD/COP Primary',
             'model_type': 'RL',
             'framework': 'stable-baselines3',
             'algorithm': 'PPO',
-            'version': 'v19',
-            'file_path': str(models_dir / 'ppo_usdcop_v19_fold0.zip'),
+            'version': 'current',
+            'file_path': str(models_dir / 'ppo_usdcop_fold0.zip'),
             'observation_dim': 15,
             'action_space': 'Box(-1, 1)',
             'is_active': True,
             'network': {'pi': [32, 32], 'vf': [32, 32]}
         },
-        'ppo_v15_fold3': {
-            'model_id': 'ppo_v15_fold3',
-            'model_name': 'PPO USD/COP V15 Fold3',
+        'ppo_secondary': {
+            'model_id': 'ppo_secondary',
+            'model_name': 'PPO USD/COP Secondary',
             'model_type': 'RL',
             'framework': 'stable-baselines3',
             'algorithm': 'PPO',
-            'version': 'v15',
-            'file_path': str(models_dir / 'ppo_usdcop_v15_fold3.zip'),
+            'version': 'current',
+            'file_path': str(models_dir / 'ppo_usdcop_fold3.zip'),
             'observation_dim': 15,
             'action_space': 'Box(-1, 1)',
             'is_active': True,
@@ -132,7 +132,7 @@ class TestModelRegistry:
 
     def test_registry_has_required_models(self, model_registry):
         """Registry contains expected models"""
-        expected_models = ['ppo_v19', 'ppo_v15_fold3']
+        expected_models = ['ppo_primary', 'ppo_secondary']
 
         for model_id in expected_models:
             assert model_id in model_registry, \
@@ -160,14 +160,14 @@ class TestModelRegistry:
 
 @pytest.mark.integration
 @pytest.mark.skipif(not HAS_SB3, reason="stable-baselines3 not installed")
-class TestLoadPPOV19:
-    """Tests for loading PPO V19 model"""
+class TestLoadPPOModels:
+    """Tests for loading PPO models"""
 
-    def test_load_ppo_v19_if_exists(self, model_registry, models_dir):
-        """Can load PPO V19 model if file exists"""
-        config = model_registry.get('ppo_v19')
+    def test_load_ppo_primary_if_exists(self, model_registry, models_dir):
+        """Can load PPO primary model if file exists"""
+        config = model_registry.get('ppo_primary')
         if not config:
-            pytest.skip("ppo_v19 not in registry")
+            pytest.skip("ppo_primary not in registry")
 
         model_path = Path(config['file_path'])
         if not model_path.exists():
@@ -176,11 +176,11 @@ class TestLoadPPOV19:
         model = PPO.load(str(model_path))
         assert model is not None, "Failed to load model"
 
-    def test_ppo_v15_fold3_if_exists(self, model_registry, models_dir):
-        """Can load PPO V15 Fold3 model if file exists"""
-        config = model_registry.get('ppo_v15_fold3')
+    def test_ppo_secondary_if_exists(self, model_registry, models_dir):
+        """Can load PPO secondary model if file exists"""
+        config = model_registry.get('ppo_secondary')
         if not config:
-            pytest.skip("ppo_v15_fold3 not in registry")
+            pytest.skip("ppo_secondary not in registry")
 
         model_path = Path(config['file_path'])
         if not model_path.exists():
@@ -347,21 +347,21 @@ class TestMultiModelInference:
             assert -1 <= result['action'] <= 1
 
     def test_models_produce_different_actions(self, sample_observation):
-        """Different model versions may produce different actions"""
+        """Different models may produce different actions"""
         # Create models with different seeds
-        model_v19 = MockModel()
-        model_v19._deterministic_seed = 42
+        model_primary = MockModel()
+        model_primary._deterministic_seed = 42
 
-        model_v15 = MockModel()
-        model_v15._deterministic_seed = 123
+        model_secondary = MockModel()
+        model_secondary._deterministic_seed = 123
 
-        action_v19, _ = model_v19.predict(sample_observation, deterministic=True)
-        action_v15, _ = model_v15.predict(sample_observation, deterministic=True)
+        action_primary, _ = model_primary.predict(sample_observation, deterministic=True)
+        action_secondary, _ = model_secondary.predict(sample_observation, deterministic=True)
 
         # Actions may differ (different model weights in production)
         # Just verify they are valid
-        assert -1 <= action_v19[0] <= 1
-        assert -1 <= action_v15[0] <= 1
+        assert -1 <= action_primary[0] <= 1
+        assert -1 <= action_secondary[0] <= 1
 
     def test_concurrent_inference_consistency(self, sample_observation):
         """Concurrent inference produces consistent results"""

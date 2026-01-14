@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/playwright/.cache/
+tests/e2e/screenshots/*.png
+!tests/e2e/screenshots/.gitkeep
+*.webm
 
 # next.js
 /.next/
@@ -39,3 +45,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary files
+tmpclaude-*
+_backup_*/
+debug/
+*.tmp
+*.bak
+
+# IDE
+.vscode/
+.idea/

@@ -110,8 +110,8 @@ def get_default_config() -> Dict[str, Any]:
     """Return default configuration when file is not available."""
     return {
         "_meta": {
-            "model_id": "ppo_usdcop_v14",
-            "version": "14.0.0"
+            "model_id": "ppo_primary",
+            "version": "current"
         },
         "sources": {
             "ohlcv": {

@@ -1,67 +1,39 @@
 {
   "_meta": {
-    "version": "5.0.0",
-    "model_id": "ppo_v1",
-    "created_at": "2025-12-26",
-    "updated_at": "2025-12-26",
-    "description": "SSOT para features V19 - 30 features (12 state + 18 market)",
+    "version": "6.0.0",
+    "model_id": "ppo_primary",
+    "created_at": "2025-01-12",
+    "updated_at": "2025-01-14",
+    "description": "SSOT for features - 15 features (13 market + 2 state). Aligned with src/feature_store/core.py",
     "author": "Pedro @ Lean Tech Solutions",
     "changelog": {
-      "5.0.0": "V19 production: 30 features matching TradingEnvironmentV19. Model ppo_v1_20251226_054154.zip",
-      "4.1.0": "v15 production: 15 features (deprecated)",
-      "4.0.0": "v15: Corrected normalization stats using fixed z-score"
+      "6.0.0": "CRITICAL FIX: Aligned with 15-dim SSOT from feature_store/core.py",
+      "5.0.0": "DEPRECATED: Had incorrect 30-dim spec",
+      "4.1.0": "Legacy production: 15 features (deprecated)",
+      "4.0.0": "Legacy: Corrected normalization stats using fixed z-score"
     }
   },
 
   "observation_space": {
-    "total_dimension": 30,
-    "state_features_count": 12,
-    "market_features_count": 18,
+    "total_dimension": 15,
+    "market_features_count": 13,
+    "state_features_count": 2,
     "order": [
-      "position",
-      "unrealized_pnl",
-      "cumulative_return",
-      "current_drawdown",
-      "max_drawdown_episode",
-      "regime_encoded",
-      "session_phase",
-      "volatility_regime",
-      "cost_regime",
-      "position_duration",
-      "trade_count_normalized",
-      "time_remaining",
       "log_ret_5m",
       "log_ret_1h",
       "log_ret_4h",
       "rsi_9",
       "atr_pct",
       "adx_14",
-      "bb_position",
       "dxy_z",
       "dxy_change_1d",
-      "dxy_mom_5d",
       "vix_z",
       "embi_z",
       "brent_change_1d",
-      "brent_vol_5d",
       "rate_spread",
       "usdmxn_change_1d",
-      "hour_sin",
-      "hour_cos"
-    ],
-    "state_features": [
       "position",
-      "unrealized_pnl",
-      "cumulative_return",
-      "current_drawdown",
-      "max_drawdown_episode",
-      "regime_encoded",
-      "session_phase",
-      "volatility_regime",
-      "cost_regime",
-      "position_duration",
-      "trade_count_normalized",
-      "time_remaining"
+      "time_normalized"
     ],
     "market_features": [
       "log_ret_5m",
@@ -70,120 +42,17 @@
       "rsi_9",
       "atr_pct",
       "adx_14",
-      "bb_position",
       "dxy_z",
       "dxy_change_1d",
-      "dxy_mom_5d",
       "vix_z",
       "embi_z",
       "brent_change_1d",
-      "brent_vol_5d",
       "rate_spread",
-      "usdmxn_change_1d",
-      "hour_sin",
-      "hour_cos"
+      "usdmxn_change_1d"
     ],
-    "total_obs_dim": 30
-  },
-
-  "state_features": {
-    "description": "12 state features computed at runtime by StateTracker",
-    "compute_location": "python_runtime",
-    "items": [
-      {
-        "name": "position",
-        "observation_order": 0,
-        "range": [-1.0, 1.0],
-        "description": "Current position normalized [-1 short, 0 flat, 1 long]",
-        "source": "TradeManager.get_current_position(model_id)"
-      },
-      {
-        "name": "unrealized_pnl",
-        "observation_order": 1,
-        "range": [-1.0, 1.0],
-        "formula": "clip(unrealized_pnl / 0.05, -1, 1)",
-        "description": "Unrealized PnL normalized by 5% threshold"
-      },
-      {
-        "name": "cumulative_return",
-        "observation_order": 2,
-        "range": [-1.0, 1.0],
-        "formula": "clip(cumulative_return / 0.10, -1, 1)",
-        "description": "Session cumulative return normalized by 10%"
-      },
-      {
-        "name": "current_drawdown",
-        "observation_order": 3,
-        "range": [-1.0, 0.0],
-        "formula": "-current_drawdown / max_drawdown_pct",
-        "description": "Current drawdown as fraction of max allowed"
-      },
-      {
-        "name": "max_drawdown_episode",
-        "observation_order": 4,
-        "range": [-1.0, 0.0],
-        "formula": "-max_drawdown_session / max_drawdown_pct",
-        "description": "Max drawdown this session"
-      },
-      {
-        "name": "regime_encoded",
-        "observation_order": 5,
-        "range": [-0.5, 1.0],
-        "encoding": {
-          "crisis": 1.0,
-          "high_volatility": 0.5,
-          "normal": 0.0,
-          "low_volatility": -0.5
-        },
-        "description": "Market regime based on volatility percentile"
-      },
-      {
-        "name": "session_phase",
-        "observation_order": 6,
-        "range": [0.1, 0.8],
-        "encoding": {
-          "ny_am": 0.8,
-          "ny_pm": 0.6,
-          "asia_early": 0.3,
-          "london": 0.2,
-          "closed": 0.1
-        },
-        "description": "Trading session phase (liquidity proxy)"
-      },
-      {
-        "name": "volatility_regime",
-        "observation_order": 7,
-        "range": [0.0, 1.0],
-        "description": "Volatility percentile [0=low, 1=high]"
-      },
-      {
-        "name": "cost_regime",
-        "observation_order": 8,
-        "range": [0.0, 1.0],
-        "default": 1.0,
-        "description": "Transaction cost multiplier (always 1.0 in production)"
-      },
-      {
-        "name": "position_duration",
-        "observation_order": 9,
-        "range": [0.0, 1.0],
-        "formula": "min(bars_in_position / 100, 1.0)",
-        "description": "Bars holding current position (normalized)"
-      },
-      {
-        "name": "trade_count_normalized",
-        "observation_order": 10,
-        "range": [0.0, 1.0],
-        "formula": "min(trade_count_session / 50, 1.0)",
-        "description": "Trades executed this session (normalized)"
-      },
-      {
-        "name": "time_remaining",
-        "observation_order": 11,
-        "range": [0.0, 1.0],
-        "formula": "1.0 - (bar_number / bars_per_session)",
-        "description": "Fraction of session remaining"
-      }
+    "state_features": [
+      "position",
+      "time_normalized"
     ]
   },
 
@@ -194,30 +63,27 @@
       "items": [
         {
           "name": "log_ret_5m",
-          "observation_order": 12,
+          "observation_order": 0,
           "formula": "ln(close / close[-1])",
           "lookback_bars": 1,
           "norm_stats": {"mean": 2.0e-06, "std": 0.001138},
-          "clip": [-0.05, 0.05],
-          "sql": "LN(close / LAG(close, 1) OVER (ORDER BY time))"
+          "clip": [-0.05, 0.05]
         },
         {
           "name": "log_ret_1h",
-          "observation_order": 13,
+          "observation_order": 1,
           "formula": "ln(close / close[-12])",
           "lookback_bars": 12,
           "norm_stats": {"mean": 2.3e-05, "std": 0.003776},
-          "clip": [-0.05, 0.05],
-          "sql": "LN(close / LAG(close, 12) OVER (ORDER BY time))"
+          "clip": [-0.05, 0.05]
         },
         {
           "name": "log_ret_4h",
-          "observation_order": 14,
+          "observation_order": 2,
           "formula": "ln(close / close[-48])",
           "lookback_bars": 48,
           "norm_stats": {"mean": 5.2e-05, "std": 0.007768},
-          "clip": [-0.05, 0.05],
-          "sql": "LN(close / LAG(close, 48) OVER (ORDER BY time))"
+          "clip": [-0.05, 0.05]
         }
       ]
     },
@@ -228,36 +94,27 @@
       "items": [
         {
           "name": "rsi_9",
-          "observation_order": 15,
+          "observation_order": 3,
           "period": 9,
+          "smoothing": "wilder",
           "norm_stats": {"mean": 49.27, "std": 23.07},
-          "range": [0, 100],
-          "python_function": "calc_rsi(close, period=9)"
+          "range": [0, 100]
         },
         {
           "name": "atr_pct",
-          "observation_order": 16,
+          "observation_order": 4,
           "period": 10,
+          "smoothing": "wilder",
           "formula": "(ATR / close) * 100",
-          "norm_stats": {"mean": 0.062, "std": 0.0446},
-          "python_function": "calc_atr_pct(high, low, close, period=10)"
+          "norm_stats": {"mean": 0.062, "std": 0.0446}
         },
         {
           "name": "adx_14",
-          "observation_order": 17,
+          "observation_order": 5,
           "period": 14,
+          "smoothing": "wilder",
           "norm_stats": {"mean": 32.01, "std": 16.36},
-          "range": [0, 100],
-          "python_function": "calc_adx(high, low, close, period=14)"
-        },
-        {
-          "name": "bb_position",
-          "observation_order": 18,
-          "period": 20,
-          "std_dev": 2,
-          "range": [0.0, 1.0],
-          "formula": "(close - bb_lower) / (bb_upper - bb_lower)",
-          "python_function": "calc_bb_position(close, period=20, std_dev=2)"
+          "range": [0, 100]
         }
       ]
     },
@@ -269,27 +126,24 @@
       "items": [
         {
           "name": "dxy_z",
-          "observation_order": 19,
+          "observation_order": 6,
           "raw_column": "dxy",
           "norm_stats": {"mean": 100.21, "std": 5.60},
-          "clip": [-4, 4],
-          "sql": "(dxy - 100.21) / 5.60"
+          "clip": [-4, 4]
         },
         {
           "name": "vix_z",
-          "observation_order": 22,
+          "observation_order": 8,
           "raw_column": "vix",
           "norm_stats": {"mean": 21.16, "std": 7.89},
-          "clip": [-4, 4],
-          "sql": "(vix - 21.16) / 7.89"
+          "clip": [-4, 4]
         },
         {
           "name": "embi_z",
-          "observation_order": 23,
+          "observation_order": 9,
           "raw_column": "embi",
           "norm_stats": {"mean": 322.01, "std": 62.68},
-          "clip": [-4, 4],
-          "sql": "(embi - 322.01) / 62.68"
+          "clip": [-4, 4]
         }
       ]
     },
@@ -300,31 +154,21 @@
       "items": [
         {
           "name": "dxy_change_1d",
-          "observation_order": 20,
+          "observation_order": 7,
           "clip": [-0.03, 0.03],
-          "no_zscore": true,
-          "sql": "(dxy - LAG(dxy, 1)) / NULLIF(LAG(dxy, 1), 0)"
-        },
-        {
-          "name": "dxy_mom_5d",
-          "observation_order": 21,
-          "clip": [-0.05, 0.05],
-          "no_zscore": true,
-          "sql": "(dxy - LAG(dxy, 5)) / NULLIF(LAG(dxy, 5), 0)"
+          "no_zscore": true
         },
         {
           "name": "brent_change_1d",
-          "observation_order": 24,
+          "observation_order": 10,
           "clip": [-0.10, 0.10],
-          "no_zscore": true,
-          "sql": "(brent - LAG(brent, 1)) / NULLIF(LAG(brent, 1), 0)"
+          "no_zscore": true
         },
         {
           "name": "usdmxn_change_1d",
-          "observation_order": 27,
+          "observation_order": 12,
           "clip": [-0.10, 0.10],
-          "no_zscore": true,
-          "sql": "(usdmxn - LAG(usdmxn, 1)) / NULLIF(LAG(usdmxn, 1), 0)"
+          "no_zscore": true
         }
       ]
     },
@@ -334,49 +178,43 @@
       "compute_location": "python",
       "items": [
         {
-          "name": "brent_vol_5d",
-          "observation_order": 25,
-          "clip": [0.0, 0.05],
-          "no_zscore": true,
-          "python_function": "calc_rolling_std(brent, period=5)"
-        },
-        {
           "name": "rate_spread",
-          "observation_order": 26,
+          "observation_order": 11,
           "norm_stats": {"mean": 7.03, "std": 1.41},
-          "formula": "10.0 - treasury_10y",
-          "sql": "((10.0 - treasury_10y) - 7.03) / 1.41"
-        }
-      ]
-    },
-
-    "temporal": {
-      "source": "ohlcv",
-      "compute_location": "sql",
-      "items": [
-        {
-          "name": "hour_sin",
-          "observation_order": 28,
-          "range": [-1.0, 1.0],
-          "formula": "sin(2 * pi * hour / 24)",
-          "sql": "SIN(2 * PI() * EXTRACT(HOUR FROM time) / 24)"
-        },
-        {
-          "name": "hour_cos",
-          "observation_order": 29,
-          "range": [-1.0, 1.0],
-          "formula": "cos(2 * pi * hour / 24)",
-          "sql": "COS(2 * PI() * EXTRACT(HOUR FROM time) / 24)"
+          "formula": "10.0 - treasury_10y"
         }
       ]
     }
   },
 
+  "state_features": {
+    "description": "2 state features computed at runtime by StateTracker",
+    "compute_location": "python_runtime",
+    "items": [
+      {
+        "name": "position",
+        "observation_order": 13,
+        "range": [-1.0, 1.0],
+        "description": "Current position normalized [-1 short, 0 flat, 1 long]",
+        "source": "StateTracker.get_state_features(model_id)"
+      },
+      {
+        "name": "time_normalized",
+        "observation_order": 14,
+        "range": [0.0, 1.0],
+        "formula": "(current_minutes - start_minutes) / (end_minutes - start_minutes)",
+        "description": "Normalized time within trading session [0=start, 1=end]"
+      }
+    ]
+  },
+
   "environment_config": {
-    "class": "TradingEnvironmentV19",
+    "_note": "Production inference uses 400 bars. Training uses longer episodes (1200 bars) for diverse experience.",
+    "class": "TradingEnvironment",
     "initial_balance": 10000,
     "max_position": 1.0,
     "episode_length": 400,
+    "training_episode_length": 1200,
     "max_drawdown_pct": 15.0,
     "bars_per_day": 56,
     "bars_per_session": 60,
@@ -385,13 +223,16 @@
   },
 
   "cost_model": {
+    "_note": "DEPRECATED: For RL training costs, see trading_config.yaml (transaction_cost_bps: 75, slippage_bps: 15)",
     "class": "SETFXCostModel",
     "base_spread_bps": 14.0,
     "high_vol_spread_bps": 28.0,
     "crisis_spread_bps": 45.0,
     "slippage_bps": 3.0,
     "volatility_threshold_high": 0.7,
-    "volatility_threshold_crisis": 0.9
+    "volatility_threshold_crisis": 0.9,
+    "total_cost_normal_bps": 17.0,
+    "comment": "SETFX institutional costs (NOT used for RL training). RL uses 75 bps spread from trading_config.yaml"
   },
 
   "volatility_scaler": {
@@ -429,10 +270,10 @@
   },
 
   "model": {
-    "path": "models/ppo_v1_20251226_054154.zip",
+    "path": "models/ppo_primary.zip",
     "framework": "stable-baselines3",
     "algorithm": "PPO",
-    "version": "V1",
+    "version": "current",
     "network": {
       "pi": [256, 256],
       "vf": [256, 256],
@@ -447,12 +288,6 @@
       "gae_lambda": 0.95,
       "clip_range": 0.2,
       "ent_coef": 0.05
-    },
-    "backtest_metrics": {
-      "sharpe_ratio": 2.91,
-      "max_drawdown": 0.0068,
-      "win_rate": 0.4485,
-      "training_date": "2025-12-26"
     }
   },
 
@@ -470,15 +305,16 @@
     "bars_per_session": 60,
     "trading_days": [0, 1, 2, 3, 4],
     "signal_thresholds": {
-      "long": 0.3,
-      "short": -0.3
+      "long": 0.33,
+      "short": -0.33,
+      "comment": "Wider HOLD zone: [-0.33, 0.33] = 66% HOLD"
     }
   },
 
   "validation": {
-    "expected_observation_dim": 30,
-    "expected_state_features": 12,
-    "expected_market_features": 18,
+    "expected_observation_dim": 15,
+    "expected_market_features": 13,
+    "expected_state_features": 2,
     "min_bars_for_inference": 50,
     "max_gap_minutes": 10
   },

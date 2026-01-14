@@ -1,0 +1,309 @@
+# ==============================================================================
+# FEATURE REGISTRY - Single Source of Truth (SSOT)
+# ==============================================================================
+# This file defines ALL features used in training and inference.
+# ANY change here MUST be reflected in both training and inference pipelines.
+#
+# Contract Version: 2.0.0
+# Observation Dimension: 15 (13 market + 2 state)
+# ==============================================================================
+
+_meta:
+  version: "2.0.0"
+  created_at: "2025-01-14"
+  updated_at: "2025-01-14"
+  description: "SSOT for feature definitions - 15 dimensions (13 market + 2 state)"
+  contract: "CTR-FEATURE-001"
+
+# ==============================================================================
+# Observation Space Definition
+# ==============================================================================
+observation_space:
+  total_dimension: 15
+  market_features_count: 13
+  state_features_count: 2
+
+  # Canonical order - MUST match this exactly in all implementations
+  order:
+    - log_ret_5m
+    - log_ret_1h
+    - log_ret_4h
+    - rsi_9
+    - atr_pct
+    - adx_14
+    - dxy_z
+    - dxy_change_1d
+    - vix_z
+    - embi_z
+    - brent_change_1d
+    - rate_spread
+    - usdmxn_change_1d
+    - position
+    - time_normalized
+
+# ==============================================================================
+# Feature Definitions
+# ==============================================================================
+features:
+  # --------------------------------------------------------------------------
+  # Returns Features (0-2)
+  # --------------------------------------------------------------------------
+  - name: log_ret_5m
+    order: 0
+    category: returns
+    calculator: LogReturnCalculator
+    source: ohlcv
+    params:
+      lookback_bars: 1
+      column: close
+    normalization:
+      method: zscore
+      mean: 2.0e-06
+      std: 0.001138
+      clip: [-0.05, 0.05]
+    description: "5-minute log return: ln(close / close[-1])"
+
+  - name: log_ret_1h
+    order: 1
+    category: returns
+    calculator: LogReturnCalculator
+    source: ohlcv
+    params:
+      lookback_bars: 12
+      column: close
+    normalization:
+      method: zscore
+      mean: 2.3e-05
+      std: 0.003776
+      clip: [-0.05, 0.05]
+    description: "1-hour log return: ln(close / close[-12])"
+
+  - name: log_ret_4h
+    order: 2
+    category: returns
+    calculator: LogReturnCalculator
+    source: ohlcv
+    params:
+      lookback_bars: 48
+      column: close
+    normalization:
+      method: zscore
+      mean: 5.2e-05
+      std: 0.007768
+      clip: [-0.05, 0.05]
+    description: "4-hour log return: ln(close / close[-48])"
+
+  # --------------------------------------------------------------------------
+  # Technical Features (3-5)
+  # --------------------------------------------------------------------------
+  - name: rsi_9
+    order: 3
+    category: technical
+    calculator: RSICalculator
+    source: ohlcv
+    params:
+      period: 9
+      smoothing: wilder
+    normalization:
+      method: zscore
+      mean: 49.27
+      std: 23.07
+      clip: [-3.0, 3.0]
+    description: "RSI with 9 periods, Wilder smoothing"
+
+  - name: atr_pct
+    order: 4
+    category: technical
+    calculator: ATRPercentCalculator
+    source: ohlcv
+    params:
+      period: 10
+      smoothing: wilder
+    normalization:
+      method: zscore
+      mean: 0.062
+      std: 0.0446
+      clip: [-3.0, 3.0]
+    description: "ATR as percentage of close: (ATR / close) * 100"
+
+  - name: adx_14
+    order: 5
+    category: technical
+    calculator: ADXCalculator
+    source: ohlcv
+    params:
+      period: 14
+      smoothing: wilder
+    normalization:
+      method: zscore
+      mean: 32.01
+      std: 16.36
+      clip: [-3.0, 3.0]
+    description: "ADX with 14 periods, Wilder smoothing"
+
+  # --------------------------------------------------------------------------
+  # Macro Z-Score Features (6, 8-9)
+  # --------------------------------------------------------------------------
+  - name: dxy_z
+    order: 6
+    category: macro_zscore
+    calculator: ZScoreCalculator
+    source: macro_indicators_daily
+    params:
+      column: dxy
+    normalization:
+      method: zscore
+      mean: 100.21
+      std: 5.60
+      clip: [-4.0, 4.0]
+    description: "DXY Index z-score"
+
+  - name: vix_z
+    order: 8
+    category: macro_zscore
+    calculator: ZScoreCalculator
+    source: macro_indicators_daily
+    params:
+      column: vix
+    normalization:
+      method: zscore
+      mean: 21.16
+      std: 7.89
+      clip: [-4.0, 4.0]
+    description: "VIX Index z-score"
+
+  - name: embi_z
+    order: 9
+    category: macro_zscore
+    calculator: ZScoreCalculator
+    source: macro_indicators_daily
+    params:
+      column: embi
+    normalization:
+      method: zscore
+      mean: 322.01
+      std: 62.68
+      clip: [-4.0, 4.0]
+    description: "EMBI spread z-score"
+
+  # --------------------------------------------------------------------------
+  # Macro Change Features (7, 10, 12)
+  # --------------------------------------------------------------------------
+  - name: dxy_change_1d
+    order: 7
+    category: macro_change
+    calculator: DailyChangeCalculator
+    source: macro_indicators_daily
+    params:
+      column: dxy
+    normalization:
+      method: clip
+      clip: [-0.03, 0.03]
+    description: "DXY daily percentage change"
+
+  - name: brent_change_1d
+    order: 10
+    category: macro_change
+    calculator: DailyChangeCalculator
+    source: macro_indicators_daily
+    params:
+      column: brent
+    normalization:
+      method: clip
+      clip: [-0.10, 0.10]
+    description: "Brent crude daily percentage change"
+
+  - name: usdmxn_change_1d
+    order: 12
+    category: macro_change
+    calculator: DailyChangeCalculator
+    source: macro_indicators_daily
+    params:
+      column: usdmxn
+    normalization:
+      method: clip
+      clip: [-0.10, 0.10]
+    description: "USD/MXN daily percentage change"
+
+  # --------------------------------------------------------------------------
+  # Macro Derived Features (11)
+  # --------------------------------------------------------------------------
+  - name: rate_spread
+    order: 11
+    category: macro_derived
+    calculator: RateSpreadCalculator
+    source: macro_indicators_daily
+    params:
+      base_rate: 10.0
+      treasury_column: treasury_10y
+    normalization:
+      method: zscore
+      mean: 7.03
+      std: 1.41
+      clip: [-3.0, 3.0]
+    description: "Interest rate spread: 10.0 - treasury_10y"
+
+  # --------------------------------------------------------------------------
+  # State Features (13-14) - Computed at runtime
+  # --------------------------------------------------------------------------
+  - name: position
+    order: 13
+    category: state
+    calculator: null  # Computed at runtime
+    source: runtime
+    params: {}
+    normalization:
+      method: none
+      clip: [-1.0, 1.0]
+    description: "Current position: -1 (short), 0 (flat), 1 (long)"
+
+  - name: time_normalized
+    order: 14
+    category: state
+    calculator: null  # Computed at runtime
+    source: runtime
+    params: {}
+    normalization:
+      method: none
+      clip: [0.0, 1.0]
+    description: "Normalized time within session: 0 (start) to 1 (end)"
+
+# ==============================================================================
+# Data Sources
+# ==============================================================================
+sources:
+  ohlcv:
+    table: usdcop_m5_ohlcv
+    columns: [time, open, high, low, close]
+    granularity: 5min
+    lookback_bars_needed: 100
+
+  macro_indicators_daily:
+    table: macro_indicators_daily
+    columns: [date, dxy, vix, embi, brent, treasury_10y, usdmxn]
+    granularity: daily
+    resample_method: ffill
+
+# ==============================================================================
+# Validation Constraints
+# ==============================================================================
+validation:
+  min_bars_for_inference: 50
+  max_ohlcv_staleness_minutes: 10
+  max_macro_staleness_hours: 48
+  expected_dimension: 15
+
+# ==============================================================================
+# Version History
+# ==============================================================================
+changelog:
+  "2.0.0":
+    date: "2025-01-14"
+    changes:
+      - "Created unified SSOT registry"
+      - "Standardized normalization parameters"
+      - "Added calculator class references"
+  "1.0.0":
+    date: "2025-01-12"
+    changes:
+      - "Initial 15-dimension feature contract"

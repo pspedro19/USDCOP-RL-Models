@@ -3,7 +3,7 @@ Core module - Business logic and services.
 
 Refactored with SOLID principles and Design Patterns.
 
-Version: 19.0.0
+Version: 1.0.0
 Date: 2025-01-07
 """
 
@@ -44,8 +44,7 @@ from .calculators import (
 # Normalizers
 from .normalizers import (
     ZScoreNormalizer,
-    ZScoreNormalizerV19,
-    create_zscore_normalizer_v19,
+    create_zscore_normalizer,
     ClipNormalizer,
     NoOpNormalizer,
     CompositeNormalizer
@@ -54,11 +53,10 @@ from .normalizers import (
 # Builders
 from .builders import (
     ObservationBuilder,
-    ObservationBuilderV19,
-    create_observation_builder_v19
+    create_observation_builder
 )
 
-# State Management (V19)
+# State Management
 from .state import (
     ModelState,
     StateTracker,
@@ -95,18 +93,16 @@ __all__ = [
 
     # Normalizers
     'ZScoreNormalizer',
-    'ZScoreNormalizerV19',
-    'create_zscore_normalizer_v19',
+    'create_zscore_normalizer',
     'ClipNormalizer',
     'NoOpNormalizer',
     'CompositeNormalizer',
 
     # Builders
     'ObservationBuilder',
-    'ObservationBuilderV19',
-    'create_observation_builder_v19',
+    'create_observation_builder',
 
-    # State Management (V19)
+    # State Management
     'ModelState',
     'StateTracker',
     'create_state_tracker',

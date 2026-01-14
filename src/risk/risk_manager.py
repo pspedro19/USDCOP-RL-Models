@@ -65,8 +65,8 @@ class RiskLimits:
     max_drawdown_pct: float = 15.0      # Kill switch trigger
     max_daily_loss_pct: float = 5.0     # Stop trading today
     max_trades_per_day: int = 20        # Pause trading
-    cooldown_after_losses: int = 3      # Consecutive losses before cooldown
-    cooldown_minutes: int = 30          # Cooldown duration
+    cooldown_after_losses: int = 5      # Circuit breaker: 5 consecutive losses (matches trading_config.yaml)
+    cooldown_minutes: int = 60          # Cooldown: 12 bars × 5 min = 60 min (matches trading_config.yaml)
 
 
 @dataclass

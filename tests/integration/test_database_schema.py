@@ -8,7 +8,7 @@ Tests cover:
 - config.models table
 - config.feature_definitions table
 - trading.model_inferences table
-- PPO V19 model configuration
+- PPO model configuration
 - dw.* schema tables
 
 Author: Pedro @ Lean Tech Solutions
@@ -167,24 +167,24 @@ class TestModelsTableExists:
         for col in expected_columns:
             assert col in columns, f"Missing column: {col}"
 
-    def test_models_table_has_ppo_v19(self, sync_db_connection):
-        """PPO V19 model is configured in database"""
+    def test_models_table_has_ppo_primary(self, sync_db_connection):
+        """PPO primary model is configured in database"""
         if not table_exists(sync_db_connection, 'config', 'models'):
             pytest.skip("config.models table not created yet")
 
         query = """
             SELECT * FROM config.models
-            WHERE model_id = 'ppo_v19' OR model_name LIKE '%PPO%V19%'
+            WHERE model_id = 'ppo_primary' OR model_name LIKE '%PPO%'
         """
         results = execute_query(sync_db_connection, query)
 
         if not results:
-            pytest.skip("PPO V19 not seeded yet")
+            pytest.skip("PPO model not seeded yet")
 
-        assert len(results) >= 1, "PPO V19 should be in database"
+        assert len(results) >= 1, "PPO model should be in database"
 
         model = results[0]
-        assert model['is_active'] is True, "PPO V19 should be active"
+        assert model['is_active'] is True, "PPO model should be active"
 
 
 @pytest.mark.integration
@@ -299,24 +299,23 @@ class TestInferencesTableExists:
 
 
 @pytest.mark.integration
-class TestPPOV19IsConfigured:
-    """Tests for PPO V19 model configuration"""
+class TestPPOModelIsConfigured:
+    """Tests for PPO model configuration"""
 
-    def test_ppo_v19_exists_in_config(self, sync_db_connection):
-        """PPO V19 model is in database with correct config"""
+    def test_ppo_model_exists_in_config(self, sync_db_connection):
+        """PPO model is in database with correct config"""
         # Try config.models first
         if table_exists(sync_db_connection, 'config', 'models'):
             query = """
                 SELECT * FROM config.models
-                WHERE model_id ILIKE '%ppo%v19%'
-                   OR model_name ILIKE '%ppo%v19%'
+                WHERE model_id ILIKE '%ppo%'
                 LIMIT 1
             """
             results = execute_query(sync_db_connection, query)
 
             if results:
                 model = results[0]
-                assert model.get('is_active', True), "PPO V19 should be active"
+                assert model.get('is_active', True), "PPO model should be active"
                 return
 
         # Try dw.dim_strategy
@@ -335,8 +334,8 @@ class TestPPOV19IsConfigured:
 
         pytest.skip("No model configuration tables found")
 
-    def test_ppo_v19_has_network_config(self, sync_db_connection):
-        """PPO V19 has network configuration"""
+    def test_ppo_model_has_network_config(self, sync_db_connection):
+        """PPO model has network configuration"""
         # Network config might be in a separate table or JSON column
         if table_exists(sync_db_connection, 'config', 'models'):
             columns = get_table_columns(sync_db_connection, 'config', 'models')
@@ -344,7 +343,7 @@ class TestPPOV19IsConfigured:
             if 'network_config' in columns or 'config' in columns:
                 query = """
                     SELECT * FROM config.models
-                    WHERE model_id ILIKE '%ppo%v19%'
+                    WHERE model_id ILIKE '%ppo%'
                     LIMIT 1
                 """
                 results = execute_query(sync_db_connection, query)

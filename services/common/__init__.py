@@ -12,10 +12,13 @@ Modules:
     - validation: Input validation utilities (SOLID compliance)
     - trading_calendar: Colombian holiday and weekend validation
     - redis_streams_manager: Redis Streams for multi-model signal streaming
+    - tracing: Distributed tracing with OpenTelemetry/Jaeger
+    - prometheus_metrics: Prometheus metrics for observability
 
 Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 Updated: 2025-12-26 - Added Redis Streams manager
+Updated: 2025-01-14 - Added tracing and prometheus metrics (FASE 8)
 """
 
 from .database import (
@@ -86,6 +89,33 @@ from .redis_streams_manager import (
     get_utilities,
 )
 
+from .tracing import (
+    setup_tracing,
+    get_tracer,
+    trace_function,
+    trace_async_function,
+    NoOpTracer,
+    NoOpSpan,
+)
+
+from .prometheus_metrics import (
+    # Counters
+    inference_requests_total,
+    trade_signals_total,
+    model_load_total,
+    # Histograms
+    inference_latency_seconds,
+    feature_calculation_seconds,
+    db_query_seconds,
+    # Gauges
+    current_position_gauge,
+    model_confidence_gauge,
+    feature_drift_gauge,
+    # Setup
+    setup_prometheus_metrics,
+    get_metrics_app,
+)
+
 __all__ = [
     # Database
     'get_db_config',
@@ -139,4 +169,23 @@ __all__ = [
     'get_sse_adapter',
     'StreamUtilities',
     'get_utilities',
+    # Tracing (OpenTelemetry)
+    'setup_tracing',
+    'get_tracer',
+    'trace_function',
+    'trace_async_function',
+    'NoOpTracer',
+    'NoOpSpan',
+    # Prometheus Metrics
+    'inference_requests_total',
+    'trade_signals_total',
+    'model_load_total',
+    'inference_latency_seconds',
+    'feature_calculation_seconds',
+    'db_query_seconds',
+    'current_position_gauge',
+    'model_confidence_gauge',
+    'feature_drift_gauge',
+    'setup_prometheus_metrics',
+    'get_metrics_app',
 ]

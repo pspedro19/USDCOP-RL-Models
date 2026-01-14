@@ -17,9 +17,10 @@ All state is persisted in Redis for reliability.
 """
 
 import os
+import sys
 import time
 import logging
-from typing import Optional, Dict, Tuple, Any, List
+from typing import Optional, Dict, Tuple, Any, List, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from enum import Enum
@@ -32,9 +33,28 @@ except ImportError:
     redis = None
     logging.warning("redis not installed. Install with: pip install redis")
 
-from .config import MLOpsConfig, get_config, RiskLimits, TradingHours, SignalType
+# Add project root for new architecture imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from mlops.config import MLOpsConfig, get_config, RiskLimits, TradingHours, SignalType
 
 logger = logging.getLogger(__name__)
+
+# Try to import new SOLID architecture components
+_NEW_ARCH_AVAILABLE = False
+try:
+    from src.core.interfaces.risk import (
+        RiskContext,
+        RiskCheckResult as NewRiskCheckResult,
+        RiskStatus as NewRiskStatus,
+    )
+    from src.risk.checks import RiskCheckChain
+    _NEW_ARCH_AVAILABLE = True
+    logger.info("New SOLID risk architecture available")
+except ImportError as e:
+    logger.debug(f"New risk architecture not available: {e}")
 
 
 class RiskStatus(str, Enum):
@@ -156,7 +176,8 @@ class RiskManager:
     def __init__(
         self,
         config: Optional[MLOpsConfig] = None,
-        redis_client: Optional[redis.Redis] = None
+        redis_client: Optional[redis.Redis] = None,
+        use_chain: bool = False,
     ):
         self.config = config or get_config()
         self.limits = self.config.risk_limits
@@ -180,6 +201,43 @@ class RiskManager:
             logger.warning("Redis not available. Using in-memory state (not recommended for production)")
 
         self._memory_stats: Dict[str, DailyStats] = {}
+
+        # New SOLID architecture: RiskCheckChain integration
+        self._use_chain = use_chain and _NEW_ARCH_AVAILABLE
+        self._risk_chain: Optional['RiskCheckChain'] = None
+
+        if self._use_chain:
+            self._initialize_risk_chain()
+            logger.info("RiskManager using new SOLID RiskCheckChain architecture")
+        else:
+            if use_chain and not _NEW_ARCH_AVAILABLE:
+                logger.warning("use_chain=True but new architecture not available, using legacy mode")
+
+    def _initialize_risk_chain(self):
+        """Initialize the SOLID RiskCheckChain with current configuration."""
+        if not _NEW_ARCH_AVAILABLE:
+            return
+
+        chain_config = {
+            "min_confidence": self.limits.min_confidence,
+            "max_daily_loss": self.limits.max_daily_loss,
+            "max_drawdown": self.limits.max_drawdown,
+            "max_consecutive_losses": self.limits.max_consecutive_losses,
+            "max_trades_per_day": self.limits.max_trades_per_day,
+            "cooldown_after_loss": self.limits.cooldown_after_loss,
+            "start_time": self.trading_hours.start_time,
+            "end_time": self.trading_hours.end_time,
+            "trading_days": self.trading_hours.trading_days,
+            "timezone": self.trading_hours.timezone,
+        }
+
+        # Create chain with callbacks to this manager's methods
+        self._risk_chain = RiskCheckChain.with_defaults(
+            config=chain_config,
+            trigger_circuit_breaker_fn=self._trigger_circuit_breaker,
+            set_cooldown_fn=self._set_cooldown,
+        )
+        logger.debug(f"RiskCheckChain initialized with checks: {self._risk_chain.check_names}")
 
     def _get_today(self) -> str:
         """Get today's date in Colombia timezone."""
@@ -330,6 +388,11 @@ class RiskManager:
         Returns:
             RiskCheckResult with approval status
         """
+        # Use new SOLID RiskCheckChain if enabled
+        if self._use_chain and self._risk_chain is not None:
+            return self._check_signal_with_chain(signal, confidence, enforce_trading_hours)
+
+        # Legacy implementation
         timestamp = self._get_now().isoformat()
         stats = self.get_daily_stats()
 
@@ -439,6 +502,96 @@ class RiskManager:
             RiskStatus.APPROVED,
             adjusted_signal=signal,
             message="Signal approved for execution"
+        )
+
+    def _check_signal_with_chain(
+        self,
+        signal: SignalType,
+        confidence: float,
+        enforce_trading_hours: bool = True
+    ) -> RiskCheckResult:
+        """
+        Check signal using the new SOLID RiskCheckChain architecture.
+
+        Converts between old and new data structures while maintaining
+        backward compatibility.
+
+        Args:
+            signal: The trading signal (BUY/SELL/HOLD)
+            confidence: Model confidence (0-1)
+            enforce_trading_hours: Whether to enforce trading hours
+
+        Returns:
+            RiskCheckResult with approval status (legacy format)
+        """
+        timestamp = self._get_now().isoformat()
+        stats = self.get_daily_stats()
+
+        # Build risk metrics for the result
+        risk_metrics = {
+            "daily_pnl_percent": stats.pnl_percent,
+            "current_drawdown": stats.drawdown,
+            "consecutive_losses": stats.consecutive_losses,
+            "trades_today": stats.trades_count,
+            "win_rate": stats.win_rate,
+            "limits": self.limits.to_dict(),
+            "architecture": "solid_chain",
+        }
+
+        # Create context for the new chain
+        context = RiskContext(
+            signal=signal.value,
+            confidence=confidence,
+            daily_pnl_percent=stats.pnl_percent,
+            current_drawdown=stats.drawdown,
+            consecutive_losses=stats.consecutive_losses,
+            consecutive_wins=stats.consecutive_wins,
+            trades_today=stats.trades_count,
+            win_rate=stats.win_rate,
+            last_trade_time=stats.last_trade_time,
+            enforce_trading_hours=enforce_trading_hours,
+        )
+
+        # Run the chain
+        chain_result = self._risk_chain.run(context)
+
+        # Map new RiskStatus to legacy RiskStatus
+        status_mapping = {
+            "APPROVED": RiskStatus.APPROVED,
+            "HOLD_SIGNAL": RiskStatus.HOLD_SIGNAL,
+            "DAILY_LOSS_LIMIT": RiskStatus.DAILY_LOSS_LIMIT,
+            "MAX_DRAWDOWN": RiskStatus.MAX_DRAWDOWN,
+            "CONSECUTIVE_LOSSES": RiskStatus.CONSECUTIVE_LOSSES,
+            "LOW_CONFIDENCE": RiskStatus.LOW_CONFIDENCE,
+            "MAX_TRADES_REACHED": RiskStatus.MAX_TRADES_REACHED,
+            "OUTSIDE_TRADING_HOURS": RiskStatus.OUTSIDE_TRADING_HOURS,
+            "COOLDOWN_ACTIVE": RiskStatus.COOLDOWN_ACTIVE,
+            "CIRCUIT_BREAKER_ACTIVE": RiskStatus.CIRCUIT_BREAKER_ACTIVE,
+            "SYSTEM_ERROR": RiskStatus.SYSTEM_ERROR,
+        }
+
+        legacy_status = status_mapping.get(
+            chain_result.status.value,
+            RiskStatus.SYSTEM_ERROR
+        )
+
+        # Determine adjusted signal
+        adjusted_signal = signal if chain_result.approved else SignalType.HOLD
+
+        # Add chain metadata to risk metrics
+        risk_metrics["checks_passed"] = chain_result.metadata.get("checks_passed", [])
+        risk_metrics["check_that_failed"] = chain_result.metadata.get("check_that_failed")
+
+        return RiskCheckResult(
+            approved=chain_result.approved,
+            status=legacy_status,
+            original_signal=signal,
+            adjusted_signal=adjusted_signal,
+            confidence=confidence,
+            daily_stats=stats,
+            risk_metrics=risk_metrics,
+            message=chain_result.message,
+            timestamp=timestamp,
         )
 
     def update_trade_result(
@@ -602,19 +755,47 @@ class RiskManager:
 _risk_manager: Optional[RiskManager] = None
 
 
-def get_risk_manager() -> RiskManager:
-    """Get or create global risk manager."""
+def get_risk_manager(use_chain: bool = False) -> RiskManager:
+    """
+    Get or create global risk manager.
+
+    Args:
+        use_chain: If True, use new SOLID RiskCheckChain architecture
+    """
     global _risk_manager
     if _risk_manager is None:
-        _risk_manager = RiskManager()
+        _risk_manager = RiskManager(use_chain=use_chain)
     return _risk_manager
 
 
 def initialize_risk_manager(
     config: Optional[MLOpsConfig] = None,
-    redis_client: Optional[redis.Redis] = None
+    redis_client: Optional[redis.Redis] = None,
+    use_chain: bool = False,
 ) -> RiskManager:
-    """Initialize global risk manager."""
+    """
+    Initialize global risk manager.
+
+    Args:
+        config: MLOps configuration
+        redis_client: Redis client for state persistence
+        use_chain: If True, use new SOLID RiskCheckChain architecture
+    """
     global _risk_manager
-    _risk_manager = RiskManager(config, redis_client)
+    _risk_manager = RiskManager(config, redis_client, use_chain=use_chain)
     return _risk_manager
+
+
+def get_risk_manager_with_chain() -> RiskManager:
+    """
+    Get or create global risk manager using the new SOLID architecture.
+
+    This is the recommended way to get a RiskManager that uses the
+    refactored Chain of Responsibility pattern for risk checks.
+    """
+    return get_risk_manager(use_chain=True)
+
+
+def is_solid_architecture_available() -> bool:
+    """Check if the new SOLID risk architecture is available."""
+    return _NEW_ARCH_AVAILABLE

@@ -532,17 +532,19 @@ function generateFallbackSignals(modelId: string): TradingSignal[] {
   const now = new Date();
   const signals: TradingSignal[] = [];
 
-  // Model-specific configurations
+  // Model-specific configurations for fallback demo signals
+  // These should match model_registry.model_id values
   const modelConfigs: Record<string, { bias: number; confidence: number; name: string }> = {
-    'ppo_v1': { bias: 0.55, confidence: 0.75, name: 'PPO V19' },
+    'ppo_v20': { bias: 0.38, confidence: 0.68, name: 'PPO V20' }, // V20 has SHORT bias
+    'ppo_v1': { bias: 0.55, confidence: 0.75, name: 'PPO V1' },
+    // Legacy IDs (for backwards compatibility)
     'ppo_v19_prod': { bias: 0.55, confidence: 0.75, name: 'PPO V19' },
-    'ppo_v20_macro': { bias: 0.38, confidence: 0.68, name: 'PPO V20' }, // V20 has SHORT bias
     'ppo_v20_prod': { bias: 0.38, confidence: 0.68, name: 'PPO V20' },
-    'sac_v1': { bias: 0.50, confidence: 0.65, name: 'SAC Demo' },
-    'sac_v1_demo': { bias: 0.50, confidence: 0.65, name: 'SAC Demo' },
+    'ppo_v20_macro': { bias: 0.38, confidence: 0.68, name: 'PPO V20' },
   };
 
-  const config = modelConfigs[modelId] || { bias: 0.50, confidence: 0.60, name: 'Unknown' };
+  // Default to PPO V20 config if model not found
+  const config = modelConfigs[modelId] || modelConfigs['ppo_v20'];
   const basePrice = 4250 + Math.floor(Date.now() / 100000) % 150; // Deterministic price
 
   // Generate 5 recent signals

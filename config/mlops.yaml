@@ -22,29 +22,32 @@ environment: production
 # ================================================
 
 models:
-  - name: ppo_usdcop_v3
+  # Production model - PPO with 15-dimensional observation space
+  - name: ppo_primary
     algorithm: PPO
-    onnx_path: models/onnx/ppo_usdcop_v3.onnx
-    observation_dim: 45
+    onnx_path: /models/ppo_production/model.onnx
+    observation_dim: 15
     action_space_size: 3
     weight: 1.0
     enabled: true
 
+  # Disabled - model not trained yet
   - name: sac_usdcop_v2
     algorithm: SAC
     onnx_path: models/onnx/sac_usdcop_v2.onnx
-    observation_dim: 45
+    observation_dim: 15
     action_space_size: 3
     weight: 0.8
-    enabled: true
+    enabled: false
 
+  # Disabled - model not trained yet
   - name: a2c_macro_v1
     algorithm: A2C
     onnx_path: models/onnx/a2c_macro_v1.onnx
-    observation_dim: 45
+    observation_dim: 15
     action_space_size: 3
     weight: 0.6
-    enabled: true
+    enabled: false
 
 # Ensemble strategy: weighted_average | majority_vote
 ensemble_strategy: weighted_average

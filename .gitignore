@@ -111,9 +111,15 @@ trades/
 positions/
 
 # Secrets and credentials
-.env
-.env.*
+# NOTE: .env is ALLOWED for dev/test environment replication
+# For production, use proper secret management (Vault, AWS Secrets Manager)
+# .env  # COMMENTED OUT - allowing .env for project replication
+.env.local
+.env.production
+.env.staging
+!.env
 !.env.example
+!.env.multimodel.example
 !env.example
 credentials.json
 secrets.yaml
@@ -162,3 +168,26 @@ workspace/
 sandbox/
 experiments/
 research/
+
+# Claude Code temporary files and directories
+tmpclaude-*/
+tmpclaude-*
+**/tmpclaude-*
+
+# Windows null file artifacts
+nul
+
+# Node.js (for dashboard)
+node_modules/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Compiled outputs
+*.wasm
+*.map

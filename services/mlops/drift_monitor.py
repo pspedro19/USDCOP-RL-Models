@@ -41,7 +41,12 @@ try:
 except ImportError:
     redis = None
 
-from .config import MLOpsConfig, get_config
+from mlops.config import MLOpsConfig, get_config
+from mlops.action_collapse_detector import (
+    ActionCollapseDetector,
+    ActionCollapseConfig,
+    ActionCollapseResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -446,6 +451,53 @@ class DriftMonitor:
         """Clear the active drift alert."""
         if self.redis:
             self.redis.delete("drift:alert")
+
+    def check_action_drift(
+        self,
+        action_history: List[str],
+        entropy_threshold: float = 0.5,
+        dominance_threshold: float = 0.80
+    ) -> ActionCollapseResult:
+        """
+        Check for action distribution drift (mode collapse).
+
+        This monitors if the model is exhibiting mode collapse behavior,
+        i.e., always predicting the same action regardless of observations.
+
+        Args:
+            action_history: List of recent action strings ("HOLD", "LONG", "SHORT")
+            entropy_threshold: Entropy below this indicates collapse (default 0.5)
+            dominance_threshold: Single action above this indicates collapse (default 0.80)
+
+        Returns:
+            ActionCollapseResult with analysis details
+
+        Example:
+            >>> monitor = DriftMonitor(reference_data)
+            >>> actions = ["HOLD"] * 100  # Suspicious pattern
+            >>> result = monitor.check_action_drift(actions)
+            >>> if result.is_collapsed:
+            ...     send_alert(f"Mode collapse detected: {result.warning}")
+        """
+        config = ActionCollapseConfig(
+            entropy_threshold=entropy_threshold,
+            dominance_threshold=dominance_threshold,
+            min_samples=50,
+        )
+        detector = ActionCollapseDetector(config)
+        result = detector.check(action_history)
+
+        # Log warnings
+        if result.is_collapsed:
+            logger.warning(f"ACTION COLLAPSE DETECTED: {result.warning}")
+            if self.redis:
+                self.redis.setex(
+                    "action_collapse:alert",
+                    3600,  # 1 hour
+                    json.dumps(result.to_dict())
+                )
+
+        return result
 
     def generate_report(
         self,

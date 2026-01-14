@@ -629,6 +629,12 @@ services:
       MULTI_MODEL_API_URL: http://usdcop-multi-model-api:8006
       BACKTEST_API_URL: http://usdcop-multi-model-api:8006
       ML_ANALYTICS_URL: http://usdcop-analytics-api:8001
+      # Inference service (server-side uses Docker hostname for replay API)
+      INFERENCE_SERVICE_URL: http://usdcop-mlops-inference:8090
+      # Backtest API for client-side (SSE backtest - uses exposed port 8003)
+      NEXT_PUBLIC_INFERENCE_API_URL: http://localhost:8003
+      # Backtest API server-side (Docker hostname)
+      BACKTEST_SERVICE_URL: http://usdcop-backtest-api:8000
       # NextAuth Configuration
       NEXTAUTH_SECRET: usdcop-trading-secret-key-2025-production
       NEXTAUTH_URL: http://localhost:5000
@@ -1056,6 +1062,53 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Backtest Inference API - Runs backtests with SSE streaming
+  # This service has the /v1/backtest endpoints that the dashboard needs
+  backtest-api:
+    build:
+      context: .
+      dockerfile: services/inference_api/Dockerfile
+    container_name: usdcop-backtest-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MODEL_PATH=/models
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # INVESTOR_MODE: Set to 'true' for investor presentations with optimized metrics
+      # Switch between real backtest and demo mode without code changes
+      - INVESTOR_MODE=${INVESTOR_MODE:-false}
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+      - ./data:/app/data:ro
+      - ./services/demo_mode:/app/demo_mode:ro
+    ports:
+      - "8003:8000"
+    networks:
+      usdcop-trading-network:
+        aliases:
+          - backtest-api
+          - usdcop-backtest-api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # MLflow Tracking Server
   # SECURITY FIX: Removed 'user: root' - runs as default mlflow user

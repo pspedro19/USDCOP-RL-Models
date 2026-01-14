@@ -280,6 +280,19 @@ const config: Config = {
 
         // Gradient Border Animation
         "gradient-border": "gradient-border 3s ease infinite",
+
+        // Replay System Animations
+        "trade-highlight": "trade-highlight 2s ease-out forwards",
+        "replay-pulse": "replay-pulse 1.5s ease-in-out infinite",
+
+        // Hybrid Replay Trade Animations
+        "trade-bounce": "trade-bounce 600ms cubic-bezier(0.68, -0.55, 0.27, 1.55)",
+        "trade-fade": "trade-fade 400ms ease-out",
+        "trade-slide": "trade-slide 300ms ease-out",
+        "trade-scale": "trade-scale 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "trade-enter": "trade-enter 500ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "cluster-enter": "cluster-enter 600ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "timeline-progress": "timeline-progress 200ms linear",
       },
 
       // === Professional Keyframes ===
@@ -333,6 +346,113 @@ const config: Config = {
           "0%": { "background-position": "0% 50%" },
           "50%": { "background-position": "100% 50%" },
           "100%": { "background-position": "0% 50%" },
+        },
+        // Replay System Keyframes
+        "trade-highlight": {
+          "0%": {
+            backgroundColor: "rgba(6, 182, 212, 0.4)",
+            boxShadow: "0 0 0 4px rgba(6, 182, 212, 0.4), inset 0 0 20px rgba(6, 182, 212, 0.3)",
+          },
+          "30%": {
+            backgroundColor: "rgba(6, 182, 212, 0.3)",
+          },
+          "100%": {
+            backgroundColor: "rgba(6, 182, 212, 0.1)",
+            boxShadow: "none",
+          },
+        },
+        "replay-pulse": {
+          "0%, 100%": {
+            opacity: "1",
+            transform: "scale(1)",
+          },
+          "50%": {
+            opacity: "0.7",
+            transform: "scale(1.02)",
+          },
+        },
+        // Hybrid Replay Trade Animation Keyframes
+        "trade-bounce": {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.3) translateY(20px)",
+          },
+          "50%": {
+            transform: "scale(1.1) translateY(-5px)",
+          },
+          "70%": {
+            transform: "scale(0.95) translateY(2px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1) translateY(0)",
+          },
+        },
+        "trade-fade": {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.8)",
+          },
+          "100%": {
+            opacity: "0.8",
+            transform: "scale(1)",
+          },
+        },
+        "trade-slide": {
+          "0%": {
+            opacity: "0",
+            transform: "translateX(-20px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateX(0)",
+          },
+        },
+        "trade-scale": {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.5)",
+          },
+          "60%": {
+            transform: "scale(1.05)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1)",
+          },
+        },
+        "trade-enter": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px) scale(0.9)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0) scale(1)",
+          },
+        },
+        "cluster-enter": {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.8)",
+            boxShadow: "0 0 0 0 rgba(6, 182, 212, 0.4)",
+          },
+          "50%": {
+            boxShadow: "0 0 20px 10px rgba(6, 182, 212, 0.2)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1)",
+            boxShadow: "0 0 0 0 rgba(6, 182, 212, 0)",
+          },
+        },
+        "timeline-progress": {
+          "0%": {
+            width: "var(--progress-start)",
+          },
+          "100%": {
+            width: "var(--progress-end)",
+          },
         },
       },
 

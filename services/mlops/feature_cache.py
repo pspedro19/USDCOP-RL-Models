@@ -12,11 +12,9 @@ Features:
 - Cache statistics
 """
 
-import os
-import time
 import logging
-from typing import Optional, Dict, List, Any, Union
-from datetime import datetime, timedelta
+from typing import Optional, Dict, List, Any
+from datetime import datetime
 from dataclasses import dataclass
 import json
 
@@ -27,7 +25,7 @@ try:
 except ImportError:
     redis = None
 
-from .config import MLOpsConfig, get_config
+from mlops.config import MLOpsConfig, get_config
 
 logger = logging.getLogger(__name__)
 

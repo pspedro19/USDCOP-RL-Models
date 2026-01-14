@@ -33,6 +33,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Build optimizations
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# DEV MODE - Skip authentication for local testing
+ENV NEXT_PUBLIC_DEV_MODE=true
+
 # Dummy DB config for build time (actual values provided at runtime)
 ENV POSTGRES_HOST=localhost
 ENV POSTGRES_PORT=5432

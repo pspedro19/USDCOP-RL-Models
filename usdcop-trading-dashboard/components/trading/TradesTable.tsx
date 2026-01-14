@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
     Table,
     TableBody,
@@ -17,10 +17,36 @@ import { useSelectedModel } from "@/contexts/ModelContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { TRAINING_PERIODS, getDataType } from "@/lib/config/training-periods";
+import { cn } from "@/lib/utils";
 
 interface TradesTableProps {
     initialLimit?: number;
     compact?: boolean;
+    // Replay mode props
+    highlightedTradeIds?: Set<string>;
+    onTradeVisible?: (tradeId: string) => void;
+    replayEndDate?: Date;
+    // New: Only show these trade IDs during replay (progressive display)
+    replayVisibleTradeIds?: Set<string>;
+    isReplayMode?: boolean;
+    // Force empty state (used when clearing dashboard)
+    forceEmpty?: boolean;
+    // Trades to display directly during replay mode (bypasses API)
+    replayTrades?: Array<{
+        trade_id: number;
+        timestamp?: string;
+        entry_time?: string;
+        side?: string;
+        entry_price?: number;
+        exit_price?: number | null;
+        pnl?: number;
+        pnl_usd?: number;
+        pnl_percent?: number;
+        pnl_pct?: number;
+        status?: string;
+        duration_minutes?: number | null;
+        exit_reason?: string | null;
+    }>;
 }
 
 // Market hours constants (COT timezone)
@@ -100,12 +126,24 @@ function formatToCOT(timestamp: string | Date, formatStr: 'short' | 'full' = 'sh
     }
 }
 
-export function TradesTable({ initialLimit = 10, compact = false }: TradesTableProps) {
+export function TradesTable({
+    initialLimit = 10,
+    compact = false,
+    highlightedTradeIds,
+    onTradeVisible,
+    replayEndDate,
+    replayVisibleTradeIds,
+    isReplayMode = false,
+    forceEmpty = false,
+    replayTrades,
+}: TradesTableProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const { modelId, model } = useSelectedModel();
+    const highlightedRowRef = useRef<HTMLTableRowElement>(null);
 
-    // Map frontend model ID to database model_id
-    const dbModelId = modelId === 'ppo_v20_prod' ? 'ppo_v20_macro' : 'ppo_v1';
+    // Use model ID directly - must match model_registry.model_id in database
+    // No hardcoded mappings - the frontend model selector already uses DB model IDs
+    const dbModelId = modelId || 'ppo_v20';
 
     // Fetch more trades to account for filtering
     // When expanded, fetch up to 200 trades (some will be filtered out)
@@ -113,20 +151,76 @@ export function TradesTable({ initialLimit = 10, compact = false }: TradesTableP
     const { data, isLoading } = useTradesHistory(fetchLimit, dbModelId);
 
     // Filter trades to only show those within market hours (8am-12:55pm COT, Mon-Fri)
+    // And optionally filter by replayEndDate or replayVisibleTradeIds for replay mode
     const filteredTrades = useMemo(() => {
+        // Force empty state when dashboard is cleared
+        if (forceEmpty) return [];
+
+        // In replay mode with direct trades, use those
+        if (isReplayMode && replayTrades && replayTrades.length > 0) {
+            // Convert to table format and sort by timestamp descending (newest first)
+            return [...replayTrades]
+                .map((trade) => ({
+                    trade_id: trade.trade_id,
+                    timestamp: trade.timestamp || trade.entry_time,
+                    entry_time: trade.entry_time || trade.timestamp,
+                    side: trade.side || 'buy',
+                    entry_price: trade.entry_price || 0,
+                    exit_price: trade.exit_price,
+                    pnl: trade.pnl ?? trade.pnl_usd ?? 0,
+                    pnl_percent: trade.pnl_percent ?? trade.pnl_pct ?? 0,
+                    status: trade.status || 'closed',
+                    duration_minutes: trade.duration_minutes,
+                    exit_reason: trade.exit_reason,
+                    data_type: 'replay',
+                }))
+                .sort((a, b) => {
+                    const timeA = new Date(a.timestamp || a.entry_time || 0).getTime();
+                    const timeB = new Date(b.timestamp || b.entry_time || 0).getTime();
+                    return timeB - timeA; // Newest first
+                });
+        }
+
         if (!data?.trades) return [];
+
+        // In replay mode with visible trade IDs (legacy), only show those trades
+        if (isReplayMode && replayVisibleTradeIds) {
+            return data.trades.filter((trade: any) => {
+                const tradeId = String(trade.trade_id || trade.id);
+                return replayVisibleTradeIds.has(tradeId);
+            });
+        }
 
         return data.trades.filter((trade: any) => {
             const tradeTime = trade.timestamp || trade.entry_time || trade.open_time;
             if (!tradeTime) return false;
-            return isWithinMarketHours(tradeTime);
+
+            // Market hours filter
+            if (!isWithinMarketHours(tradeTime)) return false;
+
+            // Replay mode: filter trades up to replayEndDate
+            if (replayEndDate) {
+                const tradeDate = new Date(tradeTime);
+                if (tradeDate > replayEndDate) return false;
+            }
+
+            return true;
         });
-    }, [data?.trades]);
+    }, [data?.trades, replayEndDate, isReplayMode, replayVisibleTradeIds, replayTrades, forceEmpty]);
+
+    // Scroll to highlighted trade when it appears (disabled during replay to prevent forced scrolling)
+    useEffect(() => {
+        // Only auto-scroll when NOT in replay mode to avoid hijacking user scroll
+        if (!isReplayMode && highlightedRowRef.current && highlightedTradeIds && highlightedTradeIds.size > 0) {
+            highlightedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [highlightedTradeIds, isReplayMode]);
 
     // Count how many trades were filtered out (for debugging/info)
     const filteredOutCount = (data?.trades?.length || 0) - filteredTrades.length;
 
-    if (isLoading || !data) {
+    // Only show skeleton if loading AND we don't have replay trades to display
+    if ((isLoading || !data) && !(isReplayMode && replayTrades && replayTrades.length > 0)) {
         return <TradesTableSkeleton />;
     }
 
@@ -157,8 +251,18 @@ export function TradesTable({ initialLimit = 10, compact = false }: TradesTableP
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            displayedTrades.map((trade: any) => (
-                                <TableRow key={trade.trade_id} className="border-slate-800 hover:bg-slate-800/30 transition-colors">
+                            displayedTrades.map((trade: any) => {
+                                const tradeIdStr = String(trade.trade_id);
+                                const isHighlighted = highlightedTradeIds?.has(tradeIdStr);
+                                return (
+                                <TableRow
+                                    key={trade.trade_id}
+                                    ref={isHighlighted ? highlightedRowRef : null}
+                                    className={cn(
+                                        "border-slate-800 hover:bg-slate-800/30 transition-colors",
+                                        isHighlighted && "animate-trade-highlight bg-cyan-500/20 border-l-2 border-l-cyan-400"
+                                    )}
+                                >
                                     <TableCell className="text-xs text-slate-300 py-2">
                                         {formatToCOT(trade.timestamp || trade.entry_time)}
                                     </TableCell>
@@ -183,7 +287,7 @@ export function TradesTable({ initialLimit = 10, compact = false }: TradesTableP
                                         {(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(0)}
                                     </TableCell>
                                 </TableRow>
-                            ))
+                            );})
                         )}
                     </TableBody>
                 </Table>
@@ -267,8 +371,19 @@ export function TradesTable({ initialLimit = 10, compact = false }: TradesTableP
                                     // Map period type to display: train/validation = backtest, test/oos = out_of_sample
                                     const dataType = trade.data_type || (periodType === 'train' || periodType === 'validation' ? 'backtest' : 'out_of_sample');
 
+                                    // Check if trade is highlighted (for replay mode)
+                                    const tradeIdStr = String(trade.trade_id);
+                                    const isHighlighted = highlightedTradeIds?.has(tradeIdStr);
+
                                     return (
-                                        <TableRow key={trade.trade_id} className="border-slate-800 hover:bg-slate-800/30 transition-colors">
+                                        <TableRow
+                                            key={trade.trade_id}
+                                            ref={isHighlighted ? highlightedRowRef : null}
+                                            className={cn(
+                                                "border-slate-800 hover:bg-slate-800/30 transition-colors",
+                                                isHighlighted && "animate-trade-highlight bg-cyan-500/20 border-l-2 border-l-cyan-400"
+                                            )}
+                                        >
                                             <TableCell className="font-mono text-xs text-slate-500">
                                                 {trade.trade_id}
                                             </TableCell>

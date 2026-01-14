@@ -9,7 +9,11 @@ Industry-grade MLOps components for production inference:
 - Feature caching
 - Health monitoring
 
-Usage:
+Architecture:
+- Legacy: Direct class imports (backward compatible)
+- Modern: Via bridge module using SOLID refactored code
+
+Usage (Legacy):
     from services.mlops import (
         InferenceEngine,
         RiskManager,
@@ -17,15 +21,40 @@ Usage:
         FeatureCache,
         MLOpsConfig
     )
+
+Usage (Modern - SOLID Architecture):
+    from services.mlops.bridge import (
+        get_inference_engine_v2,
+        get_risk_check_chain,
+        get_ensemble_strategy_registry,
+    )
+
+Author: Trading Team
+Version: 2.0.0
+Date: 2025-01-14
 """
 
-from .config import MLOpsConfig, RiskLimits, TradingHours
-from .inference_engine import InferenceEngine, get_inference_engine
-from .risk_manager import RiskManager, get_risk_manager
-from .drift_monitor import DriftMonitor
-from .feature_cache import FeatureCache
+# Legacy imports (backward compatible)
+from mlops.config import MLOpsConfig, RiskLimits, TradingHours
+from mlops.inference_engine import InferenceEngine, get_inference_engine
+from mlops.risk_manager import RiskManager, get_risk_manager
+from mlops.drift_monitor import DriftMonitor
+from mlops.feature_cache import FeatureCache
+
+# Modern bridge imports (SOLID architecture)
+from mlops.bridge import (
+    get_service_container,
+    get_inference_engine_v2,
+    get_risk_check_chain,
+    get_ensemble_strategy_registry,
+    get_repository_factory,
+    get_daily_stats_repository,
+    get_trade_log_repository,
+    health_check as bridge_health_check,
+)
 
 __all__ = [
+    # Legacy (backward compatible)
     'MLOpsConfig',
     'RiskLimits',
     'TradingHours',
@@ -35,6 +64,15 @@ __all__ = [
     'get_risk_manager',
     'DriftMonitor',
     'FeatureCache',
+    # Modern (SOLID architecture)
+    'get_service_container',
+    'get_inference_engine_v2',
+    'get_risk_check_chain',
+    'get_ensemble_strategy_registry',
+    'get_repository_factory',
+    'get_daily_stats_repository',
+    'get_trade_log_repository',
+    'bridge_health_check',
 ]
 
-__version__ = '1.0.0'
+__version__ = '2.0.0'

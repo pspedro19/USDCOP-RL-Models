@@ -17,12 +17,21 @@ Changes: Added thread-safe singleton with double-checked locking
 
 import json
 import yaml
+import sys
 import threading
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from functools import lru_cache
 
-from .exceptions import ConfigurationError
+# Flexible import for exceptions
+try:
+    from .exceptions import ConfigurationError
+except ImportError:
+    # When loaded standalone, import from same directory
+    _shared_path = Path(__file__).parent
+    if str(_shared_path) not in sys.path:
+        sys.path.insert(0, str(_shared_path))
+    from exceptions import ConfigurationError
 
 
 class ConfigLoader:

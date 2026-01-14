@@ -1,0 +1,181 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Upload SARIF report
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+        continue-on-error: true
+
+  trivy-scan:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+  dependency-check:
+    name: Dependency Security Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install safety
+        run: pip install safety
+
+      - name: Check Python dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            safety check -r requirements.txt --full-report
+          fi
+        continue-on-error: true
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit Python packages
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt
+          fi
+        continue-on-error: true
+
+  env-file-check:
+    name: Environment File Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for .env files in repository
+        run: |
+          echo "Checking for .env files that should not be committed..."
+
+          # Find all .env files (excluding .env.example)
+          ENV_FILES=$(find . -name ".env" -o -name ".env.local" -o -name ".env.*.local" 2>/dev/null | grep -v ".env.example" || true)
+
+          if [ -n "$ENV_FILES" ]; then
+            echo "::error::Found .env files that should not be committed:"
+            echo "$ENV_FILES"
+            exit 1
+          else
+            echo "No sensitive .env files found in repository."
+          fi
+
+      - name: Check .gitignore for .env entries
+        run: |
+          if grep -q "^\.env$" .gitignore && grep -q "^\.env\.\*$" .gitignore; then
+            echo ".env files are properly ignored in .gitignore"
+          else
+            echo "::warning::Verify .gitignore properly excludes .env files"
+          fi
+
+  hardcoded-secrets-check:
+    name: Hardcoded Secrets Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for potentially hardcoded secrets..."
+
+          # Common secret patterns
+          PATTERNS=(
+            "password\s*=\s*['\"][^'\"]+['\"]"
+            "api_key\s*=\s*['\"][^'\"]+['\"]"
+            "secret\s*=\s*['\"][^'\"]+['\"]"
+            "token\s*=\s*['\"][a-zA-Z0-9]{20,}['\"]"
+            "-----BEGIN.*PRIVATE KEY-----"
+          )
+
+          FOUND_ISSUES=0
+
+          for pattern in "${PATTERNS[@]}"; do
+            # Search in Python files (excluding tests and examples)
+            MATCHES=$(grep -rniE "$pattern" --include="*.py" . \
+              --exclude-dir=".git" \
+              --exclude-dir="__pycache__" \
+              --exclude-dir="venv" \
+              --exclude-dir="tests" \
+              --exclude="*example*" \
+              --exclude="*test*" \
+              --exclude="*.pyc" 2>/dev/null || true)
+
+            if [ -n "$MATCHES" ]; then
+              echo "::warning::Potential hardcoded secret found with pattern: $pattern"
+              echo "$MATCHES" | head -5
+              FOUND_ISSUES=$((FOUND_ISSUES + 1))
+            fi
+          done
+
+          if [ $FOUND_ISSUES -gt 0 ]; then
+            echo "::warning::Found $FOUND_ISSUES potential hardcoded secret patterns. Please review."
+          else
+            echo "No obvious hardcoded secrets found."
+          fi
+
+  notify-on-failure:
+    name: Notify on Security Issues
+    runs-on: ubuntu-latest
+    needs: [gitleaks, trivy-scan, dependency-check, env-file-check, hardcoded-secrets-check]
+    if: failure()
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "::error::Security scan failed! Please review the findings above."
+          # Add Slack/email notification here if configured

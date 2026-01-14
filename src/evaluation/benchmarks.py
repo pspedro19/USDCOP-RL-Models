@@ -2,8 +2,7 @@
 Benchmark Strategies for Model Comparison
 =========================================
 
-V20 Implementation: Benchmark strategies to compare RL model performance
-against simple baselines.
+Benchmark strategies to compare RL model performance against simple baselines.
 
 From: 09_Documento Maestro Completo.md Section 6.9
 
@@ -459,7 +458,7 @@ if __name__ == "__main__":
     comparison = compare_with_benchmarks(
         model_equity=model_equity,
         prices=prices,
-        model_name="PPO V20",
+        model_name="PPO Model",
         model_trades=50,
         model_wins=25
     )

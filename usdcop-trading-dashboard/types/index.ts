@@ -2,34 +2,126 @@
  * TypeScript Types Index
  * =======================
  *
- * Punto central de exportación para todos los tipos del proyecto
- * Sistema de tipos profesional y centralizado para USD/COP Trading Dashboard
+ * Punto central de exportación para todos los tipos del proyecto.
+ * Sistema de tipos profesional y centralizado para USD/COP Trading Dashboard.
  *
+ * CANONICAL IMPORTS (Zod-validated):
  * @example
- * import { TradingSignal, PipelineStatus, ApiResponse } from '@/types'
+ * import { TradingSignal, SignalType, Trade, apiClient } from '@/types'
+ *
+ * LEGACY IMPORTS (for backwards compatibility):
+ * @example
+ * import { OrderType, Position } from '@/types'
  */
 
 // ============================================================================
-// Re-export all type modules
+// CANONICAL SCHEMAS (Zod validated - Single Source of Truth)
+// These are the preferred types for new code
+// ============================================================================
+export * from './schemas';
+
+// ============================================================================
+// Re-export all type modules (legacy compatibility)
 // ============================================================================
 
 // Common utility types
 export * from './common';
 
-// Trading types
-export * from './trading';
+// Trading types (some overlap with schemas - schemas take precedence)
+export {
+  OrderType,
+  OrderSide as LegacyOrderSide,
+  OrderStatus,
+  MarketStatus as LegacyMarketStatus,
+  Timeframe,
+} from './trading';
+
+export type {
+  OHLCVData,
+  CandlestickData,
+  CandlestickExtended,
+  CandlestickResponse,
+  MarketDataPoint,
+  MarketUpdate,
+  PriceTick,
+  TechnicalIndicators as LegacyTechnicalIndicators,
+  TradingSignal as LegacyTradingSignal,
+  SignalAlert,
+  SignalPerformance,
+  Position,
+  Trade as LegacyTrade,
+  TradeUpdate,
+  Order,
+  OrderBookLevel,
+  OrderBook,
+  OrderBookUpdate,
+  SymbolStats,
+  VolumeProfileLevel,
+  VolumeProfile,
+  BacktestResult,
+  PerformanceMetrics,
+} from './trading';
 
 // Pipeline types
 export * from './pipeline';
 
-// API types
-export * from './api';
+// API types (excluding ApiError which conflicts with schemas)
+export type {
+  HttpMethod,
+  HttpHeaders,
+  RequestConfig,
+  TypedResponse,
+  ApiError as LegacyApiError,
+  HealthCheckResponse,
+  ServiceHealth,
+  DatabaseStats,
+  QueryResult,
+  AnalyticsRequest,
+  AnalyticsResponse,
+  PredictionRequest,
+  PredictionResponse,
+  ModelInfo,
+  BacktestRequest,
+  BacktestTriggerResponse,
+  AlertLevel,
+  Alert,
+  SystemAlertsResponse,
+  ApiUsageStats,
+  UsageMonitoringResponse,
+  BackupStatus,
+  MarketStatusResponse,
+  VolumeProfileRequest,
+  ExportFormat,
+  ExportRequest,
+  ExportResponse,
+  FeatureFlag,
+  AppConfiguration,
+  NotificationType,
+  Notification,
+  NotificationPreferences,
+  RateLimitInfo,
+  RateLimitResponse,
+} from './api';
 
 // WebSocket types
 export * from './websocket';
 
 // Chart types
 export * from './charts';
+
+// Contracts (some types re-exported from schemas)
+export type {
+  StrategySignal,
+  LatestSignalsResponse,
+  StrategyPerformance,
+  PerformanceResponse,
+  RiskLimits,
+  RiskStatusResponse,
+  HealthStatus,
+  ModelHealth,
+  ModelHealthResponse,
+  APIError,
+} from './contracts';
 
 // ============================================================================
 // LEGACY TYPES (Preserving backwards compatibility)
@@ -111,12 +203,23 @@ export interface L4QualityCheck {
 }
 
 export interface L5Models {
-  models?: ModelInfo[];
+  models?: Array<{
+    model_id: string;
+    model_name: string;
+    version: string;
+    type: string;
+    status: string;
+  }>;
   count?: number;
 }
 
 export interface L6BacktestResults {
-  results?: BacktestResult[];
+  results?: Array<{
+    strategy: string;
+    sharpeRatio: number;
+    totalReturn: number;
+    maxDrawdown: number;
+  }>;
   summary?: BacktestSummary;
 }
 

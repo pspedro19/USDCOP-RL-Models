@@ -140,8 +140,9 @@ export function useIntegratedChart({
       setSignalsLoading(true)
       setSignalsError(null)
 
-      // Map frontend model ID to database model_id
-      const dbModelId = modelId === 'ppo_v20_prod' ? 'ppo_v20_macro' : 'ppo_v1'
+      // Use model ID directly - must match model_registry.model_id in database
+      // No hardcoded mappings - the frontend model selector already uses DB model IDs
+      const dbModelId = modelId || 'ppo_v20'
 
       // Fetch signals for the selected model
       const response = await fetch(`/api/trading/signals?action=recent&limit=500&model_id=${dbModelId}`)

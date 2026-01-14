@@ -62,21 +62,6 @@ class AuthService implements IAuthService {
       return { success: false, error: 'Email/username and password are required' };
     }
 
-    // DEV BACKDOOR: Allow admin/admin123 for testing
-    if (identifier === 'admin' && password === 'admin123') {
-      return {
-        success: true,
-        user: {
-          id: 'dev-admin-id',
-          email: 'admin@example.com',
-          username: 'admin',
-          role: 'admin',
-          fullName: 'Developer Admin',
-          avatarUrl: undefined
-        }
-      };
-    }
-
     // Check rate limit
     const rateLimit = await checkLoginRateLimit(identifier, ip);
     if (!rateLimit.allowed) {

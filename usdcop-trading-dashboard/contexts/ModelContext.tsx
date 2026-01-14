@@ -80,67 +80,26 @@ export function ModelProvider({ children, initialModelId }: ModelProviderProps) 
   const [comparisonModelIds, setComparisonModelIds] = useState<string[]>([]);
 
   // Default models when backend is unavailable
-  // PPO v19/v20 = real production data, others = demo data
+  // NOTE: These IDs MUST match the model_id values used by the inference service
   const defaultModels: ModelConfig[] = [
     {
-      id: 'ppo_v19_prod',
-      name: 'PPO V19 Production',
+      id: 'ppo_primary',  // Must match inference service model_id
+      name: 'PPO Primary (Production)',
       type: 'rl',
       algorithm: 'PPO',
       status: 'production' as ModelStatus,
-      version: 'V19',
+      version: 'current',
       color: '#10B981',
-      description: 'Production model V19 - 127 features - Real data',
+      description: '15-feature model with macro indicators',
       isRealData: true,
       backtest: {
-        sharpe: 1.84,
-        maxDrawdown: 8.2,
-        winRate: 67.3,
-        holdPercent: 32.7,
-        totalTrades: 1250,
-        dataRange: { start: '2024-01-01', end: '2025-12-31' },
+        sharpe: 1.19,
+        maxDrawdown: 7.96,
+        winRate: 49.2,
+        holdPercent: 0,
+        totalTrades: 518,
+        dataRange: { start: '2025-01-01', end: '2025-03-31' },
       },
-    },
-    {
-      id: 'ppo_v20_prod',
-      name: 'PPO V20 Production',
-      type: 'rl',
-      algorithm: 'PPO',
-      status: 'production' as ModelStatus,
-      version: 'V20',
-      color: '#06B6D4',
-      description: 'Production model V20 - 187 features + macro - Real data',
-      isRealData: true,
-      backtest: {
-        sharpe: 2.12,
-        maxDrawdown: 6.8,
-        winRate: 71.2,
-        holdPercent: 28.8,
-        totalTrades: 980,
-        dataRange: { start: '2024-01-01', end: '2025-12-31' },
-      },
-    },
-    {
-      id: 'sac_v1_demo',
-      name: 'SAC V1 Demo',
-      type: 'rl',
-      algorithm: 'SAC',
-      status: 'testing' as ModelStatus,
-      version: 'V1',
-      color: '#8B5CF6',
-      description: 'Soft Actor-Critic - Demo data',
-      isRealData: false,
-    },
-    {
-      id: 'llm_claude_demo',
-      name: 'LLM Claude Demo',
-      type: 'llm',
-      algorithm: 'LLM',
-      status: 'testing' as ModelStatus,
-      version: 'V1',
-      color: '#6366F1',
-      description: 'Claude-based LLM - Demo data',
-      isRealData: false,
     },
   ];
 

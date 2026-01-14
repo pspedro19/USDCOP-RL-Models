@@ -1,29 +1,40 @@
 """
 DAG: v3.l5_multi_model_inference
 ================================
-Layer 5: Multi-Model Realtime Inference System (PRODUCTION V19)
+Layer 5: Multi-Model Realtime Inference System (PRODUCTION)
 
 Purpose:
     Execute inference across multiple RL models with 15-feature observation space
-    matching TradingEnvironmentV19 from training.
+    matching TradingEnvironment from training.
 
 Architecture:
     1. Model Registry Pattern - Load models from config table
-    2. StateTracker (V19) - Track per-model state (position, time_normalized)
-    3. ObservationBuilderV19 - 15-dim observation (13 core + 2 state)
+    2. StateTracker - Track per-model state (position, time_normalized)
+    3. ObservationBuilder - 15-dim observation (13 core + 2 state)
     4. RiskManager - Safety layer for trade validation
     5. PaperTrader - Simulated trade execution
     6. ModelMonitor - Drift detection and health monitoring
     7. Multi-destination output - PostgreSQL, Redis Streams, Events table
 
+Schedule:
+    Event-driven: Uses NewFeatureBarSensor to wait for new features from L1.
+    Fallback schedule: */5 13-17 * * 1-5 (8:00-12:55 COT)
+
+    Best Practice: Instead of running blindly every 5 minutes, the sensor
+    waits for actual new feature data before running inference. This prevents:
+    - Schedule drift
+    - Overlapping jobs
+    - Running inference on stale features
+
 SSOT:
-    - config/feature_config_v19.json for 15-feature observation space
-    - config/v19_norm_stats.json for normalization statistics
+    - config/feature_config.json for 15-feature observation space
+    - config/norm_stats.json for normalization statistics
     - config.models table for enabled models
 
 Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-26
-Version: 3.0.0 (V19 15-feature support)
+Version: 3.1.0 (15-feature support + sensor-driven execution)
+Updated: 2025-01-12
 """
 
 from datetime import datetime, timedelta
@@ -49,17 +60,21 @@ from utils.dag_common import get_db_connection, load_feature_config
 from utils.trading_calendar import TradingCalendar, get_calendar, is_trading_day
 from utils.datetime_handler import UnifiedDatetimeHandler
 
+# Event-driven sensor (Best Practice: wait for actual data instead of fixed schedule)
+from sensors.new_bar_sensor import NewFeatureBarSensor
+
 # =============================================================================
-# V19 MODULE IMPORTS
+# MODULE IMPORTS
 # =============================================================================
 # Add src to path for new modular components
 sys.path.insert(0, '/opt/airflow')
 
-from src.core.builders.observation_builder_v19 import ObservationBuilderV19
+from src.core.builders.observation_builder import ObservationBuilder
 from src.core.state.state_tracker import StateTracker
 from src.risk.risk_manager import RiskManager, RiskLimits
 from src.trading.paper_trader import PaperTrader
 from src.monitoring.model_monitor import ModelMonitor
+from src.features.contract import FEATURE_CONTRACT
 
 # =============================================================================
 # CONFIGURATION
@@ -68,12 +83,12 @@ from src.monitoring.model_monitor import ModelMonitor
 CONFIG = load_feature_config(raise_on_error=False)
 DAG_ID = "v3.l5_multi_model_inference"
 
-# Observation space from SSOT (V19: 15 features = 13 core + 2 state)
-OBS_DIM_EXPECTED = 15  # V19: 13 core market features + 2 state features
+# Observation space from SSOT (15 features = 13 core + 2 state)
+OBS_DIM_EXPECTED = 15  # 13 core market features + 2 state features
 BARS_PER_SESSION = CONFIG.get("environment_config", {}).get("bars_per_session", 60)
 MAX_DRAWDOWN_PCT = CONFIG.get("environment_config", {}).get("max_drawdown_pct", 15.0)
 
-# V19 Feature order (for reference)
+# Feature order (for reference)
 # 0-12: Core market features (log_ret_5m, log_ret_1h, log_ret_4h, rsi_9, atr_pct, adx_14,
 #       dxy_z, dxy_change_1d, vix_z, embi_z, brent_change_1d, rate_spread, usdmxn_change_1d)
 # 13-14: State features (position, time_normalized)
@@ -82,10 +97,10 @@ MAX_DRAWDOWN_PCT = CONFIG.get("environment_config", {}).get("max_drawdown_pct", 
 OBS_CLIP_MIN = -5.0
 OBS_CLIP_MAX = 5.0
 
-# Trading thresholds - V20 FIX: Changed from 0.3 to 0.10 to match training environment
-# Training used ACTION_THRESHOLD = 0.10, production must match
-LONG_THRESHOLD = CONFIG.get("trading", {}).get("signal_thresholds", {}).get("long", 0.10)
-SHORT_THRESHOLD = CONFIG.get("trading", {}).get("signal_thresholds", {}).get("short", -0.10)
+# Trading thresholds - SSOT: config/trading_config.yaml (thresholds.long/short = 0.33/-0.33)
+# Fallback to config/feature_config.json if available
+LONG_THRESHOLD = CONFIG.get("trading", {}).get("signal_thresholds", {}).get("long", 0.33)
+SHORT_THRESHOLD = CONFIG.get("trading", {}).get("signal_thresholds", {}).get("short", -0.33)
 
 # Regime detection config
 REGIME_CONFIG = CONFIG.get("regime_detection", {})
@@ -132,9 +147,9 @@ class ModelConfig:
     enabled: bool
     is_production: bool
     priority: int
-    # V20 FIX: Changed defaults from 0.3 to 0.10 to match training environment
-    threshold_long: float = 0.10
-    threshold_short: float = -0.10
+    # Default thresholds - from config/trading_config.yaml SSOT
+    threshold_long: float = 0.33  # From SSOT: thresholds.long
+    threshold_short: float = -0.33  # From SSOT: thresholds.short
 
 
 @dataclass
@@ -189,16 +204,16 @@ class ModelRegistry:
                     enabled BOOLEAN DEFAULT TRUE,
                     is_production BOOLEAN DEFAULT FALSE,
                     priority INT DEFAULT 100,
-                    threshold_long DECIMAL(5,3) DEFAULT 0.10,  -- V20 FIX: Match training threshold
-                    threshold_short DECIMAL(5,3) DEFAULT -0.10,  -- V20 FIX: Match training threshold
+                    threshold_long DECIMAL(5,3) DEFAULT 0.33,  -- From SSOT: thresholds.long
+                    threshold_short DECIMAL(5,3) DEFAULT -0.33,  -- From SSOT: thresholds.short
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
 
                 INSERT INTO config.models (model_id, model_name, model_type, model_path, version, enabled, is_production, priority)
                 SELECT * FROM (VALUES
-                    ('ppo_v1', 'PPO USDCOP V1 (Production)', 'PPO', '/opt/airflow/models/ppo_v1_20251226_054154.zip', 'v1.0.0', TRUE, TRUE, 1),
-                    ('ppo_v15_legacy', 'PPO USDCOP V15 (Legacy)', 'PPO', '/opt/airflow/models/ppo_usdcop_v15_fold3.zip', 'v15.0.0', FALSE, FALSE, 5)
+                    ('ppo_primary', 'PPO USDCOP Primary (Production)', 'PPO', '/opt/airflow/models/ppo_primary.zip', 'current', TRUE, TRUE, 1),
+                    ('ppo_secondary', 'PPO USDCOP Secondary', 'PPO', '/opt/airflow/models/ppo_secondary.zip', 'current', FALSE, FALSE, 5)
                 ) AS v(model_id, model_name, model_type, model_path, version, enabled, is_production, priority)
                 WHERE NOT EXISTS (SELECT 1 FROM config.models LIMIT 1);
             """)
@@ -223,9 +238,9 @@ class ModelRegistry:
                     enabled=row[5],
                     is_production=row[6],
                     priority=row[7],
-                    # V20 FIX: Fallback values match training thresholds
-                    threshold_long=float(row[8]) if row[8] else 0.10,
-                    threshold_short=float(row[9]) if row[9] else -0.10
+                    # Fallback values from config/trading_config.yaml SSOT
+                    threshold_long=float(row[8]) if row[8] else 0.33,  # SSOT: thresholds.long
+                    threshold_short=float(row[9]) if row[9] else -0.33  # SSOT: thresholds.short
                 ))
 
             logging.info(f"Found {len(models)} enabled models in registry")
@@ -298,20 +313,22 @@ model_registry = ModelRegistry()
 
 
 # =============================================================================
-# V19 GLOBAL INSTANCES
+# GLOBAL INSTANCES
 # =============================================================================
 
-# State tracker for managing model positions (V19: 2 state features)
+# State tracker for managing model positions (2 state features)
 state_tracker = StateTracker(initial_equity=10000.0)
 
-# Observation builder for V19 15-dim observations (13 core + 2 state)
-observation_builder = ObservationBuilderV19()
+# Observation builder for 15-dim observations (13 core + 2 state)
+observation_builder = ObservationBuilder()
 
-# Risk manager with conservative limits
+# Risk manager with conservative limits (matches trading_config.yaml)
 risk_manager = RiskManager(RiskLimits(
     max_drawdown_pct=15.0,
     max_daily_loss_pct=5.0,
-    max_trades_per_day=20
+    max_trades_per_day=20,
+    cooldown_after_losses=5,   # Circuit breaker: 5 consecutive losses
+    cooldown_minutes=60        # Cooldown: 12 bars × 5 min = 60 min
 ))
 
 # Paper trader for simulated execution
@@ -322,7 +339,7 @@ model_monitors: Dict[str, ModelMonitor] = {}
 
 
 # =============================================================================
-# TECHNICAL INDICATOR HELPERS (V19)
+# TECHNICAL INDICATOR HELPERS
 # =============================================================================
 
 def _calculate_rsi(cur, period: int = 9) -> float:
@@ -370,7 +387,8 @@ def _calculate_atr_pct(cur, period: int = 10) -> float:
 
 def _calculate_adx(cur, period: int = 14) -> float:
     """Calculate ADX (simplified placeholder)"""
-    return 25.0  # Placeholder - full ADX requires more complex calculation
+    adx_period = FEATURE_CONTRACT.technical_periods["adx"]
+    return float(adx_period)  # Placeholder - full ADX requires more complex calculation
 
 
 # =============================================================================
@@ -439,7 +457,7 @@ def create_output_tables():
             CREATE SCHEMA IF NOT EXISTS events;
             CREATE SCHEMA IF NOT EXISTS dw;
 
-            -- Model inferences table (V19: includes state_features)
+            -- Model inferences table (includes state_features)
             CREATE TABLE IF NOT EXISTS trading.model_inferences (
                 id SERIAL PRIMARY KEY,
                 timestamp TIMESTAMPTZ DEFAULT NOW(),
@@ -497,8 +515,8 @@ def create_output_tables():
             -- Seed strategies
             INSERT INTO dw.dim_strategy (strategy_code, strategy_name, strategy_type, model_id, is_active)
             VALUES
-                ('RL_PPO', 'PPO USDCOP V1', 'RL', 'ppo_v1', TRUE),
-                ('RL_PPO_LEGACY', 'PPO V15 Legacy', 'RL', 'ppo_v15_legacy', FALSE)
+                ('RL_PPO', 'PPO USDCOP Primary', 'RL', 'ppo_primary', TRUE),
+                ('RL_PPO_SECONDARY', 'PPO USDCOP Secondary', 'RL', 'ppo_secondary', FALSE)
             ON CONFLICT (strategy_code) DO NOTHING;
         """)
         conn.commit()
@@ -596,14 +614,71 @@ def publish_to_redis(result: InferenceResult):
 # MAIN DAG TASKS
 # =============================================================================
 
+def check_macro_data_readiness() -> Tuple[bool, str, float]:
+    """Check if macro data is ready for inference.
+
+    Queries the latest readiness report from l0_macro_unified DAG.
+    Returns (is_ready, reason, score).
+    """
+    try:
+        from airflow.models import DagRun, TaskInstance
+
+        # Find latest successful run of macro DAG today
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        macro_runs = DagRun.find(
+            dag_id='v3.l0_macro_unified',
+            state='success',
+            execution_start_date=today_start,
+        )
+
+        if not macro_runs:
+            logging.warning("No successful macro pipeline run found today")
+            # Allow inference to continue but log warning
+            return True, "No macro run today (continuing)", 0.0
+
+        latest_run = sorted(macro_runs, key=lambda r: r.execution_date, reverse=True)[0]
+
+        # Get readiness report from XCom
+        ti = latest_run.get_task_instance('generate_readiness_report')
+        if ti:
+            is_ready = ti.xcom_pull(key='is_ready_for_inference')
+            readiness = ti.xcom_pull(key='readiness_report') or {}
+
+            if is_ready is False:
+                return False, f"Macro data not ready. Score: {readiness.get('score', '0%')}", readiness.get('readiness_score', 0)
+
+            score = readiness.get('score', '100%')
+            return True, f"Macro data ready. Score: {score}", float(readiness.get('readiness_score', 1.0))
+
+        return True, "Readiness task not found (continuing)", 0.0
+
+    except Exception as e:
+        logging.error(f"Error checking macro readiness: {e}")
+        # Don't block inference on error - log and continue
+        return True, f"Readiness check error: {e} (continuing)", 0.0
+
+
 def check_system_readiness(**ctx) -> Dict[str, Any]:
-    """Task 1: Check trading hours and system readiness for V19 15-feature inference"""
-    logging.info("Checking system readiness for V19 15-feature inference...")
+    """Task 1: Check trading hours, data freshness, and system readiness for 15-feature inference"""
+    logging.info("Checking system readiness for 15-feature inference...")
 
     is_trading, reason = check_trading_hours()
     if not is_trading:
         logging.warning(f"Skipping inference: {reason}")
         return {"status": "SKIP", "reason": reason, "can_infer": False}
+
+    # Check macro data readiness from L0 pipeline
+    macro_ready, macro_reason, macro_score = check_macro_data_readiness()
+    logging.info(f"Macro data readiness: {macro_reason}")
+
+    if not macro_ready:
+        logging.warning(f"Skipping inference: {macro_reason}")
+        return {
+            "status": "MACRO_NOT_READY",
+            "reason": macro_reason,
+            "can_infer": False,
+            "macro_score": macro_score
+        }
 
     conn = get_db_connection()
     cur = conn.cursor()
@@ -627,9 +702,10 @@ def check_system_readiness(**ctx) -> Dict[str, Any]:
 
         return {
             "status": "READY",
-            "reason": f"System ready. Data age: {age_minutes:.1f} min",
+            "reason": f"System ready. OHLCV age: {age_minutes:.1f} min, Macro: {macro_reason}",
             "can_infer": True,
-            "observation_dim": OBS_DIM_EXPECTED
+            "observation_dim": OBS_DIM_EXPECTED,
+            "macro_score": macro_score
         }
 
     finally:
@@ -663,20 +739,20 @@ def load_models(**ctx) -> Dict[str, Any]:
 
 
 def build_observation(**ctx) -> Dict[str, Any]:
-    """Task 3: Build V19 15-dim observation (13 core market + 2 state features)
+    """Task 3: Build 15-dim observation (13 core market + 2 state features)
 
-    V20 FIX - Look-Ahead Bias Prevention:
+    Look-Ahead Bias Prevention:
     - Signal is generated using the PREVIOUS bar (bar N-1, which is fully closed)
     - Execution happens at the CURRENT bar's OPEN (bar N)
     - This prevents using future information (close price) for execution
     """
-    logging.info(f"Building V19 15-dim observation (with look-ahead bias prevention)...")
+    logging.info(f"Building 15-dim observation (with look-ahead bias prevention)...")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        # V20 FIX: Query TWO latest bars
+        # FIX: Query TWO latest bars
         # - Bar N-1 (prev_bar): Used for signal generation (CLOSED, no look-ahead)
         # - Bar N (current_bar): Use OPEN price for execution
         cur.execute("""
@@ -695,7 +771,7 @@ def build_observation(**ctx) -> Dict[str, Any]:
                 time as bar_time
             FROM latest ORDER BY time DESC LIMIT 2
         """)
-        # V20 FIX: Fetch both bars
+        # FIX: Fetch both bars
         ohlcv_rows = cur.fetchall()
 
         # Bar 0 = current bar (most recent), Bar 1 = previous bar (signal bar)
@@ -718,7 +794,7 @@ def build_observation(**ctx) -> Dict[str, Any]:
         """)
         macro_result = cur.fetchone()
 
-        # V20 FIX - Look-ahead bias prevention:
+        # Look-ahead bias prevention:
         # - signal_bar_close: Used for observation building (bar N-1, already closed)
         # - execution_price: OPEN of current bar (bar N) for trade execution
         signal_bar_close = float(signal_bar[3]) if signal_bar and signal_bar[3] else 4200.0
@@ -726,13 +802,13 @@ def build_observation(**ctx) -> Dict[str, Any]:
         signal_bar_time = signal_bar[5] if signal_bar and len(signal_bar) > 5 else None
         current_bar_time = current_bar[5] if current_bar and len(current_bar) > 5 else None
 
-        logging.info(f"V20 Look-Ahead Fix: Signal from bar {signal_bar_time}, Execution at bar {current_bar_time}")
+        logging.info(f"Look-Ahead Fix: Signal from bar {signal_bar_time}, Execution at bar {current_bar_time}")
         logging.info(f"Signal bar close: {signal_bar_close:.2f}, Execution price (open): {execution_price:.2f}")
 
         bar_number = get_bar_number()
 
-        # Build market features dict (13 core features for V19)
-        # V20 FIX: Use signal_bar data (previous closed bar) for observation
+        # Build market features dict (13 core features)
+        # FIX: Use signal_bar data (previous closed bar) for observation
         market_features = {
             "log_ret_5m": float(signal_bar[0]) if signal_bar and signal_bar[0] else 0.0,
             "log_ret_1h": float(signal_bar[1]) if signal_bar and signal_bar[1] else 0.0,
@@ -750,13 +826,13 @@ def build_observation(**ctx) -> Dict[str, Any]:
         }
 
         ctx["ti"].xcom_push(key="market_features", value=market_features)
-        # V20 FIX: Push BOTH prices - signal bar close for reference, execution price for trades
+        # FIX: Push BOTH prices - signal bar close for reference, execution price for trades
         ctx["ti"].xcom_push(key="signal_bar_price", value=signal_bar_close)
         ctx["ti"].xcom_push(key="execution_price", value=execution_price)  # Current bar OPEN
         ctx["ti"].xcom_push(key="bar_number", value=bar_number)
 
-        logging.info(f"V19 market features built: {len(market_features)} features")
-        logging.info(f"V20 FIX: Signal bar price={signal_bar_close:.2f}, Execution price={execution_price:.2f}")
+        logging.info(f"Market features built: {len(market_features)} features")
+        logging.info(f"FIX: Signal bar price={signal_bar_close:.2f}, Execution price={execution_price:.2f}")
 
         return {"status": "success", "bar_number": bar_number, "signal_price": signal_bar_close, "execution_price": execution_price}
     finally:
@@ -765,16 +841,16 @@ def build_observation(**ctx) -> Dict[str, Any]:
 
 
 def run_multi_model_inference(**ctx) -> Dict[str, Any]:
-    """Task 4: Run V19 inference on all enabled models with 15-dim observation
+    """Task 4: Run inference on all enabled models with 15-dim observation
 
-    V20 FIX - Look-Ahead Bias Prevention:
+    Look-Ahead Bias Prevention:
     - Uses execution_price (current bar OPEN) for trade execution
     - Signal was generated from previous bar's closed data
     """
     ti = ctx["ti"]
 
     market_features = ti.xcom_pull(task_ids="build_observation", key="market_features")
-    # V20 FIX: Use execution_price (current bar OPEN) instead of signal bar close
+    # FIX: Use execution_price (current bar OPEN) instead of signal bar close
     execution_price = ti.xcom_pull(task_ids="build_observation", key="execution_price")
     signal_bar_price = ti.xcom_pull(task_ids="build_observation", key="signal_bar_price")
     bar_number = ti.xcom_pull(task_ids="build_observation", key="bar_number")
@@ -783,7 +859,7 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
     if not market_features:
         raise ValueError("No market features available")
 
-    logging.info(f"V20 FIX: Executing trades at OPEN price {execution_price:.2f} (signal from bar close {signal_bar_price:.2f})")
+    logging.info(f"FIX: Executing trades at OPEN price {execution_price:.2f} (signal from bar close {signal_bar_price:.2f})")
 
     inference_results = []
     now = datetime.now(COT_TZ)
@@ -797,19 +873,19 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
             continue
 
         try:
-            # Get state features from StateTracker (V19: position, time_normalized)
+            # Get state features from StateTracker (position, time_normalized)
             position, time_norm = state_tracker.get_state_features(
                 model_id, bar_number, total_bars=BARS_PER_SESSION
             )
 
-            # Build 15-dim observation using ObservationBuilderV19
+            # Build 15-dim observation using ObservationBuilder
             obs = observation_builder.build(
                 market_features=market_features,
                 position=position,
                 time_normalized=time_norm
             )
 
-            # V20 FIX: Detailed observation logging for debugging
+            # FIX: Detailed observation logging for debugging
             logging.info(f"[{model_id}] Observation shape: {obs.shape}, dtype: {obs.dtype}")
             logging.info(f"[{model_id}] Observation first 5 values: {obs[:5].tolist()}")
             logging.info(f"[{model_id}] Observation state features: position={position:.2f}, time_norm={time_norm:.3f}")
@@ -841,7 +917,7 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
             )
 
             if allowed:
-                # Execute paper trade at OPEN price (V20 look-ahead fix)
+                # Execute paper trade at OPEN price (look-ahead fix)
                 trade = paper_trader.execute_signal(
                     model_id, signal.value, execution_price, now
                 )
@@ -859,7 +935,7 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
             else:
                 logging.warning(f"Trade blocked for {model_id}: {reason}")
 
-            # Store result (V19: state_features are [position, time_norm])
+            # Store result (state_features are [position, time_norm])
             result = InferenceResult(
                 model_id=model_id,
                 model_name=model_info["model_name"],
@@ -925,14 +1001,26 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description="V3 L5: Multi-model inference with 15-dim V19 observation space (13 core + 2 state)",
-    schedule_interval="*/5 13-17 * * 1-5",
+    description="V3 L5: Event-driven inference with NewFeatureBarSensor (15-dim)",
+    schedule_interval="*/5 13-17 * * 1-5",  # Trigger schedule (sensor waits for actual data)
     catchup=False,
     max_active_runs=1,
-    tags=["v3", "l5", "inference", "multi-model", "v19", "15-features"]
+    tags=["v3", "l5", "inference", "multi-model", "15-features", "sensor-driven"]
 )
 
 with dag:
+    # EVENT-DRIVEN SENSOR: Wait for new feature data instead of running blindly
+    # This prevents schedule drift and ensures L1 has completed before L5 runs
+    wait_features = NewFeatureBarSensor(
+        task_id="wait_for_features",
+        table_name="inference_features_5m",
+        require_complete=True,          # Require all critical features present
+        max_staleness_minutes=10,       # Features must be < 10 minutes old
+        poke_interval=30,               # Check every 30 seconds
+        timeout=300,                    # Max 5 minutes wait (matches schedule)
+        mode="poke",                    # Keep worker while waiting
+    )
+
     check_ready = PythonOperator(
         task_id="check_system_readiness",
         python_callable=check_system_readiness,
@@ -963,4 +1051,21 @@ with dag:
         provide_context=True
     )
 
-    check_ready >> load >> build_obs >> infer >> validate
+    def mark_feature_processed(**context):
+        """Mark feature time as processed for next sensor check."""
+        ti = context['ti']
+        detected_time = ti.xcom_pull(key='detected_feature_time', task_ids='wait_for_features')
+        if detected_time:
+            ti.xcom_push(key='last_processed_feature_time', value=detected_time)
+            logging.info(f"Marked feature time as processed: {detected_time}")
+
+    mark_processed = PythonOperator(
+        task_id="mark_feature_processed",
+        python_callable=mark_feature_processed,
+        provide_context=True,
+        trigger_rule="all_success"
+    )
+
+    # Task chain with sensor at the front
+    # Sensor waits for features -> check ready -> load -> build -> infer -> validate -> mark
+    wait_features >> check_ready >> load >> build_obs >> infer >> validate >> mark_processed

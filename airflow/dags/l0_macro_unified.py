@@ -32,6 +32,18 @@ import requests
 # Shared utilities
 from utils.dag_common import get_db_connection
 
+# Contract imports
+from contracts.l0_data_contracts import (
+    MACRO_INDICATOR_REGISTRY,
+    PublicationSchedule,
+    FFillConfig,
+    FFillApplicationResult,
+    IndicatorReadiness,
+    IndicatorReadinessStatus,
+    DailyDataReadinessReport,
+    DEFAULT_FFILL_CONFIG,
+)
+
 DAG_ID = "v3.l0_macro_unified"
 
 # =============================================================================
@@ -525,32 +537,25 @@ def merge_and_upsert(**context):
     return {'status': 'success', 'dates': len(all_data), 'updated': total_updated}
 
 
-def apply_forward_fill(**context):
-    """Apply forward fill for monthly/quarterly variables."""
+def apply_forward_fill(**context) -> dict:
+    """Apply bounded forward fill respecting per-indicator limits.
+
+    Uses MACRO_INDICATOR_REGISTRY to determine max FFILL days per indicator.
+    """
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Monthly columns that need forward fill
-    monthly_columns = [
-        'polr_fed_funds_usa_m_fedfunds',
-        'infl_cpi_all_usa_m_cpiaucsl',
-        'infl_cpi_core_usa_m_cpilfesl',
-        'infl_pce_usa_m_pcepi',
-        'labr_unemployment_usa_m_unrate',
-        'prod_industrial_usa_m_indpro',
-        'mnys_m2_supply_usa_m_m2sl',
-        'sent_consumer_usa_m_umcsent',
-        'fxrt_reer_bilateral_col_m_itcr',
-        'ftrd_terms_trade_col_m_tot',
-        'rsbp_reserves_international_col_m_resint',
-        'infl_cpi_total_col_m_ipccol',
-    ]
-
+    config = DEFAULT_FFILL_CONFIG
     total_filled = 0
+    exceeded_columns = []
+    fill_details = {}
 
     try:
-        for column in monthly_columns:
-            # Get last known value
+        for column, metadata in MACRO_INDICATOR_REGISTRY.items():
+            # Get max FFILL days based on publication schedule
+            max_days = config.get_max_days_for_schedule(metadata.schedule)
+
+            # Get last known value with its date
             cur.execute(f"""
                 SELECT fecha, {column}
                 FROM macro_indicators_daily
@@ -561,35 +566,72 @@ def apply_forward_fill(**context):
 
             result = cur.fetchone()
             if not result:
+                fill_details[column] = {"filled": 0, "exceeded": 0, "max_days": max_days, "status": "no_data"}
                 continue
 
             last_date, last_value = result
 
-            # Fill forward up to today
+            # Fill only up to max_days from last known value
             cur.execute(f"""
                 UPDATE macro_indicators_daily
                 SET {column} = %s, updated_at = NOW()
                 WHERE fecha > %s
+                  AND fecha <= %s + INTERVAL '%s days'
                   AND fecha <= CURRENT_DATE
                   AND {column} IS NULL
-            """, [last_value, last_date])
+            """, [last_value, last_date, last_date, max_days])
 
             filled = cur.rowcount
+            total_filled += filled
+
+            # Count rows that exceed the limit
+            cur.execute(f"""
+                SELECT COUNT(*) FROM macro_indicators_daily
+                WHERE fecha > %s + INTERVAL '%s days'
+                  AND fecha <= CURRENT_DATE
+                  AND {column} IS NULL
+            """, [last_date, max_days])
+            exceeded = cur.fetchone()[0]
+
+            if exceeded > 0:
+                exceeded_columns.append(column)
+                if config.on_limit_exceeded == "warn":
+                    logging.warning(f"[FFILL] {column}: {exceeded} rows exceed {max_days}-day limit (schedule: {metadata.schedule.value})")
+
+            fill_details[column] = {
+                "filled": filled,
+                "exceeded": exceeded,
+                "max_days": max_days,
+                "last_value": float(last_value) if last_value else None,
+                "last_date": str(last_date),
+            }
+
             if filled > 0:
-                total_filled += filled
-                logging.info(f"[FFILL] {column}: {filled} rows filled with {last_value}")
+                logging.info(f"[FFILL] {metadata.display_name}: {filled} rows filled (max {max_days} days)")
 
         conn.commit()
-        logging.info(f"Forward fill completed: {total_filled} total rows")
+        logging.info(f"Bounded forward fill completed: {total_filled} total rows filled")
+        if exceeded_columns:
+            logging.warning(f"Columns exceeding FFILL limits: {exceeded_columns}")
 
     except Exception as e:
         conn.rollback()
         logging.error(f"Forward fill error: {e}")
+        raise
     finally:
         cur.close()
         conn.close()
 
-    return {'status': 'success', 'filled': total_filled}
+    # Push result to XCom
+    result = {
+        'status': 'success',
+        'filled': total_filled,
+        'exceeded_columns': exceeded_columns,
+        'fill_details': fill_details,
+    }
+    context['ti'].xcom_push(key='ffill_result', value=result)
+
+    return result
 
 
 def generate_report(**context):
@@ -628,6 +670,120 @@ def generate_report(**context):
     except Exception as e:
         logging.error(f"Report error: {e}")
         return {'status': 'error', 'message': str(e)}
+    finally:
+        cur.close()
+        conn.close()
+
+
+def generate_readiness_report(**context) -> dict:
+    """Generate comprehensive data readiness report.
+
+    Creates DailyDataReadinessReport as the SINGLE SOURCE OF TRUTH
+    for whether data is ready for inference.
+    """
+    from datetime import date
+    ti = context['ti']
+
+    # Get FFILL result from previous task
+    ffill_result = ti.xcom_pull(task_ids='apply_forward_fill', key='ffill_result') or {}
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    indicator_details = []
+    today = date.today()
+
+    try:
+        for column, metadata in MACRO_INDICATOR_REGISTRY.items():
+            # Get current value for this indicator
+            cur.execute(f"""
+                SELECT {column}, fecha
+                FROM macro_indicators_daily
+                WHERE fecha = CURRENT_DATE
+            """)
+            row = cur.fetchone()
+
+            if row and row[0] is not None:
+                value, fecha = row
+
+                # Check if this was FFILLed based on fill_details
+                fill_info = ffill_result.get('fill_details', {}).get(column, {})
+                is_ffilled = fill_info.get('filled', 0) > 0
+                ffill_days = (today - fecha).days if fecha else 0
+
+                if not is_ffilled and ffill_days == 0:
+                    status = IndicatorReadinessStatus.FRESH
+                elif ffill_days <= metadata.max_ffill_days:
+                    status = IndicatorReadinessStatus.FFILLED
+                else:
+                    status = IndicatorReadinessStatus.STALE
+
+                indicator_details.append(IndicatorReadiness(
+                    column_name=column,
+                    display_name=metadata.display_name,
+                    status=status,
+                    latest_value=float(value),
+                    latest_observation_date=fecha,
+                    age_days=ffill_days,
+                    is_ffilled=is_ffilled,
+                    ffill_days=ffill_days,
+                    ffill_within_limit=ffill_days <= metadata.max_ffill_days
+                ))
+            else:
+                indicator_details.append(IndicatorReadiness(
+                    column_name=column,
+                    display_name=metadata.display_name,
+                    status=IndicatorReadinessStatus.MISSING
+                ))
+
+        # Build readiness report
+        report = DailyDataReadinessReport(
+            indicator_details=indicator_details,
+            indicators_fresh=sum(1 for d in indicator_details if d.status == IndicatorReadinessStatus.FRESH),
+            indicators_ffilled=sum(1 for d in indicator_details if d.status == IndicatorReadinessStatus.FFILLED),
+            indicators_stale=sum(1 for d in indicator_details if d.status == IndicatorReadinessStatus.STALE),
+            indicators_missing=sum(1 for d in indicator_details if d.status == IndicatorReadinessStatus.MISSING),
+            indicators_error=sum(1 for d in indicator_details if d.status == IndicatorReadinessStatus.ERROR),
+            ffill_applied=ffill_result.get('filled', 0) > 0,
+            ffill_total_rows=ffill_result.get('filled', 0),
+            ffill_exceeded_limit=len(ffill_result.get('exceeded_columns', [])),
+        )
+
+        # Log comprehensive summary
+        summary = report.to_summary_dict()
+        logging.info("=" * 60)
+        logging.info("DAILY DATA READINESS REPORT")
+        logging.info("=" * 60)
+        logging.info(f"Date: {summary['date']}")
+        logging.info(f"Ready for Inference: {'YES' if summary['ready'] else 'NO'}")
+        logging.info(f"Readiness Score: {summary['score']}")
+        logging.info(f"Indicators: Fresh={summary['fresh']}, FFilled={summary['ffilled']}, "
+                     f"Stale={summary['stale']}, Missing={summary['missing']}, Errors={summary['errors']}")
+
+        if report.blocking_issues:
+            logging.error("BLOCKING ISSUES:")
+            for issue in report.blocking_issues:
+                logging.error(f"  - {issue}")
+
+        if report.warnings:
+            logging.warning("WARNINGS:")
+            for warn in report.warnings:
+                logging.warning(f"  - {warn}")
+
+        # Push to XCom for downstream DAGs (L5 inference can check this)
+        ti.xcom_push(key='readiness_report', value=summary)
+        ti.xcom_push(key='is_ready_for_inference', value=report.is_ready_for_inference)
+
+        return {
+            'status': 'success',
+            'is_ready': report.is_ready_for_inference,
+            'score': report.readiness_score,
+            'summary': summary,
+        }
+
+    except Exception as e:
+        logging.error(f"Readiness report error: {e}")
+        return {'status': 'error', 'message': str(e), 'is_ready': False}
     finally:
         cur.close()
         conn.close()
@@ -710,10 +866,17 @@ with DAG(
         execution_timeout=timedelta(minutes=2),
     )
 
+    # Readiness Report - Single source of truth for inference readiness
+    readiness_task = PythonOperator(
+        task_id='generate_readiness_report',
+        python_callable=generate_readiness_report,
+        execution_timeout=timedelta(minutes=2),
+    )
+
     end = EmptyOperator(task_id='end')
 
     # Task dependencies
-    # Parallel fetch, then merge, then ffill, then report
+    # Parallel fetch -> merge -> ffill -> report -> readiness -> end
     start >> [fetch_fred_task, fetch_twelvedata_task, fetch_investing_task, fetch_banrep_task, fetch_embi_task]
     [fetch_fred_task, fetch_twelvedata_task, fetch_investing_task, fetch_banrep_task, fetch_embi_task] >> merge_task
-    merge_task >> ffill_task >> report_task >> end
+    merge_task >> ffill_task >> report_task >> readiness_task >> end

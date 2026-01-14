@@ -54,7 +54,7 @@ V19_OBS_DIM = 15  # 13 core + 2 state
 # Configuration
 CONFIG = {
     "dataset_path": "data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv",
-    "norm_stats_path": "config/v19_norm_stats.json",
+    "norm_stats_path": "config/v20_norm_stats.json",
     "output_dir": "models/ppo_v20_production",
     "total_timesteps": 500_000,
     "episode_length": 1200,  # 20 days @ 60 bars/day
@@ -67,7 +67,7 @@ CONFIG = {
         "n_steps": 2048,
         "batch_size": 64,
         "n_epochs": 10,
-        "gamma": 0.99,
+        "gamma": 0.90,  # From config/trading_config.yaml SSOT
         "gae_lambda": 0.95,
         "clip_range": 0.2,
         "ent_coef": 0.01,  # Entropy for exploration

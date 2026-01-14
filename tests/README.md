@@ -35,7 +35,7 @@ pytest tests/ -v -m "not slow"
 
 ## Fixtures Disponibles
 
-### Model Fixtures (PPO v11)
+### Model Fixtures (PPO Primary)
 - feature_config - Configuración SSOT
 - sample_observation - Vector de 15 dimensiones
 - sample_ohlcv_df - 100 barras OHLCV
