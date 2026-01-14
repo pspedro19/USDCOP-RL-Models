@@ -14,28 +14,24 @@ from ..models.responses import BacktestResponse, ErrorResponse
 from ..orchestrator.backtest_orchestrator import BacktestOrchestrator
 
 # Import demo mode (isolated module)
-import sys
-from pathlib import Path
-
-# Add paths for demo_mode import (works in Docker and local dev)
-_paths_to_try = [
-    Path(__file__).parent.parent.parent,  # services directory (local dev)
-    Path("/app"),  # Docker container path
-    Path(__file__).parent.parent.parent.parent,  # project root
-]
-for _path in _paths_to_try:
-    if _path.exists() and str(_path) not in sys.path:
-        sys.path.insert(0, str(_path))
+# Try multiple import paths for Docker and local dev compatibility
+DEMO_MODE_AVAILABLE = False
 
 try:
-    from demo_mode import DemoTradeGenerator, is_investor_mode
+    # Docker container path (PYTHONPATH=/app, module at /app/services/demo_mode)
+    from services.demo_mode import DemoTradeGenerator, is_investor_mode
     DEMO_MODE_AVAILABLE = True
-    logging.getLogger(__name__).info(f"Demo mode module loaded. INVESTOR_MODE={is_investor_mode()}")
-except ImportError as e:
-    DEMO_MODE_AVAILABLE = False
-    logging.getLogger(__name__).warning(f"Demo mode not available: {e}")
-    def is_investor_mode():
-        return False
+    logging.getLogger(__name__).info(f"Demo mode loaded (services.demo_mode). INVESTOR_MODE={is_investor_mode()}")
+except ImportError:
+    try:
+        # Local dev fallback (when running from services directory)
+        from demo_mode import DemoTradeGenerator, is_investor_mode
+        DEMO_MODE_AVAILABLE = True
+        logging.getLogger(__name__).info(f"Demo mode loaded (demo_mode). INVESTOR_MODE={is_investor_mode()}")
+    except ImportError as e:
+        logging.getLogger(__name__).warning(f"Demo mode not available: {e}")
+        def is_investor_mode():
+            return False
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 logger = logging.getLogger(__name__)
@@ -140,7 +136,7 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
         start_date=request.start_date,
         end_date=request.end_date,
         price_data=price_data,
-        initial_capital=getattr(request, 'initial_capital', 100000.0)
+        initial_capital=getattr(request, 'initial_capital', 10000.0)
     )
 
     logger.info(f"[INVESTOR MODE] Generated {result['trade_count']} demo trades")
@@ -156,6 +152,19 @@ async def run_backtest_stream(request: BacktestRequest, req: Request):
     Returns a stream of SSE events with progress updates and final result.
     """
     try:
+        # Check for investor/demo mode
+        if DEMO_MODE_AVAILABLE and is_investor_mode():
+            logger.info(f"[INVESTOR MODE] Running demo stream backtest: {request.start_date} to {request.end_date}")
+            return StreamingResponse(
+                _demo_stream_generator(request, req),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                }
+            )
+
+        # Normal mode
         orchestrator = BacktestOrchestrator(
             inference_engine=req.app.state.inference_engine
         )
@@ -183,6 +192,65 @@ async def run_backtest_stream(request: BacktestRequest, req: Request):
     except Exception as e:
         logger.error(f"Stream error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _demo_stream_generator(request: BacktestRequest, req: Request):
+    """Generate SSE events for demo mode with simulated progress."""
+    import asyncio
+    import json
+    import time
+
+    start_time = time.time()
+
+    # Get the demo result first
+    result = await _run_demo_backtest(request, req)
+    trades = result.get("trades", [])
+    total_trades = len(trades)
+
+    # Simulate progress updates
+    for i in range(0, 101, 10):
+        progress_event = {
+            "type": "progress",
+            "data": {
+                "progress": i / 100,
+                "current_bar": int(i * 2.24),  # ~224 total
+                "total_bars": 224,
+                "trades_generated": int(total_trades * i / 100),
+                "status": "running" if i < 100 else "completed",
+                "message": f"Processing... {i}%"
+            }
+        }
+        yield f"data: {json.dumps(progress_event)}\n\n"
+        await asyncio.sleep(0.05)  # Small delay for visual effect
+
+    # Fix result format to match dashboard schema
+    processing_time = (time.time() - start_time) * 1000
+
+    # Fix summary: max_drawdown_pct must be positive (absolute value)
+    summary = result.get("summary", {})
+    if summary and "max_drawdown_pct" in summary:
+        summary["max_drawdown_pct"] = abs(summary["max_drawdown_pct"])
+
+    final_result = {
+        "success": True,
+        "source": "generated",  # Must be 'database', 'generated', or 'error'
+        "trade_count": total_trades,
+        "trades": trades,
+        "summary": summary,
+        "processing_time_ms": processing_time,
+        "date_range": {
+            "start": request.start_date,
+            "end": request.end_date
+        }
+    }
+
+    # Send final result with type 'result' (not 'complete')
+    final_event = {
+        "type": "result",
+        "data": final_result
+    }
+    yield f"data: {json.dumps(final_event)}\n\n"
+    logger.info(f"[INVESTOR MODE] Stream completed with {total_trades} trades")
 
 
 @router.get("/status/{model_id}")

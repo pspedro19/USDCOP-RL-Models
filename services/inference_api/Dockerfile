@@ -43,6 +43,7 @@ RUN pip install --no-cache-dir stable-baselines3==2.3.2 shimmy>=2.0
 COPY src/ ./src/
 COPY services/inference_api/ ./services/inference_api/
 COPY services/common/ ./services/common/
+COPY services/demo_mode/ ./services/demo_mode/
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser && \
