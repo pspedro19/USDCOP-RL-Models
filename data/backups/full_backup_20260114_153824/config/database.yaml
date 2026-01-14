@@ -1,0 +1,305 @@
+---
+# Database Configuration for USD/COP RL Trading System
+# TimescaleDB (PostgreSQL) and Redis connections
+
+connections:
+  postgres_timescale:
+    host: ${POSTGRES_HOST:-usdcop-postgres-timescale}
+    port: 5432
+    database: usdcop_trading
+    user: ${POSTGRES_USER:-postgres}
+    password: ${POSTGRES_PASSWORD}
+    schema: public
+    pool_size: 10
+    max_overflow: 20
+    pool_timeout: 30
+    pool_recycle: 3600
+    echo: false
+
+  redis:
+    host: ${REDIS_HOST:-usdcop-redis}
+    port: 6379
+    db: 0
+    password: ${REDIS_PASSWORD}
+    decode_responses: true
+    socket_timeout: 5
+    socket_connect_timeout: 5
+    max_connections: 50
+
+tables:
+  ohlcv:
+    name: usdcop_m5_ohlcv
+    schema: public
+    primary_key: [timestamp]
+    indexes:
+      - timestamp DESC
+    columns:
+      - name: timestamp
+        type: TIMESTAMPTZ
+        nullable: false
+      - name: open
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: high
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: low
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: close
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: volume
+        type: BIGINT
+        nullable: false
+      - name: source
+        type: VARCHAR(50)
+        nullable: true
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: timestamp
+      chunk_time_interval: 7 days
+
+  macro:
+    name: macro_indicators_daily
+    schema: public
+    primary_key: [date, indicator_name]
+    indexes:
+      - date DESC
+      - indicator_name
+    columns:
+      - name: date
+        type: DATE
+        nullable: false
+      - name: indicator_name
+        type: VARCHAR(100)
+        nullable: false
+      - name: value
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: source
+        type: VARCHAR(50)
+        nullable: true
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+      - name: updated_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: date
+      chunk_time_interval: 30 days
+
+  inference_features:
+    name: inference_features_5m
+    schema: public
+    primary_key: [timestamp]
+    indexes:
+      - timestamp DESC
+      - feature_version
+    columns:
+      - name: timestamp
+        type: TIMESTAMPTZ
+        nullable: false
+      - name: feature_vector
+        type: JSONB
+        nullable: false
+      - name: feature_version
+        type: VARCHAR(20)
+        nullable: false
+      - name: computation_time_ms
+        type: INTEGER
+        nullable: true
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: timestamp
+      chunk_time_interval: 7 days
+
+  inference_results:
+    name: fact_rl_inference
+    schema: public
+    primary_key: [timestamp]
+    indexes:
+      - timestamp DESC
+      - model_version
+      - action
+    columns:
+      - name: timestamp
+        type: TIMESTAMPTZ
+        nullable: false
+      - name: model_version
+        type: VARCHAR(50)
+        nullable: false
+      - name: action
+        type: INTEGER
+        nullable: false
+      - name: action_probs
+        type: JSONB
+        nullable: true
+      - name: q_values
+        type: JSONB
+        nullable: true
+      - name: state_value
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: confidence
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: inference_time_ms
+        type: INTEGER
+        nullable: true
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: timestamp
+      chunk_time_interval: 7 days
+
+  agent_actions:
+    name: agent_actions
+    schema: public
+    primary_key: [id]
+    indexes:
+      - timestamp DESC
+      - action_type
+      - execution_status
+    columns:
+      - name: id
+        type: SERIAL
+        nullable: false
+      - name: timestamp
+        type: TIMESTAMPTZ
+        nullable: false
+      - name: action_type
+        type: VARCHAR(20)
+        nullable: false
+      - name: position_size
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: entry_price
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: exit_price
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: stop_loss
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: take_profit
+        type: DOUBLE PRECISION
+        nullable: true
+      - name: execution_status
+        type: VARCHAR(20)
+        nullable: false
+      - name: model_version
+        type: VARCHAR(50)
+        nullable: false
+      - name: metadata
+        type: JSONB
+        nullable: true
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: timestamp
+      chunk_time_interval: 7 days
+
+  equity_curve:
+    name: equity_curve
+    schema: public
+    primary_key: [timestamp]
+    indexes:
+      - timestamp DESC
+      - session_id
+    columns:
+      - name: timestamp
+        type: TIMESTAMPTZ
+        nullable: false
+      - name: session_id
+        type: VARCHAR(50)
+        nullable: false
+      - name: equity
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: cash
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: position_value
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: unrealized_pnl
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: realized_pnl
+        type: DOUBLE PRECISION
+        nullable: false
+      - name: total_trades
+        type: INTEGER
+        nullable: false
+      - name: winning_trades
+        type: INTEGER
+        nullable: false
+      - name: losing_trades
+        type: INTEGER
+        nullable: false
+      - name: created_at
+        type: TIMESTAMPTZ
+        default: NOW()
+    timescale:
+      hypertable: true
+      time_column: timestamp
+      chunk_time_interval: 7 days
+
+timescale_config:
+  compression:
+    enabled: true
+    policies:
+      - table: usdcop_m5_ohlcv
+        compress_after: 30 days
+        segment_by: null
+        order_by: timestamp DESC
+      - table: macro_indicators_daily
+        compress_after: 90 days
+        segment_by: indicator_name
+        order_by: date DESC
+      - table: inference_features_5m
+        compress_after: 30 days
+        segment_by: feature_version
+        order_by: timestamp DESC
+      - table: fact_rl_inference
+        compress_after: 30 days
+        segment_by: model_version
+        order_by: timestamp DESC
+      - table: agent_actions
+        compress_after: 30 days
+        segment_by: action_type
+        order_by: timestamp DESC
+      - table: equity_curve
+        compress_after: 30 days
+        segment_by: session_id
+        order_by: timestamp DESC
+
+  retention:
+    enabled: true
+    policies:
+      - table: usdcop_m5_ohlcv
+        drop_after: 2 years
+      - table: macro_indicators_daily
+        drop_after: 5 years
+      - table: inference_features_5m
+        drop_after: 6 months
+      - table: fact_rl_inference
+        drop_after: 1 year
+      - table: agent_actions
+        drop_after: 2 years
+      - table: equity_curve
+        drop_after: 2 years

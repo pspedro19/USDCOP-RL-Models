@@ -1,0 +1,634 @@
+# configs/mt5_config.yaml
+# =====================================================
+# MT5 CONFIGURATION - USDCOP TRADING SYSTEM
+# =====================================================
+# Production-ready configuration combining MT5 connection,
+# trading parameters, risk management, and system settings.
+# 
+# SECURITY: Use environment variables for all sensitive data!
+# Set APP_PROFILE=prod (or dev/staging) to select profile.
+#
+# Version: 3.0.0
+# =====================================================
+
+version: 3
+description: "USDCOP MT5 connector with trading system configuration"
+active_profile: dev   # default if APP_PROFILE not set: dev | staging | prod
+
+# =====================================================
+# DEFAULTS (merged into each profile)
+# =====================================================
+defaults: &defaults
+  timezone: "America/Bogota"
+  
+  # ----------------- MT5 CONNECTION -----------------
+  mt5:
+    mode: "real"                       # "real" | "sim" (forces simulator)
+    server: ${MT5_SERVER}              # e.g. "ICMarkets-Demo"
+    login: ${MT5_LOGIN}                # integer account id
+    password: ${MT5_PASSWORD}          # keep in env/secret manager
+    account_type: "demo"               # "demo" | "live"
+    
+    # MT5 Terminal paths
+    path:
+      windows: ${MT5_PATH_WINDOWS:-"C:\\Program Files\\MetaTrader 5\\terminal64.exe"}
+      linux: ${MT5_PATH_LINUX}
+      mac: ${MT5_PATH_MAC}
+    
+    # Connection settings
+    connect_timeout_sec: 10.0
+    timeout_ms: 60000                  # Operation timeout
+    max_retries: 5
+    base_backoff_sec: 2.0
+    read_failures_to_fallback: 3       # Switch to SIM after N failures
+    auto_start_terminal: true
+    
+    # Data validation
+    enforce_ohlc_sanity: true
+    validate_data: true
+    check_gaps: true
+    max_gap_seconds: 300
+    
+    # Bridge settings (if using TCP/IPC bridge)
+    bridge:
+      enabled: false
+      host: "127.0.0.1"
+      port: 40510
+      handshake_timeout_sec: 5.0
+
+  # ----------------- TRADING SYMBOLS -----------------
+  symbols:
+    primary:
+      name: "USDCOP"
+      digits: 2
+      point: 0.01                      # 1 MT5 point in price units
+      pip_in_points: 1                 # 1 pip = pip_in_points * point
+      contract_size: 100000            # Standard lot size
+      min_lot: 0.01
+      max_lot: 100.0
+      lot_step: 0.01
+      default_spread_points: 10
+      allow_partial_trading_hours: true
+    
+    # Alternative symbol names
+    alternatives:
+      - "USD_COP"
+      - "USDCOP."
+      - "USDCOPm"
+    
+    # Correlated symbols for analysis
+    correlated:
+      - symbol: "EURUSD"
+        correlation_threshold: 0.7
+      - symbol: "USDBRL"
+        correlation_threshold: 0.8
+      - symbol: "USDMXN"
+        correlation_threshold: 0.75
+
+  # ----------------- TIMEFRAMES -----------------
+  timeframes:
+    primary: "M5"                      # Primary trading timeframe
+    available: ["M1", "M5", "M15", "M30", "H1", "H4", "D1"]
+    
+    # Multi-timeframe analysis
+    mtf_analysis:
+      enabled: true
+      timeframes: ["M5", "M15", "H1", "H4"]
+    
+    # Bars to load per timeframe
+    bars_to_load:
+      M1: 10000
+      M5: 5000
+      M15: 3000
+      H1: 1000
+      H4: 500
+      D1: 365
+
+  # ----------------- TRADING PARAMETERS -----------------
+  trading:
+    # Magic number for order identification
+    magic_number: 202401
+    comment_prefix: "USDCOP_RL"
+    
+    # Trading hours (server time)
+    trading_hours:
+      enabled: true
+      sunday: {start: "22:00", end: "23:59"}
+      monday: {start: "00:00", end: "23:59"}
+      tuesday: {start: "00:00", end: "23:59"}
+      wednesday: {start: "00:00", end: "23:59"}
+      thursday: {start: "00:00", end: "23:59"}
+      friday: {start: "00:00", end: "22:00"}
+      saturday: null
+    
+    # Market sessions
+    sessions:
+      asia:
+        start: "00:00"
+        end: "09:00"
+        volatility_multiplier: 0.8
+      europe:
+        start: "08:00"
+        end: "17:00"
+        volatility_multiplier: 1.2
+      america:
+        start: "13:00"
+        end: "22:00"
+        volatility_multiplier: 1.5
+    
+    # Order execution
+    execution:
+      max_slippage: 10                 # Points
+      max_spread: 50                   # Points
+      use_pending_orders: false
+      fill_price: "close"              # "open" | "close" | "mid"
+    
+    # Trading costs
+    costs:
+      commission_bp_per_side: 3.0      # Basis points
+      slippage_points: 2.0
+      holding_cost_bp_per_bar: 0.0
+
+  # ----------------- RISK MANAGEMENT -----------------
+  risk_management:
+    # Position sizing
+    position_sizing:
+      method: "fixed"                  # "fixed" | "percent" | "kelly"
+      fixed_lots: 0.01
+      risk_percent: 1.0
+      max_position_size: 1.0
+    
+    # Stop loss
+    stop_loss:
+      enabled: true
+      method: "atr"                    # "fixed" | "atr" | "percent"
+      fixed_points: 500
+      atr_multiplier: 2.0
+      min_points: 100
+      max_points: 1000
+    
+    # Take profit
+    take_profit:
+      enabled: true
+      method: "atr"
+      fixed_points: 1000
+      atr_multiplier: 3.0
+      risk_reward_ratio: 2.0
+      min_points: 200
+      max_points: 2000
+    
+    # Maximum exposure
+    max_exposure:
+      max_trades: 3
+      max_daily_trades: 10
+      max_drawdown_percent: 10.0
+      max_correlation_exposure: 0.5
+    
+    # Time-based exits
+    time_exits:
+      max_trade_duration_hours: 24
+      exit_before_weekend: true
+      exit_before_news: true
+      news_minutes_before: 30
+
+  # ----------------- SIMULATOR FALLBACK -----------------
+  simulator:
+    enabled: true
+    initial_price: 4000.0
+    annual_vol: 0.10
+    seed: 42
+    spread_points: 10
+    jump_prob: 0.0
+    jump_std: 0.02
+
+  # ----------------- FALLBACK POLICY -----------------
+  fallback:
+    prefer_real: true                  # Prefer REAL when healthy
+    auto_recover: true                 # Try to return to REAL
+    health_window_sec: 60
+    staleness_limit_sec: 1800
+    max_flip_per_hour: 6
+    primary_exchange: "oanda"          # CCXT exchange
+
+  # ----------------- DATA MANAGEMENT -----------------
+  data:
+    # Acquisition settings
+    acquisition:
+      symbol: "USDCOP"
+      timeframe: "M5"
+      bars: 5000
+      days_per_chunk: 7
+      retry_chunk_failures: 2
+      lookback_window: 50              # For RL state
+    
+    # Paths
+    paths:
+      data_dir: "data"
+      bronze_dir: "data/bronze/USDCOP"
+      silver_dir: "data/silver/USDCOP"
+      gold_dir: "data/gold/USDCOP"
+      models_dir: "models"
+      reports_dir: "data/reports/usdcop"
+      logs_dir: "logs"
+      cache_dir: "cache"
+    
+    # Quality thresholds
+    quality:
+      max_na_ratio: 0.01
+      max_duplicate_ratio: 0.0
+      max_gap_factor: 1.5
+      min_rows: 100
+      min_daily_coverage: 0.95
+      completeness: 95.0               # Minimum %
+      exclude_weekends: true
+    
+    # Storage settings
+    storage:
+      compression: "gzip"              # null | "gzip" | "bz2"
+      save_frequency: "5min"
+      update_frequency: "1min"
+
+  # ----------------- MACHINE LEARNING -----------------
+  ml_config:
+    model:
+      type: "ppo"                      # RL algorithm
+      version: "latest"
+      checkpoint_dir: "./models/checkpoints"
+    
+    features:
+      window_size: 50
+      use_technical_indicators: true
+      use_price_action: true
+      use_volume: true
+      use_time_features: true
+    
+    training_config_file: "configs/rl_config.yaml"
+    
+    inference:
+      prediction_threshold: 0.6
+      use_ensemble: false
+
+  # ----------------- LOGGING -----------------
+  logging:
+    level: "INFO"                      # DEBUG | INFO | WARN | ERROR
+    console:
+      enabled: true
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    file:
+      enabled: true
+      path: "logs/mt5_connector.log"
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      rotate_mb: 50
+      backups: 5
+    
+    # Specialized logs
+    loggers:
+      trading: {enabled: true, filename: "trading.log"}
+      execution: {enabled: true, filename: "execution.log"}
+      data: {enabled: true, filename: "data.log"}
+      errors: {enabled: true, filename: "errors.log"}
+    
+    # Trade logging
+    trade_log:
+      enabled: true
+      format: "csv"                    # "csv" | "json"
+      filename: "trades.csv"
+    
+    # Sensitive fields to redact
+    redact_fields:
+      - "mt5.password"
+      - "notifications.email.password"
+      - "notifications.telegram.bot_token"
+
+  # ----------------- MONITORING & HEALTH -----------------
+  monitoring:
+    # Health checks
+    healthcheck:
+      enabled: true
+      ping_interval_sec: 15
+      max_missed_pings: 4
+    
+    # Metrics tracking
+    metrics:
+      enabled: true
+      file: "data/reports/usdcop/mt5_health.prom"
+      track_pnl: true
+      track_sharpe: true
+      track_drawdown: true
+      track_win_rate: true
+    
+    # Performance alerts
+    alerts:
+      drawdown_threshold: 5.0          # Percentage
+      daily_loss_threshold: 3.0
+      consecutive_losses: 5
+    
+    # Reports
+    reports:
+      daily: true
+      weekly: true
+      format: "html"                   # "html" | "pdf"
+
+  # ----------------- NOTIFICATIONS -----------------
+  notifications:
+    # Email
+    email:
+      enabled: false
+      smtp_server: "smtp.gmail.com"
+      smtp_port: 587
+      username: ${EMAIL_USERNAME}
+      password: ${EMAIL_PASSWORD}
+      from_address: "trading@example.com"
+      to_addresses: ["trader@example.com"]
+      on_trade: true
+      on_error: true
+      daily_summary: true
+    
+    # Telegram
+    telegram:
+      enabled: false
+      bot_token: ${TELEGRAM_BOT_TOKEN}
+      chat_id: ${TELEGRAM_CHAT_ID}
+      on_trade: true
+      on_error: true
+    
+    # Discord
+    discord:
+      enabled: false
+      webhook_url: ${DISCORD_WEBHOOK_URL}
+      on_trade: true
+      on_error: true
+
+  # ----------------- NETWORK & CONNECTION -----------------
+  connection:
+    # Reconnection
+    reconnection:
+      enabled: true
+      max_attempts: 10
+      initial_delay: 1
+      max_delay: 60
+      exponential_backoff: true
+    
+    # Network
+    network:
+      proxy:
+        enabled: false
+        http: null
+        https: null
+      retryable_errors:
+        - "ERR_TIMEOUT"
+        - "ERR_IPC"
+        - "ERR_NO_DATA"
+
+  # ----------------- ADVANCED SETTINGS -----------------
+  advanced:
+    # Multi-threading
+    threading:
+      use_threading: true
+      max_workers: 4
+    
+    # Caching
+    cache:
+      enabled: true
+      max_size_mb: 100
+      ttl_seconds: 3600
+    
+    # Database
+    database:
+      enabled: false
+      type: "sqlite"
+      connection_string: "sqlite:///trading.db"
+    
+    # Debugging
+    debug:
+      enabled: false
+      save_all_ticks: false
+      profile_performance: false
+
+# =====================================================
+# ENVIRONMENT PROFILES
+# =====================================================
+profiles:
+  # ----------------- DEVELOPMENT -----------------
+  dev:
+    <<: *defaults
+    mt5:
+      <<: *defaults.mt5
+      mode: "sim"                      # Use simulator in dev
+      account_type: "demo"
+      server: ${MT5_SERVER:-"MetaQuotes-Demo"}
+      login: ${MT5_LOGIN:-0}
+      password: ${MT5_PASSWORD:-""}
+      max_retries: 3
+      connect_timeout_sec: 8.0
+    
+    trading:
+      <<: *defaults.trading
+      magic_number: 202499             # Different magic for dev
+    
+    risk_management:
+      <<: *defaults.risk_management
+      position_sizing:
+        fixed_lots: 0.01               # Minimum for testing
+    
+    simulator:
+      <<: *defaults.simulator
+      seed: 123                        # Fixed seed for reproducibility
+      initial_price: 4000.0
+      annual_vol: 0.12
+    
+    logging:
+      <<: *defaults.logging
+      level: "DEBUG"
+      file:
+        path: "logs/mt5_connector_dev.log"
+    
+    advanced:
+      <<: *defaults.advanced
+      debug:
+        enabled: true
+
+  # ----------------- STAGING -----------------
+  staging:
+    <<: *defaults
+    mt5:
+      <<: *defaults.mt5
+      mode: "real"
+      account_type: "demo"
+      max_retries: 5
+    
+    risk_management:
+      <<: *defaults.risk_management
+      position_sizing:
+        method: "fixed"
+        fixed_lots: 0.02
+    
+    fallback:
+      <<: *defaults.fallback
+      max_flip_per_hour: 4
+    
+    logging:
+      <<: *defaults.logging
+      level: "INFO"
+      file:
+        path: "logs/mt5_connector_staging.log"
+    
+    notifications:
+      <<: *defaults.notifications
+      telegram:
+        enabled: true                  # Enable notifications in staging
+
+  # ----------------- PRODUCTION -----------------
+  prod:
+    <<: *defaults
+    mt5:
+      <<: *defaults.mt5
+      mode: "real"
+      account_type: "live"
+      max_retries: 7
+      base_backoff_sec: 2.0
+      connect_timeout_sec: 12.0
+    
+    trading:
+      <<: *defaults.trading
+      magic_number: 202401
+    
+    risk_management:
+      <<: *defaults.risk_management
+      position_sizing:
+        method: "percent"              # Risk-based sizing in prod
+        risk_percent: 1.0
+      max_exposure:
+        max_trades: 2                  # More conservative
+        max_drawdown_percent: 8.0
+    
+    fallback:
+      <<: *defaults.fallback
+      max_flip_per_hour: 2             # Limit flipping in prod
+    
+    data:
+      <<: *defaults.data
+      paths:
+        logs_dir: "/var/log/usdcop"    # Production paths
+        data_dir: "/var/data/usdcop"
+    
+    logging:
+      <<: *defaults.logging
+      level: "WARN"
+      file:
+        path: "/var/log/usdcop/mt5_connector.log"
+    
+    monitoring:
+      <<: *defaults.monitoring
+      metrics:
+        file: "/var/metrics/usdcop/mt5_health.prom"
+    
+    notifications:
+      <<: *defaults.notifications
+      email:
+        enabled: true
+      telegram:
+        enabled: true
+      discord:
+        enabled: true
+
+# =====================================================
+# RESILIENCE & RELIABILITY CONFIGURATION
+# =====================================================
+resilience:
+  # SAGA Configuration
+  saga:
+    enabled: true
+    redis_url: ${REDIS_URL:-""}
+    kafka_bootstrap: ${KAFKA_BOOTSTRAP:-""}
+    timeout_sec: 30
+    max_retries: 3
+    cleanup_interval_sec: 300
+  
+  # Circuit Breaker Configuration
+  circuit_breaker:
+    global:
+      enable_adaptive_thresholds: true
+      health_check_interval: 10
+      metrics_export_interval: 5
+    
+    services:
+      mt5_connector:
+        failure_threshold: 5
+        recovery_timeout: 60
+        half_open_max_calls: 3
+        error_types: ["ConnectionError", "TimeoutError", "MT5Error"]
+        fallback_strategy: "simulator"
+        health_impact: "critical"
+        
+      database:
+        failure_threshold: 3
+        recovery_timeout: 30
+        fallback_strategy: "cache"
+        health_impact: "degraded"
+        
+      kafka:
+        failure_threshold: 10
+        recovery_timeout: 120
+        fallback_strategy: "file_queue"
+        health_impact: "warning"
+  
+  # Backpressure Configuration
+  backpressure:
+    global:
+      enable_adaptive_watermarks: true
+      load_prediction_window: 60
+      metrics_export_interval: 2
+    
+    buffers:
+      market_data:
+        max_size: 10000
+        high_watermark: 0.8
+        low_watermark: 0.2
+        drop_strategy: "drop_oldest"
+        priority: "low"
+        adaptive: true
+        
+      trades:
+        max_size: 1000
+        high_watermark: 0.9
+        low_watermark: 0.1
+        drop_strategy: "none"
+        priority: "critical"
+        adaptive: false
+        
+      model_predictions:
+        max_size: 500
+        high_watermark: 0.7
+        low_watermark: 0.3
+        drop_strategy: "sample"
+        priority: "medium"
+        adaptive: true
+
+# =====================================================
+# SYSTEM REQUIREMENTS & VALIDATION
+# =====================================================
+requirements:
+  min_balance: 1000.0                  # Minimum account balance
+  min_free_margin_percent: 50.0
+  max_cpu_percent: 80.0
+  max_memory_percent: 80.0
+  required_symbols: ["USDCOP"]
+  required_timeframes: ["M5", "H1"]
+
+# =====================================================
+# SECRETS (DO NOT FILL - Use environment variables!)
+# =====================================================
+secrets:
+  use_env: true
+  # These are placeholders - NEVER commit real values
+  MT5_SERVER: ""
+  MT5_LOGIN: ""
+  MT5_PASSWORD: ""
+  MT5_PATH_WINDOWS: ""
+  EMAIL_USERNAME: ""
+  EMAIL_PASSWORD: ""
+  TELEGRAM_BOT_TOKEN: ""
+  TELEGRAM_CHAT_ID: ""
+  DISCORD_WEBHOOK_URL: ""

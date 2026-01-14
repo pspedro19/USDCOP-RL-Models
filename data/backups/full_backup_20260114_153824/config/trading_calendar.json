@@ -1,0 +1,78 @@
+{
+  "market_hours": {
+    "start_local": "08:00",
+    "end_local": "12:55",
+    "start_utc": "13:00",
+    "end_utc": "17:55",
+    "timezone": "America/Bogota"
+  },
+  "trading_days": {
+    "weekdays": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "cron_days": "1-5"
+  },
+  "holidays_2025_colombia": [
+    "2025-01-01",
+    "2025-01-06",
+    "2025-03-24",
+    "2025-04-17",
+    "2025-04-18",
+    "2025-05-01",
+    "2025-06-02",
+    "2025-06-23",
+    "2025-06-30",
+    "2025-07-20",
+    "2025-08-07",
+    "2025-08-18",
+    "2025-10-13",
+    "2025-11-03",
+    "2025-11-17",
+    "2025-12-08",
+    "2025-12-25"
+  ],
+  "holidays_2025_usa": [
+    "2025-01-01",
+    "2025-01-20",
+    "2025-02-17",
+    "2025-04-18",
+    "2025-05-26",
+    "2025-06-19",
+    "2025-07-04",
+    "2025-09-01",
+    "2025-10-13",
+    "2025-11-11",
+    "2025-11-27",
+    "2025-12-25"
+  ],
+  "schedules": {
+    "ohlcv_acquire": {
+      "cron": "*/5 13-17 * * 1-5",
+      "description": "Every 5 minutes during market hours (UTC)",
+      "timezone": "UTC"
+    },
+    "macro_scraping": {
+      "cron": "0 6 * * 1-5",
+      "description": "Daily at 06:00 UTC (01:00 Bogota time)",
+      "timezone": "UTC"
+    },
+    "feature_transform": {
+      "cron": "*/5 13-17 * * 1-5",
+      "description": "Every 5 minutes during market hours",
+      "timezone": "UTC"
+    },
+    "inference": {
+      "cron": "*/5 13-17 * * 1-5",
+      "description": "Real-time RL inference every 5 minutes",
+      "timezone": "UTC"
+    }
+  },
+  "session_info": {
+    "bars_per_session": 60,
+    "bar_duration_minutes": 5
+  }
+}

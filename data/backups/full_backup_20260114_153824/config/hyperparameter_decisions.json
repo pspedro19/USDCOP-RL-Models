@@ -1,0 +1,39 @@
+{
+    "model_version": "current",
+    "created_at": "2026-01-11",
+    "exploration_phase": {
+        "start_date": "2025-10-01",
+        "end_date": "2025-11-15",
+        "experiments_run": 47,
+        "validation_looks": 12,
+        "notes": "Grid search sobre learning_rate, n_steps, ent_coef"
+    },
+    "final_hyperparameters": {
+        "learning_rate": 3e-4,
+        "n_steps": 2048,
+        "batch_size": 64,
+        "n_epochs": 10,
+        "ent_coef": 0.01,
+        "clip_range": 0.2,
+        "selection_criteria": "Mejor Sharpe en validation 2025-01-01 a 2025-06-30"
+    },
+    "validation_phase": {
+        "single_pass_date": "2025-11-20",
+        "validation_metrics": {
+            "sharpe": 1.42,
+            "max_drawdown": -0.12,
+            "win_rate": 0.54
+        },
+        "passed": true
+    },
+    "test_phase": {
+        "execution_date": null,
+        "test_set_touched": false,
+        "notes": "Test set reservado para evaluacion final pre-produccion"
+    },
+    "audit_trail": [
+        {"date": "2025-10-15", "action": "Initial exploration", "validation_looks": 3},
+        {"date": "2025-11-01", "action": "Refined learning_rate", "validation_looks": 5},
+        {"date": "2025-11-15", "action": "Final tuning", "validation_looks": 4}
+    ]
+}

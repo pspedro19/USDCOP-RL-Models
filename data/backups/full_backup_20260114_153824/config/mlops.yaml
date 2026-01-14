@@ -1,0 +1,152 @@
+# ================================================
+# USDCOP Trading MLOps Configuration
+# ================================================
+#
+# This file configures the production inference system:
+# - Model paths and settings
+# - Risk management limits
+# - Trading hours
+# - Monitoring thresholds
+#
+# Environment: development | staging | production
+# ================================================
+
+environment: production
+
+# ================================================
+# Model Configuration
+# ================================================
+# Define models for production inference.
+# Set enabled: false to disable a model.
+# weight: importance in ensemble (higher = more influence)
+# ================================================
+
+models:
+  # Production model - PPO with 15-dimensional observation space
+  - name: ppo_primary
+    algorithm: PPO
+    onnx_path: /models/ppo_production/model.onnx
+    observation_dim: 15
+    action_space_size: 3
+    weight: 1.0
+    enabled: true
+
+  # Disabled - model not trained yet
+  - name: sac_usdcop_v2
+    algorithm: SAC
+    onnx_path: models/onnx/sac_usdcop_v2.onnx
+    observation_dim: 15
+    action_space_size: 3
+    weight: 0.8
+    enabled: false
+
+  # Disabled - model not trained yet
+  - name: a2c_macro_v1
+    algorithm: A2C
+    onnx_path: models/onnx/a2c_macro_v1.onnx
+    observation_dim: 15
+    action_space_size: 3
+    weight: 0.6
+    enabled: false
+
+# Ensemble strategy: weighted_average | majority_vote
+ensemble_strategy: weighted_average
+
+# ================================================
+# Risk Management Limits
+# ================================================
+# These limits protect against excessive losses.
+# Values are percentages expressed as decimals.
+# ================================================
+
+risk_limits:
+  # Daily loss limit: -2% triggers circuit breaker
+  max_daily_loss: -0.02
+
+  # Maximum drawdown: -5% triggers circuit breaker
+  max_drawdown: -0.05
+
+  # Intraday drawdown limit
+  max_intraday_drawdown: -0.03
+
+  # Stop trading after N consecutive losses
+  max_consecutive_losses: 5
+
+  # Maximum trades per day
+  max_trades_per_day: 50
+
+  # Maximum position size (% of capital)
+  max_position_size: 0.10
+
+  # Minimum confidence to execute (60%)
+  min_confidence: 0.60
+
+  # High confidence threshold (80%)
+  high_confidence_threshold: 0.80
+
+  # Cooldown after loss (seconds)
+  cooldown_after_loss: 60
+
+  # Cooldown after circuit breaker (seconds)
+  cooldown_after_circuit_break: 300
+
+# ================================================
+# Trading Hours (Colombia Time)
+# ================================================
+# Active trading session for USD/COP
+# ================================================
+
+trading_hours:
+  start_hour: 8
+  start_minute: 0
+  end_hour: 12
+  end_minute: 55
+  timezone: America/Bogota
+  # 0=Monday, 4=Friday
+  trading_days: [0, 1, 2, 3, 4]
+
+# ================================================
+# Redis Configuration
+# ================================================
+
+redis:
+  host: redis
+  port: 6379
+  db: 0
+  # password: null  # Set via REDIS_PASSWORD env var
+
+# ================================================
+# Monitoring Configuration
+# ================================================
+
+monitoring:
+  # Data drift detection
+  enable_drift_detection: true
+  drift_check_interval_minutes: 60
+  drift_threshold: 0.15  # 15% features drifted = alert
+
+  # Performance tracking
+  enable_performance_tracking: true
+  performance_log_interval_seconds: 60
+
+  # Health checks
+  enable_health_checks: true
+  health_check_interval_seconds: 30
+
+  # Alert thresholds
+  latency_alert_ms: 100.0
+  error_rate_alert: 0.01  # 1% error rate
+
+# ================================================
+# Feature Cache Settings
+# ================================================
+
+feature_cache_ttl_seconds: 300  # 5 minutes
+feature_history_size: 1000
+
+# ================================================
+# Logging
+# ================================================
+
+log_level: INFO
+log_format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"

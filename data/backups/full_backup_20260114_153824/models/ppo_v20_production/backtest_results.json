@@ -1,0 +1,20 @@
+{
+  "initial_balance": 10000,
+  "final_equity": 8793.749107053478,
+  "total_return": -0.12062508929465221,
+  "total_return_pct": -12.06250892946522,
+  "max_drawdown": 0.2117859058628913,
+  "max_drawdown_pct": 21.178590586289133,
+  "sharpe_ratio": -1.1935377087851435,
+  "win_rate": 0.4966929133858268,
+  "win_rate_pct": 49.669291338582674,
+  "total_trades": 2,
+  "n_bars": 12701,
+  "trades_per_day": 0.009448074954727975,
+  "action_distribution": {
+    "long_pct": 70.77952755905513,
+    "short_pct": 29.220472440944885,
+    "hold_pct": 0.0
+  },
+  "timestamp": "2026-01-09T03:13:29.733429"
+}

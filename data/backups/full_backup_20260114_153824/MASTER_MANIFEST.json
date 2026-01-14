@@ -1,0 +1,119 @@
+{
+  "created_at": "2026-01-14T15:38:24.867211",
+  "backup_dir": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\backups\\full_backup_20260114_153824",
+  "total_size_mb": 0.7448310852050781,
+  "components": {
+    "configs": {
+      "backed_up": [
+        "config/trading_config.yaml",
+        "config/feature_config.json",
+        "config/norm_stats.json",
+        "config/feature_registry.yaml",
+        "config/mlops.yaml",
+        "config/database.yaml",
+        "config/minio-buckets.yaml",
+        "config/redis_streams.yaml",
+        "config/trading_calendar.json",
+        "config/hyperparameter_decisions.json",
+        "config/mt5_config.yaml",
+        "config/twelve_data_config.yaml",
+        "config/storage.yaml",
+        "config/pipeline_health_config.yaml",
+        "config/quality_thresholds.yaml",
+        "config/dashboard_config.yaml"
+      ],
+      "missing": [],
+      "count": 16
+    },
+    "models": {
+      "backed_up": [
+        "models/ppo_v20_production",
+        "models/onnx"
+      ],
+      "count": 2,
+      "total_size_mb": 0.4697284698486328
+    },
+    "env": {
+      "backed_up": [
+        ".env",
+        ".env.example",
+        ".env.multimodel.example"
+      ],
+      "count": 3
+    },
+    "init_scripts": {
+      "backed_up": [
+        "init-scripts/00-init-extensions.sql",
+        "init-scripts/01-essential-usdcop-init.sql",
+        "init-scripts/02-macro-indicators-schema.sql",
+        "init-scripts/03-inference-features-views.sql",
+        "init-scripts/10-multi-model-schema.sql",
+        "init-scripts/11-paper-trading-tables.sql",
+        "init-scripts/12-trades-metadata.sql",
+        "init-scripts/04-data-seeding.py"
+      ],
+      "count": 8
+    },
+    "docker": {
+      "backed_up": [
+        "docker-compose.yml",
+        "docker-compose.multimodel.yml",
+        "docker-compose.blue-green.yml",
+        "docker-compose.canary.yml",
+        "services/Dockerfile.api",
+        "services/requirements.txt"
+      ],
+      "count": 6
+    },
+    "database": {
+      "skipped": true
+    },
+    "minio": {
+      "skipped": true
+    },
+    "redis": {
+      "skipped": true
+    }
+  },
+  "restore_instructions": [
+    "============================================================",
+    "RESTORE INSTRUCTIONS",
+    "============================================================",
+    "",
+    "1. PREREQUISITES:",
+    "   - Docker and Docker Compose installed",
+    "   - Python 3.10+ installed",
+    "   - MinIO client (mc) installed (optional)",
+    "",
+    "2. RESTORE ENVIRONMENT:",
+    "   cp env/.env ../",
+    "   cp env/.env.* ../ (if needed)",
+    "",
+    "3. RESTORE CONFIGS:",
+    "   cp config/* ../config/",
+    "",
+    "4. RESTORE INIT SCRIPTS:",
+    "   cp init-scripts/* ../init-scripts/",
+    "",
+    "5. RESTORE DOCKER:",
+    "   cp docker/docker-compose.yml ../",
+    "",
+    "6. START INFRASTRUCTURE:",
+    "   docker-compose up -d postgres redis minio",
+    "",
+    "7. RESTORE DATABASE:",
+    "   python scripts/backup/restore_master.py --database-only",
+    "",
+    "8. RESTORE MINIO:",
+    "   python scripts/backup/restore_master.py --minio-only",
+    "",
+    "9. START ALL SERVICES:",
+    "   docker-compose up -d",
+    "",
+    "10. VERIFY:",
+    "    curl http://localhost:5000/api/health",
+    "    curl http://localhost:8080/",
+    "",
+    "============================================================"
+  ]
+}

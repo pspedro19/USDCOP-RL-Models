@@ -1,0 +1,222 @@
+# =============================================================================
+# Redis Streams Configuration for Multi-Model Trading System
+# =============================================================================
+# Configuration for all Redis streams used in USD/COP multi-model trading.
+# Uses Redis Streams for reliable message delivery with consumer groups.
+#
+# Author: Pedro @ Lean Tech Solutions
+# Created: 2025-12-26
+# =============================================================================
+
+# Redis connection settings (can be overridden by environment variables)
+connection:
+  host: ${REDIS_HOST:-redis}
+  port: ${REDIS_PORT:-6379}
+  password: ${REDIS_PASSWORD:-}
+  db: 0
+  decode_responses: true
+  socket_timeout: 5
+  socket_connect_timeout: 5
+  retry_on_timeout: true
+  max_connections: 100
+
+# Stream definitions
+streams:
+  # ===========================================================================
+  # Per-model signal streams
+  # ===========================================================================
+  # Each model (PPO, A2C, SAC, XGBoost, etc.) publishes to its own stream
+  signals:
+    pattern: "signals:{model_id}:stream"
+    retention_ms: 86400000  # 24 hours
+    maxlen: 10000
+    approximate_maxlen: true  # Use ~ for better performance
+    consumer_groups:
+      - name: websocket_broadcaster
+        description: "Broadcasts signals to WebSocket clients"
+        start_id: "$"  # Only new messages
+      - name: dashboard_updater
+        description: "Updates dashboard state and metrics"
+        start_id: "$"
+      - name: trade_executor
+        description: "Executes trades based on signals"
+        start_id: "$"
+      - name: audit_logger
+        description: "Logs all signals for compliance"
+        start_id: "0"  # All messages from beginning
+    message_schema:
+      model_id: "string"
+      signal_type: "string"  # BUY, SELL, HOLD
+      confidence: "float"
+      action_probs: "json"
+      q_values: "json"
+      state_value: "float"
+      timestamp: "datetime"
+      bar_number: "int"
+      price: "float"
+      metadata: "json"
+
+  # ===========================================================================
+  # Aggregated stream for all models
+  # ===========================================================================
+  # Consolidates signals from all models for unified view
+  signals_all:
+    name: "signals:all:stream"
+    retention_ms: 3600000  # 1 hour
+    maxlen: 1000
+    approximate_maxlen: true
+    consumer_groups:
+      - name: ensemble_aggregator
+        description: "Aggregates signals for ensemble decisions"
+        start_id: "$"
+      - name: realtime_dashboard
+        description: "Real-time dashboard updates"
+        start_id: "$"
+    message_schema:
+      model_id: "string"
+      signal_type: "string"
+      confidence: "float"
+      timestamp: "datetime"
+      source_stream: "string"
+
+  # ===========================================================================
+  # Market data stream
+  # ===========================================================================
+  # OHLCV data from the L0 pipeline
+  market:
+    name: "market:ohlcv:stream"
+    retention_ms: 86400000  # 24 hours
+    maxlen: 50000
+    approximate_maxlen: true
+    consumer_groups:
+      - name: feature_calculator
+        description: "Calculates features from market data"
+        start_id: "$"
+      - name: signal_generator
+        description: "Generates signals from features"
+        start_id: "$"
+      - name: chart_updater
+        description: "Updates trading charts"
+        start_id: "$"
+    message_schema:
+      timestamp: "datetime"
+      open: "float"
+      high: "float"
+      low: "float"
+      close: "float"
+      volume: "int"
+      bar_number: "int"
+      source: "string"
+
+  # ===========================================================================
+  # Events/audit stream
+  # ===========================================================================
+  # Trading events and audit trail for compliance
+  events:
+    name: "events:trading:stream"
+    retention_ms: 604800000  # 7 days
+    maxlen: 100000
+    approximate_maxlen: true
+    consumer_groups:
+      - name: compliance_monitor
+        description: "Monitors for compliance violations"
+        start_id: "0"
+      - name: alert_manager
+        description: "Triggers alerts based on events"
+        start_id: "$"
+      - name: metrics_collector
+        description: "Collects metrics for monitoring"
+        start_id: "$"
+    message_schema:
+      event_type: "string"  # SIGNAL, TRADE, ERROR, ALERT, AUDIT
+      severity: "string"    # INFO, WARNING, ERROR, CRITICAL
+      model_id: "string"
+      payload: "json"
+      timestamp: "datetime"
+      correlation_id: "string"
+
+  # ===========================================================================
+  # Inference requests stream
+  # ===========================================================================
+  # Queues inference requests for model workers
+  inference_requests:
+    name: "inference:requests:stream"
+    retention_ms: 300000  # 5 minutes
+    maxlen: 500
+    approximate_maxlen: true
+    consumer_groups:
+      - name: ppo_worker
+        description: "PPO model inference worker"
+        start_id: "$"
+      - name: a2c_worker
+        description: "A2C model inference worker"
+        start_id: "$"
+      - name: sac_worker
+        description: "SAC model inference worker"
+        start_id: "$"
+      - name: xgb_worker
+        description: "XGBoost model inference worker"
+        start_id: "$"
+    message_schema:
+      request_id: "string"
+      model_id: "string"
+      feature_vector: "json"
+      bar_number: "int"
+      timestamp: "datetime"
+      priority: "int"
+
+  # ===========================================================================
+  # Ensemble decisions stream
+  # ===========================================================================
+  # Final ensemble-aggregated trading decisions
+  ensemble:
+    name: "ensemble:decisions:stream"
+    retention_ms: 86400000  # 24 hours
+    maxlen: 5000
+    approximate_maxlen: true
+    consumer_groups:
+      - name: execution_engine
+        description: "Executes final trading decisions"
+        start_id: "$"
+      - name: position_manager
+        description: "Updates position tracking"
+        start_id: "$"
+    message_schema:
+      decision_id: "string"
+      final_action: "string"
+      confidence: "float"
+      contributing_models: "json"
+      weights: "json"
+      timestamp: "datetime"
+      execution_status: "string"
+
+# SSE (Server-Sent Events) configuration
+sse:
+  keepalive_interval_ms: 15000  # Send keepalive every 15 seconds
+  max_connection_time_ms: 3600000  # Max 1 hour per connection
+  retry_interval_ms: 5000  # Client retry interval suggestion
+  event_prefix: "trading:"
+
+# Consumer configuration
+consumers:
+  block_timeout_ms: 5000  # How long to block waiting for messages
+  batch_size: 10  # Messages to read per XREADGROUP call
+  ack_after_process: true  # ACK messages after successful processing
+  dead_letter_after_retries: 3  # Move to dead letter after N retries
+  dead_letter_stream_suffix: ":dead"
+  pending_check_interval_ms: 60000  # Check pending messages every minute
+  claim_min_idle_ms: 300000  # Claim messages idle > 5 minutes
+
+# Producer configuration
+producers:
+  max_retries: 3
+  retry_delay_ms: 1000
+  add_timestamp: true  # Auto-add timestamp field
+  add_uuid: true  # Auto-add unique message ID
+
+# Monitoring configuration
+monitoring:
+  stream_info_cache_ttl_ms: 5000
+  health_check_interval_ms: 30000
+  metrics_prefix: "redis_streams"
+  export_prometheus: true

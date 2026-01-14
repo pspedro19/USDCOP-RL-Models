@@ -1,0 +1,327 @@
+{
+  "_meta": {
+    "version": "6.0.0",
+    "model_id": "ppo_primary",
+    "created_at": "2025-01-12",
+    "updated_at": "2025-01-14",
+    "description": "SSOT for features - 15 features (13 market + 2 state). Aligned with src/feature_store/core.py",
+    "author": "Pedro @ Lean Tech Solutions",
+    "changelog": {
+      "6.0.0": "CRITICAL FIX: Aligned with 15-dim SSOT from feature_store/core.py",
+      "5.0.0": "DEPRECATED: Had incorrect 30-dim spec",
+      "4.1.0": "Legacy production: 15 features (deprecated)",
+      "4.0.0": "Legacy: Corrected normalization stats using fixed z-score"
+    }
+  },
+
+  "observation_space": {
+    "total_dimension": 15,
+    "market_features_count": 13,
+    "state_features_count": 2,
+    "order": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "rate_spread",
+      "usdmxn_change_1d",
+      "position",
+      "time_normalized"
+    ],
+    "market_features": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "rsi_9",
+      "atr_pct",
+      "adx_14",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "rate_spread",
+      "usdmxn_change_1d"
+    ],
+    "state_features": [
+      "position",
+      "time_normalized"
+    ]
+  },
+
+  "market_features": {
+    "returns": {
+      "source": "ohlcv",
+      "compute_location": "sql",
+      "items": [
+        {
+          "name": "log_ret_5m",
+          "observation_order": 0,
+          "formula": "ln(close / close[-1])",
+          "lookback_bars": 1,
+          "norm_stats": {"mean": 2.0e-06, "std": 0.001138},
+          "clip": [-0.05, 0.05]
+        },
+        {
+          "name": "log_ret_1h",
+          "observation_order": 1,
+          "formula": "ln(close / close[-12])",
+          "lookback_bars": 12,
+          "norm_stats": {"mean": 2.3e-05, "std": 0.003776},
+          "clip": [-0.05, 0.05]
+        },
+        {
+          "name": "log_ret_4h",
+          "observation_order": 2,
+          "formula": "ln(close / close[-48])",
+          "lookback_bars": 48,
+          "norm_stats": {"mean": 5.2e-05, "std": 0.007768},
+          "clip": [-0.05, 0.05]
+        }
+      ]
+    },
+
+    "technical": {
+      "source": "ohlcv",
+      "compute_location": "python",
+      "items": [
+        {
+          "name": "rsi_9",
+          "observation_order": 3,
+          "period": 9,
+          "smoothing": "wilder",
+          "norm_stats": {"mean": 49.27, "std": 23.07},
+          "range": [0, 100]
+        },
+        {
+          "name": "atr_pct",
+          "observation_order": 4,
+          "period": 10,
+          "smoothing": "wilder",
+          "formula": "(ATR / close) * 100",
+          "norm_stats": {"mean": 0.062, "std": 0.0446}
+        },
+        {
+          "name": "adx_14",
+          "observation_order": 5,
+          "period": 14,
+          "smoothing": "wilder",
+          "norm_stats": {"mean": 32.01, "std": 16.36},
+          "range": [0, 100]
+        }
+      ]
+    },
+
+    "macro_zscore": {
+      "source": "macro_indicators_daily",
+      "compute_location": "sql",
+      "resample": "ffill",
+      "items": [
+        {
+          "name": "dxy_z",
+          "observation_order": 6,
+          "raw_column": "dxy",
+          "norm_stats": {"mean": 100.21, "std": 5.60},
+          "clip": [-4, 4]
+        },
+        {
+          "name": "vix_z",
+          "observation_order": 8,
+          "raw_column": "vix",
+          "norm_stats": {"mean": 21.16, "std": 7.89},
+          "clip": [-4, 4]
+        },
+        {
+          "name": "embi_z",
+          "observation_order": 9,
+          "raw_column": "embi",
+          "norm_stats": {"mean": 322.01, "std": 62.68},
+          "clip": [-4, 4]
+        }
+      ]
+    },
+
+    "macro_changes": {
+      "source": "macro_indicators_daily",
+      "compute_location": "sql",
+      "items": [
+        {
+          "name": "dxy_change_1d",
+          "observation_order": 7,
+          "clip": [-0.03, 0.03],
+          "no_zscore": true
+        },
+        {
+          "name": "brent_change_1d",
+          "observation_order": 10,
+          "clip": [-0.10, 0.10],
+          "no_zscore": true
+        },
+        {
+          "name": "usdmxn_change_1d",
+          "observation_order": 12,
+          "clip": [-0.10, 0.10],
+          "no_zscore": true
+        }
+      ]
+    },
+
+    "macro_derived": {
+      "source": "macro_indicators_daily",
+      "compute_location": "python",
+      "items": [
+        {
+          "name": "rate_spread",
+          "observation_order": 11,
+          "norm_stats": {"mean": 7.03, "std": 1.41},
+          "formula": "10.0 - treasury_10y"
+        }
+      ]
+    }
+  },
+
+  "state_features": {
+    "description": "2 state features computed at runtime by StateTracker",
+    "compute_location": "python_runtime",
+    "items": [
+      {
+        "name": "position",
+        "observation_order": 13,
+        "range": [-1.0, 1.0],
+        "description": "Current position normalized [-1 short, 0 flat, 1 long]",
+        "source": "StateTracker.get_state_features(model_id)"
+      },
+      {
+        "name": "time_normalized",
+        "observation_order": 14,
+        "range": [0.0, 1.0],
+        "formula": "(current_minutes - start_minutes) / (end_minutes - start_minutes)",
+        "description": "Normalized time within trading session [0=start, 1=end]"
+      }
+    ]
+  },
+
+  "environment_config": {
+    "_note": "Production inference uses 400 bars. Training uses longer episodes (1200 bars) for diverse experience.",
+    "class": "TradingEnvironment",
+    "initial_balance": 10000,
+    "max_position": 1.0,
+    "episode_length": 400,
+    "training_episode_length": 1200,
+    "max_drawdown_pct": 15.0,
+    "bars_per_day": 56,
+    "bars_per_session": 60,
+    "use_vol_scaling": true,
+    "use_regime_detection": true
+  },
+
+  "cost_model": {
+    "_note": "DEPRECATED: For RL training costs, see trading_config.yaml (transaction_cost_bps: 75, slippage_bps: 15)",
+    "class": "SETFXCostModel",
+    "base_spread_bps": 14.0,
+    "high_vol_spread_bps": 28.0,
+    "crisis_spread_bps": 45.0,
+    "slippage_bps": 3.0,
+    "volatility_threshold_high": 0.7,
+    "volatility_threshold_crisis": 0.9,
+    "total_cost_normal_bps": 17.0,
+    "comment": "SETFX institutional costs (NOT used for RL training). RL uses 75 bps spread from trading_config.yaml"
+  },
+
+  "volatility_scaler": {
+    "lookback_window": 60,
+    "quantiles": [0.5, 0.75, 0.9],
+    "scale_factors": [1.0, 0.75, 0.5, 0.25]
+  },
+
+  "regime_detection": {
+    "volatility_column": "atr_pct",
+    "lookback_bars": 100,
+    "thresholds": {
+      "crisis": 0.90,
+      "high_volatility": 0.75,
+      "normal": 0.50,
+      "low_volatility": 0.0
+    }
+  },
+
+  "sources": {
+    "ohlcv": {
+      "table": "usdcop_m5_ohlcv",
+      "columns_required": ["time", "open", "high", "low", "close"],
+      "granularity": "5min",
+      "update_schedule": "*/5 13-17 * * 1-5",
+      "lookback_bars_needed": 100
+    },
+    "macro": {
+      "table": "macro_indicators_daily",
+      "columns_required": ["date", "dxy", "vix", "embi", "brent", "treasury_10y", "usdmxn"],
+      "granularity": "daily",
+      "resample_to": "5min",
+      "resample_method": "ffill"
+    }
+  },
+
+  "model": {
+    "path": "models/ppo_primary.zip",
+    "framework": "stable-baselines3",
+    "algorithm": "PPO",
+    "version": "current",
+    "network": {
+      "pi": [256, 256],
+      "vf": [256, 256],
+      "activation": "Tanh"
+    },
+    "hyperparameters": {
+      "learning_rate": 1e-4,
+      "n_steps": 2048,
+      "batch_size": 128,
+      "n_epochs": 10,
+      "gamma": 0.99,
+      "gae_lambda": 0.95,
+      "clip_range": 0.2,
+      "ent_coef": 0.05
+    }
+  },
+
+  "trading": {
+    "symbol": "USD/COP",
+    "timeframe": "5min",
+    "market_hours": {
+      "timezone": "America/Bogota",
+      "utc_offset": -5,
+      "local_start": "08:00",
+      "local_end": "12:55",
+      "utc_start": "13:00",
+      "utc_end": "17:55"
+    },
+    "bars_per_session": 60,
+    "trading_days": [0, 1, 2, 3, 4],
+    "signal_thresholds": {
+      "long": 0.33,
+      "short": -0.33,
+      "comment": "Wider HOLD zone: [-0.33, 0.33] = 66% HOLD"
+    }
+  },
+
+  "validation": {
+    "expected_observation_dim": 15,
+    "expected_market_features": 13,
+    "expected_state_features": 2,
+    "min_bars_for_inference": 50,
+    "max_gap_minutes": 10
+  },
+
+  "cold_start": {
+    "min_warmup_bars": 50,
+    "max_ohlcv_staleness_minutes": 10,
+    "max_macro_staleness_hours": 48
+  }
+}

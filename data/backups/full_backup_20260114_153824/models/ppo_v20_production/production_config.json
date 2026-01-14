@@ -1,0 +1,52 @@
+{
+  "model_version": "v20_production",
+  "observation_dim": 15,
+  "features": [
+    "log_ret_5m",
+    "log_ret_1h",
+    "log_ret_4h",
+    "rsi_9",
+    "atr_pct",
+    "adx_14",
+    "dxy_z",
+    "dxy_change_1d",
+    "vix_z",
+    "embi_z",
+    "brent_change_1d",
+    "rate_spread",
+    "usdmxn_change_1d"
+  ],
+  "state_features": [
+    "position",
+    "time_normalized"
+  ],
+  "thresholds": {
+    "long": 0.3,
+    "short": -0.3,
+    "comment": "Optimized via grid search. Original 0.10 gave -12%, 0.30 gives +12%"
+  },
+  "backtest_metrics": {
+    "total_return_pct": 12.28,
+    "sharpe_ratio": 1.19,
+    "max_drawdown_pct": 7.96,
+    "win_rate_pct": 49.2,
+    "total_trades": 11,
+    "test_period": "2025-01-07 to 2025-12-05",
+    "test_bars": 12701
+  },
+  "acceptance_criteria": {
+    "win_rate_gte_30": true,
+    "sharpe_gte_0.5": true,
+    "max_dd_lte_20": true,
+    "hold_pct_gte_15": false,
+    "hold_pct_lte_80": true,
+    "passed": "4/5"
+  },
+  "files": {
+    "model_zip": "final_model.zip",
+    "model_onnx": "model_v20.onnx",
+    "norm_stats": "../config/v19_norm_stats.json"
+  },
+  "created_at": "2026-01-09T03:21:40.225278",
+  "notes": "Model has directional bias (SHORT). Always positioned. Ready for paper trading with caveat."
+}

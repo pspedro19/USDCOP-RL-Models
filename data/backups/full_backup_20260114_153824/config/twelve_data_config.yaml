@@ -1,0 +1,175 @@
+# Twelve Data API Configuration
+# Configuración para la API de Twelve Data
+
+# API Configuration
+api:
+  base_url: "https://api.twelvedata.com"
+  endpoints:
+    time_series: "/time_series"
+    quote: "/quote"
+    price: "/price"
+  
+  # API Key (reemplazar con tu clave real)
+  api_key: "085ba06282774cbc8e796f46a5af8ece"
+  
+  # Timeout settings
+  timeout:
+    connection: 30
+    read: 30
+
+# Market Configuration
+market:
+  symbol: "USD/COP"
+  interval: "5min"
+  timezone: "America/Bogota"
+  
+  # Supported intervals
+  supported_intervals:
+    - "1min"
+    - "5min"
+    - "15min"
+    - "30min"
+    - "1hour"
+    - "1day"
+
+# Data Extraction Settings
+extraction:
+  # Date range for historical data
+  start_date: "2022-10-01 00:00:00"
+  end_date: "2023-10-31 23:59:59"
+  
+  # Period chunking (days per API call)
+  chunk_days: 30
+  
+  # Delay between API calls (seconds) - respect 8 requests/min limit
+  delay_between_calls: 7.5
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 5
+
+# API Limits (Free Plan)
+limits:
+  requests_per_minute: 8
+  requests_per_day: 800
+  
+  # Estimated data volume
+  estimated_records_per_month: 8640  # 5min intervals in a month
+  estimated_total_records: 103680    # 12 months * 8640
+
+# Output Configuration
+output:
+  # Directory structure
+  base_dir: "data/raw/twelve_data"
+  
+  # File naming
+  filename_template: "USDCOP_5min_{start_year}_{start_month}_{end_year}_{end_month}.csv"
+  
+  # Data format
+  format: "CSV"
+  encoding: "utf-8"
+  
+  # Columns to include
+  columns:
+    - "time"
+    - "open"
+    - "high"
+    - "low"
+    - "close"
+    - "volume"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "logs/usdcop_extraction.log"
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+  
+  # Console output
+  console: true
+  
+  # File rotation
+  max_file_size: "10MB"
+  backup_count: 5
+
+# Data Processing
+processing:
+  # Data cleaning
+  remove_duplicates: true
+  handle_missing_values: true
+  
+  # Data validation
+  validate_price_range: true
+  min_price: 3000  # COP
+  max_price: 5000  # COP
+  
+  # Time validation
+  validate_timestamps: true
+  expected_interval_minutes: 5
+  
+  # Volume validation
+  validate_volume: true
+  min_volume: 0
+
+# Error Handling
+error_handling:
+  # Continue on partial failures
+  continue_on_error: true
+  
+  # Save partial data
+  save_partial_data: true
+  
+  # Error reporting
+  detailed_error_logs: true
+  
+  # Fallback strategies
+  fallback_intervals:
+    - "15min"
+    - "1hour"
+    - "1day"
+
+# Performance Optimization
+performance:
+  # Parallel processing
+  max_workers: 1  # Keep at 1 due to API limits
+  
+  # Batch processing
+  batch_size: 1000
+  
+  # Memory management
+  chunk_size: 10000
+  
+  # Progress tracking
+  show_progress: true
+  progress_interval: 100
+
+# Quality Assurance
+quality:
+  # Data completeness check
+  check_completeness: true
+  expected_records_per_day: 288  # 24h * 12 (5min intervals)
+  
+  # Price anomaly detection
+  detect_price_anomalies: true
+  price_change_threshold: 0.1  # 10% change
+  
+  # Gap detection
+  detect_gaps: true
+  max_gap_minutes: 15
+  
+  # Data consistency
+  validate_ohlc_consistency: true
+
+# Backup and Recovery
+backup:
+  # Create backups before processing
+  create_backup: true
+  
+  # Backup location
+  backup_dir: "data/backup/twelve_data"
+  
+  # Backup retention
+  keep_backups: 7  # days
+  
+  # Recovery options
+  enable_recovery: true
+  recovery_file: "data/recovery/extraction_state.json"
