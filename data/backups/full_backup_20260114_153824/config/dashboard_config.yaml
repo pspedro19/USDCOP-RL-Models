@@ -1,0 +1,62 @@
+# Dashboard Configuration
+dashboard:
+  server:
+    host: "0.0.0.0"
+    port: 8050
+    debug: false
+    reload: true
+    
+  layout:
+    theme: "dark"
+    primary_color: "#1f77b4"
+    secondary_color: "#ff7f0e"
+    background_color: "#1e1e1e"
+    text_color: "#ffffff"
+    
+  components:
+    health_monitor:
+      enabled: true
+      refresh_interval: 30  # seconds
+      show_system_metrics: true
+      show_trading_metrics: true
+      
+    charts:
+      candlestick:
+        enabled: true
+        timeframe_selector: true
+        technical_indicators: true
+        volume: true
+        
+      equity_curve:
+        enabled: true
+        show_drawdown: true
+        show_sharpe: true
+        show_max_dd: true
+        
+      performance_metrics:
+        enabled: true
+        show_returns: true
+        show_volatility: true
+        show_win_rate: true
+        
+    alerts:
+      enabled: true
+      sound_notifications: false
+      email_notifications: false
+      slack_notifications: false
+      
+  data_refresh:
+    real_time: true
+    refresh_interval: 5  # seconds
+    max_data_points: 1000
+    
+  security:
+    authentication: false
+    rate_limiting: true
+    max_requests_per_minute: 60
+    
+  export:
+    pdf_reports: true
+    csv_data: true
+    excel_reports: true
+    chart_images: true

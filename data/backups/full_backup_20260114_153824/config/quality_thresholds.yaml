@@ -1,0 +1,53 @@
+# Data Quality Thresholds Configuration
+quality:
+  bronze_to_silver:
+    completeness: 0.90
+    consistency: 0.85
+    integrity: 0.95
+    timeliness: 0.80
+    
+  silver_to_gold:
+    completeness: 0.98
+    consistency: 0.95
+    integrity: 0.99
+    timeliness: 0.95
+    accuracy: 0.97
+    
+  validation_rules:
+    ohlc:
+      open_positive: true
+      high_ge_open: true
+      high_ge_close: true
+      low_le_open: true
+      low_le_close: true
+      close_positive: true
+      
+    volume:
+      volume_positive: true
+      volume_reasonable: true
+      
+    gaps:
+      max_gap_minutes: 60
+      gap_fill_method: "brownian_bridge"
+      
+    outliers:
+      price_outlier_threshold: 3.0  # Standard deviations
+      volume_outlier_threshold: 5.0
+      
+  scoring_weights:
+    completeness: 0.25
+    consistency: 0.25
+    integrity: 0.20
+    timeliness: 0.15
+    accuracy: 0.15
+    
+  alerts:
+    critical_threshold: 0.80
+    warning_threshold: 0.90
+    info_threshold: 0.95
+    
+  reporting:
+    daily_report: true
+    weekly_summary: true
+    monthly_analysis: true
+    quality_dashboard: true

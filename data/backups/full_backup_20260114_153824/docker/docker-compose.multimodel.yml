@@ -1,0 +1,139 @@
+# ================================================
+# Docker Compose Override for Multi-Model Configuration
+# ================================================
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.multimodel.yml up
+#
+# This override file provides:
+# - Enhanced multi-model configuration
+# - Additional environment variables for ML inference
+# - Model registry integration
+# - Redis streams for real-time signals
+# ================================================
+
+version: '3.8'
+
+services:
+  # ================================================
+  # Enhanced Redis for Streams
+  # ================================================
+  redis:
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --notify-keyspace-events KEA
+      --tcp-keepalive 300
+      --timeout 0
+
+  # ================================================
+  # Enhanced Trading API Multi-Model
+  # ================================================
+  trading-api-multimodel:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.trading-api
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Redis with streams
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_STREAMS_ENABLED=true
+      # Model Configuration
+      - MODEL_STORAGE_PATH=/models
+      - MODEL_REGISTRY_ENABLED=true
+      - PRODUCTION_MODEL_ID=${PRODUCTION_MODEL_ID:-ppo_v19}
+      - FEATURE_CONFIG_PATH=/app/config/features/feature_registry_v19.json
+      # Inference Settings
+      - INFERENCE_BATCH_SIZE=32
+      - INFERENCE_TIMEOUT_MS=1000
+      - MODEL_CACHE_TTL=3600
+      # CORS
+      - CORS_ORIGINS=http://localhost:5000,http://localhost:3001,http://localhost:3000
+      # Logging
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+    volumes:
+      - ./models:/models:ro
+      - ./config:/app/config:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # ================================================
+  # Enhanced Airflow Scheduler for Multi-Model
+  # ================================================
+  airflow-scheduler:
+    environment:
+      # Multi-Model Configuration
+      - MODEL_REGISTRY_ENABLED=true
+      - REDIS_STREAMS_ENABLED=true
+      - MODEL_STORAGE_PATH=/opt/airflow/models
+      - FEATURE_CONFIG_PATH=/opt/airflow/config/features/feature_registry_v19.json
+      - PRODUCTION_MODEL_ID=${PRODUCTION_MODEL_ID:-ppo_v19}
+      # MLflow Integration
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+
+  # ================================================
+  # Enhanced Airflow Webserver for Multi-Model
+  # ================================================
+  airflow-webserver:
+    environment:
+      # Multi-Model Configuration
+      - MODEL_REGISTRY_ENABLED=true
+      - REDIS_STREAMS_ENABLED=true
+      - MODEL_STORAGE_PATH=/opt/airflow/models
+      - FEATURE_CONFIG_PATH=/opt/airflow/config/features/feature_registry_v19.json
+      - PRODUCTION_MODEL_ID=${PRODUCTION_MODEL_ID:-ppo_v19}
+      # MLflow Integration
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+
+  # ================================================
+  # Enhanced Dashboard with Multi-Model API
+  # ================================================
+  dashboard:
+    environment:
+      - NEXT_PUBLIC_MULTIMODEL_API_URL=http://trading-api-multimodel:8000
+      - MULTIMODEL_API_URL=http://trading-api-multimodel:8000
+      - MODEL_REGISTRY_ENABLED=true
+    depends_on:
+      - trading-api-multimodel
+
+  # ================================================
+  # MLflow with Enhanced Configuration
+  # ================================================
+  mlflow:
+    environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+      - AWS_DEFAULT_REGION=us-east-1
+      - MLFLOW_TRACKING_INSECURE_TLS=true
+
+networks:
+  usdcop-trading-network:
+    driver: bridge
+
+volumes:
+  models_data:
+    driver: local

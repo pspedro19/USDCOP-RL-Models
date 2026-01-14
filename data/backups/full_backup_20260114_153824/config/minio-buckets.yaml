@@ -1,0 +1,343 @@
+# MLOps Bucket Configuration for USDCOP Trading System
+# =====================================================
+# Infrastructure-as-Code for MinIO Bucket Management
+# This configuration automatically provisions and manages all required buckets
+
+metadata:
+  version: "v1.0.0"
+  description: "USDCOP Trading System Bucket Configuration"
+  owner: "MLOps Team"
+  created: "2025-09-11"
+  last_updated: "2025-09-11"
+  environment: "production"
+
+# Global MinIO Configuration
+minio_config:
+  endpoint: "${MINIO_ENDPOINT:-localhost:9000}"
+  access_key: "${MINIO_ACCESS_KEY:-minioadmin}"
+  secret_key: "${MINIO_SECRET_KEY:-minioadmin123}"
+  secure: false
+  region: "us-east-1"
+  
+# Bucket Groups by Data Layer
+bucket_groups:
+  
+  # ===============================
+  # L0: Raw Data Acquisition Layer
+  # ===============================
+  l0_raw_data:
+    description: "Raw market data from external sources"
+    naming_pattern: "00-raw-{market}-{source}"
+    retention_days: 90
+    versioning: true
+    lifecycle_rules:
+      - delete_incomplete_uploads: 7
+      - transition_to_ia: 30
+    buckets:
+      - name: "00-raw-usdcop-marketdata"
+        description: "Raw USDCOP market data from MT5 and TwelveData"
+        tags:
+          layer: "L0"
+          data_type: "market_data"
+          source: "external_apis"
+          classification: "raw"
+        paths:
+          mt5: "source=mt5/market=usdcop/timeframe={timeframe}/date={date}/"
+          twelvedata: "source=twelvedata/market=usdcop/timeframe={timeframe}/date={date}/"
+          cache: "_cache/source={source}/date={date}/"
+          control: "_control/date={date}/run_id={run_id}/"
+
+  # ===============================
+  # L1: Standardization Layer
+  # ===============================
+  l1_standardized:
+    description: "Standardized and normalized data"
+    naming_pattern: "01-l1-ds-{market}-standardize"
+    retention_days: 60
+    versioning: true
+    buckets:
+      - name: "01-l1-ds-usdcop-standardize"
+        description: "UTC-normalized USDCOP data with session classification"
+        tags:
+          layer: "L1"
+          data_type: "standardized"
+          timezone: "utc"
+          classification: "processed"
+        paths:
+          data: "market=usdcop/timeframe={timeframe}/date={date}/session={session}/run_id={run_id}/"
+          schemas: "_schemas/version={version}/"
+          control: "_control/date={date}/run_id={run_id}/"
+
+  # ===============================
+  # L2: Data Preparation Layer
+  # ===============================
+  l2_prepared:
+    description: "Cleaned and prepared data ready for feature engineering"
+    naming_pattern: "02-l2-ds-{market}-prepare"
+    retention_days: 45
+    versioning: true
+    buckets:
+      - name: "02-l2-ds-usdcop-prepare"
+        description: "Cleaned USDCOP data with anomaly detection and premium session filtering"
+        tags:
+          layer: "L2"
+          data_type: "prepared"
+          quality: "cleaned"
+          classification: "analytics_ready"
+        paths:
+          cleaned: "process=clean/market=usdcop/timeframe={timeframe}/date={date}/run_id={run_id}/"
+          premium: "process=premium_filter/market=usdcop/timeframe={timeframe}/session=premium/date={date}/run_id={run_id}/"
+          quality: "_quality/process={process}/date={date}/run_id={run_id}/"
+          control: "_control/process={process}/date={date}/run_id={run_id}/"
+
+  # ===============================
+  # L3: Feature Engineering Layer
+  # ===============================
+  l3_features:
+    description: "Engineered features for machine learning"
+    naming_pattern: "03-l3-ds-{market}-feature"
+    retention_days: 30
+    versioning: true
+    buckets:
+      - name: "03-l3-ds-usdcop-feature"
+        description: "Technical indicators and microstructure features"
+        tags:
+          layer: "L3"
+          data_type: "features"
+          feature_set: "v1"
+          classification: "ml_input"
+        paths:
+          features: "market=usdcop/timeframe={timeframe}/feature_set={version}/date={date}/run_id={run_id}/"
+          specs: "_specs/feature_set={version}/"
+          control: "_control/feature_set={version}/date={date}/run_id={run_id}/"
+
+  # ===============================
+  # L4: ML-Ready Data Layer
+  # ===============================
+  l4_ml_ready:
+    description: "Train/validation/test datasets ready for ML training"
+    naming_pattern: "04-l4-ds-{market}-mlready"
+    retention_days: 60
+    versioning: true
+    buckets:
+      - name: "04-l4-ds-usdcop-rlready"
+        description: "ML-ready datasets with proper splits and scaling"
+        tags:
+          layer: "L4"
+          data_type: "ml_ready"
+          split_strategy: "time_series"
+          classification: "training_data"
+        paths:
+          datasets: "market=usdcop/timeframe={timeframe}/version={version}/run_id={run_id}/"
+          scalers: "market=usdcop/timeframe={timeframe}/version={version}/run_id={run_id}/scalers/"
+          schemas: "_schemas/version={version}/"
+          control: "_control/version={version}/run_id={run_id}/"
+
+  # ===============================
+  # L5: Serving Layer
+  # ===============================
+  l5_serving:
+    description: "Model predictions and serving artifacts"
+    naming_pattern: "05-l5-ds-{market}-serving"
+    retention_days: 30
+    versioning: true
+    buckets:
+      - name: "05-l5-ds-usdcop-serving"
+        description: "Real-time predictions and batch inference results"
+        tags:
+          layer: "L5"
+          data_type: "predictions"
+          inference_type: "batch"
+          classification: "serving_output"
+        paths:
+          predictions: "market=usdcop/timeframe={timeframe}/date={date}/run_id={run_id}/"
+          exports: "exports/market=usdcop/timeframe={timeframe}/date={date}/"
+          dashboards: "dashboards/market=usdcop/timeframe={timeframe}/date={date}/"
+          control: "_control/date={date}/run_id={run_id}/"
+
+  # ===============================
+  # L6: Backtesting Layer (New)
+  # ===============================
+  l6_backtest:
+    description: "Backtesting results and performance analysis"
+    naming_pattern: "usdcop-l6-backtest"
+    retention_days: 90
+    versioning: true
+    buckets:
+      - name: "usdcop-l6-backtest"
+        description: "RL model backtesting results and performance metrics"
+        tags:
+          layer: "L6"
+          data_type: "backtest_results"
+          strategy_type: "rl_ppo"
+          classification: "performance_analysis"
+        paths:
+          results: "strategy={strategy}/period={period}/run_id={run_id}/"
+          reports: "reports/strategy={strategy}/period={period}/"
+          artifacts: "artifacts/strategy={strategy}/model_version={version}/"
+          control: "_control/strategy={strategy}/run_id={run_id}/"
+
+  # ===============================
+  # Common/Shared Buckets
+  # ===============================
+  common_shared:
+    description: "Shared artifacts and common resources"
+    naming_pattern: "99-common-{purpose}"
+    retention_days: 180
+    versioning: true
+    buckets:
+      - name: "99-common-trading-models"
+        description: "Trained ML models and artifacts"
+        tags:
+          layer: "COMMON"
+          data_type: "models"
+          model_type: "rl_trading"
+          classification: "ml_artifacts"
+        paths:
+          models: "model_type={type}/version={version}/run_id={run_id}/"
+          checkpoints: "checkpoints/model_type={type}/version={version}/"
+          metadata: "_metadata/model_type={type}/version={version}/"
+          
+      - name: "99-common-trading-reports"
+        description: "Performance reports and analytics"
+        tags:
+          layer: "COMMON"
+          data_type: "reports"
+          report_type: "performance"
+          classification: "analytics"
+        paths:
+          daily: "type=daily/date={date}/"
+          weekly: "type=weekly/week={week}/"
+          monthly: "type=monthly/month={month}/"
+          adhoc: "type=adhoc/run_id={run_id}/"
+          
+      - name: "99-common-trading-backups"
+        description: "System backups and disaster recovery"
+        tags:
+          layer: "COMMON"
+          data_type: "backups"
+          backup_type: "system"
+          classification: "backup"
+        paths:
+          daily: "type=daily/date={date}/"
+          weekly: "type=weekly/week={week}/"
+          emergency: "type=emergency/timestamp={timestamp}/"
+
+  # ===============================
+  # MLOps Infrastructure Buckets
+  # ===============================
+  mlops_infrastructure:
+    description: "MLOps platform buckets"
+    naming_pattern: "{service}-{environment}"
+    retention_days: 90
+    versioning: true
+    buckets:
+      - name: "mlflow"
+        description: "MLflow experiment tracking and model registry"
+        tags:
+          service: "mlflow"
+          data_type: "experiments"
+          classification: "mlops"
+        
+      - name: "airflow"
+        description: "Airflow logs and DAG artifacts"
+        tags:
+          service: "airflow"
+          data_type: "logs"
+          classification: "orchestration"
+
+# Bucket Policies and Permissions
+bucket_policies:
+  default_policy:
+    version: "2012-10-17"
+    statements:
+      - effect: "Allow"
+        principal: {"AWS": "*"}
+        actions:
+          - "s3:GetBucketLocation"
+          - "s3:ListBucket"
+          - "s3:GetObject"
+          - "s3:PutObject"
+          - "s3:DeleteObject"
+        resources:
+          - "arn:aws:s3:::{bucket_name}"
+          - "arn:aws:s3:::{bucket_name}/*"
+          
+  read_only_policy:
+    version: "2012-10-17"
+    statements:
+      - effect: "Allow"
+        principal: {"AWS": "*"}
+        actions:
+          - "s3:GetBucketLocation"
+          - "s3:ListBucket"
+          - "s3:GetObject"
+        resources:
+          - "arn:aws:s3:::{bucket_name}"
+          - "arn:aws:s3:::{bucket_name}/*"
+
+# Lifecycle Management
+lifecycle_policies:
+  default_lifecycle:
+    rules:
+      - id: "delete_incomplete_uploads"
+        status: "Enabled"
+        abort_incomplete_multipart_upload:
+          days_after_initiation: 7
+          
+      - id: "transition_old_versions"
+        status: "Enabled"
+        noncurrent_version_transitions:
+          - days: 30
+            storage_class: "STANDARD_IA"
+          - days: 90
+            storage_class: "GLACIER"
+            
+      - id: "cleanup_old_data"
+        status: "Enabled"
+        expiration:
+          days: 365
+
+# Monitoring and Alerting
+monitoring:
+  metrics:
+    - bucket_size_growth
+    - object_count_growth
+    - failed_uploads
+    - access_patterns
+    
+  alerts:
+    - name: "bucket_size_threshold"
+      condition: "bucket_size > 50GB"
+      action: "notification"
+      
+    - name: "failed_upload_rate"
+      condition: "failed_uploads > 5% over 1h"
+      action: "alert"
+
+# Backup and Disaster Recovery
+backup_config:
+  enable_cross_region_replication: false
+  backup_schedule: "daily"
+  retention_policy: "7_days_daily_30_days_weekly"
+  exclude_buckets:
+    - "airflow"  # Logs can be regenerated
+
+# Environment-specific Overrides
+environments:
+  development:
+    minio_config:
+      endpoint: "localhost:9000"
+    retention_days_override: 7
+    
+  staging:
+    minio_config:
+      endpoint: "staging-minio:9000"
+    retention_days_override: 14
+    
+  production:
+    minio_config:
+      endpoint: "prod-minio:9000"
+    backup_config:
+      enable_cross_region_replication: true
+      retention_policy: "30_days_daily_12_months_weekly"

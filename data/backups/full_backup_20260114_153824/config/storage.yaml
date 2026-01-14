@@ -1,0 +1,216 @@
+# ==========================================
+# STORAGE REGISTRY - USDCOP Trading System
+# ==========================================
+# Define WHERE each pipeline layer (L0-L6) stores data
+# Backend: postgres (transactional/operational) vs s3 (analytical/features)
+
+layers:
+  # L0: Raw data acquisition (OHLCV from TwelveData/MT5)
+  l0:
+    backend: postgres
+    table: market_data
+    description: "Raw OHLCV 5-minute bars"
+    retention: permanent
+    indexes:
+      - market_data_datetime
+      - market_data_symbol_datetime
+    quality_table: data_quality_checks
+
+  # L0 Quality Reports (stored in MinIO for analysis)
+  l0_quality:
+    backend: s3
+    bucket: usdcop
+    prefix: l0/quality
+    description: "L0 quality reports (coverage, gaps, OHLC violations)"
+    file_format: parquet
+
+  # L1: Standardized data (timezone aligned, holiday filtered)
+  l1:
+    backend: s3
+    bucket: usdcop
+    prefix: l1
+    description: "Standardized data: UTC timezone, session classification"
+    file_format: parquet
+    metadata_files:
+      - standardized_data_accepted.parquet
+      - standardized_data_rejected.parquet
+      - metadata.json
+
+  # L2: Prepared data (winsorized, deseasonalized, premium hours only)
+  l2:
+    backend: s3
+    bucket: usdcop
+    prefix: l2
+    description: "Cleaned data: winsorization, HOD deseasonalization, 60+ indicators"
+    file_format: parquet
+    variants:
+      strict: data_premium_strict.parquet
+      flex: data_premium_flex.parquet
+    metadata_files:
+      - hod_baselines.json
+      - winsor_stats.json
+      - metadata.json
+
+  # L3: Features (technical indicators, anti-leakage validated)
+  l3:
+    backend: s3
+    bucket: usdcop
+    prefix: l3
+    description: "30 engineered features with Forward IC validation"
+    file_format: parquet
+    metadata_files:
+      - features.parquet
+      - feature_specs.json
+      - ic_validation.json
+      - metadata.json
+
+  # L4: RL-Ready dataset (normalized, train/val/test splits)
+  l4:
+    backend: s3
+    bucket: usdcop
+    prefix: l4
+    description: "RL-ready episodes: 17 observations, splits, quality gates"
+    file_format: parquet
+    metadata_files:
+      - replay_dataset.parquet
+      - env_spec.json
+      - reward_spec.json
+      - split_spec.json
+      - obs_clip_rates.json
+      - metadata.json
+
+  # L5: Model serving (trained models, ONNX exports, validation metrics)
+  l5:
+    backend: s3
+    bucket: usdcop
+    prefix: l5
+    description: "Production models: ONNX format, latency validated"
+    file_format: onnx
+    metadata_files:
+      - model.onnx
+      - model_manifest.json
+      - metrics_summary.json
+      - training_config.json
+      - metadata.json
+
+  # L6: Backtest results (performance metrics, equity curves)
+  l6:
+    backend: s3
+    bucket: usdcop
+    prefix: l6
+    description: "Backtest results: hedge-fund grade metrics, net of costs"
+    file_format: parquet
+    metadata_files:
+      - trades.parquet
+      - returns.parquet
+      - kpis.json
+      - equity_curve.json
+      - metadata.json
+    fallback:
+      backend: postgres
+      table: l6_backtest_results
+      description: "Optional DB storage for quick queries"
+
+# ==========================================
+# STORAGE BACKENDS CONFIGURATION
+# ==========================================
+backends:
+  postgres:
+    connection_string: "${POSTGRES_URL}"
+    pool_size: 5
+    max_overflow: 10
+    pool_pre_ping: true
+    pool_recycle: 3600
+
+  s3:
+    endpoint_url: "${S3_ENDPOINT}"  # http://minio:9000 or AWS endpoint
+    access_key_id: "${S3_KEY}"
+    secret_access_key: "${S3_SECRET}"
+    region: us-east-1
+    signature_version: s3v4
+
+# ==========================================
+# MANIFEST CONFIGURATION
+# ==========================================
+manifests:
+  enabled: true
+  location: s3
+  bucket: usdcop
+  prefix: _meta
+  files:
+    run: "run.json"           # {run_id, dataset_hash, started_at, completed_at, files[]}
+    latest: "latest.json"     # Pointer to most recent valid run_id
+
+  # Manifest schema
+  schema:
+    run_id: "YYYY-MM-DD or unique identifier"
+    dataset_hash: "SHA-256 hash of dataset"
+    started_at: "ISO 8601 timestamp"
+    completed_at: "ISO 8601 timestamp"
+    status: "success|failed|running"
+    layer: "l0|l1|l2|l3|l4|l5|l6"
+    files:
+      - name: "filename.parquet"
+        path: "l4/2025-10-20/filename.parquet"
+        size_bytes: 12345
+        row_count: 1000
+        checksum: "sha256:abc123..."
+
+# ==========================================
+# DATA RETENTION POLICIES
+# ==========================================
+retention:
+  l0: permanent              # Raw OHLCV data
+  l1: 180_days              # Standardized data
+  l2: 90_days               # Prepared data
+  l3: 90_days               # Features
+  l4: 365_days              # RL datasets
+  l5: permanent             # Models
+  l6: permanent             # Backtest results
+
+  # Metadata
+  manifests: 365_days
+  quality_reports: 90_days
+  pipeline_logs: 30_days
+
+# ==========================================
+# QUALITY GATES (GO/NO-GO criteria)
+# ==========================================
+quality_gates:
+  l0:
+    coverage_pct: ">= 95"
+    ohlc_violations: "== 0"
+    duplicates: "== 0"
+    stale_rate_pct: "<= 2"
+    gaps_gt1: "== 0"
+
+  l1:
+    grid_300s_pct: ">= 99"
+    timezone_correct: "== 100"
+    holiday_filtered: true
+
+  l2:
+    winsor_rate_pct: "<= 1.0"
+    hod_mad_range: "[0.8, 1.2]"
+    hod_median_abs: "<= 0.05"
+    nan_rate_pct: "<= 0.5"
+
+  l3:
+    forward_ic_max: "<= 0.10"  # Leakage detection
+    feature_count: ">= 30"
+    correlation_max: "<= 0.95"
+
+  l4:
+    obs_clip_rate_pct: "<= 0.5"
+    reward_rmse: "< 0.01"
+    reward_std: "> 0.1"
+    reward_zero_pct: "< 1.0"
+
+  l5:
+    latency_p99_ms: "<= 20"
+    model_size_mb: "<= 50"
+
+  l6:
+    sortino: ">= 1.3"
+    calmar: ">= 0.8"
+    trades_min: ">= 100"
