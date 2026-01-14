@@ -229,11 +229,11 @@ class DemoTradeGenerator:
             if is_winner:
                 wins += 1
                 # Winners: use avg_win_pct with some variance
-                pnl_pct = target_avg_win * (0.5 + random.random())  # 50-150% of avg
+                pnl_pct = target_avg_win * (0.7 + random.random() * 0.6)  # 70-130% of avg
 
-                # Some big winners
-                if random.random() < 0.15:
-                    pnl_pct *= 2.5  # Occasional big win
+                # Some big winners (reduced frequency and size)
+                if random.random() < 0.08:
+                    pnl_pct *= 1.8  # Occasional bigger win
 
                 if side == "short":
                     exit_price = entry_price * (1 - pnl_pct)
@@ -242,11 +242,11 @@ class DemoTradeGenerator:
             else:
                 losses += 1
                 # Losers: use avg_loss_pct with variance
-                pnl_pct = -target_avg_loss * (0.5 + random.random())
+                pnl_pct = -target_avg_loss * (0.7 + random.random() * 0.6)
 
-                # Rare big loss (controlled)
-                if random.random() < 0.05:
-                    pnl_pct *= 2.0
+                # Occasional bigger loss (for realistic drawdowns)
+                if random.random() < 0.08:
+                    pnl_pct *= 2.2  # Bigger losses for realistic DD
 
                 if side == "short":
                     exit_price = entry_price * (1 - pnl_pct)
