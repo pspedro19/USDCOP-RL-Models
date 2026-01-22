@@ -1,0 +1,183 @@
+# =============================================================================
+# Seed Data Configuration v2.0
+# =============================================================================
+# Single Source of Truth para datos de inicialización del proyecto.
+#
+# Este archivo define:
+#   - Dónde buscar los seeds (MinIO, local, fallback)
+#   - Qué tablas son críticas para restaurar
+#   - Configuración de backups automatizados
+#
+# Contract: CTR-SEED-CONFIG-001
+# Version: 2.0.0
+# =============================================================================
+
+version: "2.0"
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+storage:
+  # Primary: MinIO (S3-compatible)
+  type: minio
+  endpoint: ${MINIO_ENDPOINT:-minio:9000}
+  bucket: seeds
+  access_key: ${AWS_ACCESS_KEY_ID:-minioadmin}
+  secret_key: ${AWS_SECRET_ACCESS_KEY:-minioadmin123}
+  use_ssl: false
+  region: us-east-1
+
+# =============================================================================
+# SEED SOURCES (Priority Order)
+# =============================================================================
+# El sistema intenta cada fuente en orden hasta encontrar datos válidos.
+#
+# Priority:
+#   1. MinIO/S3 (primary) - Versionado, compartido entre servidores
+#   2. Local DVC (fallback_1) - Si dvc pull funcionó
+#   3. Local legacy (fallback_2) - Backups históricos
+#
+sources:
+  # ---------------------------------------------------------------------------
+  # OHLCV - Precios USD/COP 5 minutos
+  # ---------------------------------------------------------------------------
+  ohlcv:
+    table: usdcop_m5_ohlcv
+    description: "USD/COP 5-minute OHLCV data"
+    required: true
+
+    # Fuentes en orden de prioridad
+    primary:
+      type: minio
+      path: seeds/latest/usdcop_m5_ohlcv.parquet
+      format: parquet
+
+    fallback:
+      - type: local
+        path: seeds/latest/usdcop_m5_ohlcv.parquet
+        format: parquet
+      - type: local
+        path: data/backups/usdcop_m5_ohlcv_*.csv.gz
+        format: csv.gz
+        glob: true
+
+    # Validación post-carga
+    validation:
+      min_rows: 50000
+      required_columns:
+        - time
+        - symbol
+        - open
+        - high
+        - low
+        - close
+        - volume
+      date_column: time
+      max_null_ratio: 0.01
+
+  # ---------------------------------------------------------------------------
+  # MACRO - Indicadores macroeconómicos diarios
+  # ---------------------------------------------------------------------------
+  macro:
+    table: macro_indicators_daily
+    description: "Daily macroeconomic indicators (37+ columns)"
+    required: true
+
+    primary:
+      type: minio
+      path: seeds/latest/macro_indicators_daily.parquet
+      format: parquet
+
+    fallback:
+      - type: local
+        path: seeds/latest/macro_indicators_daily.parquet
+        format: parquet
+      - type: local
+        path: data/pipeline/05_resampling/output/MACRO_DAILY_CONSOLIDATED.csv
+        format: csv
+
+    validation:
+      min_rows: 5000
+      required_columns:
+        - fecha
+      date_column: fecha
+      max_null_ratio: 0.3  # Macro data has many nulls by design
+
+  # ---------------------------------------------------------------------------
+  # TRADES HISTORY - Historial de operaciones (opcional)
+  # ---------------------------------------------------------------------------
+  trades:
+    table: trades_history
+    description: "Historical trades for replay/analysis"
+    required: false
+
+    primary:
+      type: minio
+      path: seeds/latest/trades_history.parquet
+      format: parquet
+
+    fallback: []
+
+    validation:
+      min_rows: 0
+
+# =============================================================================
+# BACKUP CONFIGURATION
+# =============================================================================
+backup:
+  # DAG schedule (cron format)
+  schedule: "0 2 * * 0"  # Sundays 02:00 UTC
+
+  # Retention policy
+  retention:
+    count: 4           # Mantener 4 snapshots
+    min_age_days: 7    # No borrar snapshots < 7 días
+
+  # Export format
+  format: parquet
+  compression: snappy  # snappy | gzip | none
+
+  # Tables to backup
+  tables:
+    - usdcop_m5_ohlcv
+    - macro_indicators_daily
+    - trades_history
+
+  # Notification on failure
+  notify_on_failure: true
+  notification_email: ${ALERT_EMAIL:-}
+
+# =============================================================================
+# RESTORE BEHAVIOR
+# =============================================================================
+restore:
+  # Skip if table already has data
+  skip_if_not_empty: true
+
+  # Force overwrite (use with caution)
+  force_overwrite: false
+
+  # Batch size for inserts
+  batch_size: 10000
+
+  # Trigger backfill DAG after restore
+  trigger_backfill: true
+  backfill_dag_id: l0_ohlcv_backfill
+
+# =============================================================================
+# PATHS (for reference)
+# =============================================================================
+paths:
+  # MinIO paths
+  minio_seeds_bucket: seeds
+  minio_latest: seeds/latest/
+  minio_versioned: seeds/v{version}/
+
+  # Local paths (relative to project root)
+  local_seeds: seeds/
+  local_backups: data/backups/
+  local_pipeline: data/pipeline/05_resampling/output/
+
+  # Docker paths (inside containers)
+  docker_seeds: /opt/airflow/seeds/
+  docker_backups: /app/data/backups/

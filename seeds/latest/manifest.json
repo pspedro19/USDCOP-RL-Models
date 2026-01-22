@@ -1,0 +1,27 @@
+{
+  "version": "2026.01.22",
+  "created_at": "2026-01-22T15:40:12.805961Z",
+  "created_by": "backup_verification_script",
+  "tables": {
+    "usdcop_m5_ohlcv": {
+      "file": "usdcop_m5_ohlcv.parquet",
+      "rows": 91157,
+      "date_range": [
+        "2020-01-02",
+        "2026-01-15"
+      ],
+      "size_bytes": 2709756,
+      "sha256": "14e3a48509972f9a23812735a2eb5325589ab51eb870e94b697a2deacb819862"
+    },
+    "macro_indicators_daily": {
+      "file": "macro_indicators_daily.parquet",
+      "rows": 10759,
+      "date_range": [
+        "1954-07-31",
+        "2026-01-22"
+      ],
+      "size_bytes": 257413,
+      "sha256": "aed8e8949e5b05996d08d7b0f47cb2db0d17616044e17ff518259996d919e70f"
+    }
+  }
+}
