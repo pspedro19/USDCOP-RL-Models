@@ -16,6 +16,32 @@ volumes:
   airflow_plugins:
   prometheus_data:
   grafana_data:
+  vault_data:
+  loki_data:
+  alertmanager_data:
+
+# Docker Secrets Configuration
+# ============================
+# Secrets are loaded from ./secrets/ directory
+# Each service can mount secrets at /run/secrets/<secret_name>
+# Use POSTGRES_PASSWORD_FILE instead of POSTGRES_PASSWORD for enhanced security
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  minio_secret_key:
+    file: ./secrets/minio_secret_key.txt
+  airflow_password:
+    file: ./secrets/airflow_password.txt
+  airflow_fernet_key:
+    file: ./secrets/airflow_fernet_key.txt
+  airflow_secret_key:
+    file: ./secrets/airflow_secret_key.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt
+  pgadmin_password:
+    file: ./secrets/pgadmin_password.txt
 
 services:
   # Infrastructure Services
@@ -23,7 +49,6 @@ services:
     image: timescale/timescaledb:latest-pg15
     container_name: usdcop-postgres-timescale
     environment:
-      # SECURITY: No default values - all credentials must be in .env file
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -53,8 +78,8 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # Data Seeder Service - Loads initial data from backups on first startup
-  # Runs once after postgres is healthy, seeds OHLCV and macro data if tables are empty
+  # Data Seeder Service - Loads initial data from MinIO seeds on first startup
+  # Priority: 1) MinIO seeds/latest/ 2) Local seeds/ 3) Legacy data/backups/
   data-seeder:
     build:
       context: .
@@ -63,15 +88,23 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
+      # Database
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # MinIO (for seeds)
+      MINIO_ENDPOINT: minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     volumes:
       - ./data:/app/data:ro
       - ./init-scripts:/app/init-scripts:ro
+      - ./seeds:/app/seeds:ro
     networks:
       - usdcop-trading-network
     restart: "no"
@@ -79,9 +112,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: usdcop-redis
-    # SECURITY: No default password - must be set in .env file
-    # Streams configuration: appendonly for persistence, memory limits for LRU eviction
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     ports:
@@ -100,7 +133,6 @@ services:
     container_name: usdcop-minio
     command: server /data --console-address ":9001"
     environment:
-      # SECURITY: No default values - credentials must be in .env file
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
@@ -155,9 +187,12 @@ services:
       mc mb --ignore-existing minio/99-common-trading-backups &&
       echo 'Creating MLflow bucket...' &&
       mc mb --ignore-existing minio/mlflow &&
-      echo 'Setting bucket policies for public download access...' &&
-      mc anonymous set download minio/00-raw-usdcop-marketdata || true &&
-      mc anonymous set download minio/99-common-trading-reports || true &&
+      echo 'Setting bucket policies (MINIO-13: Disabled anonymous access for security)...' &&
+      echo 'SECURITY: Anonymous access disabled. Use authenticated access only.' &&
+      mc anonymous set none minio/00-raw-usdcop-marketdata || true &&
+      mc anonymous set none minio/99-common-trading-reports || true &&
+      mc anonymous set none minio/mlflow || true &&
+      mc anonymous set none minio/dvc-storage 2>/dev/null || true &&
       echo 'All buckets created successfully!' &&
       echo 'Final bucket list:' &&
       mc ls minio &&
@@ -212,6 +247,8 @@ services:
     depends_on:
       airflow-init:
         condition: service_completed_successfully
+      mlflow:
+        condition: service_healthy
     environment:
       # SECURITY: All credentials from .env - no defaults
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -268,6 +305,9 @@ services:
       MODEL_STORAGE_PATH: /opt/airflow/models
       FEATURE_CONFIG_PATH: /opt/airflow/config/features/feature_registry_v19.json
       PRODUCTION_MODEL_ID: ${PRODUCTION_MODEL_ID:-ppo_v1}
+      # MLflow Configuration for experiment tracking
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -353,6 +393,9 @@ services:
       MODEL_STORAGE_PATH: /opt/airflow/models
       FEATURE_CONFIG_PATH: /opt/airflow/config/features/feature_registry_v19.json
       PRODUCTION_MODEL_ID: ${PRODUCTION_MODEL_ID:-ppo_v1}
+      # MLflow Configuration for experiment tracking
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
@@ -605,11 +648,16 @@ services:
       context: ./usdcop-trading-dashboard
       dockerfile: Dockerfile.prod
     container_name: usdcop-dashboard
+    # HEALTH-14 FIX: Add dependencies on API services
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      trading-api:
+        condition: service_healthy
+      analytics-api:
+        condition: service_started
     environment:
       # SECURITY: All credentials from .env
       NODE_ENV: production
@@ -626,8 +674,9 @@ services:
       # Server-side API URLs (internal Docker network)
       TRADING_API_URL: http://usdcop-trading-api:8000
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
-      MULTI_MODEL_API_URL: http://usdcop-multi-model-api:8006
-      BACKTEST_API_URL: http://usdcop-multi-model-api:8006
+      # Consolidated: multi-model-api removed, using backtest-api for all model endpoints
+      MULTI_MODEL_API_URL: http://usdcop-backtest-api:8000
+      BACKTEST_API_URL: http://usdcop-backtest-api:8000
       ML_ANALYTICS_URL: http://usdcop-analytics-api:8001
       # Inference service (server-side uses Docker hostname for replay API)
       INFERENCE_SERVICE_URL: http://usdcop-mlops-inference:8090
@@ -681,12 +730,28 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
     environment:
       # SECURITY: Credentials from .env
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      # Database connection for TimescaleDB datasource
+      GF_DATABASE_TYPE: postgres
+      # Provisioning paths
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      # Enable anonymous access for read-only dashboards (optional)
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Timezone
+      GF_DEFAULT_TIMEZONE: America/Bogota
     volumes:
       - grafana_data:/var/lib/grafana
+      # Provisioning configuration
+      - ./config/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./config/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./config/grafana/dashboards:/etc/grafana/dashboards:ro
     ports:
       - "3002:3000"
     networks:
@@ -712,6 +777,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # P1 Security: Resource limits to prevent DoS
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     environment:
       # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
@@ -750,6 +824,15 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # P1 Security: Resource limits to prevent DoS
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
     environment:
       # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
@@ -888,90 +971,56 @@ services:
   #     retries: 3
   #     start_period: 40s
 
-  # Multi-Model Trading API - RL + ML + LLM Strategies
-  multi-model-api:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.api
-      args:
-        APP_FILE: multi_model_trading_api.py
-        PORT: 8006
-    container_name: usdcop-multi-model-api
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      # SECURITY: All credentials from .env
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "8006:8006"
-    networks:
-      usdcop-trading-network:
-        aliases:
-          - multi-model-api
-          - usdcop-multi-model-api
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8006/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # REMOVED: Multi-Model Trading API (port 8006)
+  # Reason: Functionality consolidated into backtest-api (port 8003)
+  # backtest-api has all model/trade endpoints needed
+  # Original file: services/trading_models_api.py
+  # Date removed: 2026-01-17
+  # multi-model-api:
+  #   build:
+  #     context: ./services
+  #     dockerfile: Dockerfile.api
+  #     args:
+  #       APP_FILE: trading_models_api.py
+  #       PORT: 8006
+  #   container_name: usdcop-multi-model-api
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '2.0'
+  #         memory: 4G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   environment:
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_PORT=5432
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #   ports:
+  #     - "8006:8006"
+  #   networks:
+  #     usdcop-trading-network:
+  #       aliases:
+  #         - multi-model-api
+  #         - usdcop-multi-model-api
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8006/api/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
-  # Trading API Multi-Model Backend - Production inference with RL/ML models
-  trading-api-multimodel:
-    build:
-      context: ./services
-      dockerfile: Dockerfile.api
-      args:
-        APP_FILE: multi_model_trading_api.py
-        PORT: 8000
-    container_name: usdcop-trading-api-multimodel
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      # SECURITY: All credentials from .env
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      # Model Configuration
-      - MODEL_STORAGE_PATH=/models
-      - MODEL_REGISTRY_ENABLED=${MODEL_REGISTRY_ENABLED:-true}
-      - PRODUCTION_MODEL_ID=${PRODUCTION_MODEL_ID:-ppo_v1}
-      - FEATURE_CONFIG_PATH=/app/config/features/feature_registry_v19.json
-      # CORS Configuration
-      - CORS_ORIGINS=http://localhost:5000,http://localhost:3001,http://localhost:3000
-    volumes:
-      - ./models:/models:ro
-      - ./config:/app/config:ro
-    ports:
-      - "8085:8000"
-    networks:
-      usdcop-trading-network:
-        aliases:
-          - trading-api-multimodel
-          - usdcop-trading-api-multimodel
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # REMOVED: trading-api-multimodel (port 8085)
+  # Reason: Redundant service running same code as multi-model-api
+  # Consolidated into multi-model-api service (port 8006)
+  # Archived to: archive/services-deprecated/multi_model_trading_api.py
+  # Date: 2026-01-17
 
   # REMOVED: Alpha Arena API - Not currently in use, conflicts with bi-api port 8007
   # Infrastructure exists (DB tables) but no DAGs populate data, no dashboard integration
@@ -1017,11 +1066,25 @@ services:
         APP_FILE: mlops/inference_api.py
         PORT: 8090
     container_name: usdcop-mlops-inference
+    # HEALTH-11, HEALTH-12 FIX: Add dependencies on MLflow and related services
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # P1 Security: Resource limits to prevent DoS
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     environment:
       # SECURITY: All credentials from .env
       - POSTGRES_HOST=postgres
@@ -1070,11 +1133,25 @@ services:
       context: .
       dockerfile: services/inference_api/Dockerfile
     container_name: usdcop-backtest-api
+    # HEALTH-11, HEALTH-12 FIX: Add dependencies on MLflow and related services
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # P1 Security: Resource limits to prevent DoS
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -1087,9 +1164,8 @@ services:
       - MODEL_PATH=/models
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      # INVESTOR_MODE: Set to 'true' for investor presentations with optimized metrics
-      # Switch between real backtest and demo mode without code changes
-      - INVESTOR_MODE=${INVESTOR_MODE:-false}
+      # Demo mode is now selected by model_id (investor_demo vs ppo_primary)
+      # No environment variable needed
     volumes:
       - ./models:/models:ro
       - ./config:/app/config:ro
@@ -1141,7 +1217,9 @@ services:
     networks:
       usdcop-trading-network:
         aliases:
+          - mlflow
           - trading-mlflow
+          - usdcop-mlflow
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -1149,6 +1227,156 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+
+  # ===========================================================================
+  # HashiCorp Vault - Secrets Management
+  # ===========================================================================
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: usdcop-vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_TOKEN:-devtoken}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      VAULT_LOG_LEVEL: info
+    volumes:
+      - vault_data:/vault/file
+      - ./config/vault:/vault/config:ro
+      - ./scripts/vault:/vault/scripts:ro
+    command: server -dev -dev-root-token-id=${VAULT_DEV_TOKEN:-devtoken}
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: usdcop-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_TOKEN:-devtoken}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1:-}
+    volumes:
+      - ./config/vault:/vault/config:ro
+      - ./scripts/vault:/vault/scripts:ro
+    entrypoint: /bin/sh
+    command: /vault/scripts/init_vault.sh
+    networks:
+      - usdcop-trading-network
+    restart: "no"
+
+  # ===========================================================================
+  # Jaeger - Distributed Tracing
+  # ===========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: usdcop-jaeger
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"     # Jaeger UI
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "4317:4317"       # OTLP gRPC
+      - "4318:4318"       # OTLP HTTP
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+      LOG_LEVEL: info
+      SPAN_STORAGE_TYPE: memory
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:14269/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Loki - Log Aggregation (like Prometheus but for logs)
+  # ===========================================================================
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: usdcop-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./config/loki:/etc/loki
+      - loki_data:/loki
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Promtail - Log Collection Agent
+  # ===========================================================================
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: usdcop-promtail
+    volumes:
+      - ./config/promtail:/etc/promtail
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # AlertManager - Alert Routing and Notifications
+  # ===========================================================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: usdcop-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager:/etc/alertmanager
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
 
   # REMOVED: Redundant service - Direct port access to services, nginx proxy not needed for current setup
   # nginx:

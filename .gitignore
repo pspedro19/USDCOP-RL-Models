@@ -79,7 +79,9 @@ docker-compose.override.yml
 # MLflow
 mlruns/
 mlflow.db
+mlflow_data/
 artifacts/
+mlartifacts/
 
 # MinIO
 minio_data/
@@ -111,13 +113,14 @@ trades/
 positions/
 
 # Secrets and credentials
-# NOTE: .env is ALLOWED for dev/test environment replication
-# For production, use proper secret management (Vault, AWS Secrets Manager)
-# .env  # COMMENTED OUT - allowing .env for project replication
+# SECURITY: .env files contain sensitive credentials and MUST NOT be tracked
+# Use .env.example as template for local setup
+.env
 .env.local
 .env.production
 .env.staging
-!.env
+.env.infrastructure
+# Templates are allowed (should contain placeholder values only)
 !.env.example
 !.env.multimodel.example
 !env.example
@@ -126,6 +129,12 @@ secrets.yaml
 *.key
 *.pem
 *.crt
+
+# Secrets directory - only allow templates and documentation
+secrets/*
+!secrets/.gitignore
+!secrets/secrets.template.txt
+!secrets/README.md
 
 # Testing
 .coverage
@@ -191,3 +200,28 @@ playwright/.cache/
 # Compiled outputs
 *.wasm
 *.map
+
+# =============================================================================
+# DVC (Data Version Control)
+# =============================================================================
+# DVC cache and temp files (managed in .dvc/.gitignore)
+# Keep dvc.lock and .dvc files tracked for reproducibility
+.dvc/cache/
+.dvc/tmp/
+.dvc/experiments/
+.dvc/run_cache/
+
+# DVC-tracked large files have .dvc pointer files
+# The actual data is stored in remote (MinIO/S3)
+# DO NOT ignore *.dvc files - they must be tracked!
+
+# =============================================================================
+# SEEDS (Database Initialization Data) - Tracked with Git LFS
+# =============================================================================
+# Seeds parquet files are tracked with Git LFS for automatic deployment
+# See .gitattributes for LFS configuration
+seeds/v*/
+!seeds/latest/
+!seeds/latest/*.parquet
+!seeds/latest/manifest.json
+!seeds/README.md
