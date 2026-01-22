@@ -1,6 +1,6 @@
 """
-DAG: v3.l0_ohlcv_backfill
-==========================
+DAG: l0_03_ohlcv_backfill
+=========================
 USD/COP Trading System - V3 Architecture
 Layer 0: OHLCV COMPREHENSIVE Gap Detection and Automatic Backfill
 
@@ -50,13 +50,14 @@ from typing import List, Dict, Tuple
 # =============================================================================
 
 from utils.dag_common import get_db_connection, load_feature_config
+from contracts.dag_registry import L0_OHLCV_BACKFILL
 
 CONFIG = load_feature_config(raise_on_error=False)
 OHLCV_CONFIG = CONFIG.get('sources', {}).get('ohlcv', {})
 TRADING_CONFIG = CONFIG.get('trading', {})
 MARKET_HOURS = TRADING_CONFIG.get('market_hours', {})
 
-DAG_ID = 'v3.l0_ohlcv_backfill'
+DAG_ID = L0_OHLCV_BACKFILL
 
 # Timezone settings (from config SSOT)
 TIMEZONE_STR = MARKET_HOURS.get('timezone', 'America/Bogota')

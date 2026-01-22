@@ -1,0 +1,32 @@
+# =============================================================================
+# Grafana Dashboard Provisioning - USDCOP Trading Platform
+# =============================================================================
+# Configures automatic dashboard provisioning from local JSON files.
+# Dashboards are loaded on Grafana startup and can be updated by modifying
+# the JSON files (if updateIntervalSeconds > 0).
+#
+# Dashboard Categories:
+#   - Trading Performance: P&L, win rate, Sharpe ratio, positions
+#   - MLOps Monitoring: Model inference, drift detection, predictions
+#   - System Health: Service status, resources, databases, pipelines
+#
+# Reference: https://grafana.com/docs/grafana/latest/administration/provisioning/
+# =============================================================================
+
+apiVersion: 1
+
+providers:
+  # ===========================================================================
+  # USDCOP Trading Dashboards
+  # ===========================================================================
+  - name: 'USDCOP Trading'
+    orgId: 1
+    folder: 'USDCOP Trading'
+    folderUid: 'usdcop-trading'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

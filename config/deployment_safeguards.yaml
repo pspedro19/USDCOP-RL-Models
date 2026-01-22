@@ -1,0 +1,297 @@
+# =============================================================================
+# DEPLOYMENT SAFEGUARDS - Production Safety Configuration
+# =============================================================================
+# This file defines rollback triggers, canary deployment settings, and
+# production monitoring thresholds.
+#
+# Author: Trading Team
+# Version: 1.0.0
+# Date: 2026-01-18
+# =============================================================================
+
+version: "1.0.0"
+last_updated: "2026-01-18"
+
+# =============================================================================
+# MODEL ROLLBACK CONFIGURATION
+# =============================================================================
+rollback:
+  enabled: true
+
+  # Automatic rollback triggers
+  triggers:
+    # Sharpe ratio degradation
+    - name: sharpe_degradation
+      metric: rolling_sharpe_7d
+      condition: "less_than"
+      threshold: 0.3
+      action: rollback_to_previous
+      alert_severity: critical
+      cooldown_hours: 24
+
+    # Maximum drawdown breach
+    - name: max_drawdown_breach
+      metric: max_drawdown_7d
+      condition: "greater_than"
+      threshold: 0.15  # 15%
+      action: pause_and_alert
+      alert_severity: critical
+      cooldown_hours: 12
+
+    # Win rate collapse
+    - name: win_rate_collapse
+      metric: rolling_win_rate_7d
+      condition: "less_than"
+      threshold: 0.35  # 35%
+      action: rollback_to_previous
+      alert_severity: high
+      cooldown_hours: 24
+
+    # Consecutive losses
+    - name: consecutive_losses
+      metric: consecutive_losing_trades
+      condition: "greater_than"
+      threshold: 10
+      action: pause_trading
+      alert_severity: high
+      cooldown_hours: 4
+
+    # Model divergence from shadow
+    - name: model_divergence
+      metric: shadow_divergence_rate
+      condition: "greater_than"
+      threshold: 0.30  # 30% disagreement
+      action: alert_only
+      alert_severity: medium
+      cooldown_hours: 6
+
+  # Fallback configuration
+  fallback:
+    # Strategy: 'previous' uses last known good model, 'baseline' uses baseline model
+    strategy: previous
+    # If no previous model available, use this baseline
+    baseline_model_path: models/baseline_ppo_v1/model.zip
+    # Maximum rollback depth (how many versions back to try)
+    max_rollback_depth: 3
+    # Minimum time model must run before becoming "known good"
+    min_stable_hours: 168  # 7 days
+
+  # State tracking
+  state_tracking:
+    enabled: true
+    table: model_deployment_state
+    track_fields:
+      - model_id
+      - model_version
+      - deployed_at
+      - status  # active, staged, rolled_back, deprecated
+      - rollback_reason
+      - performance_metrics
+
+# =============================================================================
+# CANARY DEPLOYMENT CONFIGURATION
+# =============================================================================
+canary:
+  enabled: true
+
+  # Deployment stages
+  stages:
+    # Stage 1: Shadow mode (no real trading)
+    - name: shadow
+      traffic_percent: 0  # 0% = shadow only, no real trades
+      duration_hours: 168  # 7 days
+      success_criteria:
+        min_sharpe: 0.4
+        max_drawdown: 0.12
+        min_agreement_with_champion: 0.60
+        min_trades_simulated: 50
+      on_failure: reject
+      on_success: promote_to_canary_10
+
+    # Stage 2: Canary 10%
+    - name: canary_10
+      traffic_percent: 10
+      duration_hours: 72  # 3 days
+      success_criteria:
+        min_sharpe: 0.5
+        max_drawdown: 0.10
+        min_win_rate: 0.40
+        min_trades: 20
+      on_failure: rollback_to_champion
+      on_success: promote_to_canary_50
+
+    # Stage 3: Canary 50%
+    - name: canary_50
+      traffic_percent: 50
+      duration_hours: 72  # 3 days
+      success_criteria:
+        min_sharpe: 0.5
+        max_drawdown: 0.10
+        min_win_rate: 0.42
+        min_trades: 50
+      on_failure: rollback_to_champion
+      on_success: promote_to_production
+
+    # Stage 4: Full production
+    - name: production
+      traffic_percent: 100
+      duration_hours: null  # Indefinite
+      success_criteria: null  # Monitored by rollback triggers
+      on_failure: trigger_rollback
+      on_success: null
+
+  # Traffic splitting method
+  traffic_splitting:
+    method: deterministic  # deterministic or random
+    # For deterministic: use trade_id % 100 < traffic_percent
+    # For random: use random.random() < traffic_percent / 100
+    seed: 42
+
+  # Promotion settings
+  promotion:
+    auto_promote: true
+    require_approval_for_production: false
+    notification_channels:
+      - slack
+      - email
+    approval_timeout_hours: 24
+
+# =============================================================================
+# DATA QUALITY GATES
+# =============================================================================
+data_quality:
+  # L2 → L3 validation thresholds
+  l2_to_l3_gate:
+    enabled: true
+    validations:
+      # NaN percentage threshold
+      max_nan_percentage: 0.05  # 5%
+
+      # Minimum row count
+      min_row_count: 100000
+
+      # Feature count must match contract
+      expected_feature_count: 15
+
+      # Date monotonicity (no future data leakage)
+      require_monotonic_dates: true
+
+      # Value range checks
+      feature_ranges:
+        rsi_9:
+          min: 0
+          max: 100
+        atr_pct:
+          min: 0
+          max: null  # No upper bound
+        adx_14:
+          min: 0
+          max: 100
+        log_ret_5m:
+          min: -0.10  # -10%
+          max: 0.10   # +10%
+
+      # Distribution checks (z-score bounds)
+      max_zscore: 10.0
+
+      # Duplicate timestamp check
+      allow_duplicate_timestamps: false
+
+    on_failure: block_training
+    alert_on_failure: true
+
+  # Real-time inference validation
+  inference_gate:
+    enabled: true
+    validations:
+      max_feature_zscore: 5.0  # Alert if feature > 5 sigma
+      require_all_features_present: true
+      max_inference_latency_ms: 100
+    on_failure: use_last_valid_observation
+
+# =============================================================================
+# PRODUCTION MONITORING
+# =============================================================================
+monitoring:
+  # Health check intervals
+  health_check_interval_seconds: 60
+
+  # Metrics to track
+  metrics:
+    - name: inference_latency_p99
+      threshold_ms: 100
+      alert_if_exceeded: true
+
+    - name: feature_drift_score
+      threshold: 0.3
+      alert_if_exceeded: true
+
+    - name: model_agreement_rate
+      threshold: 0.70
+      alert_if_below: true
+
+    - name: rolling_sharpe_24h
+      threshold: 0.0
+      alert_if_below: true
+
+  # Alerting
+  alerts:
+    channels:
+      slack:
+        enabled: true
+        webhook_url_env: SLACK_WEBHOOK_URL
+        mention_on_critical: "@trading-team"
+
+      email:
+        enabled: true
+        recipients_env: ALERT_EMAIL_RECIPIENTS
+        smtp_host_env: SMTP_HOST
+
+    # Alert aggregation
+    aggregation:
+      window_minutes: 15
+      max_alerts_per_window: 5
+
+  # Dashboard integration
+  dashboards:
+    grafana:
+      enabled: true
+      url_env: GRAFANA_URL
+
+    mlflow:
+      enabled: true
+      tracking_uri_env: MLFLOW_TRACKING_URI
+
+# =============================================================================
+# KILL SWITCH INTEGRATION
+# =============================================================================
+kill_switch:
+  # Integrate with existing risk manager
+  enabled: true
+
+  # Additional kill switch triggers
+  triggers:
+    # API errors
+    - name: api_error_rate
+      metric: api_error_rate_5m
+      threshold: 0.10  # 10% error rate
+      action: pause_trading
+
+    # Database connectivity
+    - name: db_connectivity
+      metric: db_connection_failures
+      threshold: 3  # 3 consecutive failures
+      action: pause_trading
+
+    # Model load failure
+    - name: model_load_failure
+      metric: model_load_errors
+      threshold: 1
+      action: use_fallback_model
+
+  # Manual override
+  manual_override:
+    enabled: true
+    api_endpoint: /api/v1/kill-switch
+    require_auth: true
+    audit_log: true

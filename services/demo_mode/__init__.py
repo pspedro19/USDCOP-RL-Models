@@ -15,6 +15,6 @@ Features:
 """
 
 from .trade_generator import DemoTradeGenerator
-from .config import DEMO_CONFIG, is_investor_mode
+from .config import DEMO_CONFIG, is_investor_mode, is_demo_model
 
-__all__ = ['DemoTradeGenerator', 'DEMO_CONFIG', 'is_investor_mode']
+__all__ = ['DemoTradeGenerator', 'DEMO_CONFIG', 'is_investor_mode', 'is_demo_model']

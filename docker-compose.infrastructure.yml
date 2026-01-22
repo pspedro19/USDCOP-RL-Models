@@ -1,0 +1,274 @@
+# =============================================================================
+# Infrastructure Services - Docker Compose Configuration
+# =============================================================================
+# Complete infrastructure stack for USDCOP Trading Platform:
+#   - HashiCorp Vault (Secrets Management)
+#   - Jaeger (Distributed Tracing)
+#   - Feast (Feature Store - Online Serving)
+#   - Enhanced Grafana (with Dashboard Provisioning)
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.infrastructure.yml up -d
+#
+# Author: Trading Team
+# Date: 2026-01-17
+# Version: 1.0.0
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # HashiCorp Vault - Secrets Management
+  # ===========================================================================
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: usdcop-vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    environment:
+      # Development mode configuration
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_TOKEN:-devtoken}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      VAULT_LOG_LEVEL: info
+    volumes:
+      - vault_data:/vault/file
+      - ./config/vault:/vault/config:ro
+      - ./scripts/vault:/vault/scripts:ro
+    # Production: Use proper storage backend, not dev mode
+    # command: server -config=/vault/config/vault-config.hcl
+    command: server -dev -dev-root-token-id=${VAULT_DEV_TOKEN:-devtoken}
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # Vault Initialization - Runs once to set up policies and secrets
+  vault-init:
+    image: hashicorp/vault:1.15
+    container_name: usdcop-vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_TOKEN:-devtoken}
+      # Pass credentials for migration
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1:-}
+      TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2:-}
+      TWELVEDATA_API_KEY_3: ${TWELVEDATA_API_KEY_3:-}
+      TWELVEDATA_API_KEY_4: ${TWELVEDATA_API_KEY_4:-}
+    volumes:
+      - ./config/vault:/vault/config:ro
+      - ./scripts/vault:/vault/scripts:ro
+    entrypoint: /bin/sh
+    command: /vault/scripts/init_vault.sh
+    networks:
+      - usdcop-trading-network
+    restart: "no"
+
+  # ===========================================================================
+  # Jaeger - Distributed Tracing
+  # ===========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: usdcop-jaeger
+    ports:
+      - "5775:5775/udp"   # Agent: accept zipkin.thrift over compact thrift protocol
+      - "6831:6831/udp"   # Agent: accept jaeger.thrift over compact thrift protocol
+      - "6832:6832/udp"   # Agent: accept jaeger.thrift over binary thrift protocol
+      - "5778:5778"       # Agent: serve configs
+      - "16686:16686"     # Query: UI
+      - "14250:14250"     # Collector: accept model.proto
+      - "14268:14268"     # Collector: accept jaeger.thrift directly from clients
+      - "14269:14269"     # Collector: admin port (health check)
+      - "4317:4317"       # OTLP gRPC receiver
+      - "4318:4318"       # OTLP HTTP receiver
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+      COLLECTOR_OTLP_ENABLED: "true"
+      LOG_LEVEL: info
+      # Memory storage for development (use Elasticsearch/Cassandra in production)
+      SPAN_STORAGE_TYPE: memory
+      # Sampling configuration
+      SAMPLING_STRATEGIES_FILE: /etc/jaeger/sampling.json
+    volumes:
+      - ./config/jaeger:/etc/jaeger:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:14269/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Feast Feature Server - Online Feature Serving
+  # ===========================================================================
+  feast-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.feast
+    container_name: usdcop-feast-server
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "6566:6566"  # Feast feature server port
+    environment:
+      FEAST_REPO_PATH: /app/feature_repo
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      LOG_LEVEL: INFO
+    volumes:
+      - ./feature_repo:/app/feature_repo:ro
+      - ./data/feast:/app/data/feast
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # Feast Materialization Job - Runs periodically via Airflow
+  # This is a one-off container for manual materialization
+  feast-materialize:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.feast
+    container_name: usdcop-feast-materialize
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      FEAST_REPO_PATH: /app/feature_repo
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./feature_repo:/app/feature_repo
+      - ./data/feast:/app/data/feast
+    entrypoint: ["feast", "-c", "/app/feature_repo", "materialize-incremental"]
+    command: ["$(date -I)"]
+    networks:
+      - usdcop-trading-network
+    profiles:
+      - tools  # Only run manually with --profile tools
+    restart: "no"
+
+  # ===========================================================================
+  # Enhanced Grafana with Dashboard Provisioning
+  # ===========================================================================
+  grafana-provisioned:
+    image: grafana/grafana:10.2.0
+    container_name: usdcop-grafana-provisioned
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    environment:
+      # Security
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      # Server
+      GF_SERVER_ROOT_URL: http://localhost:3003
+      GF_SERVER_HTTP_PORT: 3000
+      # Paths
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      # Features
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor tempoSearch tempoBackendSearch
+      # Plugins
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      # Anonymous access (for dashboards)
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Unified alerting
+      GF_UNIFIED_ALERTING_ENABLED: "true"
+      GF_ALERTING_ENABLED: "false"
+    volumes:
+      - grafana_provisioned_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3003:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # OpenTelemetry Collector (Optional - for advanced scenarios)
+  # ===========================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: usdcop-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./config/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4319:4317"   # OTLP gRPC receiver (different port to avoid conflict with Jaeger)
+      - "4320:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+    depends_on:
+      jaeger:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - usdcop-trading-network
+    profiles:
+      - full  # Only start with --profile full
+    restart: unless-stopped
+
+volumes:
+  vault_data:
+  grafana_provisioned_data:
+
+networks:
+  usdcop-trading-network:
+    external: true

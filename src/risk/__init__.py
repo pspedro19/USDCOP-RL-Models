@@ -6,12 +6,12 @@ Safety layer for USD/COP trading system.
 Provides kill switches, daily limits, and cooldown mechanisms
 to prevent catastrophic losses.
 
-Chain of Responsibility Pattern:
-- Individual risk checks (HoldSignalCheck, TradingHoursCheck, etc.)
-- RiskCheckChain orchestrator
+Design Patterns:
+- Chain of Responsibility: Individual risk checks
+- Command Pattern: Encapsulated risk operations with undo support
 
 Author: Trading Team
-Version: 2.0.0
+Version: 2.1.0
 Date: 2025-01-14
 """
 
@@ -31,6 +31,19 @@ from .checks import (
     RiskCheckChain,
 )
 
+# Command Pattern for risk operations
+from .commands import (
+    Command,
+    CommandResult,
+    CommandInvoker,
+    TriggerCircuitBreakerCommand,
+    SetCooldownCommand,
+    ClearCooldownCommand,
+    ResetKillSwitchCommand,
+    UpdateRiskLimitsCommand,
+    BlockTradingCommand,
+)
+
 __all__ = [
     # Legacy interface
     'RiskManager',
@@ -46,4 +59,14 @@ __all__ = [
     'ConsecutiveLossesCheck',
     'MaxTradesCheck',
     'RiskCheckChain',
+    # Command Pattern
+    'Command',
+    'CommandResult',
+    'CommandInvoker',
+    'TriggerCircuitBreakerCommand',
+    'SetCooldownCommand',
+    'ClearCooldownCommand',
+    'ResetKillSwitchCommand',
+    'UpdateRiskLimitsCommand',
+    'BlockTradingCommand',
 ]

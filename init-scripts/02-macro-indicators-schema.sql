@@ -81,7 +81,11 @@ CREATE TABLE IF NOT EXISTS macro_indicators_daily (
 
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- L0 DAG Required Fields (Data acquisition tracking)
+    release_date TIMESTAMP WITH TIME ZONE,          -- When data was released/published
+    ffilled_from_date DATE                          -- Source date for forward-filled values
 );
 
 -- Create indexes for efficient querying
@@ -110,6 +114,57 @@ SELECT * FROM macro_indicators_daily
 ORDER BY fecha DESC
 LIMIT 1;
 
+-- =============================================================================
+-- COMPATIBILITY VIEW: macro_daily_simple
+-- =============================================================================
+-- This view provides simple column names for backward compatibility and
+-- easier use in SQL queries. Maps long technical column names to short aliases.
+-- Used by inference features views and other components.
+
+CREATE OR REPLACE VIEW macro_daily_simple AS
+SELECT
+    fecha AS date,
+    -- FX and Indices
+    fxrt_index_dxy_usa_d_dxy AS dxy,
+    volt_vix_usa_d_vix AS vix,
+    fxrt_spot_usdmxn_mex_d_usdmxn AS usdmxn,
+    fxrt_spot_usdclp_chl_d_usdclp AS usdclp,
+    -- Country Risk
+    crsk_spread_embi_col_d_embi AS embi,
+    -- Commodities
+    comm_oil_brent_glb_d_brent AS brent,
+    comm_oil_wti_glb_d_wti AS wti,
+    comm_metal_gold_glb_d_gold AS gold,
+    comm_agri_coffee_glb_d_coffee AS coffee,
+    -- Bond Yields
+    finc_bond_yield2y_usa_d_dgs2 AS treasury_2y,
+    finc_bond_yield10y_usa_d_ust10y AS treasury_10y,
+    finc_bond_yield10y_col_d_col10y AS colombia_10y,
+    finc_bond_yield5y_col_d_col5y AS colombia_5y,
+    -- Policy Rates
+    polr_fed_funds_usa_m_fedfunds AS fedfunds,
+    polr_policy_rate_col_d_tpm AS colombia_rate,
+    polr_prime_rate_usa_d_prime AS prime_rate,
+    -- Colombia Local
+    eqty_index_colcap_col_d_colcap AS colcap,
+    finc_rate_ibr_overnight_col_d_ibr AS ibr,
+    -- Inflation
+    infl_cpi_all_usa_m_cpiaucsl AS us_cpi,
+    infl_cpi_total_col_m_ipccol AS col_cpi,
+    -- Other US
+    labr_unemployment_usa_m_unrate AS us_unemployment,
+    sent_consumer_usa_m_umcsent AS us_consumer_sentiment,
+    prod_industrial_usa_m_indpro AS us_industrial_production,
+    -- Balance of Payments
+    rsbp_reserves_international_col_m_resint AS col_reserves,
+    -- Metadata
+    created_at,
+    updated_at
+FROM macro_indicators_daily;
+
+COMMENT ON VIEW macro_daily_simple IS
+    'Simplified column names for macro_indicators_daily. Use for queries requiring short aliases.';
+
 -- Confirmation message
 DO $$
 BEGIN
@@ -119,6 +174,8 @@ BEGIN
     RAISE NOTICE '============================================================';
     RAISE NOTICE 'Table: macro_indicators_daily (37 macroeconomic columns)';
     RAISE NOTICE 'View: inference_macro_features (7 RL model features)';
+    RAISE NOTICE 'View: macro_daily_simple (simplified column names)';
+    RAISE NOTICE 'View: latest_macro (most recent row)';
     RAISE NOTICE 'Data Source: MACRO_DAILY_CONSOLIDATED.csv';
     RAISE NOTICE '============================================================';
     RAISE NOTICE '';

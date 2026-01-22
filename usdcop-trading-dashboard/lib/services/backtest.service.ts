@@ -12,6 +12,8 @@
  * - Factory Pattern: createBacktestRunner creates configured instances
  * - Observer Pattern: Event callbacks for progress updates
  * - Strategy Pattern: Different handling for progress vs result events
+ *
+ * SSOT: Date ranges and presets are imported from ssot.contract.ts
  */
 
 import {
@@ -21,7 +23,17 @@ import {
   BacktestProgressSchema,
   BacktestResultSchema,
   BacktestSSEEvent,
+  BacktestTradeEvent,
 } from '@/lib/contracts/backtest.contract';
+
+import {
+  PIPELINE_DATE_RANGES,
+  BACKTEST_PRESETS,
+  BACKTEST_PRESET_CONFIG,
+  getPresetDateRange,
+  getTestEndDate,
+  type BacktestPreset,
+} from '@/lib/contracts/ssot.contract';
 
 // ============================================================================
 // Configuration
@@ -47,6 +59,8 @@ export interface BacktestEventHandlers {
   onResult: (result: BacktestResult) => void;
   onError: (error: Error) => void;
   onConnectionChange?: (connected: boolean) => void;
+  /** Called for each trade as it's generated - enables real-time equity curve updates */
+  onTrade?: (trade: BacktestTradeEvent) => void;
 }
 
 export interface BacktestRunner {
@@ -101,6 +115,12 @@ function parseSSEEvent(data: string): BacktestSSEEvent | null {
         return { type: 'result', data: validated.data };
       }
       console.error('[BacktestService] Result validation failed:', validated.error);
+    }
+
+    if (parsed.type === 'trade') {
+      // Trade event for real-time equity curve updates
+      console.log(`[BacktestService] Trade received: ${parsed.data.side} @ ${parsed.data.entry_price}`);
+      return { type: 'trade', data: parsed.data as BacktestTradeEvent };
     }
 
     if (parsed.type === 'error') {
@@ -230,6 +250,10 @@ export function createBacktestRunner(
               switch (event.type) {
                 case 'progress':
                   handlers.onProgress(event.data as BacktestProgress);
+                  break;
+                case 'trade':
+                  // Real-time trade event for equity curve updates
+                  handlers.onTrade?.(event.data as BacktestTradeEvent);
                   break;
                 case 'result':
                   handlers.onResult(event.data as BacktestResult);
@@ -414,23 +438,11 @@ export interface PipelineDates {
 
 /**
  * Default date ranges (fallback if API fails)
- * These should match trading_config.yaml
+ * Uses SSOT values from ssot.contract.ts
+ *
+ * @deprecated Use PIPELINE_DATE_RANGES from ssot.contract.ts directly
  */
-export const BACKTEST_DATE_RANGES = {
-  // Data availability
-  DATA_START: '2020-03-01',
-
-  // Training period (model trained on full historical data)
-  TRAINING_START: '2020-03-01',
-  TRAINING_END: '2024-12-31',
-
-  // Validation period (used to tune hyperparameters)
-  VALIDATION_START: '2025-01-01',
-  VALIDATION_END: '2025-06-30',
-
-  // Test period (true out-of-sample)
-  TEST_START: '2025-07-01',
-} as const;
+export const BACKTEST_DATE_RANGES = PIPELINE_DATE_RANGES;
 
 /**
  * Fetch pipeline dates from API (reads from official config)
@@ -466,42 +478,21 @@ export function formatDateRange(startDate: string, endDate: string): string {
 
 /**
  * Get predefined date range presets for backtest
+ * Uses SSOT values from ssot.contract.ts
  * Simplified: Validación, Test, Ambos, Personalizado
  */
 export function getDateRangePresets(): DateRangePreset[] {
-  const today = new Date();
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
-  const todayStr = formatDate(today);
+  // Use SSOT preset list and config
+  return BACKTEST_PRESETS.map((presetId) => {
+    const config = BACKTEST_PRESET_CONFIG[presetId];
+    const dateRange = getPresetDateRange(presetId);
 
-  return [
-    {
-      id: 'validation',
-      label: 'Validación',
-      description: 'Ene - Jun 2025',
-      startDate: BACKTEST_DATE_RANGES.VALIDATION_START,
-      endDate: BACKTEST_DATE_RANGES.VALIDATION_END,
-    },
-    {
-      id: 'test',
-      label: 'Test',
-      description: 'Jul 2025 - Actual',
-      startDate: BACKTEST_DATE_RANGES.TEST_START,
-      endDate: todayStr,
-    },
-    {
-      id: 'both',
-      label: 'Ambos',
-      description: 'Validación + Test completo',
-      startDate: BACKTEST_DATE_RANGES.VALIDATION_START,
-      endDate: todayStr,
-    },
-    {
-      id: 'custom',
-      label: 'Personalizado',
-      description: 'Rango personalizado',
-      // Default to full range when custom is selected
-      startDate: BACKTEST_DATE_RANGES.VALIDATION_START,
-      endDate: todayStr,
-    },
-  ];
+    return {
+      id: presetId,
+      label: config.labelEs, // Use Spanish label
+      description: config.descriptionEs,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+    };
+  });
 }

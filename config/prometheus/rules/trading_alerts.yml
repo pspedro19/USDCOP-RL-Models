@@ -1,0 +1,512 @@
+# =============================================================================
+# Prometheus Alert Rules: USDCOP Trading Platform
+# =============================================================================
+# Comprehensive alert rules for monitoring the trading platform's health,
+# performance, and risk metrics.
+#
+# Alert Severities:
+#   - info: Informational, no action required
+#   - warning: May require attention, non-urgent
+#   - critical: Requires immediate attention, may impact trading
+#
+# Alert Categories:
+#   - Service Health: Service availability and health
+#   - Latency: Performance and response time
+#   - Data Quality: Market data integrity
+#   - Trading Risk: Risk management metrics
+#   - Infrastructure: System resources
+#
+# Reference: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+# =============================================================================
+
+groups:
+  # ===========================================================================
+  # Service Health Alerts
+  # ===========================================================================
+  - name: service_health
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: |
+            Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes.
+            This may impact trading operations.
+          runbook_url: "https://docs.example.com/runbooks/service-down"
+
+      - alert: TradingAPIDown
+        expr: absent(up{job="trading-api"}) or up{job="trading-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Trading API is unreachable"
+          description: |
+            The Trading API service is down or unreachable.
+            Trading signals cannot be generated. Immediate investigation required.
+
+      - alert: InferenceAPIDown
+        expr: absent(up{job="inference-api"}) or up{job="inference-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Inference API is unreachable"
+          description: |
+            The Inference API service is down or unreachable.
+            ML model predictions cannot be generated.
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          pg_stat_activity_count{state="active"}
+          /
+          pg_settings_max_connections
+          > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "PostgreSQL connection pool near capacity"
+          description: |
+            Database connection pool is at {{ $value | humanizePercentage }} capacity.
+            Consider increasing max_connections or optimizing queries.
+
+      - alert: RedisConnectionsFailing
+        expr: rate(redis_rejected_connections_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Redis rejecting connections"
+          description: |
+            Redis is rejecting connections. This may impact caching and real-time data.
+
+      - alert: HighRestartRate
+        expr: |
+          increase(container_restart_count[1h]) > 3
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Container {{ $labels.name }} restarting frequently"
+          description: |
+            Container {{ $labels.name }} has restarted {{ $value }} times in the last hour.
+            Check logs for errors.
+
+  # ===========================================================================
+  # Trading Operations Alerts
+  # ===========================================================================
+  - name: trading_operations
+    interval: 30s
+    rules:
+      - alert: NoTradingSignals
+        expr: |
+          rate(usdcop_trading_signals_total[15m]) == 0
+          and on() hour() >= 13 and hour() < 18
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "No trading signals generated during market hours"
+          description: |
+            No trading signals have been generated in the last 15 minutes
+            during active trading hours (08:00-13:00 EST / 13:00-18:00 UTC).
+            Check market data feed and inference service.
+
+      - alert: TradingSignalAnomalyHigh
+        expr: |
+          (
+            rate(usdcop_trading_signals_total{action="BUY"}[1h])
+            /
+            (rate(usdcop_trading_signals_total{action="BUY"}[1h]) + rate(usdcop_trading_signals_total{action="SELL"}[1h]))
+          ) > 0.8
+          or
+          (
+            rate(usdcop_trading_signals_total{action="SELL"}[1h])
+            /
+            (rate(usdcop_trading_signals_total{action="BUY"}[1h]) + rate(usdcop_trading_signals_total{action="SELL"}[1h]))
+          ) > 0.8
+        for: 30m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Unusual trading signal distribution"
+          description: |
+            More than 80% of trading signals are in one direction.
+            This may indicate model drift or market anomaly.
+
+      - alert: LowConfidenceSignals
+        expr: |
+          avg_over_time(usdcop_signal_confidence[30m]) < 0.5
+        for: 30m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Low average signal confidence"
+          description: |
+            Average signal confidence is {{ $value | humanizePercentage }} over the last 30 minutes.
+            Model may be uncertain. Consider reviewing market conditions.
+
+      - alert: ConsecutiveLossesExceeded
+        expr: usdcop_consecutive_losses >= 7
+        for: 0s
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "7+ consecutive losing trades"
+          description: |
+            {{ $value }} consecutive losing trades detected.
+            Risk management should consider pausing trading.
+
+      - alert: DailyLossLimitApproaching
+        expr: usdcop_daily_pnl < -0.015
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Approaching daily loss limit"
+          description: |
+            Daily P&L is {{ $value | humanizePercentage }}.
+            Loss limit is -2%. Consider reducing position sizes.
+
+      - alert: DailyLossLimitBreached
+        expr: usdcop_daily_pnl < -0.02
+        for: 0s
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Daily loss limit breached"
+          description: |
+            Daily P&L is {{ $value | humanizePercentage }}, exceeding -2% limit.
+            Trading should be halted per risk management policy.
+
+  # ===========================================================================
+  # Data Quality Alerts
+  # ===========================================================================
+  - name: data_quality
+    interval: 30s
+    rules:
+      - alert: MarketDataStale
+        expr: usdcop_data_freshness_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Market data is stale"
+          description: |
+            Latest market data is {{ $value | humanizeDuration }} old.
+            Expected: < 5 minutes during market hours.
+
+      - alert: MarketDataVeryStaleCritical
+        expr: usdcop_data_freshness_seconds > 900
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Market data severely outdated"
+          description: |
+            Market data is {{ $value | humanizeDuration }} old.
+            Trading with stale data is dangerous. Investigate immediately.
+
+      - alert: OHLCVDataGap
+        expr: |
+          (time() - usdcop_last_ohlcv_timestamp) > 600
+          and on() hour() >= 13 and hour() < 18
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Gap in OHLCV data"
+          description: |
+            No OHLCV data received for {{ $value | humanizeDuration }}.
+            Check TwelveData API connection and quotas.
+
+      - alert: HighNullRatioInFeatures
+        expr: usdcop_feature_null_ratio > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "High null ratio in features"
+          description: |
+            {{ $value | humanizePercentage }} of features contain null values.
+            This may impact model predictions.
+
+      - alert: FeatureValueOutOfRange
+        expr: |
+          usdcop_feature_zscore > 5 or usdcop_feature_zscore < -5
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Feature values out of expected range"
+          description: |
+            Feature {{ $labels.feature }} has z-score of {{ $value }}.
+            This may indicate data quality issues or market anomaly.
+
+      - alert: MacroDataMissing
+        expr: usdcop_macro_data_age_hours > 48
+        for: 1h
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Macro indicator data is outdated"
+          description: |
+            Macro economic data is {{ $value }} hours old.
+            FRED API may have issues. Some features may be using stale values.
+
+  # ===========================================================================
+  # Model Health Alerts
+  # ===========================================================================
+  - name: model_health
+    interval: 60s
+    rules:
+      - alert: NoModelsLoaded
+        expr: usdcop_active_models == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "No ML models loaded"
+          description: |
+            The inference service has no models loaded.
+            Trading signals cannot be generated.
+
+      - alert: ModelInferenceErrors
+        expr: |
+          rate(usdcop_model_inference_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Model inference errors detected"
+          description: |
+            Model inference error rate is {{ $value | humanize }}/s.
+            Check model compatibility and input data.
+
+      - alert: ModelDriftDetected
+        expr: usdcop_model_drift_score > 0.3
+        for: 1h
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Model drift detected"
+          description: |
+            Model drift score is {{ $value }}.
+            Model may need retraining to maintain accuracy.
+
+      - alert: ModelAccuracyDegraded
+        expr: |
+          usdcop_model_accuracy_rolling_7d < 0.45
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Model accuracy below threshold"
+          description: |
+            7-day rolling accuracy is {{ $value | humanizePercentage }}.
+            Model performance has degraded. Consider retraining.
+
+      - alert: FeatureCalculationFailures
+        expr: |
+          rate(usdcop_feature_calculation_errors_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Feature calculation errors"
+          description: |
+            Feature calculations are failing at {{ $value | humanize }}/s.
+            Check data pipeline and feature engineering code.
+
+  # ===========================================================================
+  # Infrastructure Alerts
+  # ===========================================================================
+  - name: infrastructure
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes{name=~"usdcop.*"}
+            /
+            container_spec_memory_limit_bytes{name=~"usdcop.*"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage in {{ $labels.name }}"
+          description: |
+            Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of memory limit.
+            Consider increasing memory limit or investigating memory leak.
+
+      - alert: HighCPUUsage
+        expr: |
+          rate(container_cpu_usage_seconds_total{name=~"usdcop.*"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage in {{ $labels.name }}"
+          description: |
+            Container {{ $labels.name }} CPU usage is {{ $value | humanizePercentage }}.
+            This may impact performance.
+
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"}
+            /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.15
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Disk space running low"
+          description: |
+            Only {{ $value | humanizePercentage }} disk space remaining.
+            Clean up old logs, data, or increase disk size.
+
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"}
+            /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.05
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+          pagerduty: "true"
+        annotations:
+          summary: "Disk space critically low"
+          description: |
+            Only {{ $value | humanizePercentage }} disk space remaining.
+            Services may fail. Immediate action required.
+
+      - alert: PostgresHighConnections
+        expr: |
+          pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High PostgreSQL connection count"
+          description: |
+            {{ $value }} active PostgreSQL connections.
+            Default max is usually 100. Investigate connection leaks.
+
+      - alert: RedisMemoryHigh
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Redis memory usage high"
+          description: |
+            Redis is using {{ $value | humanizePercentage }} of max memory.
+            LRU eviction may impact cache hit rate.
+
+  # ===========================================================================
+  # Airflow/Pipeline Alerts
+  # ===========================================================================
+  - name: pipeline_health
+    interval: 60s
+    rules:
+      - alert: AirflowDAGFailed
+        expr: |
+          increase(airflow_dag_run_failed_total[1h]) > 0
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Airflow DAG {{ $labels.dag_id }} failed"
+          description: |
+            DAG {{ $labels.dag_id }} has failed {{ $value }} times in the last hour.
+            Check Airflow logs for details.
+
+      - alert: AirflowSchedulerUnhealthy
+        expr: airflow_scheduler_heartbeat == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: trading
+          pagerduty: "true"
+        annotations:
+          summary: "Airflow scheduler is not running"
+          description: |
+            Airflow scheduler heartbeat not detected.
+            DAGs will not be triggered. Check scheduler logs.
+
+      - alert: L0PipelineDelayed
+        expr: |
+          (time() - usdcop_l0_pipeline_last_success_timestamp) > 7200
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "L0 OHLCV pipeline delayed"
+          description: |
+            L0 pipeline hasn't run successfully in {{ $value | humanizeDuration }}.
+            Market data may become stale.
+
+  # ===========================================================================
+  # Watchdog (Heartbeat Alert)
+  # ===========================================================================
+  - name: watchdog
+    rules:
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: "Alerting system is operational"
+          description: |
+            This is a watchdog alert that fires continuously to verify
+            the alerting pipeline is working. If this alert stops firing,
+            the alerting system itself may have issues.

@@ -11,11 +11,14 @@
  * - Position tracking
  * - WebSocket real-time updates
  * - Unified loading and error states
+ *
+ * SSOT: Default dates use PIPELINE_DATE_RANGES from ssot.contract.ts
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { TradingSignal, Position, CandlestickData } from '@/types/trading'
 import { createLogger } from '@/lib/utils/logger'
+import { PIPELINE_DATE_RANGES, getTestEndDate } from '@/lib/contracts/ssot.contract'
 
 const logger = createLogger('useIntegratedChart')
 
@@ -101,8 +104,9 @@ export function useIntegratedChart({
       setDataError(null)
 
       // Use filtered endpoint for better performance - excludes flat bars
-      const start = startDate || '2025-01-01'
-      const end = endDate || new Date().toISOString().split('T')[0]
+      // Use SSOT PIPELINE_DATE_RANGES for default dates
+      const start = startDate || PIPELINE_DATE_RANGES.VALIDATION_START
+      const end = endDate || getTestEndDate()
 
       const response = await fetch(
         `/api/market/candlesticks-filtered?start_date=${start}&end_date=${end}&limit=${limit}`

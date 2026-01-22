@@ -5,6 +5,8 @@
  * ==============
  * Provides global state for the selected trading model.
  * Model data comes from the API - NO hardcoded models here.
+ *
+ * SSOT: Uses values from ssot.contract.ts for colors and default dates
  */
 
 import React, {
@@ -17,6 +19,10 @@ import React, {
 } from 'react';
 import type { ModelConfig, ModelStatus } from '@/lib/config/models.config';
 import { modelRefreshIntervals } from '@/lib/config/models.config';
+import {
+  ALGORITHM_COLORS,
+  PIPELINE_DATE_RANGES,
+} from '@/lib/contracts/ssot.contract';
 
 // ============================================================================
 // Types
@@ -81,6 +87,7 @@ export function ModelProvider({ children, initialModelId }: ModelProviderProps) 
 
   // Default models when backend is unavailable
   // NOTE: These IDs MUST match the model_id values used by the inference service
+  // SSOT: Colors from ALGORITHM_COLORS, dates from PIPELINE_DATE_RANGES
   const defaultModels: ModelConfig[] = [
     {
       id: 'ppo_primary',  // Must match inference service model_id
@@ -89,7 +96,7 @@ export function ModelProvider({ children, initialModelId }: ModelProviderProps) 
       algorithm: 'PPO',
       status: 'production' as ModelStatus,
       version: 'current',
-      color: '#10B981',
+      color: ALGORITHM_COLORS.PPO, // SSOT color
       description: '15-feature model with macro indicators',
       isRealData: true,
       backtest: {
@@ -98,7 +105,11 @@ export function ModelProvider({ children, initialModelId }: ModelProviderProps) 
         winRate: 49.2,
         holdPercent: 0,
         totalTrades: 518,
-        dataRange: { start: '2025-01-01', end: '2025-03-31' },
+        // SSOT: Use pipeline date ranges
+        dataRange: {
+          start: PIPELINE_DATE_RANGES.VALIDATION_START,
+          end: PIPELINE_DATE_RANGES.VALIDATION_END,
+        },
       },
     },
   ];

@@ -28,12 +28,32 @@ from typing import Dict, Optional
 from pathlib import Path
 from ..config import get_settings, FEATURE_ORDER
 
+# Import from SSOT
+try:
+    from src.core.constants import OBSERVATION_DIM as SSOT_OBSERVATION_DIM
+except ImportError:
+    SSOT_OBSERVATION_DIM = 15  # Fallback for isolated testing
+
 # Import the SSOT adapter
 from .feature_adapter import (
     InferenceFeatureAdapter,
     FeatureCircuitBreakerError,
     FeatureCircuitBreakerConfig,
 )
+
+# Import Feast service for online feature serving (P1-3 remediation)
+try:
+    from src.feature_store.feast_service import (
+        FeastInferenceService,
+        create_feast_service,
+        FeastServiceError,
+    )
+    FEAST_SERVICE_AVAILABLE = True
+except ImportError:
+    FEAST_SERVICE_AVAILABLE = False
+    FeastInferenceService = None
+    create_feast_service = None
+    FeastServiceError = Exception
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -63,32 +83,61 @@ class ObservationBuilder:
     that RSI, ATR, and ADX use Wilder's EMA (alpha=1/period) to match
     the training data EXACTLY.
 
+    OPTIONAL FEAST INTEGRATION (P1-3 remediation):
+    When Feast is available, can use FeastInferenceService for low-latency
+    feature retrieval from Redis online store. Falls back to SSOT adapter.
+
     FAIL-FAST: This builder will raise NormStatsNotFoundError if
     the normalization statistics file is not found. This is intentional -
     using wrong defaults would produce incorrect predictions.
     """
 
-    # Class-level constant for observation dimension
-    OBSERVATION_DIM = 15
+    # Class-level constant from SSOT (src/core/constants.py)
+    OBSERVATION_DIM = SSOT_OBSERVATION_DIM
 
-    def __init__(self, norm_stats_path: Optional[Path] = None):
+    def __init__(
+        self,
+        norm_stats_path: Optional[Path] = None,
+        enable_feast: bool = True,
+        feast_repo_path: Optional[str] = None,
+    ):
         """
         Initialize ObservationBuilder.
 
         Args:
             norm_stats_path: Path to norm_stats JSON file.
                            If None, uses settings.full_norm_stats_path.
+            enable_feast: Enable Feast online store for feature retrieval.
+                         Falls back to SSOT adapter when Feast unavailable.
+            feast_repo_path: Optional path to Feast repository.
 
         Raises:
             NormStatsNotFoundError: If norm_stats file not found.
                                    NO DEFAULTS - this is intentional.
         """
-        # Initialize the SSOT adapter for feature calculations
+        # Initialize the SSOT adapter for feature calculations (always available)
         norm_path = str(norm_stats_path) if norm_stats_path else None
         try:
             self._adapter = InferenceFeatureAdapter(norm_stats_path=norm_path)
         except FileNotFoundError as e:
             raise NormStatsNotFoundError(str(e))
+
+        # Initialize Feast service if available and enabled (P1-3 remediation)
+        self._feast_service: Optional[FeastInferenceService] = None
+        self._feast_enabled = enable_feast and FEAST_SERVICE_AVAILABLE
+
+        if self._feast_enabled:
+            try:
+                self._feast_service = create_feast_service(
+                    feast_repo_path=feast_repo_path,
+                    fallback_norm_stats_path=norm_path,
+                    enable_metrics=True,
+                )
+                logger.info("Feast online store integration enabled")
+            except Exception as e:
+                logger.warning(f"Feast initialization failed, using SSOT adapter only: {e}")
+                self._feast_service = None
+                self._feast_enabled = False
 
         # Keep backward-compatible attributes
         self.norm_stats = self._adapter._norm_stats
@@ -96,7 +145,8 @@ class ObservationBuilder:
         self.clip_range = self._adapter.CLIP_RANGE
         logger.info(
             f"ObservationBuilder initialized with SSOT adapter "
-            f"({len(self.norm_stats)} features, Wilder's EMA enabled)"
+            f"({len(self.norm_stats)} features, Wilder's EMA enabled, "
+            f"Feast={self._feast_enabled})"
         )
 
     def _load_norm_stats_strict(self, path: Optional[Path] = None) -> Dict[str, Dict[str, float]]:
@@ -270,12 +320,17 @@ class ObservationBuilder:
         df: pd.DataFrame,
         bar_idx: int,
         position: float,
-        session_progress: float = 0.5
+        time_normalized: float = 0.5,
+        symbol: str = "USD/COP",
+        bar_id: Optional[str] = None,
+        use_feast: bool = True,
     ) -> np.ndarray:
         """
         Build complete 15-dimensional observation vector.
 
-        DELEGATES TO: InferenceFeatureAdapter.build_observation()
+        ARCHITECTURE (P1-3 remediation):
+        1. If Feast enabled and bar_id provided, try Feast online store first
+        2. If Feast fails or not available, delegate to SSOT adapter
 
         CRITICAL: Uses SSOT calculators with Wilder's EMA smoothing
         for RSI, ATR, and ADX to ensure PERFECT PARITY with training.
@@ -284,7 +339,11 @@ class ObservationBuilder:
             df: DataFrame with OHLCV and macro data
             bar_idx: Current bar index
             position: Current position (-1 to 1)
-            session_progress: Trading session progress (0 to 1)
+            time_normalized: Normalized trading session time (0 to 1)
+                            Maps to SSOT feature index 14 'time_normalized'
+            symbol: Trading symbol (default "USD/COP")
+            bar_id: Bar identifier for Feast lookup (e.g., "20250117_130500")
+            use_feast: Whether to try Feast first (default True)
 
         Returns:
             numpy array of shape (15,)
@@ -292,10 +351,42 @@ class ObservationBuilder:
         Raises:
             FeatureCircuitBreakerError: If data quality is too low (>20% NaN)
         """
+        # Try Feast first if enabled and bar_id provided
+        if use_feast and self._feast_service is not None and bar_id is not None:
+            try:
+                return self._feast_service.get_features(
+                    symbol=symbol,
+                    bar_id=bar_id,
+                    position=position,
+                    ohlcv_df=df,  # For fallback
+                    macro_df=df,  # For fallback
+                    bar_idx=bar_idx,  # For fallback
+                    time_normalized=time_normalized,
+                )
+            except Exception as e:
+                logger.debug(f"Feast retrieval failed, using adapter: {e}")
+
+        # Fall back to SSOT adapter
         return self._adapter.build_observation(
             df=df,
             bar_idx=bar_idx,
             position=position,
-            session_progress=session_progress,
+            time_normalized=time_normalized,
             check_circuit_breaker=True
         )
+
+    def get_feast_health(self) -> Dict:
+        """Get Feast service health status (P1-3 remediation)."""
+        if self._feast_service is None:
+            return {
+                "feast_enabled": False,
+                "feast_available": FEAST_SERVICE_AVAILABLE,
+                "status": "disabled",
+            }
+        return self._feast_service.health_check()
+
+    def get_feast_metrics(self) -> Dict:
+        """Get Feast service metrics (P1-3 remediation)."""
+        if self._feast_service is None:
+            return {"feast_enabled": False, "metrics_available": False}
+        return self._feast_service.get_metrics()

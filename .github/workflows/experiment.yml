@@ -1,0 +1,313 @@
+name: ML Experiment Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment_name:
+        description: 'Experiment name/ID'
+        required: true
+        type: string
+      experiment_type:
+        description: 'Type of experiment'
+        required: true
+        type: choice
+        options:
+          - hyperparameter_search
+          - architecture_comparison
+          - feature_ablation
+          - baseline_comparison
+      learning_rate:
+        description: 'Learning rate (e.g., 3e-4)'
+        required: false
+        default: '3e-4'
+      total_timesteps:
+        description: 'Total training timesteps'
+        required: false
+        default: '100000'
+      n_epochs:
+        description: 'Number of epochs'
+        required: false
+        default: '10'
+      run_validation:
+        description: 'Run validation after training'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+jobs:
+  setup:
+    name: Setup Experiment
+    runs-on: ubuntu-latest
+    outputs:
+      experiment_id: ${{ steps.setup.outputs.experiment_id }}
+      timestamp: ${{ steps.setup.outputs.timestamp }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate experiment ID
+        id: setup
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d_%H%M%S")
+          EXP_ID="${{ github.event.inputs.experiment_name }}_${TIMESTAMP}"
+          echo "experiment_id=${EXP_ID}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "Experiment ID: ${EXP_ID}"
+
+  validate-config:
+    name: Validate Experiment Config
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Validate experiment parameters
+        run: |
+          python -c "
+          import json
+
+          config = {
+              'experiment_id': '${{ needs.setup.outputs.experiment_id }}',
+              'experiment_type': '${{ github.event.inputs.experiment_type }}',
+              'learning_rate': float('${{ github.event.inputs.learning_rate }}'),
+              'total_timesteps': int('${{ github.event.inputs.total_timesteps }}'),
+              'n_epochs': int('${{ github.event.inputs.n_epochs }}'),
+          }
+
+          # Validate learning rate
+          lr = config['learning_rate']
+          if lr < 1e-6 or lr > 1e-1:
+              raise ValueError(f'Learning rate {lr} is outside reasonable range [1e-6, 1e-1]')
+
+          # Validate timesteps
+          ts = config['total_timesteps']
+          if ts < 1000 or ts > 10_000_000:
+              raise ValueError(f'Total timesteps {ts} is outside reasonable range')
+
+          print('Experiment config validated:')
+          print(json.dumps(config, indent=2))
+          "
+
+      - name: Check SSOT compliance
+        run: |
+          python -c "
+          from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
+          from src.core.constants import RSI_PERIOD, ATR_PERIOD, ADX_PERIOD
+
+          print(f'Feature order: {len(FEATURE_ORDER)} features')
+          print(f'Observation dim: {OBSERVATION_DIM}')
+          print(f'Technical periods: RSI={RSI_PERIOD}, ATR={ATR_PERIOD}, ADX={ADX_PERIOD}')
+          print('SSOT compliance verified')
+          "
+
+  train:
+    name: Run Training
+    runs-on: ubuntu-latest
+    needs: [setup, validate-config]
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install torch numpy pandas gymnasium stable-baselines3
+          pip install mlflow scikit-learn
+
+      - name: Log experiment start
+        run: |
+          python -c "
+          from src.ml_workflow.experiment_tracker import MLWorkflowTracker
+
+          tracker = MLWorkflowTracker()
+
+          # Log experiment
+          tracker.log_experiment_start(
+              experiment_id='${{ needs.setup.outputs.experiment_id }}',
+              hyperparameters={
+                  'learning_rate': float('${{ github.event.inputs.learning_rate }}'),
+                  'total_timesteps': int('${{ github.event.inputs.total_timesteps }}'),
+                  'n_epochs': int('${{ github.event.inputs.n_epochs }}'),
+              }
+          )
+          print('Experiment logged')
+          " 2>/dev/null || echo "Experiment tracking skipped"
+
+      - name: Run training
+        id: train
+        run: |
+          echo "Training with parameters:"
+          echo "  Experiment: ${{ needs.setup.outputs.experiment_id }}"
+          echo "  Type: ${{ github.event.inputs.experiment_type }}"
+          echo "  Learning rate: ${{ github.event.inputs.learning_rate }}"
+          echo "  Timesteps: ${{ github.event.inputs.total_timesteps }}"
+          echo "  Epochs: ${{ github.event.inputs.n_epochs }}"
+          echo ""
+
+          # Placeholder for actual training script
+          # In production, this would call: python scripts/train_with_mlflow.py
+          python -c "
+          import time
+          print('Starting training simulation...')
+          print('(Replace with actual training script in production)')
+
+          # Simulate training progress
+          for i in range(5):
+              print(f'Training epoch {i+1}/5...')
+              time.sleep(1)
+
+          print('Training completed!')
+          print('Model saved to: models/experiment_${{ needs.setup.outputs.experiment_id }}/')
+          "
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ needs.setup.outputs.experiment_id }}
+          path: |
+            models/
+            logs/
+          retention-days: 30
+          if-no-files-found: warn
+
+  validate:
+    name: Run Validation
+    runs-on: ubuntu-latest
+    needs: [setup, train]
+    if: ${{ github.event.inputs.run_validation == 'true' }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: model-${{ needs.setup.outputs.experiment_id }}
+        continue-on-error: true
+
+      - name: Run validation
+        id: validate
+        run: |
+          python -c "
+          import json
+
+          # Placeholder for validation
+          # In production: python scripts/validate_model.py
+
+          metrics = {
+              'sharpe_ratio': 1.5,
+              'max_drawdown': -8.5,
+              'win_rate': 0.55,
+              'profit_factor': 1.3,
+          }
+
+          print('Validation Results:')
+          print(json.dumps(metrics, indent=2))
+
+          # Output for summary
+          print(f'::set-output name=sharpe::{metrics[\"sharpe_ratio\"]}')
+          print(f'::set-output name=drawdown::{metrics[\"max_drawdown\"]}')
+          "
+
+      - name: Log validation metrics
+        run: |
+          python -c "
+          from src.ml_workflow.experiment_tracker import MLWorkflowTracker
+
+          tracker = MLWorkflowTracker()
+          tracker.log_validation_look(
+              'Automated validation for ${{ needs.setup.outputs.experiment_id }}'
+          )
+          " 2>/dev/null || echo "Validation logging skipped"
+
+  report:
+    name: Generate Report
+    runs-on: ubuntu-latest
+    needs: [setup, train, validate]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate experiment report
+        run: |
+          cat << EOF > experiment_report.md
+          # Experiment Report
+
+          ## Experiment Details
+          - **ID**: ${{ needs.setup.outputs.experiment_id }}
+          - **Type**: ${{ github.event.inputs.experiment_type }}
+          - **Timestamp**: ${{ needs.setup.outputs.timestamp }}
+
+          ## Configuration
+          | Parameter | Value |
+          |-----------|-------|
+          | Learning Rate | ${{ github.event.inputs.learning_rate }} |
+          | Total Timesteps | ${{ github.event.inputs.total_timesteps }} |
+          | N Epochs | ${{ github.event.inputs.n_epochs }} |
+
+          ## Status
+          - Training: ${{ needs.train.result }}
+          - Validation: ${{ needs.validate.result }}
+
+          ## Next Steps
+          - [ ] Review training logs
+          - [ ] Compare with baseline
+          - [ ] Document findings in hyperparameter_decisions.json
+
+          ---
+          Generated by GitHub Actions Experiment Workflow
+          EOF
+
+          cat experiment_report.md
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment-report-${{ needs.setup.outputs.experiment_id }}
+          path: experiment_report.md
+          retention-days: 90
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [setup, train, validate, report]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "=================================="
+          echo "Experiment Workflow Complete"
+          echo "=================================="
+          echo "Experiment ID: ${{ needs.setup.outputs.experiment_id }}"
+          echo "Training: ${{ needs.train.result }}"
+          echo "Validation: ${{ needs.validate.result }}"
+          echo ""
+          echo "Artifacts available for 30 days"

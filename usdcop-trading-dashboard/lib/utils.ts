@@ -23,3 +23,11 @@ export async function fetcher<T>(url: string): Promise<T> {
 
   return res.json()
 }
+
+/**
+ * Sleep utility for async delays
+ * @param ms - milliseconds to sleep
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}

@@ -34,7 +34,6 @@ Date: 2026-01-12
 from .features.builder import (
     FeatureBuilder,
     create_feature_builder,
-    load_norm_stats,
 )
 from .features.contract import (
     FeatureContract,
@@ -43,6 +42,7 @@ from .features.contract import (
     FEATURE_ORDER,
     OBSERVATION_DIM,
 )
+from .core.contracts.norm_stats_contract import load_norm_stats
 
 # =============================================================================
 # LEGACY IMPORTS (for backward compatibility - marked for deprecation)
@@ -51,10 +51,19 @@ from .core.services.feature_builder import (
     FeatureBuilder as FeatureBuilderLegacy,
     create_feature_builder as create_feature_builder_legacy,
 )
-from .core.services.feature_builder_refactored import (
-    FeatureBuilderRefactored,
-    create_feature_builder as create_feature_builder_refactored,
-)
+
+# SOLID refactored version (optional, Phase 6)
+# Note: FeatureBuilderRefactored is conditionally imported to avoid ImportError
+# if the module is not yet implemented
+try:
+    from .core.services.feature_builder_refactored import (
+        FeatureBuilderRefactored,
+        create_feature_builder as create_feature_builder_refactored,
+    )
+except ImportError:
+    # Module not implemented yet - provide stubs for backward compatibility
+    FeatureBuilderRefactored = None
+    create_feature_builder_refactored = None
 
 # Configuration
 from .shared.config_loader import ConfigLoader, get_config, load_feature_config
@@ -87,16 +96,26 @@ from .core.factories import (
     NormalizerFactory
 )
 
-# Calculators
-from .core.calculators import (
-    BaseFeatureCalculator,
-    RSICalculator,
-    ATRCalculator,
-    ADXCalculator,
-    ReturnsCalculator,
-    MacroZScoreCalculator,
-    MacroChangeCalculator
-)
+# Calculators (SSOT: use feature_store.calculators)
+try:
+    from .feature_store.calculators import (
+        BaseCalculator as BaseFeatureCalculator,
+        RSICalculator,
+        ATRPercentCalculator as ATRCalculator,
+        ADXCalculator,
+        LogReturnCalculator as ReturnsCalculator,
+        MacroZScoreCalculator,
+        MacroChangeCalculator,
+    )
+except ImportError:
+    # Fallback stubs if calculators module not available
+    BaseFeatureCalculator = None
+    RSICalculator = None
+    ATRCalculator = None
+    ADXCalculator = None
+    ReturnsCalculator = None
+    MacroZScoreCalculator = None
+    MacroChangeCalculator = None
 
 # Normalizers
 from .core.normalizers import (

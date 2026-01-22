@@ -20,14 +20,22 @@ Version: 1.0.0
 Created: 2025-01-12
 """
 
-import hashlib
 import json
 import logging
+import sys
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+
+# Add project root to path for SSOT imports
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# SSOT import for hash utilities
+from src.utils.hash_utils import compute_file_hash as _compute_file_hash_ssot, compute_json_hash as _compute_json_hash_ssot
 from typing import Any, Dict, List, Optional, Callable
 
 from airflow.models import BaseOperator
@@ -355,21 +363,14 @@ class BaseTrainingOperator(BaseOperator, ABC):
 
 
 # =============================================================================
-# HASH UTILITIES
+# HASH UTILITIES - Delegates to SSOT src.utils.hash_utils
 # =============================================================================
 
 def compute_file_hash(file_path: Path) -> str:
-    """Compute SHA256 hash of a file"""
-    sha256 = hashlib.sha256()
-    with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(8192), b''):
-            sha256.update(chunk)
-    return sha256.hexdigest()
+    """Compute SHA256 hash of a file. SSOT: Delegates to src.utils.hash_utils"""
+    return _compute_file_hash_ssot(file_path).full_hash
 
 
 def compute_json_hash(file_path: Path) -> str:
-    """Compute SHA256 hash of JSON content (normalized)"""
-    with open(file_path, 'r') as f:
-        data = json.load(f)
-    normalized = json.dumps(data, sort_keys=True, separators=(',', ':'))
-    return hashlib.sha256(normalized.encode()).hexdigest()
+    """Compute SHA256 hash of JSON content. SSOT: Delegates to src.utils.hash_utils"""
+    return _compute_json_hash_ssot(file_path).full_hash

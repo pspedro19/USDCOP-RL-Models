@@ -1,0 +1,312 @@
+# =============================================================================
+# Feast Feature Server Dockerfile
+# =============================================================================
+# Builds a Feast feature server for online feature serving.
+#
+# This Dockerfile builds a Feast server image that:
+# - Serves features via HTTP API for online feature retrieval
+# - Connects to Redis for online store
+# - Supports both development (file-based) and production (PostgreSQL) modes
+#
+# Architecture:
+#   Inference API ──> Feast Server ──> Redis Online Store
+#                         │
+#                         └──> PostgreSQL Offline Store (production)
+#
+# Usage:
+#   docker build -f docker/Dockerfile.feast -t usdcop-feast:latest .
+#   docker run -p 6566:6566 usdcop-feast:latest
+#
+# Author: Trading Team
+# Version: 2.0.0
+# Date: 2026-01-17
+# =============================================================================
+
+FROM python:3.11-slim
+
+# =============================================================================
+# METADATA
+# =============================================================================
+LABEL maintainer="USDCOP Trading Team"
+LABEL description="Feast Feature Store Server for real-time ML inference"
+LABEL version="2.0.0"
+
+# Build arguments
+ARG FEAST_VERSION=0.37.1
+
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV FEAST_REPO_PATH=/app/feature_repo
+ENV FEAST_SERVER_PORT=6566
+ENV LOG_LEVEL=INFO
+
+# Redis configuration (defaults, override via docker-compose or env)
+ENV REDIS_HOST=redis
+ENV REDIS_PORT=6379
+ENV REDIS_PASSWORD=""
+
+# PostgreSQL configuration (for production offline store)
+ENV POSTGRES_HOST=postgres
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_DB=trading
+ENV POSTGRES_USER=trading
+ENV POSTGRES_PASSWORD=""
+
+# =============================================================================
+# SYSTEM DEPENDENCIES
+# =============================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# =============================================================================
+# PYTHON DEPENDENCIES
+# =============================================================================
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install Feast and dependencies
+# feast[redis] includes Redis online store support
+# feast[postgres] includes PostgreSQL offline store support
+RUN pip install --no-cache-dir \
+    "feast[redis,postgres]==${FEAST_VERSION}" \
+    redis==5.0.1 \
+    psycopg2-binary==2.9.9 \
+    pandas==2.1.4 \
+    numpy==1.26.3 \
+    pyarrow==14.0.2 \
+    protobuf==4.25.1 \
+    grpcio==1.60.0 \
+    fastapi==0.109.0 \
+    uvicorn==0.27.0 \
+    httpx==0.26.0 \
+    pydantic==2.5.3
+
+# =============================================================================
+# APPLICATION FILES
+# =============================================================================
+
+# Copy feature repository
+COPY feature_repo /app/feature_repo
+
+# Create data directories
+RUN mkdir -p /app/data/feast
+
+# =============================================================================
+# HEALTH CHECK SCRIPT
+# =============================================================================
+RUN echo '#!/usr/bin/env python3\n\
+"""Health check for Feast server."""\n\
+import sys\n\
+try:\n\
+    import httpx\n\
+    response = httpx.get("http://localhost:6566/health", timeout=5.0)\n\
+    sys.exit(0 if response.status_code == 200 else 1)\n\
+except Exception:\n\
+    sys.exit(1)\n\
+' > /app/healthcheck.py && chmod +x /app/healthcheck.py
+
+# =============================================================================
+# STARTUP SCRIPT
+# =============================================================================
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+echo "=============================================="\n\
+echo "FEAST FEATURE STORE SERVER"\n\
+echo "=============================================="\n\
+echo "Repo Path: ${FEAST_REPO_PATH}"\n\
+echo "Server Port: ${FEAST_SERVER_PORT}"\n\
+echo "Redis: ${REDIS_HOST}:${REDIS_PORT}"\n\
+echo "=============================================="\n\
+\n\
+# Verify feature_store.yaml exists\n\
+if [ ! -f "${FEAST_REPO_PATH}/feature_store.yaml" ]; then\n\
+    echo "ERROR: feature_store.yaml not found at ${FEAST_REPO_PATH}"\n\
+    exit 1\n\
+fi\n\
+\n\
+# Apply feature definitions\n\
+echo "Applying feature definitions..."\n\
+cd ${FEAST_REPO_PATH}\n\
+feast apply || echo "Warning: feast apply failed (may be first run)"\n\
+\n\
+# Start Feast server\n\
+echo "Starting Feast server on port ${FEAST_SERVER_PORT}..."\n\
+feast serve -h 0.0.0.0 -p ${FEAST_SERVER_PORT}\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# =============================================================================
+# CUSTOM FEAST SERVER (with enhanced endpoints)
+# =============================================================================
+RUN cat > /app/feast_server.py << 'PYEOF'
+"""
+Custom Feast Server with enhanced endpoints.
+
+Provides:
+- /health - Health check endpoint
+- /metrics - Prometheus metrics
+- /features - Online feature retrieval
+- /v1/features/* - Standard Feast REST API
+"""
+import os
+import logging
+from typing import Dict, Any, Optional
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI
+app = FastAPI(
+    title="USDCOP Feast Server",
+    description="Feature Store for real-time trading inference",
+    version="2.0.0"
+)
+
+# Try to initialize Feast
+FEAST_AVAILABLE = False
+feast_store = None
+
+try:
+    from feast import FeatureStore
+    feast_repo_path = os.environ.get("FEAST_REPO_PATH", "/app/feature_repo")
+    feast_store = FeatureStore(repo_path=feast_repo_path)
+    FEAST_AVAILABLE = True
+    logger.info(f"Feast initialized from {feast_repo_path}")
+except Exception as e:
+    logger.error(f"Failed to initialize Feast: {e}")
+
+
+class FeatureRequest(BaseModel):
+    """Request model for feature retrieval."""
+    symbol: str
+    bar_id: str
+
+
+class HealthResponse(BaseModel):
+    """Response model for health check."""
+    status: str
+    feast_available: bool
+    redis_connected: bool = False
+    version: str = "2.0.0"
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint."""
+    redis_ok = False
+
+    if FEAST_AVAILABLE and feast_store:
+        try:
+            # Test Redis connection by getting feature service
+            feast_store.get_feature_service("observation_15d")
+            redis_ok = True
+        except Exception as e:
+            logger.warning(f"Redis check failed: {e}")
+
+    return HealthResponse(
+        status="healthy" if (FEAST_AVAILABLE and redis_ok) else "degraded",
+        feast_available=FEAST_AVAILABLE,
+        redis_connected=redis_ok
+    )
+
+
+@app.get("/metrics")
+async def get_metrics():
+    """Prometheus-compatible metrics endpoint."""
+    return {
+        "feast_server_up": 1 if FEAST_AVAILABLE else 0,
+        "feast_server_requests_total": 0,
+        "feast_server_feature_retrievals_total": 0,
+    }
+
+
+@app.post("/features")
+async def get_features(request: FeatureRequest):
+    """
+    Get features for a trading bar.
+
+    Returns 15-dimensional observation vector.
+    """
+    if not FEAST_AVAILABLE or not feast_store:
+        raise HTTPException(status_code=503, detail="Feast not available")
+
+    try:
+        # Get features from online store
+        features = feast_store.get_online_features(
+            features=feast_store.get_feature_service("observation_15d"),
+            entity_rows=[{"symbol": request.symbol, "bar_id": request.bar_id}]
+        ).to_dict()
+
+        return {
+            "symbol": request.symbol,
+            "bar_id": request.bar_id,
+            "features": features,
+        }
+
+    except Exception as e:
+        logger.error(f"Feature retrieval failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/feature-services")
+async def list_feature_services():
+    """List available feature services."""
+    if not FEAST_AVAILABLE or not feast_store:
+        raise HTTPException(status_code=503, detail="Feast not available")
+
+    try:
+        services = feast_store.list_feature_services()
+        return {
+            "feature_services": [
+                {
+                    "name": fs.name,
+                    "description": fs.description,
+                    "features": [f.name for f in fs.feature_view_projections],
+                }
+                for fs in services
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("FEAST_SERVER_PORT", 6566))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+PYEOF
+
+# =============================================================================
+# PORTS & HEALTH CHECK
+# =============================================================================
+EXPOSE 6566
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python /app/healthcheck.py || curl -f http://localhost:6566/health
+
+# =============================================================================
+# ENTRYPOINT
+# =============================================================================
+# Use custom server by default, or feast serve for standard behavior
+CMD ["python", "/app/feast_server.py"]
+
+# Alternative: Use standard Feast server
+# CMD ["/app/start.sh"]

@@ -1,0 +1,257 @@
+# =============================================================================
+# Promtail Configuration - Log Collection Agent
+# =============================================================================
+# Promtail is an agent that ships the contents of local logs to a Loki instance.
+# It is deployed to every machine that runs applications for which you want logs.
+#
+# Key Features:
+#   - Discovers targets (containers, pods, files)
+#   - Attaches labels to log streams
+#   - Pushes logs to Loki
+#   - Supports log parsing and transformation
+#
+# Reference: https://grafana.com/docs/loki/latest/clients/promtail/configuration/
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+# =============================================================================
+# Positions Configuration
+# =============================================================================
+# Tracks the position of each log file being read
+positions:
+  filename: /tmp/positions.yaml
+
+# =============================================================================
+# Clients Configuration
+# =============================================================================
+# Configures how Promtail connects to Loki
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: usdcop-trading
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+# =============================================================================
+# Scrape Configurations
+# =============================================================================
+# Defines what logs to collect and how to process them
+scrape_configs:
+  # ===========================================================================
+  # Docker Container Logs
+  # ===========================================================================
+  - job_name: docker_containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=usdcop-rl-models"]
+    relabel_configs:
+      # Keep only containers from our project
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/usdcop-(.*)'
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+      # Add environment label
+      - source_labels: []
+        target_label: 'environment'
+        replacement: 'production'
+      # Add team label for alerting
+      - source_labels: []
+        target_label: 'team'
+        replacement: 'trading'
+    pipeline_stages:
+      # ===========================================================================
+      # JSON Log Parsing (for structured logs from our Python services)
+      # ===========================================================================
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+            logger: logger
+            service: service
+            request_id: request_id
+            duration_ms: duration_ms
+            model_id: model_id
+            action: action
+            confidence: confidence
+        if: '{ "level": '
+
+      # Map log levels to standard labels
+      - labels:
+          level:
+          logger:
+          service:
+          request_id:
+
+      # ===========================================================================
+      # Metrics Extraction from Logs
+      # ===========================================================================
+      - metrics:
+          log_lines_total:
+            type: Counter
+            description: "Total number of log lines by level"
+            source: level
+            config:
+              action: inc
+              match_all: true
+
+      - metrics:
+          inference_duration_seconds:
+            type: Histogram
+            description: "Inference duration extracted from logs"
+            source: duration_ms
+            config:
+              match_all: false
+              buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5]
+        if: 'duration_ms'
+
+      # ===========================================================================
+      # Error Detection and Labeling
+      # ===========================================================================
+      - match:
+          selector: '{level="ERROR"} |~ "(?i)(exception|error|failed|failure)"'
+          stages:
+            - labels:
+                error_type: 'runtime_error'
+
+      - match:
+          selector: '{level="CRITICAL"}'
+          stages:
+            - labels:
+                alert: 'critical'
+
+  # ===========================================================================
+  # Trading-Specific Log Parsing
+  # ===========================================================================
+  - job_name: trading_signals
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/usdcop-(inference|backtest|mlops).*'
+        action: keep
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+    pipeline_stages:
+      # Parse trading signal logs
+      - json:
+          expressions:
+            action: action
+            confidence: confidence
+            model_id: model_id
+            symbol: symbol
+            timestamp: timestamp
+        if: '"action":'
+
+      - labels:
+          action:
+          model_id:
+          symbol:
+
+      # Track trading decisions
+      - metrics:
+          trading_signals_total:
+            type: Counter
+            description: "Total trading signals by action"
+            source: action
+            config:
+              action: inc
+              match_all: false
+
+  # ===========================================================================
+  # Airflow Logs
+  # ===========================================================================
+  - job_name: airflow_logs
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/usdcop-airflow.*'
+        action: keep
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: []
+        target_label: 'service'
+        replacement: 'airflow'
+    pipeline_stages:
+      # Parse Airflow log format
+      - regex:
+          expression: '^\[(?P<timestamp>[^\]]+)\]\s+\{(?P<dag_id>[^}]+)\}\s+(?P<level>[A-Z]+)\s+-\s+(?P<message>.*)$'
+
+      - labels:
+          level:
+          dag_id:
+
+      - timestamp:
+          source: timestamp
+          format: "2006-01-02T15:04:05.000000-07:00"
+
+  # ===========================================================================
+  # Database Logs (PostgreSQL/TimescaleDB)
+  # ===========================================================================
+  - job_name: postgres_logs
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/usdcop-postgres.*'
+        action: keep
+      - source_labels: []
+        target_label: 'service'
+        replacement: 'postgres'
+    pipeline_stages:
+      # Parse PostgreSQL log format
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+)\s+\[(?P<pid>\d+)\]\s+(?P<level>[A-Z]+):\s+(?P<message>.*)$'
+
+      - labels:
+          level:
+
+  # ===========================================================================
+  # Redis Logs
+  # ===========================================================================
+  - job_name: redis_logs
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/usdcop-redis.*'
+        action: keep
+      - source_labels: []
+        target_label: 'service'
+        replacement: 'redis'
+
+# =============================================================================
+# Target Configuration (Additional Static Targets)
+# =============================================================================
+# For log files not in Docker containers
+# Uncomment if you have local log files to scrape
+#
+# - job_name: local_logs
+#   static_configs:
+#     - targets:
+#         - localhost
+#       labels:
+#         job: trading_local
+#         __path__: /var/log/trading/*.log

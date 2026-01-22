@@ -1,0 +1,112 @@
+# =============================================================================
+# Storage Configuration
+# =============================================================================
+# MinIO-First ML Pipeline Architecture
+#
+# This file configures object storage for experiments and production.
+# Environment variables override these settings.
+#
+# Contract: CTR-STORAGE-CONFIG-001
+# =============================================================================
+
+# Backend type: minio, aws_s3, or local
+backend: minio
+
+# MinIO/S3 Connection Settings
+# Override with: MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+endpoint: localhost:9000
+access_key: minioadmin
+secret_key: minioadmin
+secure: false
+region: null
+
+# Bucket Configuration
+# Override with: EXPERIMENTS_BUCKET, PRODUCTION_BUCKET, DVC_BUCKET
+buckets:
+  # Experiment zone - fast iteration, A/B testing
+  # Structure: experiments/{exp_id}/datasets|models|backtests|comparisons/
+  experiments: experiments
+
+  # Production zone - deployed models only
+  # Structure: production/models/{model_id}/
+  production: production
+
+  # DVC storage - version controlled data
+  dvc: dvc-storage
+
+# =============================================================================
+# Bucket Structure Documentation
+# =============================================================================
+#
+# experiments/                           # Main experiment bucket
+# ├── {experiment_id}/
+# │   ├── datasets/
+# │   │   └── {version}/
+# │   │       ├── train.parquet
+# │   │       ├── norm_stats.json
+# │   │       └── manifest.json
+# │   ├── models/
+# │   │   └── {version}/
+# │   │       ├── policy.onnx
+# │   │       ├── policy.zip
+# │   │       ├── norm_stats.json
+# │   │       ├── config.yaml
+# │   │       └── lineage.json
+# │   ├── backtests/
+# │   │   └── {backtest_id}/
+# │   │       ├── result.json
+# │   │       ├── trades.parquet
+# │   │       └── equity_curve.parquet
+# │   └── comparisons/
+# │       └── {comparison_id}/
+# │           ├── ab_result.json
+# │           └── shadow_trades.parquet
+#
+# production/                            # Production models bucket
+# └── models/
+#     └── {model_id}/
+#         ├── policy.onnx
+#         ├── policy.zip
+#         ├── norm_stats.json
+#         ├── config.yaml
+#         └── metadata.json
+#
+# =============================================================================
+
+# Lifecycle and Retention Policies
+lifecycle:
+  # Experiment artifacts retention (days)
+  experiments:
+    datasets: 90    # Keep datasets for 90 days
+    models: 180     # Keep models for 180 days
+    backtests: 60   # Keep backtests for 60 days
+    comparisons: 60 # Keep comparisons for 60 days
+
+  # Production artifacts (no auto-deletion)
+  production:
+    models: -1      # Keep forever (manual cleanup only)
+
+# Performance Settings
+performance:
+  # Max concurrent uploads
+  max_concurrent_uploads: 4
+
+  # Multipart upload threshold (bytes)
+  multipart_threshold: 104857600  # 100 MB
+
+  # Multipart chunk size (bytes)
+  multipart_chunk_size: 10485760  # 10 MB
+
+  # Connection pool size
+  connection_pool_size: 10
+
+# Validation Settings
+validation:
+  # Verify content hash on download
+  verify_hash_on_download: true
+
+  # Maximum file size (bytes, 0 = unlimited)
+  max_file_size: 0
+
+  # Allowed content types (empty = all)
+  allowed_content_types: []

@@ -4,6 +4,14 @@ Build features for 2025 backtest.
 Populates inference_features_5m from OHLCV + Macro data.
 
 Usage: python scripts/build_2025_features.py
+
+SSOT COMPLIANCE:
+    - Technical indicator calculations delegated to src.feature_store.calculators (SSOT)
+    - Removed duplicate calculate_rsi(), calculate_atr_pct(), calculate_adx() functions
+    - Remediation Issue 2.3 applied: 2026-01-18
+
+Author: Trading Team
+Updated: 2026-01-18 (DRY Remediation)
 """
 
 import os
@@ -13,6 +21,26 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 import psycopg2
+
+# Add project root to path for SSOT imports
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# =============================================================================
+# SSOT IMPORTS - Use canonical calculators
+# =============================================================================
+# Issue 2.3 Remediation: Import from SSOT instead of duplicating functions
+try:
+    from src.feature_store.calculators import (
+        RSICalculator,
+        ATRPercentCalculator,
+        ADXCalculator,
+    )
+    from src.feature_store.calculators.base import FeatureSpec
+    SSOT_AVAILABLE = True
+except ImportError:
+    SSOT_AVAILABLE = False
+    print("WARNING: SSOT calculators not available, using legacy fallback")
 
 
 def get_connection():
@@ -26,61 +54,81 @@ def get_connection():
     )
 
 
+# =============================================================================
+# SSOT CALCULATOR WRAPPERS
+# =============================================================================
+# These wrappers use the canonical implementations from feature_store.calculators
+
 def calculate_rsi(prices: pd.Series, period: int = 9) -> pd.Series:
-    """Calculate RSI indicator."""
-    delta = prices.diff()
-    gain = delta.where(delta > 0, 0.0)
-    loss = -delta.where(delta < 0, 0.0)
+    """
+    Calculate RSI using SSOT RSICalculator.
 
-    avg_gain = gain.rolling(window=period, min_periods=period).mean()
-    avg_loss = loss.rolling(window=period, min_periods=period).mean()
-
-    rs = avg_gain / avg_loss.replace(0, np.inf)
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    SSOT: src.feature_store.calculators.RSICalculator
+    """
+    if SSOT_AVAILABLE:
+        spec = FeatureSpec(name=f"rsi_{period}", period=period)
+        calculator = RSICalculator(spec)
+        # RSICalculator expects a DataFrame with 'close' column
+        df = pd.DataFrame({'close': prices})
+        return calculator.calculate(df)
+    else:
+        # Legacy fallback (kept for backward compatibility only)
+        delta = prices.diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.rolling(window=period, min_periods=period).mean()
+        avg_loss = loss.rolling(window=period, min_periods=period).mean()
+        rs = avg_gain / avg_loss.replace(0, np.inf)
+        return 100 - (100 / (1 + rs))
 
 
 def calculate_atr_pct(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    """Calculate ATR as percentage of close."""
-    high = df['high']
-    low = df['low']
-    close = df['close']
+    """
+    Calculate ATR as percentage using SSOT ATRPercentCalculator.
 
-    tr1 = high - low
-    tr2 = abs(high - close.shift(1))
-    tr3 = abs(low - close.shift(1))
-
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    atr = tr.rolling(window=period, min_periods=period).mean()
-
-    return (atr / close) * 100
+    SSOT: src.feature_store.calculators.ATRPercentCalculator
+    """
+    if SSOT_AVAILABLE:
+        spec = FeatureSpec(name=f"atr_pct_{period}", period=period)
+        calculator = ATRPercentCalculator(spec)
+        return calculator.calculate(df)
+    else:
+        # Legacy fallback
+        high, low, close = df['high'], df['low'], df['close']
+        tr1 = high - low
+        tr2 = abs(high - close.shift(1))
+        tr3 = abs(low - close.shift(1))
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.rolling(window=period, min_periods=period).mean()
+        return (atr / close) * 100
 
 
 def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    """Calculate ADX indicator."""
-    high = df['high']
-    low = df['low']
-    close = df['close']
+    """
+    Calculate ADX using SSOT ADXCalculator.
 
-    plus_dm = high.diff()
-    minus_dm = -low.diff()
-
-    plus_dm = plus_dm.where((plus_dm > minus_dm) & (plus_dm > 0), 0.0)
-    minus_dm = minus_dm.where((minus_dm > plus_dm) & (minus_dm > 0), 0.0)
-
-    tr1 = high - low
-    tr2 = abs(high - close.shift(1))
-    tr3 = abs(low - close.shift(1))
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-
-    atr = tr.rolling(window=period, min_periods=period).mean()
-    plus_di = 100 * (plus_dm.rolling(window=period, min_periods=period).mean() / atr)
-    minus_di = 100 * (minus_dm.rolling(window=period, min_periods=period).mean() / atr)
-
-    dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di).replace(0, np.inf)
-    adx = dx.rolling(window=period, min_periods=period).mean()
-
-    return adx
+    SSOT: src.feature_store.calculators.ADXCalculator
+    """
+    if SSOT_AVAILABLE:
+        spec = FeatureSpec(name=f"adx_{period}", period=period)
+        calculator = ADXCalculator(spec)
+        return calculator.calculate(df)
+    else:
+        # Legacy fallback
+        high, low, close = df['high'], df['low'], df['close']
+        plus_dm = high.diff()
+        minus_dm = -low.diff()
+        plus_dm = plus_dm.where((plus_dm > minus_dm) & (plus_dm > 0), 0.0)
+        minus_dm = minus_dm.where((minus_dm > plus_dm) & (minus_dm > 0), 0.0)
+        tr1 = high - low
+        tr2 = abs(high - close.shift(1))
+        tr3 = abs(low - close.shift(1))
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr = tr.rolling(window=period, min_periods=period).mean()
+        plus_di = 100 * (plus_dm.rolling(window=period, min_periods=period).mean() / atr)
+        minus_di = 100 * (minus_dm.rolling(window=period, min_periods=period).mean() / atr)
+        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di).replace(0, np.inf)
+        return dx.rolling(window=period, min_periods=period).mean()
 
 
 def main():

@@ -1,3 +1,44 @@
+# =============================================================================
+# DVC Internal Files - Git Ignore
+# =============================================================================
+# These files are managed by DVC and should not be tracked by Git.
+# The config file IS tracked to ensure consistent remote configuration.
+#
+# IMPORTANT: dvc.lock (at project root) must be tracked in Git for reproducibility!
+# This file only ignores internal .dvc directory contents.
+#
+# Author: Trading Team
+# Date: 2026-01-17
+# Updated: Phase 0.4 DVC Configuration remediation
+# =============================================================================
+
+# Local config overrides (not shared)
 /config.local
-/tmp
+
+# DVC cache directory (stores actual file content)
 /cache
+
+# DVC tmp directory (temporary files during operations)
+/tmp
+
+# State database (tracks file hashes)
+/state
+
+# Experiments database (for dvc exp)
+/experiments
+
+# DVC queue for experiments
+/queue
+
+# Run cache for experiments
+/run_cache
+
+# Plots cache
+/plots
+
+# Checkpoints (for interrupted runs)
+/checkpoints
+
+# DO NOT ignore dvc.lock - it must be tracked in Git!
+# The dvc.lock file lives at project root, not here, but adding this note
+# as a reminder that it should NEVER be in any .gitignore file.

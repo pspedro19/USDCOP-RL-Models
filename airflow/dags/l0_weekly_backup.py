@@ -43,8 +43,9 @@ import psycopg2
 # =============================================================================
 
 from utils.dag_common import get_db_connection
+from contracts.dag_registry import L0_WEEKLY_BACKUP
 
-DAG_ID = 'v3.l0_weekly_backup'
+DAG_ID = L0_WEEKLY_BACKUP
 
 # Backup configuration
 def get_backup_dir():

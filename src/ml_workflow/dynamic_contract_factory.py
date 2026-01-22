@@ -449,9 +449,9 @@ class ContractRegistry:
 
         factory = ContractFactory(project_root)
 
-        # Load static contract
+        # Load static contract from SSOT
         try:
-            from src.features.contract import FEATURE_CONTRACT
+            from src.core.contracts import FEATURE_CONTRACT
             cls._contracts["current"] = DynamicFeatureContract(
                 version="current",
                 observation_dim=FEATURE_CONTRACT.observation_dim,

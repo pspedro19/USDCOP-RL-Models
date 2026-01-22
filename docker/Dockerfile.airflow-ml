@@ -105,9 +105,10 @@ RUN pip install --no-cache-dir \
 # ============================================================================
 # Selenium Dependencies (for BanRep SUAMECA scraper)
 # ============================================================================
+# Note: Let pip resolve selenium version to avoid conflicts
+# seleniumbase requires selenium==4.26.1, undetected-chromedriver requires selenium>=4.9.0
 RUN pip install --no-cache-dir \
     undetected-chromedriver==3.5.5 \
-    selenium==4.25.0 \
     seleniumbase==4.32.6
 
 # ============================================================================
@@ -123,7 +124,9 @@ RUN python -c "import scipy; print('scipy OK')" && \
     python -c "import mlflow; print(f'MLflow {mlflow.__version__} OK')" && \
     python -c "import lightgbm; print(f'LightGBM {lightgbm.__version__} OK')" && \
     python -c "import onnxruntime; print(f'ONNX Runtime {onnxruntime.__version__} OK')" && \
-    python -c "import pandas; import numpy; print('Data science stack OK')"
+    python -c "import pandas; import numpy; print('Data science stack OK')" && \
+    python -c "import selenium; print(f'Selenium {selenium.__version__} OK')" && \
+    python -c "import undetected_chromedriver; print('undetected-chromedriver OK')"
 
 # ============================================================================
 # Configuration

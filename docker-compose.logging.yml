@@ -1,0 +1,85 @@
+version: '3.8'
+
+# =============================================================================
+# Centralized Logging Stack: Loki + Promtail + AlertManager
+# =============================================================================
+# This compose file adds centralized logging infrastructure to the trading system.
+#
+# Components:
+#   - Loki: Log aggregation system (like Prometheus, but for logs)
+#   - Promtail: Log collection agent (scrapes container logs)
+#   - AlertManager: Alert routing and notification system
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+#
+# Ports:
+#   - 3100: Loki HTTP API
+#   - 9093: AlertManager Web UI
+# =============================================================================
+
+services:
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: usdcop-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./config/loki:/etc/loki
+      - loki_data:/loki
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: usdcop-promtail
+    volumes:
+      - ./config/promtail:/etc/promtail
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: usdcop-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager:/etc/alertmanager
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      # SECURITY: Slack webhook URL from .env file
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    networks:
+      - usdcop-trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  loki_data:
+  alertmanager_data:
+
+networks:
+  usdcop-trading-network:
+    external: true

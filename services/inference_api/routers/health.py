@@ -1,14 +1,24 @@
 """
 Health Router - Health check and status endpoints
+
+P2-1 Remediation: Added /metrics endpoint for Prometheus scraping
 """
 
 from fastapi import APIRouter, Request
+from fastapi.responses import Response
 from datetime import datetime
 import asyncpg
 import logging
 from ..models.responses import HealthResponse
 from ..config import get_settings
 from .. import __version__
+from ..core.metrics import (
+    get_metrics,
+    get_content_type,
+    update_active_models,
+    set_api_info,
+    PROMETHEUS_AVAILABLE,
+)
 
 router = APIRouter(tags=["health"])
 logger = logging.getLogger(__name__)
@@ -154,5 +164,149 @@ async def check_all_consistency(verify_hashes: bool = False):
             "overall_status": "error",
             "all_passed": False,
             "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+
+# =============================================================================
+# PROMETHEUS METRICS ENDPOINT (P2-1 remediation)
+# =============================================================================
+
+@router.get("/metrics")
+async def metrics(req: Request):
+    """
+    Prometheus metrics endpoint.
+
+    Returns metrics in Prometheus text format for scraping.
+
+    Metrics exposed:
+    - inference_requests_total: Total inference requests
+    - inference_latency_seconds: Request latency histogram
+    - active_models_count: Number of loaded models
+    - inference_errors_total: Error counts by type
+    - feature_nan_ratio: Feature quality gauge
+    - feast_hit_ratio: Feast vs fallback ratio
+    - model_agreement_ratio: Shadow mode agreement
+    """
+    # Update dynamic gauges
+    try:
+        engine = req.app.state.inference_engine
+        if hasattr(engine, 'models'):
+            update_active_models(len(engine.models))
+
+        # Set API info
+        set_api_info(__version__)
+    except Exception as e:
+        logger.debug(f"Error updating dynamic metrics: {e}")
+
+    # Return metrics
+    return Response(
+        content=get_metrics(),
+        media_type=get_content_type()
+    )
+
+
+@router.get("/metrics/status")
+async def metrics_status():
+    """
+    Get metrics system status.
+
+    Returns information about Prometheus metrics availability.
+    """
+    return {
+        "prometheus_available": PROMETHEUS_AVAILABLE,
+        "metrics_endpoint": "/api/v1/health/metrics",
+        "scrape_interval_recommended": "15s",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# =============================================================================
+# DATABASE SCHEMA HEALTH (Schema drift prevention)
+# =============================================================================
+
+# Required tables for the inference service to work correctly
+REQUIRED_TABLES = [
+    ("public", "usdcop_m5_ohlcv", "OHLCV price data"),
+    ("public", "macro_indicators_daily", "Macro indicators"),
+    ("public", "trades_history", "Trade history for backtest"),
+    ("public", "trading_state", "Trading state per model"),
+    ("config", "models", "Model configurations"),
+]
+
+
+@router.get("/schema")
+async def schema_health():
+    """
+    Check database schema health.
+
+    Validates that all required tables exist.
+    Use this to detect schema drift before it causes runtime errors.
+
+    Returns:
+        - status: "healthy", "degraded", or "unhealthy"
+        - tables: list of table checks with status
+        - missing_count: number of missing tables
+        - action: recommended action if issues found
+    """
+    try:
+        conn = await asyncpg.connect(
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db,
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+        )
+
+        table_checks = []
+        missing_count = 0
+
+        for schema, table, description in REQUIRED_TABLES:
+            exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = $1 AND table_name = $2
+                )
+            """, schema, table)
+
+            table_checks.append({
+                "schema": schema,
+                "table": table,
+                "description": description,
+                "exists": exists,
+                "status": "ok" if exists else "missing",
+            })
+
+            if not exists:
+                missing_count += 1
+
+        await conn.close()
+
+        # Determine overall status
+        if missing_count == 0:
+            status = "healthy"
+            action = None
+        elif missing_count <= 2:
+            status = "degraded"
+            action = "Run: python scripts/db_migrate.py"
+        else:
+            status = "unhealthy"
+            action = "Run: python scripts/db_migrate.py --validate"
+
+        return {
+            "status": status,
+            "tables": table_checks,
+            "total_tables": len(REQUIRED_TABLES),
+            "missing_count": missing_count,
+            "action": action,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Schema health check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "action": "Check database connection",
             "timestamp": datetime.utcnow().isoformat(),
         }

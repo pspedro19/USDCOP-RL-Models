@@ -6,18 +6,31 @@
  * IMPORTANT: This file only contains TYPE DEFINITIONS and API endpoint configuration.
  * Actual model data (list of models, metrics, status) comes from the API.
  * No hardcoded model data here.
+ *
+ * SSOT: Algorithm types and colors are imported from ssot.contract.ts
  */
 
 import { apiConfig } from './api.config';
+import {
+  RL_ALGORITHMS,
+  ML_ALGORITHMS,
+  ALL_ALGORITHMS,
+  ALGORITHM_COLORS,
+  Action,
+  ACTION_NAMES,
+  type Algorithm,
+  type RLAlgorithm,
+} from '../contracts/ssot.contract';
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
 
 /**
- * Supported RL/ML algorithm types
+ * Supported RL/ML algorithm types - uses SSOT
+ * Includes all algorithms from RL_ALGORITHMS and ML_ALGORITHMS
  */
-export type ModelAlgorithm = 'PPO' | 'SAC' | 'TD3' | 'A2C' | 'DQN' | 'DDPG';
+export type ModelAlgorithm = Algorithm;
 
 /**
  * Model deployment status
@@ -253,15 +266,9 @@ export const modelsApiEndpoints = {
 
 /**
  * Default colors for models (used as fallback if API doesn't provide color)
+ * Uses SSOT ALGORITHM_COLORS
  */
-export const defaultModelColors: Record<ModelAlgorithm, string> = {
-  PPO: '#10B981',   // Green
-  SAC: '#8B5CF6',   // Purple
-  TD3: '#F59E0B',   // Orange
-  A2C: '#EF4444',   // Red
-  DQN: '#3B82F6',   // Blue
-  DDPG: '#EC4899',  // Pink
-};
+export const defaultModelColors = ALGORITHM_COLORS;
 
 /**
  * Status badge configuration
@@ -313,9 +320,10 @@ export const modelRefreshIntervals = {
 
 /**
  * Get color for a model based on algorithm
+ * Uses SSOT ALGORITHM_COLORS
  */
-export function getModelColor(algorithm: ModelAlgorithm, customColor?: string): string {
-  return customColor || defaultModelColors[algorithm] || '#6B7280';
+export function getModelColor(algorithm: ModelAlgorithm | string, customColor?: string): string {
+  return customColor || defaultModelColors[algorithm as Algorithm] || '#6B7280';
 }
 
 /**

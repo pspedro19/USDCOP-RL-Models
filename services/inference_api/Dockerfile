@@ -44,6 +44,16 @@ COPY src/ ./src/
 COPY services/inference_api/ ./services/inference_api/
 COPY services/common/ ./services/common/
 COPY services/demo_mode/ ./services/demo_mode/
+COPY services/shared/ ./services/shared/
+COPY config/ ./config/
+
+# Copy migration scripts and init-scripts
+COPY scripts/ ./scripts/
+COPY init-scripts/ ./init-scripts/
+
+# Copy and setup entrypoint
+COPY services/inference_api/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser && \
@@ -52,8 +62,9 @@ USER appuser
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Health check now includes schema validation
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-# Run using uvicorn
-CMD ["python", "-m", "uvicorn", "services.inference_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use entrypoint for migration + startup
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,131 @@
+# =============================================================================
+# Dependabot Configuration - USDCOP Trading Platform
+# =============================================================================
+# Automatically creates pull requests to keep dependencies up to date.
+# Reviews security advisories and updates vulnerable packages.
+#
+# Documentation: https://docs.github.com/en/code-security/dependabot
+# =============================================================================
+
+version: 2
+
+updates:
+  # ===========================================================================
+  # Python Dependencies (pip)
+  # ===========================================================================
+  # Main Python dependencies for ML/trading services
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "deps(pip)"
+    reviewers:
+      - "trading-team"
+    groups:
+      # Group minor and patch updates together
+      python-minor-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ===========================================================================
+  # NPM Dependencies (Dashboard)
+  # ===========================================================================
+  # Next.js trading dashboard dependencies
+  - package-ecosystem: "npm"
+    directory: "/usdcop-trading-dashboard"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "dashboard"
+    commit-message:
+      prefix: "deps(npm)"
+    reviewers:
+      - "trading-team"
+    groups:
+      # Group React ecosystem updates
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "next*"
+          - "@next/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group TypeScript and linting tools
+      dev-tools:
+        patterns:
+          - "typescript"
+          - "eslint*"
+          - "@typescript-eslint/*"
+          - "prettier"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ===========================================================================
+  # Docker Dependencies
+  # ===========================================================================
+  # Docker base images and configurations
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+      - "infrastructure"
+    commit-message:
+      prefix: "deps(docker)"
+    reviewers:
+      - "trading-team"
+
+  # ===========================================================================
+  # GitHub Actions Dependencies
+  # ===========================================================================
+  # Keep CI/CD workflows up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci-cd"
+    commit-message:
+      prefix: "deps(actions)"
+    reviewers:
+      - "trading-team"
+    groups:
+      # Group all GitHub Actions updates
+      actions-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

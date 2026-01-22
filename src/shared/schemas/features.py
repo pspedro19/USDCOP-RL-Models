@@ -3,9 +3,10 @@ Feature Schema Definitions
 ==========================
 
 Feature contracts for model observation space.
-Single Source of Truth for feature ordering and normalization.
+Imports from SSOT: src.core.contracts.feature_contract
 
 Contract: CTR-SHARED-FEAT-001
+Version: 2.0.0 - SSOT consolidation
 """
 
 from __future__ import annotations
@@ -16,41 +17,19 @@ from pydantic import Field, field_validator, model_validator
 
 from .core import BaseSchema
 
-
 # =============================================================================
-# CONSTANTS - SSOT for Feature Contract
+# SSOT IMPORTS - Single Source of Truth
 # =============================================================================
+# FEATURE_ORDER and OBSERVATION_DIM are imported from the canonical source.
+# NO FALLBACK - if import fails, error should be raised to detect configuration issues.
 
-
-OBSERVATION_DIM: int = 15
-"""Model observation dimension (15 features)."""
-
-FEATURE_ORDER: Tuple[str, ...] = (
-    # Returns (3)
-    "log_ret_5m",
-    "log_ret_1h",
-    "log_ret_4h",
-    # Technical Indicators (3)
-    "rsi_9",
-    "atr_pct",
-    "adx_14",
-    # Macro Z-Scores (4)
-    "dxy_z",
-    "dxy_change_1d",
-    "vix_z",
-    "embi_z",
-    # Macro Changes (3)
-    "brent_change_1d",
-    "rate_spread",
-    "usdmxn_change_1d",
-    # State Features (2)
-    "position",
-    "time_normalized",
+from src.core.contracts.feature_contract import (
+    FEATURE_ORDER,
+    OBSERVATION_DIM,
 )
-"""Feature order - canonical ordering for observation vector."""
 
 
-# Type alias for feature order
+# Type alias for feature order (Literal type for type checking)
 FeatureOrderType = Literal[
     "log_ret_5m", "log_ret_1h", "log_ret_4h",
     "rsi_9", "atr_pct", "adx_14",

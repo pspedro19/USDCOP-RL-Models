@@ -1,151 +1,287 @@
 #!/bin/bash
 # =============================================================================
-# DVC Setup Script (Phase 11)
+# DVC Setup and Initialization Script
 # =============================================================================
-# Setup DVC for data versioning in the USDCOP trading system.
+# Initializes DVC for the USDCOP trading project with MinIO remote storage.
+# Updated as part of MLOps-2 implementation from remediation plan.
+#
+# Prerequisites:
+#   - Python 3.11+ with pip
+#   - MinIO running on localhost:9000 (or set MINIO_ENDPOINT)
+#   - AWS credentials set for MinIO access
 #
 # Usage:
 #   chmod +x scripts/setup_dvc.sh
 #   ./scripts/setup_dvc.sh
 #
 # Author: Trading Team
-# Date: 2025-01-14
+# Date: 2026-01-16
 # =============================================================================
 
-set -e
+set -e  # Exit on error
 
-echo "=== Setting up DVC for Data Versioning ==="
+echo "=============================================="
+echo "DVC Setup for USDCOP Trading Project"
+echo "=============================================="
 echo ""
 
+# Configuration (can be overridden via environment variables)
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://localhost:9000}"
+DVC_REMOTE_NAME="${DVC_REMOTE_NAME:-minio}"
+DVC_BUCKET="${DVC_BUCKET:-dvc-storage}"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Helper functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if running from project root
+if [ ! -f "dvc.yaml" ]; then
+    log_error "Please run this script from the project root directory"
+    exit 1
+fi
+
 # =============================================================================
-# 1. Check if DVC is installed
+# Step 1: Install DVC with S3 support
 # =============================================================================
+log_info "Checking DVC installation..."
+
 if ! command -v dvc &> /dev/null; then
-    echo "DVC not found. Installing..."
-    pip install "dvc[s3]"  # Includes S3 support
+    log_info "DVC not found. Installing with S3 support..."
+    pip install --quiet --upgrade "dvc[s3]>=3.42.0"
 else
-    echo "DVC is already installed: $(dvc --version)"
+    log_info "DVC is already installed: $(dvc --version)"
 fi
 
 # =============================================================================
-# 2. Initialize DVC (if not already initialized)
+# Step 2: Initialize DVC (if not already initialized)
 # =============================================================================
-if [ ! -d ".dvc" ]; then
-    echo ""
-    echo "Initializing DVC..."
+if [ -d ".dvc" ]; then
+    log_info "DVC already initialized, skipping..."
+else
+    log_info "Initializing DVC..."
     dvc init
-    echo "DVC initialized successfully"
-else
-    echo "DVC already initialized (.dvc directory exists)"
+    log_info "DVC initialized successfully"
 fi
 
 # =============================================================================
-# 3. Configure remote storage
+# Step 3: Configure MinIO remote
 # =============================================================================
-echo ""
-echo "Configuring remote storage..."
+log_info "Configuring MinIO remote storage..."
 
-# Check if remote already exists
+# Remove existing remotes and configure MinIO
+if dvc remote list | grep -q "$DVC_REMOTE_NAME"; then
+    log_info "Updating existing remote '$DVC_REMOTE_NAME'..."
+    dvc remote remove $DVC_REMOTE_NAME
+fi
+
+# Also remove legacy 'myremote' if it exists
 if dvc remote list | grep -q "myremote"; then
-    echo "Remote 'myremote' already configured"
-else
-    # Default to local remote for initial setup
-    # Users can reconfigure to S3/GCS later
-    mkdir -p .dvc/remote-storage
-    dvc remote add -d myremote .dvc/remote-storage
-    echo "Added local remote at .dvc/remote-storage"
-    echo ""
-    echo "To use S3 instead, run:"
-    echo "  dvc remote modify myremote url s3://your-bucket/dvc-store"
-    echo "  dvc remote modify myremote region us-east-1"
+    log_warn "Removing legacy 'myremote' remote..."
+    dvc remote remove myremote
 fi
 
-# =============================================================================
-# 4. Track key data files
-# =============================================================================
-echo ""
-echo "Tracking data files..."
+# Add MinIO as S3-compatible remote
+dvc remote add -d $DVC_REMOTE_NAME s3://$DVC_BUCKET
 
-# Track normalization stats (critical for model parity)
-if [ -f "config/norm_stats.json" ]; then
-    if [ ! -f "config/norm_stats.json.dvc" ]; then
-        dvc add config/norm_stats.json
-        echo "Added config/norm_stats.json to DVC tracking"
-    else
-        echo "config/norm_stats.json already tracked"
-    fi
-fi
+# Configure MinIO endpoint
+dvc remote modify $DVC_REMOTE_NAME endpointurl $MINIO_ENDPOINT
 
-# Track training datasets if they exist
-if [ -d "data/training" ]; then
-    for file in data/training/*.parquet; do
-        if [ -f "$file" ] && [ ! -f "${file}.dvc" ]; then
-            dvc add "$file"
-            echo "Added $file to DVC tracking"
-        fi
-    done
-fi
+# Additional S3 settings for MinIO compatibility
+dvc remote modify $DVC_REMOTE_NAME use_ssl false
+
+log_info "Remote '$DVC_REMOTE_NAME' configured with:"
+log_info "  - Bucket: s3://$DVC_BUCKET"
+log_info "  - Endpoint: $MINIO_ENDPOINT"
 
 # =============================================================================
-# 5. Create .dvcignore
+# Step 4: Create required directories
+# =============================================================================
+log_info "Creating required directories..."
+
+mkdir -p data/raw
+mkdir -p data/processed
+mkdir -p models/onnx
+mkdir -p reports/backtest
+
+# Create .gitkeep files
+touch data/raw/.gitkeep 2>/dev/null || true
+touch data/processed/.gitkeep 2>/dev/null || true
+touch models/onnx/.gitkeep 2>/dev/null || true
+touch reports/.gitkeep 2>/dev/null || true
+
+log_info "Directories created"
+
+# =============================================================================
+# Step 5: Create .dvcignore
 # =============================================================================
 if [ ! -f ".dvcignore" ]; then
+    log_info "Creating .dvcignore..."
     cat > .dvcignore << 'EOF'
-# DVC ignore patterns
-# Similar to .gitignore but for DVC
+# =============================================================================
+# DVC Ignore Patterns
+# =============================================================================
+# Similar to .gitignore but for DVC file tracking.
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
 # Temporary files
 *.tmp
 *.temp
 *.log
+*.bak
 
 # IDE files
 .idea/
 .vscode/
 *.swp
+*.swo
 
 # Test artifacts
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
 
 # Build artifacts
 build/
 dist/
 *.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Node modules (dashboard)
+node_modules/
+.next/
+
+# Git
+.git/
+
+# DVC internal
+.dvc/cache/
+.dvc/tmp/
 EOF
-    echo "Created .dvcignore"
+    log_info ".dvcignore created"
+else
+    log_info ".dvcignore already exists"
 fi
 
 # =============================================================================
-# 6. Add DVC files to git
+# Step 6: Verify configuration
 # =============================================================================
+log_info "Verifying DVC configuration..."
+
 echo ""
-echo "Adding DVC files to git..."
+echo "Current DVC remotes:"
+echo "-------------------------------------------"
+dvc remote list
+
+echo ""
+echo "DVC configuration:"
+echo "-------------------------------------------"
+dvc config -l | grep -E "^remote\." || echo "  (using defaults)"
+
+# =============================================================================
+# Step 7: Add DVC files to git
+# =============================================================================
+log_info "Adding DVC files to git staging..."
 git add .dvc/config .dvcignore 2>/dev/null || true
-git add *.dvc 2>/dev/null || true
-git add **/*.dvc 2>/dev/null || true
+git add .dvc/.gitignore 2>/dev/null || true
+
+# =============================================================================
+# Step 8: Create local config template
+# =============================================================================
+if [ ! -f ".dvc/config.local" ] && [ ! -f ".dvc/config.local.example" ]; then
+    log_info "Creating local DVC config template..."
+    cat > .dvc/config.local.example << 'EOF'
+# =============================================================================
+# Local DVC Configuration (not tracked by git)
+# =============================================================================
+# Copy this file to .dvc/config.local and modify as needed.
+# Local settings override the main config.
+
+[core]
+    # Auto-stage DVC files for git after dvc add/run
+    autostage = true
+
+# Uncomment to use a shared cache directory
+# [cache]
+#     dir = /path/to/shared/cache
+
+# Uncomment for faster operations (skip hash verification)
+# [remote "minio"]
+#     verify = false
+
+# Uncomment to use environment variables for credentials
+# [remote "minio"]
+#     access_key_id = ${AWS_ACCESS_KEY_ID}
+#     secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+EOF
+    log_info "Created .dvc/config.local.example"
+fi
 
 # =============================================================================
 # Summary
 # =============================================================================
 echo ""
-echo "=== DVC Setup Complete ==="
+echo "=============================================="
+echo "DVC Setup Complete!"
+echo "=============================================="
+echo ""
+echo "Configuration:"
+echo "  Remote: $DVC_REMOTE_NAME"
+echo "  Bucket: s3://$DVC_BUCKET"
+echo "  Endpoint: $MINIO_ENDPOINT"
 echo ""
 echo "Next steps:"
-echo "1. Commit DVC configuration: git commit -m 'Initialize DVC for data versioning'"
-echo "2. Push data to remote: dvc push"
-echo "3. To pull data on another machine: dvc pull"
+echo ""
+echo "1. Set MinIO credentials (if not already set):"
+echo "   export AWS_ACCESS_KEY_ID=your_minio_access_key"
+echo "   export AWS_SECRET_ACCESS_KEY=your_minio_secret_key"
+echo ""
+echo "2. Test the remote connection:"
+echo "   dvc push --dry"
+echo ""
+echo "3. Add data files to DVC tracking:"
+echo "   dvc add data/raw/your_data_file.parquet"
+echo ""
+echo "4. Commit the .dvc files to git:"
+echo "   git add data/raw/your_data_file.parquet.dvc .gitignore"
+echo "   git commit -m 'Add data file to DVC'"
+echo ""
+echo "5. Push data to remote storage:"
+echo "   dvc push"
+echo ""
+echo "6. Run the ML pipeline:"
+echo "   dvc repro"
 echo ""
 echo "Useful commands:"
 echo "  dvc status       - Check status of tracked files"
 echo "  dvc diff HEAD~1  - Show changes between versions"
-echo "  dvc push         - Push data to remote storage"
-echo "  dvc pull         - Pull data from remote storage"
-echo "  dvc repro        - Reproduce pipeline stages"
+echo "  dvc dag          - Visualize pipeline DAG"
+echo "  dvc metrics show - Show pipeline metrics"
+echo "  dvc plots show   - Generate pipeline plots"
 echo ""
+echo "For more information, see: https://dvc.org/doc"
+echo ""
+
+log_info "Setup complete!"

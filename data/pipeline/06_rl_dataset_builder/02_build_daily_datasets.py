@@ -612,8 +612,8 @@ for ds_name, cols in DATASETS.items():
     critical_exist = [c for c in critical_cols if c in df_ds.columns]
     df_ds = df_ds.dropna(subset=critical_exist)
 
-    # Forward fill para el resto
-    df_ds = df_ds.ffill().bfill()
+    # IMPORTANT: Only ffill allowed - bfill would create look-ahead bias
+    df_ds = df_ds.ffill()
 
     # Guardar
     output_file = OUTPUT_RL_DAILY / f"{ds_name}.csv"

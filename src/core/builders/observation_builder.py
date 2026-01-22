@@ -7,13 +7,18 @@ Implements the observation vector construction for the trading model with:
 - 2 state features (position, time_normalized)
 - Total 15 dimensions
 
+SSOT COMPLIANCE (v2.0.0):
+All constants are imported from src/core/constants.py to ensure
+consistency across the codebase. No hardcoded values.
+
 Author: Pedro @ Lean Tech Solutions / Claude Code
-Version: 1.0.0
-Date: 2025-01-07
+Version: 2.0.0
+Date: 2025-01-17
 
 Configuration:
     - Feature config: config/feature_config.json
     - Normalization stats: config/norm_stats.json
+    - Constants: src/core/constants.py (SSOT)
 """
 
 import json
@@ -21,6 +26,14 @@ import math
 import numpy as np
 from pathlib import Path
 from typing import Dict, Optional, Union, List, Any
+
+# Import constants from SSOT
+from src.core.constants import (
+    FEATURE_ORDER as SSOT_FEATURE_ORDER,
+    OBSERVATION_DIM,
+    CLIP_MIN,
+    CLIP_MAX,
+)
 
 # Default paths relative to project root
 DEFAULT_CONFIG_PATH = "config/feature_config.json"
@@ -34,13 +47,9 @@ class ObservationBuilder:
     Constructs 15-dimensional observation vectors with proper normalization
     and clipping for stable RL training and inference.
 
-    Attributes:
-        FEATURE_ORDER: Canonical order of all 15 features (13 core + 2 state)
-        CORE_FEATURES: The 13 market-derived features
-        STATE_FEATURES: The 2 environment state features
-        OBS_DIM: Total observation dimension (15)
-        CLIP_MIN: Global minimum clip value (-5.0)
-        CLIP_MAX: Global maximum clip value (5.0)
+    SSOT Compliance:
+        All constants (FEATURE_ORDER, OBS_DIM, CLIP bounds) come from
+        src/core/constants.py to ensure single source of truth.
 
     Example:
         >>> builder = ObservationBuilder()
@@ -55,30 +64,13 @@ class ObservationBuilder:
         (15,)
     """
 
-    # Canonical feature order - MUST match training order exactly
-    FEATURE_ORDER: List[str] = [
-        "log_ret_5m",
-        "log_ret_1h",
-        "log_ret_4h",
-        "rsi_9",
-        "atr_pct",
-        "adx_14",
-        "dxy_z",
-        "dxy_change_1d",
-        "vix_z",
-        "embi_z",
-        "brent_change_1d",
-        "rate_spread",
-        "usdmxn_change_1d",
-        "position",
-        "time_normalized"
-    ]
-
+    # Constants from SSOT (src/core/constants.py)
+    FEATURE_ORDER: List[str] = list(SSOT_FEATURE_ORDER)
     CORE_FEATURES: List[str] = FEATURE_ORDER[:13]
     STATE_FEATURES: List[str] = ["position", "time_normalized"]
-    OBS_DIM: int = 15
-    CLIP_MIN: float = -5.0
-    CLIP_MAX: float = 5.0
+    OBS_DIM: int = OBSERVATION_DIM
+    CLIP_MIN: float = CLIP_MIN
+    CLIP_MAX: float = CLIP_MAX
 
     def __init__(
         self,
@@ -193,12 +185,14 @@ class ObservationBuilder:
                 f"Config dimension {obs_space.get('dimension')} != expected {self.OBS_DIM}"
             )
 
-        # Check feature order matches
+        # Check feature order matches (first 13 core features or full 15 features)
         config_order = obs_space.get("order", [])
-        if config_order != self.CORE_FEATURES:
+        # Accept both: full 15-feature order or just 13 core features
+        config_core_features = config_order[:13] if len(config_order) >= 13 else config_order
+        if config_core_features != self.CORE_FEATURES:
             raise ValueError(
-                f"Config feature order mismatch. Expected: {self.CORE_FEATURES}, "
-                f"Got: {config_order}"
+                f"Config feature order mismatch. Expected core features: {self.CORE_FEATURES}, "
+                f"Got: {config_core_features}"
             )
 
         # Check all core features have norm stats

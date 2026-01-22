@@ -1,35 +1,48 @@
 # =============================================================================
-# DVC Pipeline Configuration (Phase 11)
+# DVC Pipeline Configuration (Phase 11 + MLOps)
 # =============================================================================
-# Defines the data pipeline stages for reproducibility.
+# Data versioning and ML pipeline for USDCOP RL trading models.
+# Updated with MLflow integration as part of MLOps-1/MLOps-2 remediation.
 #
 # Usage:
-#   dvc repro           - Run all stages
-#   dvc repro train     - Run specific stage
-#   dvc dag             - Show pipeline DAG
+#   dvc repro                    # Run full pipeline
+#   dvc repro prepare_data       # Run only data preparation
+#   dvc repro train              # Run training with MLflow tracking
+#   dvc dag                      # Show pipeline DAG
+#   dvc metrics show             # Show all metrics
+#   dvc plots show               # Generate plots
 #
 # Author: Trading Team
-# Date: 2025-01-14
+# Date: 2026-01-16
 # =============================================================================
 
 stages:
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
   # Stage 1: Prepare Training Data
-  # ---------------------------------------------------------------------------
-  # Merges OHLCV and macro data into training-ready datasets
+  # ===========================================================================
+  # Merges OHLCV and macro data into training-ready datasets.
+  # Splits data into train/val/test sets with proper temporal ordering.
   prepare_data:
-    cmd: python data/pipeline/06_rl_dataset_builder/01_build_5min_datasets.py
+    cmd: python scripts/prepare_training_data.py
     deps:
-      - data/pipeline/06_rl_dataset_builder/01_build_5min_datasets.py
+      - data/raw/
+      - scripts/prepare_training_data.py
       - config/feature_config.json
+      - src/feature_store/builder.py
+      - src/feature_store/calculators/
+    params:
+      - prepare.lookback_days
+      - prepare.train_ratio
+      - prepare.val_ratio
+      - prepare.random_seed
     outs:
-      - data/pipeline/07_output/datasets_5min/:
+      - data/processed/:
           persist: true
 
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
   # Stage 2: Calculate Normalization Statistics
-  # ---------------------------------------------------------------------------
-  # Computes mean/std for z-score normalization
+  # ===========================================================================
+  # Computes mean/std for z-score normalization from training data only.
   calculate_norm_stats:
     cmd: >
       python -c "
@@ -37,8 +50,12 @@ stages:
       import json
       from pathlib import Path
 
-      # Load dataset
-      df = pd.read_csv('data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv')
+      # Load training dataset only (avoid data leakage)
+      train_path = Path('data/processed/train_features.parquet')
+      if train_path.exists():
+          df = pd.read_parquet(train_path)
+      else:
+          df = pd.read_csv('data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv')
 
       # Features to normalize
       features = ['log_ret_5m', 'log_ret_1h', 'log_ret_4h', 'rsi_9', 'atr_pct', 'adx_14',
@@ -63,77 +80,155 @@ stages:
       print(f'Generated norm_stats.json with {len(stats)} features')
       "
     deps:
-      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
+      - data/processed/
       - config/feature_config.json
     outs:
       - config/norm_stats.json:
           cache: false
 
-  # ---------------------------------------------------------------------------
-  # Stage 3: Train Model
-  # ---------------------------------------------------------------------------
-  # Trains PPO model using prepared data
-  train_model:
-    cmd: python notebooks/train_v20_production_parity.py
+  # ===========================================================================
+  # Stage 3: Train Model with MLflow
+  # ===========================================================================
+  # Trains PPO model with full MLflow tracking, metrics logging, and
+  # automatic model registry integration.
+  train:
+    cmd: python scripts/train_with_mlflow.py --config params.yaml
     deps:
-      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
+      - data/processed/
       - config/norm_stats.json
       - config/feature_config.json
+      - scripts/train_with_mlflow.py
+      - src/training/environments/
+      - src/core/builders/
       - src/feature_store/core.py
     params:
-      - config/mlops.yaml:
-          - training
+      - train.learning_rate
+      - train.n_steps
+      - train.batch_size
+      - train.n_epochs
+      - train.gamma
+      - train.gae_lambda
+      - train.clip_range
+      - train.ent_coef
+      - train.total_timesteps
+      - train.episode_length
     outs:
-      - models/ppo_primary/:
+      - models/ppo_mlflow/:
           persist: true
     metrics:
-      - models/ppo_primary/training_metrics.json:
-          cache: false
-
-  # ---------------------------------------------------------------------------
-  # Stage 4: Export to ONNX
-  # ---------------------------------------------------------------------------
-  # Exports trained model to ONNX format for inference
-  export_onnx:
-    cmd: python scripts/export_to_onnx.py --model models/ppo_primary/final_model.zip --output models/ppo_primary/model.onnx
-    deps:
-      - models/ppo_primary/final_model.zip
-      - scripts/export_to_onnx.py
-    outs:
-      - models/ppo_primary/model.onnx:
-          persist: true
-
-  # ---------------------------------------------------------------------------
-  # Stage 5: Run Backtest
-  # ---------------------------------------------------------------------------
-  # Validates model performance on historical data
-  backtest:
-    cmd: python scripts/backtest.py --model models/ppo_primary --output results/backtest/
-    deps:
-      - models/ppo_primary/model.onnx
-      - data/pipeline/07_output/datasets_5min/RL_DS3_MACRO_CORE.csv
-      - config/norm_stats.json
-      - scripts/backtest.py
-    outs:
-      - results/backtest/:
-          persist: true
-    metrics:
-      - results/backtest/metrics.json:
+      - reports/metrics.json:
           cache: false
     plots:
-      - results/backtest/equity_curve.csv:
+      - reports/training_curves.csv:
+          x: step
+          y: episode_reward_mean
+
+  # ===========================================================================
+  # Stage 4: Evaluate Model
+  # ===========================================================================
+  # Evaluates trained model on validation set.
+  evaluate:
+    cmd: python scripts/evaluate_model.py --model models/ppo_mlflow/
+    deps:
+      - models/ppo_mlflow/
+      - data/processed/
+      - config/norm_stats.json
+      - scripts/evaluate_model.py
+    params:
+      - evaluate.n_episodes
+      - evaluate.deterministic
+    metrics:
+      - reports/evaluation_metrics.json:
+          cache: false
+    plots:
+      - reports/val_equity_curve.csv:
+          x: step
+          y: equity
+
+  # ===========================================================================
+  # Stage 5: Export to ONNX
+  # ===========================================================================
+  # Exports trained model to ONNX format for production inference.
+  export_onnx:
+    cmd: python scripts/export_to_onnx.py --model models/ppo_mlflow/ --output models/onnx/
+    deps:
+      - models/ppo_mlflow/
+      - scripts/export_to_onnx.py
+    params:
+      - export.opset_version
+      - export.optimize
+    outs:
+      - models/onnx/model.onnx:
+          persist: true
+      - models/onnx/model_metadata.json:
+          persist: true
+
+  # ===========================================================================
+  # Stage 6: Backtest on Test Set
+  # ===========================================================================
+  # Final backtest on held-out test set. Run sparingly to avoid data leakage.
+  backtest:
+    cmd: python scripts/backtest.py --model models/onnx/ --mode test --output reports/backtest/
+    deps:
+      - models/onnx/model.onnx
+      - data/processed/
+      - config/norm_stats.json
+      - scripts/backtest.py
+      - config/trading_config.yaml
+    params:
+      - backtest.initial_balance
+      - backtest.transaction_cost_bps
+      - backtest.slippage_bps
+    outs:
+      - reports/backtest/trades.csv:
+          persist: true
+    metrics:
+      - reports/backtest/metrics.json:
+          cache: false
+    plots:
+      - reports/backtest/equity_curve.csv:
           x: timestamp
           y: equity
+      - reports/backtest/drawdown.csv:
+          x: timestamp
+          y: drawdown_pct
+
+  # ===========================================================================
+  # Stage 7: Model Promotion Check
+  # ===========================================================================
+  # Checks if model meets promotion criteria and updates model registry.
+  promote:
+    cmd: >
+      python scripts/promote_model.py
+      --model-name usdcop-ppo-model
+      --from-stage Staging
+      --to-stage Production
+      --reason "Automated promotion after successful backtest"
+    deps:
+      - reports/backtest/metrics.json
+      - scripts/promote_model.py
+    always_changed: true
 
 # =============================================================================
 # Plots Configuration
 # =============================================================================
 plots:
-  - results/backtest/equity_curve.csv:
+  - reports/training_curves.csv:
+      x: step
+      y:
+        - episode_reward_mean
+        - policy_loss
+        - value_loss
+      title: "Training Progress"
+  - reports/val_equity_curve.csv:
+      x: step
+      y: equity
+      title: "Validation Equity Curve"
+  - reports/backtest/equity_curve.csv:
       x: timestamp
       y: equity
       title: "Backtest Equity Curve"
-  - results/backtest/drawdown.csv:
+  - reports/backtest/drawdown.csv:
       x: timestamp
       y: drawdown_pct
       title: "Drawdown Over Time"

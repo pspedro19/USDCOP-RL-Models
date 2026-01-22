@@ -1,0 +1,436 @@
+# =============================================================================
+# L0 Macro Sources Configuration
+# =============================================================================
+# Single Source of Truth for all macro data acquisition settings.
+# Contract: CTR-L0-CONFIG-001
+#
+# Architecture:
+#   External APIs → L0 (Data Acquisition) → PostgreSQL → L1 (Feature Calculation)
+#
+# Version: 1.0.0
+# =============================================================================
+
+version: "1.0"
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  default_lookback_days: 90
+  retry_attempts: 3
+  retry_delay_seconds: 60
+  request_timeout_seconds: 30
+  rate_limit_delay_seconds: 1
+
+# =============================================================================
+# ENABLED SOURCES (order matters for priority)
+# =============================================================================
+enabled_sources:
+  - fred
+  - twelvedata
+  - investing
+  - banrep
+  # - banrep_sdmx  # DISABLED - columns removed from DB
+  - bcrp
+  - fedesarrollo
+  - dane
+  - banrep_bop    # BanRep Balance of Payments (quarterly data)
+
+# =============================================================================
+# SOURCE-SPECIFIC CONFIGURATIONS
+# =============================================================================
+sources:
+  # ---------------------------------------------------------------------------
+  # FRED API - US Economic Indicators
+  # ---------------------------------------------------------------------------
+  fred:
+    api_key_env: "FRED_API_KEY"
+    api_key_vault_path: "trading/fred"
+    lookback_days: 90
+    indicators:
+      # Daily indicators
+      DTWEXBGS: fxrt_index_dxy_usa_d_dxy
+      VIXCLS: volt_vix_usa_d_vix
+      DGS10: finc_bond_yield10y_usa_d_ust10y
+      DGS2: finc_bond_yield2y_usa_d_dgs2
+      DPRIME: polr_prime_rate_usa_d_prime
+      # Monthly indicators
+      FEDFUNDS: polr_fed_funds_usa_m_fedfunds
+      CPIAUCSL: infl_cpi_all_usa_m_cpiaucsl
+      CPILFESL: infl_cpi_core_usa_m_cpilfesl
+      PCEPI: infl_pce_usa_m_pcepi
+      UNRATE: labr_unemployment_usa_m_unrate
+      INDPRO: prod_industrial_usa_m_indpro
+      M2SL: mnys_m2_supply_usa_m_m2sl
+      UMCSENT: sent_consumer_usa_m_umcsent
+      # Quarterly indicators
+      GDP: gdpp_real_gdp_usa_q_gdp_q
+
+  # ---------------------------------------------------------------------------
+  # TwelveData API - FX and Commodities
+  # ---------------------------------------------------------------------------
+  twelvedata:
+    api_key_env: "TWELVEDATA_API_KEY_1"
+    api_key_vault_path: "trading/twelvedata"
+    lookback_days: 60
+    interval: "1day"
+    outputsize: 60
+    indicators:
+      USD/MXN: fxrt_spot_usdmxn_mex_d_usdmxn
+      USD/CLP: fxrt_spot_usdclp_chl_d_usdclp
+      CL: comm_oil_wti_glb_d_wti
+      # NOTE: BZ returns anomalous values, using Investing.com as primary source for Brent
+      # BZ: comm_oil_brent_glb_d_brent  # DISABLED - see P0-2 in DATASET_QUALITY_ISSUES.md
+
+  # ---------------------------------------------------------------------------
+  # Investing.com - Market Indices and Commodities
+  # ---------------------------------------------------------------------------
+  investing:
+    scraper_type: cloudscraper
+    request_delay_seconds: 2
+    max_rows: 65
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    urls:
+      - url: https://www.investing.com/indices/colcap-historical-data
+        column: eqty_index_colcap_col_d_colcap
+        name: COLCAP Index
+      - url: https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data
+        column: finc_bond_yield10y_col_d_col10y
+        name: Colombia 10Y Yield
+      - url: https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data
+        column: finc_bond_yield5y_col_d_col5y
+        name: Colombia 5Y Yield
+      - url: https://www.investing.com/commodities/gold-historical-data
+        column: comm_metal_gold_glb_d_gold
+        name: Gold
+      - url: https://www.investing.com/commodities/us-coffee-c-historical-data
+        column: comm_agri_coffee_glb_d_coffee
+        name: Coffee
+      # Added to replace TwelveData BZ which returns anomalous values
+      - url: https://www.investing.com/commodities/brent-oil-historical-data
+        column: comm_oil_brent_glb_d_brent
+        name: Brent Oil
+
+  # ---------------------------------------------------------------------------
+  # BanRep SUAMECA - Colombian Central Bank Data (Selenium)
+  # ---------------------------------------------------------------------------
+  banrep:
+    selenium_timeout_seconds: 30
+    page_load_wait_seconds: 5
+    chrome_options:
+      - "--headless=new"
+      - "--no-sandbox"
+      - "--disable-dev-shm-usage"
+    indicators:
+      "241":
+        column: finc_rate_ibr_overnight_col_d_ibr
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/241/tasas_interes_indicador_bancario_referencia_ibr
+        name: IBR Overnight
+      "59":
+        column: polr_policy_rate_col_d_tpm
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/59/tasas_interes_politica_monetaria
+        name: TPM Policy Rate
+      "4170":
+        column: fxrt_reer_bilateral_col_m_itcr
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4170/indice_tasa_cambio_real_itcr
+        name: ITCR
+      "4180":
+        column: ftrd_terms_trade_col_m_tot
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4180/indice_terminos_intercambio_bienes
+        name: Terms of Trade
+      "15051":
+        column: rsbp_reserves_international_col_m_resint
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/15051/reservas_internacionales
+        name: International Reserves
+      "100002":
+        column: infl_cpi_total_col_m_ipccol
+        url: https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/100002/ipc
+        name: Colombia CPI
+
+  # ---------------------------------------------------------------------------
+  # BanRep SDMX REST API - Alternative for 4 Legacy Variables
+  # ---------------------------------------------------------------------------
+  # NOTE: These 4 indicators were previously only available via hardcoded
+  # scrapers. Now extracted via REST API for better reliability.
+  banrep_sdmx:
+    request_timeout_seconds: 30
+    rate_limit_delay_seconds: 1
+    lookback_days: 365
+    indicators:
+      # M2 Money Supply (Serie 15001)
+      "15001":
+        column: mnys_m2_col_m_m2col
+        name: M2 Money Supply Colombia
+        frequency: M
+      # M3 Money Supply (Serie 15002)
+      "15002":
+        column: mnys_m3_col_m_m3col
+        name: M3 Money Supply Colombia
+        frequency: M
+      # Private Credit (Serie 7870)
+      "7870":
+        column: crdt_private_col_m_credpri
+        name: Private Credit Colombia
+        frequency: M
+      # Gross Fixed Capital Formation (Serie 6847)
+      "6847":
+        column: invt_gfcf_col_q_gfcf
+        name: Gross Fixed Capital Formation Colombia
+        frequency: Q
+
+  # ---------------------------------------------------------------------------
+  # BCRP Peru - EMBI Colombia Spread
+  # ---------------------------------------------------------------------------
+  bcrp:
+    url: https://estadisticas.bcrp.gob.pe/estadisticas/series/diarias/resultados/PD04715XD/html/
+    column: crsk_spread_embi_col_d_embi
+    lookback_rows: 60
+    request_timeout_seconds: 20
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+  # ---------------------------------------------------------------------------
+  # Fedesarrollo - Colombian Confidence Indices
+  # ---------------------------------------------------------------------------
+  fedesarrollo:
+    scraper_path: /opt/airflow/data/pipeline/02_scrapers/02_custom
+    scraper_module: scraper_fedesarrollo
+    lookback_months: 12
+    indicators:
+      CCI:
+        column: crsk_sentiment_cci_col_m_cci
+        function: obtener_cci
+        name: Consumer Confidence Index
+      ICI:
+        column: crsk_sentiment_ici_col_m_ici
+        function: obtener_ici
+        name: Industrial Confidence Index
+
+  # ---------------------------------------------------------------------------
+  # DANE - Colombian Trade Balance
+  # ---------------------------------------------------------------------------
+  dane:
+    scraper_path: /opt/airflow/data/pipeline/02_scrapers/02_custom
+    scraper_module: scraper_dane_balanza
+    lookback_months: 15
+    indicators:
+      EXPORTS:
+        column: ftrd_exports_total_col_m_expusd
+        function: obtener_exportaciones
+        name: Exports USD millions
+      IMPORTS:
+        column: ftrd_imports_total_col_m_impusd
+        function: obtener_importaciones
+        name: Imports USD millions
+
+  # ---------------------------------------------------------------------------
+  # BanRep BOP - Balance of Payments (Quarterly Data)
+  # ---------------------------------------------------------------------------
+  # Contract: CTR-L0-BANREP-BOP-001
+  #
+  # Extracts data from the Highcharts data table in the BanRep catalog.
+  # The table has columns for each BOP component after clicking "Vista tabla".
+  #
+  # Available series (from Highcharts table):
+  #   - Column 1: Cuenta Corriente Trimestral
+  #   - Column 2: Cuenta Financiera Trimestral
+  #
+  # NOTE: IED (Foreign Direct Investment INTO Colombia) is NOT available
+  # as a separate series. It's aggregated within Cuenta Financiera.
+  #
+  banrep_bop:
+    selenium_timeout_seconds: 60
+    page_load_wait_seconds: 8
+    chrome_options:
+      - "--headless=new"
+      - "--no-sandbox"
+      - "--disable-dev-shm-usage"
+      - "--window-size=1920,1080"
+    indicators:
+      # Cuenta Corriente Trimestral (Column index 1 in Highcharts table)
+      # Extracted from: Catálogo > Cuenta corriente y cuenta financiera > Vista tabla
+      cuenta_corriente:
+        column: rsbp_current_account_col_q_cacct
+        name: Cuenta Corriente Trimestral
+        frequency: Q
+        unit: Millones USD
+        description: Balance de cuenta corriente de Colombia (quarterly)
+
+# =============================================================================
+# HOLIDAY CONFIGURATION (for cleanup of non-trading days)
+# =============================================================================
+holidays:
+  colombia:
+    library: colombian-holidays
+    # Library handles all Colombian holidays automatically
+
+  usa:
+    fixed:
+      - month: 1
+        day: 1
+        name: "New Year's Day"
+      - month: 7
+        day: 4
+        name: "Independence Day"
+      - month: 11
+        day: 11
+        name: "Veterans Day"
+      - month: 12
+        day: 25
+        name: "Christmas Day"
+    floating:
+      - name: "MLK Day"
+        rule: "third_monday_january"
+      - name: "Presidents Day"
+        rule: "third_monday_february"
+      - name: "Memorial Day"
+        rule: "last_monday_may"
+      - name: "Labor Day"
+        rule: "first_monday_september"
+      - name: "Columbus Day"
+        rule: "second_monday_october"
+      - name: "Thanksgiving"
+        rule: "fourth_thursday_november"
+
+# =============================================================================
+# RELEASE DATE OFFSETS (for determining when data is available for inference)
+# =============================================================================
+release_date_offsets:
+  fred: 1  # FRED data is typically released next day
+  twelvedata: 0  # Real-time data
+  investing: 0  # Same day scraping
+  banrep: 0  # Same day scraping
+  bcrp: 0  # Same day scraping
+  fedesarrollo: 15  # Monthly, ~15 days after month end
+  dane: 45  # Trade balance, ~45 days after month end
+
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
+database:
+  table_name: macro_indicators_daily
+  primary_key: fecha
+  update_fields:
+    - release_date
+    - ffilled_from_date
+    - updated_at
+
+# =============================================================================
+# VALIDATION CONFIGURATION (P0-2: Detect anomalous values)
+# =============================================================================
+validation:
+  enabled: true
+  on_invalid: warn  # warn | skip | error
+  ranges:
+    # Commodities (USD)
+    comm_oil_brent_glb_d_brent: [30, 150]
+    comm_oil_wti_glb_d_wti: [25, 150]
+    comm_metal_gold_glb_d_gold: [1000, 3500]
+    comm_agri_coffee_glb_d_coffee: [50, 400]
+
+    # Volatility Index
+    volt_vix_usa_d_vix: [9, 90]
+
+    # FX Indices and Rates
+    fxrt_index_dxy_usa_d_dxy: [80, 130]
+    fxrt_spot_usdmxn_mex_d_usdmxn: [12, 30]
+    fxrt_spot_usdclp_chl_d_usdclp: [600, 1200]
+
+    # Bond Yields (percentage)
+    finc_bond_yield10y_usa_d_ust10y: [0, 12]
+    finc_bond_yield2y_usa_d_dgs2: [0, 12]
+    finc_bond_yield10y_col_d_col10y: [4, 20]
+    finc_bond_yield5y_col_d_col5y: [4, 20]
+
+    # Interest Rates (percentage)
+    finc_rate_ibr_overnight_col_d_ibr: [0, 25]
+    polr_policy_rate_col_d_tpm: [0, 20]
+    polr_prime_rate_usa_d_prime: [0, 15]
+    polr_fed_funds_usa_m_fedfunds: [0, 10]
+
+    # Spreads (basis points)
+    crsk_spread_embi_col_d_embi: [50, 1500]
+
+    # Equity Indices
+    eqty_index_colcap_col_d_colcap: [800, 2500]
+
+    # Macro indicators (percentage/index)
+    infl_cpi_all_usa_m_cpiaucsl: [200, 400]
+    infl_cpi_core_usa_m_cpilfesl: [200, 400]
+    labr_unemployment_usa_m_unrate: [2, 20]
+
+    # Balance of Payments (Millones USD)
+    # Cuenta Corriente can be negative (deficit) or positive (surplus)
+    rsbp_current_account_col_q_cacct: [-20000, 5000]
+    # IDCE typically positive (outflows) but can be negative (repatriations)
+    rsbp_fdi_outflow_col_a_idce: [-5000, 15000]
+
+# =============================================================================
+# INDICATOR CALENDARS (P1-3/P1-5: Calendar-specific cleanup)
+# =============================================================================
+indicator_calendars:
+  # USA calendar - US market holidays apply
+  usa:
+    - fxrt_index_dxy_usa_d_dxy
+    - volt_vix_usa_d_vix
+    - finc_bond_yield10y_usa_d_ust10y
+    - finc_bond_yield2y_usa_d_dgs2
+    - polr_prime_rate_usa_d_prime
+    - comm_oil_wti_glb_d_wti  # CME traded
+
+  # Colombia calendar - Colombian market holidays apply
+  colombia:
+    - eqty_index_colcap_col_d_colcap
+    - finc_rate_ibr_overnight_col_d_ibr
+    - polr_policy_rate_col_d_tpm
+    - finc_bond_yield10y_col_d_col10y
+    - finc_bond_yield5y_col_d_col5y
+
+  # Global - No holiday cleanup (24/7 or global markets)
+  global:
+    - comm_metal_gold_glb_d_gold
+    - comm_oil_brent_glb_d_brent
+    - comm_agri_coffee_glb_d_coffee
+    - crsk_spread_embi_col_d_embi
+    - fxrt_spot_usdmxn_mex_d_usdmxn
+    - fxrt_spot_usdclp_chl_d_usdclp
+
+  # Monthly indicators - Only weekend cleanup, no holiday cleanup
+  monthly:
+    - infl_cpi_all_usa_m_cpiaucsl
+    - infl_cpi_core_usa_m_cpilfesl
+    - infl_pce_usa_m_pcepi
+    - polr_fed_funds_usa_m_fedfunds
+    - labr_unemployment_usa_m_unrate
+    - prod_industrial_usa_m_indpro
+    - mnys_m2_supply_usa_m_m2sl
+    - sent_consumer_usa_m_umcsent
+    - fxrt_reer_bilateral_col_m_itcr
+    - ftrd_terms_trade_col_m_tot
+    - rsbp_reserves_international_col_m_resint
+    - infl_cpi_total_col_m_ipccol
+    - crsk_sentiment_cci_col_m_cci
+    - crsk_sentiment_ici_col_m_ici
+    - ftrd_exports_total_col_m_expusd
+    - ftrd_imports_total_col_m_impusd
+    # BanRep SDMX legacy variables (P2-6) - DISABLED
+    # - mnys_m2_col_m_m2col
+    # - mnys_m3_col_m_m3col
+    # - crdt_private_col_m_credpri
+    # - invt_gfcf_col_q_gfcf
+
+  # Quarterly indicators - Balance of Payments data
+  quarterly:
+    - rsbp_current_account_col_q_cacct  # Cuenta Corriente Trimestral
+
+  # Annual indicators - Investment flow data
+  annual:
+    - rsbp_fdi_outflow_col_a_idce  # IDCE - Colombia FDI outflows
+
+# =============================================================================
+# FFILL LIMITS BY FREQUENCY (P1-4: Frequency-specific forward fill)
+# =============================================================================
+ffill_limits:
+  daily: 5       # Max 5 days for daily indicators
+  monthly: 35    # Max 35 days for monthly indicators
+  quarterly: 95  # Max 95 days for quarterly indicators
+  annual: 370    # Max 370 days for annual indicators (just over 1 year)

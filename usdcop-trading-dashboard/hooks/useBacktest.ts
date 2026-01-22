@@ -21,6 +21,7 @@ import {
   BacktestProgress,
   BacktestResult,
   BacktestRequest,
+  BacktestTradeEvent,
   createInitialBacktestState,
   createEmptyProgress,
   isBacktestRunning,
@@ -42,6 +43,8 @@ export interface UseBacktestOptions {
   onComplete?: (result: BacktestResult) => void;
   /** Callback when backtest fails */
   onError?: (error: Error) => void;
+  /** Callback when a trade is generated (for real-time equity curve updates) */
+  onTrade?: (trade: BacktestTradeEvent) => void;
   /** Auto-activate replay mode on completion */
   autoActivateReplay?: boolean;
 }
@@ -72,7 +75,7 @@ export interface UseBacktestReturn {
 // ============================================================================
 
 export function useBacktest(options: UseBacktestOptions = {}): UseBacktestReturn {
-  const { onComplete, onError, autoActivateReplay = true } = options;
+  const { onComplete, onError, onTrade, autoActivateReplay = true } = options;
 
   // State
   const [state, setState] = useState<BacktestState>(createInitialBacktestState);
@@ -170,6 +173,10 @@ export function useBacktest(options: UseBacktestOptions = {}): UseBacktestReturn
       onProgress: (progress) => {
         updateProgress(progress);
       },
+      onTrade: (trade) => {
+        // Real-time trade event for equity curve updates
+        onTrade?.(trade);
+      },
       onResult: (result) => {
         updateResult(result);
         onComplete?.(result);
@@ -193,7 +200,7 @@ export function useBacktest(options: UseBacktestOptions = {}): UseBacktestReturn
       // Error already handled by onError callback
       console.error('[useBacktest] Unexpected error:', error);
     }
-  }, [state.status, startTimer, updateProgress, updateResult, updateError, updateStatus, onComplete, onError]);
+  }, [state.status, startTimer, updateProgress, updateResult, updateError, updateStatus, onComplete, onError, onTrade]);
 
   const cancelBacktest = useCallback(() => {
     if (runnerRef.current) {

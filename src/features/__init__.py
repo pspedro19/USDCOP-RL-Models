@@ -26,9 +26,6 @@ from .contract import (
     OBSERVATION_DIM,
 )
 
-# Calculators (CTR-005) - import before builder
-from . import calculators
-
 # Normalizers (CTR-006) - Strategy Pattern implementations
 from . import normalizers
 from .normalizers import (
@@ -72,6 +69,54 @@ from .gap_handler import (
     validate_ohlcv_data,
 )
 
+# Feature Reader (Week 1) - Feature store reading and validation
+from .feature_reader import (
+    FeatureReader,
+    FeatureReadResult,
+    FeatureValidationError,
+    EXPECTED_FEATURE_ORDER,
+)
+
+# Temporal Joins (P0-06) - Point-in-time correct joins
+from .temporal_joins import (
+    merge_price_with_macro,
+    validate_no_lookahead,
+    join_multiple_sources,
+    TemporalJoinConfig,
+    JoinStatistics,
+    get_join_statistics,
+    fill_missing_macro,
+)
+
+# Trading Hours Filter (P0-07) - Colombian trading hours filtering
+# Refactored to use SSOT from config/trading_calendar.json
+from .trading_hours_filter import (
+    # Protocol
+    ITradingHoursFilter,
+    # Config classes
+    TradingCalendarConfig,
+    TradingSession,
+    # Main class
+    TradingHoursFilter,
+    # Factory
+    TradingHoursFilterFactory,
+    MarketType,
+    HolidayType,
+    # Config loading
+    load_trading_calendar_config,
+    ConfigLoadError,
+    # Convenience functions
+    get_trading_hours_filter,
+    filter_to_trading_hours,
+    is_trading_time,
+    # Integration
+    create_filter_from_trading_calendar,
+    # Constants
+    TRADING_WEEKDAYS,
+    WEEKEND_DAYS,
+    TRADING_CALENDAR_CONFIG_PATH,
+)
+
 __all__ = [
     # Feature Builder
     'FeatureBuilder',
@@ -82,8 +127,6 @@ __all__ = [
     'get_contract',
     'FEATURE_ORDER',
     'OBSERVATION_DIM',
-    # Calculators
-    'calculators',
     # Normalizers
     'normalizers',
     'Normalizer',
@@ -112,4 +155,34 @@ __all__ = [
     'get_gap_handler',
     'handle_gaps',
     'validate_ohlcv_data',
+    # Feature Reader (Week 1)
+    'FeatureReader',
+    'FeatureReadResult',
+    'FeatureValidationError',
+    'EXPECTED_FEATURE_ORDER',
+    # Temporal Joins (P0-06)
+    'merge_price_with_macro',
+    'validate_no_lookahead',
+    'join_multiple_sources',
+    'TemporalJoinConfig',
+    'JoinStatistics',
+    'get_join_statistics',
+    'fill_missing_macro',
+    # Trading Hours Filter (P0-07) - SSOT Version
+    'ITradingHoursFilter',
+    'TradingCalendarConfig',
+    'TradingSession',
+    'TradingHoursFilter',
+    'TradingHoursFilterFactory',
+    'MarketType',
+    'HolidayType',
+    'load_trading_calendar_config',
+    'ConfigLoadError',
+    'get_trading_hours_filter',
+    'filter_to_trading_hours',
+    'is_trading_time',
+    'create_filter_from_trading_calendar',
+    'TRADING_WEEKDAYS',
+    'WEEKEND_DAYS',
+    'TRADING_CALENDAR_CONFIG_PATH',
 ]

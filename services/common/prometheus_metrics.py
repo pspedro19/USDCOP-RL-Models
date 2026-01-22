@@ -27,6 +27,54 @@ Usage:
 Contract: CTR-OBS-001
 """
 
+__all__ = [
+    # Setup and configuration
+    "setup_prometheus_metrics",
+    "get_metrics_app",
+    "PROMETHEUS_AVAILABLE",
+    # Counters
+    "inference_requests_total",
+    "trade_signals_total",
+    "model_load_total",
+    "feature_calculation_errors_total",
+    "circuit_breaker_activations_total",
+    # Histograms
+    "inference_latency_seconds",
+    "feature_calculation_seconds",
+    "db_query_seconds",
+    "model_prediction_distribution",
+    # Gauges
+    "current_position_gauge",
+    "model_confidence_gauge",
+    "feature_drift_gauge",
+    "data_freshness_gauge",
+    "active_models_gauge",
+    "consecutive_losses_gauge",
+    # Macro ingestion metrics (P0-10)
+    "macro_ingestion_success",
+    "macro_ingestion_errors",
+    "macro_data_staleness",
+    "macro_ingestion_latency",
+    "macro_indicators_available",
+    # Info
+    "service_info",
+    # Decorators
+    "track_latency",
+    "track_latency_async",
+    "count_requests",
+    # Utility functions
+    "record_inference",
+    "record_trade_signal",
+    "record_feature_drift",
+    "record_data_freshness",
+    # Macro ingestion helper functions (P0-10)
+    "record_macro_ingestion_success",
+    "record_macro_ingestion_error",
+    "update_macro_staleness",
+    "record_macro_ingestion_latency",
+    "update_macro_indicators_available",
+]
+
 import logging
 import time
 from contextlib import contextmanager
@@ -217,6 +265,41 @@ if PROMETHEUS_AVAILABLE:
     )
 
     # -------------------------------------------------------------------------
+    # MACRO INGESTION METRICS (P0-10)
+    # -------------------------------------------------------------------------
+
+    macro_ingestion_success = Counter(
+        'usdcop_macro_ingestion_success_total',
+        'Total successful macro data ingestions',
+        ['source', 'indicator']
+    )
+
+    macro_ingestion_errors = Counter(
+        'usdcop_macro_ingestion_errors_total',
+        'Total failed macro data ingestions',
+        ['source', 'indicator', 'error_type']
+    )
+
+    macro_data_staleness = Gauge(
+        'usdcop_macro_data_staleness_seconds',
+        'Age of latest macro data in seconds',
+        ['source', 'indicator']
+    )
+
+    macro_ingestion_latency = Histogram(
+        'usdcop_macro_ingestion_latency_seconds',
+        'Latency of macro data ingestion',
+        ['source'],
+        buckets=[0.5, 1, 2, 5, 10, 30, 60, 120, 300]
+    )
+
+    macro_indicators_available = Gauge(
+        'usdcop_macro_indicators_available',
+        'Number of macro indicators with fresh data',
+        ['source']
+    )
+
+    # -------------------------------------------------------------------------
     # INFO - Static information about the service
     # -------------------------------------------------------------------------
 
@@ -242,6 +325,11 @@ else:
     data_freshness_gauge = NoOpMetric()
     active_models_gauge = NoOpMetric()
     consecutive_losses_gauge = NoOpMetric()
+    macro_ingestion_success = NoOpMetric()
+    macro_ingestion_errors = NoOpMetric()
+    macro_data_staleness = NoOpMetric()
+    macro_ingestion_latency = NoOpMetric()
+    macro_indicators_available = NoOpMetric()
     service_info = NoOpInfo()
 
 
@@ -472,3 +560,107 @@ def record_data_freshness(data_type: str, age_seconds: float) -> None:
         age_seconds: Age of latest data in seconds
     """
     data_freshness_gauge.labels(data_type=data_type).set(age_seconds)
+
+
+# =============================================================================
+# MACRO INGESTION HELPER FUNCTIONS (P0-10)
+# =============================================================================
+
+def record_macro_ingestion_success(source: str, indicator: str) -> None:
+    """
+    Record a successful macro data ingestion.
+
+    This function increments the success counter for macro data ingestion,
+    allowing tracking of successful data pulls from various sources.
+
+    Args:
+        source: Data source identifier (e.g., 'banrep', 'dane', 'fred')
+        indicator: Macro indicator name (e.g., 'cpi', 'gdp', 'interest_rate')
+
+    Example:
+        record_macro_ingestion_success('banrep', 'interest_rate')
+    """
+    macro_ingestion_success.labels(source=source, indicator=indicator).inc()
+
+
+def record_macro_ingestion_error(
+    source: str,
+    indicator: str,
+    error_type: str
+) -> None:
+    """
+    Record a failed macro data ingestion.
+
+    This function increments the error counter for macro data ingestion,
+    categorized by error type for debugging and alerting purposes.
+
+    Args:
+        source: Data source identifier (e.g., 'banrep', 'dane', 'fred')
+        indicator: Macro indicator name (e.g., 'cpi', 'gdp', 'interest_rate')
+        error_type: Type of error encountered (e.g., 'timeout', 'parse_error',
+                    'api_error', 'validation_error', 'network_error')
+
+    Example:
+        record_macro_ingestion_error('fred', 'gdp', 'timeout')
+    """
+    macro_ingestion_errors.labels(
+        source=source,
+        indicator=indicator,
+        error_type=error_type
+    ).inc()
+
+
+def update_macro_staleness(source: str, indicator: str, age_seconds: float) -> None:
+    """
+    Update the staleness gauge for a macro indicator.
+
+    This function sets the current age (in seconds) of the latest data point
+    for a specific macro indicator, enabling staleness-based alerting.
+
+    Args:
+        source: Data source identifier (e.g., 'banrep', 'dane', 'fred')
+        indicator: Macro indicator name (e.g., 'cpi', 'gdp', 'interest_rate')
+        age_seconds: Age of the latest data point in seconds
+
+    Example:
+        # Data is 2 hours old
+        update_macro_staleness('banrep', 'interest_rate', 7200.0)
+    """
+    macro_data_staleness.labels(source=source, indicator=indicator).set(age_seconds)
+
+
+def record_macro_ingestion_latency(source: str, latency_seconds: float) -> None:
+    """
+    Record the latency of a macro data ingestion operation.
+
+    This function observes the time taken to fetch and process macro data
+    from a specific source, useful for performance monitoring.
+
+    Args:
+        source: Data source identifier (e.g., 'banrep', 'dane', 'fred')
+        latency_seconds: Time taken for the ingestion in seconds
+
+    Example:
+        start = time.perf_counter()
+        fetch_macro_data('banrep')
+        record_macro_ingestion_latency('banrep', time.perf_counter() - start)
+    """
+    macro_ingestion_latency.labels(source=source).observe(latency_seconds)
+
+
+def update_macro_indicators_available(source: str, count: int) -> None:
+    """
+    Update the count of available macro indicators for a source.
+
+    This function sets the number of macro indicators that have fresh
+    (non-stale) data available from a specific source.
+
+    Args:
+        source: Data source identifier (e.g., 'banrep', 'dane', 'fred')
+        count: Number of indicators with fresh data
+
+    Example:
+        # 5 out of 8 indicators have fresh data
+        update_macro_indicators_available('banrep', 5)
+    """
+    macro_indicators_available.labels(source=source).set(count)

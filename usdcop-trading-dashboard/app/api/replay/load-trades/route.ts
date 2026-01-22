@@ -14,8 +14,9 @@ import { withAuth } from '@/lib/auth/api-auth';
  * FastAPI inference service running on port 8000.
  */
 
-// Docker: http://usdcop-mlops-inference:8090, Local: http://localhost:8090
-const INFERENCE_SERVICE_URL = process.env.INFERENCE_SERVICE_URL || 'http://usdcop-mlops-inference:8090';
+// Docker: http://usdcop-backtest-api:8000, Local: http://localhost:8003
+const INFERENCE_SERVICE_URL = process.env.BACKTEST_SERVICE_URL ||
+  process.env.INFERENCE_SERVICE_URL || 'http://localhost:8003';
 const INFERENCE_TIMEOUT_MS = 300000; // 5 minutes for long backtests
 
 interface BacktestRequest {
@@ -138,7 +139,7 @@ export const POST = withAuth(async (request) => {
     const timeoutId = setTimeout(() => controller.abort(), INFERENCE_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${INFERENCE_SERVICE_URL}/v1/backtest`, {
+      const response = await fetch(`${INFERENCE_SERVICE_URL}/api/v1/backtest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ export const GET = withAuth(async (request) => {
 
   try {
     const response = await fetch(
-      `${INFERENCE_SERVICE_URL}/v1/backtest/status/${modelId}?start_date=${startDate}&end_date=${endDate}`,
+      `${INFERENCE_SERVICE_URL}/api/v1/backtest/status/${modelId}?start_date=${startDate}&end_date=${endDate}`,
       { method: 'GET' }
     );
 

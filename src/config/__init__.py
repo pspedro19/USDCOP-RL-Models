@@ -48,6 +48,33 @@ from .trading_config import (
 # Security settings
 from .security import SecuritySettings, SecurityError, get_secure_db_url
 
+# Trading flags (kill switch, maintenance mode, etc.) - SSOT
+from .trading_flags import (
+    # Enums
+    TradingMode,
+    Environment,
+    # Main class (SSOT)
+    TradingFlags,
+    TradingFlagsEnv,  # Backward compatibility alias
+    # Singleton functions
+    get_trading_flags,
+    reload_trading_flags,
+    reset_trading_flags,
+    reset_trading_flags_cache,
+    # Kill switch functions
+    activate_kill_switch,
+    deactivate_kill_switch,
+    # Convenience functions
+    is_live_trading_enabled,
+    is_paper_trading_enabled,
+    is_kill_switch_active,
+    get_current_environment,
+    get_current_trading_mode,
+    # Backward compatibility
+    get_trading_flags_env,
+    reload_trading_flags_env,
+)
+
 __all__ = [
     # Trading Config (SSOT)
     "TradingConfig",
@@ -72,4 +99,22 @@ __all__ = [
     "SecuritySettings",
     "SecurityError",
     "get_secure_db_url",
+    # Trading Flags (SSOT)
+    "TradingMode",
+    "Environment",
+    "TradingFlags",
+    "TradingFlagsEnv",
+    "get_trading_flags",
+    "reload_trading_flags",
+    "reset_trading_flags",
+    "reset_trading_flags_cache",
+    "activate_kill_switch",
+    "deactivate_kill_switch",
+    "is_live_trading_enabled",
+    "is_paper_trading_enabled",
+    "is_kill_switch_active",
+    "get_current_environment",
+    "get_current_trading_mode",
+    "get_trading_flags_env",
+    "reload_trading_flags_env",
 ]

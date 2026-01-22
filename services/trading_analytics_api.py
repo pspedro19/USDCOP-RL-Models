@@ -926,14 +926,17 @@ def get_spread_proxy(symbol: str = "USDCOP", days: int = 30):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ==========================================
-# SESSION PROGRESS
+# TRADING HOURS PROGRESS
 # ==========================================
 
 
-def calculate_session_progress() -> Dict[str, Any]:
+def calculate_trading_hours_progress() -> Dict[str, Any]:
     """
-    Calcula el progreso de la sesión de trading premium
+    Calcula el progreso de la sesión de trading premium.
     Sesión: 08:00 - 12:55 COT (5 horas = 300 minutos = 60 barras M5)
+
+    Note: This function tracks trading session hours, not the SSOT
+    'time_normalized' feature used in ML models.
 
     Returns:
         dict: Status, progreso %, barras elapsed/total, tiempo restante
@@ -992,18 +995,22 @@ def calculate_session_progress() -> Dict[str, Any]:
     }
 
 
-@app.get("/api/analytics/session-progress")
-def get_session_progress():
+@app.get("/api/analytics/trading-hours-progress")
+def get_trading_hours_progress():
     """
-    Retorna progreso de la sesión de trading premium
+    Retorna progreso de la sesión de trading premium.
     Horario: 08:00 - 12:55 COT (60 barras M5)
+
+    Note: This endpoint tracks trading session hours, not the SSOT
+    'time_normalized' feature used in ML models.
     """
     try:
-        progress = calculate_session_progress()
+        progress = calculate_trading_hours_progress()
         return progress
     except Exception as e:
-        logger.error(f"Error calculating session progress: {e}")
+        logger.error(f"Error calculating trading hours progress: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/analytics/order-flow")
 async def get_order_flow(

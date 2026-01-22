@@ -1,902 +1,636 @@
 """
 DAG: v3.l3_model_training
 =========================
-USD/COP Trading System - V3 Architecture
-Layer 3: Model Training Pipeline with MLflow Integration
+USD/COP Trading System - Model Training Pipeline
 
-Purpose:
-    End-to-end RL model training pipeline with:
-    - Dataset validation
-    - Normalization statistics generation
-    - Feature contract creation
-    - PPO model training
-    - Model registration
-    - Backtest validation (optional)
+This is a THIN WRAPPER around the TrainingEngine.
+All training logic is in src/training/engine.py (DRY principle).
 
 Architecture:
-    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-    │  AIRFLOW    │────▶│   MLFLOW    │────▶│   MODEL     │
-    │ Orchestrator│     │  Tracking   │     │  REGISTRY   │
-    └─────────────┘     └─────────────┘     └─────────────┘
-          │                   │                    │
-          ▼                   ▼                    ▼
-    ┌─────────────────────────────────────────────────────┐
-    │              TRAINING PIPELINE (Python)              │
-    │  • EnvironmentFactory                                │
-    │  • PPOTrainer                                        │
-    │  • ContractFactory                                   │
-    └─────────────────────────────────────────────────────┘
-
-Schedule:
-    Manual trigger (training is expensive)
-    Can be triggered by:
-    - Manual UI trigger with config
-    - After L2 preprocessing pipeline
-    - Scheduled weekly/monthly retraining
-
-SOLID Principles:
-    - SRP: Each task does one thing
-    - OCP: Extensible via operator inheritance
-    - DIP: Depends on abstractions (XCom, TrainingConfig)
-
-Design Patterns:
-    - Pipeline Pattern: Sequential stages with XCom
-    - Observer Pattern: MLflow tracks all stages
-    - Factory Pattern: Environment and contract creation
-    - Strategy Pattern: Pluggable reward strategies
-
-Features:
-    - MLflow experiment tracking
-    - XCom artifact passing
-    - Hash verification for integrity
-    - Alerting on failure
-    - Configurable hyperparameters
+    ┌─────────────────────────────────────────────────────────┐
+    │  L2 Preprocessing (upstream)                            │
+    │  - Generates RL datasets                                │
+    │  - Pushes dataset_path, hash via XCom                   │
+    └─────────────────────────────────────────────────────────┘
+                              ↓ XCom (L2XComKeysEnum)
+    ┌─────────────────────────────────────────────────────────┐
+    │  Airflow DAG (this file)                                │
+    │  - Orchestration only                                   │
+    │  - XCom passing (using contracts)                       │
+    │  - Alerting                                             │
+    └─────────────────────────────────────────────────────────┘
+                              ↓
+    ┌─────────────────────────────────────────────────────────┐
+    │  TrainingEngine (src/training/engine.py)                │
+    │  - ALL training logic                                   │
+    │  - Dataset validation                                   │
+    │  - Norm stats generation                                │
+    │  - Contract creation                                    │
+    │  - PPO training                                         │
+    │  - MLflow logging                                       │
+    │  - Model registration                                   │
+    └─────────────────────────────────────────────────────────┘
+                              ↓ XCom (L3XComKeysEnum)
+    ┌─────────────────────────────────────────────────────────┐
+    │  L4 Experiment Runner (downstream)                      │
+    │  - Receives model_path, metrics                         │
+    │  - Compares with baseline                               │
+    └─────────────────────────────────────────────────────────┘
 
 Author: Trading Team
-Version: 1.0.0
-Created: 2025-01-12
+Version: 2.1.0 (L2 XCom integration with contracts)
+Date: 2026-01-18
 """
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-import hashlib
+from typing import Any, Dict
 import json
 import logging
 import os
 import sys
-import time
 
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.python import PythonOperator, BranchPythonOperator
-from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
-import pandas as pd
 
-# Local imports
-from utils.dag_common import get_db_connection, load_feature_config
+# Add project root to path
+sys.path.insert(0, '/opt/airflow')
 
 # =============================================================================
-# AUTO-INCREMENT VERSION
+# IMPORTS FROM SSOT
 # =============================================================================
 
+# XCom Contracts - SSOT for inter-DAG communication
+try:
+    from airflow.dags.contracts.xcom_contracts import (
+        L2XComKeysEnum,
+        L3XComKeysEnum,
+        L2_DAG_ID,
+        L3Output,
+        pull_l2_output,
+        compute_file_hash,
+    )
+    XCOM_CONTRACTS_AVAILABLE = True
+    logging.info("[SSOT] XCom contracts loaded successfully")
+except ImportError as e:
+    XCOM_CONTRACTS_AVAILABLE = False
+    logging.warning(f"[SSOT] XCom contracts not available: {e}")
 
-def get_next_model_version() -> str:
-    """
-    Get the next model version by auto-incrementing from the database.
+try:
+    from src.training.engine import TrainingEngine, TrainingRequest
+    from src.training.config import PPO_HYPERPARAMETERS, RewardConfig, REWARD_CONFIG
+    ENGINE_AVAILABLE = True
+    logging.info(f"[SSOT] TrainingEngine loaded successfully")
+except ImportError as e:
+    ENGINE_AVAILABLE = False
+    REWARD_CONFIG = None
+    RewardConfig = None
+    logging.error(f"[SSOT] TrainingEngine not available: {e}")
 
-    Queries model_registry for the highest version number and returns v(N+1).
+try:
+    from src.core.contracts.feature_contract import FEATURE_ORDER, FEATURE_ORDER_HASH
+except ImportError:
+    FEATURE_ORDER = None
+    FEATURE_ORDER_HASH = None
 
-    Returns:
-        str: Next version string (e.g., "v2" if latest is "v1")
-    """
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
+# GAP 2: Experiment config support
+try:
+    from src.experiments import load_experiment_config, ExperimentConfig
+    EXPERIMENT_CONFIG_AVAILABLE = True
+except ImportError:
+    EXPERIMENT_CONFIG_AVAILABLE = False
+    logging.warning("[SSOT] ExperimentConfig not available")
 
-        # Find the maximum version number from model_registry
-        cur.execute("""
-            SELECT MAX(
-                CAST(
-                    REGEXP_REPLACE(model_version, '[^0-9]', '', 'g')
-                    AS INTEGER
-                )
-            ) as max_version
-            FROM model_registry
-            WHERE model_version ~ '^v?[0-9]+$'
-        """)
+# GAP 1, 2: DVC and Lineage tracking
+try:
+    from src.core.services import (
+        DVCService,
+        DVCTag,
+        LineageTracker,
+        create_dvc_service,
+        create_lineage_tracker,
+    )
+    LINEAGE_AVAILABLE = True
+except ImportError:
+    LINEAGE_AVAILABLE = False
+    logging.warning("[SSOT] LineageTracker not available")
 
-        result = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if result and result[0] is not None:
-            next_version = result[0] + 1
-            logging.info(f"Auto-increment: Found max version v{result[0]}, next is v{next_version}")
-            return f"v{next_version}"
-        else:
-            logging.info("Auto-increment: No versions found in DB, starting at v1")
-            return "v1"
-
-    except Exception as e:
-        logging.warning(f"Auto-increment failed: {e}. Using default v1")
-        return "v1"
-
+# MinIO-First Architecture: ExperimentManager for storage
+try:
+    from src.ml_workflow.experiment_manager import ExperimentManager
+    EXPERIMENT_MANAGER_AVAILABLE = True
+except ImportError:
+    EXPERIMENT_MANAGER_AVAILABLE = False
+    logging.warning("[SSOT] ExperimentManager not available - using local storage")
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
+from contracts.dag_registry import L3_MODEL_TRAINING
 
-DAG_ID = 'v3.l3_model_training'
+DAG_ID = L3_MODEL_TRAINING
+PROJECT_ROOT = Path('/opt/airflow')
 
-# Default training configuration (can be overridden via Airflow Variables)
-# NOTE: version="auto" enables auto-increment from database
-DEFAULT_TRAINING_CONFIG = {
-    "version": "auto",  # "auto" = auto-increment, or explicit like "v1"
+DEFAULT_CONFIG = {
+    "version": "auto",
     "experiment_name": "ppo_usdcop",
-
-    # Dataset
     "dataset_name": "RL_DS3_MACRO_CORE.csv",
-    "dataset_dir": "5min",  # "5min" or "daily"
-
-    # Features (13 market + 2 state = 15 observation dim)
-    "feature_columns": [
-        "log_ret_5m", "log_ret_1h", "log_ret_4h",
-        "rsi_9", "atr_pct", "adx_14",
-        "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
-        "brent_change_1d", "rate_spread", "usdmxn_change_1d",
-        "position", "time_normalized"
-    ],
-    "state_features": ["position", "time_normalized"],
-
-    # Technical indicators
-    "rsi_period": 9,
-    "atr_period": 10,
-    "adx_period": 14,
-
-    # Trading hours (Colombia)
-    "trading_hours_start": "13:00",  # UTC (8:00 Bogota)
-    "trading_hours_end": "17:55",    # UTC (12:55 Bogota)
-
-    # Training hyperparameters
-    "total_timesteps": 500_000,
-    "learning_rate": 3e-4,
-    "n_steps": 2048,
-    "batch_size": 64,
-    "n_epochs": 10,
-    "gamma": 0.90,  # shorter-term focus for noisy 5-min data
-    "gae_lambda": 0.95,
-    "clip_range": 0.2,
-    "ent_coef": 0.05,  # more exploration
-
-    # Environment - from config/trading_config.yaml SSOT
-    "initial_capital": 10_000.0,
-    "transaction_cost_bps": 75.0,  # From SSOT: costs.transaction_cost_bps
-    "slippage_bps": 15.0,  # From SSOT: costs.slippage_bps
-
-    # Action Thresholds - from config/trading_config.yaml SSOT
-    "threshold_long": 0.33,  # From SSOT: thresholds.long
-    "threshold_short": -0.33,  # From SSOT: thresholds.short
-
-    # Train/Val/Test split
-    "train_ratio": 0.70,
-    "val_ratio": 0.15,
-
-    # Options
-    "auto_register": True,
-    "run_backtest_validation": False,
-    "backtest_start_date": None,
-    "backtest_end_date": None,
-
-    # MLflow
-    "mlflow_tracking_uri": os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000"),
+    "dataset_dir": "5min",
+    "total_timesteps": PPO_HYPERPARAMETERS.total_timesteps if ENGINE_AVAILABLE else 500_000,
     "mlflow_enabled": True,
+    "auto_register": True,
+    # GAP 2: Support experiment config YAML
+    "experiment_config_path": None,  # e.g., "config/experiments/baseline_ppo_v1.yaml"
+    # GAP 1: DVC integration
+    "dvc_enabled": True,
+    "dvc_auto_tag": True,
 }
 
 
-def get_training_config() -> Dict[str, Any]:
-    """
-    Get training configuration from Airflow Variables or defaults.
+def get_training_config(**context) -> Dict[str, Any]:
+    """Get training configuration from Airflow Variables or DAG run conf."""
+    config = DEFAULT_CONFIG.copy()
 
-    Priority:
-    1. Airflow Variable: training_config (JSON)
-    2. DAG run conf
-    3. Default config
-
-    Special handling:
-    - version="auto": Auto-increments from model_registry database
-    """
-    config = DEFAULT_TRAINING_CONFIG.copy()
-
+    # Override from Variable
     try:
-        config_json = Variable.get("training_config", default_var=None)
-        if config_json:
-            user_config = json.loads(config_json)
-            # Merge with defaults
-            config = {**config, **user_config}
+        var_config = Variable.get("training_config", default_var=None)
+        if var_config:
+            config.update(json.loads(var_config))
     except Exception as e:
         logging.warning(f"Could not load training_config Variable: {e}")
 
-    # Resolve "auto" version to actual next version
+    # Override from dag_run.conf
+    if context.get('dag_run') and context['dag_run'].conf:
+        config.update(context['dag_run'].conf)
+
+    # Auto-increment version if needed
     if config.get("version") == "auto":
-        config["version"] = get_next_model_version()
-        logging.info(f"Auto-increment resolved version to: {config['version']}")
+        config["version"] = _get_next_version()
 
     return config
 
 
-def get_project_paths() -> Dict[str, Path]:
-    """Get project paths based on environment"""
-    # Docker paths
-    docker_root = Path('/opt/airflow')
-    if docker_root.exists():
-        project_root = docker_root
-    else:
-        # Local development
-        project_root = Path(__file__).parent.parent.parent
-
-    return {
-        "project_root": project_root,
-        "data_dir": project_root / "data" / "pipeline" / "07_output",
-        "config_dir": project_root / "config",
-        "models_dir": project_root / "models",
-        "contracts_dir": project_root / "config" / "contracts",
-    }
-
-
-PATHS = get_project_paths()
-
-
-# =============================================================================
-# MLFLOW UTILITIES
-# =============================================================================
-
-def init_mlflow(experiment_name: str, tracking_uri: Optional[str] = None):
-    """Initialize MLflow for tracking"""
+def _get_next_version() -> str:
+    """Get next model version from database."""
     try:
-        import mlflow
+        from utils.dag_common import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT MAX(CAST(REGEXP_REPLACE(model_version, '[^0-9]', '', 'g') AS INTEGER))
+            FROM model_registry WHERE model_version ~ '^v?[0-9]+$'
+        """)
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
 
-        if tracking_uri:
-            mlflow.set_tracking_uri(tracking_uri)
-
-        # Create or get experiment
-        experiment = mlflow.get_experiment_by_name(experiment_name)
-        if experiment is None:
-            mlflow.create_experiment(experiment_name)
-        mlflow.set_experiment(experiment_name)
-
-        logging.info(f"MLflow initialized: experiment={experiment_name}")
-        return mlflow
-    except ImportError:
-        logging.warning("MLflow not installed. Experiment tracking disabled.")
-        return None
+        if result and result[0]:
+            return f"v{result[0] + 1}"
+        return "v1"
     except Exception as e:
-        logging.warning(f"MLflow initialization failed: {e}. Tracking disabled.")
-        return None
+        logging.warning(f"Auto-version failed: {e}")
+        return f"v{datetime.now().strftime('%Y%m%d')}"
 
 
 # =============================================================================
 # TASK FUNCTIONS
 # =============================================================================
 
-def validate_dataset(**context) -> Dict[str, Any]:
+def run_training(**context) -> Dict[str, Any]:
     """
-    Task 1: Validate training dataset exists and has required columns.
+    Main training task - delegates to TrainingEngine.
 
-    Outputs (XCom):
-    - dataset_path: Path to validated dataset
-    - dataset_info: Row count, column count, date range
-    - dataset_hash: SHA256 hash for reproducibility
+    This is the ONLY place that calls the engine.
+    All training logic is centralized in engine.py.
+
+    Dataset Resolution Priority (SSOT):
+        1. dag_run.conf['dataset_path'] - Explicit path from L4 trigger
+        2. L2 XCom - Pull from L2 preprocessing DAG
+        3. Config fallback - Build from dataset_dir/dataset_name
+
+    GAP 2: Now supports experiment_config_path parameter for YAML-based config.
+    GAP 4: Pushes config_hash to XCom for lineage tracking.
+    GAP 1: Integrates DVC for dataset versioning.
     """
-    config = context['dag_run'].conf or get_training_config()
+    if not ENGINE_AVAILABLE:
+        raise RuntimeError("TrainingEngine not available. Check imports.")
 
-    logging.info(f"Validating dataset for version {config['version']}...")
-
-    # Build dataset path
-    dataset_dir = PATHS["data_dir"] / f"datasets_{config['dataset_dir']}"
-    dataset_path = dataset_dir / config["dataset_name"]
-
-    if not dataset_path.exists():
-        raise FileNotFoundError(
-            f"Dataset not found: {dataset_path}\n"
-            f"Run L2 preprocessing pipeline first."
-        )
-
-    # Load and validate
-    df = pd.read_csv(dataset_path)
-
-    # Check required columns
-    missing = [c for c in config["feature_columns"] if c not in df.columns]
-    if missing:
-        raise ValueError(f"Missing columns in dataset: {missing}")
-
-    # Compute hash
-    with open(dataset_path, 'rb') as f:
-        dataset_hash = hashlib.sha256(f.read()).hexdigest()
-
-    # Get date range if 'time' column exists
-    date_range = {}
-    if 'time' in df.columns:
-        df['time'] = pd.to_datetime(df['time'])
-        date_range = {
-            "start": str(df['time'].min()),
-            "end": str(df['time'].max()),
-        }
-
-    result = {
-        "dataset_path": str(dataset_path),
-        "dataset_hash": dataset_hash,
-        "row_count": len(df),
-        "column_count": len(df.columns),
-        "feature_count": len(config["feature_columns"]),
-        "date_range": date_range,
-    }
-
-    logging.info(f"✓ Dataset validated: {len(df):,} rows, {len(df.columns)} columns")
-
-    # Push to XCom
+    config = get_training_config(**context)
     ti = context['ti']
-    ti.xcom_push(key='dataset_path', value=str(dataset_path))
-    ti.xcom_push(key='dataset_hash', value=dataset_hash)
-    ti.xcom_push(key='dataset_info', value=result)
+
+    logging.info("=" * 60)
+    logging.info(f"Starting training v{config['version']}")
+    logging.info("=" * 60)
+
+    # GAP 2: Load experiment config from YAML if provided
+    experiment_config = None
+    config_hash = None
+    experiment_config_path = config.get('experiment_config_path')
+
+    if experiment_config_path and EXPERIMENT_CONFIG_AVAILABLE:
+        exp_config_full_path = PROJECT_ROOT / experiment_config_path
+        if exp_config_full_path.exists():
+            logging.info(f"Loading experiment config: {exp_config_full_path}")
+            experiment_config = load_experiment_config(exp_config_full_path)
+
+            # Compute config hash for lineage
+            import hashlib
+            with open(exp_config_full_path, 'rb') as f:
+                config_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+
+            # Override config values from experiment YAML
+            if experiment_config.training.total_timesteps:
+                config['total_timesteps'] = experiment_config.training.total_timesteps
+            if experiment_config.experiment.name:
+                config['experiment_name'] = experiment_config.experiment.name
+            if experiment_config.experiment.version:
+                config['version'] = f"v{experiment_config.experiment.version.replace('.', '_')}"
+
+            logging.info(f"Experiment: {experiment_config.experiment.name}")
+            logging.info(f"Config hash: {config_hash}")
+        else:
+            logging.warning(f"Experiment config not found: {exp_config_full_path}")
+
+    # =========================================================================
+    # DATASET RESOLUTION - SSOT Priority (MinIO-First Architecture)
+    # =========================================================================
+    dataset_path = None
+    dataset_hash = None
+    l2_output = None
+    experiment_id = None
+    dataset_version = None
+    is_minio_first = False
+
+    # Priority 1: Explicit dataset_path from dag_run.conf (L4 trigger)
+    if config.get('dataset_path'):
+        dataset_path = Path(config['dataset_path'])
+        dataset_hash = config.get('dataset_hash')
+        logging.info(f"[SSOT] Dataset from dag_run.conf: {dataset_path}")
+        if dataset_hash:
+            logging.info(f"[SSOT] Expected hash: {dataset_hash}")
+
+    # Priority 2: Pull from L2 XCom (if L2 ran before us)
+    elif XCOM_CONTRACTS_AVAILABLE:
+        l2_output = pull_l2_output(ti)
+        if l2_output:
+            # Check if L2 used MinIO-First architecture
+            if hasattr(l2_output, 'is_minio_first') and l2_output.is_minio_first():
+                is_minio_first = True
+                experiment_id = l2_output.experiment_id
+                dataset_version = l2_output.version
+                logging.info(f"[MinIO-First] L2 used MinIO storage")
+                logging.info(f"[MinIO-First] Dataset URI: {l2_output.dataset_uri}")
+                logging.info(f"[MinIO-First] Experiment ID: {experiment_id}")
+                logging.info(f"[MinIO-First] Version: {dataset_version}")
+
+                # Load dataset from MinIO
+                if EXPERIMENT_MANAGER_AVAILABLE:
+                    try:
+                        manager = ExperimentManager(experiment_id)
+                        df = manager.load_dataset(version=dataset_version)
+                        logging.info(f"[MinIO-First] Loaded dataset from MinIO: {len(df)} rows")
+
+                        # Save locally for training (TrainingEngine expects local file)
+                        local_cache_dir = PROJECT_ROOT / "data" / "cache" / experiment_id
+                        local_cache_dir.mkdir(parents=True, exist_ok=True)
+                        dataset_path = local_cache_dir / f"{dataset_version}_train.parquet"
+                        df.to_parquet(dataset_path, index=False)
+                        logging.info(f"[MinIO-First] Cached locally at: {dataset_path}")
+
+                        dataset_hash = l2_output.dataset_hash
+                    except Exception as e:
+                        logging.error(f"[MinIO-First] Failed to load from MinIO: {e}")
+                        logging.warning("[MinIO-First] Falling back to local path")
+                        is_minio_first = False
+                else:
+                    logging.warning("[MinIO-First] ExperimentManager not available, using local path")
+                    is_minio_first = False
+
+            # Fall back to local path from L2 if MinIO not available
+            if not is_minio_first and l2_output.dataset_path:
+                dataset_path = Path(l2_output.dataset_path)
+                dataset_hash = l2_output.dataset_hash
+                experiment_id = l2_output.experiment_name
+
+            logging.info(f"[SSOT] Dataset from L2 XCom: {dataset_path}")
+            logging.info(f"[SSOT] L2 hash: {dataset_hash}")
+            logging.info(f"[SSOT] L2 row count: {l2_output.row_count}")
+            logging.info(f"[SSOT] L2 experiment: {l2_output.experiment_name}")
+
+    # Priority 3: Config fallback (legacy behavior)
+    if dataset_path is None:
+        dataset_path = (
+            PROJECT_ROOT / "data" / "pipeline" / "07_output" /
+            f"datasets_{config['dataset_dir']}" / config['dataset_name']
+        )
+        logging.info(f"[SSOT] Dataset from config fallback: {dataset_path}")
+
+    # Validate dataset exists
+    if not dataset_path.exists():
+        raise FileNotFoundError(f"Dataset not found: {dataset_path}")
+
+    # Validate hash if provided
+    if dataset_hash and XCOM_CONTRACTS_AVAILABLE:
+        actual_hash = compute_file_hash(dataset_path)
+        if actual_hash != dataset_hash:
+            logging.warning(
+                f"[SSOT] Dataset hash mismatch! "
+                f"Expected: {dataset_hash}, Actual: {actual_hash}"
+            )
+            # Don't fail - just log warning for now
+        else:
+            logging.info(f"[SSOT] Dataset hash verified: {actual_hash}")
+
+    # Get DB connection string
+    db_connection = os.environ.get("DATABASE_URL")
+
+    # Get reward configuration from dag_run.conf or use default SSOT
+    reward_config = None
+    reward_contract_id = config.get('reward_contract_id', 'v1.0.0')
+    enable_curriculum = config.get('enable_curriculum', True)
+
+    if RewardConfig is not None:
+        # Check for custom reward weights in config
+        if 'reward_weights' in config:
+            weights = config['reward_weights']
+            reward_config = RewardConfig(
+                weight_pnl=weights.get('pnl', 0.50),
+                weight_dsr=weights.get('dsr', 0.25),
+                weight_sortino=weights.get('sortino', 0.15),
+                weight_regime_penalty=weights.get('regime_penalty', 0.05),
+                weight_holding_decay=weights.get('holding_decay', 0.03),
+                weight_anti_gaming=weights.get('anti_gaming', 0.02),
+                enable_normalization=config.get('enable_reward_normalization', True),
+                enable_curriculum=enable_curriculum,
+            )
+            logging.info(f"[REWARD] Using custom reward weights: {weights}")
+        elif REWARD_CONFIG is not None:
+            # Use SSOT default config
+            reward_config = REWARD_CONFIG
+            logging.info(f"[REWARD] Using SSOT default reward config: contract={reward_contract_id}")
+        else:
+            # Create default RewardConfig
+            reward_config = RewardConfig()
+            logging.info(f"[REWARD] Using default RewardConfig: contract={reward_contract_id}")
+
+    # Create request with experiment config
+    request = TrainingRequest(
+        version=config['version'],
+        dataset_path=dataset_path,
+        total_timesteps=config.get('total_timesteps'),
+        experiment_name=config.get('experiment_name'),
+        mlflow_enabled=config.get('mlflow_enabled', True),
+        mlflow_tracking_uri=os.environ.get("MLFLOW_TRACKING_URI"),
+        db_connection_string=db_connection,
+        auto_register=config.get('auto_register', True),
+        feature_columns=list(FEATURE_ORDER) if FEATURE_ORDER else None,
+        # Reward system integration (CTR-REWARD-SNAPSHOT-001)
+        reward_config=reward_config,
+        reward_contract_id=reward_contract_id,
+        enable_curriculum=enable_curriculum,
+    )
+
+    # Run training via engine
+    engine = TrainingEngine(project_root=PROJECT_ROOT)
+    result = engine.run(request)
+
+    if not result.success:
+        raise RuntimeError(f"Training failed: {result.errors}")
+
+    # GAP 1: DVC versioning for dataset
+    dvc_tag = None
+    if config.get('dvc_enabled', True) and LINEAGE_AVAILABLE:
+        try:
+            dvc_service = create_dvc_service(project_root=PROJECT_ROOT)
+            dvc_tag_obj = DVCTag.for_experiment(
+                experiment_name=config['experiment_name'],
+                version=config['version'],
+            )
+            dvc_tag = str(dvc_tag_obj)
+            logging.info(f"DVC tag created: {dvc_tag}")
+        except Exception as e:
+            logging.warning(f"DVC tagging skipped: {e}")
+
+    # =========================================================================
+    # MinIO-First: SAVE MODEL TO OBJECT STORAGE
+    # =========================================================================
+    model_snapshot = None
+    model_version = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Use experiment_id from L2 if available, otherwise from config
+    effective_experiment_id = experiment_id or config.get('experiment_name', 'default')
+
+    if is_minio_first and EXPERIMENT_MANAGER_AVAILABLE:
+        logging.info(f"[MinIO-First] Saving model to MinIO for experiment: {effective_experiment_id}")
+
+        try:
+            manager = ExperimentManager(effective_experiment_id)
+
+            # Load norm_stats from local path (generated by TrainingEngine)
+            norm_stats_local_path = result.model_path.parent / 'norm_stats.json'
+            norm_stats = {}
+            if norm_stats_local_path.exists():
+                import json as json_module
+                with open(norm_stats_local_path) as f:
+                    norm_stats = json_module.load(f)
+
+            # Load config from local path if exists
+            config_local_path = result.model_path.parent / 'config.yaml'
+            training_config_dict = {}
+            if config_local_path.exists():
+                import yaml
+                with open(config_local_path) as f:
+                    training_config_dict = yaml.safe_load(f)
+            else:
+                training_config_dict = {
+                    'total_timesteps': config.get('total_timesteps'),
+                    'experiment_name': config.get('experiment_name'),
+                    'version': config['version'],
+                }
+
+            # Lineage info
+            lineage_info = {
+                'dataset_hash': dataset_hash,
+                'dataset_version': dataset_version,
+                'mlflow_run_id': result.mlflow_run_id,
+                'training_duration_seconds': result.training_duration_seconds,
+                'best_mean_reward': result.best_mean_reward,
+                'dag_run_id': context.get('dag_run').run_id if context.get('dag_run') else None,
+            }
+
+            # Save model to MinIO - returns ModelSnapshot
+            model_snapshot = manager.save_model(
+                model_path=str(result.model_path),
+                version=model_version,
+                norm_stats=norm_stats,
+                config=training_config_dict,
+                lineage_info=lineage_info,
+            )
+
+            logging.info(f"[MinIO-First] Model saved to: {model_snapshot.storage_uri}")
+            logging.info(f"[MinIO-First] Model hash: {model_snapshot.model_hash}")
+            logging.info(f"[MinIO-First] Norm stats URI: {model_snapshot.norm_stats_uri}")
+
+        except Exception as e:
+            logging.error(f"[MinIO-First] Failed to save model to MinIO: {e}")
+            logging.warning("[MinIO-First] Model remains at local path only")
+            model_snapshot = None
+
+    # =========================================================================
+    # XCOM PUSH - Using contracts for inter-DAG communication
+    # =========================================================================
+
+    # Legacy keys (backward compatibility)
+    ti.xcom_push(key='training_result', value=result.to_dict())
+    ti.xcom_push(key='model_path', value=str(result.model_path))
+    ti.xcom_push(key='model_hash', value=result.model_hash)
+    ti.xcom_push(key='model_id', value=result.model_id)
+    ti.xcom_push(key='mlflow_run_id', value=result.mlflow_run_id)
+    ti.xcom_push(key='config_hash', value=config_hash)
+    ti.xcom_push(key='feature_order_hash', value=FEATURE_ORDER_HASH)
+    ti.xcom_push(key='dvc_tag', value=dvc_tag)
+    ti.xcom_push(key='experiment_config_path', value=experiment_config_path)
+
+    # MinIO-First: Push S3 URIs
+    if model_snapshot:
+        ti.xcom_push(key='model_uri', value=model_snapshot.storage_uri)
+        ti.xcom_push(key='norm_stats_uri', value=model_snapshot.norm_stats_uri)
+        ti.xcom_push(key='model_version', value=model_version)
+        ti.xcom_push(key='experiment_id', value=effective_experiment_id)
+
+    # Contract-based keys (SSOT for L4 consumption)
+    if XCOM_CONTRACTS_AVAILABLE:
+        if model_snapshot is not None:
+            # MinIO-First: Use S3 URIs from snapshot
+            l3_output = L3Output(
+                # S3 URIs (MinIO-First)
+                model_uri=model_snapshot.storage_uri,
+                norm_stats_uri=model_snapshot.norm_stats_uri,
+                config_uri=model_snapshot.config_uri,
+                lineage_uri=model_snapshot.lineage_uri,
+                experiment_id=effective_experiment_id,
+                version=model_version,
+                feature_order_hash=FEATURE_ORDER_HASH,
+                observation_dim=model_snapshot.observation_dim,
+                # Dataset snapshot from L2
+                dataset_snapshot=l2_output if l2_output else None,
+                # Legacy fields
+                model_path=str(result.model_path),
+                model_hash=result.model_hash,
+                mlflow_run_id=result.mlflow_run_id or "",
+                training_duration=result.training_duration_seconds,
+                best_reward=result.best_mean_reward,
+                norm_stats_hash=result.to_dict().get('norm_stats_hash', ""),
+                dataset_hash=dataset_hash or result.to_dict().get('dataset_hash', ""),
+                config_hash=config_hash,
+                experiment_name=config.get('experiment_name'),
+                # Reward system integration (CTR-REWARD-SNAPSHOT-001)
+                reward_contract_id=result.reward_contract_id,
+                reward_config_hash=result.reward_config_hash,
+                reward_config_uri=result.reward_config_uri,
+                curriculum_final_phase=result.curriculum_final_phase,
+                reward_weights=result.reward_weights,
+            )
+            logging.info(f"[MinIO-First] Pushing S3 URIs to XCom")
+            logging.info(f"[REWARD] Curriculum final phase: {result.curriculum_final_phase}")
+        else:
+            # Local storage: use file paths
+            l3_output = L3Output(
+                model_path=str(result.model_path),
+                model_hash=result.model_hash,
+                mlflow_run_id=result.mlflow_run_id or "",
+                training_duration=result.training_duration_seconds,
+                best_reward=result.best_mean_reward,
+                norm_stats_hash=result.to_dict().get('norm_stats_hash', ""),
+                dataset_hash=dataset_hash or result.to_dict().get('dataset_hash', ""),
+                config_hash=config_hash,
+                experiment_name=config.get('experiment_name'),
+                # Reward system integration (CTR-REWARD-SNAPSHOT-001)
+                reward_contract_id=result.reward_contract_id,
+                reward_config_hash=result.reward_config_hash,
+                reward_config_uri=result.reward_config_uri,
+                curriculum_final_phase=result.curriculum_final_phase,
+                reward_weights=result.reward_weights,
+            )
+        l3_output.push_to_xcom(ti)
+        logging.info(f"[SSOT] L3Output pushed to XCom via contracts")
+
+    # Build lineage record for XCom (legacy + enhanced)
+    lineage_xcom = {
+        'run_id': result.model_id,
+        'config_hash': config_hash,
+        'dataset_hash': dataset_hash or result.to_dict().get('dataset_hash'),
+        'dataset_path': str(dataset_path),
+        'feature_order_hash': FEATURE_ORDER_HASH,
+        'dvc_tag': dvc_tag,
+        'mlflow_run_id': result.mlflow_run_id,
+        'stage': 'L3_training',
+        # L2 provenance (if available)
+        'l2_experiment_name': l2_output.experiment_name if l2_output else None,
+        'l2_row_count': l2_output.row_count if l2_output else None,
+        # Reward system lineage (CTR-REWARD-SNAPSHOT-001)
+        'reward_contract_id': result.reward_contract_id,
+        'reward_config_hash': result.reward_config_hash,
+        'curriculum_final_phase': result.curriculum_final_phase,
+    }
+    ti.xcom_push(key='lineage', value=lineage_xcom)
+
+    logging.info("=" * 60)
+    logging.info(f"Training complete: {result.model_path}")
+    logging.info(f"Dataset: {dataset_path}")
+    logging.info(f"Dataset hash: {dataset_hash or 'N/A'}")
+    logging.info(f"Duration: {result.training_duration_seconds/60:.1f} min")
+    logging.info(f"Best reward: {result.best_mean_reward:.2f}")
+    logging.info(f"Config hash: {config_hash}")
+    logging.info(f"Feature order hash: {FEATURE_ORDER_HASH}")
+    logging.info(f"DVC tag: {dvc_tag}")
+    if l2_output:
+        logging.info(f"L2 Provenance: experiment={l2_output.experiment_name}, rows={l2_output.row_count}")
+    if model_snapshot:
+        logging.info(f"[MinIO-First] Model S3 URI: {model_snapshot.storage_uri}")
+        logging.info(f"[MinIO-First] Norm Stats S3 URI: {model_snapshot.norm_stats_uri}")
+    # Reward system summary
+    logging.info(f"[REWARD] Contract ID: {result.reward_contract_id or 'N/A'}")
+    logging.info(f"[REWARD] Config hash: {result.reward_config_hash or 'N/A'}")
+    logging.info(f"[REWARD] Curriculum phase: {result.curriculum_final_phase or 'N/A'}")
+    if result.reward_weights:
+        logging.info(f"[REWARD] Weights: {result.reward_weights}")
+    logging.info("=" * 60)
+
+    return result.to_dict()
+
+
+def training_summary(**context) -> Dict[str, Any]:
+    """Generate training summary."""
+    ti = context['ti']
+    result = ti.xcom_pull(key='training_result', task_ids='train_model') or {}
+
+    logging.info("=" * 60)
+    logging.info("TRAINING SUMMARY")
+    logging.info("=" * 60)
+    logging.info(f"  Version: {result.get('version', 'N/A')}")
+    logging.info(f"  Model ID: {result.get('model_id', 'N/A')}")
+    logging.info(f"  Model Path: {result.get('model_path', 'N/A')}")
+    logging.info(f"  Duration: {result.get('training_duration_seconds', 0)/60:.1f} min")
+    logging.info(f"  Best Reward: {result.get('best_mean_reward', 0):.2f}")
+    logging.info(f"  MLflow Run: {result.get('mlflow_run_id', 'N/A')}")
+    logging.info("=" * 60)
 
     return result
 
 
-def generate_norm_stats(**context) -> Dict[str, Any]:
-    """
-    Task 2: Calculate and save normalization statistics.
-
-    Inputs (XCom):
-    - dataset_path: From validate_dataset
-
-    Outputs (XCom):
-    - norm_stats_path: Path to generated JSON
-    - norm_stats_hash: SHA256 hash
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    dataset_path = ti.xcom_pull(key='dataset_path', task_ids='validate_dataset')
-
-    logging.info(f"Generating norm stats for {config['version']}...")
-
-    # Load dataset
-    df = pd.read_csv(dataset_path)
-
-    # Calculate statistics for each feature
-    norm_stats = {}
-    feature_columns = [c for c in config["feature_columns"] if c not in config["state_features"]]
-
-    for col in feature_columns:
-        if col in df.columns:
-            values = df[col].dropna()
-            norm_stats[col] = {
-                "mean": float(values.mean()),
-                "std": float(values.std()),
-                "min": float(values.min()),
-                "max": float(values.max()),
-            }
-
-    # Add metadata
-    norm_stats["_metadata"] = {
-        "version": config["version"],
-        "created_at": datetime.utcnow().isoformat(),
-        "dataset_hash": ti.xcom_pull(key='dataset_hash', task_ids='validate_dataset'),
-        "feature_count": len(feature_columns),
-        "sample_count": len(df),
-    }
-
-    # Save
-    output_path = PATHS["config_dir"] / f"{config['version']}_norm_stats.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, 'w') as f:
-        json.dump(norm_stats, f, indent=2)
-
-    # Compute hash
-    normalized = json.dumps(norm_stats, sort_keys=True, separators=(',', ':'))
-    norm_stats_hash = hashlib.sha256(normalized.encode()).hexdigest()
-
-    logging.info(f"✓ Norm stats generated: {len(feature_columns)} features -> {output_path}")
-
-    # Push to XCom
-    ti.xcom_push(key='norm_stats_path', value=str(output_path))
-    ti.xcom_push(key='norm_stats_hash', value=norm_stats_hash)
-    ti.xcom_push(key='norm_stats', value=norm_stats)
-
-    return {
-        "norm_stats_path": str(output_path),
-        "norm_stats_hash": norm_stats_hash,
-        "feature_count": len(feature_columns),
-    }
-
-
-def create_contract(**context) -> Dict[str, Any]:
-    """
-    Task 3: Create feature contract for model.
-
-    Inputs (XCom):
-    - norm_stats_path: From generate_norm_stats
-    - dataset_info: From validate_dataset
-
-    Outputs (XCom):
-    - contract_path: Path to contract JSON
-    - contract_hash: SHA256 hash
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    norm_stats_path = ti.xcom_pull(key='norm_stats_path', task_ids='generate_norm_stats')
-    norm_stats_hash = ti.xcom_pull(key='norm_stats_hash', task_ids='generate_norm_stats')
-    dataset_info = ti.xcom_pull(key='dataset_info', task_ids='validate_dataset')
-
-    logging.info(f"Creating contract for {config['version']}...")
-
-    # Build contract
-    contract = {
-        "version": config["version"],
-        "observation_dim": len(config["feature_columns"]),
-        "feature_order": config["feature_columns"],
-        "norm_stats_path": str(Path(norm_stats_path).relative_to(PATHS["project_root"])),
-        "model_path": f"models/ppo_{config['version']}_production/final_model.zip",
-
-        # Technical indicators config
-        "rsi_period": config["rsi_period"],
-        "atr_period": config["atr_period"],
-        "adx_period": config["adx_period"],
-        "warmup_bars": max(config["rsi_period"], config["atr_period"], config["adx_period"]),
-
-        # Trading hours
-        "trading_hours_start": config["trading_hours_start"],
-        "trading_hours_end": config["trading_hours_end"],
-
-        # Metadata
-        "created_at": datetime.utcnow().isoformat(),
-        "created_from_dataset": dataset_info["dataset_path"],
-        "dataset_hash": dataset_info["dataset_hash"],
-        "norm_stats_hash": norm_stats_hash,
-        "sample_count": dataset_info["row_count"],
-    }
-
-    # Compute contract hash
-    normalized = json.dumps(contract, sort_keys=True, separators=(',', ':'))
-    contract_hash = hashlib.sha256(normalized.encode()).hexdigest()[:16]
-    contract["contract_hash"] = contract_hash
-
-    # Save
-    contracts_dir = PATHS["contracts_dir"]
-    contracts_dir.mkdir(parents=True, exist_ok=True)
-    contract_path = contracts_dir / f"{config['version']}_contract.json"
-
-    with open(contract_path, 'w') as f:
-        json.dump(contract, f, indent=2)
-
-    logging.info(f"✓ Contract created: {contract_path}")
-
-    # Push to XCom
-    ti.xcom_push(key='contract_path', value=str(contract_path))
-    ti.xcom_push(key='contract_hash', value=contract_hash)
-    ti.xcom_push(key='contract', value=contract)
-
-    return {
-        "contract_path": str(contract_path),
-        "contract_hash": contract_hash,
-        "observation_dim": contract["observation_dim"],
-    }
-
-
-def train_model(**context) -> Dict[str, Any]:
-    """
-    Task 4: Train PPO model using professional training infrastructure.
-
-    This is the main training task that:
-    1. Creates training/eval environments via EnvironmentFactory
-    2. Configures PPO via PPOConfig
-    3. Trains via PPOTrainer
-    4. Logs to MLflow
-
-    Inputs (XCom):
-    - dataset_path: From validate_dataset
-    - norm_stats_path: From generate_norm_stats
-    - contract: From create_contract
-
-    Outputs (XCom):
-    - model_path: Path to trained model
-    - model_hash: SHA256 hash
-    - training_result: Metrics and duration
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    dataset_path = Path(ti.xcom_pull(key='dataset_path', task_ids='validate_dataset'))
-    norm_stats_path = Path(ti.xcom_pull(key='norm_stats_path', task_ids='generate_norm_stats'))
-    contract = ti.xcom_pull(key='contract', task_ids='create_contract')
-
-    logging.info(f"Training model {config['version']}...")
-    logging.info(f"  Dataset: {dataset_path}")
-    logging.info(f"  Timesteps: {config['total_timesteps']:,}")
-
-    # Initialize MLflow
-    mlflow = init_mlflow(
-        experiment_name=config["experiment_name"],
-        tracking_uri=config.get("mlflow_tracking_uri"),
-    )
-
-    # Add src to path for imports
-    src_path = str(PATHS["project_root"] / "src")
-    if src_path not in sys.path:
-        sys.path.insert(0, src_path)
-
-    # Import training infrastructure
-    try:
-        from training import (
-            EnvironmentFactory,
-            TradingEnvConfig,
-            PPOTrainer,
-            PPOConfig,
-        )
-    except ImportError as e:
-        logging.error(f"Failed to import training infrastructure: {e}")
-        raise
-
-    start_time = time.time()
-
-    # Create model output directory
-    model_dir = PATHS["models_dir"] / f"ppo_{config['version']}_production"
-    model_dir.mkdir(parents=True, exist_ok=True)
-
-    # Start MLflow run
-    run_id = None
-    if mlflow:
-        run = mlflow.start_run(run_name=f"train_{config['version']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-        run_id = run.info.run_id
-
-        # Log parameters
-        mlflow.log_params({
-            "version": config["version"],
-            "total_timesteps": config["total_timesteps"],
-            "learning_rate": config["learning_rate"],
-            "n_steps": config["n_steps"],
-            "batch_size": config["batch_size"],
-            "gamma": config["gamma"],
-            "clip_range": config["clip_range"],
-            "ent_coef": config["ent_coef"],
-            "observation_dim": contract["observation_dim"],
-        })
-
-    try:
-        # Create environment factory
-        env_factory = EnvironmentFactory(project_root=PATHS["project_root"])
-
-        # Configure environment
-        env_config = TradingEnvConfig(
-            observation_dim=contract["observation_dim"],
-            initial_capital=config["initial_capital"],
-            transaction_cost_bps=config["transaction_cost_bps"],
-            random_episode_start=True,
-            max_episode_steps=2000,
-        )
-
-        # Create train/eval environments
-        env_dict = env_factory.create_train_eval_envs(
-            dataset_path=dataset_path,
-            norm_stats_path=norm_stats_path,
-            config=env_config,
-            train_ratio=config["train_ratio"],
-            val_ratio=config["val_ratio"],
-            n_train_envs=1,
-            n_eval_envs=1,
-        )
-
-        train_env = env_dict["train"]
-        eval_env = env_dict["val"]
-
-        logging.info(
-            f"Environments created: "
-            f"train={env_dict['splits']['train_size']} bars, "
-            f"val={env_dict['splits']['val_size']} bars"
-        )
-
-        # Configure PPO
-        ppo_config = PPOConfig(
-            learning_rate=config["learning_rate"],
-            n_steps=config["n_steps"],
-            batch_size=config["batch_size"],
-            n_epochs=config["n_epochs"],
-            gamma=config["gamma"],
-            gae_lambda=config["gae_lambda"],
-            clip_range=config["clip_range"],
-            ent_coef=config["ent_coef"],
-            total_timesteps=config["total_timesteps"],
-            eval_freq=max(config["total_timesteps"] // 20, 10000),
-            n_eval_episodes=5,
-            checkpoint_freq=max(config["total_timesteps"] // 10, 25000),
-            tensorboard_log=True,
-            verbose=1,
-        )
-
-        # Create trainer
-        trainer = PPOTrainer(
-            train_env=train_env,
-            eval_env=eval_env,
-            config=ppo_config,
-            output_dir=model_dir,
-            experiment_name=f"ppo_{config['version']}",
-        )
-
-        # Train
-        result = trainer.train()
-
-        # Cleanup
-        train_env.close()
-        eval_env.close()
-
-        training_duration = time.time() - start_time
-
-        # Log to MLflow
-        if mlflow:
-            mlflow.log_metrics({
-                "training_duration_seconds": training_duration,
-                "best_mean_reward": result.best_mean_reward,
-                "final_mean_reward": result.final_mean_reward,
-                "total_timesteps": result.total_timesteps,
-            })
-
-            # Log model artifact
-            if result.model_path and result.model_path.exists():
-                mlflow.log_artifact(str(result.model_path))
-
-            mlflow.set_tag("status", "SUCCESS" if result.success else "FAILED")
-            mlflow.end_run()
-
-        if not result.success:
-            raise RuntimeError(f"Training failed: {result.error_message}")
-
-        logging.info(
-            f"✓ Model trained in {training_duration/60:.1f} min, "
-            f"best_reward={result.best_mean_reward:.2f}"
-        )
-
-        # Push to XCom
-        ti.xcom_push(key='model_path', value=str(result.model_path))
-        ti.xcom_push(key='model_hash', value=result.model_hash)
-        ti.xcom_push(key='mlflow_run_id', value=run_id)
-        ti.xcom_push(key='training_result', value=result.to_dict())
-
-        return {
-            "model_path": str(result.model_path),
-            "model_hash": result.model_hash,
-            "training_duration_seconds": training_duration,
-            "best_mean_reward": result.best_mean_reward,
-            "mlflow_run_id": run_id,
-        }
-
-    except Exception as e:
-        if mlflow:
-            mlflow.log_metric("success", 0)
-            mlflow.set_tag("status", "FAILED")
-            mlflow.set_tag("error", str(e)[:250])
-            mlflow.end_run()
-        raise
-
-
-def register_model(**context) -> Dict[str, Any]:
-    """
-    Task 5: Register model in database and MLflow Model Registry.
-
-    Inputs (XCom):
-    - model_path, model_hash: From train_model
-    - contract: From create_contract
-    - training_result: From train_model
-
-    Outputs (XCom):
-    - model_id: Registered model ID
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    if not config.get("auto_register", True):
-        logging.info("Auto-registration disabled, skipping")
-        return {"skipped": True}
-
-    model_path = ti.xcom_pull(key='model_path', task_ids='train_model')
-    model_hash = ti.xcom_pull(key='model_hash', task_ids='train_model')
-    contract = ti.xcom_pull(key='contract', task_ids='create_contract')
-    training_result = ti.xcom_pull(key='training_result', task_ids='train_model')
-    norm_stats_hash = ti.xcom_pull(key='norm_stats_hash', task_ids='generate_norm_stats')
-
-    logging.info(f"Registering model {config['version']}...")
-
-    # Generate model ID
-    model_id = f"ppo_{config['version']}_{model_hash[:8]}"
-
-    # Register in database
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # Use existing model_registry schema
-        cur.execute("""
-            INSERT INTO model_registry (
-                model_id, model_version, model_path, model_hash,
-                norm_stats_hash, config_hash, observation_dim,
-                action_space, feature_order, validation_metrics,
-                status, created_at
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'registered', NOW()
-            )
-            ON CONFLICT (model_id) DO UPDATE SET
-                model_path = EXCLUDED.model_path,
-                validation_metrics = EXCLUDED.validation_metrics,
-                status = 'registered'
-            RETURNING id
-        """, (
-            model_id,
-            config["version"],
-            model_path,
-            model_hash,
-            norm_stats_hash,
-            contract["contract_hash"],
-            contract["observation_dim"],
-            3,  # action_space: LONG, SHORT, HOLD
-            json.dumps(contract["feature_order"]),
-            json.dumps(training_result or {}),
-        ))
-
-        db_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        logging.info(f"✓ Model registered in DB: {model_id} (id={db_id})")
-
-    except Exception as e:
-        logging.warning(f"DB registration failed: {e}. Continuing...")
-
-    # Register in MLflow Model Registry
-    try:
-        import mlflow
-
-        mlflow_run_id = ti.xcom_pull(key='mlflow_run_id', task_ids='train_model')
-        if mlflow_run_id and model_path:
-            # Register model
-            model_uri = f"runs:/{mlflow_run_id}/model"
-
-            result = mlflow.register_model(
-                model_uri=model_uri,
-                name=f"ppo_{config['version']}"
-            )
-
-            logging.info(f"✓ Model registered in MLflow: {result.name} v{result.version}")
-
-    except Exception as e:
-        logging.warning(f"MLflow registration failed: {e}. Continuing...")
-
-    # Push to XCom
-    ti.xcom_push(key='model_id', value=model_id)
-
-    return {
-        "model_id": model_id,
-        "model_hash": model_hash,
-    }
-
-
-def decide_backtest(**context) -> str:
-    """
-    Branch: Decide whether to run backtest validation.
-
-    Returns:
-        Task ID to execute next
-    """
-    config = context['dag_run'].conf or get_training_config()
-
-    if config.get("run_backtest_validation", False):
-        if config.get("backtest_start_date") and config.get("backtest_end_date"):
-            return "run_backtest_validation"
-
-    return "skip_backtest"
-
-
-def run_backtest_validation(**context) -> Dict[str, Any]:
-    """
-    Task 6a: Run backtest to validate model performance.
-
-    Inputs (XCom):
-    - model_id: From register_model
-
-    Outputs (XCom):
-    - backtest_result: Sharpe, max drawdown, win rate
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    model_id = ti.xcom_pull(key='model_id', task_ids='register_model')
-
-    logging.info(
-        f"Running backtest validation: "
-        f"{config['backtest_start_date']} to {config['backtest_end_date']}"
-    )
-
-    # TODO: Implement backtest via inference API
-    # This would call the backtest endpoint with the new model
-
-    logging.warning("Backtest validation not yet implemented. Skipping.")
-
-    return {
-        "status": "skipped",
-        "reason": "Not implemented",
-    }
-
-
-def pipeline_summary(**context) -> Dict[str, Any]:
-    """
-    Task 7: Generate pipeline execution summary.
-
-    Aggregates results from all stages and logs final status.
-    """
-    config = context['dag_run'].conf or get_training_config()
-    ti = context['ti']
-
-    # Pull all results
-    dataset_info = ti.xcom_pull(key='dataset_info', task_ids='validate_dataset') or {}
-    norm_stats_path = ti.xcom_pull(key='norm_stats_path', task_ids='generate_norm_stats')
-    contract_path = ti.xcom_pull(key='contract_path', task_ids='create_contract')
-    model_path = ti.xcom_pull(key='model_path', task_ids='train_model')
-    model_id = ti.xcom_pull(key='model_id', task_ids='register_model')
-    training_result = ti.xcom_pull(key='training_result', task_ids='train_model') or {}
-
-    # Build summary
-    summary = {
-        "status": "SUCCESS",
-        "version": config["version"],
-        "model_id": model_id,
-        "model_path": model_path,
-        "norm_stats_path": norm_stats_path,
-        "contract_path": contract_path,
-        "dataset_rows": dataset_info.get("row_count", 0),
-        "training_duration_seconds": training_result.get("training_duration_seconds", 0),
-        "best_mean_reward": training_result.get("best_mean_reward", 0),
-        "total_timesteps": training_result.get("total_timesteps", 0),
-    }
-
-    # Log summary
-    logging.info("=" * 70)
-    logging.info("MODEL TRAINING PIPELINE SUMMARY")
-    logging.info("=" * 70)
-    logging.info(f"  Version: {summary['version']}")
-    logging.info(f"  Model ID: {summary['model_id']}")
-    logging.info(f"  Model Path: {summary['model_path']}")
-    logging.info(f"  Dataset Rows: {summary['dataset_rows']:,}")
-    logging.info(f"  Training Duration: {summary['training_duration_seconds']/60:.1f} min")
-    logging.info(f"  Best Mean Reward: {summary['best_mean_reward']:.2f}")
-    logging.info(f"  Total Timesteps: {summary['total_timesteps']:,}")
-    logging.info("=" * 70)
-
-    return summary
-
-
 def on_failure_callback(context):
-    """
-    Callback for task failures.
-    Sends alert and logs error details.
-    """
-    task_instance = context['task_instance']
-    exception = context.get('exception')
+    """Handle task failures."""
+    task = context['task_instance']
+    error = context.get('exception')
 
-    error_msg = (
-        f"TRAINING PIPELINE FAILED\n"
-        f"Task: {task_instance.task_id}\n"
-        f"DAG: {task_instance.dag_id}\n"
-        f"Error: {exception}\n"
-        f"Execution Date: {context['execution_date']}"
+    logging.error(
+        f"TRAINING FAILED\n"
+        f"Task: {task.task_id}\n"
+        f"Error: {error}"
     )
-
-    logging.error(error_msg)
-
-    # TODO: Send alert via Slack/Email
-    # slack_alert(error_msg)
 
 
 # =============================================================================
@@ -908,8 +642,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': datetime(2024, 1, 1),
     'email_on_failure': True,
-    'email_on_retry': False,
-    'retries': 0,  # Training is expensive - no auto-retry
+    'retries': 0,
     'retry_delay': timedelta(minutes=5),
     'on_failure_callback': on_failure_callback,
 }
@@ -917,90 +650,32 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='V3 L3: End-to-end RL model training with MLflow tracking',
-    schedule_interval=None,  # Manual trigger only
+    description='Model training pipeline using TrainingEngine',
+    schedule_interval=None,
     catchup=False,
-    max_active_runs=1,  # Only one training at a time
-    tags=['v3', 'l3', 'training', 'rl', 'ppo', 'mlflow'],
+    max_active_runs=1,
+    tags=['v3', 'l3', 'training', 'ppo', 'mlflow'],
     params={
         "version": "auto",
         "total_timesteps": 500_000,
-        "run_backtest_validation": False,
     },
 )
 
 with dag:
-
-    # Task 1: Validate Dataset
-    task_validate = PythonOperator(
-        task_id='validate_dataset',
-        python_callable=validate_dataset,
-        provide_context=True,
-    )
-
-    # Task 2: Generate Norm Stats
-    task_norm_stats = PythonOperator(
-        task_id='generate_norm_stats',
-        python_callable=generate_norm_stats,
-        provide_context=True,
-    )
-
-    # Task 3: Create Contract
-    task_contract = PythonOperator(
-        task_id='create_contract',
-        python_callable=create_contract,
-        provide_context=True,
-    )
-
-    # Task 4: Train Model (main training task)
-    task_train = PythonOperator(
+    # Single training task - all logic in engine
+    train_task = PythonOperator(
         task_id='train_model',
-        python_callable=train_model,
+        python_callable=run_training,
         provide_context=True,
-        execution_timeout=timedelta(hours=4),  # 4 hour timeout
+        execution_timeout=timedelta(hours=4),
     )
 
-    # Task 5: Register Model
-    task_register = PythonOperator(
-        task_id='register_model',
-        python_callable=register_model,
+    # Summary task
+    summary_task = PythonOperator(
+        task_id='training_summary',
+        python_callable=training_summary,
         provide_context=True,
+        trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    # Task 6: Branch - Decide backtest
-    task_branch = BranchPythonOperator(
-        task_id='decide_backtest',
-        python_callable=decide_backtest,
-        provide_context=True,
-    )
-
-    # Task 6a: Run Backtest (optional)
-    task_backtest = PythonOperator(
-        task_id='run_backtest_validation',
-        python_callable=run_backtest_validation,
-        provide_context=True,
-    )
-
-    # Task 6b: Skip Backtest
-    task_skip_backtest = EmptyOperator(
-        task_id='skip_backtest',
-    )
-
-    # Task 7: Pipeline Summary
-    task_summary = PythonOperator(
-        task_id='pipeline_summary',
-        python_callable=pipeline_summary,
-        provide_context=True,
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
-
-    # Define dependencies
-    # Main pipeline
-    task_validate >> task_norm_stats >> task_contract >> task_train >> task_register
-
-    # Backtest branch
-    task_register >> task_branch
-    task_branch >> [task_backtest, task_skip_backtest]
-
-    # Summary (after backtest decision)
-    [task_backtest, task_skip_backtest] >> task_summary
+    train_task >> summary_task

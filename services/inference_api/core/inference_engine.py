@@ -29,6 +29,17 @@ except ImportError:
 
 from ..config import get_settings
 
+# Import thresholds from SSOT (REQUIRED - no fallback)
+from src.core.constants import THRESHOLD_LONG, THRESHOLD_SHORT
+
+# P2-2: Import hash validation utilities
+try:
+    from ..contracts.model_contract import compute_json_hash
+    HASH_VALIDATION_AVAILABLE = True
+except ImportError:
+    HASH_VALIDATION_AVAILABLE = False
+    compute_json_hash = None
+
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
@@ -44,11 +55,11 @@ class InferenceEngine:
     3. Filesystem pattern matching
     """
 
-    # Model-specific thresholds (must match training thresholds!)
-    # Uses 0.33/-0.33 (wider HOLD zone) - matches training
+    # Model-specific thresholds from SSOT (src/core/constants.py)
+    # Default to SSOT values - can override per model if needed
     MODEL_THRESHOLDS = {
-        "ppo_primary": {"long": 0.33, "short": -0.33},     # Primary: matches training thresholds
-        "ppo_secondary": {"long": 0.33, "short": -0.33},   # Secondary: matches training thresholds
+        "ppo_primary": {"long": THRESHOLD_LONG, "short": THRESHOLD_SHORT},
+        "ppo_secondary": {"long": THRESHOLD_LONG, "short": THRESHOLD_SHORT},
     }
 
     def __init__(self):
@@ -57,6 +68,9 @@ class InferenceEngine:
         self.threshold_long = settings.threshold_long
         self.threshold_short = settings.threshold_short
         self._db_url = os.environ.get("DATABASE_URL")
+
+        # Post-prediction hook for drift observation (set by main.py)
+        self.post_predict_hook: Optional[callable] = None
 
     def load_model(self, model_id: str, model_path: Optional[Path] = None) -> bool:
         """
@@ -93,8 +107,13 @@ class InferenceEngine:
             logger.info(f"Found model in registry: {db_model_path}")
             return self._load_from_path(model_id, Path(db_model_path))
 
-        # Strategy 3: Pattern matching in models directory (try this BEFORE default)
-        model_dir = settings.project_root / "models"
+        # Strategy 3: Pattern matching in models directory
+        # Use MODEL_PATH env var (Docker: /models) or project_root/models (local)
+        base_path = Path(settings.model_base_path)
+        if not base_path.is_absolute():
+            base_path = settings.project_root / base_path
+        model_dir = base_path
+
         pattern = f"{model_id}*.zip"
         matches = list(model_dir.glob(pattern))
         if matches:
@@ -107,9 +126,10 @@ class InferenceEngine:
                 model_path = subdir_path
                 logger.info(f"Found model in production subdirectory: {model_path}")
             elif model_path is None:
-                # Strategy 5: Use default path from settings (only for ppo_primary)
+                # Strategy 5: Use default path from settings (ppo_primary uses ppo_v20_production)
                 if model_id == "ppo_primary":
                     model_path = settings.full_model_path
+                    logger.info(f"Using default model path for ppo_primary: {model_path}")
                 else:
                     logger.error(f"Model file not found for {model_id}")
                     self.models[model_id] = MockModel()
@@ -121,10 +141,25 @@ class InferenceEngine:
         """Load model from a specific path."""
         try:
             logger.info(f"Loading model from {model_path}")
+
+            # P2-2: Validate norm_stats_hash before loading model
+            norm_stats_validation = self._validate_norm_stats_hash(model_id)
+            if norm_stats_validation.get("status") == "failed":
+                logger.error(
+                    f"CRITICAL: norm_stats hash validation failed for {model_id}: "
+                    f"{norm_stats_validation.get('error')}"
+                )
+                # Don't block model loading, but log prominently
+                logger.warning(
+                    "Loading model anyway, but predictions may be INCORRECT "
+                    "due to norm_stats mismatch with training"
+                )
+
             self.models[model_id] = PPO.load(str(model_path))
             self.model_metadata[model_id] = {
                 "path": str(model_path),
                 "loaded_at": __import__("datetime").datetime.now().isoformat(),
+                "norm_stats_validation": norm_stats_validation,
             }
             logger.info(f"Model {model_id} loaded successfully")
             return True
@@ -132,6 +167,88 @@ class InferenceEngine:
             logger.error(f"Error loading model: {e}")
             self.models[model_id] = MockModel()
             return True
+
+    def _validate_norm_stats_hash(self, model_id: str) -> dict:
+        """
+        P2-2: Validate norm_stats.json hash matches registered hash.
+
+        This ensures inference uses the SAME normalization as training.
+
+        Returns:
+            dict with status, expected_hash, actual_hash
+        """
+        if not HASH_VALIDATION_AVAILABLE:
+            return {"status": "skipped", "reason": "hash_validation_not_available"}
+
+        try:
+            # Get expected hash from model metadata (from registry query)
+            metadata = self.model_metadata.get(model_id, {})
+            expected_hash = metadata.get("norm_stats_hash")
+
+            if not expected_hash:
+                # Try to get from registry
+                expected_hash = self._get_norm_stats_hash_from_registry(model_id)
+
+            if not expected_hash:
+                return {"status": "skipped", "reason": "no_expected_hash_registered"}
+
+            # Compute actual hash
+            norm_stats_path = settings.full_norm_stats_path
+            if not norm_stats_path.exists():
+                return {
+                    "status": "failed",
+                    "error": f"norm_stats file not found: {norm_stats_path}",
+                }
+
+            actual_hash = compute_json_hash(norm_stats_path)
+
+            if actual_hash == expected_hash:
+                return {
+                    "status": "passed",
+                    "expected_hash": expected_hash[:16],
+                    "actual_hash": actual_hash[:16],
+                }
+            else:
+                return {
+                    "status": "failed",
+                    "error": "hash_mismatch",
+                    "expected_hash": expected_hash[:16],
+                    "actual_hash": actual_hash[:16],
+                }
+
+        except Exception as e:
+            logger.warning(f"norm_stats hash validation error: {e}")
+            return {"status": "error", "error": str(e)}
+
+    def _get_norm_stats_hash_from_registry(self, model_id: str) -> Optional[str]:
+        """Get norm_stats_hash from model_registry table."""
+        if not PSYCOPG2_AVAILABLE or not self._db_url:
+            return None
+
+        try:
+            conn = psycopg2.connect(self._db_url)
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+            cursor.execute(
+                """
+                SELECT norm_stats_hash
+                FROM model_registry
+                WHERE model_id = %s
+                """,
+                (model_id,)
+            )
+
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if row:
+                return row.get("norm_stats_hash")
+            return None
+
+        except Exception as e:
+            logger.debug(f"Could not get norm_stats_hash from registry: {e}")
+            return None
 
     def _get_model_path_from_registry(self, model_id: str) -> Optional[str]:
         """
@@ -256,6 +373,13 @@ class InferenceEngine:
 
         # Calculate confidence as magnitude of action
         confidence = min(abs(action_value), 1.0)
+
+        # Call post-predict hook for drift observation
+        if self.post_predict_hook is not None:
+            try:
+                self.post_predict_hook(observation)
+            except Exception as e:
+                logger.debug(f"Post-predict hook error: {e}")
 
         return action_value, confidence
 

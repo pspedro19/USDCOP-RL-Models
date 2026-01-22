@@ -1,0 +1,149 @@
+# =============================================================================
+# Grafana Data Sources Provisioning - USDCOP Trading Platform
+# =============================================================================
+# Configures all data sources required for the trading platform dashboards.
+# Data sources are automatically provisioned when Grafana starts.
+#
+# Data Sources:
+#   - Prometheus: Metrics from trading services, infrastructure
+#   - Loki: Centralized logging aggregation
+#   - PostgreSQL: TimescaleDB for trading data, time-series queries
+#   - Jaeger: Distributed tracing for request flows
+#
+# Reference: https://grafana.com/docs/grafana/latest/administration/provisioning/
+# =============================================================================
+
+apiVersion: 1
+
+# Delete data sources that are no longer in the provisioning config
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+  - name: Loki
+    orgId: 1
+  - name: TimescaleDB
+    orgId: 1
+  - name: Jaeger
+    orgId: 1
+
+datasources:
+  # ===========================================================================
+  # Prometheus - Metrics Collection
+  # ===========================================================================
+  # Primary metrics store for all trading and infrastructure metrics
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    uid: prometheus
+    url: http://prometheus:9090
+    basicAuth: false
+    isDefault: true
+    version: 1
+    editable: false
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: "2.47.0"
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: jaeger
+
+  # ===========================================================================
+  # Loki - Log Aggregation
+  # ===========================================================================
+  # Centralized logging for all containers via Promtail
+  - name: Loki
+    type: loki
+    access: proxy
+    orgId: 1
+    uid: loki
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: jaeger
+          matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: '$${__value.raw}'
+        - datasourceUid: jaeger
+          matcherRegex: 'trace_id=(\w+)'
+          name: trace_id
+          url: '$${__value.raw}'
+
+  # ===========================================================================
+  # PostgreSQL/TimescaleDB - Trading Data
+  # ===========================================================================
+  # TimescaleDB for time-series trading data (OHLCV, trades, equity curves)
+  - name: TimescaleDB
+    type: postgres
+    access: proxy
+    orgId: 1
+    uid: timescaledb
+    url: postgres:5432
+    user: ${POSTGRES_USER}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      database: ${POSTGRES_DB:-usdcop_trading}
+      sslmode: 'disable'
+      maxOpenConns: 10
+      maxIdleConns: 5
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: true
+
+  # ===========================================================================
+  # Jaeger - Distributed Tracing
+  # ===========================================================================
+  # Traces request flows across microservices
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    orgId: 1
+    uid: jaeger
+    url: http://jaeger:16686
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: true
+        filterBySpanID: false
+        customQuery: true
+        query: '{job="$${__span.tags.service}"} |= "$${__span.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - key: service
+            value: service
+        queries:
+          - name: Request rate
+            query: 'sum(rate(http_requests_total{service="$${__tags.service}"}[$__rate_interval]))'
+          - name: Latency P95
+            query: 'histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="$${__tags.service}"}[$__rate_interval])) by (le))'
+      nodeGraph:
+        enabled: true
+      traceQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: '-30m'
+        spanEndTimeShift: '30m'

@@ -22,8 +22,26 @@ import re
 
 
 # =============================================================================
-# CONSTANTS (from feature_config.json)
+# CONSTANTS (import from SSOT where applicable)
 # =============================================================================
+
+# Import session length from SSOT (REQUIRED - no fallback)
+from src.core.constants import BARS_PER_SESSION
+
+# =============================================================================
+# SSOT IMPORTS - Issue 2.6 Remediation (2026-01-18)
+# =============================================================================
+# Import canonical validation from feature contract
+try:
+    from src.core.contracts.feature_contract import (
+        validate_feature_vector,
+        OBSERVATION_DIM,
+        FEATURE_CONTRACT,
+    )
+    SSOT_VALIDATION_AVAILABLE = True
+except ImportError:
+    SSOT_VALIDATION_AVAILABLE = False
+    OBSERVATION_DIM = 15  # Fallback constant
 
 SUPPORTED_SYMBOLS = ['USDCOP', 'USD/COP']
 SUPPORTED_TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d']
@@ -31,7 +49,6 @@ MAX_LIMIT = 10000
 DEFAULT_LIMIT = 1000
 MIN_LIMIT = 1
 MAX_DATE_RANGE_DAYS = 365
-BARS_PER_SESSION = 60
 
 
 # =============================================================================
@@ -109,17 +126,36 @@ class LimitParam(BaseModel):
 
 
 class InferenceRequest(BaseModel):
-    """Validated inference request for RL model"""
-    observation: List[float] = Field(..., min_items=15, max_items=15)
+    """
+    Validated inference request for RL model.
+
+    SSOT: Observation dimension from src.core.contracts.feature_contract.OBSERVATION_DIM
+    Issue 2.6 Remediation: Uses canonical validation.
+    """
+    observation: List[float] = Field(..., min_items=OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15,
+                                      max_items=OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15)
     position: float = Field(..., ge=-1.0, le=1.0)
     step: int = Field(..., ge=1, le=BARS_PER_SESSION)
 
     @validator('observation')
-    def validate_observation(cls, v):
-        """Validate observation values are in expected range"""
-        for i, val in enumerate(v):
-            if abs(val) > 5.0:
-                raise ValueError(f"Observation[{i}] = {val} exceeds expected range [-5, 5]")
+    def validate_observation_values(cls, v):
+        """
+        Validate observation values are in expected range.
+
+        SSOT: Delegates to FEATURE_CONTRACT.validate_observation when available.
+        """
+        import numpy as np
+
+        if SSOT_VALIDATION_AVAILABLE:
+            obs_array = np.array(v, dtype=np.float32)
+            is_valid, errors = FEATURE_CONTRACT.validate_observation(obs_array, strict=False)
+            if not is_valid:
+                raise ValueError(f"Observation validation failed: {'; '.join(errors)}")
+        else:
+            # Legacy fallback
+            for i, val in enumerate(v):
+                if abs(val) > 5.0:
+                    raise ValueError(f"Observation[{i}] = {val} exceeds expected range [-5, 5]")
         return v
 
 
@@ -280,8 +316,11 @@ def validate_observation(observation: List[float]) -> List[float]:
     """
     Validate observation vector for RL inference.
 
+    SSOT: Delegates to src.core.contracts.feature_contract.validate_feature_vector
+    for canonical validation (Issue 2.6 Remediation).
+
     Args:
-        observation: List of 15 float values
+        observation: List of float values (length from OBSERVATION_DIM)
 
     Returns:
         Validated observation
@@ -289,10 +328,15 @@ def validate_observation(observation: List[float]) -> List[float]:
     Raises:
         HTTPException: If observation is invalid
     """
-    if len(observation) != 15:
+    import numpy as np
+
+    # Use SSOT observation dimension
+    expected_dim = OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15
+
+    if len(observation) != expected_dim:
         raise HTTPException(
             status_code=400,
-            detail=f"Observation must have exactly 15 values, got {len(observation)}"
+            detail=f"Observation must have exactly {expected_dim} values, got {len(observation)}"
         )
 
     for i, val in enumerate(observation):
@@ -301,11 +345,33 @@ def validate_observation(observation: List[float]) -> List[float]:
                 status_code=400,
                 detail=f"Observation[{i}] must be a number, got {type(val).__name__}"
             )
-        if abs(val) > 5.0:
+
+    # Use SSOT validation when available
+    if SSOT_VALIDATION_AVAILABLE:
+        obs_array = np.array(observation, dtype=np.float32)
+        try:
+            # Use canonical validation (strict=False for API to get detailed errors)
+            is_valid, errors = FEATURE_CONTRACT.validate_observation(obs_array, strict=False)
+            if not is_valid:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Observation validation failed: {'; '.join(errors)}"
+                )
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise
             raise HTTPException(
                 status_code=400,
-                detail=f"Observation[{i}] = {val} exceeds expected range [-5, 5]"
+                detail=f"Observation validation error: {str(e)}"
             )
+    else:
+        # Legacy fallback validation
+        for i, val in enumerate(observation):
+            if abs(val) > 5.0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Observation[{i}] = {val} exceeds expected range [-5, 5]"
+                )
 
     return observation
 

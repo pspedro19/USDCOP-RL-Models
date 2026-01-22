@@ -1,0 +1,184 @@
+# =============================================================================
+# Jaeger Configuration for USDCOP Trading Platform
+# =============================================================================
+# Distributed tracing backend configuration
+#
+# Reference: https://www.jaegertracing.io/docs/1.53/deployment/
+# =============================================================================
+
+# Collector configuration
+collector:
+  # OTLP receiver (OpenTelemetry Protocol)
+  otlp:
+    enabled: true
+    grpc:
+      host_port: 0.0.0.0:4317
+    http:
+      host_port: 0.0.0.0:4318
+
+  # Zipkin receiver (for compatibility)
+  zipkin:
+    host_port: 0.0.0.0:9411
+
+  # Jaeger receiver (legacy)
+  jaeger:
+    thrift:
+      binary:
+        host_port: 0.0.0.0:6832
+      compact:
+        host_port: 0.0.0.0:6831
+    grpc:
+      host_port: 0.0.0.0:14250
+
+# Query service configuration
+query:
+  base_path: /
+  # UI configuration
+  ui:
+    archive_enabled: false
+    dependencies_menu_enabled: true
+
+# Processing configuration
+processor:
+  # Batch processing for efficiency
+  batch:
+    timeout: 5s
+    batch_size: 512
+
+# Storage configuration
+storage:
+  type: elasticsearch
+  options:
+    es:
+      server_urls: http://elasticsearch:9200
+      index_prefix: jaeger
+      # Index rollover settings
+      create_index_templates: true
+      use_ilm: true
+      # Retention
+      max_span_age: 168h  # 7 days
+
+# Sampling configuration
+# Note: Full sampling config is in sampling.json
+sampling:
+  # Dynamic sampling configuration service
+  sampling_server:
+    host_port: 0.0.0.0:5778
+
+  # Initial sampling rate (before service-specific rates)
+  initial_sampling_probability: 0.01
+
+  # Adaptive sampling (adjusts rates based on traffic)
+  adaptive:
+    enabled: true
+    target_samples_per_second: 10
+    sampling_refresh_interval: 60s
+
+# Agent configuration (for legacy deployments)
+agent:
+  # Compact thrift protocol (UDP)
+  compact_host_port: 0.0.0.0:6831
+  # Binary thrift protocol (UDP)
+  binary_host_port: 0.0.0.0:6832
+  # HTTP sampling server
+  http_server_host_port: 0.0.0.0:5778
+
+# Extensions
+extensions:
+  # Health check endpoint
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  # Performance profiling
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+# Service name normalization
+# Maps service names for consistency
+service_name_mappings:
+  - from: "inference_api"
+    to: "inference-api"
+  - from: "trading_api"
+    to: "trading-api"
+
+# Span enrichment rules
+enrichment:
+  # Add environment tag to all spans
+  - key: deployment.environment
+    value: "${DEPLOYMENT_ENV:-development}"
+
+  # Add namespace
+  - key: service.namespace
+    value: "usdcop-trading"
+
+# Logging configuration
+log_level: info
+
+# Metrics configuration
+metrics:
+  # Enable Prometheus metrics endpoint
+  prometheus:
+    endpoint: 0.0.0.0:14269
+
+  # Enable latency histograms
+  latency_histograms:
+    enabled: true
+    buckets:
+      - 5ms
+      - 10ms
+      - 25ms
+      - 50ms
+      - 100ms
+      - 250ms
+      - 500ms
+      - 1s
+      - 2.5s
+      - 5s
+      - 10s
+
+# Service-specific configurations
+services:
+  inference-api:
+    # Higher sampling for inference service
+    sampling_rate: 0.1
+    # Track ML-specific attributes
+    tracked_attributes:
+      - ml.model_id
+      - ml.confidence
+      - ml.signal
+      - ml.inference_latency_ms
+
+  trading-api:
+    sampling_rate: 0.1
+    tracked_attributes:
+      - trading.symbol
+      - trading.position
+      - trading.pnl
+
+  feast-server:
+    # Lower sampling for feature service (high volume)
+    sampling_rate: 0.05
+    tracked_attributes:
+      - feast.feature_count
+      - feast.latency_ms
+
+# Operation-specific configurations
+operations:
+  # Always sample prediction endpoints
+  /predict:
+    sampling_rate: 0.5
+
+  /v1/backtest:
+    sampling_rate: 0.5
+
+  # Sample feature endpoints less frequently
+  /features:
+    sampling_rate: 0.2
+
+  # Minimal sampling for health checks
+  /health:
+    sampling_rate: 0.001
+
+  # Don't trace metrics endpoint
+  /metrics:
+    sampling_rate: 0.0

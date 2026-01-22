@@ -88,7 +88,9 @@ from airflow.utils.trigger_rule import TriggerRule
 # CONFIGURATION
 # =============================================================================
 
-DAG_ID = 'v3.l4_backtest_validation'
+from contracts.dag_registry import L4_BACKTEST_VALIDATION
+
+DAG_ID = L4_BACKTEST_VALIDATION
 
 # Default validation configuration
 DEFAULT_VALIDATION_CONFIG = {

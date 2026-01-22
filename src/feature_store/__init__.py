@@ -98,6 +98,35 @@ from .adapters import (
     NormStatsNotFoundError,
 )
 
+# Canonical Feature Builder - SINGLE SOURCE OF TRUTH
+from .builders import (
+    IFeatureBuilder,
+    CanonicalFeatureBuilder,
+    BuilderContext,
+    ObservationDimensionError,
+    FeatureCalculationError,
+)
+
+# Feast Inference Service - Feature retrieval with fallback
+from .feast_service import (
+    FeastInferenceService,
+    FeastServiceError,
+    FeastConnectionError,
+    FeastFeatureNotFoundError,
+    FeastMetrics,
+    create_feast_service,
+)
+
+# Feature Readers - Read pre-computed features from L1 pipeline
+from .readers import (
+    FeatureResult,
+    FeatureReader,
+    FeatureReaderError,
+    FeatureNotFoundError,
+    StaleFeatureError,
+    FeatureOrderMismatchError,
+)
+
 __all__ = [
     # Enums
     "FeatureVersion",
@@ -151,6 +180,29 @@ __all__ = [
     "BacktestFeatureAdapter",
     "AdapterFactory",
     "NormStatsNotFoundError",
+
+    # Canonical Builder (SSOT)
+    "IFeatureBuilder",
+    "CanonicalFeatureBuilder",
+    "BuilderContext",
+    "ObservationDimensionError",
+    "FeatureCalculationError",
+
+    # Feast Inference Service
+    "FeastInferenceService",
+    "FeastServiceError",
+    "FeastConnectionError",
+    "FeastFeatureNotFoundError",
+    "FeastMetrics",
+    "create_feast_service",
+
+    # Feature Readers (L1 -> L5 integration)
+    "FeatureResult",
+    "FeatureReader",
+    "FeatureReaderError",
+    "FeatureNotFoundError",
+    "StaleFeatureError",
+    "FeatureOrderMismatchError",
 ]
 
-__version__ = "2.0.0"
+__version__ = "2.3.0"
