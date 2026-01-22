@@ -10,12 +10,16 @@ Features:
 - Batch feature retrieval
 - Feature versioning
 - Cache statistics
+
+SSOT: Uses FEATURE_ORDER and OBSERVATION_DIM from src.core.contracts
 """
 
 import logging
-from typing import Optional, Dict, List, Any
+import sys
+from typing import Optional, Dict, List, Any, Tuple
 from datetime import datetime
 from dataclasses import dataclass
+from pathlib import Path
 import json
 
 import numpy as np
@@ -24,6 +28,13 @@ try:
     import redis
 except ImportError:
     redis = None
+
+# Add project root to path for SSOT imports
+_project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_project_root))
+
+# Import FEATURE_ORDER and OBSERVATION_DIM from SSOT (REQUIRED - no fallback)
+from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
 
 from mlops.config import MLOpsConfig, get_config
 
@@ -81,37 +92,17 @@ class FeatureCache:
     KEY_HISTORY = "features:history"
     KEY_STATS = "features:stats"
 
-    # Default feature order for USDCOP model
-    DEFAULT_FEATURE_ORDER = [
-        # Price features
-        "returns_1m", "returns_5m", "returns_15m", "returns_30m", "returns_1h",
-        "log_returns_5m", "price_momentum", "price_acceleration",
+    # SSOT: FEATURE_ORDER imported from src.core.contracts.feature_contract
+    # Contract: CTR-FEAT-001 - 15 features in canonical order
+    # See src/core/contracts/feature_contract.py for the canonical definition
+    #
+    # Feature layout (15 total):
+    #   0-5: Technical (log_ret_5m, log_ret_1h, log_ret_4h, rsi_9, atr_pct, adx_14)
+    #   6-12: Macro (dxy_z, dxy_change_1d, vix_z, embi_z, brent_change_1d, rate_spread, usdmxn_change_1d)
+    #   13-14: State (position, time_normalized)
 
-        # Volatility
-        "volatility_5m", "volatility_15m", "volatility_1h",
-        "atr_14", "bollinger_width",
-
-        # Technical indicators
-        "rsi_14", "rsi_7", "macd", "macd_signal", "macd_histogram",
-        "stochastic_k", "stochastic_d", "cci_20", "williams_r",
-
-        # Moving averages
-        "sma_ratio_20", "sma_ratio_50", "ema_ratio_12", "ema_ratio_26",
-        "ma_crossover",
-
-        # Volume
-        "volume_ratio", "volume_momentum", "obv_change",
-
-        # Market regime
-        "trend_strength", "regime_indicator",
-
-        # Macro indicators
-        "dxy_change", "brent_change", "vix_level",
-        "usdcop_spread", "rate_differential",
-
-        # Time features
-        "hour_sin", "hour_cos", "day_of_week", "is_morning_session",
-    ]
+    # DEFAULT_FEATURE_ORDER from SSOT (no fallback)
+    DEFAULT_FEATURE_ORDER: Tuple[str, ...] = FEATURE_ORDER
 
     def __init__(
         self,

@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(tree:*)",
-      "Bash(dir /s \"C:\\\\Users\\\\pedro\\\\OneDrive\\\\Documents\\\\ALGO TRADING\\\\USDCOP\\\\USDCOP-RL-Models\\\\notebooks\\\\Entrneamiento PPOV2\")"
-    ]
-  }
-}

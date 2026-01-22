@@ -1,0 +1,43 @@
+{
+  "report_name": "20260106_191625",
+  "generated_at": "2026-01-06T19:16:25.961257",
+  "n_models": 9,
+  "n_horizons": 7,
+  "files": {
+    "report_dir": "/opt/airflow/backend/pipelines/results/hybrid_improved/20260106_190602/figures/20260106_191625",
+    "da_table": "/opt/airflow/backend/pipelines/results/hybrid_improved/20260106_190602/figures/20260106_191625/da_table.csv",
+    "variance_table": "/opt/airflow/backend/pipelines/results/hybrid_improved/20260106_190602/figures/20260106_191625/variance_ratio_table.csv",
+    "gap_table": "/opt/airflow/backend/pipelines/results/hybrid_improved/20260106_190602/figures/20260106_191625/overfitting_gap_table.csv",
+    "da_heatmap": "/opt/airflow/backend/pipelines/results/hybrid_improved/20260106_190602/figures/20260106_191625/da_val_heatmap.png"
+  },
+  "best_models": {
+    "H=1": {
+      "model": "hybrid_xgboost",
+      "da_val": 52.7972027972028
+    },
+    "H=5": {
+      "model": "hybrid_catboost",
+      "da_val": 59.44055944055944
+    },
+    "H=10": {
+      "model": "hybrid_lightgbm",
+      "da_val": 62.807017543859644
+    },
+    "H=15": {
+      "model": "hybrid_lightgbm",
+      "da_val": 68.66197183098592
+    },
+    "H=20": {
+      "model": "ard",
+      "da_val": 65.01766784452296
+    },
+    "H=25": {
+      "model": "bayesian_ridge",
+      "da_val": 59.57446808510638
+    },
+    "H=30": {
+      "model": "ridge",
+      "da_val": 65.83629893238434
+    }
+  }
+}

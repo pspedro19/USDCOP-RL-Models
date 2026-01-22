@@ -28,6 +28,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from contracts.dag_registry import L6_DRIFT_MONITOR
+
 # Database connection from environment variables (not hardcoded)
 DB_HOST = os.environ.get('POSTGRES_HOST', 'postgres')
 DB_PORT = os.environ.get('POSTGRES_PORT', '5432')
@@ -283,7 +285,7 @@ Action Required: Review model performance and consider retraining.
 # ============================================================================
 
 with DAG(
-    dag_id='mlops_drift_monitor',
+    dag_id=L6_DRIFT_MONITOR,
     default_args=default_args,
     description='Monitor data drift for ML models',
     schedule_interval='0 9-12 * * 1-5',  # Hourly during trading hours, Mon-Fri

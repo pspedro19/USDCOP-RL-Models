@@ -53,8 +53,8 @@ class TestNaNSanitization:
             'low': [98.0, 99.0, 100.0, 101.0, 102.0],
         })
 
-        # Fill NaN with forward fill then backward fill
-        df_clean = df.ffill().bfill()
+        # IMPORTANT: Only ffill allowed - bfill would create look-ahead bias
+        df_clean = df.ffill()
 
         assert not df_clean.isna().any().any()
 

@@ -10,30 +10,34 @@ health_check_interval: 30  # seconds
 metrics_retention_hours: 168  # 1 week
 
 # Database configuration
+# SECURITY: Credentials loaded from environment variables or Docker secrets
 database:
-  host: "localhost"
+  host: "${POSTGRES_HOST:-localhost}"
   port: 5432
-  database: "trading_db"
-  user: "trading_user" 
-  password: "trading123"
+  database: "${POSTGRES_DB:-trading_db}"
+  user: "${POSTGRES_USER:-admin}"
+  password: "${POSTGRES_PASSWORD}"  # Set via env var or Docker secret
 
-# Redis configuration  
+# Redis configuration
+# SECURITY: Password loaded from environment variable or Docker secret
 redis:
-  host: "localhost"
+  host: "${REDIS_HOST:-localhost}"
   port: 6379
-  password: "redis123"
+  password: "${REDIS_PASSWORD}"  # Set via env var or Docker secret
 
 # S3/MinIO configuration
+# SECURITY: Credentials loaded from environment variables or Docker secrets
 s3:
-  endpoint: "http://localhost:9000"
-  access_key: "minioadmin"
-  secret_key: "minioadmin123"
+  endpoint: "${MINIO_ENDPOINT:-http://localhost:9000}"
+  access_key: "${MINIO_ACCESS_KEY:-minioadmin}"
+  secret_key: "${MINIO_SECRET_KEY}"  # Set via env var or Docker secret
 
 # Airflow configuration
+# SECURITY: Credentials loaded from environment variables or Docker secrets
 airflow:
-  base_url: "http://localhost:8081"
-  username: "admin"
-  password: "admin123"
+  base_url: "${AIRFLOW_BASE_URL:-http://localhost:8081}"
+  username: "${AIRFLOW_USER:-admin}"
+  password: "${AIRFLOW_PASSWORD}"  # Set via env var or Docker secret
 
 # Alert thresholds
 alerts:

@@ -1,0 +1,130 @@
+# =============================================================================
+# DATE RANGES - Single Source of Truth (SSOT)
+# =============================================================================
+#
+# This file is the AUTHORITATIVE source for all date ranges in the system.
+# ALL other configurations should reference or align with these values.
+#
+# Referenced by:
+# - config/trading_config.yaml
+# - config/experiments/*.yaml
+# - usdcop-trading-dashboard/lib/contracts/ssot.contract.ts (via API)
+# - /api/pipeline/dates endpoint
+#
+# IMPORTANT: When changing dates, update this file FIRST, then propagate.
+# =============================================================================
+
+version: "1.0.0"
+last_updated: "2026-01-18"
+
+# =============================================================================
+# DATA AVAILABILITY
+# =============================================================================
+# The full range of available OHLCV and macro data in the database.
+data:
+  # First date with reliable USDCOP data (post-COVID volatility normalized)
+  start: "2020-03-01"
+  # Updated dynamically - represents "today"
+  end: "dynamic"  # Use current date in code
+
+# =============================================================================
+# TRAINING PERIOD
+# =============================================================================
+# Data used to train the models. NEVER backtest on this period!
+# This creates data leakage and overestimates model performance.
+training:
+  # Full historical data for maximum pattern learning
+  start: "2020-03-01"
+  end: "2024-12-31"
+  description: "Full historical training data for production models"
+
+# =============================================================================
+# EXPERIMENT TRAINING PERIOD
+# =============================================================================
+# For A/B experiments, we use a shorter training window to:
+# 1. Speed up training iterations
+# 2. Focus on more recent market regimes
+# 3. Compare experiments on equal data
+experiment_training:
+  start: "2023-01-01"
+  end: "2024-12-31"
+  description: "Shorter window for A/B experiment comparisons"
+
+# =============================================================================
+# VALIDATION PERIOD
+# =============================================================================
+# Used for hyperparameter tuning and model selection.
+# Results may have some bias from tuning decisions.
+validation:
+  start: "2025-01-01"
+  end: "2025-06-30"
+  description: "Hyperparameter tuning period (may have tuning bias)"
+
+# =============================================================================
+# TEST PERIOD
+# =============================================================================
+# True out-of-sample evaluation. Most realistic performance estimate.
+# NEVER tune hyperparameters based on test period results!
+test:
+  start: "2025-07-01"
+  end: "dynamic"  # Use current date in code
+  description: "Out-of-sample test (most realistic performance)"
+
+# =============================================================================
+# BACKTEST PRESETS
+# =============================================================================
+# Pre-configured date ranges for quick backtest setup in the dashboard.
+presets:
+  validation:
+    label_en: "Validation"
+    label_es: "Validación"
+    description_en: "Validation period (may have tuning bias)"
+    description_es: "Período de validación (puede tener sesgo de tuning)"
+    start: "2025-01-01"
+    end: "2025-06-30"
+
+  test:
+    label_en: "Test"
+    label_es: "Test"
+    description_en: "Out-of-sample test period (most realistic)"
+    description_es: "Período de prueba fuera de muestra (más realista)"
+    start: "2025-07-01"
+    end: "dynamic"
+
+  both:
+    label_en: "Both"
+    label_es: "Ambos"
+    description_en: "Validation + Test combined"
+    description_es: "Validación + Test combinados"
+    start: "2025-01-01"
+    end: "dynamic"
+
+  custom:
+    label_en: "Custom"
+    label_es: "Personalizado"
+    description_en: "Custom date range"
+    description_es: "Rango de fechas personalizado"
+    start: "2025-01-01"
+    end: "dynamic"
+
+# =============================================================================
+# USAGE GUIDELINES
+# =============================================================================
+#
+# Python (load with PyYAML):
+#   import yaml
+#   with open('config/date_ranges.yaml') as f:
+#       dates = yaml.safe_load(f)
+#   training_end = dates['training']['end']
+#
+# Experiment YAML (reference):
+#   data:
+#     date_range:
+#       start: !include date_ranges.yaml#experiment_training.start
+#       end: !include date_ranges.yaml#experiment_training.end
+#
+# Frontend (via API):
+#   fetch('/api/pipeline/dates')
+#   // Returns dates from this config via trading_config.yaml
+#
+# =============================================================================

@@ -36,6 +36,12 @@ from .builder_factory import (
     get_builder_for_type,
 )
 
+# Import CachedInferenceEngine - P1-3: Feast caching for low-latency inference
+from .cached_inference import (
+    CachedInferenceEngine,
+    create_cached_inference_engine,
+)
+
 __all__ = [
     # Core services
     "DataLoader",
@@ -54,6 +60,9 @@ __all__ = [
     "BuilderFactory",
     "get_observation_builder",
     "get_builder_for_type",
+    # Cached Inference Engine (P1-3: Feast caching)
+    "CachedInferenceEngine",
+    "create_cached_inference_engine",
     # Exceptions
     "NormStatsNotFoundError",
     "FeatureCircuitBreakerError",

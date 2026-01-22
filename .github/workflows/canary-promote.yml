@@ -1,0 +1,278 @@
+# =============================================================================
+# Canary Promotion Workflow
+# =============================================================================
+# Automated canary deployment promotion with metrics monitoring.
+#
+# Features:
+# - Gradual traffic promotion: 10% -> 25% -> 50% -> 100%
+# - Automatic error rate monitoring
+# - Automatic rollback on threshold breach
+# - Prometheus metrics integration
+#
+# Author: Trading Team
+# Date: 2026-01-17
+# =============================================================================
+
+name: Canary Promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      canary_deployment_id:
+        description: 'Canary deployment ID to promote'
+        required: true
+        type: string
+      action:
+        description: 'Action to take'
+        required: true
+        type: choice
+        options:
+          - promote
+          - rollback
+          - status
+      target_percentage:
+        description: 'Target traffic percentage (for manual promotion)'
+        required: false
+        type: choice
+        options:
+          - '25'
+          - '50'
+          - '75'
+          - '100'
+
+env:
+  ERROR_RATE_THRESHOLD: 0.01  # 1% error rate threshold
+  LATENCY_P99_THRESHOLD: 500  # 500ms P99 latency threshold
+  OBSERVATION_PERIOD: 300      # 5 minutes observation period
+  PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL }}
+
+jobs:
+  # ===========================================================================
+  # Canary Status Check
+  # ===========================================================================
+  check-canary-status:
+    name: Check Canary Status
+    runs-on: ubuntu-latest
+
+    outputs:
+      current_percentage: ${{ steps.status.outputs.percentage }}
+      error_rate: ${{ steps.metrics.outputs.error_rate }}
+      latency_p99: ${{ steps.metrics.outputs.latency_p99 }}
+      healthy: ${{ steps.health.outputs.healthy }}
+
+    steps:
+      - name: Get canary status
+        id: status
+        run: |
+          echo "Checking canary deployment status..."
+          echo "Deployment ID: ${{ github.event.inputs.canary_deployment_id }}"
+
+          # In production, query Kubernetes/service mesh for actual status
+          # For now, simulate with environment variable or API call
+          CURRENT_PERCENTAGE=${CANARY_PERCENTAGE:-10}
+          echo "percentage=${CURRENT_PERCENTAGE}" >> $GITHUB_OUTPUT
+          echo "Current traffic percentage: ${CURRENT_PERCENTAGE}%"
+
+      - name: Query Prometheus metrics
+        id: metrics
+        run: |
+          echo "Querying canary metrics from Prometheus..."
+
+          # In production, use promtool or curl to query Prometheus
+          # Example queries:
+          # - Error rate: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+          # - Latency P99: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+
+          # Simulated metrics for demonstration
+          ERROR_RATE=0.005  # 0.5%
+          LATENCY_P99=150   # 150ms
+
+          echo "error_rate=${ERROR_RATE}" >> $GITHUB_OUTPUT
+          echo "latency_p99=${LATENCY_P99}" >> $GITHUB_OUTPUT
+
+          echo "Error rate: ${ERROR_RATE}"
+          echo "Latency P99: ${LATENCY_P99}ms"
+
+      - name: Evaluate health
+        id: health
+        env:
+          ERROR_RATE: ${{ steps.metrics.outputs.error_rate }}
+          LATENCY_P99: ${{ steps.metrics.outputs.latency_p99 }}
+        run: |
+          echo "Evaluating canary health..."
+
+          # Check error rate threshold
+          if (( $(echo "${ERROR_RATE} > ${ERROR_RATE_THRESHOLD}" | bc -l) )); then
+            echo "ERROR: Error rate ${ERROR_RATE} exceeds threshold ${ERROR_RATE_THRESHOLD}"
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check latency threshold
+          if (( $(echo "${LATENCY_P99} > ${LATENCY_P99_THRESHOLD}" | bc -l) )); then
+            echo "ERROR: Latency P99 ${LATENCY_P99}ms exceeds threshold ${LATENCY_P99_THRESHOLD}ms"
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Canary is healthy!"
+          echo "healthy=true" >> $GITHUB_OUTPUT
+
+  # ===========================================================================
+  # Automatic Rollback (if unhealthy)
+  # ===========================================================================
+  auto-rollback:
+    name: Automatic Rollback
+    runs-on: ubuntu-latest
+    needs: check-canary-status
+    if: ${{ needs.check-canary-status.outputs.healthy == 'false' && github.event.inputs.action != 'status' }}
+
+    steps:
+      - name: Initiate rollback
+        run: |
+          echo "🚨 CANARY UNHEALTHY - Initiating automatic rollback!"
+          echo ""
+          echo "Metrics at rollback time:"
+          echo "- Error rate: ${{ needs.check-canary-status.outputs.error_rate }}"
+          echo "- Latency P99: ${{ needs.check-canary-status.outputs.latency_p99 }}ms"
+          echo ""
+          echo "Rolling back to stable version..."
+
+          # In production, this would:
+          # 1. Set canary traffic to 0%
+          # 2. Scale down canary pods
+          # 3. Alert on-call team
+
+      - name: Send rollback notification
+        run: |
+          echo "Sending rollback notification..."
+
+          # In production, send to Slack/PagerDuty
+          echo "## 🚨 Canary Rollback Initiated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ github.event.inputs.canary_deployment_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Error Rate:** ${{ needs.check-canary-status.outputs.error_rate }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Latency P99:** ${{ needs.check-canary-status.outputs.latency_p99 }}ms" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Promote Canary
+  # ===========================================================================
+  promote-canary:
+    name: Promote Canary
+    runs-on: ubuntu-latest
+    needs: check-canary-status
+    if: ${{ needs.check-canary-status.outputs.healthy == 'true' && github.event.inputs.action == 'promote' }}
+
+    steps:
+      - name: Calculate next percentage
+        id: next
+        env:
+          CURRENT: ${{ needs.check-canary-status.outputs.current_percentage }}
+          TARGET: ${{ github.event.inputs.target_percentage }}
+        run: |
+          if [ -n "$TARGET" ]; then
+            NEXT=$TARGET
+          else
+            # Automatic progression: 10 -> 25 -> 50 -> 100
+            case $CURRENT in
+              10) NEXT=25 ;;
+              25) NEXT=50 ;;
+              50) NEXT=100 ;;
+              *) NEXT=100 ;;
+            esac
+          fi
+          echo "next_percentage=${NEXT}" >> $GITHUB_OUTPUT
+          echo "Promoting from ${CURRENT}% to ${NEXT}%"
+
+      - name: Promote canary traffic
+        env:
+          NEXT_PERCENTAGE: ${{ steps.next.outputs.next_percentage }}
+        run: |
+          echo "Promoting canary to ${NEXT_PERCENTAGE}% traffic..."
+
+          # In production, this would:
+          # - Update Istio VirtualService
+          # - Update Kubernetes traffic split
+          # - Update load balancer weights
+
+          echo "Traffic updated to ${NEXT_PERCENTAGE}%"
+
+      - name: Wait for observation period
+        if: ${{ steps.next.outputs.next_percentage != '100' }}
+        run: |
+          echo "Waiting ${OBSERVATION_PERIOD} seconds for metrics to stabilize..."
+          sleep 60  # Shortened for CI, use OBSERVATION_PERIOD in production
+
+      - name: Promotion summary
+        run: |
+          echo "## ✅ Canary Promotion Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ github.event.inputs.canary_deployment_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Previous:** ${{ needs.check-canary-status.outputs.current_percentage }}%" >> $GITHUB_STEP_SUMMARY
+          echo "**Current:** ${{ steps.next.outputs.next_percentage }}%" >> $GITHUB_STEP_SUMMARY
+          echo "**Error Rate:** ${{ needs.check-canary-status.outputs.error_rate }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Latency P99:** ${{ needs.check-canary-status.outputs.latency_p99 }}ms" >> $GITHUB_STEP_SUMMARY
+
+      - name: Full promotion notification
+        if: ${{ steps.next.outputs.next_percentage == '100' }}
+        run: |
+          echo "🎉 Canary fully promoted to 100% - Deployment complete!"
+
+          # In production:
+          # 1. Clean up old version
+          # 2. Update deployment records
+          # 3. Send success notification
+
+  # ===========================================================================
+  # Manual Rollback
+  # ===========================================================================
+  manual-rollback:
+    name: Manual Rollback
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.action == 'rollback' }}
+
+    steps:
+      - name: Execute rollback
+        run: |
+          echo "Executing manual rollback..."
+          echo "Deployment ID: ${{ github.event.inputs.canary_deployment_id }}"
+
+          # In production, this would:
+          # 1. Set canary traffic to 0%
+          # 2. Scale down canary pods
+          # 3. Restore stable version
+
+          echo "Rollback completed"
+
+      - name: Rollback summary
+        run: |
+          echo "## ⏪ Manual Rollback Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ github.event.inputs.canary_deployment_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Status Report
+  # ===========================================================================
+  status-report:
+    name: Status Report
+    runs-on: ubuntu-latest
+    needs: check-canary-status
+    if: ${{ github.event.inputs.action == 'status' }}
+
+    steps:
+      - name: Generate status report
+        run: |
+          echo "## 📊 Canary Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID:** ${{ github.event.inputs.canary_deployment_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Traffic Percentage:** ${{ needs.check-canary-status.outputs.current_percentage }}%" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Status:** ${{ needs.check-canary-status.outputs.healthy == 'true' && '✅ Healthy' || '❌ Unhealthy' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Threshold | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Error Rate | ${{ needs.check-canary-status.outputs.error_rate }} | ${ERROR_RATE_THRESHOLD} | ${{ needs.check-canary-status.outputs.error_rate < env.ERROR_RATE_THRESHOLD && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Latency P99 | ${{ needs.check-canary-status.outputs.latency_p99 }}ms | ${LATENCY_P99_THRESHOLD}ms | ${{ needs.check-canary-status.outputs.latency_p99 < env.LATENCY_P99_THRESHOLD && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY

@@ -19,7 +19,9 @@ import os, logging, json
 # DRY: Using shared utilities
 from utils.dag_common import get_db_connection, load_feature_config
 
-DAG_ID = "v3.alert_monitor"
+from contracts.dag_registry import L6_ALERT_MONITOR
+
+DAG_ID = L6_ALERT_MONITOR
 
 # Load config with thresholds (SSOT - no hardcoded values)
 CONFIG = load_feature_config(raise_on_error=False)

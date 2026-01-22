@@ -1,11 +1,11 @@
 """
 Backtest Router - Endpoints for running backtests
 
-Supports INVESTOR_MODE for demo presentations with realistic metrics.
-Set INVESTOR_MODE=true environment variable to enable.
+Supports two modes based on model_id selection:
+- investor_demo: Synthetic trades for investor presentations
+- ppo_primary: Real PPO model backtesting
 """
 
-import os
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 import logging
@@ -14,24 +14,23 @@ from ..models.responses import BacktestResponse, ErrorResponse
 from ..orchestrator.backtest_orchestrator import BacktestOrchestrator
 
 # Import demo mode (isolated module)
-# Try multiple import paths for Docker and local dev compatibility
+# Demo mode is selected by model_id, not environment variable
 DEMO_MODE_AVAILABLE = False
+is_demo_model = lambda model_id: model_id == "investor_demo"  # Default fallback
 
 try:
     # Docker container path (PYTHONPATH=/app, module at /app/services/demo_mode)
-    from services.demo_mode import DemoTradeGenerator, is_investor_mode
+    from services.demo_mode import DemoTradeGenerator, is_demo_model
     DEMO_MODE_AVAILABLE = True
-    logging.getLogger(__name__).info(f"Demo mode loaded (services.demo_mode). INVESTOR_MODE={is_investor_mode()}")
+    logging.getLogger(__name__).info("Demo mode loaded (services.demo_mode)")
 except ImportError:
     try:
         # Local dev fallback (when running from services directory)
-        from demo_mode import DemoTradeGenerator, is_investor_mode
+        from demo_mode import DemoTradeGenerator, is_demo_model
         DEMO_MODE_AVAILABLE = True
-        logging.getLogger(__name__).info(f"Demo mode loaded (demo_mode). INVESTOR_MODE={is_investor_mode()}")
+        logging.getLogger(__name__).info("Demo mode loaded (demo_mode)")
     except ImportError as e:
         logging.getLogger(__name__).warning(f"Demo mode not available: {e}")
-        def is_investor_mode():
-            return False
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 logger = logging.getLogger(__name__)
@@ -47,15 +46,14 @@ async def run_backtest(request: BacktestRequest, req: Request):
 
     - **start_date**: Start date in YYYY-MM-DD format
     - **end_date**: End date in YYYY-MM-DD format
-    - **model_id**: Model ID to use (default: ppo_primary)
+    - **model_id**: Model ID to use (investor_demo for demo, ppo_primary for real)
     - **force_regenerate**: Force regeneration even if trades exist
-
-    **INVESTOR_MODE**: When enabled, returns optimized demo results for presentations.
     """
     try:
-        # Check for investor/demo mode
-        if DEMO_MODE_AVAILABLE and is_investor_mode():
-            logger.info(f"[INVESTOR MODE] Running demo backtest: {request.start_date} to {request.end_date}")
+        # Demo mode determined ONLY by model_id (investor_demo vs ppo_primary)
+        use_demo = is_demo_model(request.model_id)
+        if use_demo:
+            logger.info(f"[DEMO MODE] Running demo backtest for model '{request.model_id}': {request.start_date} to {request.end_date}")
             result = await _run_demo_backtest(request, req)
             return result
 
@@ -97,7 +95,10 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
     end_dt = dt.strptime(request.end_date, "%Y-%m-%d").date()
 
     # Fetch real price data for realistic trade generation
-    db_url = os.getenv("DATABASE_URL", "postgresql://admin:admin123@localhost:5432/usdcop_trading")
+    # Use environment variables or fallback to local defaults
+    from ..config import get_settings
+    settings = get_settings()
+    db_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
 
     try:
         conn = await asyncpg.connect(db_url)
@@ -152,9 +153,10 @@ async def run_backtest_stream(request: BacktestRequest, req: Request):
     Returns a stream of SSE events with progress updates and final result.
     """
     try:
-        # Check for investor/demo mode
-        if DEMO_MODE_AVAILABLE and is_investor_mode():
-            logger.info(f"[INVESTOR MODE] Running demo stream backtest: {request.start_date} to {request.end_date}")
+        # Demo mode determined ONLY by model_id (investor_demo vs ppo_primary)
+        use_demo = is_demo_model(request.model_id)
+        if use_demo:
+            logger.info(f"[DEMO MODE] Running demo stream backtest for model '{request.model_id}': {request.start_date} to {request.end_date}")
             return StreamingResponse(
                 _demo_stream_generator(request, req),
                 media_type="text/event-stream",
@@ -174,7 +176,8 @@ async def run_backtest_stream(request: BacktestRequest, req: Request):
                 async for event in orchestrator.run_with_progress(
                     start_date=request.start_date,
                     end_date=request.end_date,
-                    model_id=request.model_id
+                    model_id=request.model_id,
+                    force_regenerate=request.force_regenerate
                 ):
                     yield event
             finally:
@@ -195,33 +198,85 @@ async def run_backtest_stream(request: BacktestRequest, req: Request):
 
 
 async def _demo_stream_generator(request: BacktestRequest, req: Request):
-    """Generate SSE events for demo mode with simulated progress."""
+    """
+    Generate SSE events for demo mode with REALISTIC trade-by-trade streaming.
+
+    This matches the real backtest streaming behavior:
+    1. Initial progress events
+    2. Individual trade events with current_equity (for real-time equity curve)
+    3. Final result event
+
+    The delay between trades creates the same dynamic visual effect as real backtests.
+    """
     import asyncio
     import json
     import time
 
     start_time = time.time()
 
-    # Get the demo result first
+    # Initial progress: connecting
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.0, 'current_bar': 0, 'total_bars': 0, 'trades_generated': 0, 'status': 'starting', 'message': 'Checking for existing trades...'}})}\n\n"
+    await asyncio.sleep(0.1)
+
+    # Get the demo result (generates all trades)
     result = await _run_demo_backtest(request, req)
     trades = result.get("trades", [])
     total_trades = len(trades)
 
-    # Simulate progress updates
-    for i in range(0, 101, 10):
+    # Loading progress
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.05, 'current_bar': 0, 'total_bars': 0, 'trades_generated': 0, 'status': 'loading', 'message': 'Loading historical data...'}})}\n\n"
+    await asyncio.sleep(0.15)
+
+    # Running progress - now stream trades one by one
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.1, 'current_bar': 0, 'total_bars': total_trades * 10, 'trades_generated': 0, 'status': 'running', 'message': f'Loaded data, starting simulation...'}})}\n\n"
+    await asyncio.sleep(0.1)
+
+    # Calculate delay per trade to create smooth animation
+    # Target: ~15-30 seconds for full backtest visualization
+    # Adjust based on number of trades
+    if total_trades > 0:
+        # For ~100 trades: 0.15s each = 15s total
+        # For ~50 trades: 0.3s each = 15s total
+        # For ~200 trades: 0.1s each = 20s total
+        delay_per_trade = max(0.08, min(0.4, 20.0 / total_trades))
+    else:
+        delay_per_trade = 0.1
+
+    logger.info(f"[INVESTOR MODE] Streaming {total_trades} trades with {delay_per_trade:.2f}s delay each")
+
+    # Stream each trade individually (just like real backtest)
+    for idx, trade in enumerate(trades):
+        # Send trade event with current_equity for real-time equity curve updates
+        trade_event = {
+            "type": "trade",
+            "data": {
+                **trade,
+                "current_equity": trade.get("equity_at_exit", trade.get("equity_at_entry", 10000))
+            }
+        }
+        yield f"data: {json.dumps(trade_event)}\n\n"
+
+        # Send progress update after each trade
+        progress = 0.1 + (0.8 * (idx + 1) / total_trades)
         progress_event = {
             "type": "progress",
             "data": {
-                "progress": i / 100,
-                "current_bar": int(i * 2.24),  # ~224 total
-                "total_bars": 224,
-                "trades_generated": int(total_trades * i / 100),
-                "status": "running" if i < 100 else "completed",
-                "message": f"Processing... {i}%"
+                "progress": progress,
+                "current_bar": (idx + 1) * 10,
+                "total_bars": total_trades * 10,
+                "trades_generated": idx + 1,
+                "status": "running",
+                "message": f"Trade #{idx + 1} generated..."
             }
         }
         yield f"data: {json.dumps(progress_event)}\n\n"
-        await asyncio.sleep(0.05)  # Small delay for visual effect
+
+        # Delay between trades for visual effect
+        await asyncio.sleep(delay_per_trade)
+
+    # Saving progress
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.9, 'current_bar': total_trades * 10, 'total_bars': total_trades * 10, 'trades_generated': total_trades, 'status': 'saving', 'message': f'Generated {total_trades} trades, saving...'}})}\n\n"
+    await asyncio.sleep(0.1)
 
     # Fix result format to match dashboard schema
     processing_time = (time.time() - start_time) * 1000
@@ -231,9 +286,12 @@ async def _demo_stream_generator(request: BacktestRequest, req: Request):
     if summary and "max_drawdown_pct" in summary:
         summary["max_drawdown_pct"] = abs(summary["max_drawdown_pct"])
 
+    # Completed progress
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 1.0, 'current_bar': total_trades * 10, 'total_bars': total_trades * 10, 'trades_generated': total_trades, 'status': 'completed', 'message': 'Backtest complete!'}})}\n\n"
+
     final_result = {
         "success": True,
-        "source": "generated",  # Must be 'database', 'generated', or 'error'
+        "source": "generated",
         "trade_count": total_trades,
         "trades": trades,
         "summary": summary,
@@ -244,13 +302,9 @@ async def _demo_stream_generator(request: BacktestRequest, req: Request):
         }
     }
 
-    # Send final result with type 'result' (not 'complete')
-    final_event = {
-        "type": "result",
-        "data": final_result
-    }
-    yield f"data: {json.dumps(final_event)}\n\n"
-    logger.info(f"[INVESTOR MODE] Stream completed with {total_trades} trades")
+    # Send final result
+    yield f"data: {json.dumps({'type': 'result', 'data': final_result})}\n\n"
+    logger.info(f"[INVESTOR MODE] Stream completed with {total_trades} trades in {processing_time:.0f}ms")
 
 
 @router.get("/status/{model_id}")

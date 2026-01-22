@@ -64,6 +64,19 @@ from .repository import (
     ICacheRepository,
 )
 
+# Storage interfaces (Phase 5 - MinIO-First Architecture)
+from .storage import (
+    ArtifactMetadata,
+    IObjectStorageRepository,
+    IDatasetRepository,
+    IModelRepository,
+    IBacktestRepository,
+    IABComparisonRepository,
+    ObjectNotFoundError,
+    StorageError,
+    IntegrityError,
+)
+
 __all__ = [
     # Original interfaces
     'IFeatureCalculator',
@@ -101,4 +114,15 @@ __all__ = [
     'IDailyStatsRepository',
     'ITradeLogRepository',
     'ICacheRepository',
+
+    # Storage interfaces
+    'ArtifactMetadata',
+    'IObjectStorageRepository',
+    'IDatasetRepository',
+    'IModelRepository',
+    'IBacktestRepository',
+    'IABComparisonRepository',
+    'ObjectNotFoundError',
+    'StorageError',
+    'IntegrityError',
 ]

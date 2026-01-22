@@ -462,8 +462,8 @@ class ConsistencyValidatorService:
     def _check_feature_order(self, contract: ModelContract) -> ValidationResult:
         """Check that feature order is defined"""
         try:
-            # Import feature contract to get expected order
-            from src.features.contract import FEATURE_CONTRACT
+            # Import feature contract from SSOT
+            from src.core.contracts import FEATURE_CONTRACT
 
             expected_order = list(FEATURE_CONTRACT.feature_order)
             expected_dim = FEATURE_CONTRACT.observation_dim

@@ -6,11 +6,25 @@
  * These types MUST mirror the model_registry table schema in PostgreSQL.
  * Any changes to the DB schema should be reflected here.
  *
+ * IMPORTANT: This file uses SSOT values from ssot.contract.ts
+ * Do NOT hardcode algorithm names, colors, or statuses here.
+ *
  * SOLID Principles Applied:
  * - Single Responsibility: Only model-related types
  * - Open/Closed: Extensible via generics, closed for modification
  * - Interface Segregation: Separate interfaces for different use cases
  */
+
+import {
+  MODEL_STATUSES,
+  RL_ALGORITHMS,
+  ML_ALGORITHMS,
+  ALL_ALGORITHMS,
+  ALGORITHM_COLORS,
+  isRLAlgorithm,
+  type ModelStatus as SSOTModelStatus,
+  type Algorithm,
+} from './ssot.contract';
 
 // ============================================================================
 // Core Types (mirror model_registry table)
@@ -18,9 +32,9 @@
 
 /**
  * Model status from model_registry.status
- * CHECK constraint: status IN ('registered', 'deployed', 'retired')
+ * Uses SSOT values: 'registered' | 'deployed' | 'retired'
  */
-export type ModelStatus = 'registered' | 'deployed' | 'retired';
+export type ModelStatus = SSOTModelStatus;
 
 /**
  * Core model identity from model_registry
@@ -152,7 +166,8 @@ export function createFrontendModelConfig(record: ModelRegistryRecord): Frontend
     version,
     displayStatus: mapStatus(record.status),
     dbStatus: record.status,
-    type: algorithm === 'PPO' || algorithm === 'SAC' ? 'rl' : 'ml',
+    // Use SSOT isRLAlgorithm helper to determine model type
+    type: isRLAlgorithm(algorithm) ? 'rl' : 'ml',
     color: getModelColor(algorithm, version),
     description: `${algorithm} model ${version} - ${record.observation_dim}-dim observation`,
     isRealData: record.status === 'deployed',
@@ -169,15 +184,20 @@ export function createFrontendModelConfig(record: ModelRegistryRecord): Frontend
 // Helper Functions
 // ============================================================================
 
+/**
+ * Extract algorithm name from model ID using SSOT algorithm list
+ * Dynamically checks against ALL_ALGORITHMS from SSOT
+ */
 function extractAlgorithm(modelId: string): string {
   const id = modelId.toLowerCase();
-  if (id.includes('ppo')) return 'PPO';
-  if (id.includes('sac')) return 'SAC';
-  if (id.includes('td3')) return 'TD3';
-  if (id.includes('a2c')) return 'A2C';
-  if (id.includes('dqn')) return 'DQN';
-  if (id.includes('lgbm')) return 'LGBM';
-  if (id.includes('xgb')) return 'XGB';
+
+  // Check against all algorithms from SSOT
+  for (const algo of ALL_ALGORITHMS) {
+    if (id.includes(algo.toLowerCase())) {
+      return algo;
+    }
+  }
+
   return 'Unknown';
 }
 
@@ -197,18 +217,12 @@ function mapStatus(dbStatus: ModelStatus): 'production' | 'testing' | 'deprecate
   }
 }
 
-function getModelColor(algorithm: string, version: string): string {
-  // Color by algorithm first
-  const algorithmColors: Record<string, string> = {
-    'PPO': '#10B981',  // Emerald
-    'SAC': '#8B5CF6',  // Violet
-    'TD3': '#F59E0B',  // Amber
-    'A2C': '#EF4444',  // Red
-    'LGBM': '#3B82F6', // Blue
-    'XGB': '#EC4899',  // Pink
-  };
-
-  return algorithmColors[algorithm] || '#6B7280'; // Gray default
+/**
+ * Get color for algorithm using SSOT ALGORITHM_COLORS
+ */
+function getModelColor(algorithm: string, _version: string): string {
+  // Use SSOT colors - type assertion since algorithm might not be in the map
+  return ALGORITHM_COLORS[algorithm as Algorithm] || '#6B7280'; // Gray default
 }
 
 // ============================================================================

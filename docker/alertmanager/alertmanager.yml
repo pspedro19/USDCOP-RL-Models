@@ -1,0 +1,81 @@
+global:
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+  resolve_timeout: 5m
+
+route:
+  receiver: 'slack-notifications'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    # P0 Critical - immediate page
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      group_wait: 0s
+      repeat_interval: 15m
+
+    # P1 Warning
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+      group_wait: 1m
+
+    # P2 Info
+    - match:
+        severity: info
+      receiver: 'slack-info'
+      group_wait: 5m
+
+receivers:
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#trading-alerts-p0'
+        send_resolved: true
+        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+
+          *Runbook:* {{ .Annotations.runbook }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook }}'
+          - type: button
+            text: 'Dashboard'
+            url: 'https://grafana.internal/d/trading'
+
+  - name: 'slack-warnings'
+    slack_configs:
+      - channel: '#trading-alerts'
+        send_resolved: true
+        title: 'WARNING: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'slack-info'
+    slack_configs:
+      - channel: '#trading-info'
+        send_resolved: false
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#trading-alerts'
+        send_resolved: true
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']

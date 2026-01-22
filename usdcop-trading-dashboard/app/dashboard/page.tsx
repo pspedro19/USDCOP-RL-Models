@@ -56,7 +56,7 @@ import { TradesTable } from "@/components/trading/TradesTable";
 import { useReplay } from "@/hooks/useReplay";
 import { ReplayControlBarCollapsible } from "@/components/trading/ReplayControlBar";
 import { BacktestControlPanel } from "@/components/trading/BacktestControlPanel";
-import { BacktestResult } from "@/lib/contracts/backtest.contract";
+import { BacktestResult, BacktestTradeEvent } from "@/lib/contracts/backtest.contract";
 
 // ============================================================================
 // Types
@@ -321,6 +321,7 @@ interface BacktestMetricsPanelProps {
         hold_time_minutes?: number;
         equity_at_entry?: number;
         equity_at_exit?: number;
+        current_equity?: number;  // Real-time equity from streaming trades
     }>;
 }
 
@@ -397,12 +398,18 @@ function BacktestMetricsPanel({ isReplayMode = false, forceEmpty = false, replay
 
         for (const trade of trades) {
             const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
-            const hasEquityFields = trade.equity_at_entry !== undefined && trade.equity_at_exit !== undefined;
+            // Priority: current_equity > equity_at_entry/exit > fallback calculation
+            const hasCurrentEquity = trade.current_equity != null;
+            const hasEquityFields = trade.equity_at_entry != null && trade.equity_at_exit != null;
 
             let entryEquity: number;
             let exitEquity: number;
 
-            if (hasEquityFields) {
+            if (hasCurrentEquity) {
+                // Real-time streaming: current_equity is the equity AFTER this trade
+                exitEquity = trade.current_equity as number;
+                entryEquity = exitEquity - pnl;
+            } else if (hasEquityFields) {
                 entryEquity = trade.equity_at_entry as number;
                 exitEquity = trade.equity_at_exit as number;
             } else {
@@ -1059,10 +1066,12 @@ interface EquityCurveSectionProps {
         pnl?: number;
         pnl_usd?: number;
         timestamp?: string;
+        entry_time?: string;
         duration_minutes?: number;
         side?: string;
         equity_at_entry?: number;
         equity_at_exit?: number;
+        current_equity?: number;  // Real-time equity from streaming trades
     }>;
 }
 
@@ -1191,16 +1200,24 @@ function EquityCurveSection({ isReplayMode = false, replayVisibleTrades = [] }: 
 
         // Process each trade - create entry AND exit points
         for (const trade of replayVisibleTrades) {
-            const entryTime = trade.timestamp || new Date().toISOString();
+            const entryTime = trade.entry_time || trade.timestamp || new Date().toISOString();
             const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
 
-            // Use equity_at_entry/exit if available (check for both null and undefined), otherwise calculate from running total
+            // Priority for equity values:
+            // 1. current_equity (from real-time streaming)
+            // 2. equity_at_entry/exit (from backtest results)
+            // 3. Calculate from running total (fallback)
+            const hasCurrentEquity = trade.current_equity != null;
             const hasEquityFields = trade.equity_at_entry != null && trade.equity_at_exit != null;
 
             let entryEquity: number;
             let exitEquity: number;
 
-            if (hasEquityFields) {
+            if (hasCurrentEquity) {
+                // Real-time streaming: current_equity is the equity AFTER this trade
+                exitEquity = trade.current_equity as number;
+                entryEquity = exitEquity - pnl;
+            } else if (hasEquityFields) {
                 entryEquity = trade.equity_at_entry as number;
                 exitEquity = trade.equity_at_exit as number;
             } else {
@@ -1272,13 +1289,18 @@ function EquityCurveSection({ isReplayMode = false, replayVisibleTrades = [] }: 
 
         for (const trade of replayVisibleTrades) {
             const pnl = trade.pnl ?? trade.pnl_usd ?? 0;
-            // Check for both null and undefined
+            // Priority: current_equity > equity_at_entry/exit > fallback calculation
+            const hasCurrentEquity = trade.current_equity != null;
             const hasEquityFields = trade.equity_at_entry != null && trade.equity_at_exit != null;
 
             let entryEquity: number;
             let exitEquity: number;
 
-            if (hasEquityFields) {
+            if (hasCurrentEquity) {
+                // Real-time streaming: current_equity is the equity AFTER this trade
+                exitEquity = trade.current_equity as number;
+                entryEquity = exitEquity - pnl;
+            } else if (hasEquityFields) {
                 entryEquity = trade.equity_at_entry as number;
                 exitEquity = trade.equity_at_exit as number;
             } else {
@@ -1380,8 +1402,9 @@ function EquityCurveSection({ isReplayMode = false, replayVisibleTrades = [] }: 
     const gradientId = `equity-gradient-${selectedModel?.id || 'default'}`;
     const drawdownGradientId = `drawdown-gradient-${selectedModel?.id || 'default'}`;
 
-    // Loading state
-    if (isLoading) {
+    // Loading state - but skip if in replay mode with streaming trades
+    // This allows real-time updates even while API data is still loading
+    if (isLoading && !isReplayMode && replayVisibleTrades.length === 0) {
         return (
             <Card className="bg-slate-900/40 border-slate-800">
                 <CardHeader className="py-3 px-4 border-b border-slate-800/50">
@@ -1628,6 +1651,9 @@ function DashboardContent() {
     const [backtestDateRange, setBacktestDateRange] = useState<{ start: string; end: string } | null>(null);
     const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
 
+    // Real-time streaming trades (accumulates as backtest runs)
+    const [streamingTrades, setStreamingTrades] = useState<BacktestTradeEvent[]>([]);
+
     // Animation state for animated backtest replay
     const [isAnimating, setIsAnimating] = useState(false);
     const [animationBarIndex, setAnimationBarIndex] = useState(0);
@@ -1700,6 +1726,7 @@ function DashboardContent() {
         setBacktestResult(null);
         setBacktestDateRange(null);
         setIsReplayMode(false);
+        setStreamingTrades([]); // Clear streaming trades
         replay.stop();
         replay.reset();
         // Increment clear key to force components to remount with fresh state
@@ -1767,42 +1794,82 @@ function DashboardContent() {
         };
     }, []);
 
-    // Handle backtest completion - show results with animation
+    // Handle backtest start - clear all previous state for fresh start
+    const handleBacktestStart = useCallback(() => {
+        console.log('[Dashboard] Backtest starting - clearing all previous state');
+        // Clear streaming trades from any previous run
+        setStreamingTrades([]);
+        // Clear previous backtest result to avoid stale data interference
+        setBacktestResult(null);
+        setBacktestDateRange(null);
+        // Reset replay mode and manual replay state
+        setIsReplayMode(false);
+        setIsDashboardCleared(false);
+        // Stop and reset the replay system to clear any stale replay.visibleTrades
+        replay.stop();
+        replay.reset();
+        // Stop any running animation
+        if (animationRef.current) {
+            clearInterval(animationRef.current);
+            animationRef.current = null;
+        }
+        setIsAnimating(false);
+        setAnimationBarIndex(0);
+    }, [replay]);
+
+    // Handle real-time trade events from backtest streaming
+    // This updates the equity curve live as trades are generated
+    const handleTradeGenerated = useCallback((trade: BacktestTradeEvent) => {
+        console.log(`[Dashboard] Real-time trade #${trade.trade_id}: ${trade.side} @ ${trade.entry_price}, equity=${trade.current_equity}`);
+
+        // Clear dashboard cleared flag since we have new data
+        setIsDashboardCleared(false);
+
+        // Activate replay mode to show live updates
+        setIsReplayMode(true);
+
+        // Accumulate trades for real-time equity curve updates
+        setStreamingTrades(prev => [...prev, trade]);
+    }, []);
+
+    // Handle backtest completion - show final results
+    // NOTE: Don't call handleClearDashboard here - it would clear streaming trades
+    // The streaming trades are already cleared when a NEW backtest starts (handleBacktestStart)
     const handleBacktestComplete = useCallback((result: BacktestResult, startDate: string, endDate: string) => {
         console.log(`[Dashboard] Backtest completed: ${result.trade_count} trades from ${startDate} to ${endDate}`);
+        console.log('[Dashboard] Result summary:', result.summary);
+        console.log('[Dashboard] First trade:', result.trades?.[0]);
 
-        // First, clear any existing data
-        handleClearDashboard();
+        // Stop any running animation first
+        if (animationRef.current) {
+            clearInterval(animationRef.current);
+            animationRef.current = null;
+        }
+        setIsAnimating(false);
+        setAnimationBarIndex(0);
 
-        // Small delay to ensure clean slate
-        setTimeout(() => {
-            // Store the date range for chart
-            setBacktestDateRange({ start: startDate, end: endDate });
+        // Clear streaming trades - we now have the final result
+        // The final result contains all trades with equity_at_entry/exit
+        console.log('[Dashboard] Clearing streamingTrades, setting backtestResult');
+        setStreamingTrades([]);
 
-            // Store backtest result for display in other components
-            setBacktestResult(result);
+        // Store the date range for chart
+        setBacktestDateRange({ start: startDate, end: endDate });
 
-            // Clear the "dashboard cleared" flag since we have new data
-            setIsDashboardCleared(false);
+        // Store backtest result for display in other components
+        setBacktestResult(result);
 
-            // Activate replay mode to show trades on chart
-            if (result.trade_count > 0) {
-                setIsReplayMode(true);
-                console.log(`[Dashboard] Backtest mode activated with ${result.trades?.length || 0} trades`);
+        // Clear the "dashboard cleared" flag since we have new data
+        setIsDashboardCleared(false);
 
-                // Calculate number of bars in the date range (5-min bars, ~60 bars per day)
-                // Market hours: 8:00-12:55 COT = ~60 5-min bars per day
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                const tradingDays = Math.floor(days * 5 / 7); // Approximate trading days
-                const estimatedBars = tradingDays * 60; // ~60 bars per trading day
-
-                // Start animated replay
-                startAnimatedReplay(Math.min(estimatedBars, 5000)); // Cap at 5000 bars
-            }
-        }, 100);
-    }, [handleClearDashboard, startAnimatedReplay]);
+        // Activate replay mode to show all trades immediately (no animation)
+        // The user already saw the trades streaming in real-time, no need to animate again
+        if (result.trade_count > 0) {
+            setIsReplayMode(true);
+            console.log(`[Dashboard] Backtest complete - isReplayMode=true, ${result.trades?.length || 0} trades available`);
+            // Don't start animation - just show all trades at once
+        }
+    }, []);
 
     // Compute animation date based on current bar index
     // Each bar is 5 minutes, starting from the backtest start date
@@ -1828,6 +1895,28 @@ function DashboardContent() {
 
     // Animation progress percentage
     const animationProgress = totalBars > 0 ? Math.round((animationBarIndex / totalBars) * 100) : 0;
+
+    // Debug: Log equity curve data source on every render (when data changes)
+    const equityCurveDataSource = useMemo(() => {
+        const source = streamingTrades.length > 0
+            ? 'streamingTrades'
+            : isAnimating
+                ? 'visibleAnimationTrades'
+                : replay.visibleTrades.length > 0
+                    ? 'replay.visibleTrades'
+                    : backtestResult?.trades?.length
+                        ? 'backtestResult.trades'
+                        : 'none';
+        const count = streamingTrades.length > 0
+            ? streamingTrades.length
+            : isAnimating
+                ? visibleAnimationTrades.length
+                : replay.visibleTrades.length > 0
+                    ? replay.visibleTrades.length
+                    : backtestResult?.trades?.length || 0;
+        console.log(`[Dashboard] Equity curve source: ${source} (${count} trades), isReplayMode=${isReplayMode}, isAnimating=${isAnimating}`);
+        return { source, count };
+    }, [streamingTrades.length, isAnimating, visibleAnimationTrades.length, replay.visibleTrades.length, backtestResult?.trades?.length, isReplayMode]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#030712] via-[#0f172a] to-[#030712] overflow-x-hidden">
@@ -1888,6 +1977,8 @@ function DashboardContent() {
                             selectedModelId={selectedModel?.id || 'ppo_v20'}
                             onModelChange={(modelId) => setSelectedModel(modelId)}
                             onBacktestComplete={handleBacktestComplete}
+                            onTradeGenerated={handleTradeGenerated}
+                            onBacktestStart={handleBacktestStart}
                             onClearDashboard={handleClearDashboard}
                             enableAnimatedReplay={true}
                             expanded={true}
@@ -1960,12 +2051,15 @@ function DashboardContent() {
                         />
                         <BacktestMetricsPanel
                             key={`metrics-${clearKey}`}
-                            isReplayMode={isReplayMode || !!backtestResult || isAnimating}
+                            isReplayMode={isReplayMode || !!backtestResult || isAnimating || streamingTrades.length > 0}
                             forceEmpty={isDashboardCleared}
                             replayVisibleTrades={
-                                isAnimating
-                                    ? visibleAnimationTrades
-                                    : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
+                                // Priority: streaming trades > animation > replay > backtest result
+                                streamingTrades.length > 0
+                                    ? streamingTrades  // Real-time streaming during backtest
+                                    : isAnimating
+                                        ? visibleAnimationTrades
+                                        : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
                             }
                         />
                     </div>
@@ -2005,44 +2099,61 @@ function DashboardContent() {
                         <Suspense fallback={<ChartLoadingFallback />}>
                             <div className="rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
                                 <TradingChartWithSignals
-                                    key={`chart-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult ? '-backtest' : ''}${backtestDateRange?.start || ''}`}
+                                    key={`chart-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult || streamingTrades.length > 0 ? '-backtest' : ''}${backtestDateRange?.start || ''}`}
                                     symbol="USDCOP"
                                     timeframe="5m"
                                     height={400}
                                     showSignals={true}
                                     showPositions={false}
-                                    enableRealTime={!isReplayMode && !backtestResult}
+                                    enableRealTime={!isReplayMode && !backtestResult && streamingTrades.length === 0}
                                     modelId={selectedModel?.id || 'ppo_v19_prod'}
                                     startDate={backtestDateRange ? backtestDateRange.start : undefined}
                                     endDate={
-                                        // During animation, use the computed animation date
-                                        // When animation complete, show full backtest results
-                                        isAnimating && animationEndDate
-                                            ? animationEndDate
-                                            : replay.isPlaying && replay.state.currentDate
-                                                ? replay.state.currentDate
-                                                : backtestResult
-                                                    ? new Date(backtestDateRange?.end + 'T23:59:59')
-                                                    : undefined
+                                        // Priority: streaming > animation > replay > backtest result
+                                        streamingTrades.length > 0
+                                            // During streaming, use the latest trade's exit_time to progressively reveal candles
+                                            ? (() => {
+                                                const lastTrade = streamingTrades[streamingTrades.length - 1];
+                                                // Use exit_time if available, otherwise entry_time + duration
+                                                const exitTime = lastTrade.exit_time
+                                                    ? new Date(lastTrade.exit_time)
+                                                    : new Date(new Date(lastTrade.entry_time || lastTrade.timestamp).getTime() + (lastTrade.duration_minutes || 0) * 60000);
+                                                console.log(`[Dashboard] Price chart endDate: ${exitTime.toISOString()} (streaming trade #${lastTrade.trade_id})`);
+                                                return exitTime;
+                                            })()
+                                            : isAnimating && animationEndDate
+                                                ? animationEndDate
+                                                : replay.isPlaying && replay.state.currentDate
+                                                    ? replay.state.currentDate
+                                                    : backtestResult
+                                                        ? new Date(backtestDateRange?.end + 'T23:59:59')
+                                                        : undefined
                                     }
-                                    isReplayMode={isReplayMode || !!backtestResult}
+                                    isReplayMode={isReplayMode || !!backtestResult || streamingTrades.length > 0}
                                     replayVisibleTradeIds={
-                                        // During animation, only show trades up to current point
-                                        isAnimating
-                                            ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
-                                            : isReplayMode
-                                                ? new Set(replay.visibleTrades.map(t => String(t.trade_id)))
-                                                : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined)
+                                        // Priority: streaming > animation > replay > backtest result
+                                        streamingTrades.length > 0
+                                            ? new Set(streamingTrades.map(t => String(t.trade_id)))
+                                            : isAnimating
+                                                ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
+                                                : isReplayMode
+                                                    ? new Set(replay.visibleTrades.map(t => String(t.trade_id)))
+                                                    : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined)
                                     }
                                     replayTrades={
-                                        // During animation, show trades progressively
-                                        (isAnimating ? visibleAnimationTrades : (replay.visibleTrades.length > 0 ? replay.visibleTrades : backtestResult?.trades || [])).map(t => ({
+                                        // Priority: streaming > animation > replay > backtest result
+                                        (streamingTrades.length > 0
+                                            ? streamingTrades
+                                            : isAnimating
+                                                ? visibleAnimationTrades
+                                                : (replay.visibleTrades.length > 0 ? replay.visibleTrades : backtestResult?.trades || [])
+                                        ).map(t => ({
                                             trade_id: t.trade_id,
                                             timestamp: t.timestamp || t.entry_time,
                                             entry_time: t.entry_time,
                                             side: t.side || 'buy',
                                             entry_price: t.entry_price,
-                                            pnl: t.pnl,
+                                            pnl: t.pnl ?? t.pnl_usd,
                                             status: t.status,
                                         }))
                                     }
@@ -2065,23 +2176,44 @@ function DashboardContent() {
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
                             <div className="lg:col-span-2">
                                 <EquityCurveSection
-                                    isReplayMode={isReplayMode || !!backtestResult}
+                                    isReplayMode={isReplayMode || !!backtestResult || streamingTrades.length > 0}
                                     replayVisibleTrades={
-                                        // During animation, show trades progressively
-                                        isAnimating
-                                            ? visibleAnimationTrades
-                                            : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
+                                        // Priority: streaming trades > animation > replay > backtest result
+                                        streamingTrades.length > 0
+                                            ? streamingTrades  // Real-time streaming during backtest
+                                            : isAnimating
+                                                ? visibleAnimationTrades
+                                                : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || []))
                                     }
                                 />
                             </div>
                             <div className="flex flex-col items-center lg:items-stretch">
                                 <TradingSummaryCard
-                                    isReplayMode={isReplayMode || isAnimating}
+                                    isReplayMode={isReplayMode || isAnimating || streamingTrades.length > 0}
                                     forceEmpty={isDashboardCleared}
-                                    replayVisibleTrades={isAnimating ? visibleAnimationTrades : replay.visibleTrades}
+                                    replayVisibleTrades={
+                                        // Priority: streaming trades > animation > replay
+                                        streamingTrades.length > 0
+                                            ? streamingTrades
+                                            : (isAnimating ? visibleAnimationTrades : replay.visibleTrades)
+                                    }
                                     backtestSummary={
-                                        // During animation, ALWAYS compute from visible trades (even if 0)
-                                        isAnimating
+                                        // Real-time streaming trades - compute summary on the fly
+                                        streamingTrades.length > 0
+                                            ? (() => {
+                                                const trades = streamingTrades;
+                                                const wins = trades.filter(t => (t.pnl || t.pnl_usd || 0) > 0).length;
+                                                const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || t.pnl_usd || 0), 0);
+                                                return {
+                                                    totalTrades: trades.length,
+                                                    winRate: trades.length > 0 ? (wins / trades.length) * 100 : 0,
+                                                    totalPnl,
+                                                    totalPnlPct: (totalPnl / 10000) * 100,
+                                                    tradingDays: 0,
+                                                };
+                                            })()
+                                        // During animation, compute from visible trades
+                                        : isAnimating
                                             ? (() => {
                                                 const trades = visibleAnimationTrades;
                                                 const wins = trades.filter(t => (t.pnl || 0) > 0).length;
@@ -2090,8 +2222,8 @@ function DashboardContent() {
                                                     totalTrades: trades.length,
                                                     winRate: trades.length > 0 ? (wins / trades.length) * 100 : 0,
                                                     totalPnl,
-                                                    totalPnlPct: (totalPnl / 10000) * 100, // Assuming $10k initial
-                                                    tradingDays: Math.floor(animationBarIndex / 60), // ~60 bars per day
+                                                    totalPnlPct: (totalPnl / 10000) * 100,
+                                                    tradingDays: Math.floor(animationBarIndex / 60),
                                                 };
                                             })()
                                             : backtestResult?.summary ? {
@@ -2119,22 +2251,41 @@ function DashboardContent() {
                             icon={<Table2 className="w-5 h-5 sm:w-6 sm:h-6" />}
                         />
                         <TradesTable
-                            key={`trades-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult ? '-backtest' : ''}`}
-                            initialLimit={isReplayMode || backtestResult || isAnimating ? 50 : 10}
+                            key={`trades-${selectedModel?.id || 'default'}-${clearKey}${isReplayMode || backtestResult || streamingTrades.length > 0 ? '-backtest' : ''}`}
+                            initialLimit={isReplayMode || backtestResult || isAnimating || streamingTrades.length > 0 ? 50 : 10}
                             compact={false}
                             forceEmpty={isDashboardCleared}
-                            highlightedTradeIds={isAnimating ? new Set(visibleAnimationTrades.slice(-3).map(t => String(t.trade_id))) : (isReplayMode ? replay.highlightedTradeIds : undefined)}
-                            replayEndDate={isAnimating ? animationEndDate : (isReplayMode ? replay.state.currentDate : undefined)}
-                            isReplayMode={isReplayMode || !!backtestResult || isAnimating}
+                            highlightedTradeIds={
+                                // Priority: streaming > animation > replay
+                                streamingTrades.length > 0
+                                    ? new Set(streamingTrades.slice(-3).map(t => String(t.trade_id)))
+                                    : isAnimating
+                                        ? new Set(visibleAnimationTrades.slice(-3).map(t => String(t.trade_id)))
+                                        : (isReplayMode ? replay.highlightedTradeIds : undefined)
+                            }
+                            replayEndDate={
+                                streamingTrades.length > 0
+                                    ? undefined
+                                    : isAnimating
+                                        ? animationEndDate
+                                        : (isReplayMode ? replay.state.currentDate : undefined)
+                            }
+                            isReplayMode={isReplayMode || !!backtestResult || isAnimating || streamingTrades.length > 0}
                             replayVisibleTradeIds={
-                                isAnimating
-                                    ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
-                                    : (isReplayMode ? new Set(replay.visibleTrades.map(t => String(t.trade_id))) : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined))
+                                // Priority: streaming > animation > replay > backtest result
+                                streamingTrades.length > 0
+                                    ? new Set(streamingTrades.map(t => String(t.trade_id)))
+                                    : isAnimating
+                                        ? new Set(visibleAnimationTrades.map(t => String(t.trade_id)))
+                                        : (isReplayMode ? new Set(replay.visibleTrades.map(t => String(t.trade_id))) : (backtestResult ? new Set(backtestResult.trades.map(t => String(t.trade_id))) : undefined))
                             }
                             replayTrades={
-                                isAnimating
-                                    ? visibleAnimationTrades
-                                    : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || undefined))
+                                // Priority: streaming > animation > replay > backtest result
+                                streamingTrades.length > 0
+                                    ? streamingTrades
+                                    : isAnimating
+                                        ? visibleAnimationTrades
+                                        : (replay.visibleTrades.length > 0 ? replay.visibleTrades : (backtestResult?.trades || undefined))
                             }
                         />
                     </div>

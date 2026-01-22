@@ -12,10 +12,12 @@ metadata:
   environment: "production"
 
 # Global MinIO Configuration
+# SECURITY: Credentials loaded from environment variables or Docker secrets
+# NEVER use hardcoded credentials in production
 minio_config:
   endpoint: "${MINIO_ENDPOINT:-localhost:9000}"
   access_key: "${MINIO_ACCESS_KEY:-minioadmin}"
-  secret_key: "${MINIO_SECRET_KEY:-minioadmin123}"
+  secret_key: "${MINIO_SECRET_KEY}"  # REQUIRED: Set via env var or Docker secret
   secure: false
   region: "us-east-1"
   

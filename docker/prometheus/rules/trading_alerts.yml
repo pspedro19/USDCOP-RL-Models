@@ -1,0 +1,106 @@
+groups:
+  - name: trading_critical
+    rules:
+      # P0: Trading system down
+      - alert: TradingAPIDown
+        expr: up{job="trading-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+        annotations:
+          summary: "Trading API is down"
+          description: "Trading API has been down for more than 1 minute"
+          runbook: "https://docs.internal/runbooks/trading-api-down"
+
+      # P0: High error rate
+      - alert: HighInferenceErrorRate
+        expr: |
+          sum(rate(inference_errors_total[5m])) /
+          sum(rate(inference_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: ml
+        annotations:
+          summary: "Inference error rate > 5%"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+          action: "Consider automatic rollback"
+
+      # P0: Model drift detected
+      - alert: FeatureDriftDetected
+        expr: feature_drift_psi > 0.2
+        for: 15m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "Feature drift detected (PSI > 0.2)"
+          description: "PSI value: {{ $value }}"
+
+  - name: trading_performance
+    rules:
+      # P1: Low Sharpe ratio
+      - alert: LowSharpeRatio
+        expr: trading_sharpe_ratio_30d < 0.5
+        for: 1h
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "30-day Sharpe ratio below 0.5"
+          description: "Current Sharpe: {{ $value }}"
+
+      # P1: High drawdown
+      - alert: HighDailyDrawdown
+        expr: trading_daily_drawdown_pct > 0.03
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Daily drawdown exceeds 3%"
+          description: "Current drawdown: {{ $value | humanizePercentage }}"
+
+      # P1: Consecutive losses
+      - alert: ConsecutiveLosses
+        expr: trading_consecutive_losses >= 5
+        for: 0s
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "5+ consecutive losing trades"
+          description: "Current streak: {{ $value }} losses"
+
+  - name: infrastructure
+    rules:
+      # P1: Database connection issues
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Database connection pool > 80% utilized"
+
+      # P1: Redis memory high
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Redis memory usage > 80%"
+
+      # P2: Airflow DAG failures
+      - alert: AirflowDAGFailure
+        expr: airflow_dag_run_state{state="failed"} > 0
+        for: 0s
+        labels:
+          severity: info
+          team: data
+        annotations:
+          summary: "Airflow DAG {{ $labels.dag_id }} failed"

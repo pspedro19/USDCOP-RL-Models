@@ -111,7 +111,8 @@ class TradeSimulator:
         inference_engine: InferenceEngine,
         observation_builder: ObservationBuilder,
         model_id: str = "ppo_primary",
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        trade_callback: Optional[callable] = None
     ) -> List[Trade]:
         """
         Run full simulation on historical data.
@@ -122,6 +123,7 @@ class TradeSimulator:
             observation_builder: Observation builder instance
             model_id: Model ID to use
             progress_callback: Optional callback(progress, bar_idx, total_bars)
+            trade_callback: Optional callback(trade, equity) called when trade closes
 
         Returns:
             List of executed trades
@@ -140,8 +142,8 @@ class TradeSimulator:
         for bar_idx in range(start_bar, total_bars):
             row = df.iloc[bar_idx]
 
-            # Calculate session progress (0-1 based on time of day)
-            session_progress = self._calculate_session_progress(row["time"])
+            # Calculate time_normalized (0-1 based on time of day) - SSOT feature name
+            time_normalized = self._calculate_time_normalized(row["time"])
 
             # FIX: Always use position=0 to avoid position bias
             # The model learned to "stay in position" when it knows its current position
@@ -153,7 +155,7 @@ class TradeSimulator:
                 df=df,
                 bar_idx=bar_idx,
                 position=position_numeric,
-                session_progress=session_progress
+                time_normalized=time_normalized  # SSOT feature name (index 14)
             )
 
             # Get model prediction
@@ -175,6 +177,8 @@ class TradeSimulator:
             )
             if duration_trade:
                 trades.append(duration_trade)
+                if trade_callback:
+                    trade_callback(duration_trade, state.equity)
                 state.last_trade_bar = bar_idx
                 continue  # Skip signal processing this bar
 
@@ -188,6 +192,8 @@ class TradeSimulator:
             )
             if sl_tp_trade:
                 trades.append(sl_tp_trade)
+                if trade_callback:
+                    trade_callback(sl_tp_trade, state.equity)
                 state.last_trade_bar = bar_idx
 
             # 3. Apply dynamic thresholds (easier to exit than enter)
@@ -210,6 +216,8 @@ class TradeSimulator:
 
             if trade:
                 trades.append(trade)
+                if trade_callback:
+                    trade_callback(trade, state.equity)
                 state.last_trade_bar = bar_idx
 
             # Update peak equity
@@ -234,11 +242,13 @@ class TradeSimulator:
             )
             if trade:
                 trades.append(trade)
+                if trade_callback:
+                    trade_callback(trade, state.equity)
 
         return trades
 
-    def _calculate_session_progress(self, timestamp: datetime) -> float:
-        """Calculate progress through trading session (0-1)"""
+    def _calculate_time_normalized(self, timestamp: datetime) -> float:
+        """Calculate progress through trading session (0-1) - SSOT feature name: time_normalized"""
         if pd.isna(timestamp):
             return 0.5
 

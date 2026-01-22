@@ -1,0 +1,258 @@
+# =============================================================================
+# DVC Pipeline Parameters
+# =============================================================================
+# Central configuration for all DVC pipeline stages.
+# Changes to these parameters will trigger re-execution of dependent stages.
+#
+# Usage:
+#   - Modify parameters here
+#   - Run `dvc repro` to rebuild affected stages
+#   - Use `dvc params diff` to see what changed
+#
+# Author: Trading Team
+# Date: 2026-01-16
+# Updated: 2026-01-17 (Added dataset SSOT section)
+# =============================================================================
+
+# =============================================================================
+# Dataset Configuration
+# =============================================================================
+# IMPORTANT: For date ranges, see config/date_ranges.yaml (SSOT)
+# The date_range section below is DEPRECATED and kept only for backward
+# compatibility with older DVC pipelines. New code should use:
+#   config/date_ranges.yaml (Python: yaml.safe_load())
+#   Or L2 XCom contracts for pipeline stages
+dataset:
+  # Version identifier
+  version: "v2.0.0"
+  dvc_tag: "dataset-v2.0.0"
+
+  # Data source
+  source: "data/processed/"
+  raw_source: "data/raw/"
+
+  # Hash for reproducibility (update when data changes)
+  hash: null  # Computed at runtime, logged to MLflow
+
+  # DEPRECATED: Use config/date_ranges.yaml instead
+  # These values are kept for backward compatibility only
+  # Reference: config/date_ranges.yaml (SSOT)
+  date_range:
+    # Updated to match date_ranges.yaml (SSOT)
+    train_start: "2020-03-01"    # date_ranges.yaml: training.start
+    train_end: "2024-12-31"      # date_ranges.yaml: training.end
+    validation_start: "2025-01-01"  # date_ranges.yaml: validation.start
+    validation_end: "2025-06-30"    # date_ranges.yaml: validation.end
+    test_start: "2025-07-01"     # date_ranges.yaml: test.start
+    test_end: "2025-12-31"       # date_ranges.yaml: test.end (dynamic)
+
+# =============================================================================
+# Data Preparation Parameters
+# =============================================================================
+prepare:
+  # Number of days of historical data to include
+  lookback_days: 365
+
+  # Train/validation/test split ratios (must sum to 1.0)
+  train_ratio: 0.7
+  val_ratio: 0.15
+  # test_ratio is implicitly 1 - train_ratio - val_ratio = 0.15
+
+  # Random seed for reproducibility
+  random_seed: 42
+
+  # Feature columns to include (from feature_config.json)
+  features:
+    - log_ret_5m
+    - log_ret_1h
+    - log_ret_4h
+    - rsi_9
+    - atr_pct
+    - adx_14
+    - dxy_z
+    - dxy_change_1d
+    - vix_z
+    - embi_z
+    - brent_change_1d
+    - rate_spread
+    - usdmxn_change_1d
+
+# =============================================================================
+# Normalization Parameters
+# =============================================================================
+normalize:
+  # Percentile for clipping outliers (0 = no clipping)
+  clip_percentile: 99.5
+
+  # Number of standard deviations for outlier detection
+  outlier_std: 4.0
+
+  # Method: zscore, minmax, robust
+  method: zscore
+
+# =============================================================================
+# Training Parameters (PPO)
+# =============================================================================
+# SSOT: These values are synchronized with src/training/config.py
+# Any changes here should also be reflected in the SSOT config module.
+# The Python SSOT (src/training/config.py) is the authoritative source.
+train:
+  # MLflow experiment configuration
+  experiment_name: usdcop-rl-training
+  model_name: usdcop-ppo-model
+
+  # PPO Hyperparameters - SYNCHRONIZED WITH src/training/config.py
+  learning_rate: 0.0003   # 3e-4 - SSOT canonical value
+  n_steps: 2048
+  batch_size: 64          # SSOT canonical value (was 128)
+  n_epochs: 10
+  gamma: 0.90             # SSOT canonical value (was 0.99) - shorter-term focus
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.05          # SSOT canonical value - more exploration
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+
+  # Training duration
+  total_timesteps: 500000
+
+  # Environment configuration - SYNCHRONIZED WITH src/training/config.py
+  episode_length: 2000    # max_episode_steps from SSOT
+  initial_balance: 10000
+  max_position: 1.0
+  max_drawdown_pct: 15.0
+
+  # Network architecture - SYNCHRONIZED WITH src/training/config.py
+  network:
+    pi: [256, 256]
+    vf: [256, 256]
+    activation: Tanh
+
+  # Early stopping (optional)
+  early_stopping:
+    enabled: true
+    patience: 10
+    min_delta: 0.01
+    monitor: episode_reward_mean
+
+  # Logging frequency
+  log_interval: 1000
+  eval_interval: 5000
+
+# =============================================================================
+# Evaluation Parameters
+# =============================================================================
+evaluate:
+  # Number of episodes for evaluation
+  n_episodes: 100
+
+  # Use deterministic policy (no exploration)
+  deterministic: true
+
+  # Metrics to compute
+  metrics:
+    - sharpe_ratio
+    - sortino_ratio
+    - max_drawdown
+    - win_rate
+    - profit_factor
+    - total_trades
+    - avg_trade_duration
+
+# =============================================================================
+# ONNX Export Parameters
+# =============================================================================
+export:
+  # ONNX opset version
+  opset_version: 14
+
+  # Optimize for inference
+  optimize: true
+
+  # Include metadata
+  include_metadata: true
+
+# =============================================================================
+# Backtest Parameters
+# =============================================================================
+backtest:
+  # Initial capital
+  initial_balance: 10000
+
+  # Transaction costs (basis points)
+  transaction_cost_bps: 75
+
+  # Slippage (basis points)
+  slippage_bps: 15
+
+  # Position sizing
+  position_size: 1.0
+  max_position: 1.0
+
+  # Risk limits
+  max_daily_loss: -0.02
+  max_drawdown: -0.15
+
+  # Signal thresholds
+  long_threshold: 0.33
+  short_threshold: -0.33
+
+  # Trading hours (UTC)
+  trading_start_hour: 13
+  trading_end_hour: 17
+  trading_end_minute: 55
+
+# =============================================================================
+# Model Promotion Thresholds
+# =============================================================================
+promotion:
+  # Staging promotion requirements
+  staging:
+    min_sharpe_ratio: 0.5
+    min_win_rate: 0.45
+    max_drawdown: -0.15
+    min_trades: 50
+
+  # Production promotion requirements
+  production:
+    min_sharpe_ratio: 1.0
+    min_win_rate: 0.50
+    max_drawdown: -0.10
+    min_trades: 100
+    min_staging_days: 7
+
+# =============================================================================
+# MLflow Configuration
+# =============================================================================
+mlflow:
+  tracking_uri: http://localhost:5000
+  registry_uri: http://localhost:5000
+  artifact_location: s3://mlflow-artifacts/
+
+  # Experiment tags
+  tags:
+    project: usdcop-trading
+    team: algo-trading
+    environment: development
+
+# =============================================================================
+# DVC Remote Configuration
+# =============================================================================
+dvc:
+  remote:
+    name: minio
+    url: s3://dvc-storage
+    endpointurl: http://localhost:9000
+
+  # Cache settings
+  cache:
+    type: symlink
+    dir: .dvc/cache
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: logs/training.log

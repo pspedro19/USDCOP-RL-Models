@@ -1,0 +1,188 @@
+name: Contracts & SSOT Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**/*.py'
+      - 'services/**/*.py'
+      - 'airflow/**/*.py'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**/*.py'
+      - 'services/**/*.py'
+      - 'airflow/**/*.py'
+
+jobs:
+  contracts-check:
+    name: Check SSOT Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check for deprecated imports
+        id: deprecated-check
+        run: |
+          echo "Checking for deprecated imports..."
+          python scripts/migrate_imports.py --check
+        continue-on-error: true
+
+      - name: Verify SSOT contracts are importable
+        run: |
+          echo "Verifying SSOT contracts..."
+          python -c "
+          from src.core.contracts import (
+              FEATURE_ORDER,
+              OBSERVATION_DIM,
+              FEATURE_CONTRACT,
+              FEATURE_CONTRACT_VERSION,
+          )
+          print(f'FEATURE_ORDER: {len(FEATURE_ORDER)} features')
+          print(f'OBSERVATION_DIM: {OBSERVATION_DIM}')
+          print(f'Contract Version: {FEATURE_CONTRACT_VERSION}')
+          assert len(FEATURE_ORDER) == OBSERVATION_DIM, 'Feature count mismatch!'
+          print('SSOT contracts verified successfully.')
+          "
+
+      - name: Verify SSOT constants are importable
+        run: |
+          echo "Verifying SSOT constants..."
+          python -c "
+          from src.core.constants import (
+              CLIP_MIN,
+              CLIP_MAX,
+              RSI_PERIOD,
+              ATR_PERIOD,
+              ADX_PERIOD,
+              THRESHOLD_LONG,
+              THRESHOLD_SHORT,
+              BARS_PER_SESSION,
+          )
+          print(f'CLIP_MIN: {CLIP_MIN}')
+          print(f'CLIP_MAX: {CLIP_MAX}')
+          print(f'RSI_PERIOD: {RSI_PERIOD}')
+          print(f'ATR_PERIOD: {ATR_PERIOD}')
+          print(f'ADX_PERIOD: {ADX_PERIOD}')
+          print(f'THRESHOLD_LONG: {THRESHOLD_LONG}')
+          print(f'THRESHOLD_SHORT: {THRESHOLD_SHORT}')
+          print(f'BARS_PER_SESSION: {BARS_PER_SESSION}')
+          print('SSOT constants verified successfully.')
+          "
+
+      - name: Check for hardcoded values in critical files
+        run: |
+          echo "Checking for hardcoded values that should use SSOT..."
+
+          # Check for hardcoded FEATURE_ORDER tuples (15 features pattern)
+          HARDCODED_FEATURE_ORDER=$(grep -rn "log_ret_5m.*log_ret_1h.*log_ret_4h.*rsi_9" \
+            --include="*.py" \
+            src/ services/ airflow/ \
+            2>/dev/null | grep -v "contracts/feature_contract.py" | grep -v "#" || true)
+
+          if [ -n "$HARDCODED_FEATURE_ORDER" ]; then
+            echo "WARNING: Found potential hardcoded FEATURE_ORDER:"
+            echo "$HARDCODED_FEATURE_ORDER"
+          else
+            echo "No hardcoded FEATURE_ORDER found outside SSOT."
+          fi
+
+      - name: Verify feature hash consistency
+        run: |
+          echo "Verifying feature hash consistency..."
+          python -c "
+          from src.core.contracts import FEATURE_ORDER, FEATURE_ORDER_HASH
+          import hashlib
+
+          computed_hash = hashlib.sha256(
+              ','.join(FEATURE_ORDER).encode('utf-8')
+          ).hexdigest()[:16]
+
+          assert computed_hash == FEATURE_ORDER_HASH, (
+              f'Hash mismatch! Computed: {computed_hash}, Expected: {FEATURE_ORDER_HASH}'
+          )
+          print(f'Feature order hash verified: {FEATURE_ORDER_HASH}')
+          "
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=================================="
+          echo "SSOT Compliance Check Complete"
+          echo "=================================="
+          if [ "${{ steps.deprecated-check.outcome }}" == "failure" ]; then
+            echo "WARNING: Deprecated imports detected."
+            echo "Run 'python scripts/migrate_imports.py --check' for details."
+          else
+            echo "All checks passed."
+          fi
+
+  contract-consistency:
+    name: Contract Consistency Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install numpy pandas pydantic
+
+      - name: Test contract round-trip
+        run: |
+          python -c "
+          import numpy as np
+          from src.core.contracts import (
+              FEATURE_ORDER,
+              OBSERVATION_DIM,
+              FEATURE_CONTRACT,
+              features_dict_to_array,
+              validate_feature_vector,
+          )
+
+          # Create test observation
+          test_features = {name: 0.0 for name in FEATURE_ORDER}
+          test_features['rsi_9'] = 0.5
+          test_features['position'] = 0.0
+          test_features['time_normalized'] = 0.5
+
+          # Convert to array
+          obs = features_dict_to_array(test_features)
+
+          # Validate
+          assert obs.shape == (OBSERVATION_DIM,), f'Wrong shape: {obs.shape}'
+          assert obs.dtype == np.float32, f'Wrong dtype: {obs.dtype}'
+          assert validate_feature_vector(obs, raise_on_error=False), 'Validation failed'
+
+          print('Contract round-trip test passed.')
+          "
+
+      - name: Test feature order consistency across modules
+        run: |
+          python -c "
+          # Import from all locations that re-export FEATURE_ORDER
+          from src.core.contracts import FEATURE_ORDER as contracts_order
+          from src.feature_store.core import FEATURE_ORDER as feature_store_order
+
+          # Verify they are identical
+          assert contracts_order == feature_store_order, (
+              'FEATURE_ORDER mismatch between src.core.contracts and src.feature_store.core'
+          )
+
+          print(f'Feature order consistent: {len(contracts_order)} features')
+          "

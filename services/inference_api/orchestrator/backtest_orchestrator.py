@@ -6,6 +6,8 @@ Coordinates the entire backtest pipeline
 import time
 import asyncio
 import json
+import queue
+import threading
 from typing import List, Dict, Any, Optional, AsyncGenerator
 import logging
 from ..core.data_loader import DataLoader
@@ -155,7 +157,8 @@ class BacktestOrchestrator:
         self,
         start_date: str,
         end_date: str,
-        model_id: str = "ppo_primary"
+        model_id: str = "ppo_primary",
+        force_regenerate: bool = False
     ) -> AsyncGenerator[str, None]:
         """
         Run backtest with Server-Sent Events for progress updates.
@@ -163,6 +166,7 @@ class BacktestOrchestrator:
         Yields SSE-formatted progress updates.
         """
         start_time = time.time()
+        logger.info(f"[STREAM] run_with_progress called: {start_date} to {end_date}, model={model_id}, force={force_regenerate}")
 
         # Initial progress
         yield self._sse_event(ProgressUpdate(
@@ -174,10 +178,19 @@ class BacktestOrchestrator:
             message="Checking for existing trades..."
         ))
 
-        # Check existing trades
-        existing_trades = await self.trade_persister.get_trades(
-            start_date, end_date, model_id
-        )
+        # Delete existing trades if force regenerate
+        if force_regenerate:
+            deleted = await self.trade_persister.delete_trades(
+                start_date, end_date, model_id
+            )
+            if deleted > 0:
+                logger.info(f"Deleted {deleted} existing trades for regeneration")
+            existing_trades = []
+        else:
+            # Check existing trades
+            existing_trades = await self.trade_persister.get_trades(
+                start_date, end_date, model_id
+            )
 
         if existing_trades:
             yield self._sse_event(ProgressUpdate(
@@ -228,24 +241,73 @@ class BacktestOrchestrator:
             message=f"Loaded {total_bars} bars, starting simulation..."
         ))
 
-        # Run simulation with progress callbacks
+        # Run simulation with real-time trade streaming
         trades: List[Trade] = []
-        last_progress_update = time.time()
+        trade_queue: queue.Queue = queue.Queue()
+        simulation_done = threading.Event()
+        current_equity = 10000.0  # Initial equity
+        logger.info(f"[STREAM] Starting simulation with {total_bars} bars, model={model_id}")
+
+        def trade_callback(trade: Trade, equity: float):
+            """Called when a trade is closed - puts trade in queue for streaming"""
+            nonlocal current_equity
+            current_equity = equity
+            trade_queue.put(trade)
+            logger.info(f"[STREAM] Trade #{trade.trade_id} queued: {trade.side} @ {trade.entry_price:.2f}, equity={equity:.2f}")
 
         def progress_callback(progress: float, bar_idx: int, total: int):
-            nonlocal last_progress_update
-            now = time.time()
-            if now - last_progress_update > 0.5:  # Update every 500ms
-                last_progress_update = now
+            pass  # Progress updates handled separately
 
-        observation_builder = self._get_observation_builder(model_id)
-        trades = self.trade_simulator.run_simulation(
-            df=df,
-            inference_engine=self.inference_engine,
-            observation_builder=observation_builder,
-            model_id=model_id,
-            progress_callback=progress_callback
-        )
+        def run_simulation():
+            """Run simulation in separate thread"""
+            nonlocal trades
+            observation_builder = self._get_observation_builder(model_id)
+            trades = self.trade_simulator.run_simulation(
+                df=df,
+                inference_engine=self.inference_engine,
+                observation_builder=observation_builder,
+                model_id=model_id,
+                progress_callback=progress_callback,
+                trade_callback=trade_callback
+            )
+            simulation_done.set()
+
+        # Start simulation in background thread
+        sim_thread = threading.Thread(target=run_simulation)
+        sim_thread.start()
+
+        # Stream trades as they are generated
+        trades_streamed = 0
+        logger.info(f"[STREAM] Entering trade streaming loop, simulation_done={simulation_done.is_set()}")
+        while not simulation_done.is_set() or not trade_queue.empty():
+            try:
+                # Get trade from queue with timeout
+                trade = trade_queue.get(timeout=0.1)
+                trades_streamed += 1
+                logger.info(f"[STREAM] Yielding trade #{trades_streamed}: {trade.side} @ {trade.entry_price:.2f}")
+
+                # Send trade event with equity for equity curve update
+                trade_data = self._trade_to_response(trade).model_dump()
+                trade_data["current_equity"] = current_equity
+                yield f"data: {json.dumps({'type': 'trade', 'data': trade_data})}\n\n"
+
+                # Send progress update
+                yield self._sse_event(ProgressUpdate(
+                    progress=0.1 + (0.8 * trades_streamed / max(1, trades_streamed + 5)),
+                    current_bar=0,
+                    total_bars=total_bars,
+                    trades_generated=trades_streamed,
+                    status="running",
+                    message=f"Trade #{trades_streamed} generated..."
+                ))
+
+            except queue.Empty:
+                # No trade ready, continue waiting
+                await asyncio.sleep(0.05)
+
+        # Wait for simulation thread to complete
+        sim_thread.join()
+        logger.info(f"[STREAM] Simulation complete. Total trades: {len(trades)}, Streamed: {trades_streamed}")
 
         yield self._sse_event(ProgressUpdate(
             progress=0.9,

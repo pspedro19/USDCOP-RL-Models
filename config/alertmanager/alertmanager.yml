@@ -1,0 +1,236 @@
+# =============================================================================
+# AlertManager Configuration - Alert Routing and Notification
+# =============================================================================
+# AlertManager handles alerts sent by client applications such as Prometheus.
+# It takes care of deduplicating, grouping, and routing alerts to the correct
+# receiver (Slack, email, PagerDuty, etc).
+#
+# Key Features:
+#   - Alert deduplication
+#   - Alert grouping
+#   - Silencing/inhibition
+#   - Multiple notification channels
+#
+# Reference: https://prometheus.io/docs/alerting/latest/configuration/
+# =============================================================================
+
+global:
+  # Slack webhook URL - MUST be set via environment variable
+  # See: https://api.slack.com/messaging/webhooks
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+  # How long to wait before marking alert as resolved
+  resolve_timeout: 5m
+
+  # SMTP configuration for email alerts (optional)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alerts@trading.local'
+  # smtp_auth_username: '${SMTP_USER}'
+  # smtp_auth_password: '${SMTP_PASSWORD}'
+
+# =============================================================================
+# Templates Configuration
+# =============================================================================
+# Custom templates for notification messages
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# =============================================================================
+# Routing Configuration
+# =============================================================================
+# Defines how alerts are routed to receivers
+route:
+  # Group alerts by these labels
+  group_by: ['alertname', 'severity', 'service']
+
+  # Wait before sending initial notification for a group
+  group_wait: 30s
+
+  # Wait before sending updates to a group
+  group_interval: 5m
+
+  # How often to resend an alert that has not been resolved
+  repeat_interval: 4h
+
+  # Default receiver for all alerts
+  receiver: 'slack-trading'
+
+  # Child routes for specific alert routing
+  routes:
+    # =========================================================================
+    # Critical Alerts - High Priority Channel
+    # =========================================================================
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      repeat_interval: 15m
+      continue: true  # Continue to check other routes
+
+    # =========================================================================
+    # PagerDuty Integration for Critical Alerts
+    # =========================================================================
+    - match:
+        severity: critical
+        pagerduty: "true"
+      receiver: 'pagerduty-critical'
+      repeat_interval: 5m
+
+    # =========================================================================
+    # Trading-Specific Alerts
+    # =========================================================================
+    - match:
+        team: trading
+      receiver: 'slack-trading'
+      routes:
+        # Circuit breaker alerts
+        - match:
+            alertname: 'FeatureCircuitBreakerActivated'
+          receiver: 'slack-critical'
+          repeat_interval: 5m
+
+        # Model health alerts
+        - match_re:
+            alertname: 'Model.*'
+          receiver: 'slack-trading'
+          group_by: ['alertname', 'model_id']
+
+        # Latency alerts
+        - match_re:
+            alertname: '.*Latency.*'
+          receiver: 'slack-trading'
+          group_interval: 2m
+
+    # =========================================================================
+    # Infrastructure Alerts
+    # =========================================================================
+    - match:
+        team: infrastructure
+      receiver: 'slack-infrastructure'
+
+    # =========================================================================
+    # Watchdog Alert (Heartbeat)
+    # =========================================================================
+    - match:
+        alertname: Watchdog
+      receiver: 'null'
+      repeat_interval: 24h
+
+# =============================================================================
+# Inhibition Rules
+# =============================================================================
+# Prevents certain alerts from firing when others are already firing
+inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
+
+  # Inhibit all alerts if circuit breaker is active
+  - source_match:
+      alertname: 'FeatureCircuitBreakerActivated'
+    target_match_re:
+      alertname: 'Inference.*|Feature.*'
+    equal: ['service']
+
+  # Inhibit downstream alerts when database is down
+  - source_match:
+      alertname: 'PostgresDown'
+    target_match_re:
+      alertname: '.*QuerySlow.*|.*DataStale.*'
+
+# =============================================================================
+# Receivers Configuration
+# =============================================================================
+# Defines notification channels
+receivers:
+  # ===========================================================================
+  # Null Receiver (Drops Alerts)
+  # ===========================================================================
+  - name: 'null'
+
+  # ===========================================================================
+  # Slack - Trading Team Channel
+  # ===========================================================================
+  - name: 'slack-trading'
+    slack_configs:
+      - channel: '#trading-alerts'
+        send_resolved: true
+        title: '{{ .Status | toUpper }}: {{ .CommonLabels.alertname }}'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Service:* {{ .CommonLabels.service }}
+
+          {{ range .Alerts }}
+          *Description:* {{ .Annotations.description }}
+          *Summary:* {{ .Annotations.summary }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}{{ else }}good{{ end }}'
+        actions:
+          - type: button
+            text: 'Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
+          - type: button
+            text: 'Silence'
+            url: '{{ template "__alertmanagerURL" . }}/#/silences/new?filter=%7Balertname%3D%22{{ .CommonLabels.alertname }}%22%7D'
+
+  # ===========================================================================
+  # Slack - Critical Alerts Channel
+  # ===========================================================================
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#trading-critical'
+        send_resolved: true
+        title: 'CRITICAL: {{ .CommonLabels.alertname }}'
+        text: |
+          *CRITICAL ALERT*
+
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Service:* {{ .CommonLabels.service }}
+          *Environment:* {{ .CommonLabels.environment | default "production" }}
+
+          {{ range .Alerts }}
+          *Description:* {{ .Annotations.description }}
+
+          *Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+
+          cc: @channel
+        color: 'danger'
+        link_names: true
+
+  # ===========================================================================
+  # Slack - Infrastructure Channel
+  # ===========================================================================
+  - name: 'slack-infrastructure'
+    slack_configs:
+      - channel: '#infrastructure-alerts'
+        send_resolved: true
+        title: '{{ .Status | toUpper }}: {{ .CommonLabels.alertname }}'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+
+          {{ range .Alerts }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+
+  # ===========================================================================
+  # PagerDuty - Critical Alerts
+  # ===========================================================================
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: critical
+        description: '{{ .CommonLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        client: 'USDCOP Trading Platform'
+        client_url: 'http://grafana:3000'
+        details:
+          severity: '{{ .CommonLabels.severity }}'
+          service: '{{ .CommonLabels.service }}'
+          description: '{{ .CommonAnnotations.description }}'

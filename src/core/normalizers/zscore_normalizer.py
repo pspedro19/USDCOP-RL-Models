@@ -5,12 +5,16 @@ ZScoreNormalizer - Z-Score Normalization with Config Loading
 Enhanced z-score normalizer that loads statistics from configuration files
 and provides normalization/denormalization for the trading system.
 
+SSOT Compliance (v2.0.0):
+CLIP_MIN/CLIP_MAX imported from src/core/constants.py
+
 Author: Pedro @ Lean Tech Solutions / Claude Code
-Version: 1.0.0
-Date: 2025-01-07
+Version: 2.0.0
+Date: 2025-01-17
 
 Configuration:
     - Normalization stats: config/norm_stats.json
+    - Clip bounds: src/core/constants.py (SSOT)
 """
 
 import json
@@ -19,6 +23,9 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Dict, Optional, Union, Any
+
+# Import clip bounds from SSOT
+from src.core.constants import CLIP_MIN, CLIP_MAX
 
 # Default path relative to project root
 DEFAULT_STATS_PATH = "config/norm_stats.json"
@@ -32,8 +39,8 @@ class ZScoreNormalizer:
     from the training dataset (84,671 samples, 2020-03 to 2025-12).
 
     Attributes:
-        CLIP_MIN: Default minimum clip value (-5.0)
-        CLIP_MAX: Default maximum clip value (5.0)
+        CLIP_MIN: Minimum clip value from SSOT (-5.0)
+        CLIP_MAX: Maximum clip value from SSOT (5.0)
 
     Example:
         >>> normalizer = ZScoreNormalizer()
@@ -43,8 +50,9 @@ class ZScoreNormalizer:
         True
     """
 
-    CLIP_MIN: float = -5.0
-    CLIP_MAX: float = 5.0
+    # Constants from SSOT (src/core/constants.py)
+    CLIP_MIN: float = CLIP_MIN
+    CLIP_MAX: float = CLIP_MAX
 
     def __init__(
         self,

@@ -33,6 +33,17 @@ export default function HubPage() {
       glowColor: 'purple',
       href: '/forecasting',
       features: ['Proyeccion 7 dias', 'Intervalos de confianza', 'Tendencias macro', 'Analisis tecnico']
+    },
+    {
+      id: 'execution',
+      title: 'SignalBridge',
+      subtitle: 'Ejecucion automatizada',
+      description: 'Conecta tus exchanges y ejecuta trades automaticamente basados en las senales del modelo RL.',
+      icon: Zap,
+      gradient: 'from-green-500 to-emerald-600',
+      glowColor: 'green',
+      href: '/execution/dashboard',
+      features: ['Conexion Exchanges', 'Ejecucion Real', 'Gestion de Riesgo', 'Kill Switch']
     }
   ];
 

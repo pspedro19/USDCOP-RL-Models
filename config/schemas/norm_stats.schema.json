@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://usdcop-rl.example/schemas/norm_stats.schema.json",
+  "title": "Normalization Statistics Schema",
+  "description": "Schema for norm_stats.json",
+  "type": "object",
+  "required": ["_metadata", "features"],
+  "properties": {
+    "_metadata": {
+      "type": "object",
+      "required": ["version", "generated_at", "sample_count", "data_start", "data_end"],
+      "properties": {
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "sample_count": {"type": "integer", "minimum": 1},
+        "data_start": {"type": "string", "format": "date"},
+        "data_end": {"type": "string", "format": "date"},
+        "dataset_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "features": {
+      "type": "object",
+      "minProperties": 13,
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["mean", "std"],
+          "properties": {
+            "mean": {"type": "number"},
+            "std": {"type": "number", "exclusiveMinimum": 0},
+            "min": {"type": "number"},
+            "max": {"type": "number"}
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+# =============================================================================
+# MLOps Infrastructure - Docker Compose Configuration
+# =============================================================================
+# MLflow server with PostgreSQL backend and MinIO artifact storage.
+# Part of MLOps-1 and MLOps-2 implementation from remediation plan.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.mlops.yml up -d
+#
+# Author: Trading Team
+# Date: 2026-01-16
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # MLflow Tracking Server with PostgreSQL Backend
+  # ===========================================================================
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    container_name: usdcop-mlflow-server
+    ports:
+      - "5000:5000"
+    environment:
+      # PostgreSQL backend store for experiment tracking
+      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mlflow
+      # MinIO S3-compatible artifact storage
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://mlflow-artifacts/
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      # Disable MLflow tracking telemetry
+      MLFLOW_TRACKING_INSECURE_TLS: "true"
+    command: >
+      bash -c "
+        pip install psycopg2-binary boto3 &&
+        mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mlflow
+        --default-artifact-root s3://mlflow-artifacts/
+        --serve-artifacts
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # MLflow Artifacts Bucket Initialization
+  # ===========================================================================
+  mlflow-init:
+    image: minio/mc:latest
+    container_name: usdcop-mlflow-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...' &&
+      sleep 5 &&
+      mc alias set minio http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY} &&
+      echo 'Creating MLflow artifacts bucket...' &&
+      mc mb --ignore-existing minio/mlflow-artifacts &&
+      mc mb --ignore-existing minio/dvc-storage &&
+      echo 'Setting bucket policies...' &&
+      mc anonymous set download minio/mlflow-artifacts || true &&
+      echo 'MLflow bucket initialization completed.'
+      "
+    networks:
+      - usdcop-trading-network
+    restart: "no"
+
+networks:
+  usdcop-trading-network:
+    external: true

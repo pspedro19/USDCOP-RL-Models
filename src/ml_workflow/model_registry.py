@@ -9,7 +9,6 @@ Proporciona:
 - Tracking de modelos desplegados
 """
 
-import hashlib
 import json
 import logging
 from datetime import datetime
@@ -17,12 +16,22 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+# SSOT import for hash utilities
+from src.utils.hash_utils import compute_file_hash as _compute_file_hash_ssot
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ModelMetadata:
-    """Metadata de un modelo registrado."""
+    """
+    Metadata de un modelo registrado.
+
+    MinIO-First Architecture:
+    - S3 URIs for production models
+    - Source experiment tracking
+    - Enhanced integrity hashes
+    """
     model_id: str
     model_version: str
     model_path: str
@@ -35,6 +44,28 @@ class ModelMetadata:
     status: str
     created_at: Optional[datetime] = None
     deployed_at: Optional[datetime] = None
+
+    # MinIO-First: S3 URIs
+    s3_model_uri: Optional[str] = None
+    s3_norm_stats_uri: Optional[str] = None
+    s3_config_uri: Optional[str] = None
+
+    # Lineage tracking
+    source_experiment_id: Optional[str] = None
+    source_experiment_version: Optional[str] = None
+    feature_order_hash: Optional[str] = None
+    mlflow_run_id: Optional[str] = None
+
+    # Performance metrics
+    test_sharpe: Optional[float] = None
+    test_max_drawdown: Optional[float] = None
+    test_win_rate: Optional[float] = None
+    test_total_return: Optional[float] = None
+    test_total_trades: Optional[int] = None
+
+    def is_minio_first(self) -> bool:
+        """Check if model uses MinIO-first storage."""
+        return self.s3_model_uri is not None and self.s3_model_uri.startswith("s3://")
 
 
 class ModelIntegrityError(Exception):
@@ -82,6 +113,8 @@ class ModelRegistry:
         """
         Computa SHA256 hash de un archivo.
 
+        SSOT: Delegates to src.utils.hash_utils
+
         Args:
             file_path: Path al archivo
 
@@ -91,15 +124,7 @@ class ModelRegistry:
         Raises:
             FileNotFoundError: Si el archivo no existe
         """
-        if not file_path.exists():
-            raise FileNotFoundError(f"Archivo no encontrado: {file_path}")
-
-        sha256 = hashlib.sha256()
-        with open(file_path, 'rb') as f:
-            for chunk in iter(lambda: f.read(8192), b''):
-                sha256.update(chunk)
-
-        return sha256.hexdigest()
+        return _compute_file_hash_ssot(file_path).full_hash
 
     def register_model(
         self,
@@ -331,6 +356,12 @@ class ModelRegistry:
 
     def _row_to_metadata(self, row: Dict) -> ModelMetadata:
         """Convierte row de BD a ModelMetadata."""
+        feature_order = row.get('feature_order')
+        if isinstance(feature_order, str):
+            feature_order = json.loads(feature_order)
+        elif feature_order is None:
+            feature_order = []
+
         return ModelMetadata(
             model_id=row['model_id'],
             model_version=row['model_version'],
@@ -340,10 +371,25 @@ class ModelRegistry:
             config_hash=row.get('config_hash'),
             observation_dim=row['observation_dim'],
             action_space=row['action_space'],
-            feature_order=json.loads(row['feature_order']) if isinstance(row['feature_order'], str) else row['feature_order'],
+            feature_order=feature_order,
             status=row['status'],
             created_at=row.get('created_at'),
-            deployed_at=row.get('deployed_at')
+            deployed_at=row.get('deployed_at'),
+            # MinIO-First fields
+            s3_model_uri=row.get('s3_model_uri'),
+            s3_norm_stats_uri=row.get('s3_norm_stats_uri'),
+            s3_config_uri=row.get('s3_config_uri'),
+            # Lineage tracking
+            source_experiment_id=row.get('source_experiment_id'),
+            source_experiment_version=row.get('source_experiment_version'),
+            feature_order_hash=row.get('feature_order_hash'),
+            mlflow_run_id=row.get('mlflow_run_id'),
+            # Performance metrics
+            test_sharpe=row.get('test_sharpe'),
+            test_max_drawdown=row.get('test_max_drawdown'),
+            test_win_rate=row.get('test_win_rate'),
+            test_total_return=row.get('test_total_return'),
+            test_total_trades=row.get('test_total_trades'),
         )
 
 

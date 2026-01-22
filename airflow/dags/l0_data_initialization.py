@@ -1,6 +1,6 @@
 """
-DAG: v3.l0_data_initialization
-================================
+DAG: l0_01_init_restore
+=======================
 USD/COP Trading System - V3 Architecture
 Layer 0: Data Initialization from Backups
 
@@ -49,8 +49,9 @@ from psycopg2.extras import execute_values
 # =============================================================================
 
 from utils.dag_common import get_db_connection
+from contracts.dag_registry import L0_INIT_RESTORE, L0_OHLCV_BACKFILL
 
-DAG_ID = 'v3.l0_data_initialization'
+DAG_ID = L0_INIT_RESTORE
 
 # Paths - Support both Docker and local development
 def get_backup_paths():
@@ -528,7 +529,7 @@ with dag:
     # Task 5a: Trigger OHLCV backfill DAG
     task_trigger_backfill = TriggerDagRunOperator(
         task_id='trigger_backfill',
-        trigger_dag_id='v3.l0_ohlcv_backfill',
+        trigger_dag_id=L0_OHLCV_BACKFILL,
         wait_for_completion=False,  # Don't wait - can run in parallel
         conf={'triggered_by': DAG_ID}
     )

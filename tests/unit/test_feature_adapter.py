@@ -346,7 +346,7 @@ class TestFeatureAdapterIntegration:
             df=sample_data,
             bar_idx=50,
             position=0.0,
-            session_progress=0.5,
+            time_normalized=0.5,
             check_circuit_breaker=False
         )
 

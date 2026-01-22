@@ -1,0 +1,213 @@
+# =============================================================================
+# Prometheus Alert Rules: Feature Drift (MLOps-4)
+# =============================================================================
+# Alert rules for monitoring feature drift in the trading system.
+#
+# Drift Detection:
+#   - Uses Kolmogorov-Smirnov test for continuous features
+#   - P-value threshold: 0.01 (1% significance level)
+#   - KS statistic indicates magnitude of distribution shift
+#
+# Severity Levels:
+#   - warning: Single feature drift, may be transient
+#   - critical: Multiple features drifted, likely requires action
+#
+# Author: Trading Team
+# Date: 2025-01-14
+# =============================================================================
+
+groups:
+  # ===========================================================================
+  # Feature Drift Alerts
+  # ===========================================================================
+  - name: feature_drift
+    interval: 5m
+    rules:
+      # -----------------------------------------------------------------------
+      # Warning: Single Feature Drift Detected
+      # -----------------------------------------------------------------------
+      - alert: FeatureDriftDetected
+        expr: feature_drift_alert == 1
+        for: 15m
+        labels:
+          severity: warning
+          team: trading
+          category: drift
+        annotations:
+          summary: "Feature drift detected: {{ $labels.feature_name }}"
+          description: |
+            Drift detected in feature '{{ $labels.feature_name }}'.
+            KS statistic: {{ printf "%.4f" (query "feature_drift_score{feature_name='{{ $labels.feature_name }}'}") }}
+            P-value: {{ printf "%.6f" (query "feature_drift_pvalue{feature_name='{{ $labels.feature_name }}'}") }}
+
+            This may indicate:
+            - Change in market regime
+            - Data pipeline issues
+            - Feature calculation changes
+
+            Action: Review feature distribution and consider retraining if persistent.
+          runbook_url: "https://docs.example.com/runbooks/feature-drift"
+
+      # -----------------------------------------------------------------------
+      # Warning: Moderate Feature Drift (KS > 0.2)
+      # -----------------------------------------------------------------------
+      - alert: ModerateFeatureDrift
+        expr: feature_drift_score > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          team: trading
+          category: drift
+        annotations:
+          summary: "Moderate drift in feature: {{ $labels.feature_name }}"
+          description: |
+            Feature '{{ $labels.feature_name }}' shows moderate drift.
+            KS statistic: {{ $value | printf "%.4f" }} (threshold: 0.2)
+
+            The distribution has shifted noticeably from reference.
+            Monitor for further degradation.
+
+      # -----------------------------------------------------------------------
+      # Critical: Multiple Features Drifted
+      # -----------------------------------------------------------------------
+      - alert: MultipleFeaturesDrifted
+        expr: count(feature_drift_alert == 1) > 3
+        for: 10m
+        labels:
+          severity: critical
+          team: trading
+          category: drift
+          pagerduty: "true"
+        annotations:
+          summary: "Multiple features showing drift ({{ $value }} features)"
+          description: |
+            CRITICAL: {{ $value }} features are currently in drift state.
+            Threshold: 3 features.
+
+            This indicates a significant shift in feature distributions
+            that may affect model performance.
+
+            Immediate actions:
+            1. Check data pipeline for issues
+            2. Verify feature calculations
+            3. Review recent market conditions
+            4. Consider pausing trading if performance degrades
+
+          runbook_url: "https://docs.example.com/runbooks/multiple-feature-drift"
+
+      # -----------------------------------------------------------------------
+      # Critical: High Feature Drift (KS > 0.3)
+      # -----------------------------------------------------------------------
+      - alert: HighFeatureDrift
+        expr: feature_drift_score > 0.3
+        for: 5m
+        labels:
+          severity: critical
+          team: trading
+          category: drift
+          pagerduty: "true"
+        annotations:
+          summary: "High drift in feature: {{ $labels.feature_name }}"
+          description: |
+            CRITICAL: Feature '{{ $labels.feature_name }}' shows severe drift.
+            KS statistic: {{ $value | printf "%.4f" }} (threshold: 0.3)
+
+            The feature distribution has shifted significantly from reference.
+            Model predictions may be unreliable.
+
+            Immediate actions:
+            1. Investigate root cause
+            2. Consider manual override to HOLD
+            3. Evaluate need for model retraining
+
+      # -----------------------------------------------------------------------
+      # Critical: Overall Drift Score High
+      # -----------------------------------------------------------------------
+      - alert: OverallDriftScoreHigh
+        expr: avg(feature_drift_score) > 0.15
+        for: 15m
+        labels:
+          severity: critical
+          team: trading
+          category: drift
+        annotations:
+          summary: "Overall feature drift score elevated"
+          description: |
+            Average drift score across all features: {{ $value | printf "%.4f" }}
+            Threshold: 0.15
+
+            System-wide drift detected. The model may be operating
+            outside its trained distribution.
+
+  # ===========================================================================
+  # Drift Monitoring Meta-Alerts
+  # ===========================================================================
+  - name: drift_monitoring
+    interval: 1m
+    rules:
+      # -----------------------------------------------------------------------
+      # Warning: Drift Checks Not Running
+      # -----------------------------------------------------------------------
+      - alert: DriftChecksStalled
+        expr: |
+          increase(feature_drift_checks_total[10m]) == 0
+          and on() up{job="inference_api"} == 1
+        for: 15m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Feature drift checks not running"
+          description: |
+            No drift checks have been performed in the last 15 minutes.
+            This may indicate:
+            - Insufficient data in sliding windows
+            - Drift detector not properly initialized
+            - Service issue
+
+            Check inference API logs for errors.
+
+      # -----------------------------------------------------------------------
+      # Info: Feature Windows Filling
+      # -----------------------------------------------------------------------
+      - alert: FeatureWindowsLow
+        expr: |
+          count(feature_drift_score > 0) < 10
+          and on() up{job="inference_api"} == 1
+        for: 30m
+        labels:
+          severity: info
+          team: trading
+        annotations:
+          summary: "Feature drift monitoring warming up"
+          description: |
+            Only {{ $value }} features have sufficient data for drift detection.
+            The system is still collecting observations to fill sliding windows.
+
+            This is normal after service restart or reference data update.
+
+  # ===========================================================================
+  # Drift Recovery Alerts
+  # ===========================================================================
+  - name: drift_recovery
+    interval: 5m
+    rules:
+      # -----------------------------------------------------------------------
+      # Info: Feature Drift Resolved
+      # -----------------------------------------------------------------------
+      - alert: FeatureDriftResolved
+        expr: |
+          (feature_drift_alert == 0)
+          and (feature_drift_alert offset 10m == 1)
+        for: 0m
+        labels:
+          severity: info
+          team: trading
+          category: drift
+        annotations:
+          summary: "Feature drift resolved: {{ $labels.feature_name }}"
+          description: |
+            Feature '{{ $labels.feature_name }}' is no longer in drift state.
+            Current KS statistic: {{ printf "%.4f" (query "feature_drift_score{feature_name='{{ $labels.feature_name }}'}") }}
+
+            The feature distribution has returned to normal.

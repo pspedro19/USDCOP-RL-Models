@@ -208,6 +208,29 @@ from .l5_inference_contracts import (
 )
 
 # =============================================================================
+# XCOM CONTRACTS - Inter-DAG Communication SSOT
+# =============================================================================
+from .xcom_contracts import (
+    # Enum keys for XCom
+    L2XComKeysEnum,
+    L3XComKeysEnum,
+    L4XComKeysEnum,
+    # DAG IDs
+    L2_DAG_ID,
+    L3_DAG_ID,
+    L4_DAG_ID,
+    # Output dataclasses
+    L2Output,
+    L3Output,
+    L4Output,
+    # Helper functions
+    pull_l2_output,
+    pull_l3_output,
+    compute_file_hash,
+    compute_config_hash,
+)
+
+# =============================================================================
 # BACKTEST CONTRACTS (L4)
 # =============================================================================
 from .backtest_contracts import (
@@ -401,4 +424,21 @@ __all__ = [
     "PipelineContext",
     "BacktestConfig",
     "StrategyConfig",
+
+    # =========================================================================
+    # XCom Contracts - Inter-DAG Communication
+    # =========================================================================
+    "L2XComKeysEnum",
+    "L3XComKeysEnum",
+    "L4XComKeysEnum",
+    "L2_DAG_ID",
+    "L3_DAG_ID",
+    "L4_DAG_ID",
+    "L2Output",
+    "L3Output",
+    "L4Output",
+    "pull_l2_output",
+    "pull_l3_output",
+    "compute_file_hash",
+    "compute_config_hash",
 ]

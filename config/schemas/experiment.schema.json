@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://usdcop-trading.com/schemas/experiment.schema.json",
+  "title": "USDCOP Experiment Configuration",
+  "description": "Schema for A/B experiment configuration files",
+  "type": "object",
+  "required": ["experiment", "model", "training", "evaluation"],
+  "properties": {
+    "experiment": {
+      "type": "object",
+      "description": "Experiment metadata",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique experiment name",
+          "pattern": "^[a-z0-9_-]+$",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description",
+          "maxLength": 500
+        },
+        "hypothesis": {
+          "type": "string",
+          "description": "What hypothesis is being tested",
+          "maxLength": 1000
+        },
+        "tags": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Tags for filtering experiments"
+        },
+        "baseline_experiment": {
+          "type": "string",
+          "description": "Name of baseline experiment for comparison"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team or person responsible"
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "description": "Model architecture configuration",
+      "required": ["algorithm", "policy"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["PPO", "A2C", "SAC", "TD3", "DQN"],
+          "description": "RL algorithm to use"
+        },
+        "policy": {
+          "type": "string",
+          "enum": ["MlpPolicy", "CnnPolicy", "MultiInputPolicy"],
+          "default": "MlpPolicy"
+        },
+        "policy_kwargs": {
+          "type": "object",
+          "description": "Policy network configuration",
+          "properties": {
+            "net_arch": {
+              "type": "array",
+              "description": "Network architecture layers",
+              "items": {"type": "integer", "minimum": 1}
+            },
+            "activation_fn": {
+              "type": "string",
+              "enum": ["tanh", "relu", "elu", "leaky_relu"],
+              "default": "tanh"
+            },
+            "ortho_init": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    "training": {
+      "type": "object",
+      "description": "Training hyperparameters",
+      "required": ["total_timesteps"],
+      "properties": {
+        "total_timesteps": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "Total training steps"
+        },
+        "learning_rate": {
+          "oneOf": [
+            {"type": "number", "minimum": 0, "maximum": 1},
+            {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string", "enum": ["linear", "exponential", "cosine"]},
+                "initial": {"type": "number"},
+                "final": {"type": "number"}
+              },
+              "required": ["type", "initial", "final"]
+            }
+          ],
+          "default": 0.0003
+        },
+        "n_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2048,
+          "description": "Steps per rollout"
+        },
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 64
+        },
+        "n_epochs": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10,
+          "description": "Epochs per update"
+        },
+        "gamma": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.99,
+          "description": "Discount factor"
+        },
+        "gae_lambda": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.95,
+          "description": "GAE lambda"
+        },
+        "clip_range": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.2,
+          "description": "PPO clipping range"
+        },
+        "clip_range_vf": {
+          "type": ["number", "null"],
+          "description": "Value function clipping"
+        },
+        "ent_coef": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0.0,
+          "description": "Entropy coefficient"
+        },
+        "vf_coef": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0.5,
+          "description": "Value function coefficient"
+        },
+        "max_grad_norm": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0.5,
+          "description": "Gradient clipping"
+        },
+        "seed": {
+          "type": ["integer", "null"],
+          "description": "Random seed for reproducibility"
+        },
+        "device": {
+          "type": "string",
+          "enum": ["auto", "cpu", "cuda"],
+          "default": "auto"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Trading environment configuration",
+      "properties": {
+        "observation_dim": {
+          "type": "integer",
+          "const": 15,
+          "description": "Must match OBSERVATION_DIM from contracts"
+        },
+        "action_type": {
+          "type": "string",
+          "enum": ["continuous", "discrete"],
+          "default": "continuous"
+        },
+        "reward_function": {
+          "type": "string",
+          "enum": ["sharpe", "pnl", "risk_adjusted", "custom"],
+          "default": "sharpe"
+        },
+        "reward_kwargs": {
+          "type": "object",
+          "properties": {
+            "risk_free_rate": {"type": "number", "default": 0.0},
+            "annualization_factor": {"type": "number", "default": 252},
+            "penalty_holding": {"type": "number", "default": 0.0},
+            "penalty_trading": {"type": "number", "default": 0.0001}
+          }
+        },
+        "normalization": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean", "default": true},
+            "stats_path": {"type": "string", "default": "config/norm_stats.json"},
+            "clip_range": {"type": "number", "default": 10.0}
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "description": "Data configuration",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["feast", "parquet", "csv", "database"],
+          "default": "feast"
+        },
+        "train_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Training start date (YYYY-MM-DD)"
+        },
+        "train_end": {
+          "type": "string",
+          "format": "date",
+          "description": "Training end date"
+        },
+        "validation_split": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0.1,
+          "description": "Fraction for validation"
+        },
+        "feature_set": {
+          "type": "string",
+          "enum": ["v1", "v2", "custom"],
+          "default": "v1",
+          "description": "Which feature set to use"
+        },
+        "custom_features": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Custom feature list (if feature_set=custom)"
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "description": "Evaluation configuration",
+      "required": ["metrics"],
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "sharpe_ratio",
+              "total_return",
+              "max_drawdown",
+              "win_rate",
+              "profit_factor",
+              "sortino_ratio",
+              "calmar_ratio",
+              "avg_trade_pnl",
+              "trade_count",
+              "avg_holding_period"
+            ]
+          },
+          "minItems": 1
+        },
+        "primary_metric": {
+          "type": "string",
+          "description": "Main metric for comparison",
+          "default": "sharpe_ratio"
+        },
+        "backtest": {
+          "type": "object",
+          "properties": {
+            "start_date": {"type": "string", "format": "date"},
+            "end_date": {"type": "string", "format": "date"},
+            "initial_capital": {"type": "number", "minimum": 0, "default": 100000},
+            "position_size": {"type": "number", "minimum": 0, "maximum": 1, "default": 1.0},
+            "slippage_bps": {"type": "number", "minimum": 0, "default": 5},
+            "commission_bps": {"type": "number", "minimum": 0, "default": 10}
+          }
+        },
+        "statistical_tests": {
+          "type": "object",
+          "properties": {
+            "significance_level": {"type": "number", "default": 0.05},
+            "min_samples": {"type": "integer", "default": 30},
+            "bootstrap_iterations": {"type": "integer", "default": 1000}
+          }
+        }
+      }
+    },
+    "mlflow": {
+      "type": "object",
+      "description": "MLflow tracking configuration",
+      "properties": {
+        "experiment_name": {
+          "type": "string",
+          "description": "MLflow experiment name (defaults to experiment.name)"
+        },
+        "tracking_uri": {
+          "type": "string",
+          "default": "http://localhost:5000"
+        },
+        "log_model": {
+          "type": "boolean",
+          "default": true
+        },
+        "log_artifacts": {
+          "type": "array",
+          "items": {"type": "string"},
+          "default": ["model", "config", "metrics"]
+        }
+      }
+    },
+    "callbacks": {
+      "type": "object",
+      "description": "Training callbacks",
+      "properties": {
+        "eval_freq": {
+          "type": "integer",
+          "minimum": 100,
+          "default": 10000,
+          "description": "Evaluation frequency"
+        },
+        "save_freq": {
+          "type": "integer",
+          "minimum": 100,
+          "default": 50000,
+          "description": "Checkpoint frequency"
+        },
+        "early_stopping": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "patience": {"type": "integer", "default": 10},
+            "min_delta": {"type": "number", "default": 0.01}
+          }
+        },
+        "tensorboard": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

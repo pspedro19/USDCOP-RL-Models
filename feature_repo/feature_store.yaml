@@ -1,0 +1,128 @@
+# Feast Feature Store Configuration
+# ==================================
+# USDCOP Trading Project - Feature Store for Real-time ML Inference
+#
+# This configuration defines how Feast manages features for the trading system:
+# - Offline store: File-based for simplicity (training data)
+# - Online store: Redis for low-latency inference
+# - Registry: SQLite locally, can be PostgreSQL for production
+#
+# Architecture:
+#   Training Pipeline ──> Offline Store (Parquet) ──> Materialize ──> Online Store (Redis)
+#                                                                           │
+#   Inference API ──────────────────────────────────────────────────────────┘
+#
+# Author: Trading Team
+# Version: 1.0.0
+# Created: 2025-01-17
+
+project: usdcop_trading
+
+# ============================================================================
+# REGISTRY CONFIGURATION
+# ============================================================================
+# The registry stores feature definitions and metadata
+# Local development uses SQLite, production uses PostgreSQL
+registry:
+  path: data/feast/registry.db
+  # For production, uncomment and configure:
+  # registry_type: sql
+  # path: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+# ============================================================================
+# PROVIDER CONFIGURATION
+# ============================================================================
+# Local provider for development, AWS/GCP for production
+provider: local
+
+# ============================================================================
+# ONLINE STORE CONFIGURATION
+# ============================================================================
+# Redis for low-latency feature retrieval during inference
+# Features are materialized from offline store to online store
+online_store:
+  type: redis
+  connection_string: redis://redis:6379
+  # Key prefix to avoid conflicts with other Redis data
+  key_ttl_seconds: 86400  # 24 hours TTL for cached features
+
+  # For authenticated Redis (production):
+  # connection_string: redis://:${REDIS_PASSWORD}@redis:6379
+
+  # For Redis Cluster (high availability):
+  # type: redis_cluster
+  # connection_string: redis://redis-node-1:6379,redis://redis-node-2:6379,redis://redis-node-3:6379
+
+# ============================================================================
+# OFFLINE STORE CONFIGURATION
+# ============================================================================
+# File-based offline store for simplicity in development
+# Uses Parquet files for efficient columnar storage
+offline_store:
+  type: file
+  # Base path for Parquet files (relative to feature_repo)
+  # path: data/feast/offline_store
+
+  # For production with PostgreSQL/TimescaleDB:
+  # type: postgres
+  # host: postgres
+  # port: 5432
+  # database: ${POSTGRES_DB}
+  # user: ${POSTGRES_USER}
+  # password: ${POSTGRES_PASSWORD}
+  # sslmode: disable
+
+# ============================================================================
+# ENTITY KEY SERIALIZATION
+# ============================================================================
+# Simple serialization for straightforward entity key encoding
+entity_key_serialization_version: 3
+
+# ============================================================================
+# FLAGS & SETTINGS
+# ============================================================================
+flags:
+  # Enable on-demand feature computation
+  on_demand_feature_views: True
+
+  # Enable feature services
+  feature_services: True
+
+  # Coalesce rows with same timestamp during retrieval
+  coalesce_rows: True
+
+# ============================================================================
+# PROJECT-LEVEL SETTINGS
+# ============================================================================
+# Repository root path (relative to this config file)
+repo_path: .
+
+# ============================================================================
+# PRODUCTION CONFIGURATION (Reference)
+# ============================================================================
+# When deploying to production, modify the following:
+#
+# 1. Registry - Use PostgreSQL for shared access:
+#    registry:
+#      registry_type: sql
+#      path: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/feast_registry
+#
+# 2. Online Store - Use authenticated Redis:
+#    online_store:
+#      type: redis
+#      connection_string: redis://:${REDIS_PASSWORD}@redis:6379/1
+#      key_ttl_seconds: 3600
+#
+# 3. Offline Store - Use PostgreSQL/TimescaleDB:
+#    offline_store:
+#      type: postgres
+#      host: postgres
+#      port: 5432
+#      database: ${POSTGRES_DB}
+#      user: ${POSTGRES_USER}
+#      password: ${POSTGRES_PASSWORD}
+#
+# 4. Add secrets management:
+#    secrets:
+#      type: env
+#      prefix: FEAST_

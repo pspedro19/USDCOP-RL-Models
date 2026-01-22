@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS config.models (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Constraints
-    CONSTRAINT chk_model_algorithm CHECK (algorithm IN ('PPO', 'SAC', 'TD3', 'A2C', 'DQN', 'DDPG')),
+    CONSTRAINT chk_model_algorithm CHECK (algorithm IN ('PPO', 'SAC', 'TD3', 'A2C', 'DQN', 'DDPG', 'SYNTHETIC')),
     CONSTRAINT chk_model_status CHECK (status IN ('active', 'inactive', 'training', 'deprecated', 'testing')),
     CONSTRAINT chk_model_color CHECK (color ~ '^#[0-9A-Fa-f]{6}$')
 );
@@ -546,12 +546,9 @@ CREATE INDEX IF NOT EXISTS idx_perf_sharpe ON metrics.model_performance (sharpe_
 -- =============================================================================
 
 -- =============================================================================
--- PPO V1 - PRODUCTION MODEL (trained 2025-12-26)
+-- PPO PRIMARY - PRODUCTION MODEL (loaded by InferenceEngine)
 -- =============================================================================
--- This is the main production model trained in notebooks/Entrneamiento PPOV1
--- Sharpe: 2.91, MaxDD: 0.68%, WinRate: 44.85%
--- =============================================================================
-
+-- This is the model_id that InferenceEngine loads by default
 INSERT INTO config.models (
     model_id,
     name,
@@ -567,19 +564,19 @@ INSERT INTO config.models (
     framework,
     description
 ) VALUES (
-    'ppo_v1',
-    'PPO USDCOP V1 (Production)',
+    'ppo_primary',
+    'PPO Primary (Production)',
     'PPO',
-    'V1',
+    'V20',
     'active',
     '#10B981',
     '{
-        "learning_rate": 0.0001,
+        "learning_rate": 0.0003,
         "n_steps": 2048,
-        "batch_size": 128,
+        "batch_size": 64,
         "n_epochs": 10,
         "gamma": 0.99,
-        "ent_coef": 0.05,
+        "ent_coef": 0.01,
         "clip_range": 0.2,
         "gae_lambda": 0.95,
         "max_grad_norm": 0.5,
@@ -587,35 +584,26 @@ INSERT INTO config.models (
     }'::jsonb,
     '{
         "type": "MlpPolicy",
-        "net_arch": [256, 256],
+        "net_arch": [64, 64],
         "activation_fn": "Tanh"
     }'::jsonb,
     '{
         "class": "TradingEnvironmentV19",
         "initial_balance": 10000,
         "max_position": 1.0,
-        "episode_length": 400,
+        "episode_length": 1200,
         "use_vol_scaling": true,
         "use_regime_detection": true,
         "bars_per_day": 56,
-        "observation_space_dim": 30
+        "observation_space_dim": 15
     }'::jsonb,
     '{
-        "sharpe_ratio": 2.91,
-        "max_drawdown": 0.0068,
-        "win_rate": 0.4485,
-        "hold_pct": 0.40,
-        "total_return": 0.15,
-        "validation": {
-            "stress_tests_passed": true,
-            "training_date": "2025-12-26",
-            "dataset": "RL_DS3_MACRO_CORE.csv",
-            "features": 30
-        }
+        "dataset": "RL_DS3_MACRO_CORE.csv",
+        "norm_stats": "config/norm_stats.json"
     }'::jsonb,
-    '/opt/airflow/models/ppo_v1_20251226_054154.zip',
+    '/opt/airflow/models/ppo_v20_production/final_model.zip',
     'stable-baselines3',
-    'PPO V1 Production - Trained 2025-12-26 on RL_DS3_MACRO_CORE.csv. Sharpe 2.91, MaxDD 0.68%, 30 features (12 state + 18 market). Uses regime detection and vol scaling.'
+    'Primary production model - loaded by InferenceEngine on startup. PPO V20 with 15-dim observation space.'
 ) ON CONFLICT (model_id) DO UPDATE SET
     hyperparameters = EXCLUDED.hyperparameters,
     policy_config = EXCLUDED.policy_config,
@@ -626,8 +614,10 @@ INSERT INTO config.models (
     updated_at = NOW();
 
 -- =============================================================================
--- PPO V15 - LEGACY MODEL (deprecated)
+-- INVESTOR DEMO MODEL - For investor presentations (SSOT for demo mode)
 -- =============================================================================
+-- This model generates synthetic trades with optimized metrics for presentations.
+-- Select this model_id in the UI to enable demo mode - no separate flag needed (DRY).
 INSERT INTO config.models (
     model_id,
     name,
@@ -643,176 +633,49 @@ INSERT INTO config.models (
     framework,
     description
 ) VALUES (
-    'ppo_v15_legacy',
-    'PPO USDCOP V15 (Legacy)',
-    'PPO',
-    'V15',
-    'deprecated',
-    '#6B7280',
-    '{
-        "learning_rate": 0.0001,
-        "n_steps": 2048,
-        "batch_size": 128,
-        "n_epochs": 10,
-        "gamma": 0.99
-    }'::jsonb,
-    '{
-        "type": "MlpPolicy",
-        "net_arch": [256, 256],
-        "activation_fn": "Tanh"
-    }'::jsonb,
-    '{
-        "class": "TradingEnvironmentV15",
-        "initial_balance": 10000,
-        "max_position": 1.0
-    }'::jsonb,
-    '{}'::jsonb,
-    '/opt/airflow/models/ppo_usdcop_v15_fold3.zip',
-    'stable-baselines3',
-    'Legacy PPO V15 model - Deprecated, kept for reference only.'
-) ON CONFLICT (model_id) DO NOTHING;
-
--- Insert placeholder for SAC model
-INSERT INTO config.models (
-    model_id,
-    name,
-    algorithm,
-    version,
-    status,
-    color,
-    hyperparameters,
-    policy_config,
-    environment_config,
-    framework,
-    description
-) VALUES (
-    'sac_v19_baseline',
-    'SAC Baseline',
-    'SAC',
-    'V19',
-    'inactive',
-    '#8B5CF6',
-    '{
-        "learning_rate": 0.0003,
-        "buffer_size": 100000,
-        "learning_starts": 1000,
-        "batch_size": 256,
-        "tau": 0.005,
-        "gamma": 0.99,
-        "train_freq": 1,
-        "gradient_steps": 1,
-        "ent_coef": "auto"
-    }'::jsonb,
-    '{
-        "type": "MlpPolicy",
-        "net_arch": [256, 256],
-        "activation_fn": "ReLU"
-    }'::jsonb,
-    '{
-        "class": "TradingEnvironmentV19",
-        "initial_balance": 10000,
-        "max_position": 1.0,
-        "episode_length": 400,
-        "bars_per_day": 56
-    }'::jsonb,
-    'stable-baselines3',
-    'Soft Actor-Critic baseline model - placeholder for future training'
-) ON CONFLICT (model_id) DO NOTHING;
-
--- Insert placeholder for TD3 model
-INSERT INTO config.models (
-    model_id,
-    name,
-    algorithm,
-    version,
-    status,
-    color,
-    hyperparameters,
-    policy_config,
-    environment_config,
-    framework,
-    description
-) VALUES (
-    'td3_v19_baseline',
-    'TD3 Baseline',
-    'TD3',
-    'V19',
-    'inactive',
+    'investor_demo',
+    'Demo Mode (Investor Presentation)',
+    'SYNTHETIC',
+    'V1',
+    'active',
     '#F59E0B',
     '{
-        "learning_rate": 0.0003,
-        "buffer_size": 100000,
-        "learning_starts": 1000,
-        "batch_size": 256,
-        "tau": 0.005,
-        "gamma": 0.99,
-        "train_freq": [1, "episode"],
-        "policy_delay": 2,
-        "target_policy_noise": 0.2,
-        "target_noise_clip": 0.5
+        "target_sharpe": 2.1,
+        "target_max_drawdown": -0.095,
+        "target_win_rate": 0.61,
+        "target_annual_return": 0.32,
+        "target_profit_factor": 1.85,
+        "trades_per_month": 18
     }'::jsonb,
     '{
-        "type": "MlpPolicy",
-        "net_arch": [256, 256],
-        "activation_fn": "ReLU"
+        "type": "SyntheticTradeGenerator",
+        "avg_win_pct": 0.005,
+        "avg_loss_pct": 0.004,
+        "max_position_duration_minutes": 300,
+        "min_position_duration_minutes": 15
     }'::jsonb,
     '{
-        "class": "TradingEnvironmentV19",
-        "initial_balance": 10000,
-        "max_position": 1.0,
-        "episode_length": 400,
-        "bars_per_day": 56
-    }'::jsonb,
-    'stable-baselines3',
-    'Twin Delayed DDPG baseline model - placeholder for future training'
-) ON CONFLICT (model_id) DO NOTHING;
-
--- Insert placeholder for A2C model
-INSERT INTO config.models (
-    model_id,
-    name,
-    algorithm,
-    version,
-    status,
-    color,
-    hyperparameters,
-    policy_config,
-    environment_config,
-    framework,
-    description
-) VALUES (
-    'a2c_v19_baseline',
-    'A2C Baseline',
-    'A2C',
-    'V19',
-    'inactive',
-    '#EF4444',
-    '{
-        "learning_rate": 0.0007,
-        "n_steps": 5,
-        "gamma": 0.99,
-        "gae_lambda": 0.95,
-        "ent_coef": 0.01,
-        "vf_coef": 0.5,
-        "max_grad_norm": 0.5,
-        "rms_prop_eps": 1e-5,
-        "normalize_advantage": true
+        "market_open_hour": 8,
+        "market_close_hour": 12,
+        "stop_loss_pct": 0.005,
+        "take_profit_pct": 0.012
     }'::jsonb,
     '{
-        "type": "MlpPolicy",
-        "net_arch": [256, 256],
-        "activation_fn": "Tanh"
+        "sharpe_ratio": 2.1,
+        "max_drawdown": 0.095,
+        "win_rate": 0.61,
+        "total_return": 0.32,
+        "profit_factor": 1.85,
+        "is_synthetic": true
     }'::jsonb,
-    '{
-        "class": "TradingEnvironmentV19",
-        "initial_balance": 10000,
-        "max_position": 1.0,
-        "episode_length": 400,
-        "bars_per_day": 56
-    }'::jsonb,
-    'stable-baselines3',
-    'Advantage Actor-Critic baseline model - placeholder for future training'
-) ON CONFLICT (model_id) DO NOTHING;
+    NULL,
+    'synthetic-generator',
+    'Demo model for investor presentations. Generates synthetic trades with target metrics. NOT for live trading.'
+) ON CONFLICT (model_id) DO UPDATE SET
+    hyperparameters = EXCLUDED.hyperparameters,
+    policy_config = EXCLUDED.policy_config,
+    backtest_metrics = EXCLUDED.backtest_metrics,
+    updated_at = NOW();
 
 -- =============================================================================
 -- SECTION 9: SEED DATA - Feature Definitions (30 Total Features)

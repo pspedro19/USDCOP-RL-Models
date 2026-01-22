@@ -1,0 +1,361 @@
+# =============================================================================
+# Prometheus Alert Rules: Shadow Mode & Model Health (MLOps-3)
+# =============================================================================
+# Alert rules for monitoring shadow mode execution, model agreement,
+# and overall model health in production.
+#
+# Shadow Mode:
+#   - Champion model: Production model used for actual trading decisions
+#   - Shadow model: Staging model running in parallel for comparison
+#   - Agreement tracking: Monitors divergence between models
+#
+# Alert Philosophy:
+#   - High divergence may indicate model improvement opportunity
+#   - Persistent divergence with better shadow performance -> promote shadow
+#   - Low divergence validates model stability
+#
+# Author: Trading Team
+# Date: 2025-01-14
+# =============================================================================
+
+groups:
+  # ===========================================================================
+  # Shadow Mode Alerts
+  # ===========================================================================
+  - name: shadow_mode
+    interval: 1m
+    rules:
+      # -----------------------------------------------------------------------
+      # Warning: High Model Divergence
+      # -----------------------------------------------------------------------
+      - alert: ShadowModelHighDivergence
+        expr: shadow_divergence_rate > 0.3
+        for: 15m
+        labels:
+          severity: warning
+          team: trading
+          category: shadow_mode
+        annotations:
+          summary: "High divergence between champion and shadow models"
+          description: |
+            Divergence rate: {{ $value | humanizePercentage }}
+            Threshold: 30%
+
+            The shadow (staging) model is making different predictions
+            than the champion (production) model more than 30% of the time.
+
+            This may indicate:
+            - Shadow model has learned different patterns
+            - Market regime change favoring one model
+            - Potential model improvement opportunity
+
+            Actions:
+            1. Review shadow model performance metrics
+            2. Compare backtest results
+            3. Consider A/B test with limited allocation
+
+          runbook_url: "https://docs.example.com/runbooks/shadow-divergence"
+
+      # -----------------------------------------------------------------------
+      # Critical: Very High Model Divergence
+      # -----------------------------------------------------------------------
+      - alert: ShadowModelVeryHighDivergence
+        expr: shadow_divergence_rate > 0.5
+        for: 10m
+        labels:
+          severity: critical
+          team: trading
+          category: shadow_mode
+        annotations:
+          summary: "Very high divergence between models ({{ $value | humanizePercentage }})"
+          description: |
+            CRITICAL: Divergence rate exceeds 50%.
+
+            The champion and shadow models are producing very different
+            predictions. This requires immediate investigation.
+
+            Possible causes:
+            - Different feature processing
+            - Model corruption
+            - Significant market regime shift
+
+            Actions:
+            1. Verify both models are functioning correctly
+            2. Check for feature pipeline issues
+            3. Review recent training data changes
+
+      # -----------------------------------------------------------------------
+      # Info: Models Highly Aligned
+      # -----------------------------------------------------------------------
+      - alert: ShadowModelHighAgreement
+        expr: shadow_divergence_rate < 0.05
+        for: 1h
+        labels:
+          severity: info
+          team: trading
+          category: shadow_mode
+        annotations:
+          summary: "Champion and shadow models highly aligned"
+          description: |
+            Agreement rate: {{ printf "%.1f%%" (sub 1 $value | mulf 100) }}
+
+            Models are producing very similar predictions.
+            Shadow model may be redundant or no significant
+            improvement has been achieved.
+
+      # -----------------------------------------------------------------------
+      # Warning: Shadow Model Not Loaded
+      # -----------------------------------------------------------------------
+      - alert: ShadowModelNotLoaded
+        expr: |
+          absent(model_loaded{model_type="staging"})
+          or model_loaded{model_type="staging"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+          category: shadow_mode
+        annotations:
+          summary: "Shadow model not loaded"
+          description: |
+            No shadow (staging) model is currently loaded.
+            Shadow mode comparison is not active.
+
+            This may be intentional if no staging model is available.
+            If a shadow model should be running, check:
+            1. MLflow staging model exists
+            2. Model loading logs for errors
+            3. Service configuration
+
+  # ===========================================================================
+  # Model Health Alerts
+  # ===========================================================================
+  - name: model_health
+    interval: 30s
+    rules:
+      # -----------------------------------------------------------------------
+      # Critical: Champion Model Not Loaded
+      # -----------------------------------------------------------------------
+      - alert: ChampionModelNotLoaded
+        expr: |
+          absent(model_loaded{model_type="production"})
+          or model_loaded{model_type="production"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: trading
+          category: model_health
+          pagerduty: "true"
+        annotations:
+          summary: "Champion (production) model not loaded!"
+          description: |
+            CRITICAL: No production model is currently loaded.
+            The inference service cannot generate trading signals.
+
+            Immediate actions:
+            1. Check MLflow for production model
+            2. Review service startup logs
+            3. Trigger model reload endpoint
+            4. If persistent, investigate model registry
+
+          runbook_url: "https://docs.example.com/runbooks/model-not-loaded"
+
+      # -----------------------------------------------------------------------
+      # Warning: High Prediction Latency
+      # -----------------------------------------------------------------------
+      - alert: ModelPredictionLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(prediction_latency_seconds_bucket[5m])
+          ) > 0.050
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+          category: model_health
+        annotations:
+          summary: "Model prediction latency elevated"
+          description: |
+            p95 prediction latency: {{ $value | humanizeDuration }}
+            Threshold: 50ms
+
+            This may indicate:
+            - Model complexity issues
+            - Resource contention
+            - Memory pressure
+
+      # -----------------------------------------------------------------------
+      # Critical: Very High Prediction Latency
+      # -----------------------------------------------------------------------
+      - alert: ModelPredictionLatencyCritical
+        expr: |
+          histogram_quantile(0.99,
+            rate(prediction_latency_seconds_bucket[5m])
+          ) > 0.100
+        for: 2m
+        labels:
+          severity: critical
+          team: trading
+          category: model_health
+          pagerduty: "true"
+        annotations:
+          summary: "Model prediction latency critical!"
+          description: |
+            CRITICAL: p99 prediction latency is {{ $value | humanizeDuration }}.
+            SLA threshold: 100ms.
+
+            Trading signals may be delayed, affecting execution quality.
+
+      # -----------------------------------------------------------------------
+      # Warning: Champion Model Old
+      # -----------------------------------------------------------------------
+      - alert: ChampionModelStale
+        expr: |
+          time() - model_loaded_timestamp{model_type="production"} > 604800
+        for: 1h
+        labels:
+          severity: info
+          team: trading
+          category: model_health
+        annotations:
+          summary: "Champion model is over 7 days old"
+          description: |
+            The production model was loaded more than 7 days ago.
+            Consider if a model refresh is needed based on:
+            - Market conditions
+            - Performance metrics
+            - Available staging models
+
+  # ===========================================================================
+  # Prediction Distribution Alerts
+  # ===========================================================================
+  - name: prediction_distribution
+    interval: 5m
+    rules:
+      # -----------------------------------------------------------------------
+      # Warning: Action Distribution Skewed
+      # -----------------------------------------------------------------------
+      - alert: PredictionDistributionSkewed
+        expr: |
+          (
+            sum(rate(model_predictions_total{action="LONG"}[1h]))
+            /
+            sum(rate(model_predictions_total[1h]))
+          ) > 0.7
+          or
+          (
+            sum(rate(model_predictions_total{action="SHORT"}[1h]))
+            /
+            sum(rate(model_predictions_total[1h]))
+          ) > 0.7
+        for: 30m
+        labels:
+          severity: warning
+          team: trading
+          category: model_health
+        annotations:
+          summary: "Model predictions heavily skewed"
+          description: |
+            More than 70% of predictions are in one direction.
+            This may indicate:
+            - Strong market trend (expected)
+            - Model bias issue
+            - Feature pipeline problem
+
+            Review if this aligns with market conditions.
+
+      # -----------------------------------------------------------------------
+      # Critical: Model Stuck on Single Action
+      # -----------------------------------------------------------------------
+      - alert: ModelStuckBehavior
+        expr: |
+          (
+            sum(rate(model_predictions_total{action="HOLD"}[1h]))
+            /
+            sum(rate(model_predictions_total[1h]))
+          ) > 0.95
+        for: 1h
+        labels:
+          severity: critical
+          team: trading
+          category: model_health
+          pagerduty: "true"
+        annotations:
+          summary: "Model appears stuck - 95%+ HOLD predictions"
+          description: |
+            CRITICAL: Model is generating HOLD signals over 95% of the time.
+            This suggests the model may be stuck or misconfigured.
+
+            Immediate actions:
+            1. Check model outputs for constant values
+            2. Verify feature pipeline is providing valid data
+            3. Review model thresholds
+            4. Consider model reload or fallback
+
+      # -----------------------------------------------------------------------
+      # Warning: No Predictions
+      # -----------------------------------------------------------------------
+      - alert: NoPredictionsGenerated
+        expr: |
+          increase(model_predictions_total[10m]) == 0
+          and on() up{job="inference_api"} == 1
+        for: 15m
+        labels:
+          severity: warning
+          team: trading
+          category: model_health
+        annotations:
+          summary: "No predictions generated in 15 minutes"
+          description: |
+            The model has not generated any predictions recently.
+            This may indicate:
+            - No inference requests (upstream issue)
+            - Model error causing silent failures
+            - Service degradation
+
+  # ===========================================================================
+  # Model Reload Alerts
+  # ===========================================================================
+  - name: model_reload
+    interval: 1m
+    rules:
+      # -----------------------------------------------------------------------
+      # Info: Model Reload Triggered
+      # -----------------------------------------------------------------------
+      - alert: ModelReloadTriggered
+        expr: |
+          increase(model_reload_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: info
+          team: trading
+          category: model_reload
+        annotations:
+          summary: "Model reload was triggered"
+          description: |
+            A model reload was initiated.
+            Check reload success metrics and service logs.
+
+      # -----------------------------------------------------------------------
+      # Critical: Model Reload Failed
+      # -----------------------------------------------------------------------
+      - alert: ModelReloadFailed
+        expr: |
+          increase(model_reload_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: trading
+          category: model_reload
+          pagerduty: "true"
+        annotations:
+          summary: "Model reload failed!"
+          description: |
+            CRITICAL: Model reload operation failed.
+
+            The service is still running with the previous model version.
+            Investigate:
+            1. MLflow connectivity
+            2. Model file availability
+            3. Memory constraints
+            4. Service logs for detailed error

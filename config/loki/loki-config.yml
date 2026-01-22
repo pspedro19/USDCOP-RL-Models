@@ -1,0 +1,132 @@
+# =============================================================================
+# Loki Configuration - Centralized Log Aggregation
+# =============================================================================
+# Loki is a horizontally-scalable, highly-available log aggregation system
+# inspired by Prometheus. It's designed to be cost-effective and easy to operate.
+#
+# Key Design Principles:
+#   - Index only metadata (labels), not the full log content
+#   - Use same labels as Prometheus for correlation
+#   - Store logs in object storage for cost efficiency
+#
+# Reference: https://grafana.com/docs/loki/latest/configuration/
+# =============================================================================
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+# =============================================================================
+# Query Frontend Configuration
+# =============================================================================
+# Handles query parallelization and caching
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+# =============================================================================
+# Schema Configuration
+# =============================================================================
+# Defines how Loki stores and indexes logs
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# =============================================================================
+# Ruler Configuration
+# =============================================================================
+# Enables alerting rules evaluation
+ruler:
+  alertmanager_url: http://alertmanager:9093
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules-temp
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+
+# =============================================================================
+# Ingester Configuration
+# =============================================================================
+# Controls log ingestion behavior
+ingester:
+  wal:
+    enabled: true
+    dir: /loki/wal
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  chunk_idle_period: 1h
+  max_chunk_age: 1h
+  chunk_target_size: 1048576
+  chunk_retain_period: 30s
+
+# =============================================================================
+# Compactor Configuration
+# =============================================================================
+# Handles log compaction and retention
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
+# =============================================================================
+# Limits Configuration
+# =============================================================================
+# Sets resource limits and quotas
+limits_config:
+  retention_period: 744h  # 31 days
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h  # 7 days
+  ingestion_rate_mb: 10
+  ingestion_burst_size_mb: 20
+  max_streams_per_user: 10000
+  max_line_size: 256kb
+  max_entries_limit_per_query: 5000
+  max_query_parallelism: 32
+
+# =============================================================================
+# Analytics Configuration
+# =============================================================================
+analytics:
+  reporting_enabled: false
+
+# =============================================================================
+# Table Manager (Legacy - for compatibility)
+# =============================================================================
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 744h  # 31 days

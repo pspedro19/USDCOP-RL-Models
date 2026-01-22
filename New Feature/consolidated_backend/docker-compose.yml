@@ -1,0 +1,488 @@
+version: '3.8'
+
+# =============================================================================
+# USD/COP Forecasting Pipeline - Docker Compose
+# Servicios: PostgreSQL, MinIO, MLflow, Airflow, Redis, API, Frontend
+# =============================================================================
+
+x-airflow-common: &airflow-common
+  build:
+    context: ./infrastructure/airflow
+    dockerfile: Dockerfile
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Conexiones
+    AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/pipeline_db
+    # MLflow
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+    # MinIO (S3 compatible)
+    AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+    AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+    MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    MINIO_ENDPOINT: minio:9000
+    MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+    MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+    # PostgreSQL para DAGs
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: '5432'
+    POSTGRES_DB: pipeline_db
+    POSTGRES_USER: pipeline
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pipeline_secret}
+    # Python path
+    PYTHONPATH: /opt/airflow/backend:/opt/airflow/dags
+  volumes:
+    - ./data-engineering/dags:/opt/airflow/dags
+    - ./data-engineering/scrapers:/opt/airflow/scrapers
+    - ./backend:/opt/airflow/backend
+    - ./data:/opt/airflow/data
+    - ./outputs:/opt/airflow/outputs
+    - airflow-logs:/opt/airflow/logs
+    - airflow-plugins:/opt/airflow/plugins
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
+services:
+  # ===========================================================================
+  # BASE DE DATOS - PostgreSQL
+  # ===========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: pipeline-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pipeline_secret}
+      POSTGRES_DB: pipeline_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./infrastructure/postgres/seeds/01_indicator_catalog.sql:/docker-entrypoint-initdb.d/02_seed_indicator_catalog.sql:ro
+      - ./infrastructure/postgres/seeds/02_dim_models.sql:/docker-entrypoint-initdb.d/03_seed_dim_models.sql:ro
+      - ./infrastructure/postgres/seeds/03_dim_horizons.sql:/docker-entrypoint-initdb.d/04_seed_dim_horizons.sql:ro
+      - ./infrastructure/postgres/seeds/04_users.sql:/docker-entrypoint-initdb.d/05_seed_users.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipeline -d pipeline_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # OBJECT STORAGE - MinIO (S3 Compatible)
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: pipeline-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - pipeline-network
+
+  # Inicializar buckets de MinIO con estructura organizada
+  minio-init:
+    image: minio/mc:latest
+    container_name: pipeline-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minio_secret};
+
+      echo 'Creando buckets...';
+      mc mb myminio/mlflow-artifacts --ignore-existing;
+      mc mb myminio/ml-models --ignore-existing;
+      mc mb myminio/forecasts --ignore-existing;
+      mc mb myminio/backups --ignore-existing;
+      mc mb myminio/raw-data --ignore-existing;
+
+      echo 'Configurando políticas...';
+      mc anonymous set download myminio/mlflow-artifacts;
+      mc anonymous set download myminio/forecasts;
+
+      echo 'Buckets creados:';
+      echo '  - mlflow-artifacts: Artifacts de MLflow';
+      echo '  - ml-models: Modelos entrenados (.pkl)';
+      echo '  - forecasts: Resultados semanales (forecasts/YYYY/weekNN/)';
+      echo '  - backups: Backups de PostgreSQL';
+      echo '  - raw-data: Datos crudos de scraping';
+
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret}
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # ML EXPERIMENT TRACKING - MLflow
+  # ===========================================================================
+  mlflow:
+    build:
+      context: ./infrastructure/mlflow
+      dockerfile: Dockerfile
+    container_name: pipeline-mlflow
+    restart: unless-stopped
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/mlflow
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://mlflow-artifacts/
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/mlflow
+      --default-artifact-root s3://mlflow-artifacts/
+      --host 0.0.0.0
+      --port 5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # MESSAGE BROKER - Redis (para Airflow Celery)
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: pipeline-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Using 6380 externally to avoid port conflicts
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # WORKFLOW ORCHESTRATION - Apache Airflow
+  # ===========================================================================
+
+  # Airflow Webserver (UI)
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: pipeline-airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - pipeline-network
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: pipeline-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - pipeline-network
+
+  # Airflow Worker (Celery)
+  airflow-worker:
+    <<: *airflow-common
+    container_name: pipeline-airflow-worker
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      DUMB_INIT_SETSID: "0"
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - pipeline-network
+
+  # Airflow Triggerer (para deferrable operators)
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: pipeline-airflow-triggerer
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - pipeline-network
+
+  # Airflow Init (inicialización única)
+  airflow-init:
+    <<: *airflow-common
+    container_name: pipeline-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        echo "Starting Airflow initialization..."
+        /bin/mkdir -p /sources/logs /sources/dags /sources/plugins
+        /bin/chown -R "${AIRFLOW_UID:-50000}:0" /sources/{logs,dags,plugins}
+        echo "Running DB migration as airflow user..."
+        su airflow -c "airflow db migrate"
+        echo "Creating admin user..."
+        su airflow -c "airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin" || echo "User may already exist"
+        echo "Verifying Airflow version..."
+        su airflow -c "airflow version"
+        echo "Initialization complete!"
+    environment:
+      <<: *airflow-common-env
+    user: "0:0"
+    volumes:
+      - ./data-engineering/dags:/sources/dags
+      - airflow-logs:/sources/logs
+      - airflow-plugins:/sources/plugins
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # API REST - FastAPI
+  # ===========================================================================
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: pipeline-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/pipeline_db
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+      REDIS_URL: redis://redis:6379/0
+      OUTPUTS_PATH: /app/outputs
+      JWT_SECRET_KEY: your-secret-key-change-in-production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs:ro
+      - ./data:/app/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # FRONTEND - React/Vite
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pipeline-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - pipeline-network
+
+  # ===========================================================================
+  # HEALTHCHECK - Connection Verification Service
+  # ===========================================================================
+  healthcheck:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pipeline-healthcheck
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_DB: pipeline_db
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pipeline_secret}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      API_HOST: api
+      API_PORT: '8000'
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./data:/app/data:ro
+      - ./.env:/app/.env:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    # Run connection verification and exit
+    command: python /app/scripts/verify_connections.py --json
+    networks:
+      - pipeline-network
+    # This service runs once and exits
+    restart: "no"
+    profiles:
+      - healthcheck
+      - all
+
+  # ===========================================================================
+  # ML BACKEND - Training & Inference
+  # ===========================================================================
+  ml-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pipeline-ml-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://pipeline:${POSTGRES_PASSWORD:-pipeline_secret}@postgres:5432/pipeline_db
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio_secret}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Por defecto solo se queda idle, se ejecuta con docker exec
+    command: tail -f /dev/null
+    networks:
+      - pipeline-network
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  pipeline-network:
+    driver: bridge
+    name: pipeline-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres-data:
+    name: pipeline-postgres-data
+  minio-data:
+    name: pipeline-minio-data
+  redis-data:
+    name: pipeline-redis-data
+  airflow-logs:
+    name: pipeline-airflow-logs
+  airflow-plugins:
+    name: pipeline-airflow-plugins

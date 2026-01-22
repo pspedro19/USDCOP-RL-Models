@@ -2,25 +2,74 @@
 """
 Setup MinIO connection in Airflow
 This script creates the necessary connection for Airflow to communicate with MinIO
+
+SECURITY: Credentials are loaded from environment variables or Docker secrets.
+Set MINIO_ACCESS_KEY and MINIO_SECRET_KEY in your environment or create
+secrets/minio_access_key.txt and secrets/minio_secret_key.txt
 """
 
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
+
+
+def get_secret(name: str, default: str = "") -> str:
+    """
+    Get a secret from Docker secrets, local files, or environment variables.
+
+    Priority:
+    1. Docker secrets (/run/secrets/<name>)
+    2. Local secrets (./secrets/<name>.txt)
+    3. Environment variables
+    """
+    # Try Docker secret
+    docker_secret_path = Path(f"/run/secrets/{name}")
+    if docker_secret_path.exists():
+        return docker_secret_path.read_text().strip()
+
+    # Try local secret file
+    local_paths = [
+        Path(f"secrets/{name}.txt"),
+        Path(f"../secrets/{name}.txt"),
+        Path(__file__).parent.parent / "secrets" / f"{name}.txt",
+    ]
+    for path in local_paths:
+        if path.exists():
+            return path.read_text().strip()
+
+    # Fall back to environment variable
+    env_names = [name, name.upper(), name.lower()]
+    for env_name in env_names:
+        value = os.environ.get(env_name)
+        if value:
+            return value
+
+    return default
+
 
 def create_minio_connection():
     """Create MinIO connection in Airflow"""
-    
+
+    # SECURITY: Load credentials from secrets or environment
+    minio_access_key = get_secret("minio_access_key", os.environ.get("MINIO_ACCESS_KEY", "minioadmin"))
+    minio_secret_key = get_secret("minio_secret_key", os.environ.get("MINIO_SECRET_KEY", ""))
+
+    if not minio_secret_key:
+        print("[ERROR] MINIO_SECRET_KEY not set. Please set it in environment or create secrets/minio_secret_key.txt")
+        sys.exit(1)
+
     # MinIO connection configuration
     minio_conn = {
         "conn_type": "aws",
         "host": "http://minio:9000",  # Internal Docker network endpoint
-        "login": "minioadmin",  # MinIO access key
-        "password": "minioadmin123",  # MinIO secret key
+        "login": minio_access_key,
+        "password": minio_secret_key,
         "extra": json.dumps({
             "endpoint_url": "http://minio:9000",
-            "aws_access_key_id": "minioadmin",
-            "aws_secret_access_key": "minioadmin123",
+            "aws_access_key_id": minio_access_key,
+            "aws_secret_access_key": minio_secret_key,
             "region_name": "us-east-1",  # Default region for MinIO
             "signature_version": "s3v4",
             "config": {
@@ -203,7 +252,7 @@ def main():
     print("  - Connection ID: minio_conn")
     print("  - Endpoint: http://minio:9000")
     print("  - Bucket: 00-raw-usdcop-marketdata")
-    print("  - Access Key: minioadmin")
+    print("  - Access Key: (from environment/secrets)")
     print("\nYou can now run the L0 pipeline and data will be saved to MinIO")
 
 if __name__ == "__main__":

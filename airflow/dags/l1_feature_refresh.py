@@ -1,50 +1,42 @@
 """
-DAG: v3.l1_feature_refresh
-===========================
-V3 Architecture - Layer 1: Feature Calculation with Macro FFILL
+L1 Feature Refresh DAG - SSOT Edition
+======================================
+P0-1: Uses CanonicalFeatureBuilder as Single Source of Truth
 
-Purpose:
-    Calculates ALL 13 features for each OHLCV bar using Python.
-    Macro data is forward-filled (ffill) from daily values to each 5-min bar.
+Contract: CTR-FEAT-001 - 15 features in canonical order
+
+This DAG replaces all duplicated feature calculations with the
+CanonicalFeatureBuilder from src.feature_store.builders, ensuring:
+1. Same calculations as training (Wilder's EMA for RSI/ATR/ADX)
+2. Same feature order (FEATURE_ORDER from core.py)
+3. Same normalization stats
+4. Builder version tracked for audit
 
 Schedule:
     Event-driven: Uses NewOHLCVBarSensor to wait for new data from L0.
     Fallback schedule: */5 13-17 * * 1-5 (8:00-12:55 COT)
 
-    Best Practice: Instead of running blindly every 5 minutes, the sensor
-    waits for actual new OHLCV data before processing. This prevents:
-    - Schedule drift
-    - Overlapping jobs
-    - Processing stale data
-
-Feature Calculation Strategy:
-    1. Load OHLCV bars (last 100 for indicator warmup)
-    2. Load macro_indicators_daily and FFILL to each bar's date
-    3. Calculate returns: log_ret_5m, log_ret_1h, log_ret_4h
-    4. Calculate indicators: rsi_9, atr_pct, adx_14
-    5. Calculate macro z-scores: dxy_z, vix_z (using historical mean/std)
-    6. Calculate macro changes: dxy_change_1d, brent_change_1d
-    7. Calculate derived: rate_spread, usdmxn_change_1d
-    8. Store ALL features in inference_features_5m table
-
 Data Flow:
-    ┌─────────────────┐     ┌────────────────┐
-    │usdcop_m5_ohlcv  │────►│                │
-    │ time, OHLCV     │     │                │
-    └─────────────────┘     │  PYTHON        │     ┌────────────────────┐
-                            │  FEATURE       │────►│inference_features  │
-    ┌─────────────────┐     │  CALCULATION   │     │_5m (13 features)   │
-    │macro_indicators │────►│  + FFILL       │     └────────────────────┘
-    │_daily           │     │                │
-    │ dxy, vix, etc   │     └────────────────┘
-    └─────────────────┘
+    +-----------------+     +----------------+
+    |usdcop_m5_ohlcv  |---->|                |
+    | time, OHLCV     |     |                |
+    +-----------------+     |  CANONICAL     |     +--------------------+
+                            |  FEATURE       |---->|inference_features  |
+    +-----------------+     |  BUILDER       |     |_5m (15 features)   |
+    |macro_indicators |---->|  (SSOT)        |     +--------------------+
+    |_daily           |     |  Wilder's EMA  |
+    | dxy, vix, etc   |     +----------------+
+    +-----------------+
 
-Author: Pedro @ Lean Tech Solutions
-Version: 3.2.0 (with sensor-driven execution)
-Updated: 2025-01-12
+Author: Pedro @ Lean Tech Solutions / Trading Team
+Version: 4.0.0 (SSOT CanonicalFeatureBuilder integration)
+Updated: 2026-01-17
 """
 
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.empty import EmptyOperator
@@ -53,7 +45,7 @@ import numpy as np
 import logging
 import psycopg2
 from psycopg2.extras import execute_values
-import os
+import json
 
 # Trading calendar from DAG utils
 from utils.trading_calendar import TradingCalendar
@@ -62,14 +54,36 @@ from utils.dag_common import get_db_connection, load_feature_config
 # Event-driven sensor (Best Practice: wait for actual data instead of fixed schedule)
 from sensors.new_bar_sensor import NewOHLCVBarSensor
 
-DAG_ID = 'v3.l1_feature_refresh'
+# =============================================================================
+# SSOT IMPORTS - Single Source of Truth for Feature Calculations
+# =============================================================================
+# CRITICAL: Add project root to path for imports
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# Import SSOT components (REQUIRED - no fallback)
+from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM, FEATURE_CONTRACT
+from src.feature_store.builders import CanonicalFeatureBuilder
+
+SSOT_AVAILABLE = True
+logging.info(
+    f"SSOT CanonicalFeatureBuilder loaded successfully. "
+    f"Builder version: {CanonicalFeatureBuilder.VERSION}, "
+    f"Feature count: {OBSERVATION_DIM}"
+)
+
+from contracts.dag_registry import L1_FEATURE_REFRESH
+
+logger = logging.getLogger(__name__)
+
+DAG_ID = L1_FEATURE_REFRESH
 CONFIG = load_feature_config(raise_on_error=False)
 
 # Feature calculation parameters (from config or defaults)
 MACRO_ZSCORE_STATS = CONFIG.get('macro_zscore_stats', {
     'dxy': {'mean': 103.5, 'std': 2.5},
     'vix': {'mean': 18.0, 'std': 5.0},
-    'embi': {'mean': 400.0, 'std': 50.0}  # Not used currently
+    'embi': {'mean': 400.0, 'std': 50.0}
 })
 
 # Initialize trading calendar
@@ -87,149 +101,32 @@ def should_run_today():
 
 
 # =============================================================================
-# FEATURE CALCULATION FUNCTIONS
+# MAIN TASK FUNCTIONS - USING SSOT CANONICAL BUILDER
 # =============================================================================
 
-def calc_log_returns(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate log returns for different periods."""
-    df = df.copy()
-    df['log_ret_5m'] = np.log(df['close'] / df['close'].shift(1))
-    df['log_ret_1h'] = np.log(df['close'] / df['close'].shift(12))   # 12 bars = 1 hour
-    df['log_ret_4h'] = np.log(df['close'] / df['close'].shift(48))   # 48 bars = 4 hours
-    return df
-
-
-def calc_rsi(series: pd.Series, period: int = 9) -> pd.Series:
-    """Calculate RSI indicator."""
-    delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
-
-
-def calc_atr(df: pd.DataFrame, period: int = 10) -> pd.Series:
-    """Calculate ATR (Average True Range)."""
-    high_low = df['high'] - df['low']
-    high_close = np.abs(df['high'] - df['close'].shift())
-    low_close = np.abs(df['low'] - df['close'].shift())
-    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-    atr = true_range.rolling(window=period).mean()
-    return atr
-
-
-def calc_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    """Calculate ADX indicator."""
-    plus_dm = df['high'].diff()
-    minus_dm = df['low'].diff().abs() * -1
-
-    plus_dm[plus_dm < 0] = 0
-    minus_dm[minus_dm > 0] = 0
-    minus_dm = minus_dm.abs()
-
-    tr = calc_atr(df, 1) * 1  # True range (period 1)
-
-    plus_di = 100 * (plus_dm.rolling(period).mean() / tr.rolling(period).mean())
-    minus_di = 100 * (minus_dm.rolling(period).mean() / tr.rolling(period).mean())
-
-    dx = 100 * np.abs(plus_di - minus_di) / (plus_di + minus_di)
-    adx = dx.rolling(period).mean()
-    return adx
-
-
-def calc_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate all technical indicators."""
-    df = df.copy()
-    df['rsi_9'] = calc_rsi(df['close'], period=9)
-    df['atr_pct'] = (calc_atr(df, period=10) / df['close']) * 100
-    df['adx_14'] = calc_adx(df, period=14)
-    return df
-
-
-def calc_macro_features(df: pd.DataFrame, df_macro: pd.DataFrame) -> pd.DataFrame:
+def compute_features_ssot(**context) -> dict:
     """
-    Calculate macro features with FFILL from daily to 5-min bars.
+    Compute features using the Single Source of Truth builder.
 
-    Args:
-        df: OHLCV DataFrame with 'time' column
-        df_macro: macro_indicators_daily DataFrame with 'date', 'dxy', 'vix', etc.
-
-    Returns:
-        DataFrame with macro features ffilled to each bar
-    """
-    df = df.copy()
-
-    # Extract date from OHLCV time
-    df['date'] = pd.to_datetime(df['time']).dt.date
-
-    # Ensure macro has date column
-    if 'date' in df_macro.columns:
-        df_macro = df_macro.copy()
-        df_macro['date'] = pd.to_datetime(df_macro['date']).dt.date
-    else:
-        logging.warning("Macro data missing 'date' column")
-        return df
-
-    # Sort macro by date for proper merge_asof
-    df_macro = df_macro.sort_values('date')
-    df = df.sort_values('time')
-
-    # Convert date to datetime for merge_asof
-    df['date_dt'] = pd.to_datetime(df['date'])
-    df_macro['date_dt'] = pd.to_datetime(df_macro['date'])
-
-    # FFILL: merge_asof finds the most recent macro data for each bar
-    df = pd.merge_asof(
-        df,
-        df_macro[['date_dt', 'dxy', 'vix', 'brent', 'treasury_2y', 'treasury_10y', 'usdmxn']],
-        left_on='date_dt',
-        right_on='date_dt',
-        direction='backward'  # Use most recent available data
-    )
-
-    # Calculate Z-scores using config stats
-    dxy_stats = MACRO_ZSCORE_STATS.get('dxy', {'mean': 103.5, 'std': 2.5})
-    vix_stats = MACRO_ZSCORE_STATS.get('vix', {'mean': 18.0, 'std': 5.0})
-
-    df['dxy_z'] = (df['dxy'] - dxy_stats['mean']) / dxy_stats['std']
-    df['vix_z'] = (df['vix'] - vix_stats['mean']) / vix_stats['std']
-    df['embi_z'] = 0.0  # EMBI not available, set to 0
-
-    # Calculate daily changes (requires previous day data)
-    df['dxy_change_1d'] = df.groupby('date')['dxy'].transform(
-        lambda x: (x / x.iloc[0] - 1) if len(x) > 0 else 0
-    )
-    df['brent_change_1d'] = df.groupby('date')['brent'].transform(
-        lambda x: (x / x.iloc[0] - 1) if len(x) > 0 else 0
-    )
-
-    # Rate spread
-    df['rate_spread'] = df['treasury_10y'] - df['treasury_2y']
-
-    # USDMXN daily change
-    df['usdmxn_change_1d'] = np.log(df['usdmxn'] / df['usdmxn'].shift(12))
-
-    # Clean up temp columns
-    df = df.drop(columns=['date', 'date_dt'], errors='ignore')
-
-    return df
-
-
-# =============================================================================
-# MAIN TASK FUNCTIONS
-# =============================================================================
-
-def calculate_all_features(**context):
-    """
-    Main feature calculation task with macro FFILL.
-
-    This replaces both refresh_sql_features and calculate_python_features
-    with a unified Python implementation that properly handles ffill.
+    This ensures:
+    1. Same calculations as training (Wilder's EMA for RSI/ATR/ADX)
+    2. Same feature order (CTR-FEAT-001)
+    3. Same normalization stats
+    4. Builder version tracked for audit
     """
     logging.info("=" * 60)
-    logging.info("STARTING FEATURE CALCULATION WITH MACRO FFILL")
+    logging.info("STARTING FEATURE CALCULATION WITH SSOT CANONICAL BUILDER")
     logging.info("=" * 60)
+
+    if not SSOT_AVAILABLE:
+        raise RuntimeError(
+            "SSOT CanonicalFeatureBuilder not available. "
+            "Cannot compute features without SSOT to ensure training/inference parity."
+        )
+
+    # Initialize SSOT builder
+    builder = CanonicalFeatureBuilder()
+    logging.info(f"Using CanonicalFeatureBuilder v{builder.VERSION}")
 
     conn = get_db_connection()
 
@@ -249,8 +146,7 @@ def calculate_all_features(**context):
         logging.info(f"Loaded {len(df)} OHLCV bars")
 
         if df.empty:
-            logging.error("No OHLCV data available!")
-            return {'status': 'error', 'reason': 'no_ohlcv_data'}
+            raise ValueError("No OHLCV data found for feature computation")
 
         # =================================================================
         # STEP 2: Load macro data (last 30 days for ffill history)
@@ -263,7 +159,8 @@ def calculate_all_features(**context):
                 comm_oil_brent_glb_d_brent as brent,
                 finc_bond_yield2y_usa_d_dgs2 as treasury_2y,
                 finc_bond_yield10y_usa_d_ust10y as treasury_10y,
-                fxrt_spot_usdmxn_mex_d_usdmxn as usdmxn
+                fxrt_spot_usdmxn_mex_d_usdmxn as usdmxn,
+                0.0 as embi  -- EMBI not available, default to 0
             FROM macro_indicators_daily
             WHERE fecha >= CURRENT_DATE - INTERVAL '30 days'
             ORDER BY fecha
@@ -271,43 +168,57 @@ def calculate_all_features(**context):
         df_macro = pd.read_sql(query_macro, conn)
         logging.info(f"Loaded {len(df_macro)} macro records for ffill")
 
-        if df_macro.empty:
+        # =================================================================
+        # STEP 3: Merge macro data with OHLCV using FFILL
+        # =================================================================
+        if not df_macro.empty:
+            df = _merge_macro_ffill(df, df_macro)
+            logging.info("Merged macro data with FFILL")
+        else:
             logging.warning("No macro data available - using defaults")
-            # Create default macro row for today
-            df_macro = pd.DataFrame([{
-                'date': datetime.now().date(),
-                'dxy': MACRO_ZSCORE_STATS['dxy']['mean'],
-                'vix': MACRO_ZSCORE_STATS['vix']['mean'],
-                'brent': 75.0,
-                'treasury_2y': 4.5,
-                'treasury_10y': 4.0,
-                'usdmxn': 17.5
-            }])
+            # Add default macro columns
+            df['dxy'] = MACRO_ZSCORE_STATS['dxy']['mean']
+            df['vix'] = MACRO_ZSCORE_STATS['vix']['mean']
+            df['brent'] = 75.0
+            df['treasury_2y'] = 4.5
+            df['treasury_10y'] = 4.0
+            df['usdmxn'] = 17.5
+            df['embi'] = 0.0
 
         # =================================================================
-        # STEP 3: Calculate log returns
+        # STEP 4: Compute features using SSOT CanonicalFeatureBuilder
         # =================================================================
-        df = calc_log_returns(df)
-        logging.info("Calculated log returns")
+        # Use the canonical builder - guaranteed contract compliance
+        features_df = builder.compute_features(df, include_state=False)
+        logging.info(f"Computed {len(features_df.columns)} features using SSOT builder")
+
+        # Get latest features for validation
+        latest_features = builder.get_latest_features_dict(df, position=0.0)
 
         # =================================================================
-        # STEP 4: Calculate technical indicators
+        # STEP 5: Validate feature count matches contract
         # =================================================================
-        df = calc_technical_indicators(df)
-        logging.info("Calculated technical indicators (RSI, ATR, ADX)")
+        if len(latest_features) != len(FEATURE_ORDER):
+            raise ValueError(
+                f"Feature count mismatch: got {len(latest_features)}, "
+                f"expected {len(FEATURE_ORDER)} (CTR-FEAT-001)"
+            )
+
+        # Validate features against contract
+        is_valid, errors = builder.validate_features(latest_features)
+        if not is_valid:
+            for error in errors:
+                logging.warning(f"Feature validation warning: {error}")
+
+        # Build feature vector in canonical order
+        feature_vector = [latest_features[f] for f in FEATURE_ORDER]
 
         # =================================================================
-        # STEP 5: Calculate macro features with FFILL
-        # =================================================================
-        df = calc_macro_features(df, df_macro)
-        logging.info("Calculated macro features with FFILL")
-
-        # =================================================================
-        # STEP 6: Create/update inference_features_5m table
+        # STEP 6: Store in database with builder version for audit
         # =================================================================
         cur = conn.cursor()
 
-        # Create table if not exists
+        # Create/update inference_features_5m table with all 15 features
         cur.execute("""
             CREATE TABLE IF NOT EXISTS inference_features_5m (
                 time TIMESTAMPTZ PRIMARY KEY,
@@ -315,105 +226,142 @@ def calculate_all_features(**context):
                 log_ret_5m DOUBLE PRECISION,
                 log_ret_1h DOUBLE PRECISION,
                 log_ret_4h DOUBLE PRECISION,
-                -- Macro Z-scores
-                dxy_z DOUBLE PRECISION,
-                vix_z DOUBLE PRECISION,
-                embi_z DOUBLE PRECISION,
-                -- Macro changes
-                dxy_change_1d DOUBLE PRECISION,
-                brent_change_1d DOUBLE PRECISION,
-                -- Derived
-                rate_spread DOUBLE PRECISION,
-                -- Technical indicators
+                -- Technical indicators (Wilder's EMA)
                 rsi_9 DOUBLE PRECISION,
                 atr_pct DOUBLE PRECISION,
                 adx_14 DOUBLE PRECISION,
-                -- USDMXN correlation feature
+                -- Macro Z-scores
+                dxy_z DOUBLE PRECISION,
+                dxy_change_1d DOUBLE PRECISION,
+                vix_z DOUBLE PRECISION,
+                embi_z DOUBLE PRECISION,
+                -- Macro changes
+                brent_change_1d DOUBLE PRECISION,
+                rate_spread DOUBLE PRECISION,
                 usdmxn_change_1d DOUBLE PRECISION,
+                -- State features
+                position DOUBLE PRECISION DEFAULT 0.0,
+                time_normalized DOUBLE PRECISION,
                 -- Metadata
                 updated_at TIMESTAMPTZ DEFAULT NOW()
             )
         """)
 
-        # Prepare data for insert (only recent bars to update)
+        # Create feature_cache table for JSON storage and version tracking
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS feature_cache (
+                timestamp TIMESTAMPTZ PRIMARY KEY,
+                features_json JSONB NOT NULL,
+                feature_vector DOUBLE PRECISION[] NOT NULL,
+                builder_version VARCHAR(20) NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+
         # Skip first 50 bars (warmup period for indicators)
-        df_to_insert = df.iloc[50:].copy()
+        df_to_insert = features_df.iloc[50:].copy()
+        df_to_insert['time'] = df.iloc[50:]['time'].values
 
         if df_to_insert.empty:
             logging.warning("Not enough bars after warmup period")
             return {'status': 'warning', 'reason': 'insufficient_warmup'}
 
-        # Insert/update features
+        # Insert/update inference_features_5m
         insert_sql = """
             INSERT INTO inference_features_5m (
                 time, log_ret_5m, log_ret_1h, log_ret_4h,
-                dxy_z, vix_z, embi_z,
-                dxy_change_1d, brent_change_1d, rate_spread,
-                rsi_9, atr_pct, adx_14, usdmxn_change_1d
+                rsi_9, atr_pct, adx_14,
+                dxy_z, dxy_change_1d, vix_z, embi_z,
+                brent_change_1d, rate_spread, usdmxn_change_1d,
+                position, time_normalized
             ) VALUES %s
             ON CONFLICT (time) DO UPDATE SET
                 log_ret_5m = EXCLUDED.log_ret_5m,
                 log_ret_1h = EXCLUDED.log_ret_1h,
                 log_ret_4h = EXCLUDED.log_ret_4h,
-                dxy_z = EXCLUDED.dxy_z,
-                vix_z = EXCLUDED.vix_z,
-                embi_z = EXCLUDED.embi_z,
-                dxy_change_1d = EXCLUDED.dxy_change_1d,
-                brent_change_1d = EXCLUDED.brent_change_1d,
-                rate_spread = EXCLUDED.rate_spread,
                 rsi_9 = EXCLUDED.rsi_9,
                 atr_pct = EXCLUDED.atr_pct,
                 adx_14 = EXCLUDED.adx_14,
+                dxy_z = EXCLUDED.dxy_z,
+                dxy_change_1d = EXCLUDED.dxy_change_1d,
+                vix_z = EXCLUDED.vix_z,
+                embi_z = EXCLUDED.embi_z,
+                brent_change_1d = EXCLUDED.brent_change_1d,
+                rate_spread = EXCLUDED.rate_spread,
                 usdmxn_change_1d = EXCLUDED.usdmxn_change_1d,
+                position = EXCLUDED.position,
+                time_normalized = EXCLUDED.time_normalized,
                 updated_at = NOW()
         """
 
         # Prepare values (handle NaN)
         values = []
-        for _, row in df_to_insert.iterrows():
+        for idx, row in df_to_insert.iterrows():
             values.append((
                 row['time'],
-                None if pd.isna(row.get('log_ret_5m')) else float(row['log_ret_5m']),
-                None if pd.isna(row.get('log_ret_1h')) else float(row['log_ret_1h']),
-                None if pd.isna(row.get('log_ret_4h')) else float(row['log_ret_4h']),
-                None if pd.isna(row.get('dxy_z')) else float(row['dxy_z']),
-                None if pd.isna(row.get('vix_z')) else float(row['vix_z']),
-                None if pd.isna(row.get('embi_z')) else float(row['embi_z']),
-                None if pd.isna(row.get('dxy_change_1d')) else float(row['dxy_change_1d']),
-                None if pd.isna(row.get('brent_change_1d')) else float(row['brent_change_1d']),
-                None if pd.isna(row.get('rate_spread')) else float(row['rate_spread']),
-                None if pd.isna(row.get('rsi_9')) else float(row['rsi_9']),
-                None if pd.isna(row.get('atr_pct')) else float(row['atr_pct']),
-                None if pd.isna(row.get('adx_14')) else float(row['adx_14']),
-                None if pd.isna(row.get('usdmxn_change_1d')) else float(row['usdmxn_change_1d'])
+                _safe_float(row.get('log_ret_5m')),
+                _safe_float(row.get('log_ret_1h')),
+                _safe_float(row.get('log_ret_4h')),
+                _safe_float(row.get('rsi_9')),
+                _safe_float(row.get('atr_pct')),
+                _safe_float(row.get('adx_14')),
+                _safe_float(row.get('dxy_z')),
+                _safe_float(row.get('dxy_change_1d')),
+                _safe_float(row.get('vix_z')),
+                _safe_float(row.get('embi_z')),
+                _safe_float(row.get('brent_change_1d')),
+                _safe_float(row.get('rate_spread')),
+                _safe_float(row.get('usdmxn_change_1d')),
+                _safe_float(row.get('position', 0.0)),
+                _safe_float(row.get('time_normalized', 0.5)),
             ))
 
         execute_values(cur, insert_sql, values)
+
+        # Store in feature_cache with hash for validation
+        latest_time = df['time'].iloc[-1]
+        cache_insert = """
+            INSERT INTO feature_cache (timestamp, features_json, feature_vector, builder_version)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (timestamp) DO UPDATE SET
+                features_json = EXCLUDED.features_json,
+                feature_vector = EXCLUDED.feature_vector,
+                builder_version = EXCLUDED.builder_version,
+                updated_at = NOW()
+        """
+        cur.execute(cache_insert, (
+            latest_time.isoformat() if hasattr(latest_time, 'isoformat') else str(latest_time),
+            json.dumps(latest_features),
+            feature_vector,
+            builder.VERSION,
+        ))
+
         conn.commit()
 
         rows_inserted = len(values)
         logging.info(f"Inserted/updated {rows_inserted} feature rows")
+        logging.info(
+            f"SSOT features computed: {len(feature_vector)} features, "
+            f"builder v{builder.VERSION}"
+        )
 
-        # Push metrics
+        # Push metrics to XCom
         context['ti'].xcom_push(key='features_count', value=rows_inserted)
-        context['ti'].xcom_push(key='macro_rows_used', value=len(df_macro))
+        context['ti'].xcom_push(key='builder_version', value=builder.VERSION)
+        context['ti'].xcom_push(key='feature_count', value=len(feature_vector))
 
         # Log sample of latest features
-        if len(df_to_insert) > 0:
-            latest = df_to_insert.iloc[-1]
-            logging.info("Latest feature values:")
-            logging.info(f"  time: {latest['time']}")
-            logging.info(f"  log_ret_5m: {latest.get('log_ret_5m', 'N/A'):.6f}")
-            logging.info(f"  dxy_z: {latest.get('dxy_z', 'N/A'):.4f}")
-            logging.info(f"  vix_z: {latest.get('vix_z', 'N/A'):.4f}")
-            logging.info(f"  rsi_9: {latest.get('rsi_9', 'N/A'):.2f}")
-            logging.info(f"  rate_spread: {latest.get('rate_spread', 'N/A'):.4f}")
+        logging.info("Latest feature values (SSOT computed):")
+        for name in FEATURE_ORDER[:6]:  # First 6 features
+            logging.info(f"  {name}: {latest_features.get(name, 'N/A'):.6f}")
 
         return {
             'status': 'success',
+            'timestamp': str(latest_time),
+            'feature_count': len(feature_vector),
+            'builder_version': builder.VERSION,
             'rows_inserted': rows_inserted,
-            'ohlcv_bars': len(df),
-            'macro_records': len(df_macro)
         }
 
     except Exception as e:
@@ -425,56 +373,88 @@ def calculate_all_features(**context):
         conn.close()
 
 
-def validate_features(**context):
+def validate_feature_consistency(**context) -> bool:
     """
-    Validate that features are available for the latest bar.
+    Validate features match expected schema and ranges.
+
+    Part of CTR-FEAT-001 contract enforcement.
     """
+    if not SSOT_AVAILABLE:
+        logging.error("SSOT not available for validation")
+        return False
+
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        # Get latest OHLCV time
-        cur.execute("""
-            SELECT MAX(time) FROM usdcop_m5_ohlcv WHERE symbol = 'USD/COP'
-        """)
-        latest_ohlcv = cur.fetchone()[0]
+        # Get latest computed features from cache
+        query = """
+            SELECT features_json, builder_version, timestamp
+            FROM feature_cache
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """
+        cur.execute(query)
+        result = cur.fetchone()
 
-        # Get latest feature time
+        if not result:
+            raise ValueError("No features found for validation")
+
+        features = json.loads(result[0])
+        builder_version = result[1]
+        timestamp = result[2]
+
+        logging.info("=" * 60)
+        logging.info("FEATURE VALIDATION (CTR-FEAT-001)")
+        logging.info("=" * 60)
+        logging.info(f"Timestamp: {timestamp}")
+        logging.info(f"Builder Version: {builder_version}")
+
+        # Validate all expected features present
+        missing = set(FEATURE_ORDER) - set(features.keys())
+        if missing:
+            raise ValueError(f"Missing features: {missing}")
+
+        logging.info(f"Feature count: {len(features)} (expected {OBSERVATION_DIM})")
+
+        # Validate 15 features exactly
+        if len(features) != OBSERVATION_DIM:
+            raise ValueError(
+                f"Feature count mismatch: got {len(features)}, expected {OBSERVATION_DIM}"
+            )
+
+        # Validate ranges
+        validations = {
+            'rsi_9': (0, 100),
+            'atr_pct': (0, 0.1),  # 0-10%
+            'adx_14': (0, 100),
+            'position': (-1, 1),
+            'time_normalized': (0, 1),
+        }
+
+        warnings = []
+        for feature, (min_val, max_val) in validations.items():
+            if feature in features:
+                val = features[feature]
+                if not (min_val <= val <= max_val):
+                    msg = f"Feature {feature}={val} outside expected range [{min_val}, {max_val}]"
+                    logging.warning(msg)
+                    warnings.append(msg)
+
+        # Check feature completeness for recent data
         cur.execute("""
-            SELECT MAX(time), COUNT(*)
+            SELECT COUNT(*) as cnt
             FROM inference_features_5m
             WHERE time >= NOW() - INTERVAL '1 hour'
         """)
-        result = cur.fetchone()
-        latest_feature, recent_count = result
+        recent_count = cur.fetchone()[0]
 
-        # Check feature completeness for latest bar
-        cur.execute("""
-            SELECT
-                time,
-                CASE WHEN log_ret_5m IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN log_ret_1h IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN dxy_z IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN vix_z IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN rsi_9 IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN rate_spread IS NOT NULL THEN 1 ELSE 0 END as non_null_count
-            FROM inference_features_5m
-            ORDER BY time DESC
-            LIMIT 1
-        """)
-        completeness = cur.fetchone()
-
-        logging.info("=" * 60)
-        logging.info("FEATURE VALIDATION SUMMARY")
-        logging.info("=" * 60)
-        logging.info(f"Latest OHLCV bar: {latest_ohlcv}")
-        logging.info(f"Latest feature time: {latest_feature}")
         logging.info(f"Features in last hour: {recent_count}")
-        if completeness:
-            logging.info(f"Feature completeness (latest): {completeness[1]}/6 key features")
+        logging.info(f"Validation warnings: {len(warnings)}")
+        logging.info(f"Feature validation passed: {len(features)} features, builder v{builder_version}")
         logging.info("=" * 60)
 
-        # Validate no holiday data
+        # Check for data on non-trading days
         cur.execute("""
             SELECT DISTINCT DATE(time AT TIME ZONE 'America/Bogota') as trade_date
             FROM inference_features_5m
@@ -493,21 +473,84 @@ def validate_features(**context):
         if invalid_dates:
             logging.warning(f"Found features on {len(invalid_dates)} non-trading days")
 
+        context['ti'].xcom_push(key='validation_status', value='passed')
+        context['ti'].xcom_push(key='validation_warnings', value=len(warnings))
         context['ti'].xcom_push(key='invalid_trading_dates', value=invalid_dates)
 
-        is_valid = (recent_count > 0) and (completeness and completeness[1] >= 4)
+        return True
 
-        return {
-            'status': 'valid' if is_valid else 'incomplete',
-            'latest_ohlcv': str(latest_ohlcv),
-            'latest_feature': str(latest_feature),
-            'recent_features': recent_count,
-            'invalid_dates_found': len(invalid_dates)
-        }
+    except Exception as e:
+        logging.error(f"Feature validation failed: {e}")
+        context['ti'].xcom_push(key='validation_status', value='failed')
+        context['ti'].xcom_push(key='validation_error', value=str(e))
+        raise
 
     finally:
         cur.close()
         conn.close()
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def _merge_macro_ffill(df: pd.DataFrame, df_macro: pd.DataFrame) -> pd.DataFrame:
+    """
+    Merge macro data with OHLCV using forward fill.
+
+    Args:
+        df: OHLCV DataFrame with 'time' column
+        df_macro: macro_indicators_daily DataFrame with 'date', 'dxy', 'vix', etc.
+
+    Returns:
+        DataFrame with macro features ffilled to each bar
+    """
+    df = df.copy()
+
+    # Extract date from OHLCV time
+    df['date'] = pd.to_datetime(df['time']).dt.date
+
+    # Ensure macro has date column
+    if 'date' in df_macro.columns:
+        df_macro = df_macro.copy()
+        df_macro['date'] = pd.to_datetime(df_macro['date']).dt.date
+
+    # Sort macro by date for proper merge_asof
+    df_macro = df_macro.sort_values('date')
+    df = df.sort_values('time')
+
+    # Convert date to datetime for merge_asof
+    df['date_dt'] = pd.to_datetime(df['date'])
+    df_macro['date_dt'] = pd.to_datetime(df_macro['date'])
+
+    # FFILL: merge_asof finds the most recent macro data for each bar
+    macro_cols = ['date_dt', 'dxy', 'vix', 'brent', 'treasury_2y', 'treasury_10y', 'usdmxn']
+    if 'embi' in df_macro.columns:
+        macro_cols.append('embi')
+
+    df = pd.merge_asof(
+        df,
+        df_macro[[c for c in macro_cols if c in df_macro.columns]],
+        left_on='date_dt',
+        right_on='date_dt',
+        direction='backward'  # Use most recent available data
+    )
+
+    # Clean up temp columns
+    df = df.drop(columns=['date', 'date_dt'], errors='ignore')
+
+    # Ensure embi column exists
+    if 'embi' not in df.columns:
+        df['embi'] = 0.0
+
+    return df
+
+
+def _safe_float(value) -> float:
+    """Safely convert value to float, handling NaN and None."""
+    if value is None or pd.isna(value):
+        return None
+    return float(value)
 
 
 # =============================================================================
@@ -518,19 +561,21 @@ default_args = {
     'owner': 'trading-team',
     'depends_on_past': False,
     'start_date': datetime(2024, 1, 1),
-    'email_on_failure': False,
-    'retries': 2,
-    'retry_delay': timedelta(minutes=1)
+    'email_on_failure': True,
+    'email': ['trading@company.com'],
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
 }
 
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='V3 L1 Feature Refresh - Event-driven with NewOHLCVBarSensor',
-    schedule_interval='*/5 13-17 * * 1-5',  # Trigger schedule (sensor waits for actual data)
+    description='Feature refresh using SSOT CanonicalFeatureBuilder',
+    schedule_interval='*/5 13-17 * * 1-5',  # Every 5 min during trading hours
+    start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=['v3', 'l1', 'features', 'realtime', 'ffill', 'sensor-driven']
+    tags=['v3', 'l1', 'features', 'ssot', 'production'],
 )
 
 with dag:
@@ -538,7 +583,7 @@ with dag:
     def check_trading_day(**context):
         """Branch task to skip processing on holidays/weekends."""
         if should_run_today():
-            return 'wait_for_ohlcv'  # Changed: go to sensor first
+            return 'wait_for_ohlcv'
         else:
             return 'skip_processing'
 
@@ -553,27 +598,28 @@ with dag:
     )
 
     # EVENT-DRIVEN SENSOR: Wait for new OHLCV data instead of running blindly
-    # This prevents schedule drift and ensures L0 has completed before L1 runs
     task_wait_ohlcv = NewOHLCVBarSensor(
         task_id='wait_for_ohlcv',
         table_name='usdcop_m5_ohlcv',
         symbol='USD/COP',
-        max_staleness_minutes=10,  # Data must be < 10 minutes old
-        poke_interval=30,          # Check every 30 seconds
-        timeout=300,               # Max 5 minutes wait (matches schedule)
-        mode='poke',               # Keep worker while waiting
+        max_staleness_minutes=10,
+        poke_interval=30,
+        timeout=300,
+        mode='poke',
     )
 
-    task_calculate = PythonOperator(
-        task_id='calculate_all_features',
-        python_callable=calculate_all_features,
-        provide_context=True
+    # SSOT Feature Computation
+    task_compute = PythonOperator(
+        task_id='compute_features_ssot',
+        python_callable=compute_features_ssot,
+        provide_context=True,
     )
 
+    # Feature Validation (CTR-FEAT-001)
     task_validate = PythonOperator(
-        task_id='validate_features',
-        python_callable=validate_features,
-        provide_context=True
+        task_id='validate_feature_consistency',
+        python_callable=validate_feature_consistency,
+        provide_context=True,
     )
 
     def mark_processed(**context):
@@ -592,6 +638,6 @@ with dag:
     )
 
     # Task dependencies with sensor
-    # Trading day check -> (sensor wait OR skip) -> calculate -> validate -> mark
+    # Trading day check -> (sensor wait OR skip) -> compute -> validate -> mark
     task_check >> [task_wait_ohlcv, task_skip]
-    task_wait_ohlcv >> task_calculate >> task_validate >> task_mark_processed
+    task_wait_ohlcv >> task_compute >> task_validate >> task_mark_processed

@@ -1,8 +1,24 @@
 """
-Service Container
-=================
+Service Container (DEPRECATED)
+==============================
 
 Thread-safe dependency injection container.
+
+DEPRECATION WARNING:
+    ServiceContainer implements the Service Locator anti-pattern.
+    Use ApplicationContext with constructor injection instead.
+
+    Migration Guide:
+        # OLD (deprecated)
+        container = ServiceContainer.get_instance()
+        engine = container.resolve("inference_engine")
+
+        # NEW (preferred)
+        from src.core.container import ApplicationContext
+        context = ApplicationContext.create_production(config)
+        service = InferenceService(context)
+
+    See: src/core/container/application_context.py
 
 Supports:
 - Singleton registration
@@ -11,16 +27,20 @@ Supports:
 - Scoped lifetimes
 
 Author: Trading Team
-Version: 1.0.0
+Version: 1.0.0 (deprecated in 2.0.0)
 Date: 2025-01-14
 """
 
 import logging
+import warnings
 from typing import Any, Callable, Dict, Optional, TypeVar, Type
 from threading import Lock
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+# Deprecation warning flag
+_DEPRECATION_WARNED = False
 
 T = TypeVar('T')
 
@@ -70,12 +90,24 @@ class ServiceContainer:
         Get singleton container instance.
 
         Thread-safe lazy initialization.
+
+        DEPRECATED: Use ApplicationContext.create_production() instead.
         """
+        global _DEPRECATION_WARNED
+        if not _DEPRECATION_WARNED:
+            warnings.warn(
+                "ServiceContainer is deprecated. Use ApplicationContext with constructor injection instead. "
+                "See src/core/container/application_context.py for migration guide.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            _DEPRECATION_WARNED = True
+
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = cls()
-                    logger.info("ServiceContainer initialized")
+                    logger.info("ServiceContainer initialized (DEPRECATED - use ApplicationContext)")
         return cls._instance
 
     @classmethod

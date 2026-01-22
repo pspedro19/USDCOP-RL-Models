@@ -8,10 +8,11 @@ api:
     time_series: "/time_series"
     quote: "/quote"
     price: "/price"
-  
-  # API Key (reemplazar con tu clave real)
-  api_key: "085ba06282774cbc8e796f46a5af8ece"
-  
+
+  # API Key - SECURITY: Loaded from environment variable or Docker secret
+  # Set TWELVEDATA_API_KEY in .env or create secrets/twelvedata_api_key.txt
+  api_key: "${TWELVEDATA_API_KEY}"
+
   # Timeout settings
   timeout:
     connection: 30

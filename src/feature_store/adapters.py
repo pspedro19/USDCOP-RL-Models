@@ -34,6 +34,13 @@ from .contracts import (
     NormalizationMethod,
 )
 from .registry import FeatureRegistry, get_registry
+
+# Import FEATURE_ORDER from SSOT
+try:
+    from src.core.contracts import FEATURE_ORDER as SSOT_FEATURE_ORDER, OBSERVATION_DIM
+except ImportError:
+    SSOT_FEATURE_ORDER = None
+    OBSERVATION_DIM = 15
 from .builder import FeatureBuilder
 from .calculators import (
     RSICalculator,
@@ -62,29 +69,18 @@ class InferenceObservationAdapter:
     Usage:
         # Drop-in replacement for ObservationBuilder
         adapter = InferenceObservationAdapter(norm_stats_path)
-        obs = adapter.build_observation(df, bar_idx, position, session_progress)
+        obs = adapter.build_observation(df, bar_idx, position, time_normalized)
     """
 
-    OBSERVATION_DIM = 15
-
-    # Feature order (13 normalized + 2 state)
-    FEATURE_ORDER = [
-        "log_ret_5m",
-        "log_ret_1h",
-        "log_ret_4h",
-        "rsi_9",
-        "atr_pct",
-        "adx_14",
-        "dxy_z",
-        "dxy_change_1d",
-        "vix_z",
-        "embi_z",
-        "brent_change_1d",
-        "rate_spread",
-        "usdmxn_change_1d",
-        "position",
-        "session_progress",
-    ]
+    # Use SSOT FEATURE_ORDER from src.core.contracts (imported at module level)
+    # Fallback only if SSOT import failed
+    FEATURE_ORDER = SSOT_FEATURE_ORDER if SSOT_FEATURE_ORDER is not None else (
+        "log_ret_5m", "log_ret_1h", "log_ret_4h",
+        "rsi_9", "atr_pct", "adx_14",
+        "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
+        "brent_change_1d", "rate_spread", "usdmxn_change_1d",
+        "position", "time_normalized",
+    )
 
     def __init__(self, norm_stats_path: Optional[Path] = None):
         """
@@ -254,7 +250,7 @@ class InferenceObservationAdapter:
         df: pd.DataFrame,
         bar_idx: int,
         position: float,
-        session_progress: float = 0.5
+        time_normalized: float = 0.5
     ) -> np.ndarray:
         """
         Build complete 15-dimensional observation vector.
@@ -266,7 +262,8 @@ class InferenceObservationAdapter:
             df: DataFrame with OHLCV and macro data
             bar_idx: Current bar index
             position: Current position (-1 to 1)
-            session_progress: Trading session progress (0 to 1)
+            time_normalized: Normalized trading session time (0 to 1)
+                            Maps to SSOT feature index 14 'time_normalized'
 
         Returns:
             numpy array of shape (15,)
@@ -297,8 +294,10 @@ class InferenceObservationAdapter:
         obs[12] = self.normalize_feature(macro_features["usdmxn_change_1d"], "usdmxn_change_1d")
 
         # State features (not normalized)
+        # Index 13: position (-1 to 1)
+        # Index 14: time_normalized (0 to 1) - SSOT feature name
         obs[13] = np.clip(position, -1.0, 1.0)
-        obs[14] = np.clip(session_progress, 0.0, 1.0)
+        obs[14] = np.clip(time_normalized, 0.0, 1.0)
 
         # NaN check
         obs = np.nan_to_num(obs, nan=0.0, posinf=5.0, neginf=-5.0)

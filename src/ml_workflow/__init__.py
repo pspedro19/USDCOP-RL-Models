@@ -5,8 +5,10 @@ Contrato: CTR-008
 Provides:
 - Experiment tracking (MLWorkflowTracker)
 - Dynamic contract generation (ContractFactory)
-- End-to-end training pipeline (TrainingPipeline)
 - Model registration (ModelRegistry)
+
+NOTE: Training pipeline has been moved to src/training/engine.py
+      Use: from src.training import TrainingEngine, run_training
 """
 
 from .experiment_tracker import MLWorkflowTracker, ExperimentLog
@@ -21,13 +23,12 @@ from .dynamic_contract_factory import (
     get_contract,
 )
 
-# Training pipeline
-from .training_pipeline import (
-    TrainingConfig,
-    TrainingPipeline,
-    PipelineResult,
+# Re-export training from new location for backwards compatibility
+# DEPRECATED: Import directly from src.training instead
+from src.training import (
+    TrainingEngine,
+    TrainingRequest,
     run_training,
-    FEATURE_ORDER,
 )
 
 __all__ = [
@@ -41,10 +42,8 @@ __all__ = [
     "ContractRegistry",
     "create_contract_from_training",
     "get_contract",
-    # Training pipeline
-    "TrainingConfig",
-    "TrainingPipeline",
-    "PipelineResult",
+    # Training (DEPRECATED - use src.training directly)
+    "TrainingEngine",
+    "TrainingRequest",
     "run_training",
-    "FEATURE_ORDER",
 ]

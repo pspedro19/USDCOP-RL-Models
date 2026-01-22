@@ -56,6 +56,13 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+# Import canonical SSOT from src.core.contracts (REQUIRED - no fallback)
+from src.core.contracts import (
+    FEATURE_ORDER as SSOT_FEATURE_ORDER,
+    OBSERVATION_DIM as SSOT_OBSERVATION_DIM,
+    FEATURE_CONTRACT as SSOT_FEATURE_CONTRACT,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -118,18 +125,12 @@ class FeatureContract:
     """
     Feature Contract - IMMUTABLE SPECIFICATION
 
-    This is the Single Source of Truth for feature definitions.
-    Contains the 15-dimensional observation space used across all pipelines.
+    NOTE: The canonical SSOT is in src/core/contracts/feature_contract.py
+    This class uses SSOT values exclusively (no fallback).
     """
     version: str = "current"
-    observation_dim: int = 15
-    feature_order: Tuple[str, ...] = (
-        "log_ret_5m", "log_ret_1h", "log_ret_4h",
-        "rsi_9", "atr_pct", "adx_14",
-        "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
-        "brent_change_1d", "rate_spread", "usdmxn_change_1d",
-        "position", "time_normalized"
-    )
+    observation_dim: int = SSOT_OBSERVATION_DIM  # From SSOT
+    feature_order: Tuple[str, ...] = SSOT_FEATURE_ORDER  # From SSOT
     norm_stats_path: str = "config/norm_stats.json"
     clip_range: Tuple[float, float] = (-5.0, 5.0)
 
@@ -158,9 +159,9 @@ class FeatureContract:
 # Singleton instance
 FEATURE_CONTRACT: Final = FeatureContract()
 
-# Convenience exports
-FEATURE_ORDER: Final = FEATURE_CONTRACT.feature_order
-OBSERVATION_DIM: Final = FEATURE_CONTRACT.observation_dim
+# Convenience exports - Always from SSOT (no fallback)
+FEATURE_ORDER: Final = SSOT_FEATURE_ORDER
+OBSERVATION_DIM: Final = SSOT_OBSERVATION_DIM
 NORM_STATS_PATH: Final = FEATURE_CONTRACT.norm_stats_path
 
 
@@ -668,68 +669,49 @@ class CalculatorRegistry:
 
 
 # =============================================================================
-# UNIFIED FEATURE BUILDER
+# UNIFIED FEATURE BUILDER - Wrapper to CanonicalFeatureBuilder (SSOT)
 # =============================================================================
 
 class UnifiedFeatureBuilder:
     """
-    Unified Feature Builder - SINGLE SOURCE OF TRUTH
+    Unified Feature Builder - WRAPPER to CanonicalFeatureBuilder (SSOT)
 
-    This builder is used by:
-    - Training Pipeline
-    - Backtest Validation
-    - Inference API
-    - Replay API
+    NOTE: This class now delegates all calculations to CanonicalFeatureBuilder
+    from src.feature_store.builders. It exists for backward compatibility.
 
-    All feature calculations go through this class to ensure
-    perfect parity across all pipelines.
+    For new code, use CanonicalFeatureBuilder directly:
+        from src.feature_store.builders import CanonicalFeatureBuilder
+        builder = CanonicalFeatureBuilder.for_inference()
+
+    v3.0.0 CHANGELOG:
+    - REMOVED: ~185 lines of duplicate calculation logic
+    - DELEGATES: All methods now use CanonicalFeatureBuilder (SSOT)
+    - DRY: Zero code duplication
     """
 
     def __init__(self, version: str = "current"):
         """
-        Initialize builder with contract version.
+        Initialize builder - delegates to CanonicalFeatureBuilder.
 
         Args:
             version: Contract version (default: "current")
         """
-        self.contract = self._get_contract(version)
-        self.registry = CalculatorRegistry.instance()
-        self.norm_stats = self._load_norm_stats()
+        # Import here to avoid circular imports
+        from .builders import CanonicalFeatureBuilder
 
-        logger.info(f"UnifiedFeatureBuilder initialized: {version}")
+        self._canonical = CanonicalFeatureBuilder.for_training()
+        self.contract = FEATURE_CONTRACT
+        self.norm_stats = self._canonical.get_norm_stats()
 
-    def _get_contract(self, version: str) -> FeatureContract:
-        """Get contract by version"""
-        contracts = {"current": FEATURE_CONTRACT}
-        if version not in contracts:
-            raise ValueError(f"Unknown version: {version}. Available: {list(contracts.keys())}")
-        return contracts[version]
-
-    def _load_norm_stats(self) -> Dict[str, Dict[str, float]]:
-        """Load normalization stats from config"""
-        path = Path(self.contract.norm_stats_path)
-
-        # Try relative to project root
-        if not path.is_absolute():
-            project_root = Path(__file__).parent.parent.parent
-            path = project_root / self.contract.norm_stats_path
-
-        if not path.exists():
-            raise FileNotFoundError(
-                f"CRITICAL: Norm stats file not found: {path}. "
-                f"Model cannot produce correct predictions without exact training stats."
-            )
-
-        with open(path) as f:
-            return json.load(f)
+        logger.info(f"UnifiedFeatureBuilder initialized (delegates to CanonicalFeatureBuilder)")
 
     def get_observation_dim(self) -> int:
         """Get observation dimension"""
-        return self.contract.observation_dim
+        return self._canonical.get_observation_dim()
 
     def get_feature_names(self) -> Tuple[str, ...]:
         """Get feature names in order"""
-        return self.contract.feature_order
+        return tuple(self._canonical.get_feature_order())
 
     def build_observation(
         self,
@@ -740,7 +722,7 @@ class UnifiedFeatureBuilder:
         bar_idx: int
     ) -> np.ndarray:
         """
-        Build observation array following the feature contract.
+        Build observation array - DELEGATES to CanonicalFeatureBuilder.
 
         Args:
             ohlcv: DataFrame with OHLCV columns
@@ -752,109 +734,13 @@ class UnifiedFeatureBuilder:
         Returns:
             np.ndarray of shape (observation_dim,)
         """
-        # Validate warmup
-        if bar_idx < self.contract.warmup_bars:
-            raise ValueError(
-                f"bar_idx ({bar_idx}) < warmup_bars ({self.contract.warmup_bars})"
-            )
-
-        # Calculate raw features
-        raw = self._calculate_raw_features(ohlcv, macro_df, bar_idx)
-
-        # Normalize
-        normalized = self._normalize_features(raw)
-
-        # Add state features
-        normalized["position"] = float(np.clip(position, -1.0, 1.0))
-        normalized["time_normalized"] = self._compute_time_normalized(timestamp)
-
-        # Assemble in order
-        observation = self._assemble_observation(normalized)
-
-        # Final validation
-        assert observation.shape == (self.contract.observation_dim,)
-        assert not np.isnan(observation).any(), "NaN in observation"
-        assert not np.isinf(observation).any(), "Inf in observation"
-
-        return observation
-
-    def _calculate_raw_features(
-        self,
-        ohlcv: pd.DataFrame,
-        macro_df: pd.DataFrame,
-        bar_idx: int
-    ) -> Dict[str, float]:
-        """Calculate raw feature values"""
-        features = {}
-
-        # Merge data for calculators
-        data = ohlcv.copy()
-        if macro_df is not None and len(macro_df) > 0:
-            for col in macro_df.columns:
-                if col not in data.columns:
-                    data[col] = macro_df[col]
-
-        # Use registered calculators
-        for name in self.contract.feature_order[:13]:
-            calc = self.registry.get(name)
-            if calc:
-                features[name] = calc.calculate(data, bar_idx)
-            elif name == "rate_spread":
-                # Special case: rate_spread is raw value
-                if "rate_spread" in data.columns:
-                    features[name] = float(data["rate_spread"].iloc[bar_idx])
-                else:
-                    features[name] = 0.0
-            else:
-                features[name] = 0.0
-
-        return features
-
-    def _normalize_features(self, raw: Dict[str, float]) -> Dict[str, float]:
-        """Apply z-score normalization"""
-        normalized = {}
-        clip_min, clip_max = self.contract.clip_range
-
-        for name, value in raw.items():
-            stats = self.norm_stats.get(name)
-            if stats and stats.get("std", 0) > 0:
-                z = (value - stats["mean"]) / stats["std"]
-                normalized[name] = float(np.clip(z, clip_min, clip_max))
-            else:
-                normalized[name] = float(np.clip(value, clip_min, clip_max))
-
-        return normalized
-
-    def _compute_time_normalized(self, timestamp: pd.Timestamp) -> float:
-        """Normalize timestamp to [0, 1] within trading hours"""
-        hours = self.contract.get_trading_hours()
-        start_hour = int(hours["start"].split(":")[0])
-        end_hour = int(hours["end"].split(":")[0])
-
-        current_minutes = timestamp.hour * 60 + timestamp.minute
-        start_minutes = start_hour * 60
-        end_minutes = end_hour * 60
-
-        if end_minutes <= start_minutes:
-            end_minutes += 24 * 60
-
-        if current_minutes < start_minutes:
-            current_minutes += 24 * 60
-
-        normalized = (current_minutes - start_minutes) / (end_minutes - start_minutes)
-        return float(np.clip(normalized, 0.0, 1.0))
-
-    def _assemble_observation(self, features: Dict[str, float]) -> np.ndarray:
-        """Assemble array in contract order"""
-        observation = np.zeros(self.contract.observation_dim, dtype=np.float32)
-
-        for idx, name in enumerate(self.contract.feature_order):
-            value = features.get(name, 0.0)
-            if np.isnan(value) or np.isinf(value):
-                value = 0.0
-            observation[idx] = value
-
-        return observation
+        return self._canonical.build_observation(
+            ohlcv=ohlcv,
+            macro=macro_df,
+            position=position,
+            bar_idx=bar_idx,
+            timestamp=timestamp
+        )
 
 
 # =============================================================================

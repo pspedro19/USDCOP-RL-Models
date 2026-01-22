@@ -1,6 +1,14 @@
 [core]
     remote = minio
     autostage = true
+
 [remote "minio"]
     url = s3://dvc-storage
-    endpointurl = http://localhost:9000
+    endpointurl = http://minio:9000
+    access_key_id = ${DVC_ACCESS_KEY}
+    secret_access_key = ${DVC_SECRET_KEY}
+
+[remote "backup"]
+    url = s3://dvc-backup
+    endpointurl = https://s3.us-east-1.amazonaws.com
+    # Production backup, credentials via AWS env vars

@@ -1,6 +1,6 @@
 """
 Configuration for Inference API Service
-Uses Feature Contract as SSOT for norm_stats path
+Uses Feature Contract as SSOT for norm_stats path and FEATURE_ORDER
 """
 
 import os
@@ -11,14 +11,31 @@ from functools import lru_cache
 
 # Add project root to path for imports
 _project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "src"))
 
+# Import FEATURE_ORDER and OBSERVATION_DIM from SSOT (src/core/constants.py)
 try:
-    from features.contract import FEATURE_CONTRACT
+    from src.core.constants import FEATURE_ORDER, OBSERVATION_DIM
+    _ssot_available = True
+except ImportError:
+    # Fallback to contracts if constants not available
+    try:
+        from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
+        _ssot_available = True
+    except ImportError:
+        _ssot_available = False
+        FEATURE_ORDER = None
+        OBSERVATION_DIM = 15
+
+try:
+    from features.contract import FEATURE_CONTRACT, NORM_STATS_PATH
     _contract = FEATURE_CONTRACT
+    _norm_stats_path = NORM_STATS_PATH
 except ImportError:
     # Fallback if contract not available yet
     _contract = None
+    _norm_stats_path = "config/norm_stats.json"
 
 
 class Settings(BaseSettings):
@@ -31,12 +48,13 @@ class Settings(BaseSettings):
     postgres_user: str = os.getenv("POSTGRES_USER", "")
     postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
 
-    # Model paths (relative to project root)
+    # Model paths - use MODEL_PATH env var (Docker) or relative path (local dev)
     project_root: Path = Path(__file__).parent.parent.parent  # Go up to USDCOP-RL-Models
-    model_path: str = "models/ppo_production/final_model.zip"  # 15-dim observation model
+    model_base_path: str = os.getenv("MODEL_PATH", "models")  # Docker: /models, Local: models
+    model_subpath: str = "ppo_v20_production/final_model.zip"  # Model file within base path
 
-    # Use norm_stats from Feature Contract (SSOT)
-    norm_stats_path: str = _contract.norm_stats_path if _contract else "config/norm_stats.json"
+    # Use norm_stats from Feature Contract constant (SSOT)
+    norm_stats_path: str = _norm_stats_path
 
     # Trading parameters - from config/trading_config.yaml SSOT
     initial_capital: float = 10000.0
@@ -65,8 +83,8 @@ class Settings(BaseSettings):
     threshold_short_entry: float = -0.33  # From SSOT: thresholds.short
     threshold_exit: float = 0.10  # Exit threshold within HOLD zone
 
-    # Feature configuration - P0-1: Use contract as source of truth
-    observation_dim: int = _contract.observation_dim if _contract else 15  # 13 core + 2 state features
+    # Feature configuration - P0-1: Use SSOT from src.core.contracts
+    observation_dim: int = OBSERVATION_DIM  # 13 core + 2 state features from SSOT
 
     @property
     def database_url(self) -> str:
@@ -74,7 +92,14 @@ class Settings(BaseSettings):
 
     @property
     def full_model_path(self) -> Path:
-        return self.project_root / self.model_path
+        """Get full path to model file. Uses MODEL_PATH env var in Docker."""
+        base = Path(self.model_base_path)
+        if base.is_absolute():
+            # Docker: MODEL_PATH=/models (absolute)
+            return base / self.model_subpath
+        else:
+            # Local dev: relative to project root
+            return self.project_root / base / self.model_subpath
 
     @property
     def full_norm_stats_path(self) -> Path:
@@ -91,26 +116,18 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Feature order for observation builder (must match training)
-FEATURE_ORDER = [
-    # Core market features (13)
-    "log_ret_5m",       # 0: 5-min log return
-    "log_ret_1h",       # 1: 1-hour log return
-    "log_ret_4h",       # 2: 4-hour log return
-    "rsi_9",            # 3: RSI period 9
-    "atr_pct",          # 4: ATR percentage
-    "adx_14",           # 5: ADX period 14
-    "dxy_z",            # 6: DXY z-score
-    "dxy_change_1d",    # 7: DXY daily % change
-    "vix_z",            # 8: VIX z-score
-    "embi_z",           # 9: EMBI z-score
-    "brent_change_1d",  # 10: Brent daily % change
-    "rate_spread",      # 11: UST 10Y spread
-    "usdmxn_change_1d", # 12: USDMXN hourly return
-    # State features (2)
-    "position",         # 13: Current position (-1 to 1)
-    "time_normalized",  # 14: Normalized session time (0 to 1)
-]
+# =============================================================================
+# FEATURE_ORDER - SSOT Import (DO NOT DEFINE LOCALLY)
+# =============================================================================
+# FEATURE_ORDER is imported from src.core.contracts (SSOT) at module level.
+# See src/core/contracts/feature_contract.py for the canonical definition.
+# Contains 15 features:
+#   0-5: Technical features (log_ret_5m, log_ret_1h, log_ret_4h, rsi_9, atr_pct, adx_14)
+#   6-12: Macro features (dxy_z, dxy_change_1d, vix_z, embi_z, brent_change_1d, rate_spread, usdmxn_change_1d)
+#   13-14: State features (position, time_normalized)
+#
+# If SSOT import fails, FEATURE_ORDER will be None - caller must handle this.
+# This ensures no duplicate definitions exist outside the SSOT.
 
 # Macro feature mappings from database columns
 MACRO_COLUMN_MAP = {

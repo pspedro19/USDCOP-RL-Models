@@ -389,7 +389,7 @@ if LOCUST_AVAILABLE:
                 json={
                     "model_id": "ppo_primary",
                     "position": 0.0,
-                    "session_progress": 0.5
+                    "time_normalized": 0.5
                 },
                 catch_response=True
             ) as response:

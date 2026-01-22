@@ -1,13 +1,38 @@
 """
-Backtest Feature Builder Service
-Contract: CTR-FEAT-BUILD-001
+Backtest Feature Builder Service (SSOT Integrated)
+===================================================
+
+Contract: CTR-FEAT-BUILD-001-SSOT
+Supersedes: CTR-FEAT-BUILD-001
 
 Builds inference features for historical backtest periods.
-Follows Single Responsibility: Only builds features, delegates validation.
+Now delegates feature calculations to CanonicalFeatureBuilder (SSOT).
+
+Architecture:
+    BacktestFeatureBuilder
+           │
+           ├── Data Loading (SQL)
+           │
+           └── Feature Calculation ──► CanonicalFeatureBuilder (SSOT)
+                                              │
+                                              ├── RSI (Wilder's EMA)
+                                              ├── ATR (Wilder's EMA)
+                                              ├── ADX (Wilder's EMA)
+                                              └── Macro Features
+
+Author: Trading Team
+Version: 2.0.0
+Date: 2025-01-16
+
+CHANGELOG v2.0.0:
+- INTEGRATED: Now uses CanonicalFeatureBuilder for feature calculation
+- MAINTAINS: Backward compatibility with existing API
+- ENSURES: Perfect parity with training features via SSOT
 """
 
 import datetime as dt
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Optional
 
@@ -17,6 +42,23 @@ from sqlalchemy import create_engine, text
 from src.validation.backtest_data_validator import BacktestDataValidator
 
 logger = logging.getLogger(__name__)
+
+# Lazy import for CanonicalFeatureBuilder
+_canonical_builder = None
+
+
+def _get_canonical_builder():
+    """Lazy initialization of CanonicalFeatureBuilder."""
+    global _canonical_builder
+    if _canonical_builder is None:
+        try:
+            from src.feature_store.builders import CanonicalFeatureBuilder
+            _canonical_builder = CanonicalFeatureBuilder.for_backtest()
+            logger.info("BacktestFeatureBuilder using CanonicalFeatureBuilder (SSOT)")
+        except (ImportError, Exception) as e:
+            logger.warning(f"CanonicalFeatureBuilder not available: {e}")
+            _canonical_builder = False  # Mark as unavailable
+    return _canonical_builder if _canonical_builder is not False else None
 
 
 @dataclass(frozen=True)
@@ -186,7 +228,79 @@ class BacktestFeatureBuilder:
         return merged
 
     def _calculate_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Calculate derived features from merged data."""
+        """
+        Calculate derived features from merged data.
+
+        ARCHITECTURE (v2.0):
+        This method now attempts to use CanonicalFeatureBuilder (SSOT) for
+        feature calculation, falling back to legacy implementation if unavailable.
+
+        Returns:
+            DataFrame with calculated features
+        """
+        canonical = _get_canonical_builder()
+
+        if canonical is not None:
+            return self._calculate_features_ssot(df, canonical)
+        else:
+            warnings.warn(
+                "CanonicalFeatureBuilder not available. Using legacy feature calculation. "
+                "Features may not match training data exactly.",
+                RuntimeWarning
+            )
+            return self._calculate_features_legacy(df)
+
+    def _calculate_features_ssot(self, df: pd.DataFrame, canonical) -> pd.DataFrame:
+        """
+        Calculate features using CanonicalFeatureBuilder (SSOT).
+
+        This ensures perfect parity with training features.
+        """
+        features = df.copy()
+
+        # Prepare OHLCV DataFrame
+        ohlcv_cols = ['open', 'high', 'low', 'close', 'volume']
+        ohlcv = features[ohlcv_cols].copy() if all(c in features.columns for c in ohlcv_cols) else None
+
+        # Prepare macro DataFrame
+        macro_cols = ['dxy', 'vix', 'embi', 'ust10y', 'ust2y', 'brent', 'usdmxn']
+        macro = features[[c for c in macro_cols if c in features.columns]].copy()
+
+        if ohlcv is not None:
+            # Use CanonicalFeatureBuilder for batch calculation
+            try:
+                built_features = canonical.build_batch(ohlcv, macro, normalize=True)
+
+                # Merge SSOT features back to our DataFrame
+                for col in built_features.columns:
+                    if col not in features.columns:
+                        features[col] = built_features[col]
+
+                logger.info(f"Calculated {len(built_features.columns)} features via SSOT")
+            except Exception as e:
+                logger.warning(f"SSOT feature calculation failed: {e}. Using legacy.")
+                return self._calculate_features_legacy(df)
+
+        # Additional backtest-specific features (not in SSOT)
+        if 'ust10y' in features.columns and 'ust2y' in features.columns:
+            features['yield_spread'] = features['ust10y'] - features['ust2y']
+
+        # Volatility (rolling std of returns) - backtest specific
+        if 'log_ret_5m' in features.columns:
+            features['volatility_1h'] = features['log_ret_5m'].rolling(12).std()
+        elif 'close' in features.columns:
+            features['return_5m'] = features['close'].pct_change()
+            features['volatility_1h'] = features['return_5m'].rolling(12).std()
+
+        return features.dropna()
+
+    def _calculate_features_legacy(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Legacy feature calculation (fallback only).
+
+        NOTE: This implementation may not match training features exactly.
+        Use CanonicalFeatureBuilder for production.
+        """
         features = df.copy()
 
         # Z-scores with static parameters

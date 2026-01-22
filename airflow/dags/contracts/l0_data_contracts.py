@@ -58,7 +58,11 @@ class L0XComKeys(str, Enum):
     TWELVEDATA_DATA = "twelvedata_data"
     INVESTING_DATA = "investing_data"
     BANREP_DATA = "banrep_data"
+    BANREP_SDMX_DATA = "banrep_sdmx_data"  # BanRep REST API (P2-6)
     EMBI_DATA = "embi_data"
+    FEDESARROLLO_DATA = "fedesarrollo_data"
+    DANE_DATA = "dane_data"
+    BANREP_BOP_DATA = "banrep_bop_data"  # BanRep Balance of Payments (quarterly)
 
     # Backup
     BACKUP_PATH = "backup_path"
@@ -71,8 +75,12 @@ class DataSourceType(str, Enum):
     TWELVEDATA = "twelvedata"
     FRED = "fred"
     BANREP = "banrep"
+    BANREP_SDMX = "banrep_sdmx"  # BanRep REST API (P2-6)
+    BANREP_BOP = "banrep_bop"  # BanRep Balance of Payments (quarterly)
     INVESTING = "investing"
     BCRP = "bcrp"  # Peru central bank for EMBI
+    FEDESARROLLO = "fedesarrollo"  # Colombian think tank
+    DANE = "dane"  # Colombian statistics agency
 
 
 class AcquisitionStatus(str, Enum):
@@ -293,6 +301,33 @@ class ExtractionBatchResult(BaseModel):
             return 0.0
         return (self.batch_end - self.batch_start).total_seconds()
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for XCom serialization."""
+        return {
+            'source': self.source.value if isinstance(self.source, DataSourceType) else self.source,
+            'batch_start': self.batch_start.isoformat() if self.batch_start else None,
+            'batch_end': self.batch_end.isoformat() if self.batch_end else None,
+            'total_indicators': self.total_indicators,
+            'success_new': self.success_new,
+            'success_same': self.success_same,
+            'failures': self.failures,
+            'success_rate': self.success_rate,
+            'duration_seconds': self.duration_seconds,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ExtractionBatchResult":
+        """Create from dictionary (XCom deserialization)."""
+        return cls(
+            source=DataSourceType(data['source']) if data.get('source') else DataSourceType.FRED,
+            batch_start=dt.datetime.fromisoformat(data['batch_start']) if data.get('batch_start') else dt.datetime.utcnow(),
+            batch_end=dt.datetime.fromisoformat(data['batch_end']) if data.get('batch_end') else None,
+            total_indicators=data.get('total_indicators', 0),
+            success_new=data.get('success_new', 0),
+            success_same=data.get('success_same', 0),
+            failures=data.get('failures', 0),
+        )
+
 
 # =============================================================================
 # MACRO INDICATOR METADATA
@@ -331,7 +366,7 @@ class MacroIndicatorMetadata(BaseModel):
     )
 
 
-# Registry of all 37 macro indicators with metadata
+# Registry of all 31 macro indicators with metadata (27 original + 4 new from Fedesarrollo/DANE)
 MACRO_INDICATOR_REGISTRY: Dict[str, MacroIndicatorMetadata] = {
     # FRED Daily
     "fxrt_index_dxy_usa_d_dxy": MacroIndicatorMetadata(
@@ -580,6 +615,73 @@ MACRO_INDICATOR_REGISTRY: Dict[str, MacroIndicatorMetadata] = {
         typical_publication_delay_days=1,
         max_ffill_days=5
     ),
+    # Fedesarrollo (CCI, ICI)
+    "crsk_sentiment_cci_col_m_cci": MacroIndicatorMetadata(
+        column_name="crsk_sentiment_cci_col_m_cci",
+        display_name="Consumer Confidence (CCI)",
+        source=DataSourceType.FEDESARROLLO,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=15,
+        max_ffill_days=35
+    ),
+    "crsk_sentiment_ici_col_m_ici": MacroIndicatorMetadata(
+        column_name="crsk_sentiment_ici_col_m_ici",
+        display_name="Industrial Confidence (ICI)",
+        source=DataSourceType.FEDESARROLLO,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=15,
+        max_ffill_days=35
+    ),
+    # DANE (Exports, Imports)
+    "ftrd_exports_total_col_m_expusd": MacroIndicatorMetadata(
+        column_name="ftrd_exports_total_col_m_expusd",
+        display_name="Exports (USD millions)",
+        source=DataSourceType.DANE,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=45,
+        max_ffill_days=50
+    ),
+    "ftrd_imports_total_col_m_impusd": MacroIndicatorMetadata(
+        column_name="ftrd_imports_total_col_m_impusd",
+        display_name="Imports (USD millions)",
+        source=DataSourceType.DANE,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=45,
+        max_ffill_days=50
+    ),
+    # BanRep SDMX - 4 Legacy Variables (P2-6)
+    "mnys_m2_col_m_m2col": MacroIndicatorMetadata(
+        column_name="mnys_m2_col_m_m2col",
+        display_name="M2 Money Supply Colombia",
+        source=DataSourceType.BANREP_SDMX,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=30,
+        max_ffill_days=35
+    ),
+    "mnys_m3_col_m_m3col": MacroIndicatorMetadata(
+        column_name="mnys_m3_col_m_m3col",
+        display_name="M3 Money Supply Colombia",
+        source=DataSourceType.BANREP_SDMX,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=30,
+        max_ffill_days=35
+    ),
+    "crdt_private_col_m_credpri": MacroIndicatorMetadata(
+        column_name="crdt_private_col_m_credpri",
+        display_name="Private Credit Colombia",
+        source=DataSourceType.BANREP_SDMX,
+        schedule=PublicationSchedule.MONTHLY,
+        typical_publication_delay_days=30,
+        max_ffill_days=35
+    ),
+    "invt_gfcf_col_q_gfcf": MacroIndicatorMetadata(
+        column_name="invt_gfcf_col_q_gfcf",
+        display_name="Gross Fixed Capital Formation Colombia",
+        source=DataSourceType.BANREP_SDMX,
+        schedule=PublicationSchedule.QUARTERLY,
+        typical_publication_delay_days=60,
+        max_ffill_days=95
+    ),
 }
 
 
@@ -700,7 +802,7 @@ class DailyDataReadinessReport(BaseModel):
     readiness_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     # Extraction summary
-    total_indicators: int = Field(default=37)
+    total_indicators: int = Field(default=31)
     indicators_fresh: int = Field(default=0, ge=0, description="Indicators with fresh data")
     indicators_ffilled: int = Field(default=0, ge=0, description="Indicators forward-filled within limits")
     indicators_stale: int = Field(default=0, ge=0, description="Indicators beyond FFILL limits")

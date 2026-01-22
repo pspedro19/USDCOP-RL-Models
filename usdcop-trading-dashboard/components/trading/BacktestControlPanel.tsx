@@ -16,6 +16,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   BacktestResult,
   BacktestSummary,
+  BacktestTradeEvent,
   getStatusMessage,
   isBacktestComplete,
 } from '@/lib/contracts/backtest.contract';
@@ -40,6 +41,10 @@ interface BacktestControlPanelProps {
   selectedModelId: string;
   onModelChange?: (modelId: string) => void;
   onBacktestComplete?: (result: BacktestResult, startDate: string, endDate: string) => void;
+  /** Called for each trade as it's generated - for real-time equity curve updates */
+  onTradeGenerated?: (trade: BacktestTradeEvent) => void;
+  /** Called when backtest starts - use to clear previous streaming state */
+  onBacktestStart?: () => void;
   onClearDashboard?: () => void;
   /** Enable animated replay mode (1 bar/second) */
   enableAnimatedReplay?: boolean;
@@ -228,6 +233,8 @@ export function BacktestControlPanel({
   selectedModelId,
   onModelChange,
   onBacktestComplete,
+  onTradeGenerated,
+  onBacktestStart,
   onClearDashboard,
   enableAnimatedReplay = true,
   expanded = false,
@@ -294,6 +301,10 @@ export function BacktestControlPanel({
     onComplete: (result) => {
       onBacktestComplete?.(result, currentDateRange.startDate, currentDateRange.endDate);
     },
+    onTrade: (trade) => {
+      // Forward real-time trade events to parent for live equity curve updates
+      onTradeGenerated?.(trade);
+    },
     onError: (error) => {
       console.error('[BacktestPanel] Error:', error.message);
     },
@@ -317,13 +328,16 @@ export function BacktestControlPanel({
     setPromoteSuccess(false);
     setPromoteError(null);
 
+    // Notify parent that backtest is starting (clears streaming trades, etc.)
+    onBacktestStart?.();
+
     await startBacktest({
       startDate: currentDateRange.startDate,
       endDate: currentDateRange.endDate,
       modelId: selectedModelId,
       forceRegenerate,
     });
-  }, [currentDateRange, selectedModelId, forceRegenerate, startBacktest]);
+  }, [currentDateRange, selectedModelId, forceRegenerate, startBacktest, onBacktestStart]);
 
   const handlePromoteToProduction = useCallback(async () => {
     setIsPromoting(true);

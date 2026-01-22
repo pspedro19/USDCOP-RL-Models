@@ -1,0 +1,49 @@
+{
+  "flags": {
+    "shadow_mode": {
+      "enabled": true,
+      "description": "Enable shadow model comparison for A/B testing production vs candidate models",
+      "rollout_percentage": 100
+    },
+    "new_backtest_engine": {
+      "enabled": true,
+      "description": "Use unified backtest engine with improved performance and caching",
+      "rollout_percentage": 100
+    },
+    "feature_replay": {
+      "enabled": false,
+      "description": "Enable feature replay endpoint for debugging and testing",
+      "rollout_percentage": 100
+    },
+    "enhanced_logging": {
+      "enabled": true,
+      "description": "Enable detailed request/response logging for debugging",
+      "rollout_percentage": 100
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "description": "Enable API rate limiting per client",
+      "rollout_percentage": 100
+    },
+    "model_caching": {
+      "enabled": true,
+      "description": "Cache model predictions for identical inputs",
+      "rollout_percentage": 100
+    },
+    "experimental_risk_engine": {
+      "enabled": false,
+      "description": "Use experimental risk calculation engine (beta)",
+      "rollout_percentage": 0
+    },
+    "position_sizing_v2": {
+      "enabled": false,
+      "description": "Enable improved position sizing algorithm",
+      "rollout_percentage": 50
+    }
+  },
+  "_meta": {
+    "version": "1.0.0",
+    "last_updated": "2026-01-17T00:00:00Z",
+    "description": "Feature flags for USD/COP RL Trading System"
+  }
+}

@@ -131,11 +131,29 @@ export interface BacktestState {
 // SSE Event Types
 // ============================================================================
 
-export type BacktestSSEEventType = 'progress' | 'result' | 'error';
+export type BacktestSSEEventType = 'progress' | 'result' | 'error' | 'trade';
 
 export interface BacktestSSEEvent<T = unknown> {
   type: BacktestSSEEventType;
   data: T;
+}
+
+// Trade event data (for real-time equity curve updates)
+export interface BacktestTradeEvent {
+  trade_id: string;
+  model_id: string;
+  timestamp: string;
+  entry_time: string;
+  exit_time?: string;
+  side: 'LONG' | 'SHORT';
+  entry_price: number;
+  exit_price?: number;
+  pnl?: number;
+  pnl_usd?: number;
+  pnl_percent?: number;
+  pnl_pct?: number;
+  status: string;
+  current_equity: number;  // For equity curve update
 }
 
 // ============================================================================

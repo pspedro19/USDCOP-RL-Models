@@ -19,3 +19,16 @@ stable-baselines3>=2.2.0
 
 # Utilities
 python-dotenv>=1.0.0
+
+# OpenTelemetry - Distributed Tracing
+opentelemetry-api>=1.22.0
+opentelemetry-sdk>=1.22.0
+opentelemetry-exporter-jaeger>=1.21.0
+opentelemetry-propagator-b3>=1.22.0
+
+# OpenTelemetry Auto-Instrumentation
+opentelemetry-instrumentation-fastapi>=0.43b0
+opentelemetry-instrumentation-requests>=0.43b0
+opentelemetry-instrumentation-asyncpg>=0.43b0
+opentelemetry-instrumentation-psycopg2>=0.43b0
+opentelemetry-instrumentation-redis>=0.43b0

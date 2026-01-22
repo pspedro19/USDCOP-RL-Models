@@ -200,24 +200,56 @@ class TradingEnvConfig:
 
 
 # =============================================================================
-# Reward Strategy Adapter (Integrates RewardCalculator)
+# Reward Strategy Adapter (Integrates ModularRewardCalculator)
 # =============================================================================
 
 class RewardStrategyAdapter:
     """
-    Adapter that wraps RewardCalculator to work with TradingEnvironment.
+    Adapter that wraps ModularRewardCalculator to work with TradingEnvironment.
 
-    This adapter ensures the full reward function is used,
-    including intratrade DD penalty and time decay.
+    This adapter integrates the full reward system including:
+    - DSR (Differential Sharpe Ratio)
+    - Sortino Ratio
+    - Regime-based penalties
+    - Market impact (Almgren-Chriss)
+    - Holding decay (gap risk)
+    - Anti-gaming penalties
+    - Curriculum learning
+
+    Contract: CTR-REWARD-SNAPSHOT-001
     """
 
-    def __init__(self):
-        from ..reward_calculator import RewardCalculator, RewardConfig
-        self._calculator = RewardCalculator(RewardConfig())
+    def __init__(
+        self,
+        reward_config: Optional["RewardConfig"] = None,
+        enable_curriculum: bool = True,
+    ):
+        """
+        Initialize reward strategy adapter.
+
+        Args:
+            reward_config: Optional RewardConfig for customization
+            enable_curriculum: Enable curriculum learning phases
+        """
+        from ..reward_calculator import ModularRewardCalculator
+        from ..config import RewardConfig
+
+        config = reward_config or RewardConfig()
+        self._calculator = ModularRewardCalculator(
+            config=config,
+            enable_curriculum=enable_curriculum,
+        )
+
+        # State tracking
         self._bars_held = 0
         self._consecutive_wins = 0
         self._max_intratrade_dd = 0.0
         self._last_position_is_flat = True
+        self._last_action: int = 0
+
+        # Track volatility for regime detection
+        self._volatility_window: List[float] = []
+        self._volatility_window_size = 20
 
     def calculate(
         self,
@@ -227,8 +259,31 @@ class RewardStrategyAdapter:
         market_return: float,
         step_count: int,
         episode_length: int,
+        volatility: Optional[float] = None,
+        hour_utc: int = 12,
+        is_overnight: bool = False,
+        oil_return: Optional[float] = None,
+        spread_bid_ask: float = 0.0,
     ) -> float:
-        """Calculate reward using RewardCalculator."""
+        """
+        Calculate reward using ModularRewardCalculator.
+
+        Args:
+            pnl: PnL in currency units
+            portfolio: Current portfolio state
+            position_changed: Whether position changed this step
+            market_return: Log return of underlying
+            step_count: Current step in episode
+            episode_length: Total episode length
+            volatility: Optional ATR or volatility measure
+            hour_utc: Hour in UTC (0-23)
+            is_overnight: Whether this is an overnight position
+            oil_return: Optional oil price return (for correlation tracking)
+            spread_bid_ask: Bid-ask spread in bps
+
+        Returns:
+            Calculated reward
+        """
         initial_balance = portfolio.balance - portfolio.total_pnl
 
         # Calculate PnL percentage
@@ -236,6 +291,7 @@ class RewardStrategyAdapter:
 
         # Track position state
         is_flat = portfolio.position.is_flat
+        position = 0 if is_flat else (1 if portfolio.position.is_long else -1)
 
         # Determine position change for reward calculator
         if position_changed:
@@ -263,17 +319,31 @@ class RewardStrategyAdapter:
             else:
                 self._consecutive_wins = 0
 
-        # Call reward calculator
-        reward, _ = self._calculator.calculate(
+        # Estimate volatility if not provided
+        if volatility is None:
+            self._volatility_window.append(abs(market_return))
+            if len(self._volatility_window) > self._volatility_window_size:
+                self._volatility_window.pop(0)
+            volatility = np.std(self._volatility_window) if len(self._volatility_window) > 1 else 0.01
+
+        # Calculate action (discrete: -1, 0, 1)
+        action = position
+
+        # Call modular reward calculator
+        reward, breakdown = self._calculator.calculate(
             pnl_pct=pnl_pct,
+            position=position,
             position_change=position_change,
-            bars_held=self._bars_held,
-            consecutive_wins=self._consecutive_wins,
-            current_drawdown=portfolio.drawdown,
-            intratrade_drawdown=self._max_intratrade_dd,
+            holding_bars=self._bars_held,
+            volatility=volatility,
+            hour_utc=hour_utc,
+            is_overnight=is_overnight,
+            oil_return=oil_return,
+            price_change=pnl_pct,  # Use PnL as price change proxy
         )
 
         self._last_position_is_flat = is_flat
+        self._last_action = action
 
         return reward
 
@@ -283,7 +353,76 @@ class RewardStrategyAdapter:
         self._consecutive_wins = 0
         self._max_intratrade_dd = 0.0
         self._last_position_is_flat = True
+        self._last_action = 0
+        self._volatility_window = []
         self._calculator.reset()
+
+    @property
+    def curriculum_phase(self) -> Optional[str]:
+        """Get current curriculum phase."""
+        return self._calculator.get_curriculum_phase()
+
+    @property
+    def curriculum_stats(self) -> Optional[Dict[str, Any]]:
+        """Get curriculum statistics."""
+        return self._calculator.get_curriculum_stats()
+
+    def get_reward_breakdown(self) -> Optional[Dict[str, float]]:
+        """Get the breakdown of the last reward calculation."""
+        last_breakdown = getattr(self._calculator, '_last_breakdown', None)
+        if last_breakdown:
+            return last_breakdown.to_dict()
+        return None
+
+
+class ModularRewardStrategyAdapter(RewardStrategyAdapter):
+    """
+    Extended adapter with full modular reward system support.
+
+    Provides additional hooks for:
+    - Curriculum learning callbacks
+    - Reward breakdown logging
+    - Regime tracking
+    """
+
+    def __init__(
+        self,
+        reward_config: Optional["RewardConfig"] = None,
+        enable_curriculum: bool = True,
+        on_phase_change: Optional[callable] = None,
+    ):
+        """
+        Initialize modular reward strategy adapter.
+
+        Args:
+            reward_config: Optional RewardConfig
+            enable_curriculum: Enable curriculum learning
+            on_phase_change: Callback for curriculum phase changes
+        """
+        super().__init__(reward_config, enable_curriculum)
+        self._on_phase_change = on_phase_change
+        self._regime_history: List[str] = []
+
+    def step(self) -> bool:
+        """
+        Advance curriculum by one step.
+
+        Returns:
+            True if curriculum phase changed
+        """
+        old_phase = self.curriculum_phase
+        self._calculator.step_curriculum()
+        new_phase = self.curriculum_phase
+
+        if old_phase != new_phase and self._on_phase_change:
+            self._on_phase_change(old_phase, new_phase)
+            return True
+        return False
+
+    def get_regime_distribution(self) -> Dict[str, int]:
+        """Get distribution of regimes seen during training."""
+        from collections import Counter
+        return dict(Counter(self._regime_history))
 
 
 # =============================================================================
@@ -623,15 +762,66 @@ class TradingEnvironment(gym.Env):
         # Update portfolio
         self._update_portfolio(net_pnl)
 
-        # Calculate reward
-        reward = self.reward_strategy.calculate(
-            pnl=net_pnl,
-            portfolio=self._portfolio,
-            position_changed=position_changed,
-            market_return=market_return,
-            step_count=self._step_count,
-            episode_length=self.config.episode_length,
-        )
+        # Get additional context for reward calculation
+        volatility = self._get_current_atr()
+
+        # Get hour from timestamp if available
+        hour_utc = 12  # Default
+        if hasattr(self.df, 'index') and hasattr(self.df.index, 'hour'):
+            try:
+                hour_utc = self.df.index[self._current_idx].hour
+            except (IndexError, AttributeError):
+                pass
+        elif 'datetime' in self.df.columns:
+            try:
+                hour_utc = pd.to_datetime(self.df.iloc[self._current_idx]['datetime']).hour
+            except (KeyError, IndexError, TypeError):
+                pass
+
+        # Check if overnight position (after market close or before open)
+        is_overnight = hour_utc < 8 or hour_utc >= 22
+
+        # Get oil return if available
+        oil_return = None
+        if 'brent_change_1d' in self.df.columns:
+            try:
+                oil_return = float(self.df.iloc[self._current_idx]['brent_change_1d'])
+            except (KeyError, IndexError, TypeError):
+                pass
+
+        # Calculate reward using the strategy
+        # Handle both old and new strategy interfaces
+        if hasattr(self.reward_strategy, 'calculate'):
+            import inspect
+            sig = inspect.signature(self.reward_strategy.calculate)
+            params = sig.parameters
+
+            if 'volatility' in params:
+                # New modular reward strategy
+                reward = self.reward_strategy.calculate(
+                    pnl=net_pnl,
+                    portfolio=self._portfolio,
+                    position_changed=position_changed,
+                    market_return=market_return,
+                    step_count=self._step_count,
+                    episode_length=self.config.episode_length,
+                    volatility=volatility,
+                    hour_utc=hour_utc,
+                    is_overnight=is_overnight,
+                    oil_return=oil_return,
+                )
+            else:
+                # Legacy reward strategy
+                reward = self.reward_strategy.calculate(
+                    pnl=net_pnl,
+                    portfolio=self._portfolio,
+                    position_changed=position_changed,
+                    market_return=market_return,
+                    step_count=self._step_count,
+                    episode_length=self.config.episode_length,
+                )
+        else:
+            reward = 0.0
 
         # Check termination
         terminated = self._check_termination()
@@ -793,7 +983,7 @@ class TradingEnvironment(gym.Env):
 
     def _get_info(self) -> Dict[str, Any]:
         """Get current info dictionary"""
-        return {
+        info = {
             "equity": self._portfolio.equity,
             "balance": self._portfolio.balance,
             "position": self._portfolio.position.side.value,
@@ -806,6 +996,18 @@ class TradingEnvironment(gym.Env):
             "bar_idx": self._current_idx,
             "episode_return": (self._portfolio.equity / self.config.initial_balance) - 1,
         }
+
+        # Add curriculum phase info if available
+        if hasattr(self.reward_strategy, 'curriculum_phase'):
+            info["curriculum_phase"] = self.reward_strategy.curriculum_phase
+
+        # Add reward breakdown if available
+        if hasattr(self.reward_strategy, 'get_reward_breakdown'):
+            breakdown = self.reward_strategy.get_reward_breakdown()
+            if breakdown:
+                info["reward_breakdown"] = breakdown
+
+        return info
 
     def render(self, mode: str = "human") -> Optional[np.ndarray]:
         """Render environment state"""

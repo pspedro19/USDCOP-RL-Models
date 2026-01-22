@@ -117,10 +117,10 @@ class InferenceFeatureAdapter:
     Usage:
         adapter = InferenceFeatureAdapter()
         obs = adapter.build_observation(
-            ohlcv_df=df,
+            df=df,
             bar_idx=100,
             position=0.0,
-            session_progress=0.5
+            time_normalized=0.5  # SSOT feature name (index 14)
         )
     """
 
@@ -390,7 +390,7 @@ class InferenceFeatureAdapter:
         df: pd.DataFrame,
         bar_idx: int,
         position: float,
-        session_progress: float = 0.5,
+        time_normalized: float = 0.5,
         check_circuit_breaker: bool = True
     ) -> np.ndarray:
         """
@@ -403,7 +403,8 @@ class InferenceFeatureAdapter:
             df: DataFrame with OHLCV and macro data
             bar_idx: Current bar index
             position: Current position (-1 to 1)
-            session_progress: Trading session progress (0 to 1)
+            time_normalized: Normalized trading session time (0 to 1)
+                            Maps to SSOT feature index 14 'time_normalized'
             check_circuit_breaker: Whether to check feature quality
 
         Returns:
@@ -432,8 +433,10 @@ class InferenceFeatureAdapter:
             obs[i] = self.normalize_feature(raw_value, name)
 
         # State features (indices 13-14) - not normalized
+        # Index 13: position (-1 to 1)
+        # Index 14: time_normalized (0 to 1) - SSOT feature name
         obs[13] = float(np.clip(position, -1.0, 1.0))
-        obs[14] = float(np.clip(session_progress, 0.0, 1.0))
+        obs[14] = float(np.clip(time_normalized, 0.0, 1.0))
 
         # Final NaN/Inf check
         obs = np.nan_to_num(obs, nan=0.0, posinf=5.0, neginf=-5.0)

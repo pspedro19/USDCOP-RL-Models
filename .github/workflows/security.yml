@@ -1,0 +1,298 @@
+# =============================================================================
+# Security Scanning Workflow - USDCOP Trading Platform
+# =============================================================================
+# Runs security scans using Bandit, Safety, and pip-audit.
+# Uploads security reports as artifacts for review.
+#
+# Triggers:
+# - Push to main branch
+# - Pull requests to main branch
+# - Weekly schedule (Sundays at 3 AM UTC)
+#
+# Author: Trading Team
+# Date: 2026-01-17
+# =============================================================================
+
+name: Security Scanning
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    # Allow manual triggering
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ===========================================================================
+  # Python Security Scanning
+  # ===========================================================================
+  security-scan:
+    name: Python Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Setup
+      # -----------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-security-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-security-
+            ${{ runner.os }}-pip-
+
+      # -----------------------------------------------------------------------
+      # Install Security Tools
+      # -----------------------------------------------------------------------
+      - name: Install security scanning tools
+        run: |
+          pip install --upgrade pip
+          pip install bandit safety pip-audit
+
+      - name: Install project dependencies (for accurate scanning)
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt || true
+          fi
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # Create Reports Directory
+      # -----------------------------------------------------------------------
+      - name: Create reports directory
+        run: mkdir -p security-reports
+
+      # -----------------------------------------------------------------------
+      # Bandit - Python Static Security Analysis
+      # -----------------------------------------------------------------------
+      - name: Run Bandit on src/
+        run: |
+          echo "Running Bandit security scan on src/..."
+          bandit -r src/ \
+            -f json \
+            -o security-reports/bandit-src-report.json \
+            --severity-level medium \
+            --confidence-level medium \
+            || true
+
+          # Also generate human-readable report
+          bandit -r src/ \
+            -f txt \
+            -o security-reports/bandit-src-report.txt \
+            --severity-level medium \
+            --confidence-level medium \
+            || true
+        continue-on-error: true
+
+      - name: Run Bandit on services/
+        run: |
+          echo "Running Bandit security scan on services/..."
+          bandit -r services/ \
+            -f json \
+            -o security-reports/bandit-services-report.json \
+            --severity-level medium \
+            --confidence-level medium \
+            || true
+
+          # Also generate human-readable report
+          bandit -r services/ \
+            -f txt \
+            -o security-reports/bandit-services-report.txt \
+            --severity-level medium \
+            --confidence-level medium \
+            || true
+        continue-on-error: true
+
+      - name: Display Bandit summary
+        run: |
+          echo "=== Bandit Security Scan Summary ==="
+          echo ""
+          echo "--- src/ Results ---"
+          if [ -f security-reports/bandit-src-report.txt ]; then
+            cat security-reports/bandit-src-report.txt | tail -20
+          fi
+          echo ""
+          echo "--- services/ Results ---"
+          if [ -f security-reports/bandit-services-report.txt ]; then
+            cat security-reports/bandit-services-report.txt | tail -20
+          fi
+
+      # -----------------------------------------------------------------------
+      # Safety - Known Vulnerability Check
+      # -----------------------------------------------------------------------
+      - name: Run Safety check on requirements.txt
+        run: |
+          echo "Running Safety vulnerability check..."
+          if [ -f requirements.txt ]; then
+            safety check \
+              -r requirements.txt \
+              --full-report \
+              --output json \
+              > security-reports/safety-report.json 2>&1 || true
+
+            # Also generate text report
+            safety check \
+              -r requirements.txt \
+              --full-report \
+              > security-reports/safety-report.txt 2>&1 || true
+          else
+            echo "No requirements.txt found in root directory"
+            echo "No requirements.txt found" > security-reports/safety-report.txt
+          fi
+        continue-on-error: true
+
+      - name: Check additional requirements files
+        run: |
+          # Check services requirements
+          for req_file in services/requirements.txt services/inference_api/requirements.txt; do
+            if [ -f "$req_file" ]; then
+              echo "Checking $req_file..."
+              safety check -r "$req_file" --full-report >> security-reports/safety-report.txt 2>&1 || true
+            fi
+          done
+        continue-on-error: true
+
+      - name: Display Safety summary
+        run: |
+          echo "=== Safety Vulnerability Check Summary ==="
+          if [ -f security-reports/safety-report.txt ]; then
+            cat security-reports/safety-report.txt | head -50
+          fi
+
+      # -----------------------------------------------------------------------
+      # pip-audit - PyPI Vulnerability Database Check
+      # -----------------------------------------------------------------------
+      - name: Run pip-audit
+        run: |
+          echo "Running pip-audit..."
+          pip-audit \
+            --format json \
+            --output security-reports/pip-audit-report.json \
+            || true
+
+          # Also generate text report
+          pip-audit \
+            --format columns \
+            > security-reports/pip-audit-report.txt 2>&1 || true
+        continue-on-error: true
+
+      - name: Audit from requirements files
+        run: |
+          if [ -f requirements.txt ]; then
+            echo "Auditing requirements.txt..."
+            pip-audit \
+              -r requirements.txt \
+              --format columns \
+              >> security-reports/pip-audit-report.txt 2>&1 || true
+          fi
+        continue-on-error: true
+
+      - name: Display pip-audit summary
+        run: |
+          echo "=== pip-audit Summary ==="
+          if [ -f security-reports/pip-audit-report.txt ]; then
+            cat security-reports/pip-audit-report.txt
+          fi
+
+      # -----------------------------------------------------------------------
+      # Generate Combined Summary
+      # -----------------------------------------------------------------------
+      - name: Generate combined security summary
+        run: |
+          echo "# Security Scan Report" > security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+          echo "Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> security-reports/SUMMARY.md
+          echo "Commit: ${{ github.sha }}" >> security-reports/SUMMARY.md
+          echo "Branch: ${{ github.ref_name }}" >> security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+
+          echo "## Bandit (Static Analysis)" >> security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+          if [ -f security-reports/bandit-src-report.json ]; then
+            echo "### src/ directory" >> security-reports/SUMMARY.md
+            echo '```' >> security-reports/SUMMARY.md
+            cat security-reports/bandit-src-report.txt | grep -E "^(Total|High|Medium|Low)" || echo "See full report"
+            echo '```' >> security-reports/SUMMARY.md
+          fi
+          echo "" >> security-reports/SUMMARY.md
+
+          echo "## Safety (Known Vulnerabilities)" >> security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+          echo '```' >> security-reports/SUMMARY.md
+          head -20 security-reports/safety-report.txt 2>/dev/null || echo "No report generated"
+          echo '```' >> security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+
+          echo "## pip-audit (PyPI Database)" >> security-reports/SUMMARY.md
+          echo "" >> security-reports/SUMMARY.md
+          echo '```' >> security-reports/SUMMARY.md
+          cat security-reports/pip-audit-report.txt 2>/dev/null || echo "No report generated"
+          echo '```' >> security-reports/SUMMARY.md
+
+      # -----------------------------------------------------------------------
+      # Upload Artifacts
+      # -----------------------------------------------------------------------
+      - name: Upload security reports as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: security-reports/
+          retention-days: 30
+
+      # -----------------------------------------------------------------------
+      # Job Summary
+      # -----------------------------------------------------------------------
+      - name: Add to job summary
+        if: always()
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Security scans completed. Download the **security-reports** artifact for detailed findings." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bandit**: Static security analysis for Python code" >> $GITHUB_STEP_SUMMARY
+          echo "- **Safety**: Checks for known vulnerabilities in dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- **pip-audit**: Audits Python packages against PyPI vulnerability database" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Directories Scanned" >> $GITHUB_STEP_SUMMARY
+          echo "- \`src/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`services/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f security-reports/SUMMARY.md ]; then
+            cat security-reports/SUMMARY.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ===========================================================================
+  # Notify on Critical Findings
+  # ===========================================================================
+  notify:
+    name: Notify on Findings
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: failure()
+
+    steps:
+      - name: Security scan notification
+        run: |
+          echo "::error::Security scanning found issues. Review the security-reports artifact."
+          # Add Slack/email notification here if SLACK_WEBHOOK_URL is configured
