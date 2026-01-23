@@ -78,7 +78,9 @@ sources:
     indicators:
       USD/MXN: fxrt_spot_usdmxn_mex_d_usdmxn
       USD/CLP: fxrt_spot_usdclp_chl_d_usdclp
-      CL: comm_oil_wti_glb_d_wti
+      # DISABLED 2026-01-23: WTI moved to Investing.com as Single Source of Truth
+      # TwelveData WTI/USD had data quality issues and gaps on weekends/holidays
+      # WTI/USD: comm_oil_wti_glb_d_wti
       # NOTE: BZ returns anomalous values, using Investing.com as primary source for Brent
       # BZ: comm_oil_brent_glb_d_brent  # DISABLED - see P0-2 in DATASET_QUALITY_ISSUES.md
 
@@ -110,6 +112,12 @@ sources:
       - url: https://www.investing.com/commodities/brent-oil-historical-data
         column: comm_oil_brent_glb_d_brent
         name: Brent Oil
+      # 2026-01-23: WTI Oil - PRIMARY SOURCE (moved from TwelveData)
+      # AJAX pair_id=8849 for historical backfills (scripts/fix_wti_data.py)
+      # URL scraping for daily updates
+      - url: https://www.investing.com/commodities/crude-oil-historical-data
+        column: comm_oil_wti_glb_d_wti
+        name: WTI Oil
 
   # ---------------------------------------------------------------------------
   # BanRep SUAMECA - Colombian Central Bank Data (Selenium)

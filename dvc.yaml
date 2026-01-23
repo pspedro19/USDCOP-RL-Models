@@ -209,6 +209,145 @@ stages:
       - scripts/promote_model.py
     always_changed: true
 
+  # ===========================================================================
+  # FORECASTING PIPELINE STAGES
+  # ===========================================================================
+  # Daily USDCOP forecasting using ML models (XGBoost, LightGBM, etc.)
+  # SSOT: src/forecasting/data_contracts.py, src/forecasting/config.py
+
+  # ===========================================================================
+  # Forecasting Stage 1: Build Daily Dataset
+  # ===========================================================================
+  # Fetches USDCOP daily data and builds SSOT-aligned features (19 features)
+  forecast_prepare_data:
+    cmd: python scripts/build_forecasting_dataset_aligned.py --start 2020-01-01 --output data/forecasting/aligned
+    deps:
+      - scripts/build_forecasting_dataset_aligned.py
+      - src/forecasting/data_contracts.py
+    params:
+      - forecasting.data.train_start
+      - forecasting.data.train_end
+      - forecasting.features.num_features
+    outs:
+      - data/forecasting/aligned/:
+          persist: true
+
+  # ===========================================================================
+  # Forecasting Stage 2: Train Models
+  # ===========================================================================
+  # Trains 9 models x 7 horizons = 63 model combinations with walk-forward CV
+  forecast_train:
+    cmd: >
+      python -c "
+      import sys
+      sys.path.insert(0, '.')
+      from src.forecasting.engine import ForecastingEngine
+      from src.forecasting.contracts import ForecastingTrainingRequest, MODEL_IDS, HORIZONS
+      from pathlib import Path
+      import glob
+
+      # Find latest dataset
+      datasets = sorted(glob.glob('data/forecasting/aligned/*.parquet'))
+      if not datasets:
+          raise FileNotFoundError('No forecasting datasets found')
+
+      dataset_path = datasets[-1]
+      print(f'Using dataset: {dataset_path}')
+
+      # Create training request
+      request = ForecastingTrainingRequest(
+          version='1.0.0',
+          models=list(MODEL_IDS),
+          horizons=list(HORIZONS),
+          dataset_path=dataset_path,
+          walk_forward_windows=5,
+          minio_enabled=False,
+          mlflow_enabled=True,
+          experiment_name='forecasting-training',
+      )
+
+      # Train
+      engine = ForecastingEngine(project_root=Path('.'))
+      result = engine.train(request)
+
+      print(f'Training completed: {result.models_trained}/{result.total_combinations}')
+      print(f'Artifacts: {result.model_artifacts_path}')
+      "
+    deps:
+      - data/forecasting/aligned/
+      - src/forecasting/engine.py
+      - src/forecasting/data_contracts.py
+      - src/forecasting/contracts.py
+      - src/forecasting/models/
+      - src/forecasting/evaluation/
+    params:
+      - forecasting.training.walk_forward_windows
+      - forecasting.training.random_seed
+      - forecasting.training.models
+    outs:
+      - outputs/forecasting/:
+          persist: true
+    metrics:
+      - outputs/forecasting/run_*/model_results.csv:
+          cache: false
+
+  # ===========================================================================
+  # Forecasting Stage 3: Evaluate Models
+  # ===========================================================================
+  # Evaluates trained models and generates performance reports
+  forecast_evaluate:
+    cmd: >
+      python -c "
+      import pandas as pd
+      import json
+      from pathlib import Path
+      import glob
+
+      # Find latest run
+      runs = sorted(glob.glob('outputs/forecasting/run_*'))
+      if not runs:
+          raise FileNotFoundError('No forecasting runs found')
+
+      run_dir = Path(runs[-1])
+      results_path = run_dir / 'model_results.csv'
+
+      if not results_path.exists():
+          raise FileNotFoundError(f'Results not found: {results_path}')
+
+      df = pd.read_csv(results_path)
+
+      # Calculate summary metrics
+      summary = {
+          'total_models': len(df),
+          'avg_da': float(df['direction_accuracy'].mean()),
+          'max_da': float(df['direction_accuracy'].max()),
+          'min_da': float(df['direction_accuracy'].min()),
+          'best_model': df.loc[df['direction_accuracy'].idxmax(), 'model_id'],
+          'best_horizon': int(df.loc[df['direction_accuracy'].idxmax(), 'horizon']),
+          'models_above_52': int((df['direction_accuracy'] > 52).sum()),
+          'models_above_55': int((df['direction_accuracy'] > 55).sum()),
+      }
+
+      # Model rankings by average DA
+      model_rankings = df.groupby('model_id')['direction_accuracy'].mean().sort_values(ascending=False)
+      summary['model_rankings'] = model_rankings.to_dict()
+
+      # Save evaluation report
+      eval_dir = run_dir / 'evaluation'
+      eval_dir.mkdir(exist_ok=True)
+
+      with open(eval_dir / 'summary.json', 'w') as f:
+          json.dump(summary, f, indent=2)
+
+      print(f'Evaluation complete: {summary[\"total_models\"]} models')
+      print(f'Best: {summary[\"best_model\"]} H={summary[\"best_horizon\"]} DA={summary[\"max_da\"]:.2f}%')
+      "
+    deps:
+      - outputs/forecasting/
+    metrics:
+      - outputs/forecasting/run_*/evaluation/summary.json:
+          cache: false
+
 # =============================================================================
 # Plots Configuration
 # =============================================================================
@@ -232,3 +371,8 @@ plots:
       x: timestamp
       y: drawdown_pct
       title: "Drawdown Over Time"
+  # Forecasting plots
+  - outputs/forecasting/run_*/model_results.csv:
+      x: horizon
+      y: direction_accuracy
+      title: "Direction Accuracy by Horizon"

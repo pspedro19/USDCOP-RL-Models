@@ -256,3 +256,114 @@ logging:
   level: INFO
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: logs/training.log
+
+# =============================================================================
+# Forecasting Pipeline Configuration
+# =============================================================================
+# SSOT for daily USDCOP forecasting models.
+# Python SSOT: src/forecasting/config.py
+# Data Contracts: src/forecasting/data_contracts.py
+forecasting:
+  # Version identifier
+  version: "1.0.0"
+
+  # Data configuration
+  data:
+    train_start: "2020-01-01"
+    train_end: "2024-12-31"
+    validation_start: "2025-01-01"
+    validation_end: "2025-06-30"
+    test_start: "2025-07-01"
+    test_end: "2025-12-31"
+    # Minimum days for feature calculation (MA50 needs 50)
+    lookback_days: 50
+    # Data quality thresholds
+    min_records: 500
+    max_null_pct: 5.0
+
+  # Feature configuration (19 SSOT features)
+  features:
+    # Number of features (validated by data_contracts.py)
+    num_features: 19
+    # Target horizons (days ahead)
+    target_horizons: [1, 5, 10, 15, 20, 25, 30]
+    # RSI period
+    rsi_period: 14
+    # MA periods
+    ma_short_period: 20
+    ma_long_period: 50
+
+  # Training configuration
+  training:
+    # Walk-forward validation windows
+    walk_forward_windows: 5
+    min_train_size: 252
+    expansion_step: 63
+    # Random seed
+    random_seed: 42
+    # MLflow experiment
+    experiment_name: "forecasting-training"
+    # Model list (9 models from contracts.py)
+    models:
+      - xgboost
+      - lightgbm
+      - catboost
+      - hybrid_xgboost
+      - hybrid_lightgbm
+      - hybrid_catboost
+      - ridge
+      - bayesian_ridge
+      - ard
+    # Boosting defaults
+    boosting:
+      n_estimators: 500
+      max_depth: 6
+      learning_rate: 0.03
+      subsample: 0.8
+      colsample_bytree: 0.8
+      early_stopping_rounds: 50
+
+  # Inference configuration
+  inference:
+    generate_ensembles: true
+    persist_to_db: true
+    upload_images: true
+
+  # Storage paths
+  storage:
+    models_bucket: "forecasting-models"
+    forecasts_bucket: "forecasts"
+    datasets_bucket: "forecasting-datasets"
+    # Database tables
+    ohlcv_table: "bi.dim_daily_usdcop"
+    features_view: "bi.v_forecasting_features"
+    forecasts_table: "bi.fact_forecasts"
+
+  # Promotion thresholds (Direction Accuracy %)
+  promotion:
+    staging:
+      min_da: 52.0
+    production:
+      min_da: 55.0
+      min_staging_days: 7
+
+  # MLflow configuration
+  mlflow:
+    enabled: true
+    tracking_uri: ${MLFLOW_TRACKING_URI:-http://localhost:5000}
+    experiment_name: "forecasting-training"
+    # Registry configuration
+    registry:
+      enabled: true
+      model_name_prefix: "forecasting"
+    # Logging configuration
+    logging:
+      log_models: true
+      log_artifacts: true
+      log_params: true
+      log_metrics: true
+    # Tags
+    tags:
+      project: "usdcop-forecasting"
+      team: "algo-trading"
+      pipeline: "forecasting"

@@ -43,6 +43,7 @@ from fastapi.openapi.utils import get_openapi
 from .routers import (
     backtest_router,
     config_router,
+    forecasting_router,
     health_router,
     lineage_router,
     models_router,
@@ -275,6 +276,10 @@ OPENAPI_TAGS = [
         "name": "ssot",
         "description": "Single Source of Truth - contract values and validation",
     },
+    {
+        "name": "forecasting",
+        "description": "Forecasting - ML model predictions, consensus, and backtest metrics",
+    },
 ]
 
 
@@ -454,6 +459,10 @@ app.include_router(trades_router, prefix="/api/v1")
 app.include_router(websocket_router, prefix="/api/v1")
 app.include_router(ssot_router, prefix="/api/v1")
 
+# Optional forecasting router (may not be available in all deployments)
+if forecasting_router:
+    app.include_router(forecasting_router, prefix="/api/v1")
+
 # Also maintain legacy /v1 routes for backward compatibility
 app.include_router(health_router, prefix="/v1", include_in_schema=False)
 app.include_router(backtest_router, prefix="/v1", include_in_schema=False)
@@ -466,6 +475,8 @@ app.include_router(lineage_router, prefix="/v1", include_in_schema=False)
 app.include_router(trades_router, prefix="/v1", include_in_schema=False)
 app.include_router(websocket_router, prefix="/v1", include_in_schema=False)
 app.include_router(ssot_router, prefix="/v1", include_in_schema=False)
+if forecasting_router:
+    app.include_router(forecasting_router, prefix="/v1", include_in_schema=False)
 
 
 # Override OpenAPI schema with custom version
@@ -512,6 +523,7 @@ async def root(request: Request):
             "health": "/api/v1/health",
             "backtest": "/api/v1/backtest",
             "config": "/api/v1/config",
+            "forecasting": "/api/v1/forecasting",
             "models": "/api/v1/models",
             "operations": "/api/v1/operations",
             "replay": "/api/v1/replay",

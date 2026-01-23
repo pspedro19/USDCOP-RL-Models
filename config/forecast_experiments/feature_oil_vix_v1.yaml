@@ -1,0 +1,72 @@
+# =============================================================================
+# Forecasting Experiment: Oil + VIX Features V1
+# =============================================================================
+#
+# Hypothesis: Adding oil price momentum and VIX volatility features
+# improves direction accuracy for USDCOP prediction.
+#
+# Rationale:
+# - Oil (Brent/WTI) is correlated with Colombian peso (petro-currency)
+# - VIX indicates market risk appetite affecting EM currencies
+#
+# SSOT Contract: CTR-FORECAST-EXPERIMENT-CONFIG-001
+# Version: 1.0.0
+# =============================================================================
+
+experiment:
+  name: "feature_oil_vix_v1"
+  version: "1.0.0"
+  description: "Add oil momentum and VIX volatility features"
+  hypothesis: "Oil price momentum and VIX improve direction accuracy by >3%"
+  baseline_experiment: "baseline_v1"  # Compare against baseline
+
+# Model Configuration
+# Focus on tree-based models that can capture non-linear relationships
+models:
+  include:
+    - "xgboost_pure"
+    - "lightgbm_pure"
+    - "catboost_pure"
+    - "hybrid_xgboost"
+    - "hybrid_lightgbm"
+    - "hybrid_catboost"
+
+# Horizon Configuration
+# Focus on short-to-medium term where macro factors have more impact
+horizons:
+  include:
+    - 5
+    - 10
+    - 15
+    - 20
+
+# Feature Configuration
+features:
+  contract_version: "1.0.0"
+  additions:
+    - "oil_return_5d"       # 5-day oil price return
+    - "oil_return_10d"      # 10-day oil price return
+    - "oil_volatility_10d"  # 10-day oil volatility
+    - "vix_level"           # VIX closing level
+    - "vix_change_5d"       # 5-day VIX change
+  removals: []
+
+# Training Configuration
+training:
+  walk_forward_windows: 5
+  min_train_pct: 0.4
+  gap_days: 30
+
+# Evaluation Configuration
+evaluation:
+  primary_metric: "direction_accuracy"
+  secondary_metrics:
+    - "rmse"
+    - "mae"
+  significance_level: 0.05
+  bonferroni_correction: true
+
+# MLflow Configuration
+mlflow:
+  enabled: true
+  experiment_name: "forecast_feature_oil_vix_v1"

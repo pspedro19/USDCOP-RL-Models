@@ -19,9 +19,16 @@ try:
 except ImportError:
     config_router = None
 
+# Forecasting router (optional - requires forecasting module)
+try:
+    from .forecasting import router as forecasting_router
+except ImportError:
+    forecasting_router = None
+
 __all__ = [
     "backtest_router",
     "config_router",
+    "forecasting_router",
     "health_router",
     "lineage_router",
     "models_router",

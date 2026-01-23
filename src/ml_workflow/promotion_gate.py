@@ -343,6 +343,109 @@ class LineageValidator(IValidator):
         return issues
 
 
+class MLflowFirstValidator(IValidator):
+    """
+    Validates model follows MLflow-First principle.
+
+    Enforces:
+    - Model must have MLflow run ID
+    - Model must be registered in MLflow Model Registry
+    - Model URI must point to MLflow (models:/ or runs:/)
+    """
+
+    @property
+    def name(self) -> str:
+        return "mlflow_first"
+
+    def validate(
+        self,
+        model: ModelSnapshot,
+        backtest: Optional[BacktestSnapshot],
+        config: Dict[str, Any],
+    ) -> List[ValidationIssue]:
+        issues = []
+
+        # MLflow-First is mandatory
+        enforce_mlflow_first = config.get("enforce_mlflow_first", True)
+
+        if enforce_mlflow_first:
+            # Must have MLflow run ID
+            if not model.mlflow_run_id:
+                issues.append(ValidationIssue(
+                    rule_name=self.name,
+                    severity=ValidationSeverity.ERROR,
+                    message="MLflow-First: Model must have mlflow_run_id",
+                ))
+
+            # Must be registered in Model Registry
+            model_uri = getattr(model, 'model_uri', None) or getattr(model, 's3_uri', None)
+            if model_uri:
+                if not (model_uri.startswith("models:/") or model_uri.startswith("runs:/")):
+                    issues.append(ValidationIssue(
+                        rule_name=self.name,
+                        severity=ValidationSeverity.ERROR,
+                        message="MLflow-First: Model must be in MLflow Registry",
+                        actual_value=model_uri[:50] if len(model_uri) > 50 else model_uri,
+                        expected_value="models:/<name>/<version> or runs:/<run_id>/...",
+                    ))
+            else:
+                issues.append(ValidationIssue(
+                    rule_name=self.name,
+                    severity=ValidationSeverity.ERROR,
+                    message="MLflow-First: Model URI is required",
+                ))
+
+        return issues
+
+
+class DVCTrackedValidator(IValidator):
+    """
+    Validates dataset follows DVC-Tracked principle.
+
+    Enforces:
+    - Dataset must have DVC tag
+    - Dataset hash must be present
+    """
+
+    @property
+    def name(self) -> str:
+        return "dvc_tracked"
+
+    def validate(
+        self,
+        model: ModelSnapshot,
+        backtest: Optional[BacktestSnapshot],
+        config: Dict[str, Any],
+    ) -> List[ValidationIssue]:
+        issues = []
+
+        # DVC tracking is mandatory
+        enforce_dvc_tracking = config.get("enforce_dvc_tracking", True)
+
+        if enforce_dvc_tracking and model.dataset_snapshot:
+            dataset = model.dataset_snapshot
+
+            # Must have DVC tag
+            dvc_tag = getattr(dataset, 'dvc_tag', None)
+            if not dvc_tag:
+                issues.append(ValidationIssue(
+                    rule_name=self.name,
+                    severity=ValidationSeverity.ERROR,
+                    message="DVC-Tracked: Dataset must have dvc_tag",
+                ))
+
+            # Must have content hash
+            content_hash = getattr(dataset, 'content_hash', None) or getattr(dataset, 'hash', None)
+            if not content_hash:
+                issues.append(ValidationIssue(
+                    rule_name=self.name,
+                    severity=ValidationSeverity.ERROR,
+                    message="DVC-Tracked: Dataset must have content hash",
+                ))
+
+        return issues
+
+
 # =============================================================================
 # PROMOTION GATE
 # =============================================================================
@@ -372,6 +475,8 @@ class PromotionGate:
         FeatureContractValidator(),
         PerformanceValidator(),
         LineageValidator(),
+        MLflowFirstValidator(),
+        DVCTrackedValidator(),
     ]
 
     def __init__(
@@ -469,6 +574,10 @@ DEFAULT_GATE_CONFIG: Dict[str, Any] = {
     # Lineage requirements
     "require_backtest": False,        # Require backtest results
     "require_dataset_lineage": False,  # Require dataset snapshot
+
+    # MLflow-First + DVC-Tracked Principle
+    "enforce_mlflow_first": True,     # Model must be in MLflow Registry
+    "enforce_dvc_tracking": True,     # Dataset must have DVC tag
 }
 
 
@@ -507,6 +616,8 @@ __all__ = [
     "FeatureContractValidator",
     "PerformanceValidator",
     "LineageValidator",
+    "MLflowFirstValidator",
+    "DVCTrackedValidator",
     # Gate
     "PromotionGate",
     "DEFAULT_GATE_CONFIG",
