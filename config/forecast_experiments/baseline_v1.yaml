@@ -1,0 +1,56 @@
+# =============================================================================
+# Forecasting Experiment: Baseline V1
+# =============================================================================
+#
+# This is the baseline forecasting experiment that serves as the control
+# for all A/B comparisons. New experiments should set this as their
+# baseline_experiment to enable statistical comparison.
+#
+# SSOT Contract: CTR-FORECAST-EXPERIMENT-CONFIG-001
+# Version: 1.0.0
+# =============================================================================
+
+experiment:
+  name: "baseline_v1"
+  version: "1.0.0"
+  description: "Baseline forecasting experiment with standard feature set"
+  hypothesis: "Standard features provide reasonable direction accuracy"
+  baseline_experiment: null  # This IS the baseline
+
+# Model Configuration
+# null = all models (ridge, bayesian_ridge, ard, xgboost_pure, lightgbm_pure,
+#                    catboost_pure, hybrid_xgboost, hybrid_lightgbm, hybrid_catboost)
+models:
+  include: null  # All 9 models
+
+# Horizon Configuration
+# null = all horizons (1, 5, 10, 15, 20, 25, 30 days)
+horizons:
+  include: null  # All 7 horizons
+
+# Feature Configuration
+features:
+  contract_version: "1.0.0"
+  additions: []  # No additional features
+  removals: []   # No features removed
+
+# Training Configuration
+training:
+  walk_forward_windows: 5
+  min_train_pct: 0.4
+  gap_days: 30  # Gap between train and test to avoid lookahead
+
+# Evaluation Configuration
+evaluation:
+  primary_metric: "direction_accuracy"
+  secondary_metrics:
+    - "rmse"
+    - "mae"
+    - "sharpe_ratio"
+  significance_level: 0.05
+  bonferroni_correction: true
+
+# MLflow Configuration
+mlflow:
+  enabled: true
+  experiment_name: "forecast_baseline_v1"

@@ -1,0 +1,66 @@
+{
+  "pipeline_version": "1.0.0",
+  "execution_timestamp": "2026-01-22T18:50:44.541524",
+  "data": {
+    "rows": 427,
+    "date_range": {
+      "start": "2024-04-15",
+      "end": "2026-01-21",
+      "trading_days": 427
+    },
+    "quality_score": 98.74
+  },
+  "training": {
+    "models_trained": 8,
+    "best_models": {
+      "1": {
+        "model": "xgboost_pure",
+        "direction_accuracy": 44.58
+      },
+      "5": {
+        "model": "lightgbm_pure",
+        "direction_accuracy": 51.83
+      },
+      "10": {
+        "model": "xgboost_pure",
+        "direction_accuracy": 42.59
+      },
+      "20": {
+        "model": "xgboost_pure",
+        "direction_accuracy": 30.38
+      }
+    },
+    "training_time_seconds": 3.51
+  },
+  "inference": {
+    "inference_date": "2026-01-21",
+    "current_price": 3674.699951171875,
+    "predictions_count": 4,
+    "consensus": {
+      "1": {
+        "direction": "DOWN",
+        "bullish_count": 0,
+        "bearish_count": 1,
+        "avg_return_pct": -0.0054
+      },
+      "5": {
+        "direction": "DOWN",
+        "bullish_count": 0,
+        "bearish_count": 1,
+        "avg_return_pct": -0.053
+      },
+      "10": {
+        "direction": "DOWN",
+        "bullish_count": 0,
+        "bearish_count": 1,
+        "avg_return_pct": -0.0918
+      },
+      "20": {
+        "direction": "UP",
+        "bullish_count": 1,
+        "bearish_count": 0,
+        "avg_return_pct": 0.1902
+      }
+    }
+  }
+}

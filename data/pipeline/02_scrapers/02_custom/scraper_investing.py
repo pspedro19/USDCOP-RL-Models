@@ -24,7 +24,8 @@ INVESTING_URLS = {
     'GOLD': 'https://www.investing.com/commodities/gold-historical-data',
     'COFFEE': 'https://www.investing.com/commodities/us-coffee-c-historical-data',
 
-    # Forex
+    # Forex - USDCOP is PRIMARY for Forecasting pipeline
+    'USDCOP': 'https://www.investing.com/currencies/usd-cop-historical-data',  # OFFICIAL source
     'USDCLP': 'https://www.investing.com/currencies/usd-clp-historical-data',
     'USDMXN': 'https://www.investing.com/currencies/usd-mxn-historical-data',
 
@@ -155,6 +156,18 @@ def obtener_dxy(n: int = 20) -> Optional[pd.DataFrame]:
 def obtener_ust10y(n: int = 20) -> Optional[pd.DataFrame]:
     """Obtener rendimiento bono USA 10Y"""
     return obtener_investing_com(INVESTING_URLS['UST10Y'], n)
+
+
+def obtener_usdcop(n: int = 20) -> Optional[pd.DataFrame]:
+    """
+    Obtener tipo de cambio USD/COP (OFICIAL para Forecasting).
+
+    IMPORTANTE: Para datos OHLCV completos, usar USDCOPInvestingScraper
+    de scraper_usdcop_investing.py que retorna open, high, low, close.
+
+    Esta función solo retorna fecha y precio de cierre.
+    """
+    return obtener_investing_com(INVESTING_URLS['USDCOP'], n)
 
 
 # Test

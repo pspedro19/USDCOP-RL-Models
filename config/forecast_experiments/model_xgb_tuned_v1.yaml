@@ -1,0 +1,85 @@
+# =============================================================================
+# Forecasting Experiment: XGBoost Tuned V1
+# =============================================================================
+#
+# Hypothesis: Tuned XGBoost parameters with regularization
+# reduce overfitting and improve OOS direction accuracy.
+#
+# Changes from baseline:
+# - Lower learning rate (0.01 vs 0.1)
+# - More trees (1000 vs 100)
+# - Higher regularization (alpha/lambda)
+# - Early stopping
+#
+# SSOT Contract: CTR-FORECAST-EXPERIMENT-CONFIG-001
+# Version: 1.0.0
+# =============================================================================
+
+experiment:
+  name: "model_xgb_tuned_v1"
+  version: "1.0.0"
+  description: "Tuned XGBoost with higher regularization and early stopping"
+  hypothesis: "Higher regularization improves OOS performance by reducing overfit"
+  baseline_experiment: "baseline_v1"
+
+# Model Configuration
+# Only test XGBoost variants for this experiment
+models:
+  include:
+    - "xgboost_pure"
+    - "hybrid_xgboost"
+
+# Horizon Configuration
+horizons:
+  include: null  # All horizons
+
+# Feature Configuration (same as baseline)
+features:
+  contract_version: "1.0.0"
+  additions: []
+  removals: []
+
+# Training Configuration
+training:
+  walk_forward_windows: 5
+  min_train_pct: 0.4
+  gap_days: 30
+
+# Evaluation Configuration
+evaluation:
+  primary_metric: "direction_accuracy"
+  secondary_metrics:
+    - "rmse"
+    - "mae"
+  significance_level: 0.05
+  bonferroni_correction: true
+
+# MLflow Configuration
+mlflow:
+  enabled: true
+  experiment_name: "forecast_model_xgb_tuned_v1"
+
+# Model-specific hyperparameters
+# These override defaults in the training engine
+hyperparameters:
+  xgboost_pure:
+    n_estimators: 1000
+    learning_rate: 0.01
+    max_depth: 4
+    min_child_weight: 5
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    subsample: 0.8
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50
+
+  hybrid_xgboost:
+    n_estimators: 1000
+    learning_rate: 0.01
+    max_depth: 4
+    min_child_weight: 5
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    subsample: 0.8
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50

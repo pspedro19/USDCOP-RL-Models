@@ -3,6 +3,7 @@ SCRIPT 03 - Generacion de 10 Datasets RL para USD/COP
 ======================================================
 Version 3.0 - DATOS CRUDOS SIN FFILL
 Version 15 - FIXED Z-SCORES (training-production parity)
+Version 16 - UNIFIED LOADERS (SSOT from PostgreSQL/Parquet)
 
 Genera 10 datasets optimizados para diferentes estrategias:
 
@@ -26,6 +27,11 @@ Estrategia de datos v3.0:
   - La expansion diario->5min ya viene hecha en MACRO_5MIN_CONSOLIDATED.csv
   - El filtrado de warmup NaN se hace al final con dropna()
 
+SSOT Data Source (v16):
+  - Primary: PostgreSQL (usdcop_m5_ohlcv, v_macro_unified)
+  - Secondary: Parquet backups (seeds/latest/)
+  - Legacy: CSV files (fallback)
+
 Correcciones aplicadas:
   - Blacklist de columnas rotas
   - Normalizacion por tipo de feature
@@ -39,10 +45,23 @@ Correcciones aplicadas:
 import pandas as pd
 import numpy as np
 import gzip
+import sys
 from pathlib import Path
 from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
+
+# Add project root to path for imports
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# Try to import unified loaders
+try:
+    from src.data import UnifiedOHLCVLoader, UnifiedMacroLoader
+    UNIFIED_LOADERS_AVAILABLE = True
+except ImportError:
+    UNIFIED_LOADERS_AVAILABLE = False
+    print("[WARN] UnifiedLoaders not available - using legacy CSV loading")
 
 # =============================================================================
 # CONFIGURACION GLOBAL
@@ -131,30 +150,97 @@ print(f"Output: {OUTPUT_RL}")
 
 
 # =============================================================================
-# 1. CARGAR DATOS
+# 1. CARGAR DATOS - SSOT (PostgreSQL/Parquet) con fallback a CSV
 # =============================================================================
 print("\n" + "-" * 80)
 print("1. CARGANDO DATOS")
 print("-" * 80)
 
-# OHLCV
-with gzip.open(OHLCV_BACKUP, 'rt') as f:
-    df_ohlcv = pd.read_csv(f)
+# Flag para modo de carga
+USE_UNIFIED_LOADERS = UNIFIED_LOADERS_AVAILABLE
 
-df_ohlcv['time'] = pd.to_datetime(df_ohlcv['time'])
-df_ohlcv = df_ohlcv.sort_values('time').reset_index(drop=True)
-df_ohlcv = df_ohlcv.rename(columns={'time': 'datetime'})
-df_ohlcv = df_ohlcv[['datetime', 'open', 'high', 'low', 'close']].copy()
+if USE_UNIFIED_LOADERS:
+    try:
+        print("   [SSOT] Using UnifiedLoaders (PostgreSQL/Parquet)...")
 
-print(f"   OHLCV: {len(df_ohlcv):,} registros")
-print(f"   Rango: {df_ohlcv['datetime'].min()} a {df_ohlcv['datetime'].max()}")
+        # OHLCV from SSOT
+        ohlcv_loader = UnifiedOHLCVLoader()
+        df_ohlcv = ohlcv_loader.load_5min(START_DATE, "2026-12-31", filter_market_hours=True)
 
-# Macro consolidado
-df_macro = pd.read_csv(OUTPUT_V2 / "MACRO_5MIN_CONSOLIDATED.csv")
-df_macro['datetime_utc'] = pd.to_datetime(df_macro['datetime_utc'])
-df_macro['datetime'] = df_macro['datetime_utc'].dt.tz_localize(None)
+        # Normalize column names
+        df_ohlcv = df_ohlcv.rename(columns={'time': 'datetime'})
+        df_ohlcv = df_ohlcv[['datetime', 'open', 'high', 'low', 'close']].copy()
 
-print(f"   Macro: {len(df_macro):,} registros, {len(df_macro.columns)} columnas")
+        print(f"   OHLCV (SSOT): {len(df_ohlcv):,} registros")
+        print(f"   Rango: {df_ohlcv['datetime'].min()} a {df_ohlcv['datetime'].max()}")
+
+        # Macro from SSOT (5-min resampled)
+        macro_loader = UnifiedMacroLoader()
+        df_macro = macro_loader.load_5min(START_DATE, "2026-12-31")
+
+        # Rename columns to match expected format (uppercase)
+        MACRO_COL_RENAMES = {
+            'time': 'datetime',
+            'dxy': 'FXRT_INDEX_DXY_USA_D_DXY',
+            'vix': 'VOLT_VIX_USA_D_VIX',
+            'embi': 'CRSK_SPREAD_EMBI_COL_D_EMBI',
+            'brent': 'COMM_OIL_BRENT_GLB_D_BRENT',
+            'wti': 'COMM_OIL_WTI_GLB_D_WTI',
+            'gold': 'COMM_METAL_GOLD_GLB_D_GOLD',
+            'coffee': 'COMM_AGRI_COFFEE_GLB_D_COFFEE',
+            'ust10y': 'FINC_BOND_YIELD10Y_USA_D_UST10Y',
+            'ust2y': 'FINC_BOND_YIELD2Y_USA_D_DGS2',
+            'col10y': 'FINC_BOND_YIELD10Y_COL_D_COL10Y',
+            'col5y': 'FINC_BOND_YIELD5Y_COL_D_COL5Y',
+            'ibr': 'FINC_RATE_IBR_OVERNIGHT_COL_D_IBR',
+            'tpm': 'POLR_POLICY_RATE_COL_M_TPM',
+            'fedfunds': 'POLR_FED_FUNDS_USA_M_FEDFUNDS',
+            'colcap': 'EQTY_INDEX_COLCAP_COL_D_COLCAP',
+            'usdmxn': 'FXRT_SPOT_USDMXN_MEX_D_USDMXN',
+            'usdclp': 'FXRT_SPOT_USDCLP_CHL_D_USDCLP',
+            'cpi_usa': 'INFL_CPI_ALL_USA_M_CPIAUCSL',
+            'pce': 'INFL_PCE_USA_M_PCEPI',
+            'unemployment': 'LABR_UNEMPLOYMENT_USA_M_UNRATE',
+            'terms_of_trade': 'FTRD_TERMS_TRADE_COL_M_TOT',
+            'exports': 'FTRD_EXPORTS_TOTAL_COL_M_EXPUSD',
+            'imports': 'FTRD_IMPORTS_TOTAL_COL_M_IMPUSD',
+            'reserves': 'RSBP_RESERVES_INTERNATIONAL_COL_M_RESINT',
+            'itcr': 'FXRT_REER_BILATERAL_COL_M_ITCR',
+            'fdi_inflow': 'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q',
+            'current_account': 'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q',
+            'rate_spread': 'RATE_SPREAD_COL_USA',
+        }
+        df_macro = df_macro.rename(columns=MACRO_COL_RENAMES)
+
+        print(f"   Macro (SSOT): {len(df_macro):,} registros, {len(df_macro.columns)} columnas")
+
+    except Exception as e:
+        print(f"   [WARN] SSOT loading failed: {e}")
+        print("   [WARN] Falling back to legacy CSV loading...")
+        USE_UNIFIED_LOADERS = False
+
+if not USE_UNIFIED_LOADERS:
+    # Legacy CSV loading
+    print("   [LEGACY] Using CSV file loading...")
+
+    # OHLCV
+    with gzip.open(OHLCV_BACKUP, 'rt') as f:
+        df_ohlcv = pd.read_csv(f)
+
+    df_ohlcv['time'] = pd.to_datetime(df_ohlcv['time'])
+    df_ohlcv = df_ohlcv.sort_values('time').reset_index(drop=True)
+    df_ohlcv = df_ohlcv.rename(columns={'time': 'datetime'})
+    df_ohlcv = df_ohlcv[['datetime', 'open', 'high', 'low', 'close']].copy()
+
+    print(f"   OHLCV (CSV): {len(df_ohlcv):,} registros")
+    print(f"   Rango: {df_ohlcv['datetime'].min()} a {df_ohlcv['datetime'].max()}")
+
+    # Macro consolidado
+    df_macro = pd.read_csv(OUTPUT_V2 / "MACRO_5MIN_CONSOLIDATED.csv")
+    df_macro['datetime_utc'] = pd.to_datetime(df_macro['datetime_utc'])
+    df_macro['datetime'] = df_macro['datetime_utc'].dt.tz_localize(None)
+
+    print(f"   Macro (CSV): {len(df_macro):,} registros, {len(df_macro.columns)} columnas")
 
 
 # =============================================================================
@@ -164,8 +250,11 @@ print("\n" + "-" * 80)
 print("2. MERGE OHLCV + MACRO")
 print("-" * 80)
 
+# Remove timezone if present
 if df_ohlcv['datetime'].dt.tz is not None:
     df_ohlcv['datetime'] = df_ohlcv['datetime'].dt.tz_localize(None)
+if 'datetime' in df_macro.columns and df_macro['datetime'].dt.tz is not None:
+    df_macro['datetime'] = df_macro['datetime'].dt.tz_localize(None)
 
 # Columnas macro a incluir - EXPANDIDO para DS6-DS10
 macro_cols_to_use = [
@@ -222,14 +311,23 @@ df_macro_subset = df_macro[macro_cols_exist].copy()
 
 print(f"   Columnas macro disponibles: {len(macro_cols_exist) - 1}")
 
-# P0-11 FIX: Remove tolerance to prevent data leakage
-df = pd.merge_asof(
-    df_ohlcv.sort_values('datetime'),
-    df_macro_subset.sort_values('datetime'),
-    on='datetime',
-    direction='backward'
-    # NO tolerance - strict temporal ordering prevents data leakage
-)
+# Merge OHLCV + Macro
+if USE_UNIFIED_LOADERS and 'datetime' in df_macro_subset.columns:
+    # SSOT mode: macro already has datetime aligned to 5-min grid
+    # Use regular merge on datetime
+    df = df_ohlcv.merge(df_macro_subset, on='datetime', how='left')
+    print(f"   Merge mode: SSOT (direct join)")
+else:
+    # Legacy mode: use merge_asof for temporal alignment
+    # P0-11 FIX: Remove tolerance to prevent data leakage
+    df = pd.merge_asof(
+        df_ohlcv.sort_values('datetime'),
+        df_macro_subset.sort_values('datetime'),
+        on='datetime',
+        direction='backward'
+        # NO tolerance - strict temporal ordering prevents data leakage
+    )
+    print(f"   Merge mode: Legacy (merge_asof)")
 
 print(f"   Despues de merge: {len(df):,} registros")
 
