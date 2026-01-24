@@ -64,7 +64,7 @@ decimal==1.0.0
 python-dotenv==1.0.1
 
 # Assertions and Matchers
-pytest-benchmark==4.0.0  # Benchmark tests
+pytest-benchmark==5.2.3  # Benchmark tests
 dirty-equals==0.7.1  # Flexible equality comparisons
 
 # API Testing
