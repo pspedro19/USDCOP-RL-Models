@@ -123,7 +123,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "happy-dom": "^17.6.1",
-    "jsdom": "^26.1.0",
+    "jsdom": "^27.4.0",
     "lighthouse": "^12.8.2",
     "lighthouse-ci": "^1.13.1",
     "msw": "^2.11.5",
