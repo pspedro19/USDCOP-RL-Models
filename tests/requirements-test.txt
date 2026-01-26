@@ -18,7 +18,7 @@ asyncpg==0.29.0
 psycopg2-binary==2.9.9
 
 # Redis Testing
-redis==5.0.1
+redis==7.1.0
 fakeredis==2.21.1  # In-memory Redis for testing
 
 # HTTP/WebSocket Testing
