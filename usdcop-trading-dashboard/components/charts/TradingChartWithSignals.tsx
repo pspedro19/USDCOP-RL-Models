@@ -15,8 +15,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import {
   createChart,
+  createSeriesMarkers,
   IChartApi,
   ISeriesApi,
+  ISeriesMarkersPluginApi,
   ColorType,
   CrosshairMode,
   SeriesMarker,
@@ -111,6 +113,7 @@ export default function TradingChartWithSignals({
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null)
 
   // Price lines for SL/TP and period separators
   const priceLineRefs = useRef<Map<string, any>>(new Map())
@@ -376,6 +379,7 @@ export default function TradingChartWithSignals({
 
     return () => {
       window.removeEventListener('resize', handleResize)
+      markersPluginRef.current = null
       chart.remove()
     }
   }, [height])
@@ -453,12 +457,6 @@ export default function TradingChartWithSignals({
     const series = candleSeriesRef.current
     if (!series || !showSignals || signals.length === 0 || candlestickData.length === 0) return
 
-    // Check if setMarkers method exists (lightweight-charts v4+)
-    if (typeof series.setMarkers !== 'function') {
-      console.warn('[TradingChart] setMarkers not available on series')
-      return
-    }
-
     // Create a set of valid candlestick timestamps (in seconds)
     const candleTimestamps = new Set(
       candlestickData.map(c => Math.floor(new Date(c.time).getTime() / 1000))
@@ -486,8 +484,9 @@ export default function TradingChartWithSignals({
         }
       }
 
-      // Only return if within 10 minutes (600 seconds)
-      return bestDiff <= 600 ? bestNearest : null
+      // In replay mode with synthetic trades, use wider tolerance
+      const maxDiff = isReplayMode ? 86400 : 600
+      return bestDiff <= maxDiff ? bestNearest : null
     }
 
     const markers: SeriesMarker<Time>[] = signals
@@ -517,10 +516,19 @@ export default function TradingChartWithSignals({
     console.log(`[TradingChart] Setting ${markers.length} signal markers from ${signals.length} signals (isReplayMode=${isReplayMode}, replayTrades=${replayTrades?.length || 0})`)
 
     try {
-      series.setMarkers(markers)
+      // lightweight-charts v5: use createSeriesMarkers plugin API
+      if (!markersPluginRef.current) {
+        markersPluginRef.current = createSeriesMarkers(series, markers) as ISeriesMarkersPluginApi<Time>
+      } else {
+        markersPluginRef.current.setMarkers(markers)
+      }
     } catch (err) {
-      console.warn('[TradingChart] Error setting markers (using HTML overlays instead):', err)
-      // The HTML overlays in the JSX will handle marker display as fallback
+      // Fallback: try legacy series.setMarkers (v3/v4)
+      try {
+        (series as any).setMarkers(markers)
+      } catch {
+        console.warn('[TradingChart] Error setting markers (using HTML overlays instead):', err)
+      }
     }
   }, [signals, showSignals, candlestickData, isReplayMode, replayTrades])
 
@@ -574,8 +582,10 @@ export default function TradingChartWithSignals({
             }
           }
 
-          // Only show if within 10 minutes (600 seconds) of a candlestick
-          if (bestMatch.diff > 600) return
+          // Only show if within tolerance of a candlestick
+          // In replay mode with synthetic trades, use wider tolerance (1 day = 86400s)
+          const maxDiff = isReplayMode ? 86400 : 600
+          if (bestMatch.diff > maxDiff) return
 
           const nearestTs = bestMatch.candleTs
 

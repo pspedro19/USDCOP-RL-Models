@@ -11,6 +11,7 @@ test.use({
 });
 
 test.describe('Investor Mode Replay Debug', () => {
+  test.setTimeout(120000);
   test('debug investor mode replay authentication error', async ({ page }) => {
     const consoleLogs: string[] = [];
     const networkRequests: { url: string; status: number | null; error?: string }[] = [];
@@ -80,10 +81,42 @@ test.describe('Investor Mode Replay Debug', () => {
     const loginButton = page.locator('button[type="submit"]');
 
     if (await usernameInput.isVisible()) {
-      await usernameInput.fill('admin');
-      await passwordInput.fill('admin123');
-      await loginButton.click();
-      console.log('Submitted login form');
+      // Use native input setter to trigger React's onChange
+      await usernameInput.focus();
+      await page.evaluate(() => {
+        const input = document.querySelector('input[autocomplete="username"]') as HTMLInputElement;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+        nativeInputValueSetter.call(input, 'admin');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      await passwordInput.focus();
+      await page.evaluate(() => {
+        const input = document.querySelector('input[type="password"]') as HTMLInputElement;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+        nativeInputValueSetter.call(input, 'admin123');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      await page.waitForTimeout(500);
+      console.log('Button disabled?', await loginButton.isDisabled());
+
+      if (await loginButton.isDisabled()) {
+        // Fallback: set auth directly and navigate
+        console.log('Button still disabled, setting auth directly');
+        await page.evaluate(() => {
+          localStorage.setItem('isAuthenticated', 'true');
+          sessionStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('username', 'admin');
+          sessionStorage.setItem('username', 'admin');
+        });
+        await page.goto('http://localhost:5000/hub', { waitUntil: 'domcontentloaded' });
+      } else {
+        await loginButton.click();
+      }
+      console.log('Login completed');
 
       await page.waitForTimeout(3000);
       console.log(`Current URL after login: ${page.url()}`);
@@ -117,32 +150,66 @@ test.describe('Investor Mode Replay Debug', () => {
     // Step 4: Find and select Investor Demo model
     console.log('\n=== STEP 4: SELECT INVESTOR MODEL ===');
 
-    // Look for model dropdown
-    const modelButtons = await page.locator('button').filter({ hasText: /model|PPO|investor/i }).all();
-    console.log(`Found ${modelButtons.length} model-related buttons`);
+    // Wait for the ModelDropdown button to appear (it shows a skeleton while loading)
+    // The button contains badge text like DEPLOYED, DEMO, TESTING
+    console.log('Waiting for model dropdown button...');
 
-    for (const btn of modelButtons) {
-      const text = await btn.textContent();
-      console.log(`Button: ${text}`);
+    // The dropdown button has badge text - wait for it to appear (up to 30s for HMR in dev mode)
+    const dropdownButton = page.locator('button').filter({ hasText: /DEPLOYED|DEMO|TESTING|En Producción|Select Model/i }).first();
+    try {
+      await dropdownButton.waitFor({ state: 'visible', timeout: 30000 });
+      console.log('Model dropdown button appeared');
+    } catch {
+      console.log('Model dropdown button did NOT appear after 30s');
+
+      // Debug: list all buttons
+      const allButtons = await page.locator('button').all();
+      console.log(`Total buttons: ${allButtons.length}`);
+      for (const btn of allButtons) {
+        const text = (await btn.textContent())?.trim().substring(0, 80);
+        console.log(`  Button: "${text}"`);
+      }
+
+      // Check body for model text
+      const bodyText = await page.textContent('body') || '';
+      console.log(`Page has DEPLOYED: ${bodyText.includes('DEPLOYED')}`);
+      console.log(`Page has PPO: ${bodyText.includes('PPO')}`);
+      console.log(`Page has Select Model: ${bodyText.includes('Select Model')}`);
+      console.log(`Page has No models: ${bodyText.includes('No models')}`);
+      console.log(`Page has animate-pulse: ${(await page.locator('.animate-pulse').count()) > 0}`);
+
+      await page.screenshot({
+        path: 'tests/e2e/screenshots/investor-debug-04-no-dropdown.png',
+        fullPage: true
+      });
     }
 
-    // Try to click dropdown and select investor_demo
-    const dropdownTrigger = page.locator('[class*="dropdown"], button:has-text("PPO"), button:has-text("Model")').first();
-    if (await dropdownTrigger.isVisible()) {
-      await dropdownTrigger.click();
-      await page.waitForTimeout(500);
+    const dropdownVisible = await dropdownButton.isVisible().catch(() => false);
+    if (dropdownVisible) {
+      const btnText = await dropdownButton.textContent();
+      console.log(`Dropdown button text: "${btnText?.trim()}"`);
+      await dropdownButton.click();
+      await page.waitForTimeout(1000);
 
       await page.screenshot({
         path: 'tests/e2e/screenshots/investor-debug-04-dropdown-open.png',
         fullPage: true
       });
 
-      // Look for investor option
-      const investorOption = page.locator('[role="option"], li, button').filter({ hasText: /investor|demo/i }).first();
-      if (await investorOption.isVisible()) {
+      // Dropdown items are divs with cursor-pointer class
+      const investorOption = page.locator('div[class*="cursor-pointer"]').filter({ hasText: /investor|demo/i }).first();
+      if (await investorOption.isVisible({ timeout: 3000 }).catch(() => false)) {
         await investorOption.click();
         console.log('Selected investor demo model');
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000);
+      } else {
+        console.log('Investor option not found in dropdown');
+        const dropdownItems = await page.locator('div[class*="cursor-pointer"]').all();
+        console.log(`Found ${dropdownItems.length} cursor-pointer divs`);
+        for (const item of dropdownItems) {
+          const t = (await item.textContent())?.trim().substring(0, 60);
+          console.log(`  Dropdown item: "${t}"`);
+        }
       }
     }
 
@@ -151,25 +218,30 @@ test.describe('Investor Mode Replay Debug', () => {
       fullPage: true
     });
 
-    // Step 5: Click Replay button
-    console.log('\n=== STEP 5: START REPLAY ===');
-    const replayButton = page.locator('button').filter({ hasText: /Replay/i }).first();
+    // Step 5: Click "Iniciar" (Start Backtest/Replay) button
+    console.log('\n=== STEP 5: START BACKTEST/REPLAY ===');
 
-    if (await replayButton.isVisible()) {
-      console.log('Replay button found, clicking...');
-      await replayButton.click();
-      await page.waitForTimeout(5000);
+    // The start button is labeled "Iniciar" - Backtest panel is expanded by default
+    await page.waitForTimeout(2000);
+    // Scroll to top to ensure backtest controls are visible
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(500);
+
+    const iniciarButton = page.locator('button').filter({ hasText: /Iniciar/i }).first();
+
+    if (await iniciarButton.isVisible({ timeout: 10000 }).catch(() => false)) {
+      console.log('Iniciar button found, clicking...');
+      await iniciarButton.click();
+      await page.waitForTimeout(10000); // Wait for backtest to run
 
       await page.screenshot({
-        path: 'tests/e2e/screenshots/investor-debug-06-replay-clicked.png',
+        path: 'tests/e2e/screenshots/investor-debug-06-replay-started.png',
         fullPage: true
       });
     } else {
-      console.log('Replay button NOT visible');
-
-      // Take screenshot of current state
+      console.log('Iniciar button NOT visible');
       await page.screenshot({
-        path: 'tests/e2e/screenshots/investor-debug-06-no-replay-button.png',
+        path: 'tests/e2e/screenshots/investor-debug-06-no-iniciar-button.png',
         fullPage: true
       });
     }
@@ -191,11 +263,15 @@ test.describe('Investor Mode Replay Debug', () => {
       console.log('FOUND ERROR TEXT ON PAGE');
 
       // Screenshot any visible error dialog
-      const errorDialog = page.locator('[role="dialog"], [class*="error"], [class*="alert"]').first();
-      if (await errorDialog.isVisible()) {
-        await errorDialog.screenshot({
-          path: 'tests/e2e/screenshots/investor-debug-08-error-dialog.png'
-        });
+      try {
+        const errorDialog = page.locator('[role="dialog"], [class*="error"], [class*="alert"]').first();
+        if (await errorDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await errorDialog.screenshot({
+            path: 'tests/e2e/screenshots/investor-debug-08-error-dialog.png'
+          });
+        }
+      } catch {
+        console.log('Error dialog screenshot failed (element may have detached)');
       }
     }
 

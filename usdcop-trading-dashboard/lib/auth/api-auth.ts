@@ -174,6 +174,26 @@ type ApiHandler = (
  */
 export function withAuth(handler: ApiHandler, options: ApiAuthOptions = {}) {
   return async (request: NextRequest): Promise<NextResponse> => {
+    // Dev mode bypass: skip auth when DEV_MODE is enabled
+    const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+    if (isDevMode) {
+      const devUser: SessionUser = {
+        id: 'dev-user',
+        username: 'admin',
+        role: 'admin',
+        email: 'admin@dev.local',
+      };
+      try {
+        return await handler(request, { user: devUser });
+      } catch (error) {
+        console.error('[ApiAuth] Handler error:', error);
+        return NextResponse.json(
+          { error: 'Internal server error', message: error instanceof Error ? error.message : 'Unknown error', timestamp: new Date().toISOString() },
+          { status: 500 }
+        );
+      }
+    }
+
     const auth = await protectApiRoute(request, options);
 
     if (!auth.authenticated || !auth.user) {
