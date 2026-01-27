@@ -14,10 +14,12 @@ Supported Formats:
     - US format: 01/15/2024
     - Compact format: 20240115
     - EMBI format: 06Ene26 (Spanish months)
+    - Investing.com English: "Jan 22, 2026", "January 22, 2026"
+    - Investing.com Spanish: "22 ene. 2026", "22 enero 2026"
     - pandas Timestamp
     - datetime/date objects
 
-Version: 1.0.0
+Version: 1.1.0
 """
 
 from __future__ import annotations
@@ -35,11 +37,36 @@ class DateParser:
     Handles all date formats encountered in the pipeline.
     """
 
-    # Spanish month names for EMBI/BanRep parsing
+    # Spanish month names for EMBI/BanRep/Investing.com parsing
     SPANISH_MONTHS = {
-        'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04',
-        'may': '05', 'jun': '06', 'jul': '07', 'ago': '08',
-        'sep': '09', 'set': '09', 'oct': '10', 'nov': '11', 'dic': '12'
+        'ene': '01', 'enero': '01',
+        'feb': '02', 'febrero': '02',
+        'mar': '03', 'marzo': '03',
+        'abr': '04', 'abril': '04',
+        'may': '05', 'mayo': '05',
+        'jun': '06', 'junio': '06',
+        'jul': '07', 'julio': '07',
+        'ago': '08', 'agosto': '08',
+        'sep': '09', 'set': '09', 'sept': '09', 'septiembre': '09',
+        'oct': '10', 'octubre': '10',
+        'nov': '11', 'noviembre': '11',
+        'dic': '12', 'diciembre': '12',
+    }
+
+    # English month names for Investing.com parsing
+    ENGLISH_MONTHS = {
+        'jan': '01', 'january': '01',
+        'feb': '02', 'february': '02',
+        'mar': '03', 'march': '03',
+        'apr': '04', 'april': '04',
+        'may': '05',
+        'jun': '06', 'june': '06',
+        'jul': '07', 'july': '07',
+        'aug': '08', 'august': '08',
+        'sep': '09', 'sept': '09', 'september': '09',
+        'oct': '10', 'october': '10',
+        'nov': '11', 'november': '11',
+        'dec': '12', 'december': '12',
     }
 
     # Common date formats to try (in order of priority)
@@ -93,6 +120,11 @@ class DateParser:
             if embi_result:
                 return embi_result
 
+            # Try Investing.com formats
+            investing_result = cls._parse_investing_format(value)
+            if investing_result:
+                return investing_result
+
             # Try standard formats
             for fmt in cls.DATE_FORMATS:
                 try:
@@ -124,13 +156,81 @@ class DateParser:
         match = re.match(r'(\d{2})([A-Za-z]{3})(\d{2})', value)
         if match:
             day, month_txt, year_2d = match.groups()
-            month = cls.SPANISH_MONTHS.get(month_txt.lower())
+            month = cls.SPANISH_MONTHS.get(month_txt.lower()[:3])
             if month:
                 # 2-digit year conversion (00-49 = 2000s, 50-99 = 1900s)
                 year_int = int(year_2d)
                 year = f"20{year_2d}" if year_int <= 49 else f"19{year_2d}"
                 return f"{year}-{month}-{day}"
         return None
+
+    @classmethod
+    def _parse_investing_format(cls, value: str) -> Optional[str]:
+        """
+        Parse Investing.com date formats.
+
+        Supported formats:
+            - English: "Jan 22, 2026", "January 22, 2026"
+            - Spanish: "22 ene. 2026", "22 enero 2026"
+
+        Args:
+            value: Date string from Investing.com
+
+        Returns:
+            ISO date string (YYYY-MM-DD) or None
+        """
+        if not value:
+            return None
+
+        # Clean up the string
+        value = value.strip().lower()
+        value = value.replace('.', '').strip()
+
+        # Try English format: "jan 22, 2026" or "january 22, 2026"
+        try:
+            parts = value.replace(',', '').split()
+            if len(parts) == 3:
+                month_str = parts[0]
+                day = int(parts[1])
+                year = int(parts[2])
+
+                # Check English months first
+                month = cls.ENGLISH_MONTHS.get(month_str[:3])
+                if month:
+                    return f"{year:04d}-{month}-{day:02d}"
+        except (ValueError, IndexError):
+            pass
+
+        # Try Spanish format: "22 ene 2026" or "22 enero 2026"
+        try:
+            parts = value.split()
+            if len(parts) == 3:
+                day = int(parts[0])
+                month_str = parts[1][:3]  # First 3 chars
+                year = int(parts[2])
+
+                month = cls.SPANISH_MONTHS.get(month_str)
+                if month:
+                    return f"{year:04d}-{month}-{day:02d}"
+        except (ValueError, IndexError):
+            pass
+
+        return None
+
+    @classmethod
+    def parse_investing_date(cls, value: str) -> Optional[str]:
+        """
+        Public method to parse Investing.com date formats.
+
+        This is a convenience wrapper for external use.
+
+        Args:
+            value: Date string from Investing.com
+
+        Returns:
+            ISO date string (YYYY-MM-DD) or None
+        """
+        return cls._parse_investing_format(value) or cls.parse(value)
 
     @classmethod
     def parse_to_date(cls, value: Any) -> Optional[date]:

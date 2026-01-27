@@ -15,8 +15,9 @@ Strategies:
     - BCRPExtractionStrategy: EMBI spread from Peru central bank
     - FedesarrolloExtractionStrategy: Colombian confidence indices
     - DANEExtractionStrategy: Colombian trade balance data
+    - FallbackExtractionStrategy: Composite strategy with primary + fallback sources
 
-Version: 1.0.0
+Version: 1.1.0
 """
 
 from __future__ import annotations
@@ -1195,3 +1196,271 @@ class BanRepSDMXExtractionStrategy(ConfigurableExtractor):
             logger.debug(f"[BanRep-SDMX] Alt parse error: {e}")
 
         return extracted
+
+
+# =============================================================================
+# Fallback Extraction Strategy (Primary + Fallback Sources)
+# =============================================================================
+
+class FallbackExtractionStrategy(ConfigurableExtractor):
+    """
+    Composite extraction strategy with primary source and fallback.
+
+    Implements per-indicator fallback logic:
+    1. Attempts extraction from primary source (e.g., Investing.com)
+    2. For each failed indicator, attempts fallback source (e.g., FRED)
+    3. Merges results from both sources
+
+    This strategy enables:
+    - Same-day data from Investing.com when available
+    - Reliable fallback to FRED/TwelveData if scraping fails
+    - Per-indicator granularity (not all-or-nothing)
+
+    Contract: CTR-L0-FALLBACK-001
+
+    Configuration:
+        multi_source_indicators:
+          fxrt_index_dxy_usa_d_dxy:
+            primary_source: investing
+            primary_url: https://www.investing.com/indices/usdollar-historical-data
+            primary_pair_id: 8827
+            fallback_source: fred
+            fallback_series_id: DTWEXBGS
+    """
+
+    def __init__(
+        self,
+        primary_strategy: BaseMacroExtractor,
+        fallback_strategy: BaseMacroExtractor,
+        multi_source_config: Dict[str, Dict[str, Any]]
+    ):
+        """
+        Initialize fallback strategy with primary and fallback extractors.
+
+        Args:
+            primary_strategy: Primary extraction strategy (e.g., InvestingExtractionStrategy)
+            fallback_strategy: Fallback extraction strategy (e.g., FREDExtractionStrategy)
+            multi_source_config: Multi-source indicator configuration from YAML
+        """
+        super().__init__()
+        self.primary = primary_strategy
+        self.fallback = fallback_strategy
+        self.multi_source_config = multi_source_config
+
+    @property
+    def source_name(self) -> str:
+        return f"{self.primary.source_name}+{self.fallback.source_name}"
+
+    def extract(
+        self,
+        indicators: Dict[str, str],
+        lookback_days: int,
+        **kwargs
+    ) -> ExtractionResult:
+        """
+        Extract indicators with automatic fallback.
+
+        Process:
+        1. Extract all indicators from primary source
+        2. Identify indicators with no data or errors
+        3. For failed indicators, attempt fallback source
+        4. Merge results
+
+        Args:
+            indicators: Mapping of source_id -> column_name
+            lookback_days: Days of historical data
+            **kwargs: Additional options
+
+        Returns:
+            Combined ExtractionResult from both sources
+        """
+        start_time = datetime.utcnow()
+        combined_data: Dict[str, Dict[str, float]] = {}
+        all_errors: List[str] = []
+
+        # Step 1: Try primary source for all indicators
+        logger.info(f"[Fallback] Attempting primary source: {self.primary.source_name}")
+        primary_result = self.primary.extract(indicators, lookback_days, **kwargs)
+
+        # Copy primary data
+        if primary_result.data:
+            for date_str, values in primary_result.data.items():
+                combined_data[date_str] = values.copy()
+
+        # Step 2: Identify failed indicators
+        failed_indicators = self._identify_failed_indicators(
+            primary_result,
+            indicators
+        )
+
+        if not failed_indicators:
+            logger.info(f"[Fallback] All indicators extracted from primary source")
+            return self._create_result(combined_data, primary_result.errors, start_time)
+
+        logger.warning(
+            f"[Fallback] {len(failed_indicators)} indicators failed, "
+            f"attempting fallback: {self.fallback.source_name}"
+        )
+
+        # Step 3: Map failed indicators to fallback source IDs
+        fallback_mapping = self._map_to_fallback(failed_indicators)
+
+        if not fallback_mapping:
+            logger.warning("[Fallback] No fallback mappings found for failed indicators")
+            all_errors.extend(primary_result.errors)
+            return self._create_result(combined_data, all_errors, start_time)
+
+        # Step 4: Extract from fallback source
+        fallback_result = self.fallback.extract(
+            fallback_mapping,
+            lookback_days,
+            **kwargs
+        )
+
+        # Step 5: Merge fallback data
+        if fallback_result.data:
+            for date_str, values in fallback_result.data.items():
+                if date_str not in combined_data:
+                    combined_data[date_str] = {}
+                # Only add columns that are missing
+                for col, val in values.items():
+                    if col not in combined_data[date_str]:
+                        combined_data[date_str][col] = val
+
+        # Combine errors
+        all_errors.extend(primary_result.errors)
+        all_errors.extend([f"[fallback] {e}" for e in fallback_result.errors])
+
+        logger.info(
+            f"[Fallback] Combined result: {len(combined_data)} dates, "
+            f"{primary_result.records_extracted} from primary, "
+            f"{fallback_result.records_extracted} from fallback"
+        )
+
+        return self._create_result(combined_data, all_errors, start_time)
+
+    def _identify_failed_indicators(
+        self,
+        result: ExtractionResult,
+        expected: Dict[str, str]
+    ) -> Dict[str, str]:
+        """
+        Identify indicators that failed to extract.
+
+        Args:
+            result: Extraction result to check
+            expected: Expected source_id -> column mapping
+
+        Returns:
+            Dict of failed source_id -> column mappings
+        """
+        failed = {}
+
+        # Get all columns that were extracted
+        extracted_columns = set()
+        if result.data:
+            for values in result.data.values():
+                extracted_columns.update(values.keys())
+
+        # Find columns with no data
+        for source_id, column in expected.items():
+            if column not in extracted_columns:
+                failed[source_id] = column
+                logger.debug(f"[Fallback] No data for {column} from primary")
+
+        return failed
+
+    def _map_to_fallback(
+        self,
+        failed_indicators: Dict[str, str]
+    ) -> Dict[str, str]:
+        """
+        Map failed indicators to fallback source IDs.
+
+        Uses multi_source_config to find fallback series IDs or symbols.
+
+        Args:
+            failed_indicators: source_id -> column mapping of failed indicators
+
+        Returns:
+            fallback_source_id -> column mapping for fallback extraction
+        """
+        fallback_mapping = {}
+
+        for source_id, column in failed_indicators.items():
+            # Look up in multi_source_config
+            config = self.multi_source_config.get(column, {})
+
+            fallback_series = config.get('fallback_series_id')  # FRED
+            fallback_symbol = config.get('fallback_symbol')  # TwelveData
+
+            fallback_id = fallback_series or fallback_symbol
+
+            if fallback_id:
+                fallback_mapping[fallback_id] = column
+                logger.debug(f"[Fallback] {column} -> {fallback_id}")
+            else:
+                logger.warning(f"[Fallback] No fallback configured for {column}")
+
+        return fallback_mapping
+
+    def _create_result(
+        self,
+        data: Dict[str, Dict[str, float]],
+        errors: List[str],
+        start_time: datetime
+    ) -> ExtractionResult:
+        """Create ExtractionResult with combined metadata."""
+        end_time = datetime.utcnow()
+        return ExtractionResult(
+            data=data,
+            errors=errors,
+            records_extracted=len(data),
+            source_name=self.source_name,
+            extraction_time=start_time,
+            duration_seconds=(end_time - start_time).total_seconds(),
+        )
+
+
+def create_fallback_strategy(
+    primary_source: str,
+    fallback_source: str,
+    config: Dict[str, Any]
+) -> Optional[FallbackExtractionStrategy]:
+    """
+    Factory function to create a FallbackExtractionStrategy.
+
+    Args:
+        primary_source: Primary source name ('investing')
+        fallback_source: Fallback source name ('fred' or 'twelvedata')
+        config: Full configuration from l0_macro_sources.yaml
+
+    Returns:
+        Configured FallbackExtractionStrategy or None if sources not available
+    """
+    sources_config = config.get('sources', {})
+    multi_source_config = config.get('multi_source_indicators', {})
+
+    # Create primary strategy
+    primary_config = sources_config.get(primary_source, {})
+    if primary_source == 'investing':
+        primary_strategy = InvestingExtractionStrategy(primary_config)
+    else:
+        logger.error(f"Unsupported primary source: {primary_source}")
+        return None
+
+    # Create fallback strategy
+    fallback_config = sources_config.get(fallback_source, {})
+    if fallback_source == 'fred':
+        fallback_strategy = FREDExtractionStrategy(fallback_config)
+    elif fallback_source == 'twelvedata':
+        fallback_strategy = TwelveDataExtractionStrategy(fallback_config)
+    else:
+        logger.error(f"Unsupported fallback source: {fallback_source}")
+        return None
+
+    return FallbackExtractionStrategy(
+        primary_strategy=primary_strategy,
+        fallback_strategy=fallback_strategy,
+        multi_source_config=multi_source_config
+    )

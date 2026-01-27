@@ -18,6 +18,7 @@ import { getToken } from 'next-auth/jwt';
 const PUBLIC_ROUTES = [
   '/',           // Landing page is public
   '/login',
+  '/execution', // Execution module has its own auth system (localStorage-based)
   '/api/auth',
   '/api/health',
   '/api/proxy/trading/health',  // Health checks don't need auth

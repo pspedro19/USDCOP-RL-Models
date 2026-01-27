@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
 
 interface Params {
   params: Promise<{ exchange: string }>;
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { exchange } = await params;
     const authHeader = request.headers.get('authorization');
 
-    const response = await fetch(`${BACKEND_URL}/exchanges/${exchange}/balance`, {
+    const response = await fetch(`${BACKEND_URL}/api/exchanges/credentials/${exchange}/balances`, {
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader && { Authorization: authHeader }),

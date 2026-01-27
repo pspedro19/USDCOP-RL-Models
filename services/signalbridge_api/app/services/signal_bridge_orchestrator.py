@@ -823,7 +823,3 @@ class SignalBridgeOrchestrator:
                 logger.error(f"Error notifying listener: {e}")
 
 
-# Missing UserTradingState class - add to contracts if needed
-class UserTradingState:
-    """User trading state placeholder."""
-    pass

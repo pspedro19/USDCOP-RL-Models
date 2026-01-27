@@ -289,7 +289,7 @@ class SignalService:
             stop_loss=signal.stop_loss,
             take_profit=signal.take_profit,
             source=signal.source,
-            metadata=signal.metadata or {},
+            metadata=signal.signal_metadata or {},
             created_at=signal.created_at,
             processed_at=signal.processed_at,
             is_processed=signal.is_processed,

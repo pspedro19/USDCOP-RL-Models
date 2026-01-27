@@ -25,7 +25,7 @@ models:
   # Production model - PPO with 15-dimensional observation space
   - name: ppo_primary
     algorithm: PPO
-    onnx_path: /models/ppo_production/model.onnx
+    onnx_path: /models/ppo_v20_production/model_v20.onnx
     observation_dim: 15
     action_space_size: 3
     weight: 1.0

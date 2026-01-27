@@ -2,8 +2,10 @@
 Authentication middleware and dependencies.
 """
 
+import os
+from datetime import datetime
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +20,25 @@ from app.services.user import UserService
 
 # HTTP Bearer security scheme
 security = HTTPBearer(auto_error=False)
+
+# Dev mode flag - skip authentication when enabled
+DEV_MODE = os.getenv("SIGNALBRIDGE_DEV_MODE", "false").lower() == "true"
+
+# Default dev user ID - use integer to match existing users table schema
+DEV_USER_ID = 1  # Integer ID to match existing database schema
+
+
+class DevUser:
+    """Dummy user object for dev mode."""
+    def __init__(self):
+        self.id = DEV_USER_ID  # Integer ID
+        self.email = "admin@trading.usdcop.com"
+        self.name = "Dev User"
+        self.is_active = True
+        self.is_verified = True
+        self.last_login = datetime.utcnow()
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
 
 
 async def get_current_user(
@@ -37,6 +58,10 @@ async def get_current_user(
     Raises:
         HTTPException: If authentication fails
     """
+    # In dev mode, return a dummy user without requiring authentication
+    if DEV_MODE:
+        return DevUser()
+
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

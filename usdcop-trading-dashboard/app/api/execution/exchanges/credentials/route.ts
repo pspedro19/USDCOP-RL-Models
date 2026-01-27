@@ -1,19 +1,19 @@
 /**
- * Kill Switch API Route
- * =====================
+ * Exchange Credentials API Route
+ * ===============================
  *
- * Proxy routes to SignalBridge backend /signal-bridge/kill-switch
+ * Proxy route to SignalBridge backend /exchanges/credentials
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
+const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://usdcop-signalbridge:8085';
 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
 
-    const response = await fetch(`${BACKEND_URL}/api/signal-bridge/kill-switch/status`, {
+    const response = await fetch(`${BACKEND_URL}/api/exchanges/credentials`, {
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader && { Authorization: authHeader }),
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { error: error.detail || 'Failed to get kill switch status' },
+        { error: error.detail || 'Failed to get credentials' },
         { status: response.status }
       );
     }
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('[API] Kill switch status error:', error);
+    console.error('[API] Exchange credentials error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/api/signal-bridge/kill-switch`, {
+    const response = await fetch(`${BACKEND_URL}/api/exchanges/credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { error: error.detail || 'Failed to toggle kill switch' },
+        { error: error.detail || 'Failed to save credentials' },
         { status: response.status }
       );
     }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('[API] Kill switch toggle error:', error);
+    console.error('[API] Exchange credentials POST error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
