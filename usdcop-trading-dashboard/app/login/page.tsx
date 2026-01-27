@@ -234,6 +234,48 @@ export default function LoginPage() {
       localStorage.setItem('username', username);
       sessionStorage.setItem('username', username);
 
+      // Also authenticate with SignalBridge (for execution module)
+      // Use email format: username@trading.usdcop.com
+      // Password must meet SignalBridge requirements: uppercase, lowercase, digit (min 8 chars)
+      const signalBridgeEmail = `${username}@trading.usdcop.com`;
+      // Transform password to meet SignalBridge requirements: capitalize first letter + ensure complexity
+      const signalBridgePassword = password.charAt(0).toUpperCase() + password.slice(1) + '!A';
+      try {
+        // Try to login to SignalBridge
+        const sbLoginResponse = await fetch('/api/execution/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: signalBridgeEmail, password: signalBridgePassword }),
+        });
+
+        if (sbLoginResponse.ok) {
+          const sbData = await sbLoginResponse.json();
+          if (sbData.access_token) {
+            localStorage.setItem('auth-token', sbData.access_token);
+            console.log('[LOGIN] SignalBridge auth success');
+          }
+        } else if (sbLoginResponse.status === 401 || sbLoginResponse.status === 404) {
+          // User not found in SignalBridge - try to register
+          console.log('[LOGIN] SignalBridge user not found, attempting registration');
+          const sbRegisterResponse = await fetch('/api/execution/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: signalBridgeEmail, password: signalBridgePassword, name: username }),
+          });
+
+          if (sbRegisterResponse.ok) {
+            const sbData = await sbRegisterResponse.json();
+            if (sbData.access_token) {
+              localStorage.setItem('auth-token', sbData.access_token);
+              console.log('[LOGIN] SignalBridge registration success');
+            }
+          }
+        }
+      } catch (sbError) {
+        // SignalBridge auth failed - continue without it
+        console.log('[LOGIN] SignalBridge auth failed, continuing without:', sbError);
+      }
+
       const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
       console.log('[LOGIN] Local auth success, redirecting to:', callbackUrl);
       // Use setTimeout to allow React state to settle before navigation

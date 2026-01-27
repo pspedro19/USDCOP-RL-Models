@@ -1,0 +1,9 @@
+{
+  "USDCLP": {
+    "indicator": "USDCLP",
+    "column": "fxrt_spot_usdclp_chl_d_usdclp",
+    "rows": 1583,
+    "status": "SUCCESS",
+    "warnings": []
+  }
+}

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
 
 interface Params {
   params: Promise<{ exchange: string }>;
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     const authHeader = request.headers.get('authorization');
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/exchanges/${exchange}/connect`, {
+    const response = await fetch(`${BACKEND_URL}/api/exchanges/credentials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -674,6 +674,8 @@ services:
       # Server-side API URLs (internal Docker network)
       TRADING_API_URL: http://usdcop-trading-api:8000
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
+      # SignalBridge API (internal Docker network)
+      SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
       # Consolidated: multi-model-api removed, using backtest-api for all model endpoints
       MULTI_MODEL_API_URL: http://usdcop-backtest-api:8000
       BACKTEST_API_URL: http://usdcop-backtest-api:8000
@@ -1411,3 +1413,44 @@ services:
   # - Single source (DAG) is more maintainable
   # - Original file archived to: archive/services-deprecated/realtime_market_ingestion_v2.py
   # ================================================
+
+  # ==========================================================================
+  # SIGNALBRIDGE API - Exchange Connection & Trade Execution
+  # ==========================================================================
+  signalbridge-api:
+    build:
+      context: ./services/signalbridge_api
+      dockerfile: Dockerfile
+    container_name: usdcop-signalbridge
+    env_file:
+      - .env
+    environment:
+      # Note: Using direct values since env var interpolation has issues on some Windows setups
+      - DATABASE_URL=postgresql+asyncpg://admin:admin123@postgres:5432/usdcop_trading
+      - DATABASE_SYNC_URL=postgresql://admin:admin123@postgres:5432/usdcop_trading
+      - REDIS_URL=redis://redis:6379/0
+      - VAULT_ADDR=http://vault:8200
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      - VAULT_ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-me-32-byte-encryption-key}
+      - BINANCE_TESTNET=${BINANCE_TESTNET:-false}
+      - MEXC_TESTNET=${MEXC_TESTNET:-false}
+      - APP_ENV=development
+      - DEBUG=true
+      - SIGNALBRIDGE_DEV_MODE=true
+    volumes:
+      - ./services/signalbridge_api:/app
+    ports:
+      - "8085:8000"
+    networks:
+      - usdcop-trading-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

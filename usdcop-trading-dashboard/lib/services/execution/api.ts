@@ -44,12 +44,21 @@ async function fetchWithAuth<T>(
 
     clearTimeout(timeoutId);
 
-    // Handle 401 - redirect to login
+    // Handle 401 - only redirect if not authenticated via main app
     if (response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
         localStorage.removeItem('auth-storage');
-        window.location.href = '/execution/login';
+
+        // Check if user is authenticated via main app login
+        const mainAppAuth = localStorage.getItem('isAuthenticated') === 'true' ||
+                           sessionStorage.getItem('isAuthenticated') === 'true';
+
+        // Only redirect to login if not authenticated at all
+        if (!mainAppAuth) {
+          window.location.href = '/login?callbackUrl=' + encodeURIComponent(window.location.pathname);
+        }
+        // If main app auth exists, don't redirect - let the error be handled by calling code
       }
       throw new Error('Unauthorized');
     }

@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Zap,
+  Home,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EXECUTION_ROUTES } from '@/lib/config/execution/constants';
@@ -34,20 +35,32 @@ export default function ExecutionLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication
+  // Check authentication - supports both main app auth and execution module auth
   useEffect(() => {
-    const token = localStorage.getItem('auth-token');
-    if (!token && pathname !== EXECUTION_ROUTES.LOGIN) {
-      router.push(EXECUTION_ROUTES.LOGIN);
-    } else if (token) {
+    const executionToken = localStorage.getItem('auth-token');
+    const mainAppAuth = localStorage.getItem('isAuthenticated') === 'true' ||
+                        sessionStorage.getItem('isAuthenticated') === 'true';
+
+    // User is authenticated if they have either token
+    if (executionToken || mainAppAuth) {
       setIsAuthenticated(true);
+    } else if (pathname !== EXECUTION_ROUTES.LOGIN) {
+      // Not authenticated, redirect to main login (not execution login)
+      router.push('/login?callbackUrl=' + encodeURIComponent(pathname));
     }
   }, [pathname, router]);
 
   const handleLogout = () => {
+    // Clear execution module auth
     localStorage.removeItem('auth-token');
     localStorage.removeItem('auth-storage');
-    router.push(EXECUTION_ROUTES.LOGIN);
+    // Clear main app auth
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('username');
+    sessionStorage.removeItem('isAuthenticated');
+    sessionStorage.removeItem('username');
+    // Redirect to main login
+    router.push('/login');
   };
 
   // Show login page without layout
@@ -79,6 +92,17 @@ export default function ExecutionLayout({
               <p className="text-xs text-gray-500">Execution Module</p>
             </div>
           </div>
+        </div>
+
+        {/* Back to Hub */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={() => router.push('/hub')}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-gray-700/50 hover:border-cyan-500/30 transition-all duration-200"
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-sm font-medium">Volver al Hub</span>
+          </button>
         </div>
 
         {/* Navigation */}
@@ -156,6 +180,18 @@ export default function ExecutionLayout({
             className="lg:hidden fixed top-14 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-xl border-b border-gray-800/50"
           >
             <nav className="p-4 space-y-1">
+              {/* Back to Hub - Mobile */}
+              <button
+                onClick={() => {
+                  router.push('/hub');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-cyan-400 hover:bg-cyan-500/10 border border-cyan-500/30 mb-2"
+              >
+                <Home className="w-5 h-5" />
+                <span>Volver al Hub</span>
+              </button>
+
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;

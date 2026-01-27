@@ -1,0 +1,733 @@
+# =============================================================================
+# CALENDARIO ECONÓMICO MAESTRO
+# =============================================================================
+# Single Source of Truth para fechas de publicación de indicadores macro
+# Contract: CTR-L0-CALENDAR-001
+#
+# PROPÓSITO:
+#   - Prevenir data leakage en features de ML
+#   - Forward-fill respetando fechas de publicación reales
+#   - Tracking de provenance de datos
+#
+# CONVENCIÓN DE FECHAS:
+#   - data_month: Mes al que corresponde el dato (ej: 2025-12)
+#   - release_date: Fecha en que se publica (ej: 2026-01-13)
+#   - month_lag: Meses entre data_month y release_date
+#
+# Version: 1.0.0
+# Last Updated: 2026-01-24
+# =============================================================================
+
+version: "1.0.0"
+last_updated: "2026-01-24"
+
+# =============================================================================
+# USA MONTHLY VARIABLES (FRED)
+# =============================================================================
+# 8 variables mensuales de FRED
+# Ordenadas por día típico de publicación (más temprano a más tardío)
+
+usa_monthly:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MERCADO LABORAL - PRIMERO EN PUBLICARSE (~día 7)
+  # ═══════════════════════════════════════════════════════════════════════════
+  labr_unemployment_usa_m_unrate:
+    fred_code: UNRATE
+    name: "Unemployment Rate USA"
+    db_column: labr_unemployment_usa_m_unrate
+    category: labor_market
+    frequency: monthly
+
+    publication:
+      day_range: [6, 10]
+      typical_day: 7
+      time: "08:30:00"
+      timezone: US/Eastern
+      month_lag: 1
+      release_pattern: "First Friday of month"
+
+    source:
+      agency: "Bureau of Labor Statistics (BLS)"
+      release_name: "Employment Situation (NFP Report)"
+      url: "https://www.bls.gov/news.release/empsit.toc.htm"
+
+    integration:
+      investing_calendar_id: 294
+      investing_calendar_url: "https://www.investing.com/economic-calendar/nonfarm-payrolls-227"
+
+    validation:
+      priority: HIGH
+      leakage_risk: LOW
+      expected_range: [2, 20]  # Porcentaje
+
+    notes:
+      - "PRIMERA serie mensual en publicarse"
+      - "Solo 6-10 días de delay"
+      - "Alta volatilidad de mercado al publicarse"
+      - "Incluye NFP (Nonfarm Payrolls)"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # INFLACIÓN CPI - (~día 13)
+  # ═══════════════════════════════════════════════════════════════════════════
+  infl_cpi_all_usa_m_cpiaucsl:
+    fred_code: CPIAUCSL
+    name: "CPI All Items USA"
+    db_column: infl_cpi_all_usa_m_cpiaucsl
+    category: inflation
+    frequency: monthly
+
+    publication:
+      day_range: [10, 15]
+      typical_day: 13
+      time: "08:30:00"
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "Bureau of Labor Statistics (BLS)"
+      release_name: "Consumer Price Index"
+      url: "https://www.bls.gov/cpi/"
+
+    integration:
+      investing_calendar_id: 736
+      investing_calendar_url: "https://www.investing.com/economic-calendar/cpi-733"
+      simultaneous_with: infl_cpi_core_usa_m_cpilfesl
+
+    validation:
+      priority: HIGH
+      leakage_risk: MEDIUM
+      expected_range: [200, 400]  # Index value
+
+    notes:
+      - "Publicado con Core CPI simultáneamente"
+      - "Típicamente día 13 del mes siguiente"
+      - "Alta volatilidad de mercado"
+
+  infl_cpi_core_usa_m_cpilfesl:
+    fred_code: CPILFESL
+    name: "Core CPI USA (Less Food & Energy)"
+    db_column: infl_cpi_core_usa_m_cpilfesl
+    category: inflation
+    frequency: monthly
+
+    publication:
+      day_range: [10, 15]
+      typical_day: 13
+      time: "08:30:00"
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "Bureau of Labor Statistics (BLS)"
+      release_name: "Consumer Price Index"
+      url: "https://www.bls.gov/cpi/"
+
+    integration:
+      investing_calendar_id: 1226
+      simultaneous_with: infl_cpi_all_usa_m_cpiaucsl
+
+    validation:
+      priority: HIGH
+      leakage_risk: MEDIUM
+      expected_range: [200, 400]
+      fed_preference: true
+
+    notes:
+      - "Preferida por la Fed para decisiones de política"
+      - "Excluye alimentos y energía (menos volátil)"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PRODUCCIÓN INDUSTRIAL - (~día 16)
+  # ═══════════════════════════════════════════════════════════════════════════
+  prod_industrial_usa_m_indpro:
+    fred_code: INDPRO
+    name: "Industrial Production Index USA"
+    db_column: prod_industrial_usa_m_indpro
+    category: production
+    frequency: monthly
+
+    publication:
+      day_range: [15, 18]
+      typical_day: 16
+      time: "09:15:00"  # DIFERENTE - 09:15 no 08:30
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "Federal Reserve Board"
+      release_name: "Industrial Production and Capacity Utilization"
+      url: "https://www.federalreserve.gov/releases/g17/"
+
+    integration:
+      investing_calendar_id: 82
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: MEDIUM
+      expected_range: [80, 120]  # Index
+
+    notes:
+      - "HORA DIFERENTE: 09:15 ET (no 08:30)"
+      - "Publicación a mediados de mes"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FED FUNDS RATE - (~día 18)
+  # ═══════════════════════════════════════════════════════════════════════════
+  polr_fed_funds_usa_m_fedfunds:
+    fred_code: FEDFUNDS
+    name: "Federal Funds Effective Rate (Monthly Avg)"
+    db_column: polr_fed_funds_usa_m_fedfunds
+    category: interest_rates
+    frequency: monthly
+
+    publication:
+      day_range: [15, 20]
+      typical_day: 18
+      time: "16:15:00"
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "Federal Reserve Board"
+      release_name: "Selected Interest Rates"
+      url: "https://www.federalreserve.gov/releases/h15/"
+
+    integration:
+      investing_calendar_id: null  # No en calendario típico
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: MEDIUM
+      expected_range: [0, 10]  # Porcentaje
+
+    notes:
+      - "Promedio mensual de la tasa diaria"
+      - "Hora tardía de publicación"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONSUMER SENTIMENT - (~día 21)
+  # ═══════════════════════════════════════════════════════════════════════════
+  sent_consumer_usa_m_umcsent:
+    fred_code: UMCSENT
+    name: "University of Michigan Consumer Sentiment"
+    db_column: sent_consumer_usa_m_umcsent
+    category: sentiment
+    frequency: monthly
+
+    publication:
+      day_range: [20, 23]
+      typical_day: 21
+      time: "10:00:00"
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "University of Michigan"
+      release_name: "Consumer Sentiment Index"
+      url: "http://www.sca.isr.umich.edu/"
+
+    integration:
+      investing_calendar_id: 234
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: MEDIUM_HIGH
+      expected_range: [50, 120]  # Index
+
+    notes:
+      - "Versión preliminar ~día 10"
+      - "Versión final ~día 20-23"
+      - "Usar versión final para consistencia"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PCE INFLATION - (~día 22) - MÁXIMO DELAY
+  # ═══════════════════════════════════════════════════════════════════════════
+  infl_pce_usa_m_pcepi:
+    fred_code: PCEPI
+    name: "PCE Price Index USA"
+    db_column: infl_pce_usa_m_pcepi
+    category: inflation
+    frequency: monthly
+
+    publication:
+      day_range: [20, 25]
+      typical_day: 22
+      time: "08:30:00"
+      timezone: US/Eastern
+      month_lag: 2  # ⚠️ CASI 2 MESES
+
+    source:
+      agency: "Bureau of Economic Analysis (BEA)"
+      release_name: "Personal Income and Outlays"
+      url: "https://www.bea.gov/data/income-saving/personal-income"
+
+    integration:
+      investing_calendar_id: 905
+
+    validation:
+      priority: CRITICAL
+      leakage_risk: CRITICAL
+      expected_range: [80, 150]  # Index
+
+    critical_warnings:
+      - "⚠️⚠️⚠️ MAYOR DELAY DE TODAS: ~50-55 días"
+      - "⚠️ Dato Nov 2025 publicado 22 Ene 2026"
+      - "⚠️ ALTO RIESGO de data leakage"
+
+    notes:
+      - "Indicador FAVORITO de la Fed"
+      - "Considerar si delay justifica inclusión"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # M2 MONEY SUPPLY - (~día 25) - ÚLTIMO EN PUBLICARSE
+  # ═══════════════════════════════════════════════════════════════════════════
+  mnys_m2_supply_usa_m_m2sl:
+    fred_code: M2SL
+    name: "M2 Money Stock USA"
+    db_column: mnys_m2_supply_usa_m_m2sl
+    category: monetary_aggregates
+    frequency: monthly
+
+    publication:
+      day_range: [23, 27]
+      typical_day: 25
+      time: "16:30:00"  # POST-MARKET
+      timezone: US/Eastern
+      month_lag: 1
+
+    source:
+      agency: "Federal Reserve Board"
+      release_name: "Money Stock Measures (H.6)"
+      url: "https://www.federalreserve.gov/releases/h6/"
+
+    integration:
+      investing_calendar_id: null
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [15000, 25000]  # Billions USD
+
+    critical_warnings:
+      - "⚠️⚠️ ÚLTIMA serie mensual en publicarse"
+      - "⚠️ Día 23-27 del mes siguiente"
+      - "⚠️ Hora tardía: 16:30 (post-market)"
+
+    notes:
+      - "Considerar si delay justifica inclusión"
+
+# =============================================================================
+# COLOMBIA MONTHLY VARIABLES
+# =============================================================================
+# 8 variables mensuales de Colombia
+# Ordenadas por día típico de publicación
+
+colombia_monthly:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # IPC COLOMBIA - PRIMERO (~día 5)
+  # ═══════════════════════════════════════════════════════════════════════════
+  infl_cpi_total_col_m_ipccol:
+    name: "IPC Colombia Total"
+    db_column: infl_cpi_total_col_m_ipccol
+    category: inflation
+    frequency: monthly
+
+    publication:
+      day_range: [5, 8]
+      typical_day: 5
+      time: "08:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "DANE"
+      source_scraper: banrep
+      serie_id: "100002"
+      release_name: "Índice de Precios al Consumidor"
+      url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
+
+    validation:
+      priority: HIGH
+      leakage_risk: LOW
+      expected_range: [50, 300]  # Index
+
+    notes:
+      - "PRIMERA variable Colombia en publicarse"
+      - "Solo 5 días de delay"
+      - "Fuente oficial: DANE"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # RESERVAS INTERNACIONALES - (~día 8)
+  # ═══════════════════════════════════════════════════════════════════════════
+  rsbp_reserves_international_col_m_resint:
+    name: "Reservas Internacionales Colombia"
+    db_column: rsbp_reserves_international_col_m_resint
+    category: reserves
+    frequency: monthly
+
+    publication:
+      day_range: [5, 10]
+      typical_day: 8
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep
+      serie_id: "15051"
+      release_name: "Reservas Internacionales"
+      url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/15051/reservas_internacionales"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: LOW
+      expected_range: [40000, 80000]  # Millones USD
+
+    notes:
+      - "Publicación temprana"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ITCR - (~día 10)
+  # ═══════════════════════════════════════════════════════════════════════════
+  fxrt_reer_bilateral_col_m_itcr:
+    name: "Índice de Tasa de Cambio Real (ITCR)"
+    db_column: fxrt_reer_bilateral_col_m_itcr
+    category: fx_index
+    frequency: monthly
+
+    publication:
+      day_range: [8, 12]
+      typical_day: 10
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep
+      serie_id: "4170"
+      release_name: "Índice de Tasa de Cambio Real"
+      url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4170/indice_tasa_cambio_real_itcr"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: LOW
+      expected_range: [80, 150]  # Index
+
+    notes:
+      - "Índice de competitividad cambiaria"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TÉRMINOS DE INTERCAMBIO - (~día 12)
+  # ═══════════════════════════════════════════════════════════════════════════
+  ftrd_terms_trade_col_m_tot:
+    name: "Términos de Intercambio Colombia"
+    db_column: ftrd_terms_trade_col_m_tot
+    category: trade
+    frequency: monthly
+
+    publication:
+      day_range: [10, 15]
+      typical_day: 12
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep
+      serie_id: "4180"
+      release_name: "Índice de Términos de Intercambio"
+      url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4180/indice_terminos_intercambio_bienes"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: LOW
+      expected_range: [50, 150]  # Index
+
+    notes:
+      - "Ratio precios exportaciones/importaciones"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONFIANZA CONSUMIDOR - (~día 18)
+  # ═══════════════════════════════════════════════════════════════════════════
+  crsk_sentiment_cci_col_m_cci:
+    name: "Índice de Confianza del Consumidor Colombia"
+    db_column: crsk_sentiment_cci_col_m_cci
+    category: sentiment
+    frequency: monthly
+
+    publication:
+      day_range: [15, 20]
+      typical_day: 18
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "Fedesarrollo"
+      source_scraper: fedesarrollo
+      release_name: "Encuesta de Opinión del Consumidor"
+      url: "https://www.fedesarrollo.org.co/encuestas/consumidor"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: MEDIUM
+      expected_range: [-50, 50]  # Index (puede ser negativo)
+
+    notes:
+      - "Índice de sentimiento del consumidor"
+      - "Puede ser negativo (pesimismo)"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONFIANZA INDUSTRIAL - (~día 18)
+  # ═══════════════════════════════════════════════════════════════════════════
+  crsk_sentiment_ici_col_m_ici:
+    name: "Índice de Confianza Industrial Colombia"
+    db_column: crsk_sentiment_ici_col_m_ici
+    category: sentiment
+    frequency: monthly
+
+    publication:
+      day_range: [15, 20]
+      typical_day: 18
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+
+    source:
+      agency: "Fedesarrollo"
+      source_scraper: fedesarrollo
+      release_name: "Encuesta de Opinión Empresarial"
+      url: "https://www.fedesarrollo.org.co/encuestas/industria"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: MEDIUM
+      expected_range: [-30, 30]  # Index
+
+    notes:
+      - "Publicado junto con CCI"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EXPORTACIONES - MÁXIMO DELAY (~día 45)
+  # ═══════════════════════════════════════════════════════════════════════════
+  ftrd_exports_total_col_m_expusd:
+    name: "Exportaciones Totales Colombia"
+    db_column: ftrd_exports_total_col_m_expusd
+    category: trade
+    frequency: monthly
+
+    publication:
+      day_range: [40, 50]
+      typical_day: 45
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 2  # ⚠️ CASI 2 MESES
+
+    source:
+      agency: "DANE"
+      source_scraper: dane
+      release_name: "Balanza Comercial"
+      url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/exportaciones"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [2000, 8000]  # Millones USD
+
+    critical_warnings:
+      - "⚠️⚠️ MÁXIMO DELAY Colombia: ~45 días"
+      - "⚠️ Alto riesgo de data leakage"
+
+    notes:
+      - "Dato preliminar, puede ser revisado"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # IMPORTACIONES - MÁXIMO DELAY (~día 45)
+  # ═══════════════════════════════════════════════════════════════════════════
+  ftrd_imports_total_col_m_impusd:
+    name: "Importaciones Totales Colombia"
+    db_column: ftrd_imports_total_col_m_impusd
+    category: trade
+    frequency: monthly
+
+    publication:
+      day_range: [40, 50]
+      typical_day: 45
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 2
+
+    source:
+      agency: "DANE"
+      source_scraper: dane
+      release_name: "Balanza Comercial"
+      url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/importaciones"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [3000, 10000]  # Millones USD
+
+    critical_warnings:
+      - "⚠️⚠️ MÁXIMO DELAY Colombia: ~45 días"
+      - "⚠️ Publicado junto con exportaciones"
+
+# =============================================================================
+# QUARTERLY VARIABLES
+# =============================================================================
+
+quarterly:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # GDP USA - (~día 25 del mes siguiente al trimestre)
+  # ═══════════════════════════════════════════════════════════════════════════
+  gdpp_real_gdp_usa_q_gdp_q:
+    fred_code: GDP
+    name: "Real GDP USA"
+    db_column: gdpp_real_gdp_usa_q_gdp_q
+    category: output
+    frequency: quarterly
+
+    publication:
+      # Q4 data (Oct-Dec) published late January
+      # Q1 data (Jan-Mar) published late April
+      day_range: [25, 30]
+      typical_day: 27
+      time: "08:30:00"
+      timezone: US/Eastern
+      quarter_lag: 1  # Trimestre siguiente
+      releases_per_quarter: 3  # Advance, Second, Third
+
+    source:
+      agency: "Bureau of Economic Analysis (BEA)"
+      release_name: "Gross Domestic Product"
+      url: "https://www.bea.gov/data/gdp/gross-domestic-product"
+
+    integration:
+      investing_calendar_id: 375
+
+    validation:
+      priority: HIGH
+      leakage_risk: MEDIUM
+      expected_range: [15000, 30000]  # Billions USD
+
+    notes:
+      - "3 releases: Advance (~30 días), Second (~60 días), Third (~90 días)"
+      - "Usar Advance para menor delay"
+      - "Revisiones pueden ser significativas"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CUENTA CORRIENTE COLOMBIA - (~90 días después del trimestre)
+  # ═══════════════════════════════════════════════════════════════════════════
+  rsbp_current_account_col_q_cacct:
+    name: "Cuenta Corriente Colombia"
+    db_column: rsbp_current_account_col_q_cacct
+    category: balance_of_payments
+    frequency: quarterly
+
+    publication:
+      day_range: [85, 95]
+      typical_day: 90
+      time: "09:00:00"
+      timezone: America/Bogota
+      quarter_lag: 1
+      days_after_quarter: 90  # ~3 meses después
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep_bop
+      release_name: "Balanza de Pagos"
+      url: "https://www.banrep.gov.co/es/estadisticas/balanza-pagos"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [-20000, 5000]  # Millones USD (puede ser negativo)
+
+    critical_warnings:
+      - "⚠️⚠️ MÁXIMO DELAY: ~90 días"
+      - "⚠️ Dato Q3-2025 publicado ~Dic 2025"
+
+    notes:
+      - "Puede ser negativo (déficit)"
+      - "Delay muy largo - considerar utilidad"
+
+# =============================================================================
+# GLOBAL RULES
+# =============================================================================
+
+global_rules:
+
+  # Offsets por defecto si no hay calendario específico
+  default_offsets:
+    fred: 15
+    investing: 0
+    banrep: 10
+    fedesarrollo: 18
+    dane: 45
+    bcrp: 5
+
+  # Manejo de festivos
+  holiday_adjustment:
+    rule: "Si fecha cae en festivo, publicación se mueve al siguiente día hábil"
+    apply_to: [usa_monthly, colombia_monthly, quarterly]
+
+  # Prioridades de validación
+  validation_priorities:
+    CRITICAL:
+      - infl_pce_usa_m_pcepi
+    HIGH:
+      - infl_cpi_all_usa_m_cpiaucsl
+      - infl_cpi_core_usa_m_cpilfesl
+      - labr_unemployment_usa_m_unrate
+      - infl_cpi_total_col_m_ipccol
+      - gdpp_real_gdp_usa_q_gdp_q
+    MEDIUM:
+      - prod_industrial_usa_m_indpro
+      - mnys_m2_supply_usa_m_m2sl
+      - sent_consumer_usa_m_umcsent
+      - polr_fed_funds_usa_m_fedfunds
+      - crsk_sentiment_cci_col_m_cci
+      - crsk_sentiment_ici_col_m_ici
+      - ftrd_exports_total_col_m_expusd
+      - ftrd_imports_total_col_m_impusd
+      - rsbp_current_account_col_q_cacct
+    LOW:
+      - fxrt_reer_bilateral_col_m_itcr
+      - ftrd_terms_trade_col_m_tot
+      - rsbp_reserves_international_col_m_resint
+
+# =============================================================================
+# RESUMEN DE DELAYS (ordenado de menor a mayor)
+# =============================================================================
+#
+# MENOR DELAY (5-10 días):
+#   - labr_unemployment_usa_m_unrate: ~7 días
+#   - infl_cpi_total_col_m_ipccol: ~5 días
+#   - rsbp_reserves_international_col_m_resint: ~8 días
+#
+# DELAY MEDIO (10-20 días):
+#   - infl_cpi_all_usa_m_cpiaucsl: ~13 días
+#   - infl_cpi_core_usa_m_cpilfesl: ~13 días
+#   - prod_industrial_usa_m_indpro: ~16 días
+#   - polr_fed_funds_usa_m_fedfunds: ~18 días
+#   - crsk_sentiment_cci_col_m_cci: ~18 días
+#   - crsk_sentiment_ici_col_m_ici: ~18 días
+#
+# DELAY ALTO (20-30 días):
+#   - sent_consumer_usa_m_umcsent: ~21 días
+#   - mnys_m2_supply_usa_m_m2sl: ~25 días
+#   - gdpp_real_gdp_usa_q_gdp_q: ~27 días (advance)
+#
+# DELAY CRÍTICO (45+ días):
+#   - ftrd_exports_total_col_m_expusd: ~45 días
+#   - ftrd_imports_total_col_m_impusd: ~45 días
+#   - infl_pce_usa_m_pcepi: ~52 días ⚠️⚠️⚠️
+#   - rsbp_current_account_col_q_cacct: ~90 días ⚠️⚠️⚠️
+#
+# =============================================================================

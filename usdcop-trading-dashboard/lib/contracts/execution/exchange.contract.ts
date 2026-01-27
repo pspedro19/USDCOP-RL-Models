@@ -32,20 +32,23 @@ export const EXCHANGE_METADATA: Record<SupportedExchange, {
   logo: string;
   color: string;
   docsUrl: string;
+  description: string;
 }> = {
   binance: {
     name: 'binance',
     displayName: 'Binance',
-    logo: '/exchanges/binance.svg',
+    logo: '🔶',
     color: '#F0B90B',
     docsUrl: 'https://binance-docs.github.io/apidocs/',
+    description: 'World\'s largest crypto exchange',
   },
   mexc: {
     name: 'mexc',
     displayName: 'MEXC',
-    logo: '/exchanges/mexc.svg',
+    logo: '🟢',
     color: '#00B897',
     docsUrl: 'https://mexcdevelop.github.io/apidocs/',
+    description: 'Global crypto exchange',
   },
 };
 

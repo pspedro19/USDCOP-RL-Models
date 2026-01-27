@@ -269,15 +269,37 @@ class WebSocketBridge:
 
         Args:
             data: Prediction message data
+
+        Message Format from backtest-api WebSocket:
+        {
+            "type": "prediction",
+            "model_id": "ppo_primary",
+            "timestamp": "2026-01-23T...",
+            "signal": "BUY" | "SELL" | "HOLD",
+            "confidence": 0.85,
+            "features": {...}
+        }
         """
         try:
             # Parse prediction message
             signal_id = data.get("signal_id") or str(uuid4())
             model_id = data.get("model_id", "unknown")
-            action = int(data.get("action", 1))  # Default to HOLD
             confidence = float(data.get("confidence", 0.0))
-            symbol = data.get("symbol", "UNKNOWN")
+            symbol = data.get("symbol", "USDCOP")  # Default to USDCOP
             timestamp = data.get("timestamp")
+
+            # Handle both formats: string "signal" or integer "action"
+            signal_str = data.get("signal")  # "BUY", "SELL", "HOLD"
+            action = data.get("action")  # 0=SELL, 1=HOLD, 2=BUY
+
+            if signal_str:
+                # Convert string signal to action integer
+                signal_map = {"SELL": 0, "HOLD": 1, "BUY": 2}
+                action = signal_map.get(signal_str.upper(), 1)
+            elif action is not None:
+                action = int(action)
+            else:
+                action = 1  # Default to HOLD
 
             # Validate action (0=SELL, 1=HOLD, 2=BUY)
             if action not in (0, 1, 2):

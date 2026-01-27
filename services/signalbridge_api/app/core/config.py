@@ -65,8 +65,10 @@ class Settings(BaseSettings):
 
     # SignalBridge Configuration
     trading_mode: str = Field(default="PAPER")  # KILLED|DISABLED|SHADOW|PAPER|STAGING|LIVE
-    inference_ws_url: str = Field(default="ws://inference-api:8000/ws/predictions")
-    inference_api_url: str = Field(default="http://inference-api:8000")
+    # WebSocket predictions come from backtest-api (has WebSocket router)
+    # MLOps inference API (8090) is HTTP-only for risk management
+    inference_ws_url: str = Field(default="ws://usdcop-backtest-api:8000/api/v1/ws/predictions")
+    inference_api_url: str = Field(default="http://usdcop-backtest-api:8000")
 
     # Position Sizing
     default_position_size_usd: float = Field(default=100.0)

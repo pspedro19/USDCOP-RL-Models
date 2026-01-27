@@ -7,13 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
 
-    const response = await fetch(`${BACKEND_URL}/exchanges`, {
+    const response = await fetch(`${BACKEND_URL}/api/exchanges/credentials`, {
       headers: {
         'Content-Type': 'application/json',
         ...(authHeader && { Authorization: authHeader }),

@@ -173,11 +173,11 @@ async def health_check(
 )
 async def process_signal(
     signal: ManualSignalCreate,
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     orchestrator: SignalBridgeOrchestrator = Depends(get_orchestrator),
 ) -> ExecutionResult:
     """Process a manual trading signal."""
-    user_id = UUID(user["id"])
+    user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
 
     # Convert to InferenceSignalCreate
     inference_signal = InferenceSignalCreate(
@@ -205,11 +205,11 @@ async def process_signal(
 )
 async def validate_signal(
     signal: ManualSignalCreate,
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     orchestrator: SignalBridgeOrchestrator = Depends(get_orchestrator),
 ) -> RiskCheckResult:
     """Validate a signal without executing."""
-    user_id = UUID(user["id"])
+    user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
 
     inference_signal = InferenceSignalCreate(
         signal_id=UUID(str(uuid4())),
@@ -241,12 +241,12 @@ async def validate_signal(
 )
 async def control_kill_switch(
     request: KillSwitchRequest,
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     orchestrator: SignalBridgeOrchestrator = Depends(get_orchestrator),
 ) -> SuccessResponse:
     """Activate or deactivate the kill switch."""
-    user_id = user["id"]
-    username = user.get("username", "unknown")
+    user_id = user.id
+    username = getattr(user, "name", getattr(user, "username", "unknown"))
 
     if request.activate:
         success = await orchestrator.activate_kill_switch(
@@ -313,13 +313,13 @@ async def get_history(
     until: Optional[datetime] = Query(None, description="End date"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> PaginatedResponse[ExecutionResult]:
     """Get execution history with filters."""
     from sqlalchemy import text
 
-    user_id = user["id"]
+    user_id = user.id
     offset = (page - 1) * limit
 
     # Build WHERE clauses dynamically
@@ -498,7 +498,7 @@ async def get_user_state(
 )
 async def get_user_limits(
     user_id: UUID,
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     orchestrator: SignalBridgeOrchestrator = Depends(get_orchestrator),
 ) -> UserRiskLimits:
     """Get user risk limits."""
@@ -518,15 +518,15 @@ async def get_user_limits(
 async def update_user_limits(
     user_id: UUID,
     limits: UserRiskLimitsUpdate,
-    user: dict = Depends(get_current_user),
+    user = Depends(get_current_user),
     orchestrator: SignalBridgeOrchestrator = Depends(get_orchestrator),
 ) -> UserRiskLimits:
     """Update user risk limits."""
     # Verify user has permission (can only update own limits unless admin)
-    current_user_id = user["id"]
-    is_admin = user.get("role") == "admin"
+    current_user_id = user.id
+    is_admin = getattr(user, "role", None) == "admin"
 
-    if str(user_id) != current_user_id and not is_admin:
+    if str(user_id) != str(current_user_id) and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update other user's limits"

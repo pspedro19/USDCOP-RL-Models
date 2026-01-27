@@ -379,3 +379,18 @@ class APIKeyValidationResult(BaseContract):
     permissions: List[str] = Field(default_factory=list)
     error_message: Optional[str] = None
     warnings: List[str] = Field(default_factory=list)
+
+
+class UserTradingState(BaseContract):
+    """
+    User trading state for risk management and session tracking.
+    Tracks daily P&L, trade count, and position status.
+    """
+    user_id: UUID
+    daily_pnl: float = Field(default=0.0, description="Daily P&L in USD")
+    daily_trades: int = Field(default=0, ge=0, description="Number of trades today")
+    open_positions: int = Field(default=0, ge=0, description="Number of open positions")
+    total_exposure_usd: float = Field(default=0.0, ge=0, description="Total exposure in USD")
+    last_trade_at: Optional[datetime] = None
+    cooldown_until: Optional[datetime] = None
+    is_in_cooldown: bool = Field(default=False)

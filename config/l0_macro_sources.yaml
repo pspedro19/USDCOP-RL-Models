@@ -37,24 +37,87 @@ enabled_sources:
   - banrep_bop    # BanRep Balance of Payments (quarterly data)
 
 # =============================================================================
+# MULTI-SOURCE INDICATORS (Primary + Fallback configuration)
+# =============================================================================
+# Strategy: Primary source (Investing.com) with fallback to FRED/TwelveData
+# This enables same-day data from Investing.com while maintaining reliability
+# via fallback sources if scraping fails.
+#
+# Contract: CTR-L0-MULTISOURCE-001
+# =============================================================================
+multi_source_indicators:
+  # DXY - Dollar Index (DTWEXBGS in FRED)
+  fxrt_index_dxy_usa_d_dxy:
+    primary_source: investing
+    primary_url: https://www.investing.com/indices/usdollar-historical-data
+    primary_pair_id: 8827
+    fallback_source: fred
+    fallback_series_id: DTWEXBGS
+
+  # VIX - Volatility Index
+  volt_vix_usa_d_vix:
+    primary_source: investing
+    primary_url: https://www.investing.com/indices/volatility-s-p-500-historical-data
+    primary_pair_id: 44336
+    fallback_source: fred
+    fallback_series_id: VIXCLS
+
+  # US 10Y Treasury Yield
+  finc_bond_yield10y_usa_d_ust10y:
+    primary_source: investing
+    primary_url: https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data
+    primary_pair_id: 23705
+    fallback_source: fred
+    fallback_series_id: DGS10
+
+  # US 2Y Treasury Yield
+  finc_bond_yield2y_usa_d_dgs2:
+    primary_source: investing
+    primary_url: https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield-historical-data
+    primary_pair_id: 23701
+    fallback_source: fred
+    fallback_series_id: DGS2
+
+  # USD/MXN - Mexican Peso (Spanish URL for better availability)
+  fxrt_spot_usdmxn_mex_d_usdmxn:
+    primary_source: investing
+    primary_url: https://es.investing.com/currencies/usd-mxn-historical-data
+    primary_pair_id: 2124
+    fallback_source: twelvedata
+    fallback_symbol: USD/MXN
+
+  # USD/CLP - Chilean Peso (Spanish URL for better availability)
+  fxrt_spot_usdclp_chl_d_usdclp:
+    primary_source: investing
+    primary_url: https://es.investing.com/currencies/usd-clp-historical-data
+    primary_pair_id: 2126
+    fallback_source: twelvedata
+    fallback_symbol: USD/CLP
+
+# =============================================================================
 # SOURCE-SPECIFIC CONFIGURATIONS
 # =============================================================================
 sources:
   # ---------------------------------------------------------------------------
   # FRED API - US Economic Indicators
   # ---------------------------------------------------------------------------
+  # NOTE: Daily indicators (DXY, VIX, 10Y, 2Y) migrated to Investing.com
+  # as primary source for same-day data. FRED remains as fallback.
+  # See multi_source_indicators section above.
   fred:
     api_key_env: "FRED_API_KEY"
     api_key_vault_path: "trading/fred"
     lookback_days: 90
     indicators:
-      # Daily indicators
-      DTWEXBGS: fxrt_index_dxy_usa_d_dxy
-      VIXCLS: volt_vix_usa_d_vix
-      DGS10: finc_bond_yield10y_usa_d_ust10y
-      DGS2: finc_bond_yield2y_usa_d_dgs2
-      DPRIME: polr_prime_rate_usa_d_prime
-      # Monthly indicators
+      # Daily indicators - FRED as primary
+      DPRIME: polr_prime_rate_usa_d_prime  # No Investing.com equivalent
+      # Daily indicators - FRED as FALLBACK ONLY (primary: Investing.com)
+      # These are kept for fallback but not extracted by default
+      # DTWEXBGS: fxrt_index_dxy_usa_d_dxy  # -> Investing.com primary
+      # VIXCLS: volt_vix_usa_d_vix          # -> Investing.com primary
+      # DGS10: finc_bond_yield10y_usa_d_ust10y  # -> Investing.com primary
+      # DGS2: finc_bond_yield2y_usa_d_dgs2      # -> Investing.com primary
+      # Monthly indicators (no migration - FRED is best source)
       FEDFUNDS: polr_fed_funds_usa_m_fedfunds
       CPIAUCSL: infl_cpi_all_usa_m_cpiaucsl
       CPILFESL: infl_cpi_core_usa_m_cpilfesl
@@ -65,10 +128,18 @@ sources:
       UMCSENT: sent_consumer_usa_m_umcsent
       # Quarterly indicators
       GDP: gdpp_real_gdp_usa_q_gdp_q
+    # Fallback-only indicators (used by FallbackExtractionStrategy)
+    fallback_indicators:
+      DTWEXBGS: fxrt_index_dxy_usa_d_dxy
+      VIXCLS: volt_vix_usa_d_vix
+      DGS10: finc_bond_yield10y_usa_d_ust10y
+      DGS2: finc_bond_yield2y_usa_d_dgs2
 
   # ---------------------------------------------------------------------------
   # TwelveData API - FX and Commodities
   # ---------------------------------------------------------------------------
+  # NOTE: USD/MXN and USD/CLP migrated to Investing.com as primary source.
+  # TwelveData remains as fallback. See multi_source_indicators section.
   twelvedata:
     api_key_env: "TWELVEDATA_API_KEY_1"
     api_key_vault_path: "trading/twelvedata"
@@ -76,48 +147,153 @@ sources:
     interval: "1day"
     outputsize: 60
     indicators:
-      USD/MXN: fxrt_spot_usdmxn_mex_d_usdmxn
-      USD/CLP: fxrt_spot_usdclp_chl_d_usdclp
+      # FX pairs - TwelveData as FALLBACK ONLY (primary: Investing.com)
+      # These are kept for fallback but not extracted by default
+      # USD/MXN: fxrt_spot_usdmxn_mex_d_usdmxn  # -> Investing.com primary
+      # USD/CLP: fxrt_spot_usdclp_chl_d_usdclp  # -> Investing.com primary
       # DISABLED 2026-01-23: WTI moved to Investing.com as Single Source of Truth
       # TwelveData WTI/USD had data quality issues and gaps on weekends/holidays
       # WTI/USD: comm_oil_wti_glb_d_wti
       # NOTE: BZ returns anomalous values, using Investing.com as primary source for Brent
       # BZ: comm_oil_brent_glb_d_brent  # DISABLED - see P0-2 in DATASET_QUALITY_ISSUES.md
+    # Fallback-only indicators (used by FallbackExtractionStrategy)
+    fallback_indicators:
+      USD/MXN: fxrt_spot_usdmxn_mex_d_usdmxn
+      USD/CLP: fxrt_spot_usdclp_chl_d_usdclp
 
   # ---------------------------------------------------------------------------
   # Investing.com - Market Indices and Commodities
   # ---------------------------------------------------------------------------
+  # Dual-strategy scraper: AJAX for most indicators, REST API for FX/COLCAP
+  # Contract: CTR-L0-INVESTING-002
+  # Updated: 2026-01-24
+  #
+  # IMPORTANT: Some indicators require different extraction methods:
+  #   - AJAX (pair_id): Works for DXY, VIX, US10Y, US2Y, Gold, Coffee, Brent, WTI
+  #   - REST API (instrument_id): Required for COLCAP, USDMXN, USDCLP
+  #   - HTML: Fallback for Colombia bonds (no verified IDs)
+  #
+  # The scraper automatically selects the correct method based on INDICATOR_CONFIG
+  # in scraper_investing.py
   investing:
     scraper_type: cloudscraper
-    request_delay_seconds: 2
-    max_rows: 65
+    request_delay_seconds: 3
+    max_retries: 3
+    backoff_multiplier: 2
+    max_rows: 100
+    random_jitter_max_seconds: 1
+    session_reuse: true
+    # Endpoints
+    ajax_endpoint: https://www.investing.com/instruments/HistoricalDataAjax
+    api_endpoint: https://api.investing.com/api/financialdata/historical
     user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
     urls:
+      # =========== Colombian Markets ===========
+      # COLCAP: AJAX pair_id 40830 returns WRONG values (~53846)
+      # Must use REST API with instrument_id 49642
       - url: https://www.investing.com/indices/colcap-historical-data
         column: eqty_index_colcap_col_d_colcap
         name: COLCAP Index
+        method: api
+        pair_id: 40830        # WRONG - do not use
+        instrument_id: 49642  # CORRECT
+        expected_range: [800, 3000]
+
+      # Colombia bonds - use REST API with verified instrument_ids
       - url: https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data
         column: finc_bond_yield10y_col_d_col10y
         name: Colombia 10Y Yield
+        method: api
+        instrument_id: 29236  # Verified: 1728 rows, values 6.10-12.20
+        expected_range: [4, 20]
       - url: https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data
         column: finc_bond_yield5y_col_d_col5y
         name: Colombia 5Y Yield
+        method: api
+        instrument_id: 29240  # Verified: 1751 rows, values 5.34-12.55
+        expected_range: [4, 20]
+
+      # USD/COP - Colombian Peso (REST API required)
+      - url: https://www.investing.com/currencies/usd-cop-historical-data
+        column: fxrt_spot_usdcop_col_d_usdcop
+        name: USD/COP
+        method: api
+        instrument_id: 2112   # Verified: 1583 rows, values 3287-3639
+        expected_range: [3000, 5500]
+
+      # =========== Commodities (AJAX works correctly) ===========
       - url: https://www.investing.com/commodities/gold-historical-data
         column: comm_metal_gold_glb_d_gold
         name: Gold
+        method: ajax
+        pair_id: 8830
+        expected_range: [1000, 6000]  # Updated for 2026 prices
       - url: https://www.investing.com/commodities/us-coffee-c-historical-data
         column: comm_agri_coffee_glb_d_coffee
         name: Coffee
-      # Added to replace TwelveData BZ which returns anomalous values
+        method: ajax
+        pair_id: 8832
+        expected_range: [50, 500]
       - url: https://www.investing.com/commodities/brent-oil-historical-data
         column: comm_oil_brent_glb_d_brent
         name: Brent Oil
-      # 2026-01-23: WTI Oil - PRIMARY SOURCE (moved from TwelveData)
-      # AJAX pair_id=8849 for historical backfills (scripts/fix_wti_data.py)
-      # URL scraping for daily updates
+        method: ajax
+        pair_id: 8833
+        expected_range: [30, 150]
       - url: https://www.investing.com/commodities/crude-oil-historical-data
         column: comm_oil_wti_glb_d_wti
         name: WTI Oil
+        method: ajax
+        pair_id: 8849
+        expected_range: [25, 150]
+
+      # =========== US Indices (AJAX works correctly) ===========
+      - url: https://www.investing.com/indices/usdollar-historical-data
+        column: fxrt_index_dxy_usa_d_dxy
+        name: Dollar Index (DXY)
+        method: ajax
+        pair_id: 8827
+        expected_range: [80, 130]
+      - url: https://www.investing.com/indices/volatility-s-p-500-historical-data
+        column: volt_vix_usa_d_vix
+        name: VIX Volatility Index
+        method: ajax
+        pair_id: 44336
+        expected_range: [9, 90]
+
+      # =========== US Bonds (AJAX works correctly) ===========
+      - url: https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data
+        column: finc_bond_yield10y_usa_d_ust10y
+        name: US 10Y Treasury Yield
+        method: ajax
+        pair_id: 23705
+        expected_range: [0, 12]
+      - url: https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield-historical-data
+        column: finc_bond_yield2y_usa_d_dgs2
+        name: US 2Y Treasury Yield
+        method: ajax
+        pair_id: 23701
+        expected_range: [0, 12]
+
+      # =========== FX Pairs (REST API required) ===========
+      # AJAX pair_ids return INVERTED values (MXN/USD, CLP/USD instead of USD/MXN, USD/CLP)
+      - url: https://es.investing.com/currencies/usd-mxn-historical-data
+        column: fxrt_spot_usdmxn_mex_d_usdmxn
+        name: USD/MXN
+        method: api
+        pair_id: 2124         # WRONG - returns ~0.85 (inverted)
+        instrument_id: 39     # CORRECT - returns ~17-20
+        domain_id: es
+        expected_range: [12, 30]
+      - url: https://es.investing.com/currencies/usd-clp-historical-data
+        column: fxrt_spot_usdclp_chl_d_usdclp
+        name: USD/CLP
+        method: api
+        pair_id: 2126         # WRONG - returns inverted/scaled
+        instrument_id: 2110   # CORRECT - returns ~700-1000
+        domain_id: es
+        expected_range: [600, 1200]
 
   # ---------------------------------------------------------------------------
   # BanRep SUAMECA - Colombian Central Bank Data (Selenium)
@@ -332,7 +508,7 @@ validation:
     # Commodities (USD)
     comm_oil_brent_glb_d_brent: [30, 150]
     comm_oil_wti_glb_d_wti: [25, 150]
-    comm_metal_gold_glb_d_gold: [1000, 3500]
+    comm_metal_gold_glb_d_gold: [1000, 6000]  # Updated for 2025-2026 prices
     comm_agri_coffee_glb_d_coffee: [50, 400]
 
     # Volatility Index
@@ -340,6 +516,7 @@ validation:
 
     # FX Indices and Rates
     fxrt_index_dxy_usa_d_dxy: [80, 130]
+    fxrt_spot_usdcop_col_d_usdcop: [3000, 5500]
     fxrt_spot_usdmxn_mex_d_usdmxn: [12, 30]
     fxrt_spot_usdclp_chl_d_usdclp: [600, 1200]
 
@@ -359,7 +536,7 @@ validation:
     crsk_spread_embi_col_d_embi: [50, 1500]
 
     # Equity Indices
-    eqty_index_colcap_col_d_colcap: [800, 2500]
+    eqty_index_colcap_col_d_colcap: [800, 3000]  # Updated for 2026
 
     # Macro indicators (percentage/index)
     infl_cpi_all_usa_m_cpiaucsl: [200, 400]
@@ -392,6 +569,7 @@ indicator_calendars:
     - polr_policy_rate_col_d_tpm
     - finc_bond_yield10y_col_d_col10y
     - finc_bond_yield5y_col_d_col5y
+    - fxrt_spot_usdcop_col_d_usdcop
 
   # Global - No holiday cleanup (24/7 or global markets)
   global:
