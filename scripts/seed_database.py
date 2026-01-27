@@ -150,25 +150,22 @@ def seed_database():
     try:
         if df_ohlcv is not None:
             # Clear existing data to avoid duplicates
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 conn.execute(text("DELETE FROM usdcop_m5_ohlcv WHERE TRUE"))
-                conn.commit()
             df_ohlcv.to_sql("usdcop_m5_ohlcv", engine, if_exists="append", index=False)
             print(f"  [OK] usdcop_m5_ohlcv: {len(df_ohlcv)} rows inserted")
 
         if df_macro is not None:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 conn.execute(text("DELETE FROM macro_indicators_daily WHERE TRUE"))
-                conn.commit()
             df_macro.to_sql("macro_indicators_daily", engine, if_exists="append", index=False)
             print(f"  [OK] macro_indicators_daily: {len(df_macro)} rows inserted")
 
         if df_daily is not None:
             # Create bi schema if not exists
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 conn.execute(text("CREATE SCHEMA IF NOT EXISTS bi"))
                 conn.execute(text("DELETE FROM bi.dim_daily_usdcop WHERE TRUE"))
-                conn.commit()
             df_daily.to_sql("dim_daily_usdcop", engine, schema="bi", if_exists="append", index=False)
             print(f"  [OK] bi.dim_daily_usdcop: {len(df_daily)} rows inserted")
 
@@ -184,7 +181,7 @@ def seed_database():
     # Summary
     print()
     print("Summary:")
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         for table in ["usdcop_m5_ohlcv", "macro_indicators_daily"]:
             result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
             count = result.scalar()

@@ -174,7 +174,8 @@ export function createBacktestRunner(
     running = true;
     abortController = new AbortController();
 
-    const url = `${BACKTEST_CONFIG.INFERENCE_API_URL}/v1/backtest/stream`;
+    // Use Next.js API proxy route (which forwards to inference API or generates fallback)
+    const url = `/api/backtest/stream`;
 
     console.log(`[BacktestService] Starting backtest: ${request.startDate} to ${request.endDate} (model=${request.modelId})`);
 
@@ -337,7 +338,7 @@ export async function checkBacktestStatus(
   modelId: string
 ): Promise<BacktestStatusResponse | null> {
   try {
-    const url = `${BACKTEST_CONFIG.INFERENCE_API_URL}/v1/backtest/status/${modelId}?start_date=${startDate}&end_date=${endDate}`;
+    const url = `/api/backtest/status/${modelId}?start_date=${startDate}&end_date=${endDate}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -365,7 +366,7 @@ export async function checkBacktestStatus(
 export async function runSimpleBacktest(
   request: BacktestRequest
 ): Promise<BacktestResult> {
-  const url = `${BACKTEST_CONFIG.INFERENCE_API_URL}/v1/backtest`;
+  const url = `/api/backtest`;
 
   const response = await fetch(url, {
     method: 'POST',
