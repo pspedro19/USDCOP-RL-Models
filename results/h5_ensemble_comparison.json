@@ -1,0 +1,181 @@
+{
+  "strategies": {
+    "BASELINE": {
+      "n_trades": 44,
+      "da_pct": 56.8,
+      "n_long": 8,
+      "n_short": 36,
+      "long_wr_pct": 62.5,
+      "short_wr_pct": 66.7,
+      "total_return_pct": 18.54,
+      "sharpe": 1.857,
+      "win_rate_pct": 65.9,
+      "profit_factor": 1.849,
+      "max_dd_pct": -4.88,
+      "t_stat": 1.628,
+      "p_value": 0.1109,
+      "bootstrap_ci_lo": -0.075,
+      "bootstrap_ci_hi": 0.878,
+      "final_equity": 11853.85
+    },
+    "LINEAR-ONLY": {
+      "n_trades": 44,
+      "da_pct": 59.1,
+      "n_long": 13,
+      "n_short": 31,
+      "long_wr_pct": 69.2,
+      "short_wr_pct": 71.0,
+      "total_return_pct": 32.85,
+      "sharpe": 3.461,
+      "win_rate_pct": 70.5,
+      "profit_factor": 2.923,
+      "max_dd_pct": -3.85,
+      "t_stat": 2.796,
+      "p_value": 0.0077,
+      "bootstrap_ci_lo": 0.201,
+      "bootstrap_ci_hi": 1.111,
+      "final_equity": 13285.43
+    },
+    "NON-COLLAPSED": {
+      "n_trades": 44,
+      "da_pct": 61.4,
+      "n_long": 8,
+      "n_short": 36,
+      "long_wr_pct": 75.0,
+      "short_wr_pct": 69.4,
+      "total_return_pct": 29.52,
+      "sharpe": 3.055,
+      "win_rate_pct": 70.5,
+      "profit_factor": 2.559,
+      "max_dd_pct": -3.9,
+      "t_stat": 2.511,
+      "p_value": 0.0159,
+      "bootstrap_ci_lo": 0.131,
+      "bootstrap_ci_hi": 1.066,
+      "final_equity": 12951.68
+    },
+    "SMART-FILTER": {
+      "n_trades": 44,
+      "da_pct": 59.1,
+      "n_long": 9,
+      "n_short": 35,
+      "long_wr_pct": 66.7,
+      "short_wr_pct": 68.6,
+      "total_return_pct": 22.14,
+      "sharpe": 2.2,
+      "win_rate_pct": 68.2,
+      "profit_factor": 2.027,
+      "max_dd_pct": -3.9,
+      "t_stat": 1.887,
+      "p_value": 0.066,
+      "bootstrap_ci_lo": -0.009,
+      "bootstrap_ci_hi": 0.953,
+      "final_equity": 12213.53
+    }
+  },
+  "collapse": [
+    {
+      "model": "ard",
+      "type": "LINEAR",
+      "mean": 5e-06,
+      "std": 0.000149,
+      "min": -0.000253,
+      "max": 0.000266,
+      "n_preds": 218,
+      "status": "COLLAPSED"
+    },
+    {
+      "model": "bayesian_ridge",
+      "type": "LINEAR",
+      "mean": -0.001322,
+      "std": 0.00419,
+      "min": -0.012296,
+      "max": 0.015349,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "catboost_pure",
+      "type": "BOOSTING",
+      "mean": -0.00106,
+      "std": 0.001785,
+      "min": -0.005919,
+      "max": 0.005545,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "hybrid_catboost",
+      "type": "HYBRID",
+      "mean": -0.001186,
+      "std": 0.002407,
+      "min": -0.007247,
+      "max": 0.009003,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "hybrid_lightgbm",
+      "type": "HYBRID",
+      "mean": -0.002462,
+      "std": 0.002885,
+      "min": -0.011101,
+      "max": 0.005651,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "hybrid_xgboost",
+      "type": "HYBRID",
+      "mean": -0.002502,
+      "std": 0.002811,
+      "min": -0.010362,
+      "max": 0.006016,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "lightgbm_pure",
+      "type": "BOOSTING",
+      "mean": -0.002662,
+      "std": 0.002765,
+      "min": -0.009345,
+      "max": 0.002828,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "ridge",
+      "type": "LINEAR",
+      "mean": -0.001675,
+      "std": 0.00483,
+      "min": -0.015296,
+      "max": 0.017071,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    },
+    {
+      "model": "xgboost_pure",
+      "type": "BOOSTING",
+      "mean": -0.0028570001013576984,
+      "std": 0.002662000013515353,
+      "min": -0.009549999609589577,
+      "max": 0.003097000066190958,
+      "n_preds": 218,
+      "status": "ACTIVE"
+    }
+  ],
+  "config": {
+    "trail": {
+      "activation": 0.004,
+      "trail": 0.003,
+      "hard_stop": 0.04
+    },
+    "vol_target": {
+      "target_vol": 0.15,
+      "max_lev": 2.0
+    },
+    "warmup_weeks": 12,
+    "collapse_threshold": 0.001
+  }
+}

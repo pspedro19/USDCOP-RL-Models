@@ -56,7 +56,10 @@ from .config import (
     TrainingConfig,
     RewardConfig,
     get_training_config,
+    get_ppo_hyperparameters,
+    get_environment_config,
 )
+from .utils.reproducibility import set_reproducible_seeds
 
 # =============================================================================
 # GAP 1, 2: DVC and Lineage Tracking imports
@@ -88,10 +91,22 @@ except ImportError:
     create_lineage_tracker = None
 
 # GAP 3: Feature order hash for contract validation
+# Try experiment SSOT first, then fall back to feature_contract
+FEATURE_ORDER_HASH = None
+FEATURE_ORDER = None
 try:
-    from src.core.contracts.feature_contract import FEATURE_ORDER_HASH
-except ImportError:
-    FEATURE_ORDER_HASH = None
+    from src.config.experiment_loader import (
+        load_experiment_config as _load_ssot,
+        get_feature_order_hash as _get_ssot_hash,
+    )
+    _ssot_config = _load_ssot()
+    FEATURE_ORDER_HASH = _ssot_config.feature_order_hash
+    FEATURE_ORDER = _ssot_config.feature_order
+except (ImportError, FileNotFoundError):
+    try:
+        from src.core.contracts.feature_contract import FEATURE_ORDER_HASH, FEATURE_ORDER
+    except ImportError:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +129,9 @@ class TrainingRequest:
     # Optional overrides (defaults from SSOT)
     total_timesteps: Optional[int] = None
     learning_rate: Optional[float] = None
+
+    # Reproducibility - CRITICAL for consistent training results
+    seed: int = 42  # Fixed seed for reproducibility
 
     # Output configuration
     output_dir: Optional[Path] = None
@@ -176,6 +194,9 @@ class TrainingResult:
     best_mean_reward: float = 0.0
     final_mean_reward: float = 0.0
 
+    # Reproducibility tracking
+    training_seed: int = 42  # Seed used for this training run
+
     # MLflow
     mlflow_run_id: Optional[str] = None
 
@@ -215,6 +236,7 @@ class TrainingResult:
             "total_timesteps": self.total_timesteps,
             "best_mean_reward": self.best_mean_reward,
             "final_mean_reward": self.final_mean_reward,
+            "training_seed": self.training_seed,
             "mlflow_run_id": self.mlflow_run_id,
             "model_id": self.model_id,
             # GAP 1, 2: DVC and lineage
@@ -272,6 +294,41 @@ class TrainingEngine:
         self._lineage_tracker = None
         self._lineage_record = None
 
+    def _get_date_ranges(self) -> Dict[str, str]:
+        """
+        Get date ranges from SSOT config for train/test split.
+
+        Returns:
+            Dict with train_end, test_start dates from experiment_ssot.yaml
+        """
+        try:
+            from src.config.experiment_loader import load_experiment_config
+            config = load_experiment_config()
+            date_ranges = config.pipeline.date_ranges if hasattr(config.pipeline, 'date_ranges') else {}
+
+            # Handle both dict and object access
+            if hasattr(date_ranges, 'train_end'):
+                return {
+                    'train_end': date_ranges.train_end,
+                    'test_start': date_ranges.test_start,
+                }
+            elif isinstance(date_ranges, dict):
+                return {
+                    'train_end': date_ranges.get('train_end', '2024-12-31'),
+                    'test_start': date_ranges.get('test_start', '2025-01-01'),
+                }
+            else:
+                return {
+                    'train_end': '2024-12-31',
+                    'test_start': '2025-01-01',
+                }
+        except Exception as e:
+            logger.warning(f"Could not load date_ranges from SSOT: {e}")
+            return {
+                'train_end': '2024-12-31',
+                'test_start': '2025-01-01',
+            }
+
     def run(self, request: TrainingRequest) -> TrainingResult:
         """
         Execute complete training pipeline.
@@ -290,6 +347,10 @@ class TrainingEngine:
         logger.info("=" * 60)
         logger.info(f"TRAINING ENGINE - Starting v{request.version}")
         logger.info("=" * 60)
+
+        # REPRODUCIBILITY: Set seeds BEFORE any stochastic operations
+        set_reproducible_seeds(request.seed)
+        logger.info(f"[REPRODUCIBILITY] Seed={request.seed} set for all RNGs")
 
         try:
             # Step 1: Validate dataset
@@ -389,6 +450,7 @@ class TrainingEngine:
                 total_timesteps=train_result.total_timesteps,
                 best_mean_reward=train_result.best_mean_reward,
                 final_mean_reward=train_result.final_mean_reward,
+                training_seed=request.seed,
                 mlflow_run_id=self._mlflow_run_id,
                 model_id=model_id,
                 # GAP 1, 2: DVC and lineage
@@ -463,17 +525,33 @@ class TrainingEngine:
         if not request.dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {request.dataset_path}")
 
-        df = pd.read_csv(request.dataset_path)
+        # Support both CSV and Parquet formats
+        if str(request.dataset_path).endswith('.parquet'):
+            df = pd.read_parquet(request.dataset_path)
+        else:
+            df = pd.read_csv(request.dataset_path)
 
-        # Get feature columns
+        # Get feature columns from SSOT or request
         feature_columns = request.feature_columns
         if not feature_columns:
-            # Use SSOT feature order
-            from src.core.contracts.feature_contract import FEATURE_ORDER
-            feature_columns = list(FEATURE_ORDER)
+            # Use SSOT feature order (already loaded at module level)
+            if FEATURE_ORDER:
+                feature_columns = list(FEATURE_ORDER)
+            else:
+                raise ValueError("No feature_columns provided and SSOT not available")
 
-        # Validate columns exist
-        missing = [c for c in feature_columns if c not in df.columns]
+        # Exclude runtime state features (added by environment, not in dataset)
+        # Read state features from SSOT or use defaults
+        try:
+            from src.config.experiment_loader import load_experiment_config
+            ssot = load_experiment_config()
+            state_features = [f.name for f in ssot.features if f.is_state]
+        except (ImportError, FileNotFoundError):
+            state_features = ["position", "unrealized_pnl", "time_normalized"]
+        market_features = [c for c in feature_columns if c not in state_features]
+
+        # Validate only market columns exist (state features are added at runtime)
+        missing = [c for c in market_features if c not in df.columns]
         if missing:
             raise ValueError(f"Missing columns: {missing}")
 
@@ -485,6 +563,60 @@ class TrainingEngine:
 
         return df, dataset_hash
 
+    def _find_l2_norm_stats(self, dataset_path: Path) -> Optional[Path]:
+        """
+        Find L2-generated norm_stats adjacent to dataset.
+
+        L2 dataset builder now generates {dataset_prefix}_norm_stats.json
+        alongside each dataset (e.g., DS_v3_close_only_norm_stats.json).
+
+        Search order:
+        1. {dataset_dir}/{base}_norm_stats.json (stripping _train/_val/_test suffix)
+        2. {dataset_dir}/{dataset_stem}_norm_stats.json (exact match)
+        3. {dataset_dir}/{dataset_stem.replace('RL_', '')}_norm_stats.json
+        4. {dataset_dir}/norm_stats.json
+
+        Args:
+            dataset_path: Path to the dataset file
+
+        Returns:
+            Path to norm_stats.json if found, None otherwise
+        """
+        dataset_dir = dataset_path.parent
+        dataset_stem = dataset_path.stem
+
+        # Strip _train/_val/_test suffix to get base name
+        # E.g., DS_v3_close_only_train -> DS_v3_close_only
+        base_stem = dataset_stem
+        for suffix in ['_train', '_val', '_test']:
+            if base_stem.endswith(suffix):
+                base_stem = base_stem[:-len(suffix)]
+                break
+
+        candidates = []
+
+        # Pattern 1: Base name without _train/_val/_test (MOST COMMON for L2)
+        # E.g., DS_v3_close_only_train.parquet -> DS_v3_close_only_norm_stats.json
+        candidates.append(dataset_dir / f"{base_stem}_norm_stats.json")
+
+        # Pattern 2: RL_ prefix stripping
+        if dataset_stem.startswith('RL_'):
+            candidates.append(dataset_dir / f"{dataset_stem[3:]}_norm_stats.json")
+
+        # Pattern 3: Direct match with full dataset stem
+        candidates.append(dataset_dir / f"{dataset_stem}_norm_stats.json")
+
+        # Pattern 4: Generic norm_stats.json in same directory
+        candidates.append(dataset_dir / "norm_stats.json")
+
+        for p in candidates:
+            if p.exists():
+                logger.info(f"[L2->L3] Found L2 norm_stats: {p}")
+                return p
+
+        logger.debug(f"No L2 norm_stats found for {dataset_path}. Searched: {[str(c) for c in candidates]}")
+        return None
+
     def _generate_norm_stats(
         self,
         df: pd.DataFrame,
@@ -493,29 +625,83 @@ class TrainingEngine:
         """
         Generate normalization statistics.
 
+        FIX: First check if L2 already provides norm_stats to avoid double normalization.
+        L2 computes stats from raw data, so we should use those instead of recomputing
+        from potentially pre-normalized data.
+
         Returns:
             Tuple of (norm_stats_path, norm_stats_hash)
         """
         # Get feature columns (exclude state features)
         feature_columns = request.feature_columns
-        if not feature_columns:
-            from src.core.contracts.feature_contract import FEATURE_ORDER
+        if not feature_columns and FEATURE_ORDER:
             feature_columns = list(FEATURE_ORDER)
 
-        state_features = ["position", "time_normalized"]
+        # Get state features from SSOT
+        try:
+            from src.config.experiment_loader import load_experiment_config
+            ssot = load_experiment_config()
+            state_features = [f.name for f in ssot.features if f.is_state]
+        except (ImportError, FileNotFoundError):
+            state_features = ["position", "unrealized_pnl", "time_normalized"]
         market_features = [c for c in feature_columns if c not in state_features]
 
-        # Calculate stats
-        norm_stats = {}
-        for col in market_features:
-            if col in df.columns:
-                values = df[col].dropna()
-                norm_stats[col] = {
-                    "mean": float(values.mean()),
-                    "std": float(values.std()),
-                    "min": float(values.min()),
-                    "max": float(values.max()),
-                }
+        # FIX: Use new method to find L2 norm_stats
+        l2_norm_stats_path = self._find_l2_norm_stats(request.dataset_path)
+
+        if l2_norm_stats_path is not None and l2_norm_stats_path.exists():
+            logger.info(f"[L2->L3] Using L2 norm_stats from: {l2_norm_stats_path}")
+            with open(l2_norm_stats_path, 'r') as f:
+                l2_stats = json.load(f)
+
+            # Convert L2 format to engine format
+            norm_stats = {}
+            # L2 format can have features:
+            #   1. Nested under "features" key (L2DatasetBuilder v1.0+)
+            #   2. Directly at top level (legacy format)
+            if "features" in l2_stats and isinstance(l2_stats["features"], dict):
+                # New format: features nested under "features" key
+                l2_features = l2_stats["features"]
+                logger.info(f"[L2->L3] Using nested 'features' key from L2 norm_stats")
+            else:
+                # Legacy format: features directly at top level
+                # Skip metadata keys (start with "_")
+                l2_features = {k: v for k, v in l2_stats.items() if not k.startswith("_")}
+
+            for col in market_features:
+                if col in l2_features:
+                    stats = l2_features[col]
+                    norm_stats[col] = {
+                        "mean": float(stats.get("mean", 0.0)),
+                        "std": float(stats.get("std", 1.0)),
+                        "min": float(stats.get("min", -5.0)),
+                        "max": float(stats.get("max", 5.0)),
+                    }
+                elif col in df.columns:
+                    # Fallback for features not in L2 stats
+                    logger.warning(f"Feature '{col}' not in L2 norm_stats, computing from data")
+                    values = df[col].dropna()
+                    norm_stats[col] = {
+                        "mean": float(values.mean()),
+                        "std": float(values.std()),
+                        "min": float(values.min()),
+                        "max": float(values.max()),
+                    }
+
+            logger.info(f"[L2->L3] Loaded {len(norm_stats)} features from L2 norm_stats (avoiding double normalization)")
+        else:
+            logger.warning(f"[L2->L3] L2 norm_stats not found, computing from data (this may cause normalization mismatch!)")
+            # Calculate stats from data (original behavior)
+            norm_stats = {}
+            for col in market_features:
+                if col in df.columns:
+                    values = df[col].dropna()
+                    norm_stats[col] = {
+                        "mean": float(values.mean()),
+                        "std": float(values.std()),
+                        "min": float(values.min()),
+                        "max": float(values.max()),
+                    }
 
         # Add metadata
         norm_stats["_metadata"] = {
@@ -564,8 +750,7 @@ class TrainingEngine:
             Tuple of (contract_path, config_hash)
         """
         feature_columns = request.feature_columns
-        if not feature_columns:
-            from src.core.contracts.feature_contract import FEATURE_ORDER
+        if not feature_columns and FEATURE_ORDER:
             feature_columns = list(FEATURE_ORDER)
 
         contract = {
@@ -631,13 +816,14 @@ class TrainingEngine:
             run = mlflow.start_run(run_name=run_name)
             self._mlflow_run_id = run.info.run_id
 
-            # Log parameters
+            # Log parameters - use fresh hyperparams from SSOT
+            hyperparams = get_ppo_hyperparameters(force_reload=True)
             params = {
                 "version": request.version,
-                "learning_rate": PPO_HYPERPARAMETERS.learning_rate,
-                "gamma": PPO_HYPERPARAMETERS.gamma,
-                "ent_coef": PPO_HYPERPARAMETERS.ent_coef,
-                "total_timesteps": request.total_timesteps or PPO_HYPERPARAMETERS.total_timesteps,
+                "learning_rate": request.learning_rate or hyperparams.learning_rate,
+                "gamma": hyperparams.gamma,
+                "ent_coef": hyperparams.ent_coef,
+                "total_timesteps": request.total_timesteps or hyperparams.total_timesteps,
                 "dataset_hash": dataset_hash[:16],
                 "norm_stats_hash": norm_stats_hash[:16],
                 "config_hash": config_hash,
@@ -702,10 +888,9 @@ class TrainingEngine:
         from .environments.trading_env import ModularRewardStrategyAdapter
         from .trainers import PPOTrainer, PPOConfig
 
-        # Get feature columns
+        # Get feature columns from SSOT or request
         feature_columns = request.feature_columns
-        if not feature_columns:
-            from src.core.contracts.feature_contract import FEATURE_ORDER
+        if not feature_columns and FEATURE_ORDER:
             feature_columns = list(FEATURE_ORDER)
 
         # Create output directory
@@ -729,21 +914,28 @@ class TrainingEngine:
         logger.info(f"Reward system: contract={request.reward_contract_id}, "
                    f"curriculum={'enabled' if request.enable_curriculum else 'disabled'}")
 
-        # Environment config
+        # Environment config - force reload from SSOT to get latest settings
+        env_ssot = get_environment_config(force_reload=True)
+        logger.info(f"[SSOT] Environment config: max_episode_steps={env_ssot.max_episode_steps}")
+
         env_config = TradingEnvConfig(
             observation_dim=len(feature_columns),
-            initial_capital=ENVIRONMENT_CONFIG.initial_capital,
-            transaction_cost_bps=ENVIRONMENT_CONFIG.transaction_cost_bps,
-            random_episode_start=True,
-            max_episode_steps=ENVIRONMENT_CONFIG.max_episode_steps,
+            initial_balance=getattr(env_ssot, 'initial_capital', 10_000.0),
+            transaction_cost_bps=env_ssot.transaction_cost_bps,
+            episode_length=env_ssot.max_episode_steps,
         )
 
-        # Create environments
+        # Get date ranges from SSOT for proper train/test split
+        date_ranges = self._get_date_ranges()
+        logger.info(f"[SSOT] Date ranges: train_end={date_ranges['train_end']}, test_start={date_ranges['test_start']}")
+
+        # Create environments with date-based splits
         env_dict = env_factory.create_train_eval_envs(
             dataset_path=request.dataset_path,
             norm_stats_path=norm_stats_path,
             config=env_config,
-            train_ratio=DATA_SPLIT_CONFIG.train_ratio,
+            date_ranges=date_ranges,  # NEW: date-based split from SSOT
+            train_ratio=DATA_SPLIT_CONFIG.train_ratio,  # Fallback if date_ranges fails
             val_ratio=DATA_SPLIT_CONFIG.val_ratio,
             n_train_envs=1,
             n_eval_envs=1,
@@ -757,25 +949,35 @@ class TrainingEngine:
             f"val={env_dict['splits']['val_size']} bars"
         )
 
-        # PPO config
-        total_timesteps = request.total_timesteps or PPO_HYPERPARAMETERS.total_timesteps
+        # PPO config - DRY: Use from_ssot() to read all defaults from SSOT
+        total_timesteps = request.total_timesteps or get_ppo_hyperparameters().total_timesteps
 
-        ppo_config = PPOConfig(
-            learning_rate=request.learning_rate or PPO_HYPERPARAMETERS.learning_rate,
-            n_steps=PPO_HYPERPARAMETERS.n_steps,
-            batch_size=PPO_HYPERPARAMETERS.batch_size,
-            n_epochs=PPO_HYPERPARAMETERS.n_epochs,
-            gamma=PPO_HYPERPARAMETERS.gamma,
-            gae_lambda=PPO_HYPERPARAMETERS.gae_lambda,
-            clip_range=PPO_HYPERPARAMETERS.clip_range,
-            ent_coef=PPO_HYPERPARAMETERS.ent_coef,
-            total_timesteps=total_timesteps,
-            eval_freq=max(total_timesteps // 20, 10000),
-            n_eval_episodes=5,
-            checkpoint_freq=max(total_timesteps // 10, 25000),
-            tensorboard_log=True,
-            verbose=1,
-        )
+        # Build overrides from request
+        overrides = {
+            "total_timesteps": total_timesteps,
+            "eval_freq": max(total_timesteps // 20, 10000),
+            "n_eval_episodes": 5,
+            "checkpoint_freq": max(total_timesteps // 10, 25000),
+            "tensorboard_log": False,  # Disabled until tensorboard is properly installed
+            "verbose": 1,
+        }
+        if request.learning_rate:
+            overrides["learning_rate"] = request.learning_rate
+
+        ppo_config = PPOConfig.from_ssot(**overrides)
+
+        # Resolve algorithm name from pipeline SSOT if available
+        try:
+            from src.training.algorithm_factory import resolve_algorithm_name
+            from src.config.pipeline_config import load_pipeline_config
+            pipeline_cfg = load_pipeline_config()
+            ppo_config.algorithm_name = resolve_algorithm_name(pipeline_cfg)
+        except Exception:
+            pass  # Keep default "ppo"
+
+        logger.info(f"[SSOT] PPO hyperparameters: lr={ppo_config.learning_rate}, ent_coef={ppo_config.ent_coef}")
+        logger.info(f"[SSOT] Early stopping: enabled={ppo_config.early_stopping_enabled}, patience={ppo_config.early_stopping_patience}")
+        logger.info(f"[SSOT] LR decay: enabled={ppo_config.lr_decay_enabled}")
 
         # Create trainer
         trainer = PPOTrainer(

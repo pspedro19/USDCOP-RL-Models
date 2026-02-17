@@ -45,7 +45,9 @@ env/
 # Data and Models
 data/raw/
 data/processed/
+data/signals/
 !data/backups/
+!data/backups/seeds/
 !data/.gitkeep
 models/
 !models/.gitkeep
@@ -103,6 +105,21 @@ airflow/*.cfg
 *.csv
 !sample_data.csv
 !usdcop-trading-dashboard/public/forecasting/*.csv
+
+# =============================================================================
+# MACRO SEEDS - 9 Master Files (D/M/Q × CSV/Parquet/Excel)
+# =============================================================================
+# These are the restore points for L0 macro pipelines
+# Tracked in Git for deployment and disaster recovery
+!data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.csv
+!data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.parquet
+!data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.xlsx
+!data/pipeline/04_cleaning/output/MACRO_MONTHLY_MASTER.csv
+!data/pipeline/04_cleaning/output/MACRO_MONTHLY_MASTER.parquet
+!data/pipeline/04_cleaning/output/MACRO_MONTHLY_MASTER.xlsx
+!data/pipeline/04_cleaning/output/MACRO_QUARTERLY_MASTER.csv
+!data/pipeline/04_cleaning/output/MACRO_QUARTERLY_MASTER.parquet
+!data/pipeline/04_cleaning/output/MACRO_QUARTERLY_MASTER.xlsx
 
 # Allow trading data backups for deployment
 !data/backups/pre_v20_migration_20260109/*.csv.gz
@@ -175,8 +192,12 @@ pipeline_state.json
 # Custom
 workspace/
 sandbox/
-experiments/
+/experiments/
 research/
+
+# Claude Code project config (rules, experiments, specs) — MUST be tracked
+!.claude/
+!.claude/**
 
 # Claude Code temporary files and directories
 tmpclaude-*/
@@ -225,3 +246,9 @@ seeds/v*/
 !seeds/latest/*.parquet
 !seeds/latest/manifest.json
 !seeds/README.md
+
+# Sensitive files
+cookies.txt
+
+# Temporary norm_stats from training runs
+config/v*_norm_stats.json

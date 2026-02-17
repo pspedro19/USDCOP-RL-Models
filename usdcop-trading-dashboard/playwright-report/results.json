@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 2
     },
     "preserveOutput": "always",
     "reporter": [
@@ -43,7 +43,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "chromium",
         "name": "chromium",
@@ -52,14 +52,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "firefox",
         "name": "firefox",
@@ -68,14 +68,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "webkit",
         "name": "webkit",
@@ -84,14 +84,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "Mobile Chrome",
         "name": "Mobile Chrome",
@@ -100,14 +100,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "Mobile Safari",
         "name": "Mobile Safari",
@@ -116,14 +116,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "Microsoft Edge",
         "name": "Microsoft Edge",
@@ -132,14 +132,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 2
         },
         "id": "Google Chrome",
         "name": "Google Chrome",
@@ -148,7 +148,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 60000
+        "timeout": 30000
       }
     ],
     "shard": null,
@@ -165,168 +165,87 @@
   },
   "suites": [
     {
-      "title": "backtest-verify.spec.ts",
-      "file": "backtest-verify.spec.ts",
+      "title": "screenshot-check.spec.ts",
+      "file": "screenshot-check.spec.ts",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "Backtest Results Display",
-          "file": "backtest-verify.spec.ts",
-          "line": 9,
-          "column": 6,
-          "specs": [
+          "title": "Screenshot /production page",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "should show backtest results in all sections",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
                 {
-                  "timeout": 180000,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6278,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-17T04:17:59.068Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 104012,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "=== Step 1: Navigate to dashboard ===\n"
-                        },
-                        {
-                          "text": "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
-                        },
-                        {
-                          "text": "[log] [UnifiedWebSocket] Subscribed to channel: signals\n"
-                        },
-                        {
-                          "text": "[log] [UnifiedWebSocket] Subscribed to channel: trades\n"
-                        },
-                        {
-                          "text": "[log] [UnifiedWebSocket] Primary WebSocket connected\n"
-                        },
-                        {
-                          "text": "[debug] [UnifiedWebSocket] No schema for message type: price_update\n"
-                        },
-                        {
-                          "text": "=== Step 2: Open backtest panel ===\n"
-                        },
-                        {
-                          "text": "[log] [Fast Refresh] rebuilding\n"
-                        },
-                        {
-                          "text": "=== Step 3: Select validation dates ===\n"
-                        },
-                        {
-                          "text": "=== Step 4: Start backtest ===\n"
-                        },
-                        {
-                          "text": "[log] [BacktestService] Starting backtest: 2025-01-01 to 2025-06-30 (model=ppo_v20)\n"
-                        },
-                        {
-                          "text": "Clicked Iniciar Backtest\n"
-                        },
-                        {
-                          "text": "Waiting for backtest to complete...\n"
-                        },
-                        {
-                          "text": "[log] [BacktestService] Backtest completed: 132 trades\n"
-                        },
-                        {
-                          "text": "[log] [Dashboard] Backtest completed: 132 trades from 2025-01-01 to 2025-06-30\n"
-                        },
-                        {
-                          "text": "[log] [Dashboard] Clearing dashboard\n"
-                        },
-                        {
-                          "text": "[log] [Dashboard] Dashboard cleared\n"
-                        },
-                        {
-                          "text": "[log] [Dashboard] Backtest mode activated with 132 trades\n"
-                        },
-                        {
-                          "text": "[log] [Dashboard] Starting animated replay with 5000 bars\n"
-                        },
-                        {
-                          "text": "[debug] [UnifiedWebSocket] No schema for message type: heartbeat\n"
-                        },
-                        {
-                          "text": "[log] [Fast Refresh] done in 31744ms\n"
-                        },
-                        {
-                          "text": "[log] [USDCOP][useIntegratedChart] [2026-01-13T17:57:48.763Z] [DEBUG] Fetched 15017 candlesticks with price movement\n"
-                        },
-                        {
-                          "text": "[log] [USDCOP][useIntegratedChart] [2026-01-13T17:57:50.013Z] [DEBUG] Fetched 15017 candlesticks with price movement\n"
-                        },
-                        {
-                          "text": "[debug] [UnifiedWebSocket] No schema for message type: heartbeat\n"
-                        },
-                        {
-                          "text": "=== Step 5: Wait for chart to load ===\n"
-                        },
-                        {
-                          "text": "=== Step 6: Final verification ===\n"
-                        },
-                        {
-                          "text": "=== Step 7: Checking sections ===\n"
-                        },
-                        {
-                          "text": "Trading Summary heading visible: true\n"
-                        },
-                        {
-                          "text": "REPLAY badge visible: true\n"
-                        },
-                        {
-                          "text": "Trades text found: 132\n"
-                        },
-                        {
-                          "text": "[log] [Fast Refresh] rebuilding\n"
-                        },
-                        {
-                          "text": "Equity Curve section visible: true\n"
-                        },
-                        {
-                          "text": "Profit/Loss text found: $-4416\n"
-                        },
-                        {
-                          "text": "Signal markers visible on page: 3\n"
-                        },
-                        {
-                          "text": "=== Test completed ===\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-01-13T17:56:57.026Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
+                  "attachments": []
                 }
               ],
-              "id": "a6040a1083c3b7d60e92-b08b1b16125d89f9501e",
-              "file": "backtest-verify.spec.ts",
-              "line": 12,
-              "column": 7
+              "status": "expected"
             }
-          ]
+          ],
+          "id": "6fabc0e0b6ba1248f787-9257719dd859a413650c",
+          "file": "screenshot-check.spec.ts",
+          "line": 3,
+          "column": 5
+        },
+        {
+          "title": "Screenshot /dashboard page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 6403,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-17T04:17:59.060Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6fabc0e0b6ba1248f787-649bd1de6899fd14fad5",
+          "file": "screenshot-check.spec.ts",
+          "line": 10,
+          "column": 5
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-01-13T17:55:20.807Z",
-    "duration": 204486.522,
-    "expected": 1,
+    "startTime": "2026-02-17T04:17:57.777Z",
+    "duration": 8189.1320000000005,
+    "expected": 2,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

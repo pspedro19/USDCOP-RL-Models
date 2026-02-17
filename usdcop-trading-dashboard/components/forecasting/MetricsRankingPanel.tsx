@@ -158,7 +158,8 @@ export function MetricsRankingPanel({ data, selectedHorizon, selectedModel }: Me
           </thead>
           <tbody>
             {rankings.map((m, idx) => {
-              const isSelected = selectedModel && m.model_id.toLowerCase() === selectedModel.toLowerCase();
+              const normalize = (s: string) => s.toLowerCase().replace(/[_ ]/g, '');
+              const isSelected = selectedModel && normalize(m.model_id) === normalize(selectedModel);
               const isFirst = idx === 0;
               const sharpeBadge = getSharpeBadge(m.sharpe);
 

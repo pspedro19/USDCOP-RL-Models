@@ -107,6 +107,14 @@ from .trainers import (
     train_ppo,
 )
 
+# Multi-seed training for variance reduction
+from .multi_seed_trainer import (
+    MultiSeedTrainer,
+    MultiSeedConfig,
+    MultiSeedResult,
+    train_with_multiple_seeds,
+)
+
 __all__ = [
     # Engine (UNIFIED TRAINING)
     "TrainingEngine",
@@ -165,4 +173,9 @@ __all__ = [
     "ProgressCallback",
     # Convenience
     "train_ppo",
+    # Multi-seed training
+    "MultiSeedTrainer",
+    "MultiSeedConfig",
+    "MultiSeedResult",
+    "train_with_multiple_seeds",
 ]

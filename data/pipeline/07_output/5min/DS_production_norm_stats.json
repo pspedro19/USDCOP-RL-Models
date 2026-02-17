@@ -1,0 +1,83 @@
+{
+  "log_ret_5m": {
+    "mean": 4.331534450567134e-06,
+    "std": 0.0011895622096895768,
+    "method": "zscore"
+  },
+  "log_ret_1h": {
+    "mean": 5.220908847584681e-05,
+    "std": 0.003919808436360707,
+    "method": "zscore"
+  },
+  "log_ret_4h": {
+    "mean": 0.00020961348018758852,
+    "std": 0.00806626702539462,
+    "method": "zscore"
+  },
+  "log_ret_1d": {
+    "mean": 0.0012484737737021928,
+    "std": 0.022600709286663388,
+    "method": "zscore"
+  },
+  "rsi_9": {
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1,
+    "method": "minmax"
+  },
+  "volatility_pct": {
+    "mean": 0.10020030841182263,
+    "std": 0.08485772913259923,
+    "method": "zscore"
+  },
+  "trend_z": {
+    "method": "none"
+  },
+  "dxy_z": {
+    "method": "none"
+  },
+  "dxy_change_1d": {
+    "mean": 0.00014287277732849126,
+    "std": 0.004385217135401835,
+    "method": "zscore"
+  },
+  "vix_z": {
+    "method": "none"
+  },
+  "embi_z": {
+    "method": "none"
+  },
+  "brent_change_1d": {
+    "mean": 0.0002382428834774557,
+    "std": 0.02779035065974738,
+    "method": "zscore"
+  },
+  "gold_change_1d": {
+    "mean": 0.00039016535702835717,
+    "std": 0.01026174141891893,
+    "method": "zscore"
+  },
+  "rate_spread_z": {
+    "method": "none"
+  },
+  "yield_curve_z": {
+    "method": "none"
+  },
+  "hour_sin_market": {
+    "method": "none"
+  },
+  "hour_cos_market": {
+    "method": "none"
+  },
+  "dow_sin_market": {
+    "method": "none"
+  },
+  "_meta": {
+    "version": "3.5.2",
+    "ssot_model": "v21.5b_temporal_features",
+    "train_rows": 68705,
+    "feature_count": 18,
+    "created_at": "2026-02-15T11:43:23.951897"
+  }
+}

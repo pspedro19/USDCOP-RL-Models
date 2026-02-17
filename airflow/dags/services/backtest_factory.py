@@ -391,6 +391,333 @@ class OrchestratorBacktestRunner(AbstractBacktestRunner):
         return records
 
 
+class EvaluationBacktestRunner(AbstractBacktestRunner):
+    """
+    Backtest runner using src/evaluation/backtest_engine.py.
+
+    This is the primary runner for L4 validation, using the unified
+    BacktestEngine that ensures exact parity with L3 training environment.
+    """
+
+    def __init__(self, config: BacktestConfig, project_root: Path, **kwargs):
+        super().__init__(config, project_root)
+        self._model = None
+        self._norm_stats = None
+        self._test_df = None
+        self._model_path = kwargs.get('model_path')
+        self._norm_stats_path = kwargs.get('norm_stats_path')
+        self._dataset_path = kwargs.get('dataset_path')
+
+    def _check_cache(self, request: BacktestRequest) -> Optional[BacktestResult]:
+        """No caching for evaluation runner"""
+        return None
+
+    def _load_model(self, model_id: str):
+        """Load model from standard paths"""
+        import sys
+        src_path = str(self.project_root / "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+
+        try:
+            from stable_baselines3 import PPO
+
+            # Try multiple model paths
+            model_paths = [
+                self._model_path,
+                self.project_root / "models" / f"{model_id}" / "final_model.zip",
+                self.project_root / "models" / f"ppo_{model_id}_production" / "final_model.zip",
+                self.project_root / "models" / f"{model_id}_production" / "final_model.zip",
+            ]
+
+            for path in model_paths:
+                if path and Path(path).exists():
+                    self._model = PPO.load(str(path))
+                    logger.info(f"Loaded model from {path}")
+                    return
+
+            raise FileNotFoundError(f"Model not found for {model_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
+
+    def _load_norm_stats(self, model_id: str) -> Dict:
+        """Load normalization statistics"""
+        import json
+
+        norm_paths = [
+            self._norm_stats_path,
+            self.project_root / "models" / f"{model_id}" / "norm_stats.json",
+            self.project_root / "models" / f"ppo_{model_id}_production" / "norm_stats.json",
+            self.project_root / "models" / f"{model_id}_production" / "norm_stats.json",
+        ]
+
+        for path in norm_paths:
+            if path and Path(path).exists():
+                with open(path) as f:
+                    self._norm_stats = json.load(f)
+                logger.info(f"Loaded norm_stats from {path}")
+                return self._norm_stats
+
+        raise FileNotFoundError(f"norm_stats.json not found for {model_id}")
+
+    def _load_data(self, request: BacktestRequest) -> Any:
+        """Load val + test datasets combined for complete backtest coverage"""
+        import pandas as pd
+
+        # First, try to load combined val + test from dataset prefix
+        dataset_prefixes = []
+
+        # If dataset_path is provided, check if it's a specific file or a prefix
+        if self._dataset_path:
+            ds_path = Path(self._dataset_path)
+            if ds_path.exists() and ds_path.suffix == '.parquet':
+                # Single file - try to extract prefix for combined loading
+                path_str = str(ds_path)
+                for split in ['_train.parquet', '_val.parquet', '_test.parquet']:
+                    if path_str.endswith(split):
+                        # Extract prefix (e.g., "DS_v3_close_only")
+                        prefix_path = path_str[:-len(split)]
+                        dataset_prefixes.append(Path(prefix_path))
+                        break
+                else:
+                    # Not a split file, use as-is
+                    dataset_prefixes.append(ds_path)
+            else:
+                # Assume it's a prefix path
+                dataset_prefixes.append(ds_path)
+
+        # Add fallback paths
+        dataset_prefixes.extend([
+            self.project_root / "data" / "pipeline" / "07_output" / "5min" / "DS_v3_close_only",
+            self.project_root / "data" / "pipeline" / "07_output" / "5min" / "DS_production",
+        ])
+
+        # Try to load combined val + test
+        for base_path in dataset_prefixes:
+            dfs = []
+
+            # Check if it's a full path to a single file
+            if base_path and base_path.suffix == '.parquet' and base_path.exists():
+                self._test_df = pd.read_parquet(base_path)
+                logger.info(f"Loaded single dataset from {base_path}: {len(self._test_df)} rows")
+                return self._filter_by_date(request)
+
+            # Try to load val + test splits
+            for split in ['val', 'test']:
+                split_path = Path(str(base_path) + f"_{split}.parquet")
+                if split_path.exists():
+                    split_df = pd.read_parquet(split_path)
+                    dfs.append(split_df)
+                    logger.info(f"Loaded {split}: {len(split_df)} rows from {split_path}")
+
+            if dfs:
+                # Combine and deduplicate
+                self._test_df = pd.concat(dfs).sort_index()
+                self._test_df = self._test_df[~self._test_df.index.duplicated(keep='first')]
+                logger.info(f"Combined val+test dataset: {len(self._test_df)} rows ({self._test_df.index.min()} to {self._test_df.index.max()})")
+                return self._filter_by_date(request)
+
+        raise FileNotFoundError("Val/Test datasets not found")
+
+    def _filter_by_date(self, request: BacktestRequest) -> Any:
+        """Filter loaded dataset by date range"""
+        import pandas as pd
+
+        # Filter by date range
+        if 'timestamp' in self._test_df.columns:
+            ts_col = 'timestamp'
+        elif 'datetime' in self._test_df.columns:
+            ts_col = 'datetime'
+        elif isinstance(self._test_df.index, pd.DatetimeIndex):
+            self._test_df['timestamp'] = self._test_df.index
+            ts_col = 'timestamp'
+        else:
+            ts_col = None
+
+        if ts_col:
+            self._test_df[ts_col] = pd.to_datetime(self._test_df[ts_col])
+            start = pd.to_datetime(request.start_date)
+            end = pd.to_datetime(request.end_date)
+            if self._test_df[ts_col].dt.tz is not None:
+                start = start.tz_localize('UTC')
+                end = end.tz_localize('UTC')
+            self._test_df = self._test_df[
+                (self._test_df[ts_col] >= start) &
+                (self._test_df[ts_col] <= end)
+            ]
+            logger.info(f"Filtered to date range: {len(self._test_df)} rows")
+
+        return self._test_df
+
+    def _run_simulation(self, data: Any, request: BacktestRequest) -> List[TradeRecord]:
+        """Run simulation using BacktestEngine"""
+        import sys
+        src_path = str(self.project_root / "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+
+        try:
+            from evaluation.backtest_engine import (
+                BacktestEngine,
+                BacktestConfig as EvalBacktestConfig,
+            )
+        except ImportError:
+            logger.warning("Could not import BacktestEngine from src/evaluation")
+            raise RuntimeError("BacktestEngine not available")
+
+        # Load model and norm_stats
+        if self._model is None:
+            self._load_model(request.model_id)
+
+        if self._norm_stats is None:
+            self._load_norm_stats(request.model_id)
+
+        # Get feature columns from norm_stats
+        if "features" in self._norm_stats:
+            feature_stats = self._norm_stats["features"]
+        else:
+            feature_stats = {k: v for k, v in self._norm_stats.items() if not k.startswith("_")}
+
+        feature_cols = list(feature_stats.keys())
+        logger.info(f"Using {len(feature_cols)} features: {feature_cols[:5]}...")
+
+        # Create backtest config
+        eval_config = EvalBacktestConfig(
+            initial_capital=self.config.initial_capital,
+            spread_bps=self.config.transaction_cost_bps,
+            slippage_bps=self.config.slippage_bps,
+            threshold_long=self.config.long_entry_threshold,
+            threshold_short=self.config.short_entry_threshold,
+        )
+
+        # Initialize engine
+        engine = BacktestEngine(eval_config, feature_stats, feature_cols)
+
+        # Run backtest
+        df = self._test_df
+        trades_internal = []
+
+        for i in range(1, len(df)):
+            obs = engine.build_observation(df.iloc[i])
+            action, _ = self._model.predict(obs, deterministic=True)
+            action_val = float(action[0]) if hasattr(action, '__len__') else float(action)
+            engine.step(action_val, df.iloc[i], df.iloc[i-1])
+
+        # Close final position
+        engine.close_position(df.iloc[-1])
+
+        # Convert internal trades to TradeRecord format
+        trades = []
+        from datetime import datetime as dt
+        import pandas as pd
+
+        for t in engine.trades:
+            # Parse entry_time (could be datetime string or index name)
+            entry_time_val = getattr(t, 'entry_time', None)
+            if entry_time_val:
+                try:
+                    if isinstance(entry_time_val, str) and entry_time_val.strip():
+                        entry_time_val = pd.to_datetime(entry_time_val)
+                    elif not isinstance(entry_time_val, dt):
+                        entry_time_val = dt.now()  # Fallback
+                except:
+                    entry_time_val = dt.now()
+            else:
+                entry_time_val = dt.now()
+
+            # Parse exit_time
+            exit_time_val = getattr(t, 'exit_time', None)
+            if exit_time_val:
+                try:
+                    if isinstance(exit_time_val, str) and exit_time_val.strip():
+                        exit_time_val = pd.to_datetime(exit_time_val)
+                    elif not isinstance(exit_time_val, dt):
+                        exit_time_val = None
+                except:
+                    exit_time_val = None
+
+            # Ensure entry_price > 0 (required by contract)
+            entry_price = getattr(t, 'entry_price', 1.0)
+            if entry_price <= 0:
+                entry_price = 4200.0  # Default USDCOP price
+
+            exit_price = getattr(t, 'exit_price', None)
+            if exit_price is not None and exit_price <= 0:
+                exit_price = None
+
+            trades.append(TradeRecord(
+                trade_id=len(trades),
+                entry_time=entry_time_val,
+                exit_time=exit_time_val,
+                side=getattr(t, 'direction', 'LONG'),
+                entry_price=entry_price,
+                exit_price=exit_price,
+                pnl_usd=getattr(t, 'pnl', 0),
+                pnl_pct=getattr(t, 'pnl_pct', None) if hasattr(t, 'pnl_pct') else None,
+                equity_at_entry=self.config.initial_capital,
+                equity_at_exit=engine.capital,
+            ))
+
+        # Store engine for metrics calculation
+        self._engine = engine
+
+        logger.info(f"Simulation complete: {len(trades)} trades")
+        return trades
+
+    def _calculate_metrics(
+        self, trades: List[TradeRecord], start_date: date, end_date: date
+    ) -> BacktestMetrics:
+        """Calculate metrics from engine results"""
+        if hasattr(self, '_engine'):
+            engine = self._engine
+            result = engine.get_result(self._test_df)
+
+            return BacktestMetrics(
+                total_trades=result.total_trades,
+                winning_trades=result.winning_trades,
+                losing_trades=result.losing_trades,
+                total_pnl_usd=result.total_pnl,
+                total_return_pct=result.total_return_pct / 100,  # Convert to decimal
+                sharpe_ratio=result.sharpe_annual,
+                max_drawdown_pct=result.max_drawdown_pct / 100,  # Convert to decimal
+                max_drawdown_usd=result.max_drawdown_pct / 100 * self.config.initial_capital,
+                win_rate=result.win_rate_pct / 100,  # Convert to decimal
+                profit_factor=result.profit_factor if result.profit_factor < 999 else None,
+                avg_win_usd=result.avg_pnl if result.avg_pnl > 0 else None,
+                avg_loss_usd=result.avg_pnl if result.avg_pnl < 0 else None,
+                avg_trade_duration_minutes=result.avg_duration_hours * 60 if result.avg_duration_hours else None,
+                start_date=start_date,
+                end_date=end_date,
+                trading_days=int(result.trading_days),
+            )
+
+        # Fallback to parent calculation
+        return OrchestratorBacktestRunner._calculate_metrics(self, trades, start_date, end_date)
+
+    def _persist_results(self, trades: List[TradeRecord], request: BacktestRequest) -> None:
+        """Persist results to file"""
+        import json
+        from datetime import datetime
+
+        output_dir = self.project_root / "results" / "backtests"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        result_file = output_dir / f"{request.model_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+        with open(result_file, 'w') as f:
+            json.dump({
+                "model_id": request.model_id,
+                "start_date": str(request.start_date),
+                "end_date": str(request.end_date),
+                "trade_count": len(trades),
+                "trades": [t.model_dump() if hasattr(t, 'model_dump') else vars(t) for t in trades[:100]],
+            }, f, indent=2, default=str)
+
+        logger.info(f"Results saved to {result_file}")
+
+
 class MockBacktestRunner(AbstractBacktestRunner):
     """
     Mock backtest runner for testing.
@@ -452,7 +779,8 @@ class BacktestRunnerFactory:
     """
 
     _runners: Dict[str, Type[AbstractBacktestRunner]] = {
-        "orchestrator": OrchestratorBacktestRunner,
+        "evaluation": EvaluationBacktestRunner,  # Primary runner using BacktestEngine
+        "orchestrator": OrchestratorBacktestRunner,  # Legacy - requires external module
         "mock": MockBacktestRunner,
     }
 
@@ -517,18 +845,27 @@ class BacktestConfigBuilder:
     """
 
     def __init__(self):
+        # Import SSOT config for canonical values
+        try:
+            from src.config.backtest_ssot import BACKTEST_SSOT
+            ssot = BACKTEST_SSOT
+        except ImportError:
+            # Fallback if SSOT not available - use canonical values directly
+            ssot = None
+
         self._model_id: str = "ppo_latest"
         self._model_path: Optional[str] = None
         self._norm_stats_path: Optional[str] = None
-        self._initial_capital: float = 10_000.0
-        self._transaction_cost_bps: float = 75.0  # realistic USDCOP spread
-        self._slippage_bps: float = 15.0  # realistic slippage
-        self._long_entry: float = 0.33  # matches training
-        self._short_entry: float = -0.33  # matches training
-        self._exit: float = 0.15  # exit threshold
-        self._stop_loss: float = 0.02
-        self._take_profit: float = 0.03
-        self._max_bars: int = 20
+        # SSOT: Use canonical config values for consistency with L4
+        self._initial_capital: float = ssot.initial_capital if ssot else 10_000.0
+        self._transaction_cost_bps: float = ssot.spread_bps if ssot else 2.5  # SSOT: 2.5 bps
+        self._slippage_bps: float = ssot.slippage_bps if ssot else 1.0  # SSOT: 1.0 bps
+        self._long_entry: float = ssot.threshold_long if ssot else 0.50  # SSOT: matches training
+        self._short_entry: float = ssot.threshold_short if ssot else -0.50  # SSOT: matches training
+        self._exit: float = ssot.exit_threshold if ssot else 0.0  # SSOT: neutral
+        self._stop_loss: float = ssot.stop_loss_pct if ssot else 0.025
+        self._take_profit: float = ssot.take_profit_pct if ssot else 0.03
+        self._max_bars: int = ssot.max_position_bars if ssot else 576
 
     def with_model(self, model_id: str, model_path: Optional[str] = None) -> "BacktestConfigBuilder":
         self._model_id = model_id
@@ -550,9 +887,9 @@ class BacktestConfigBuilder:
 
     def with_thresholds(
         self,
-        long: float = 0.33,  # matches training
-        short: float = -0.33,  # matches training
-        exit: float = 0.15  # adjusted
+        long: float = 0.50,  # SSOT: matches training
+        short: float = -0.50,  # SSOT: matches training
+        exit: float = 0.0  # SSOT: neutral zone
     ) -> "BacktestConfigBuilder":
         self._long_entry = long
         self._short_entry = short
@@ -613,10 +950,11 @@ def create_backtest_runner(
     if project_root is None:
         project_root = Path("/opt/airflow")
 
+    # SSOT: Use canonical config values for L4 consistency
     config = (BacktestConfigBuilder()
         .with_model(model_id)
         .with_capital(config_kwargs.get("initial_capital", 10_000.0))
-        .with_costs(config_kwargs.get("transaction_cost_bps", 75.0))  # 75 bps
+        .with_costs(config_kwargs.get("transaction_cost_bps", 2.5))  # SSOT: 2.5 bps
         .build())
 
     return BacktestRunnerFactory.create(

@@ -53,6 +53,9 @@ from .lineage_service import (
     get_lineage_service,
 )
 
+# Run manifest (pipeline lineage tracking)
+from .run_manifest import RunManifest
+
 # Promotion gate
 from .promotion_gate import (
     PromotionGate,
@@ -98,6 +101,8 @@ __all__ = [
     "LineageNode",
     "LineageEdge",
     "get_lineage_service",
+    # Run manifest
+    "RunManifest",
     # Promotion gate
     "PromotionGate",
     "ValidationResult",

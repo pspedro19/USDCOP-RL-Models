@@ -51,11 +51,30 @@ from .dag_dependencies import (
 # Trading Calendar
 from .trading_calendar import TradingCalendar, get_calendar, is_trading_day
 
+# Circuit Breaker
+from .circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerRegistry,
+    CircuitOpenError,
+    get_circuit_breaker,
+)
+
+# Retry Policy
+from .retry_policy import (
+    RetryConfig,
+    RetryStats,
+    retry_with_backoff,
+    get_retry_decorator,
+    retry_extraction,
+    RetryContext,
+)
+
 # =============================================================================
 # VERSION INFO
 # =============================================================================
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"
 __author__ = "USDCOP Trading System"
 
 # =============================================================================

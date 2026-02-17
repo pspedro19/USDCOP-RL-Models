@@ -46,6 +46,8 @@ import pandas as pd
 import numpy as np
 import gzip
 import sys
+import json
+import hashlib
 from pathlib import Path
 from datetime import datetime
 import warnings
@@ -206,8 +208,7 @@ if USE_UNIFIED_LOADERS:
             'imports': 'FTRD_IMPORTS_TOTAL_COL_M_IMPUSD',
             'reserves': 'RSBP_RESERVES_INTERNATIONAL_COL_M_RESINT',
             'itcr': 'FXRT_REER_BILATERAL_COL_M_ITCR',
-            'fdi_inflow': 'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q',
-            'current_account': 'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q',
+            'current_account': 'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT',
             'rate_spread': 'RATE_SPREAD_COL_USA',
         }
         df_macro = df_macro.rename(columns=MACRO_COL_RENAMES)
@@ -302,8 +303,7 @@ macro_cols_to_use = [
     'FXRT_REER_BILATERAL_COL_M_ITCR',     # ITCR
 
     # === TRIMESTRALES (forward-fill) ===
-    'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q',      # IED entrada
-    'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q', # Cuenta corriente
+    'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT',   # Cuenta corriente
 ]
 
 macro_cols_exist = [c for c in macro_cols_to_use if c in df_macro.columns]
@@ -362,25 +362,49 @@ def calc_atr_pct(high, low, close, period=14):
     return (atr / close) * 100
 
 def calc_adx(high, low, close, period=14):
-    """ADX - Average Directional Index (0-100)"""
+    """
+    ADX - Average Directional Index (0-100)
+
+    FIX v2: Use percentage-based ATR to avoid saturation issues.
+    The original calculation saturated to ~100 because ATR in absolute
+    terms for USDCOP (~4000) is very different from typical FX pairs (~1.0).
+
+    Solution: Normalize DM by price level before calculating DI.
+    """
     tr1 = high - low
     tr2 = abs(high - close.shift())
     tr3 = abs(low - close.shift())
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+    # Use ATR as percentage of price to normalize across price levels
     atr = tr.rolling(window=period).mean()
+    atr_pct = atr / close  # ATR as percentage
+
+    # Minimum ATR to avoid division by zero (0.01% = 10 bps)
+    atr_pct_min = 0.0001
+    atr_pct_safe = atr_pct.clip(lower=atr_pct_min)
 
     up_move = high - high.shift()
     down_move = low.shift() - low
 
-    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
-    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+    # Directional movement as percentage of price
+    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move / close, 0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move / close, 0)
 
-    plus_di = 100 * pd.Series(plus_dm, index=close.index).rolling(window=period).mean() / (atr + 1e-10)
-    minus_di = 100 * pd.Series(minus_dm, index=close.index).rolling(window=period).mean() / (atr + 1e-10)
+    # DI calculation with percentage-based values
+    plus_di = 100 * pd.Series(plus_dm, index=close.index).rolling(window=period).mean() / atr_pct_safe
+    minus_di = 100 * pd.Series(minus_dm, index=close.index).rolling(window=period).mean() / atr_pct_safe
 
-    dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di + 1e-10)
+    # Clamp DI values to valid range before DX calculation
+    plus_di = plus_di.clip(0, 100)
+    minus_di = minus_di.clip(0, 100)
+
+    # DX with safe denominator
+    di_sum = plus_di + minus_di
+    dx = 100 * abs(plus_di - minus_di) / di_sum.clip(lower=1.0)
+
     adx = dx.rolling(window=period).mean()
-    return adx
+    return adx.clip(0, 100)  # Ensure final output is bounded
 
 def calc_bollinger_position(close, period=20, std=2):
     """Posicion en Bollinger Bands (0-1)"""
@@ -442,11 +466,231 @@ def calc_atr_percentile(atr, window=50):
         return (x.iloc[-1] - x.min()) / (x.max() - x.min() + 1e-10)
     return atr.rolling(window).apply(percentile_rank, raw=False)
 
+def calc_volatility_pct(close, period=14, annualize=True, bars_per_day=48):
+    """
+    CLOSE-ONLY volatility (replaces ATR).
+    Realized volatility as percentage of price.
+    """
+    log_returns = np.log(close / close.shift(1))
+    vol = log_returns.rolling(window=period).std()
+    if annualize:
+        vol = vol * np.sqrt(252 * bars_per_day)
+    return vol * 100  # As percentage
+
+def calc_trend_z(close, sma_period=50, clip_value=3.0):
+    """
+    CLOSE-ONLY trend indicator (replaces ADX).
+    Position of price vs SMA normalized by rolling std.
+    """
+    sma = close.rolling(window=sma_period).mean()
+    rolling_std = close.rolling(window=sma_period).std()
+    trend_z = (close - sma) / (rolling_std + 1e-10)
+    return trend_z.clip(-clip_value, clip_value)
+
+
+# =============================================================================
+# EXP-B-001: NEW FEATURE FUNCTIONS
+# =============================================================================
+
+def calc_rsi_21(close: pd.Series, period: int = 21) -> pd.Series:
+    """
+    EXP-B-001: RSI with 21-period for longer-term overbought/oversold.
+
+    Args:
+        close: Close price series
+        period: RSI period (default 21)
+
+    Returns:
+        RSI values in [0, 100]
+    """
+    delta = close.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / (loss + 1e-10)
+    return 100 - (100 / (1 + rs))
+
+
+def calc_yield_curve_zscore(df: pd.DataFrame, window: int = 252 * 12) -> pd.Series:
+    """
+    EXP-B-001: Yield curve (10Y - 2Y) z-score for risk-on/off signal.
+
+    Inverted yield curve (negative spread) historically indicates recession risk.
+
+    Args:
+        df: DataFrame with ust10y and ust2y columns
+        window: Rolling window in 5-min bars (252 trading days * 12 hours/day)
+
+    Returns:
+        Rolling z-score of yield curve spread, clipped to [-4, 4]
+    """
+    if 'ust10y' in df.columns and 'ust2y' in df.columns:
+        spread = df['ust10y'] - df['ust2y']
+    else:
+        return pd.Series(0.0, index=df.index)
+
+    return z_score_rolling(spread, window=window, clip_val=4.0)
+
+
+def calc_rate_spread_change(df: pd.DataFrame, periods: int = 288) -> pd.Series:
+    """
+    EXP-B-001: Rate spread momentum (col10y - ust10y) change.
+
+    Captures carry trade momentum - widening spread is COP positive.
+
+    Args:
+        df: DataFrame with col10y and ust10y columns
+        periods: Lookback period in 5-min bars (288 = 1 day)
+
+    Returns:
+        Percentage change of rate spread, clipped to [-0.1, 0.1]
+    """
+    if 'col10y' in df.columns and 'ust10y' in df.columns:
+        spread = df['col10y'] - df['ust10y']
+        return spread.pct_change(periods=periods).clip(-0.1, 0.1)
+    return pd.Series(0.0, index=df.index)
+
+
+def calculate_rate_spread_zscore(df: pd.DataFrame, window: int = 252 * 12 * 5) -> pd.Series:
+    """
+    Calculate rate spread as rolling z-score for stationarity.
+
+    This fixes the distribution shift problem where rate_spread had:
+    - Train (2020-2024): mean = +0.15
+    - Test (2025): mean = -0.96 (shift of -1.11 std)
+
+    By using rolling z-score, both train and test periods will have
+    similar distributions (mean ~0, std ~1).
+
+    Args:
+        df: DataFrame with col10y and/or ust10y columns
+        window: Rolling window in 5-min bars (252 trading days * 12 hours/day * 5 bars/hour)
+                Default ~15,120 bars for 252 trading day window
+
+    Returns:
+        Rolling z-score of rate spread, clipped to [-4, 4]
+    """
+    # Calculate raw spread
+    if 'col10y' in df.columns and 'ust10y' in df.columns:
+        spread = df['col10y'] - df['ust10y']
+    elif 'ust10y' in df.columns:
+        # Fallback: use 10.0 - ust10y but with rolling normalization
+        spread = 10.0 - df['ust10y']
+    else:
+        return pd.Series(0.0, index=df.index)
+
+    # Apply rolling z-score (same method as dxy_z, vix_z, embi_z)
+    # Use min_periods = window // 4 to allow calculation during warmup
+    mean = spread.rolling(window=window, min_periods=window // 4).mean()
+    std = spread.rolling(window=window, min_periods=window // 4).std()
+    z = (spread - mean) / (std + 1e-10)
+
+    return z.clip(-4.0, 4.0)
+
 def encode_cyclical(value, max_value):
     """Codificacion ciclica (sin/cos)"""
     sin_val = np.sin(2 * np.pi * value / max_value)
     cos_val = np.cos(2 * np.pi * value / max_value)
     return sin_val, cos_val
+
+
+# =============================================================================
+# NORMALIZATION STATS (L2 -> L3 -> L4 Pipeline Integration)
+# =============================================================================
+
+def save_norm_stats(df: pd.DataFrame, output_dir: Path, dataset_name: str, feature_columns: list) -> Path:
+    """
+    Compute and save normalization stats from TRAINING data only.
+
+    This ensures L2, L3, and L4 all use the SAME normalization statistics,
+    fixing the critical bug where L4 was using unnormalized observations.
+
+    Args:
+        df: Full dataset with 'timestamp' column
+        output_dir: Directory to save norm_stats.json
+        dataset_name: Name for the output file (e.g., 'DS3_MACRO_CORE')
+        feature_columns: List of feature column names to compute stats for
+
+    Returns:
+        Path to saved norm_stats.json
+    """
+    # Use only TRAINING data (before 2025-01-01) to compute stats
+    # This prevents data leakage from test period
+    TRAIN_END_DATE = '2025-01-01'
+
+    if 'timestamp' in df.columns:
+        time_col = 'timestamp'
+    elif 'datetime' in df.columns:
+        time_col = 'datetime'
+    else:
+        raise ValueError("Dataset must have 'timestamp' or 'datetime' column")
+
+    # Filter to training period only
+    train_df = df[df[time_col] < TRAIN_END_DATE].copy()
+
+    if len(train_df) == 0:
+        raise ValueError(f"No training data found before {TRAIN_END_DATE}")
+
+    print(f"   Computing norm_stats from {len(train_df):,} training rows (before {TRAIN_END_DATE})")
+
+    # Compute stats for each feature
+    norm_stats = {}
+
+    for feat in feature_columns:
+        if feat not in train_df.columns:
+            print(f"      [WARN] Feature '{feat}' not in dataset, skipping")
+            continue
+
+        values = train_df[feat].dropna()
+
+        if len(values) == 0:
+            print(f"      [WARN] Feature '{feat}' has all NaN values, using defaults")
+            norm_stats[feat] = {
+                "mean": 0.0,
+                "std": 1.0,
+                "min": -5.0,
+                "max": 5.0,
+            }
+            continue
+
+        mean_val = float(values.mean())
+        std_val = float(values.std())
+        min_val = float(values.min())
+        max_val = float(values.max())
+
+        # Prevent division by zero
+        if std_val < 1e-8:
+            std_val = 1.0
+
+        norm_stats[feat] = {
+            "mean": mean_val,
+            "std": std_val,
+            "min": min_val,
+            "max": max_val,
+        }
+
+    # Compute feature order hash for contract validation
+    feature_order_str = ",".join(sorted(feature_columns))
+    feature_order_hash = hashlib.md5(feature_order_str.encode()).hexdigest()
+
+    # Add metadata
+    norm_stats["_meta"] = {
+        "version": "1.0.0",
+        "pipeline_stage": "L2",
+        "train_rows": len(train_df),
+        "train_end_date": TRAIN_END_DATE,
+        "feature_count": len(feature_columns),
+        "feature_order_hash": feature_order_hash,
+        "created_at": datetime.now().isoformat(),
+    }
+
+    # Save to output directory
+    stats_path = output_dir / f"{dataset_name}_norm_stats.json"
+    with open(stats_path, 'w') as f:
+        json.dump(norm_stats, f, indent=2)
+
+    print(f"   Saved norm_stats: {stats_path} ({len(norm_stats) - 1} features)")
+
+    return stats_path
 
 
 # =============================================================================
@@ -458,7 +702,14 @@ print("-" * 80)
 
 # --- RETORNOS ---
 print("   Calculando retornos...")
-df['log_ret_5m'] = calc_log_return(df['close'], 1).clip(-0.05, 0.05)
+# P0.1 FIX: Preserve RAW returns BEFORE any clipping/normalization
+# raw_log_ret_5m is used for PnL calculation in L4 backtest
+# log_ret_5m (clipped) is used as model input feature
+df['raw_log_ret_5m'] = calc_log_return(df['close'], 1)
+df['raw_log_ret_5m'] = df['raw_log_ret_5m'].fillna(0)  # First bar has no return
+
+# Clipped versions for model features
+df['log_ret_5m'] = df['raw_log_ret_5m'].clip(-0.05, 0.05)
 df['log_ret_15m'] = calc_log_return(df['close'], 3).clip(-0.05, 0.05)
 df['log_ret_1h'] = calc_log_return(df['close'], 12).clip(-0.05, 0.05)
 df['log_ret_4h'] = calc_log_return(df['close'], 48).clip(-0.05, 0.05)
@@ -483,6 +734,17 @@ df['macd_hist'] = calc_macd_histogram(df['close'], MACD_FAST, MACD_SLOW, MACD_SI
 # RSI multi-timeframe
 df['rsi_9_15m'] = calc_rsi(df['close'].rolling(3).mean(), RSI_PERIOD)
 df['rsi_9_1h'] = calc_rsi(df['close'].rolling(12).mean(), RSI_PERIOD)
+
+# CLOSE-ONLY features (SSOT v2.0.0)
+df['volatility_pct'] = calc_volatility_pct(df['close'], period=14, annualize=True, bars_per_day=48)
+df['trend_z'] = calc_trend_z(df['close'], sma_period=50, clip_value=3.0)
+
+# EXP-B-001: NEW FEATURES
+print("   Calculating EXP-B-001 features...")
+# 1. log_ret_1d: 1-day log return (288 bars)
+df['log_ret_1d'] = calc_log_return(df['close'], 288).clip(-0.05, 0.05)
+# 2. rsi_21: Longer-term RSI
+df['rsi_21'] = calc_rsi_21(df['close'], period=21)
 
 # ATR multi-timeframe
 df['atr_pct_1h'] = calc_atr_pct(
@@ -554,11 +816,14 @@ if 'CRSK_SPREAD_EMBI_COL_D_EMBI' in df.columns:
 print("   Calculando features macro (Tasas)...")
 if 'FINC_BOND_YIELD10Y_USA_D_UST10Y' in df.columns:
     df['ust10y'] = df['FINC_BOND_YIELD10Y_USA_D_UST10Y']  # Sin ffill - datos crudos
-    # RATE_SPREAD: Sovereign spread Colombia - USA (NOT yield curve slope!)
-    # Formula: Colombia 10Y (hardcoded 10%) - USA 10Y
-    # This captures the risk premium for Colombian debt
-    df['rate_spread'] = 10.0 - df['ust10y']
-    df['rate_spread'] = z_score_fixed(df['rate_spread'], mean=7.03, std=1.41)
+    # RATE_SPREAD_Z: Rolling z-score for stationarity (fixes distribution shift)
+    # Uses col10y - ust10y if col10y available, otherwise 10.0 - ust10y
+    # Rolling z-score ensures train and test have similar distributions
+    df['rate_spread_z'] = calculate_rate_spread_zscore(df, window=ZSCORE_WINDOW * 12 * 24)
+    print(f"   rate_spread_z: rolling z-score, window={ZSCORE_WINDOW * 12 * 24}")
+
+    # EXP-B-001: Rate spread change (carry trade momentum)
+    df['rate_spread_change'] = calc_rate_spread_change(df, periods=288)  # 1-day change
 
 if 'FINC_BOND_YIELD2Y_USA_D_DGS2' in df.columns:
     df['ust2y'] = df['FINC_BOND_YIELD2Y_USA_D_DGS2']  # Sin ffill - datos crudos
@@ -566,6 +831,8 @@ if 'FINC_BOND_YIELD2Y_USA_D_DGS2' in df.columns:
     if 'ust10y' in df.columns:
         df['curve_slope'] = df['ust10y'] - df['ust2y']
         df['curve_slope_z'] = z_score_rolling(df['curve_slope'], ZSCORE_WINDOW)
+        # EXP-B-001: Yield curve z-score (risk-on/off signal)
+        df['yield_curve_z'] = calc_yield_curve_zscore(df, window=ZSCORE_WINDOW * 12)
 
 # --- MACRO: CROSS-PAIRS ---
 print("   Calculando features cross-pairs...")
@@ -743,17 +1010,8 @@ if 'inflation_hot' in df.columns and 'labor_tight' in df.columns:
 # DS10: FLOWS FUNDAMENTALS - DATOS CRUDOS SIN FFILL
 # Usar valores NORMALIZADOS y CAMBIOS
 # =============================================================================
-if 'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q' in df.columns:
-    df['ied'] = df['RSBP_FDI_INFLOW_COL_Q_FDIIN_Q']  # Sin ffill - datos crudos
-    # IED normalizado (0-10B USD -> 0-1)
-    df['ied_normalized'] = (df['ied'] / 10000).clip(0, 1)
-    # IED z-score trimestral (4 trimestres = 12*24*365/4 ~= 26280 bars)
-    df['ied_z'] = z_score_rolling(df['ied'], 26280)
-    # IED creciendo vs trimestre anterior
-    df['ied_growing'] = (df['ied'].diff(26280) > 0).astype(float)
-
-if 'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q' in df.columns:
-    df['cuenta_corriente'] = df['RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q']  # Sin ffill - datos crudos
+if 'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT' in df.columns:
+    df['cuenta_corriente'] = df['RSBP_CURRENT_ACCOUNT_COL_Q_CACCT']  # Sin ffill - datos crudos
     # Cuenta corriente normalizada (-10B a 0 -> -1 a 0)
     df['ca_normalized'] = (df['cuenta_corriente'] / 10000).clip(-1, 0)
     # Cuenta corriente mejorando (deficit reduciendose)
@@ -827,10 +1085,10 @@ MACRO_COLS_TO_FILL = [
     'col10y', 'col5y', 'ibr', 'colcap',
     # Monthly/Quarterly frequency data
     'tpm', 'fedfunds', 'tot', 'cpi_usa', 'pce_usa', 'unrate',
-    'ied', 'cuenta_corriente', 'exports', 'imports',
+    'cuenta_corriente', 'exports', 'imports',
     'itcr', 'reserves',
     # Derived z-scores and changes (fill remaining NaN after calculation)
-    'embi_z', 'dxy_z', 'dxy_mom_5d', 'rate_spread',
+    'embi_z', 'dxy_z', 'dxy_mom_5d', 'rate_spread_z',
     'vix_level', 'vix_z', 'brent_z', 'curve_slope',
     'usdmxn_change_1d', 'usdclp_change_1d',  # Daily FX pairs resampled to 5min
 ]
@@ -865,9 +1123,11 @@ print("-" * 80)
 
 FILLNA_STRATEGY = {
     'dxy_z': 0.0, 'vix_z': 0.0, 'embi_z': 0.0, 'brent_z': 0.0,
-    'rate_spread': 0.0, 'dxy_mom_5d': 0.0,
+    'rate_spread_z': 0.0, 'dxy_mom_5d': 0.0,
     'dxy_change_1d': 0.0, 'brent_change_1d': 0.0, 'usdmxn_change_1d': 0.0,
     'vix_regime': 1.0, 'vix_level': 1.0,
+    # CLOSE-ONLY features (SSOT v2.0.0)
+    'volatility_pct': 0.15, 'trend_z': 0.0,  # Neutral values
 }
 
 print("   Applying explicit fillna strategy:")
@@ -887,7 +1147,8 @@ print("\n" + "-" * 80)
 print("4. CREANDO 10 DATASETS")
 print("-" * 80)
 
-base_cols = ['datetime', 'open', 'high', 'low', 'close']
+# P0.1 FIX: Include raw_log_ret_5m in base columns for PnL calculation
+base_cols = ['datetime', 'open', 'high', 'low', 'close', 'raw_log_ret_5m']
 
 # -------------------------------------------------------------------------
 # DS1: MINIMAL (14 features)
@@ -930,28 +1191,31 @@ ds2_features = [
 ]
 
 # -------------------------------------------------------------------------
-# DS3: MACRO_CORE (21 features) - RECOMENDADO
+# DS3: MACRO_CORE (26 features) - RECOMENDADO (EXP-B-001)
 # -------------------------------------------------------------------------
-print("   DS3_MACRO_CORE (21 features) [RECOMENDADO]")
+print("   DS3_MACRO_CORE (26 features) [RECOMENDADO - EXP-B-001]")
 print("   Filosofia: Balance optimo tecnico + macro para USD/COP")
+print("   EXP-B-001: 18 market features + 2 state (TradingEnv) = 20 obs_dim")
 
 ds3_features = [
-    # OHLC (4)
-    # Retornos (3)
-    'log_ret_5m', 'log_ret_1h', 'log_ret_4h',
-    # Tecnicos (4)
-    'rsi_9', 'atr_pct', 'adx_14', 'bb_position',
-    # Macro - Dolar (3)
-    'dxy_z', 'dxy_change_1d', 'dxy_mom_5d',
-    # Macro - Riesgo (2) - NOTE: vix_regime removed (corr=0.909 with vix_z)
+    # EXP-B-001 - Exact 18 market features (order matters!)
+    # Retornos (4) - EXP-B-001: +log_ret_1d
+    'log_ret_5m', 'log_ret_1h', 'log_ret_4h', 'log_ret_1d',
+    # Tecnicos (4) - CLOSE-ONLY - EXP-B-001: +rsi_21
+    'rsi_9', 'rsi_21', 'volatility_pct', 'trend_z',
+    # Macro - Dolar (2)
+    'dxy_z', 'dxy_change_1d',
+    # Macro - Riesgo (2)
     'vix_z', 'embi_z',
-    # Macro - Commodities (2)
-    'brent_change_1d', 'brent_vol_5d',
-    # Tasas (1)
-    'rate_spread',
-    # Cross-pair (1) - NOTE: usdmxn is DAILY data, change captures day-over-day
+    # Macro - Commodities (1)
+    'brent_change_1d',
+    # Tasas (2) - EXP-B-001: +rate_spread_change
+    'rate_spread_z', 'rate_spread_change',
+    # Cross-pair (1)
     'usdmxn_change_1d',
-    # Temporal (2)
+    # EXP-B-001: NEW macro features (2)
+    'yield_curve_z', 'gold_change_1d',
+    # Temporal (2) - for model but not in SSOT observation
     'hour_sin', 'hour_cos',
 ]
 
@@ -1106,14 +1370,13 @@ print("   Filosofia: Flujos de capital - solo normalizados y tendencias (sin z-s
 ds10_features = [
     # Retornos (2)
     'log_ret_5m', 'log_ret_1h',
-    # Flujos de capital - Normalizados (4)
-    'ied_normalized', 'ied_growing',
+    # Flujos de capital - Normalizados (2)
     'ca_normalized', 'ca_improving',
     # Comercio - Solo tendencias (2)
     'exports_growing', 'trade_improving',
     # Competitividad COP (2)
     'itcr_deviation', 'itcr_change_1m',
-    # Reservas (2)
+    # Reservas (1)
     'reserves_falling',
     # Riesgo macro (1)
     'embi_z',
@@ -1189,14 +1452,14 @@ def drop_warmup_nans(df, required_cols):
 datasets = {
     'DS1_MINIMAL': (df_ds1, ['log_ret_5m', 'rsi_9', 'dxy_z']),
     'DS2_TECHNICAL_MTF': (df_ds2, ['log_ret_5m', 'rsi_9', 'adx_14']),
-    'DS3_MACRO_CORE': (df_ds3, ['log_ret_5m', 'dxy_z', 'vix_z']),
+    'DS3_MACRO_CORE': (df_ds3, ['log_ret_5m', 'log_ret_1d', 'rsi_21', 'dxy_z', 'vix_z', 'volatility_pct', 'trend_z', 'rate_spread_z', 'rate_spread_change', 'yield_curve_z', 'gold_change_1d']),
     'DS4_COST_AWARE': (df_ds4, ['log_ret_5m', 'rsi_9', 'dxy_z']),
     'DS5_REGIME': (df_ds5, ['log_ret_5m', 'dxy_z', 'vix_z']),
     'DS6_CARRY_TRADE': (df_ds6, ['log_ret_5m', 'spread_normalized', 'policy_spread_normalized']),
     'DS7_COMMODITY_BASKET': (df_ds7, ['log_ret_5m', 'brent_z', 'coffee_z']),
     'DS8_RISK_SENTIMENT': (df_ds8, ['log_ret_5m', 'vix_z', 'embi_z']),
     'DS9_FED_WATCH': (df_ds9, ['log_ret_5m', 'fed_hawkish', 'inflation_hot']),
-    'DS10_FLOWS_FUNDAMENTALS': (df_ds10, ['log_ret_5m', 'ied_normalized', 'itcr_z']),
+    'DS10_FLOWS_FUNDAMENTALS': (df_ds10, ['log_ret_5m', 'ca_normalized', 'itcr_z']),
 }
 
 filtered_datasets = {}
@@ -1265,11 +1528,15 @@ for name, df_temp in filtered_datasets.items():
 
 
 # =============================================================================
-# 8. GUARDAR DATASETS
+# 8. GUARDAR DATASETS + NORM_STATS (L2 -> L3 -> L4 Pipeline Integration)
 # =============================================================================
 print("\n" + "-" * 80)
-print("7. GUARDANDO DATASETS")
+print("7. GUARDANDO DATASETS + NORM_STATS")
 print("-" * 80)
+
+# Base columns that are NOT features (excluded from normalization)
+# P0.1 FIX: Include raw_log_ret_5m - it's for PnL calculation, not a model feature
+BASE_COLS = ['datetime', 'timestamp', 'open', 'high', 'low', 'close', 'raw_log_ret_5m']
 
 for name, df_temp in filtered_datasets.items():
     # Renombrar datetime a timestamp
@@ -1281,6 +1548,21 @@ for name, df_temp in filtered_datasets.items():
 
     size_mb = filepath.stat().st_size / (1024 * 1024)
     print(f"   {filename}: {len(df_save):,} filas, {len(df_save.columns)} cols, {size_mb:.1f} MB")
+
+    # Generate norm_stats.json for this dataset
+    # Extract feature columns (exclude base columns)
+    feature_cols = [c for c in df_save.columns if c not in BASE_COLS]
+
+    try:
+        norm_stats_path = save_norm_stats(
+            df=df_save,
+            output_dir=OUTPUT_RL,
+            dataset_name=name,
+            feature_columns=feature_cols
+        )
+        print(f"      + {norm_stats_path.name}")
+    except Exception as e:
+        print(f"      [ERROR] Failed to save norm_stats for {name}: {e}")
 
 
 # =============================================================================

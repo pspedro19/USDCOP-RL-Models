@@ -1,0 +1,1493 @@
+# =============================================================================
+# MACRO VARIABLES - SINGLE SOURCE OF TRUTH (SSOT)
+# =============================================================================
+# Contract: CTR-L0-SSOT-001
+#
+# This file is the ONLY source of truth for all macro variable definitions.
+# All other systems (extractors, calendar, contracts) read from this file.
+#
+# DO NOT duplicate variable definitions elsewhere. If you need to add a new
+# variable, add it here first.
+#
+# Version: 1.0.0
+# Last Updated: 2026-01-29
+# =============================================================================
+
+version: "1.0.0"
+last_updated: "2026-01-29"
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+global:
+  default_lookback_days: 90
+  retry_attempts: 3
+  retry_delay_seconds: 60
+  request_timeout_seconds: 30
+
+  # FFILL limits by target frequency (prevents infinite propagation)
+  ffill_limits:
+    daily:
+      daily_data: 5
+      monthly_data: 22      # ~1 month of trading days
+      quarterly_data: 66    # ~3 months of trading days
+    minutes_5:
+      daily_data: 48        # ~1 day of 5min bars
+      monthly_data: 1440    # ~1 month (30 days x 48 bars/day)
+      quarterly_data: 4320  # ~3 months
+    hourly:
+      daily_data: 8         # ~1 day
+      monthly_data: 176     # ~1 month (22 days x 8 hours)
+      quarterly_data: 528   # ~3 months
+
+  # Default publication offsets by source (days after observation)
+  default_offsets:
+    fred: 1
+    investing: 0
+    twelvedata: 0
+    suameca: 0
+    bcrp: 0
+    fedesarrollo: 15
+    dane: 45
+    banrep_bop: 90
+
+# =============================================================================
+# SOURCE CONFIGURATIONS (for extractors)
+# =============================================================================
+sources:
+  fred:
+    enabled: true
+    api_key_env: "FRED_API_KEY"
+    base_url: "https://api.stlouisfed.org/fred/series/observations"
+    rate_limit_per_minute: 120
+
+  suameca:
+    enabled: true
+    method: "rest_api"
+    base_url: "https://suameca.banrep.gov.co/estadisticas-economicas-back/rest/estadisticaEconomicaRestService"
+
+  bcrp:
+    enabled: true
+    base_url: "https://estadisticas.bcrp.gob.pe/estadisticas/series/api"
+
+  investing:
+    enabled: true
+    method: "cloudscraper"
+    ajax_endpoint: "https://www.investing.com/instruments/HistoricalDataAjax"
+    api_endpoint: "https://api.investing.com/api/financialdata/historical"
+    rate_limit_seconds: 3
+    max_retries: 3
+
+  twelvedata:
+    enabled: true
+    api_key_env: "TWELVEDATA_API_KEY_1"
+    interval: "1day"
+    outputsize: 60
+
+  fedesarrollo:
+    enabled: true
+    scraper_module: "scraper_fedesarrollo"
+
+  dane:
+    enabled: true
+    scraper_module: "scraper_dane_balanza"
+
+  banrep_bop:
+    enabled: true
+    method: "selenium"
+    selenium_timeout_seconds: 60
+
+# =============================================================================
+# MACRO VARIABLES DEFINITIONS
+# =============================================================================
+# Each variable has:
+#   - identity: canonical_name, display_name, category, country
+#   - extraction: source configs for each data source
+#   - schedule: publication timing for anti-leakage
+#   - validation: expected ranges, priority, risk
+#   - ffill: max days for forward-fill
+# =============================================================================
+
+variables:
+
+  # ===========================================================================
+  # FRED DAILY VARIABLES (5 variables)
+  # ===========================================================================
+
+  finc_bond_yield2y_usa_d_dgs2:
+    identity:
+      canonical_name: finc_bond_yield2y_usa_d_dgs2
+      display_name: "UST 2Y Yield"
+      category: fixed_income
+      country: USA
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: fred
+      fred:
+        series_id: DGS2
+      investing:
+        instrument_id: 23701  # Fixed: extractor looks for 'instrument_id', not 'pair_id'
+        url: "https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [0, 12]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  finc_bond_yield10y_usa_d_ust10y:
+    identity:
+      canonical_name: finc_bond_yield10y_usa_d_ust10y
+      display_name: "UST 10Y Yield"
+      category: fixed_income
+      country: USA
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: fred
+      fred:
+        series_id: DGS10
+      investing:
+        method: ajax
+        pair_id: 23705
+        url: "https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [0, 12]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  polr_prime_rate_usa_d_prime:
+    identity:
+      canonical_name: polr_prime_rate_usa_d_prime
+      display_name: "Prime Rate"
+      category: policy_rates
+      country: USA
+      frequency: daily
+
+    extraction:
+      primary_source: suameca
+      # SUAMECA serie 88 es la fuente Bloomberg (REST API funciona - 9599 datos)
+      # FRED se mantiene como fallback
+      suameca:
+        serie_id: 88
+        method: rest_api
+        # Graficador URL: https://suameca.banrep.gov.co/graficador-interactivo/grafica/88
+      fallback_source: fred
+      fred:
+        series_id: DPRIME
+        notes: "Prime rate - fallback source (misma metodología Fed Reserve)"
+      intraday: false
+
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [0, 15]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 10
+
+  fxrt_index_dxy_usa_d_dxy:
+    identity:
+      canonical_name: fxrt_index_dxy_usa_d_dxy
+      display_name: "DXY Dollar Index"
+      category: exchange_rates
+      country: USA
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: fred
+      fred:
+        series_id: DTWEXBGS
+      investing:
+        instrument_id: 942611  # Fixed: was pair_id 8827 (wrong ID) + extractor needs 'instrument_id'
+        url: "https://www.investing.com/indices/usdollar-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [80, 130]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  volt_vix_usa_d_vix:
+    identity:
+      canonical_name: volt_vix_usa_d_vix
+      display_name: "VIX Volatility Index"
+      category: volatility
+      country: USA
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: fred
+      fred:
+        series_id: VIXCLS
+      investing:
+        method: ajax
+        pair_id: 44336
+        url: "https://www.investing.com/indices/volatility-s-p-500-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [9, 90]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  # ===========================================================================
+  # FRED MONTHLY VARIABLES (8 variables)
+  # ===========================================================================
+
+  polr_fed_funds_usa_m_fedfunds:
+    identity:
+      canonical_name: polr_fed_funds_usa_m_fedfunds
+      display_name: "Fed Funds Rate"
+      category: policy_rates
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: FEDFUNDS
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [15, 20]
+        typical_day: 18
+        time: "16:15:00"
+        timezone: US/Eastern
+        month_lag: 1
+
+    validation:
+      expected_range: [0, 10]
+      leakage_risk: MEDIUM
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  infl_cpi_all_usa_m_cpiaucsl:
+    identity:
+      canonical_name: infl_cpi_all_usa_m_cpiaucsl
+      display_name: "CPI All Items USA"
+      category: inflation
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: CPIAUCSL
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [10, 15]
+        typical_day: 13
+        time: "08:30:00"
+        timezone: US/Eastern
+        month_lag: 1
+
+    validation:
+      expected_range: [200, 400]
+      leakage_risk: MEDIUM
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  infl_cpi_core_usa_m_cpilfesl:
+    identity:
+      canonical_name: infl_cpi_core_usa_m_cpilfesl
+      display_name: "Core CPI USA"
+      category: inflation
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: CPILFESL
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [10, 15]
+        typical_day: 13
+        time: "08:30:00"
+        timezone: US/Eastern
+        month_lag: 1
+        simultaneous_with: infl_cpi_all_usa_m_cpiaucsl
+
+    validation:
+      expected_range: [200, 400]
+      leakage_risk: MEDIUM
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  infl_pce_usa_m_pcepi:
+    identity:
+      canonical_name: infl_pce_usa_m_pcepi
+      display_name: "PCE Price Index USA"
+      category: inflation
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: PCEPI
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [20, 25]
+        typical_day: 22
+        time: "08:30:00"
+        timezone: US/Eastern
+        month_lag: 2  # Almost 2 months delay!
+
+    validation:
+      expected_range: [80, 150]
+      leakage_risk: CRITICAL
+      priority: CRITICAL
+
+    ffill:
+      max_days: 55
+
+  labr_unemployment_usa_m_unrate:
+    identity:
+      canonical_name: labr_unemployment_usa_m_unrate
+      display_name: "Unemployment Rate USA"
+      category: labor_market
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: UNRATE
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [6, 10]
+        typical_day: 7
+        time: "08:30:00"
+        timezone: US/Eastern
+        month_lag: 1
+        release_pattern: "First Friday of month"
+
+    validation:
+      expected_range: [2, 20]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  prod_industrial_usa_m_indpro:
+    identity:
+      canonical_name: prod_industrial_usa_m_indpro
+      display_name: "Industrial Production Index USA"
+      category: production
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: INDPRO
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [15, 18]
+        typical_day: 16
+        time: "09:15:00"
+        timezone: US/Eastern
+        month_lag: 1
+
+    validation:
+      expected_range: [80, 120]
+      leakage_risk: MEDIUM
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  mnys_m2_supply_usa_m_m2sl:
+    identity:
+      canonical_name: mnys_m2_supply_usa_m_m2sl
+      display_name: "M2 Money Stock USA"
+      category: money_supply
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: M2SL
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [23, 27]
+        typical_day: 25
+        time: "16:30:00"
+        timezone: US/Eastern
+        month_lag: 1
+
+    validation:
+      expected_range: [15000, 25000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  sent_consumer_usa_m_umcsent:
+    identity:
+      canonical_name: sent_consumer_usa_m_umcsent
+      display_name: "Consumer Sentiment Index"
+      category: sentiment
+      country: USA
+      frequency: monthly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: UMCSENT
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [20, 23]
+        typical_day: 21
+        time: "10:00:00"
+        timezone: US/Eastern
+        month_lag: 1
+
+    validation:
+      expected_range: [50, 120]
+      leakage_risk: MEDIUM_HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  # ===========================================================================
+  # FRED QUARTERLY VARIABLES (1 variable)
+  # ===========================================================================
+
+  gdpp_real_gdp_usa_q_gdp_q:
+    identity:
+      canonical_name: gdpp_real_gdp_usa_q_gdp_q
+      display_name: "Real GDP USA"
+      category: economic_growth
+      country: USA
+      frequency: quarterly
+
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: GDP
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [25, 30]
+        typical_day: 27
+        time: "08:30:00"
+        timezone: US/Eastern
+        quarter_lag: 1
+        releases_per_quarter: 3  # Advance, Second, Third
+
+    validation:
+      expected_range: [15000, 30000]
+      leakage_risk: MEDIUM
+      priority: HIGH
+
+    ffill:
+      max_days: 95
+
+  # ===========================================================================
+  # COLOMBIA DAILY VARIABLES (SUAMECA/BanRep) - 2 variables
+  # ===========================================================================
+
+  finc_rate_ibr_overnight_col_d_ibr:
+    identity:
+      canonical_name: finc_rate_ibr_overnight_col_d_ibr
+      display_name: "IBR Overnight Rate"
+      category: fixed_income
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 241
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/241/tasas_interes_indicador_bancario_referencia_ibr"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [0, 25]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  polr_policy_rate_col_d_tpm:
+    identity:
+      canonical_name: polr_policy_rate_col_d_tpm
+      display_name: "Colombia Policy Rate (TPM)"
+      category: policy_rates
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 59
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/59/tasas_interes_politica_monetaria"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [0, 20]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  # ===========================================================================
+  # COLOMBIA MONTHLY VARIABLES (SUAMECA/BanRep) - 4 variables
+  # ===========================================================================
+
+  fxrt_reer_bilateral_col_m_itcr:
+    identity:
+      canonical_name: fxrt_reer_bilateral_col_m_itcr
+      display_name: "ITCR (Real Exchange Rate Index)"
+      category: exchange_rates
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 234
+        method: rest_api
+        # REST API works for this serie (tested: returns 469 data points from 1986-2025)
+        # Graficador URL kept as reference: https://suameca.banrep.gov.co/graficador-interactivo/grafica/234
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [8, 12]
+        typical_day: 10
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [80, 150]
+      leakage_risk: LOW
+      priority: LOW
+
+    ffill:
+      max_days: 35
+
+  fxrt_reer_bilateral_usa_col_m_itcr_usa:
+    identity:
+      canonical_name: fxrt_reer_bilateral_usa_col_m_itcr_usa
+      display_name: "ITCR Bilateral USA (Real Exchange Rate vs USA)"
+      category: exchange_rates
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 219
+        method: rest_api
+        # REST API works for this serie (tested: returns 469 data points from 1986-2025)
+        # Graficador URL kept as reference: https://suameca.banrep.gov.co/graficador-interactivo/grafica/219
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [8, 12]
+        typical_day: 10
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+        simultaneous_with: fxrt_reer_bilateral_col_m_itcr
+
+    validation:
+      expected_range: [80, 200]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  ftrd_terms_trade_col_m_tot:
+    identity:
+      canonical_name: ftrd_terms_trade_col_m_tot
+      display_name: "Terms of Trade Colombia"
+      category: foreign_trade
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 4180
+        method: selenium
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4180/indice_terminos_intercambio_bienes"
+        use_vista_tabla: true
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [10, 15]
+        typical_day: 12
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [50, 150]
+      leakage_risk: LOW
+      priority: LOW
+
+    ffill:
+      max_days: 35
+
+  rsbp_reserves_international_col_m_resint:
+    identity:
+      canonical_name: rsbp_reserves_international_col_m_resint
+      display_name: "International Reserves Colombia"
+      category: reserves_bop
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 15051
+        method: selenium
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/15051/reservas_internacionales"
+        use_vista_tabla: true
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [5, 10]
+        typical_day: 8
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [40000, 80000]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  infl_cpi_total_col_m_ipccol:
+    identity:
+      canonical_name: infl_cpi_total_col_m_ipccol
+      display_name: "CPI Colombia"
+      category: inflation
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 100002
+        method: selenium
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/100002/ipc"
+        use_vista_tabla: true
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [5, 8]
+        typical_day: 5
+        time: "08:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [50, 300]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  # ===========================================================================
+  # COLOMBIA QUARTERLY VARIABLES (BanRep BOP) - 1 variable
+  # ===========================================================================
+
+  rsbp_current_account_col_q_cacct:
+    identity:
+      canonical_name: rsbp_current_account_col_q_cacct
+      display_name: "Current Account Colombia"
+      category: reserves_bop
+      country: COL
+      frequency: quarterly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 414001
+        method: selenium
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/414001/cuentacorriente"
+        use_vista_tabla: true
+        unit: "Millones USD"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [85, 95]
+        typical_day: 90
+        time: "09:00:00"
+        timezone: America/Bogota
+        quarter_lag: 1
+        days_after_quarter: 90
+
+    validation:
+      expected_range: [-20000, 5000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 95
+
+  rsbp_fdi_inflow_col_q_fdiin:
+    identity:
+      canonical_name: rsbp_fdi_inflow_col_q_fdiin
+      display_name: "FDI Inflow Colombia (IED)"
+      category: balance_of_payments
+      country: COL
+      frequency: quarterly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 15133
+        method: rest_api  # Changed from graficador - REST API works for this series
+        url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15133"
+        unit: "Millones USD"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [85, 95]
+        typical_day: 90
+        time: "09:00:00"
+        timezone: America/Bogota
+        quarter_lag: 1
+        days_after_quarter: 90
+
+    validation:
+      expected_range: [0, 10000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 95
+
+  rsbp_fdi_outflow_col_q_fdiout:
+    identity:
+      canonical_name: rsbp_fdi_outflow_col_q_fdiout
+      display_name: "FDI Outflow Colombia (IDCE)"
+      category: balance_of_payments
+      country: COL
+      frequency: quarterly
+
+    extraction:
+      primary_source: suameca
+      suameca:
+        serie_id: 15134
+        method: rest_api  # Changed from graficador - REST API works for this series
+        url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15134"
+        unit: "Millones USD"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [85, 95]
+        typical_day: 90
+        time: "09:00:00"
+        timezone: America/Bogota
+        quarter_lag: 1
+        days_after_quarter: 90
+
+    validation:
+      expected_range: [0, 5000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 95
+
+  # ===========================================================================
+  # BCRP PERU VARIABLES (1 variable)
+  # ===========================================================================
+
+  crsk_spread_embi_col_d_embi:
+    identity:
+      canonical_name: crsk_spread_embi_col_d_embi
+      display_name: "EMBI Colombia Spread"
+      category: country_risk
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: bcrp
+      bcrp:
+        serie_code: PD04715XD
+        url: "https://estadisticas.bcrp.gob.pe/estadisticas/series/diarias/resultados/PD04715XD/html/"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: America/Lima
+
+    validation:
+      expected_range: [50, 1500]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  # ===========================================================================
+  # INVESTING.COM DAILY VARIABLES (10 variables)
+  # ===========================================================================
+
+  finc_bond_yield10y_col_d_col10y:
+    identity:
+      canonical_name: finc_bond_yield10y_col_d_col10y
+      display_name: "Colombia 10Y Yield"
+      category: fixed_income
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: api
+        instrument_id: 29236
+        url: "https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [4, 20]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  finc_bond_yield5y_col_d_col5y:
+    identity:
+      canonical_name: finc_bond_yield5y_col_d_col5y
+      display_name: "Colombia 5Y Yield"
+      category: fixed_income
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: api
+        instrument_id: 29240
+        url: "https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [4, 20]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  eqty_index_colcap_col_d_colcap:
+    identity:
+      canonical_name: eqty_index_colcap_col_d_colcap
+      display_name: "COLCAP Index"
+      category: equities
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: api
+        instrument_id: 49642
+        pair_id: 40830  # WRONG - do not use
+        url: "https://www.investing.com/indices/colcap-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [800, 3000]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 5
+
+  comm_oil_wti_glb_d_wti:
+    identity:
+      canonical_name: comm_oil_wti_glb_d_wti
+      display_name: "WTI Crude Oil"
+      category: commodities
+      country: GLB
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: ajax
+        pair_id: 8849
+        url: "https://www.investing.com/commodities/crude-oil-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [25, 150]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  comm_oil_brent_glb_d_brent:
+    identity:
+      canonical_name: comm_oil_brent_glb_d_brent
+      display_name: "Brent Crude Oil"
+      category: commodities
+      country: GLB
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: ajax
+        pair_id: 8833
+        url: "https://www.investing.com/commodities/brent-oil-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [30, 150]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  comm_metal_gold_glb_d_gold:
+    identity:
+      canonical_name: comm_metal_gold_glb_d_gold
+      display_name: "Gold"
+      category: commodities
+      country: GLB
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: ajax
+        pair_id: 8830
+        url: "https://www.investing.com/commodities/gold-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [1000, 6000]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 5
+
+  comm_agri_coffee_glb_d_coffee:
+    identity:
+      canonical_name: comm_agri_coffee_glb_d_coffee
+      display_name: "Coffee"
+      category: commodities
+      country: GLB
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: ajax
+        pair_id: 8832
+        url: "https://www.investing.com/commodities/us-coffee-c-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: US/Eastern
+
+    validation:
+      expected_range: [50, 500]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 5
+
+  fxrt_spot_usdmxn_mex_d_usdmxn:
+    identity:
+      canonical_name: fxrt_spot_usdmxn_mex_d_usdmxn
+      display_name: "USD/MXN"
+      category: exchange_rates
+      country: MEX
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: twelvedata
+      investing:
+        method: api
+        instrument_id: 39
+        pair_id: 2124  # WRONG - returns inverted
+        domain_id: es
+        url: "https://es.investing.com/currencies/usd-mxn-historical-data"
+      twelvedata:
+        symbol: USD/MXN
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Mexico_City
+
+    validation:
+      expected_range: [12, 30]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 5
+
+  fxrt_spot_usdclp_chl_d_usdclp:
+    identity:
+      canonical_name: fxrt_spot_usdclp_chl_d_usdclp
+      display_name: "USD/CLP"
+      category: exchange_rates
+      country: CHL
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      fallback_source: twelvedata
+      investing:
+        method: api
+        instrument_id: 2110
+        pair_id: 2126  # WRONG - returns inverted
+        domain_id: es
+        url: "https://es.investing.com/currencies/usd-clp-historical-data"
+      twelvedata:
+        symbol: USD/CLP
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Santiago
+
+    validation:
+      expected_range: [600, 1200]
+      leakage_risk: LOW
+      priority: MEDIUM
+
+    ffill:
+      max_days: 5
+
+  fxrt_spot_usdcop_col_d_usdcop:
+    identity:
+      canonical_name: fxrt_spot_usdcop_col_d_usdcop
+      display_name: "USD/COP"
+      category: exchange_rates
+      country: COL
+      frequency: daily
+
+    extraction:
+      primary_source: investing
+      investing:
+        method: api
+        instrument_id: 2112
+        url: "https://www.investing.com/currencies/usd-cop-historical-data"
+      intraday: true
+
+    schedule:
+      publication:
+        delay_days: 0
+        timezone: America/Bogota
+
+    validation:
+      expected_range: [3000, 5500]
+      leakage_risk: LOW
+      priority: HIGH
+
+    ffill:
+      max_days: 5
+
+  # ===========================================================================
+  # FEDESARROLLO VARIABLES (3 variables)
+  # ===========================================================================
+
+  infl_exp_eof_col_m_infexp:
+    identity:
+      canonical_name: infl_exp_eof_col_m_infexp
+      display_name: "Inflation Expectation EOF Colombia"
+      category: inflation
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: fedesarrollo
+      fedesarrollo:
+        function: obtener_eof_inflacion
+        url: "https://www.repository.fedesarrollo.org.co/handle/11445/38"
+        notes: "Encuesta de Opinión Financiera (EOF) - Expectativa de Inflación"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [10, 15]
+        typical_day: 12
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [0, 15]
+      leakage_risk: MEDIUM
+      priority: HIGH
+
+    ffill:
+      max_days: 35
+
+  crsk_sentiment_cci_col_m_cci:
+    identity:
+      canonical_name: crsk_sentiment_cci_col_m_cci
+      display_name: "Consumer Confidence Index Colombia"
+      category: sentiment
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: fedesarrollo
+      fedesarrollo:
+        function: obtener_cci
+        url: "https://www.fedesarrollo.org.co/encuestas/consumidor"
+        notes: "Encuesta de Opinión del Consumidor (EOC)"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [15, 20]
+        typical_day: 18
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+
+    validation:
+      expected_range: [-50, 50]
+      leakage_risk: MEDIUM
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  crsk_sentiment_ici_col_m_ici:
+    identity:
+      canonical_name: crsk_sentiment_ici_col_m_ici
+      display_name: "Industrial Confidence Index Colombia"
+      category: sentiment
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: fedesarrollo
+      fedesarrollo:
+        function: obtener_ici
+        url: "https://www.fedesarrollo.org.co/encuestas/empresarial"
+        notes: "Encuesta de Opinión Empresarial (EOE)"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [15, 20]
+        typical_day: 18
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 1
+        simultaneous_with: crsk_sentiment_cci_col_m_cci
+
+    validation:
+      expected_range: [-30, 30]
+      leakage_risk: MEDIUM
+      priority: MEDIUM
+
+    ffill:
+      max_days: 35
+
+  # ===========================================================================
+  # DANE VARIABLES (2 variables)
+  # ===========================================================================
+
+  ftrd_exports_total_col_m_expusd:
+    identity:
+      canonical_name: ftrd_exports_total_col_m_expusd
+      display_name: "Exports Total Colombia"
+      category: foreign_trade
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: dane
+      dane:
+        function: obtener_exportaciones
+        unit: "USD millions"
+        url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/exportaciones"
+        notes: "Estadísticas de Comercio Exterior - Exportaciones"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [40, 50]
+        typical_day: 45
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 2
+
+    validation:
+      expected_range: [2000, 8000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 50
+
+  ftrd_imports_total_col_m_impusd:
+    identity:
+      canonical_name: ftrd_imports_total_col_m_impusd
+      display_name: "Imports Total Colombia"
+      category: foreign_trade
+      country: COL
+      frequency: monthly
+
+    extraction:
+      primary_source: dane
+      dane:
+        function: obtener_importaciones
+        unit: "USD millions"
+        url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/importaciones"
+        notes: "Estadísticas de Comercio Exterior - Importaciones"
+      intraday: false
+
+    schedule:
+      publication:
+        day_range: [40, 50]
+        typical_day: 45
+        time: "09:00:00"
+        timezone: America/Bogota
+        month_lag: 2
+        simultaneous_with: ftrd_exports_total_col_m_expusd
+
+    validation:
+      expected_range: [3000, 10000]
+      leakage_risk: HIGH
+      priority: MEDIUM
+
+    ffill:
+      max_days: 50
+
+# =============================================================================
+# VARIABLE GROUPS (for batch operations)
+# =============================================================================
+variable_groups:
+  # All daily variables
+  daily:
+    - finc_bond_yield2y_usa_d_dgs2
+    - finc_bond_yield10y_usa_d_ust10y
+    - polr_prime_rate_usa_d_prime
+    - fxrt_index_dxy_usa_d_dxy
+    - volt_vix_usa_d_vix
+    - finc_rate_ibr_overnight_col_d_ibr
+    - polr_policy_rate_col_d_tpm
+    - crsk_spread_embi_col_d_embi
+    - finc_bond_yield10y_col_d_col10y
+    - finc_bond_yield5y_col_d_col5y
+    - eqty_index_colcap_col_d_colcap
+    - comm_oil_wti_glb_d_wti
+    - comm_oil_brent_glb_d_brent
+    - comm_metal_gold_glb_d_gold
+    - comm_agri_coffee_glb_d_coffee
+    - fxrt_spot_usdmxn_mex_d_usdmxn
+    - fxrt_spot_usdclp_chl_d_usdclp
+    - fxrt_spot_usdcop_col_d_usdcop
+
+  # All monthly variables
+  monthly:
+    - polr_fed_funds_usa_m_fedfunds
+    - infl_cpi_all_usa_m_cpiaucsl
+    - infl_cpi_core_usa_m_cpilfesl
+    - infl_pce_usa_m_pcepi
+    - labr_unemployment_usa_m_unrate
+    - prod_industrial_usa_m_indpro
+    - mnys_m2_supply_usa_m_m2sl
+    - sent_consumer_usa_m_umcsent
+    - fxrt_reer_bilateral_col_m_itcr
+    - fxrt_reer_bilateral_usa_col_m_itcr_usa
+    - ftrd_terms_trade_col_m_tot
+    - rsbp_reserves_international_col_m_resint
+    - infl_cpi_total_col_m_ipccol
+    - infl_exp_eof_col_m_infexp
+    - crsk_sentiment_cci_col_m_cci
+    - crsk_sentiment_ici_col_m_ici
+    - ftrd_exports_total_col_m_expusd
+    - ftrd_imports_total_col_m_impusd
+
+  # All quarterly variables
+  quarterly:
+    - gdpp_real_gdp_usa_q_gdp_q
+    - rsbp_current_account_col_q_cacct
+    - rsbp_fdi_inflow_col_q_fdiin
+    - rsbp_fdi_outflow_col_q_fdiout
+
+  # Intraday (realtime) variables
+  intraday:
+    - finc_bond_yield2y_usa_d_dgs2
+    - finc_bond_yield10y_usa_d_ust10y
+    - fxrt_index_dxy_usa_d_dxy
+    - volt_vix_usa_d_vix
+    - finc_rate_ibr_overnight_col_d_ibr
+    - polr_policy_rate_col_d_tpm
+    - crsk_spread_embi_col_d_embi
+    - finc_bond_yield10y_col_d_col10y
+    - finc_bond_yield5y_col_d_col5y
+    - eqty_index_colcap_col_d_colcap
+    - comm_oil_wti_glb_d_wti
+    - comm_oil_brent_glb_d_brent
+    - comm_metal_gold_glb_d_gold
+    - comm_agri_coffee_glb_d_coffee
+    - fxrt_spot_usdmxn_mex_d_usdmxn
+    - fxrt_spot_usdclp_chl_d_usdclp
+    - fxrt_spot_usdcop_col_d_usdcop
+
+  # Critical for inference
+  critical:
+    - fxrt_index_dxy_usa_d_dxy
+    - volt_vix_usa_d_vix
+    - finc_bond_yield10y_usa_d_ust10y
+    - finc_bond_yield2y_usa_d_dgs2
+
+  # High leakage risk
+  high_leakage_risk:
+    - infl_pce_usa_m_pcepi
+    - mnys_m2_supply_usa_m_m2sl
+    - ftrd_exports_total_col_m_expusd
+    - ftrd_imports_total_col_m_impusd
+    - rsbp_current_account_col_q_cacct
+    - rsbp_fdi_inflow_col_q_fdiin
+    - rsbp_fdi_outflow_col_q_fdiout

@@ -100,7 +100,7 @@ class PPOHyperparameters:
     n_epochs: int = 10
 
     # RL-specific
-    gamma: float = 0.90  # Shorter horizon for noisy FX 5-min data
+    gamma: float = 0.95  # SSOT: ~20-step horizon, balanced for 5-min FX
     gae_lambda: float = 0.95
     clip_range: float = 0.2
     ent_coef: float = 0.05  # Higher exploration for FX volatility
@@ -130,8 +130,49 @@ class PPOHyperparameters:
         return cls(**filtered)
 
 
-# Default instance - THE canonical values
-PPO_HYPERPARAMETERS = PPOHyperparameters()
+# Default instance - Load from pipeline SSOT (single source of truth)
+def _load_ppo_hyperparameters() -> PPOHyperparameters:
+    """Load PPO hyperparameters from pipeline_ssot.yaml (unified SSOT)."""
+    try:
+        from src.config.pipeline_config import load_pipeline_config
+        cfg = load_pipeline_config()
+        ppo = cfg.ppo
+        schedule = cfg.get_training_schedule()
+        logger.info(f"[SSOT] Loaded PPO hyperparameters from pipeline_ssot: lr={ppo.learning_rate}, ent_coef={ppo.ent_coef}")
+        return PPOHyperparameters(
+            learning_rate=ppo.learning_rate,
+            n_steps=ppo.n_steps,
+            batch_size=ppo.batch_size,
+            n_epochs=ppo.n_epochs,
+            gamma=ppo.gamma,
+            gae_lambda=ppo.gae_lambda,
+            clip_range=ppo.clip_range,
+            ent_coef=ppo.ent_coef,
+            vf_coef=ppo.vf_coef,
+            max_grad_norm=ppo.max_grad_norm,
+            total_timesteps=schedule.get('total_timesteps', 500_000),
+            seed=42,  # Keep default seed
+        )
+    except (ImportError, FileNotFoundError, AttributeError) as e:
+        logger.warning(f"[SSOT] Could not load from pipeline_ssot, using defaults: {e}")
+        return PPOHyperparameters()
+
+PPO_HYPERPARAMETERS = _load_ppo_hyperparameters()
+
+
+def get_ppo_hyperparameters(force_reload: bool = False) -> PPOHyperparameters:
+    """Get PPO hyperparameters, optionally force-reloading from SSOT.
+
+    Args:
+        force_reload: If True, always reload from SSOT YAML file.
+                      If False, return cached PPO_HYPERPARAMETERS.
+
+    Returns:
+        PPOHyperparameters instance with current values.
+    """
+    if force_reload:
+        return _load_ppo_hyperparameters()
+    return PPO_HYPERPARAMETERS
 
 
 # =============================================================================
@@ -182,10 +223,11 @@ class EnvironmentConfig:
     These values define the simulation environment for RL training.
     Must be consistent between training and inference.
     """
-    # Capital and costs
+    # Capital and costs - OPTIMIZED FOR MEXC/BINANCE USDT/COP
+    # MEXC: 0% maker, 0.05% taker = 5bps round-trip (2.5bps per side)
     initial_capital: float = 10_000.0
-    transaction_cost_bps: float = 75.0  # From config/trading_config.yaml
-    slippage_bps: float = 15.0
+    transaction_cost_bps: float = 2.5   # MEXC: 0.025% per side
+    slippage_bps: float = 2.5           # Minimal slippage on liquid pair
 
     # Episode settings
     max_episode_steps: int = 2000
@@ -200,9 +242,9 @@ class EnvironmentConfig:
     trading_end_hour: int = 17
     trading_end_minute: int = 55  # 12:55 Bogota
 
-    # Action thresholds
-    threshold_long: float = 0.33
-    threshold_short: float = -0.33
+    # Action thresholds - PHASE 1 FIX: Wider HOLD zone
+    threshold_long: float = 0.60      # PHASE1: Requires 60% confidence
+    threshold_short: float = -0.60    # PHASE1: Wider HOLD zone
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -214,8 +256,47 @@ class EnvironmentConfig:
         return cls(**filtered)
 
 
-# Default environment config
-ENVIRONMENT_CONFIG = EnvironmentConfig()
+# Default environment config - Load from pipeline SSOT (unified)
+def _load_environment_config() -> EnvironmentConfig:
+    """Load environment config from pipeline_ssot.yaml (unified SSOT)."""
+    try:
+        from src.config.pipeline_config import load_pipeline_config
+        cfg = load_pipeline_config()
+        env = cfg.environment
+        logger.info(
+            f"[SSOT] Loaded env config from pipeline_ssot: episode_length={env.episode_length}, "
+            f"max_drawdown={env.max_drawdown_pct}%, "
+            f"thresholds=[{env.threshold_short}, {env.threshold_long}], "
+            f"costs={env.transaction_cost_bps}bps"
+        )
+        return EnvironmentConfig(
+            max_episode_steps=env.episode_length,
+            max_drawdown_pct=env.max_drawdown_pct,
+            max_position=1.0,
+            threshold_long=env.threshold_long,
+            threshold_short=env.threshold_short,
+            transaction_cost_bps=env.transaction_cost_bps,
+            slippage_bps=env.slippage_bps,
+        )
+    except (ImportError, FileNotFoundError, AttributeError) as e:
+        logger.warning(f"[SSOT] Could not load env config from pipeline_ssot, using defaults: {e}")
+        return EnvironmentConfig()
+
+ENVIRONMENT_CONFIG = _load_environment_config()
+
+
+def get_environment_config(force_reload: bool = False) -> EnvironmentConfig:
+    """Get environment config, optionally force-reloading from SSOT.
+
+    Args:
+        force_reload: If True, always reload from SSOT YAML file.
+
+    Returns:
+        EnvironmentConfig instance with current values.
+    """
+    if force_reload:
+        return _load_environment_config()
+    return ENVIRONMENT_CONFIG
 
 
 # =============================================================================
@@ -331,17 +412,49 @@ class MarketImpactConfig:
         return asdict(self)
 
 
+def _load_holding_decay_from_ssot() -> Dict[str, Any]:
+    """Load HoldingDecayConfig values from pipeline_ssot.yaml (unified SSOT)."""
+    try:
+        from src.config.pipeline_config import load_pipeline_config
+        cfg = load_pipeline_config()
+        r = cfg.reward
+        holding_raw = cfg._raw.get("training", {}).get("reward", {}).get("holding_decay", {})
+        logger.info(f"[SSOT] Loaded HoldingDecayConfig from pipeline_ssot: half_life={r.holding_decay_half_life}, max_penalty={r.holding_decay_max_penalty}")
+        return {
+            "half_life_bars": r.holding_decay_half_life,
+            "max_penalty": r.holding_decay_max_penalty,
+            "flat_threshold": holding_raw.get("flat_threshold", 72),
+            "enable_overnight_boost": True,
+            "overnight_multiplier": 1.5,
+        }
+    except (ImportError, FileNotFoundError, AttributeError) as e:
+        logger.warning(f"[SSOT] Could not load HoldingDecayConfig from pipeline_ssot, using defaults: {e}")
+        return {}
+
+
 @dataclass(frozen=True)
 class HoldingDecayConfig:
-    """Holding time decay configuration."""
-    half_life_bars: int = 48
-    max_penalty: float = 0.3
-    flat_threshold: int = 0
+    """Holding time decay configuration.
+
+    PHASE 1 FIX: Gentler curve to allow profitable holding
+    SSOT: Values loaded from config/experiment_ssot.yaml reward.holding_decay_config
+    """
+    half_life_bars: int = 144      # PHASE1: 12 hours (full trading day)
+    max_penalty: float = 0.3       # PHASE1: gentle, not prohibitive
+    flat_threshold: int = 24       # PHASE1: 2-hour grace period
     enable_overnight_boost: bool = True
-    overnight_multiplier: float = 1.5
+    overnight_multiplier: float = 1.5  # PHASE1: softer overnight
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+    @classmethod
+    def from_ssot(cls) -> "HoldingDecayConfig":
+        """Create HoldingDecayConfig from SSOT values (DRY principle)."""
+        ssot_values = _load_holding_decay_from_ssot()
+        if ssot_values:
+            return cls(**ssot_values)
+        return cls()
 
 
 @dataclass(frozen=True)
@@ -438,6 +551,40 @@ class CurriculumConfig:
 
 
 @dataclass(frozen=True)
+class FlatRewardConfig:
+    """
+    Flat reward configuration - PHASE 3 Anti-Reward-Hacking.
+
+    CRITICAL: flat_reward_weight 0.3 caused REWARD HACKING where HOLD
+    gave MORE reward than profitable trades. PHASE 3 reduces weight to 0.05
+    and enables decay to penalize extended HOLD.
+
+    Provides counterfactual reward for HOLD action to prevent collapse to
+    always-trading behavior. When position=0 and market moves, reward
+    the agent for avoiding a loss (direction-neutral).
+    """
+    # Enable/disable the component
+    enabled: bool = True
+
+    # Scale factor for counterfactual reward (match PnL scale ~50-100)
+    scale: float = 50.0
+
+    # Minimum market move to trigger reward (0.01% = 1 pip in FX)
+    min_move_threshold: float = 0.0001
+
+    # Direction-neutral loss avoidance (v2 - symmetric for LONG/SHORT)
+    loss_avoidance_mult: float = 1.0   # Reward for avoiding losses (any direction)
+
+    # PHASE 3: Decay for extended flat periods (CRITICAL for anti-reward-hacking)
+    decay_enabled: bool = True   # PHASE3: Enable by default
+    decay_half_life: int = 12    # PHASE3: 1 hour (12 bars * 5min)
+    decay_max: float = 0.9       # PHASE3: 90% max reduction
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class RewardConfig:
     """
     Complete reward system configuration (SSOT).
@@ -457,20 +604,25 @@ class RewardConfig:
     oil_correlation: OilCorrelationConfig = field(default_factory=OilCorrelationConfig)
     pnl_transform: PnLTransformConfig = field(default_factory=PnLTransformConfig)
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
+    flat_reward: FlatRewardConfig = field(default_factory=FlatRewardConfig)  # PHASE2
 
     # Component weights (for weighted sum)
-    weight_pnl: float = 0.5
-    weight_dsr: float = 0.3
-    weight_sortino: float = 0.2
-    weight_regime_penalty: float = 1.0
-    weight_holding_decay: float = 1.0
-    weight_anti_gaming: float = 1.0
+    # PHASE 1 FIX: BALANCED weights (penalty_sum=0.5, reward_sum=0.9)
+    # Previous: penalty_sum=1.6, reward_sum=0.8 (2:1 penalty bias - caused 0.4% HOLD)
+    weight_pnl: float = 0.7           # PHASE1: Primary signal
+    weight_dsr: float = 0.15          # Keep
+    weight_sortino: float = 0.05      # Keep
+    weight_regime_penalty: float = 0.15 # PHASE1: Soft regime awareness
+    weight_holding_decay: float = 0.2   # PHASE1: CRITICAL FIX - was 1.0!
+    weight_anti_gaming: float = 0.15    # PHASE1: Soft anti-gaming
+    weight_flat_reward: float = 0.3     # PHASE2: Counterfactual reward for HOLD
 
     # Global settings
     enable_normalization: bool = True
     enable_curriculum: bool = True
     enable_banrep_detection: bool = True
     enable_oil_tracking: bool = False  # Off by default - requires oil data
+    enable_flat_reward: bool = False   # V21: Disabled (was True) - causes HOLD bias
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -485,16 +637,19 @@ class RewardConfig:
             "oil_correlation": self.oil_correlation.to_dict(),
             "pnl_transform": self.pnl_transform.to_dict(),
             "curriculum": self.curriculum.to_dict(),
+            "flat_reward": self.flat_reward.to_dict(),  # PHASE2
             "weight_pnl": self.weight_pnl,
             "weight_dsr": self.weight_dsr,
             "weight_sortino": self.weight_sortino,
             "weight_regime_penalty": self.weight_regime_penalty,
             "weight_holding_decay": self.weight_holding_decay,
             "weight_anti_gaming": self.weight_anti_gaming,
+            "weight_flat_reward": self.weight_flat_reward,  # PHASE2
             "enable_normalization": self.enable_normalization,
             "enable_curriculum": self.enable_curriculum,
             "enable_banrep_detection": self.enable_banrep_detection,
             "enable_oil_tracking": self.enable_oil_tracking,
+            "enable_flat_reward": self.enable_flat_reward,  # PHASE2
         }
 
     def to_hash(self) -> str:
@@ -517,21 +672,91 @@ class RewardConfig:
             oil_correlation=OilCorrelationConfig(**data.get("oil_correlation", {})) if data.get("oil_correlation") else OilCorrelationConfig(),
             pnl_transform=PnLTransformConfig(**data.get("pnl_transform", {})) if data.get("pnl_transform") else PnLTransformConfig(),
             curriculum=CurriculumConfig(**data.get("curriculum", {})) if data.get("curriculum") else CurriculumConfig(),
+            flat_reward=FlatRewardConfig(**data.get("flat_reward", {})) if data.get("flat_reward") else FlatRewardConfig(),  # PHASE2
             weight_pnl=data.get("weight_pnl", 0.5),
             weight_dsr=data.get("weight_dsr", 0.3),
             weight_sortino=data.get("weight_sortino", 0.2),
             weight_regime_penalty=data.get("weight_regime_penalty", 1.0),
             weight_holding_decay=data.get("weight_holding_decay", 1.0),
             weight_anti_gaming=data.get("weight_anti_gaming", 1.0),
+            weight_flat_reward=data.get("weight_flat_reward", 0.3),  # PHASE2
             enable_normalization=data.get("enable_normalization", True),
             enable_curriculum=data.get("enable_curriculum", True),
             enable_banrep_detection=data.get("enable_banrep_detection", True),
             enable_oil_tracking=data.get("enable_oil_tracking", False),
+            enable_flat_reward=data.get("enable_flat_reward", False),  # V21: default False
         )
 
 
-# Default reward config
-REWARD_CONFIG = RewardConfig()
+def _load_reward_config_from_ssot() -> RewardConfig:
+    """Load RewardConfig with values from pipeline_ssot.yaml (unified SSOT)."""
+    try:
+        from src.config.pipeline_config import load_pipeline_config
+        cfg = load_pipeline_config()
+        r = cfg.reward
+
+        # Load HoldingDecayConfig from pipeline SSOT
+        holding_raw = cfg._raw.get("training", {}).get("reward", {}).get("holding_decay", {})
+        holding_decay_cfg = HoldingDecayConfig(
+            half_life_bars=r.holding_decay_half_life,
+            max_penalty=r.holding_decay_max_penalty,
+            flat_threshold=holding_raw.get("flat_threshold", 72),
+            enable_overnight_boost=True,
+            overnight_multiplier=1.5,
+        )
+
+        # AntiGamingConfig - inactivity disabled to allow HOLD action
+        anti_gaming_cfg = AntiGamingConfig(
+            inactivity_grace_period=999,
+            inactivity_max_penalty=0.0,
+            inactivity_growth_rate=0.0,
+            churn_window_size=20,
+            churn_max_trades=10,
+            churn_base_penalty=0.1,
+            churn_excess_penalty=0.02,
+            bias_imbalance_threshold=0.80,
+            bias_penalty=0.1,
+            bias_min_samples=100,
+        )
+
+        # FlatRewardConfig - read enabled from SSOT flat_reward section
+        flat_raw = cfg._raw.get("training", {}).get("reward", {}).get("flat_reward", {})
+        flat_reward_cfg = FlatRewardConfig(
+            enabled=flat_raw.get("enabled", False),
+            scale=50.0,
+            min_move_threshold=0.0001,
+            loss_avoidance_mult=1.0,
+            decay_enabled=flat_raw.get("decay_enabled", True),
+            decay_half_life=flat_raw.get("decay_half_life", 12),
+            decay_max=0.9,
+        )
+        weight_flat_reward = r.weight_flat_reward
+
+        logger.info(
+            f"[SSOT] Loaded RewardConfig from pipeline_ssot: pnl={r.weight_pnl}, "
+            f"holding_decay_weight={r.weight_holding_decay}, "
+            f"flat_reward_weight={weight_flat_reward}"
+        )
+        return RewardConfig(
+            holding_decay=holding_decay_cfg,
+            anti_gaming=anti_gaming_cfg,
+            flat_reward=flat_reward_cfg,
+            weight_pnl=r.weight_pnl,
+            weight_dsr=r.weight_dsr,
+            weight_sortino=r.weight_sortino,
+            weight_regime_penalty=r.weight_regime_penalty,
+            weight_holding_decay=r.weight_holding_decay,
+            weight_anti_gaming=r.weight_anti_gaming,
+            weight_flat_reward=weight_flat_reward,
+            enable_flat_reward=flat_reward_cfg.enabled if hasattr(flat_reward_cfg, 'enabled') else False,
+        )
+    except (ImportError, FileNotFoundError, AttributeError) as e:
+        logger.warning(f"[SSOT] Could not load RewardConfig from pipeline_ssot, using defaults: {e}")
+        return RewardConfig()
+
+
+# Default reward config - SSOT (DRY principle)
+REWARD_CONFIG = _load_reward_config_from_ssot()
 
 
 # =============================================================================
@@ -745,7 +970,7 @@ def load_config_from_yaml(yaml_path: Union[str, Path]) -> TrainingConfig:
         n_steps=train_section.get("n_steps", 2048),
         batch_size=train_section.get("batch_size", 64),
         n_epochs=train_section.get("n_epochs", 10),
-        gamma=train_section.get("gamma", 0.90),
+        gamma=train_section.get("gamma", 0.95),  # SSOT default
         gae_lambda=train_section.get("gae_lambda", 0.95),
         clip_range=train_section.get("clip_range", 0.2),
         ent_coef=train_section.get("ent_coef", 0.05),
@@ -879,6 +1104,7 @@ __all__ = [
     "OilCorrelationConfig",
     "PnLTransformConfig",
     "CurriculumConfig",
+    "FlatRewardConfig",  # PHASE2
     "RewardConfig",
     # Singleton instances (SSOT)
     "PPO_HYPERPARAMETERS",

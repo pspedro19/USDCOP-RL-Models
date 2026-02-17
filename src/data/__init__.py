@@ -55,6 +55,13 @@ from .macro_loader import UnifiedMacroLoader
 # Trading calendar
 from .calendar import TradingCalendar, is_trading_day, filter_market_hours
 
+# SSOT Dataset Builder (v2.0)
+from .ssot_dataset_builder import (
+    SSOTDatasetBuilder,
+    DatasetBuildResult,
+    build_production_dataset,
+)
+
 # Contracts
 from .contracts import (
     # Column mappings
@@ -90,6 +97,10 @@ __all__ = [
     "safe_ffill",
     "safe_merge_macro",
     "validate_no_future_data",
+    # SSOT Dataset Builder (v2.0)
+    "SSOTDatasetBuilder",
+    "DatasetBuildResult",
+    "build_production_dataset",
     # Loaders
     "UnifiedOHLCVLoader",
     "UnifiedMacroLoader",

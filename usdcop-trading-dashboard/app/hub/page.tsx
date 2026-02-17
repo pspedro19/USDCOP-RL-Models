@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   BarChart3, TrendingUp, Activity, ChevronRight,
-  Calendar, LineChart, Zap, Target, ArrowRight
+  Calendar, LineChart, Zap, Target, ArrowRight, Cpu, FlaskConical
 } from 'lucide-react';
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
 
@@ -15,13 +15,35 @@ export default function HubPage() {
     {
       id: 'dashboard',
       title: 'Trading Dashboard',
-      subtitle: 'Monitoreo en tiempo real',
+      subtitle: 'Backtest y analisis',
       description: 'Visualiza precios, senales de trading, metricas de rendimiento y el historial de operaciones del modelo RL.',
       icon: BarChart3,
       gradient: 'from-cyan-500 to-blue-600',
       glowColor: 'cyan',
       href: '/dashboard',
-      features: ['Precios en vivo', 'Senales RL', 'Equity Curve', 'Historial de Trades']
+      features: ['Backtest Interactivo', 'Senales RL', 'Equity Curve', 'Historial de Trades']
+    },
+    {
+      id: 'production',
+      title: 'Monitor de Produccion',
+      subtitle: 'Modelo en tiempo real',
+      description: 'Visualiza el modelo activo en produccion durante horario de mercado. Equity curve, posicion actual y P&L en vivo.',
+      icon: Cpu,
+      gradient: 'from-green-500 to-teal-600',
+      glowColor: 'green',
+      href: '/production',
+      features: ['Modelo Activo', 'Equity NRT', 'Posicion Actual', 'P&L en Vivo']
+    },
+    {
+      id: 'experiments',
+      title: 'Experimentos',
+      subtitle: 'Aprobacion de modelos',
+      description: 'Revisa y aprueba experimentos propuestos por L4. Sistema de dos votos para promocion a produccion.',
+      icon: FlaskConical,
+      gradient: 'from-purple-500 to-pink-600',
+      glowColor: 'purple',
+      href: '/dashboard', // Experiments approval is integrated in Dashboard via FloatingExperimentPanel
+      features: ['Propuestas L4', 'Metricas Backtest', 'Comparacion Baseline', 'Segundo Voto']
     },
     {
       id: 'forecasting',
@@ -29,8 +51,8 @@ export default function HubPage() {
       subtitle: 'Predicciones a mediano plazo',
       description: 'Analiza proyecciones semanales del USD/COP basadas en modelos de series de tiempo y machine learning.',
       icon: Calendar,
-      gradient: 'from-purple-500 to-pink-600',
-      glowColor: 'purple',
+      gradient: 'from-amber-500 to-orange-600',
+      glowColor: 'amber',
       href: '/forecasting',
       features: ['Proyeccion 7 dias', 'Intervalos de confianza', 'Tendencias macro', 'Analisis tecnico']
     },
@@ -40,8 +62,8 @@ export default function HubPage() {
       subtitle: 'Ejecucion automatizada',
       description: 'Conecta tus exchanges y ejecuta trades automaticamente basados en las senales del modelo RL.',
       icon: Zap,
-      gradient: 'from-green-500 to-emerald-600',
-      glowColor: 'green',
+      gradient: 'from-rose-500 to-red-600',
+      glowColor: 'rose',
       href: '/execution/dashboard',
       features: ['Conexion Exchanges', 'Ejecucion Real', 'Gestion de Riesgo', 'Kill Switch']
     }
@@ -93,7 +115,7 @@ export default function HubPage() {
           </motion.div>
 
           {/* Menu Cards */}
-          <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {menuOptions.map((option, index) => {
               const Icon = option.icon;
               return (

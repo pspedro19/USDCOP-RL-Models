@@ -1,0 +1,189 @@
+2026-02-04 21:41:50 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:50 | INFO | __main__ | SSOT PIPELINE RUNNER
+2026-02-04 21:41:50 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:50 | INFO | __main__ | Stage: all
+2026-02-04 21:41:50 | INFO | __main__ | Seed: 42 (reproducible)
+2026-02-04 21:41:50 | INFO | __main__ | Multi-seed: False
+2026-02-04 21:41:50 | INFO | __main__ | Output dir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\data\pipeline\07_output\5min
+2026-02-04 21:41:50 | INFO | __main__ | Models dir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\models
+2026-02-04 21:41:50 | INFO | __main__ | Results dir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\results\backtests
+2026-02-04 21:41:50 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:50 | INFO | __main__ | L2: BUILDING DATASET FROM SSOT
+2026-02-04 21:41:50 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:51 | INFO | src.config.experiment_loader | Loading experiment SSOT from: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\experiment_ssot.yaml
+2026-02-04 21:41:51 | INFO | src.config.experiment_loader | Loaded experiment SSOT v3.1.0: 18 market + 2 state = 20 total features
+2026-02-04 21:41:51 | INFO | src.config.pipeline_config | Loaded pipeline config v2.0.0 from C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\pipeline_ssot.yaml
+2026-02-04 21:41:51 | INFO | __main__ | Loading OHLCV data...
+2026-02-04 21:41:51 | INFO | __main__ |   OHLCV: 85838 rows, 2019-12-17 09:30:00-05:00 to 2026-01-30 12:55:00-05:00
+2026-02-04 21:41:51 | INFO | __main__ | Loading macro data...
+2026-02-04 21:41:51 | INFO | __main__ |   Macro: 2629 rows, columns: ['col10y', 'ust10y', 'brent', 'gold', 'usdmxn', 'dxy', 'embi', 'ust2y', 'vix']
+2026-02-04 21:41:51 | INFO | __main__ | Building dataset with SSOTDatasetBuilder...
+2026-02-04 21:41:52 | INFO | src.config.pipeline_config | Loaded pipeline config v2.0.0 from C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\pipeline_ssot.yaml
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | SSOTDatasetBuilder initialized with config v2.0.0, 18 market features
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Starting SSOT dataset build...
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Data prepared: OHLCV=85838 rows, Macro=2629 rows
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Split: train=70360 (until 2024-12-31), val=6937 (until 2025-06-30), test=8541
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Cleaned: dropped 288 rows with NaN (0.4%)
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Saved outputs to C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\data\pipeline\07_output\5min/DS_production_*
+2026-02-04 21:41:52 | INFO | src.data.ssot_dataset_builder | Dataset build complete in 0.4s: train=70072, val=6937, test=8541
+2026-02-04 21:41:52 | INFO | __main__ | L2 COMPLETE:
+2026-02-04 21:41:52 | INFO | __main__ |   Train: 70072 rows
+2026-02-04 21:41:52 | INFO | __main__ |   Val: 6937 rows
+2026-02-04 21:41:52 | INFO | __main__ |   Test: 8541 rows
+2026-02-04 21:41:52 | INFO | __main__ |   Features: 18
+2026-02-04 21:41:52 | INFO | __main__ |   Output: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\data\pipeline\07_output\5min
+2026-02-04 21:41:52 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:52 | INFO | __main__ | L3: TRAINING MODEL WITH SSOT CONFIG
+2026-02-04 21:41:52 | INFO | __main__ | ======================================================================
+2026-02-04 21:41:53 | INFO | src.config.pipeline_config | Loaded pipeline config v2.0.0 from C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\pipeline_ssot.yaml
+2026-02-04 21:41:53 | INFO | __main__ | Loading L2 datasets...
+2026-02-04 21:41:53 | INFO | __main__ |   Train: 70072 rows
+2026-02-04 21:41:53 | INFO | __main__ |   Val: 6937 rows
+2026-02-04 21:41:53 | INFO | __main__ | Creating trading environment...
+2026-02-04 21:41:53 | INFO | src.config.experiment_loader | Loading experiment SSOT from: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\experiment_ssot.yaml
+2026-02-04 21:41:54 | INFO | src.config.experiment_loader | Loaded experiment SSOT v3.1.0: 18 market + 2 state = 20 total features
+2026-02-04 21:41:54 | INFO | src.training.config | [SSOT] Loaded PPO hyperparameters from SSOT: lr=0.0003, ent_coef=0.02
+2026-02-04 21:41:54 | INFO | src.config.experiment_loader | Loading experiment SSOT from: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\experiment_ssot.yaml
+2026-02-04 21:41:54 | INFO | src.config.experiment_loader | Loaded experiment SSOT v3.1.0: 18 market + 2 state = 20 total features
+2026-02-04 21:41:54 | INFO | src.training.config | [SSOT] Loaded env config: max_episode_steps=2000, max_position_holding=576, thresholds=[-0.5, 0.5], costs=2.5bps
+2026-02-04 21:41:54 | INFO | src.config.experiment_loader | Loading experiment SSOT from: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\config\experiment_ssot.yaml
+2026-02-04 21:41:54 | INFO | src.config.experiment_loader | Loaded experiment SSOT v3.1.0: 18 market + 2 state = 20 total features
+2026-02-04 21:41:54 | INFO | src.training.config | [SSOT] Loaded RewardConfig from SSOT: pnl=0.8, holding_decay_weight=0.4, inactivity_penalty=0.0, flat_reward_weight=0.12
+2026-02-04 21:41:54 | INFO | src.training.reward_calculator | [PHASE3] FlatReward component enabled with decay (anti-reward-hacking)
+2026-02-04 21:41:54 | INFO | src.training.environments.trading_env | [ENV] Using raw_log_ret_5m for PnL calculation (correct)
+2026-02-04 21:41:54 | INFO | src.training.environments.trading_env | TradingEnvironment initialized: 70072 bars, 20 dims, episode_length=1200, thresholds=0.5/-0.5, costs=2.5bps
+2026-02-04 21:41:54 | INFO | src.training.reward_calculator | [PHASE3] FlatReward component enabled with decay (anti-reward-hacking)
+2026-02-04 21:41:54 | INFO | src.training.environments.trading_env | [ENV] Using raw_log_ret_5m for PnL calculation (correct)
+2026-02-04 21:41:54 | INFO | src.training.environments.trading_env | TradingEnvironment initialized: 6937 bars, 20 dims, episode_length=1200, thresholds=0.5/-0.5, costs=2.5bps
+2026-02-04 21:41:54 | INFO | __main__ | PPO Hyperparameters:
+2026-02-04 21:41:54 | INFO | __main__ |   learning_rate: 0.0003
+2026-02-04 21:41:54 | INFO | __main__ |   n_steps: 2048
+2026-02-04 21:41:54 | INFO | __main__ |   batch_size: 256
+2026-02-04 21:41:54 | INFO | __main__ |   gamma: 0.95
+2026-02-04 21:41:54 | INFO | __main__ |   ent_coef: 0.02
+2026-02-04 21:41:54 | INFO | __main__ | Creating PPO model (seed=42)...
+2026-02-04 21:41:56 | INFO | __main__ | Training for 500000 timesteps...
+2026-02-04 21:41:56 | INFO | __main__ | Model will be saved to: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\models\ppo_ssot_20260204_214156
+Using cpu device
+Logging to C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\logs\tensorboard\PPO_7
+-----------------------------
+| time/              |      |
+|    fps             | 568  |
+|    iterations      | 1    |
+|    time_elapsed    | 3    |
+|    total_timesteps | 2048 |
+-----------------------------
+------------------------------------------
+| time/                   |              |
+|    fps                  | 529          |
+|    iterations           | 2            |
+|    time_elapsed         | 7            |
+|    total_timesteps      | 4096         |
+| train/                  |              |
+|    approx_kl            | 0.0036417628 |
+|    clip_fraction        | 0.0108       |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.42        |
+|    explained_variance   | 0.000997     |
+|    learning_rate        | 0.0003       |
+|    loss                 | 0.591        |
+|    n_updates            | 10           |
+|    policy_gradient_loss | -0.00328     |
+|    std                  | 1            |
+|    value_loss           | 1.62         |
+------------------------------------------
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 526         |
+|    iterations           | 3           |
+|    time_elapsed         | 11          |
+|    total_timesteps      | 6144        |
+| train/                  |             |
+|    approx_kl            | 0.003366325 |
+|    clip_fraction        | 0.00918     |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.42       |
+|    explained_variance   | -0.00465    |
+|    learning_rate        | 0.0003      |
+|    loss                 | 0.872       |
+|    n_updates            | 20          |
+|    policy_gradient_loss | -0.00365    |
+|    std                  | 1           |
+|    value_loss           | 2.41        |
+-----------------------------------------
+------------------------------------------
+| time/                   |              |
+|    fps                  | 520          |
+|    iterations           | 4            |
+|    time_elapsed         | 15           |
+|    total_timesteps      | 8192         |
+| train/                  |              |
+|    approx_kl            | 0.0027221055 |
+|    clip_fraction        | 0.00508      |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.42        |
+|    explained_variance   | 0.0127       |
+|    learning_rate        | 0.0003       |
+|    loss                 | 0.883        |
+|    n_updates            | 30           |
+|    policy_gradient_loss | -0.00386     |
+|    std                  | 0.992        |
+|    value_loss           | 2.21         |
+------------------------------------------
+------------------------------------------
+| time/                   |              |
+|    fps                  | 498          |
+|    iterations           | 5            |
+|    time_elapsed         | 20           |
+|    total_timesteps      | 10240        |
+| train/                  |              |
+|    approx_kl            | 0.0048342394 |
+|    clip_fraction        | 0.0291       |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.4         |
+|    explained_variance   | 0.0107       |
+|    learning_rate        | 0.0003       |
+|    loss                 | 0.751        |
+|    n_updates            | 40           |
+|    policy_gradient_loss | -0.00743     |
+|    std                  | 0.971        |
+|    value_loss           | 1.86         |
+------------------------------------------
+------------------------------------------
+| time/                   |              |
+|    fps                  | 494          |
+|    iterations           | 6            |
+|    time_elapsed         | 24           |
+|    total_timesteps      | 12288        |
+| train/                  |              |
+|    approx_kl            | 0.0037775044 |
+|    clip_fraction        | 0.0251       |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.39        |
+|    explained_variance   | -0.0083      |
+|    learning_rate        | 0.0003       |
+|    loss                 | 0.624        |
+|    n_updates            | 50           |
+|    policy_gradient_loss | -0.00666     |
+|    std                  | 0.969        |
+|    value_loss           | 1.78         |
+------------------------------------------
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 501         |
+|    iterations           | 7           |
+|    time_elapsed         | 28          |
+|    total_timesteps      | 14336       |
+| train/                  |             |
+|    approx_kl            | 0.004014922 |
+|    clip_fraction        | 0.0338      |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.38       |
+|    explained_variance   | 0.108       |
+|    learning_rate        | 0.0003      |
+|    loss                 | 0.777       |
+|    n_updates            | 60          |
+|    policy_gradient_loss | -0.00765    |
+|    std                  | 0.962       |
+|    value_loss           | 1.93        |
+-----------------------------------------

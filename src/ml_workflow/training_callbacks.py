@@ -7,18 +7,357 @@ Proporciona callbacks para Stable Baselines 3 que:
 1. Registran el modelo en model_registry al terminar training
 2. Guardan metricas de backtest con el modelo
 3. Notifican al sistema que hay un nuevo modelo disponible
+4. LR Decay para prevenir overfitting (FASE 2)
+5. Early Stopping mejorado con validation set (FASE 2)
+
+FASE 2 Implementation (2026-02-02):
+- LearningRateDecayCallback: Decays LR from initial to final over training
+- ValidationEarlyStoppingCallback: Monitors validation reward, stops on plateau
 """
 
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Dict, Optional, Callable, List
 import json
+import numpy as np
 
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# FASE 2: Learning Rate Decay Callback
+# =============================================================================
+
+class LearningRateDecayCallback(BaseCallback):
+    """
+    Callback que reduce el learning rate linealmente durante el entrenamiento.
+
+    FASE 2: Prevenir Overfitting
+    - Reduce LR de initial_lr a final_lr
+    - Decay lineal durante todo el training
+    - Logging cada log_freq steps
+
+    Uso:
+        callback = LearningRateDecayCallback(
+            initial_lr=0.0003,
+            final_lr=0.00003,
+            total_timesteps=500_000,
+        )
+
+        model.learn(total_timesteps=500_000, callback=callback)
+    """
+
+    def __init__(
+        self,
+        initial_lr: float = 0.0003,
+        final_lr: float = 0.00003,
+        total_timesteps: int = 500_000,
+        log_freq: int = 25_000,
+        verbose: int = 1,
+    ):
+        """
+        Initialize LR decay callback.
+
+        Args:
+            initial_lr: Starting learning rate (SSOT default: 0.0003)
+            final_lr: Final learning rate (SSOT default: 0.00003)
+            total_timesteps: Total training timesteps for decay schedule
+            log_freq: How often to log current LR
+            verbose: Verbosity level
+        """
+        super().__init__(verbose)
+        self.initial_lr = initial_lr
+        self.final_lr = final_lr
+        self.total_timesteps = total_timesteps
+        self.log_freq = log_freq
+        self._current_lr = initial_lr
+
+    def _on_training_start(self) -> None:
+        """Set initial learning rate."""
+        self._current_lr = self.initial_lr
+        if self.verbose > 0:
+            logger.info(f"[LR-Decay] Starting LR decay: {self.initial_lr:.6f} -> {self.final_lr:.6f}")
+
+    def _on_step(self) -> bool:
+        """Update learning rate based on progress."""
+        # Calculate progress (0 to 1)
+        progress = min(1.0, self.num_timesteps / self.total_timesteps)
+
+        # Linear decay
+        self._current_lr = self.initial_lr + (self.final_lr - self.initial_lr) * progress
+
+        # Update the model's learning rate
+        if hasattr(self.model, 'lr_schedule'):
+            # For SB3, we need to update the lr_schedule
+            self.model.lr_schedule = lambda _: self._current_lr
+
+        # Also update policy optimizer directly
+        if hasattr(self.model, 'policy') and hasattr(self.model.policy, 'optimizer'):
+            for param_group in self.model.policy.optimizer.param_groups:
+                param_group['lr'] = self._current_lr
+
+        # Log periodically
+        if self.num_timesteps % self.log_freq == 0 and self.verbose > 0:
+            logger.info(
+                f"[LR-Decay] Step {self.num_timesteps:,}: "
+                f"LR = {self._current_lr:.6f} ({progress*100:.1f}% decay)"
+            )
+
+            # Log to tensorboard if available
+            if self.logger:
+                self.logger.record("train/learning_rate_decay", self._current_lr)
+
+        return True
+
+    @property
+    def current_lr(self) -> float:
+        """Get current learning rate."""
+        return self._current_lr
+
+
+# =============================================================================
+# FASE 2: Validation Early Stopping Callback
+# =============================================================================
+
+class ValidationEarlyStoppingCallback(BaseCallback):
+    """
+    Callback que detiene el entrenamiento si no hay mejora en validation.
+
+    FASE 2: Prevenir Overfitting
+    - Monitorea mean_reward en eval_env
+    - Detiene si no hay mejora en `patience` evaluaciones
+    - Guarda el mejor modelo antes de overfitting
+
+    Uso:
+        callback = ValidationEarlyStoppingCallback(
+            eval_env=eval_env,
+            eval_freq=25_000,
+            patience=5,
+            min_improvement=0.01,
+        )
+
+        model.learn(total_timesteps=500_000, callback=callback)
+    """
+
+    def __init__(
+        self,
+        eval_env,
+        eval_freq: int = 25_000,
+        n_eval_episodes: int = 5,
+        patience: int = 5,
+        min_improvement: float = 0.01,
+        best_model_save_path: Optional[str] = None,
+        verbose: int = 1,
+    ):
+        """
+        Initialize early stopping callback.
+
+        Args:
+            eval_env: Validation environment
+            eval_freq: Evaluate every N timesteps
+            n_eval_episodes: Episodes per evaluation
+            patience: Stop if no improvement in N evaluations (SSOT default: 5)
+            min_improvement: Minimum relative improvement required
+            best_model_save_path: Path to save best model
+            verbose: Verbosity level
+        """
+        super().__init__(verbose)
+        self.eval_env = eval_env
+        self.eval_freq = eval_freq
+        self.n_eval_episodes = n_eval_episodes
+        self.patience = patience
+        self.min_improvement = min_improvement
+        self.best_model_save_path = best_model_save_path
+
+        # Tracking
+        self._best_mean_reward = float('-inf')
+        self._no_improvement_count = 0
+        self._eval_rewards: List[float] = []
+        self._eval_timesteps: List[int] = []
+        self._stopped_early = False
+
+    def _on_training_start(self) -> None:
+        """Reset tracking variables."""
+        self._best_mean_reward = float('-inf')
+        self._no_improvement_count = 0
+        self._eval_rewards = []
+        self._eval_timesteps = []
+        self._stopped_early = False
+
+        if self.verbose > 0:
+            logger.info(
+                f"[Early-Stop] Initialized: patience={self.patience}, "
+                f"eval_freq={self.eval_freq}, min_improvement={self.min_improvement:.2%}"
+            )
+
+    def _on_step(self) -> bool:
+        """Evaluate and check for early stopping."""
+        if self.num_timesteps % self.eval_freq != 0:
+            return True
+
+        # Evaluate
+        mean_reward = self._evaluate()
+        self._eval_rewards.append(mean_reward)
+        self._eval_timesteps.append(self.num_timesteps)
+
+        # Calculate improvement
+        improvement = 0.0
+        if self._best_mean_reward > float('-inf'):
+            improvement = (mean_reward - self._best_mean_reward) / abs(self._best_mean_reward + 1e-8)
+
+        # Check if improved
+        if mean_reward > self._best_mean_reward * (1 + self.min_improvement) or self._best_mean_reward == float('-inf'):
+            if self.verbose > 0:
+                logger.info(
+                    f"[Early-Stop] Step {self.num_timesteps:,}: "
+                    f"New best reward {mean_reward:.2f} (was {self._best_mean_reward:.2f}, "
+                    f"improvement: {improvement:.2%})"
+                )
+
+            self._best_mean_reward = mean_reward
+            self._no_improvement_count = 0
+
+            # Save best model
+            if self.best_model_save_path:
+                self.model.save(self.best_model_save_path)
+                if self.verbose > 0:
+                    logger.info(f"[Early-Stop] Best model saved to {self.best_model_save_path}")
+        else:
+            self._no_improvement_count += 1
+
+            if self.verbose > 0:
+                logger.info(
+                    f"[Early-Stop] Step {self.num_timesteps:,}: "
+                    f"No improvement ({mean_reward:.2f} vs best {self._best_mean_reward:.2f}). "
+                    f"Count: {self._no_improvement_count}/{self.patience}"
+                )
+
+        # Log to tensorboard
+        if self.logger:
+            self.logger.record("eval/mean_reward", mean_reward)
+            self.logger.record("eval/best_reward", self._best_mean_reward)
+            self.logger.record("eval/no_improvement_count", self._no_improvement_count)
+
+        # Check for early stopping
+        if self._no_improvement_count >= self.patience:
+            if self.verbose > 0:
+                logger.warning(
+                    f"[Early-Stop] STOPPING EARLY at step {self.num_timesteps:,}. "
+                    f"No improvement in {self.patience} evaluations. "
+                    f"Best reward: {self._best_mean_reward:.2f}"
+                )
+            self._stopped_early = True
+            return False  # Stop training
+
+        return True
+
+    def _evaluate(self) -> float:
+        """Run evaluation episodes and return mean reward."""
+        from stable_baselines3.common.evaluation import evaluate_policy
+
+        mean_reward, std_reward = evaluate_policy(
+            self.model,
+            self.eval_env,
+            n_eval_episodes=self.n_eval_episodes,
+            deterministic=True,
+        )
+
+        return float(mean_reward)
+
+    @property
+    def stopped_early(self) -> bool:
+        """Check if training was stopped early."""
+        return self._stopped_early
+
+    @property
+    def best_mean_reward(self) -> float:
+        """Get best mean reward achieved."""
+        return self._best_mean_reward
+
+    @property
+    def eval_history(self) -> Dict[str, List]:
+        """Get evaluation history."""
+        return {
+            "rewards": self._eval_rewards,
+            "timesteps": self._eval_timesteps,
+        }
+
+
+# =============================================================================
+# Factory Function for FASE 2 Callbacks
+# =============================================================================
+
+def create_overfitting_prevention_callbacks(
+    eval_env,
+    total_timesteps: int = 500_000,
+    initial_lr: float = 0.0003,
+    final_lr: float = 0.00003,
+    eval_freq: int = 25_000,
+    patience: int = 5,
+    best_model_save_path: Optional[str] = None,
+    verbose: int = 1,
+) -> List[BaseCallback]:
+    """
+    Factory function to create FASE 2 overfitting prevention callbacks.
+
+    Creates:
+    1. LearningRateDecayCallback - Linear LR decay
+    2. ValidationEarlyStoppingCallback - Early stopping on validation plateau
+
+    Args:
+        eval_env: Validation environment
+        total_timesteps: Total training timesteps
+        initial_lr: Starting learning rate
+        final_lr: Final learning rate
+        eval_freq: Evaluation frequency
+        patience: Early stopping patience
+        best_model_save_path: Path to save best model
+        verbose: Verbosity level
+
+    Returns:
+        List of callbacks for overfitting prevention
+
+    Example:
+        from src.ml_workflow.training_callbacks import create_overfitting_prevention_callbacks
+
+        callbacks = create_overfitting_prevention_callbacks(
+            eval_env=eval_env,
+            total_timesteps=500_000,
+        )
+
+        model.learn(total_timesteps=500_000, callback=callbacks)
+    """
+    callbacks = []
+
+    # LR Decay
+    callbacks.append(LearningRateDecayCallback(
+        initial_lr=initial_lr,
+        final_lr=final_lr,
+        total_timesteps=total_timesteps,
+        log_freq=eval_freq,
+        verbose=verbose,
+    ))
+
+    # Early Stopping
+    callbacks.append(ValidationEarlyStoppingCallback(
+        eval_env=eval_env,
+        eval_freq=eval_freq,
+        patience=patience,
+        best_model_save_path=best_model_save_path,
+        verbose=verbose,
+    ))
+
+    logger.info(
+        f"[FASE-2] Created overfitting prevention callbacks: "
+        f"LR decay ({initial_lr:.6f}->{final_lr:.6f}), "
+        f"Early stop (patience={patience})"
+    )
+
+    return callbacks
 
 
 class ModelRegistrationCallback(BaseCallback):

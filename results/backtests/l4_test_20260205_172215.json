@@ -1,0 +1,11 @@
+{
+  "stage": "L4-TEST",
+  "total_return_pct": -12.426962890625004,
+  "apr_pct": -25.638293669777447,
+  "sharpe_ratio": -1.6214390237690024,
+  "max_drawdown_pct": 17.05099311233551,
+  "n_trades": 91,
+  "win_rate_pct": 24.175824175824175,
+  "final_equity": 8757.3037109375,
+  "test_days": 176.91666666666666
+}

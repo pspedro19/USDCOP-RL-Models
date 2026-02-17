@@ -112,7 +112,7 @@ class HyperparametersConfig(BaseModel):
     n_epochs: int = Field(10, gt=0, description="Number of epochs per update")
 
     # Discount and advantage
-    gamma: float = Field(0.99, ge=0, le=1, description="Discount factor")
+    gamma: float = Field(0.95, ge=0, le=1, description="Discount factor (SSOT default)")
     gae_lambda: float = Field(0.95, ge=0, le=1, description="GAE lambda")
 
     # PPO-specific
@@ -149,8 +149,8 @@ class EnvironmentConfig(BaseModel):
     initial_balance: float = Field(10000, gt=0, description="Initial trading balance")
     max_position: float = Field(1.0, gt=0, description="Maximum position size")
     max_drawdown_pct: float = Field(15.0, gt=0, le=100, description="Max drawdown percentage")
-    transaction_cost_bps: float = Field(75, ge=0, description="Transaction cost in bps")
-    slippage_bps: float = Field(15, ge=0, description="Slippage in bps")
+    transaction_cost_bps: float = Field(2.5, ge=0, description="Transaction cost in bps (MEXC: 2.5)")
+    slippage_bps: float = Field(2.5, ge=0, description="Slippage in bps (MEXC: 2.5)")
     trading_start_hour: int = Field(13, ge=0, le=23, description="Trading start hour (UTC)")
     trading_end_hour: int = Field(17, ge=0, le=23, description="Trading end hour (UTC)")
     trading_end_minute: int = Field(55, ge=0, le=59, description="Trading end minute")

@@ -29,7 +29,7 @@ Date: 2026-01-17
 
 from .model_loader import ONNXModelLoader
 from .predictor import ONNXPredictor
-from .ensemble_predictor import EnsemblePredictor
+from .ensemble_predictor import EnsemblePredictor, load_ensemble_from_multi_seed
 from .inference_engine import InferenceEngine
 from .model_router import (
     ModelRouter,
@@ -54,6 +54,7 @@ __all__ = [
     'ONNXModelLoader',
     'ONNXPredictor',
     'EnsemblePredictor',
+    'load_ensemble_from_multi_seed',
     'InferenceEngine',
     # Validated inference
     'ValidatedPredictor',

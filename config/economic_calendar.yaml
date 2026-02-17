@@ -14,12 +14,18 @@
 #   - release_date: Fecha en que se publica (ej: 2026-01-13)
 #   - month_lag: Meses entre data_month y release_date
 #
-# Version: 1.0.0
-# Last Updated: 2026-01-24
+# FUENTES OFICIALES 2026:
+#   - BLS: https://www.bls.gov/schedule/2026/home.htm
+#   - BEA: https://www.bea.gov/news/schedule
+#   - Federal Reserve: https://www.federalreserve.gov/newsevents/calendar.htm
+#   - DANE: https://www.dane.gov.co/index.php/calendario
+#
+# Version: 1.1.0
+# Last Updated: 2026-01-30
 # =============================================================================
 
-version: "1.0.0"
-last_updated: "2026-01-24"
+version: "1.1.0"
+last_updated: "2026-01-30"
 
 # =============================================================================
 # USA MONTHLY VARIABLES (FRED)
@@ -47,10 +53,27 @@ usa_monthly:
       month_lag: 1
       release_pattern: "First Friday of month"
 
+    # Fechas oficiales BLS 2026 (fuente: bls.gov/schedule/news_release/empsit.htm)
+    # IMPORTANTE: Enero publica datos de Diciembre (1 mes de lag)
+    official_dates_2026:
+      - "2026-01-09"  # Dato Dic 2025
+      - "2026-02-06"  # Dato Ene 2026
+      - "2026-03-06"  # Dato Feb 2026
+      - "2026-04-03"  # Dato Mar 2026
+      - "2026-05-08"  # Dato Abr 2026
+      - "2026-06-05"  # Dato May 2026
+      - "2026-07-02"  # Dato Jun 2026
+      - "2026-08-07"  # Dato Jul 2026
+      - "2026-09-04"  # Dato Ago 2026
+      - "2026-10-02"  # Dato Sep 2026
+      - "2026-11-06"  # Dato Oct 2026
+      - "2026-12-04"  # Dato Nov 2026
+
     source:
       agency: "Bureau of Labor Statistics (BLS)"
       release_name: "Employment Situation (NFP Report)"
       url: "https://www.bls.gov/news.release/empsit.toc.htm"
+      calendar_url: "https://www.bls.gov/schedule/news_release/empsit.htm"
 
     integration:
       investing_calendar_id: 294
@@ -60,6 +83,7 @@ usa_monthly:
       priority: HIGH
       leakage_risk: LOW
       expected_range: [2, 20]  # Porcentaje
+      avg_delay_days: 7
 
     notes:
       - "PRIMERA serie mensual en publicarse"
@@ -84,10 +108,27 @@ usa_monthly:
       timezone: US/Eastern
       month_lag: 1
 
+    # Fechas oficiales BLS 2026 (fuente: bls.gov/schedule/news_release/cpi.htm)
+    # IMPORTANTE: Enero publica datos de Diciembre (1 mes de lag)
+    official_dates_2026:
+      - "2026-01-13"  # Dato Dic 2025
+      - "2026-02-11"  # Dato Ene 2026
+      - "2026-03-11"  # Dato Feb 2026
+      - "2026-04-14"  # Dato Mar 2026
+      - "2026-05-13"  # Dato Abr 2026
+      - "2026-06-11"  # Dato May 2026
+      - "2026-07-15"  # Dato Jun 2026
+      - "2026-08-12"  # Dato Jul 2026
+      - "2026-09-16"  # Dato Ago 2026
+      - "2026-10-13"  # Dato Sep 2026
+      - "2026-11-12"  # Dato Oct 2026
+      - "2026-12-10"  # Dato Nov 2026
+
     source:
       agency: "Bureau of Labor Statistics (BLS)"
       release_name: "Consumer Price Index"
       url: "https://www.bls.gov/cpi/"
+      calendar_url: "https://www.bls.gov/schedule/news_release/cpi.htm"
 
     integration:
       investing_calendar_id: 736
@@ -98,6 +139,7 @@ usa_monthly:
       priority: HIGH
       leakage_risk: MEDIUM
       expected_range: [200, 400]  # Index value
+      avg_delay_days: 13
 
     notes:
       - "Publicado con Core CPI simultáneamente"
@@ -118,10 +160,26 @@ usa_monthly:
       timezone: US/Eastern
       month_lag: 1
 
+    # Mismas fechas que CPI All Items (publicación simultánea)
+    official_dates_2026:
+      - "2026-01-13"  # Dato Dic 2025
+      - "2026-02-11"  # Dato Ene 2026
+      - "2026-03-11"  # Dato Feb 2026
+      - "2026-04-14"  # Dato Mar 2026
+      - "2026-05-13"  # Dato Abr 2026
+      - "2026-06-11"  # Dato May 2026
+      - "2026-07-15"  # Dato Jun 2026
+      - "2026-08-12"  # Dato Jul 2026
+      - "2026-09-16"  # Dato Ago 2026
+      - "2026-10-13"  # Dato Sep 2026
+      - "2026-11-12"  # Dato Oct 2026
+      - "2026-12-10"  # Dato Nov 2026
+
     source:
       agency: "Bureau of Labor Statistics (BLS)"
       release_name: "Consumer Price Index"
       url: "https://www.bls.gov/cpi/"
+      calendar_url: "https://www.bls.gov/schedule/news_release/cpi.htm"
 
     integration:
       investing_calendar_id: 1226
@@ -132,6 +190,7 @@ usa_monthly:
       leakage_risk: MEDIUM
       expected_range: [200, 400]
       fed_preference: true
+      avg_delay_days: 13
 
     notes:
       - "Preferida por la Fed para decisiones de política"
@@ -154,10 +213,27 @@ usa_monthly:
       timezone: US/Eastern
       month_lag: 1
 
+    # Fechas oficiales Federal Reserve 2026 (fuente: federalreserve.gov/releases/g17/)
+    # IMPORTANTE: Enero publica datos de Diciembre (1 mes de lag)
+    official_dates_2026:
+      - "2026-01-16"  # Dato Dic 2025
+      - "2026-02-18"  # Dato Ene 2026
+      - "2026-03-16"  # Dato Feb 2026
+      - "2026-04-16"  # Dato Mar 2026
+      - "2026-05-15"  # Dato Abr 2026
+      - "2026-06-15"  # Dato May 2026
+      - "2026-07-17"  # Dato Jun 2026
+      - "2026-08-18"  # Dato Jul 2026
+      - "2026-09-18"  # Dato Ago 2026
+      - "2026-10-16"  # Dato Sep 2026
+      - "2026-11-17"  # Dato Oct 2026
+      - "2026-12-16"  # Dato Nov 2026
+
     source:
       agency: "Federal Reserve Board"
-      release_name: "Industrial Production and Capacity Utilization"
+      release_name: "Industrial Production and Capacity Utilization (G.17)"
       url: "https://www.federalreserve.gov/releases/g17/"
+      calendar_url: "https://www.federalreserve.gov/releases/g17/current/default.htm"
 
     integration:
       investing_calendar_id: 82
@@ -166,6 +242,7 @@ usa_monthly:
       priority: MEDIUM
       leakage_risk: MEDIUM
       expected_range: [80, 120]  # Index
+      avg_delay_days: 16
 
     notes:
       - "HORA DIFERENTE: 09:15 ET (no 08:30)"
@@ -182,28 +259,44 @@ usa_monthly:
     frequency: monthly
 
     publication:
-      day_range: [15, 20]
-      typical_day: 18
+      day_range: [1, 5]
+      typical_day: 3
       time: "16:15:00"
       timezone: US/Eastern
-      month_lag: 1
+      month_lag: 1  # Promedio del mes anterior
+
+    # Nota: El promedio mensual se publica en H.15 pocos días después del cierre del mes
+    # El dato diario está disponible con 1 día de delay
+    # FOMC decisions afectan el target rate (decisiones ~8 veces por año)
+    fomc_meetings_2026:
+      - "2026-01-28"  # Decisión: mantener 3.50-3.75%
+      - "2026-03-18"
+      - "2026-05-06"
+      - "2026-06-17"
+      - "2026-07-29"
+      - "2026-09-16"
+      - "2026-11-04"
+      - "2026-12-16"
 
     source:
       agency: "Federal Reserve Board"
-      release_name: "Selected Interest Rates"
+      release_name: "Selected Interest Rates (H.15)"
       url: "https://www.federalreserve.gov/releases/h15/"
+      calendar_url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 
     integration:
       investing_calendar_id: null  # No en calendario típico
 
     validation:
       priority: MEDIUM
-      leakage_risk: MEDIUM
+      leakage_risk: LOW
       expected_range: [0, 10]  # Porcentaje
+      avg_delay_days: 3
 
     notes:
       - "Promedio mensual de la tasa diaria"
-      - "Hora tardía de publicación"
+      - "Target rate decidido en reuniones FOMC (8/año)"
+      - "Tasa actual (Ene 2026): 3.50-3.75%"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # CONSUMER SENTIMENT - (~día 21)
@@ -216,29 +309,64 @@ usa_monthly:
     frequency: monthly
 
     publication:
-      day_range: [20, 23]
-      typical_day: 21
+      day_range: [20, 26]
+      typical_day: 24
       time: "10:00:00"
       timezone: US/Eastern
-      month_lag: 1
+      month_lag: 0  # Dato del mes actual (encuesta continua)
+
+    # Fechas oficiales U. Michigan 2026 (fuente: sca.isr.umich.edu)
+    # NOTA: Dos releases por mes: Preliminar (~día 10) y Final (~día 24)
+    # FRED publica con 1 mes de delay. Aquí usamos fechas de release FINAL
+    # IMPORTANTE: El dato de Enero se publica en Enero (mismo mes)
+    official_dates_2026_preliminary:
+      - "2026-01-10"  # Preliminar Ene 2026
+      - "2026-02-06"  # Preliminar Feb 2026
+      - "2026-03-13"  # Preliminar Mar 2026
+      - "2026-04-10"  # Preliminar Abr 2026
+      - "2026-05-08"  # Preliminar May 2026
+      - "2026-06-12"  # Preliminar Jun 2026
+      - "2026-07-10"  # Preliminar Jul 2026
+      - "2026-08-14"  # Preliminar Ago 2026
+      - "2026-09-11"  # Preliminar Sep 2026
+      - "2026-10-09"  # Preliminar Oct 2026
+      - "2026-11-13"  # Preliminar Nov 2026
+      - "2026-12-11"  # Preliminar Dic 2026
+
+    official_dates_2026_final:
+      - "2026-01-24"  # Final Ene 2026
+      - "2026-02-20"  # Final Feb 2026
+      - "2026-03-27"  # Final Mar 2026
+      - "2026-04-24"  # Final Abr 2026
+      - "2026-05-22"  # Final May 2026
+      - "2026-06-26"  # Final Jun 2026
+      - "2026-07-24"  # Final Jul 2026
+      - "2026-08-28"  # Final Ago 2026
+      - "2026-09-25"  # Final Sep 2026
+      - "2026-10-23"  # Final Oct 2026
+      - "2026-11-25"  # Final Nov 2026
+      - "2026-12-23"  # Final Dic 2026
 
     source:
       agency: "University of Michigan"
-      release_name: "Consumer Sentiment Index"
-      url: "http://www.sca.isr.umich.edu/"
+      release_name: "Surveys of Consumers"
+      url: "https://www.sca.isr.umich.edu/"
+      calendar_url: "https://data.sca.isr.umich.edu/survey-info.php"
 
     integration:
       investing_calendar_id: 234
 
     validation:
       priority: MEDIUM
-      leakage_risk: MEDIUM_HIGH
+      leakage_risk: MEDIUM
       expected_range: [50, 120]  # Index
+      avg_delay_days: 10  # Preliminar disponible ~día 10
 
     notes:
-      - "Versión preliminar ~día 10"
-      - "Versión final ~día 20-23"
-      - "Usar versión final para consistencia"
+      - "Versión preliminar ~día 10 (2do viernes)"
+      - "Versión final ~día 24 (4to viernes)"
+      - "FRED tiene 1 mes de delay adicional"
+      - "Valor actual (Ene 2026): 56.4"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # PCE INFLATION - (~día 22) - MÁXIMO DELAY
@@ -251,16 +379,34 @@ usa_monthly:
     frequency: monthly
 
     publication:
-      day_range: [20, 25]
-      typical_day: 22
+      day_range: [20, 30]
+      typical_day: 27
       time: "08:30:00"
       timezone: US/Eastern
-      month_lag: 2  # ⚠️ CASI 2 MESES
+      month_lag: 2  # ⚠️ CASI 2 MESES DE LAG
+
+    # Fechas oficiales BEA 2026 (fuente: bea.gov/news/schedule)
+    # CRÍTICO: Enero publica datos de NOVIEMBRE (2 meses de lag!)
+    # Nota: Algunas fechas fueron reprogramadas post-shutdown
+    official_dates_2026:
+      - "2026-01-22"  # Dato Oct+Nov 2025 (combinado post-shutdown)
+      - "2026-02-20"  # Dato Dic 2025
+      - "2026-03-13"  # Dato Ene 2026 (reprogramado de Feb 26)
+      - "2026-04-09"  # Dato Feb 2026 (reprogramado de Apr 30)
+      - "2026-05-28"  # Dato Mar 2026
+      - "2026-06-25"  # Dato Abr 2026
+      - "2026-07-30"  # Dato May 2026
+      - "2026-08-26"  # Dato Jun 2026
+      - "2026-09-30"  # Dato Jul 2026
+      - "2026-10-29"  # Dato Ago 2026
+      - "2026-11-25"  # Dato Sep 2026
+      - "2026-12-23"  # Dato Oct 2026
 
     source:
       agency: "Bureau of Economic Analysis (BEA)"
       release_name: "Personal Income and Outlays"
       url: "https://www.bea.gov/data/income-saving/personal-income"
+      calendar_url: "https://www.bea.gov/news/schedule"
 
     integration:
       investing_calendar_id: 905
@@ -269,15 +415,17 @@ usa_monthly:
       priority: CRITICAL
       leakage_risk: CRITICAL
       expected_range: [80, 150]  # Index
+      avg_delay_days: 52
 
     critical_warnings:
       - "⚠️⚠️⚠️ MAYOR DELAY DE TODAS: ~50-55 días"
-      - "⚠️ Dato Nov 2025 publicado 22 Ene 2026"
-      - "⚠️ ALTO RIESGO de data leakage"
+      - "⚠️ Enero publica datos de Noviembre (2 meses atrás)"
+      - "⚠️ ALTO RIESGO de data leakage si no se maneja bien"
 
     notes:
-      - "Indicador FAVORITO de la Fed"
-      - "Considerar si delay justifica inclusión"
+      - "Indicador FAVORITO de la Fed para decisiones de política"
+      - "Calendario 2026 afectado por shutdown gobierno"
+      - "Considerar si delay justifica inclusión en features"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # M2 MONEY SUPPLY - (~día 25) - ÚLTIMO EN PUBLICARSE
@@ -290,16 +438,34 @@ usa_monthly:
     frequency: monthly
 
     publication:
-      day_range: [23, 27]
-      typical_day: 25
-      time: "16:30:00"  # POST-MARKET
+      day_range: [22, 28]
+      typical_day: 24
+      time: "13:00:00"  # 1:00 PM ET
       timezone: US/Eastern
       month_lag: 1
+
+    # Fechas oficiales Federal Reserve 2026 (fuente: federalreserve.gov/releases/h6/)
+    # Patrón: Cuarto martes del mes, 1:00 PM ET
+    # IMPORTANTE: Enero publica datos de Diciembre (1 mes de lag)
+    official_dates_2026:
+      - "2026-01-27"  # Dato Dic 2025
+      - "2026-02-24"  # Dato Ene 2026
+      - "2026-03-24"  # Dato Feb 2026
+      - "2026-04-28"  # Dato Mar 2026
+      - "2026-05-26"  # Dato Abr 2026
+      - "2026-06-23"  # Dato May 2026
+      - "2026-07-28"  # Dato Jun 2026
+      - "2026-08-25"  # Dato Jul 2026
+      - "2026-09-22"  # Dato Ago 2026
+      - "2026-10-27"  # Dato Sep 2026
+      - "2026-11-24"  # Dato Oct 2026
+      - "2026-12-22"  # Dato Nov 2026
 
     source:
       agency: "Federal Reserve Board"
       release_name: "Money Stock Measures (H.6)"
       url: "https://www.federalreserve.gov/releases/h6/"
+      calendar_url: "https://www.federalreserve.gov/releases/h6/current/default.htm"
 
     integration:
       investing_calendar_id: null
@@ -308,14 +474,16 @@ usa_monthly:
       priority: MEDIUM
       leakage_risk: HIGH
       expected_range: [15000, 25000]  # Billions USD
+      avg_delay_days: 24
 
     critical_warnings:
-      - "⚠️⚠️ ÚLTIMA serie mensual en publicarse"
-      - "⚠️ Día 23-27 del mes siguiente"
-      - "⚠️ Hora tardía: 16:30 (post-market)"
+      - "⚠️⚠️ ÚLTIMA serie mensual FRED en publicarse"
+      - "⚠️ Cuarto martes del mes siguiente"
+      - "⚠️ ~24 días de delay"
 
     notes:
-      - "Considerar si delay justifica inclusión"
+      - "Patrón: 4to martes del mes"
+      - "Considerar si delay justifica inclusión en features"
 
 # =============================================================================
 # COLOMBIA MONTHLY VARIABLES
@@ -335,11 +503,29 @@ colombia_monthly:
     frequency: monthly
 
     publication:
-      day_range: [5, 8]
-      typical_day: 5
-      time: "08:00:00"
+      day_range: [5, 10]
+      typical_day: 8
+      time: "18:00:00"  # 6:00 PM hora Colombia
       timezone: America/Bogota
       month_lag: 1
+      release_pattern: "5to día hábil del mes"
+
+    # Fechas oficiales DANE 2026 (fuente: dane.gov.co/calendario)
+    # IMPORTANTE: Enero publica datos de Diciembre (1 mes de lag)
+    # Regla: 5to día HÁBIL del mes → puede caer entre día 5-10
+    official_dates_2026:
+      - "2026-01-08"  # Dato Dic 2025 (jueves 8, 5to día hábil)
+      - "2026-02-06"  # Dato Ene 2026
+      - "2026-03-06"  # Dato Feb 2026
+      - "2026-04-08"  # Dato Mar 2026
+      - "2026-05-07"  # Dato Abr 2026
+      - "2026-06-05"  # Dato May 2026
+      - "2026-07-08"  # Dato Jun 2026
+      - "2026-08-07"  # Dato Jul 2026
+      - "2026-09-08"  # Dato Ago 2026
+      - "2026-10-07"  # Dato Sep 2026
+      - "2026-11-06"  # Dato Oct 2026
+      - "2026-12-08"  # Dato Nov 2026
 
     source:
       agency: "DANE"
@@ -347,15 +533,22 @@ colombia_monthly:
       serie_id: "100002"
       release_name: "Índice de Precios al Consumidor"
       url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc"
+      calendar_url: "https://www.dane.gov.co/index.php/calendario"
+
+    integration:
+      investing_calendar_id: 494
+      investing_calendar_url: "https://www.investing.com/economic-calendar/colombia-consumer-price-index-(cpi)-yoy-494"
 
     validation:
       priority: HIGH
       leakage_risk: LOW
       expected_range: [50, 300]  # Index
+      avg_delay_days: 8
 
     notes:
       - "PRIMERA variable Colombia en publicarse"
-      - "Solo 5 días de delay"
+      - "5to día HÁBIL del mes (puede ser día 5-10)"
+      - "Hora: 6:00 PM (rueda de prensa DANE)"
       - "Fuente oficial: DANE"
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -374,26 +567,34 @@ colombia_monthly:
       timezone: America/Bogota
       month_lag: 1
 
+    # Nota: BanRep no publica calendario exacto de reservas mensuales
+    # Los datos se actualizan en SUAMECA típicamente primera semana del mes
+    # El informe completo (bienal) tiene otra periodicidad
+
     source:
       agency: "Banco de la República"
       source_scraper: banrep
       serie_id: "15051"
       release_name: "Reservas Internacionales"
       url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/15051/reservas_internacionales"
+      main_page: "https://www.banrep.gov.co/es/estadisticas/reservas-internacionales-del-banco-republica"
 
     validation:
       priority: MEDIUM
       leakage_risk: LOW
       expected_range: [40000, 80000]  # Millones USD
+      avg_delay_days: 8
 
     notes:
-      - "Publicación temprana"
+      - "Publicación temprana (~día 5-10)"
+      - "Datos actualizados en SUAMECA"
+      - "Informe detallado: bienal"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # ITCR - (~día 10)
   # ═══════════════════════════════════════════════════════════════════════════
   fxrt_reer_bilateral_col_m_itcr:
-    name: "Índice de Tasa de Cambio Real (ITCR)"
+    name: "Índice de Tasa de Cambio Real (ITCR) - Ponderaciones Totales"
     db_column: fxrt_reer_bilateral_col_m_itcr
     category: fx_index
     frequency: monthly
@@ -405,20 +606,60 @@ colombia_monthly:
       timezone: America/Bogota
       month_lag: 1
 
+    # Nota: BanRep actualiza ITCR en SUAMECA ~día 10 del mes
+    # No hay calendario público de fechas exactas
+
     source:
       agency: "Banco de la República"
       source_scraper: banrep
-      serie_id: "4170"
+      serie_id: "234"
+      method: graficador
       release_name: "Índice de Tasa de Cambio Real"
-      url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4170/indice_tasa_cambio_real_itcr"
+      url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/234"
+      url_fallback: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4170/indice_tasa_cambio_real_itcr"
+      main_page: "https://www.banrep.gov.co/es/estadisticas/indice-tasa-cambio-real-itcr"
 
     validation:
       priority: MEDIUM
       leakage_risk: LOW
       expected_range: [80, 150]  # Index
+      avg_delay_days: 10
 
     notes:
       - "Índice de competitividad cambiaria"
+      - "Ponderaciones totales (todos los socios comerciales)"
+      - "18 países en la canasta"
+
+  fxrt_reer_bilateral_usa_col_m_itcr_usa:
+    name: "Índice de Tasa de Cambio Real (ITCR) - Bilateral USA"
+    db_column: fxrt_reer_bilateral_usa_col_m_itcr_usa
+    category: fx_index
+    frequency: monthly
+
+    publication:
+      day_range: [8, 12]
+      typical_day: 10
+      time: "09:00:00"
+      timezone: America/Bogota
+      month_lag: 1
+      simultaneous_with: fxrt_reer_bilateral_col_m_itcr
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep
+      serie_id: "219"
+      method: graficador
+      release_name: "Índice de Tasa de Cambio Real Bilateral"
+      url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/219"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: LOW
+      expected_range: [80, 200]  # Index
+
+    notes:
+      - "ITCR bilateral Colombia vs Estados Unidos"
+      - "Importante para analizar competitividad frente al principal socio comercial"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # TÉRMINOS DE INTERCAMBIO - (~día 12)
@@ -461,29 +702,51 @@ colombia_monthly:
     frequency: monthly
 
     publication:
-      day_range: [15, 20]
-      typical_day: 18
+      day_range: [12, 16]
+      typical_day: 13
       time: "09:00:00"
       timezone: America/Bogota
       month_lag: 1
 
+    # Fechas ESTIMADAS Fedesarrollo 2026 (basado en patrón histórico)
+    # Patrón observado: ~12-14 del mes siguiente
+    # Oct 2025 → 12 Nov, Jul 2025 → 13 Ago, Dic 2025 → 14 Ene
+    official_dates_2026:
+      - "2026-01-14"  # Dato Dic 2025
+      - "2026-02-13"  # Dato Ene 2026
+      - "2026-03-12"  # Dato Feb 2026
+      - "2026-04-14"  # Dato Mar 2026
+      - "2026-05-13"  # Dato Abr 2026
+      - "2026-06-12"  # Dato May 2026
+      - "2026-07-14"  # Dato Jun 2026
+      - "2026-08-13"  # Dato Jul 2026
+      - "2026-09-14"  # Dato Ago 2026
+      - "2026-10-13"  # Dato Sep 2026
+      - "2026-11-12"  # Dato Oct 2026
+      - "2026-12-14"  # Dato Nov 2026
+
     source:
       agency: "Fedesarrollo"
       source_scraper: fedesarrollo
-      release_name: "Encuesta de Opinión del Consumidor"
+      release_name: "Encuesta de Opinión del Consumidor (EOC)"
       url: "https://www.fedesarrollo.org.co/encuestas/consumidor"
+      calendar_url: "https://www.fedesarrollo.org.co/es/encuestas/consumidor-eoc"
+      methodology: "Basado en encuesta U. Michigan"
 
     validation:
       priority: MEDIUM
       leakage_risk: MEDIUM
       expected_range: [-50, 50]  # Index (puede ser negativo)
+      avg_delay_days: 13
 
     notes:
       - "Índice de sentimiento del consumidor"
       - "Puede ser negativo (pesimismo)"
+      - "Valor Dic 2025: 19.9% (máximo histórico reciente)"
+      - "Cubre 5 ciudades: Bogotá, Medellín, Cali, Barranquilla, Bucaramanga"
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # CONFIANZA INDUSTRIAL - (~día 18)
+  # CONFIANZA INDUSTRIAL - (~día 13, junto con CCI)
   # ═══════════════════════════════════════════════════════════════════════════
   crsk_sentiment_ici_col_m_ici:
     name: "Índice de Confianza Industrial Colombia"
@@ -492,28 +755,48 @@ colombia_monthly:
     frequency: monthly
 
     publication:
-      day_range: [15, 20]
-      typical_day: 18
+      day_range: [12, 16]
+      typical_day: 13
       time: "09:00:00"
       timezone: America/Bogota
       month_lag: 1
+      simultaneous_with: crsk_sentiment_cci_col_m_cci
+
+    # Mismas fechas que CCI (publicación simultánea EOE)
+    official_dates_2026:
+      - "2026-01-14"  # Dato Dic 2025
+      - "2026-02-13"  # Dato Ene 2026
+      - "2026-03-12"  # Dato Feb 2026
+      - "2026-04-14"  # Dato Mar 2026
+      - "2026-05-13"  # Dato Abr 2026
+      - "2026-06-12"  # Dato May 2026
+      - "2026-07-14"  # Dato Jun 2026
+      - "2026-08-13"  # Dato Jul 2026
+      - "2026-09-14"  # Dato Ago 2026
+      - "2026-10-13"  # Dato Sep 2026
+      - "2026-11-12"  # Dato Oct 2026
+      - "2026-12-14"  # Dato Nov 2026
 
     source:
       agency: "Fedesarrollo"
       source_scraper: fedesarrollo
-      release_name: "Encuesta de Opinión Empresarial"
+      release_name: "Encuesta de Opinión Empresarial (EOE)"
       url: "https://www.fedesarrollo.org.co/encuestas/industria"
+      calendar_url: "https://www.fedesarrollo.org.co/es/encuestas/empresarial-eoe"
 
     validation:
       priority: MEDIUM
       leakage_risk: MEDIUM
       expected_range: [-30, 30]  # Index
+      avg_delay_days: 13
 
     notes:
-      - "Publicado junto con CCI"
+      - "Publicado junto con CCI (EOC)"
+      - "Encuesta Opinión Empresarial"
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # EXPORTACIONES - MÁXIMO DELAY (~día 45)
+  # EXPORTACIONES - (~día 3-8 del mes, ~34 días delay)
+  # Fuente Oficial: https://www.dane.gov.co/index.php/calendario
   # ═══════════════════════════════════════════════════════════════════════════
   ftrd_exports_total_col_m_expusd:
     name: "Exportaciones Totales Colombia"
@@ -522,32 +805,48 @@ colombia_monthly:
     frequency: monthly
 
     publication:
-      day_range: [40, 50]
-      typical_day: 45
-      time: "09:00:00"
+      day_range: [1, 8]
+      typical_day: 4
+      time: "10:00:00"
       timezone: America/Bogota
-      month_lag: 2  # ⚠️ CASI 2 MESES
+      month_lag: 2  # Dato de mes-2
+
+    # Fechas oficiales DANE 2026 (fuente: calendario.dane.gov.co)
+    official_dates_2026:
+      - "2026-01-07"  # Dato Nov 2025
+      - "2026-02-03"  # Dato Dic 2025
+      - "2026-03-03"  # Dato Ene 2026
+      - "2026-04-01"  # Dato Feb 2026
+      - "2026-05-05"  # Dato Mar 2026
+      - "2026-06-03"  # Dato Abr 2026
+      - "2026-07-08"  # Dato May 2026
+      - "2026-08-04"  # Dato Jun 2026
+      - "2026-09-03"  # Dato Jul 2026
+      - "2026-10-05"  # Dato Ago 2026
+      - "2026-11-04"  # Dato Sep 2026
+      - "2026-12-03"  # Dato Oct 2026
 
     source:
       agency: "DANE"
       source_scraper: dane
-      release_name: "Balanza Comercial"
+      release_name: "Exportaciones"
       url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/exportaciones"
+      calendar_url: "https://www.dane.gov.co/index.php/calendario"
 
     validation:
       priority: MEDIUM
-      leakage_risk: HIGH
+      leakage_risk: MEDIUM
       expected_range: [2000, 8000]  # Millones USD
-
-    critical_warnings:
-      - "⚠️⚠️ MÁXIMO DELAY Colombia: ~45 días"
-      - "⚠️ Alto riesgo de data leakage"
+      avg_delay_days: 34
 
     notes:
-      - "Dato preliminar, puede ser revisado"
+      - "Publicación primera semana del mes"
+      - "Delay promedio: ~34 días"
+      - "Publicado ANTES que importaciones"
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # IMPORTACIONES - MÁXIMO DELAY (~día 45)
+  # IMPORTACIONES - (~día 17-22 del mes, ~50 días delay)
+  # Fuente Oficial: https://www.dane.gov.co/index.php/calendario
   # ═══════════════════════════════════════════════════════════════════════════
   ftrd_imports_total_col_m_impusd:
     name: "Importaciones Totales Colombia"
@@ -556,26 +855,47 @@ colombia_monthly:
     frequency: monthly
 
     publication:
-      day_range: [40, 50]
-      typical_day: 45
-      time: "09:00:00"
+      day_range: [17, 22]
+      typical_day: 20
+      time: "10:00:00"
       timezone: America/Bogota
-      month_lag: 2
+      month_lag: 2  # Dato de mes-2
+
+    # Fechas oficiales DANE 2026 (fuente: calendario.dane.gov.co)
+    official_dates_2026:
+      - "2026-01-22"  # Dato Nov 2025
+      - "2026-02-17"  # Dato Dic 2025
+      - "2026-03-19"  # Dato Ene 2026
+      - "2026-04-21"  # Dato Feb 2026
+      - "2026-05-19"  # Dato Mar 2026
+      - "2026-06-22"  # Dato Abr 2026
+      - "2026-07-21"  # Dato May 2026
+      - "2026-08-19"  # Dato Jun 2026
+      - "2026-09-21"  # Dato Jul 2026
+      - "2026-10-21"  # Dato Ago 2026
+      - "2026-11-18"  # Dato Sep 2026
+      - "2026-12-22"  # Dato Oct 2026
 
     source:
       agency: "DANE"
       source_scraper: dane
-      release_name: "Balanza Comercial"
+      release_name: "Importaciones"
       url: "https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/importaciones"
+      calendar_url: "https://www.dane.gov.co/index.php/calendario"
 
     validation:
       priority: MEDIUM
       leakage_risk: HIGH
       expected_range: [3000, 10000]  # Millones USD
+      avg_delay_days: 50
 
     critical_warnings:
-      - "⚠️⚠️ MÁXIMO DELAY Colombia: ~45 días"
-      - "⚠️ Publicado junto con exportaciones"
+      - "⚠️⚠️ MAYOR DELAY Colombia: ~50 días"
+      - "⚠️ Alto riesgo de data leakage"
+
+    notes:
+      - "Publicación tercera semana del mes"
+      - "~16 días DESPUÉS de exportaciones"
 
 # =============================================================================
 # QUARTERLY VARIABLES
@@ -596,17 +916,72 @@ quarterly:
     publication:
       # Q4 data (Oct-Dec) published late January
       # Q1 data (Jan-Mar) published late April
-      day_range: [25, 30]
+      day_range: [20, 30]
       typical_day: 27
       time: "08:30:00"
       timezone: US/Eastern
       quarter_lag: 1  # Trimestre siguiente
       releases_per_quarter: 3  # Advance, Second, Third
 
+    # Fechas oficiales BEA 2026 (fuente: bea.gov/news/schedule)
+    # CRÍTICO: Q3 2025 (Jul-Sep) publicado el 22 Ene 2026 (1 trimestre de lag)
+    # Patrón: Advance ~30 días, Second ~60 días, Third ~90 días después del trimestre
+    official_dates_2026:
+      # Q3 2025 (Updated - como Third estimate)
+      - release: "2026-01-22"
+        data_period: "Q3 2025"
+        estimate: "updated"
+        value_billions: 31098.03
+
+      # Q4 2025 releases
+      - release: "2026-02-20"  # Nota: puede ser reprogramado
+        data_period: "Q4 2025"
+        estimate: "advance"
+      - release: "2026-03-26"
+        data_period: "Q4 2025"
+        estimate: "second"
+      - release: "2026-04-29"
+        data_period: "Q4 2025"
+        estimate: "third"
+
+      # Q1 2026 releases
+      - release: "2026-04-29"
+        data_period: "Q1 2026"
+        estimate: "advance"
+      - release: "2026-05-27"
+        data_period: "Q1 2026"
+        estimate: "second"
+      - release: "2026-06-25"
+        data_period: "Q1 2026"
+        estimate: "third"
+
+      # Q2 2026 releases
+      - release: "2026-07-29"
+        data_period: "Q2 2026"
+        estimate: "advance"
+      - release: "2026-08-26"
+        data_period: "Q2 2026"
+        estimate: "second"
+      - release: "2026-09-30"
+        data_period: "Q2 2026"
+        estimate: "third"
+
+      # Q3 2026 releases
+      - release: "2026-10-28"
+        data_period: "Q3 2026"
+        estimate: "advance"
+      - release: "2026-11-25"
+        data_period: "Q3 2026"
+        estimate: "second"
+      - release: "2026-12-22"
+        data_period: "Q3 2026"
+        estimate: "third"
+
     source:
       agency: "Bureau of Economic Analysis (BEA)"
       release_name: "Gross Domestic Product"
       url: "https://www.bea.gov/data/gdp/gross-domestic-product"
+      calendar_url: "https://www.bea.gov/news/schedule"
 
     integration:
       investing_calendar_id: 375
@@ -614,12 +989,16 @@ quarterly:
     validation:
       priority: HIGH
       leakage_risk: MEDIUM
-      expected_range: [15000, 30000]  # Billions USD
+      expected_range: [25000, 35000]  # Billions USD (actualizado 2026)
+      avg_delay_days_advance: 30
+      avg_delay_days_third: 90
 
     notes:
-      - "3 releases: Advance (~30 días), Second (~60 días), Third (~90 días)"
-      - "Usar Advance para menor delay"
-      - "Revisiones pueden ser significativas"
+      - "3 releases por trimestre: Advance (~30 días), Second (~60 días), Third (~90 días)"
+      - "Usar Advance para menor delay en features"
+      - "Revisiones entre estimates pueden ser significativas"
+      - "Valor actual Q3 2025: $31,098.03 billions"
+      - "Calendario 2026 afectado por shutdown gobierno"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # CUENTA CORRIENTE COLOMBIA - (~90 días después del trimestre)
@@ -638,30 +1017,197 @@ quarterly:
       quarter_lag: 1
       days_after_quarter: 90  # ~3 meses después
 
+    # Fechas ESTIMADAS BanRep 2026 (basado en patrón ~90 días después del trimestre)
+    # Q3 2025 (Jul-Sep) → publicado Dic 2025
+    # Q4 2025 (Oct-Dic) → ~Mar 2026
+    official_dates_2026:
+      - release: "2026-03-15"
+        data_period: "Q4 2025"
+        note: "Estimado ~90 días después"
+      - release: "2026-06-15"
+        data_period: "Q1 2026"
+      - release: "2026-09-15"
+        data_period: "Q2 2026"
+      - release: "2026-12-15"
+        data_period: "Q3 2026"
+
     source:
       agency: "Banco de la República"
       source_scraper: banrep_bop
       release_name: "Balanza de Pagos"
       url: "https://www.banrep.gov.co/es/estadisticas/balanza-pagos"
+      calendar_url: "https://www.banrep.gov.co/es/contenidos/informe-balanza-pagos"
 
     validation:
       priority: MEDIUM
       leakage_risk: HIGH
       expected_range: [-20000, 5000]  # Millones USD (puede ser negativo)
+      avg_delay_days: 90
 
     critical_warnings:
-      - "⚠️⚠️ MÁXIMO DELAY: ~90 días"
-      - "⚠️ Dato Q3-2025 publicado ~Dic 2025"
+      - "⚠️⚠️ MÁXIMO DELAY: ~90 días (3 meses)"
+      - "⚠️ Q3 2025: Déficit USD 2,853M (2.4% PIB)"
 
     notes:
       - "Puede ser negativo (déficit)"
-      - "Delay muy largo - considerar utilidad"
+      - "Delay muy largo - considerar utilidad para trading"
+      - "Publicado junto con FDI (misma fecha)"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FDI INFLOWS COLOMBIA - (~90 días después del trimestre)
+  # ═══════════════════════════════════════════════════════════════════════════
+  rsbp_fdi_inflow_col_q_fdiin:
+    name: "FDI Inflows Colombia"
+    db_column: rsbp_fdi_inflow_col_q_fdiin
+    category: balance_of_payments
+    frequency: quarterly
+
+    publication:
+      day_range: [85, 95]
+      typical_day: 90
+      time: "09:00:00"
+      timezone: America/Bogota
+      quarter_lag: 1
+      days_after_quarter: 90  # ~3 meses después
+      simultaneous_with: rsbp_current_account_col_q_cacct
+
+    # Mismas fechas que Cuenta Corriente (publicación simultánea)
+    official_dates_2026:
+      - release: "2026-03-15"
+        data_period: "Q4 2025"
+      - release: "2026-06-15"
+        data_period: "Q1 2026"
+      - release: "2026-09-15"
+        data_period: "Q2 2026"
+      - release: "2026-12-15"
+        data_period: "Q3 2026"
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep_bop
+      release_name: "Balanza de Pagos - Cuenta Financiera"
+      url: "https://www.banrep.gov.co/es/estadisticas/balanza-pagos"
+      suameca_url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15133"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [500, 8000]  # Millones USD
+      avg_delay_days: 90
+
+    critical_warnings:
+      - "⚠️⚠️ MÁXIMO DELAY: ~90 días"
+      - "⚠️ Publicado junto con Balanza de Pagos"
+
+    notes:
+      - "Inversión Extranjera Directa entrante"
+      - "Componente de Cuenta Financiera"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FDI OUTFLOWS COLOMBIA - (~90 días después del trimestre)
+  # ═══════════════════════════════════════════════════════════════════════════
+  rsbp_fdi_outflow_col_q_fdiout:
+    name: "FDI Outflows Colombia"
+    db_column: rsbp_fdi_outflow_col_q_fdiout
+    category: balance_of_payments
+    frequency: quarterly
+
+    publication:
+      day_range: [85, 95]
+      typical_day: 90
+      time: "09:00:00"
+      timezone: America/Bogota
+      quarter_lag: 1
+      days_after_quarter: 90  # ~3 meses después
+      simultaneous_with: rsbp_current_account_col_q_cacct
+
+    # Mismas fechas que Cuenta Corriente (publicación simultánea)
+    official_dates_2026:
+      - release: "2026-03-15"
+        data_period: "Q4 2025"
+      - release: "2026-06-15"
+        data_period: "Q1 2026"
+      - release: "2026-09-15"
+        data_period: "Q2 2026"
+      - release: "2026-12-15"
+        data_period: "Q3 2026"
+
+    source:
+      agency: "Banco de la República"
+      source_scraper: banrep_bop
+      release_name: "Balanza de Pagos - Cuenta Financiera"
+      url: "https://www.banrep.gov.co/es/estadisticas/balanza-pagos"
+      suameca_url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15134"
+
+    validation:
+      priority: MEDIUM
+      leakage_risk: HIGH
+      expected_range: [-500, 3000]  # Millones USD (puede ser negativo)
+      avg_delay_days: 90
+
+    critical_warnings:
+      - "⚠️⚠️ MÁXIMO DELAY: ~90 días"
+      - "⚠️ Publicado junto con Balanza de Pagos"
+
+    notes:
+      - "Inversión Extranjera Directa saliente"
+      - "Puede ser negativo (desinversión)"
+
+# =============================================================================
+# BANCO DE LA REPÚBLICA - DECISIONES DE POLÍTICA MONETARIA 2026
+# =============================================================================
+# Fuente oficial: https://www.banrep.gov.co/es/calendario-eventos
+# Las reuniones de la Junta Directiva (JDBR) determinan la tasa de intervención
+
+banrep_policy_meetings_2026:
+  # Reuniones CON decisión de tasa de interés
+  rate_decisions:
+    - date: "2026-01-30"
+      decision: "Incremento 100 pbs a 10.25%"
+      minutes_date: "2026-02-04"
+    - date: "2026-03-31"
+      minutes_date: "2026-04-07"
+    - date: "2026-04-30"
+      minutes_date: "2026-05-06"
+    - date: "2026-06-30"
+      minutes_date: "2026-07-03"
+    - date: "2026-07-31"
+      minutes_date: "2026-08-05"
+    - date: "2026-09-30"
+      minutes_date: "2026-10-05"
+    - date: "2026-10-30"
+      minutes_date: "2026-11-05"
+    - date: "2026-12-18"
+      minutes_date: "2026-12-23"
+
+  # Reuniones SIN decisión de tasa
+  ordinary_meetings:
+    - "2026-02-27"
+    - "2026-05-29"
+    - "2026-08-31"
+    - "2026-11-30"
+
+  current_rate: 10.25  # % (al 30 Ene 2026)
+  source: "https://www.banrep.gov.co/es/calendario-eventos"
 
 # =============================================================================
 # GLOBAL RULES
 # =============================================================================
 
 global_rules:
+
+  # Límites máximos de forward-fill por frecuencia de datos target
+  # Previene propagación infinita de datos stale
+  ffill_limits:
+    daily_bars:
+      monthly_data: 22      # ~1 mes de días trading
+      quarterly_data: 66    # ~3 meses de días trading
+    minutes_5:
+      monthly_data: 1440    # ~1 mes (30 días x 48 barras/día)
+      quarterly_data: 4320  # ~3 meses
+    hourly:
+      monthly_data: 176     # ~1 mes (22 días x 8 horas)
+      quarterly_data: 528   # ~3 meses
 
   # Offsets por defecto si no hay calendario específico
   default_offsets:
@@ -697,6 +1243,8 @@ global_rules:
       - ftrd_exports_total_col_m_expusd
       - ftrd_imports_total_col_m_impusd
       - rsbp_current_account_col_q_cacct
+      - rsbp_fdi_inflow_col_q_fdiin
+      - rsbp_fdi_outflow_col_q_fdiout
     LOW:
       - fxrt_reer_bilateral_col_m_itcr
       - ftrd_terms_trade_col_m_tot
@@ -706,28 +1254,39 @@ global_rules:
 # RESUMEN DE DELAYS (ordenado de menor a mayor)
 # =============================================================================
 #
+# FUENTES OFICIALES CONSULTADAS:
+#   - BLS: https://www.bls.gov/schedule/2026/home.htm
+#   - BEA: https://www.bea.gov/news/schedule
+#   - Federal Reserve: https://www.federalreserve.gov/newsevents/calendar.htm
+#   - U. Michigan: https://data.sca.isr.umich.edu/survey-info.php
+#   - DANE: https://www.dane.gov.co/index.php/calendario
+#
 # MENOR DELAY (5-10 días):
-#   - labr_unemployment_usa_m_unrate: ~7 días
-#   - infl_cpi_total_col_m_ipccol: ~5 días
-#   - rsbp_reserves_international_col_m_resint: ~8 días
+#   - infl_cpi_total_col_m_ipccol: ~5 días (DANE)
+#   - labr_unemployment_usa_m_unrate: ~7 días (BLS - 1er viernes)
+#   - rsbp_reserves_international_col_m_resint: ~8 días (BanRep)
+#   - sent_consumer_usa_m_umcsent: ~10 días (U.Michigan - preliminar)
 #
 # DELAY MEDIO (10-20 días):
-#   - infl_cpi_all_usa_m_cpiaucsl: ~13 días
-#   - infl_cpi_core_usa_m_cpilfesl: ~13 días
-#   - prod_industrial_usa_m_indpro: ~16 días
-#   - polr_fed_funds_usa_m_fedfunds: ~18 días
-#   - crsk_sentiment_cci_col_m_cci: ~18 días
-#   - crsk_sentiment_ici_col_m_ici: ~18 días
+#   - infl_cpi_all_usa_m_cpiaucsl: ~13 días (BLS)
+#   - infl_cpi_core_usa_m_cpilfesl: ~13 días (BLS)
+#   - prod_industrial_usa_m_indpro: ~16 días (Fed - G.17)
+#   - crsk_sentiment_cci_col_m_cci: ~18 días (Fedesarrollo)
+#   - crsk_sentiment_ici_col_m_ici: ~18 días (Fedesarrollo)
 #
 # DELAY ALTO (20-30 días):
-#   - sent_consumer_usa_m_umcsent: ~21 días
-#   - mnys_m2_supply_usa_m_m2sl: ~25 días
-#   - gdpp_real_gdp_usa_q_gdp_q: ~27 días (advance)
+#   - mnys_m2_supply_usa_m_m2sl: ~24 días (Fed - H.6, 4to martes)
+#   - gdpp_real_gdp_usa_q_gdp_q: ~27 días (BEA - advance estimate)
 #
-# DELAY CRÍTICO (45+ días):
-#   - ftrd_exports_total_col_m_expusd: ~45 días
-#   - ftrd_imports_total_col_m_impusd: ~45 días
-#   - infl_pce_usa_m_pcepi: ~52 días ⚠️⚠️⚠️
-#   - rsbp_current_account_col_q_cacct: ~90 días ⚠️⚠️⚠️
+# DELAY CRÍTICO (34+ días) - ⚠️ ALTO RIESGO DATA LEAKAGE:
+#   - ftrd_exports_total_col_m_expusd: ~34 días (DANE - 2 meses lag)
+#   - ftrd_imports_total_col_m_impusd: ~50 días (DANE - 2 meses lag)
+#   - infl_pce_usa_m_pcepi: ~52 días (BEA - 2 meses lag) ⚠️⚠️⚠️
+#   - rsbp_current_account_col_q_cacct: ~90 días (BanRep) ⚠️⚠️⚠️
+#
+# REGLA ANTI-LEAKAGE:
+#   - Enero publica Nov = 2 meses de lag → usar month_lag: 2
+#   - Para GDP: Usar advance estimate (30 días) o third (90 días)
+#   - Forward-fill NO debe exceder el próximo release date
 #
 # =============================================================================

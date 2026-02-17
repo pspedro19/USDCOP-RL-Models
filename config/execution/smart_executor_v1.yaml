@@ -1,0 +1,60 @@
+# =============================================================================
+# Smart Executor Config: V1
+# =============================================================================
+#
+# Frozen config for the Smart Executor (trailing stop intraday execution).
+# Derived from Phase 1 backtest (FC-EXEC-001) validated on 2023-2025 data.
+#
+# SSOT Contract: SMART-EXECUTOR-V1
+# Version: 1.0.0
+# =============================================================================
+
+executor:
+  name: "smart_executor_v1"
+  version: "1.1.0"
+  description: "Trailing stop intraday execution for daily forecasting signals"
+  created_at: "2026-02-15"
+  status: "active"
+
+# Direction filter — regime-aware position gating
+# Set after 2026 regime analysis: LONG DA=28%, SHORT DA=56% (p=0.0014 vs 2025)
+direction_filter:
+  mode: "short_only"           # "all" | "short_only" | "long_only"
+  activated_at: "2026-02-15"
+  reason: "2026 regime change: LONG WR 27.8% (5/18), hard stop rate 6x vs 2025 (p=0.0014)"
+  review_at: "2026-03-15"      # Day 60 checkpoint — reassess LONG DA
+
+trailing_stop:
+  activation_pct: 0.002   # 0.20% favorable move to arm the trail
+  trail_pct: 0.003         # 0.30% drawback from peak triggers exit
+  hard_stop_pct: 0.015     # 1.50% adverse move = unconditional exit
+
+broker:
+  mode: "paper"
+  slippage_bps: 1.0        # matches MEXC assumption from pipeline_ssot
+
+session:
+  timezone: "America/Bogota"
+  start_hour: 8
+  end_hour: 12
+  end_minute: 55
+  bars_per_session: 60      # 5h / 5min = 60 bars
+  bar_interval_minutes: 5
+
+entry:
+  trigger_after_l5c: true
+  entry_price_source: "daily_close"  # enter at close of signal day (T)
+
+monitor:
+  schedule_cron: "*/5 13-17 * * 1-5"  # UTC = 8:00-12:55 COT
+  source_table: "usdcop_m5_ohlcv"
+  source_symbol: "USD/COP"
+
+# Phase 1 backtest reference (FC-EXEC-001, 2023-2025)
+backtest_reference:
+  improvement_pp: 51.5       # trailing > hold by 51.5 pp total
+  sharpe_trail: 3.03
+  sharpe_hold: 2.06
+  activation_rate_pct: 46.2
+  max_dd_ratio: 0.825        # trail MaxDD / hold MaxDD
+  p_value_paired_t: 0.035

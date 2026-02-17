@@ -1,0 +1,26 @@
+{
+  "start_time": "2026-02-02T01:39:47.260530",
+  "timesteps": 100000,
+  "l2": null,
+  "l3": null,
+  "l4": {
+    "mean_reward": -1.9852720211252817,
+    "std_reward": 0.9824345600178124,
+    "total_trades": 0,
+    "winning_trades": 0,
+    "win_rate": 0.0,
+    "total_return": -1.9852720211252817,
+    "action_distribution": {
+      "long": 18.419375398342893,
+      "hold": 7.903123008285533,
+      "short": 73.67750159337157
+    },
+    "test_rows": 12714,
+    "episodes": 5,
+    "avg_episode_length": 313.8,
+    "passed": true
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T01:39:58.101898",
+  "duration_seconds": 10.841367959976196
+}

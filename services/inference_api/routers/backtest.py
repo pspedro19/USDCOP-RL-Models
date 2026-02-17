@@ -307,6 +307,521 @@ async def _demo_stream_generator(request: BacktestRequest, req: Request):
     logger.info(f"[INVESTOR MODE] Stream completed with {total_trades} trades in {processing_time:.0f}ms")
 
 
+@router.post("/real")
+async def run_real_backtest(
+    proposal_id: str,
+    start_date: str,
+    end_date: str,
+    req: Request
+):
+    """
+    Run REAL backtest using the same BacktestEngine as L4 validation.
+
+    This ensures metrics match between L4 validation and dashboard replay.
+    Uses the model from the proposal's lineage.
+
+    - **proposal_id**: The proposal ID to get model lineage from
+    - **start_date**: Start date (YYYY-MM-DD)
+    - **end_date**: End date (YYYY-MM-DD)
+    """
+    import json
+    import asyncpg
+    import pandas as pd
+    import numpy as np
+    from pathlib import Path
+
+    logger.info(f"[REAL BACKTEST] Running for proposal {proposal_id}: {start_date} to {end_date}")
+
+    try:
+        # Get database connection
+        from ..config import get_settings
+        settings = get_settings()
+        db_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
+
+        conn = await asyncpg.connect(db_url)
+
+        # 1. Get proposal lineage
+        row = await conn.fetchrow("""
+            SELECT model_id, lineage, metrics
+            FROM promotion_proposals
+            WHERE proposal_id = $1
+        """, proposal_id)
+
+        if not row:
+            await conn.close()
+            raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+        model_id = row['model_id']
+        lineage = row['lineage'] if isinstance(row['lineage'], dict) else json.loads(row['lineage'])
+
+        logger.info(f"[REAL BACKTEST] Model: {model_id}, Lineage: {lineage}")
+
+        await conn.close()
+
+        # 2. Load model and norm_stats
+        from stable_baselines3 import PPO
+
+        model_path = lineage.get('modelPath') or lineage.get('model_path')
+        norm_stats_path = lineage.get('normStatsPath') or lineage.get('norm_stats_path')
+
+        if not model_path:
+            model_path = f"models/{model_id}/final_model.zip"
+        if not norm_stats_path:
+            norm_stats_path = f"models/{model_id}/norm_stats.json"
+
+        # Resolve paths (inside container)
+        # Models are mounted at /models, data at /app/data
+        if model_path.startswith("models/"):
+            model_path = Path("/") / model_path  # /models/xxx
+        else:
+            model_path = Path("/app") / model_path
+
+        if norm_stats_path.startswith("models/"):
+            norm_stats_path = Path("/") / norm_stats_path
+        else:
+            norm_stats_path = Path("/app") / norm_stats_path
+
+        if not model_path.exists():
+            raise HTTPException(status_code=404, detail=f"Model not found: {model_path}")
+        if not norm_stats_path.exists():
+            raise HTTPException(status_code=404, detail=f"Norm stats not found: {norm_stats_path}")
+
+        model = PPO.load(str(model_path), device='cpu')
+        with open(norm_stats_path) as f:
+            norm_stats = json.load(f)
+
+        logger.info(f"[REAL BACKTEST] Model loaded from {model_path}")
+
+        # 3. Load val + test data (combined for complete backtest coverage)
+        # First try to get dataset_path from lineage
+        dataset_prefix = lineage.get('datasetPath') or lineage.get('dataset_path')
+
+        df = None
+        loaded_from = None
+
+        if dataset_prefix:
+            # Use lineage-specified dataset path
+            # e.g., "data/pipeline/07_output/5min/DS_production"
+            if dataset_prefix.startswith("data/"):
+                base_path = Path("/app") / dataset_prefix
+            else:
+                base_path = Path(dataset_prefix)
+
+            # Load val + test and combine
+            dfs = []
+            for split in ['val', 'test']:
+                split_path = Path(str(base_path) + f"_{split}.parquet")
+                if split_path.exists():
+                    split_df = pd.read_parquet(split_path)
+                    dfs.append(split_df)
+                    logger.info(f"[REAL BACKTEST] Loaded {split}: {len(split_df)} rows from {split_path}")
+
+            if dfs:
+                df = pd.concat(dfs).sort_index()
+                df = df[~df.index.duplicated(keep='first')]  # Remove duplicates
+                loaded_from = str(base_path) + "_{val,test}.parquet"
+
+        # Fallback to hardcoded paths if lineage not available
+        if df is None:
+            dataset_prefixes = [
+                Path("/app/data/pipeline/07_output/5min/DS_production"),
+                Path("/app/data/pipeline/07_output/5min/DS_v3_close_only"),
+            ]
+
+            for base_path in dataset_prefixes:
+                dfs = []
+                for split in ['val', 'test']:
+                    split_path = Path(str(base_path) + f"_{split}.parquet")
+                    if split_path.exists():
+                        split_df = pd.read_parquet(split_path)
+                        dfs.append(split_df)
+                        logger.info(f"[REAL BACKTEST] Loaded {split}: {len(split_df)} rows")
+
+                if dfs:
+                    df = pd.concat(dfs).sort_index()
+                    df = df[~df.index.duplicated(keep='first')]
+                    loaded_from = str(base_path) + "_{val,test}.parquet"
+                    break
+
+        if df is None:
+            raise HTTPException(status_code=404, detail="No val/test data found")
+
+        logger.info(f"[REAL BACKTEST] Combined dataset: {len(df)} rows ({df.index.min()} to {df.index.max()})")
+
+        # Filter by date range
+        start_dt = pd.Timestamp(start_date)
+        end_dt = pd.Timestamp(end_date) + pd.Timedelta(days=1)
+        df_filtered = df[(df.index >= start_dt) & (df.index < end_dt)]
+
+        logger.info(f"[REAL BACKTEST] Filtered to {len(df_filtered)} rows: {df_filtered.index.min()} to {df_filtered.index.max()}")
+
+        if len(df_filtered) == 0:
+            raise HTTPException(status_code=400, detail="No data in specified date range")
+
+        # 4. Run backtest using REAL BacktestEngine
+        from src.evaluation.backtest_engine import BacktestEngine, BacktestConfig
+        from src.config.experiment_loader import get_feature_order
+
+        # Get feature columns
+        try:
+            feature_cols = list(get_feature_order()[:18])
+        except Exception:
+            feature_cols = [
+                'log_ret_5m', 'log_ret_1h', 'log_ret_4h', 'log_ret_1d',
+                'rsi_9', 'rsi_21', 'volatility_pct', 'trend_z',
+                'dxy_z', 'dxy_change_1d', 'vix_z', 'embi_z',
+                'brent_change_1d', 'gold_change_1d', 'rate_spread_z',
+                'rate_spread_change', 'usdmxn_change_1d', 'yield_curve_z'
+            ]
+
+        config = BacktestConfig.from_ssot()
+        engine = BacktestEngine(config, norm_stats, feature_cols)
+
+        logger.info(f"[REAL BACKTEST] Running engine on {len(df_filtered)} bars...")
+
+        for i in range(1, len(df_filtered)):
+            row = df_filtered.iloc[i]
+            prev_row = df_filtered.iloc[i - 1]
+            obs = engine.build_observation(row)
+            action, _ = model.predict(obs, deterministic=True)
+            action_val = float(action[0]) if hasattr(action, '__len__') else float(action)
+            engine.step(action_val, row, prev_row)
+
+        result = engine.get_result(df_filtered)
+
+        logger.info(f"[REAL BACKTEST] Complete: {result.total_trades} trades, {result.win_rate_pct:.1f}% WR, {result.total_return_pct:.2f}% return")
+
+        # 5. Build response
+        trades = []
+        cumulative_pnl = 0.0
+
+        for i, trade in enumerate(result.trades):
+            cumulative_pnl += trade.pnl
+            trades.append({
+                'trade_id': i + 1,
+                'entry_time': trade.entry_time.isoformat() if hasattr(trade.entry_time, 'isoformat') else str(trade.entry_time),
+                'exit_time': trade.exit_time.isoformat() if hasattr(trade.exit_time, 'isoformat') else str(trade.exit_time),
+                'side': trade.direction,
+                'entry_price': float(trade.entry_price),
+                'exit_price': float(trade.exit_price),
+                'pnl': float(trade.pnl),
+                'pnl_usd': float(trade.pnl),
+                'pnl_percent': float(trade.pnl_pct),
+                'status': 'closed',
+                'duration_minutes': int(trade.bars_held * 5),
+                'exit_reason': 'signal',
+                'equity_at_entry': float(config.initial_capital + cumulative_pnl - trade.pnl),
+                'equity_at_exit': float(config.initial_capital + cumulative_pnl),
+            })
+
+        return {
+            'success': True,
+            'source': 'real_backtest',
+            'proposal_id': proposal_id,
+            'model_id': model_id,
+            'trade_count': result.total_trades,
+            'trades': trades,
+            'summary': {
+                'total_trades': result.total_trades,
+                'winning_trades': int(result.win_rate_pct * result.total_trades / 100) if result.total_trades > 0 else 0,
+                'losing_trades': result.total_trades - int(result.win_rate_pct * result.total_trades / 100) if result.total_trades > 0 else 0,
+                'win_rate': round(result.win_rate_pct, 2),
+                'total_pnl': round(result.total_return_pct * config.initial_capital / 100, 2),
+                'total_return_pct': round(result.total_return_pct, 2),
+                'max_drawdown_pct': round(result.max_drawdown_pct, 2),
+                'sharpe_ratio': round(result.sharpe_annual, 2),
+            },
+            'config': {
+                'threshold_long': config.threshold_long,
+                'threshold_short': config.threshold_short,
+                'stop_loss_pct': config.stop_loss_pct,
+                'take_profit_pct': config.take_profit_pct,
+                'trailing_stop_enabled': config.trailing_stop_enabled,
+                'spread_bps': config.spread_bps,
+                'slippage_bps': config.slippage_bps,
+            },
+            'date_range': {
+                'start': start_date,
+                'end': end_date
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[REAL BACKTEST] Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/real/stream")
+async def run_real_backtest_stream(
+    proposal_id: str,
+    start_date: str,
+    end_date: str,
+    req: Request
+):
+    """
+    Run REAL backtest with SSE streaming for progressive updates.
+
+    Emits events:
+    - progress: {percent, bars_processed, total_bars}
+    - trade: {trade_id, side, entry_price, exit_price, pnl, ...}
+    - complete: {summary, config, date_range}
+    """
+    import json
+    import asyncpg
+    import pandas as pd
+    import numpy as np
+    from pathlib import Path
+    import asyncio
+
+    async def generate_stream():
+        try:
+            logger.info(f"[REAL BACKTEST SSE] Starting for proposal {proposal_id}: {start_date} to {end_date}")
+
+            # Emit initial status
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Connecting to database...'})}\n\n"
+
+            # Get database connection
+            from ..config import get_settings
+            settings = get_settings()
+            db_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
+
+            conn = await asyncpg.connect(db_url)
+
+            # 1. Get proposal lineage
+            row = await conn.fetchrow("""
+                SELECT model_id, lineage, metrics
+                FROM promotion_proposals
+                WHERE proposal_id = $1
+            """, proposal_id)
+
+            if not row:
+                await conn.close()
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Proposal {proposal_id} not found'})}\n\n"
+                return
+
+            model_id = row['model_id']
+            lineage = row['lineage'] if isinstance(row['lineage'], dict) else json.loads(row['lineage'])
+            await conn.close()
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Loading model...'})}\n\n"
+
+            # 2. Load model and norm_stats
+            from stable_baselines3 import PPO
+
+            model_path = lineage.get('modelPath') or lineage.get('model_path')
+            norm_stats_path = lineage.get('normStatsPath') or lineage.get('norm_stats_path')
+
+            if not model_path:
+                model_path = f"models/{model_id}/final_model.zip"
+            if not norm_stats_path:
+                norm_stats_path = f"models/{model_id}/norm_stats.json"
+
+            # Resolve paths
+            if model_path.startswith("models/"):
+                model_path = Path("/") / model_path
+            else:
+                model_path = Path("/app") / model_path
+
+            if norm_stats_path.startswith("models/"):
+                norm_stats_path = Path("/") / norm_stats_path
+            else:
+                norm_stats_path = Path("/app") / norm_stats_path
+
+            if not model_path.exists():
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Model not found: {model_path}'})}\n\n"
+                return
+
+            model = PPO.load(str(model_path), device='cpu')
+            with open(norm_stats_path) as f:
+                norm_stats = json.load(f)
+
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Loading market data (val + test combined)...'})}\n\n"
+
+            # 3. Load val + test data combined for complete backtest coverage
+            dataset_prefix = lineage.get('datasetPath') or lineage.get('dataset_path')
+
+            df = None
+            loaded_from = None
+
+            if dataset_prefix:
+                # Use lineage-specified dataset path
+                if dataset_prefix.startswith("data/"):
+                    base_path = Path("/app") / dataset_prefix
+                else:
+                    base_path = Path(dataset_prefix)
+
+                # Load val + test and combine
+                dfs = []
+                for split in ['val', 'test']:
+                    split_path = Path(str(base_path) + f"_{split}.parquet")
+                    if split_path.exists():
+                        split_df = pd.read_parquet(split_path)
+                        dfs.append(split_df)
+                        logger.info(f"[REAL BACKTEST SSE] Loaded {split}: {len(split_df)} rows")
+
+                if dfs:
+                    df = pd.concat(dfs).sort_index()
+                    df = df[~df.index.duplicated(keep='first')]
+                    loaded_from = str(base_path)
+
+            # Fallback to hardcoded paths
+            if df is None:
+                dataset_prefixes = [
+                    Path("/app/data/pipeline/07_output/5min/DS_production"),
+                    Path("/app/data/pipeline/07_output/5min/DS_v3_close_only"),
+                ]
+
+                for base_path in dataset_prefixes:
+                    dfs = []
+                    for split in ['val', 'test']:
+                        split_path = Path(str(base_path) + f"_{split}.parquet")
+                        if split_path.exists():
+                            split_df = pd.read_parquet(split_path)
+                            dfs.append(split_df)
+                            logger.info(f"[REAL BACKTEST SSE] Loaded {split}: {len(split_df)} rows")
+
+                    if dfs:
+                        df = pd.concat(dfs).sort_index()
+                        df = df[~df.index.duplicated(keep='first')]
+                        loaded_from = str(base_path)
+                        break
+
+            if df is None:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'No val/test data found'})}\n\n"
+                return
+
+            logger.info(f"[REAL BACKTEST SSE] Combined dataset: {len(df)} rows ({df.index.min()} to {df.index.max()})")
+
+            # Filter by date range
+            start_dt = pd.Timestamp(start_date)
+            end_dt = pd.Timestamp(end_date) + pd.Timedelta(days=1)
+            df_filtered = df[(df.index >= start_dt) & (df.index < end_dt)]
+
+            total_bars = len(df_filtered)
+            if total_bars == 0:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'No data in specified date range'})}\n\n"
+                return
+
+            yield f"data: {json.dumps({'type': 'status', 'message': f'Running backtest on {total_bars} bars...'})}\n\n"
+
+            # 4. Run backtest with streaming
+            from src.evaluation.backtest_engine import BacktestEngine, BacktestConfig
+            from src.config.experiment_loader import get_feature_order
+
+            try:
+                feature_cols = list(get_feature_order()[:18])
+            except Exception:
+                feature_cols = [
+                    'log_ret_5m', 'log_ret_1h', 'log_ret_4h', 'log_ret_1d',
+                    'rsi_9', 'rsi_21', 'volatility_pct', 'trend_z',
+                    'dxy_z', 'dxy_change_1d', 'vix_z', 'embi_z',
+                    'brent_change_1d', 'gold_change_1d', 'rate_spread_z',
+                    'rate_spread_change', 'usdmxn_change_1d', 'yield_curve_z'
+                ]
+
+            config = BacktestConfig.from_ssot()
+            engine = BacktestEngine(config, norm_stats, feature_cols)
+
+            # Track trades for streaming
+            last_trade_count = 0
+            cumulative_pnl = 0.0
+            trades_emitted = []
+
+            # Process bars and emit progress
+            progress_interval = max(1, total_bars // 100)  # Emit ~100 progress updates
+
+            for i in range(1, total_bars):
+                row = df_filtered.iloc[i]
+                prev_row = df_filtered.iloc[i - 1]
+                obs = engine.build_observation(row)
+                action, _ = model.predict(obs, deterministic=True)
+                action_val = float(action[0]) if hasattr(action, '__len__') else float(action)
+                engine.step(action_val, row, prev_row)
+
+                # Check for new closed trades
+                current_trades = len(engine.trades)
+                if current_trades > last_trade_count:
+                    # New trade closed - emit it
+                    for j in range(last_trade_count, current_trades):
+                        trade = engine.trades[j]
+                        cumulative_pnl += trade.pnl
+                        trade_data = {
+                            'trade_id': j + 1,
+                            'entry_time': trade.entry_time.isoformat() if hasattr(trade.entry_time, 'isoformat') else str(trade.entry_time),
+                            'exit_time': trade.exit_time.isoformat() if hasattr(trade.exit_time, 'isoformat') else str(trade.exit_time),
+                            'side': trade.direction,
+                            'entry_price': float(trade.entry_price),
+                            'exit_price': float(trade.exit_price),
+                            'pnl': float(trade.pnl),
+                            'pnl_usd': float(trade.pnl),
+                            'pnl_percent': float(trade.pnl_pct),
+                            'status': 'closed',
+                            'duration_minutes': int(trade.bars_held * 5),
+                            'exit_reason': 'signal',
+                            'equity_at_entry': float(config.initial_capital + cumulative_pnl - trade.pnl),
+                            'equity_at_exit': float(config.initial_capital + cumulative_pnl),
+                        }
+                        trades_emitted.append(trade_data)
+                        yield f"data: {json.dumps({'type': 'trade', 'data': trade_data})}\n\n"
+
+                    last_trade_count = current_trades
+
+                # Emit progress every N bars
+                if i % progress_interval == 0 or i == total_bars - 1:
+                    percent = round((i / total_bars) * 100, 1)
+                    yield f"data: {json.dumps({'type': 'progress', 'percent': percent, 'bars_processed': i, 'total_bars': total_bars, 'trades_so_far': len(trades_emitted)})}\n\n"
+                    await asyncio.sleep(0)  # Allow other tasks to run
+
+            # Get final result
+            result = engine.get_result(df_filtered)
+
+            # Emit complete event with summary
+            complete_data = {
+                'type': 'complete',
+                'success': True,
+                'source': 'real_backtest_stream',
+                'proposal_id': proposal_id,
+                'model_id': model_id,
+                'trade_count': result.total_trades,
+                'summary': {
+                    'total_trades': result.total_trades,
+                    'winning_trades': int(result.win_rate_pct * result.total_trades / 100) if result.total_trades > 0 else 0,
+                    'losing_trades': result.total_trades - int(result.win_rate_pct * result.total_trades / 100) if result.total_trades > 0 else 0,
+                    'win_rate': round(result.win_rate_pct, 2),
+                    'total_pnl': round(result.total_return_pct * config.initial_capital / 100, 2),
+                    'total_return_pct': round(result.total_return_pct, 2),
+                    'max_drawdown_pct': round(result.max_drawdown_pct, 2),
+                    'sharpe_ratio': round(result.sharpe_annual, 2),
+                },
+                'config': {
+                    'threshold_long': config.threshold_long,
+                    'threshold_short': config.threshold_short,
+                    'stop_loss_pct': config.stop_loss_pct,
+                    'take_profit_pct': config.take_profit_pct,
+                },
+                'date_range': {'start': start_date, 'end': end_date}
+            }
+
+            yield f"data: {json.dumps(complete_data)}\n\n"
+            logger.info(f"[REAL BACKTEST SSE] Complete: {result.total_trades} trades, {result.win_rate_pct:.1f}% WR")
+
+        except Exception as e:
+            logger.error(f"[REAL BACKTEST SSE] Error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
 @router.get("/status/{model_id}")
 async def get_backtest_status(model_id: str, start_date: str, end_date: str, req: Request):
     """

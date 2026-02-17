@@ -498,6 +498,258 @@ def obtener_ici(n: int = 3) -> Optional[pd.DataFrame]:
     return scraper.scrape(n=n)
 
 
+class EOFScraper:
+    """
+    Scraper para Encuesta de Opinión Financiera (EOF) de Fedesarrollo.
+    Extrae expectativas de inflación del PDF histórico.
+    """
+
+    def __init__(self):
+        self.base_url = "https://www.repository.fedesarrollo.org.co"
+        self.collection_url = f"{self.base_url}/handle/11445/38"
+
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+
+        self.meses_map = {
+            'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+            'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+            'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+        }
+
+        self.month_abbr_map = {
+            'ene': 1, 'feb': 2, 'mar': 3, 'abr': 4,
+            'may': 5, 'jun': 6, 'jul': 7, 'ago': 8,
+            'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12
+        }
+
+    def get_latest_survey_url(self) -> Optional[str]:
+        """Obtiene la URL de la encuesta EOF más reciente."""
+        print("[INFO] Buscando Encuesta de Opinión Financiera...")
+
+        try:
+            response = self.session.get(self.collection_url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            links = soup.find_all('a', href=re.compile(r'/handle/11445/\d+'))
+
+            survey_links = []
+            for link in links:
+                text = link.get_text().strip()
+                href = link.get('href')
+
+                if 'Encuesta de Opinión Financiera' in text and 'Resultados' in text:
+                    if not href.startswith('http'):
+                        href = self.base_url + href
+
+                    date_match = re.search(
+                        r'(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})',
+                        text, re.IGNORECASE
+                    )
+                    if date_match:
+                        survey_links.append({
+                            'url': href,
+                            'text': text,
+                            'month': date_match.group(1).lower(),
+                            'year': int(date_match.group(2))
+                        })
+
+            if survey_links:
+                survey_links.sort(
+                    key=lambda x: (x['year'], self.meses_map.get(x['month'], 0)),
+                    reverse=True
+                )
+                latest = survey_links[0]
+                print(f"[OK] EOF encontrada: {latest['month'].capitalize()} {latest['year']}")
+                return latest['url']
+
+            print("[WARNING] No se encontró EOF")
+            return None
+
+        except Exception as e:
+            print(f"[ERROR] Error al buscar EOF: {e}")
+            return None
+
+    def get_pdf_historic_url(self, survey_url: str) -> Optional[str]:
+        """Obtiene la URL del PDF histórico."""
+        print("[INFO] Buscando PDF histórico EOF...")
+
+        try:
+            response = self.session.get(survey_url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            links = soup.find_all('a', href=re.compile(r'\.pdf', re.IGNORECASE))
+
+            for link in links:
+                href = link.get('href', '')
+                text = link.get_text().strip()
+
+                if 'histórico' in href.lower() or 'historico' in href.lower() or \
+                   'histórico' in text.lower() or 'historico' in text.lower():
+                    if not href.startswith('http'):
+                        href = self.base_url + href
+                    print(f"[OK] PDF histórico encontrado: {text}")
+                    return href
+
+            print("[WARNING] No se encontró PDF histórico")
+            return None
+
+        except Exception as e:
+            print(f"[ERROR] Error al buscar PDF: {e}")
+            return None
+
+    def extract_inflation_from_pdf(self, pdf_url: str) -> Optional[List[Dict]]:
+        """Extrae los valores de expectativa de inflación del PDF histórico."""
+        print("[INFO] Descargando y procesando PDF EOF...")
+
+        try:
+            response = self.session.get(pdf_url, timeout=60)
+            response.raise_for_status()
+
+            pdf_file = io.BytesIO(response.content)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            print(f"[INFO] PDF tiene {len(pdf_reader.pages)} páginas")
+
+            full_text = ""
+            for page in pdf_reader.pages:
+                full_text += page.extract_text() + "\n"
+
+            return self._parse_inflation_values(full_text)
+
+        except Exception as e:
+            print(f"[ERROR] Error al procesar PDF: {e}")
+            return None
+
+    def _parse_inflation_values(self, text: str) -> Optional[List[Dict]]:
+        """
+        Parsea los valores de inflación del PDF.
+
+        Formato del PDF EOF:
+        mes-año  TasaBanrep  Inflación  TRM
+        nov-14   4,50        (vacío)    $ 2.120
+        ene-15   4,50        3,69       $ 2.421
+
+        La columna de inflación es la SEGUNDA columna numérica después de la fecha.
+        """
+        print("[INFO] Extrayendo valores de inflación esperada...")
+
+        all_values = []
+        lines = text.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Patrón: mes-año tasa_banrep inflacion [$ TRM]
+            # Ejemplo: "ene-15 4,50 3,69 $ 2.421"
+            # Nota: algunos meses no tienen inflación (vacío)
+            pattern = r'^([a-z]{3})\s*-\s*(\d{2})\s+(\d+[,\.]\d+)\s+(\d+[,\.]\d+)'
+
+            match = re.match(pattern, line, re.IGNORECASE)
+            if match:
+                try:
+                    month_abbr = match.group(1).lower()
+                    year_2digit = int(match.group(2))
+                    # group(3) es tasa banrep
+                    inflation_str = match.group(4).replace(',', '.')
+                    inflation = float(inflation_str)
+
+                    if month_abbr not in self.month_abbr_map:
+                        continue
+
+                    month = self.month_abbr_map[month_abbr]
+                    year = 2000 + year_2digit if year_2digit <= 50 else 1900 + year_2digit
+
+                    # Crear fecha (último día del mes)
+                    if month == 12:
+                        fecha = datetime(year, month, 31)
+                    elif month in [1, 3, 5, 7, 8, 10]:
+                        fecha = datetime(year, month, 31)
+                    elif month in [4, 6, 9, 11]:
+                        fecha = datetime(year, month, 30)
+                    else:
+                        fecha = datetime(year, month, 28)
+
+                    # Validar rango razonable de inflación (0-20%)
+                    if 0 <= inflation <= 20:
+                        all_values.append({
+                            'fecha': fecha,
+                            'valor': inflation
+                        })
+
+                except Exception:
+                    continue
+
+        # Eliminar duplicados
+        seen_dates = {}
+        for item in all_values:
+            date_key = item['fecha'].strftime('%Y-%m')
+            if date_key not in seen_dates:
+                seen_dates[date_key] = item
+
+        unique_values = list(seen_dates.values())
+        unique_values.sort(key=lambda x: x['fecha'], reverse=True)
+
+        if unique_values:
+            print(f"[OK] Se encontraron {len(unique_values)} valores de inflación esperada")
+            print(f"[DEBUG] Últimos 5 valores:")
+            for v in unique_values[:5]:
+                print(f"        {v['fecha'].strftime('%Y-%m-%d')}: {v['valor']}")
+            return unique_values
+
+        print("[WARNING] No se pudieron extraer valores de inflación")
+        return None
+
+    def scrape(self, n: int = 3) -> Optional[pd.DataFrame]:
+        """Ejecuta el scraping y retorna DataFrame."""
+        print("\n[INFO] Iniciando scraper EOF (Inflación Esperada) - Fedesarrollo")
+
+        try:
+            survey_url = self.get_latest_survey_url()
+            if not survey_url:
+                return None
+
+            pdf_url = self.get_pdf_historic_url(survey_url)
+            if not pdf_url:
+                return None
+
+            values = self.extract_inflation_from_pdf(pdf_url)
+            if not values:
+                return None
+
+            df = pd.DataFrame(values)
+            df = df[['fecha', 'valor']].head(n)
+
+            print(f"\n[OK] EOF Inflación extraída exitosamente:")
+            print(f"     Registros: {len(df)}")
+            print(f"     Más reciente: {df.iloc[0]['valor']:.2f}% ({df.iloc[0]['fecha'].strftime('%Y-%m-%d')})")
+
+            return df
+
+        except Exception as e:
+            print(f"[ERROR] Error en scraper EOF: {e}")
+            return None
+
+
+def obtener_eof_inflacion(n: int = 3) -> Optional[pd.DataFrame]:
+    """
+    Obtiene los últimos n valores de expectativa de inflación de la EOF.
+
+    Args:
+        n: Número de registros a retornar (por defecto 3)
+
+    Returns:
+        DataFrame con columnas ['fecha', 'valor'] o None si falla
+    """
+    scraper = EOFScraper()
+    return scraper.scrape(n=n)
+
+
 if __name__ == "__main__":
     """
     Test del scraper
@@ -521,6 +773,15 @@ if __name__ == "__main__":
     if df_ici is not None:
         print("\nResultado ICI:")
         print(df_ici.to_string(index=False))
+
+    print("\n" + "=" * 70)
+
+    # Test EOF Inflación
+    print("\n### TEST 3: EOF (Expectativa Inflación) ###")
+    df_eof = obtener_eof_inflacion(n=5)
+    if df_eof is not None:
+        print("\nResultado EOF Inflación:")
+        print(df_eof.to_string(index=False))
 
     print("\n" + "=" * 70)
     print("TEST COMPLETADO")

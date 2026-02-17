@@ -1,205 +1,220 @@
 """
-Ensemble Predictor
-==================
+Ensemble Predictor - V22 P1 Multi-Model Voting
+================================================
+Load N models trained with different seeds, vote on actions,
+compute confidence scores for position sizing.
 
-Single Responsibility: Coordinate multiple predictors using strategy pattern.
+Supports both PPO (stateless) and RecurrentPPO (stateful) models.
 
-Author: Trading Team
+Contract: CTR-ENSEMBLE-001
 Version: 1.0.0
-Date: 2025-01-14
+Date: 2026-02-06
 """
 
-import time
+import inspect
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from collections import Counter
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-
-from src.core.interfaces.inference import (
-    IEnsembleStrategy,
-    InferenceResult,
-    EnsembleResult,
-)
-from src.core.strategies.ensemble_strategies import (
-    EnsembleStrategyRegistry,
-    WeightedAverageStrategy,
-)
-from .predictor import ONNXPredictor
 
 logger = logging.getLogger(__name__)
 
 
 class EnsemblePredictor:
     """
-    Coordinates multiple predictors for ensemble inference.
+    Load N models, vote on actions, compute confidence.
 
-    Strategy Pattern: Delegates combination logic to IEnsembleStrategy.
-    Single Responsibility: Only coordinates predictors, doesn't combine.
+    For continuous action spaces, maps each model's action to
+    discrete signals (LONG/SHORT/HOLD) then does majority vote.
+
+    For discrete action spaces (V22 P2+), directly votes on
+    the integer action.
     """
 
     def __init__(
         self,
-        predictors: Optional[Dict[str, ONNXPredictor]] = None,
-        strategy: Optional[IEnsembleStrategy] = None,
-        strategy_name: Optional[str] = None,
+        model_paths: List[Path],
+        min_consensus: int = 3,
+        action_type: str = "discrete",
+        threshold_long: float = 0.35,
+        threshold_short: float = -0.35,
+        use_lstm: bool = False,
     ):
         """
         Args:
-            predictors: Dict of name -> predictor
-            strategy: Ensemble strategy instance (takes precedence)
-            strategy_name: Strategy name to look up in registry
+            model_paths: Paths to N model .zip files
+            min_consensus: Minimum models that must agree (e.g., 3/5)
+            action_type: "discrete" or "continuous"
+            threshold_long: Threshold for LONG (continuous only)
+            threshold_short: Threshold for SHORT (continuous only)
+            use_lstm: Whether models are RecurrentPPO
         """
-        self._predictors: Dict[str, ONNXPredictor] = predictors or {}
+        self.min_consensus = min_consensus
+        self.action_type = action_type
+        self.threshold_long = threshold_long
+        self.threshold_short = threshold_short
+        self.use_lstm = use_lstm
+        self.models = []
+        self._lstm_states = []
+        self._episode_starts = []
 
-        # Resolve strategy
-        if strategy:
-            self._strategy = strategy
-        elif strategy_name:
-            self._strategy = EnsembleStrategyRegistry.get(strategy_name)
-        else:
-            self._strategy = EnsembleStrategyRegistry.get_default()
+        self._load_models(model_paths)
 
-        logger.info(f"EnsemblePredictor using strategy: {self._strategy.name}")
+    def _load_models(self, model_paths: List[Path]) -> None:
+        """Load all models."""
+        for path in model_paths:
+            path = Path(path)
+            if not path.exists():
+                logger.warning(f"Model not found: {path}")
+                continue
 
-    def add_predictor(self, predictor: ONNXPredictor) -> 'EnsemblePredictor':
-        """
-        Add a predictor to the ensemble.
-
-        Args:
-            predictor: Predictor to add
-
-        Returns:
-            Self for chaining
-        """
-        self._predictors[predictor.model_name] = predictor
-        logger.info(f"Added predictor: {predictor.model_name}")
-        return self
-
-    def remove_predictor(self, name: str) -> 'EnsemblePredictor':
-        """
-        Remove a predictor from the ensemble.
-
-        Args:
-            name: Predictor name to remove
-
-        Returns:
-            Self for chaining
-        """
-        if name in self._predictors:
-            del self._predictors[name]
-            logger.info(f"Removed predictor: {name}")
-        return self
-
-    def set_strategy(self, strategy: IEnsembleStrategy) -> 'EnsemblePredictor':
-        """
-        Change ensemble strategy.
-
-        Open/Closed: Change behavior without modifying this class.
-
-        Args:
-            strategy: New strategy
-
-        Returns:
-            Self for chaining
-        """
-        self._strategy = strategy
-        logger.info(f"Changed strategy to: {strategy.name}")
-        return self
-
-    def set_strategy_by_name(self, name: str) -> 'EnsemblePredictor':
-        """
-        Change strategy by name.
-
-        Args:
-            name: Strategy name from registry
-
-        Returns:
-            Self for chaining
-        """
-        self._strategy = EnsembleStrategyRegistry.get(name)
-        logger.info(f"Changed strategy to: {name}")
-        return self
-
-    def predict(self, observation: np.ndarray) -> EnsembleResult:
-        """
-        Run ensemble inference.
-
-        Args:
-            observation: Feature vector
-
-        Returns:
-            EnsembleResult with combined signal
-        """
-        if not self._predictors:
-            raise RuntimeError("No predictors in ensemble")
-
-        start_time = time.perf_counter()
-        individual_results: List[InferenceResult] = []
-        errors: List[str] = []
-
-        # Get predictions from all models
-        for name, predictor in self._predictors.items():
             try:
-                result = predictor.predict(observation)
-                individual_results.append(result)
+                if self.use_lstm:
+                    from sb3_contrib import RecurrentPPO
+                    model = RecurrentPPO.load(str(path))
+                else:
+                    from stable_baselines3 import PPO
+                    model = PPO.load(str(path))
+
+                self.models.append(model)
+                self._lstm_states.append(None)
+                self._episode_starts.append(np.array([True]))
+                logger.info(f"Loaded model: {path}")
             except Exception as e:
-                logger.error(f"Inference failed for {name}: {e}")
-                errors.append(f"{name}: {str(e)}")
+                logger.error(f"Failed to load {path}: {e}")
 
-        if not individual_results:
-            raise RuntimeError(f"All model inferences failed: {errors}")
+        if not self.models:
+            raise ValueError("No models loaded successfully")
 
-        # Get weights for strategy
-        weights = {
-            name: predictor.weight
-            for name, predictor in self._predictors.items()
-        }
-
-        # Combine results using strategy
-        combined_probs, signal, confidence = self._strategy.combine(
-            individual_results,
-            weights
+        logger.info(
+            f"Ensemble loaded: {len(self.models)} models, "
+            f"min_consensus={self.min_consensus}"
         )
 
-        total_latency = (time.perf_counter() - start_time) * 1000
+    def predict(
+        self,
+        obs: np.ndarray,
+        deterministic: bool = True,
+    ) -> Tuple[int, float, Dict[str, Any]]:
+        """
+        Get ensemble prediction via majority vote.
 
-        return EnsembleResult(
-            signal=signal,
-            confidence=confidence,
-            action_probs=combined_probs,
-            individual_results=individual_results,
-            ensemble_strategy=self._strategy.name,
-            total_latency_ms=total_latency,
-            timestamp=datetime.now().isoformat(),
-        )
+        Args:
+            obs: Observation array
+            deterministic: Use deterministic predictions
 
-    @property
-    def predictor_names(self) -> List[str]:
-        """Get list of predictor names."""
-        return list(self._predictors.keys())
+        Returns:
+            Tuple of (action, confidence, vote_details)
+            - action: Majority-voted action (int for discrete, mapped for continuous)
+            - confidence: Fraction of models agreeing (0.0-1.0)
+            - vote_details: {model_idx: action} for logging
+        """
+        actions = []
 
-    @property
-    def predictor_count(self) -> int:
-        """Get number of predictors."""
-        return len(self._predictors)
+        for i, model in enumerate(self.models):
+            if self.use_lstm:
+                action, self._lstm_states[i] = model.predict(
+                    obs,
+                    state=self._lstm_states[i],
+                    episode_start=self._episode_starts[i],
+                    deterministic=deterministic,
+                )
+                self._episode_starts[i] = np.array([False])
+            else:
+                action, _ = model.predict(obs, deterministic=deterministic)
 
-    @property
-    def strategy_name(self) -> str:
-        """Get current strategy name."""
-        return self._strategy.name
+            if self.action_type == "continuous":
+                mapped = self._map_continuous_action(float(action[0]))
+            else:
+                mapped = int(action)
 
-    def get_predictor(self, name: str) -> Optional[ONNXPredictor]:
-        """Get predictor by name."""
-        return self._predictors.get(name)
+            actions.append(mapped)
 
-    def get_stats(self) -> Dict[str, Any]:
-        """Get statistics for all predictors."""
-        return {
-            "strategy": self._strategy.name,
-            "predictor_count": self.predictor_count,
-            "predictors": {
-                name: pred.stats
-                for name, pred in self._predictors.items()
-            },
+        # Majority vote
+        votes = Counter(actions)
+        majority_action, majority_count = votes.most_common(1)[0]
+        confidence = majority_count / len(self.models)
+
+        vote_details = {
+            "votes": dict(enumerate(actions)),
+            "vote_counts": dict(votes),
+            "n_models": len(self.models),
         }
+
+        # Require minimum consensus
+        if majority_count < self.min_consensus:
+            hold_action = 0  # HOLD for both discrete and continuous mapping
+            return hold_action, confidence, vote_details
+
+        return majority_action, confidence, vote_details
+
+    def _map_continuous_action(self, action_value: float) -> int:
+        """Map continuous [-1, 1] action to discrete signal."""
+        if action_value > self.threshold_long:
+            return 1  # LONG / BUY
+        elif action_value < self.threshold_short:
+            return 2  # SHORT / SELL
+        else:
+            return 0  # HOLD
+
+    def reset_states(self) -> None:
+        """Reset LSTM states for all models (call on episode boundaries)."""
+        self._lstm_states = [None] * len(self.models)
+        self._episode_starts = [np.array([True])] * len(self.models)
+
+    @property
+    def n_models(self) -> int:
+        return len(self.models)
+
+
+def load_ensemble_from_multi_seed(
+    base_dir: Path,
+    seeds: Optional[List[int]] = None,
+    use_lstm: bool = False,
+    **kwargs,
+) -> EnsemblePredictor:
+    """
+    Load ensemble from multi-seed training output.
+
+    Looks for models at base_dir/*seed*/best_model.zip
+
+    Args:
+        base_dir: Directory containing seed subdirectories
+        seeds: Specific seeds to load (default: all found)
+        use_lstm: Whether models are RecurrentPPO
+        **kwargs: Additional EnsemblePredictor kwargs
+
+    Returns:
+        EnsemblePredictor with all found models
+    """
+    base_dir = Path(base_dir)
+    model_paths = []
+
+    if seeds:
+        for seed in seeds:
+            model_path = base_dir / f"seed_{seed}" / "best_model.zip"
+            if model_path.exists():
+                model_paths.append(model_path)
+    else:
+        # Find all seed directories
+        for seed_dir in sorted(base_dir.glob("seed_*")):
+            model_path = seed_dir / "best_model.zip"
+            if model_path.exists():
+                model_paths.append(model_path)
+
+    if not model_paths:
+        # Fallback: look for models in parent_seedN directories
+        parent = base_dir.parent
+        for seed_dir in sorted(parent.glob(f"{base_dir.name}_seed*")):
+            model_path = seed_dir / "best_model.zip"
+            if model_path.exists():
+                model_paths.append(model_path)
+
+    logger.info(f"Found {len(model_paths)} seed models in {base_dir}")
+    return EnsemblePredictor(
+        model_paths=model_paths,
+        use_lstm=use_lstm,
+        **kwargs,
+    )

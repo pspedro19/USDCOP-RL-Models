@@ -1,0 +1,76 @@
+{
+  "folds": {
+    "2022": {
+      "n_trades": 49,
+      "da_pct": 53.1,
+      "n_long": 16,
+      "n_short": 33,
+      "long_wr_pct": 62.5,
+      "short_wr_pct": 54.5,
+      "total_return_pct": 18.27,
+      "sharpe": 1.224,
+      "win_rate_pct": 57.1,
+      "profit_factor": 1.571,
+      "max_dd_pct": -7.92,
+      "t_stat": 1.181,
+      "p_value": 0.2435,
+      "bootstrap_ci_lo": -0.221,
+      "bootstrap_ci_hi": 0.98,
+      "final_equity": 11827.28
+    },
+    "2023": {
+      "n_trades": 48,
+      "da_pct": 50.0,
+      "n_long": 30,
+      "n_short": 18,
+      "long_wr_pct": 40.0,
+      "short_wr_pct": 72.2,
+      "total_return_pct": -0.65,
+      "sharpe": -0.045,
+      "win_rate_pct": 52.1,
+      "profit_factor": 1.01,
+      "max_dd_pct": -11.63,
+      "t_stat": 0.028,
+      "p_value": 0.9776,
+      "bootstrap_ci_lo": -0.588,
+      "bootstrap_ci_hi": 0.604,
+      "final_equity": 9934.74
+    },
+    "2024": {
+      "n_trades": 48,
+      "da_pct": 60.4,
+      "n_long": 30,
+      "n_short": 18,
+      "long_wr_pct": 66.7,
+      "short_wr_pct": 66.7,
+      "total_return_pct": 27.92,
+      "sharpe": 2.063,
+      "win_rate_pct": 66.7,
+      "profit_factor": 1.921,
+      "max_dd_pct": -6.14,
+      "t_stat": 1.837,
+      "p_value": 0.0725,
+      "bootstrap_ci_lo": -0.029,
+      "bootstrap_ci_hi": 1.099,
+      "final_equity": 12792.42
+    }
+  },
+  "config": {
+    "ensemble": "LINEAR-ONLY (ridge + bayesian_ridge)",
+    "trail": {
+      "activation": 0.004,
+      "trail": 0.003,
+      "hard_stop": 0.04
+    },
+    "vol_target": {
+      "target_vol": 0.15,
+      "max_lev": 2.0
+    },
+    "horizon": 5
+  },
+  "verdict": {
+    "n_pass": 2,
+    "n_total": 3,
+    "pass": true
+  }
+}

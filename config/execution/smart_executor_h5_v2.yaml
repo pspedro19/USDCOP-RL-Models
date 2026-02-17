@@ -1,0 +1,146 @@
+# =============================================================================
+# Smart Executor Config: H5 Linear-Only v2 — Tight Trailing (Track B)
+# =============================================================================
+#
+# UPGRADE from v1: tighter trailing stop (0.20%/0.10%) for micro-profit capture.
+# Grid search (1500 combos) found act=0.20%, trail=0.10% optimal:
+#   2025: +19.29% (daily bars), Sharpe 3.895, WR 91.2%, p=0.003
+#   With 5-min bars (production): estimated +25-35% APR
+#
+# 3-Phase escalation plan:
+#   Phase 1 (wk 1-4):  conservative — long_mult=0.5, max_lev=2.0, tv=0.15
+#   Phase 2 (wk 5-8):  moderate    — long_mult=0.75 (if WR > 75%)
+#   Phase 3 (wk 9-12): aggressive  — tv=0.20, max_lev=2.5 (if Sharpe > 1.5)
+#
+# SSOT Contract: SMART-EXECUTOR-H5-V2
+# Version: 2.0.0
+# Date: 2026-02-16
+# Based on: smart_executor_h5_v1.yaml
+# =============================================================================
+
+executor:
+  name: "smart_executor_h5_v2"
+  version: "2.0.0"
+  description: "5-day hold, linear-only, tight trailing (0.20%/0.10%), 5-min monitoring"
+  created_at: "2026-02-16"
+  status: "paper"
+  phase: 1                               # Current phase (1=conservative, 2=moderate, 3=aggressive)
+
+# Models — LINEAR ONLY (ARD excluded: collapsed in validation)
+models:
+  ids: ["ridge", "bayesian_ridge"]
+  ensemble_method: "mean"                 # Simple mean of 2 model predictions
+  collapse_threshold: 0.001               # Flag if rolling 12-week pred std < this
+  collapse_window_weeks: 12
+
+# Direction — bidirectional with asymmetric sizing
+direction_filter:
+  mode: "bidirectional"                   # SHORT + LONG (unlike Track A short_only)
+  asymmetric_sizing:
+    enabled: true
+    short_multiplier: 1.0                 # SHORT gets full leverage (all phases)
+    long_multiplier: 0.5                  # Phase 1: half leverage
+    # Phase 2: 0.75 (if WR > 75% after 4 weeks)
+    # Phase 3: 0.75 (unchanged from Phase 2)
+  ls_ratio_alarm:
+    window_weeks: 4                       # Monitor last 4 weeks (tighter than v1)
+    threshold_long_pct: 50                # Alert if LONG% > 50% (tighter than v1)
+    action: "alert"
+
+# Trailing stop — TIGHT for micro-profit capture
+trailing_stop:
+  activation_pct: 0.0020                  # 0.20% favorable move to arm (v1 was 0.40%)
+  trail_pct: 0.0010                       # 0.10% drawback from peak triggers (v1 was 0.30%)
+  hard_stop_pct: 0.035                    # 3.50% adverse move (v1 was 4.00%)
+  re_entry:
+    enabled: true
+    cooldown_minutes: 20                  # 4 bars at 5-min (v1 was 30min)
+    max_reentries_per_day: 3              # Safety: max 3 re-entries per trading day
+  # Hard stop policy: no re-entry same day after hard stop
+
+# Vol-targeting — Phase 1 (conservative)
+vol_targeting:
+  target_vol: 0.15                        # Phase 1: 0.15, Phase 3: 0.20
+  max_leverage: 2.0                       # Phase 1: 2.0, Phase 3: 2.5
+  min_leverage: 0.5
+  vol_lookback: 21
+  vol_floor: 0.05
+  annualization_factor: 252.0
+
+# Broker
+broker:
+  mode: "paper"
+  slippage_bps: 1.0
+
+# Session — Bogota market hours
+session:
+  timezone: "America/Bogota"
+  start_hour: 8
+  end_hour: 12
+  end_minute: 55
+  bar_interval_minutes: 5
+
+# Week lifecycle
+week_lifecycle:
+  entry_day: "monday"
+  exit_day: "friday"
+  exit_time_cot: "12:50"
+  monitor_frequency_minutes: 5            # Every 5 min (v1 was 30 min)
+  monitor_source: "usdcop_m5_ohlcv"       # 5-min OHLCV bars
+
+# Circuit breaker
+circuit_breaker:
+  max_cumulative_dd_pct: -15.0            # Pause if cumulative DD exceeds -15%
+  consecutive_losses: 5                   # Pause after 5 consecutive losing weeks
+  action: "pause_and_alert"
+
+# Decision gates (evaluated at week >= 15)
+decision_gates:
+  min_weeks: 15
+  promote:
+    da_pct: 55.0
+  keep_bidirectional:
+    da_short_pct: 60.0
+    da_long_pct: 45.0
+  switch_short_only:
+    da_short_pct: 60.0
+    da_long_pct_max: 40.0
+  discard:
+    da_pct_max: 50.0
+
+# Phase escalation rules
+phase_escalation:
+  phase_2:
+    trigger_week: 5
+    condition: "WR > 75% in Phase 1"
+    changes:
+      direction_filter.asymmetric_sizing.long_multiplier: 0.75
+  phase_3:
+    trigger_week: 9
+    condition: "Sharpe > 1.5 in Phase 2"
+    changes:
+      vol_targeting.target_vol: 0.20
+      vol_targeting.max_leverage: 2.5
+  rollback:
+    condition: "WR < 70% OR MaxDD > 10%"
+    action: "revert to previous phase"
+
+# Backtest reference
+backtest_reference:
+  v1_daily_bars:
+    return_pct: 7.99
+    sharpe: 2.093
+    wr: 82.4
+  v2_tight_trail_daily:
+    return_pct: 19.29
+    sharpe: 3.895
+    wr: 91.2
+    p_value: 0.003
+  v2_grid_search:
+    combos_tested: 1500
+    best_activation_pct: 0.20
+    best_trail_pct: 0.10
+  oos_2025_intraday:
+    return_pct: 32.85
+    sharpe: 3.461
+    p_value: 0.0077

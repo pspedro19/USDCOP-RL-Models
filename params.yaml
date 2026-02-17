@@ -91,53 +91,16 @@ normalize:
   method: zscore
 
 # =============================================================================
-# Training Parameters (PPO)
+# Training Parameters - REMOVED (use SSOT)
 # =============================================================================
-# SSOT: These values are synchronized with src/training/config.py
-# Any changes here should also be reflected in the SSOT config module.
-# The Python SSOT (src/training/config.py) is the authoritative source.
-train:
-  # MLflow experiment configuration
-  experiment_name: usdcop-rl-training
-  model_name: usdcop-ppo-model
-
-  # PPO Hyperparameters - SYNCHRONIZED WITH src/training/config.py
-  learning_rate: 0.0003   # 3e-4 - SSOT canonical value
-  n_steps: 2048
-  batch_size: 64          # SSOT canonical value (was 128)
-  n_epochs: 10
-  gamma: 0.90             # SSOT canonical value (was 0.99) - shorter-term focus
-  gae_lambda: 0.95
-  clip_range: 0.2
-  ent_coef: 0.05          # SSOT canonical value - more exploration
-  vf_coef: 0.5
-  max_grad_norm: 0.5
-
-  # Training duration
-  total_timesteps: 500000
-
-  # Environment configuration - SYNCHRONIZED WITH src/training/config.py
-  episode_length: 2000    # max_episode_steps from SSOT
-  initial_balance: 10000
-  max_position: 1.0
-  max_drawdown_pct: 15.0
-
-  # Network architecture - SYNCHRONIZED WITH src/training/config.py
-  network:
-    pi: [256, 256]
-    vf: [256, 256]
-    activation: Tanh
-
-  # Early stopping (optional)
-  early_stopping:
-    enabled: true
-    patience: 10
-    min_delta: 0.01
-    monitor: episode_reward_mean
-
-  # Logging frequency
-  log_interval: 1000
-  eval_interval: 5000
+# La seccion 'train:' fue ELIMINADA.
+# Use el SSOT centralizado para training:
+#
+#   from src.config.experiment_loader import get_ppo_hyperparameters
+#   hyperparams = get_ppo_hyperparameters()
+#
+# SSOT: config/experiment_ssot.yaml
+# =============================================================================
 
 # =============================================================================
 # Evaluation Parameters
@@ -193,9 +156,9 @@ backtest:
   max_daily_loss: -0.02
   max_drawdown: -0.15
 
-  # Signal thresholds
-  long_threshold: 0.33
-  short_threshold: -0.33
+  # Signal thresholds (SSOT: experiment_ssot.yaml)
+  long_threshold: 0.50
+  short_threshold: -0.50
 
   # Trading hours (UTC)
   trading_start_hour: 13

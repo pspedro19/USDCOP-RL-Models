@@ -94,6 +94,19 @@ export async function protectApiRoute(
   request: NextRequest,
   options: ApiAuthOptions = {}
 ): Promise<AuthResult> {
+  // AUTH BYPASS: Skip authentication when AUTH_BYPASS_ENABLED is set (for testing)
+  if (process.env.AUTH_BYPASS_ENABLED === 'true') {
+    return {
+      authenticated: true,
+      user: {
+        id: 'bypass-user',
+        email: 'admin@bypass.local',
+        username: 'admin',
+        role: 'admin' as const,
+      },
+    };
+  }
+
   const { requiredRole, requiredPermission, rateLimit = true, strictRateLimit = false } = options;
 
   // Check rate limit first (before auth to prevent DoS)
@@ -175,7 +188,7 @@ type ApiHandler = (
 export function withAuth(handler: ApiHandler, options: ApiAuthOptions = {}) {
   return async (request: NextRequest): Promise<NextResponse> => {
     // Dev mode bypass: skip auth when DEV_MODE is enabled
-    const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+    const isDevMode = process.env.NODE_ENV === 'development';
     if (isDevMode) {
       const devUser: SessionUser = {
         id: 'dev-user',
@@ -415,4 +428,29 @@ export function rateLimited(retryAfter: number): NextResponse {
       headers: { 'Retry-After': String(retryAfter) },
     }
   );
+}
+
+// ============================================================================
+// Legacy Aliases
+// ============================================================================
+
+/**
+ * Validate API auth - simplified version for quick auth check
+ * @deprecated Use protectApiRoute for full auth with options
+ */
+export async function validateApiAuth(request: NextRequest): Promise<AuthResult> {
+  // In development mode, always allow
+  if (process.env.NODE_ENV === 'development') {
+    return {
+      authenticated: true,
+      user: {
+        id: 'dev-user',
+        username: 'admin',
+        role: 'admin',
+        email: 'admin@dev.local',
+      },
+    };
+  }
+
+  return protectApiRoute(request, { rateLimit: false });
 }

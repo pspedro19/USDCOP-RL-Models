@@ -32,7 +32,8 @@ This module defines the Single Source of Truth (SSOT) for:
 - Table names and schema definitions
 """
 
-from typing import Dict, Tuple, List
+from dataclasses import dataclass
+from typing import Dict, Tuple, List, Optional
 
 # =============================================================================
 # MACRO COLUMN MAPPINGS (DB → Friendly Name)
@@ -41,6 +42,7 @@ from typing import Dict, Tuple, List
 MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
     # FOREX
     "fxrt_index_dxy_usa_d_dxy": "dxy",
+    "fxrt_spot_usdcop_col_d_usdcop": "usdcop",
     "fxrt_spot_usdmxn_mex_d_usdmxn": "usdmxn",
     "fxrt_spot_usdclp_chl_d_usdclp": "usdclp",
     "fxrt_reer_bilateral_col_m_itcr": "itcr",
@@ -66,7 +68,6 @@ MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
 
     # POLICY RATES
     "polr_policy_rate_col_d_tpm": "tpm",
-    "polr_policy_rate_col_m_tpm": "tpm_m",
     "polr_fed_funds_usa_m_fedfunds": "fedfunds",
     "polr_prime_rate_usa_d_prime": "prime",
 
@@ -90,9 +91,8 @@ MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
     "mnys_m2_supply_usa_m_m2sl": "m2",
 
     # BALANCE OF PAYMENTS
-    "rsbp_current_account_col_q_cacct_q": "current_account",
-    "rsbp_fdi_inflow_col_q_fdiin_q": "fdi_inflow",
-    "rsbp_fdi_outflow_col_q_fdiout_q": "fdi_outflow",
+    "rsbp_current_account_col_q_cacct": "current_account",
+    "rsbp_fdi_outflow_col_a_idce": "fdi_outflow",
     "rsbp_reserves_international_col_m_resint": "reserves",
 
     # FOREIGN TRADE
@@ -108,6 +108,74 @@ MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
 
 # Reverse mapping (Friendly → DB)
 MACRO_FRIENDLY_TO_DB: Dict[str, str] = {v: k for k, v in MACRO_DB_TO_FRIENDLY.items()}
+
+
+# =============================================================================
+# MACRO COLUMN METADATA (Source, Fallback, Frequency, Country)
+# =============================================================================
+# Derived from config/l0_macro_sources.yaml — allows programmatic lineage queries.
+
+@dataclass(frozen=True)
+class MacroColumnMeta:
+    source: str               # Primary source: "investing", "fred", "banrep", etc.
+    fallback: Optional[str]   # Fallback source or None
+    frequency: str            # "D", "M", "Q", "A"
+    country: str              # "USA", "COL", "GLB", "MEX", "CHL"
+    description: str
+
+MACRO_COLUMN_METADATA: Dict[str, MacroColumnMeta] = {
+    # FOREX
+    "fxrt_index_dxy_usa_d_dxy": MacroColumnMeta("investing", "fred", "D", "USA", "Dollar Index (DXY)"),
+    "fxrt_spot_usdcop_col_d_usdcop": MacroColumnMeta("investing", None, "D", "COL", "USD/COP Spot"),
+    "fxrt_spot_usdmxn_mex_d_usdmxn": MacroColumnMeta("investing", "twelvedata", "D", "MEX", "USD/MXN Spot"),
+    "fxrt_spot_usdclp_chl_d_usdclp": MacroColumnMeta("investing", "twelvedata", "D", "CHL", "USD/CLP Spot"),
+    "fxrt_reer_bilateral_col_m_itcr": MacroColumnMeta("banrep", None, "M", "COL", "ITCR Bilateral Real Exchange Rate"),
+    # COMMODITIES
+    "comm_oil_wti_glb_d_wti": MacroColumnMeta("investing", None, "D", "GLB", "WTI Crude Oil"),
+    "comm_oil_brent_glb_d_brent": MacroColumnMeta("investing", None, "D", "GLB", "Brent Crude Oil"),
+    "comm_metal_gold_glb_d_gold": MacroColumnMeta("investing", None, "D", "GLB", "Gold"),
+    "comm_agri_coffee_glb_d_coffee": MacroColumnMeta("investing", None, "D", "GLB", "Coffee"),
+    # VOLATILITY
+    "volt_vix_usa_d_vix": MacroColumnMeta("investing", "fred", "D", "USA", "VIX Volatility Index"),
+    # CREDIT RISK
+    "crsk_spread_embi_col_d_embi": MacroColumnMeta("bcrp", None, "D", "COL", "EMBI Colombia Spread"),
+    # INTEREST RATES
+    "finc_bond_yield10y_usa_d_ust10y": MacroColumnMeta("investing", "fred", "D", "USA", "US 10Y Treasury Yield"),
+    "finc_bond_yield2y_usa_d_dgs2": MacroColumnMeta("investing", "fred", "D", "USA", "US 2Y Treasury Yield"),
+    "finc_bond_yield10y_col_d_col10y": MacroColumnMeta("investing", None, "D", "COL", "Colombia 10Y Bond Yield"),
+    "finc_bond_yield5y_col_d_col5y": MacroColumnMeta("investing", None, "D", "COL", "Colombia 5Y Bond Yield"),
+    "finc_rate_ibr_overnight_col_d_ibr": MacroColumnMeta("banrep", None, "D", "COL", "IBR Overnight Rate"),
+    # POLICY RATES
+    "polr_policy_rate_col_d_tpm": MacroColumnMeta("banrep", None, "D", "COL", "TPM Policy Rate Colombia"),
+    "polr_fed_funds_usa_m_fedfunds": MacroColumnMeta("fred", None, "M", "USA", "Fed Funds Rate"),
+    "polr_prime_rate_usa_d_prime": MacroColumnMeta("fred", None, "D", "USA", "US Prime Rate"),
+    # EQUITY
+    "eqty_index_colcap_col_d_colcap": MacroColumnMeta("investing", None, "D", "COL", "COLCAP Index"),
+    # GDP & PRODUCTION
+    "gdpp_real_gdp_usa_q_gdp_q": MacroColumnMeta("fred", None, "Q", "USA", "US Real GDP"),
+    "prod_industrial_usa_m_indpro": MacroColumnMeta("fred", None, "M", "USA", "US Industrial Production"),
+    # INFLATION
+    "infl_cpi_total_col_m_ipccol": MacroColumnMeta("banrep", None, "M", "COL", "Colombia CPI"),
+    "infl_cpi_all_usa_m_cpiaucsl": MacroColumnMeta("fred", None, "M", "USA", "US CPI All Items"),
+    "infl_cpi_core_usa_m_cpilfesl": MacroColumnMeta("fred", None, "M", "USA", "US Core CPI"),
+    "infl_pce_usa_m_pcepi": MacroColumnMeta("fred", None, "M", "USA", "US PCE Price Index"),
+    # LABOR
+    "labr_unemployment_usa_m_unrate": MacroColumnMeta("fred", None, "M", "USA", "US Unemployment Rate"),
+    # MONEY SUPPLY
+    "mnys_m2_supply_usa_m_m2sl": MacroColumnMeta("fred", None, "M", "USA", "US M2 Money Supply"),
+    # BALANCE OF PAYMENTS
+    "rsbp_current_account_col_q_cacct": MacroColumnMeta("banrep_bop", None, "Q", "COL", "Cuenta Corriente Trimestral"),
+    "rsbp_fdi_outflow_col_a_idce": MacroColumnMeta("banrep_bop", None, "A", "COL", "IDCE FDI Outflows Colombia"),
+    "rsbp_reserves_international_col_m_resint": MacroColumnMeta("banrep", None, "M", "COL", "International Reserves"),
+    # FOREIGN TRADE
+    "ftrd_exports_total_col_m_expusd": MacroColumnMeta("dane", None, "M", "COL", "Exports Total USD"),
+    "ftrd_imports_total_col_m_impusd": MacroColumnMeta("dane", None, "M", "COL", "Imports Total USD"),
+    "ftrd_terms_trade_col_m_tot": MacroColumnMeta("banrep", None, "M", "COL", "Terms of Trade Index"),
+    # SENTIMENT
+    "sent_consumer_usa_m_umcsent": MacroColumnMeta("fred", None, "M", "USA", "US Consumer Sentiment"),
+    "crsk_sentiment_cci_col_m_cci": MacroColumnMeta("fedesarrollo", None, "M", "COL", "Consumer Confidence Index Colombia"),
+    "crsk_sentiment_ici_col_m_ici": MacroColumnMeta("fedesarrollo", None, "M", "COL", "Industrial Confidence Index Colombia"),
+}
 
 
 # =============================================================================

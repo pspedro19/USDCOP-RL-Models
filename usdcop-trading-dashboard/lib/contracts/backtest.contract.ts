@@ -104,6 +104,24 @@ export const BacktestResultSchema = z.object({
 export type BacktestResult = z.infer<typeof BacktestResultSchema>;
 
 // ============================================================================
+// Replay Speed Control
+// ============================================================================
+
+/** Available replay speeds for bar-by-bar simulation */
+export const REPLAY_SPEEDS = [0.5, 1, 2, 4, 8, 16] as const;
+export type ReplaySpeed = typeof REPLAY_SPEEDS[number];
+
+/** Default replay speed */
+export const DEFAULT_REPLAY_SPEED: ReplaySpeed = 1;
+
+/** Get base delay for a given speed (ms between events) */
+export function getReplayDelay(speed: ReplaySpeed): number {
+  // Base delay at 1x speed is 300ms between trades
+  const BASE_DELAY_MS = 300;
+  return BASE_DELAY_MS / speed;
+}
+
+// ============================================================================
 // Backtest Request Parameters
 // ============================================================================
 
@@ -112,6 +130,10 @@ export interface BacktestRequest {
   endDate: string;      // YYYY-MM-DD
   modelId: string;
   forceRegenerate?: boolean;
+  /** Replay speed multiplier (0.5x to 16x) */
+  replaySpeed?: ReplaySpeed;
+  /** Emit bar-level events for dynamic equity curve */
+  emitBarEvents?: boolean;
 }
 
 // ============================================================================
@@ -154,6 +176,33 @@ export interface BacktestTradeEvent {
   pnl_pct?: number;
   status: string;
   current_equity: number;  // For equity curve update
+}
+
+// ============================================================================
+// State Machine - Valid Transitions
+// ============================================================================
+
+const VALID_TRANSITIONS: Record<BacktestStatus, BacktestStatus[]> = {
+  idle:       ['connecting'],
+  connecting: ['loading', 'error', 'cancelled'],
+  loading:    ['running', 'error', 'cancelled'],
+  running:    ['saving', 'error', 'cancelled'],
+  saving:     ['completed', 'error'],
+  completed:  ['idle'],
+  error:      ['idle'],
+  cancelled:  ['idle'],
+};
+
+export function transitionBacktestStatus(
+  current: BacktestStatus,
+  next: BacktestStatus
+): BacktestStatus {
+  const allowed = VALID_TRANSITIONS[current];
+  if (!allowed.includes(next)) {
+    console.warn(`[StateMachine] Invalid: ${current} -> ${next}`);
+    return current;
+  }
+  return next;
 }
 
 // ============================================================================

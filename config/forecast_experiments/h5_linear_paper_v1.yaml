@@ -1,0 +1,97 @@
+# =============================================================================
+# Experiment Config: H5 Linear-Only Paper Trading V1 (Track B)
+# =============================================================================
+#
+# Frozen experiment config for Track B paper trading.
+# Hypothesis: H=5 with Ridge + BayesianRidge only achieves Sharpe > 2.0
+# in live paper trading, matching OOS 2025 validation (Sharpe 3.461).
+#
+# Contract: FC-EXP-H5-001
+# Date: 2026-02-16
+# =============================================================================
+
+_meta:
+  experiment_id: "FC-H5-LINEAR-PAPER-V1"
+  version: "1.0.0"
+  created_at: "2026-02-16"
+  status: "running"
+  hypothesis: >
+    H=5 linear-only ensemble (Ridge + BayesianRidge) with bidirectional
+    asymmetric sizing (SHORT 1.0x, LONG 0.5x) and trailing stop re-entry
+    generates positive risk-adjusted returns in live paper trading.
+  variable_changed: "Horizon H=1 -> H=5, models 9 -> 2 (linear only), hold 1d -> 5d"
+  track: "B"
+  parallel_with: "Track A (H=1 short-only)"
+
+  baseline_comparison:
+    track_a_mode: "H=1, short_only, 9 models, daily"
+    track_b_mode: "H=5, bidirectional, 2 linear models, weekly"
+
+  validation_results:
+    oos_2025:
+      sharpe: 3.461
+      return_pct: 32.85
+      p_value: 0.0077
+      n_trades: 44
+      long_trades: 13
+      short_trades: 31
+    walkforward_2022_2024:
+      folds_above_sharpe_1: "2/3"
+      status: "PASS"
+    sharpe_decomposition:
+      weekly_sharpe: 3.730
+      subtrade_sharpe: 3.213
+      inflated: false
+      p_value: 0.0047
+
+  decision_gates:
+    evaluate_at_week: 15
+    promote_threshold_da: 55.0
+    discard_threshold_da: 50.0
+
+  results:
+    # Populated after paper trading period
+    n_weeks: null
+    cumulative_pnl_pct: null
+    running_da_pct: null
+    sharpe: null
+    decision: null
+
+# Forecasting parameters
+forecasting:
+  horizon: 5
+  target: "ln(close[t+5]/close[t])"
+  models: ["ridge", "bayesian_ridge"]
+  ensemble_method: "mean"
+  features: 21                          # Same FEATURE_COLUMNS as Track A
+  training_window: "expanding"          # From 2020-01-01 to latest
+  training_start: "2020-01-01"
+
+# Execution parameters (reference to smart_executor_h5_v1.yaml)
+execution:
+  config_file: "config/execution/smart_executor_h5_v1.yaml"
+  trailing_stop:
+    activation_pct: 0.004
+    trail_pct: 0.003
+    hard_stop_pct: 0.040
+  vol_targeting:
+    target_vol: 0.15
+    max_leverage: 2.0
+    min_leverage: 0.5
+  asymmetric_sizing:
+    short_multiplier: 1.0
+    long_multiplier: 0.5
+  re_entry:
+    enabled: true
+    cooldown_minutes: 30
+
+# DAG schedule (Bogota time in comments, cron in UTC)
+schedule:
+  l5a_training: "30 6 * * 0"           # Dom 01:30 COT
+  l5b_signal: "15 13 * * 1"            # Lun 08:15 COT
+  l5c_vol_target: "45 13 * * 1"        # Lun 08:45 COT
+  l7_entry: "0 14 * * 1"               # Lun 09:00 COT
+  l7_monitor_mon: "0,30 14-17 * * 1"   # Lun 09:00-12:30 COT cada 30min
+  l7_monitor_tue_fri: "0,30 13-17 * * 2-5"  # Mar-Vie 08:00-12:30 COT cada 30min
+  l7_week_close: "50 17 * * 5"         # Vie 12:50 COT
+  l6_evaluation: "30 19 * * 5"         # Vie 14:30 COT

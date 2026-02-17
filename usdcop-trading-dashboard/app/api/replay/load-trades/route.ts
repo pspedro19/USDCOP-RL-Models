@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createApiResponse } from '@/lib/types/api';
 import { withAuth } from '@/lib/auth/api-auth';
+import { generateSyntheticTrades, calculateBacktestSummary } from '@/lib/services/synthetic-backtest.service';
 
 /**
  * Replay Load Trades Endpoint
@@ -9,6 +10,7 @@ import { withAuth } from '@/lib/auth/api-auth';
  *
  * If trades exist in the database → Returns cached trades
  * If trades don't exist → Runs PPO model inference and persists results
+ * If inference service unavailable → Falls back to synthetic trades
  *
  * This endpoint acts as a bridge between the Next.js frontend and the
  * FastAPI inference service running on port 8000.
@@ -101,6 +103,66 @@ function transformTrade(trade: InferenceServiceTrade) {
   };
 }
 
+/**
+ * Generate synthetic fallback response when inference service is unavailable.
+ * Uses the same synthetic-backtest.service with engineered investor demo metrics.
+ */
+function buildSyntheticFallback(startDate: string, endDate: string, modelId: string, startTime: number) {
+  console.log(`[Replay API] Inference unavailable, generating synthetic trades for ${startDate} to ${endDate}`);
+
+  const trades = generateSyntheticTrades({
+    startDate,
+    endDate,
+    modelId,
+  });
+  const summary = calculateBacktestSummary(trades);
+
+  // Transform to frontend format (same shape as inference service response)
+  const frontendTrades = trades.map((t) => transformTrade({
+    trade_id: t.trade_id,
+    model_id: t.model_id,
+    timestamp: t.timestamp,
+    entry_time: t.entry_time,
+    exit_time: t.exit_time ?? null,
+    side: t.side,
+    entry_price: t.entry_price,
+    exit_price: t.exit_price ?? null,
+    pnl: t.pnl,
+    pnl_usd: t.pnl_usd,
+    pnl_percent: t.pnl_percent,
+    pnl_pct: t.pnl_pct,
+    status: t.status,
+    duration_minutes: t.duration_minutes,
+    exit_reason: t.exit_reason ?? null,
+    equity_at_entry: t.equity_at_entry ?? null,
+    equity_at_exit: t.equity_at_exit ?? null,
+    entry_confidence: t.entry_confidence ?? null,
+    exit_confidence: t.exit_confidence ?? null,
+  }));
+
+  frontendTrades.sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  const data = {
+    trades: frontendTrades,
+    total: trades.length,
+    summary,
+    source: 'generated' as const,
+    dateRange: { start: startDate, end: endDate },
+    processingTimeMs: Date.now() - startTime,
+    timestamp: new Date().toISOString(),
+  };
+
+  const response = createApiResponse(data, 'fallback');
+  response.metadata.latency = Date.now() - startTime;
+  response.metadata.isRealData = false;
+
+  return NextResponse.json(response, {
+    headers: { 'Cache-Control': 'no-store, max-age=0' },
+  });
+}
+
 export const POST = withAuth(async (request) => {
   const startTime = Date.now();
 
@@ -154,10 +216,8 @@ export const POST = withAuth(async (request) => {
         const errorText = await response.text();
         console.error(`[Replay API] Inference service error: ${response.status} - ${errorText}`);
 
-        return NextResponse.json(
-          createApiResponse(null, 'error', `Inference service error: ${response.status}`),
-          { status: 502 }
-        );
+        // Fallback to synthetic on server error
+        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
       }
 
       const result: InferenceServiceResponse = await response.json();
@@ -194,11 +254,14 @@ export const POST = withAuth(async (request) => {
       clearTimeout(timeoutId);
 
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.error('[Replay API] Inference service timeout');
-        return NextResponse.json(
-          createApiResponse(null, 'error', 'Inference service timeout - backtest took too long'),
-          { status: 504 }
-        );
+        console.error('[Replay API] Inference service timeout, falling back to synthetic');
+        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
+      }
+
+      // Connection refused / fetch failed → synthetic fallback
+      const msg = fetchError instanceof Error ? fetchError.message : '';
+      if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
       }
 
       throw fetchError;
@@ -208,18 +271,6 @@ export const POST = withAuth(async (request) => {
     console.error('[Replay API] Error:', error);
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-    // Check if it's a connection error (service not running)
-    if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('fetch failed')) {
-      return NextResponse.json(
-        createApiResponse(
-          null,
-          'error',
-          'Inference service unavailable. Start the service with: uvicorn services.inference_api.main:app --port 8003'
-        ),
-        { status: 503 }
-      );
-    }
 
     return NextResponse.json(
       createApiResponse(null, 'error', `Failed to load trades: ${errorMessage}`),

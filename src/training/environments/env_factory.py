@@ -17,7 +17,7 @@ Design Patterns:
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Type, Callable, Any, List
+from typing import Dict, Optional, Type, Callable, Any, List, Tuple
 import pandas as pd
 import numpy as np
 
@@ -207,11 +207,64 @@ class EnvironmentFactory:
 
         return vec_env
 
+    def _split_by_dates(
+        self,
+        df: pd.DataFrame,
+        date_ranges: Dict[str, str],
+        timestamp_col: str = 'timestamp'
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Split dataframe by date ranges from SSOT.
+
+        This ensures train/test split is based on calendar dates, not row indices.
+        Critical for preventing data leakage and ensuring proper OOS evaluation.
+
+        Args:
+            df: Full dataframe with timestamp column or DatetimeIndex
+            date_ranges: Dict with train_end, test_start from SSOT
+            timestamp_col: Name of timestamp column
+
+        Returns:
+            (train_df, test_df) - validation is handled internally during training
+        """
+        # Handle DatetimeIndex (L2 datasets use DatetimeIndex named 'time')
+        if isinstance(df.index, pd.DatetimeIndex):
+            logger.info(f"Using DatetimeIndex for date-based split (index name: {df.index.name})")
+            timestamps = df.index
+        else:
+            # Try to find timestamp column
+            if timestamp_col not in df.columns:
+                # Check common alternatives
+                for alt_col in ['datetime', 'time', 'date']:
+                    if alt_col in df.columns:
+                        timestamp_col = alt_col
+                        break
+                else:
+                    raise KeyError(f"No timestamp column found. Tried: {timestamp_col}, datetime, time, date. Available: {list(df.columns)}")
+
+            timestamps = pd.to_datetime(df[timestamp_col])
+
+        train_end = pd.to_datetime(date_ranges.get('train_end', '2024-12-31'))
+        test_start = pd.to_datetime(date_ranges.get('test_start', '2025-01-01'))
+
+        # Handle timezone-aware timestamps
+        if timestamps.tz is not None:
+            train_end = train_end.tz_localize('UTC')
+            test_start = test_start.tz_localize('UTC')
+
+        train_df = df[timestamps <= train_end].copy()
+        test_df = df[timestamps >= test_start].copy()
+
+        logger.info(f"Date-based split: train={len(train_df)} (until {train_end.date()}), test={len(test_df)} (from {test_start.date()})")
+
+        return train_df, test_df
+
     def create_train_eval_envs(
         self,
         dataset_path: Path,
         norm_stats_path: Path,
         config: Optional[TradingEnvConfig] = None,
+        date_ranges: Optional[Dict[str, str]] = None,
         train_ratio: float = 0.7,
         val_ratio: float = 0.15,
         n_train_envs: int = 1,
@@ -226,7 +279,8 @@ class EnvironmentFactory:
             dataset_path: Path to full dataset
             norm_stats_path: Path to normalization stats
             config: Environment configuration
-            train_ratio: Fraction for training (default 70%)
+            date_ranges: Dict with train_end, test_start for date-based splits (from SSOT)
+            train_ratio: Fraction for training (default 70%) - used if date_ranges is None
             val_ratio: Fraction for validation (default 15%)
             n_train_envs: Number of training environments
             n_eval_envs: Number of eval environments
@@ -243,19 +297,36 @@ class EnvironmentFactory:
         df = self._load_dataset(dataset_path, use_cache=True)
         norm_stats = self._load_norm_stats(norm_stats_path, use_cache=True)
 
-        # Split data
-        n = len(df)
-        train_end = int(n * train_ratio)
-        val_end = int(n * (train_ratio + val_ratio))
+        # Split data - prefer date-based split from SSOT
+        if date_ranges:
+            # Date-based split from SSOT (fixes distribution shift)
+            train_full_df, test_df = self._split_by_dates(df, date_ranges)
 
-        train_df = df.iloc[:train_end].reset_index(drop=True)
-        val_df = df.iloc[train_end:val_end].reset_index(drop=True)
-        test_df = df.iloc[val_end:].reset_index(drop=True)
+            # Use last 10% of train for validation (eval callback during training)
+            n_train = len(train_full_df)
+            val_start = int(n_train * 0.9)
+            val_df = train_full_df.iloc[val_start:].reset_index(drop=True)
+            train_df = train_full_df.iloc[:val_start].reset_index(drop=True)
+            test_df = test_df.reset_index(drop=True)
 
-        logger.info(
-            f"Dataset split: train={len(train_df)}, "
-            f"val={len(val_df)}, test={len(test_df)}"
-        )
+            logger.info(f"  -> train={len(train_df)}, val={len(val_df)}, test={len(test_df)}")
+        else:
+            # Legacy ratio-based split (fallback)
+            n = len(df)
+            train_end = int(n * train_ratio)
+            val_end = int(n * (train_ratio + val_ratio))
+
+            train_df = df.iloc[:train_end].reset_index(drop=True)
+            val_df = df.iloc[train_end:val_end].reset_index(drop=True)
+            test_df = df.iloc[val_end:].reset_index(drop=True)
+
+            logger.info(
+                f"Ratio-based split: train={len(train_df)}, "
+                f"val={len(val_df)}, test={len(test_df)}"
+            )
+
+        # Calculate minimum rows needed for an environment
+        min_rows = config.episode_length + getattr(config, 'warmup_bars', 100) + 10
 
         # Create environments
         def make_env_fn(data: pd.DataFrame):
@@ -271,12 +342,22 @@ class EnvironmentFactory:
 
         train_env = DummyVecEnv([make_env_fn(train_df) for _ in range(n_train_envs)])
         val_env = DummyVecEnv([make_env_fn(val_df) for _ in range(n_eval_envs)])
-        test_env = DummyVecEnv([make_env_fn(test_df) for _ in range(n_eval_envs)])
+
+        # Test env is optional - may not have enough data for OOS testing
+        # (e.g., training dataset doesn't extend into test period)
+        test_env = None
+        if len(test_df) >= min_rows:
+            test_env = DummyVecEnv([make_env_fn(test_df) for _ in range(n_eval_envs)])
+        else:
+            logger.warning(
+                f"Test dataset too small ({len(test_df)} rows, need {min_rows}). "
+                f"Test env will be None. Run L4 backtest on separate test dataset."
+            )
 
         return {
             "train": train_env,
             "val": val_env,
-            "test": test_env,
+            "test": test_env,  # May be None if insufficient test data
             "splits": {
                 "train_size": len(train_df),
                 "val_size": len(val_df),
@@ -298,7 +379,11 @@ class EnvironmentFactory:
             raise FileNotFoundError(f"Dataset not found: {full_path}")
 
         logger.info(f"Loading dataset: {full_path}")
-        df = pd.read_csv(full_path)
+        # Support both CSV and Parquet formats
+        if str(full_path).endswith('.parquet'):
+            df = pd.read_parquet(full_path)
+        else:
+            df = pd.read_csv(full_path)
 
         if use_cache:
             self._dataset_cache[path_str] = df

@@ -1,0 +1,193 @@
+# ============================================================================
+# Smart Simple v1.1 — Bidirectional, flat SHORT sizing, wider HS
+# ============================================================================
+#
+# Filosofia: SHORT flat 1.5x (scorer no discrimina), LONG binario (skip LOW)
+# Ejecucion: TP + HS + Friday close. Sin trailing stop, sin re-entry.
+# Ordenes: 100% limit orders en MEXC (0% maker fee), market solo en Friday close
+#
+# Cambios v1.0 -> v1.1 (2026-02-16):
+#   - vol_multiplier: 1.5 -> 2.0 (elimina 2 HS en backtest, Sharpe 2.87->3.27)
+#   - SHORT sizing: tiered 2.0/1.5/1.0 -> flat 1.5 (N=24, tiers no significativos)
+#
+# Contrato: FC-H5-SIMPLE-001
+# Fecha: 2026-02-16
+# ============================================================================
+
+executor:
+  name: "smart_simple_v1"
+  description: "Bidirectional, flat SHORT 1.5x, adaptive stops HS 2.0x, sin trailing"
+  status: "paper"
+  version: "1.1.0"
+
+# ============================================================================
+# Direccion: Bidireccional con SHORT agresivo, LONG conservador
+# ============================================================================
+direction:
+  mode: "bidirectional_asymmetric"
+  comment: |
+    SHORT DA estable 62-72% (4 anios). LONG DA inestable 25-69%.
+    LONGs son trades exploratorios: capturar alpha cuando existe,
+    minimizar dano cuando falla.
+
+# ============================================================================
+# Confianza: Scoring basado en acuerdo Ridge+BR + magnitud prediccion
+# ============================================================================
+confidence:
+  # Umbrales de acuerdo entre modelos
+  agreement_tight: 0.001      # |ridge - br| < 0.1% = fuerte acuerdo
+  agreement_loose: 0.005      # |ridge - br| < 0.5% = acuerdo moderado
+
+  # Umbrales de magnitud del ensemble
+  magnitude_high: 0.010       # |ensemble| > 1.0% = senal fuerte
+  magnitude_medium: 0.005     # |ensemble| > 0.5% = senal moderada
+
+  # Sizing por direccion y tier
+  # SHORT: flat 1.5x (scorer no discrimina bien entre tiers, N=24 insuficiente)
+  short:
+    HIGH: 1.5
+    MEDIUM: 1.5
+    LOW: 1.5
+
+  # LONG: certidumbre baja → sizing conservador
+  long:
+    HIGH: 1.0        # Maximo 1.0x para LONGs (nunca mas que base)
+    MEDIUM: 0.5      # Exploratorio: medio tamano
+    LOW: 0.0          # SKIP: no tradear LONGs de baja confianza
+
+# ============================================================================
+# Stops adaptativos: basados en volatilidad realizada 21 dias
+# ============================================================================
+adaptive_stops:
+  vol_multiplier: 2.0         # HS = vol_weekly * 2.0 std devs (v1.1: was 1.5, wider = less whipsaw)
+  hard_stop_min_pct: 0.01     # 1% minimo (mercados tranquilos)
+  hard_stop_max_pct: 0.03     # 3% maximo (mercados volatiles)
+  tp_ratio: 0.5               # TP = HS * 0.5
+
+  # Ejemplos (vol_multiplier=2.0):
+  # vol_ann=10% -> HS=2.81%, TP=1.41%
+  # vol_ann=15% -> HS=3.00%, TP=1.50%  (capped)
+  # vol_ann=20% -> HS=3.00%, TP=1.50%  (capped)
+  # vol_ann= 5% -> HS=1.41%, TP=0.70%
+
+# ============================================================================
+# Vol-targeting (base leverage antes de confidence multiplier)
+# ============================================================================
+vol_targeting:
+  target_vol: 0.15            # 15% annualized target
+  max_leverage: 2.0           # Techo absoluto
+  min_leverage: 0.5           # Piso absoluto
+  vol_lookback: 21            # Dias para vol realizada
+  vol_floor: 0.05             # Vol minima para evitar leverage extremo
+
+# ============================================================================
+# Ejecucion semanal
+# ============================================================================
+execution:
+  trailing_stop:
+    enabled: false             # Sin trailing stop
+
+  re_entry:
+    enabled: false             # Sin re-entry despues de exit
+
+  week_lifecycle:
+    entry_day: "monday"        # Entrada los lunes
+    entry_time_cot: "09:00"    # 09:00 COT = apertura + 1h
+    exit_day: "friday"         # Cierre los viernes
+    exit_time_cot: "12:50"     # 12:50 COT = 5 min antes del cierre
+
+  order_type:
+    entry: "limit"             # 0% maker fee en MEXC
+    take_profit: "limit"       # OCO: TP limit
+    hard_stop: "limit"         # OCO: HS limit
+    week_end: "market"         # Solo Friday close es market (~5% de trades)
+
+  costs:
+    maker_fee_bps: 0.0         # 0% maker fee (MEXC)
+    taker_fee_bps: 0.0         # 0% para market orders tambien en MEXC
+    slippage_bps: 1.0          # 1 bps slippage estimado
+
+# ============================================================================
+# Protecciones
+# ============================================================================
+guardrails:
+  # Alarma: modelo insistiendo en LONGs (posible drift)
+  long_insistence_alarm:
+    window_weeks: 8            # 8 semanas rolling (no 4, insuficiente N)
+    threshold_pct: 60          # Si >60% de senales son LONG → alerta
+    action: "alert_only"       # Solo alerta, no pausa
+
+  # DA rolling por direccion (prior bayesiano)
+  rolling_da_monitor:
+    window_weeks: 16           # 16 semanas (suficiente N para LONGs)
+    min_trades_for_eval: 6     # Minimo 6 trades de una direccion para evaluar
+    short_floor_da: 55         # Si SHORT DA < 55% en ventana → pausar SHORTs
+    long_floor_da: 45          # Si LONG DA < 45% en ventana → pausar LONGs
+    action: "pause_direction"  # Pausar solo la direccion afectada
+
+  # Circuit breaker general
+  circuit_breaker:
+    max_consecutive_losses: 5
+    max_drawdown_pct: 12.0
+    action: "pause_and_alert"
+
+# ============================================================================
+# Decision gates (semana 15 de paper trading)
+# ============================================================================
+gates:
+  evaluation_week: 15
+  promote_threshold:
+    da_overall: 55             # DA general > 55%
+    da_short: 60               # DA SHORT > 60%
+  discard_threshold:
+    da_overall: 50             # DA general < 50% → descartar
+  keep_conditions:
+    da_short_min: 60           # Si SHORT DA > 60% pero LONG < 45% → switch SHORT-only
+    da_long_min: 45            # Si LONG DA > 45% → mantener bidireccional
+
+# ============================================================================
+# Modelos
+# ============================================================================
+models:
+  list:
+    - name: "ridge"
+      type: "sklearn.linear_model.Ridge"
+      params:
+        alpha: 1.0
+
+    - name: "bayesian_ridge"
+      type: "sklearn.linear_model.BayesianRidge"
+      params:
+        max_iter: 300
+
+  ensemble:
+    method: "mean"             # Promedio simple de 2 modelos
+    target: "ln(close[t+5]/close[t])"
+
+# ============================================================================
+# Features (21, identicas a Track A)
+# ============================================================================
+features:
+  count: 21
+  list:
+    - close
+    - open
+    - high
+    - low
+    - return_1d
+    - return_5d
+    - return_10d
+    - return_20d
+    - volatility_5d
+    - volatility_10d
+    - volatility_20d
+    - rsi_14d
+    - ma_ratio_20d
+    - ma_ratio_50d
+    - day_of_week
+    - month
+    - is_month_end
+    - dxy_close_lag1
+    - oil_close_lag1
+    - vix_close_lag1
+    - embi_close_lag1

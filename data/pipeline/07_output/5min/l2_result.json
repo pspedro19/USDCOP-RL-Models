@@ -1,0 +1,73 @@
+{
+  "train_rows": 68417,
+  "val_rows": 6877,
+  "test_rows": 5338,
+  "feature_columns": [
+    "log_ret_5m",
+    "log_ret_1h",
+    "log_ret_4h",
+    "log_ret_1d",
+    "rsi_9",
+    "volatility_pct",
+    "trend_z",
+    "dxy_z",
+    "dxy_change_1d",
+    "vix_z",
+    "embi_z",
+    "brent_change_1d",
+    "gold_change_1d",
+    "rate_spread_z",
+    "yield_curve_z",
+    "hour_sin_market",
+    "hour_cos_market",
+    "dow_sin_market"
+  ],
+  "observation_dim": 18,
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\5min\\DS_production_norm_stats.json",
+  "train_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\5min\\DS_production_train.parquet",
+  "val_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\5min\\DS_production_val.parquet",
+  "test_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\5min\\DS_production_test.parquet",
+  "lineage": {
+    "ssot_version": "3.5.2",
+    "ssot_model": "v21.5b_temporal_features",
+    "feature_count": 18,
+    "feature_order": [
+      "log_ret_5m",
+      "log_ret_1h",
+      "log_ret_4h",
+      "log_ret_1d",
+      "rsi_9",
+      "volatility_pct",
+      "trend_z",
+      "dxy_z",
+      "dxy_change_1d",
+      "vix_z",
+      "embi_z",
+      "brent_change_1d",
+      "gold_change_1d",
+      "rate_spread_z",
+      "yield_curve_z",
+      "hour_sin_market",
+      "hour_cos_market",
+      "dow_sin_market"
+    ],
+    "feature_order_hash": "adb444350e3f1f923e96f62b298cd234",
+    "observation_dim": 30,
+    "date_ranges": {
+      "train_start": "2023-01-01",
+      "train_end": "2024-12-30",
+      "val_start": "2025-01-02",
+      "val_end": "2025-06-27",
+      "test_start": "2025-07-01",
+      "test_end": "2025-12-30"
+    },
+    "row_counts": {
+      "ohlcv_input": 80920,
+      "macro_input": 2629,
+      "train_output": 68417,
+      "val_output": 6877,
+      "test_output": 5338
+    },
+    "created_at": "2026-02-15T11:43:24.328786"
+  }
+}

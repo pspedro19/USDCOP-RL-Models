@@ -1,0 +1,51 @@
+{
+  "log_ret_5m": {
+    "mean": 3.3959174557033794e-06,
+    "std": 0.0012288899009774783,
+    "method": "zscore"
+  },
+  "log_ret_1h": {
+    "mean": 4.08043126845655e-05,
+    "std": 0.003985707411357734,
+    "method": "zscore"
+  },
+  "log_ret_4h": {
+    "mean": 0.00016310102389562972,
+    "std": 0.00819739538243577,
+    "method": "zscore"
+  },
+  "log_ret_1d": {
+    "mean": 0.0009879005786494024,
+    "std": 0.022995673180457102,
+    "method": "zscore"
+  },
+  "rsi_9": {
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1,
+    "method": "minmax"
+  },
+  "rsi_21": {
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1,
+    "method": "minmax"
+  },
+  "volatility_pct": {
+    "mean": 0.1026589379878834,
+    "std": 0.08889122943263633,
+    "method": "zscore"
+  },
+  "trend_z": {
+    "method": "none"
+  },
+  "_meta": {
+    "version": "2.0.0",
+    "ssot_model": "v20260203_092854",
+    "train_rows": 63160,
+    "feature_count": 18,
+    "created_at": "2026-02-04T16:13:10.390882"
+  }
+}

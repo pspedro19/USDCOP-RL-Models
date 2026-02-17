@@ -9,16 +9,18 @@ Contract: CTR-L0-MERGE-001
 
 Operations:
     - merge_and_upsert: Combine all source data and write to database
-    - forward_fill: Apply bounded forward-fill for missing values
+    - forward_fill: Apply bounded forward-fill for missing values (using EconomicCalendar)
     - generate_readiness_report: Create daily data readiness report
 
-Version: 1.0.0
+Version: 2.0.0 - Now uses EconomicCalendar for anti-leakage ffill
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 from datetime import datetime, timedelta, date
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from utils.dag_common import get_db_connection
@@ -34,6 +36,19 @@ from contracts.l0_data_contracts import (
     DailyDataReadinessReport,
     DataSourceType,
 )
+
+# Try to import EconomicCalendar for anti-leakage ffill
+try:
+    project_root = Path(__file__).parent.parent.parent.parent
+    src_path = project_root / "src"
+    if str(src_path) not in sys.path:
+        sys.path.insert(0, str(src_path))
+
+    from data.economic_calendar import EconomicCalendar
+    from data.macro_ssot import MacroSSOT
+    CALENDAR_AVAILABLE = True
+except ImportError:
+    CALENDAR_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +248,8 @@ class MacroMergeService:
         """
         Apply bounded forward fill respecting per-indicator limits.
 
-        Uses MACRO_INDICATOR_REGISTRY to determine max FFILL days per indicator.
+        Uses EconomicCalendar/SSOT to determine max FFILL days per indicator.
+        This implements anti-leakage protection by respecting publication dates.
 
         Args:
             **context: Airflow context
@@ -249,10 +265,22 @@ class MacroMergeService:
         exceeded_columns = []
         fill_details = {}
 
+        # Try to use SSOT for max_ffill_days (preferred)
+        ssot = None
+        if CALENDAR_AVAILABLE:
+            try:
+                ssot = MacroSSOT()
+                logger.info("[FFILL] Using SSOT for max_ffill_days")
+            except Exception as e:
+                logger.warning(f"[FFILL] Could not load SSOT: {e}")
+
         try:
             for column, metadata in MACRO_INDICATOR_REGISTRY.items():
-                # Get max FFILL days based on publication schedule
-                max_days = config.get_max_days_for_schedule(metadata.schedule)
+                # Get max FFILL days - prefer SSOT, fallback to config
+                if ssot:
+                    max_days = ssot.get_max_ffill_days(column)
+                else:
+                    max_days = config.get_max_days_for_schedule(metadata.schedule)
 
                 # Get last known value with its date
                 cur.execute(f"""

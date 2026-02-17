@@ -1,0 +1,73 @@
+{
+  "status": "PENDING_APPROVAL",
+  "strategy": "smart_simple_v11",
+  "strategy_name": "Smart Simple v1.1.0",
+  "backtest_year": 2025,
+  "backtest_recommendation": "PROMOTE",
+  "backtest_confidence": 1.0,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "passed": true,
+      "value": 23.07,
+      "threshold": -15.0
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "passed": true,
+      "value": 3.822,
+      "threshold": 0.0
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "passed": true,
+      "value": 3.83,
+      "threshold": 20.0
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "passed": true,
+      "value": 25,
+      "threshold": 10
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "passed": true,
+      "value": 0.0056,
+      "threshold": 0.05
+    }
+  ],
+  "backtest_metrics": {
+    "return_pct": 23.07,
+    "sharpe": 3.822,
+    "max_dd_pct": 3.83,
+    "p_value": 0.0056,
+    "trades": 25,
+    "win_rate_pct": 72.0
+  },
+  "deploy_manifest": {
+    "pipeline_type": "ml_forecasting",
+    "script": "scripts/train_and_export_smart_simple.py",
+    "args": [
+      "--phase",
+      "production",
+      "--no-png",
+      "--seed-db"
+    ],
+    "config_path": "config/execution/smart_simple_v1.yaml",
+    "db_tables": [
+      "forecast_h5_predictions",
+      "forecast_h5_signals",
+      "forecast_h5_executions",
+      "forecast_h5_subtrades",
+      "forecast_h5_paper_trading"
+    ]
+  },
+  "created_at": "2026-02-17T14:55:26.516199",
+  "last_updated": "2026-02-17T14:55:26.516199"
+}

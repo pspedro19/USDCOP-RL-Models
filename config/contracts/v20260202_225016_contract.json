@@ -1,0 +1,33 @@
+{
+  "version": "v20260202_225016",
+  "observation_dim": 15,
+  "feature_order": [
+    "log_ret_5m",
+    "log_ret_1h",
+    "log_ret_4h",
+    "rsi_9",
+    "volatility_pct",
+    "trend_z",
+    "dxy_z",
+    "dxy_change_1d",
+    "vix_z",
+    "embi_z",
+    "brent_change_1d",
+    "rate_spread_z",
+    "usdmxn_change_1d",
+    "position",
+    "unrealized_pnl"
+  ],
+  "norm_stats_path": "models\\ppo_v20260202_225016_production\\norm_stats.json",
+  "model_path": "models/ppo_v20260202_225016_production/final_model.zip",
+  "rsi_period": 9,
+  "atr_period": 10,
+  "adx_period": 14,
+  "warmup_bars": 14,
+  "trading_hours_start": "13:00",
+  "trading_hours_end": "17:55",
+  "created_at": "2026-02-03T03:50:16.687312+00:00",
+  "norm_stats_hash": "40e7dd3c3189245a595e6b516028637c3afbb682a9be227d4a5b990b94d2637c",
+  "sample_count": 84421,
+  "contract_hash": "81edbbd413bfb09d"
+}

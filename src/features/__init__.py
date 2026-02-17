@@ -88,6 +88,22 @@ from .temporal_joins import (
     fill_missing_macro,
 )
 
+# Calculator Registry (SSOT v2.0) - Dynamic feature calculation
+from .calculator_registry import (
+    CalculatorRegistry,
+    get_calculator_registry,
+    calculate_features_ssot,
+    normalize_features,
+    # Individual calculators
+    calculate_log_returns,
+    calculate_rsi_wilders,
+    calculate_volatility_pct,
+    calculate_trend_z,
+    calculate_macro_zscore,
+    calculate_spread_zscore,
+    calculate_pct_change,
+)
+
 # Trading Hours Filter (P0-07) - Colombian trading hours filtering
 # Refactored to use SSOT from config/trading_calendar.json
 from .trading_hours_filter import (
@@ -168,6 +184,18 @@ __all__ = [
     'JoinStatistics',
     'get_join_statistics',
     'fill_missing_macro',
+    # Calculator Registry (SSOT v2.0)
+    'CalculatorRegistry',
+    'get_calculator_registry',
+    'calculate_features_ssot',
+    'normalize_features',
+    'calculate_log_returns',
+    'calculate_rsi_wilders',
+    'calculate_volatility_pct',
+    'calculate_trend_z',
+    'calculate_macro_zscore',
+    'calculate_spread_zscore',
+    'calculate_pct_change',
     # Trading Hours Filter (P0-07) - SSOT Version
     'ITradingHoursFilter',
     'TradingCalendarConfig',

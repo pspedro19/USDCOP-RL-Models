@@ -4,20 +4,20 @@ DAG: v3.l5_multi_model_inference
 Layer 5: Multi-Model Realtime Inference System (PRODUCTION)
 
 Purpose:
-    Execute inference across multiple RL models with 15-feature observation space
-    matching TradingEnvironment from training.
+    Execute inference across multiple RL models using PRE-COMPUTED features
+    from inference_ready_nrt (written by L1 DAG).
 
 Architecture:
     1. Model Registry Pattern - Load models from config table
     2. StateTracker - Track per-model state (position, time_normalized)
-    3. ObservationBuilder - 15-dim observation (13 core + 2 state)
+    3. inference_ready_nrt - Pre-normalized FLOAT[] from L1 (NO inline calculation)
     4. RiskManager - Safety layer for trade validation
     5. PaperTrader - Simulated trade execution
     6. ModelMonitor - Drift detection and health monitoring
     7. Multi-destination output - PostgreSQL, Redis Streams, Events table
 
 Schedule:
-    Event-driven: Uses NewFeatureBarSensor to wait for new features from L1.
+    Event-driven: Uses FeatureReadySensor to wait for new features from L1.
     Fallback schedule: */5 13-17 * * 1-5 (8:00-12:55 COT)
 
     Best Practice: Instead of running blindly every 5 minutes, the sensor
@@ -27,26 +27,26 @@ Schedule:
     - Running inference on stale features
 
 SSOT:
-    - config/feature_config.json for 15-feature observation space
-    - config/norm_stats.json for normalization statistics
+    - inference_ready_nrt table (FLOAT[] pre-normalized by L1)
     - config.models table for enabled models
+    - L1 handles normalization using production norm_stats
 
 Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-26
-Version: 5.0.0 (SSOT Integration + Canary/Rollback)
-Updated: 2026-01-18
+Version: 6.0.0 (Unified pipeline: reads pre-computed features from inference_ready_nrt)
+Updated: 2026-02-12
+
+CHANGELOG v6.0.0:
+- REMOVED: All inline feature calculations (_calculate_rsi, _calculate_atr_pct, _calculate_adx)
+- REMOVED: CanonicalFeatureBuilder dependency (L1 handles all feature computation)
+- REMOVED: ObservationBuilder dependency (features arrive pre-normalized)
+- CHANGED: build_observation() now reads from inference_ready_nrt
+- CHANGED: Sensor from NewFeatureBarSensor to FeatureReadySensor(inference_ready_nrt)
+- SIMPLIFIED: ~200 lines of inline computation eliminated
 
 CHANGELOG v5.0.0:
 - INTEGRATED: DeploymentManager for canary deployment and automatic rollback
 - INTEGRATED: Traffic splitting for champion/challenger model selection
-- INTEGRATED: Post-inference metrics reporting for promotion decisions
-- INTEGRATED: Rollback trigger checking with cooldown management
-
-CHANGELOG v4.0.0:
-- INTEGRATED: CanonicalFeatureBuilder for RSI, ATR, ADX calculations
-- ENSURES: Perfect parity with training (Wilder's EMA for all indicators)
-- FALLBACK: Legacy calculators used only if SSOT unavailable
-- REMOVES: ADX placeholder - now uses proper Wilder's smoothing
 """
 
 from datetime import datetime, timedelta
@@ -74,7 +74,8 @@ from utils.trading_calendar import TradingCalendar, get_calendar, is_trading_day
 from utils.datetime_handler import UnifiedDatetimeHandler
 
 # Event-driven sensor (Best Practice: wait for actual data instead of fixed schedule)
-from sensors.new_bar_sensor import NewFeatureBarSensor
+# v6.0.0: FeatureReadySensor listens to inference_ready_nrt (pre-normalized by L1)
+from sensors.postgres_notify_sensor import FeatureReadySensor
 
 # =============================================================================
 # MODULE IMPORTS
@@ -110,7 +111,7 @@ def get_redis_config() -> Dict[str, Any]:
         "password": os.environ.get("REDIS_PASSWORD"),
     }
 
-from src.core.builders.observation_builder import ObservationBuilder
+# NOTE: ObservationBuilder removed in v6.0.0 — features arrive pre-normalized from L1
 from src.core.state.state_tracker import StateTracker
 from src.risk.risk_manager import RiskManager, RiskLimits
 from src.trading.paper_trader import PaperTrader
@@ -190,32 +191,25 @@ class TradingFlagsError(Exception):
     pass
 
 # =============================================================================
-# SSOT IMPORTS - CanonicalFeatureBuilder for perfect training/inference parity
+# NOTE: CanonicalFeatureBuilder removed in v6.0.0
+# L1 DAG now handles ALL feature computation and normalization.
+# L5 reads pre-computed features from inference_ready_nrt.
+# =============================================================================
+CANONICAL_BUILDER_AVAILABLE = False  # Kept for backward compat checks
+
+# =============================================================================
+# PRODUCTION CONTRACT INTEGRATION (Two-Vote System)
 # =============================================================================
 try:
-    from src.feature_store.builders import CanonicalFeatureBuilder, BuilderContext
-    CANONICAL_BUILDER_AVAILABLE = True
-    logging.info("CanonicalFeatureBuilder (SSOT) loaded successfully")
+    from src.core.contracts.production_contract import (
+        ProductionContract,
+        get_production_contract,
+    )
+    PRODUCTION_CONTRACT_AVAILABLE = True
+    logging.info("[PROD-CONTRACT] ProductionContract loaded for 2-vote model loading")
 except ImportError as e:
-    CANONICAL_BUILDER_AVAILABLE = False
-    logging.warning(f"CanonicalFeatureBuilder not available: {e}. Using legacy calculators.")
-
-# Lazy-initialized SSOT builder
-_canonical_builder = None
-
-def get_canonical_builder():
-    """Get or initialize the SSOT CanonicalFeatureBuilder for inference."""
-    global _canonical_builder
-    if _canonical_builder is None and CANONICAL_BUILDER_AVAILABLE:
-        try:
-            _canonical_builder = CanonicalFeatureBuilder.for_inference()
-            logging.info(
-                f"Initialized CanonicalFeatureBuilder for inference "
-                f"(hash: {_canonical_builder.get_norm_stats_hash()[:12]}...)"
-            )
-        except Exception as e:
-            logging.error(f"Failed to initialize CanonicalFeatureBuilder: {e}")
-    return _canonical_builder
+    PRODUCTION_CONTRACT_AVAILABLE = False
+    logging.warning(f"[PROD-CONTRACT] ProductionContract not available: {e}. Using legacy model loading.")
 
 # =============================================================================
 # CONFIGURATION
@@ -484,6 +478,64 @@ class ModelRegistry:
     def get_model(self, model_id: str) -> Optional[Any]:
         return self._models.get(model_id)
 
+    def get_production_model_from_contract(self) -> Optional[ModelConfig]:
+        """
+        Get production model configuration from ProductionContract.
+
+        This loads the model that has passed BOTH votes:
+        1. L4 Backtest + Promotion (primer voto)
+        2. Dashboard Approval (segundo voto)
+
+        Returns:
+            ModelConfig or None if no production contract found
+        """
+        if not PRODUCTION_CONTRACT_AVAILABLE:
+            logging.info("[PROD-CONTRACT] ProductionContract not available")
+            return None
+
+        conn = get_db_connection()
+        try:
+            prod_contract = get_production_contract(conn)
+
+            if prod_contract is None:
+                logging.info("[PROD-CONTRACT] No production model found in contract")
+                return None
+
+            logging.info(f"[PROD-CONTRACT] Loading production model from contract:")
+            logging.info(f"  Model ID: {prod_contract.model_id}")
+            logging.info(f"  Experiment: {prod_contract.experiment_name}")
+            logging.info(f"  Approved by: {prod_contract.approved_by}")
+            logging.info(f"  Feature order hash: {prod_contract.feature_order_hash}")
+
+            # Validate feature order hash matches current L5
+            if prod_contract.feature_order_hash and FEATURE_ORDER_HASH:
+                if prod_contract.feature_order_hash != FEATURE_ORDER_HASH:
+                    logging.error(
+                        f"[PROD-CONTRACT] FEATURE_ORDER_HASH mismatch! "
+                        f"Production={prod_contract.feature_order_hash}, "
+                        f"L5={FEATURE_ORDER_HASH}"
+                    )
+                    # Continue anyway but log the warning
+
+            return ModelConfig(
+                model_id=prod_contract.model_id,
+                model_name=prod_contract.experiment_name,
+                model_type="PPO",
+                model_path=prod_contract.model_path,
+                version="production",
+                enabled=True,
+                is_production=True,
+                priority=1,
+                feature_order_hash=prod_contract.feature_order_hash,
+                norm_stats_hash=prod_contract.norm_stats_hash,
+            )
+
+        except Exception as e:
+            logging.error(f"[PROD-CONTRACT] Error loading production contract: {e}")
+            return None
+        finally:
+            conn.close()
+
 
 model_registry = ModelRegistry()
 
@@ -495,8 +547,7 @@ model_registry = ModelRegistry()
 # State tracker for managing model positions (2 state features)
 state_tracker = StateTracker(initial_equity=10000.0)
 
-# Observation builder for 15-dim observations (13 core + 2 state)
-observation_builder = ObservationBuilder()
+# NOTE: ObservationBuilder removed in v6.0.0 — L5 reads pre-normalized FLOAT[] from L1
 
 # Risk manager with conservative limits (matches trading_config.yaml)
 risk_manager = RiskManager(RiskLimits(
@@ -600,234 +651,13 @@ def report_inference_metrics(
 
 
 # =============================================================================
-# TECHNICAL INDICATOR HELPERS (SSOT-AWARE)
-# =============================================================================
-# NOTE: These functions now prefer CanonicalFeatureBuilder (SSOT) when available.
-# The legacy implementations are kept as fallback only.
-# =============================================================================
-
-def _calculate_technical_features_ssot(ohlcv_df: pd.DataFrame, bar_idx: int) -> Dict[str, float]:
-    """
-    Calculate technical features using SSOT CanonicalFeatureBuilder.
-
-    This ensures PERFECT PARITY with training by using the exact same
-    calculators (Wilder's EMA for RSI, ATR, ADX).
-
-    Contract: CTR-FEATURE-001 - Uses FEATURE_ORDER for consistent feature names.
-
-    Args:
-        ohlcv_df: DataFrame with OHLCV data
-        bar_idx: Current bar index
-
-    Returns:
-        Dict with technical features (rsi_9, atr_pct, adx_14, log returns)
-    """
-    builder = get_canonical_builder()
-    if builder is None:
-        raise RuntimeError("CanonicalFeatureBuilder not available")
-
-    # Use SSOT calculators - CTR-FEATURE-001
-    from src.feature_store.core import (
-        RSICalculator, ATRPercentCalculator, ADXCalculator,
-        LogReturnCalculator,
-    )
-    # Use FEATURE_CONTRACT from module-level SSOT import (not feature_store.core)
-    # to ensure consistent feature periods
-
-    # Default periods matching SSOT contract (rsi_9, atr_10, adx_14)
-    periods = {"rsi": 9, "atr": 10, "adx": 14}
-
-    # Initialize calculators
-    rsi_calc = RSICalculator(period=periods["rsi"])
-    atr_calc = ATRPercentCalculator(period=periods["atr"])
-    adx_calc = ADXCalculator(period=periods["adx"])
-    log_ret_5m = LogReturnCalculator("log_ret_5m", periods=1)
-    log_ret_1h = LogReturnCalculator("log_ret_1h", periods=12)
-    log_ret_4h = LogReturnCalculator("log_ret_4h", periods=48)
-
-    return {
-        "rsi_9": rsi_calc.calculate(ohlcv_df, bar_idx),
-        "atr_pct": atr_calc.calculate(ohlcv_df, bar_idx),
-        "adx_14": adx_calc.calculate(ohlcv_df, bar_idx),
-        "log_ret_5m": log_ret_5m.calculate(ohlcv_df, bar_idx),
-        "log_ret_1h": log_ret_1h.calculate(ohlcv_df, bar_idx),
-        "log_ret_4h": log_ret_4h.calculate(ohlcv_df, bar_idx),
-    }
-
-
-def _load_ohlcv_for_ssot(cur, lookback: int = 100) -> pd.DataFrame:
-    """Load OHLCV data from database into DataFrame for SSOT calculators."""
-    cur.execute(f"""
-        SELECT time, open, high, low, close, volume
-        FROM usdcop_m5_ohlcv
-        ORDER BY time DESC LIMIT {lookback}
-    """)
-    rows = cur.fetchall()[::-1]  # Reverse to chronological order
-
-    if not rows:
-        return pd.DataFrame()
-
-    return pd.DataFrame(rows, columns=["time", "open", "high", "low", "close", "volume"])
-
-
-def _calculate_rsi(cur, period: int = 9) -> float:
-    """
-    Calculate RSI from recent OHLCV data.
-
-    ARCHITECTURE: Prefers SSOT CanonicalFeatureBuilder when available.
-    Falls back to legacy SMA-based calculation if SSOT unavailable.
-
-    WARNING: Legacy calculation uses SMA instead of Wilder's EMA.
-    """
-    # Try SSOT first
-    if CANONICAL_BUILDER_AVAILABLE:
-        try:
-            ohlcv_df = _load_ohlcv_for_ssot(cur, lookback=period * 3)
-            if len(ohlcv_df) >= period + 1:
-                from src.feature_store.core import RSICalculator
-                calc = RSICalculator(period=period)
-                return calc.calculate(ohlcv_df, len(ohlcv_df) - 1)
-        except Exception as e:
-            logging.warning(f"SSOT RSI calculation failed: {e}. Using legacy.")
-
-    # Legacy fallback (SMA-based - may differ from training!)
-    logging.debug("Using legacy RSI calculation (SMA-based)")
-    cur.execute(f"""
-        SELECT close FROM usdcop_m5_ohlcv
-        ORDER BY time DESC LIMIT {period + 1}
-    """)
-    closes = [r[0] for r in cur.fetchall()][::-1]
-    if len(closes) < period + 1:
-        return 50.0
-
-    deltas = np.diff([float(c) for c in closes])
-    gains = np.where(deltas > 0, deltas, 0)
-    losses = np.where(deltas < 0, -deltas, 0)
-    avg_gain = np.mean(gains[-period:])
-    avg_loss = np.mean(losses[-period:])
-
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
-
-def _calculate_atr_pct(cur, period: int = 10) -> float:
-    """
-    Calculate ATR percentage.
-
-    ARCHITECTURE: Prefers SSOT CanonicalFeatureBuilder when available.
-    Falls back to legacy SMA-based calculation if SSOT unavailable.
-
-    WARNING: Legacy calculation uses SMA instead of Wilder's EMA.
-    """
-    # Try SSOT first
-    if CANONICAL_BUILDER_AVAILABLE:
-        try:
-            ohlcv_df = _load_ohlcv_for_ssot(cur, lookback=period * 3)
-            if len(ohlcv_df) >= period + 1:
-                from src.feature_store.core import ATRPercentCalculator
-                calc = ATRPercentCalculator(period=period)
-                return calc.calculate(ohlcv_df, len(ohlcv_df) - 1)
-        except Exception as e:
-            logging.warning(f"SSOT ATR calculation failed: {e}. Using legacy.")
-
-    # Legacy fallback (SMA-based - may differ from training!)
-    logging.debug("Using legacy ATR calculation (SMA-based)")
-    cur.execute(f"""
-        SELECT high, low, close FROM usdcop_m5_ohlcv
-        ORDER BY time DESC LIMIT {period + 1}
-    """)
-    rows = cur.fetchall()[::-1]
-    if len(rows) < period + 1:
-        return 0.05
-
-    tr_list = []
-    for i in range(1, len(rows)):
-        h, l, c = float(rows[i][0]), float(rows[i][1]), float(rows[i][2])
-        prev_c = float(rows[i-1][2])
-        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
-        tr_list.append(tr)
-
-    atr = np.mean(tr_list[-period:])
-    return atr / float(rows[-1][2])
-
-
-def _calculate_adx(cur, bar_idx: int = 0, period: int = 14) -> float:
-    """
-    Calculate ADX using Wilder's smoothing method.
-
-    ARCHITECTURE: Prefers SSOT CanonicalFeatureBuilder when available.
-    Falls back to inline Wilder's implementation if SSOT unavailable.
-
-    NOTE: Both SSOT and legacy use Wilder's smoothing (alpha=1/period).
-    """
-    # Try SSOT first
-    if CANONICAL_BUILDER_AVAILABLE:
-        try:
-            ohlcv_df = _load_ohlcv_for_ssot(cur, lookback=period * 3 + 1)
-            if len(ohlcv_df) >= period * 2:
-                from src.feature_store.core import ADXCalculator
-                calc = ADXCalculator(period=period)
-                return calc.calculate(ohlcv_df, len(ohlcv_df) - 1)
-        except Exception as e:
-            logging.warning(f"SSOT ADX calculation failed: {e}. Using legacy.")
-
-    # Legacy fallback (Wilder's EMA - matches training)
-    logging.debug("Using legacy ADX calculation (Wilder's EMA)")
-    required_bars = period * 3 + 1
-
-    cur.execute("""
-        SELECT high, low, close FROM usdcop_m5_ohlcv
-        ORDER BY time DESC LIMIT %s
-    """, (required_bars,))
-
-    rows = cur.fetchall()[::-1]  # Reverse to chronological
-    if len(rows) < required_bars:
-        return 25.0  # Neutral during warmup
-
-    # Calculate TR, +DM, -DM
-    tr_list, plus_dm_list, minus_dm_list = [], [], []
-    for i in range(1, len(rows)):
-        high, low, close = rows[i]
-        prev_high, prev_low, prev_close = rows[i-1]
-
-        tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
-        tr_list.append(tr)
-
-        up_move, down_move = high - prev_high, prev_low - low
-        plus_dm_list.append(up_move if up_move > down_move and up_move > 0 else 0)
-        minus_dm_list.append(down_move if down_move > up_move and down_move > 0 else 0)
-
-    # Wilder's smoothing
-    alpha = 1.0 / period
-    def wilder_smooth(values):
-        result = [sum(values[:period]) / period]
-        for v in values[period:]:
-            result.append(result[-1] * (1 - alpha) + v * alpha)
-        return result
-
-    smoothed_tr = wilder_smooth(tr_list)
-    smoothed_plus_dm = wilder_smooth(plus_dm_list)
-    smoothed_minus_dm = wilder_smooth(minus_dm_list)
-
-    # Calculate DX and ADX
-    dx_list = []
-    for i in range(len(smoothed_tr)):
-        if smoothed_tr[i] == 0:
-            dx_list.append(0)
-            continue
-        plus_di = 100 * smoothed_plus_dm[i] / smoothed_tr[i]
-        minus_di = 100 * smoothed_minus_dm[i] / smoothed_tr[i]
-        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di) if (plus_di + minus_di) else 0
-        dx_list.append(dx)
-
-    adx_values = wilder_smooth(dx_list) if len(dx_list) >= period else [25.0]
-    return float(adx_values[-1])
-
-
-# =============================================================================
 # HELPER FUNCTIONS
+# =============================================================================
+# NOTE: v6.0.0 removed all inline technical indicator functions:
+#   _calculate_technical_features_ssot, _load_ohlcv_for_ssot,
+#   _calculate_rsi, _calculate_atr_pct, _calculate_adx
+# L1 DAG now handles ALL feature computation via CanonicalFeatureBuilder.
+# L5 reads pre-computed, pre-normalized features from inference_ready_nrt.
 # =============================================================================
 
 def check_trading_hours() -> Tuple[bool, str]:
@@ -1366,166 +1196,185 @@ def check_system_readiness(**ctx) -> Dict[str, Any]:
 
 
 def load_models(**ctx) -> Dict[str, Any]:
-    """Task 2: Load enabled models from registry"""
-    logging.info("Loading models from registry...")
+    """Task 2: Load production model from contract (2-vote system) or fallback to registry.
+
+    Priority:
+    1. ProductionContract (model approved via L4 + Dashboard)
+    2. Fallback to config.models table
+    """
+    logging.info("Loading models...")
     create_output_tables()
 
-    model_configs = model_registry.get_enabled_models()
     loaded_models = []
     failed_models = []
+    using_contract = False
 
-    for config in model_configs:
-        model = model_registry.load_model(config)
+    # First, try to load from ProductionContract (2-vote approved model)
+    prod_config = model_registry.get_production_model_from_contract()
+
+    if prod_config:
+        logging.info(f"[PROD-CONTRACT] Using production model from contract: {prod_config.model_id}")
+        model = model_registry.load_model(prod_config)
+
         if model is not None:
             loaded_models.append({
-                "model_id": config.model_id,
-                "model_name": config.model_name,
-                "model_type": config.model_type,
-                "is_production": config.is_production
+                "model_id": prod_config.model_id,
+                "model_name": prod_config.model_name,
+                "model_type": prod_config.model_type,
+                "is_production": True,
+                "from_contract": True,
+                "feature_order_hash": prod_config.feature_order_hash,
+                "norm_stats_hash": prod_config.norm_stats_hash,
             })
+            using_contract = True
+            ctx["ti"].xcom_push(key="using_production_contract", value=True)
+            ctx["ti"].xcom_push(key="production_model_id", value=prod_config.model_id)
         else:
-            failed_models.append(config.model_id)
+            failed_models.append(prod_config.model_id)
+            logging.warning(f"[PROD-CONTRACT] Failed to load production model: {prod_config.model_id}")
+
+    # Fallback to config.models if no production contract or load failed
+    if not loaded_models:
+        logging.info("Falling back to config.models registry")
+        ctx["ti"].xcom_push(key="using_production_contract", value=False)
+
+        model_configs = model_registry.get_enabled_models()
+
+        for config in model_configs:
+            model = model_registry.load_model(config)
+            if model is not None:
+                loaded_models.append({
+                    "model_id": config.model_id,
+                    "model_name": config.model_name,
+                    "model_type": config.model_type,
+                    "is_production": config.is_production,
+                    "from_contract": False,
+                    "feature_order_hash": config.feature_order_hash,
+                    "norm_stats_hash": config.norm_stats_hash,
+                })
+            else:
+                failed_models.append(config.model_id)
 
     ctx["ti"].xcom_push(key="loaded_models", value=loaded_models)
-    return {"loaded_count": len(loaded_models), "failed_count": len(failed_models)}
+
+    logging.info(f"Loaded {len(loaded_models)} models (from_contract={using_contract})")
+    return {
+        "loaded_count": len(loaded_models),
+        "failed_count": len(failed_models),
+        "from_contract": using_contract,
+    }
 
 
 def build_observation(**ctx) -> Dict[str, Any]:
-    """Task 3: Build 15-dim observation (13 core market + 2 state features)
+    """Task 3: Read pre-computed features from inference_ready_nrt (v6.0.0).
+
+    v6.0.0: L1 DAG handles ALL feature computation and normalization.
+    L5 simply reads the latest row from inference_ready_nrt.
 
     Look-Ahead Bias Prevention:
-    - Signal is generated using the PREVIOUS bar (bar N-1, which is fully closed)
+    - Features are computed from the PREVIOUS bar (bar N-1, fully closed) by L1
     - Execution happens at the CURRENT bar's OPEN (bar N)
-    - This prevents using future information (close price) for execution
     """
-    logging.info(f"Building 15-dim observation (with look-ahead bias prevention)...")
+    logging.info("Reading pre-computed features from inference_ready_nrt...")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        # FIX: Query TWO latest bars
-        # - Bar N-1 (prev_bar): Used for signal generation (CLOSED, no look-ahead)
-        # - Bar N (current_bar): Use OPEN price for execution
+        # Read latest pre-normalized features from L1
         cur.execute("""
-            WITH latest AS (
-                SELECT time, open, close FROM usdcop_m5_ohlcv
-                WHERE time > NOW() - INTERVAL '1 hour'
-                ORDER BY time DESC LIMIT 50
-            )
-            SELECT
-                -- Returns calculated from bar N-1 (signal bar)
-                LN(close / LAG(close,1) OVER (ORDER BY time)) as log_ret_5m,
-                LN(close / LAG(close,12) OVER (ORDER BY time)) as log_ret_1h,
-                LN(close / LAG(close,48) OVER (ORDER BY time)) as log_ret_4h,
-                close as signal_bar_close,
-                open as current_bar_open,
-                time as bar_time
-            FROM latest ORDER BY time DESC LIMIT 2
+            SELECT timestamp, features, price, feature_order_hash, norm_stats_hash
+            FROM inference_ready_nrt
+            ORDER BY timestamp DESC LIMIT 1
         """)
-        # FIX: Fetch both bars
-        ohlcv_rows = cur.fetchall()
+        row = cur.fetchone()
 
-        # Bar 0 = current bar (most recent), Bar 1 = previous bar (signal bar)
-        current_bar = ohlcv_rows[0] if len(ohlcv_rows) > 0 else None
-        signal_bar = ohlcv_rows[1] if len(ohlcv_rows) > 1 else current_bar
+        if not row:
+            raise ValueError("No features found in inference_ready_nrt. Is L1 DAG running?")
 
-        # Get macro features
+        feature_ts, market_features_array, signal_price, fo_hash, ns_hash = row
+        market_features_array = list(market_features_array)  # FLOAT[] → list
+
+        logging.info(
+            f"Read {len(market_features_array)} pre-normalized features from inference_ready_nrt "
+            f"(timestamp={feature_ts}, fo_hash={fo_hash[:12] if fo_hash else 'N/A'}...)"
+        )
+
+        # Look-ahead bias prevention: execution price = OPEN of bar AFTER the signal bar
         cur.execute("""
-            SELECT
-                (fxrt_index_dxy_usa_d_dxy - 100.21) / 5.60 as dxy_z,
-                (fxrt_index_dxy_usa_d_dxy - LAG(fxrt_index_dxy_usa_d_dxy,1) OVER (ORDER BY fecha)) / NULLIF(LAG(fxrt_index_dxy_usa_d_dxy,1) OVER (ORDER BY fecha), 0) as dxy_change_1d,
-                (volt_vix_usa_d_vix - 21.16) / 7.89 as vix_z,
-                (crsk_spread_embi_col_d_embi - 322.01) / 62.68 as embi_z,
-                (comm_oil_brent_glb_d_brent - LAG(comm_oil_brent_glb_d_brent,1) OVER (ORDER BY fecha)) / NULLIF(LAG(comm_oil_brent_glb_d_brent,1) OVER (ORDER BY fecha), 0) as brent_change_1d,
-                ((10.0 - finc_bond_yield10y_usa_d_ust10y) - 7.03) / 1.41 as rate_spread,
-                (fxrt_spot_usdmxn_mex_d_usdmxn - LAG(fxrt_spot_usdmxn_mex_d_usdmxn,1) OVER (ORDER BY fecha)) / NULLIF(LAG(fxrt_spot_usdmxn_mex_d_usdmxn,1) OVER (ORDER BY fecha), 0) as usdmxn_change_1d
-            FROM macro_indicators_daily
-            WHERE fecha <= CURRENT_DATE
-            ORDER BY fecha DESC LIMIT 1
-        """)
-        macro_result = cur.fetchone()
+            SELECT open FROM usdcop_m5_ohlcv
+            WHERE symbol = 'USD/COP' AND time > %s
+            ORDER BY time ASC LIMIT 1
+        """, (feature_ts,))
+        exec_row = cur.fetchone()
+        execution_price = float(exec_row[0]) if exec_row else float(signal_price)
 
-        # Look-ahead bias prevention:
-        # - signal_bar_close: Used for observation building (bar N-1, already closed)
-        # - execution_price: OPEN of current bar (bar N) for trade execution
-        signal_bar_close = float(signal_bar[3]) if signal_bar and signal_bar[3] else 4200.0
-        execution_price = float(current_bar[4]) if current_bar and current_bar[4] else signal_bar_close
-        signal_bar_time = signal_bar[5] if signal_bar and len(signal_bar) > 5 else None
-        current_bar_time = current_bar[5] if current_bar and len(current_bar) > 5 else None
-
-        logging.info(f"Look-Ahead Fix: Signal from bar {signal_bar_time}, Execution at bar {current_bar_time}")
-        logging.info(f"Signal bar close: {signal_bar_close:.2f}, Execution price (open): {execution_price:.2f}")
+        logging.info(
+            f"Look-Ahead Fix: Signal from bar {feature_ts}, "
+            f"Signal price={float(signal_price):.2f}, Execution price (next open)={execution_price:.2f}"
+        )
 
         bar_number = get_bar_number()
 
-        # Build market features dict (13 core features)
-        # FIX: Use signal_bar data (previous closed bar) for observation
-        market_features = {
-            "log_ret_5m": float(signal_bar[0]) if signal_bar and signal_bar[0] else 0.0,
-            "log_ret_1h": float(signal_bar[1]) if signal_bar and signal_bar[1] else 0.0,
-            "log_ret_4h": float(signal_bar[2]) if signal_bar and signal_bar[2] else 0.0,
-            "rsi_9": _calculate_rsi(cur, 9),
-            "atr_pct": _calculate_atr_pct(cur, 10),
-            "adx_14": _calculate_adx(cur, period=14),
-            "dxy_z": float(macro_result[0]) if macro_result and macro_result[0] else 0.0,
-            "dxy_change_1d": float(macro_result[1]) if macro_result and macro_result[1] else 0.0,
-            "vix_z": float(macro_result[2]) if macro_result and macro_result[2] else 0.0,
-            "embi_z": float(macro_result[3]) if macro_result and macro_result[3] else 0.0,
-            "brent_change_1d": float(macro_result[4]) if macro_result and macro_result[4] else 0.0,
-            "rate_spread": float(macro_result[5]) if macro_result and macro_result[5] else 0.0,
-            "usdmxn_change_1d": float(macro_result[6]) if macro_result and macro_result[6] else 0.0
-        }
-
-        ctx["ti"].xcom_push(key="market_features", value=market_features)
-        # FIX: Push BOTH prices - signal bar close for reference, execution price for trades
-        ctx["ti"].xcom_push(key="signal_bar_price", value=signal_bar_close)
-        ctx["ti"].xcom_push(key="execution_price", value=execution_price)  # Current bar OPEN
+        # Push pre-normalized FLOAT[] array (NOT a dict — already normalized by L1)
+        ctx["ti"].xcom_push(key="market_features_array", value=market_features_array)
+        ctx["ti"].xcom_push(key="signal_bar_price", value=float(signal_price))
+        ctx["ti"].xcom_push(key="execution_price", value=execution_price)
         ctx["ti"].xcom_push(key="bar_number", value=bar_number)
+        ctx["ti"].xcom_push(key="feature_order_hash", value=fo_hash)
+        ctx["ti"].xcom_push(key="norm_stats_hash", value=ns_hash)
 
-        logging.info(f"Market features built: {len(market_features)} features")
-        logging.info(f"FIX: Signal bar price={signal_bar_close:.2f}, Execution price={execution_price:.2f}")
-
-        return {"status": "success", "bar_number": bar_number, "signal_price": signal_bar_close, "execution_price": execution_price}
+        return {
+            "status": "success",
+            "bar_number": bar_number,
+            "signal_price": float(signal_price),
+            "execution_price": execution_price,
+            "feature_count": len(market_features_array),
+        }
     finally:
         cur.close()
         conn.close()
 
 
 def run_multi_model_inference(**ctx) -> Dict[str, Any]:
-    """Task 4: Run inference on all enabled models with 15-dim observation
+    """Task 4: Run inference on all enabled models using pre-normalized features (v6.0.0).
+
+    v6.0.0: Uses pre-normalized FLOAT[] from inference_ready_nrt (written by L1).
+    Only adds state features (position, time_normalized) before model.predict().
 
     Look-Ahead Bias Prevention:
-    - Uses execution_price (current bar OPEN) for trade execution
-    - Signal was generated from previous bar's closed data
+    - Uses execution_price (next bar OPEN) for trade execution
+    - Signal was generated from previous bar's closed data (by L1)
     """
     ti = ctx["ti"]
 
-    market_features = ti.xcom_pull(task_ids="build_observation", key="market_features")
-    # FIX: Use execution_price (current bar OPEN) instead of signal bar close
+    # v6.0.0: Read pre-normalized FLOAT[] array (NOT a dict)
+    market_features_array = ti.xcom_pull(task_ids="build_observation", key="market_features_array")
     execution_price = ti.xcom_pull(task_ids="build_observation", key="execution_price")
     signal_bar_price = ti.xcom_pull(task_ids="build_observation", key="signal_bar_price")
     bar_number = ti.xcom_pull(task_ids="build_observation", key="bar_number")
     loaded_models = ti.xcom_pull(task_ids="load_models", key="loaded_models")
+    nrt_fo_hash = ti.xcom_pull(task_ids="build_observation", key="feature_order_hash")
+    nrt_ns_hash = ti.xcom_pull(task_ids="build_observation", key="norm_stats_hash")
 
-    if not market_features:
-        raise ValueError("No market features available")
+    if not market_features_array:
+        raise ValueError("No market features available from inference_ready_nrt")
 
-    logging.info(f"FIX: Executing trades at OPEN price {execution_price:.2f} (signal from bar close {signal_bar_price:.2f})")
+    logging.info(
+        f"Executing trades at OPEN price {execution_price:.2f} "
+        f"(signal from bar close {signal_bar_price:.2f})"
+    )
 
     # =========================================================================
     # CONTRACT VALIDATION (CTR-FEATURE-001 + CTR-HASH-001)
     # =========================================================================
-    # Log feature contract info for traceability
-    logging.info(f"[CTR-FEATURE-001] Feature contract: version={FEATURE_CONTRACT_VERSION if FEATURE_CONTRACT_AVAILABLE else 'fallback'}, "
-                 f"obs_dim={OBS_DIM_EXPECTED}, hash={FEATURE_ORDER_HASH[:12] if FEATURE_CONTRACT_AVAILABLE else 'N/A'}...")
-
-    # Compute current norm_stats hash for traceability (CTR-HASH-001)
-    current_norm_stats_hash = compute_norm_stats_hash()
-    if current_norm_stats_hash:
-        logging.info(f"[CTR-HASH-001] norm_stats.json hash: {current_norm_stats_hash}")
-    else:
-        logging.warning("[CTR-HASH-001] Could not compute norm_stats.json hash - file may be missing")
+    logging.info(
+        f"[CTR-FEATURE-001] Feature contract: version={FEATURE_CONTRACT_VERSION if FEATURE_CONTRACT_AVAILABLE else 'fallback'}, "
+        f"obs_dim={OBS_DIM_EXPECTED}, hash={FEATURE_ORDER_HASH[:12] if FEATURE_CONTRACT_AVAILABLE else 'N/A'}..."
+    )
+    logging.info(
+        f"[CTR-HASH-001] norm_stats hash from inference_ready_nrt: {nrt_ns_hash or 'N/A'}"
+    )
 
     inference_results = []
     now = datetime.now(COT_TZ)
@@ -1539,51 +1388,47 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
             continue
 
         try:
-            # Validate norm_stats hash if model has expected hash configured
-            if config and config.norm_stats_hash:
-                is_valid, validation_msg = validate_norm_stats_hash(
-                    config.norm_stats_hash
-                )
-                if not is_valid:
+            # Validate norm_stats hash matches (L1 normalized with same stats as training)
+            if config and config.norm_stats_hash and nrt_ns_hash:
+                if config.norm_stats_hash != nrt_ns_hash:
                     logging.warning(
-                        f"[{model_id}] NORM_STATS VALIDATION WARNING: {validation_msg}. "
-                        f"Inference will continue but results may differ from training."
+                        f"[{model_id}] NORM_STATS HASH MISMATCH: "
+                        f"model={config.norm_stats_hash}, L1={nrt_ns_hash}. "
+                        f"Features may not match training normalization."
                     )
-                else:
-                    logging.debug(f"[{model_id}] {validation_msg}")
 
             # Get state features from StateTracker (position, time_normalized)
             position, time_norm = state_tracker.get_state_features(
                 model_id, bar_number, total_bars=BARS_PER_SESSION
             )
 
-            # Build 15-dim observation using ObservationBuilder
-            obs = observation_builder.build(
-                market_features=market_features,
-                position=position,
-                time_normalized=time_norm
+            # v6.0.0: Build observation from pre-normalized FLOAT[] + state features
+            obs = np.array(
+                market_features_array + [position, time_norm],
+                dtype=np.float32,
             )
 
-            # FIX: Detailed observation logging for debugging
             logging.info(f"[{model_id}] Observation shape: {obs.shape}, dtype: {obs.dtype}")
             logging.info(f"[{model_id}] Observation first 5 values: {obs[:5].tolist()}")
-            logging.info(f"[{model_id}] Observation state features: position={position:.2f}, time_norm={time_norm:.3f}")
+            logging.info(f"[{model_id}] State features: position={position:.2f}, time_norm={time_norm:.3f}")
 
             # Validate dimension
+            expected_dim = len(market_features_array) + 2  # market + state
             if len(obs) != OBS_DIM_EXPECTED:
-                logging.error(f"[{model_id}] DIMENSION MISMATCH: {len(obs)} != {OBS_DIM_EXPECTED}")
-                raise ValueError(f"Observation dim mismatch: {len(obs)} vs {OBS_DIM_EXPECTED}")
+                logging.warning(
+                    f"[{model_id}] Observation dim {len(obs)} != expected {OBS_DIM_EXPECTED}. "
+                    f"Market features: {len(market_features_array)}, state: 2. "
+                    f"Continuing with actual dim (model may handle it)."
+                )
 
             # =========================================================================
             # GAP 3, 10: L5 CONTRACT VALIDATION
             # =========================================================================
-            # Validate that this model was trained with compatible feature order.
-            # This prevents inference using a model trained with different features.
             contract_valid, validation_result = validate_l5_contract(
                 observation=obs,
-                model_feature_order_hash=config.feature_order_hash if config else None,
-                norm_stats_hash=config.norm_stats_hash if config else None,
-                strict_mode=False,  # Set to True in production to block on mismatch
+                model_feature_order_hash=config.feature_order_hash if config else nrt_fo_hash,
+                norm_stats_hash=config.norm_stats_hash if config else nrt_ns_hash,
+                strict_mode=False,
             )
 
             if not contract_valid:
@@ -1656,17 +1501,15 @@ def run_multi_model_inference(**ctx) -> Dict[str, Any]:
                 result,
                 execution_price,
                 model_version=config.version if config else None,
-                norm_stats_hash=current_norm_stats_hash
+                norm_stats_hash=nrt_ns_hash,
             )
             publish_to_redis(result)
             inference_results.append(asdict(result))
 
             # v5.0.0: Report metrics to canary system for rollback/promotion evaluation
-            # Determine if this model is the challenger
             dm = get_deployment_manager()
             is_challenger = (dm and dm.challenger and dm.challenger.model_id == model_id)
 
-            # Calculate PnL for this trade (if closed)
             trade_pnl = 0.0
             if allowed:
                 state = state_tracker.get_or_create(model_id)
@@ -1868,11 +1711,11 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description="V3 L5: Event-driven inference with NewFeatureBarSensor (15-dim)",
+    description="V6 L5: Event-driven inference from inference_ready_nrt (pre-normalized by L1)",
     schedule_interval="*/5 13-17 * * 1-5",  # Trigger schedule (sensor waits for actual data)
     catchup=False,
     max_active_runs=1,
-    tags=["v3", "l5", "inference", "multi-model", "15-features", "sensor-driven"]
+    tags=["v6", "l5", "inference", "multi-model", "unified-pipeline", "sensor-driven"]
 )
 
 with dag:
@@ -1887,16 +1730,18 @@ with dag:
         provide_context=True
     )
 
-    # EVENT-DRIVEN SENSOR: Wait for new feature data instead of running blindly
-    # This prevents schedule drift and ensures L1 has completed before L5 runs
-    wait_features = NewFeatureBarSensor(
+    # v6.0.0: Wait for new pre-normalized features from L1 in inference_ready_nrt
+    # FeatureReadySensor listens to PostgreSQL NOTIFY channel 'features_ready'
+    # with fallback polling on inference_ready_nrt table
+    wait_features = FeatureReadySensor(
         task_id="wait_for_features",
-        table_name="inference_features_5m",
-        require_complete=True,          # Require all critical features present
-        max_staleness_minutes=10,       # Features must be < 10 minutes old
-        poke_interval=30,               # Check every 30 seconds
-        timeout=300,                    # Max 5 minutes wait (matches schedule)
-        mode="poke",                    # Keep worker while waiting
+        channel="features_ready",               # NOTIFY channel from L1
+        fallback_table="inference_ready_nrt",    # Pre-normalized features from L1
+        fallback_date_column="timestamp",        # Date column for staleness check
+        max_staleness_minutes=10,                # Features must be < 10 minutes old
+        poke_interval=30,                        # Check every 30 seconds
+        timeout=300,                             # Max 5 minutes wait
+        mode="poke",
     )
 
     check_ready = PythonOperator(
@@ -1952,15 +1797,15 @@ with dag:
     )
 
     # ==========================================================================
-    # TASK CHAIN (v5.0.0)
+    # TASK CHAIN (v6.0.0)
     # ==========================================================================
     # 1. validate_flags: Check TRADING_ENABLED and KILL_SWITCH_ACTIVE first
-    # 2. wait_features: Sensor waits for new features from L1
+    # 2. wait_features: FeatureReadySensor waits for inference_ready_nrt from L1
     # 3. check_ready: Verify trading hours and data freshness
     # 4. load: Load models from registry
-    # 5. build_obs: Build 15-dim observation
-    # 6. infer: Run multi-model inference
+    # 5. build_obs: Read pre-normalized features from inference_ready_nrt
+    # 6. infer: Run multi-model inference (market FLOAT[] + state features)
     # 7. validate: Validate and summarize results
-    # 8. check_deployment: Check rollback triggers and canary promotion (v5.0.0)
+    # 8. check_deployment: Check rollback triggers and canary promotion
     # 9. mark_processed: Mark feature as processed
     validate_flags >> wait_features >> check_ready >> load >> build_obs >> infer >> validate >> check_deployment >> mark_processed

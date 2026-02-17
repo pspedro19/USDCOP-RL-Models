@@ -1,0 +1,107 @@
+# =============================================================================
+# Smart Executor Config: H5 Linear-Only (Track B)
+# =============================================================================
+#
+# Weekly H=5 forecasting with Ridge + BayesianRidge only.
+# Validated: OOS 2025 Sharpe 3.461, p=0.0077, return +32.85%.
+# Walk-forward 2022-2024: 2/3 folds Sharpe >1.0.
+#
+# Runs alongside Track A (H=1 daily). Separate tables, zero interference.
+#
+# SSOT Contract: SMART-EXECUTOR-H5-V1
+# Version: 1.0.0
+# Date: 2026-02-16
+# =============================================================================
+
+executor:
+  name: "smart_executor_h5_v1"
+  version: "1.0.0"
+  description: "5-day hold, linear-only ensemble, bidirectional with asymmetric sizing"
+  created_at: "2026-02-16"
+  status: "paper"
+
+# Models — LINEAR ONLY (ARD excluded: collapsed in validation)
+models:
+  ids: ["ridge", "bayesian_ridge"]
+  ensemble_method: "mean"             # Simple mean of 2 model predictions
+  collapse_threshold: 0.001           # Flag if rolling 12-week pred std < this
+  collapse_window_weeks: 12
+
+# Direction — bidirectional with asymmetric sizing
+direction_filter:
+  mode: "bidirectional"               # SHORT + LONG (unlike Track A short_only)
+  asymmetric_sizing:
+    enabled: true
+    short_multiplier: 1.0             # SHORT gets full leverage
+    long_multiplier: 0.5              # LONG gets half leverage (2023 fragility)
+  ls_ratio_alarm:
+    window_weeks: 8                   # Monitor last 8 weeks
+    threshold_long_pct: 60            # Alert if LONG% > 60%
+    action: "alert"                   # alert | switch_short_only
+
+# Trailing stop — wider stops for 5-day hold
+trailing_stop:
+  activation_pct: 0.004               # 0.40% favorable move to arm
+  trail_pct: 0.003                     # 0.30% drawback from peak triggers exit
+  hard_stop_pct: 0.040                # 4.00% adverse move = unconditional exit
+  re_entry:
+    enabled: true                     # Re-enter same direction after trailing exit
+    cooldown_minutes: 30              # 6 bars at 5min, avoids churn in lateral markets
+
+# Vol-targeting — same params as Track A
+vol_targeting:
+  target_vol: 0.15
+  max_leverage: 2.0
+  min_leverage: 0.5
+  vol_lookback: 21
+  vol_floor: 0.05
+  annualization_factor: 252.0
+
+# Broker
+broker:
+  mode: "paper"
+  slippage_bps: 1.0
+
+# Session — Bogota market hours
+session:
+  timezone: "America/Bogota"
+  start_hour: 8
+  end_hour: 12
+  end_minute: 55
+  bar_interval_minutes: 5
+
+# Week lifecycle
+week_lifecycle:
+  entry_day: "monday"                 # Enter on Monday after signal
+  exit_day: "friday"                  # Close remaining on Friday
+  exit_time_cot: "12:50"             # 5 min before session close
+  monitor_frequency_minutes: 30       # Check every 30 min (not 5 min)
+
+# Circuit breaker
+circuit_breaker:
+  max_cumulative_dd_pct: -12.0        # Pause if cumulative DD exceeds -12%
+  consecutive_losses: 5               # Pause after 5 consecutive losing weeks
+  action: "pause_and_alert"           # pause_and_alert | alert_only
+
+# Decision gates (evaluated at week >= 15)
+decision_gates:
+  min_weeks: 15
+  promote:
+    da_pct: 55.0                      # DA > 55% -> promote to production
+  keep_bidirectional:
+    da_short_pct: 60.0                # SHORT DA > 60%
+    da_long_pct: 45.0                 # AND LONG DA > 45%
+  switch_short_only:
+    da_short_pct: 60.0                # SHORT DA > 60%
+    da_long_pct_max: 40.0             # AND LONG DA < 40%
+  discard:
+    da_pct_max: 50.0                  # DA < 50% -> discard
+
+# Backtest reference (diagnostics 2025 OOS)
+backtest_reference:
+  oos_2025_sharpe: 3.461
+  oos_2025_return_pct: 32.85
+  oos_2025_p_value: 0.0077
+  oos_2025_trades: "13L/31S"
+  walkforward_pass: "2/3 folds Sharpe >1.0"
+  sharpe_decomposition: "weekly 3.730 > sub-trade 3.213 (NOT inflated)"

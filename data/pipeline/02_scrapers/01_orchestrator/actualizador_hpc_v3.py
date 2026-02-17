@@ -95,6 +95,15 @@ except ImportError:
 
             return result
 
+# Add custom scrapers path
+_custom_scrapers_path = str(Path(__file__).parent.parent / '02_custom')
+if _custom_scrapers_path not in sys.path:
+    sys.path.insert(0, _custom_scrapers_path)
+
+_fallbacks_path = str(Path(__file__).parent.parent / '03_fallbacks')
+if _fallbacks_path not in sys.path:
+    sys.path.insert(0, _fallbacks_path)
+
 # Importar scrapers existentes
 try:
     from scraper_embi_bcrp import get_embi_last_n
@@ -147,6 +156,102 @@ try:
     DANE_SCRAPER_AVAILABLE = True
 except ImportError:
     DANE_SCRAPER_AVAILABLE = False
+
+# Importar scraper avanzado de Investing.com con AJAX
+try:
+    from scraper_investing import (
+        fetch_historical_ajax_chunked,
+        fetch_historical_api,
+        INDICATOR_CONFIG,
+        create_session as create_investing_session
+    )
+    INVESTING_AJAX_AVAILABLE = True
+except ImportError:
+    INVESTING_AJAX_AVAILABLE = False
+
+# Mapeo de variables HPC a pair_id/instrument_id de Investing.com
+INVESTING_PAIR_IDS = {
+    'WTI': 8849,
+    'BRENT': 8833,
+    'GOLD': 8830,
+    'COFFEE': 8832,
+    'VIX': 44336,
+    'DXY': 8827,
+    'UST10Y': 23705,
+    'UST2Y': 23701,
+}
+
+# Variables que requieren REST API en vez de AJAX (valores invertidos con AJAX)
+INVESTING_INSTRUMENT_IDS = {
+    'COLCAP': 49642,
+    'USDMXN': 39,
+    'USDCLP': 2110,
+    'COL10Y': 29236,
+    'COL5Y': 29240,
+}
+
+INVESTING_URLS_MAP = {
+    'WTI': 'https://www.investing.com/commodities/crude-oil-historical-data',
+    'BRENT': 'https://www.investing.com/commodities/brent-oil-historical-data',
+    'GOLD': 'https://www.investing.com/commodities/gold-historical-data',
+    'COFFEE': 'https://www.investing.com/commodities/us-coffee-c-historical-data',
+    'VIX': 'https://www.investing.com/indices/volatility-s-p-500-historical-data',
+    'DXY': 'https://www.investing.com/indices/usdollar-historical-data',
+    'UST10Y': 'https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data',
+    'UST2Y': 'https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield-historical-data',
+    'COLCAP': 'https://www.investing.com/indices/colcap-historical-data',
+    'USDMXN': 'https://es.investing.com/currencies/usd-mxn-historical-data',
+    'USDCLP': 'https://es.investing.com/currencies/usd-clp-historical-data',
+    'COL10Y': 'https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data',
+    'COL5Y': 'https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data',
+}
+
+# Mapeo de archivos Excel/CSV fuente para variables de BanRep/SUAMECA
+# Estos son los archivos descargados manualmente que sirven como fallback definitivo
+EXCEL_FALLBACK_SOURCES = {
+    'FDIIN': {
+        'path': '01_sources/09_reserves_bop/IED.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,  # Segunda columna (index 1)
+        'freq': 'Q',
+    },
+    'FDIOUT': {
+        'path': '01_sources/09_reserves_bop/IDCE.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,
+        'freq': 'Q',
+    },
+    'CACCT': {
+        'path': '01_sources/09_reserves_bop/BP_CUENTA_CORRIENTE_TRIM.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,
+        'freq': 'Q',
+    },
+    'RESINT': {
+        'path': '01_sources/09_reserves_bop/reserves_international_COL_m_RESBR.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,
+        'freq': 'M',
+    },
+    'ITCR': {
+        'path': '01_sources/02_exchange_rates/fx_itcr_bilateral_COL_m_ITCR.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,
+        'freq': 'M',
+    },
+    'TOT': {
+        'path': '01_sources/08_foreign_trade/trade_terms_COL_m_TOT.xlsx',
+        'fecha_col': 'Fecha',
+        'valor_col': 1,
+        'freq': 'M',
+    },
+    'IPCCOL': {
+        'path': '01_sources/04_inflation/indice de Precios al Consumidor.csv',
+        'fecha_col': 'Periodo(MMM, AAAA)',
+        'valor_col': 1,
+        'freq': 'M',
+    },
+}
 
 # Cargar configuracion
 load_dotenv()
@@ -273,57 +378,230 @@ class ActualizadorHPCV3:
             # RIESGO PAIS
             'EMBI': {'custom': 'embi_bcrp'},
 
-            # BONOS
+            # BONOS (SIN Yahoo - solo Investing.com AJAX/API)
             'COL5Y': {'investing': 'https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data'},
             'COL10Y': {'investing': 'https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data'},
-            'UST10Y': {'investing': 'https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data', 'yahoo': '^TNX'},
+            'UST10Y': {'investing': 'https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data'},
+            'UST2Y': {'investing': 'https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield-historical-data'},
 
-            # COMMODITIES
-            'WTI': {'investing': 'https://www.investing.com/commodities/crude-oil-historical-data', 'yahoo': 'CL=F'},
-            'BRENT': {'investing': 'https://www.investing.com/commodities/brent-oil-historical-data', 'yahoo': 'BZ=F'},
-            # 'COAL': ELIMINADO - ya no se usa
-            'GOLD': {'investing': 'https://www.investing.com/commodities/gold-historical-data', 'yahoo': 'GC=F'},
-            'COFFEE': {'investing': 'https://www.investing.com/commodities/us-coffee-c-historical-data', 'yahoo': 'KC=F'},
+            # COMMODITIES (SIN Yahoo - solo Investing.com AJAX)
+            'WTI': {'investing': 'https://www.investing.com/commodities/crude-oil-historical-data'},
+            'BRENT': {'investing': 'https://www.investing.com/commodities/brent-oil-historical-data'},
+            'GOLD': {'investing': 'https://www.investing.com/commodities/gold-historical-data'},
+            'COFFEE': {'investing': 'https://www.investing.com/commodities/us-coffee-c-historical-data'},
 
-            # FOREX
-            'USDCLP': {'investing': 'https://www.investing.com/currencies/usd-clp-historical-data', 'yahoo': 'CLP=X'},
-            'USDMXN': {'investing': 'https://www.investing.com/currencies/usd-mxn-historical-data', 'yahoo': 'MXN=X'},
-            'DXY': {'investing': 'https://www.investing.com/indices/usdollar-historical-data', 'yahoo': 'DX-Y.NYB'},
+            # FOREX (SIN Yahoo - solo Investing.com API)
+            'USDCLP': {'investing': 'https://es.investing.com/currencies/usd-clp-historical-data'},
+            'USDMXN': {'investing': 'https://es.investing.com/currencies/usd-mxn-historical-data'},
+            'DXY': {'investing': 'https://www.investing.com/indices/usdollar-historical-data'},
 
-            # INDICES
-            'COLCAP': {'investing': 'https://www.investing.com/indices/colcap-historical-data', 'yahoo': 'ICOLCAP.CL'},
+            # INDICES (SIN Yahoo - solo Investing.com API)
+            'COLCAP': {'investing': 'https://www.investing.com/indices/colcap-historical-data'},
 
-            # VOLATILITY
-            'VIX': {'investing': 'https://www.investing.com/indices/volatility-s-p-500-historical-data', 'yahoo': '^VIX'},
+            # VOLATILITY (SIN Yahoo - solo Investing.com AJAX)
+            'VIX': {'investing': 'https://www.investing.com/indices/volatility-s-p-500-historical-data'},
 
             # CONFIANZA
             'CCI': {'fedesarrollo': 'obtener_cci'},
             'ICI': {'fedesarrollo': 'obtener_ici'},
         }
 
-    def _descargar_yahoo(self, symbol: str, n: int = 20) -> Optional[pd.DataFrame]:
-        """Descargar datos de Yahoo Finance"""
+    def _descargar_investing_ajax(self, variable_key: str, n: int = 20) -> Optional[pd.DataFrame]:
+        """
+        Descargar datos de Investing.com usando AJAX endpoint con rangos de fecha.
+
+        Este método obtiene datos históricos completos (no solo los ~20 de la página).
+
+        Args:
+            variable_key: Clave de variable (WTI, COFFEE, VIX, UST10Y, etc.)
+            n: Número de registros a obtener
+
+        Returns:
+            DataFrame con columnas ['fecha', 'valor'] o None si falla
+        """
+        if not INVESTING_AJAX_AVAILABLE:
+            logger.warning(f"[INVESTING AJAX] No disponible para {variable_key}")
+            return None
+
         try:
-            periodo = f"{n+5}d"
-            data = yf.download(symbol, period=periodo, progress=False)
+            # Calcular rango de fechas
+            # Para n registros diarios, necesitamos aproximadamente n * 1.5 días (por fines de semana)
+            dias_necesarios = int(n * 1.5) + 30  # Extra buffer
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=dias_necesarios)
 
-            if data is not None and not data.empty:
-                if isinstance(data.columns, pd.MultiIndex):
-                    close_data = data['Close'].iloc[:, 0]
-                else:
-                    close_data = data['Close']
+            start_str = start_date.strftime('%Y-%m-%d')
+            end_str = end_date.strftime('%Y-%m-%d')
 
-                df = pd.DataFrame({
-                    'fecha': close_data.tail(n).index,
-                    'valor': close_data.tail(n).values
-                })
+            # Crear sesión
+            session = create_investing_session()
+
+            # Determinar si usar AJAX (pair_id) o REST API (instrument_id)
+            if variable_key in INVESTING_PAIR_IDS:
+                pair_id = INVESTING_PAIR_IDS[variable_key]
+                referer_url = INVESTING_URLS_MAP.get(variable_key)
+
+                logger.info(f"  [INVESTING AJAX] {variable_key} (pair_id={pair_id})")
+                logger.info(f"    Rango: {start_str} a {end_str}")
+
+                df = fetch_historical_ajax_chunked(
+                    pair_id=pair_id,
+                    start_date=start_str,
+                    end_date=end_str,
+                    session=session,
+                    chunk_days=365,
+                    delay=2.0,
+                    referer_url=referer_url
+                )
+
+            elif variable_key in INVESTING_INSTRUMENT_IDS:
+                instrument_id = INVESTING_INSTRUMENT_IDS[variable_key]
+                referer_url = INVESTING_URLS_MAP.get(variable_key)
+                domain_id = 'es' if variable_key in ['USDMXN', 'USDCLP'] else 'www'
+
+                logger.info(f"  [INVESTING API] {variable_key} (instrument_id={instrument_id})")
+                logger.info(f"    Rango: {start_str} a {end_str}")
+
+                df = fetch_historical_api(
+                    instrument_id=instrument_id,
+                    start_date=start_str,
+                    end_date=end_str,
+                    session=session,
+                    delay=2.0,
+                    referer_url=referer_url,
+                    domain_id=domain_id
+                )
+            else:
+                logger.warning(f"  [INVESTING] Variable {variable_key} no tiene pair_id ni instrument_id configurado")
+                return None
+
+            if df is not None and not df.empty:
+                # Convertir fecha a datetime si es string
+                if df['fecha'].dtype == 'object':
+                    df['fecha'] = pd.to_datetime(df['fecha'])
+
+                # Ordenar descendente y tomar los últimos n
                 df = df.sort_values('fecha', ascending=False).reset_index(drop=True)
+                df = df.head(n)
+
+                logger.info(f"    [OK] {len(df)} registros obtenidos de Investing.com AJAX")
                 return df
 
             return None
 
         except Exception as e:
-            logger.debug(f"Error Yahoo Finance {symbol}: {e}")
+            logger.error(f"  [ERROR] Investing AJAX {variable_key}: {e}")
+            return None
+
+    def _descargar_excel_fallback(self, variable_key: str, n: int = 20) -> Optional[pd.DataFrame]:
+        """
+        Leer datos de archivos Excel/CSV descargados manualmente como fallback definitivo.
+
+        Estos archivos son la fuente de respaldo para variables de BanRep/SUAMECA
+        cuando los scrapers web no funcionan.
+
+        NOTA: Los archivos de BanRep tienen formato específico:
+        - Primera fila con 'dd/mm/aaaa' e 'Índice' como headers descriptivos
+        - Fechas en formato dd/mm/yyyy
+        - Números con coma decimal (formato europeo)
+
+        Args:
+            variable_key: Clave de variable (FDIIN, FDIOUT, CACCT, RESINT, ITCR, TOT, IPCCOL)
+            n: Número de registros a retornar
+
+        Returns:
+            DataFrame con columnas ['fecha', 'valor'] o None si no existe
+        """
+        if variable_key not in EXCEL_FALLBACK_SOURCES:
+            return None
+
+        config = EXCEL_FALLBACK_SOURCES[variable_key]
+        # Construir ruta relativa al directorio data/pipeline
+        # self.base_path = 02_scrapers, entonces parent = data/pipeline
+        data_pipeline_dir = self.base_path.parent
+        file_path = data_pipeline_dir / config['path']
+
+        if not file_path.exists():
+            logger.warning(f"  [EXCEL FALLBACK] Archivo no existe: {file_path}")
+            return None
+
+        try:
+            logger.info(f"  [EXCEL FALLBACK] Leyendo {variable_key} de {file_path.name}...")
+
+            # Leer según extensión
+            if str(file_path).endswith('.csv'):
+                df = pd.read_csv(file_path)
+            else:
+                df = pd.read_excel(file_path)
+
+            # Obtener columna de fecha
+            fecha_col = config['fecha_col']
+            if fecha_col not in df.columns:
+                fecha_col = df.columns[0]  # Fallback a primera columna
+
+            # Obtener columna de valor (puede ser índice o nombre)
+            valor_col = config['valor_col']
+            if isinstance(valor_col, int):
+                valor_col = df.columns[valor_col]
+
+            # Filtrar filas no válidas (headers descriptivos, notas al final)
+            # La primera fila suele tener 'dd/mm/aaaa' como texto
+            df = df[~df[fecha_col].astype(str).str.contains('dd/mm|aaaa|Descargado|NaN', case=False, na=True)]
+
+            # Convertir fechas - probar múltiples formatos
+            def parse_fecha(val):
+                if pd.isna(val):
+                    return pd.NaT
+                val_str = str(val).strip()
+                # Formato dd/mm/yyyy
+                for fmt in ['%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y']:
+                    try:
+                        return pd.to_datetime(val_str, format=fmt)
+                    except:
+                        continue
+                # Último intento con parser automático
+                return pd.to_datetime(val_str, errors='coerce')
+
+            df['fecha'] = df[fecha_col].apply(parse_fecha)
+
+            # Convertir valores - manejar formato europeo (punto miles, coma decimal)
+            def parse_valor(val):
+                if pd.isna(val):
+                    return np.nan
+                val_str = str(val).strip()
+                # Detectar formato: si tiene punto Y coma, es europeo (1.234,56)
+                if '.' in val_str and ',' in val_str:
+                    # Formato europeo: quitar puntos de miles, cambiar coma a punto
+                    val_str = val_str.replace('.', '').replace(',', '.')
+                elif ',' in val_str and '.' not in val_str:
+                    # Solo coma: puede ser decimal europeo (84,40)
+                    val_str = val_str.replace(',', '.')
+                # Si solo tiene punto, es formato americano (ya correcto)
+                try:
+                    return float(val_str)
+                except:
+                    return np.nan
+
+            df['valor'] = df[valor_col].apply(parse_valor)
+
+            # Limpiar y ordenar
+            df = df[['fecha', 'valor']].dropna()
+            df = df.sort_values('fecha', ascending=False).reset_index(drop=True)
+
+            # Retornar últimos n registros
+            result = df.head(n)
+
+            if len(result) > 0:
+                logger.info(f"    [OK] {len(result)} registros desde {result['fecha'].min().date()} a {result['fecha'].max().date()}")
+            else:
+                logger.warning(f"    [WARN] 0 registros extraídos de {file_path.name}")
+
+            return result if len(result) > 0 else None
+
+        except Exception as e:
+            logger.error(f"  [EXCEL FALLBACK] Error leyendo {variable_key}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
 
     def _descargar_csv_local(self, csv_path: str, n: int = 20, variable_hint: str = None) -> Optional[pd.DataFrame]:
@@ -705,25 +983,56 @@ class ActualizadorHPCV3:
                 if datos is not None:
                     fuente_usada = 'CSV Local (Fallback)'
 
-            # Investing.com (PRIORITARIO sobre Yahoo)
-            elif 'investing' in fallback:
-                # Pasar código de variable para detección inteligente de formato
-                variable_hint = codigo if codigo else var_nombre
-                datos = self._descargar_investing(fallback['investing'], n, variable_hint=variable_hint)
-                if datos is not None:
-                    fuente_usada = 'Investing.com'
+            # Investing.com - Usar AJAX con rangos de fecha para datos completos
+            if 'investing' in fallback:
+                # Determinar la clave de variable para AJAX
+                variable_key = None
+                for key in INVESTING_PAIR_IDS.keys():
+                    if codigo == key or var_nombre.endswith(f"_{key}") or key in var_nombre.upper():
+                        variable_key = key
+                        break
+                if not variable_key:
+                    for key in INVESTING_INSTRUMENT_IDS.keys():
+                        if codigo == key or var_nombre.endswith(f"_{key}") or key in var_nombre.upper():
+                            variable_key = key
+                            break
 
-            # Yahoo Finance (fallback si Investing falla)
-            elif 'yahoo' in fallback:
-                datos = self._descargar_yahoo(fallback['yahoo'], n)
-                if datos is not None:
-                    fuente_usada = 'Yahoo Finance'
+                if variable_key and INVESTING_AJAX_AVAILABLE:
+                    # Usar AJAX con rangos de fecha (obtiene datos históricos completos)
+                    datos = self._descargar_investing_ajax(variable_key, n)
+                    if datos is not None:
+                        fuente_usada = f'Investing.com AJAX ({variable_key})'
+                else:
+                    # Fallback a HTML scraping (solo ~20 registros)
+                    variable_hint = codigo if codigo else var_nombre
+                    datos = self._descargar_investing(fallback['investing'], n, variable_hint=variable_hint)
+                    if datos is not None:
+                        fuente_usada = 'Investing.com HTML'
+
+            # NO usar Yahoo Finance - Investing.com es la única fuente para estas variables
+            # Las líneas de Yahoo Finance han sido eliminadas intencionalmente
 
         # Intentar FRED API como último recurso
         if datos is None and codigo:
             datos = self._descargar_fred_api(codigo, n)
             if datos is not None:
                 fuente_usada = 'FRED API'
+
+        # FALLBACK DEFINITIVO: Archivos Excel descargados manualmente
+        # Para variables de BanRep/SUAMECA que no tienen API REST funcional
+        if datos is None:
+            # Buscar la clave de variable para Excel fallback
+            excel_key = None
+            for key in EXCEL_FALLBACK_SOURCES.keys():
+                if codigo == key or var_nombre.endswith(f"_{key}") or key in var_nombre.upper():
+                    excel_key = key
+                    break
+
+            if excel_key:
+                logger.info(f"    [FALLBACK DEFINITIVO] Intentando archivo Excel para {excel_key}...")
+                datos = self._descargar_excel_fallback(excel_key, n)
+                if datos is not None:
+                    fuente_usada = f'Excel BanRep ({excel_key})'
 
         # Procesar resultados
         if datos is not None and not datos.empty:
@@ -820,7 +1129,7 @@ class ActualizadorHPCV3:
 
             # Determinar si es rápida o lenta
             es_lenta = False
-            for key in ['IBR', 'TPM', 'ITCR', 'FDIIN', 'FDIOUT', 'IED', 'IDCE', 'CACCT', 'TOT', 'RESINT', 'CCI', 'ICI', 'IPCCOL']:
+            for key in ['IBR', 'TPM', 'ITCR', 'FDIIN', 'FDIOUT', 'IED', 'IDCE', 'CACCT', 'TOT', 'RESINT', 'CCI', 'ICI', 'IPCCOL', 'EMBI']:
                 if codigo == key or var_nombre.endswith(f"_{key}"):
                     es_lenta = True
                     break
@@ -889,11 +1198,27 @@ class ActualizadorHPCV3:
         logger.info(f"[HPC] Cache misses: {self.stats['cache_misses']}")
         logger.info("="*100)
 
-    def generar_datasets_polars(self):
-        """Generar datasets usando Polars (10x más rápido que Pandas)"""
+    def generar_datasets_polars(self, output_dir: Path = None, formatos: list = None):
+        """
+        Generar datasets en múltiples formatos usando Polars.
+
+        Args:
+            output_dir: Directorio de salida (default: storage/datasets)
+            formatos: Lista de formatos ['csv', 'parquet', 'xlsx'] (default: todos)
+
+        Returns:
+            Dict con rutas de archivos generados
+        """
+        if output_dir is None:
+            output_dir = self.base_path / "storage" / "datasets"
+        if formatos is None:
+            formatos = ['csv', 'parquet', 'xlsx']
+
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("\n" + "="*100)
-        logger.info("GENERANDO DATASETS CON POLARS (HPC)")
+        logger.info("GENERANDO DATASETS EN MULTIPLES FORMATOS (HPC)")
+        logger.info(f"Formatos: {formatos}")
         logger.info("="*100)
 
         # Agrupar por frecuencia
@@ -912,11 +1237,12 @@ class ActualizadorHPCV3:
                     datos_por_frecuencia[freq].append((var_nombre, df_pl))
 
         # Generar datasets
-        frecuencia_nombres = {'D': 'diarios', 'M': 'mensuales', 'Q': 'trimestrales'}
+        frecuencia_nombres = {'D': 'DAILY', 'M': 'MONTHLY', 'Q': 'QUARTERLY'}
+        archivos_generados = {}
 
         for freq_code, freq_nombre in frecuencia_nombres.items():
             if len(datos_por_frecuencia[freq_code]) > 0:
-                logger.info(f"\nGenerando dataset {freq_nombre.upper()} con Polars...")
+                logger.info(f"\nGenerando dataset MACRO_{freq_nombre}_MASTER...")
 
                 # Combinar usando Polars (outer join)
                 datasets = datos_por_frecuencia[freq_code]
@@ -924,43 +1250,88 @@ class ActualizadorHPCV3:
                 # Iniciar con el primer dataset
                 df_combined = datasets[0][1]
 
-                # Hacer outer join con todos los demás (usar 'full' en vez de 'outer' para Polars)
+                # Hacer outer join con todos los demás
                 for var_nombre, df in datasets[1:]:
                     df_combined = df_combined.join(df, on='fecha', how='full', suffix='_temp', coalesce=True)
 
-                # Ordenar por fecha descendente
-                df_combined = df_combined.sort('fecha', descending=True)
+                # Ordenar por fecha ascendente (para análisis temporal)
+                df_combined = df_combined.sort('fecha', descending=False)
 
-                # Guardar (convertir a Pandas solo para guardar por compatibilidad)
-                output_dataset = self.base_path / "storage" / "datasets" / f"datos_{freq_nombre}_hpc.csv"
+                # Convertir a Pandas para guardado
+                df_pandas = df_combined.to_pandas()
 
-                # Retry logic para manejar bloqueos de OneDrive
-                max_retries = 5
-                for retry in range(max_retries):
-                    try:
-                        df_combined.to_pandas().to_csv(output_dataset, index=False, encoding='utf-8-sig')
-                        break
-                    except PermissionError as e:
-                        if retry < max_retries - 1:
-                            logger.warning(f"  [RETRY {retry+1}/{max_retries}] Archivo bloqueado, esperando 2s...")
-                            time.sleep(2)
-                        else:
-                            # Intentar guardar con nombre alternativo
-                            alt_output = output_dataset.parent / f"datos_{freq_nombre}_hpc_new.csv"
-                            logger.warning(f"  [FALLBACK] Guardando como: {alt_output}")
-                            df_combined.to_pandas().to_csv(alt_output, index=False, encoding='utf-8-sig')
+                # Generar en cada formato
+                base_name = f"MACRO_{freq_nombre}_MASTER"
+                archivos_generados[freq_nombre] = {}
 
-                logger.info(f"  [OK] Dataset {freq_nombre}: {output_dataset}")
+                for fmt in formatos:
+                    output_file = output_dir / f"{base_name}.{fmt}"
+
+                    max_retries = 3
+                    for retry in range(max_retries):
+                        try:
+                            if fmt == 'csv':
+                                df_pandas.to_csv(output_file, index=False, encoding='utf-8-sig')
+                            elif fmt == 'parquet':
+                                df_pandas.to_parquet(output_file, index=False, engine='pyarrow')
+                            elif fmt == 'xlsx':
+                                df_pandas.to_excel(output_file, index=False, engine='openpyxl')
+
+                            archivos_generados[freq_nombre][fmt] = str(output_file)
+                            logger.info(f"  [OK] {output_file.name}")
+                            break
+                        except PermissionError:
+                            if retry < max_retries - 1:
+                                time.sleep(2)
+                            else:
+                                logger.warning(f"  [SKIP] No se pudo guardar {output_file.name}")
+                        except Exception as e:
+                            logger.warning(f"  [ERROR] {fmt}: {e}")
+                            break
+
                 logger.info(f"      Variables: {len(datasets)}")
                 logger.info(f"      Filas: {df_combined.shape[0]}")
 
+                # También guardar versión legacy para compatibilidad
+                legacy_name = f"datos_{'diarios' if freq_code == 'D' else 'mensuales' if freq_code == 'M' else 'trimestrales'}_hpc.csv"
+                legacy_file = output_dir / legacy_name
+                try:
+                    df_pandas.to_csv(legacy_file, index=False, encoding='utf-8-sig')
+                except:
+                    pass
+
         logger.info("\n" + "="*100)
+        logger.info("RESUMEN DE ARCHIVOS GENERADOS:")
+        for freq, files in archivos_generados.items():
+            logger.info(f"  {freq}:")
+            for fmt, path in files.items():
+                logger.info(f"    - {fmt}: {path}")
+        logger.info("="*100)
+
+        return archivos_generados
 
 
 def main():
     """Funcion principal HPC"""
-
+    import argparse
     import time
+
+    parser = argparse.ArgumentParser(description='HPC V3 - Actualizador de Variables Macro')
+    parser.add_argument('--backfill', action='store_true',
+                       help='Backfill completo desde 2016 (n=3000 para diarios)')
+    parser.add_argument('-n', type=int, default=20,
+                       help='Numero de registros a obtener por variable (default: 20)')
+    parser.add_argument('--workers', type=int, default=10,
+                       help='Numero de workers paralelos (default: 10)')
+    args = parser.parse_args()
+
+    # Determinar n segun modo
+    if args.backfill:
+        n = 3000  # ~10 años de datos diarios
+        logger.info("[HPC] MODO BACKFILL: Obteniendo datos desde 2016")
+    else:
+        n = args.n
+
     inicio_total = time.time()
 
     # Buscar diccionario en config/ (un nivel arriba de orchestrators/)
@@ -970,11 +1341,11 @@ def main():
     if not diccionario_path.exists():
         diccionario_path = Path(__file__).parent / "DICCIONARIO_MACROECONOMICOS_FINAL.csv"
 
-    # Crear actualizador HPC con 10 workers
-    actualizador = ActualizadorHPCV3(diccionario_path, max_workers=10)
+    # Crear actualizador HPC con workers especificados
+    actualizador = ActualizadorHPCV3(diccionario_path, max_workers=args.workers)
 
     # Actualizar todas las variables EN PARALELO
-    actualizador.actualizar_todas_las_variables_paralelo(n=20)
+    actualizador.actualizar_todas_las_variables_paralelo(n=n)
 
     # Generar datasets con Polars
     actualizador.generar_datasets_polars()
@@ -989,7 +1360,7 @@ def main():
     logger.info("\n" + "="*100)
     logger.info("[HPC] ACTUALIZACION COMPLETA HPC V3 FINALIZADA")
     logger.info(f"[HPC] TIEMPO TOTAL: {tiempo_final:.2f} segundos ({tiempo_final/60:.2f} minutos)")
-    logger.info(f"[HPC] SPEEDUP vs V2: {6.6*60/tiempo_final:.2f}x más rápido")
+    logger.info(f"[HPC] Registros por variable: {n}")
     logger.info("="*100)
 
 

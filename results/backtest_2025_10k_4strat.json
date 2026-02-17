@@ -1,0 +1,193 @@
+{
+  "initial_capital": 10000.0,
+  "n_trading_days": 261,
+  "direction_accuracy_pct": 52.87356321839081,
+  "strategies": {
+    "buy_and_hold": {
+      "final_equity": 8346.58213504261,
+      "total_return_pct": -16.5341786495739
+    },
+    "forecast_1x": {
+      "final_equity": 10250.372772138042,
+      "total_return_pct": 2.503727721380411,
+      "annualized_return_pct": 2.41635764596988,
+      "volatility_pct": 12.047732724611446,
+      "sharpe": 0.20056534297392542,
+      "max_dd_pct": -10.408151101603188,
+      "win_rate_pct": 51.724137931034484,
+      "profit_factor": 1.043900394214186,
+      "trading_days": 261
+    },
+    "forecast_vol_target": {
+      "final_equity": 10872.780274480483,
+      "total_return_pct": 8.727802744804825,
+      "annualized_return_pct": 8.414528910696939,
+      "volatility_pct": 16.361194758249155,
+      "sharpe": 0.5142979492041323,
+      "max_dd_pct": -13.246968221330482,
+      "win_rate_pct": 51.724137931034484,
+      "profit_factor": 1.1003678508618921,
+      "trading_days": 261,
+      "avg_leverage": 1.382128884059572
+    },
+    "forecast_vt_trailing": {
+      "final_equity": 11505.721847726134,
+      "total_return_pct": 15.05721847726127,
+      "annualized_return_pct": 14.502084329573428,
+      "volatility_pct": 14.341969944486028,
+      "sharpe": 1.0111640441101997,
+      "max_dd_pct": -13.808122810093467,
+      "win_rate_pct": 58.620689655172406,
+      "profit_factor": 1.2007738720969985,
+      "trading_days": 261,
+      "avg_leverage": 1.382128884059572,
+      "exit_reasons": {
+        "trailing_stop": 134,
+        "hard_stop": 9,
+        "session_close": 117,
+        "no_bars": 1
+      },
+      "avg_alpha_bps": 2.084884680308333,
+      "alpha_positive_rate_pct": 35.38461538461539
+    }
+  },
+  "statistical_tests": {
+    "forecast_1x": {
+      "t_stat": 0.2623514082591379,
+      "p_value": 0.7932582768378049,
+      "bootstrap_95ci_ann": [
+        -19.770039820779967,
+        26.52972425323949
+      ],
+      "significant": "False"
+    },
+    "forecast_vol_target": {
+      "t_stat": 0.5844652189248943,
+      "p_value": 0.5594141509785554,
+      "bootstrap_95ci_ann": [
+        -21.6120543175891,
+        41.210306364405156
+      ],
+      "significant": "False"
+    },
+    "forecast_vt_trailing": {
+      "t_stat": 1.032163387809737,
+      "p_value": 0.3029547285290789,
+      "bootstrap_95ci_ann": [
+        -12.473475792211836,
+        42.30005798615207
+      ],
+      "significant": "False"
+    },
+    "paired_trail_vs_hold": {
+      "t_stat": 0.5102641256366771,
+      "p_value": 0.6102993439117326,
+      "significant": "False",
+      "description": "Trail better than hold-to-close?"
+    },
+    "direction_accuracy": {
+      "correct": 138,
+      "total": 261,
+      "binomial_p": 0.38621172101798656,
+      "significant": "False"
+    }
+  },
+  "monthly": {
+    "months": [
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-04",
+      "2025-05",
+      "2025-06",
+      "2025-07",
+      "2025-08",
+      "2025-09",
+      "2025-10",
+      "2025-11",
+      "2025-12",
+      "2026-01",
+      "2026-02"
+    ],
+    "days": [
+      20,
+      19,
+      20,
+      20,
+      20,
+      17,
+      22,
+      19,
+      21,
+      22,
+      4,
+      14,
+      30,
+      13
+    ],
+    "f1_pct": [
+      1.99,
+      1.38,
+      0.06,
+      2.87,
+      -0.71,
+      -2.63,
+      0.34,
+      0.75,
+      4.52,
+      1.29,
+      3.8,
+      -2.59,
+      -2.26,
+      -5.59
+    ],
+    "vt_pct": [
+      4.55,
+      1.89,
+      -0.35,
+      5.29,
+      -1.79,
+      -3.63,
+      0.45,
+      0.98,
+      8.87,
+      2.11,
+      4.91,
+      -2.88,
+      -3.43,
+      -7.21
+    ],
+    "ts_pct": [
+      2.78,
+      2.24,
+      -2.18,
+      8.31,
+      -0.64,
+      -3.78,
+      2.15,
+      3.13,
+      11.51,
+      2.18,
+      2.6,
+      -4.1,
+      -5.84,
+      -3.29
+    ],
+    "da": [
+      70.0,
+      57.9,
+      50.0,
+      50.0,
+      55.0,
+      47.1,
+      50.0,
+      52.6,
+      52.4,
+      59.1,
+      100.0,
+      35.7,
+      50.0,
+      38.5
+    ]
+  }
+}

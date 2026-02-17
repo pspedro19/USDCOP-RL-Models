@@ -52,6 +52,14 @@ from src.training.reward_components import (
     InactivityTracker,
     ChurnTracker,
     BiasDetector,
+    # Bonuses (PHASE2)
+    FlatReward,
+    # V22 P2: Close reason reward shaping
+    CloseReasonDetector,
+    # Drawdown penalty (Phase 5)
+    DrawdownPenaltyComponent,
+    # Execution alpha (EXP-RL-EXECUTOR)
+    ExecutionAlphaComponent,
     # Transforms
     ZScorePnLTransform,
     AsymmetricPnLTransform,
@@ -89,6 +97,10 @@ class RewardBreakdown:
     bias_penalty: float = 0.0
     banrep_penalty: float = 0.0
     oil_adjustment: float = 0.0
+    flat_reward_bonus: float = 0.0  # PHASE2: Counterfactual HOLD reward
+    close_shaping: float = 0.0     # V22 P2: Close reason reward shaping
+    drawdown_penalty: float = 0.0  # Phase 5: Drawdown penalty
+    execution_alpha: float = 0.0  # EXP-RL-EXECUTOR: Execution alpha
 
     # Weighted total (before normalization)
     weighted_total: float = 0.0
@@ -117,6 +129,7 @@ class RewardBreakdown:
             "gap_risk": self.gap_risk_penalty,
             "anti_gaming": self.inactivity_penalty + self.churn_penalty + self.bias_penalty,
             "banrep": self.banrep_penalty,
+            "flat_reward": self.flat_reward_bonus,  # PHASE2
             "weighted_total": self.weighted_total,
             "normalized": self.normalized_reward,
             "final": self.clipped_reward,
@@ -297,6 +310,71 @@ class ModularRewardCalculator:
                 per_episode_reset=cfg.normalizer.per_episode_reset,
             )
 
+        # PHASE 3 FIX: Flat reward with decay (anti-reward-hacking)
+        self._flat_reward: Optional[FlatReward] = None
+        if getattr(cfg, 'enable_flat_reward', False):
+            fr_cfg = getattr(cfg, 'flat_reward', None)
+            if fr_cfg:
+                self._flat_reward = FlatReward(
+                    scale=fr_cfg.scale,
+                    min_move_threshold=fr_cfg.min_move_threshold,
+                    loss_avoidance_mult=fr_cfg.loss_avoidance_mult,
+                    decay_enabled=getattr(fr_cfg, 'decay_enabled', True),   # PHASE3: default True
+                    decay_half_life=getattr(fr_cfg, 'decay_half_life', 12), # PHASE3: 1 hour
+                    decay_max=getattr(fr_cfg, 'decay_max', 0.9),            # PHASE3: 90% max
+                )
+            else:
+                # Use PHASE3 defaults (anti-reward-hacking)
+                self._flat_reward = FlatReward(
+                    scale=50.0,
+                    decay_enabled=True,
+                    decay_half_life=12,
+                    decay_max=0.9,
+                )
+            logger.info("[PHASE3] FlatReward component enabled with decay (anti-reward-hacking)")
+
+        # Phase 5: Drawdown penalty
+        self._drawdown_penalty: Optional[DrawdownPenaltyComponent] = None
+        try:
+            from src.config.pipeline_config import load_pipeline_config
+            pipeline_cfg = load_pipeline_config()
+            dd_cfg = pipeline_cfg._raw.get("reward", {}).get("drawdown_penalty", {})
+            if dd_cfg.get("enabled", False):
+                self._drawdown_penalty = DrawdownPenaltyComponent(
+                    threshold=dd_cfg.get("threshold", 0.05),
+                    max_penalty=dd_cfg.get("max_penalty", 0.5),
+                )
+                logger.info("[Phase5] DrawdownPenaltyComponent enabled")
+        except (ImportError, FileNotFoundError, AttributeError):
+            pass
+
+        # EXP-RL-EXECUTOR: Execution alpha component
+        self._execution_alpha: Optional[ExecutionAlphaComponent] = None
+        try:
+            from src.config.pipeline_config import load_pipeline_config
+            pipeline_cfg = load_pipeline_config()
+            ea_cfg = pipeline_cfg._raw.get("reward", {}).get("execution_alpha", {})
+            if ea_cfg.get("enabled", False):
+                self._execution_alpha = ExecutionAlphaComponent(
+                    penalty_no_trade=ea_cfg.get("penalty_no_trade", 0.1),
+                    scale=ea_cfg.get("scale", 100.0),
+                )
+                logger.info("[EXP-RL-EXECUTOR] ExecutionAlphaComponent enabled")
+        except (ImportError, FileNotFoundError, AttributeError):
+            pass
+
+        # V22 P2: Close reason reward shaping
+        self._close_reason_detector: Optional[CloseReasonDetector] = None
+        try:
+            from src.config.pipeline_config import load_pipeline_config
+            pipeline_cfg = load_pipeline_config()
+            close_shaping_raw = pipeline_cfg._raw.get("training", {}).get("close_shaping", {})
+            if close_shaping_raw.get("enabled", False):
+                self._close_reason_detector = CloseReasonDetector(close_shaping_raw)
+                logger.info("[V22] CloseReasonDetector enabled with PnL multipliers")
+        except (ImportError, FileNotFoundError, AttributeError):
+            pass
+
     def _on_phase_change(self, old_phase: CurriculumPhase, new_phase: CurriculumPhase) -> None:
         """Callback when curriculum phase changes."""
         logger.info(f"Curriculum phase change: {old_phase.value} -> {new_phase.value}")
@@ -313,6 +391,12 @@ class ModularRewardCalculator:
         is_weekend: bool = False,
         oil_return: Optional[float] = None,
         price_change: float = 0.0,
+        close_reason: str = "",
+        cumulative_return: float = 0.0,
+        forecast_direction: int = 0,
+        session_open_price: float = 0.0,
+        current_price: float = 0.0,
+        has_position: bool = False,
     ) -> Tuple[float, RewardBreakdown]:
         """
         Calculate reward using all components.
@@ -364,10 +448,13 @@ class ModularRewardCalculator:
         # =================================================================
         # STEP 2: Transform PnL
         # =================================================================
-        # Clip -> ZScore -> Asymmetric
+        # FIX 6: Clip -> Scale -> Asymmetric (removed ZScore which broke absolute PnL signal)
+        # ZScore converted absolute PnL to relative z-scores, allowing agent to accumulate
+        # high shaped reward while losing money. Simple scaling preserves the absolute signal.
         pnl_clipped = self._pnl_clip.calculate(pnl_pct)
-        pnl_zscored = self._pnl_zscore.calculate(pnl_clipped)
-        pnl_transformed = self._pnl_asymmetric.calculate(pnl_zscored)
+        # Scale: typical 5-min return ~0.001, scale to ~1.0 range
+        pnl_scaled = pnl_clipped * 100.0  # Gentler: 0.1% move → 0.1 reward
+        pnl_transformed = self._pnl_asymmetric.calculate(pnl_scaled)
         breakdown.transformed_pnl = pnl_transformed
 
         # =================================================================
@@ -386,17 +473,16 @@ class ModularRewardCalculator:
         breakdown.regime_penalty = regime_penalty
 
         # =================================================================
-        # STEP 5: Calculate market impact (only on position change)
+        # STEP 5: Market impact - DISABLED to avoid double-counting
+        # FIX 2026-02-01: Transaction costs already applied in trading_env.py
+        # net_pnl = gross_pnl - trade_cost (line ~830 in trading_env.py)
+        # Adding market_impact here would double-count costs.
         # =================================================================
-        impact_cost = 0.0
-        if position_change != 0:
-            impact_cost = self._market_impact.calculate(
-                hour_utc=hour_utc,
-                regime=regime.value,
-                volatility=volatility,
-            )
-            # Apply curriculum cost multiplier
-            impact_cost *= cost_mult
+        impact_cost = 0.0  # FIX: Disabled - costs already in PnL
+        # Original code (kept for reference):
+        # if position_change != 0:
+        #     impact_cost = self._market_impact.calculate(...)
+        #     impact_cost *= cost_mult
         breakdown.market_impact_cost = impact_cost
 
         # =================================================================
@@ -451,6 +537,56 @@ class ModularRewardCalculator:
         breakdown.oil_adjustment = oil_adj
 
         # =================================================================
+        # STEP 9.5: Flat reward - PHASE 2 FIX (if enabled)
+        # =================================================================
+        # Counterfactual reward: give positive signal for avoiding losses
+        # when position is FLAT and market would have moved against a LONG
+        flat_reward_bonus = 0.0
+        if self._flat_reward is not None:
+            # Use price_change as market_return (this is the raw return, not z-scored)
+            flat_reward_bonus = self._flat_reward.calculate(
+                position=position,
+                market_return=price_change,
+            )
+        breakdown.flat_reward_bonus = flat_reward_bonus
+
+        # =================================================================
+        # STEP 9.7: V22 P2 - Close reason reward shaping
+        # =================================================================
+        close_shaping_adj = 0.0
+        if self._close_reason_detector and close_reason:
+            close_shaping_adj = self._close_reason_detector.get_delta(
+                base_reward=pnl_transformed,
+                close_reason=close_reason,
+                pnl=pnl_pct,
+            )
+        breakdown.close_shaping = close_shaping_adj
+
+        # =================================================================
+        # STEP 9.8: Phase 5 - Drawdown penalty
+        # =================================================================
+        dd_penalty = 0.0
+        if self._drawdown_penalty:
+            dd_penalty = self._drawdown_penalty.calculate(
+                cumulative_return=cumulative_return,
+            )
+        breakdown.drawdown_penalty = dd_penalty
+
+        # =================================================================
+        # STEP 9.9: EXP-RL-EXECUTOR - Execution alpha
+        # =================================================================
+        exec_alpha = 0.0
+        if self._execution_alpha:
+            exec_alpha = self._execution_alpha.calculate(
+                rl_pnl_pct=pnl_pct,
+                forecast_direction=forecast_direction,
+                session_open_price=session_open_price,
+                current_price=current_price,
+                has_position=has_position,
+            )
+        breakdown.execution_alpha = exec_alpha
+
+        # =================================================================
         # STEP 10: Weighted combination
         # =================================================================
         cfg = self._config
@@ -467,6 +603,15 @@ class ModularRewardCalculator:
         holding_component = (holding_penalty + gap_penalty) * cfg.weight_holding_decay
         antigaming_component = (inactivity + churn + bias) * cfg.weight_anti_gaming
 
+        # PHASE2: Flat reward component (counterfactual HOLD reward)
+        flat_reward_component = flat_reward_bonus * getattr(cfg, 'weight_flat_reward', 0.3)
+
+        # Phase 5: Drawdown penalty component
+        drawdown_component = dd_penalty * getattr(cfg, 'weight_drawdown_penalty', 0.0)
+
+        # EXP-RL-EXECUTOR: Execution alpha component
+        exec_alpha_component = exec_alpha * getattr(cfg, 'weight_execution_alpha', 0.0)
+
         # Combine
         weighted_total = (
             pnl_component +
@@ -477,7 +622,11 @@ class ModularRewardCalculator:
             holding_component +
             antigaming_component +
             banrep_penalty +
-            oil_adj
+            oil_adj +
+            flat_reward_component +  # PHASE2: Counterfactual HOLD reward
+            close_shaping_adj +      # V22 P2: Close reason shaping
+            drawdown_component +     # Phase 5: Drawdown penalty
+            exec_alpha_component     # EXP-RL-EXECUTOR: Execution alpha
         )
         breakdown.weighted_total = weighted_total
 
@@ -522,10 +671,20 @@ class ModularRewardCalculator:
             self._oil_tracker.reset()
         if self._normalizer:
             self._normalizer.reset()
+        if self._flat_reward:  # PHASE2
+            self._flat_reward.reset()
+        if self._close_reason_detector:  # V22 P2
+            self._close_reason_detector.reset()
+        if self._drawdown_penalty:  # Phase 5
+            self._drawdown_penalty.reset()
+        if self._execution_alpha:  # EXP-RL-EXECUTOR
+            self._execution_alpha.reset()
 
     def reset_position(self) -> None:
         """Reset position-related state (on position close)."""
         self._holding_decay.reset_position()
+        if self._flat_reward:  # PHASE2
+            self._flat_reward.reset_position()
 
     def get_stats(self) -> Dict[str, Any]:
         """Get comprehensive statistics from all components."""
@@ -553,6 +712,18 @@ class ModularRewardCalculator:
 
         if self._curriculum:
             stats.update(self._curriculum.get_stats())
+
+        if self._flat_reward:  # PHASE2
+            stats.update(self._flat_reward.get_stats())
+
+        if self._close_reason_detector:  # V22 P2
+            stats.update(self._close_reason_detector.get_stats())
+
+        if self._drawdown_penalty:  # Phase 5
+            stats.update(self._drawdown_penalty.get_stats())
+
+        if self._execution_alpha:  # EXP-RL-EXECUTOR
+            stats.update(self._execution_alpha.get_stats())
 
         return stats
 

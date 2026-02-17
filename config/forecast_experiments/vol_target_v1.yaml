@@ -1,0 +1,89 @@
+# =============================================================================
+# Forecasting Experiment: Vol-Target V1
+# =============================================================================
+#
+# Production config for vol-targeting position sizing on H=1 top-3 ensemble.
+# Derived from baseline_v1 results + FC-SIZE-001 backtest validation.
+#
+# SSOT Contract: CTR-FORECAST-EXPERIMENT-CONFIG-001
+# Version: 1.0.0
+# =============================================================================
+
+experiment:
+  name: "vol_target_v1"
+  version: "1.0.0"
+  description: "Vol-targeting with tv=15%, max_lev=2.0x on H=1 top-3 ensemble"
+  hypothesis: "Vol-targeting scales returns while preserving Sharpe >= 2.0"
+  baseline_experiment: "baseline_v1"
+  created_at: "2026-02-15"
+  status: "running"
+
+# Model Configuration
+# null = all 9 models (ensemble selects top-3 per fold adaptively)
+models:
+  include: null  # All 9 models
+
+# Horizon Configuration
+# Only H=1 is validated (DA > 50% with statistical significance)
+horizons:
+  include: [1]
+
+# Feature Configuration (same as baseline)
+features:
+  contract_version: "1.0.0"
+  additions: []
+  removals: []
+
+# Training Configuration (same as baseline)
+training:
+  walk_forward_windows: 5
+  min_train_pct: 0.4
+  gap_days: 30
+
+# Evaluation Configuration (same as baseline)
+evaluation:
+  primary_metric: "direction_accuracy"
+  secondary_metrics:
+    - "rmse"
+    - "mae"
+    - "sharpe_ratio"
+  significance_level: 0.05
+  bonferroni_correction: true
+
+# Vol-Targeting Configuration (FC-SIZE-001 selected parameters)
+vol_targeting:
+  target_vol: 0.15
+  max_leverage: 2.0
+  min_leverage: 0.5
+  vol_lookback: 21
+  vol_floor: 0.05
+  annualization_factor: 252.0
+
+# Reference: FC-SIZE-001 backtest results (2026-02-15)
+backtest_reference:
+  baseline_sharpe: 2.109
+  baseline_return_pct: 69.36
+  vol_target_sharpe: 2.062
+  vol_target_return_pct: 85.22
+  vol_target_max_dd_pct: -10.26
+  da_pct: 55.9
+  avg_leverage: 1.38
+  p_value_binomial: 0.0033
+  p_value_ttest: 0.0021
+  results_file: "results/vol_target_backtest_9models.json"
+
+# Paper trading stop criteria (from playbook GATE 1.4)
+paper_trading:
+  min_days_before_eval: 20
+  continue_if_da_above: 50.0
+  pause_if_da_below: 48.0
+  pause_after_days: 40
+  stop_if_da_below: 46.0
+  stop_after_days: 60
+  stop_if_maxdd_above: 20.0
+  pause_if_maxdd_above: 15.0
+
+# MLflow Configuration
+mlflow:
+  enabled: true
+  experiment_name: "forecast_vol_target_v1"

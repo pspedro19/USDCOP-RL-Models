@@ -187,35 +187,57 @@ class L6XComKeysEnum(str, Enum):
 # =============================================================================
 # DAG IDs - Centralized references (SSOT for inter-DAG communication)
 # =============================================================================
+# NOTE: These are canonical references. For new naming convention, see dag_registry.py
 
-# Layer 0: Data Acquisition
-L0_MACRO_DAG_ID = "v3.l0_macro_unified"
-L0_OHLCV_REALTIME_DAG_ID = "v3.l0_ohlcv_realtime"
-L0_OHLCV_BACKFILL_DAG_ID = "v3.l0_ohlcv_backfill"
-L0_WEEKLY_BACKUP_DAG_ID = "v3.l0_weekly_backup"
-L0_DATA_INIT_DAG_ID = "v3.l0_data_initialization"
+try:
+    from contracts.dag_registry import (
+        CORE_L0_OHLCV_BACKFILL,
+        CORE_L0_OHLCV_REALTIME,
+        CORE_L0_MACRO_BACKFILL,
+        CORE_L0_MACRO_UPDATE,
+        RL_L1_FEATURE_REFRESH,
+        RL_L1_FEAST_MATERIALIZE,
+        RL_L2_DATASET_BUILD,
+        RL_L2_DRIFT_RETRAIN,
+        RL_L3_MODEL_TRAINING,
+        RL_L4_EXPERIMENT_RUNNER,
+        RL_L4_BACKTEST_VALIDATION,
+        RL_L4_SCHEDULED_RETRAINING,
+        RL_L5_PRODUCTION_INFERENCE,
+        RL_L6_PRODUCTION_MONITOR,
+    )
+    _REGISTRY_AVAILABLE = True
+except ImportError:
+    _REGISTRY_AVAILABLE = False
+
+# Layer 0: Data Acquisition (4 DAGs)
+L0_MACRO_DAG_ID = CORE_L0_MACRO_UPDATE if _REGISTRY_AVAILABLE else "l0_macro_update"
+L0_MACRO_UPDATE_DAG_ID = CORE_L0_MACRO_UPDATE if _REGISTRY_AVAILABLE else "l0_macro_update"
+L0_MACRO_BACKFILL_DAG_ID = CORE_L0_MACRO_BACKFILL if _REGISTRY_AVAILABLE else "l0_macro_backfill"
+L0_OHLCV_REALTIME_DAG_ID = CORE_L0_OHLCV_REALTIME if _REGISTRY_AVAILABLE else "core_l0_02_ohlcv_realtime"
+L0_OHLCV_BACKFILL_DAG_ID = CORE_L0_OHLCV_BACKFILL if _REGISTRY_AVAILABLE else "core_l0_01_ohlcv_backfill"
 
 # Layer 1: Feature Engineering
-L1_DAG_ID = "v3.l1_feature_refresh"
-L1_FEAST_DAG_ID = "v3.l1b_feast_materialize"
+L1_DAG_ID = RL_L1_FEATURE_REFRESH if _REGISTRY_AVAILABLE else "v3.l1_feature_refresh"
+L1_FEAST_DAG_ID = RL_L1_FEAST_MATERIALIZE if _REGISTRY_AVAILABLE else "v3.l1b_feast_materialize"
 
-# Layer 2: Data Preprocessing
-L2_DAG_ID = "v3.l2_preprocessing_pipeline"
-L2_DRIFT_DAG_ID = "l2b_drift_retraining"
+# Layer 2: Data Preprocessing (NEW: uses unified dataset builder)
+L2_DAG_ID = RL_L2_DATASET_BUILD if _REGISTRY_AVAILABLE else "rl_l2_01_dataset_build"
+L2_DRIFT_DAG_ID = RL_L2_DRIFT_RETRAIN if _REGISTRY_AVAILABLE else "l2b_drift_retraining"
 
 # Layer 3: Model Training
-L3_DAG_ID = "v3.l3_model_training"
+L3_DAG_ID = RL_L3_MODEL_TRAINING if _REGISTRY_AVAILABLE else "rl_l3_01_model_training"
 
 # Layer 4: Experiment/Validation
-L4_DAG_ID = "l4_experiment_runner"
-L4_BACKTEST_DAG_ID = "v3.l4_backtest_validation"
-L4_SCHEDULED_DAG_ID = "l4_scheduled_retraining"
+L4_DAG_ID = RL_L4_EXPERIMENT_RUNNER if _REGISTRY_AVAILABLE else "rl_l4_01_experiment_runner"
+L4_BACKTEST_DAG_ID = RL_L4_BACKTEST_VALIDATION if _REGISTRY_AVAILABLE else "v3.l4_backtest_validation"
+L4_SCHEDULED_DAG_ID = RL_L4_SCHEDULED_RETRAINING if _REGISTRY_AVAILABLE else "l4_scheduled_retraining"
 
 # Layer 5: Inference
-L5_DAG_ID = "v3.l5_multi_model_inference"
+L5_DAG_ID = RL_L5_PRODUCTION_INFERENCE if _REGISTRY_AVAILABLE else "v3.l5_multi_model_inference"
 
 # Layer 6: Production Monitoring
-L6_DAG_ID = "l6_production_monitoring"
+L6_DAG_ID = RL_L6_PRODUCTION_MONITOR if _REGISTRY_AVAILABLE else "l6_production_monitoring"
 
 
 # =============================================================================
@@ -1087,10 +1109,10 @@ __all__ = [
     "L6XComKeysEnum",
     # Layer 0 DAG IDs
     "L0_MACRO_DAG_ID",
+    "L0_MACRO_UPDATE_DAG_ID",
+    "L0_MACRO_BACKFILL_DAG_ID",
     "L0_OHLCV_REALTIME_DAG_ID",
     "L0_OHLCV_BACKFILL_DAG_ID",
-    "L0_WEEKLY_BACKUP_DAG_ID",
-    "L0_DATA_INIT_DAG_ID",
     # Layer 1 DAG IDs
     "L1_DAG_ID",
     "L1_FEAST_DAG_ID",

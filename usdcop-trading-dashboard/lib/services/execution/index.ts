@@ -27,4 +27,4 @@ export { executionService } from './execution.service';
 export { signalService } from './signal.service';
 
 // Trading Config Service
-export { tradingConfigService } from './trading-config.service';
+export { tradingService } from './trading-config.service';

@@ -1,0 +1,828 @@
+# ==============================================================================
+# EXPERIMENT SSOT - Single Source of Truth for L2 + L3
+# ==============================================================================
+# Este archivo es la UNICA fuente de verdad para:
+#   - L2 Dataset Builder: features, sources, normalization
+#   - L3 Training: hyperparameters, reward, environment
+#
+# AMBOS pipelines leen este archivo. NO duplicar configuracion en otros archivos.
+#
+# Contract: CTR-EXPERIMENT-001
+# Version: 2.0.0
+# Date: 2026-02-01
+# ==============================================================================
+
+_meta:
+  version: "3.1.0"
+  contract: "CTR-EXPERIMENT-001"
+  experiment_id: "EXP-B-001"
+  parent_experiment: "EXP-A-001"
+  created_at: "2026-02-03"
+  description: |
+    EXP-B-001: Enhanced dataset with trailing stop mechanism.
+    - 20 features (5 new: log_ret_1d, rsi_21, rate_spread_change, yield_curve_z, gold_change_1d)
+    - Trailing stop for profit locking
+    - More aggressive thresholds (0.50) for increased trading
+    - Stricter bias penalty (0.70) to prevent directional bias
+
+# ==============================================================================
+# PIPELINE TYPE
+# ==============================================================================
+pipeline:
+  type: "rl"  # "rl" or "forecasting"
+
+  # For RL: observation_dim = market_features + state_features
+  # For Forecasting: prediction targets go at the end
+
+  observation_dim: 20  # Total observation dimension for RL (EXP-B-001: 15→20)
+  action_space: 3      # HOLD=0, BUY=1, SELL=2
+
+  # Output configuration
+  output:
+    path: "data/pipeline/07_output/5min"
+    format: "parquet"
+    prefix: "DS_v3_close_only"
+    splits:
+      train: 0.8
+      validation: 0.1
+      test: 0.1
+
+  # Date ranges for proper train/test separation
+  # Train: 2020-03-01 to 2024-12-31 (model learning)
+  # Test/Backtest: 2025-01-01 to present (out-of-sample validation)
+  date_ranges:
+    full_start: "2020-03-01"
+    train_end: "2024-12-31"      # Train only on data until this date
+    test_start: "2025-01-01"     # Out-of-sample testing starts here
+    test_end: "2026-02-01"       # Or latest available data
+
+  # ==========================================================================
+  # FASE 3: Rolling Training Windows (2026-02-02)
+  # ==========================================================================
+  # Addresses distribution shift between train (2020-2024) and test (2025+)
+  # by training on more recent data windows.
+  rolling:
+    enabled: false              # Set to true to use rolling windows
+    window_months: 18           # Rolling window size (18 months recommended)
+    retrain_frequency: "weekly" # How often to retrain: "weekly", "monthly"
+    min_train_rows: 50000       # Minimum rows required for training
+    validation_months: 6        # Last N months used for validation
+
+# ==============================================================================
+# ENVIRONMENT CONFIGURATION (L3 TradingEnv)
+# ==============================================================================
+environment:
+  max_episode_steps: 2000      # INCREASED: 600 → 2000 for longer episodes with multiple trade cycles
+  max_drawdown: 0.25           # 25% max drawdown before termination
+  max_position_holding: 576    # PHASE4: Keep 576 (48 hours), rely on take-profit for early exits
+
+  # Observation normalization
+  clip_range: [-5, 5]          # Clip all z-scores to this range
+  skip_z_suffix: true          # Don't normalize features ending in _z
+
+  # Circuit breaker - DISABLED for training to avoid action-reward mismatch
+  circuit_breaker:
+    enabled: false             # FIX: Desactivar para training (bloquea sin feedback)
+    max_consecutive_losses: 999  # Backup si se reactiva
+    cooldown_bars: 0
+
+  # Action thresholds - EXP-B-001: Lower thresholds for more trades
+  thresholds:
+    long: 0.50                 # EXP-B-001: 0.65→0.50 (more trades, 25-40 target)
+    short: -0.50               # EXP-B-001: -0.65→-0.50 (balanced with LONG)
+    # HOLD zone: [-0.50, +0.50] = 100% of action range
+
+  # Transaction costs - OPTIMIZED FOR MEXC/BINANCE USDT/COP
+  # MEXC: 0% maker, 0.05% taker = 0.05% round-trip
+  # Binance+BNB: 0.075% each side = 0.15% round-trip
+  # Using MEXC costs (lowest) as primary target
+  transaction_cost_bps: 2.5    # MEXC: 0.025% per side (5bps round-trip total)
+  slippage_bps: 2.5            # Minimal slippage on liquid USDT/COP pair
+
+  # Risk management - PHASE 4 FIX: Stop-loss, take-profit, and exit incentives
+  risk_management:
+    stop_loss_pct: -0.025      # -2.5% stop loss (force flatten position)
+    stop_loss_penalty: 0.3     # Penalty for hitting stop loss
+    take_profit_pct: 0.03      # PHASE4: +3% take profit (force exit to lock gains)
+    take_profit_bonus: 0.5     # PHASE4: Bonus for hitting take profit
+    exit_bonus: 0.2            # PHASE4: Bonus for voluntary profitable exit (scaled by profit)
+    max_daily_loss_pct: -0.10  # -10% max daily loss
+
+  # EXP-B-001: Trailing Stop - Lock in profits dynamically
+  trailing_stop:
+    enabled: true              # Enable trailing stop mechanism
+    activation_pct: 0.015      # Activate at +1.5% unrealized profit
+    trail_factor: 0.5          # Trail at 50% of peak unrealized PnL
+    min_trail_pct: 0.005       # Minimum 0.5% trail distance
+    bonus: 0.25                # Bonus reward for trailing stop exit
+
+# ==============================================================================
+# TRAINING HYPERPARAMETERS (L3 PPO)
+# ==============================================================================
+training:
+  # Duration
+  total_timesteps: 500000
+  eval_freq: 25000             # Evaluate every N steps
+  n_eval_episodes: 5
+
+  # PPO Hyperparameters (Stable-Baselines3)
+  # TUNED 2026-02-01: Comprehensive fix based on 10-agent analysis
+  algorithm: "PPO"
+  learning_rate: 0.0003        # Initial LR (will decay to final_lr)
+  n_steps: 2048
+  batch_size: 256              # FIX: 64→256 to reduce overfitting (8 updates/epoch vs 32)
+  n_epochs: 10
+  gamma: 0.95                  # FIX: 0.99→0.95 (~20-step horizon, appropriate for 5-min FX)
+  gae_lambda: 0.95             # GAE lambda
+  clip_range: 0.2              # PPO clip range
+  ent_coef: 0.02               # FIX: 0.04→0.02 for tighter policy distribution (less exploration noise)
+  vf_coef: 0.5                 # Value function coefficient
+  max_grad_norm: 0.5           # Gradient clipping
+
+  # ==========================================================================
+  # FASE 2: Overfitting Prevention (2026-02-02)
+  # ==========================================================================
+  # Learning Rate Decay - prevents late-stage overfitting
+  lr_decay:
+    enabled: true              # Enable LR decay
+    initial_lr: 0.0003         # Starting LR (same as learning_rate above)
+    final_lr: 0.00003          # Final LR (10x reduction)
+    schedule: "linear"         # Decay schedule: "linear", "exponential", "cosine"
+
+  # Early Stopping - stops training when validation plateaus
+  # NOTE: Temporarily disabled - model needs more training to learn
+  early_stopping:
+    enabled: false             # DISABLED: Allow full training
+    patience: 10               # Stop if no improvement in N evaluations
+    min_improvement: 0.01      # Minimum relative improvement required (1%)
+    monitor: "mean_reward"     # Metric to monitor
+
+  # Network architecture (optional override)
+  policy_kwargs:
+    net_arch:
+      pi: [256, 256]           # Policy network layers
+      vf: [256, 256]           # Value network layers
+
+# ==============================================================================
+# REWARD CONFIGURATION (L3 Reward Function)
+# ==============================================================================
+reward:
+  # Primary weights - PHASE 3 FIX: PnL dominant, anti-reward-hacking
+  # Key insight: flat_reward 0.3 was causing REWARD HACKING (HOLD > profitable trade)
+  pnl_weight: 0.8              # FIX: 0.7→0.8 (PRIMARY signal, 80% of reward)
+  dsr_weight: 0.15             # Keep (risk-adjusted returns)
+  sortino_weight: 0.05         # Keep (downside risk)
+
+  # Penalties - PHASE 3 FIX: Increased holding_decay to incentivize exits
+  regime_penalty: 0.15         # Keep (soft regime awareness)
+  holding_decay: 0.4           # FIX: 0.2→0.4 (DOUBLED - incentivize exits)
+  anti_gaming: 0.15            # Keep (soft anti-gaming)
+
+  # Holding decay parameters - PHASE 3 FIX: More aggressive decay
+  holding_decay_config:
+    half_life_bars: 48         # FIX: 144→48 (4 hours, more aggressive)
+    max_penalty: 0.5           # FIX: 0.3→0.5 (50% max penalty)
+    flat_threshold: 24         # Keep (2-hour grace period)
+    enable_overnight_boost: true
+    overnight_multiplier: 1.5  # Keep (softer overnight)
+
+  # Anti-gaming parameters - PHASE 1 FIX: Disable inactivity penalty
+  # CRITICAL: InactivityTracker was penalizing HOLD after 12 bars, destroying wider thresholds
+  anti_gaming_config:
+    # Inactivity - DISABLED to allow HOLD action with wider thresholds
+    inactivity_grace_period: 999  # FIX: 12→999 (effectively disabled)
+    inactivity_max_penalty: 0.0   # FIX: 0.2→0.0 (disabled)
+    inactivity_growth_rate: 0.0   # FIX: 0.01→0.0 (disabled)
+    # Churn - Keep moderate to prevent over-trading
+    churn_window_size: 20
+    churn_max_trades: 10
+    churn_base_penalty: 0.1
+    churn_excess_penalty: 0.02
+    # Bias - EXP-B-001: Stricter to prevent directional bias
+    bias_imbalance_threshold: 0.70  # EXP-B-001: 0.80→0.70 (stricter)
+    bias_penalty: 0.15              # EXP-B-001: 0.10→0.15 (more penalty)
+    bias_min_samples: 100          # FIX: 50→100 (need more samples)
+
+  # PHASE 3.1 FIX: Flat reward - BALANCED to allow some HOLD
+  # PHASE 3 reduced to 0.05 which was too aggressive - model never uses HOLD (2.1%)
+  # Now using 0.12 with decay to balance trading vs holding
+  # With decay enabled, extended HOLD is still penalized but short HOLD is allowed
+  flat_reward_weight: 0.12          # FIX: 0.05→0.12 (allow more HOLD, but with decay)
+  flat_reward_config:
+    enabled: true                   # Enable counterfactual HOLD reward
+    scale: 50.0                     # Scale to match PnL reward magnitude
+    min_move_threshold: 0.0001      # Minimum market move (0.01% = 1 pip)
+    loss_avoidance_mult: 1.0        # Reward for avoiding losses (any direction)
+    decay_enabled: true             # FIX: Enable decay to penalize extended HOLD
+    decay_half_life: 12             # FIX: 1 hour (12 bars * 5min) until 50% decay
+    decay_max: 0.9                  # FIX: 90% max reduction after extended HOLD
+
+  # DSR parameters
+  dsr_eta: 0.01                # DSR learning rate
+
+  # Sortino parameters
+  sortino_window: 240          # FIX: 20→240 (~20 horas, estimación más estable)
+
+# ==============================================================================
+# L4 BACKTEST CONFIGURATION
+# ==============================================================================
+# CRITICAL: These values MUST match environment configuration above
+# Used by: scripts/run_full_pipeline.py, scripts/full_2025_backtest.py
+backtest:
+  # Capital settings
+  initial_capital: 10000.0
+
+  # Transaction costs - OPTIMIZED FOR MEXC/BINANCE USDT/COP
+  # MEXC: 0% maker, 0.05% taker = 0.05% round-trip
+  # Binance+BNB: 0.075% each side = 0.15% round-trip
+  # Using MEXC costs (lowest) as primary target
+  transaction_costs:
+    spread_bps: 2.5            # MEXC: 0.025% per side (0.05% round-trip / 2)
+    slippage_bps: 2.5          # Minimal slippage on liquid USDT/COP pair
+    total_round_trip_pct: 0.05 # MEXC: 0.05% round-trip (18x cheaper than retail)
+
+  # Position limits (MUST match environment.max_position_holding)
+  max_position_holding: 576    # PHASE4: Same as environment.max_position_holding
+
+  # Thresholds (MUST match environment.thresholds)
+  # Note: These are REFERENCED from environment section, not duplicated
+  # L4 should read from environment.thresholds to ensure DRY
+
+  # Validation gates - conditions for L4 to PASS
+  gates:
+    min_return_pct: -20.0      # Fail if return < -20%
+    max_action_imbalance: 0.80 # Fail if any action > 80%
+    min_trades: 10             # Fail if fewer than 10 trades
+    min_sharpe: -3.0           # Warn if Sharpe < -3
+
+  # Output configuration
+  output:
+    save_trades: true          # Save trade-by-trade details
+    save_equity_curve: true    # Save equity curve for visualization
+
+# ==============================================================================
+# LOGGING & TRACKING (L3)
+# ==============================================================================
+logging:
+  mlflow_tracking_uri: "http://mlflow:5000"
+  experiment_name: "usdcop_ppo_v3_tuned"
+  tensorboard_log: "models/tensorboard/"
+  checkpoint_freq: 25000         # INCREASED: Save more frequently to avoid losing progress
+  keep_checkpoints: 5            # INCREASED: Keep more checkpoints
+
+# ==============================================================================
+# DATA SOURCES
+# ==============================================================================
+sources:
+  ohlcv:
+    table: "usdcop_m5_ohlcv"
+    symbol: "USD/COP"
+    columns_used:
+      - close  # CLOSE-ONLY: O/H/L no son confiables en nuestro dataset
+    frequency: "5min"
+
+  macro_daily:
+    table: "macro_indicators_daily"
+    ffill_limit_days: 5
+    columns:
+      - dxy
+      - vix
+      - embi
+      - brent
+      - ust10y
+      - col10y
+      - usdmxn
+
+  macro_monthly:
+    table: "macro_indicators_monthly"
+    ffill_limit_days: 35
+    columns:
+      - fedfunds
+
+  macro_quarterly:
+    table: "macro_indicators_quarterly"
+    ffill_limit_days: 95
+    columns: []  # No usamos quarterly en features actuales
+
+# ==============================================================================
+# FEATURE DEFINITIONS
+# ==============================================================================
+# IMPORTANTE: El orden aqui define el orden en el vector de observacion.
+# NO cambiar el orden sin actualizar TODOS los componentes dependientes.
+# ==============================================================================
+
+features:
+  # ==========================================================================
+  # TECHNICAL FEATURES (6) - Solo usan CLOSE
+  # Contract: CTR-FEATURES-002 (CLOSE-ONLY)
+  # ==========================================================================
+
+  - name: log_ret_5m
+    order: 0
+    category: returns
+    description: "Log return 1 bar (5min)"
+    source: ohlcv
+    input_column: close
+    formula: "log(close / close.shift(1))"
+    calculator: "calculate_log_returns"
+    params:
+      periods: 1
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+
+  - name: log_ret_1h
+    order: 1
+    category: returns
+    description: "Log return 12 bars (1 hora)"
+    source: ohlcv
+    input_column: close
+    formula: "log(close / close.shift(12))"
+    calculator: "calculate_log_returns"
+    params:
+      periods: 12
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+
+  - name: log_ret_4h
+    order: 2
+    category: returns
+    description: "Log return 48 bars (4 horas)"
+    source: ohlcv
+    input_column: close
+    formula: "log(close / close.shift(48))"
+    calculator: "calculate_log_returns"
+    params:
+      periods: 48
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+
+  # EXP-B-001: NEW - 1-day log return for longer-term momentum
+  - name: log_ret_1d
+    order: 3
+    category: returns
+    description: "Log return 1 day (288 bars)"
+    source: ohlcv
+    input_column: close
+    formula: "log(close / close.shift(288))"
+    calculator: "calculate_log_returns"
+    params:
+      periods: 288
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+
+  - name: rsi_9
+    order: 4
+    category: technical
+    description: "RSI periodo 9 (Wilders smoothing)"
+    source: ohlcv
+    input_column: close
+    formula: "100 - 100/(1 + avg_gain/avg_loss)"
+    calculator: "calculate_rsi_wilders"
+    params:
+      period: 9
+    normalization:
+      method: minmax
+      min: 0
+      max: 100
+      # RSI ya esta en [0,100], solo escalamos a [0,1]
+    is_predictor: true
+
+  # EXP-B-001: NEW - RSI 21 for longer-term overbought/oversold
+  - name: rsi_21
+    order: 5
+    category: technical
+    description: "RSI periodo 21 (longer-term momentum)"
+    source: ohlcv
+    input_column: close
+    formula: "RSI(21)"
+    calculator: "calculate_rsi_wilders"
+    params:
+      period: 21
+    normalization:
+      method: minmax
+      min: 0
+      max: 100
+    is_predictor: true
+
+  - name: volatility_pct
+    order: 6
+    category: technical
+    description: "Realized volatility como % (reemplaza ATR)"
+    source: ohlcv
+    input_column: close
+    formula: "std(log_returns, window=14) * sqrt(252*48)"
+    calculator: "calculate_volatility_pct"
+    params:
+      period: 14
+      annualize: true
+      bars_per_day: 48
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+    note: "CLOSE-ONLY: Mide volatilidad sin necesitar H/L"
+    replaces: "atr_pct"
+
+  - name: trend_z
+    order: 7
+    category: technical
+    description: "Posicion precio vs SMA (reemplaza ADX)"
+    source: ohlcv
+    input_column: close
+    formula: "(close - sma_50) / rolling_std_50"
+    calculator: "calculate_trend_z"
+    params:
+      sma_period: 50
+      clip_value: 3.0
+    normalization:
+      method: none  # Ya es z-score, clipped a +-3
+    is_predictor: true
+    note: "CLOSE-ONLY: Mide fuerza/direccion de tendencia sin H/L"
+    replaces: "adx_14"
+
+  # ==========================================================================
+  # MACRO FEATURES (10) - Datos diarios/mensuales (EXP-B-001: +3 new)
+  # ==========================================================================
+
+  - name: dxy_z
+    order: 8
+    category: macro_zscore
+    description: "Dollar Index z-score"
+    source: macro_daily
+    input_column: dxy
+    formula: "rolling_zscore(dxy, window=252)"
+    calculator: "calculate_macro_zscore"
+    params:
+      window: 252
+      method: rolling
+    normalization:
+      method: none  # Ya es z-score
+      clip: [-5, 5]
+    is_predictor: true
+    importance: CRITICAL
+
+  - name: dxy_change_1d
+    order: 9
+    category: macro_change
+    description: "Dollar Index cambio diario %"
+    source: macro_daily
+    input_column: dxy
+    formula: "pct_change(dxy, 1)"
+    calculator: "pct_change"
+    params:
+      periods: 1
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+
+  - name: vix_z
+    order: 10
+    category: macro_zscore
+    description: "VIX z-score (risk sentiment)"
+    source: macro_daily
+    input_column: vix
+    formula: "rolling_zscore(vix, window=252)"
+    calculator: "calculate_macro_zscore"
+    params:
+      window: 252
+      method: rolling
+    normalization:
+      method: none  # Ya es z-score
+      clip: [-5, 5]
+    is_predictor: true
+    importance: HIGH
+
+  - name: embi_z
+    order: 11
+    category: macro_zscore
+    description: "EMBI Colombia z-score (country risk)"
+    source: macro_daily
+    input_column: embi
+    formula: "rolling_zscore(embi, window=252)"
+    calculator: "calculate_macro_zscore"
+    params:
+      window: 252
+      method: rolling
+    normalization:
+      method: none  # Ya es z-score
+      clip: [-5, 5]
+    is_predictor: true
+    importance: HIGH
+
+  - name: brent_change_1d
+    order: 12
+    category: macro_change
+    description: "Brent oil cambio diario %"
+    source: macro_daily
+    input_column: brent
+    formula: "pct_change(brent, 1)"
+    calculator: "pct_change"
+    params:
+      periods: 1
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+    note: "Colombia es exportador de petroleo"
+
+  - name: rate_spread_z
+    order: 13
+    category: macro_zscore
+    description: "Diferencial tasas Colombia-USA z-score rolling 252d"
+    source: [macro_daily, macro_monthly]
+    input_columns: [col10y, ust10y]
+    formula: "rolling_zscore(col10y - ust10y, window=252)"
+    calculator: "calculate_rate_spread_zscore"
+    params:
+      window: 252
+      method: rolling
+    normalization:
+      method: none  # Ya es z-score, no necesita normalización adicional
+      clip: [-4, 4]
+    is_predictor: true
+    note: "Carry trade driver - rolling z-score for stationarity"
+
+  # EXP-B-001: NEW - Rate spread momentum
+  - name: rate_spread_change
+    order: 14
+    category: macro_change
+    description: "Rate spread (col10y - ust10y) momentum"
+    source: [macro_daily, macro_monthly]
+    input_columns: [col10y, ust10y]
+    formula: "pct_change(col10y - ust10y)"
+    calculator: "calc_rate_spread_change"
+    params:
+      periods: 288  # 1-day change
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+    note: "EXP-B-001: Carry trade momentum signal"
+
+  - name: usdmxn_change_1d
+    order: 15
+    category: macro_change
+    description: "USD/MXN cambio diario % (peer currency)"
+    source: macro_daily
+    input_column: usdmxn
+    formula: "pct_change(usdmxn, 1)"
+    calculator: "pct_change"
+    params:
+      periods: 1
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+    note: "Correlacion con otros EM LATAM"
+
+  # EXP-B-001: NEW - Yield curve z-score (risk-on/off signal)
+  - name: yield_curve_z
+    order: 16
+    category: macro_zscore
+    description: "US yield curve (10Y - 2Y) z-score"
+    source: macro_daily
+    input_columns: [ust10y, ust2y]
+    formula: "zscore(ust10y - ust2y)"
+    calculator: "calc_yield_curve_zscore"
+    params:
+      window: 252
+    normalization:
+      method: none  # Already z-score
+      clip: [-4, 4]
+    is_predictor: true
+    note: "EXP-B-001: Risk-on/off and recession indicator"
+
+  # EXP-B-001: NEW - Gold daily change (safe haven proxy)
+  - name: gold_change_1d
+    order: 17
+    category: macro_change
+    description: "Gold price 1-day change %"
+    source: macro_daily
+    input_column: gold
+    formula: "pct_change(gold)"
+    calculator: "pct_change"
+    params:
+      periods: 288  # 1 day in 5-min bars
+    normalization:
+      method: zscore
+      clip: [-5, 5]
+    is_predictor: true
+    note: "EXP-B-001: Safe haven flow indicator"
+
+  # ==========================================================================
+  # STATE FEATURES (2) - Calculados en runtime por TradingEnv
+  # ==========================================================================
+
+  - name: position
+    order: 18
+    category: state
+    description: "Posicion actual del agente"
+    source: runtime
+    values: [-1, 0, 1]  # SHORT, FLAT, LONG
+    normalization:
+      method: none  # Ya discreto
+    is_predictor: false
+    is_state: true
+
+  - name: unrealized_pnl
+    order: 19
+    category: state
+    description: "P&L no realizado como %"
+    source: runtime
+    formula: "(current_price - entry_price) / entry_price * position_sign"
+    normalization:
+      method: clip
+      clip: [-1.0, 1.0]  # FIX: [-0.1,0.1]→[-1.0,1.0] usar más del rango de obs space
+    is_predictor: false
+    is_state: true
+
+# ==============================================================================
+# DERIVED CONFIGURATION (computed from features)
+# ==============================================================================
+
+derived:
+  # Automatically computed from features list
+  # EXP-B-001: Updated to 20 features (18 market + 2 state)
+  feature_order:
+    - log_ret_5m          # 0
+    - log_ret_1h          # 1
+    - log_ret_4h          # 2
+    - log_ret_1d          # 3  EXP-B-001 NEW
+    - rsi_9               # 4
+    - rsi_21              # 5  EXP-B-001 NEW
+    - volatility_pct      # 6
+    - trend_z             # 7
+    - dxy_z               # 8
+    - dxy_change_1d       # 9
+    - vix_z               # 10
+    - embi_z              # 11
+    - brent_change_1d     # 12
+    - rate_spread_z       # 13
+    - rate_spread_change  # 14 EXP-B-001 NEW
+    - usdmxn_change_1d    # 15
+    - yield_curve_z       # 16 EXP-B-001 NEW
+    - gold_change_1d      # 17 EXP-B-001 NEW
+    - position            # 18
+    - unrealized_pnl      # 19
+
+  market_features: 18  # EXP-B-001: 13→18 features where is_predictor=true
+  state_features: 2    # features where is_state=true
+  total_features: 20   # EXP-B-001: 15→20
+
+  # Hash for contract validation
+  feature_order_hash: null  # Computed at runtime
+
+# ==============================================================================
+# ANTI-LEAKAGE CONFIGURATION
+# ==============================================================================
+
+anti_leakage:
+  # Macro data shift
+  macro_shift_days: 1  # Use T-1 macro data
+
+  # Forward-fill limits by frequency
+  ffill_limits:
+    daily: 5
+    monthly: 35
+    quarterly: 95
+
+  # Normalization
+  normalization_source: "train_only"  # Stats computed on train split only
+
+  # Session boundaries
+  trading_session:
+    start_hour: 8   # Colombia time
+    end_hour: 13    # Colombia time
+    no_ffill_across_sessions: true
+
+# ==============================================================================
+# FORECASTING TARGET (only used when pipeline.type = "forecasting")
+# ==============================================================================
+
+forecasting_targets:
+  enabled: false  # Set to true for forecasting pipeline
+  horizons: [1, 5, 10, 15, 20, 25, 30]  # Days ahead
+  target_column: "close"
+  target_type: "return"  # "return" or "direction"
+
+  # Generated target columns (appended as last columns)
+  columns:
+    - name: target_1d
+      horizon: 1
+      formula: "log(close.shift(-1) / close)"
+      is_target: true
+    - name: target_5d
+      horizon: 5
+      formula: "log(close.shift(-5) / close)"
+      is_target: true
+    # ... etc
+
+# ==============================================================================
+# VALIDATION
+# ==============================================================================
+
+validation:
+  min_rows: 50000
+  max_null_pct: 0.01
+
+  feature_checks:
+    - name: "volatility_pct_range"
+      feature: volatility_pct
+      check: "0.05 <= mean <= 0.35"
+      description: "Annualized vol should be 5-35% for FX EM"
+
+    - name: "trend_z_distribution"
+      feature: trend_z
+      check: "abs(mean) < 0.5 and 0.5 < std < 1.5"
+      description: "trend_z should be roughly standard normal"
+
+    - name: "rsi_range"
+      feature: rsi_9
+      check: "0 <= min and max <= 100"
+      description: "RSI must be in [0, 100]"
+
+# ==============================================================================
+# CHANGELOG
+# ==============================================================================
+# v3.1.0 (2026-02-03) - EXP-B-001 (Enhanced Dataset + Trailing Stop):
+#   TARGET: APR 25-30%, Sharpe > 1.0, Trades 25-40
+#   Changes:
+#   - observation_dim: 15→20 (5 new market features)
+#   - New features:
+#     - log_ret_1d (order 3): 1-day momentum
+#     - rsi_21 (order 5): longer-term RSI
+#     - rate_spread_change (order 14): carry trade momentum
+#     - yield_curve_z (order 16): risk-on/off signal
+#     - gold_change_1d (order 17): safe haven flows
+#   - Trailing stop mechanism:
+#     - activation_pct: 1.5% unrealized profit
+#     - trail_factor: 0.5 (50% of peak)
+#     - min_trail_pct: 0.5%
+#     - bonus: 0.25 reward
+#   - Thresholds: 0.65→0.50 (more trades)
+#   - Bias penalty: 0.80→0.70 (stricter), penalty 0.10→0.15
+#
+# v3.0.0 (2026-02-02) - PHASE 3 FIX (Anti-Reward-Hacking + Profitability):
+#   ROOT CAUSE 1: FlatReward 0.3 = REWARD HACKING (HOLD > profitable trades)
+#   ROOT CAUSE 2: Max holding 576 bars = forced exit at random price
+#   ROOT CAUSE 3: No stop-loss = losses accumulate until max holding
+#   ROOT CAUSE 4: Thresholds 0.60 = too many trades, cost drag kills edge
+#
+#   PHASE 3 Changes:
+#   - flat_reward_weight: 0.3→0.05 (REDUCED 6x to eliminate reward hacking)
+#   - flat_reward_config.decay_enabled: true (penalize extended HOLD)
+#   - flat_reward_config.decay_half_life: 12 (1 hour until 50% decay)
+#   - pnl_weight: 0.7→0.8 (PnL is 80% of reward signal)
+#   - holding_decay: 0.2→0.4 (DOUBLED to incentivize exits)
+#   - holding_decay_config.half_life_bars: 144→48 (4 hours, more aggressive)
+#   - holding_decay_config.max_penalty: 0.3→0.5 (50% max penalty)
+#   - thresholds: 0.60→0.75 (reduce trade frequency, higher conviction)
+#   - ent_coef: 0.04→0.02 (less exploration noise, more deterministic)
+#   - risk_management: NEW section with stop_loss_pct: -0.025
+#
+# v2.2.0 (2026-02-02) - PHASE 2 FIX (HOLD Action Collapse):
+#   ROOT CAUSE: Model gets zero reward signal when FLAT (no PnL, no DSR/Sortino)
+#   SOLUTION: Counterfactual reward - give positive signal for avoiding losses
+#
+#   PHASE 2 Changes:
+#   - flat_reward_weight: 0.3 (counterfactual HOLD reward)
+#   - flat_reward_config: FlatReward component for HOLD incentive
+#
+#   PHASE 2 v2.0 FIX (2026-02-02) - Direction-Neutral FlatReward:
+#   ROOT CAUSE OF SHORT BIAS: FlatReward v1 only rewarded avoiding LONG losses
+#   - Market DOWN: Got reward (avoided LONG loss)
+#   - Market UP: Got 0 (missed LONG gain) <- This created LONG bias
+#   SOLUTION: Symmetric reward for avoiding losses in ANY direction
+#   - Market DOWN: Reward for avoiding LONG loss
+#   - Market UP: Reward for avoiding SHORT loss (NEW - same magnitude)
+#
+# v2.1.0 (2026-02-01) - PLAN INTEGRAL FIX:
+#   FASE 1 (P0):
+#   - pnl_weight: 0.5→0.8 (PnL dominante en reward)
+#   - penalties: reducidas de 1.0 a 0.2-0.3
+#   - gamma: 0.99→0.95 (horizon ~20 steps)
+#   - batch_size: 64→256 (reduce overfitting)
+#   - learning_rate: 0.0001→0.0003
+#   - ent_coef: 0.10→0.08
+#   - circuit_breaker: enabled=false para training
+#   - thresholds: ±0.33→±0.50 (zona HOLD más amplia)
+#   FASE 2 (P1):
+#   - unrealized_pnl clip: [-0.1,0.1]→[-1.0,1.0]
+#   - sortino_window: 20→240 (estimación más estable)
+#
+# v2.0.0 (2026-02-01):
+#   - CLOSE-ONLY features: volatility_pct, trend_z
+#   - Removed: atr_pct, adx_14 (required H/L)
+#   - Changed: time_normalized -> unrealized_pnl
+#   - Anti-leakage config added
+#   - Validation checks added
+# ==============================================================================

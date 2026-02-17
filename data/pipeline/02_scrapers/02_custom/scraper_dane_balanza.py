@@ -1,6 +1,9 @@
 """
 Scraper para Balanza Comercial de Colombia desde DANE
 Obtiene datos mensuales de exportaciones e importaciones
+
+Fuente: https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/balanza-comercial
+El scraper busca dinámicamente el enlace más reciente del Excel de serie mensual.
 """
 
 import requests
@@ -10,41 +13,111 @@ from datetime import datetime
 from pathlib import Path
 import io
 import re
+from bs4 import BeautifulSoup
 
-# URL base y patron dinamico del archivo Excel de Balanza Comercial Mensual
-# Formato: anex-BCOM-Mensual-{mes}{año}.xlsx (ej: sep2025, oct2025)
-DANE_BASE_URL = 'https://www.dane.gov.co/files/operaciones/BCOM/'
-BALANZA_PATTERN = 'anex-BCOM-Mensual-{mes}{anio}.xlsx'
+# URL de la página principal de Balanza Comercial
+DANE_BALANZA_PAGE = 'https://www.dane.gov.co/index.php/estadisticas-por-tema/comercio-internacional/balanza-comercial'
+DANE_BASE_URL = 'https://www.dane.gov.co'
 
-# Meses en español para el patron
+# Patrón para identificar el archivo Excel de serie mensual
+# Ejemplo: /files/operaciones/BCOM/anex-BCOM-Mensual-nov2025.xlsx
+EXCEL_PATTERN = re.compile(r'/files/operaciones/BCOM/anex-BCOM-Mensual-\w+\.xlsx', re.IGNORECASE)
+
+# Meses en español para el patron (fallback)
 MESES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
 }
 
 
 def buscar_archivo_mas_reciente():
     """
-    Busca dinamicamente el archivo Excel más reciente de Balanza Comercial
+    Busca dinámicamente el archivo Excel más reciente de Balanza Comercial
 
-    Intenta desde el mes actual hacia atrás hasta encontrar un archivo válido
+    Scrapea la página principal del DANE y busca enlaces que coincidan con
+    el patrón de archivo Excel de serie mensual.
+
+    Returns:
+        URL completa del archivo encontrado o None
+    """
+    print(f"\n[DANE] Buscando enlace más reciente en página principal...")
+    print(f"  URL: {DANE_BALANZA_PAGE}")
+
+    try:
+        # Descargar página principal
+        response = requests.get(DANE_BALANZA_PAGE, headers=HEADERS, timeout=30)
+
+        if response.status_code != 200:
+            print(f"  [ERROR] No se pudo acceder a la página (status: {response.status_code})")
+            return _buscar_archivo_fallback()
+
+        # Parsear HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Buscar enlaces que coincidan con el patrón
+        enlaces_encontrados = []
+
+        for link in soup.find_all('a', href=True):
+            href = link.get('href', '')
+
+            # Verificar si coincide con el patrón del Excel
+            if EXCEL_PATTERN.search(href):
+                title = link.get('title', '') or link.get_text(strip=True)
+                enlaces_encontrados.append({
+                    'href': href,
+                    'title': title
+                })
+                print(f"  [FOUND] {href}")
+                print(f"          Título: {title[:60]}...")
+
+        if not enlaces_encontrados:
+            print(f"  [WARN] No se encontraron enlaces con patrón esperado")
+            return _buscar_archivo_fallback()
+
+        # Usar el primer enlace encontrado (generalmente es el más reciente)
+        enlace = enlaces_encontrados[0]
+
+        # Construir URL completa
+        href = enlace['href']
+        if href.startswith('/'):
+            url_completa = f"{DANE_BASE_URL}{href}"
+        elif href.startswith('http'):
+            url_completa = href
+        else:
+            url_completa = f"{DANE_BASE_URL}/{href}"
+
+        print(f"\n  [OK] Archivo seleccionado: {href.split('/')[-1]}")
+        return url_completa
+
+    except Exception as e:
+        print(f"  [ERROR] {type(e).__name__}: {str(e)[:80]}")
+        return _buscar_archivo_fallback()
+
+
+def _buscar_archivo_fallback():
+    """
+    Método fallback: intenta adivinar la URL probando meses recientes
 
     Returns:
         URL del archivo encontrado o None
     """
+    print(f"\n[DANE] Usando método fallback (adivinando URLs)...")
+
     from datetime import datetime
 
     now = datetime.now()
     anio_actual = now.year
     mes_actual = now.month
 
+    # URL base para archivos directos
+    base_files_url = 'https://www.dane.gov.co/files/operaciones/BCOM/'
+
     # Intentar desde el mes actual hasta 6 meses atrás
     for offset in range(6):
-        # Calcular mes y año
-        mes_idx = mes_actual - 1 - offset  # -1 porque MESES_ES es 0-indexed
+        mes_idx = mes_actual - 1 - offset
         anio = anio_actual
 
         while mes_idx < 0:
@@ -52,53 +125,60 @@ def buscar_archivo_mas_reciente():
             anio -= 1
 
         mes_str = MESES_ES[mes_idx]
-        archivo = BALANZA_PATTERN.format(mes=mes_str, anio=anio)
-        url = f"{DANE_BASE_URL}{archivo}"
+        archivo = f"anex-BCOM-Mensual-{mes_str}{anio}.xlsx"
+        url = f"{base_files_url}{archivo}"
 
         try:
-            # Hacer HEAD request para verificar si existe
             response = requests.head(url, headers=HEADERS, timeout=10, allow_redirects=True)
             if response.status_code == 200:
                 print(f"  [OK] Archivo encontrado: {archivo}")
                 return url
             else:
-                print(f"  [--] {archivo} no disponible (status: {response.status_code})")
+                print(f"  [--] {archivo} no disponible")
         except Exception as e:
             print(f"  [--] Error verificando {archivo}: {str(e)[:50]}")
 
+    print(f"  [ERROR] No se encontró ningún archivo disponible")
     return None
 
 
 def descargar_archivo_excel():
     """
     Descarga el archivo Excel de Balanza Comercial del DANE
-    Busca dinámicamente el archivo más reciente
+    Busca dinámicamente el archivo más reciente scrapeando la página principal
 
     Returns:
         BytesIO con el contenido del archivo o None si falla
     """
     print("\n[DANE] Descargando archivo Excel de Balanza Comercial...")
-    print(f"  Buscando archivo más reciente...")
 
-    # Buscar archivo dinamicamente
+    # Buscar archivo dinámicamente (scrapea la página)
     url = buscar_archivo_mas_reciente()
 
     if url is None:
         print(f"  [ERROR] No se encontró ningún archivo disponible")
         return None
 
-    print(f"  URL: {url}")
+    print(f"\n  Descargando: {url}")
 
     try:
-        response = requests.get(url, headers=HEADERS, timeout=30)
+        # Headers específicos para descargar Excel
+        download_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+        }
+
+        response = requests.get(url, headers=download_headers, timeout=60)
 
         print(f"  Status: {response.status_code}")
 
         if response.status_code == 200:
-            print(f"  [OK] Archivo descargado ({len(response.content)} bytes)")
+            size_kb = len(response.content) / 1024
+            print(f"  [OK] Archivo descargado ({size_kb:.1f} KB)")
             return io.BytesIO(response.content)
         else:
-            print(f"  [ERROR] No se pudo descargar el archivo")
+            print(f"  [ERROR] No se pudo descargar el archivo (status: {response.status_code})")
             return None
 
     except Exception as e:

@@ -127,7 +127,7 @@ class AsymmetricPnLTransform(RewardComponent):
     def __init__(
         self,
         win_multiplier: float = 1.0,
-        loss_multiplier: float = 2.0,
+        loss_multiplier: float = 1.2,  # FIX: 2.0→1.2 (less aggressive)
         neutral_zone: float = 0.0001,
     ):
         """

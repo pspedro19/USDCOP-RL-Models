@@ -1,0 +1,10 @@
+{
+  "stage": "L4-VAL",
+  "total_return_pct": -6.371071836240716,
+  "sharpe_ratio": -1.021276525018562,
+  "max_drawdown_pct": 13.332743507752964,
+  "n_trades": 39,
+  "win_rate_pct": 8253.846153846152,
+  "final_equity": 9362.892816375928,
+  "gates_passed": false
+}

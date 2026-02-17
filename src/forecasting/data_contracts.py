@@ -19,6 +19,9 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple, Any
 import hashlib
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -70,39 +73,48 @@ RAW_DAILY_COLUMNS: Tuple[str, ...] = (
 TARGET_COLUMN = "close"  # Daily USDCOP close price
 
 # Feature columns for model input (in strict order - SSOT)
-FEATURE_COLUMNS: Tuple[str, ...] = (
-    # Price-based
-    "close",
-    "open",
-    "high",
-    "low",
-    # Returns (momentum)
-    "return_1d",
-    "return_5d",
-    "return_10d",
-    "return_20d",
-    # Volatility
-    "volatility_5d",
-    "volatility_10d",
-    "volatility_20d",
-    # Technical
-    "rsi_14d",
-    "ma_ratio_20d",      # close / MA(20)
-    "ma_ratio_50d",      # close / MA(50)
-    # Calendar
-    "day_of_week",       # 0=Monday, 6=Sunday
-    "month",
-    "is_month_end",
-    # Macro (lagged to avoid lookahead)
-    "dxy_close_lag1",    # Dollar Index, 1-day lag
-    "oil_close_lag1",    # WTI Oil, 1-day lag
-)
+# YAML-first with hardcoded fallback
+try:
+    from src.forecasting.ssot_config import ForecastingSSOTConfig as _SSOTCfg
+    _cfg = _SSOTCfg.load()
+    FEATURE_COLUMNS: Tuple[str, ...] = _cfg.get_feature_columns()
+    TARGET_HORIZONS: Tuple[int, ...] = _cfg.get_horizons()
+    _logger.debug("[data_contracts] Loaded %d features from YAML", len(FEATURE_COLUMNS))
+except Exception as _e:
+    _logger.debug("[data_contracts] YAML load failed (%s), using hardcoded fallback", _e)
+    FEATURE_COLUMNS: Tuple[str, ...] = (
+        # Price-based
+        "close",
+        "open",
+        "high",
+        "low",
+        # Returns (momentum)
+        "return_1d",
+        "return_5d",
+        "return_10d",
+        "return_20d",
+        # Volatility
+        "volatility_5d",
+        "volatility_10d",
+        "volatility_20d",
+        # Technical
+        "rsi_14d",
+        "ma_ratio_20d",
+        "ma_ratio_50d",
+        # Calendar
+        "day_of_week",
+        "month",
+        "is_month_end",
+        # Macro (lagged to avoid lookahead)
+        "dxy_close_lag1",
+        "oil_close_lag1",
+        "vix_close_lag1",
+        "embi_close_lag1",
+    )
+    TARGET_HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 # Number of features (for validation)
 NUM_FEATURES = len(FEATURE_COLUMNS)
-
-# Horizons for target calculation (days ahead)
-TARGET_HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 
 # =============================================================================

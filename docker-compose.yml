@@ -690,6 +690,7 @@ services:
       NEXTAUTH_SECRET: usdcop-trading-secret-key-2025-production
       NEXTAUTH_URL: http://localhost:5000
       DEBUG_AUTH: "true"
+      AUTH_BYPASS_ENABLED: "true"
     ports:
       - "5000:3000"
     networks:

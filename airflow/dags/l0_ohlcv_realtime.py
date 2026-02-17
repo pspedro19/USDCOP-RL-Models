@@ -1,92 +1,135 @@
 """
-DAG: l0_02_ohlcv_realtime
-=========================
-USD/COP Trading System - V3 Architecture
-Layer 0: Realtime OHLCV Acquisition
+DAG: core_l0_02_ohlcv_realtime
+==============================
+USD/COP Trading System - L0 Consolidated Realtime OHLCV Acquisition
 
 Purpose:
-    Acquires USD/COP 5-minute OHLCV bars from TwelveData API.
-    Stores in usdcop_m5_ohlcv table for downstream processing.
+    Acquires 5-minute OHLCV bars for USD/COP, USD/MXN, and USD/BRL from
+    TwelveData API. All timestamps stored in America/Bogota (COT).
+    Stores in usdcop_m5_ohlcv table (multi-symbol via symbol column).
+
+    Consolidates:
+    - l0_ohlcv_realtime.py (COP only, with TradingCalendar + CircuitBreaker)
+    - l0_ohlcv_realtime_multi.py (3 pairs, BRL tz handling)
 
 Schedule:
     */5 13-17 * * 1-5 (Every 5 minutes, 8:00-12:55 COT, Mon-Fri)
     Note: Airflow is UTC-based, 8:00-12:55 COT = 13:00-17:55 UTC
 
+Timezone handling per pair:
+    - USD/COP: TwelveData timezone=America/Bogota -> COT natively
+    - USD/MXN: TwelveData timezone=America/Bogota -> COT natively
+    - USD/BRL: TwelveData timezone=UTC -> convert to COT before DB insert
+      (BRL returns incomplete data with timezone=America/Bogota)
+
 Features:
-    - Gap detection and backfilling
-    - Duplicate prevention
-    - Business hours validation
-    - Automatic retry on API failures
+    - TradingCalendar holiday validation (skip holidays)
+    - CircuitBreaker per-symbol API protection
+    - Parallel tasks per symbol (failure isolation)
+    - API key rotation across symbols
+    - UPSERT on (time, symbol) for idempotent inserts
 
 Author: Pedro @ Lean Tech Solutions
-Version: 3.0.0
-Updated: 2025-12-16
+Version: 4.0.0
+Created: 2026-02-12
 """
 
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.empty import EmptyOperator
-from airflow.sensors.time_delta import TimeDeltaSensor
 import pandas as pd
 import requests
 import pytz
-import psycopg2
 from psycopg2.extras import execute_values
 import os
 import logging
-import json
-import sys
-from pathlib import Path
-
-# Trading calendar from utils
-from utils.trading_calendar import TradingCalendar
 
 # =============================================================================
-# CONFIGURATION - DRY: Using shared utilities + SSOT from feature_config.json
+# CONFIGURATION
 # =============================================================================
 
 from utils.dag_common import get_db_connection, load_feature_config
-from contracts.dag_registry import L0_OHLCV_REALTIME, L1_FEATURE_REFRESH
+from utils.trading_calendar import TradingCalendar
+from utils.circuit_breaker import get_circuit_breaker, CircuitOpenError
+from contracts.dag_registry import CORE_L0_OHLCV_REALTIME
 
 CONFIG = load_feature_config(raise_on_error=False)
-OHLCV_CONFIG = CONFIG.get('sources', {}).get('ohlcv', {})
 TRADING_CONFIG = CONFIG.get('trading', {})
+OHLCV_CONFIG = CONFIG.get('sources', {}).get('ohlcv', {})
 MARKET_HOURS = TRADING_CONFIG.get('market_hours', {})
 
-DAG_ID = L0_OHLCV_REALTIME
+DAG_ID = CORE_L0_OHLCV_REALTIME
 
-# Timezone settings (from config SSOT)
+# Timezone
 TIMEZONE_STR = MARKET_HOURS.get('timezone', 'America/Bogota')
 COT_TZ = pytz.timezone(TIMEZONE_STR)
 UTC_TZ = pytz.UTC
 
-# Trading hours (from config SSOT - no hardcoded values)
+# Trading hours
 _local_start = MARKET_HOURS.get('local_start', '08:00')
 _local_end = MARKET_HOURS.get('local_end', '12:55')
-MARKET_START_COT = int(_local_start.split(':')[0])  # 8 from "08:00"
-MARKET_END_COT = int(_local_end.split(':')[0]) + 1  # 13 from "12:55" (end hour + 1)
+MARKET_START_COT = int(_local_start.split(':')[0])
+MARKET_END_COT = int(_local_end.split(':')[0]) + 1  # 13 for "12:55"
 MARKET_DAYS = TRADING_CONFIG.get('trading_days', [0, 1, 2, 3, 4])
 
-# API Configuration (from config SSOT)
-TWELVEDATA_SYMBOLS = [TRADING_CONFIG.get('symbol', 'USD/COP')]
-TWELVEDATA_INTERVAL = OHLCV_CONFIG.get('granularity', '5min')
-TWELVEDATA_TIMEZONE = TIMEZONE_STR
-TWELVEDATA_API_KEY = os.environ.get('TWELVEDATA_API_KEY_1') or os.environ.get('TWELVEDATA_API_KEY')
+# Symbol configuration (api_tz, needs_tz_convert)
+SYMBOL_CONFIG = {
+    'USD/COP': {'api_tz': 'America/Bogota', 'needs_tz_convert': False},
+    'USD/MXN': {'api_tz': 'America/Bogota', 'needs_tz_convert': False},
+    'USD/BRL': {'api_tz': 'UTC', 'needs_tz_convert': True},
+}
 
-# Validate API key is set (Fail Fast)
-if not TWELVEDATA_API_KEY:
-    raise ValueError("TWELVEDATA_API_KEY environment variable is required")
+# TwelveData API keys (rotation pool)
+TWELVEDATA_API_KEYS = [
+    os.environ.get(f'TWELVEDATA_API_KEY_{i}') for i in range(1, 9)
+] + [os.environ.get('TWELVEDATA_API_KEY')]
+TWELVEDATA_API_KEYS = [k for k in TWELVEDATA_API_KEYS if k]
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
+_api_key_index = 0
 
-# Initialize trading calendar
+# Trading calendar for holiday checks
 trading_cal = TradingCalendar()
 
-def should_run_today():
-    """Check if today is a valid trading day."""
+
+# =============================================================================
+# HELPERS
+# =============================================================================
+
+def get_next_api_key() -> str:
+    """Rotate through API keys."""
+    global _api_key_index
+    if not TWELVEDATA_API_KEYS:
+        return None
+    key = TWELVEDATA_API_KEYS[_api_key_index % len(TWELVEDATA_API_KEYS)]
+    _api_key_index += 1
+    return key
+
+
+def is_market_hours_now() -> bool:
+    """Check if current COT time is within market hours."""
+    now_cot = datetime.now(COT_TZ)
+    return (
+        now_cot.weekday() in MARKET_DAYS
+        and MARKET_START_COT <= now_cot.hour < MARKET_END_COT
+    )
+
+
+def is_bar_in_session(bar_time: datetime) -> bool:
+    """Check if a bar timestamp (in COT) is within 8:00-12:55 Mon-Fri."""
+    if bar_time.weekday() >= 5:
+        return False
+    hour = bar_time.hour
+    minute = bar_time.minute
+    if hour < MARKET_START_COT or hour > (MARKET_END_COT - 1):
+        return False
+    if hour == (MARKET_END_COT - 1) and minute > 55:
+        return False
+    return True
+
+
+def should_run_today() -> bool:
+    """Check if today is a valid trading day (not weekend/holiday)."""
     today = datetime.now(COT_TZ)
     if not trading_cal.is_trading_day(today):
         reason = trading_cal.get_violation_reason(today)
@@ -94,263 +137,180 @@ def should_run_today():
         return False
     return True
 
-def is_market_hours():
-    """Check if current time is within market hours"""
-    now_cot = datetime.now(COT_TZ)
-    is_trading_day = now_cot.weekday() in MARKET_DAYS
-    is_trading_hour = MARKET_START_COT <= now_cot.hour < MARKET_END_COT
-    return is_trading_day and is_trading_hour
 
-def fetch_ohlcv_data(symbol, interval, bars=60):
+# =============================================================================
+# MAIN TASK: Fetch + store for one symbol
+# =============================================================================
+
+def fetch_and_store_symbol(symbol: str, **context):
     """
-    Fetch OHLCV data from TwelveData API.
+    Fetch OHLCV for a single symbol and store in DB.
 
-    Args:
-        symbol: e.g., 'USD/COP'
-        interval: e.g., '5min'
-        bars: number of bars to fetch
-
-    Returns:
-        DataFrame with columns: time, open, high, low, close, volume, symbol
+    Uses CircuitBreaker for API resilience.
+    Handles timezone conversion for BRL (UTC -> COT).
     """
+    cfg = SYMBOL_CONFIG[symbol]
+    api_key = get_next_api_key()
+    if not api_key:
+        raise ValueError(f"No TWELVEDATA_API_KEY configured for {symbol}")
+
+    # Skip if outside market hours
+    if not is_market_hours_now():
+        logging.info(f"[{symbol}] Outside market hours, skipping")
+        return {'status': 'skipped', 'reason': 'outside_market_hours'}
+
+    # Circuit breaker protection
+    cb = get_circuit_breaker(f'twelvedata_realtime_{symbol.replace("/", "_").lower()}')
+    if not cb.can_execute():
+        logging.warning(f"[{symbol}] Circuit breaker OPEN - skipping")
+        raise CircuitOpenError(f"Circuit breaker OPEN for {symbol}")
+
+    # Fetch from TwelveData
     url = 'https://api.twelvedata.com/time_series'
-
+    lookback = OHLCV_CONFIG.get('lookback_bars_needed', 60)
     params = {
         'symbol': symbol,
-        'interval': interval,
+        'interval': '5min',
         'format': 'JSON',
-        'timezone': TWELVEDATA_TIMEZONE,
-        'apikey': TWELVEDATA_API_KEY,
-        'outputsize': bars
+        'timezone': cfg['api_tz'],
+        'apikey': api_key,
+        'outputsize': lookback,
     }
 
     try:
-        logging.info(f"Fetching {bars} bars for {symbol}")
-        response = requests.get(url, params=params, timeout=10)
+        logging.info(f"[{symbol}] Fetching {lookback} bars (tz={cfg['api_tz']})")
+        response = requests.get(url, params=params, timeout=15)
         response.raise_for_status()
-
         data = response.json()
 
         if 'values' not in data:
-            logging.error(f"API response missing 'values': {data}")
-            raise ValueError("API response format error")
+            logging.warning(f"[{symbol}] No data: {data.get('message', 'unknown')}")
+            cb.record_failure(ValueError("No data returned"))
+            return {'status': 'no_data', 'symbol': symbol}
 
-        # Parse API response
+        # Parse bars
         records = []
         for bar in data['values']:
+            bar_time = datetime.fromisoformat(bar['datetime'])
+
+            # BRL: convert UTC -> COT
+            if cfg['needs_tz_convert']:
+                if bar_time.tzinfo is None:
+                    bar_time = UTC_TZ.localize(bar_time)
+                bar_time = bar_time.astimezone(COT_TZ)
+            else:
+                if bar_time.tzinfo is None:
+                    bar_time = COT_TZ.localize(bar_time)
+
             records.append({
-                'time': datetime.fromisoformat(bar['datetime']),
+                'time': bar_time,
+                'symbol': symbol,
                 'open': float(bar['open']),
                 'high': float(bar['high']),
                 'low': float(bar['low']),
                 'close': float(bar['close']),
                 'volume': float(bar.get('volume', 0)),
-                'symbol': symbol,
-                'source': 'twelvedata'
+                'source': 'twelvedata_multi',
             })
 
         df = pd.DataFrame(records)
-        logging.info(f"Fetched {len(df)} bars from API")
-        return df
+        logging.info(f"[{symbol}] Fetched {len(df)} bars")
 
-    except Exception as e:
-        logging.error(f"API fetch error: {e}")
-        raise
+        # Filter to market hours only
+        df_filtered = df[df['time'].apply(
+            lambda t: is_bar_in_session(t if t.tzinfo else COT_TZ.localize(t))
+        )]
+        n_dropped = len(df) - len(df_filtered)
+        if n_dropped > 0:
+            logging.info(f"[{symbol}] Filtered {n_dropped} off-session bars")
 
-def is_bar_in_market_hours(bar_time):
-    """
-    Check if a bar timestamp is within market hours (8:00-12:55 COT).
-    TwelveData returns timestamps in COT timezone (as configured).
-    """
-    if isinstance(bar_time, str):
-        bar_time = datetime.fromisoformat(bar_time)
+        if df_filtered.empty:
+            cb.record_success()
+            return {'status': 'empty_after_filter', 'symbol': symbol}
 
-    # Get hour and minute in local time (COT)
-    hour = bar_time.hour
-    minute = bar_time.minute
-
-    # Market hours: 8:00 - 12:55 COT
-    if hour < MARKET_START_COT or hour > MARKET_END_COT - 1:
-        return False
-    if hour == MARKET_END_COT - 1 and minute > 55:  # After 12:55
-        return False
-
-    # Also check weekday (0=Monday, 6=Sunday)
-    if bar_time.weekday() >= 5:  # Saturday or Sunday
-        return False
-
-    return True
-
-
-def insert_ohlcv_data(df, conn):
-    """
-    Insert OHLCV data into usdcop_m5_ohlcv table.
-    Uses ON CONFLICT to handle duplicates.
-    FILTERS: Only inserts bars within market hours (8:00-12:55 COT, Mon-Fri)
-    """
-    if df.empty:
-        logging.warning("No data to insert")
-        return 0
-
-    cur = conn.cursor()
-
-    try:
-        # Ensure table exists
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS usdcop_m5_ohlcv (
-                time TIMESTAMPTZ PRIMARY KEY,
-                symbol VARCHAR(20),
-                open DOUBLE PRECISION,
-                high DOUBLE PRECISION,
-                low DOUBLE PRECISION,
-                close DOUBLE PRECISION,
-                volume DOUBLE PRECISION,
-                source VARCHAR(50),
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
-
-        # FILTER: Only include bars within market hours (8:00-12:55 COT, Mon-Fri)
-        filtered_count = 0
-        values = []
-        for _, row in df.iterrows():
-            if is_bar_in_market_hours(row['time']):
-                values.append((row['time'], row['symbol'], row['open'], row['high'],
-                               row['low'], row['close'], row['volume'], row['source']))
-            else:
-                filtered_count += 1
-
-        if filtered_count > 0:
-            logging.info(f"Filtered out {filtered_count} bars outside market hours")
-
-        if not values:
-            logging.warning("No bars within market hours to insert")
-            return 0
-
-        # Insert with conflict handling
-        query = """
-            INSERT INTO usdcop_m5_ohlcv
-            (time, symbol, open, high, low, close, volume, source)
-            VALUES %s
-            ON CONFLICT (time, symbol) DO UPDATE SET
-                volume = EXCLUDED.volume,
-                source = EXCLUDED.source,
-                updated_at = NOW()
-        """
-
-        execute_values(cur, query, values)
-        conn.commit()
-
-        logging.info(f"Inserted {len(values)} OHLCV records (market hours only)")
-        return len(values)
-
-    except Exception as e:
-        conn.rollback()
-        logging.error(f"Database insert error: {e}")
-        raise
-    finally:
-        cur.close()
-
-def acquire_ohlcv(**context):
-    """
-    Main task: Acquire OHLCV data and store in database.
-    """
-    logging.info(f"Starting OHLCV acquisition at {datetime.now(UTC_TZ)}")
-
-    # Check market hours
-    if not is_market_hours():
-        logging.info("Outside market hours, skipping acquisition")
-        return {'status': 'skipped', 'reason': 'outside_market_hours'}
-
-    try:
-        # Fetch data from API (bars from config SSOT)
-        lookback_bars = OHLCV_CONFIG.get('lookback_bars_needed', 100)
-        df_ohlcv = fetch_ohlcv_data(
-            symbol=TWELVEDATA_SYMBOLS[0],
-            interval=TWELVEDATA_INTERVAL,
-            bars=lookback_bars
-        )
-
-        # Insert into database
+        # Insert to DB
         conn = get_db_connection()
-        rows_inserted = insert_ohlcv_data(df_ohlcv, conn)
-        conn.close()
+        try:
+            cur = conn.cursor()
+            values = [
+                (row['time'], row['symbol'], row['open'], row['high'],
+                 row['low'], row['close'], row['volume'], row['source'])
+                for _, row in df_filtered.iterrows()
+            ]
 
-        # Push metrics to XCom
-        context['ti'].xcom_push(key='ohlcv_rows_inserted', value=rows_inserted)
+            execute_values(
+                cur,
+                """
+                INSERT INTO usdcop_m5_ohlcv
+                    (time, symbol, open, high, low, close, volume, source)
+                VALUES %s
+                ON CONFLICT (time, symbol) DO UPDATE SET
+                    volume = EXCLUDED.volume,
+                    source = EXCLUDED.source,
+                    updated_at = NOW()
+                """,
+                values,
+            )
+            conn.commit()
+            cur.close()
+            logging.info(f"[{symbol}] Inserted/updated {len(values)} bars")
 
-        return {
-            'status': 'success',
-            'rows_inserted': rows_inserted,
-            'timestamp': datetime.now(UTC_TZ).isoformat()
-        }
+            cb.record_success()
+            return {'status': 'success', 'symbol': symbol, 'rows': len(values)}
 
-    except Exception as e:
-        logging.error(f"OHLCV acquisition failed: {e}")
+        except Exception as e:
+            conn.rollback()
+            logging.error(f"[{symbol}] DB insert failed: {e}")
+            cb.record_failure(e)
+            raise
+        finally:
+            conn.close()
+
+    except CircuitOpenError:
         raise
+    except Exception as e:
+        logging.error(f"[{symbol}] Fetch error: {e}")
+        cb.record_failure(e)
+        raise
+
 
 def validate_data(**context):
-    """
-    Validate that latest OHLCV bar has been inserted.
-    Also validates that no holiday data slipped through.
-    """
+    """Validate that latest OHLCV bars have been inserted for all symbols."""
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
-        # Get latest bar
-        cur.execute("""
-            SELECT COUNT(*) as count, MAX(time) as latest_time
-            FROM usdcop_m5_ohlcv
-            WHERE symbol = 'USD/COP'
-        """)
+        for symbol in SYMBOL_CONFIG:
+            cur.execute("""
+                SELECT COUNT(*), MAX(time)
+                FROM usdcop_m5_ohlcv WHERE symbol = %s
+            """, (symbol,))
+            count, latest = cur.fetchone()
+            logging.info(f"[{symbol}] {count} bars, latest: {latest}")
 
-        result = cur.fetchone()
-        count, latest_time = result[0], result[1]
-
-        logging.info(f"OHLCV table has {count} bars. Latest: {latest_time}")
-
-        if count == 0:
-            raise ValueError("No OHLCV data in database")
-
-        # Validate no holiday data exists (check last 7 days)
+        # Check for holiday data in last 7 days
         cur.execute("""
             SELECT DISTINCT DATE(time AT TIME ZONE 'America/Bogota') as trade_date
             FROM usdcop_m5_ohlcv
-            WHERE symbol = 'USD/COP'
-            AND time >= NOW() - INTERVAL '7 days'
+            WHERE symbol = 'USD/COP' AND time >= NOW() - INTERVAL '7 days'
             ORDER BY trade_date DESC
         """)
-
         dates_with_data = [row[0] for row in cur.fetchall()]
         invalid_dates = []
-
         for trade_date in dates_with_data:
             if not trading_cal.is_trading_day(trade_date):
                 reason = trading_cal.get_violation_reason(trade_date)
-                invalid_dates.append({
-                    'date': str(trade_date),
-                    'reason': reason
-                })
+                invalid_dates.append({'date': str(trade_date), 'reason': reason})
 
         if invalid_dates:
-            logging.warning(f"Found data on {len(invalid_dates)} non-trading days: {invalid_dates}")
-            # Don't fail, just warn - data might have been from before validation was added
+            logging.warning(f"Data on {len(invalid_dates)} non-trading days: {invalid_dates}")
 
-        context['ti'].xcom_push(key='ohlcv_count', value=count)
-        context['ti'].xcom_push(key='latest_ohlcv_time', value=str(latest_time))
-        context['ti'].xcom_push(key='invalid_trading_dates', value=invalid_dates)
-
-        return {
-            'status': 'valid',
-            'total_bars': count,
-            'latest_time': str(latest_time),
-            'invalid_dates_found': len(invalid_dates)
-        }
+        return {'status': 'valid', 'invalid_dates_found': len(invalid_dates)}
 
     finally:
         cur.close()
         conn.close()
+
 
 # =============================================================================
 # DAG DEFINITION
@@ -362,52 +322,60 @@ default_args = {
     'start_date': datetime(2024, 1, 1),
     'email_on_failure': False,
     'retries': 3,
-    'retry_delay': timedelta(minutes=1)
+    'retry_delay': timedelta(minutes=1),
 }
 
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='V3 L0: Realtime OHLCV acquisition from TwelveData (every 5 min)',
-    schedule_interval='*/5 13-17 * * 1-5',  # Every 5min during market hours (UTC)
+    description='L0: Multi-pair realtime OHLCV (COP/MXN/BRL) with holiday + circuit breaker protection',
+    schedule_interval='*/5 13-17 * * 1-5',
     catchup=False,
     max_active_runs=1,
-    tags=['v3', 'l0', 'ohlcv', 'realtime', 'data-acquisition']
+    tags=['core', 'l0', 'ohlcv', 'realtime', 'multi-pair'],
 )
 
 with dag:
 
-    # Check if today is a trading day
+    # Check if today is a trading day (holidays/weekends)
     def check_trading_day(**context):
-        """Branch task to skip processing on holidays/weekends."""
         if should_run_today():
-            return 'acquire_ohlcv'
-        else:
-            return 'skip_processing'
+            return 'start_fetch'
+        return 'skip_processing'
 
-    task_check_trading_day = BranchPythonOperator(
+    task_check = BranchPythonOperator(
         task_id='check_trading_day',
         python_callable=check_trading_day,
-        provide_context=True
     )
 
-    task_skip = EmptyOperator(
-        task_id='skip_processing'
-    )
+    task_skip = EmptyOperator(task_id='skip_processing')
 
-    task_acquire = PythonOperator(
-        task_id='acquire_ohlcv',
-        python_callable=acquire_ohlcv,
-        provide_context=True,
-        pool='api_requests'  # Rate limiting
-    )
+    task_start = EmptyOperator(task_id='start_fetch')
+
+    # One task per symbol, running in parallel
+    symbol_tasks = []
+    for symbol in SYMBOL_CONFIG:
+        task_id = f"fetch_{symbol.replace('/', '_').lower()}"
+        task = PythonOperator(
+            task_id=task_id,
+            python_callable=fetch_and_store_symbol,
+            op_kwargs={'symbol': symbol},
+            pool='api_requests',
+        )
+        symbol_tasks.append(task)
 
     task_validate = PythonOperator(
         task_id='validate_ohlcv',
         python_callable=validate_data,
-        provide_context=True
+        trigger_rule='none_failed_min_one_success',
     )
 
-    # Task dependencies
-    task_check_trading_day >> [task_acquire, task_skip]
-    task_acquire >> task_validate
+    task_end = EmptyOperator(
+        task_id='end',
+        trigger_rule='none_failed_min_one_success',
+    )
+
+    # Flow: check_day -> [start -> [fetch_cop, fetch_mxn, fetch_brl] -> validate -> end | skip -> end]
+    task_check >> [task_start, task_skip]
+    task_start >> symbol_tasks >> task_validate >> task_end
+    task_skip >> task_end
