@@ -1,0 +1,209 @@
+{
+  "experiment": "EXP-H5-001",
+  "horizon": 5,
+  "best_trailing_config": {
+    "activation_pct": 0.004,
+    "trail_pct": 0.003,
+    "hard_stop_pct": 0.04
+  },
+  "walk_forward": {
+    "folds": [
+      {
+        "fold": 1,
+        "da_pct": 53.5,
+        "n_weekly_trades": 23,
+        "return_pct": 2.44,
+        "sharpe": 0.41,
+        "test_start": "2023-03-10",
+        "test_end": "2023-09-05"
+      },
+      {
+        "fold": 2,
+        "da_pct": 43.0,
+        "n_weekly_trades": 23,
+        "return_pct": -6.38,
+        "sharpe": -0.97,
+        "test_start": "2023-09-06",
+        "test_end": "2024-02-26"
+      },
+      {
+        "fold": 3,
+        "da_pct": 58.8,
+        "n_weekly_trades": 23,
+        "return_pct": 16.75,
+        "sharpe": 2.87,
+        "test_start": "2024-02-27",
+        "test_end": "2024-08-21"
+      },
+      {
+        "fold": 4,
+        "da_pct": 37.2,
+        "n_weekly_trades": 18,
+        "return_pct": -6.31,
+        "sharpe": -2.26,
+        "test_start": "2024-08-22",
+        "test_end": "2024-12-30"
+      }
+    ],
+    "avg_da": 48.1,
+    "avg_sharpe": 0.01,
+    "folds_positive": 2
+  },
+  "oos_2025": {
+    "n_trades": 44,
+    "da_pct": 56.8,
+    "buy_hold": {
+      "total_return_pct": -14.8
+    },
+    "forecast_1x": {
+      "final_equity": 10139.12,
+      "total_return_pct": 1.39,
+      "annualized_return_pct": 1.6,
+      "sharpe": 0.159,
+      "max_dd_pct": -6.76,
+      "win_rate_pct": 56.8,
+      "profit_factor": 1.076,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.041
+    },
+    "forecast_vt": {
+      "final_equity": 10157.49,
+      "total_return_pct": 1.57,
+      "annualized_return_pct": 1.81,
+      "sharpe": 0.127,
+      "max_dd_pct": -10.24,
+      "win_rate_pct": 56.8,
+      "profit_factor": 1.074,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.055
+    },
+    "forecast_vt_trail": {
+      "final_equity": 11853.85,
+      "total_return_pct": 18.54,
+      "annualized_return_pct": 21.51,
+      "sharpe": 1.857,
+      "max_dd_pct": -4.88,
+      "win_rate_pct": 65.9,
+      "profit_factor": 1.849,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.4
+    },
+    "t_stat": 1.628,
+    "p_value": 0.1109
+  },
+  "oos_full": {
+    "n_trades": 52,
+    "da_pct": 55.8,
+    "buy_hold": {
+      "total_return_pct": -16.41
+    },
+    "forecast_1x": {
+      "final_equity": 10153.21,
+      "total_return_pct": 1.53,
+      "annualized_return_pct": 1.48,
+      "sharpe": 0.157,
+      "max_dd_pct": -6.76,
+      "win_rate_pct": 55.8,
+      "profit_factor": 1.076,
+      "n_trades": 52,
+      "avg_ret_per_trade_pct": 0.038
+    },
+    "forecast_vt": {
+      "final_equity": 10162.6,
+      "total_return_pct": 1.63,
+      "annualized_return_pct": 1.58,
+      "sharpe": 0.118,
+      "max_dd_pct": -10.24,
+      "win_rate_pct": 55.8,
+      "profit_factor": 1.071,
+      "n_trades": 52,
+      "avg_ret_per_trade_pct": 0.048
+    },
+    "forecast_vt_trail": {
+      "final_equity": 11524.25,
+      "total_return_pct": 15.24,
+      "annualized_return_pct": 14.74,
+      "sharpe": 1.344,
+      "max_dd_pct": -4.88,
+      "win_rate_pct": 59.6,
+      "profit_factor": 1.6,
+      "n_trades": 52,
+      "avg_ret_per_trade_pct": 0.285
+    },
+    "t_stat": 1.33,
+    "p_value": 0.1895
+  },
+  "grid_top_5": [
+    {
+      "activation": 0.004,
+      "trail": 0.003,
+      "hard_stop": 0.04,
+      "final_equity": 11853.85,
+      "total_return_pct": 18.54,
+      "annualized_return_pct": 21.51,
+      "sharpe": 1.857,
+      "max_dd_pct": -4.88,
+      "win_rate_pct": 65.9,
+      "profit_factor": 1.849,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.4
+    },
+    {
+      "activation": 0.004,
+      "trail": 0.003,
+      "hard_stop": 0.03,
+      "final_equity": 11773.95,
+      "total_return_pct": 17.74,
+      "annualized_return_pct": 20.57,
+      "sharpe": 1.736,
+      "max_dd_pct": -4.88,
+      "win_rate_pct": 65.9,
+      "profit_factor": 1.792,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.385
+    },
+    {
+      "activation": 0.0035,
+      "trail": 0.003,
+      "hard_stop": 0.04,
+      "final_equity": 11685.33,
+      "total_return_pct": 16.85,
+      "annualized_return_pct": 19.53,
+      "sharpe": 1.545,
+      "max_dd_pct": -7.7,
+      "win_rate_pct": 68.2,
+      "profit_factor": 1.676,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.37
+    },
+    {
+      "activation": 0.004,
+      "trail": 0.004,
+      "hard_stop": 0.04,
+      "final_equity": 11554.91,
+      "total_return_pct": 15.55,
+      "annualized_return_pct": 18.0,
+      "sharpe": 1.46,
+      "max_dd_pct": -5.93,
+      "win_rate_pct": 63.6,
+      "profit_factor": 1.678,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.344
+    },
+    {
+      "activation": 0.0035,
+      "trail": 0.003,
+      "hard_stop": 0.03,
+      "final_equity": 11606.57,
+      "total_return_pct": 16.07,
+      "annualized_return_pct": 18.61,
+      "sharpe": 1.444,
+      "max_dd_pct": -7.7,
+      "win_rate_pct": 68.2,
+      "profit_factor": 1.631,
+      "n_trades": 44,
+      "avg_ret_per_trade_pct": 0.355
+    }
+  ],
+  "gate_result": "REVIEW"
+}

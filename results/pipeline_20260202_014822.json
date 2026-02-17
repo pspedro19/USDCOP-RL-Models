@@ -1,0 +1,71 @@
+{
+  "start_time": "2026-02-02T01:48:12.439224",
+  "timesteps": 100000,
+  "l2": null,
+  "l3": null,
+  "l4": {
+    "mean_reward": -0.5958126109844126,
+    "std_reward": 1.0072431423433288,
+    "total_trades": 5,
+    "win_rate_episodes": 60.0,
+    "winning_episodes": 3,
+    "total_pnl": 502.8806204860641,
+    "max_drawdown": 1.9252601958312194,
+    "avg_episode_return": 1.0057612409722005,
+    "action_distribution": {
+      "long": 18.256475047378395,
+      "hold": 8.717624763108024,
+      "short": 73.02590018951358
+    },
+    "test_rows": 12714,
+    "episodes": 5,
+    "avg_episode_length": 316.6,
+    "episode_details": [
+      {
+        "trades": 1,
+        "win_rate": 140.0,
+        "total_pnl": -48.86101073028655,
+        "max_drawdown": 0.014341981217945969,
+        "episode_return": -0.004886101073028115,
+        "equity": 9951.138989269719
+      },
+      {
+        "trades": 1,
+        "win_rate": 154.0,
+        "total_pnl": 103.61037941528713,
+        "max_drawdown": 0.010776244660567499,
+        "episode_return": 0.01036103794152976,
+        "equity": 10103.610379415297
+      },
+      {
+        "trades": 1,
+        "win_rate": 142.0,
+        "total_pnl": 246.23327026070874,
+        "max_drawdown": 0.006786797292099827,
+        "episode_return": 0.024623327026071173,
+        "equity": 10246.233270260713
+      },
+      {
+        "trades": 1,
+        "win_rate": 147.0,
+        "total_pnl": 215.64499454234922,
+        "max_drawdown": 0.017930755487465658,
+        "episode_return": 0.021564499454235664,
+        "equity": 10215.644994542356
+      },
+      {
+        "trades": 1,
+        "win_rate": 154.0,
+        "total_pnl": -13.74701300199442,
+        "max_drawdown": 0.019252601958312195,
+        "episode_return": -0.0013747013001984554,
+        "equity": 9986.252986998015
+      }
+    ],
+    "passed": true,
+    "warnings": []
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T01:48:22.267787",
+  "duration_seconds": 9.82856273651123
+}

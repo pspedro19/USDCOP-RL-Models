@@ -1,0 +1,38 @@
+{
+  "total_return_pct": 13.639918294936093,
+  "apr_pct": 15.8901102817528,
+  "sharpe_ratio": 0.9943805827050652,
+  "max_drawdown_pct": 7.66065430369744,
+  "n_trades": 99,
+  "win_rate_pct": 7143.434343434344,
+  "final_equity": 11363.991829493609,
+  "test_days": 313.3125,
+  "gates_passed": true,
+  "gate_results": {
+    "min_return_pct": {
+      "passed": true,
+      "actual": 13.639918294936093,
+      "threshold": -10.0
+    },
+    "min_sharpe_ratio": {
+      "passed": true,
+      "actual": 0.9943805827050652,
+      "threshold": 0.3
+    },
+    "max_drawdown_pct": {
+      "passed": true,
+      "actual": 7.66065430369744,
+      "threshold": 25.0
+    },
+    "min_trades": {
+      "passed": true,
+      "actual": 99.0,
+      "threshold": 20.0
+    },
+    "min_win_rate": {
+      "passed": true,
+      "actual": 7143.434343434344,
+      "threshold": 30.0
+    }
+  }
+}

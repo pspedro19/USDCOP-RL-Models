@@ -1,56 +1,215 @@
 # =============================================================================
-# Forecasting Experiment: Baseline V1
+# Forecasting SSOT — FROZEN Baseline V1
 # =============================================================================
 #
-# This is the baseline forecasting experiment that serves as the control
-# for all A/B comparisons. New experiments should set this as their
-# baseline_experiment to enable statistical comparison.
+# FROZEN copy of config/forecasting_ssot.yaml.
+# This is the reference baseline — NEVER modify after creation.
+# Future experiments copy this file and change ONE variable.
 #
-# SSOT Contract: CTR-FORECAST-EXPERIMENT-CONFIG-001
+# Contract: CTR-FORECAST-SSOT-001
 # Version: 1.0.0
-# =============================================================================
+# Date: 2026-02-17
 
-experiment:
-  name: "baseline_v1"
+_meta:
   version: "1.0.0"
-  description: "Baseline forecasting experiment with standard feature set"
-  hypothesis: "Standard features provide reasonable direction accuracy"
-  baseline_experiment: null  # This IS the baseline
+  experiment_id: "baseline_v1"
+  description: "H1 9-model + H5 2-model baseline (production)"
+  created_at: "2026-02-17"
+  status: "frozen"
 
-# Model Configuration
-# null = all models (ridge, bayesian_ridge, ard, xgboost_pure, lightgbm_pure,
-#                    catboost_pure, hybrid_xgboost, hybrid_lightgbm, hybrid_catboost)
-models:
-  include: null  # All 9 models
+# =============================================================================
+# DATA SOURCES
+# =============================================================================
+data_sources:
+  ohlcv:
+    db_table: "bi.dim_daily_usdcop"
+    db_columns: [date, open, high, low, close]
+    fallback_parquet: "seeds/latest/usdcop_daily_ohlcv.parquet"
+    parquet_time_column: "time"
+  macro:
+    db_table: "macro_indicators_daily"
+    db_date_column: "fecha"
+    fallback_parquet: "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet"
+    column_mapping:
+      FXRT_INDEX_DXY_USA_D_DXY: "dxy_close_lag1"
+      COMM_OIL_WTI_GLB_D_WTI: "oil_close_lag1"
+      VOLT_VIX_USA_D_VIX: "vix_close_lag1"
+      CRSK_SPREAD_EMBI_COL_D_EMBI: "embi_close_lag1"
+    lag_days: 1
+  monitoring:
+    db_table: "usdcop_m5_ohlcv"
+    symbol: "USD/COP"
 
-# Horizon Configuration
-# null = all horizons (1, 5, 10, 15, 20, 25, 30 days)
-horizons:
-  include: null  # All 7 horizons
-
-# Feature Configuration
+# =============================================================================
+# FEATURES — 21 SSOT features shared by H1 and H5
+# =============================================================================
 features:
-  contract_version: "1.0.0"
-  additions: []  # No additional features
-  removals: []   # No features removed
+  count: 21
+  columns:
+    # Price (4)
+    - close
+    - open
+    - high
+    - low
+    # Returns (4)
+    - return_1d
+    - return_5d
+    - return_10d
+    - return_20d
+    # Volatility (3)
+    - volatility_5d
+    - volatility_10d
+    - volatility_20d
+    # Technical (3)
+    - rsi_14d
+    - ma_ratio_20d
+    - ma_ratio_50d
+    # Calendar (3)
+    - day_of_week
+    - month
+    - is_month_end
+    # Macro T-1 (4)
+    - dxy_close_lag1
+    - oil_close_lag1
+    - vix_close_lag1
+    - embi_close_lag1
 
-# Training Configuration
+# =============================================================================
+# MODELS — 9 model definitions (3 linear + 3 boosting + 3 hybrid)
+# =============================================================================
+models:
+  ridge:
+    type: linear
+    class: sklearn.linear_model.Ridge
+    params:
+      alpha: 1.0
+  bayesian_ridge:
+    type: linear
+    class: sklearn.linear_model.BayesianRidge
+    params:
+      max_iter: 300
+  ard:
+    type: linear
+    class: sklearn.linear_model.ARDRegression
+    params:
+      max_iter: 300
+  xgboost_pure:
+    type: boosting
+    class: xgboost.XGBRegressor
+    params: {}
+  lightgbm_pure:
+    type: boosting
+    class: lightgbm.LGBMRegressor
+    params: {}
+  catboost_pure:
+    type: boosting
+    class: catboost.CatBoostRegressor
+    param_translation:
+      n_estimators: iterations
+      max_depth: depth
+    params:
+      verbose: false
+      allow_writing_files: false
+  hybrid_xgboost:
+    type: hybrid
+    class: xgboost.XGBRegressor
+    params: {}
+  hybrid_lightgbm:
+    type: hybrid
+    class: lightgbm.LGBMRegressor
+    params: {}
+  hybrid_catboost:
+    type: hybrid
+    class: catboost.CatBoostRegressor
+    param_translation:
+      n_estimators: iterations
+      max_depth: depth
+    params:
+      verbose: false
+      allow_writing_files: false
+
+# =============================================================================
+# HORIZONS — 7 forecast horizons with category-specific hyperparams
+# =============================================================================
+horizons:
+  values: [1, 5, 10, 15, 20, 25, 30]
+  categories:
+    short: [1, 5]
+    medium: [10, 15, 20]
+    long: [25, 30]
+  configs:
+    short:
+      n_estimators: 50
+      max_depth: 3
+      learning_rate: 0.05
+      colsample_bytree: 0.6
+      reg_alpha: 0.5
+      reg_lambda: 1.0
+      min_samples_leaf: 20
+    medium:
+      n_estimators: 30
+      max_depth: 2
+      learning_rate: 0.08
+      colsample_bytree: 0.5
+      reg_alpha: 1.0
+      reg_lambda: 2.0
+      min_samples_leaf: 30
+    long:
+      n_estimators: 20
+      max_depth: 1
+      learning_rate: 0.1
+      colsample_bytree: 0.4
+      reg_alpha: 2.0
+      reg_lambda: 3.0
+      min_samples_leaf: 50
+
+# =============================================================================
+# TARGET
+# =============================================================================
+target:
+  formula: "ln(close[t+H]/close[t])"
+  column_template: "target_return_{H}d"
+
+# =============================================================================
+# TRAINING
+# =============================================================================
 training:
-  walk_forward_windows: 5
+  start_date: "2020-01-01"
+  expanding_window: true
+  scaler: StandardScaler
+  warmup_bars: 50
+
+# =============================================================================
+# WALK-FORWARD VALIDATION
+# =============================================================================
+walk_forward:
+  n_windows: 5
   min_train_pct: 0.4
-  gap_days: 30  # Gap between train and test to avoid lookahead
+  gap_days: 30
+  step_pct: 0.1
 
-# Evaluation Configuration
-evaluation:
-  primary_metric: "direction_accuracy"
-  secondary_metrics:
-    - "rmse"
-    - "mae"
-    - "sharpe_ratio"
-  significance_level: 0.05
-  bonferroni_correction: true
+# =============================================================================
+# TRACKS — H1 (daily) and H5 (weekly) pipelines
+# =============================================================================
+tracks:
+  h1:
+    name: "H1 Daily"
+    horizon: 1
+    models: all
+    ensemble: top_3_by_magnitude
+    execution_config: "config/execution/smart_executor_v1.yaml"
+  h5:
+    name: "H5 Weekly"
+    horizon: 5
+    models: [ridge, bayesian_ridge]
+    ensemble: mean
+    execution_config: "config/execution/smart_simple_v1.yaml"
 
-# MLflow Configuration
-mlflow:
-  enabled: true
-  experiment_name: "forecast_baseline_v1"
+# =============================================================================
+# PATHS
+# =============================================================================
+paths:
+  models_h1: "outputs/forecasting/weekly_models/latest"
+  models_h5: "outputs/forecasting/h5_weekly_models/latest"
+  dashboard_forecasting: "usdcop-trading-dashboard/public/forecasting"
+  dashboard_production: "usdcop-trading-dashboard/public/data/production"

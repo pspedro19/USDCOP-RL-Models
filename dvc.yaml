@@ -1,22 +1,185 @@
 # =============================================================================
-# DVC Pipeline Configuration (Phase 11 + MLOps)
+# DVC Pipeline Configuration (Phase 11 + MLOps + SSOT v2.0)
 # =============================================================================
 # Data versioning and ML pipeline for USDCOP RL trading models.
 # Updated with MLflow integration as part of MLOps-1/MLOps-2 remediation.
 #
+# SSOT v2.0 Integration (2026-02-03):
+#   - pipeline_ssot.yaml is the single source of truth for the entire pipeline
+#   - L2, L3, L4 stages read configuration from SSOT
+#   - Training/backtest parity is automatically validated
+#
 # Usage:
-#   dvc repro                    # Run full pipeline
-#   dvc repro prepare_data       # Run only data preparation
-#   dvc repro train              # Run training with MLflow tracking
-#   dvc dag                      # Show pipeline DAG
-#   dvc metrics show             # Show all metrics
-#   dvc plots show               # Generate plots
+#   dvc repro                        # Run full pipeline
+#   dvc repro ssot_build_dataset     # Build dataset from SSOT (L2)
+#   dvc repro ssot_train             # Train with SSOT config (L3)
+#   dvc repro ssot_backtest          # Backtest with parity check (L4)
+#   dvc dag                          # Show pipeline DAG
+#   dvc metrics show                 # Show all metrics
+#   dvc plots show                   # Generate plots
 #
 # Author: Trading Team
-# Date: 2026-01-16
+# Date: 2026-01-16 (Updated: 2026-02-03)
 # =============================================================================
 
 stages:
+  # ===========================================================================
+  # SSOT Pipeline Stages (v2.0)
+  # ===========================================================================
+  # These stages use pipeline_ssot.yaml as the single source of truth.
+  # Ensures training/backtest parity and full lineage tracking.
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # L2: Build Dataset from SSOT
+  # ---------------------------------------------------------------------------
+  ssot_build_dataset:
+    cmd: >
+      python -c "
+      from pathlib import Path
+      from src.data import build_production_dataset, UnifiedOHLCVLoader, UnifiedMacroLoader
+      from src.config.pipeline_config import load_pipeline_config
+      import pandas as pd
+
+      # Load SSOT config
+      config = load_pipeline_config()
+      print(f'SSOT Version: {config.version}')
+      print(f'Based on model: {config.based_on_model}')
+
+      # Load data
+      ohlcv_loader = UnifiedOHLCVLoader()
+      macro_loader = UnifiedMacroLoader()
+
+      df_ohlcv = ohlcv_loader.load_5min(
+          config.date_ranges.train_start,
+          config.date_ranges.test_end
+      )
+      df_macro = macro_loader.load_5min(
+          config.date_ranges.train_start,
+          config.date_ranges.test_end
+      )
+
+      # Build datasets
+      output_dir = Path('data/pipeline/07_output/5min')
+      result = build_production_dataset(df_ohlcv, df_macro, output_dir)
+
+      print(f'Train: {len(result.train_df)} rows')
+      print(f'Val: {len(result.val_df)} rows')
+      print(f'Test: {len(result.test_df)} rows')
+      print(f'Features: {len(result.feature_columns)}')
+      "
+    deps:
+      - config/pipeline_ssot.yaml
+      - src/config/pipeline_config.py
+      - src/data/ssot_dataset_builder.py
+      - src/features/calculator_registry.py
+      - seeds/latest/usdcop_m5_ohlcv.parquet
+    params:
+      - config/pipeline_ssot.yaml:
+          - date_ranges
+          - features
+          - preprocessing
+    outs:
+      - data/pipeline/07_output/5min/DS_production_train.parquet:
+          persist: true
+      - data/pipeline/07_output/5min/DS_production_val.parquet:
+          persist: true
+      - data/pipeline/07_output/5min/DS_production_test.parquet:
+          persist: true
+      - data/pipeline/07_output/5min/DS_production_norm_stats.json:
+          cache: false
+      - data/pipeline/07_output/5min/DS_production_lineage.json:
+          cache: false
+
+  # ---------------------------------------------------------------------------
+  # L3: Train with SSOT Configuration
+  # ---------------------------------------------------------------------------
+  ssot_train:
+    cmd: >
+      python -c "
+      from src.config.pipeline_config import load_pipeline_config
+      from src.ml_workflow.ssot_lineage_integration import create_ssot_lineage_record
+      import json
+
+      # Load SSOT
+      config = load_pipeline_config()
+      print(f'Training with SSOT v{config.version}')
+      print(f'PPO LR: {config.ppo.learning_rate}')
+      print(f'Timesteps: {config.get_training_schedule().get(\"total_timesteps\")}')
+      print(f'Transaction cost: {config.environment.transaction_cost_bps} bps')
+
+      # Validate parity before training
+      issues = config.validate_training_backtest_parity()
+      if issues:
+          raise ValueError(f'Parity issues: {issues}')
+      print('Training/Backtest parity: OK')
+
+      # Training would happen here...
+      print('TODO: Implement actual training with SSOT config')
+      "
+    deps:
+      - config/pipeline_ssot.yaml
+      - data/pipeline/07_output/5min/DS_production_train.parquet
+      - data/pipeline/07_output/5min/DS_production_norm_stats.json
+    params:
+      - config/pipeline_ssot.yaml:
+          - training
+    outs:
+      - models/ppo_production/:
+          persist: true
+    metrics:
+      - reports/ssot_training_metrics.json:
+          cache: false
+
+  # ---------------------------------------------------------------------------
+  # L4: Backtest with Parity Verification
+  # ---------------------------------------------------------------------------
+  ssot_backtest:
+    cmd: >
+      python -c "
+      from src.config.pipeline_config import load_pipeline_config
+      from src.evaluation.backtest_engine import BacktestConfig
+      import json
+
+      # Load SSOT
+      config = load_pipeline_config()
+      print(f'Backtesting with SSOT v{config.version}')
+
+      # Load backtest config from SSOT
+      backtest_config = BacktestConfig.from_pipeline_ssot()
+      print(f'Transaction cost: {backtest_config.spread_bps} bps')
+      print(f'Thresholds: [{backtest_config.threshold_short}, {backtest_config.threshold_long}]')
+      print(f'Stop loss: {backtest_config.stop_loss_pct*100}%')
+      print(f'Take profit: {backtest_config.take_profit_pct*100}%')
+
+      # Validate parity
+      issues = config.validate_training_backtest_parity()
+      if issues:
+          raise ValueError(f'Parity issues before backtest: {issues}')
+      print('Training/Backtest parity: VERIFIED')
+
+      # Backtest would happen here...
+      print('TODO: Implement actual backtest with SSOT config')
+      "
+    deps:
+      - config/pipeline_ssot.yaml
+      - models/ppo_production/
+      - data/pipeline/07_output/5min/DS_production_test.parquet
+      - data/pipeline/07_output/5min/DS_production_norm_stats.json
+    params:
+      - config/pipeline_ssot.yaml:
+          - backtest
+    metrics:
+      - reports/ssot_backtest_metrics.json:
+          cache: false
+    plots:
+      - reports/ssot_equity_curve.json:
+          x: bar
+          y: equity
+
+  # ===========================================================================
+  # Legacy Pipeline Stages (for backward compatibility)
+  # ===========================================================================
   # ===========================================================================
   # Stage 1: Prepare Training Data
   # ===========================================================================

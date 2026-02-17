@@ -1,0 +1,107 @@
+{
+  "start_time": "2026-02-02T09:38:24.763037",
+  "timesteps": 500000,
+  "l2": {
+    "dataset_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\RL_DS3_MACRO_CORE.csv",
+    "success": true
+  },
+  "l3": {
+    "success": true,
+    "version": "v20260202_093951",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_093951_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_093951_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_093951_contract.json",
+    "model_hash": "93224aea4b9c1a3d8661e24641e1e7f9aecfa5efbad86bcfd964bdf2319fab6c",
+    "dataset_hash": "70e6456b98c21396cc1dc8077bb20f412c38a1eab1e08e0d7f8dcb070228b00b",
+    "norm_stats_hash": "5d4349086525c72740c824f982d8efdfc2caefe186429b4e5d788ace5b709cc6",
+    "config_hash": "fe4612a4fcef918c",
+    "training_duration_seconds": 3507.191779613495,
+    "total_timesteps": 500000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "03d7fceb75ce0d9627f8a18264e14a47",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.5,
+      "dsr": 0.3,
+      "sortino": 0.2,
+      "regime_penalty": 1.0,
+      "holding_decay": 1.0,
+      "anti_gaming": 1.0
+    },
+    "errors": []
+  },
+  "l4": {
+    "mean_reward": -3.412595371409968,
+    "std_reward": 2.7547017031294088,
+    "total_trades": 5,
+    "win_rate_episodes": 80.0,
+    "winning_episodes": 4,
+    "total_pnl": 92.60282462428388,
+    "max_drawdown": 3.97290490278023,
+    "avg_episode_return": 0.18520564924852767,
+    "action_distribution": {
+      "long": 20.02772002772003,
+      "hold": 0.03465003465003465,
+      "short": 79.93762993762994
+    },
+    "test_rows": 12714,
+    "episodes": 5,
+    "avg_episode_length": 577.2,
+    "episode_details": [
+      {
+        "trades": 1,
+        "win_rate": 303.0,
+        "total_pnl": 152.47909557255605,
+        "max_drawdown": 0.011700984623629776,
+        "episode_return": 0.015247909557256856,
+        "equity": 10152.479095572568
+      },
+      {
+        "trades": 1,
+        "win_rate": 277.0,
+        "total_pnl": 45.76028115417301,
+        "max_drawdown": 0.023446385598017556,
+        "episode_return": 0.004576028115417241,
+        "equity": 10045.760281154173
+      },
+      {
+        "trades": 1,
+        "win_rate": 293.0,
+        "total_pnl": -358.8188245254038,
+        "max_drawdown": 0.0397290490278023,
+        "episode_return": -0.035881882452542424,
+        "equity": 9641.181175474576
+      },
+      {
+        "trades": 1,
+        "win_rate": 284.0,
+        "total_pnl": 89.52359473659429,
+        "max_drawdown": 0.019053948170250128,
+        "episode_return": 0.00895235947365891,
+        "equity": 10089.523594736589
+      },
+      {
+        "trades": 1,
+        "win_rate": 303.0,
+        "total_pnl": 163.6586776863643,
+        "max_drawdown": 0.011700984623630745,
+        "episode_return": 0.0163658677686358,
+        "equity": 10163.658677686359
+      }
+    ],
+    "passed": true,
+    "warnings": []
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T10:38:27.246136",
+  "duration_seconds": 3602.4843549728394
+}

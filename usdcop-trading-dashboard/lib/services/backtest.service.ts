@@ -24,7 +24,14 @@ import {
   BacktestResultSchema,
   BacktestSSEEvent,
   BacktestTradeEvent,
+  REPLAY_SPEEDS,
+  DEFAULT_REPLAY_SPEED,
+  type ReplaySpeed,
 } from '@/lib/contracts/backtest.contract';
+
+// Re-export SSOT constants for use in components
+export { REPLAY_SPEEDS, DEFAULT_REPLAY_SPEED };
+export type { ReplaySpeed };
 
 import {
   PIPELINE_DATE_RANGES,
@@ -202,6 +209,8 @@ export function createBacktestRunner(
           end_date: request.endDate,
           model_id: request.modelId,
           force_regenerate: request.forceRegenerate ?? false,
+          replay_speed: request.replaySpeed ?? DEFAULT_REPLAY_SPEED,
+          emit_bar_events: request.emitBarEvents ?? true,
         }),
         signal: abortController.signal,
       });
@@ -438,14 +447,6 @@ export interface PipelineDates {
 }
 
 /**
- * Default date ranges (fallback if API fails)
- * Uses SSOT values from ssot.contract.ts
- *
- * @deprecated Use PIPELINE_DATE_RANGES from ssot.contract.ts directly
- */
-export const BACKTEST_DATE_RANGES = PIPELINE_DATE_RANGES;
-
-/**
  * Fetch pipeline dates from API (reads from official config)
  */
 export async function fetchPipelineDates(): Promise<PipelineDates | null> {
@@ -475,6 +476,101 @@ export function formatDateRange(startDate: string, endDate: string): string {
   }
 
   return `${formatMonth(start)} - ${formatMonth(end)}`;
+}
+
+// ============================================================================
+// Real Backtest (uses Python BacktestEngine)
+// ============================================================================
+
+export interface RealBacktestRequest {
+  proposalId: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface RealBacktestResult {
+  success: boolean;
+  source: string;
+  proposal_id: string;
+  model_id: string;
+  trade_count: number;
+  trades: BacktestTradeEvent[];
+  summary: {
+    total_trades: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate: number;
+    total_pnl: number;
+    total_return_pct: number;
+    max_drawdown_pct: number;
+    sharpe_ratio: number;
+  };
+  config: {
+    threshold_long: number;
+    threshold_short: number;
+    stop_loss_pct: number;
+    take_profit_pct: number;
+    trailing_stop_enabled: boolean;
+    spread_bps: number;
+    slippage_bps: number;
+  };
+  date_range: {
+    start: string;
+    end: string;
+  };
+  error?: string;
+}
+
+/**
+ * Run REAL backtest using Python BacktestEngine.
+ *
+ * This uses the EXACT same BacktestEngine as L4 validation:
+ * - Same stop loss/take profit
+ * - Same thresholds
+ * - Same transaction costs
+ * - Same model from proposal lineage
+ *
+ * Use this for pending experiments to ensure metrics consistency.
+ */
+export async function runRealBacktest(
+  request: RealBacktestRequest
+): Promise<RealBacktestResult> {
+  const url = '/api/backtest/real';
+
+  console.log(`[BacktestService] Running REAL backtest for ${request.proposalId}: ${request.startDate} to ${request.endDate}`);
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      proposal_id: request.proposalId,
+      start_date: request.startDate,
+      end_date: request.endDate,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw createBacktestError(
+      'SERVER_ERROR',
+      `Real backtest failed (${response.status}): ${errorText}`,
+      response.status >= 500
+    );
+  }
+
+  const result = await response.json() as RealBacktestResult;
+
+  if (!result.success) {
+    throw createBacktestError(
+      'SERVER_ERROR',
+      result.error || 'Real backtest failed',
+      false
+    );
+  }
+
+  console.log(`[BacktestService] REAL backtest complete: ${result.trade_count} trades, ${result.summary.win_rate}% WR`);
+
+  return result;
 }
 
 /**

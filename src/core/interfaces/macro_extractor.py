@@ -35,6 +35,10 @@ class ExtractionResult:
         source_name: Name of the data source
         extraction_time: When extraction was performed
         duration_seconds: How long extraction took
+        retry_count: Number of retry attempts used (0 = first try succeeded)
+        fallback_used: Whether a fallback source was used
+        validation_passed: Whether data passed all validation checks
+        validation_errors: List of validation error messages
     """
     data: Dict[str, Dict[str, float]] = field(default_factory=dict)
     errors: List[str] = field(default_factory=list)
@@ -42,6 +46,11 @@ class ExtractionResult:
     source_name: str = ""
     extraction_time: datetime = field(default_factory=datetime.utcnow)
     duration_seconds: float = 0.0
+    # New fields for L0 Backfill v2.0
+    retry_count: int = 0
+    fallback_used: bool = False
+    validation_passed: bool = True
+    validation_errors: List[str] = field(default_factory=list)
 
     @property
     def is_successful(self) -> bool:
@@ -62,6 +71,10 @@ class ExtractionResult:
             'source_name': self.source_name,
             'extraction_time': self.extraction_time.isoformat(),
             'duration_seconds': self.duration_seconds,
+            'retry_count': self.retry_count,
+            'fallback_used': self.fallback_used,
+            'validation_passed': self.validation_passed,
+            'validation_errors': self.validation_errors,
         }
 
     @classmethod
@@ -74,6 +87,10 @@ class ExtractionResult:
             source_name=data.get('source_name', ''),
             extraction_time=datetime.fromisoformat(data.get('extraction_time', datetime.utcnow().isoformat())),
             duration_seconds=data.get('duration_seconds', 0.0),
+            retry_count=data.get('retry_count', 0),
+            fallback_used=data.get('fallback_used', False),
+            validation_passed=data.get('validation_passed', True),
+            validation_errors=data.get('validation_errors', []),
         )
 
 

@@ -1,4 +1,18 @@
 {
+  "_meta": {
+    "version": "6.0.0",
+    "compatible_with": ["feature_config.json v6.0.0"],
+    "computed_from": "train_set_only",
+    "date_range": {
+      "start": "2020-01-01",
+      "end": "2025-06-30"
+    },
+    "description": "Normalization statistics for 13 market features",
+    "feature_count": 13,
+    "sample_count": 84671,
+    "created_at": "2026-01-31T00:00:00Z",
+    "notes": "Stats computed exclusively from training split. DO NOT include val/test data."
+  },
   "log_ret_5m": {
     "mean": 9.042127679274034e-07,
     "std": 0.0011338119633965713,

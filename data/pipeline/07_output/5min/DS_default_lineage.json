@@ -1,0 +1,19 @@
+{
+  "dataset_hash": "41a6b7ace8a22917",
+  "config_hash": "44136fa355b3678a",
+  "feature_order_hash": "8531855184ee22eb68cbc376ed109a03",
+  "norm_stats_hash": "be17a8149880b229",
+  "builder_version": "L2DatasetBuilder_v1.0.0",
+  "created_at": "2026-02-01T06:40:39.510763",
+  "date_range": {
+    "start": "2020-03-01",
+    "end": "2026-02-01"
+  },
+  "num_rows": {
+    "train": 73073,
+    "val": 7364,
+    "test": 8315,
+    "total": 88752
+  },
+  "num_features": 13
+}

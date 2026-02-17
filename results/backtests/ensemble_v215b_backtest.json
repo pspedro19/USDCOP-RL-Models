@@ -1,0 +1,62 @@
+{
+  "stage": "ENSEMBLE-L4",
+  "total_return_pct": 1.6018945312499921,
+  "apr_pct": 3.2366107971494307,
+  "sharpe_ratio": 0.2408233982201208,
+  "max_drawdown_pct": 15.68878933347312,
+  "n_trades": 375,
+  "winning_trades": 199,
+  "losing_trades": 176,
+  "win_rate_pct": 53.06666666666666,
+  "profit_factor": 1.0065066427419291,
+  "final_equity": 10160.189453125,
+  "test_days": 182.10256410256412,
+  "sortino_ratio": 0.2516106414884067,
+  "monthly_returns": {
+    "2025-02": 2.98,
+    "2025-03": 0.45,
+    "2025-04": -0.82,
+    "2025-05": 1.85,
+    "2025-06": -3.03,
+    "2025-07": 2.19,
+    "2025-08": -4.8,
+    "2025-09": -4.7,
+    "2025-10": -4.71,
+    "2025-11": 1.36,
+    "2025-12": 4.82
+  },
+  "gates_passed": true,
+  "gate_results": {
+    "min_return_pct": {
+      "passed": true,
+      "actual": 1.6018945312499921,
+      "threshold": 0.0
+    },
+    "min_sharpe_ratio": {
+      "passed": true,
+      "actual": 0.2408233982201208,
+      "threshold": 0.0
+    },
+    "max_drawdown_pct": {
+      "passed": true,
+      "actual": 15.68878933347312,
+      "threshold": 20.0
+    },
+    "min_trades": {
+      "passed": true,
+      "actual": 375.0,
+      "threshold": 30.0
+    },
+    "min_win_rate": {
+      "passed": true,
+      "actual": 53.06666666666666,
+      "threshold": 35.0
+    }
+  },
+  "ensemble_info": {
+    "n_models": 5,
+    "min_consensus": 3,
+    "use_kelly": false,
+    "model_dir": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\v215b_ensemble"
+  }
+}

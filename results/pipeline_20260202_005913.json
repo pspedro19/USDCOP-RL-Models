@@ -1,0 +1,56 @@
+{
+  "start_time": "2026-02-02T00:53:46.999681",
+  "timesteps": 150000,
+  "l2": null,
+  "l3": {
+    "success": true,
+    "version": "v20260202_005352",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_005352_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_005352_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_005352_contract.json",
+    "model_hash": "a762ce7a78abada57be8286ad316664df18d4ec3a4ce4755885e2b030b0d6e8e",
+    "dataset_hash": "c9f918b7f0f91279d8cf263bc04f9346dd9bad0bf1349185e4dbc9d7e792e6fa",
+    "norm_stats_hash": "80b5cf14e1662b268a9cab02ad9dfa7048523272d502e77ceaf0f7982c4db996",
+    "config_hash": "7d89545d76419785",
+    "training_duration_seconds": 293.28613686561584,
+    "total_timesteps": 150000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "8531855184ee22eb68cbc376ed109a03",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.5,
+      "dsr": 0.3,
+      "sortino": 0.2,
+      "regime_penalty": 1.0,
+      "holding_decay": 1.0,
+      "anti_gaming": 1.0
+    },
+    "errors": []
+  },
+  "l4": {
+    "total_trades": 1,
+    "winning_trades": 1,
+    "win_rate": 100.0,
+    "total_return": 12.354002978996096,
+    "sharpe_ratio": 0,
+    "max_drawdown": 0.0,
+    "action_distribution": {
+      "long": 0.0,
+      "hold": 0.07897022822395958,
+      "short": 99.92102977177603
+    },
+    "test_rows": 12664,
+    "passed": true
+  },
+  "end_time": "2026-02-02T00:59:13.466784",
+  "duration_seconds": 326.467102766037
+}

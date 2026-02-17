@@ -1,0 +1,89 @@
+{
+  "log_ret_1h": {
+    "mean": 5.1582002493735295e-05,
+    "std": 0.003817328483222944,
+    "method": "zscore"
+  },
+  "log_ret_4h": {
+    "mean": 0.0002062882750695012,
+    "std": 0.0079498846461653,
+    "method": "zscore"
+  },
+  "log_ret_1d": {
+    "mean": 0.000258689161604525,
+    "std": 0.009033331753738397,
+    "method": "zscore"
+  },
+  "log_ret_1w": {
+    "mean": 0.001282469290474627,
+    "std": 0.02284107419356136,
+    "method": "zscore"
+  },
+  "rsi_9": {
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1,
+    "method": "minmax"
+  },
+  "rsi_21": {
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1,
+    "method": "minmax"
+  },
+  "volatility_pct": {
+    "mean": 0.11951578288296023,
+    "std": 0.05969638164857413,
+    "method": "zscore"
+  },
+  "trend_z": {
+    "method": "none"
+  },
+  "dxy_z": {
+    "method": "none"
+  },
+  "dxy_change_1d": {
+    "mean": 0.00015385980883664307,
+    "std": 0.004390563549013562,
+    "method": "zscore"
+  },
+  "vix_z": {
+    "method": "none"
+  },
+  "embi_z": {
+    "method": "none"
+  },
+  "brent_change_1d": {
+    "mean": 0.0002394088585243536,
+    "std": 0.027768120480474,
+    "method": "zscore"
+  },
+  "gold_change_1d": {
+    "mean": 0.0003991152650081838,
+    "std": 0.010255464391997194,
+    "method": "zscore"
+  },
+  "rate_spread_z": {
+    "method": "none"
+  },
+  "yield_curve_z": {
+    "method": "none"
+  },
+  "usdmxn_change_1d": {
+    "mean": 0.00020663265797191778,
+    "std": 0.008240610618502646,
+    "method": "zscore"
+  },
+  "carry_spread_z": {
+    "method": "none"
+  },
+  "_meta": {
+    "version": "5.1.0",
+    "ssot_model": "EXP-HOURLY-PPO-001 seed 42",
+    "train_rows": 5836,
+    "feature_count": 18,
+    "created_at": "2026-02-14T10:36:42.095545"
+  }
+}

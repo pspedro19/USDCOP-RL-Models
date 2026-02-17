@@ -7,7 +7,7 @@ Gestor del calendario económico para prevenir data leakage.
 Contract: CTR-L0-CALENDAR-001
 
 Responsabilidades:
-1. Cargar configuración desde YAML
+1. Cargar configuración desde SSOT (macro_variables_ssot.yaml)
 2. Calcular fechas de publicación para cada variable
 3. Forward-fill respetando fechas de publicación reales
 4. Validar no-leakage en features de ML
@@ -26,10 +26,9 @@ Uso:
     # Validar no hay leakage
     result = calendar.validate_no_leakage(df, test_timestamp, 'infl_cpi_all_usa_m_cpiaucsl')
 
-Version: 1.0.0
+Version: 2.0.0 - Now reads from SSOT
 """
 
-import yaml
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -44,6 +43,17 @@ try:
 except ImportError:
     PYTZ_AVAILABLE = False
 
+# Import SSOT loader
+try:
+    from .macro_ssot import MacroSSOT, MacroVariableDef
+    SSOT_AVAILABLE = True
+except ImportError:
+    try:
+        from src.data.macro_ssot import MacroSSOT, MacroVariableDef
+        SSOT_AVAILABLE = True
+    except ImportError:
+        SSOT_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,8 +61,8 @@ class EconomicCalendar:
     """
     Gestor principal del calendario económico.
 
-    Single Source of Truth para fechas de publicación de indicadores macro.
-    Previene data leakage en pipelines de ML.
+    Reads from SSOT (macro_variables_ssot.yaml) as the Single Source of Truth
+    for publication schedules. Previene data leakage en pipelines de ML.
     """
 
     def __init__(self, config_path: Optional[Path] = None):
@@ -60,44 +70,99 @@ class EconomicCalendar:
         Inicializar calendario económico.
 
         Args:
-            config_path: Ruta al archivo economic_calendar.yaml.
-                        Si None, usa la ruta por defecto.
+            config_path: Optional path to SSOT config.
+                        If None, uses default SSOT location.
         """
-        if config_path is None:
-            # Buscar config en rutas estándar
-            possible_paths = [
-                Path(__file__).parent.parent.parent / "config" / "economic_calendar.yaml",
-                Path("/opt/airflow/config/economic_calendar.yaml"),
-                Path("config/economic_calendar.yaml"),
-            ]
-            for path in possible_paths:
-                if path.exists():
-                    config_path = path
-                    break
-
-            if config_path is None:
-                raise FileNotFoundError(
-                    f"economic_calendar.yaml not found in: {possible_paths}"
-                )
-
-        logger.info(f"Loading economic calendar from: {config_path}")
-
-        with open(config_path, 'r', encoding='utf-8') as f:
-            self.config = yaml.safe_load(f)
-
-        # Combinar todas las variables en un diccionario plano
+        # Build variables dict from SSOT
         self.variables: Dict[str, dict] = {}
+        self.config: Dict = {'global_rules': {}}
 
-        for section in ['usa_monthly', 'colombia_monthly', 'quarterly']:
-            section_vars = self.config.get(section, {})
-            for var_name, var_config in section_vars.items():
-                var_config['_section'] = section
-                self.variables[var_name] = var_config
+        if SSOT_AVAILABLE:
+            self._load_from_ssot(config_path)
+        else:
+            logger.warning("SSOT not available, calendar will be empty")
 
-        logger.info(f"Loaded {len(self.variables)} variables from calendar")
+        logger.info(f"Loaded {len(self.variables)} variables from SSOT")
 
         # Cache de fechas de publicación calculadas
         self._pub_date_cache: Dict[Tuple[str, str], pd.Timestamp] = {}
+
+    def _load_from_ssot(self, config_path: Optional[Path] = None):
+        """Load calendar data from SSOT."""
+        ssot = MacroSSOT(config_path)
+
+        # Build global rules from SSOT
+        global_config = ssot.get_global_config()
+        self.config['global_rules'] = {
+            'ffill_limits': global_config.get('ffill_limits', {}),
+            'default_offsets': global_config.get('default_offsets', {}),
+        }
+
+        # Convert each SSOT variable to calendar format
+        for var_name in ssot.get_all_variables():
+            var_def = ssot.get_variable(var_name)
+            if var_def is None:
+                continue
+
+            # Build calendar-compatible config from SSOT
+            var_config = self._convert_ssot_to_calendar(var_def)
+            self.variables[var_name] = var_config
+
+    def _convert_ssot_to_calendar(self, var_def: 'MacroVariableDef') -> dict:
+        """Convert SSOT MacroVariableDef to calendar format."""
+        sched = var_def.schedule
+
+        # Build publication dict
+        publication = {
+            'timezone': sched.timezone,
+            'month_lag': sched.month_lag,
+        }
+
+        if sched.typical_day is not None:
+            publication['typical_day'] = sched.typical_day
+        elif sched.delay_days is not None:
+            # For daily variables, typical_day is delay_days
+            publication['typical_day'] = sched.delay_days
+
+        if sched.day_range is not None:
+            publication['day_range'] = list(sched.day_range)
+
+        if sched.time is not None:
+            publication['time'] = sched.time
+
+        if sched.quarter_lag is not None:
+            publication['quarter_lag'] = sched.quarter_lag
+
+        if sched.days_after_quarter is not None:
+            publication['days_after_quarter'] = sched.days_after_quarter
+
+        # Build validation dict
+        validation = {
+            'leakage_risk': var_def.validation.leakage_risk,
+            'priority': var_def.validation.priority,
+            'expected_range': list(var_def.validation.expected_range),
+        }
+
+        # Determine section based on frequency
+        frequency = var_def.identity.frequency
+        country = var_def.identity.country
+
+        if frequency == 'quarterly':
+            section = 'quarterly'
+        elif country == 'USA':
+            section = 'usa_monthly'
+        else:
+            section = 'colombia_monthly'
+
+        return {
+            'name': var_def.display_name,
+            'db_column': var_def.canonical_name,
+            'category': var_def.identity.category,
+            'frequency': frequency,
+            'publication': publication,
+            'validation': validation,
+            '_section': section,
+        }
 
     def get_variable_config(self, variable_name: str) -> Optional[dict]:
         """
@@ -261,10 +326,11 @@ class EconomicCalendar:
         self,
         df: pd.DataFrame,
         variable_name: str,
+        target_frequency: str = 'daily',
         verbose: bool = False
     ) -> pd.Series:
         """
-        Forward-fill respetando calendario de publicaciones.
+        Forward-fill respetando calendario de publicaciones con límite por frecuencia.
 
         ⚠️ CRÍTICO: Nunca propaga un dato antes de su fecha de publicación real.
 
@@ -273,7 +339,13 @@ class EconomicCalendar:
         Args:
             df: DataFrame con index datetime (debe tener la columna variable_name)
             variable_name: Nombre de la variable a procesar
+            target_frequency: Frecuencia del dataset target ('daily', '5min', 'hourly')
+                             Determina el límite máximo de forward-fill
             verbose: Si True, muestra logging detallado
+
+        Límites (SSOT desde YAML global_rules.ffill_limits):
+            - Monthly data → daily: max 22 barras
+            - Quarterly data → daily: max 66 barras
 
         Returns:
             Serie con forward-fill correcto (sin leakage)
@@ -283,9 +355,9 @@ class EconomicCalendar:
             df = pd.read_sql('SELECT * FROM macro_indicators_daily', conn)
             df = df.set_index('fecha')
 
-            # Forward-fill sin leakage
+            # Forward-fill sin leakage con límite
             df['cpi_safe'] = calendar.apply_publication_aware_ffill(
-                df, 'infl_cpi_all_usa_m_cpiaucsl'
+                df, 'infl_cpi_all_usa_m_cpiaucsl', target_frequency='daily'
             )
         """
         if variable_name not in df.columns:
@@ -296,6 +368,15 @@ class EconomicCalendar:
         if not isinstance(df.index, pd.DatetimeIndex):
             logger.error("DataFrame index must be DatetimeIndex")
             return pd.Series(index=df.index, dtype=float, name=variable_name)
+
+        # Obtener límite de ffill desde configuración YAML
+        ffill_limits = self.config.get('global_rules', {}).get('ffill_limits', {})
+        freq_key = f'{target_frequency}_bars' if target_frequency != '5min' else 'minutes_5'
+        freq_config = ffill_limits.get(freq_key, {})
+
+        var_config = self.variables.get(variable_name, {})
+        var_freq = var_config.get('frequency', 'monthly')
+        max_ffill = freq_config.get(f'{var_freq}_data', 9999)
 
         # Serie resultado (inicialmente todo NaN)
         result = pd.Series(index=df.index, dtype=float, name=f"{variable_name}_safe")
@@ -309,6 +390,8 @@ class EconomicCalendar:
             logger.info(f"{'='*60}")
             logger.info(f"Monthly data points: {len(monthly_data)}")
             logger.info(f"Target rows: {len(df)}")
+            logger.info(f"Target frequency: {target_frequency}")
+            logger.info(f"Max ffill limit: {max_ffill} bars")
 
         # Para cada valor mensual, propagar solo desde su fecha de publicación
         for data_date, value in monthly_data.items():
@@ -437,6 +520,78 @@ class EconomicCalendar:
             'is_valid': is_valid,
             'status': status
         }
+
+    def validate_dataset_no_leakage(
+        self,
+        df: pd.DataFrame,
+        variables: List[str] = None,
+        sample_rate: int = 100,
+        verbose: bool = False
+    ) -> Dict[str, bool]:
+        """
+        Validar que todo el dataset no tiene leakage en ninguna variable.
+
+        Muestrea timestamps del dataset y verifica que los valores usados
+        corresponden a datos que ya habían sido publicados.
+
+        Args:
+            df: DataFrame con variables macro (index debe ser DatetimeIndex)
+            variables: Lista de variables a validar. Si None, usa todas las
+                      columnas que estén en el calendario.
+            sample_rate: Validar cada N filas (default 100 para eficiencia)
+            verbose: Si True, muestra progreso detallado
+
+        Returns:
+            Dict con {variable: is_valid} para cada variable
+
+        Example:
+            calendar = EconomicCalendar()
+            df = pd.read_csv('MACRO_MONTHLY_CLEAN.csv', index_col='fecha', parse_dates=True)
+            results = calendar.validate_dataset_no_leakage(df)
+            # results = {'infl_cpi_all_usa_m_cpiaucsl': True, 'infl_pce_usa_m_pcepi': False, ...}
+        """
+        if variables is None:
+            variables = [col for col in df.columns if col in self.variables]
+
+        if not variables:
+            logger.warning("No variables found in DataFrame that match calendar")
+            return {}
+
+        results = {}
+
+        for var in variables:
+            if var not in df.columns:
+                results[var] = None
+                continue
+
+            # Muestrear timestamps para validar
+            valid_indices = df[var].dropna().index
+            if len(valid_indices) == 0:
+                results[var] = True  # No data = no leakage
+                continue
+
+            sample_timestamps = df.index[::sample_rate]
+            is_valid = True
+
+            for ts in sample_timestamps:
+                result = self.validate_no_leakage(df, ts, var)
+                if not result['is_valid']:
+                    is_valid = False
+                    if verbose:
+                        logger.warning(
+                            f"LEAKAGE in {var} at {ts}: "
+                            f"used={result['used_value']}, "
+                            f"expected={result['expected_value']}"
+                        )
+                    break
+
+            results[var] = is_valid
+
+            if verbose:
+                status = "✓ PASS" if is_valid else "✗ FAIL"
+                logger.info(f"{var}: {status}")
+
+        return results
 
     def get_leakage_risk(self, variable_name: str) -> str:
         """Obtener nivel de riesgo de leakage de una variable."""

@@ -225,8 +225,9 @@ export function ForecastingDashboard() {
     let metrics: { title: string; value: string; icon: React.ReactNode; color?: string }[] = [];
 
     // Case 1: Consolidated Forecast (All Models)
+    const weekSuffix = inferenceWeek ? inferenceWeek.replace('-', '_') : '';
     if (viewType === 'forward_forecast' && selectedModel === 'ALL') {
-      imageSrc = 'forward_forecast_consensus_all_models.png';
+      imageSrc = weekSuffix ? `forward_consensus_${weekSuffix}.png` : 'forward_consensus.png';
       imageCaption = "Consensus Forecast (All Models + Average)";
 
       if (filteredData.length > 0) {
@@ -242,7 +243,7 @@ export function ForecastingDashboard() {
       const ensembleImageKey = getEnsembleImageKey(selectedModel);
       const displayLabel = getModelDisplayLabel(selectedModel);
 
-      imageSrc = `forward_forecast_ensemble_${ensembleImageKey}.png`;
+      imageSrc = weekSuffix ? `forward_ensemble_${ensembleImageKey}_${weekSuffix}.png` : `forward_ensemble_${ensembleImageKey}.png`;
       imageCaption = `${displayLabel} Ensemble Forecast`;
 
       metrics = [

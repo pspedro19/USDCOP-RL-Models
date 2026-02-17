@@ -1,0 +1,1040 @@
+# ==============================================================================
+# EXP-HOURLY-PPO-002: PPO on 1-Hour Bars (Reduced Timesteps)
+# ==============================================================================
+# Contract: CTR-PIPELINE-SSOT-001
+# Based on: EXP-HOURLY-PPO-001 (fix overfitting from 2M steps on small dataset)
+# Variable changed: total_timesteps 2M -> 500K + ent_coef 0.01 -> 0.03
+# ==============================================================================
+
+_meta:
+  version: "5.1.0"
+  contract_id: "CTR-PIPELINE-SSOT-001"
+  experiment_id: "EXP-HOURLY-PPO-002"
+  based_on: "exp_hourly_ppo_001.yaml"
+  based_on_model: "EXP-HOURLY-PPO-001 seed 42"
+  based_on_performance:
+    total_return: -17.49
+    sharpe_ratio: -2.618
+    max_drawdown_pct: 18.14
+    profit_factor: 0.74
+    trades: 73
+    win_rate: 43.8
+    seeds_positive: "0/1"
+  variable_changed: "total_timesteps 2M->500K (prevent overfitting on 5.8K bars) + ent_coef 0.01->0.03 (fight entropy collapse)"
+  hypothesis: "EXP-001 overfit: 2M steps on 5.8K bars = 344x per bar. 500K = 86x per bar. Higher entropy prevents policy collapse."
+  created_at: "2026-02-14"
+  status: "failed"
+  results:
+    seed_42_return: -7.16
+    seed_42_sharpe: -1.055
+    seed_42_maxdd: 10.52
+    seed_42_trades: 56
+    seed_42_wr: 42.9
+    seed_42_pf: 0.90
+    failure_reason: "No learned alpha. PPO matches SMA baseline (-6.33%). Hourly freq too sparse for RL."
+  description: |
+    Fix for EXP-HOURLY-PPO-001 overfitting.
+    Root cause: 2M timesteps on 5,811 training bars = each bar seen 344x.
+    EXP-001 showed entropy collapse (std 0.70->0.04 by 400K steps).
+    Fix: reduce to 500K steps (86x per bar) + increase ent_coef to 0.03.
+    NOTE: This changes 2 variables (timesteps + ent_coef), justified because
+    both address the same root cause (overfitting on small dataset).
+
+# ==============================================================================
+# SECTION 1: PIPELINE PATHS & DATA SOURCES
+# ==============================================================================
+
+paths:
+  project_root: "/opt/airflow"
+  local_root: "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models"
+
+  sources:
+    ohlcv_table: "usdcop_m5_ohlcv"
+    ohlcv_seed: "seeds/latest/usdcop_1h_ohlcv.parquet"  # HOURLY seed
+    macro_daily_table: "macro_indicators_daily"
+    macro_monthly_table: "macro_indicators_monthly"
+
+    macro_column_map:
+      FXRT_INDEX_DXY_USA_D_DXY: dxy
+      VOLT_VIX_USA_D_VIX: vix
+      CRSK_SPREAD_EMBI_COL_D_EMBI: embi
+      COMM_OIL_BRENT_GLB_D_BRENT: brent
+      COMM_METAL_GOLD_GLB_D_GOLD: gold
+      FINC_BOND_YIELD10Y_COL_D_COL10Y: col10y
+      FINC_BOND_YIELD10Y_USA_D_UST10Y: ust10y
+      FINC_BOND_YIELD2Y_USA_D_DGS2: ust2y
+      FXRT_SPOT_USDMXN_MEX_D_USDMXN: usdmxn
+
+  l2_output:
+    base_dir: "data/pipeline/07_output/1h"
+    dataset_prefix: "DS_production"
+    train_file: "data/pipeline/07_output/1h/DS_production_train.parquet"
+    val_file: "data/pipeline/07_output/1h/DS_production_val.parquet"
+    test_file: "data/pipeline/07_output/1h/DS_production_test.parquet"
+    norm_stats_file: "data/pipeline/07_output/1h/DS_production_norm_stats.json"
+    lineage_file: "data/pipeline/07_output/1h/DS_production_lineage.json"
+
+  l3_output:
+    models_dir: "models"
+    model_prefix: "ppo_hourly"
+    model_file: "final_model.zip"
+    policy_weights: "policy_weights.pt"
+    norm_stats: "norm_stats.json"
+    training_config: "training_config.json"
+    training_result: "training_result.json"
+
+  l4_output:
+    results_dir: "results/backtests"
+    reports_dir: "results/validation_reports"
+
+# ==============================================================================
+# SECTION 1B: AUXILIARY PAIRS (Disabled for this experiment)
+# ==============================================================================
+
+aux_pairs:
+  enabled: false  # V21.5b baseline: no cross-pair features
+  pairs:
+    usdmxn:
+      symbol: "USD/MXN"
+      seed_file: "seeds/latest/usdmxn_m5_ohlcv.parquet"
+    usdbrl:
+      symbol: "USD/BRL"
+      seed_file: "seeds/latest/usdbrl_m5_ohlcv.parquet"
+  session:
+    timezone: "America/Bogota"
+    start: "08:00"
+    end: "12:55"
+
+# ==============================================================================
+# SECTION 2: DATE RANGES & SPLITS
+# ==============================================================================
+
+date_ranges:
+  data_start: "2020-01-01"
+  data_end: "2026-02-04"
+
+  train_start: "2020-01-01"
+  train_end: "2024-12-31"
+
+  val_start: "2025-01-01"
+  val_end: "2025-06-30"
+
+  test_start: "2025-07-01"
+  test_end: "2025-12-31"
+
+  use_fixed_dates: true
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+# ==============================================================================
+# SECTION 2B: TRADING SCHEDULE (HOURLY)
+# ==============================================================================
+# USDCOP session: 8:00-12:55 COT = 5 hourly bars per day
+
+trading_schedule:
+  market_open_utc: 13
+  market_close_utc: 18
+  trading_hours_per_day: 5.0        # 5 hourly bars
+  bar_interval_minutes: 60          # 1-hour bars
+  bars_per_hour: 1
+  bars_per_day: 5                   # 5 bars/day
+  trading_days_per_year: 252
+  bars_per_year: 1260               # 252 * 5
+  backtest_warmup_bars: 50          # 50 hourly bars = 10 trading days (for SMA(50))
+  backtest_margin_bars: 10          # Reserved at end
+
+# ==============================================================================
+# SECTION 3: FEATURE CALCULATORS REGISTRY
+# ==============================================================================
+
+calculators:
+  log_return:
+    module: "src.features.technical_indicators"
+    function: "calculate_log_returns"
+    description: "Log return: ln(price_t / price_{t-n})"
+
+  rsi_wilders:
+    module: "src.features.technical_indicators"
+    function: "calculate_rsi_wilders"
+    description: "RSI with Wilder's exponential smoothing"
+
+  volatility_pct:
+    module: "src.features.technical_indicators"
+    function: "calculate_volatility_pct"
+    description: "Realized volatility as annualized percentage"
+
+  trend_z:
+    module: "src.features.technical_indicators"
+    function: "calculate_trend_z"
+    description: "Price position relative to SMA as z-score"
+
+  macro_zscore:
+    module: "src.features.technical_indicators"
+    function: "calculate_macro_zscore"
+    description: "Rolling z-score for macro variables"
+
+  pct_change:
+    module: "pandas"
+    function: "Series.pct_change"
+    description: "Simple percentage change"
+
+  spread_zscore:
+    module: "src.features.technical_indicators"
+    function: "calculate_spread_zscore"
+    description: "Spread between two series as z-score"
+
+# ==============================================================================
+# SECTION 4: FEATURE DEFINITIONS (18 market + 9 state = 27 obs_dim)
+# ==============================================================================
+# Adapted from V21.5b for hourly bars:
+# - log_ret periods: 1, 4, 5, 25 (hourly equivalents of 5min/1h/4h/1d)
+# - RSI period: 9 (= 2 trading days at hourly)
+# - RSI 21 added (= 4 trading days)
+# - Volatility: period=14, bars_per_day=5
+# - Trend: SMA(50) = 10 trading days
+# - Macro: unchanged (daily frequency, T-1 shift)
+# ==============================================================================
+
+features:
+  observation_dim: 27  # 18 market + 9 state
+
+  market_features:
+    # =========================================================================
+    # RETURNS (4 features) - Multi-timeframe momentum at hourly scale
+    # =========================================================================
+    - name: log_ret_1h
+      order: 0
+      category: returns
+      description: "1-hour log return (1 bar)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: log_return
+      params:
+        periods: 1
+      preprocessing:
+        dropna: true
+        clip_outliers: [-0.10, 0.10]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      validation:
+        expected_mean: [-0.002, 0.002]
+        expected_std: [0.001, 0.010]
+      importance: CRITICAL
+
+    - name: log_ret_4h
+      order: 1
+      category: returns
+      description: "4-hour log return (4 bars = ~1 session)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: log_return
+      params:
+        periods: 4
+      preprocessing:
+        dropna: true
+        clip_outliers: [-0.15, 0.15]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    - name: log_ret_1d
+      order: 2
+      category: returns
+      description: "1-day log return (5 bars = 1 trading day)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: log_return
+      params:
+        periods: 5
+      preprocessing:
+        dropna: true
+        clip_outliers: [-0.20, 0.20]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    - name: log_ret_1w
+      order: 3
+      category: returns
+      description: "1-week log return (25 bars = 5 trading days)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: log_return
+      params:
+        periods: 25
+      preprocessing:
+        dropna: true
+        clip_outliers: [-0.25, 0.25]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: MEDIUM
+
+    # =========================================================================
+    # TECHNICAL INDICATORS (4 features) - CLOSE-only
+    # =========================================================================
+    - name: rsi_9
+      order: 4
+      category: technical
+      description: "RSI period 9 (9 hours = ~2 trading days)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: rsi_wilders
+      params:
+        period: 9
+      preprocessing:
+        dropna: true
+      normalization:
+        method: minmax
+        input_range: [0, 100]
+        output_range: [0, 1]
+      validation:
+        expected_range: [0, 100]
+      importance: HIGH
+
+    - name: rsi_21
+      order: 5
+      category: technical
+      description: "RSI period 21 (21 hours = ~4 trading days)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: rsi_wilders
+      params:
+        period: 21
+      preprocessing:
+        dropna: true
+      normalization:
+        method: minmax
+        input_range: [0, 100]
+        output_range: [0, 1]
+      validation:
+        expected_range: [0, 100]
+      importance: HIGH
+
+    - name: volatility_pct
+      order: 6
+      category: technical
+      description: "Realized volatility % (annualized, CLOSE-only)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: volatility_pct
+      params:
+        period: 14
+        annualize: true
+        bars_per_day: 5           # 5 hourly bars per day
+      preprocessing:
+        dropna: true
+        floor: 0.0
+      normalization:
+        method: zscore
+        clip: [-3, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    - name: trend_z
+      order: 7
+      category: technical
+      description: "Price vs SMA(50) z-score (50h = 10 trading days)"
+      source: ohlcv
+      input_columns: [close]
+      calculator: trend_z
+      params:
+        sma_period: 50
+        clip_value: 3.0
+      preprocessing:
+        dropna: true
+      normalization:
+        method: none
+        clip: [-3, 3]
+      importance: HIGH
+
+    # =========================================================================
+    # MACRO - Currency & Risk (4 features) - unchanged from V21.5b
+    # =========================================================================
+    - name: dxy_z
+      order: 8
+      category: macro_zscore
+      description: "Dollar Index rolling z-score (252 days)"
+      source: macro_daily
+      input_columns: [dxy]
+      calculator: macro_zscore
+      params:
+        window: 252
+        method: rolling
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-5, 5]
+      importance: CRITICAL
+
+    - name: dxy_change_1d
+      order: 9
+      category: macro_change
+      description: "Dollar Index 1-day % change"
+      source: macro_daily
+      input_columns: [dxy]
+      calculator: pct_change
+      params:
+        periods: 1
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+        clip_outliers: [-0.05, 0.05]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    - name: vix_z
+      order: 10
+      category: macro_zscore
+      description: "VIX volatility index z-score"
+      source: macro_daily
+      input_columns: [vix]
+      calculator: macro_zscore
+      params:
+        window: 252
+        method: rolling
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-5, 5]
+      importance: HIGH
+
+    - name: embi_z
+      order: 11
+      category: macro_zscore
+      description: "EMBI Colombia z-score (country risk)"
+      source: macro_daily
+      input_columns: [embi]
+      calculator: macro_zscore
+      params:
+        window: 252
+        method: rolling
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-5, 5]
+      importance: HIGH
+
+    # =========================================================================
+    # MACRO - Commodities (2 features) - unchanged
+    # =========================================================================
+    - name: brent_change_1d
+      order: 12
+      category: macro_change
+      description: "Brent crude oil 1-day % change"
+      source: macro_daily
+      input_columns: [brent]
+      calculator: pct_change
+      params:
+        periods: 1
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+        clip_outliers: [-0.15, 0.15]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    - name: gold_change_1d
+      order: 13
+      category: macro_change
+      description: "Gold 1-day % change"
+      source: macro_daily
+      input_columns: [gold]
+      calculator: pct_change
+      params:
+        periods: 1
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+        clip_outliers: [-0.10, 0.10]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: MEDIUM
+
+    # =========================================================================
+    # MACRO - Interest Rates (2 features) - unchanged
+    # =========================================================================
+    - name: rate_spread_z
+      order: 14
+      category: macro_zscore
+      description: "Rate spread (COL10Y - UST10Y) z-score"
+      source: macro_daily
+      input_columns: [col10y, ust10y]
+      calculator: spread_zscore
+      params:
+        window: 252
+        spread_formula: "col10y - ust10y"
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-4, 4]
+      importance: HIGH
+
+    # =========================================================================
+    # MACRO - Yield Curve (1 feature) - unchanged
+    # =========================================================================
+    - name: yield_curve_z
+      order: 15
+      category: macro_zscore
+      description: "US yield curve (10Y-2Y) z-score"
+      source: macro_daily
+      input_columns: [ust10y, ust2y]
+      calculator: spread_zscore
+      params:
+        window: 252
+        spread_formula: "ust10y - ust2y"
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-4, 4]
+      importance: MEDIUM
+
+    # =========================================================================
+    # MACRO - FX Peer (1 feature) - unchanged
+    # =========================================================================
+    - name: usdmxn_change_1d
+      order: 16
+      category: macro_change
+      description: "USD/MXN 1-day % change (LATAM peer)"
+      source: macro_daily
+      input_columns: [usdmxn]
+      calculator: pct_change
+      params:
+        periods: 1
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+        clip_outliers: [-0.10, 0.10]
+      normalization:
+        method: zscore
+        clip: [-5, 5]
+        compute_on: train_only
+      importance: HIGH
+
+    # =========================================================================
+    # MACRO - Carry Trade (1 feature) - rounding out to 18 market features
+    # =========================================================================
+    - name: carry_spread_z
+      order: 17
+      category: macro_zscore
+      description: "Carry spread (COL10Y - UST10Y) z-score for carry premium"
+      source: macro_daily
+      input_columns: [col10y, ust10y]
+      calculator: spread_zscore
+      params:
+        window: 63
+        spread_formula: "col10y - ust10y"
+      preprocessing:
+        ffill_limit: 5
+        shift: 1
+      normalization:
+        method: none
+        clip: [-5, 5]
+      importance: HIGH
+
+  # ===========================================================================
+  # STATE FEATURES (9) - Computed at runtime by TradingEnv
+  # ===========================================================================
+  state_features:
+    - name: position
+      order: 18
+      category: state
+      description: "Current position (-1=SHORT, 0=FLAT, 1=LONG)"
+      source: runtime
+      normalization:
+        method: none
+        clip: [-1, 1]
+      importance: CRITICAL
+
+    - name: unrealized_pnl
+      order: 19
+      category: state
+      description: "Unrealized P&L as fraction of entry price"
+      source: runtime
+      normalization:
+        method: clip
+        clip: [-1.0, 1.0]
+      importance: CRITICAL
+
+    - name: sl_proximity
+      order: 20
+      category: state
+      description: "Distance to stop-loss"
+      source: runtime
+      normalization:
+        method: clip
+        clip: [0.0, 1.0]
+      importance: HIGH
+
+    - name: tp_proximity
+      order: 21
+      category: state
+      description: "Proximity to take-profit"
+      source: runtime
+      normalization:
+        method: clip
+        clip: [0.0, 1.0]
+      importance: HIGH
+
+    - name: bars_held
+      order: 22
+      category: state
+      description: "Bars in position normalized to [0,1]"
+      source: runtime
+      normalization:
+        method: clip
+        clip: [0.0, 1.0]
+      importance: HIGH
+
+    - name: hour_sin
+      order: 23
+      category: temporal
+      description: "Sine encoding of hour-of-day"
+      source: runtime
+      normalization:
+        method: none
+        clip: [-1.0, 1.0]
+      importance: MEDIUM
+
+    - name: hour_cos
+      order: 24
+      category: temporal
+      description: "Cosine encoding of hour-of-day"
+      source: runtime
+      normalization:
+        method: none
+        clip: [-1.0, 1.0]
+      importance: MEDIUM
+
+    - name: dow_sin
+      order: 25
+      category: temporal
+      description: "Sine encoding of day-of-week"
+      source: runtime
+      normalization:
+        method: none
+        clip: [-1.0, 1.0]
+      importance: MEDIUM
+
+    - name: dow_cos
+      order: 26
+      category: temporal
+      description: "Cosine encoding of day-of-week"
+      source: runtime
+      normalization:
+        method: none
+        clip: [-1.0, 1.0]
+      importance: MEDIUM
+
+  # ===========================================================================
+  # RAW FEATURES (not in observation, for PnL calculation)
+  # ===========================================================================
+  auxiliary_features:
+    - name: raw_log_ret_1h
+      description: "Raw (unnormalized) 1-hour log return for PnL calculation"
+      source: ohlcv
+      input_columns: [close]
+      calculator: log_return
+      params:
+        periods: 1
+      normalization:
+        method: none
+      note: "Used by TradingEnv for actual PnL computation"
+
+# ==============================================================================
+# SECTION 5: PREPROCESSING CONFIGURATION
+# ==============================================================================
+
+preprocessing:
+  ohlcv:
+    drop_duplicates: true
+    sort_by: time
+    handle_gaps:
+      max_gap_minutes: 120     # 2 hours max gap for hourly bars
+      action: ffill
+    handle_outliers:
+      method: clip
+      price_change_threshold: 0.05
+    trading_hours:
+      enabled: true
+      start_utc: 13
+      end_utc: 18
+      exclude_weekends: true
+
+  macro:
+    ffill_limits:
+      daily: 5
+      monthly: 35
+      quarterly: 95
+    anti_leakage:
+      shift_days: 1
+      reason: "Prevent look-ahead bias"
+
+  min_rows_required: 4000       # ~3.2 years of hourly bars
+  max_null_percentage: 0.01
+
+  normalization:
+    compute_on: train_only
+    save_stats: true
+    stats_file: "{output_dir}/{prefix}_norm_stats.json"
+
+# ==============================================================================
+# SECTION 6: TRAINING CONFIGURATION (L3) - V21.5b PPO parameters
+# ==============================================================================
+
+training:
+  algorithm: "ppo"              # V21.5b: PPO (not SAC)
+  device: "cpu"                 # V21.5b: CPU for PPO MlpPolicy
+
+  # PPO Hyperparameters (V21.5b exact values)
+  ppo:
+    learning_rate: 0.0003
+    n_steps: 2048               # Smaller than V21.5b's 4096 (less data per epoch)
+    batch_size: 128
+    n_epochs: 10
+    gamma: 0.98
+    gae_lambda: 0.95
+    clip_range: 0.2
+    clip_range_vf: null
+    ent_coef: 0.03
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    normalize_advantage: true
+
+  # Network architecture (V21.5b)
+  network:
+    policy_layers: [256, 256]
+    value_layers: [256, 256]
+    activation: tanh
+
+  # Training schedule
+  schedule:
+    total_timesteps: 500000     # 500K (86x per bar — prevents overfitting on 5.8K training bars)
+    eval_freq: 25000            # Eval every 25K (20 evals total)
+    n_eval_episodes: 10
+    checkpoint_freq: 100000
+
+    lr_decay:
+      enabled: false
+
+    early_stopping:
+      enabled: true
+      patience: 10
+      min_delta: 0.5
+
+  # Curriculum: disabled for simplicity
+  curriculum:
+    enabled: false
+
+  # Environment configuration (adapted for hourly)
+  environment:
+    episode_length: 250           # ~50 trading days (was 2400 for 5min)
+    warmup_bars: 50               # 10 trading days (for SMA(50))
+    initial_balance: 10000.0
+    decision_interval: 1          # Every hourly bar
+
+    # Transaction costs (V21.5b: MEXC maker)
+    transaction_cost_bps: 0.0
+    slippage_bps: 1.0
+
+    # Position management (adapted for hourly)
+    max_position: 1.0
+    max_drawdown_pct: 15.0
+    max_position_duration: 250    # 50 trading days
+
+    # Risk management (V21.5b proven stops)
+    stop_loss_pct: -0.04
+    stop_loss_penalty: 0.3
+    take_profit_pct: 0.04
+    take_profit_bonus: 0.5
+    exit_bonus: 0.2
+
+    # Trailing stop DISABLED (V21.5b)
+    trailing_stop:
+      enabled: false
+      activation_pct: 0.015
+      trail_factor: 0.5
+      min_trail_pct: 0.007
+      bonus: 0.25
+
+    # Action thresholds (V21.5b proven)
+    thresholds:
+      long: 0.35
+      short: -0.35
+
+  # Reward delivery (hourly scale)
+  reward_interval: 5              # Every trading day (5 hourly bars)
+
+  # Min hold (hourly scale)
+  min_hold_bars: 5                # 1 trading day
+
+  # Reward configuration (V21.5b weights)
+  reward:
+    weights:
+      pnl: 0.90
+      dsr: 0.00
+      sortino: 0.00
+      regime_penalty: 0.05
+      holding_decay: 0.05
+      anti_gaming: 0.00
+
+    pnl_transform:
+      clip_range: [-0.1, 0.1]
+      zscore_window: 100
+      zscore_clip: 3.0
+      asymmetric:
+        win_multiplier: 1.0
+        loss_multiplier: 1.0
+
+    holding_decay:
+      half_life_bars: 100         # 20 trading days (scaled from 576 5min bars)
+      max_penalty: 0.15
+      flat_threshold: 15          # 3 trading days
+
+    flat_reward:
+      enabled: false
+      weight: 0.0
+      decay_enabled: true
+      decay_half_life: 12
+
+  # Multi-seed training
+  multi_seed:
+    enabled: true
+    seeds: [42, 123, 456, 789, 1337]
+    selection_metric: "best_mean_reward"
+    max_cv_threshold: 0.30
+    save_all_models: true
+
+  # V21.5b: Continuous action space
+  action_type: "continuous"
+  n_actions: 1
+
+  # V21.5b: LSTM disabled
+  lstm:
+    enabled: false
+    hidden_size: 128
+    n_layers: 1
+    sequence_length: 64
+
+  # Temporal features enabled (V21.5b)
+  temporal_features:
+    enabled: true
+    features: [hour_sin, hour_cos, dow_sin, dow_cos]
+
+  # Ensemble config (kept for compatibility)
+  ensemble:
+    n_models: 5
+    min_consensus: 3
+    voting: "majority"
+    confidence_weighted: true
+
+  # Position sizing (kept for compatibility)
+  position_sizing:
+    method: "half_kelly"
+    base_fraction: 0.063
+    min_fraction: 0.02
+    max_fraction: 0.15
+    consensus_scaling: true
+
+  # Close shaping DISABLED (V21.5b)
+  close_shaping:
+    enabled: false
+    stop_loss_mult: 1.5
+    take_profit_mult: 1.2
+    agent_close_win: 1.1
+    agent_close_loss: 0.7
+    timeout_mult: 0.8
+
+  # Walk-forward disabled
+  walk_forward:
+    enabled: false
+    train_window: "expanding"
+    retrain_frequency: "quarterly"
+    min_train_bars: 4000
+    val_window_bars: 500
+    test_window_bars: 500
+    n_splits: 4
+
+# ==============================================================================
+# SECTION 7: BACKTEST CONFIGURATION (L4)
+# ==============================================================================
+
+backtest:
+  decision_interval: 1
+
+  costs:
+    transaction_cost_bps: 0.0
+    slippage_bps: 1.0
+
+  thresholds:
+    long: 0.35
+    short: -0.35
+
+  risk_management:
+    stop_loss_pct: -0.04
+    take_profit_pct: 0.04
+    trailing_stop:
+      enabled: false
+      activation_pct: 0.015
+      trail_factor: 0.5
+    max_position_duration: 250
+
+  initial_capital: 10000.0
+
+  test_dataset: "${paths.l2_output.test_file}"
+  norm_stats: "${paths.l2_output.norm_stats_file}"
+
+  gates:
+    min_return_pct: 0.0
+    min_sharpe_ratio: 0.0
+    max_drawdown_pct: 20.0
+    min_trades: 20              # Fewer trades expected at hourly (was 30)
+    min_win_rate: 0.35
+    max_action_imbalance: 0.85
+
+# ==============================================================================
+# SECTION 8: VALIDATION & QUALITY GATES
+# ==============================================================================
+
+validation:
+  dataset:
+    min_rows:
+      train: 4000               # ~3.2 years hourly (was 50000 for 5min)
+      val: 400                  # ~6 months hourly
+      test: 400                 # ~6 months hourly
+    max_null_pct: 0.01
+    feature_checks:
+      - pattern: "*_z"
+        check: "abs(mean) < 0.5 and 0.5 < std < 1.5"
+        description: "Z-scores should be ~N(0,1)"
+      - pattern: "rsi_*"
+        check: "0 <= min and max <= 100"
+        description: "RSI bounded [0, 100]"
+      - pattern: "log_ret_*"
+        check: "abs(mean) < 0.01"
+        description: "Returns should have mean ~0"
+
+  training:
+    min_reward_improvement: 0.05
+    max_policy_loss: 0.5
+    min_explained_variance: 0.3
+
+  backtest:
+    promotion_thresholds:
+      min_apr_pct: 5.0
+      max_drawdown_pct: 20.0
+      min_sharpe: 0.5
+      min_profit_factor: 0.8
+      min_trades: 20
+
+  comparison:
+    baseline_model: null
+    max_degradation_pct: 15.0
+
+# ==============================================================================
+# SECTION 9: LOGGING & MONITORING
+# ==============================================================================
+
+logging:
+  mlflow:
+    enabled: true
+    tracking_uri: "mlruns"
+    experiment_name: "usdcop_rl_hourly"
+
+  tensorboard:
+    enabled: true
+    log_dir: "logs/tensorboard"
+
+  metrics:
+    training:
+      - "episode_reward"
+      - "policy_loss"
+      - "value_loss"
+      - "entropy"
+      - "learning_rate"
+    backtest:
+      - "total_return"
+      - "sharpe_ratio"
+      - "max_drawdown"
+      - "win_rate"
+      - "profit_factor"
+
+# ==============================================================================
+# SECTION 10: DERIVED VALUES
+# ==============================================================================
+
+derived:
+  feature_order:
+    # Market features (18)
+    - log_ret_1h          # 0
+    - log_ret_4h          # 1
+    - log_ret_1d          # 2
+    - log_ret_1w          # 3
+    - rsi_9               # 4
+    - rsi_21              # 5
+    - volatility_pct      # 6
+    - trend_z             # 7
+    - dxy_z               # 8
+    - dxy_change_1d       # 9
+    - vix_z               # 10
+    - embi_z              # 11
+    - brent_change_1d     # 12
+    - gold_change_1d      # 13
+    - rate_spread_z       # 14
+    - yield_curve_z       # 15
+    - usdmxn_change_1d    # 16
+    - carry_spread_z      # 17
+    # State features (9)
+    - position            # 18
+    - unrealized_pnl      # 19
+    - sl_proximity        # 20
+    - tp_proximity        # 21
+    - bars_held           # 22
+    - hour_sin            # 23
+    - hour_cos            # 24
+    - dow_sin             # 25
+    - dow_cos             # 26
+
+  required_columns:
+    ohlcv: [close]
+    macro_daily: [dxy, vix, embi, brent, gold, col10y, ust10y, ust2y, usdmxn]
+
+  observation_dim: 27
+  market_features_count: 18
+  state_features_count: 9
+
+  action_type: "continuous"
+  n_actions: 1
+  action_mapping:
+    threshold_long: 0.35
+    threshold_short: -0.35
+
+# ==============================================================================
+# END OF CONFIGURATION
+# ==============================================================================

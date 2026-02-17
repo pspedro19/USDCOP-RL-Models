@@ -88,6 +88,37 @@ from .storage_contracts import (
     build_s3_uri,
 )
 
+# Experiment Contract (from YAML SSOT)
+from .experiment_contract import (
+    EXPERIMENT_CONTRACT_VERSION,
+    ExperimentContract,
+    ExperimentContractError,
+    load_experiment_contract,
+)
+
+# Promotion Contract (L4 -> Dashboard)
+from .promotion_contract import (
+    PROMOTION_CONTRACT_VERSION,
+    PromotionRecommendation,
+    PromotionStatus,
+    PromotionContractError,
+    BacktestMetrics,
+    CriteriaResult,
+    PromotionProposal,
+    evaluate_criteria,
+    determine_recommendation,
+)
+
+# Production Contract (for L1/L5)
+from .production_contract import (
+    PRODUCTION_CONTRACT_VERSION,
+    ProductionContract,
+    ProductionContractError,
+    get_production_contract,
+    promote_model_to_production,
+    archive_production_model,
+)
+
 __all__ = [
     # Action Contract
     "Action",
@@ -156,4 +187,26 @@ __all__ = [
     "compute_json_hash",
     "parse_s3_uri",
     "build_s3_uri",
+    # Experiment Contract
+    "EXPERIMENT_CONTRACT_VERSION",
+    "ExperimentContract",
+    "ExperimentContractError",
+    "load_experiment_contract",
+    # Promotion Contract
+    "PROMOTION_CONTRACT_VERSION",
+    "PromotionRecommendation",
+    "PromotionStatus",
+    "PromotionContractError",
+    "BacktestMetrics",
+    "CriteriaResult",
+    "PromotionProposal",
+    "evaluate_criteria",
+    "determine_recommendation",
+    # Production Contract
+    "PRODUCTION_CONTRACT_VERSION",
+    "ProductionContract",
+    "ProductionContractError",
+    "get_production_contract",
+    "promote_model_to_production",
+    "archive_production_model",
 ]

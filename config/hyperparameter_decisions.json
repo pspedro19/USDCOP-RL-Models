@@ -13,7 +13,7 @@
         "n_steps": 2048,
         "batch_size": 64,
         "n_epochs": 10,
-        "ent_coef": 0.01,
+        "ent_coef": 0.05,
         "clip_range": 0.2,
         "selection_criteria": "Mejor Sharpe en validation 2025-01-01 a 2025-06-30"
     },
@@ -34,6 +34,7 @@
     "audit_trail": [
         {"date": "2025-10-15", "action": "Initial exploration", "validation_looks": 3},
         {"date": "2025-11-01", "action": "Refined learning_rate", "validation_looks": 5},
-        {"date": "2025-11-15", "action": "Final tuning", "validation_looks": 4}
+        {"date": "2025-11-15", "action": "Final tuning", "validation_looks": 4},
+        {"date": "2026-02-01", "action": "RCA fix: ent_coef 0.01->0.05 to prevent HOLD collapse", "validation_looks": 0}
     ]
 }

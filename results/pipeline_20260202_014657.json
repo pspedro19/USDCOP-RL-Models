@@ -1,0 +1,70 @@
+{
+  "start_time": "2026-02-02T01:46:47.779205",
+  "timesteps": 100000,
+  "l2": null,
+  "l3": null,
+  "l4": {
+    "mean_reward": -0.8952197793734982,
+    "std_reward": 0.9396108481047826,
+    "total_trades": 5,
+    "win_rate": 14760.0,
+    "total_pnl": 217.35055623241175,
+    "max_drawdown": 2.254909848681491,
+    "avg_episode_return": 0.43470111246478593,
+    "action_distribution": {
+      "long": 0.0,
+      "hold": 13.73134328358209,
+      "short": 86.26865671641791
+    },
+    "test_rows": 12714,
+    "episodes": 5,
+    "avg_episode_length": 335.0,
+    "episode_details": [
+      {
+        "trades": 1,
+        "win_rate": 146.0,
+        "total_pnl": 62.83437523874447,
+        "max_drawdown": 0.013296915654850455,
+        "episode_return": 0.006283437523872726,
+        "equity": 10062.834375238726
+      },
+      {
+        "trades": 1,
+        "win_rate": 149.0,
+        "total_pnl": 128.0027441793228,
+        "max_drawdown": 0.009567530531441827,
+        "episode_return": 0.01280027441793341,
+        "equity": 10128.002744179334
+      },
+      {
+        "trades": 1,
+        "win_rate": 153.0,
+        "total_pnl": 174.88796781064872,
+        "max_drawdown": 0.007855377269488529,
+        "episode_return": 0.017488796781063964,
+        "equity": 10174.88796781064
+      },
+      {
+        "trades": 1,
+        "win_rate": 145.0,
+        "total_pnl": -50.34825956682415,
+        "max_drawdown": 0.02254909848681491,
+        "episode_return": -0.005034825956682809,
+        "equity": 9949.651740433172
+      },
+      {
+        "trades": 1,
+        "win_rate": 145.0,
+        "total_pnl": -98.0262714294801,
+        "max_drawdown": 0.017110223977528243,
+        "episode_return": -0.009802627142947995,
+        "equity": 9901.97372857052
+      }
+    ],
+    "passed": true,
+    "warnings": []
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T01:46:57.790183",
+  "duration_seconds": 10.011493444442749
+}

@@ -338,8 +338,7 @@ macro_mapping = {
     'FTRD_IMPORTS_TOTAL_COL_M_IMPUSD': 'imports',
     'RSBP_RESERVES_INTERNATIONAL_COL_M_RESINT': 'reserves',
     'FXRT_REER_BILATERAL_COL_M_ITCR': 'itcr',
-    'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q': 'fdi_inflow',
-    'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q': 'current_account',
+    'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT': 'current_account',
 }
 
 # Renombrar columnas macro existentes
@@ -571,7 +570,7 @@ DS10_COLS = BASE_COLS + [
     'log_ret_1d', 'log_ret_5d',
     'rsi_9', 'atr_pct',
     'exports', 'imports', 'trade_balance', 'trade_balance_z',
-    'fdi_inflow', 'current_account',
+    'current_account',
     'reserves', 'itcr',
     'embi_z',
     'brent_z',

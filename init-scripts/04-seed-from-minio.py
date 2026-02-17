@@ -63,7 +63,13 @@ SEED_SOURCES = [
         'table': 'usdcop_m5_ohlcv',
         'required': True,
         'minio_path': 'latest/usdcop_m5_ohlcv.parquet',
+        'backup_paths': [
+            '/app/data/backups/seeds/usdcop_m5_ohlcv_backup.parquet',
+            '/opt/airflow/data/backups/seeds/usdcop_m5_ohlcv_backup.parquet',
+        ],
         'local_paths': [
+            '/opt/airflow/seeds/latest/fx_multi_m5_ohlcv.parquet',
+            '/app/seeds/latest/fx_multi_m5_ohlcv.parquet',
             '/opt/airflow/seeds/latest/usdcop_m5_ohlcv.parquet',
             '/app/seeds/latest/usdcop_m5_ohlcv.parquet',
         ],
@@ -73,19 +79,24 @@ SEED_SOURCES = [
         ],
         'min_rows': 50000,
         'date_column': 'time',
+        'conflict_columns': ['time', 'symbol'],
     },
     {
         'name': 'macro',
         'table': 'macro_indicators_daily',
         'required': True,
         'minio_path': 'latest/macro_indicators_daily.parquet',
+        'backup_paths': [
+            '/app/data/backups/seeds/macro_indicators_daily_backup.parquet',
+            '/opt/airflow/data/backups/seeds/macro_indicators_daily_backup.parquet',
+        ],
         'local_paths': [
             '/opt/airflow/seeds/latest/macro_indicators_daily.parquet',
             '/app/seeds/latest/macro_indicators_daily.parquet',
         ],
         'legacy_paths': [
-            '/app/data/pipeline/05_resampling/output/MACRO_DAILY_CONSOLIDATED.csv',
-            '/opt/airflow/data/pipeline/05_resampling/output/MACRO_DAILY_CONSOLIDATED.csv',
+            '/app/data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet',
+            '/opt/airflow/data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet',
         ],
         'min_rows': 5000,
         'date_column': 'fecha',
@@ -137,8 +148,14 @@ def table_has_data(conn, table_name: str) -> Tuple[bool, int]:
 
 
 def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 10000,
-                     json_columns: List[str] = None):
-    """Insert DataFrame into table using batch UPSERT."""
+                     json_columns: List[str] = None, conflict_columns: List[str] = None):
+    """Insert DataFrame into table using batch UPSERT.
+
+    Args:
+        conflict_columns: Explicit list of columns for ON CONFLICT clause.
+            If None, auto-detects a single PK column (legacy behavior).
+            Use ['time', 'symbol'] for usdcop_m5_ohlcv composite PK.
+    """
     if df.empty:
         return 0
 
@@ -153,32 +170,39 @@ def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 
     columns_str = ', '.join(columns)
     placeholders = ', '.join(['%s'] * len(columns))
 
-    # Get primary key (assume first column or 'time'/'fecha'/'id'/'timestamp')
-    pk_col = columns[0]
-    if 'time' in columns:
-        pk_col = 'time'
-    elif 'fecha' in columns:
-        pk_col = 'fecha'
-    elif 'id' in columns:
-        pk_col = 'id'
-    elif 'timestamp' in columns:
-        pk_col = 'timestamp'
+    # Determine conflict columns (composite PK support)
+    if conflict_columns is None:
+        # Legacy auto-detect: single PK column
+        pk_col = columns[0]
+        if 'time' in columns:
+            pk_col = 'time'
+        elif 'fecha' in columns:
+            pk_col = 'fecha'
+        elif 'id' in columns:
+            pk_col = 'id'
+        elif 'timestamp' in columns:
+            pk_col = 'timestamp'
+        conflict_cols = [pk_col]
+    else:
+        conflict_cols = conflict_columns
+
+    conflict_str = ', '.join(conflict_cols)
 
     # Build UPSERT query
-    update_cols = [c for c in columns if c != pk_col]
+    update_cols = [c for c in columns if c not in conflict_cols]
     update_str = ', '.join([f"{c} = EXCLUDED.{c}" for c in update_cols])
 
     if update_str:
         query = f"""
             INSERT INTO {table_name} ({columns_str})
             VALUES ({placeholders})
-            ON CONFLICT ({pk_col}) DO UPDATE SET {update_str}
+            ON CONFLICT ({conflict_str}) DO UPDATE SET {update_str}
         """
     else:
         query = f"""
             INSERT INTO {table_name} ({columns_str})
             VALUES ({placeholders})
-            ON CONFLICT ({pk_col}) DO NOTHING
+            ON CONFLICT ({conflict_str}) DO NOTHING
         """
 
     # Batch insert
@@ -279,28 +303,37 @@ def load_from_local(paths: List[str]) -> Optional[pd.DataFrame]:
 def load_seed_data(source: dict) -> Optional[pd.DataFrame]:
     """Load seed data using priority chain.
 
-    Priority (optimized for fresh git clone deployments):
-    1. Local Git LFS seeds (available immediately after clone)
-    2. MinIO bucket (may be empty on fresh deployment)
-    3. Legacy CSV backups (fallback)
+    Priority:
+    1. Daily backup parquets (freshest — written by l0_seed_backup DAG)
+    2. Local Git LFS seeds (available immediately after clone)
+    3. MinIO bucket (may be empty on fresh deployment)
+    4. Legacy CSV/parquet backups (fallback)
     """
     name = source['name']
     print(f"\n  Attempting to load: {name}")
 
-    # 1. Try local Git LFS paths FIRST (available after git clone)
-    print(f"    [1/3] Trying local Git LFS paths...")
+    # 1. Try daily backup parquets FIRST (freshest data)
+    backup_paths = source.get('backup_paths', [])
+    if backup_paths:
+        print(f"    [1/4] Trying daily backup parquets...")
+        df = load_from_local(backup_paths)
+        if df is not None:
+            return df
+
+    # 2. Try local Git LFS paths (available after git clone)
+    print(f"    [2/4] Trying local Git LFS paths...")
     df = load_from_local(source['local_paths'])
     if df is not None:
         return df
 
-    # 2. Try MinIO (may have data on existing deployments)
-    print(f"    [2/3] Trying MinIO: {source['minio_path']}")
+    # 3. Try MinIO (may have data on existing deployments)
+    print(f"    [3/4] Trying MinIO: {source['minio_path']}")
     df = load_from_minio(source['minio_path'])
     if df is not None:
         return df
 
-    # 3. Try legacy CSV paths
-    print(f"    [3/3] Trying legacy CSV paths...")
+    # 4. Try legacy paths
+    print(f"    [4/4] Trying legacy paths...")
     df = load_from_local(source['legacy_paths'])
     if df is not None:
         return df
@@ -387,7 +420,9 @@ def main():
         # Insert
         print(f"\n  Inserting into {table}...")
         json_cols = source.get('json_columns', [])
-        rows = insert_dataframe(conn, df, table, json_columns=json_cols)
+        conflict_cols = source.get('conflict_columns', None)
+        rows = insert_dataframe(conn, df, table, json_columns=json_cols,
+                                conflict_columns=conflict_cols)
         print(f"  Inserted {rows:,} rows")
         results[name] = {'status': 'success', 'rows': rows}
 

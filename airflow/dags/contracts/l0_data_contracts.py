@@ -366,323 +366,102 @@ class MacroIndicatorMetadata(BaseModel):
     )
 
 
-# Registry of all 31 macro indicators with metadata (27 original + 4 new from Fedesarrollo/DANE)
-MACRO_INDICATOR_REGISTRY: Dict[str, MacroIndicatorMetadata] = {
-    # FRED Daily
-    "fxrt_index_dxy_usa_d_dxy": MacroIndicatorMetadata(
-        column_name="fxrt_index_dxy_usa_d_dxy",
-        display_name="DXY Index",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    "volt_vix_usa_d_vix": MacroIndicatorMetadata(
-        column_name="volt_vix_usa_d_vix",
-        display_name="VIX",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    "finc_bond_yield10y_usa_d_ust10y": MacroIndicatorMetadata(
-        column_name="finc_bond_yield10y_usa_d_ust10y",
-        display_name="UST 10Y Yield",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    "finc_bond_yield2y_usa_d_dgs2": MacroIndicatorMetadata(
-        column_name="finc_bond_yield2y_usa_d_dgs2",
-        display_name="UST 2Y Yield",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    "polr_prime_rate_usa_d_prime": MacroIndicatorMetadata(
-        column_name="polr_prime_rate_usa_d_prime",
-        display_name="Prime Rate",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=10
-    ),
-    # FRED Monthly
-    "polr_fed_funds_usa_m_fedfunds": MacroIndicatorMetadata(
-        column_name="polr_fed_funds_usa_m_fedfunds",
-        display_name="Fed Funds Rate",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    "infl_cpi_all_usa_m_cpiaucsl": MacroIndicatorMetadata(
-        column_name="infl_cpi_all_usa_m_cpiaucsl",
-        display_name="CPI All Items",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=12,
-        max_ffill_days=35
-    ),
-    "infl_cpi_core_usa_m_cpilfesl": MacroIndicatorMetadata(
-        column_name="infl_cpi_core_usa_m_cpilfesl",
-        display_name="Core CPI",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=12,
-        max_ffill_days=35
-    ),
-    "infl_pce_usa_m_pcepi": MacroIndicatorMetadata(
-        column_name="infl_pce_usa_m_pcepi",
-        display_name="PCE Price Index",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "labr_unemployment_usa_m_unrate": MacroIndicatorMetadata(
-        column_name="labr_unemployment_usa_m_unrate",
-        display_name="Unemployment Rate",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=5,
-        max_ffill_days=35
-    ),
-    "prod_industrial_usa_m_indpro": MacroIndicatorMetadata(
-        column_name="prod_industrial_usa_m_indpro",
-        display_name="Industrial Production",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    "mnys_m2_supply_usa_m_m2sl": MacroIndicatorMetadata(
-        column_name="mnys_m2_supply_usa_m_m2sl",
-        display_name="M2 Money Supply",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=20,
-        max_ffill_days=35
-    ),
-    "sent_consumer_usa_m_umcsent": MacroIndicatorMetadata(
-        column_name="sent_consumer_usa_m_umcsent",
-        display_name="Consumer Sentiment",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    # FRED Quarterly
-    "gdpp_real_gdp_usa_q_gdp_q": MacroIndicatorMetadata(
-        column_name="gdpp_real_gdp_usa_q_gdp_q",
-        display_name="Real GDP",
-        source=DataSourceType.FRED,
-        schedule=PublicationSchedule.QUARTERLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=95
-    ),
-    # TwelveData
-    "fxrt_spot_usdmxn_mex_d_usdmxn": MacroIndicatorMetadata(
-        column_name="fxrt_spot_usdmxn_mex_d_usdmxn",
-        display_name="USD/MXN",
-        source=DataSourceType.TWELVEDATA,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "fxrt_spot_usdclp_chl_d_usdclp": MacroIndicatorMetadata(
-        column_name="fxrt_spot_usdclp_chl_d_usdclp",
-        display_name="USD/CLP",
-        source=DataSourceType.TWELVEDATA,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "comm_oil_wti_glb_d_wti": MacroIndicatorMetadata(
-        column_name="comm_oil_wti_glb_d_wti",
-        display_name="WTI Oil",
-        source=DataSourceType.TWELVEDATA,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "comm_oil_brent_glb_d_brent": MacroIndicatorMetadata(
-        column_name="comm_oil_brent_glb_d_brent",
-        display_name="Brent Oil",
-        source=DataSourceType.TWELVEDATA,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    # BanRep
-    "finc_rate_ibr_overnight_col_d_ibr": MacroIndicatorMetadata(
-        column_name="finc_rate_ibr_overnight_col_d_ibr",
-        display_name="IBR Overnight",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    "polr_policy_rate_col_d_tpm": MacroIndicatorMetadata(
-        column_name="polr_policy_rate_col_d_tpm",
-        display_name="Colombia Policy Rate",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=0,
-        max_ffill_days=35
-    ),
-    "fxrt_reer_bilateral_col_m_itcr": MacroIndicatorMetadata(
-        column_name="fxrt_reer_bilateral_col_m_itcr",
-        display_name="ITCR",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "ftrd_terms_trade_col_m_tot": MacroIndicatorMetadata(
-        column_name="ftrd_terms_trade_col_m_tot",
-        display_name="Terms of Trade",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "rsbp_reserves_international_col_m_resint": MacroIndicatorMetadata(
-        column_name="rsbp_reserves_international_col_m_resint",
-        display_name="Int'l Reserves",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    "infl_cpi_total_col_m_ipccol": MacroIndicatorMetadata(
-        column_name="infl_cpi_total_col_m_ipccol",
-        display_name="Colombia CPI",
-        source=DataSourceType.BANREP,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=5,
-        max_ffill_days=35
-    ),
-    # Investing.com
-    "eqty_index_colcap_col_d_colcap": MacroIndicatorMetadata(
-        column_name="eqty_index_colcap_col_d_colcap",
-        display_name="COLCAP Index",
-        source=DataSourceType.INVESTING,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "finc_bond_yield10y_col_d_col10y": MacroIndicatorMetadata(
-        column_name="finc_bond_yield10y_col_d_col10y",
-        display_name="Colombia 10Y Yield",
-        source=DataSourceType.INVESTING,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "finc_bond_yield5y_col_d_col5y": MacroIndicatorMetadata(
-        column_name="finc_bond_yield5y_col_d_col5y",
-        display_name="Colombia 5Y Yield",
-        source=DataSourceType.INVESTING,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "comm_metal_gold_glb_d_gold": MacroIndicatorMetadata(
-        column_name="comm_metal_gold_glb_d_gold",
-        display_name="Gold",
-        source=DataSourceType.INVESTING,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    "comm_agri_coffee_glb_d_coffee": MacroIndicatorMetadata(
-        column_name="comm_agri_coffee_glb_d_coffee",
-        display_name="Coffee",
-        source=DataSourceType.INVESTING,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=0,
-        max_ffill_days=5
-    ),
-    # BCRP (EMBI)
-    "crsk_spread_embi_col_d_embi": MacroIndicatorMetadata(
-        column_name="crsk_spread_embi_col_d_embi",
-        display_name="EMBI Colombia",
-        source=DataSourceType.BCRP,
-        schedule=PublicationSchedule.DAILY,
-        typical_publication_delay_days=1,
-        max_ffill_days=5
-    ),
-    # Fedesarrollo (CCI, ICI)
-    "crsk_sentiment_cci_col_m_cci": MacroIndicatorMetadata(
-        column_name="crsk_sentiment_cci_col_m_cci",
-        display_name="Consumer Confidence (CCI)",
-        source=DataSourceType.FEDESARROLLO,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    "crsk_sentiment_ici_col_m_ici": MacroIndicatorMetadata(
-        column_name="crsk_sentiment_ici_col_m_ici",
-        display_name="Industrial Confidence (ICI)",
-        source=DataSourceType.FEDESARROLLO,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=15,
-        max_ffill_days=35
-    ),
-    # DANE (Exports, Imports)
-    "ftrd_exports_total_col_m_expusd": MacroIndicatorMetadata(
-        column_name="ftrd_exports_total_col_m_expusd",
-        display_name="Exports (USD millions)",
-        source=DataSourceType.DANE,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=45,
-        max_ffill_days=50
-    ),
-    "ftrd_imports_total_col_m_impusd": MacroIndicatorMetadata(
-        column_name="ftrd_imports_total_col_m_impusd",
-        display_name="Imports (USD millions)",
-        source=DataSourceType.DANE,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=45,
-        max_ffill_days=50
-    ),
-    # BanRep SDMX - 4 Legacy Variables (P2-6)
-    "mnys_m2_col_m_m2col": MacroIndicatorMetadata(
-        column_name="mnys_m2_col_m_m2col",
-        display_name="M2 Money Supply Colombia",
-        source=DataSourceType.BANREP_SDMX,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "mnys_m3_col_m_m3col": MacroIndicatorMetadata(
-        column_name="mnys_m3_col_m_m3col",
-        display_name="M3 Money Supply Colombia",
-        source=DataSourceType.BANREP_SDMX,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "crdt_private_col_m_credpri": MacroIndicatorMetadata(
-        column_name="crdt_private_col_m_credpri",
-        display_name="Private Credit Colombia",
-        source=DataSourceType.BANREP_SDMX,
-        schedule=PublicationSchedule.MONTHLY,
-        typical_publication_delay_days=30,
-        max_ffill_days=35
-    ),
-    "invt_gfcf_col_q_gfcf": MacroIndicatorMetadata(
-        column_name="invt_gfcf_col_q_gfcf",
-        display_name="Gross Fixed Capital Formation Colombia",
-        source=DataSourceType.BANREP_SDMX,
-        schedule=PublicationSchedule.QUARTERLY,
-        typical_publication_delay_days=60,
-        max_ffill_days=95
-    ),
-}
+# =============================================================================
+# MACRO INDICATOR REGISTRY - Generated from SSOT
+# =============================================================================
+# This registry is now dynamically generated from the SSOT
+# (config/macro_variables_ssot.yaml) to prevent duplication.
+# =============================================================================
+
+def _build_macro_indicator_registry() -> Dict[str, MacroIndicatorMetadata]:
+    """
+    Build MACRO_INDICATOR_REGISTRY from SSOT.
+
+    This function reads from the centralized SSOT file and generates
+    the registry dynamically, ensuring consistency across all systems.
+    """
+    registry: Dict[str, MacroIndicatorMetadata] = {}
+
+    # Try to import SSOT
+    try:
+        import sys
+        from pathlib import Path
+
+        # Add src to path if needed
+        project_root = Path(__file__).parent.parent.parent.parent
+        src_path = project_root / "src"
+        if str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        from data.macro_ssot import MacroSSOT
+
+        ssot = MacroSSOT()
+
+        # Source type mapping
+        source_mapping = {
+            'fred': DataSourceType.FRED,
+            'investing': DataSourceType.INVESTING,
+            'twelvedata': DataSourceType.TWELVEDATA,
+            'suameca': DataSourceType.BANREP,
+            'bcrp': DataSourceType.BCRP,
+            'fedesarrollo': DataSourceType.FEDESARROLLO,
+            'dane': DataSourceType.DANE,
+            'banrep_bop': DataSourceType.BANREP_BOP,
+        }
+
+        # Schedule mapping
+        schedule_mapping = {
+            'daily': PublicationSchedule.DAILY,
+            'monthly': PublicationSchedule.MONTHLY,
+            'quarterly': PublicationSchedule.QUARTERLY,
+        }
+
+        for var_name in ssot.get_all_variables():
+            var_def = ssot.get_variable(var_name)
+            if var_def is None:
+                continue
+
+            # Get source type
+            source = source_mapping.get(
+                var_def.extraction.primary_source,
+                DataSourceType.FRED
+            )
+
+            # Get schedule
+            schedule = schedule_mapping.get(
+                var_def.identity.frequency,
+                PublicationSchedule.DAILY
+            )
+
+            # Calculate delay days
+            sched = var_def.schedule
+            if sched.typical_day is not None:
+                delay_days = sched.typical_day
+            else:
+                delay_days = sched.delay_days
+
+            registry[var_name] = MacroIndicatorMetadata(
+                column_name=var_name,
+                display_name=var_def.display_name,
+                source=source,
+                schedule=schedule,
+                typical_publication_delay_days=delay_days,
+                max_ffill_days=var_def.ffill.max_days,
+            )
+
+        return registry
+
+    except ImportError as e:
+        # Fallback: return empty registry if SSOT not available
+        import logging
+        logging.getLogger(__name__).warning(
+            f"Could not load SSOT, using empty registry: {e}"
+        )
+        return {}
+
+
+# Generate the registry from SSOT
+MACRO_INDICATOR_REGISTRY: Dict[str, MacroIndicatorMetadata] = _build_macro_indicator_registry()
 
 
 # =============================================================================

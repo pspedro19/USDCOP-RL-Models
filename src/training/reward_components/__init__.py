@@ -131,6 +131,10 @@ from .anti_gaming import (
     ActionCorrelationTracker,
     BiasDetector,
 )
+from .flat_reward import FlatReward, FlatRewardConfig
+from .close_reason_detector import CloseReasonDetector
+from .drawdown_penalty import DrawdownPenaltyComponent
+from .execution_alpha import ExecutionAlphaComponent
 
 # =============================================================================
 # TRANSFORMS
@@ -192,6 +196,15 @@ __all__ = [
     "ChurnTracker",
     "ActionCorrelationTracker",
     "BiasDetector",
+    # Bonuses (Phase 2)
+    "FlatReward",
+    "FlatRewardConfig",
+    # Close reason shaping (V22 P2)
+    "CloseReasonDetector",
+    # Drawdown penalty (Phase 5)
+    "DrawdownPenaltyComponent",
+    # Execution alpha (EXP-RL-EXECUTOR)
+    "ExecutionAlphaComponent",
     # Transforms
     "LogPnLTransform",
     "AsymmetricPnLTransform",

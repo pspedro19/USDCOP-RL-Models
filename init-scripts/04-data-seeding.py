@@ -60,20 +60,30 @@ def get_data_paths():
     """Get data paths based on environment (Docker or local)."""
     # Check if running in Docker (container paths exist)
     docker_backup_dir = Path('/app/data/backups')
-    docker_macro_path = Path('/app/data/pipeline/05_resampling/output/MACRO_DAILY_CONSOLIDATED.csv')
+    docker_macro_path = Path('/app/data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet')
 
     if docker_backup_dir.exists():
         # Running in Docker container
-        return docker_backup_dir, docker_macro_path
+        project_root = Path('/app')
+        return docker_backup_dir, docker_macro_path, project_root
     else:
         # Running locally (development)
         project_root = Path(__file__).parent.parent
         return (
             project_root / 'data' / 'backups',
-            project_root / 'data' / 'pipeline' / '05_resampling' / 'output' / 'MACRO_DAILY_CONSOLIDATED.csv'
+            project_root / 'data' / 'pipeline' / '04_cleaning' / 'output' / 'MACRO_DAILY_CLEAN.parquet',
+            project_root,
         )
 
-OHLCV_BACKUP_DIR, MACRO_DATA_PATH = get_data_paths()
+OHLCV_BACKUP_DIR, MACRO_DATA_PATH, PROJECT_ROOT = get_data_paths()
+
+# Daily backup parquets (freshest, written by l0_seed_backup DAG)
+OHLCV_BACKUP_PARQUET = PROJECT_ROOT / 'data' / 'backups' / 'seeds' / 'usdcop_m5_ohlcv_backup.parquet'
+MACRO_BACKUP_PARQUET = PROJECT_ROOT / 'data' / 'backups' / 'seeds' / 'macro_indicators_daily_backup.parquet'
+
+# Unified multi-pair seed (preferred) and single-pair fallback
+UNIFIED_SEED_PATH = PROJECT_ROOT / 'seeds' / 'latest' / 'fx_multi_m5_ohlcv.parquet'
+USDCOP_SEED_PATH = PROJECT_ROOT / 'seeds' / 'latest' / 'usdcop_m5_ohlcv.parquet'
 
 
 def get_connection():
@@ -119,7 +129,12 @@ def find_latest_ohlcv_backup() -> Path:
 
 def seed_ohlcv_data(conn, force_upsert: bool = False) -> int:
     """
-    Load OHLCV data from backup into usdcop_m5_ohlcv table.
+    Load OHLCV data from seed/backup into usdcop_m5_ohlcv table.
+
+    Priority:
+      1. Unified multi-pair parquet (fx_multi_m5_ohlcv.parquet) — all 3 pairs
+      2. Single-pair parquet (usdcop_m5_ohlcv.parquet) — COP only
+      3. Legacy CSV backup (csv.gz) — COP only
 
     Args:
         conn: Database connection
@@ -137,34 +152,60 @@ def seed_ohlcv_data(conn, force_upsert: bool = False) -> int:
         logger.info("(Use FORCE_UPSERT=true to force update)")
         return 0
 
-    backup_file = find_latest_ohlcv_backup()
-    if not backup_file:
-        logger.warning("No OHLCV backup found, table will be empty")
+    # Priority: daily backup (freshest) -> unified seed -> single-pair seed -> legacy CSV
+    df = None
+    source_label = None
+
+    if OHLCV_BACKUP_PARQUET.exists():
+        df = pd.read_parquet(OHLCV_BACKUP_PARQUET)
+        source_label = f"daily backup ({OHLCV_BACKUP_PARQUET.name})"
+        logger.info(f"Loading from {source_label}: {len(df):,} rows")
+
+    elif UNIFIED_SEED_PATH.exists():
+        df = pd.read_parquet(UNIFIED_SEED_PATH)
+        source_label = f"unified seed ({UNIFIED_SEED_PATH.name})"
+        logger.info(f"Loading from {source_label}: {len(df):,} rows")
+
+    elif USDCOP_SEED_PATH.exists():
+        df = pd.read_parquet(USDCOP_SEED_PATH)
+        source_label = f"single-pair seed ({USDCOP_SEED_PATH.name})"
+        logger.info(f"Loading from {source_label}: {len(df):,} rows")
+
+    else:
+        backup_file = find_latest_ohlcv_backup()
+        if not backup_file:
+            logger.warning("No OHLCV seed or backup found, table will be empty")
+            return 0
+        with gzip.open(backup_file, 'rt', encoding='utf-8') as f:
+            df = pd.read_csv(f)
+        source_label = f"CSV backup ({backup_file.name})"
+        logger.info(f"Loading from {source_label}: {len(df):,} rows")
+
+    # Log symbols if available
+    if df is not None and 'symbol' in df.columns:
+        symbols = df['symbol'].unique()
+        logger.info(f"Symbols found: {list(symbols)}")
+
+    # Ensure required columns
+    required_cols = ['time', 'open', 'high', 'low', 'close']
+    if not all(col in df.columns for col in required_cols):
+        logger.error(f"Seed file missing required columns. Has: {df.columns.tolist()}")
         return 0
 
-    logger.info(f"Loading OHLCV data from: {backup_file}")
     mode = "UPSERT" if has_data else "INSERT"
     logger.info(f"Mode: {mode}")
 
-    # Read gzipped CSV
-    with gzip.open(backup_file, 'rt', encoding='utf-8') as f:
-        df = pd.read_csv(f)
-
-    logger.info(f"Read {len(df):,} OHLCV records from backup")
-
-    # Ensure required columns exist
-    required_cols = ['time', 'open', 'high', 'low', 'close']
-    if not all(col in df.columns for col in required_cols):
-        logger.error(f"Backup file missing required columns. Has: {df.columns.tolist()}")
-        return 0
-
-    # Prepare data for insertion
+    # Prepare data
     df['time'] = pd.to_datetime(df['time'])
-    df['symbol'] = df.get('symbol', 'USD/COP')
-    df['volume'] = df.get('volume', 0).fillna(0).astype(int)
-    df['source'] = df.get('source', 'backup_seed')
+    if 'symbol' not in df.columns:
+        df['symbol'] = 'USD/COP'
+    df['volume'] = df['volume'].fillna(0) if 'volume' in df.columns else 0
+    df['source'] = df.get('source', 'seed_restore')
+    if 'source' not in df.columns:
+        df['source'] = 'seed_restore'
+    df['source'] = df['source'].fillna('seed_restore')
 
-    # Use UPSERT for idempotent seeding
+    # UPSERT all rows
     inserted = 0
     cols = ['time', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'source']
     data = [tuple(row) for row in df[cols].values]
@@ -182,7 +223,6 @@ def seed_ohlcv_data(conn, force_upsert: bool = False) -> int:
     """
 
     with conn.cursor() as cur:
-        # Batch insert for performance
         batch_size = 10000
         for i in range(0, len(data), batch_size):
             batch = data[i:i + batch_size]
@@ -194,26 +234,49 @@ def seed_ohlcv_data(conn, force_upsert: bool = False) -> int:
 
         conn.commit()
 
-    logger.info(f"Inserted/Updated {inserted:,} OHLCV records into usdcop_m5_ohlcv")
+    logger.info(f"Inserted/Updated {inserted:,} OHLCV records from {source_label}")
+
+    # Per-symbol summary
+    if 'symbol' in df.columns:
+        for sym in df['symbol'].unique():
+            count = (df['symbol'] == sym).sum()
+            logger.info(f"  {sym}: {count:,} rows")
+
     return inserted
 
 
 def seed_macro_data(conn) -> int:
-    """Load macro data from MACRO_DAILY_CONSOLIDATED.csv into macro_indicators_daily table."""
+    """Load macro data into macro_indicators_daily table.
+
+    Priority: daily backup parquet -> MACRO_DAILY_CLEAN parquet -> legacy CSV.
+    """
     if table_has_data(conn, 'macro_indicators_daily'):
         logger.info("macro_indicators_daily table already has data, skipping macro seeding")
         return 0
 
-    if not MACRO_DATA_PATH.exists():
-        logger.warning(f"Macro data file not found: {MACRO_DATA_PATH}")
+    # Try daily backup first (freshest), then MACRO_DAILY_CLEAN parquet
+    macro_source = None
+    df = None
+
+    if MACRO_BACKUP_PARQUET.exists():
+        macro_source = MACRO_BACKUP_PARQUET
+        logger.info(f"Loading macro from daily backup: {macro_source}")
+        df = pd.read_parquet(macro_source)
+    elif MACRO_DATA_PATH.exists():
+        macro_source = MACRO_DATA_PATH
+        logger.info(f"Loading macro from: {macro_source}")
+        if str(macro_source).endswith('.parquet'):
+            df = pd.read_parquet(macro_source)
+        else:
+            df = pd.read_csv(macro_source)
+    else:
+        logger.warning(f"No macro data found (checked {MACRO_BACKUP_PARQUET} and {MACRO_DATA_PATH})")
         return 0
 
-    logger.info(f"Loading macro data from: {MACRO_DATA_PATH}")
-
-    df = pd.read_csv(MACRO_DATA_PATH)
-    logger.info(f"Read {len(df)} macro records from file")
+    logger.info(f"Read {len(df)} macro records from {macro_source.name}")
 
     # Column mapping from CSV to database (lowercase, underscore format)
+    # Note: parquet from daily backup already has lowercase columns — mapping is a no-op
     column_mapping = {
         'fecha': 'fecha',
         'COMM_AGRI_COFFEE_GLB_D_COFFEE': 'comm_agri_coffee_glb_d_coffee',
@@ -245,12 +308,10 @@ def seed_macro_data(conn) -> int:
         'MNYS_M2_SUPPLY_USA_M_M2SL': 'mnys_m2_supply_usa_m_m2sl',
         'POLR_FED_FUNDS_USA_M_FEDFUNDS': 'polr_fed_funds_usa_m_fedfunds',
         'POLR_POLICY_RATE_COL_D_TPM': 'polr_policy_rate_col_d_tpm',
-        'POLR_POLICY_RATE_COL_M_TPM': 'polr_policy_rate_col_m_tpm',
         'POLR_PRIME_RATE_USA_D_PRIME': 'polr_prime_rate_usa_d_prime',
         'PROD_INDUSTRIAL_USA_M_INDPRO': 'prod_industrial_usa_m_indpro',
-        'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT_Q': 'rsbp_current_account_col_q_cacct_q',
-        'RSBP_FDI_INFLOW_COL_Q_FDIIN_Q': 'rsbp_fdi_inflow_col_q_fdiin_q',
-        'RSBP_FDI_OUTFLOW_COL_Q_FDIOUT_Q': 'rsbp_fdi_outflow_col_q_fdiout_q',
+        'RSBP_CURRENT_ACCOUNT_COL_Q_CACCT': 'rsbp_current_account_col_q_cacct',
+        'RSBP_FDI_OUTFLOW_COL_A_IDCE': 'rsbp_fdi_outflow_col_a_idce',
         'RSBP_RESERVES_INTERNATIONAL_COL_M_RESINT': 'rsbp_reserves_international_col_m_resint',
         'SENT_CONSUMER_USA_M_UMCSENT': 'sent_consumer_usa_m_umcsent',
         'VOLT_VIX_USA_D_VIX': 'volt_vix_usa_d_vix'
@@ -352,17 +413,20 @@ def validate_seeded_data(conn) -> dict:
     results = {}
 
     with conn.cursor() as cur:
-        # Check OHLCV
+        # Check OHLCV (all symbols)
         cur.execute("""
-            SELECT COUNT(*), MIN(time), MAX(time)
+            SELECT symbol, COUNT(*), MIN(time), MAX(time)
             FROM usdcop_m5_ohlcv
-            WHERE symbol = 'USD/COP'
+            GROUP BY symbol
+            ORDER BY symbol
         """)
-        ohlcv_result = cur.fetchone()
+        ohlcv_rows = cur.fetchall()
+        total_count = sum(r[1] for r in ohlcv_rows)
         results['ohlcv'] = {
-            'count': ohlcv_result[0],
-            'min_date': str(ohlcv_result[1]) if ohlcv_result[1] else None,
-            'max_date': str(ohlcv_result[2]) if ohlcv_result[2] else None
+            'count': total_count,
+            'min_date': str(min(r[2] for r in ohlcv_rows)) if ohlcv_rows else None,
+            'max_date': str(max(r[3] for r in ohlcv_rows)) if ohlcv_rows else None,
+            'per_symbol': {r[0]: r[1] for r in ohlcv_rows},
         }
 
         # Check Macro

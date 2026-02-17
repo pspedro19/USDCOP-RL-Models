@@ -15,8 +15,8 @@ const nextConfig: NextConfig = {
   
   // Performance optimizations for large datasets
   experimental: {
-    // Enable modern bundle optimization
-    optimizeCss: true,
+    // NOTE: optimizeCss removed — breaks CSS asset mapping with Tailwind v4 + Next.js 15
+    // (HTML references app/layout.css but build outputs hashed filenames → 404)
     // Improve cold start times
     webVitalsAttribution: ['CLS', 'LCP', 'FCP'],
     // Optimize for trading dashboard

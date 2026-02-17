@@ -1,0 +1,84 @@
+{
+  "log_ret_5m": {
+    "mean": 3.9069325008594974e-06,
+    "std": 0.001203463032105868,
+    "method": "zscore"
+  },
+  "log_ret_1h": {
+    "mean": 4.693485616167679e-05,
+    "std": 0.003892916982542377,
+    "method": "zscore"
+  },
+  "log_ret_4h": {
+    "mean": 0.00018807800153952136,
+    "std": 0.008023270996664495,
+    "method": "zscore"
+  },
+  "log_ret_1d": {
+    "mean": 0.0011413470227617187,
+    "std": 0.022336926751717938,
+    "method": "zscore"
+  },
+  "rsi_9": {
+    "method": "minmax",
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1
+  },
+  "rsi_21": {
+    "method": "minmax",
+    "input_min": 0,
+    "input_max": 100,
+    "output_min": 0,
+    "output_max": 1
+  },
+  "volatility_pct": {
+    "mean": 0.10033148587735252,
+    "std": 0.08732356906064936,
+    "method": "zscore"
+  },
+  "trend_z": {
+    "method": "none"
+  },
+  "dxy_z": {
+    "method": "none"
+  },
+  "dxy_change_1d": {
+    "mean": 0.0001382172014209261,
+    "std": 0.004352728722139076,
+    "method": "zscore"
+  },
+  "vix_z": {
+    "method": "none"
+  },
+  "embi_z": {
+    "method": "none"
+  },
+  "brent_change_1d": {
+    "mean": 0.0002954601782496085,
+    "std": 0.02754551523138248,
+    "method": "zscore"
+  },
+  "gold_change_1d": {
+    "mean": 0.00039310715788585556,
+    "std": 0.010190286363756195,
+    "method": "zscore"
+  },
+  "rate_spread_z": {
+    "method": "none"
+  },
+  "rate_spread_change": {
+    "mean": 0.0005788835986355824,
+    "std": 0.14805227732172904,
+    "method": "zscore"
+  },
+  "usdmxn_change_1d": {
+    "mean": 0.00019172378439493354,
+    "std": 0.008196340800550763,
+    "method": "zscore"
+  },
+  "yield_curve_z": {
+    "method": "none"
+  }
+}

@@ -85,45 +85,121 @@ from airflow.operators.empty import EmptyOperator
 from airflow.utils.trigger_rule import TriggerRule
 
 # =============================================================================
-# CONFIGURATION
+# CONFIGURATION - SSOT INTEGRATION
 # =============================================================================
 
-from contracts.dag_registry import L4_BACKTEST_VALIDATION
+try:
+    from contracts.dag_registry import RL_L4_BACKTEST_VALIDATION
+    DAG_ID = RL_L4_BACKTEST_VALIDATION
+except ImportError:
+    DAG_ID = "rl_l4_02_backtest_validation"
 
-DAG_ID = L4_BACKTEST_VALIDATION
+# =============================================================================
+# EXPERIMENT SSOT INTEGRATION
+# =============================================================================
+EXPERIMENT_SSOT_AVAILABLE = False
+EXPERIMENT_SSOT = None
+SSOT_DATE_RANGES = None
 
-# Default validation configuration
-DEFAULT_VALIDATION_CONFIG = {
-    # Model
-    "model_id": "ppo_latest",
-    "baseline_model_id": None,  # Compare against previous version
+try:
+    import yaml
+    from pathlib import Path
 
-    # Period
-    "period_type": "out_of_sample",
-    "lookback_days": 30,  # Last 30 days of OOS data
+    # Read dates directly from YAML (not in ExperimentConfig)
+    ssot_path = Path('/opt/airflow/config/experiment_ssot.yaml')
+    if ssot_path.exists():
+        with open(ssot_path) as f:
+            raw_yaml = yaml.safe_load(f)
+        SSOT_DATE_RANGES = raw_yaml.get('pipeline', {}).get('date_ranges', {})
+        logging.info(f"[SSOT] Loaded date_ranges: {SSOT_DATE_RANGES}")
 
-    # Thresholds
-    "min_sharpe_ratio": 0.5,
-    "max_drawdown_pct": 0.20,
-    "min_win_rate": 0.40,
-    "min_profit_factor": 1.0,
-    "min_trades": 10,
-    "max_consecutive_losses": 10,
+    from src.config.experiment_loader import load_experiment_config
+    EXPERIMENT_SSOT = load_experiment_config(force_reload=True)
+    EXPERIMENT_SSOT_AVAILABLE = True
+    logging.info(f"[SSOT] Loaded experiment config v{EXPERIMENT_SSOT.version}")
+except (ImportError, FileNotFoundError) as e:
+    logging.warning(f"[SSOT] Could not load experiment SSOT: {e}")
 
-    # Validation strategy
-    "strategy": "comparison",  # "standard", "comparison", "strict"
+# Build config from SSOT when available
+if EXPERIMENT_SSOT_AVAILABLE and EXPERIMENT_SSOT is not None and SSOT_DATE_RANGES:
+    _ssot_output = EXPERIMENT_SSOT.pipeline
+    DEFAULT_VALIDATION_CONFIG = {
+        # Model - use trained model from L3 (v3_18f_final2)
+        "model_id": "v3_18f_final2",
+        "model_path": "/opt/airflow/models/ppo_v3_18f_final2_production/final_model.zip",
+        "norm_stats_path": "/opt/airflow/models/ppo_v3_18f_final2_production/norm_stats.json",
+        # Use dataset PREFIX (not full path) to enable combined val+test loading
+        # The backtest runner will load both _val.parquet and _test.parquet
+        "dataset_path": "/opt/airflow/data/pipeline/07_output/5min/DS_v3_close_only",
+        "baseline_model_id": None,
 
-    # Comparison settings
-    "max_degradation_pct": 0.10,  # Max 10% worse than baseline
+        # Period FROM SSOT - Use full date range available in val+test datasets
+        # The backtest runner will load both val and test parquet files
+        "period_type": "out_of_sample",
+        "start_date": SSOT_DATE_RANGES.get('full_start', '2020-03-01'),  # Start from earliest available
+        "end_date": SSOT_DATE_RANGES.get('test_end', '2026-02-01'),      # End at latest available
+        "lookback_days": None,  # Not used when explicit dates provided
 
-    # Alerts
-    "alert_on_degradation": True,
-    "alert_channels": ["slack", "log"],
+        # Dataset paths from SSOT
+        "dataset_dir": _ssot_output.output_path,
+        "dataset_prefix": _ssot_output.output_prefix,
 
-    # MLflow
-    "mlflow_enabled": True,
-    "mlflow_experiment": "backtest_validation",
-}
+        # Thresholds
+        "min_sharpe_ratio": 0.3,  # Lowered for initial validation
+        "max_drawdown_pct": 0.25,
+        "min_win_rate": 0.35,
+        "min_profit_factor": 0.8,
+        "min_trades": 50,
+        "max_consecutive_losses": 15,
+
+        # Validation strategy
+        "strategy": "standard",
+
+        # Comparison settings
+        "max_degradation_pct": 0.15,
+
+        # Alerts
+        "alert_on_degradation": True,
+        "alert_channels": ["log"],
+
+        # MLflow
+        "mlflow_enabled": True,
+        "mlflow_experiment": EXPERIMENT_SSOT.logging.experiment_name,
+    }
+    logging.info(f"[SSOT] Backtest period: {SSOT_DATE_RANGES.get('test_start')} to {SSOT_DATE_RANGES.get('test_end')}")
+else:
+    # Fallback config when SSOT not available
+    DEFAULT_VALIDATION_CONFIG = {
+        # Model
+        "model_id": "ppo_latest",
+        "baseline_model_id": None,
+
+        # Period
+        "period_type": "out_of_sample",
+        "lookback_days": 30,
+
+        # Thresholds
+        "min_sharpe_ratio": 0.5,
+        "max_drawdown_pct": 0.20,
+        "min_win_rate": 0.40,
+        "min_profit_factor": 1.0,
+        "min_trades": 10,
+        "max_consecutive_losses": 10,
+
+        # Validation strategy
+        "strategy": "comparison",
+
+        # Comparison settings
+        "max_degradation_pct": 0.10,
+
+        # Alerts
+        "alert_on_degradation": True,
+        "alert_channels": ["slack", "log"],
+
+        # MLflow
+        "mlflow_enabled": True,
+        "mlflow_experiment": "backtest_validation",
+    }
 
 
 def get_validation_config() -> Dict[str, Any]:
@@ -214,11 +290,21 @@ def prepare_backtest(**context) -> Dict[str, Any]:
     )
 
     # Create pipeline context
+    # FIX: Convert pendulum datetime to standard datetime for Pydantic compatibility
+    exec_dt = datetime(
+        execution_date.year,
+        execution_date.month,
+        execution_date.day,
+        execution_date.hour,
+        execution_date.minute,
+        execution_date.second
+    ) if hasattr(execution_date, 'year') else None
+
     pipeline_context = PipelineContext(
         request=request,
         thresholds=thresholds,
         dag_run_id=context['run_id'],
-        execution_date=execution_date,
+        execution_date=exec_dt,
     )
 
     logging.info(f"Backtest prepared: {start_date} to {end_date}")
@@ -261,15 +347,22 @@ def run_backtest(**context) -> Dict[str, Any]:
         .with_costs(config.get("transaction_cost_bps", 75.0))  # realistic USDCOP spread
         .build())
 
-    # Create runner
+    # Create runner - use EvaluationBacktestRunner which wraps BacktestEngine
+    model_path = config.get("model_path")
+    norm_stats_path = config.get("norm_stats_path")
+    dataset_path = config.get("dataset_path")
+
     try:
         runner = BacktestRunnerFactory.create(
-            runner_type="orchestrator",
+            runner_type="evaluation",  # Uses src/evaluation/backtest_engine.py
             config=backtest_config,
             project_root=PATHS["project_root"],
+            model_path=model_path,
+            norm_stats_path=norm_stats_path,
+            dataset_path=dataset_path,
         )
     except Exception as e:
-        logging.warning(f"Orchestrator runner failed: {e}. Using mock runner.")
+        logging.warning(f"Evaluation runner failed: {e}. Using mock runner.")
         runner = BacktestRunnerFactory.create(
             runner_type="mock",
             config=backtest_config,

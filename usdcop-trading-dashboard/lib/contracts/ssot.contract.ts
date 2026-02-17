@@ -492,7 +492,7 @@ export function getTestEndDate(): string {
 /**
  * Backtest preset types
  */
-export const BACKTEST_PRESETS = ['validation', 'test', 'both', 'custom'] as const;
+export const BACKTEST_PRESETS = ['backtest_2025', 'custom'] as const;
 export type BacktestPreset = typeof BACKTEST_PRESETS[number];
 
 /**
@@ -504,23 +504,11 @@ export const BACKTEST_PRESET_CONFIG: Record<BacktestPreset, {
   description: string;
   descriptionEs: string;
 }> = {
-  validation: {
-    label: 'Validation',
-    labelEs: 'Validación',
-    description: 'Validation period (may have tuning bias)',
-    descriptionEs: 'Período de validación (puede tener sesgo de tuning)',
-  },
-  test: {
-    label: 'Test',
-    labelEs: 'Test',
-    description: 'Out-of-sample test period (most realistic)',
-    descriptionEs: 'Período de prueba fuera de muestra (más realista)',
-  },
-  both: {
-    label: 'Both',
-    labelEs: 'Ambos',
-    description: 'Validation + Test combined',
-    descriptionEs: 'Validación + Test combinados',
+  backtest_2025: {
+    label: 'Backtest 2025',
+    labelEs: 'Backtest 2025',
+    description: 'Full 2025 out-of-sample backtest',
+    descriptionEs: 'Backtest completo 2025 fuera de muestra',
   },
   custom: {
     label: 'Custom',
@@ -534,32 +522,30 @@ export const BACKTEST_PRESET_CONFIG: Record<BacktestPreset, {
  * Get date range for a preset
  */
 export function getPresetDateRange(preset: BacktestPreset): { startDate: string; endDate: string } {
-  const today = getTestEndDate();
-
   switch (preset) {
-    case 'validation':
+    case 'backtest_2025':
       return {
-        startDate: PIPELINE_DATE_RANGES.VALIDATION_START,
-        endDate: PIPELINE_DATE_RANGES.VALIDATION_END,
-      };
-    case 'test':
-      return {
-        startDate: PIPELINE_DATE_RANGES.TEST_START,
-        endDate: today,
-      };
-    case 'both':
-      return {
-        startDate: PIPELINE_DATE_RANGES.VALIDATION_START,
-        endDate: today,
+        startDate: '2025-01-01',
+        endDate: '2025-12-31',
       };
     case 'custom':
     default:
       return {
-        startDate: PIPELINE_DATE_RANGES.VALIDATION_START,
-        endDate: today,
+        startDate: '2025-01-01',
+        endDate: '2025-12-31',
       };
   }
 }
+
+// ============================================================================
+// TIMESTAMP TOLERANCES
+// ============================================================================
+
+/** Max allowed seconds between signal and nearest candle in normal mode */
+export const TIMESTAMP_TOLERANCE_NORMAL_S = 600 as const;
+
+/** Max allowed seconds between signal and nearest candle in replay mode (synthetic trades) */
+export const TIMESTAMP_TOLERANCE_REPLAY_S = 86400 as const;
 
 // ============================================================================
 // HASH COMPUTATION

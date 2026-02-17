@@ -1,0 +1,39 @@
+{
+  "model_id": "ppo_ssot_20260204_161918",
+  "timestamp": "2026-02-04T20:30:16.844445",
+  "total_return_pct": -3.0243249887328405,
+  "apr_pct": -3.523251133891839,
+  "sharpe_ratio": -0.17413126566243295,
+  "max_drawdown_pct": 13.48334258595183,
+  "n_trades": 71,
+  "win_rate_pct": 9929.577464788732,
+  "final_equity": 9697.567501126716,
+  "gates_passed": false,
+  "gate_results": {
+    "min_return_pct": {
+      "passed": true,
+      "actual": -3.0243249887328405,
+      "threshold": -10.0
+    },
+    "min_sharpe_ratio": {
+      "passed": false,
+      "actual": -0.17413126566243295,
+      "threshold": 0.3
+    },
+    "max_drawdown_pct": {
+      "passed": true,
+      "actual": 13.48334258595183,
+      "threshold": 25.0
+    },
+    "min_trades": {
+      "passed": true,
+      "actual": 71,
+      "threshold": 20
+    },
+    "min_win_rate": {
+      "passed": true,
+      "actual": 9929.577464788732,
+      "threshold": 30.0
+    }
+  }
+}

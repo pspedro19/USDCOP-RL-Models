@@ -1,0 +1,164 @@
+{
+  "1": {
+    "horizon": 1,
+    "n_trades": 218,
+    "da_pct": 54.1,
+    "n_long": 77,
+    "n_short": 141,
+    "long_wr_pct": 58.4,
+    "short_wr_pct": 57.4,
+    "buy_hold": {
+      "total_return_pct": -14.04,
+      "final_equity": 8595.64
+    },
+    "forecast_1x": {
+      "final_equity": 11098.1,
+      "total_return_pct": 10.98,
+      "annualized_return_pct": 12.8,
+      "sharpe": 1.046,
+      "max_dd_pct": -9.71,
+      "win_rate_pct": 54.1,
+      "profit_factor": 1.186,
+      "n_trades": 218,
+      "avg_return_per_trade_pct": 0.051
+    },
+    "forecast_vt": {
+      "final_equity": 12116.6,
+      "total_return_pct": 21.17,
+      "annualized_return_pct": 24.85,
+      "sharpe": 1.495,
+      "max_dd_pct": -11.37,
+      "win_rate_pct": 54.1,
+      "profit_factor": 1.259,
+      "n_trades": 218,
+      "avg_return_per_trade_pct": 0.094
+    },
+    "forecast_vt_trail": {
+      "final_equity": 10149.15,
+      "total_return_pct": 1.49,
+      "annualized_return_pct": 1.73,
+      "sharpe": 0.133,
+      "max_dd_pct": -10.97,
+      "win_rate_pct": 57.8,
+      "profit_factor": 1.034,
+      "n_trades": 218,
+      "avg_return_per_trade_pct": 0.01
+    },
+    "exit_reasons": {
+      "trailing_stop": 96,
+      "hard_stop": 6,
+      "session_close": 116,
+      "no_bars": 0
+    },
+    "t_stat": 0.183,
+    "p_value": 0.8551
+  },
+  "5": {
+    "horizon": 5,
+    "n_trades": 44,
+    "da_pct": 59.1,
+    "n_long": 9,
+    "n_short": 35,
+    "long_wr_pct": 77.8,
+    "short_wr_pct": 68.6,
+    "buy_hold": {
+      "total_return_pct": -14.8,
+      "final_equity": 8520.09
+    },
+    "forecast_1x": {
+      "final_equity": 10339.2,
+      "total_return_pct": 3.39,
+      "annualized_return_pct": 3.89,
+      "sharpe": 0.389,
+      "max_dd_pct": -5.68,
+      "win_rate_pct": 59.1,
+      "profit_factor": 1.165,
+      "n_trades": 44,
+      "avg_return_per_trade_pct": 0.086
+    },
+    "forecast_vt": {
+      "final_equity": 10562.4,
+      "total_return_pct": 5.62,
+      "annualized_return_pct": 6.47,
+      "sharpe": 0.455,
+      "max_dd_pct": -7.07,
+      "win_rate_pct": 59.1,
+      "profit_factor": 1.205,
+      "n_trades": 44,
+      "avg_return_per_trade_pct": 0.144
+    },
+    "forecast_vt_trail": {
+      "final_equity": 10867.41,
+      "total_return_pct": 8.67,
+      "annualized_return_pct": 10.0,
+      "sharpe": 1.625,
+      "max_dd_pct": -4.14,
+      "win_rate_pct": 70.5,
+      "profit_factor": 2.109,
+      "n_trades": 44,
+      "avg_return_per_trade_pct": 0.193
+    },
+    "exit_reasons": {
+      "trailing_stop": 41,
+      "hard_stop": 3,
+      "session_close": 0,
+      "no_bars": 0
+    },
+    "t_stat": 1.477,
+    "p_value": 0.147
+  },
+  "20": {
+    "horizon": 20,
+    "n_trades": 11,
+    "da_pct": 81.8,
+    "n_long": 0,
+    "n_short": 11,
+    "long_wr_pct": 0,
+    "short_wr_pct": 72.7,
+    "buy_hold": {
+      "total_return_pct": -12.12,
+      "final_equity": 8787.92
+    },
+    "forecast_1x": {
+      "final_equity": 11519.71,
+      "total_return_pct": 15.2,
+      "annualized_return_pct": 17.59,
+      "sharpe": 1.979,
+      "max_dd_pct": -3.48,
+      "win_rate_pct": 72.7,
+      "profit_factor": 4.203,
+      "n_trades": 11,
+      "avg_return_per_trade_pct": 1.323
+    },
+    "forecast_vt": {
+      "final_equity": 12328.12,
+      "total_return_pct": 23.28,
+      "annualized_return_pct": 27.09,
+      "sharpe": 2.038,
+      "max_dd_pct": -4.33,
+      "win_rate_pct": 72.7,
+      "profit_factor": 4.964,
+      "n_trades": 11,
+      "avg_return_per_trade_pct": 1.983
+    },
+    "forecast_vt_trail": {
+      "final_equity": 10241.78,
+      "total_return_pct": 2.42,
+      "annualized_return_pct": 2.77,
+      "sharpe": 0.964,
+      "max_dd_pct": -1.93,
+      "win_rate_pct": 72.7,
+      "profit_factor": 2.257,
+      "n_trades": 11,
+      "avg_return_per_trade_pct": 0.22
+    },
+    "exit_reasons": {
+      "trailing_stop": 10,
+      "hard_stop": 1,
+      "session_close": 0,
+      "no_bars": 0
+    },
+    "t_stat": 0.902,
+    "p_value": 0.3882
+  }
+}

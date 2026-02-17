@@ -1,0 +1,43 @@
+{
+  "ssot_version": "5.1.0",
+  "ssot_model": "EXP-HOURLY-PPO-001 seed 42",
+  "feature_count": 18,
+  "feature_order": [
+    "log_ret_1h",
+    "log_ret_4h",
+    "log_ret_1d",
+    "log_ret_1w",
+    "rsi_9",
+    "rsi_21",
+    "volatility_pct",
+    "trend_z",
+    "dxy_z",
+    "dxy_change_1d",
+    "vix_z",
+    "embi_z",
+    "brent_change_1d",
+    "gold_change_1d",
+    "rate_spread_z",
+    "yield_curve_z",
+    "usdmxn_change_1d",
+    "carry_spread_z"
+  ],
+  "feature_order_hash": "4babd3b1bd2cc397869f6883d455adca",
+  "observation_dim": 27,
+  "date_ranges": {
+    "train_start": "2020-01-01",
+    "train_end": "2024-12-31",
+    "val_start": "2025-01-01",
+    "val_end": "2025-06-30",
+    "test_start": "2025-07-01",
+    "test_end": "2025-12-31"
+  },
+  "row_counts": {
+    "ohlcv_input": 6858,
+    "macro_input": 2629,
+    "train_output": 5811,
+    "val_output": 576,
+    "test_output": 446
+  },
+  "created_at": "2026-02-14T10:36:42.320440"
+}

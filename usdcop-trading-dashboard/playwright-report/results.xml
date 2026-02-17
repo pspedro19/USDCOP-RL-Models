@@ -1,44 +1,8 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="204.486522">
-<testsuite name="backtest-verify.spec.ts" timestamp="2026-01-13T17:56:51.153Z" hostname="chromium" tests="1" failures="0" skipped="0" time="104.012" errors="0">
-<testcase name="Backtest Results Display › should show backtest results in all sections" classname="backtest-verify.spec.ts" time="104.012">
-<system-out>
-<![CDATA[=== Step 1: Navigate to dashboard ===
-[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[log] [UnifiedWebSocket] Subscribed to channel: signals
-[log] [UnifiedWebSocket] Subscribed to channel: trades
-[log] [UnifiedWebSocket] Primary WebSocket connected
-[debug] [UnifiedWebSocket] No schema for message type: price_update
-=== Step 2: Open backtest panel ===
-[log] [Fast Refresh] rebuilding
-=== Step 3: Select validation dates ===
-=== Step 4: Start backtest ===
-[log] [BacktestService] Starting backtest: 2025-01-01 to 2025-06-30 (model=ppo_v20)
-Clicked Iniciar Backtest
-Waiting for backtest to complete...
-[log] [BacktestService] Backtest completed: 132 trades
-[log] [Dashboard] Backtest completed: 132 trades from 2025-01-01 to 2025-06-30
-[log] [Dashboard] Clearing dashboard
-[log] [Dashboard] Dashboard cleared
-[log] [Dashboard] Backtest mode activated with 132 trades
-[log] [Dashboard] Starting animated replay with 5000 bars
-[debug] [UnifiedWebSocket] No schema for message type: heartbeat
-[log] [Fast Refresh] done in 31744ms
-[log] [USDCOP][useIntegratedChart] [2026-01-13T17:57:48.763Z] [DEBUG] Fetched 15017 candlesticks with price movement
-[log] [USDCOP][useIntegratedChart] [2026-01-13T17:57:50.013Z] [DEBUG] Fetched 15017 candlesticks with price movement
-[debug] [UnifiedWebSocket] No schema for message type: heartbeat
-=== Step 5: Wait for chart to load ===
-=== Step 6: Final verification ===
-=== Step 7: Checking sections ===
-Trading Summary heading visible: true
-REPLAY badge visible: true
-Trades text found: 132
-[log] [Fast Refresh] rebuilding
-Equity Curve section visible: true
-Profit/Loss text found: $-4416
-Signal markers visible on page: 3
-=== Test completed ===
-]]>
-</system-out>
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="8.189132">
+<testsuite name="screenshot-check.spec.ts" timestamp="2026-02-17T04:17:57.905Z" hostname="chromium" tests="2" failures="0" skipped="0" time="12.681" errors="0">
+<testcase name="Screenshot /production page" classname="screenshot-check.spec.ts" time="6.278">
+</testcase>
+<testcase name="Screenshot /dashboard page" classname="screenshot-check.spec.ts" time="6.403">
 </testcase>
 </testsuite>
 </testsuites>

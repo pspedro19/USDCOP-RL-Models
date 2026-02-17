@@ -1,19 +1,21 @@
 """
-Evaluation module for USDCOP Trading System.
+Evaluation module for RL trading models.
 
-Provides benchmark strategies and comparison tools for RL model evaluation.
+Provides unified backtesting and evaluation utilities.
 """
 
-from .benchmarks import (
-    BenchmarkStrategies,
-    compare_with_benchmarks,
-    calculate_max_drawdown,
-    calculate_sharpe_ratio,
+from .backtest_engine import (
+    BacktestConfig,
+    BacktestEngine,
+    BacktestResult,
+    TradeRecord,
+    run_backtest,
 )
 
 __all__ = [
-    'BenchmarkStrategies',
-    'compare_with_benchmarks',
-    'calculate_max_drawdown',
-    'calculate_sharpe_ratio',
+    "BacktestConfig",
+    "BacktestEngine",
+    "BacktestResult",
+    "TradeRecord",
+    "run_backtest",
 ]

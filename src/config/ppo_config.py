@@ -22,7 +22,7 @@ PPO_CONFIG = {
     "n_epochs": 10,           # Epochs per update
 
     # GAE (Generalized Advantage Estimation)
-    "gamma": 0.90,            # shorter-term focus for noisy 5-min data
+    "gamma": 0.95,            # SSOT: ~20-step horizon for 5-min FX
     "gae_lambda": 0.95,       # GAE lambda
 
     # Policy clipping
@@ -60,11 +60,11 @@ TRAINING_CONFIG = {
     "log_interval": 10,               # Log every 10 updates
 }
 
-# Action thresholds (must match production)
+# Action thresholds (SSOT: experiment_ssot.yaml)
 ACTION_CONFIG = {
-    "threshold_long": 0.33,           # Action > 0.33 = LONG (wider HOLD zone)
-    "threshold_short": -0.33,         # Action < -0.33 = SHORT
-    "threshold_hold_zone": 0.33,      # |action| <= 0.33 = HOLD (66% of action space)
+    "threshold_long": 0.50,           # SSOT: Action > 0.50 = LONG
+    "threshold_short": -0.50,         # SSOT: Action < -0.50 = SHORT
+    "threshold_hold_zone": 0.50,      # SSOT: |action| <= 0.50 = HOLD
 }
 
 

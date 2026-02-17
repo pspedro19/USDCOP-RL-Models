@@ -43,7 +43,7 @@ import os
 import gzip
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 
 import pandas as pd
@@ -53,6 +53,20 @@ from .calendar import TradingCalendar, filter_market_hours
 from .contracts import OHLCV_COLUMNS, OHLCV_REQUIRED, validate_ohlcv_columns
 
 logger = logging.getLogger(__name__)
+
+# Per-symbol price ranges for validation
+SYMBOL_PRICE_RANGES = {
+    "USD/COP": (3000, 6000),
+    "USD/MXN": (10, 30),
+    "USD/BRL": (3, 8),
+}
+
+# Per-symbol seed file mapping
+SYMBOL_SEED_FILES = {
+    "USD/COP": "seeds/latest/usdcop_m5_ohlcv.parquet",
+    "USD/MXN": "seeds/latest/usdmxn_m5_ohlcv.parquet",
+    "USD/BRL": "seeds/latest/usdbrl_m5_ohlcv.parquet",
+}
 
 
 class UnifiedOHLCVLoader:
@@ -154,8 +168,68 @@ class UnifiedOHLCVLoader:
 
         return df
 
-    def _load_from_db(self, start_date: str, end_date: str) -> pd.DataFrame:
-        """Load from PostgreSQL database."""
+    def load_5min_multi(
+        self,
+        symbols: List[str],
+        start_date: str,
+        end_date: str,
+        filter_market_hours: bool = True,
+    ) -> Dict[str, pd.DataFrame]:
+        """
+        Load 5-minute OHLCV data for multiple currency pairs.
+
+        Args:
+            symbols: List of symbols e.g. ["USD/COP", "USD/MXN", "USD/BRL"]
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+            filter_market_hours: If True, filter to 13:00-18:00 UTC
+
+        Returns:
+            Dict mapping symbol → DataFrame
+        """
+        result = {}
+        for symbol in symbols:
+            try:
+                df = self._load_symbol(symbol, start_date, end_date)
+                if filter_market_hours and df is not None and len(df) > 0:
+                    df = self.calendar.filter_market_hours(df, datetime_col='time')
+                if df is not None and len(df) > 0:
+                    result[symbol] = df
+                    logger.info(f"Loaded {len(df)} rows for {symbol}")
+                else:
+                    logger.warning(f"No data loaded for {symbol}")
+            except Exception as e:
+                logger.warning(f"Failed to load {symbol}: {e}")
+        return result
+
+    def _load_symbol(
+        self,
+        symbol: str,
+        start_date: str,
+        end_date: str,
+    ) -> Optional[pd.DataFrame]:
+        """Load a single symbol from DB or file."""
+        df = None
+
+        # Try DB first
+        if self.connection_string:
+            try:
+                df = self._load_from_db(start_date, end_date, symbol=symbol)
+                if df is not None and len(df) > 0:
+                    return df
+            except Exception as e:
+                logger.warning(f"DB load failed for {symbol}: {e}")
+
+        # Fallback to file
+        if self.fallback_csv:
+            df = self._load_from_file(start_date, end_date, symbol=symbol)
+
+        return df
+
+    def _load_from_db(
+        self, start_date: str, end_date: str, symbol: str = "USD/COP"
+    ) -> pd.DataFrame:
+        """Load from PostgreSQL database, optionally filtered by symbol."""
         import psycopg2
 
         query = """
@@ -168,6 +242,7 @@ class UnifiedOHLCVLoader:
                 COALESCE(volume, 0) as volume
             FROM usdcop_m5_ohlcv
             WHERE time >= %s AND time <= %s
+              AND symbol = %s
             ORDER BY time ASC
         """
 
@@ -175,19 +250,30 @@ class UnifiedOHLCVLoader:
             df = pd.read_sql_query(
                 query,
                 conn,
-                params=(f"{start_date} 00:00:00", f"{end_date} 23:59:59")
+                params=(f"{start_date} 00:00:00", f"{end_date} 23:59:59", symbol),
             )
 
         df['time'] = pd.to_datetime(df['time'])
         return df
 
-    def _load_from_file(self, start_date: str, end_date: str) -> pd.DataFrame:
-        """Load from CSV or Parquet backup file."""
-        # Determine file path
-        path = self._find_backup_file()
+    def _load_from_file(
+        self, start_date: str, end_date: str, symbol: str = "USD/COP"
+    ) -> pd.DataFrame:
+        """Load from CSV or Parquet backup file, optionally for a specific symbol."""
+        # For non-COP symbols, try the symbol-specific seed file first
+        path = None
+        if symbol != "USD/COP" and symbol in SYMBOL_SEED_FILES:
+            project_root = Path(__file__).parent.parent.parent
+            candidate = project_root / SYMBOL_SEED_FILES[symbol]
+            if candidate.exists():
+                path = candidate
+
+        # Fall back to default backup file (COP or user-specified)
+        if path is None:
+            path = self._find_backup_file()
 
         if path is None:
-            raise FileNotFoundError("No backup file found")
+            raise FileNotFoundError(f"No backup file found for {symbol}")
 
         # Load based on extension
         if path.suffix == '.parquet':
@@ -206,9 +292,21 @@ class UnifiedOHLCVLoader:
         # Convert time column
         df['time'] = pd.to_datetime(df['time'])
 
+        # Filter by symbol if the file contains multiple symbols
+        if 'symbol' in df.columns:
+            df = df[df['symbol'] == symbol]
+
         # Filter to date range
+        # FIX: Handle timezone-aware timestamps properly
         start = pd.Timestamp(start_date)
         end = pd.Timestamp(end_date) + pd.Timedelta(days=1)
+
+        # If df['time'] has timezone, make start/end timezone-aware for comparison
+        if df['time'].dt.tz is not None:
+            df_tz = df['time'].dt.tz
+            start = start.tz_localize('UTC').tz_convert(df_tz)
+            end = end.tz_localize('UTC').tz_convert(df_tz)
+
         df = df[(df['time'] >= start) & (df['time'] < end)]
 
         return df
@@ -471,18 +569,21 @@ class UnifiedOHLCVLoader:
             logger.warning(f"Failed to get latest timestamp: {e}")
             return None
 
-    def validate_data_quality(self, df: pd.DataFrame) -> dict:
+    def validate_data_quality(
+        self, df: pd.DataFrame, symbol: str = "USD/COP"
+    ) -> dict:
         """
         Validate OHLCV data quality.
 
         Checks:
         - No NaN in required columns
         - OHLC relationships (high >= low, etc.)
-        - Price range (3000 < close < 6000 for COP)
+        - Price range (per-symbol: COP 3000-6000, MXN 10-30, BRL 3-8)
         - No duplicate timestamps
 
         Args:
             df: DataFrame to validate
+            symbol: Currency pair for price range validation
 
         Returns:
             Dict with validation results
@@ -511,12 +612,13 @@ class UnifiedOHLCVLoader:
                 )
                 results['is_valid'] = False
 
-        # Check price range
+        # Check price range (per-symbol)
         if 'close' in df.columns:
-            out_of_range = ((df['close'] < 3000) | (df['close'] > 6000)).sum()
+            lo, hi = SYMBOL_PRICE_RANGES.get(symbol, (0, 1e9))
+            out_of_range = ((df['close'] < lo) | (df['close'] > hi)).sum()
             if out_of_range > 0:
                 results['warnings'].append(
-                    f"{out_of_range} rows with close outside 3000-6000 range"
+                    f"{out_of_range} rows with close outside {lo}-{hi} range ({symbol})"
                 )
 
         # Check duplicates
@@ -528,6 +630,7 @@ class UnifiedOHLCVLoader:
         # Stats
         results['stats'] = {
             'rows': len(df),
+            'symbol': symbol,
             'date_range': (
                 df['time'].min().isoformat() if 'time' in df.columns else None,
                 df['time'].max().isoformat() if 'time' in df.columns else None

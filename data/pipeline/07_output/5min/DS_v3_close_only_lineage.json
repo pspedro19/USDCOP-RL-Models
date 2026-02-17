@@ -1,0 +1,43 @@
+{
+  "ssot_version": "2.0.0",
+  "ssot_model": "v20260203_092854",
+  "feature_count": 18,
+  "feature_order": [
+    "log_ret_5m",
+    "log_ret_1h",
+    "log_ret_4h",
+    "log_ret_1d",
+    "rsi_9",
+    "rsi_21",
+    "volatility_pct",
+    "trend_z",
+    "dxy_z",
+    "dxy_change_1d",
+    "vix_z",
+    "embi_z",
+    "brent_change_1d",
+    "gold_change_1d",
+    "rate_spread_z",
+    "rate_spread_change",
+    "usdmxn_change_1d",
+    "yield_curve_z"
+  ],
+  "feature_order_hash": "ace4fcd2c84319d21c031ac24df79cf2",
+  "observation_dim": 20,
+  "date_ranges": {
+    "train_start": "2020-01-01",
+    "train_end": "2024-06-30",
+    "val_start": "2024-07-01",
+    "val_end": "2024-12-31",
+    "test_start": "2025-01-01",
+    "test_end": "2025-12-31"
+  },
+  "row_counts": {
+    "ohlcv_input": 85838,
+    "macro_input": 0,
+    "train_output": 62872,
+    "val_output": 7200,
+    "test_output": 15478
+  },
+  "created_at": "2026-02-04T16:13:10.457481"
+}

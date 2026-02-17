@@ -3,46 +3,85 @@ Config Module - Single Source of Truth (SSOT)
 =============================================
 Centralized configuration management for the USDCOP trading system.
 
-Key Components:
-- TradingConfig: Master config for all trading parameters (from config.yaml)
-- SecuritySettings: Secure credential handling (CTR-007)
+SSOT Architecture:
+    config/experiment_ssot.yaml  <-- SINGLE SOURCE OF TRUTH
+           |
+           v
+    experiment_loader.py    <-- Loads, validates, caches
+           |
+           +---> get_gamma()
+           +---> get_ppo_hyperparameters()
+           +---> get_reward_weights()
+           +---> get_environment_config()
 
 Usage:
-    from src.config import load_trading_config, get_trading_config
+    from src.config import get_gamma, get_ppo_hyperparameters
 
-    # At startup
-    config = load_trading_config()
+    gamma = get_gamma()  # 0.95 from SSOT
+    hyperparams = get_ppo_hyperparameters()  # Full dict for SB3
 
-    # Anywhere else
-    config = get_trading_config()
-    print(config.ppo.gamma)           # 0.90
-    print(config.thresholds.long)     # 0.33
+Author: Trading Team
+Version: 2.0.0 (Consolidated SSOT)
+Date: 2026-02-02
 """
 
-# Trading config (SSOT for PPO, thresholds, costs, risk)
-from .trading_config import (
-    # Main classes
-    TradingConfig,
-    PPOHyperparameters,
-    ThresholdConfig,
-    CostConfig,
-    RiskConfig,
-    RewardConfig,
+# Experiment SSOT (L2 + L3 unified config) - PRIMARY
+from .experiment_loader import (
+    # Data classes
+    ExperimentConfig,
     FeatureConfig,
-    DateConfig,
-    # Functions
-    load_trading_config,
-    get_trading_config,
-    reset_trading_config,
-    is_config_loaded,
-    # Backward compatibility helpers
+    PipelineConfig,
+    EnvironmentConfig,
+    TrainingConfig,
+    RewardConfig,
+    AntiLeakageConfig,
+    LoggingConfig,
+    # FASE 2: Overfitting prevention configs
+    LRDecayConfig,
+    EarlyStoppingConfig,
+    # FASE 3: Rolling window config
+    RollingWindowConfig,
+    # Main loader
+    load_experiment_config,
+    # Convenience functions - USE THESE
+    get_gamma,
+    get_learning_rate,
+    get_ent_coef,
+    get_batch_size,
     get_ppo_hyperparameters,
-    get_env_config,
+    get_reward_weights,
+    get_environment_config,
+    get_feature_order,
+    get_observation_dim,
+    get_training_config,
     get_reward_config,
-    # Exceptions
-    ConfigNotLoadedError,
-    ConfigVersionMismatchError,
-    ConfigValidationError,
+    get_feature_order_hash,
+    validate_feature_order,
+    # FASE 2: Overfitting prevention
+    get_lr_decay_config,
+    get_early_stopping_config,
+    get_overfitting_prevention_config,
+    # FASE 3: Rolling windows
+    get_rolling_window_config,
+    is_rolling_training_enabled,
+    get_rolling_window_months,
+)
+
+# Pipeline SSOT (L2 + L3 + L4 unified) - NEW v2.0
+from .pipeline_config import (
+    PipelineConfig as PipelineSSOTConfig,  # Renamed to avoid conflict
+    load_pipeline_config,
+    get_feature_order as get_pipeline_feature_order,
+    get_observation_dim as get_pipeline_observation_dim,
+    validate_parity,
+    # Data classes
+    FeatureDefinition as PipelineFeatureDefinition,
+    PPOConfig,
+    EnvironmentConfig as PipelineEnvironmentConfig,
+    RewardConfig as PipelineRewardConfig,
+    BacktestConfig as PipelineBacktestConfig,
+    DateRanges,
+    PathsConfig,
 )
 
 # Security settings
@@ -76,25 +115,56 @@ from .trading_flags import (
 )
 
 __all__ = [
-    # Trading Config (SSOT)
-    "TradingConfig",
-    "PPOHyperparameters",
-    "ThresholdConfig",
-    "CostConfig",
-    "RiskConfig",
-    "RewardConfig",
+    # Experiment SSOT (L2 + L3) - PRIMARY
+    "ExperimentConfig",
     "FeatureConfig",
-    "DateConfig",
-    "load_trading_config",
-    "get_trading_config",
-    "reset_trading_config",
-    "is_config_loaded",
+    "PipelineConfig",
+    "EnvironmentConfig",
+    "TrainingConfig",
+    "RewardConfig",
+    "AntiLeakageConfig",
+    "LoggingConfig",
+    # FASE 2: Overfitting prevention configs
+    "LRDecayConfig",
+    "EarlyStoppingConfig",
+    # FASE 3: Rolling window config
+    "RollingWindowConfig",
+    "load_experiment_config",
+    # Convenience functions
+    "get_gamma",
+    "get_learning_rate",
+    "get_ent_coef",
+    "get_batch_size",
     "get_ppo_hyperparameters",
-    "get_env_config",
+    "get_reward_weights",
+    "get_environment_config",
+    "get_feature_order",
+    "get_observation_dim",
+    "get_training_config",
     "get_reward_config",
-    "ConfigNotLoadedError",
-    "ConfigVersionMismatchError",
-    "ConfigValidationError",
+    "get_feature_order_hash",
+    "validate_feature_order",
+    # FASE 2: Overfitting prevention
+    "get_lr_decay_config",
+    "get_early_stopping_config",
+    "get_overfitting_prevention_config",
+    # FASE 3: Rolling windows
+    "get_rolling_window_config",
+    "is_rolling_training_enabled",
+    "get_rolling_window_months",
+    # Pipeline SSOT (L2 + L3 + L4) - v2.0
+    "PipelineSSOTConfig",
+    "load_pipeline_config",
+    "get_pipeline_feature_order",
+    "get_pipeline_observation_dim",
+    "validate_parity",
+    "PipelineFeatureDefinition",
+    "PPOConfig",
+    "PipelineEnvironmentConfig",
+    "PipelineRewardConfig",
+    "PipelineBacktestConfig",
+    "DateRanges",
+    "PathsConfig",
     # Security
     "SecuritySettings",
     "SecurityError",

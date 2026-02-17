@@ -12,6 +12,7 @@ Version: 1.0.0
 Date: 2026-01-17
 """
 
+import hashlib
 import json
 import logging
 import random

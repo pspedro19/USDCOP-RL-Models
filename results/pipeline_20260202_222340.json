@@ -1,0 +1,46 @@
+{
+  "start_time": "2026-02-02T21:55:33.621500",
+  "timesteps": 300000,
+  "l2": {
+    "dataset_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\RL_DS3_MACRO_CORE.csv",
+    "success": true
+  },
+  "l3": {
+    "success": true,
+    "version": "v20260202_215619",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_215619_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_215619_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_215619_contract.json",
+    "model_hash": "83428c97245393bec400d9ddb0cb2e549cc61de03b04baf3521390212a9e3009",
+    "dataset_hash": "c51cb6fc3e364338821ade08ca531afa03e8b470dd8b585004164589c4b9b7f9",
+    "norm_stats_hash": "2a859b037b27ad747c13ea43da05038a646180728a12099ce5af6896d3d3432f",
+    "config_hash": "c8fb992b55b2e8b8",
+    "training_duration_seconds": 1640.0805127620697,
+    "total_timesteps": 300000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "03d7fceb75ce0d9627f8a18264e14a47",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.7,
+      "dsr": 0.15,
+      "sortino": 0.05,
+      "regime_penalty": 0.15,
+      "holding_decay": 0.2,
+      "anti_gaming": 0.15
+    },
+    "errors": []
+  },
+  "l4": null,
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T22:23:40.461371",
+  "duration_seconds": 1686.8398714065552
+}

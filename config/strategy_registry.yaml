@@ -1,0 +1,59 @@
+# Strategy Registry — maps strategy_id to pipeline configuration
+# =============================================================
+#
+# Human-readable reference for all known strategies.
+# Read by: Python export scripts (deploy_manifest generation)
+# Runtime contract: deploy_manifest embedded in approval_state.json
+#
+# Each strategy entry defines:
+#   - Pipeline type (ml_forecasting or rl)
+#   - Deploy script and CLI args
+#   - SSOT config path
+#   - DB tables that get seeded on deploy
+#   - Current operational status
+#
+# Contract: CTR-STRATEGY-REGISTRY-001
+# Date: 2026-02-17
+
+strategies:
+  smart_simple_v11:
+    name: "Smart Simple v1.1"
+    pipeline_type: "ml_forecasting"
+    timeframe: "weekly"
+    horizon: 5
+    script: "scripts/train_and_export_smart_simple.py"
+    deploy_args: ["--phase", "production", "--no-png", "--seed-db"]
+    config_path: "config/execution/smart_simple_v1.yaml"
+    experiment_config: "config/forecast_experiments/h5_linear_paper_v1.yaml"
+    db_tables:
+      - "forecast_h5_predictions"
+      - "forecast_h5_signals"
+      - "forecast_h5_executions"
+      - "forecast_h5_subtrades"
+      - "forecast_h5_paper_trading"
+    status: "paper_trading"
+
+  forecast_vt_trailing:
+    name: "Forecast + VT + Trail"
+    pipeline_type: "ml_forecasting"
+    timeframe: "daily"
+    horizon: 1
+    script: "scripts/generate_weekly_forecasts.py"
+    deploy_args: ["--phase", "production"]
+    config_path: "config/execution/smart_executor_v1.yaml"
+    db_tables:
+      - "forecast_h1_predictions"
+      - "forecast_h1_signals"
+      - "forecast_h1_executions"
+    status: "production"
+
+  rl_v215b:
+    name: "RL V21.5b"
+    pipeline_type: "rl"
+    timeframe: "intraday_5m"
+    script: "scripts/run_ssot_pipeline.py"
+    deploy_args: ["--stage", "all", "--multi-seed", "--seed-db"]
+    config_path: "config/experiments/v215b_baseline.yaml"
+    db_tables:
+      - "inference_ready_nrt"
+    status: "deprioritized"

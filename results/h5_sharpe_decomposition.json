@@ -1,0 +1,52 @@
+{
+  "weekly_sharpe": {
+    "sharpe": 3.73,
+    "mean_ret_pct": 0.6988,
+    "std_ret_pct": 1.5561,
+    "ann_ret_pct": 41.21,
+    "ann_vol_pct": 11.05,
+    "total_ret_pct": 35.15,
+    "n": 44,
+    "t_stat": 2.979,
+    "p_value": 0.0047
+  },
+  "subtrade_sharpe": {
+    "sharpe": 3.213,
+    "mean_ret_pct": 0.2928,
+    "std_ret_pct": 1.1634,
+    "ann_ret_pct": 41.0,
+    "ann_vol_pct": 12.76,
+    "total_ret_pct": 34.98,
+    "n": 105,
+    "t_stat": 2.579,
+    "p_value": 0.0113
+  },
+  "subtrade_distribution": {
+    "total_weekly_signals": 44,
+    "total_subtrades": 105,
+    "avg_subtrades_per_week": 2.39,
+    "distribution": {
+      "1": 5,
+      "2": 23,
+      "3": 10,
+      "4": 6
+    }
+  },
+  "exit_reasons": {
+    "trailing_stop": 72,
+    "week_end": 32,
+    "hard_stop": 1
+  },
+  "config": {
+    "ensemble": "LINEAR-ONLY (ridge + bayesian_ridge)",
+    "trail": {
+      "activation": 0.004,
+      "trail": 0.003,
+      "hard_stop": 0.04
+    },
+    "vol_target": {
+      "target_vol": 0.15,
+      "max_lev": 2.0
+    }
+  }
+}

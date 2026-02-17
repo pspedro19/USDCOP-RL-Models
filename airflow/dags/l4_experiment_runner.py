@@ -79,7 +79,13 @@ sys.path.insert(0, '/opt/airflow')
 logger = logging.getLogger(__name__)
 
 # Import DAG IDs from registry
-from contracts.dag_registry import L4_EXPERIMENT_RUNNER, L4_SCHEDULED_RETRAINING
+try:
+    from contracts.dag_registry import RL_L4_EXPERIMENT_RUNNER, RL_L4_SCHEDULED_RETRAINING
+    L4_EXPERIMENT_RUNNER = RL_L4_EXPERIMENT_RUNNER
+    L4_SCHEDULED_RETRAINING = RL_L4_SCHEDULED_RETRAINING
+except ImportError:
+    L4_EXPERIMENT_RUNNER = "rl_l4_01_experiment_runner"
+    L4_SCHEDULED_RETRAINING = "rl_l4_03_scheduled_retraining"
 
 # =============================================================================
 # IMPORTS FROM SSOT
@@ -106,9 +112,13 @@ except ImportError as e:
     XCOM_CONTRACTS_AVAILABLE = False
     logger.warning(f"[SSOT] XCom contracts not available: {e}")
     # Fallback DAG IDs - import from dag_registry
-    from contracts.dag_registry import L2_DATASET_BUILD, L3_MODEL_TRAINING
-    L2_DAG_ID = L2_DATASET_BUILD
-    L3_DAG_ID = L3_MODEL_TRAINING
+    try:
+        from contracts.dag_registry import RL_L2_DATASET_BUILD, RL_L3_MODEL_TRAINING
+        L2_DAG_ID = RL_L2_DATASET_BUILD
+        L3_DAG_ID = RL_L3_MODEL_TRAINING
+    except ImportError:
+        L2_DAG_ID = "rl_l2_01_dataset_build"
+        L3_DAG_ID = "rl_l3_01_model_training"
 
 # Experiment configuration support
 try:
@@ -615,7 +625,7 @@ with DAG(
     wait_for_l2 = ExternalTaskSensor(
         task_id="wait_for_l2",
         external_dag_id=L2_DAG_ID,
-        external_task_id="build_rl_dataset",  # Updated to use SSOT task
+        external_task_id="build_dataset",  # Updated for new L2 dataset builder
         timeout=7200,  # 2 hours
         poke_interval=30,
         mode="reschedule",  # Free up worker while waiting

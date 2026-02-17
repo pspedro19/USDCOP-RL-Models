@@ -351,7 +351,7 @@ class TestL3TrainingContracts:
 
         params = PPOHyperparameters()
         assert params.learning_rate == 3e-4
-        assert params.gamma == 0.90  # From config/trading_config.yaml SSOT
+        assert params.gamma == 0.95  # From config/experiment_ssot.yaml SSOT
         assert params.clip_range == 0.2
 
 

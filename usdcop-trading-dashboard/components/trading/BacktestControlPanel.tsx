@@ -19,18 +19,20 @@ import {
   BacktestTradeEvent,
   getStatusMessage,
   isBacktestComplete,
+  REPLAY_SPEEDS,
+  type ReplaySpeed,
+  DEFAULT_REPLAY_SPEED,
 } from '@/lib/contracts/backtest.contract';
 import {
   getDateRangePresets,
   DateRangePreset,
-  BACKTEST_DATE_RANGES,
   formatDateRange,
-  fetchPipelineDates,
-  PipelineDates,
+  runRealBacktest,
+  RealBacktestResult,
 } from '@/lib/services/backtest.service';
 import useBacktest from '@/hooks/useBacktest';
 import { cn } from '@/lib/utils';
-import { Play, X, RotateCcw, Calendar, ChevronDown, ChevronUp, Loader2, Info, BookOpen, FlaskConical, TestTube2, Rocket, CheckCircle2, Trash2 } from 'lucide-react';
+import { Play, X, RotateCcw, Calendar, ChevronDown, ChevronUp, Loader2, Rocket, CheckCircle2, Trash2, Gauge } from 'lucide-react';
 
 // ============================================================================
 // Types
@@ -52,6 +54,8 @@ interface BacktestControlPanelProps {
   onToggleExpand?: () => void;
   /** Hide the collapsed header bar - use when toggle is external */
   hideHeader?: boolean;
+  /** Proposal ID for pending experiments - uses REAL BacktestEngine when provided */
+  proposalId?: string;
 }
 
 // ============================================================================
@@ -96,107 +100,6 @@ function PresetChip({ preset, selected, onClick, showDates = true }: PresetChipP
   );
 }
 
-/**
- * Info panel showing model training/validation/test periods
- * Uses dynamic dates from API when available
- */
-interface DateRangeInfoProps {
-  pipelineDates: PipelineDates | null;
-  isLoading: boolean;
-}
-
-function DateRangeInfo({ pipelineDates, isLoading }: DateRangeInfoProps) {
-  const today = new Date().toISOString().split('T')[0];
-
-  // Use API dates if available, otherwise fallback to defaults
-  const dates = pipelineDates?.dates || {
-    training_start: BACKTEST_DATE_RANGES.TRAINING_START,
-    training_end: BACKTEST_DATE_RANGES.TRAINING_END,
-    validation_start: BACKTEST_DATE_RANGES.VALIDATION_START,
-    validation_end: BACKTEST_DATE_RANGES.VALIDATION_END,
-    test_start: BACKTEST_DATE_RANGES.TEST_START,
-    test_end: today,
-    data_start: BACKTEST_DATE_RANGES.DATA_START,
-    data_end: today,
-  };
-
-  const periods = [
-    {
-      icon: <BookOpen className="w-3.5 h-3.5" />,
-      label: 'Entrenamiento',
-      dates: `${dates.training_start} → ${dates.training_end}`,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-      borderColor: 'border-purple-500/30',
-      description: 'Datos usados para entrenar el modelo (no usar para backtest)',
-    },
-    {
-      icon: <FlaskConical className="w-3.5 h-3.5" />,
-      label: 'Validación',
-      dates: `${dates.validation_start} → ${dates.validation_end}`,
-      color: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
-      borderColor: 'border-amber-500/30',
-      description: 'Período de tuning - resultados pueden tener sesgo',
-    },
-    {
-      icon: <TestTube2 className="w-3.5 h-3.5" />,
-      label: 'Test',
-      dates: `${dates.test_start} → ${dates.test_end}`,
-      color: 'text-emerald-400',
-      bgColor: 'bg-emerald-500/10',
-      borderColor: 'border-emerald-500/30',
-      description: 'Out-of-sample - resultados más realistas',
-    },
-  ];
-
-  const configSource = pipelineDates?.metadata?.config_source || 'defaults';
-  const modelVersion = pipelineDates?.model_version || 'v20';
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Info className="w-3.5 h-3.5" />
-          <span>Períodos del Modelo ({modelVersion})</span>
-        </div>
-        {isLoading ? (
-          <Loader2 className="w-3 h-3 text-slate-500 animate-spin" />
-        ) : (
-          <span className="text-[9px] text-slate-600 font-mono">
-            {configSource.includes('v20_config') ? '✓ config oficial' : 'defaults'}
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-        {periods.map((period) => (
-          <div
-            key={period.label}
-            className={cn(
-              "flex flex-col items-center p-1.5 sm:p-2 rounded-lg border",
-              period.bgColor,
-              period.borderColor
-            )}
-            title={period.description}
-          >
-            <div className={cn("flex items-center gap-1 sm:gap-1.5", period.color)}>
-              {period.icon}
-              <span className="text-[10px] sm:text-xs font-medium">{period.label}</span>
-            </div>
-            <span className="text-[8px] sm:text-[10px] text-slate-400 mt-0.5 sm:mt-1 font-mono truncate max-w-full">
-              {period.dates}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Data availability info */}
-      <div className="text-center text-[10px] text-slate-600 pt-1">
-        Datos disponibles: <span className="font-mono text-slate-500">{dates.data_start} → {dates.data_end}</span>
-      </div>
-    </div>
-  );
-}
 
 interface CompactSummaryProps {
   summary: BacktestSummary;
@@ -240,42 +143,27 @@ export function BacktestControlPanel({
   expanded = false,
   onToggleExpand,
   hideHeader = false,
+  proposalId,
 }: BacktestControlPanelProps) {
   const datePresets = useMemo(() => getDateRangePresets(), []);
 
-  const [selectedPreset, setSelectedPreset] = useState<string>('validation');
-  const [customStartDate, setCustomStartDate] = useState<string>(BACKTEST_DATE_RANGES.VALIDATION_START);
-  const [customEndDate, setCustomEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedPreset, setSelectedPreset] = useState<string>('backtest_2025');
+  const [customStartDate, setCustomStartDate] = useState<string>('2025-01-01');
+  const [customEndDate, setCustomEndDate] = useState<string>('2025-12-31');
   const [forceRegenerate, setForceRegenerate] = useState<boolean>(true);
+  const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(DEFAULT_REPLAY_SPEED);
 
-  // Dynamic pipeline dates from API
-  const [pipelineDates, setPipelineDates] = useState<PipelineDates | null>(null);
-  const [isLoadingDates, setIsLoadingDates] = useState<boolean>(true);
 
   // Promote to production state
   const [isPromoting, setIsPromoting] = useState<boolean>(false);
   const [promoteSuccess, setPromoteSuccess] = useState<boolean>(false);
   const [promoteError, setPromoteError] = useState<string | null>(null);
 
-  // Fetch pipeline dates on mount
-  useEffect(() => {
-    let mounted = true;
+  // SSE backtest progress state
+  const [sseProgress, setSseProgress] = useState<number>(0);
+  const [sseStatus, setSseStatus] = useState<string>('');
+  const [sseTradesCount, setSseTradesCount] = useState<number>(0);
 
-    async function loadDates() {
-      setIsLoadingDates(true);
-      const dates = await fetchPipelineDates();
-      if (mounted) {
-        setPipelineDates(dates);
-        setIsLoadingDates(false);
-      }
-    }
-
-    loadDates();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const currentDateRange = useMemo(() => {
     if (selectedPreset === 'custom') {
@@ -321,6 +209,9 @@ export function BacktestControlPanel({
     }
   }, [datePresets]);
 
+  // State for real backtest loading
+  const [isRealBacktestRunning, setIsRealBacktestRunning] = useState(false);
+
   const handleStartBacktest = useCallback(async () => {
     if (!currentDateRange.startDate || !currentDateRange.endDate) return;
 
@@ -331,13 +222,134 @@ export function BacktestControlPanel({
     // Notify parent that backtest is starting (clears streaming trades, etc.)
     onBacktestStart?.();
 
+    // Use REAL backtest with SSE streaming when proposalId is provided (pending experiment)
+    if (proposalId) {
+      console.log(`[BacktestPanel] Using REAL backtest SSE for proposal ${proposalId}`);
+      setIsRealBacktestRunning(true);
+      setSseProgress(0);
+      setSseStatus('Connecting...');
+      setSseTradesCount(0);
+
+      // Collect trades as they stream in
+      const streamedTrades: BacktestTradeEvent[] = [];
+      let modelId = '';
+
+      try {
+        const url = `/api/backtest/real/stream?proposal_id=${encodeURIComponent(proposalId)}&start_date=${currentDateRange.startDate}&end_date=${currentDateRange.endDate}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`SSE connection failed: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                switch (data.type) {
+                  case 'status':
+                    setSseStatus(data.message);
+                    console.log(`[BacktestPanel SSE] Status: ${data.message}`);
+                    break;
+
+                  case 'progress':
+                    setSseProgress(data.percent);
+                    setSseTradesCount(data.trades_so_far || 0);
+                    break;
+
+                  case 'trade':
+                    // Emit trade immediately for real-time equity curve update
+                    const trade = data.data;
+                    modelId = trade.model_id || modelId;
+                    const tradeEvent: BacktestTradeEvent = {
+                      ...trade,
+                      trade_id: String(trade.trade_id),
+                      model_id: modelId,
+                      timestamp: trade.entry_time,
+                    };
+                    streamedTrades.push(tradeEvent);
+                    onTradeGenerated?.(tradeEvent);
+                    setSseTradesCount(streamedTrades.length);
+                    console.log(`[BacktestPanel SSE] Trade #${trade.trade_id}: ${trade.side} @ ${trade.entry_price}`);
+                    break;
+
+                  case 'complete':
+                    // Build final result from complete event
+                    modelId = data.model_id || modelId;
+                    const backtestResult: BacktestResult = {
+                      success: data.success,
+                      source: 'real_backtest_stream',
+                      trade_count: data.trade_count,
+                      trades: streamedTrades,
+                      summary: {
+                        total_trades: data.summary.total_trades,
+                        winning_trades: data.summary.winning_trades,
+                        losing_trades: data.summary.losing_trades,
+                        win_rate: data.summary.win_rate,
+                        total_pnl: data.summary.total_pnl,
+                        total_return_pct: data.summary.total_return_pct,
+                        max_drawdown_pct: data.summary.max_drawdown_pct,
+                        sharpe_ratio: data.summary.sharpe_ratio,
+                        avg_trade_duration_minutes: 0,
+                      },
+                      date_range: data.date_range,
+                    };
+
+                    setSseProgress(100);
+                    setSseStatus('Complete!');
+                    onBacktestComplete?.(backtestResult, currentDateRange.startDate, currentDateRange.endDate);
+                    console.log(`[BacktestPanel SSE] Complete: ${data.trade_count} trades, ${data.summary.win_rate}% WR, Sharpe: ${data.summary.sharpe_ratio}`);
+                    break;
+
+                  case 'error':
+                    console.error(`[BacktestPanel SSE] Error: ${data.message}`);
+                    setSseStatus(`Error: ${data.message}`);
+                    break;
+                }
+              } catch (e) {
+                console.warn('[BacktestPanel SSE] Parse error:', e, line);
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error('[BacktestPanel SSE] Error:', error);
+        setSseStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setIsRealBacktestRunning(false);
+      }
+
+      return;
+    }
+
+    // Standard streaming backtest (for non-pending models)
     await startBacktest({
       startDate: currentDateRange.startDate,
       endDate: currentDateRange.endDate,
       modelId: selectedModelId,
       forceRegenerate,
+      replaySpeed,
+      emitBarEvents: enableAnimatedReplay,
     });
-  }, [currentDateRange, selectedModelId, forceRegenerate, startBacktest, onBacktestStart]);
+  }, [currentDateRange, selectedModelId, forceRegenerate, replaySpeed, enableAnimatedReplay, startBacktest, onBacktestStart, proposalId, onBacktestComplete, onTradeGenerated]);
 
   const handlePromoteToProduction = useCallback(async () => {
     setIsPromoting(true);
@@ -378,7 +390,8 @@ export function BacktestControlPanel({
   };
 
   const isValidDateRange = Boolean(currentDateRange.startDate && currentDateRange.endDate);
-  const canStartNow = canStart && isValidDateRange;
+  const isAnyBacktestRunning = isRunning || isRealBacktestRunning;
+  const canStartNow = (canStart || proposalId) && isValidDateRange && !isRealBacktestRunning;
   const showSummary = isBacktestComplete(state.status) && state.result?.summary;
 
   return (
@@ -399,7 +412,7 @@ export function BacktestControlPanel({
                 <Calendar className="w-4 h-4 text-cyan-400" />
               </div>
               <span className="text-sm font-medium text-white">Backtest</span>
-              {isRunning && (
+              {isAnyBacktestRunning && (
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-3 h-3 text-cyan-400 animate-spin" />
                   <span className="text-xs text-cyan-400">{progressPercent}%</span>
@@ -426,12 +439,6 @@ export function BacktestControlPanel({
             "bg-slate-900/80 backdrop-blur border border-slate-700/50",
             hideHeader ? "rounded-xl" : "rounded-b-xl border-t-0"
           )}>
-            {/* Model Periods Info - Dynamic from API */}
-            <DateRangeInfo pipelineDates={pipelineDates} isLoading={isLoadingDates} />
-
-            {/* Divider */}
-            <div className="border-t border-slate-700/50" />
-
             {/* Date Presets - Centered, mobile grid layout */}
             <div className="flex flex-col items-center gap-2 sm:gap-3">
               <span className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider">Seleccionar Periodo</span>
@@ -473,7 +480,7 @@ export function BacktestControlPanel({
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      min={BACKTEST_DATE_RANGES.VALIDATION_START}
+                      min="2020-01-01"
                       className="px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs sm:text-sm text-white text-center w-full sm:w-auto"
                     />
                   </div>
@@ -500,7 +507,7 @@ export function BacktestControlPanel({
               </div>
             )}
 
-            {/* Progress Bar */}
+            {/* Progress Bar - Streaming backtest */}
             {isRunning && state.progress && (
               <div className="space-y-2">
                 <div className="relative h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -511,7 +518,42 @@ export function BacktestControlPanel({
                 </div>
                 <div className="flex justify-between text-xs text-slate-500">
                   <span>{state.progress.trades_generated} trades generados</span>
-                  <span>{formatTime(elapsedTime)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400/70">{replaySpeed}x</span>
+                    <span>{formatTime(elapsedTime)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Progress Bar - Real backtest with SSE streaming */}
+            {isRealBacktestRunning && (
+              <div className="space-y-2">
+                {/* Progress bar - shows actual percentage from SSE */}
+                <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-300 ease-out"
+                    style={{ width: `${Math.max(sseProgress, 2)}%` }}
+                  />
+                  {sseProgress < 100 && sseProgress > 0 && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="flex items-center gap-2 text-slate-400">
+                    <Loader2 className="w-3 h-3 animate-spin text-emerald-400" />
+                    {sseStatus || 'Iniciando...'}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    {sseTradesCount > 0 && (
+                      <span className="text-cyan-400">
+                        {sseTradesCount} trades
+                      </span>
+                    )}
+                    <span className="text-emerald-400 font-medium">
+                      {sseProgress.toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -577,6 +619,38 @@ export function BacktestControlPanel({
               </div>
             )}
 
+            {/* Speed Control - Dynamic bar-by-bar replay */}
+            {enableAnimatedReplay && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider">Velocidad de Replay</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
+                  {REPLAY_SPEEDS.map((speed) => (
+                    <button
+                      key={speed}
+                      onClick={() => setReplaySpeed(speed)}
+                      disabled={isAnyBacktestRunning}
+                      className={cn(
+                        "px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all",
+                        "border min-w-[40px] sm:min-w-[50px]",
+                        replaySpeed === speed
+                          ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
+                          : "bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300",
+                        isAnyBacktestRunning && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-slate-600 text-center">
+                  {replaySpeed < 1 ? 'Cámara lenta' : replaySpeed === 1 ? 'Tiempo real' : `${replaySpeed}x más rápido`}
+                </p>
+              </div>
+            )}
+
             {/* Action Buttons - Mobile-first centered */}
             <div className="flex flex-col items-center gap-2 sm:gap-3">
               <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
@@ -584,11 +658,11 @@ export function BacktestControlPanel({
                 {onClearDashboard && (
                   <button
                     onClick={onClearDashboard}
-                    disabled={isRunning}
+                    disabled={isAnyBacktestRunning}
                     className={cn(
                       "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all",
                       "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white hover:border-slate-600",
-                      isRunning && "opacity-50 cursor-not-allowed"
+                      isAnyBacktestRunning && "opacity-50 cursor-not-allowed"
                     )}
                     title="Limpiar todos los datos del dashboard"
                   >
@@ -597,29 +671,46 @@ export function BacktestControlPanel({
                   </button>
                 )}
 
-                {canStart ? (
+                {(canStart || (proposalId && !isRealBacktestRunning)) ? (
                   <button
                     onClick={handleStartBacktest}
                     disabled={!canStartNow}
                     className={cn(
                       "flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all",
                       canStartNow
-                        ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/25"
+                        ? proposalId
+                          ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-emerald-500/25"
+                          : "bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:shadow-lg hover:shadow-cyan-500/25"
                         : "bg-slate-800 text-slate-500 cursor-not-allowed"
                     )}
                   >
                     <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    Iniciar
+                    {proposalId ? 'Backtest Real' : 'Iniciar'}
                   </button>
-                ) : (
+                ) : isAnyBacktestRunning ? (
                   <button
-                    onClick={cancelBacktest}
-                    className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-2 sm:py-2.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-medium text-xs sm:text-sm hover:bg-red-500/30 transition-all"
+                    onClick={proposalId ? undefined : cancelBacktest}
+                    disabled={!!proposalId}
+                    className={cn(
+                      "flex items-center gap-1.5 sm:gap-2 px-4 sm:px-8 py-2 sm:py-2.5 rounded-full font-medium text-xs sm:text-sm transition-all",
+                      proposalId
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
+                    )}
                   >
-                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    Cancelar
+                    {proposalId ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                        Ejecutando...
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        Cancelar
+                      </>
+                    )}
                   </button>
-                )}
+                ) : null}
 
                 {(showSummary || state.status === 'error') && (
                   <button
@@ -640,7 +731,7 @@ export function BacktestControlPanel({
                   type="checkbox"
                   checked={forceRegenerate}
                   onChange={(e) => setForceRegenerate(e.target.checked)}
-                  disabled={isRunning}
+                  disabled={isAnyBacktestRunning}
                   className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded bg-slate-800 border-slate-600"
                 />
                 Regenerar trades

@@ -30,12 +30,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Tuple, Union
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -55,6 +57,53 @@ except ImportError:
 from .builders import CanonicalFeatureBuilder, BuilderContext
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# MARKET HOURS CONFIGURATION (V7.1 Hybrid Logic)
+# =============================================================================
+
+# Colombia timezone for market hours check
+COT_TIMEZONE = ZoneInfo("America/Bogota")
+
+# USD/COP trading hours (Colombian stock exchange)
+MARKET_OPEN_HOUR = 8   # 08:00 COT
+MARKET_CLOSE_HOUR = 17  # 17:00 COT (extended session)
+
+# Days when market is open (Monday=0, Sunday=6)
+MARKET_OPEN_DAYS = {0, 1, 2, 3, 4}  # Monday-Friday
+
+
+def is_market_hours(dt: Optional[datetime] = None) -> bool:
+    """
+    Check if current time is within Colombian trading hours.
+
+    V7.1 Hybrid Logic:
+    - During market hours: Use PostgreSQL (fresh data via NOTIFY)
+    - Off-market hours: Use Redis (cached data is acceptable)
+
+    Args:
+        dt: Datetime to check (default: current UTC time)
+
+    Returns:
+        True if within trading hours, False otherwise
+    """
+    if dt is None:
+        dt = datetime.now(timezone.utc)
+
+    # Convert to Colombia timezone
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    cot_time = dt.astimezone(COT_TIMEZONE)
+
+    # Check if weekday
+    if cot_time.weekday() not in MARKET_OPEN_DAYS:
+        return False
+
+    # Check if within trading hours
+    current_hour = cot_time.hour
+    return MARKET_OPEN_HOUR <= current_hour < MARKET_CLOSE_HOUR
 
 
 # =============================================================================
@@ -170,6 +219,32 @@ class FeastMetrics:
 
 
 # =============================================================================
+# SSOT Configuration Loading (Module Level)
+# =============================================================================
+# Load feature order from pipeline_ssot.yaml at module import time
+# This avoids circular imports and ensures consistency
+
+def _load_ssot_feature_config():
+    """Load feature config from SSOT, with fallback to legacy."""
+    try:
+        from src.config.pipeline_config import load_pipeline_config
+        config = load_pipeline_config()
+        return config.get_observation_dim(), config.get_feature_order()
+    except Exception as e:
+        logger.warning(f"[SSOT] Failed to load pipeline_config: {e}, using legacy")
+        return 15, (
+            "log_ret_5m", "log_ret_1h", "log_ret_4h",
+            "rsi_9", "atr_pct", "adx_14",
+            "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
+            "brent_change_1d", "rate_spread", "usdmxn_change_1d",
+            "position", "time_normalized",
+        )
+
+# Load at module import time
+_SSOT_DIM, _SSOT_ORDER = _load_ssot_feature_config()
+
+
+# =============================================================================
 # FEAST INFERENCE SERVICE
 # =============================================================================
 
@@ -216,17 +291,14 @@ class FeastInferenceService:
     # Feature service name in Feast
     FEATURE_SERVICE_NAME: Final[str] = "observation_15d"
 
-    # Expected observation dimension
-    OBSERVATION_DIM: Final[int] = 15
-
-    # Feature order (must match CanonicalFeatureBuilder SSOT)
-    FEATURE_ORDER: Final[Tuple[str, ...]] = (
-        "log_ret_5m", "log_ret_1h", "log_ret_4h",
-        "rsi_9", "atr_pct", "adx_14",
-        "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
-        "brent_change_1d", "rate_spread", "usdmxn_change_1d",
-        "position", "time_normalized",
-    )
+    # ==========================================================================
+    # SSOT Integration (v2.0) - Uses module-level loaded config
+    # ==========================================================================
+    # Observation dimension and feature order loaded from pipeline_ssot.yaml
+    # at module import time (see _load_ssot_feature_config above)
+    # ==========================================================================
+    OBSERVATION_DIM: Final[int] = _SSOT_DIM
+    FEATURE_ORDER: Final[Tuple[str, ...]] = _SSOT_ORDER
 
     def __init__(
         self,
@@ -234,6 +306,8 @@ class FeastInferenceService:
         fallback_builder: Optional[CanonicalFeatureBuilder] = None,
         enable_metrics: bool = True,
         enable_fallback: bool = True,
+        enable_hybrid_mode: bool = True,
+        postgres_conn_string: Optional[str] = None,
     ):
         """
         Initialize FeastInferenceService.
@@ -243,15 +317,27 @@ class FeastInferenceService:
             fallback_builder: CanonicalFeatureBuilder instance for fallback
             enable_metrics: Enable metrics collection
             enable_fallback: Enable fallback to builder when Feast unavailable
+            enable_hybrid_mode: V7.1 Hybrid mode (PostgreSQL during market, Redis off-market)
+            postgres_conn_string: PostgreSQL connection string for hybrid mode
         """
         self._feast_repo_path = feast_repo_path or self._find_feast_repo()
         self._enable_metrics = enable_metrics
         self._enable_fallback = enable_fallback
+        self._enable_hybrid_mode = enable_hybrid_mode
+        self._postgres_conn_string = postgres_conn_string or os.environ.get(
+            "DATABASE_URL",
+            os.environ.get("TIMESCALE_URL")
+        )
 
-        # Initialize Feast store
+        # Initialize Feast store (Redis backend)
         self._feast_store: Optional[FeatureStore] = None
         self._feast_available = False
         self._initialize_feast()
+
+        # Initialize PostgreSQL connection for hybrid mode
+        self._postgres_conn = None
+        if enable_hybrid_mode and self._postgres_conn_string:
+            self._initialize_postgres()
 
         # Initialize fallback builder
         if fallback_builder:
@@ -271,6 +357,7 @@ class FeastInferenceService:
         logger.info(
             f"FeastInferenceService initialized: "
             f"feast_available={self._feast_available}, "
+            f"hybrid_mode={self._enable_hybrid_mode}, "
             f"fallback_enabled={self._fallback_builder is not None}"
         )
 
@@ -294,7 +381,7 @@ class FeastInferenceService:
         return str(project_root / "feature_repo")
 
     def _initialize_feast(self) -> None:
-        """Initialize Feast FeatureStore connection."""
+        """Initialize Feast FeatureStore connection (Redis backend)."""
         if not FEAST_AVAILABLE:
             logger.warning("Feast is not installed. Fallback mode only.")
             self._feast_available = False
@@ -305,10 +392,94 @@ class FeastInferenceService:
             # Test connection by getting feature service
             self._feast_store.get_feature_service(self.FEATURE_SERVICE_NAME)
             self._feast_available = True
-            logger.info(f"Feast initialized from {self._feast_repo_path}")
+            logger.info(f"Feast (Redis) initialized from {self._feast_repo_path}")
         except Exception as e:
             logger.warning(f"Failed to initialize Feast: {e}. Fallback mode enabled.")
             self._feast_available = False
+
+    def _initialize_postgres(self) -> None:
+        """Initialize PostgreSQL connection for hybrid mode (V7.1)."""
+        try:
+            import psycopg2
+            self._postgres_conn = psycopg2.connect(self._postgres_conn_string)
+            logger.info("PostgreSQL connection established for hybrid mode")
+        except ImportError:
+            logger.warning("psycopg2 not installed. Hybrid mode disabled.")
+            self._enable_hybrid_mode = False
+        except Exception as e:
+            logger.warning(f"Failed to connect to PostgreSQL: {e}. Hybrid mode disabled.")
+            self._enable_hybrid_mode = False
+
+    def _get_from_postgres(
+        self,
+        symbol: str,
+        bar_id: str,
+        position: float,
+        time_normalized: Optional[float] = None,
+    ) -> np.ndarray:
+        """
+        V7.1 Hybrid: Retrieve features directly from PostgreSQL during market hours.
+
+        This provides fresher data than Redis cache during active trading.
+        """
+        if self._postgres_conn is None or self._postgres_conn.closed:
+            self._initialize_postgres()
+            if self._postgres_conn is None:
+                raise FeastConnectionError("PostgreSQL connection not available")
+
+        try:
+            cur = self._postgres_conn.cursor()
+
+            # Get latest features from inference_features_5m
+            cur.execute("""
+                SELECT
+                    log_ret_5m, log_ret_1h, log_ret_4h,
+                    rsi_9, atr_pct, adx_14,
+                    dxy_z, dxy_change_1d, vix_z, embi_z,
+                    brent_change_1d, rate_spread, usdmxn_change_1d
+                FROM inference_features_5m
+                WHERE time <= NOW()
+                ORDER BY time DESC
+                LIMIT 1
+            """)
+
+            row = cur.fetchone()
+            cur.close()
+
+            if row is None:
+                raise FeastFeatureNotFoundError("No features found in PostgreSQL")
+
+            # Build observation array in SSOT order
+            observation = np.zeros(self.OBSERVATION_DIM, dtype=np.float32)
+
+            # Features from PostgreSQL (indices 0-12)
+            for i, value in enumerate(row):
+                observation[i] = 0.0 if value is None else float(value)
+
+            # Position (index 13) - from function argument
+            observation[13] = float(np.clip(position, -1.0, 1.0))
+
+            # Time normalized (index 14)
+            if time_normalized is not None:
+                observation[14] = float(np.clip(time_normalized, 0.0, 1.0))
+            else:
+                observation[14] = 0.5  # Default to middle of session
+
+            # Validate
+            if np.isnan(observation).any():
+                observation = np.nan_to_num(observation, nan=0.0)
+
+            return observation
+
+        except Exception as e:
+            # Reset connection on error
+            if self._postgres_conn:
+                try:
+                    self._postgres_conn.close()
+                except:
+                    pass
+                self._postgres_conn = None
+            raise FeastFeatureNotFoundError(f"PostgreSQL query failed: {e}")
 
     # =========================================================================
     # PUBLIC API
@@ -347,7 +518,22 @@ class FeastInferenceService:
         """
         start_time = time.perf_counter()
 
-        # Try Feast first
+        # V7.1 Hybrid Mode: Use PostgreSQL during market hours for fresh data
+        if self._enable_hybrid_mode and is_market_hours():
+            try:
+                features = self._get_from_postgres(symbol, bar_id, position, time_normalized)
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                if self._metrics:
+                    self._metrics.record_feast_hit(latency_ms)  # Count as hit for now
+
+                logger.debug(f"PostgreSQL (hybrid) hit: {symbol}/{bar_id} in {latency_ms:.2f}ms")
+                return features
+
+            except Exception as e:
+                logger.warning(f"PostgreSQL (hybrid) failed: {e}. Trying Feast (Redis)...")
+
+        # Try Feast (Redis) - primary during off-market or if PostgreSQL fails
         if self._feast_available and self._feast_store is not None:
             try:
                 features = self._get_from_feast(symbol, bar_id, position, time_normalized)
@@ -356,7 +542,7 @@ class FeastInferenceService:
                 if self._metrics:
                     self._metrics.record_feast_hit(latency_ms)
 
-                logger.debug(f"Feast hit: {symbol}/{bar_id} in {latency_ms:.2f}ms")
+                logger.debug(f"Feast (Redis) hit: {symbol}/{bar_id} in {latency_ms:.2f}ms")
                 return features
 
             except Exception as e:
@@ -445,11 +631,16 @@ class FeastInferenceService:
         """
         health = {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "feast_installed": FEAST_AVAILABLE,
             "feast_available": self._feast_available,
             "fallback_enabled": self._enable_fallback,
             "fallback_builder_ready": self._fallback_builder is not None,
+            # V7.1 Hybrid Mode
+            "hybrid_mode_enabled": self._enable_hybrid_mode,
+            "is_market_hours": is_market_hours(),
+            "active_backend": "postgresql" if (self._enable_hybrid_mode and is_market_hours()) else "redis",
+            "postgres_connected": self._postgres_conn is not None and not self._postgres_conn.closed if self._postgres_conn else False,
         }
 
         # Test Feast connection if available

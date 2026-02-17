@@ -95,13 +95,31 @@ except ImportError:
     FEATURE_ORDER = None
     FEATURE_ORDER_HASH = None
 
-# GAP 2: Experiment config support
+# =============================================================================
+# EXPERIMENT SSOT - Single Source of Truth for L2 + L3
+# =============================================================================
 try:
-    from src.experiments import load_experiment_config, ExperimentConfig
+    from src.config.experiment_loader import (
+        load_experiment_config as load_experiment_ssot,
+        ExperimentConfig,
+        get_training_config as get_ssot_training_config,
+        get_reward_config as get_ssot_reward_config,
+    )
+    EXPERIMENT_SSOT = load_experiment_ssot()
+    EXPERIMENT_SSOT_AVAILABLE = True
+    logging.info(f"[SSOT] Loaded experiment SSOT v{EXPERIMENT_SSOT.version}")
+except ImportError as e:
+    EXPERIMENT_SSOT = None
+    EXPERIMENT_SSOT_AVAILABLE = False
+    logging.warning(f"[SSOT] Experiment SSOT not available: {e}")
+
+# Fallback to old experiment config system
+try:
+    from src.experiments import load_experiment_config, ExperimentConfig as OldExperimentConfig
     EXPERIMENT_CONFIG_AVAILABLE = True
 except ImportError:
     EXPERIMENT_CONFIG_AVAILABLE = False
-    logging.warning("[SSOT] ExperimentConfig not available")
+    logging.warning("[SSOT] Legacy ExperimentConfig not available")
 
 # GAP 1, 2: DVC and Lineage tracking
 try:
@@ -128,30 +146,94 @@ except ImportError:
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
-from contracts.dag_registry import L3_MODEL_TRAINING
-
-DAG_ID = L3_MODEL_TRAINING
+try:
+    from contracts.dag_registry import RL_L3_MODEL_TRAINING
+    DAG_ID = RL_L3_MODEL_TRAINING
+except ImportError:
+    DAG_ID = "rl_l3_01_model_training"
 PROJECT_ROOT = Path('/opt/airflow')
 
-DEFAULT_CONFIG = {
-    "version": "auto",
-    "experiment_name": "ppo_usdcop",
-    "dataset_name": "RL_DS3_MACRO_CORE.csv",
-    "dataset_dir": "5min",
-    "total_timesteps": PPO_HYPERPARAMETERS.total_timesteps if ENGINE_AVAILABLE else 500_000,
-    "mlflow_enabled": True,
-    "auto_register": True,
-    # GAP 2: Support experiment config YAML
-    "experiment_config_path": None,  # e.g., "config/experiments/baseline_ppo_v1.yaml"
-    # GAP 1: DVC integration
-    "dvc_enabled": True,
-    "dvc_auto_tag": True,
-}
+# Build DEFAULT_CONFIG from SSOT when available
+if EXPERIMENT_SSOT_AVAILABLE and EXPERIMENT_SSOT is not None:
+    _ssot_training = EXPERIMENT_SSOT.training
+    _ssot_output = EXPERIMENT_SSOT.pipeline
+    DEFAULT_CONFIG = {
+        "version": "auto",
+        "experiment_name": EXPERIMENT_SSOT.logging.experiment_name,
+        "dataset_name": f"{_ssot_output.output_prefix}_train.parquet",
+        "dataset_dir": "5min",
+        "total_timesteps": _ssot_training.total_timesteps,
+        "learning_rate": _ssot_training.learning_rate,
+        "n_steps": _ssot_training.n_steps,
+        "batch_size": _ssot_training.batch_size,
+        "n_epochs": _ssot_training.n_epochs,
+        "gamma": _ssot_training.gamma,
+        "gae_lambda": _ssot_training.gae_lambda,
+        "clip_range": _ssot_training.clip_range,
+        "ent_coef": _ssot_training.ent_coef,
+        "vf_coef": _ssot_training.vf_coef,
+        "max_grad_norm": _ssot_training.max_grad_norm,
+        "mlflow_enabled": True,
+        "auto_register": True,
+        "experiment_config_path": None,
+        "dvc_enabled": True,
+        "dvc_auto_tag": True,
+    }
+    logging.info(f"[SSOT] Using experiment SSOT config: ent_coef={_ssot_training.ent_coef}")
+else:
+    DEFAULT_CONFIG = {
+        "version": "auto",
+        "experiment_name": "ppo_usdcop",
+        "dataset_name": "DS_default_train.parquet",
+        "dataset_dir": "5min",
+        "total_timesteps": PPO_HYPERPARAMETERS.total_timesteps if ENGINE_AVAILABLE else 500_000,
+        "mlflow_enabled": True,
+        "auto_register": True,
+        "experiment_config_path": None,
+        "dvc_enabled": True,
+        "dvc_auto_tag": True,
+    }
+    logging.warning("[SSOT] Using fallback config (SSOT not available)")
 
 
 def get_training_config(**context) -> Dict[str, Any]:
-    """Get training configuration from Airflow Variables or DAG run conf."""
-    config = DEFAULT_CONFIG.copy()
+    """Get training configuration from Airflow Variables or DAG run conf.
+
+    IMPORTANT: Force reloads SSOT at runtime to pick up any changes made
+    after DAG import time. This ensures hyperparameter tuning takes effect.
+    """
+    # Force reload SSOT at runtime to get fresh values
+    try:
+        from src.config.experiment_loader import load_experiment_config
+        ssot = load_experiment_config(force_reload=True)
+        _ssot_training = ssot.training
+        _ssot_output = ssot.pipeline
+        config = {
+            "version": "auto",
+            "experiment_name": ssot.logging.experiment_name,
+            "dataset_name": f"{_ssot_output.output_prefix}_train.parquet",
+            "dataset_dir": "5min",
+            "total_timesteps": _ssot_training.total_timesteps,
+            "learning_rate": _ssot_training.learning_rate,
+            "n_steps": _ssot_training.n_steps,
+            "batch_size": _ssot_training.batch_size,
+            "n_epochs": _ssot_training.n_epochs,
+            "gamma": _ssot_training.gamma,
+            "gae_lambda": _ssot_training.gae_lambda,
+            "clip_range": _ssot_training.clip_range,
+            "ent_coef": _ssot_training.ent_coef,
+            "vf_coef": _ssot_training.vf_coef,
+            "max_grad_norm": _ssot_training.max_grad_norm,
+            "mlflow_enabled": True,
+            "auto_register": True,
+            "experiment_config_path": None,
+            "dvc_enabled": True,
+            "dvc_auto_tag": True,
+        }
+        logging.info(f"[SSOT-RUNTIME] Loaded fresh config: lr={_ssot_training.learning_rate}, ent_coef={_ssot_training.ent_coef}")
+    except (ImportError, FileNotFoundError) as e:
+        logging.warning(f"[SSOT-RUNTIME] Failed to reload SSOT, using cached config: {e}")
+        config = DEFAULT_CONFIG.copy()
 
     # Override from Variable
     try:
@@ -321,9 +403,10 @@ def run_training(**context) -> Dict[str, Any]:
 
     # Priority 3: Config fallback (legacy behavior)
     if dataset_path is None:
+        # L2 builder outputs to "5min/" not "datasets_5min/"
         dataset_path = (
             PROJECT_ROOT / "data" / "pipeline" / "07_output" /
-            f"datasets_{config['dataset_dir']}" / config['dataset_name']
+            config['dataset_dir'] / config['dataset_name']
         )
         logging.info(f"[SSOT] Dataset from config fallback: {dataset_path}")
 
@@ -352,28 +435,63 @@ def run_training(**context) -> Dict[str, Any]:
     enable_curriculum = config.get('enable_curriculum', True)
 
     if RewardConfig is not None:
-        # Check for custom reward weights in config
+        # FIX 2026-02-01: Always get defaults from SSOT, not hardcoded values
+        # This ensures experiment_ssot.yaml is the single source of truth
+        ssot_defaults = {
+            'pnl': 0.80,           # SSOT experiment_ssot.yaml
+            'dsr': 0.15,           # SSOT experiment_ssot.yaml
+            'sortino': 0.05,       # SSOT experiment_ssot.yaml
+            'regime_penalty': 0.3, # SSOT experiment_ssot.yaml
+            'holding_decay': 0.2,  # SSOT experiment_ssot.yaml
+            'anti_gaming': 0.3,    # SSOT experiment_ssot.yaml
+        }
+
+        # Try to load from SSOT at runtime for fresh values
+        if EXPERIMENT_SSOT_AVAILABLE:
+            try:
+                from src.config.experiment_loader import load_experiment_config
+                _ssot = load_experiment_config(force_reload=True)
+                ssot_defaults = {
+                    'pnl': _ssot.reward.pnl_weight,
+                    'dsr': _ssot.reward.dsr_weight,
+                    'sortino': _ssot.reward.sortino_weight,
+                    'regime_penalty': _ssot.reward.regime_penalty,
+                    'holding_decay': _ssot.reward.holding_decay,
+                    'anti_gaming': _ssot.reward.anti_gaming,
+                }
+                logging.info(f"[REWARD-SSOT] Loaded from experiment_ssot.yaml: pnl={ssot_defaults['pnl']}")
+            except Exception as e:
+                logging.warning(f"[REWARD-SSOT] Failed to load SSOT, using hardcoded SSOT values: {e}")
+
+        # Check for custom reward weights in config (overrides SSOT)
         if 'reward_weights' in config:
             weights = config['reward_weights']
             reward_config = RewardConfig(
-                weight_pnl=weights.get('pnl', 0.50),
-                weight_dsr=weights.get('dsr', 0.25),
-                weight_sortino=weights.get('sortino', 0.15),
-                weight_regime_penalty=weights.get('regime_penalty', 0.05),
-                weight_holding_decay=weights.get('holding_decay', 0.03),
-                weight_anti_gaming=weights.get('anti_gaming', 0.02),
+                weight_pnl=weights.get('pnl', ssot_defaults['pnl']),
+                weight_dsr=weights.get('dsr', ssot_defaults['dsr']),
+                weight_sortino=weights.get('sortino', ssot_defaults['sortino']),
+                weight_regime_penalty=weights.get('regime_penalty', ssot_defaults['regime_penalty']),
+                weight_holding_decay=weights.get('holding_decay', ssot_defaults['holding_decay']),
+                weight_anti_gaming=weights.get('anti_gaming', ssot_defaults['anti_gaming']),
                 enable_normalization=config.get('enable_reward_normalization', True),
                 enable_curriculum=enable_curriculum,
             )
-            logging.info(f"[REWARD] Using custom reward weights: {weights}")
+            logging.info(f"[REWARD] Using custom reward weights (with SSOT defaults): {weights}")
         elif REWARD_CONFIG is not None:
             # Use SSOT default config
             reward_config = REWARD_CONFIG
             logging.info(f"[REWARD] Using SSOT default reward config: contract={reward_contract_id}")
         else:
-            # Create default RewardConfig
-            reward_config = RewardConfig()
-            logging.info(f"[REWARD] Using default RewardConfig: contract={reward_contract_id}")
+            # Create RewardConfig with SSOT defaults
+            reward_config = RewardConfig(
+                weight_pnl=ssot_defaults['pnl'],
+                weight_dsr=ssot_defaults['dsr'],
+                weight_sortino=ssot_defaults['sortino'],
+                weight_regime_penalty=ssot_defaults['regime_penalty'],
+                weight_holding_decay=ssot_defaults['holding_decay'],
+                weight_anti_gaming=ssot_defaults['anti_gaming'],
+            )
+            logging.info(f"[REWARD] Using SSOT-based RewardConfig: pnl={ssot_defaults['pnl']}, contract={reward_contract_id}")
 
     # Create request with experiment config
     request = TrainingRequest(
@@ -667,7 +785,7 @@ with dag:
         task_id='train_model',
         python_callable=run_training,
         provide_context=True,
-        execution_timeout=timedelta(hours=4),
+        execution_timeout=timedelta(hours=8),  # INCREASED: 4h → 8h for full training
     )
 
     # Summary task

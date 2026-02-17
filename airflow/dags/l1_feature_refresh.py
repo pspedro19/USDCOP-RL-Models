@@ -1,36 +1,31 @@
 """
-L1 Feature Refresh DAG - SSOT Edition
-======================================
-P0-1: Uses CanonicalFeatureBuilder as Single Source of Truth
+L1 Feature Refresh DAG - Unified Pipeline Edition
+===================================================
+Computes features via CanonicalFeatureBuilder (SSOT), normalizes with
+production norm_stats, and writes to inference_ready_nrt for L5.
 
-Contract: CTR-FEAT-001 - 15 features in canonical order
+Contract: CTR-FEAT-001 - Canonical feature order
+Contract: CTR-L1-NRT-001 - Normalized features ready for model.predict()
 
-This DAG replaces all duplicated feature calculations with the
-CanonicalFeatureBuilder from src.feature_store.builders, ensuring:
-1. Same calculations as training (Wilder's EMA for RSI/ATR/ADX)
-2. Same feature order (FEATURE_ORDER from core.py)
-3. Same normalization stats
-4. Builder version tracked for audit
+Data Flow:
+    +-----------------+     +----------------+     +---------------------+
+    |usdcop_m5_ohlcv  |---->|  CANONICAL     |---->| inference_ready_nrt |
+    | time, OHLCV     |     |  FEATURE       |     | (FLOAT[] normalized)|
+    +-----------------+     |  BUILDER       |     +---------------------+
+                            |  (SSOT)        |             |
+    +-----------------+     |  + norm_stats  |     +---------------------+
+    |macro_indicators |---->|  normalization |---->| inference_features  |
+    |_daily           |     +----------------+     | _5m (audit trail)   |
+    | dxy, vix, etc   |                            +---------------------+
+    +-----------------+
 
 Schedule:
     Event-driven: Uses NewOHLCVBarSensor to wait for new data from L0.
     Fallback schedule: */5 13-17 * * 1-5 (8:00-12:55 COT)
 
-Data Flow:
-    +-----------------+     +----------------+
-    |usdcop_m5_ohlcv  |---->|                |
-    | time, OHLCV     |     |                |
-    +-----------------+     |  CANONICAL     |     +--------------------+
-                            |  FEATURE       |---->|inference_features  |
-    +-----------------+     |  BUILDER       |     |_5m (15 features)   |
-    |macro_indicators |---->|  (SSOT)        |     +--------------------+
-    |_daily           |     |  Wilder's EMA  |
-    | dxy, vix, etc   |     +----------------+
-    +-----------------+
-
 Author: Pedro @ Lean Tech Solutions / Trading Team
-Version: 4.0.0 (SSOT CanonicalFeatureBuilder integration)
-Updated: 2026-01-17
+Version: 5.0.0 (Unified L1→L5 pipeline: normalizes + writes inference_ready_nrt)
+Updated: 2026-02-12
 """
 
 import sys
@@ -46,6 +41,7 @@ import logging
 import psycopg2
 from psycopg2.extras import execute_values
 import json
+import hashlib
 
 # Trading calendar from DAG utils
 from utils.trading_calendar import TradingCalendar
@@ -66,6 +62,17 @@ from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM, FEATURE_CONTRACT
 from src.feature_store.builders import CanonicalFeatureBuilder
 
 SSOT_AVAILABLE = True
+
+# Import ProductionContract for L1→L5 validation
+try:
+    from src.core.contracts.production_contract import ProductionContract, get_production_contract
+    from src.core.contracts.feature_contract import FEATURE_ORDER_HASH
+    PRODUCTION_CONTRACT_AVAILABLE = True
+except ImportError:
+    PRODUCTION_CONTRACT_AVAILABLE = False
+    ProductionContract = None
+    get_production_contract = None
+    FEATURE_ORDER_HASH = None
 logging.info(
     f"SSOT CanonicalFeatureBuilder loaded successfully. "
     f"Builder version: {CanonicalFeatureBuilder.VERSION}, "
@@ -89,6 +96,13 @@ MACRO_ZSCORE_STATS = CONFIG.get('macro_zscore_stats', {
 # Initialize trading calendar
 trading_cal = TradingCalendar()
 
+# =============================================================================
+# MODULE-LEVEL NORM_STATS CACHE
+# =============================================================================
+_cached_norm_stats = None
+_cached_norm_stats_hash = None
+_cached_market_feature_names = None
+
 
 def should_run_today():
     """Check if today is a valid trading day."""
@@ -101,6 +115,178 @@ def should_run_today():
 
 
 # =============================================================================
+# NORM STATS LOADING (NEW - v5.0.0)
+# =============================================================================
+
+def load_production_norm_stats(**context) -> dict:
+    """
+    Load norm_stats from the promoted production model.
+
+    Priority:
+    1. ProductionContract from model_registry (if model approved)
+    2. Fallback to config/norm_stats.json
+
+    Caches in module-level variable for compute_features_ssot() to use.
+
+    Returns:
+        Dict with status, norm_stats_hash, feature_count
+    """
+    global _cached_norm_stats, _cached_norm_stats_hash, _cached_market_feature_names
+
+    norm_stats = None
+    norm_stats_hash = None
+    source = "none"
+
+    # Try 1: Load from ProductionContract
+    if PRODUCTION_CONTRACT_AVAILABLE:
+        conn = get_db_connection()
+        try:
+            prod_contract = get_production_contract(conn)
+            if prod_contract and prod_contract.norm_stats_path:
+                norm_stats_path = prod_contract.norm_stats_path
+                try:
+                    with open(norm_stats_path, 'r') as f:
+                        norm_stats = json.load(f)
+                    # Compute hash
+                    with open(norm_stats_path, 'rb') as f:
+                        norm_stats_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                    # Validate hash matches expected
+                    if prod_contract.norm_stats_hash and norm_stats_hash != prod_contract.norm_stats_hash:
+                        logging.warning(
+                            f"norm_stats hash mismatch: file={norm_stats_hash}, "
+                            f"expected={prod_contract.norm_stats_hash}. Using file anyway."
+                        )
+                    source = f"production_contract:{prod_contract.model_id}"
+                    logging.info(
+                        f"Loaded norm_stats from production model {prod_contract.model_id}: "
+                        f"hash={norm_stats_hash}"
+                    )
+                except FileNotFoundError:
+                    logging.warning(f"norm_stats not found at {norm_stats_path}")
+        except Exception as e:
+            logging.warning(f"Error loading production contract: {e}")
+        finally:
+            conn.close()
+
+    # Try 2: Fallback to config/norm_stats.json
+    if norm_stats is None:
+        fallback_paths = [
+            PROJECT_ROOT / "config" / "norm_stats.json",
+            Path("/opt/airflow/config/norm_stats.json"),
+        ]
+        for path in fallback_paths:
+            if path.exists():
+                try:
+                    with open(path, 'r') as f:
+                        norm_stats = json.load(f)
+                    with open(path, 'rb') as f:
+                        norm_stats_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                    source = f"fallback:{path}"
+                    logging.info(f"Loaded norm_stats from fallback: {path}, hash={norm_stats_hash}")
+                    break
+                except Exception as e:
+                    logging.warning(f"Failed to load {path}: {e}")
+
+    if norm_stats is None:
+        logging.error("No norm_stats available. Cannot normalize features for inference_ready_nrt.")
+        context['ti'].xcom_push(key='norm_stats_available', value=False)
+        return {'status': 'no_norm_stats', 'source': 'none'}
+
+    # Extract market feature names (exclude state features and metadata)
+    # Market features = all FEATURE_ORDER entries that are NOT state features
+    state_features = {'position', 'time_normalized', 'unrealized_pnl'}
+    market_feature_names = [f for f in FEATURE_ORDER if f not in state_features]
+
+    # Cache for compute_features_ssot
+    _cached_norm_stats = norm_stats
+    _cached_norm_stats_hash = norm_stats_hash
+    _cached_market_feature_names = market_feature_names
+
+    # Push to XCom
+    context['ti'].xcom_push(key='norm_stats_available', value=True)
+    context['ti'].xcom_push(key='norm_stats_hash', value=norm_stats_hash)
+    context['ti'].xcom_push(key='norm_stats_source', value=source)
+    context['ti'].xcom_push(key='market_feature_count', value=len(market_feature_names))
+
+    logging.info(
+        f"norm_stats loaded: {len(market_feature_names)} market features, "
+        f"hash={norm_stats_hash}, source={source}"
+    )
+
+    return {
+        'status': 'loaded',
+        'source': source,
+        'norm_stats_hash': norm_stats_hash,
+        'market_feature_count': len(market_feature_names),
+    }
+
+
+# =============================================================================
+# PRODUCTION CONTRACT VALIDATION
+# =============================================================================
+
+def validate_production_contract(**context) -> dict:
+    """
+    Validate that L1 uses the same feature_order and norm_stats
+    as the model currently in production.
+
+    This ensures L1->L5 pipeline consistency.
+
+    Returns:
+        Dict with validation status and production model info
+    """
+    if not PRODUCTION_CONTRACT_AVAILABLE:
+        logging.warning("ProductionContract not available - skipping validation")
+        return {'status': 'skipped', 'reason': 'ProductionContract not available'}
+
+    conn = get_db_connection()
+
+    try:
+        # Load production contract
+        prod_contract = get_production_contract(conn)
+
+        if prod_contract is None:
+            logging.info("No production model found - this is expected for first deployment")
+            return {'status': 'no_production_model', 'using_defaults': True}
+
+        # Validate feature_order_hash
+        if FEATURE_ORDER_HASH and not prod_contract.validate_feature_order(FEATURE_ORDER_HASH):
+            logging.error(
+                f"FEATURE_ORDER_HASH mismatch! "
+                f"L1={FEATURE_ORDER_HASH}, "
+                f"Production={prod_contract.feature_order_hash}"
+            )
+            # Log but don't fail - allow L1 to continue for development
+            context['ti'].xcom_push(key='feature_hash_mismatch', value=True)
+        else:
+            logging.info(f"Feature order hash validated: {FEATURE_ORDER_HASH}")
+            context['ti'].xcom_push(key='feature_hash_mismatch', value=False)
+
+        # Log production contract info
+        logging.info(f"Production contract validated:")
+        logging.info(f"  Model ID: {prod_contract.model_id}")
+        logging.info(f"  Experiment: {prod_contract.experiment_name}")
+        logging.info(f"  Feature order hash: {prod_contract.feature_order_hash}")
+        logging.info(f"  Norm stats hash: {prod_contract.norm_stats_hash}")
+        logging.info(f"  Approved by: {prod_contract.approved_by}")
+
+        context['ti'].xcom_push(key='production_contract', value=prod_contract.to_dict())
+
+        return {
+            'status': 'validated',
+            'model_id': prod_contract.model_id,
+            'feature_order_hash': prod_contract.feature_order_hash,
+        }
+
+    except Exception as e:
+        logging.warning(f"Production contract validation error: {e}")
+        return {'status': 'error', 'error': str(e)}
+
+    finally:
+        conn.close()
+
+
+# =============================================================================
 # MAIN TASK FUNCTIONS - USING SSOT CANONICAL BUILDER
 # =============================================================================
 
@@ -108,11 +294,14 @@ def compute_features_ssot(**context) -> dict:
     """
     Compute features using the Single Source of Truth builder.
 
+    v5.0.0: Now also normalizes features and writes to inference_ready_nrt.
+
     This ensures:
     1. Same calculations as training (Wilder's EMA for RSI/ATR/ADX)
     2. Same feature order (CTR-FEAT-001)
-    3. Same normalization stats
+    3. Same normalization stats as production model
     4. Builder version tracked for audit
+    5. Normalized FLOAT[] written to inference_ready_nrt for L5
     """
     logging.info("=" * 60)
     logging.info("STARTING FEATURE CALCULATION WITH SSOT CANONICAL BUILDER")
@@ -267,7 +456,7 @@ def compute_features_ssot(**context) -> dict:
             logging.warning("Not enough bars after warmup period")
             return {'status': 'warning', 'reason': 'insufficient_warmup'}
 
-        # Insert/update inference_features_5m
+        # Insert/update inference_features_5m (audit trail)
         insert_sql = """
             INSERT INTO inference_features_5m (
                 time, log_ret_5m, log_ret_1h, log_ret_4h,
@@ -337,10 +526,19 @@ def compute_features_ssot(**context) -> dict:
             builder.VERSION,
         ))
 
+        # =================================================================
+        # STEP 7: Write normalized features to inference_ready_nrt (NEW)
+        # =================================================================
+        nrt_rows = _write_to_inference_ready_nrt(
+            cur, df, features_df, _cached_norm_stats,
+            _cached_norm_stats_hash, _cached_market_feature_names,
+        )
+
         conn.commit()
 
         rows_inserted = len(values)
-        logging.info(f"Inserted/updated {rows_inserted} feature rows")
+        logging.info(f"Inserted/updated {rows_inserted} feature rows to inference_features_5m")
+        logging.info(f"Inserted/updated {nrt_rows} rows to inference_ready_nrt")
         logging.info(
             f"SSOT features computed: {len(feature_vector)} features, "
             f"builder v{builder.VERSION}"
@@ -348,6 +546,7 @@ def compute_features_ssot(**context) -> dict:
 
         # Push metrics to XCom
         context['ti'].xcom_push(key='features_count', value=rows_inserted)
+        context['ti'].xcom_push(key='nrt_rows', value=nrt_rows)
         context['ti'].xcom_push(key='builder_version', value=builder.VERSION)
         context['ti'].xcom_push(key='feature_count', value=len(feature_vector))
 
@@ -362,6 +561,7 @@ def compute_features_ssot(**context) -> dict:
             'feature_count': len(feature_vector),
             'builder_version': builder.VERSION,
             'rows_inserted': rows_inserted,
+            'nrt_rows_inserted': nrt_rows,
         }
 
     except Exception as e:
@@ -371,6 +571,102 @@ def compute_features_ssot(**context) -> dict:
 
     finally:
         conn.close()
+
+
+def _write_to_inference_ready_nrt(
+    cur, df, features_df, norm_stats, norm_stats_hash, market_feature_names
+) -> int:
+    """
+    Normalize features and write to inference_ready_nrt.
+
+    This is the PRIMARY table that L5 reads from.
+    Features are stored as FLOAT[] (normalized, clipped to [-5, 5]).
+
+    Args:
+        cur: Database cursor (within active transaction)
+        df: Original OHLCV DataFrame with 'time' and 'close' columns
+        features_df: Computed features DataFrame from CanonicalFeatureBuilder
+        norm_stats: Dict from norm_stats.json (may contain _metadata key)
+        norm_stats_hash: SHA256 hash of norm_stats file
+        market_feature_names: List of market feature names (excludes state features)
+
+    Returns:
+        Number of rows inserted/updated
+    """
+    if norm_stats is None:
+        logging.warning("No norm_stats available - skipping inference_ready_nrt write")
+        return 0
+
+    if market_feature_names is None:
+        logging.warning("No market_feature_names - skipping inference_ready_nrt write")
+        return 0
+
+    # Skip warmup bars
+    warmup = 50
+    if len(features_df) <= warmup:
+        return 0
+
+    df_work = features_df.iloc[warmup:].copy()
+    df_work['time'] = df.iloc[warmup:]['time'].values
+    df_work['close'] = df.iloc[warmup:]['close'].values
+
+    nrt_values = []
+    for idx, row in df_work.iterrows():
+        # Build normalized feature array in canonical order
+        feature_array = []
+        for col in market_feature_names:
+            raw_val = row.get(col, 0.0)
+            if pd.isna(raw_val) or np.isinf(raw_val):
+                raw_val = 0.0
+            else:
+                raw_val = float(raw_val)
+
+            # Normalize using norm_stats
+            if col in norm_stats and isinstance(norm_stats[col], dict):
+                stats = norm_stats[col]
+                mean = stats.get('mean', 0.0)
+                std = stats.get('std', 1.0)
+                if std > 1e-8:
+                    raw_val = (raw_val - mean) / std
+
+            # Clip to [-5, 5]
+            raw_val = max(-5.0, min(5.0, raw_val))
+            feature_array.append(raw_val)
+
+        price = float(row.get('close', 0.0))
+        if price <= 0 or pd.isna(price):
+            continue
+
+        ts = row['time']
+        nrt_values.append((
+            ts,
+            feature_array,
+            price,
+            FEATURE_ORDER_HASH or "",
+            norm_stats_hash or "",
+            'nrt',
+        ))
+
+    if not nrt_values:
+        return 0
+
+    # Batch insert using execute_values for performance
+    insert_nrt_sql = """
+        INSERT INTO inference_ready_nrt (timestamp, features, price, feature_order_hash, norm_stats_hash, source)
+        VALUES %s
+        ON CONFLICT (timestamp) DO UPDATE SET
+            features = EXCLUDED.features,
+            price = EXCLUDED.price,
+            source = EXCLUDED.source
+    """
+    # execute_values needs a template for the FLOAT[] array
+    execute_values(
+        cur, insert_nrt_sql, nrt_values,
+        template="(%s, %s::double precision[], %s, %s, %s, %s)"
+    )
+
+    logging.info(f"Wrote {len(nrt_values)} normalized rows to inference_ready_nrt")
+    return len(nrt_values)
 
 
 def validate_feature_consistency(**context) -> bool:
@@ -441,6 +737,15 @@ def validate_feature_consistency(**context) -> bool:
                     logging.warning(msg)
                     warnings.append(msg)
 
+        # Validate inference_ready_nrt has recent data
+        cur.execute("""
+            SELECT COUNT(*) as cnt
+            FROM inference_ready_nrt
+            WHERE timestamp >= NOW() - INTERVAL '1 hour'
+        """)
+        nrt_recent = cur.fetchone()[0]
+        logging.info(f"inference_ready_nrt rows in last hour: {nrt_recent}")
+
         # Check feature completeness for recent data
         cur.execute("""
             SELECT COUNT(*) as cnt
@@ -449,7 +754,7 @@ def validate_feature_consistency(**context) -> bool:
         """)
         recent_count = cur.fetchone()[0]
 
-        logging.info(f"Features in last hour: {recent_count}")
+        logging.info(f"inference_features_5m rows in last hour: {recent_count}")
         logging.info(f"Validation warnings: {len(warnings)}")
         logging.info(f"Feature validation passed: {len(features)} features, builder v{builder_version}")
         logging.info("=" * 60)
@@ -475,6 +780,7 @@ def validate_feature_consistency(**context) -> bool:
 
         context['ti'].xcom_push(key='validation_status', value='passed')
         context['ti'].xcom_push(key='validation_warnings', value=len(warnings))
+        context['ti'].xcom_push(key='nrt_recent_count', value=nrt_recent)
         context['ti'].xcom_push(key='invalid_trading_dates', value=invalid_dates)
 
         return True
@@ -570,12 +876,12 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='Feature refresh using SSOT CanonicalFeatureBuilder',
+    description='Feature refresh: SSOT builder + normalization + inference_ready_nrt',
     schedule_interval='*/5 13-17 * * 1-5',  # Every 5 min during trading hours
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=['v3', 'l1', 'features', 'ssot', 'production'],
+    tags=['v5', 'l1', 'features', 'ssot', 'production', 'nrt'],
 )
 
 with dag:
@@ -608,7 +914,21 @@ with dag:
         mode='poke',
     )
 
-    # SSOT Feature Computation
+    # Load norm_stats from production model (NEW v5.0.0)
+    task_load_norm_stats = PythonOperator(
+        task_id='load_production_norm_stats',
+        python_callable=load_production_norm_stats,
+        provide_context=True,
+    )
+
+    # Validate production contract
+    task_validate_contract = PythonOperator(
+        task_id='validate_production_contract',
+        python_callable=validate_production_contract,
+        provide_context=True,
+    )
+
+    # SSOT Feature Computation + Normalization + inference_ready_nrt write
     task_compute = PythonOperator(
         task_id='compute_features_ssot',
         python_callable=compute_features_ssot,
@@ -637,7 +957,8 @@ with dag:
         trigger_rule='all_success'
     )
 
-    # Task dependencies with sensor
-    # Trading day check -> (sensor wait OR skip) -> compute -> validate -> mark
+    # Task dependencies (v5.0.0):
+    # check_trading_day -> (wait_for_ohlcv OR skip)
+    # wait_for_ohlcv -> load_norm_stats -> validate_contract -> compute -> validate -> mark
     task_check >> [task_wait_ohlcv, task_skip]
-    task_wait_ohlcv >> task_compute >> task_validate >> task_mark_processed
+    task_wait_ohlcv >> task_load_norm_stats >> task_validate_contract >> task_compute >> task_validate >> task_mark_processed

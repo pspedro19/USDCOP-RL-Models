@@ -1,0 +1,291 @@
+# =============================================================================
+# L0 Extractors Configuration (SSOT)
+# =============================================================================
+# Single source of truth for all data extraction settings.
+# All extractors read their configuration from this file.
+# =============================================================================
+
+version: "2.0"
+
+# -----------------------------------------------------------------------------
+# Global settings
+# -----------------------------------------------------------------------------
+global:
+  retry_attempts: 3
+  retry_delay_seconds: 5
+  timeout_seconds: 30
+  upsert_last_n: 5  # Number of recent records to UPSERT
+
+# -----------------------------------------------------------------------------
+# Market hours (for filtering realtime updates)
+# -----------------------------------------------------------------------------
+market:
+  timezone: "America/Bogota"
+  open_hour: 8
+  close_hour: 13
+  trading_days: [0, 1, 2, 3, 4]  # Mon-Fri
+
+# -----------------------------------------------------------------------------
+# Data Sources
+# -----------------------------------------------------------------------------
+sources:
+
+  # ---------------------------------------------------------------------------
+  # FRED (Federal Reserve Economic Data)
+  # ---------------------------------------------------------------------------
+  fred:
+    enabled: true
+    api_key_env: "FRED_API_KEY"
+    base_url: "https://api.stlouisfed.org/fred/series/observations"
+    rate_limit_per_minute: 120
+    variables:
+      - name: "FINC_BOND_YIELD2Y_USA_D_DGS2"
+        series_id: "DGS2"
+        frequency: "D"
+        intraday: false
+
+      - name: "POLR_PRIME_RATE_USA_D_PRIME"
+        series_id: "DPRIME"
+        frequency: "D"
+        intraday: false
+
+      - name: "POLR_FED_FUNDS_USA_M_FEDFUNDS"
+        series_id: "FEDFUNDS"
+        frequency: "M"
+        intraday: false
+
+      - name: "INFL_CPI_ALL_USA_M_CPIAUCSL"
+        series_id: "CPIAUCSL"
+        frequency: "M"
+        intraday: false
+
+      - name: "INFL_PCE_USA_M_PCEPI"
+        series_id: "PCEPI"
+        frequency: "M"
+        intraday: false
+
+      - name: "LABR_UNEMPLOYMENT_USA_M_UNRATE"
+        series_id: "UNRATE"
+        frequency: "M"
+        intraday: false
+
+      - name: "PROD_INDUSTRIAL_USA_M_INDPRO"
+        series_id: "INDPRO"
+        frequency: "M"
+        intraday: false
+
+      - name: "MNYS_M2_SUPPLY_USA_M_M2SL"
+        series_id: "M2SL"
+        frequency: "M"
+        intraday: false
+
+      - name: "SENT_CONSUMER_USA_M_UMCSENT"
+        series_id: "UMCSENT"
+        frequency: "M"
+        intraday: false
+
+  # ---------------------------------------------------------------------------
+  # SUAMECA REST API (BanRep - IBR, TPM, Prime Rate, ITCR, ITCR_USA)
+  # ---------------------------------------------------------------------------
+  suameca:
+    enabled: true
+    method: "rest_api"
+    base_url: "https://suameca.banrep.gov.co/estadisticas-economicas-back/rest/estadisticaEconomicaRestService"
+    variables:
+      - name: "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR"
+        serie_id: 241
+        frequency: "D"
+        intraday: true  # Updates during market hours
+
+      - name: "POLR_POLICY_RATE_COL_D_TPM"
+        serie_id: 59
+        frequency: "D"
+        intraday: true
+
+      - name: "POLR_PRIME_RATE_USA_D_PRIME"
+        serie_id: 88
+        frequency: "D"
+        intraday: false
+        notes: "Bloomberg source via BanRep SUAMECA"
+
+      - name: "FXRT_REER_BILATERAL_COL_M_ITCR"
+        serie_id: 234
+        frequency: "M"
+        intraday: false
+        notes: "REST API works (469 data points from 1986-2025)"
+
+      - name: "FXRT_REER_BILATERAL_USA_COL_M_ITCR_USA"
+        serie_id: 219
+        frequency: "M"
+        intraday: false
+        notes: "REST API works (469 data points from 1986-2025)"
+
+  # ---------------------------------------------------------------------------
+  # SUAMECA Selenium (BanRep - Vista Tabla: IPCCOL, ITCR, TOT, RESINT)
+  # ---------------------------------------------------------------------------
+  suameca_selenium:
+    enabled: true
+    method: "selenium"
+    use_vista_tabla: true
+    selenium_timeout_seconds: 60
+    variables:
+      - name: "INFL_CPI_TOTAL_COL_M_IPCCOL"
+        serie_id: 100002
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/100002/ipc"
+        frequency: "M"
+        intraday: false
+
+      - name: "FTRD_TERMS_TRADE_COL_M_TOT"
+        serie_id: 4180
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4180/indice_terminos_intercambio_bienes"
+        frequency: "M"
+        intraday: false
+
+      - name: "RSBP_RESERVES_INTERNATIONAL_COL_M_RESINT"
+        serie_id: 15051
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/15051/reservas_internacionales"
+        frequency: "M"
+        intraday: false
+
+      - name: "RSBP_CURRENT_ACCOUNT_COL_Q_CACCT"
+        serie_id: 414001
+        url: "https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/414001/cuentacorriente"
+        frequency: "Q"
+        intraday: false
+
+  # ---------------------------------------------------------------------------
+  # SUAMECA Graficador (BanRep - CSV Download: FDIIN, FDIOUT)
+  # NOTE: ITCR and ITCR_USA moved to REST API section (works without Selenium)
+  # ---------------------------------------------------------------------------
+  suameca_graficador:
+    enabled: true
+    method: "graficador"
+    selenium_timeout_seconds: 60
+    variables:
+      - name: "RSBP_FDI_INFLOW_COL_Q_FDIIN"
+        serie_id: 15133
+        url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15133"
+        frequency: "Q"
+        intraday: false
+
+      - name: "RSBP_FDI_OUTFLOW_COL_Q_FDIOUT"
+        serie_id: 15134
+        url: "https://suameca.banrep.gov.co/graficador-interactivo/grafica/15134"
+        frequency: "Q"
+        intraday: false
+
+  # ---------------------------------------------------------------------------
+  # BCRP (Banco Central de Reserva del Peru)
+  # ---------------------------------------------------------------------------
+  bcrp:
+    enabled: true
+    base_url: "https://estadisticas.bcrp.gob.pe/estadisticas/series/api"
+    variables:
+      - name: "CRSK_SPREAD_EMBI_COL_D_EMBI"
+        serie_code: "PD04715XD"
+        frequency: "D"
+        intraday: true
+
+  # ---------------------------------------------------------------------------
+  # Investing.com (REST API - NO Selenium)
+  # ---------------------------------------------------------------------------
+  investing:
+    enabled: true
+    method: "rest_api"
+    rate_limit_seconds: 3
+    variables:
+      # Colombian Fixed Income
+      - name: "FINC_BOND_YIELD5Y_COL_D_COL5Y"
+        instrument_id: 29240
+        domain_id: "www"
+        referer_url: "https://www.investing.com/rates-bonds/colombia-5-year-bond-yield-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "FINC_BOND_YIELD10Y_COL_D_COL10Y"
+        instrument_id: 29236
+        domain_id: "www"
+        referer_url: "https://www.investing.com/rates-bonds/colombia-10-year-bond-yield-historical-data"
+        frequency: "D"
+        intraday: true
+
+      # US Fixed Income
+      - name: "FINC_BOND_YIELD10Y_USA_D_UST10Y"
+        instrument_id: 23705
+        domain_id: "www"
+        referer_url: "https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield-historical-data"
+        frequency: "D"
+        intraday: true
+
+      # Indices
+      - name: "FXRT_INDEX_DXY_USA_D_DXY"
+        instrument_id: 8827
+        domain_id: "www"
+        referer_url: "https://www.investing.com/indices/usdollar-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "VOLT_VIX_USA_D_VIX"
+        instrument_id: 44336
+        domain_id: "www"
+        referer_url: "https://www.investing.com/indices/volatility-s-p-500-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "EQTY_INDEX_COLCAP_COL_D_COLCAP"
+        instrument_id: 49642
+        domain_id: "www"
+        referer_url: "https://www.investing.com/indices/colcap-historical-data"
+        frequency: "D"
+        intraday: true
+
+      # Commodities
+      - name: "COMM_OIL_WTI_GLB_D_WTI"
+        instrument_id: 8849
+        domain_id: "www"
+        referer_url: "https://www.investing.com/commodities/crude-oil-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "COMM_OIL_BRENT_GLB_D_BRENT"
+        instrument_id: 8833
+        domain_id: "www"
+        referer_url: "https://www.investing.com/commodities/brent-oil-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "COMM_METAL_GOLD_GLB_D_GOLD"
+        instrument_id: 8830
+        domain_id: "www"
+        referer_url: "https://www.investing.com/commodities/gold-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "COMM_AGRI_COFFEE_GLB_D_COFFEE"
+        instrument_id: 8832
+        domain_id: "www"
+        referer_url: "https://www.investing.com/commodities/us-coffee-c-historical-data"
+        frequency: "D"
+        intraday: true
+
+      # FX Pairs
+      - name: "FXRT_SPOT_USDMXN_MEX_D_USDMXN"
+        instrument_id: 39
+        domain_id: "es"
+        referer_url: "https://es.investing.com/currencies/usd-mxn-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "FXRT_SPOT_USDCLP_CHL_D_USDCLP"
+        instrument_id: 2110
+        domain_id: "es"
+        referer_url: "https://es.investing.com/currencies/usd-clp-historical-data"
+        frequency: "D"
+        intraday: true
+
+      - name: "FXRT_SPOT_USDCOP_COL_D_USDCOP"
+        instrument_id: 2112
+        domain_id: "www"
+        referer_url: "https://www.investing.com/currencies/usd-cop-historical-data"
+        frequency: "D"
+        intraday: true

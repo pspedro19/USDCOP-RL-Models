@@ -150,10 +150,10 @@ class TrainingConfig(BaseModel):
     n_steps: int = Field(default=2048, ge=64)
     batch_size: int = Field(default=64, ge=16)
     n_epochs: int = Field(default=10, ge=1)
-    gamma: float = Field(default=0.90, ge=0, le=1)  # From config/trading_config.yaml SSOT
+    gamma: float = Field(default=0.95, ge=0, le=1)  # SSOT: experiment_ssot.yaml
     gae_lambda: float = Field(default=0.95, ge=0, le=1)
     clip_range: float = Field(default=0.2, gt=0, le=1)
-    ent_coef: float = Field(default=0.01, ge=0)
+    ent_coef: float = Field(default=0.05, ge=0)  # Increased from 0.01 to prevent HOLD collapse
 
     # Environment
     initial_capital: float = Field(default=10_000.0, gt=0)
@@ -206,10 +206,10 @@ class PPOHyperparameters(BaseModel):
     n_steps: int = Field(default=2048, ge=64)
     batch_size: int = Field(default=64, ge=16)
     n_epochs: int = Field(default=10, ge=1)
-    gamma: float = Field(default=0.90, ge=0, le=1)  # From config/trading_config.yaml SSOT
+    gamma: float = Field(default=0.95, ge=0, le=1)  # SSOT: experiment_ssot.yaml
     gae_lambda: float = Field(default=0.95, ge=0, le=1)
     clip_range: float = Field(default=0.2, gt=0, le=1)
-    ent_coef: float = Field(default=0.01, ge=0)
+    ent_coef: float = Field(default=0.05, ge=0)  # Increased from 0.01 to prevent HOLD collapse
     vf_coef: float = Field(default=0.5, gt=0)
     max_grad_norm: float = Field(default=0.5, gt=0)
 

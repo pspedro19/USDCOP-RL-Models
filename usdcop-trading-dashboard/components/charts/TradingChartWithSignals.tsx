@@ -47,6 +47,7 @@ import {
   PERIOD_COLORS,
   getDataType
 } from '@/lib/config/training-periods'
+import { TIMESTAMP_TOLERANCE_NORMAL_S, TIMESTAMP_TOLERANCE_REPLAY_S } from '@/lib/contracts/ssot.contract'
 
 interface TradingChartWithSignalsProps {
   symbol?: string
@@ -485,7 +486,7 @@ export default function TradingChartWithSignals({
       }
 
       // In replay mode with synthetic trades, use wider tolerance
-      const maxDiff = isReplayMode ? 86400 : 600
+      const maxDiff = isReplayMode ? TIMESTAMP_TOLERANCE_REPLAY_S : TIMESTAMP_TOLERANCE_NORMAL_S
       return bestDiff <= maxDiff ? bestNearest : null
     }
 
@@ -584,7 +585,7 @@ export default function TradingChartWithSignals({
 
           // Only show if within tolerance of a candlestick
           // In replay mode with synthetic trades, use wider tolerance (1 day = 86400s)
-          const maxDiff = isReplayMode ? 86400 : 600
+          const maxDiff = isReplayMode ? TIMESTAMP_TOLERANCE_REPLAY_S : TIMESTAMP_TOLERANCE_NORMAL_S
           if (bestMatch.diff > maxDiff) return
 
           const nearestTs = bestMatch.candleTs

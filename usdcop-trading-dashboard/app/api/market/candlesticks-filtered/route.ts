@@ -196,9 +196,9 @@ export async function GET(request: NextRequest) {
 
     // Generate fallback data when database is unavailable
     const searchParams = request.nextUrl.searchParams;
-    const startDate = searchParams.get('start_date') || '2025-12-01';
+    const startDate = searchParams.get('start_date') || '2025-01-01';
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
-    const limit = Math.min(parseInt(searchParams.get('limit') || '1000'), 5000);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '5000'), 50000);
 
     const fallbackData = generateFallbackCandlesticks(startDate, endDate, limit);
 

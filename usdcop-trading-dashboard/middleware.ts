@@ -26,6 +26,8 @@ const PUBLIC_ROUTES = [
   '/favicon.ico',
   '/images',
   '/fonts',
+  '/data',        // Static JSON data files (production summaries, trades)
+  '/forecasting', // Static CSV + PNG files (model metrics, backtest charts)
 ];
 
 // Routes that require admin role
@@ -56,9 +58,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // DEV MODE: Skip auth entirely when NEXT_PUBLIC_DEV_MODE is true
-  // This allows the app to work without backend authentication
-  if (process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
+  // DEV MODE: Skip auth entirely in development or when AUTH_BYPASS is set
+  // NODE_ENV is compile-time, AUTH_BYPASS_ENABLED is runtime
+  if (process.env.NODE_ENV === 'development' || process.env.AUTH_BYPASS_ENABLED === 'true') {
     const response = NextResponse.next();
     addSecurityHeaders(response);
     return response;
@@ -175,6 +177,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|csv)$).*)',
   ],
 };

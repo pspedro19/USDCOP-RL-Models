@@ -15,6 +15,9 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple, Any
 import hashlib
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -50,11 +53,19 @@ class EnsembleType(str, Enum):
 
 
 # =============================================================================
-# CONSTANTS (SSOT)
+# CONSTANTS (SSOT) — YAML-first with hardcoded fallback
 # =============================================================================
 
-# Forecasting horizons (days)
-HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
+# Try loading from forecasting_ssot.yaml; fall back to hardcoded values
+try:
+    from src.forecasting.ssot_config import ForecastingSSOTConfig as _SSOTCfg
+    _cfg = _SSOTCfg.load()
+    HORIZONS: Tuple[int, ...] = _cfg.get_horizons()
+    _logger.debug("[contracts] Loaded HORIZONS from YAML: %s", HORIZONS)
+except Exception as _e:
+    _logger.debug("[contracts] YAML load failed (%s), using hardcoded fallback", _e)
+    # Hardcoded fallback (same values as forecasting_ssot.yaml)
+    HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 # Model definitions
 MODEL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
@@ -143,43 +154,52 @@ HORIZON_CATEGORIES: Dict[int, HorizonCategory] = {
 }
 
 # Walk-forward validation config
-WF_CONFIG = {
-    "n_windows": 5,
-    "min_train_pct": 0.4,
-    "gap_days": 30,
-    "step_pct": 0.1,
-}
+try:
+    WF_CONFIG = _cfg.get_wf_config()
+except Exception:
+    WF_CONFIG = {
+        "n_windows": 5,
+        "min_train_pct": 0.4,
+        "gap_days": 30,
+        "step_pct": 0.1,
+    }
 
 # Horizon-adaptive hyperparameters (SSOT)
-HORIZON_CONFIGS: Dict[str, Dict[str, Any]] = {
-    "short": {  # H <= 5
-        "n_estimators": 50,
-        "max_depth": 3,
-        "learning_rate": 0.05,
-        "colsample_bytree": 0.6,
-        "reg_alpha": 0.5,
-        "reg_lambda": 1.0,
-        "min_samples_leaf": 20,
-    },
-    "medium": {  # H <= 15
-        "n_estimators": 30,
-        "max_depth": 2,
-        "learning_rate": 0.08,
-        "colsample_bytree": 0.5,
-        "reg_alpha": 1.0,
-        "reg_lambda": 2.0,
-        "min_samples_leaf": 30,
-    },
-    "long": {  # H >= 20
-        "n_estimators": 20,
-        "max_depth": 1,
-        "learning_rate": 0.1,
-        "colsample_bytree": 0.4,
-        "reg_alpha": 2.0,
-        "reg_lambda": 3.0,
-        "min_samples_leaf": 50,
-    },
-}
+try:
+    HORIZON_CONFIGS: Dict[str, Dict[str, Any]] = {
+        cat: dict(_cfg.raw["horizons"]["configs"][cat])
+        for cat in ["short", "medium", "long"]
+    }
+except Exception:
+    HORIZON_CONFIGS: Dict[str, Dict[str, Any]] = {
+        "short": {
+            "n_estimators": 50,
+            "max_depth": 3,
+            "learning_rate": 0.05,
+            "colsample_bytree": 0.6,
+            "reg_alpha": 0.5,
+            "reg_lambda": 1.0,
+            "min_samples_leaf": 20,
+        },
+        "medium": {
+            "n_estimators": 30,
+            "max_depth": 2,
+            "learning_rate": 0.08,
+            "colsample_bytree": 0.5,
+            "reg_alpha": 1.0,
+            "reg_lambda": 2.0,
+            "min_samples_leaf": 30,
+        },
+        "long": {
+            "n_estimators": 20,
+            "max_depth": 1,
+            "learning_rate": 0.1,
+            "colsample_bytree": 0.4,
+            "reg_alpha": 2.0,
+            "reg_lambda": 3.0,
+            "min_samples_leaf": 50,
+        },
+    }
 
 
 def get_horizon_config(horizon: int) -> Dict[str, Any]:

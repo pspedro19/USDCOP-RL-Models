@@ -1,0 +1,58 @@
+{
+  "stage": "L4-TEST",
+  "total_return_pct": -4.750683593750004,
+  "apr_pct": -9.294949869168889,
+  "sharpe_ratio": -0.4525041389369176,
+  "max_drawdown_pct": 17.481236270441787,
+  "n_trades": 119,
+  "winning_trades": 61,
+  "losing_trades": 58,
+  "win_rate_pct": 51.26050420168067,
+  "profit_factor": 0.9882699977988351,
+  "final_equity": 9524.931640625,
+  "test_days": 182.10256410256412,
+  "sortino_ratio": -0.5082001431183555,
+  "period_start": "2025-01-02 13:00:00",
+  "period_end": "2025-12-30 12:55:00",
+  "monthly_returns": {
+    "2025-02": 2.04,
+    "2025-03": -2.78,
+    "2025-04": -1.66,
+    "2025-05": 2.28,
+    "2025-06": -1.29,
+    "2025-07": -4.3,
+    "2025-08": -1.83,
+    "2025-09": -4.04,
+    "2025-10": 3.1,
+    "2025-11": -0.07,
+    "2025-12": -0.45
+  },
+  "gates_passed": false,
+  "gate_results": {
+    "min_return_pct": {
+      "passed": false,
+      "actual": -4.750683593750004,
+      "threshold": 0.0
+    },
+    "min_sharpe_ratio": {
+      "passed": false,
+      "actual": -0.4525041389369176,
+      "threshold": 0.0
+    },
+    "max_drawdown_pct": {
+      "passed": true,
+      "actual": 17.481236270441787,
+      "threshold": 20.0
+    },
+    "min_trades": {
+      "passed": true,
+      "actual": 119.0,
+      "threshold": 30.0
+    },
+    "min_win_rate": {
+      "passed": true,
+      "actual": 51.26050420168067,
+      "threshold": 35.0
+    }
+  }
+}
