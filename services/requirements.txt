@@ -4,39 +4,39 @@
 # ================================================
 
 # Core API Framework
-fastapi==0.115.4
-uvicorn[standard]==0.32.0
-pydantic==2.9.2
-pydantic-settings==2.6.1
-python-multipart==0.0.12
+fastapi==0.131.0
+uvicorn[standard]==0.41.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
+python-multipart==0.0.22
 
 # Database - Sync & Async
-psycopg2-binary==2.9.9
-asyncpg==0.29.0
-sqlalchemy==2.0.23
+psycopg2-binary==2.9.11
+asyncpg==0.31.0
+sqlalchemy==2.0.46
 
 # Data Processing
 pandas==2.2.3
 numpy==1.26.4
 
 # HTTP Clients
-requests==2.31.0
-httpx==0.27.0
+requests==2.32.5
+httpx==0.28.1
 
 # Redis - Sync & Async
 redis[asyncio]==5.0.1
 
 # MinIO/S3 Storage (for pipeline-api)
-minio==7.2.8
-boto3==1.35.36
-botocore==1.35.36
+minio==7.2.20
+boto3==1.42.54
+botocore==1.42.54
 
 # Technical Analysis (for pipeline-api, requires system TA-Lib)
-ta-lib==0.4.32
+ta-lib==0.6.8
 
 # Resilience & Monitoring (for realtime-ingestion-v2)
-circuitbreaker==2.0.0
-prometheus-client==0.19.0
+circuitbreaker==2.1.3
+prometheus-client==0.24.1
 
 # WebSocket Support (for multi-model-api)
 websockets==12.0
@@ -45,9 +45,9 @@ websockets==12.0
 sse-starlette==2.0.0
 
 # Utilities
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
 pytz==2024.1
-python-dotenv==1.0.0
+python-dotenv==1.2.1
 
 # Trading Calendar - Colombian Holidays
 colombian-holidays>=1.0.0
@@ -58,21 +58,21 @@ holidays>=0.37
 # ================================================
 
 # Reinforcement Learning (PPO model)
-stable-baselines3==2.3.2
+stable-baselines3==2.7.1
 gymnasium==0.29.1
 
 # ONNX Runtime for optimized inference
 # Updated from 1.16.3 to 1.19.2 to fix kernel compatibility issue
-onnxruntime==1.19.2
+onnxruntime==1.24.2
 
 # Data Drift Detection
-evidently==0.4.16
+evidently==0.7.20
 
 # Model Export (optional - for development)
 # onnx==1.15.0
 
 # Statistical Tests (for drift fallback)
-scipy==1.11.4
+scipy==1.17.1
 
 # Configuration Management
-pyyaml==6.0.1
+pyyaml==6.0.3
