@@ -15,15 +15,15 @@
 export interface StrategyTrade {
   trade_id: number;
   timestamp: string;           // ISO8601 with timezone
-  exit_timestamp?: string;     // ISO8601 with timezone
+  exit_timestamp?: string | null;     // ISO8601 (null if open)
   side: 'LONG' | 'SHORT';
   entry_price: number;
-  exit_price: number;
-  pnl_usd: number;
-  pnl_pct: number;
-  exit_reason: string;         // Generic string (strategy-defined)
+  exit_price: number | null;         // null if trade still open
+  pnl_usd: number | null;           // null if trade still open
+  pnl_pct: number | null;           // null if trade still open
+  exit_reason: string | null;        // null if trade still open
   equity_at_entry: number;
-  equity_at_exit: number;
+  equity_at_exit: number | null;     // null if trade still open
   leverage: number;
   [key: string]: unknown;      // Strategy-specific metadata (confidence_tier, etc.)
 }

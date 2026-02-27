@@ -10,7 +10,7 @@
  * Contract: lib/contracts/strategy.contract.ts
  */
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,37 +36,115 @@ import { useLiveProduction } from '@/hooks/useLiveProduction';
 import { LivePositionCard } from '@/components/production/LivePositionCard';
 import { GuardrailsCard } from '@/components/production/GuardrailsCard';
 
+// ============================================================================
+// Production Strategy Selector
+// ============================================================================
+interface ProdStrategyInfo {
+  strategy_id: string;
+  strategy_name: string;
+  pipeline: string;
+  status: string;
+  return_pct: number;
+  sharpe: number;
+}
+
+function ProductionStrategyDropdown({ strategyName, strategyId, approval, stats }: {
+  strategyName: string;
+  strategyId: string;
+  approval: { status: string } | null;
+  stats: StrategyStats | undefined;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const statusLabel = approval?.status || 'LIVE';
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-xl",
+          "bg-slate-800/90 border-2 border-cyan-500/40 hover:border-cyan-400/70",
+          "transition-all duration-200 shadow-lg shadow-cyan-500/10"
+        )}
+      >
+        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="text-left">
+          <div className="font-bold text-white text-sm">{strategyName}</div>
+          <div className="text-[10px] text-slate-400">
+            +{stats?.total_return_pct?.toFixed(1) ?? '?'}% | Sharpe {stats?.sharpe?.toFixed(2) ?? '?'}
+          </div>
+        </div>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[9px] font-bold ml-1",
+            statusLabel === 'APPROVED'
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              : "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
+          )}
+        >
+          {statusLabel}
+        </Badge>
+        <ChevronDown className={cn(
+          "w-4 h-4 text-cyan-400 transition-transform",
+          isOpen && "rotate-180"
+        )} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl min-w-[280px]">
+          <div className="px-4 py-3 border-b border-slate-700/50">
+            <div className="text-white font-semibold text-sm">{strategyName}</div>
+            <div className="text-[10px] text-slate-400 mt-1">ID: {strategyId}</div>
+          </div>
+          <div className="px-4 py-3 space-y-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Retorno</span>
+              <span className={cn("font-bold", (stats?.total_return_pct ?? 0) >= 0 ? "text-emerald-400" : "text-red-400")}>
+                {(stats?.total_return_pct ?? 0) >= 0 ? '+' : ''}{stats?.total_return_pct?.toFixed(2) ?? 'N/A'}%
+              </span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Sharpe</span>
+              <span className="text-white font-bold">{stats?.sharpe?.toFixed(3) ?? 'N/A'}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Win Rate</span>
+              <span className="text-white font-bold">{stats?.win_rate_pct?.toFixed(1) ?? 'N/A'}%</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Max DD</span>
+              <span className="text-red-400 font-bold">{stats?.max_dd_pct?.toFixed(2) ?? 'N/A'}%</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Trades</span>
+              <span className="text-white font-bold">{(stats?.n_long ?? 0) + (stats?.n_short ?? 0)}</span>
+            </div>
+          </div>
+          <div className="px-4 py-2 bg-slate-900/50 border-t border-slate-700/50">
+            <div className="text-[9px] text-slate-500">Pipeline: ml_forecasting</div>
+          </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="w-full px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors text-center"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TradingChartWithSignals = lazy(() => import('@/components/charts/TradingChartWithSignals'));
 
 // ============================================================================
-// LivePriceDisplay — polls /api/market/realtime-price every 60s
 // ============================================================================
-function LivePriceDisplay() {
-  const [price, setPrice] = useState<number | null>(null);
-  const [change, setChange] = useState<number | null>(null);
-  const [changePct, setChangePct] = useState<number | null>(null);
-  const [isMarketOpen, setIsMarketOpen] = useState(false);
-
-  useState(() => {
-    const fetchPrice = async () => {
-      try {
-        const res = await fetch('/api/market/realtime-price');
-        if (res.ok) {
-          const data = await res.json();
-          setPrice(data.price);
-          setChange(data.change);
-          setChangePct(data.changePct);
-          setIsMarketOpen(data.isMarketOpen);
-        }
-      } catch { /* price is optional */ }
-    };
-    fetchPrice();
-    const interval = setInterval(fetchPrice, 60000);
-    return () => clearInterval(interval);
-  });
-
-  if (price === null) return null;
-
+// LivePriceDisplay — compact header badge
+// ============================================================================
+function LivePriceDisplay({ priceData }: { priceData: RealtimePriceData | null }) {
+  if (!priceData) return null;
+  const { price, change, changePct, isMarketOpen } = priceData;
   const isPositive = (change ?? 0) >= 0;
 
   return (
@@ -101,6 +179,234 @@ function LivePriceDisplay() {
         {isMarketOpen ? 'Open' : 'Closed'}
       </Badge>
     </div>
+  );
+}
+
+// ============================================================================
+// RealtimePriceCard — prominent card with full price details
+// ============================================================================
+interface RealtimePriceData {
+  price: number;
+  change: number | null;
+  changePct: number | null;
+  source: string;
+  lastUpdate: string;
+  isMarketOpen: boolean;
+  marketStatus: string;
+  nextUpdateMinutes: number;
+  dayHigh: number | null;
+  dayLow: number | null;
+  week52High: number | null;
+  week52Low: number | null;
+}
+
+function useRealtimePrice(): RealtimePriceData | null {
+  const [data, setData] = useState<RealtimePriceData | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch('/api/market/realtime-price');
+        if (res.ok && mounted) {
+          const json = await res.json();
+          const d = json.data ?? json; // handle nested or flat response
+          setData({
+            price: d.price,
+            change: d.change ?? null,
+            changePct: d.changePct ?? null,
+            source: d.originalSource ?? d.source ?? 'unknown',
+            lastUpdate: d.lastUpdate ?? new Date().toISOString(),
+            isMarketOpen: d.isMarketOpen ?? false,
+            marketStatus: d.marketStatus ?? 'closed',
+            nextUpdateMinutes: d.nextUpdateMinutes ?? 30,
+            dayHigh: d.dayHigh ?? null,
+            dayLow: d.dayLow ?? null,
+            week52High: d.week52High ?? null,
+            week52Low: d.week52Low ?? null,
+          });
+
+          // Adaptive polling: match server cache TTL
+          const pollMs = d.isMarketOpen ? 5 * 60 * 1000 : 30 * 60 * 1000;
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = setInterval(fetchPrice, pollMs);
+        }
+      } catch { /* price is optional */ }
+    };
+
+    fetchPrice();
+
+    return () => {
+      mounted = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return data;
+}
+
+function RealtimePriceCard({ data }: { data: RealtimePriceData }) {
+  const isPositive = (data.change ?? 0) >= 0;
+  const sourceLabel: Record<string, string> = {
+    investing: 'Investing.com',
+    twelvedata: 'TwelveData',
+    cache: 'Cache',
+    fallback: 'Fallback',
+  };
+  const statusLabel: Record<string, string> = {
+    open: 'Mercado Abierto',
+    closed: 'Mercado Cerrado',
+    pre_market: 'Pre-Mercado',
+    after_hours: 'Post-Mercado',
+  };
+
+  const lastUpdateTime = new Date(data.lastUpdate);
+  const minutesAgo = Math.floor((Date.now() - lastUpdateTime.getTime()) / 60000);
+
+  return (
+    <Card className="bg-slate-900/80 border-slate-700/50 overflow-hidden">
+      <div className="relative">
+        {/* Gradient top accent */}
+        <div className={cn(
+          "absolute top-0 left-0 right-0 h-1",
+          data.isMarketOpen ? "bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-500" : "bg-gradient-to-r from-slate-600 via-slate-500 to-slate-600"
+        )} />
+
+        <CardContent className="pt-5 pb-4 px-5">
+          {/* Header row: title + market status */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "p-1.5 rounded-lg",
+                data.isMarketOpen ? "bg-emerald-500/15" : "bg-slate-700/50"
+              )}>
+                <DollarSign className={cn("w-4 h-4", data.isMarketOpen ? "text-emerald-400" : "text-slate-400")} />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">USD/COP</span>
+                <span className="text-[10px] text-slate-500 ml-2">Spot</span>
+              </div>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] font-semibold px-2 py-0.5",
+                data.isMarketOpen
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+              )}
+            >
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full mr-1.5 inline-block",
+                data.isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-500"
+              )} />
+              {statusLabel[data.marketStatus] ?? 'Cerrado'}
+            </Badge>
+          </div>
+
+          {/* Price + Change */}
+          <div className="flex items-baseline gap-3 mb-4">
+            <span className="font-mono text-3xl font-bold text-white tracking-tight">
+              ${data.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            {data.change !== null && (
+              <div className="flex items-center gap-1.5">
+                {isPositive ? (
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-red-400" />
+                )}
+                <span className={cn(
+                  'font-mono text-sm font-bold',
+                  isPositive ? 'text-emerald-400' : 'text-red-400'
+                )}>
+                  {isPositive ? '+' : ''}{data.change.toFixed(2)}
+                </span>
+                <span className={cn(
+                  'font-mono text-xs',
+                  isPositive ? 'text-emerald-400/70' : 'text-red-400/70'
+                )}>
+                  ({isPositive ? '+' : ''}{data.changePct?.toFixed(2)}%)
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Range bars */}
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            {/* Day Range */}
+            {data.dayLow != null && data.dayHigh != null && (
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Rango Dia</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-slate-400">{data.dayLow.toLocaleString('en-US', { minimumFractionDigits: 1 })}</span>
+                  <div className="flex-1 h-1.5 bg-slate-700/50 rounded-full relative overflow-hidden">
+                    {(() => {
+                      const range = data.dayHigh! - data.dayLow!;
+                      const pos = range > 0 ? ((data.price - data.dayLow!) / range) * 100 : 50;
+                      return (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 via-slate-500/30 to-emerald-500/30 rounded-full" />
+                          <div
+                            className="absolute top-0 w-2 h-1.5 bg-cyan-400 rounded-full shadow-sm shadow-cyan-400/50"
+                            style={{ left: `${Math.min(100, Math.max(0, pos))}%`, transform: 'translateX(-50%)' }}
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <span className="font-mono text-[11px] text-slate-400">{data.dayHigh.toLocaleString('en-US', { minimumFractionDigits: 1 })}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 52-Week Range */}
+            {data.week52Low != null && data.week52High != null && (
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Rango 52 Sem</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] text-slate-400">{data.week52Low.toLocaleString('en-US', { minimumFractionDigits: 0 })}</span>
+                  <div className="flex-1 h-1.5 bg-slate-700/50 rounded-full relative overflow-hidden">
+                    {(() => {
+                      const range = data.week52High! - data.week52Low!;
+                      const pos = range > 0 ? ((data.price - data.week52Low!) / range) * 100 : 50;
+                      return (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 via-slate-500/30 to-emerald-500/30 rounded-full" />
+                          <div
+                            className="absolute top-0 w-2 h-1.5 bg-cyan-400 rounded-full shadow-sm shadow-cyan-400/50"
+                            style={{ left: `${Math.min(100, Math.max(0, pos))}%`, transform: 'translateX(-50%)' }}
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <span className="font-mono text-[11px] text-slate-400">{data.week52High.toLocaleString('en-US', { minimumFractionDigits: 0 })}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer: source + last update + next update */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-slate-500">
+                Fuente: <span className="text-slate-400 font-medium">{sourceLabel[data.source] ?? data.source}</span>
+              </span>
+              <span className="text-[10px] text-slate-500">
+                {minutesAgo === 0 ? 'Ahora' : `Hace ${minutesAgo}m`}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-500 flex items-center gap-1">
+              <RefreshCw className="w-2.5 h-2.5" />
+              {data.nextUpdateMinutes}m
+            </span>
+          </div>
+        </CardContent>
+      </div>
+    </Card>
   );
 }
 
@@ -504,13 +810,17 @@ function TradeTable({ trades, showAll, onToggle, highlightIds }: {
             </thead>
             <tbody>
               {visible.map((t) => {
-                const exitColor = getExitReasonColor(t.exit_reason);
-                const pnlPositive = Number(t.pnl_usd) >= 0;
+                const isOpen = t.exit_price == null || t.exit_reason == null;
+                const exitColor = isOpen
+                  ? { bg: 'bg-cyan-500/15', text: 'text-cyan-400' }
+                  : getExitReasonColor(t.exit_reason);
+                const pnlPositive = isOpen ? true : Number(t.pnl_usd) >= 0;
                 const isHighlighted = highlightIds?.has(t.trade_id);
                 return (
                   <tr key={t.trade_id} className={cn(
                     "border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors",
-                    isHighlighted && "bg-cyan-500/5 animate-pulse"
+                    isHighlighted && "bg-cyan-500/5 animate-pulse",
+                    isOpen && "bg-cyan-500/[0.03]"
                   )}>
                     <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">{t.trade_id}</td>
                     <td className="px-3 py-2.5">
@@ -524,14 +834,24 @@ function TradeTable({ trades, showAll, onToggle, highlightIds }: {
                     <td className="px-3 py-2.5 text-slate-300 text-xs font-mono whitespace-nowrap">
                       {formatTsCOT(t.timestamp as string)}
                     </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono whitespace-nowrap">
-                      {formatTsCOT(t.exit_timestamp as string | undefined)}
+                    <td className="px-3 py-2.5 text-xs font-mono whitespace-nowrap">
+                      {isOpen ? (
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-400 text-[10px] font-bold animate-pulse">
+                          ABIERTO
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">{formatTsCOT(t.exit_timestamp as string | undefined)}</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
                       ${Number(t.entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}
                     </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
-                      ${Number(t.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                    <td className="px-3 py-2.5 text-xs font-mono text-right">
+                      {isOpen ? (
+                        <span className="text-cyan-400">-</span>
+                      ) : (
+                        <span className="text-slate-300">${Number(t.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-slate-400 text-xs font-mono text-right">
                       ${Number(t.equity_at_entry ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -556,15 +876,15 @@ function TradeTable({ trades, showAll, onToggle, highlightIds }: {
                     <td className="px-3 py-2.5 text-emerald-400/70 text-xs font-mono text-right">
                       {(t as Record<string, unknown>).take_profit_pct != null ? `${Number((t as Record<string, unknown>).take_profit_pct).toFixed(1)}%` : '-'}
                     </td>
-                    <td className={cn('px-3 py-2.5 text-xs font-mono font-semibold text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {pnlPositive ? '+' : ''}{Number(t.pnl_usd).toFixed(2)}
+                    <td className={cn('px-3 py-2.5 text-xs font-mono font-semibold text-right', isOpen ? 'text-cyan-400' : pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
+                      {isOpen ? '-' : `${pnlPositive ? '+' : ''}${Number(t.pnl_usd).toFixed(2)}`}
                     </td>
-                    <td className={cn('px-3 py-2.5 text-xs font-mono text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {pnlPositive ? '+' : ''}{Number(t.pnl_pct).toFixed(2)}%
+                    <td className={cn('px-3 py-2.5 text-xs font-mono text-right', isOpen ? 'text-cyan-400' : pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
+                      {isOpen ? '-' : `${pnlPositive ? '+' : ''}${Number(t.pnl_pct).toFixed(2)}%`}
                     </td>
                     <td className="px-3 py-2.5">
                       <span className={cn('px-2 py-0.5 rounded text-[10px] font-medium', exitColor.bg, exitColor.text)}>
-                        {t.exit_reason}
+                        {isOpen ? 'ABIERTO' : t.exit_reason}
                       </span>
                     </td>
                   </tr>
@@ -958,6 +1278,7 @@ export default function ProductionPage() {
   } = useLiveProduction();
 
   const [showAllTrades, setShowAllTrades] = useState(false);
+  const priceData = useRealtimePrice();
 
   const best: StrategyStats | undefined = isLive
     ? stats
@@ -968,7 +1289,62 @@ export default function ProductionPage() {
   const cacheBust = summary?.generated_at || '';
   const marketIsOpen = market?.is_open ?? false;
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#030712] via-[#0f172a] to-[#030712]">
+        <GlobalNavbar currentPage="production" />
+        <header className="sticky top-16 z-40 bg-[#030712]/95 backdrop-blur-xl border-b border-slate-800/50">
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
+                  Produccion
+                </h1>
+              </div>
+              <ProductionStrategyDropdown
+                strategyName={strategyName}
+                strategyId={strategyId}
+                approval={approval}
+                stats={best}
+              />
+            </div>
+          </div>
+        </header>
+        <div className="h-16" aria-hidden="true" />
+        <main className="w-full overflow-x-hidden">
+          {/* Price card loads fast — show it even while rest is loading */}
+          {priceData && (
+            <section className="w-full pt-6 sm:pt-8 pb-2 flex flex-col items-center">
+              <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-md">
+                  <RealtimePriceCard data={priceData} />
+                </div>
+              </div>
+            </section>
+          )}
+          <section className="w-full py-8 sm:py-10 lg:py-12 flex flex-col items-center">
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <RefreshCw className="w-5 h-5 text-cyan-400 animate-spin" />
+                <span className="text-slate-400">Cargando datos de produccion...</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="rounded-xl border border-slate-700/50 bg-slate-900/80 p-6 animate-pulse">
+                    <div className="flex flex-col items-center">
+                      <div className="h-10 w-10 bg-slate-700 rounded-xl mb-4" />
+                      <div className="h-3 w-16 bg-slate-700/60 rounded mb-2" />
+                      <div className="h-8 w-20 bg-slate-700 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   if (error || (!summary && !isLive)) {
     const isPending = approval?.status === 'PENDING_APPROVAL';
@@ -1042,11 +1418,14 @@ export default function ProductionPage() {
                 />
               </div>
               <div className="hidden sm:block">
-                <LivePriceDisplay />
+                <LivePriceDisplay priceData={priceData} />
               </div>
-              <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[10px] font-bold">
-                {strategyName}
-              </Badge>
+              <ProductionStrategyDropdown
+                strategyName={strategyName}
+                strategyId={strategyId}
+                approval={approval}
+                stats={best}
+              />
             </div>
           </div>
         </div>
@@ -1055,6 +1434,19 @@ export default function ProductionPage() {
       <div className="h-16" aria-hidden="true" />
 
       <main className="w-full overflow-x-hidden">
+
+        {/* ═══════════════════════════════════════════════════════════════
+            Section 0: Real-Time Price Card
+        ═══════════════════════════════════════════════════════════════ */}
+        {priceData && (
+          <section className="w-full pt-6 sm:pt-8 pb-2 flex flex-col items-center">
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-md">
+                <RealtimePriceCard data={priceData} />
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════
             Section 1: KPI Cards
@@ -1070,7 +1462,7 @@ export default function ProductionPage() {
               <KPICard
                 title="Retorno Total"
                 value={`${(best?.total_return_pct ?? 0) >= 0 ? '+' : ''}${best?.total_return_pct?.toFixed(1) ?? 'N/A'}%`}
-                subtitle={`$${((best?.total_return_pct ?? 0) * 100 + 10000).toFixed(0)} final`}
+                subtitle={`$${(initialCapital * (1 + (best?.total_return_pct ?? 0) / 100)).toFixed(0)} final`}
                 icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />}
                 color={(best?.total_return_pct ?? 0) >= 0 ? '#10b981' : '#ef4444'}
                 trend={(best?.total_return_pct ?? 0) >= 0 ? 'up' : 'down'}
@@ -1126,6 +1518,7 @@ export default function ProductionPage() {
                 signal={currentSignal}
                 position={activePosition}
                 marketOpen={market?.is_open ?? false}
+                realtimePrice={priceData?.price}
               />
             </div>
           </section>

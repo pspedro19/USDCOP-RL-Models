@@ -104,9 +104,9 @@ export async function POST(_request: NextRequest) {
       scriptArgs = ['--phase', 'production', '--no-png', '--seed-db'];
     }
 
-    // Spawn detached Python process
+    // Spawn detached Python process (python3 on Debian/Ubuntu)
     const child = spawn(
-      'python',
+      'python3',
       [scriptPath, ...scriptArgs],
       {
         cwd: PROJECT_ROOT,

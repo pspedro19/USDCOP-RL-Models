@@ -63,13 +63,16 @@ async function fetchCurrentSignal(): Promise<CurrentSignal | null> {
   `);
   if (res.rows.length === 0) return null;
   const r = res.rows[0];
+  // DB stores HS/TP as fractions (0.03 = 3%), convert to percentages for frontend
+  const hsPct = safeNumber(r.hard_stop_pct);
+  const tpPct = safeNumber(r.take_profit_pct);
   return {
     signal_date: r.signal_date,
     direction: Number(r.direction),
     confidence_tier: r.confidence_tier ?? null,
     adjusted_leverage: safeNumber(r.adjusted_leverage),
-    hard_stop_pct: safeNumber(r.hard_stop_pct),
-    take_profit_pct: safeNumber(r.take_profit_pct),
+    hard_stop_pct: hsPct != null ? hsPct * 100 : null,
+    take_profit_pct: tpPct != null ? tpPct * 100 : null,
     ensemble_return: Number(r.ensemble_return),
     skip_trade: Boolean(r.skip_trade),
   };
@@ -104,27 +107,30 @@ async function fetchActivePosition(currentPrice: number | null, currentBarTime: 
     ? (entryPrice - price) / entryPrice * leverage * 100
     : (price - entryPrice) / entryPrice * leverage * 100;
 
+  // DB stores HS/TP as fractions (0.03 = 3%), convert to percentages
   const tpPct = safeNumber(r.take_profit_pct);
   const hsPct = safeNumber(r.hard_stop_pct);
+  const tpPctScaled = tpPct != null ? tpPct * 100 : null;
+  const hsPctScaled = hsPct != null ? hsPct * 100 : null;
 
   // Distance to TP/HS (how much more move needed to hit)
   let distanceToTp: number | null = null;
   let distanceToHs: number | null = null;
 
-  if (tpPct != null) {
+  if (tpPctScaled != null) {
     // TP progress: how far towards TP (0% = at entry, 100% = at TP)
     // For SHORT: tp hit when price falls tp_pct below entry
     const priceMovePct = direction === -1
       ? (entryPrice - price) / entryPrice * 100
       : (price - entryPrice) / entryPrice * 100;
-    distanceToTp = Math.max(0, tpPct - priceMovePct);
+    distanceToTp = Math.max(0, tpPctScaled - priceMovePct);
   }
-  if (hsPct != null) {
+  if (hsPctScaled != null) {
     // HS distance: how far towards HS
     const adverseMovePct = direction === -1
       ? (price - entryPrice) / entryPrice * 100
       : (entryPrice - price) / entryPrice * 100;
-    distanceToHs = Math.max(0, hsPct - adverseMovePct);
+    distanceToHs = Math.max(0, hsPctScaled - adverseMovePct);
   }
 
   return {
@@ -200,7 +206,9 @@ async function fetchExecutions(): Promise<{
 
   for (let i = 0; i < res.rows.length; i++) {
     const r = res.rows[i];
-    const pnlPct = safeNumber(r.week_pnl_pct) ?? 0;
+    // DB stores week_pnl_pct as fraction (0.029772 = 2.9772%), convert to %
+    const rawPnl = safeNumber(r.week_pnl_pct) ?? 0;
+    const pnlPct = rawPnl * 100;
     const direction = Number(r.direction);
     const lev = Number(r.leverage);
     const entryPrice = Number(r.entry_price ?? 0);
@@ -226,6 +234,9 @@ async function fetchExecutions(): Promise<{
 
     // Only add closed trades to the trade list
     if (r.status === 'closed') {
+      // DB stores HS/TP as fractions, convert to %
+      const tradeHs = safeNumber(r.hard_stop_pct);
+      const tradeTp = safeNumber(r.take_profit_pct);
       trades.push({
         trade_id: i + 1,
         timestamp: r.entry_timestamp ?? r.signal_date,
@@ -240,8 +251,8 @@ async function fetchExecutions(): Promise<{
         equity_at_exit: Math.round(equityAtExit * 100) / 100,
         leverage: lev,
         confidence_tier: r.confidence_tier ?? null,
-        hard_stop_pct: safeNumber(r.hard_stop_pct),
-        take_profit_pct: safeNumber(r.take_profit_pct),
+        hard_stop_pct: tradeHs != null ? tradeHs * 100 : null,
+        take_profit_pct: tradeTp != null ? tradeTp * 100 : null,
       });
     }
 

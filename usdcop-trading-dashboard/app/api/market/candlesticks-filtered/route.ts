@@ -144,7 +144,8 @@ export async function GET(request: NextRequest) {
           close::float,
           volume::int
         FROM public.usdcop_m5_ohlcv
-        WHERE time >= $1
+        WHERE symbol = 'USD/COP'
+          AND time >= $1
           AND time <= ($2::date + interval '1 day')
           AND EXTRACT(DOW FROM time) BETWEEN 1 AND 5
           AND DATE(time)::text NOT IN (${holidaysArray})

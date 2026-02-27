@@ -133,37 +133,47 @@ function StrategySelector({
   const [isOpen, setIsOpen] = useState(false);
   const selected = strategies.find(s => s.strategy_id === selectedId);
 
-  if (strategies.length <= 1) {
-    // Single strategy — show as a badge, no dropdown
-    return selected ? (
-      <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/30 text-[10px] font-bold">
-        {selected.pipeline} | {selected.strategy_name}
-      </Badge>
-    ) : null;
-  }
-
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => strategies.length > 1 ? setIsOpen(!isOpen) : undefined}
         className={cn(
           "flex items-center gap-2 px-3 py-2 rounded-xl",
-          "bg-slate-800/80 border border-slate-700 hover:border-cyan-500/50",
+          "bg-slate-800/80 border border-slate-700",
+          strategies.length > 1 && "hover:border-cyan-500/50 cursor-pointer",
           "transition-all duration-200 text-sm"
         )}
       >
-        <div className="text-left">
-          <div className="font-semibold text-white text-xs">
-            {selected?.strategy_name || 'Select Strategy'}
-          </div>
-          <div className="text-[10px] text-slate-400">
-            {selected?.pipeline}
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="text-left">
+            <div className="font-semibold text-white text-xs">
+              {selected?.strategy_name || 'Select Strategy'}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {selected?.pipeline} | +{selected?.return_pct.toFixed(1)}% | Sharpe {selected?.sharpe.toFixed(2)}
+            </div>
           </div>
         </div>
-        <ChevronDown className={cn(
-          "w-3.5 h-3.5 text-slate-400 transition-transform",
-          isOpen && "rotate-180"
-        )} />
+        {selected?.status && (
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[9px] font-bold ml-2 shrink-0",
+              selected.status === 'APPROVED'
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+            )}
+          >
+            {selected.status}
+          </Badge>
+        )}
+        {strategies.length > 1 && (
+          <ChevronDown className={cn(
+            "w-3.5 h-3.5 text-slate-400 transition-transform",
+            isOpen && "rotate-180"
+          )} />
+        )}
       </button>
 
       {isOpen && (
@@ -1444,7 +1454,7 @@ export function ForecastingBacktestSection() {
               {approval && <StatusBadge status={approval.status} />}
             </div>
             {/* Strategy selector */}
-            {registry && registry.strategies.length > 1 && (
+            {registry && registry.strategies.length >= 1 && (
               <div className="mb-4">
                 <StrategySelector
                   strategies={registry.strategies}
