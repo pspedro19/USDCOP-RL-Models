@@ -19,6 +19,7 @@ interface LivePositionCardProps {
   signal: CurrentSignal | null;
   position: ActivePosition | null;
   marketOpen: boolean;
+  realtimePrice?: number | null;
 }
 
 function ProgressBar({
@@ -85,7 +86,7 @@ function ConfidenceBadge({ tier }: { tier: string | null }) {
   );
 }
 
-export function LivePositionCard({ signal, position, marketOpen }: LivePositionCardProps) {
+export function LivePositionCard({ signal, position, marketOpen, realtimePrice }: LivePositionCardProps) {
   // State 1: No signal
   if (!signal) {
     return (
@@ -190,9 +191,17 @@ export function LivePositionCard({ signal, position, marketOpen }: LivePositionC
 
   // State 3: Positioned — show full position details with TP/HS bars
   const isShort = position.direction === -1;
-  const pnlPositive = position.unrealized_pnl_pct >= 0;
+  // Use realtime price from Investing.com/TwelveData when available, otherwise DB price
+  const currentPrice = realtimePrice ?? position.current_price;
+  const leverage = position.leverage;
 
-  // Progress calculations
+  // Recalculate unrealized PnL with realtime price
+  const unrealizedPnlPct = isShort
+    ? (position.entry_price - currentPrice) / position.entry_price * leverage * 100
+    : (currentPrice - position.entry_price) / position.entry_price * leverage * 100;
+  const pnlPositive = unrealizedPnlPct >= 0;
+
+  // Progress calculations — TP/HS are now in % from API
   const tpPct = signal.take_profit_pct;
   const hsPct = signal.hard_stop_pct;
 
@@ -200,8 +209,8 @@ export function LivePositionCard({ signal, position, marketOpen }: LivePositionC
   let tpProgress = 0;
   if (tpPct && tpPct > 0) {
     const favorableMove = isShort
-      ? (position.entry_price - position.current_price) / position.entry_price * 100
-      : (position.current_price - position.entry_price) / position.entry_price * 100;
+      ? (position.entry_price - currentPrice) / position.entry_price * 100
+      : (currentPrice - position.entry_price) / position.entry_price * 100;
     tpProgress = Math.max(0, (favorableMove / tpPct) * 100);
   }
 
@@ -209,8 +218,8 @@ export function LivePositionCard({ signal, position, marketOpen }: LivePositionC
   let hsProgress = 0;
   if (hsPct && hsPct > 0) {
     const adverseMove = isShort
-      ? (position.current_price - position.entry_price) / position.entry_price * 100
-      : (position.entry_price - position.current_price) / position.entry_price * 100;
+      ? (currentPrice - position.entry_price) / position.entry_price * 100
+      : (position.entry_price - currentPrice) / position.entry_price * 100;
     hsProgress = Math.max(0, (adverseMove / hsPct) * 100);
   }
 
@@ -256,9 +265,11 @@ export function LivePositionCard({ signal, position, marketOpen }: LivePositionC
             </p>
           </div>
           <div className="text-center p-2.5 rounded-lg bg-slate-800/50">
-            <p className="text-[10px] text-slate-500 uppercase">Actual</p>
+            <p className="text-[10px] text-slate-500 uppercase">
+              Actual{realtimePrice ? '' : ' (DB)'}
+            </p>
             <p className="text-sm font-mono font-bold text-cyan-300">
-              ${position.current_price.toLocaleString('en-US', { minimumFractionDigits: 1 })}
+              ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 1 })}
             </p>
           </div>
           <div className="text-center p-2.5 rounded-lg bg-slate-800/50">
@@ -266,7 +277,7 @@ export function LivePositionCard({ signal, position, marketOpen }: LivePositionC
             <p className={cn('text-sm font-mono font-bold',
               pnlPositive ? 'text-emerald-400' : 'text-red-400'
             )}>
-              {pnlPositive ? '+' : ''}{position.unrealized_pnl_pct.toFixed(2)}%
+              {pnlPositive ? '+' : ''}{unrealizedPnlPct.toFixed(2)}%
             </p>
           </div>
           <div className="text-center p-2.5 rounded-lg bg-slate-800/50">

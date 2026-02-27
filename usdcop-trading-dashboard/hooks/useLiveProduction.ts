@@ -174,7 +174,11 @@ export function useLiveProduction(): UseLiveProductionResult {
       const { summaryData, approvalData } = await fetchFileBased();
       setApproval(approvalData);
 
-      if (liveData && liveData.data_source === 'db') {
+      // Use DB data only if it actually has trades; otherwise fall back to files
+      const dbHasData = liveData && liveData.data_source === 'db'
+        && (liveData.trades.length > 0 || liveData.active_position != null);
+
+      if (dbHasData && liveData) {
         // Use live DB data
         setCurrentSignal(liveData.current_signal);
         setActivePosition(liveData.active_position);
@@ -189,19 +193,44 @@ export function useLiveProduction(): UseLiveProductionResult {
         const convertedTrades = liveTradesToStrategyTrades(liveData.trades);
         const convertedStats = liveStatsToStrategyStats(liveData.stats, liveData.equity_curve);
 
+        // Merge active position as an open trade so it appears in the trade table
+        const allTrades = [...convertedTrades];
+        if (liveData.active_position) {
+          const ap = liveData.active_position;
+          const alreadyInList = convertedTrades.some(
+            t => t.entry_price === ap.entry_price && t.timestamp === ap.entry_timestamp
+          );
+          if (!alreadyInList) {
+            allTrades.push({
+              trade_id: convertedTrades.length + 1,
+              timestamp: ap.entry_timestamp,
+              exit_timestamp: null,
+              side: ap.direction === -1 ? 'SHORT' : 'LONG',
+              entry_price: ap.entry_price,
+              exit_price: null,
+              pnl_usd: null,
+              pnl_pct: null,
+              exit_reason: null,
+              equity_at_entry: liveData.equity_curve.current_equity,
+              equity_at_exit: null,
+              leverage: ap.leverage,
+            });
+          }
+        }
+
         // Detect new trades
-        if (isPolling && convertedTrades.length > prevTradeCountRef.current) {
-          const diff = convertedTrades.length - prevTradeCountRef.current;
+        if (isPolling && allTrades.length > prevTradeCountRef.current) {
+          const diff = allTrades.length - prevTradeCountRef.current;
           setNewTradeCount(diff);
           const ids = new Set(
-            convertedTrades.slice(prevTradeCountRef.current).map(t => t.trade_id)
+            allTrades.slice(prevTradeCountRef.current).map(t => t.trade_id)
           );
           setNewTradeIds(ids);
           setTimeout(() => setNewTradeIds(new Set()), 10000);
         }
-        prevTradeCountRef.current = convertedTrades.length;
+        prevTradeCountRef.current = allTrades.length;
 
-        setTrades(convertedTrades);
+        setTrades(allTrades);
         setStats(convertedStats);
         setSummary(summaryData); // Keep summary for year/initial_capital/etc.
         marketOpenRef.current = liveData.market.is_open;

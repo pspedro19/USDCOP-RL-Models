@@ -1,0 +1,15 @@
+{
+  "strategies": [
+    {
+      "strategy_id": "smart_simple_v11",
+      "strategy_name": "Smart Simple v1.1.0",
+      "pipeline": "ml_forecasting",
+      "status": "APPROVED",
+      "backtest_year": 2025,
+      "return_pct": 23.07,
+      "sharpe": 3.822,
+      "p_value": 0.0056
+    }
+  ],
+  "default_strategy": "smart_simple_v11"
+}

@@ -8,49 +8,158 @@
  * Strategy selector lives inside ForecastingBacktestSection.
  */
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { GlobalNavbar } from "@/components/navigation/GlobalNavbar";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, DollarSign } from "lucide-react";
+import { RefreshCw, DollarSign, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ============================================================================
+// Strategy Dropdown — visible in header
+// ============================================================================
+interface StrategyInfo {
+  strategy_id: string;
+  strategy_name: string;
+  pipeline: string;
+  status: string;
+  return_pct: number;
+  sharpe: number;
+  p_value: number;
+}
+
+function HeaderStrategyDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
+  const [selected, setSelected] = useState<StrategyInfo | null>(null);
+
+  useEffect(() => {
+    fetch('/data/production/strategies.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.strategies) {
+          setStrategies(data.strategies);
+          const def = data.strategies.find((s: StrategyInfo) => s.strategy_id === data.default_strategy) || data.strategies[0];
+          setSelected(def);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!selected) return null;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-xl",
+          "bg-slate-800/90 border-2 border-cyan-500/40 hover:border-cyan-400/70",
+          "transition-all duration-200 shadow-lg shadow-cyan-500/10"
+        )}
+      >
+        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="text-left">
+          <div className="font-bold text-white text-sm">{selected.strategy_name}</div>
+          <div className="text-[10px] text-slate-400">
+            {selected.pipeline} | +{selected.return_pct.toFixed(1)}% | Sharpe {selected.sharpe.toFixed(2)}
+          </div>
+        </div>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[9px] font-bold ml-1",
+            selected.status === 'APPROVED'
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+          )}
+        >
+          {selected.status}
+        </Badge>
+        <ChevronDown className={cn("w-4 h-4 text-cyan-400 transition-transform", isOpen && "rotate-180")} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-slate-800 border-2 border-cyan-500/30 rounded-xl overflow-hidden shadow-2xl min-w-[320px]">
+          <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700/50">
+            <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Estrategia Activa</span>
+          </div>
+          {strategies.map((s) => (
+            <button
+              key={s.strategy_id}
+              className={cn(
+                "w-full flex items-center justify-between px-4 py-3",
+                "hover:bg-cyan-500/10 transition-colors text-left",
+                s.strategy_id === selected.strategy_id && "bg-cyan-500/5 border-l-2 border-cyan-400"
+              )}
+              onClick={() => { setSelected(s); setIsOpen(false); }}
+            >
+              <div>
+                <div className="text-white font-semibold text-sm">{s.strategy_name}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {s.pipeline} | +{s.return_pct.toFixed(1)}% | Sharpe {s.sharpe.toFixed(2)} | p={s.p_value.toFixed(4)}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[9px] font-bold ml-3 shrink-0",
+                  s.status === 'APPROVED'
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                )}
+              >
+                {s.status}
+              </Badge>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Forecasting backtest section (self-contained, includes strategy selector)
 import { ForecastingBacktestSection } from "@/components/production/ForecastingBacktestSection";
 
 // ============================================================================
-// Live Price Display — polls /api/market/realtime-price every 60s
+// Live Price Display — polls /api/market/realtime-price adaptively
 // ============================================================================
 function LivePriceDisplay() {
   const [price, setPrice] = useState<number | null>(null);
   const [change, setChange] = useState<number | null>(null);
   const [changePct, setChangePct] = useState<number | null>(null);
   const [isMarketOpen, setIsMarketOpen] = useState(false);
-  const [source, setSource] = useState<string>('');
-  const [lastUpdate, setLastUpdate] = useState<string>('');
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     const fetchPrice = async () => {
       try {
         const res = await fetch('/api/market/realtime-price');
-        if (res.ok) {
-          const data = await res.json();
-          setPrice(data.price);
-          setChange(data.change);
-          setChangePct(data.changePct);
-          setIsMarketOpen(data.isMarketOpen);
-          setSource(data.source);
-          setLastUpdate(new Date(data.lastUpdate).toLocaleTimeString());
+        if (res.ok && mounted) {
+          const json = await res.json();
+          const d = json.data ?? json; // handle nested response
+          setPrice(d.price);
+          setChange(d.change ?? null);
+          setChangePct(d.changePct ?? null);
+          setIsMarketOpen(d.isMarketOpen ?? false);
+          // Adaptive polling: 5min market open, 30min closed
+          const pollMs = d.isMarketOpen ? 5 * 60 * 1000 : 30 * 60 * 1000;
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = setInterval(fetchPrice, pollMs);
         }
       } catch {
         // Silently fail — price is optional
       }
     };
     fetchPrice();
-    const interval = setInterval(fetchPrice, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
-  if (price === null) return null;
+  if (price == null) return null;
 
   const isPositive = (change ?? 0) >= 0;
 
@@ -113,21 +222,22 @@ function DashboardContent() {
       <header className="sticky top-16 z-40 bg-[#030712]/95 backdrop-blur-xl border-b border-slate-800/50">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
-            {/* Left: Title + Badges */}
+            {/* Left: Title + Strategy Dropdown */}
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
-                USD/COP Trading
+                Dashboard
               </h1>
-              <div className="hidden sm:flex items-center gap-2">
-                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px] px-2 py-0.5">
-                  PAPER
-                </Badge>
-              </div>
+              <HeaderStrategyDropdown />
             </div>
 
             {/* Right: Live Price */}
-            <div className="hidden sm:block">
-              <LivePriceDisplay />
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:block">
+                <LivePriceDisplay />
+              </div>
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px] px-2 py-0.5">
+                PAPER
+              </Badge>
             </div>
           </div>
         </div>
