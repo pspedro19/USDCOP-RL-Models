@@ -36,7 +36,7 @@ Faker==22.6.0
 factory-boy==3.3.0
 
 # Testcontainers (Optional - for isolated testing)
-testcontainers==3.7.1
+testcontainers==4.14.0
 testcontainers-postgres==0.0.1rc1
 testcontainers-redis==0.0.1rc1
 
