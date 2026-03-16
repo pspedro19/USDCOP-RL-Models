@@ -13,7 +13,6 @@ import uuid
 
 warnings.filterwarnings("ignore")
 sys.path.insert(0, "/opt/airflow")
-os.environ.setdefault("POSTGRES_PASSWORD", "admin123")
 
 import numpy as np
 import pandas as pd
@@ -33,7 +32,7 @@ import psycopg2 as _pg
 
 _conn = _pg.connect(
     host="timescaledb", port=5432, database="usdcop_trading",
-    user="admin", password="admin123",
+    user="admin", password=os.environ.get("POSTGRES_PASSWORD", ""),
 )
 ohlcv = pd.read_sql(
     "SELECT date, open, high, low, close FROM bi.dim_daily_usdcop ORDER BY date",
@@ -179,7 +178,7 @@ conn = psycopg2.connect(
     port=5432,
     database="usdcop_trading",
     user="admin",
-    password="admin123",
+    password=os.environ.get("POSTGRES_PASSWORD", ""),
 )
 cur = conn.cursor()
 

@@ -65,7 +65,7 @@ def get_db_config() -> DatabaseConfig:
         POSTGRES_PORT: Database port (default: 5432)
         POSTGRES_DB: Database name (default: usdcop_trading)
         POSTGRES_USER: Database user (default: admin)
-        POSTGRES_PASSWORD: Database password (default: admin123)
+        POSTGRES_PASSWORD: Database password (required)
 
     Returns:
         DatabaseConfig instance
@@ -75,7 +75,7 @@ def get_db_config() -> DatabaseConfig:
         port=int(os.environ.get('POSTGRES_PORT', '5432')),
         database=os.environ.get('POSTGRES_DB', 'usdcop_trading'),
         user=os.environ.get('POSTGRES_USER', 'admin'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'admin123')
+        password=os.environ.get('POSTGRES_PASSWORD', '')
     )
 
 

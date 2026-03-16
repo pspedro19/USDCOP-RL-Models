@@ -38,6 +38,11 @@ from contracts.dag_registry import (
     get_dag_tags,
 )
 from utils.dag_common import get_db_connection
+from utils.signalbridge_client import (
+    get_execution_mode,
+    is_paper_mode,
+    place_order_via_bridge,
+)
 
 DAG_ID = FORECAST_H5_L7_MULTIDAY_EXECUTOR
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -148,6 +153,9 @@ def route_action(**context) -> str:
     - Has open subtrade -> monitor_position
     - Subtrade already closed by TP/HS -> skip (no re-entry)
     """
+    exec_mode = get_execution_mode()
+    logger.info(f"[H5-L7] route_action — EXECUTION_MODE={exec_mode}")
+
     now_utc = datetime.now(timezone.utc)
     day_of_week = now_utc.weekday()  # 0=Mon, 4=Fri
 
@@ -240,6 +248,30 @@ def enter_position(**context) -> Dict[str, Any]:
         bar_time, bar_open, bar_high, bar_low, bar_close = bar
         entry_price = bar_close
 
+        # Risk check before entry
+        try:
+            from src.trading.risk_enforcer import RiskEnforcer, RiskLimits, RiskDecision
+            enforcer = RiskEnforcer(limits=RiskLimits())
+            dir_str_check = "LONG" if direction == 1 else "SHORT"
+            risk_result = enforcer.check_signal(
+                signal=dir_str_check, size=leverage, price=entry_price,
+                confidence=0.8,
+            )
+            if risk_result.decision == RiskDecision.BLOCK:
+                logger.warning(
+                    f"[H5-L7] Risk check BLOCKED entry: {risk_result.reason.value} — "
+                    f"{risk_result.message}"
+                )
+                return {"blocked": True, "reason": risk_result.reason.value}
+            if risk_result.decision == RiskDecision.REDUCE:
+                logger.info(
+                    f"[H5-L7] Risk check REDUCED leverage: {leverage:.3f} -> "
+                    f"{risk_result.adjusted_size:.3f}"
+                )
+                leverage = risk_result.adjusted_size
+        except ImportError:
+            logger.debug("[H5-L7] RiskEnforcer not available, skipping risk check")
+
         # Compute TP/HS price levels for logging
         if direction == 1:  # LONG
             tp_price = entry_price * (1 + take_profit_pct) if take_profit_pct else None
@@ -299,6 +331,38 @@ def enter_position(**context) -> Dict[str, Any]:
             f"HS={hs_price:.2f} ({hard_stop_pct*100:.2f}%), "
             f"exec_id={exec_id}"
         )
+
+        # SignalBridge: forward order to OMS when in testnet/live mode
+        if not is_paper_mode():
+            bridge_side = "sell" if direction == -1 else "buy"
+            bridge_result = place_order_via_bridge(
+                symbol="USD/COP",
+                side=bridge_side,
+                quantity=leverage,
+                price=entry_price,
+                signal_id=f"h5_{signal_date}",
+                confidence=0.8,
+                stop_loss=hs_price,
+                take_profit=tp_price,
+                metadata={
+                    "dag": DAG_ID,
+                    "exec_id": str(exec_id),
+                    "direction": dir_str,
+                    "confidence_tier": confidence_tier,
+                    "hard_stop_pct": hard_stop_pct,
+                    "take_profit_pct": take_profit_pct,
+                },
+            )
+            if bridge_result.success:
+                logger.info(
+                    f"[H5-L7] SignalBridge order placed: id={bridge_result.execution_id}, "
+                    f"fill={bridge_result.fill_price:.2f}"
+                )
+            else:
+                logger.error(
+                    f"[H5-L7] SignalBridge order FAILED: {bridge_result.error} "
+                    f"(paper position still tracked locally)"
+                )
 
         return {
             "exec_id": exec_id,

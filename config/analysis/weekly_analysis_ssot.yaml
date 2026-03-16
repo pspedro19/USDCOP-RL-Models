@@ -1,0 +1,189 @@
+# =============================================================================
+# Weekly Analysis SSOT Configuration
+# =============================================================================
+#
+# Contract: CTR-ANALYSIS-CONFIG-001
+# Version: 1.0.0
+# Date: 2026-02-25
+# =============================================================================
+
+_meta:
+  version: "1.0.0"
+  contract_id: "CTR-ANALYSIS-CONFIG-001"
+  created_at: "2026-02-25"
+
+# ---------------------------------------------------------------------------
+# LLM Provider Settings
+# ---------------------------------------------------------------------------
+llm:
+  primary_provider: "azure_openai"
+  fallback_provider: "anthropic"
+  max_consecutive_failures: 3          # Switch to fallback after N failures
+
+  azure_openai:
+    deployment: "gpt-4o-mini"
+    api_version: "2024-12-01-preview"
+    max_tokens: 2000
+    temperature: 0.7
+    # API key and endpoint from env: USDCOP_AZURE_OPENAI_API_KEY, USDCOP_AZURE_OPENAI_ENDPOINT
+
+  anthropic:
+    model: "claude-sonnet-4-5-20250514"
+    max_tokens: 2000
+    temperature: 0.7
+    # API key from env: USDCOP_ANTHROPIC_API_KEY
+
+  cache:
+    enabled: true
+    ttl_hours: 24
+    backend: "file"                    # "file" or "redis"
+    cache_dir: "data/cache/analysis"
+
+# ---------------------------------------------------------------------------
+# Sentiment Analysis (Hybrid Ensemble)
+# ---------------------------------------------------------------------------
+sentiment:
+  multilingual_model: "cardiffnlp/twitter-xlm-roberta-base-sentiment"
+  finbert_model: "ProsusAI/finbert"
+  device: "cpu"
+  max_length: 512
+  weights:
+    en: { multilingual: 0.30, finbert: 0.30, llm: 0.30, gdelt: 0.10 }
+    es: { multilingual: 0.50, finbert: 0.00, llm: 0.40, gdelt: 0.10 }
+  fx_adjustment:
+    enabled: true
+    max_adjustment: 0.3
+  llm_batch:
+    enabled: true
+    max_articles_per_call: 50
+    cache_ttl_hours: 168  # 7 days
+  thresholds:
+    positive: 0.15
+    negative: -0.15
+  fallback: "vader"
+
+# ---------------------------------------------------------------------------
+# Cost Management
+# ---------------------------------------------------------------------------
+budget:
+  monthly_limit_usd: 15.0
+  daily_limit_usd: 1.0
+  alert_threshold_pct: 80             # Alert at 80% of monthly budget
+  track_per_call: true
+
+# ---------------------------------------------------------------------------
+# Macro Analyzer Settings
+# ---------------------------------------------------------------------------
+macro:
+  key_variables:
+    - dxy
+    - vix
+    - wti
+    - embi_col
+  extended_variables:
+    - ust10y
+    - ust2y
+    - ibr
+    - tpm
+    - fedfunds
+    - gold
+    - brent
+  lookback_days: 90                    # Chart data lookback
+  sma_periods: [5, 10, 20, 50]
+  bollinger_period: 20
+  bollinger_std: 2
+  rsi_period: 14
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  roc_periods: [5, 20]
+
+# ---------------------------------------------------------------------------
+# Chart Generation (matplotlib)
+# ---------------------------------------------------------------------------
+charts:
+  enabled: true
+  style: "dark_background"
+  background_color: "#0f172a"
+  figsize: [12, 6]
+  dpi: 150
+  output_dir: "usdcop-trading-dashboard/public/data/analysis/charts"
+  formats:
+    - png
+
+# ---------------------------------------------------------------------------
+# Analysis Generation
+# ---------------------------------------------------------------------------
+generation:
+  language: "es"                       # Spanish
+  daily:
+    enabled: true
+    max_tokens: 1500
+    include_news: true
+    include_signals: true
+    include_macro_pubs: true
+  weekly:
+    enabled: true
+    max_tokens: 2000
+    include_news: true
+    include_signals: true
+    include_themes: true
+    max_themes: 5
+
+# ---------------------------------------------------------------------------
+# Chat Widget Settings
+# ---------------------------------------------------------------------------
+chat:
+  enabled: true
+  max_messages_per_session: 50
+  max_sessions_per_day: 10
+  max_tokens_per_response: 2000
+  context_injection: true              # Inject current week data into system prompt
+  quick_actions:
+    - "Resumen de la semana"
+    - "¿Que paso con el dolar hoy?"
+    - "Perspectiva para la proxima semana"
+    - "Indicadores macro clave"
+
+# ---------------------------------------------------------------------------
+# Export Settings
+# ---------------------------------------------------------------------------
+export:
+  output_dir: "usdcop-trading-dashboard/public/data/analysis"
+  formats:
+    - json
+  files:
+    index: "analysis_index.json"
+    weekly_pattern: "weekly_{year}_W{week:02d}.json"
+    upcoming_events: "upcoming_events.json"
+
+# ---------------------------------------------------------------------------
+# Schedule (Reference — actual schedules in Airflow DAGs)
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Macro Preprocessor Settings (Phase 0)
+# ---------------------------------------------------------------------------
+macro_preprocessor:
+  enabled: true
+  anomaly_z_threshold: 2.0       # |z-score| > this → flagged as anomaly
+  top_movers_count: 5            # Top N by |z-score 20d|
+  correlation_windows: [20, 60]  # Rolling correlation lookback days
+  percentile_window: 252         # 1-year percentile lookback
+
+# ---------------------------------------------------------------------------
+# Prompt Version (Phase 2)
+# ---------------------------------------------------------------------------
+prompts:
+  version: "v2"                  # "v1" = legacy, "v2" = chain-of-thought
+  daily_steps: 6                 # V2: 6-step chain-of-thought
+  weekly_steps: 7                # V2: 7 steps (6 + scenarios)
+  structured_output: true        # Use response_format=json_schema
+
+# ---------------------------------------------------------------------------
+# Schedule (Reference — actual schedules in Airflow DAGs)
+# ---------------------------------------------------------------------------
+schedule:
+  daily_analysis: "14:00 COT Mon-Fri"        # After last NewsEngine run (13:00)
+  weekly_rollup: "14:00 COT Friday"           # Friday daily includes weekly section
+  chart_refresh: "14:00 COT Mon-Fri"          # With daily analysis
+  cache_cleanup: "22:00 COT Sunday"           # Weekly maintenance

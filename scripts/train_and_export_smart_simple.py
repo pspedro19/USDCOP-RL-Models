@@ -1230,6 +1230,31 @@ def main():
         if not args.no_png:
             generate_pngs(result_2025, df, 2025, DASHBOARD_DIR)
 
+        # MLflow experiment tracking (optional — silent if MLflow unavailable)
+        try:
+            import mlflow
+            mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001"))
+            mlflow.set_experiment("smart_simple_v11")
+            with mlflow.start_run(run_name=f"backtest_2025_{datetime.now().strftime('%Y%m%d_%H%M')}"):
+                mlflow.log_param("strategy", "smart_simple_v11")
+                mlflow.log_param("phase", "backtest")
+                mlflow.log_param("version", cfg["version"])
+                mlflow.log_param("vol_multiplier", cfg["stops"].vol_multiplier)
+                mlflow.log_param("tp_ratio", cfg["stops"].tp_ratio)
+                mlflow.log_param("n_features", len(feature_cols))
+                mlflow.log_metric("return_pct", m25.get("total_return_pct", 0))
+                mlflow.log_metric("sharpe", m25.get("sharpe", 0))
+                mlflow.log_metric("max_dd_pct", m25.get("max_dd_pct", 0))
+                mlflow.log_metric("win_rate_pct", m25.get("win_rate_pct", 0))
+                mlflow.log_metric("p_value", m25.get("p_value", 1.0))
+                mlflow.log_metric("n_trades", m25.get("n_trades", 0))
+                pf = m25.get("profit_factor")
+                if pf is not None:
+                    mlflow.log_metric("profit_factor", pf)
+            print(f"    -> MLflow run logged (experiment=smart_simple_v11)")
+        except Exception as e:
+            print(f"    [MLflow] Skipped: {e}")
+
     # -----------------------------------------------------------------------
     # PHASE 2: Production (monthly retraining, weekly forecasts, 2026)
     # -----------------------------------------------------------------------

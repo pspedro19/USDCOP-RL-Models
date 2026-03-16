@@ -1,0 +1,43 @@
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-json
+      - id: end-of-file-fixer
+        exclude: '\.parquet$|\.png$|\.jpg$|\.ico$|seeds/|data/'
+      - id: trailing-whitespace
+        exclude: '\.parquet$|\.png$|\.jpg$|\.ico$|seeds/|data/'
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+
+  # Ruff linter + formatter (replaces flake8, isort, black)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: ['--fix', '--exit-non-zero-on-fix']
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Secret detection — prevent committing API keys
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: '\.parquet$|seeds/|data/|\.lock$|package-lock\.json$'
+
+  # Contract validation on every commit
+  - repo: local
+    hooks:
+      - id: contract-validation
+        name: contract-validation
+        entry: python -m pytest tests/unit/test_contracts.py -x -q --no-header --tb=line
+        language: system
+        pass_filenames: false
+        files: 'src/.*\.py$'
+        stages: [pre-commit]

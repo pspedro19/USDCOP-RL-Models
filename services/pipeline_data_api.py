@@ -869,7 +869,7 @@ def get_l2_status():
         minio_client = Minio(
             os.getenv('MINIO_ENDPOINT', 'minio:9000'),
             access_key=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
-            secret_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            secret_key=os.getenv('MINIO_SECRET_KEY', ''),
             secure=False
         )
 
@@ -968,7 +968,7 @@ def get_l3_status():
         minio_client = Minio(
             os.getenv('MINIO_ENDPOINT', 'minio:9000'),
             access_key=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
-            secret_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            secret_key=os.getenv('MINIO_SECRET_KEY', ''),
             secure=False
         )
 
@@ -1067,7 +1067,7 @@ def get_l4_status():
         minio_client = Minio(
             os.getenv('MINIO_ENDPOINT', 'minio:9000'),
             access_key=os.getenv('MINIO_ACCESS_KEY', 'minioadmin'),
-            secret_key=os.getenv('MINIO_SECRET_KEY', 'minioadmin123'),
+            secret_key=os.getenv('MINIO_SECRET_KEY', ''),
             secure=False
         )
 

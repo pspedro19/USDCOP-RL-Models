@@ -32,7 +32,7 @@ def get_db_connection():
         port=int(os.environ.get('POSTGRES_PORT', 5432)),
         database=os.environ.get('POSTGRES_DB', 'usdcop_trading'),
         user=os.environ.get('POSTGRES_USER', 'admin'),
-        password=os.environ.get('POSTGRES_PASSWORD', 'admin123')
+        password=os.environ.get('POSTGRES_PASSWORD', '')
     )
 
 

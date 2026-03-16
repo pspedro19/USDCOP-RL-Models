@@ -28,7 +28,7 @@ async def check():
             host=os.getenv('POSTGRES_HOST', 'localhost'),
             port=int(os.getenv('POSTGRES_PORT', '5432')),
             user=os.getenv('POSTGRES_USER', 'admin'),
-            password=os.getenv('POSTGRES_PASSWORD', 'admin123'),
+            password=os.getenv('POSTGRES_PASSWORD', ''),
             database=os.getenv('POSTGRES_DB', 'usdcop_trading'),
         )
         await conn.close()

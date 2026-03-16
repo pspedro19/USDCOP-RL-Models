@@ -364,6 +364,25 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Observability: Prometheus metrics + Jaeger tracing + Sentry
+try:
+    from common.prometheus_metrics import setup_prometheus_metrics
+    setup_prometheus_metrics(app, "trading-api")
+except Exception:
+    pass
+try:
+    from common.tracing import setup_tracing
+    setup_tracing("trading-api")
+except Exception:
+    pass
+try:
+    import sentry_sdk
+    import os as _os
+    if _sentry_dsn := _os.environ.get("SENTRY_DSN"):
+        sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1)
+except Exception:
+    pass
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,

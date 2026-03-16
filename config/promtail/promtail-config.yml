@@ -89,7 +89,6 @@ scrape_configs:
             model_id: model_id
             action: action
             confidence: confidence
-        if: '{ "level": '
 
       # Map log levels to standard labels
       - labels:
@@ -118,7 +117,6 @@ scrape_configs:
             config:
               match_all: false
               buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5]
-        if: 'duration_ms'
 
       # ===========================================================================
       # Error Detection and Labeling
@@ -158,7 +156,6 @@ scrape_configs:
             model_id: model_id
             symbol: symbol
             timestamp: timestamp
-        if: '"action":'
 
       - labels:
           action:
@@ -201,9 +198,10 @@ scrape_configs:
           level:
           dag_id:
 
-      - timestamp:
-          source: timestamp
-          format: "2006-01-02T15:04:05.000000-07:00"
+      # Timestamp parsing disabled — Airflow log format varies and may not match
+      # - timestamp:
+      #     source: timestamp
+      #     format: "2006-01-02T15:04:05.000000-07:00"
 
   # ===========================================================================
   # Database Logs (PostgreSQL/TimescaleDB)

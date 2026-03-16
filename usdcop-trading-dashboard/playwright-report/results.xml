@@ -1,8 +1,281 @@
-<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="8.189132">
-<testsuite name="screenshot-check.spec.ts" timestamp="2026-02-17T04:17:57.905Z" hostname="chromium" tests="2" failures="0" skipped="0" time="12.681" errors="0">
-<testcase name="Screenshot /production page" classname="screenshot-check.spec.ts" time="6.278">
+<testsuites id="" name="" tests="32" failures="3" skipped="6" errors="0" time="87.221677">
+<testsuite name="all-pages-health-check.spec.ts" timestamp="2026-03-12T01:49:46.559Z" hostname="chromium" tests="11" failures="0" skipped="0" time="132.056" errors="0">
+<testcase name="5a. Analysis API: index returns 9 weeks" classname="all-pages-health-check.spec.ts" time="0.358">
+<system-out>
+<![CDATA[[OK] Analysis index: 9 weeks available
+]]>
+</system-out>
 </testcase>
-<testcase name="Screenshot /dashboard page" classname="screenshot-check.spec.ts" time="6.403">
+<testcase name="5b. Analysis API: latest week JSON has all sections" classname="all-pages-health-check.spec.ts" time="0.66">
+<system-out>
+<![CDATA[[OK] Weekly summary: "Resumen Semanal del USD/COP (Semana 9 de 2026)..."
+[OK] Daily entries: 5 days
+[OK] Macro snapshots: dxy, vix, wti, embi_col, ust10y, ibr, gold, brent
+[OK] Macro charts: 8 variables, 82+ data points each
+]]>
+</system-out>
+</testcase>
+<testcase name="5c. Analysis API: DXY technical indicators valid" classname="all-pages-health-check.spec.ts" time="0.579">
+<system-out>
+<![CDATA[[OK] DXY=97.63, RSI=51.0, MACD=0.0995, trend=above_sma20
+]]>
+</system-out>
+</testcase>
+<testcase name="5d. Analysis API: all 9 weeks load" classname="all-pages-health-check.spec.ts" time="14.168">
+<system-out>
+<![CDATA[[OK] All 9 weeks loaded:
+  W01: 5 days, 8 vars
+  W02: 5 days, 8 vars
+  W03: 5 days, 8 vars
+  W04: 5 days, 8 vars
+  W05: 5 days, 8 vars
+  W06: 5 days, 8 vars
+  W07: 5 days, 8 vars
+  W08: 5 days, 8 vars
+  W09: 5 days, 8 vars
+]]>
+</system-out>
+</testcase>
+<testcase name="5e. Analysis API: calendar endpoint" classname="all-pages-health-check.spec.ts" time="0.363">
+<system-out>
+<![CDATA[[OK] Calendar endpoint responds
+]]>
+</system-out>
+</testcase>
+<testcase name="5f. Analysis page renders content (not stuck loading)" classname="all-pages-health-check.spec.ts" time="16.076">
+<system-out>
+<![CDATA[[OK] Analysis page rendered with content
+]]>
+</system-out>
+</testcase>
+<testcase name="5g. Analysis: SEMANA week selector visible" classname="all-pages-health-check.spec.ts" time="16.34">
+<system-out>
+<![CDATA[[OK] Week selector: "SEMANA 1"
+]]>
+</system-out>
+</testcase>
+<testcase name="5h. Analysis: macro Recharts SVGs render" classname="all-pages-health-check.spec.ts" time="19.011">
+<system-out>
+<![CDATA[[OK] Recharts SVGs: 0, chart containers: 1
+]]>
+</system-out>
+</testcase>
+<testcase name="5i. Analysis: daily timeline has entries" classname="all-pages-health-check.spec.ts" time="19.727">
+<system-out>
+<![CDATA[[OK] Daily timeline section visible
+]]>
+</system-out>
+</testcase>
+<testcase name="5j. Analysis: week navigation prev/next works" classname="all-pages-health-check.spec.ts" time="19.215">
+<system-out>
+<![CDATA[[OK] Week navigation: SEMANA 1 -> navigated
+]]>
+</system-out>
+</testcase>
+<testcase name="5k. Analysis: full page screenshot" classname="all-pages-health-check.spec.ts" time="25.559">
+<system-out>
+<![CDATA[[OK] Full analysis page screenshot captured
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="analysis-deep-validation.spec.ts" timestamp="2026-03-12T01:49:46.559Z" hostname="chromium" tests="3" failures="0" skipped="0" time="126.973" errors="0">
+<testcase name="Analysis Deep Validation › Analysis page renders fully with data" classname="analysis-deep-validation.spec.ts" time="48.878">
+<system-out>
+<![CDATA[Console errors (5):
+  1. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  2. WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  3. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  4. WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+  5. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[OK] Week selector
+[OK] Analysis content
+]]>
+</system-out>
+</testcase>
+<testcase name="Analysis Deep Validation › Dashboard loads with full backtest data" classname="analysis-deep-validation.spec.ts" time="39.813">
+<system-out>
+<![CDATA[[OK] No console errors on /dashboard
+]]>
+</system-out>
+</testcase>
+<testcase name="Analysis Deep Validation › Production page loads with 2026 data" classname="analysis-deep-validation.spec.ts" time="38.282">
+</testcase>
+</testsuite>
+<testsuite name="analysis-page-validation.spec.ts" timestamp="2026-03-12T01:49:46.559Z" hostname="chromium" tests="14" failures="1" skipped="6" time="66.828" errors="0">
+<testcase name="/analysis page — API Validation › analysis index returns 7+ weeks" classname="analysis-page-validation.spec.ts" time="4.434">
+</testcase>
+<testcase name="/analysis page — API Validation › weekly data W07 has all sections populated" classname="analysis-page-validation.spec.ts" time="5.587">
+</testcase>
+<testcase name="/analysis page — API Validation › DXY snapshot has valid technical indicators" classname="analysis-page-validation.spec.ts" time="3.295">
+</testcase>
+<testcase name="/analysis page — API Validation › all 7 weekly files load successfully" classname="analysis-page-validation.spec.ts" time="28.451">
+</testcase>
+<testcase name="/analysis page — API Validation › calendar endpoint responds" classname="analysis-page-validation.spec.ts" time="0.214">
+</testcase>
+<testcase name="/analysis page — UI Rendering › page renders with analysis content (not stuck loading)" classname="analysis-page-validation.spec.ts" time="1.58">
+</testcase>
+<testcase name="/analysis page — UI Rendering › week selector shows SEMANA with correct week number" classname="analysis-page-validation.spec.ts" time="1.97">
+</testcase>
+<testcase name="/analysis page — UI Rendering › 8 macro charts are visible" classname="analysis-page-validation.spec.ts" time="21.297">
+<failure message="analysis-page-validation.spec.ts:108:7 8 macro charts are visible" type="FAILURE">
+<![CDATA[  [chromium] › analysis-page-validation.spec.ts:108:7 › /analysis page — UI Rendering › 8 macro charts are visible 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('text=Graficos Macro')
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('text=Graficos Macro')
+
+
+      111 |     // Wait for charts section
+      112 |     const chartsTitle = page.locator('text=Graficos Macro');
+    > 113 |     await expect(chartsTitle).toBeVisible({ timeout: 20000 });
+          |                               ^
+      114 |
+      115 |     // Check for individual chart labels
+      116 |     const chartNames = ['DXY', 'VIX', 'WTI', 'EMBI', 'Treasury 10Y', 'IBR', 'Oro', 'Brent'];
+        at C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\usdcop-trading-dashboard\tests\e2e\analysis-page-validation.spec.ts:113:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\video.webm]]
+
+[[ATTACHMENT|..\test-results\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="/analysis page — UI Rendering › Recharts SVG elements render in chart grid" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="/analysis page — UI Rendering › daily timeline section is rendered" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="/analysis page — UI Rendering › macro snapshot bar shows indicator values" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="/analysis page — UI Rendering › floating chat widget is visible" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="/analysis page — UI Rendering › week navigation changes displayed data" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="/analysis page — UI Rendering › full page screenshot captures complete analysis" classname="analysis-page-validation.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="full-screenshots.spec.ts" timestamp="2026-03-12T01:49:46.559Z" hostname="chromium" tests="4" failures="2" skipped="0" time="102.425" errors="0">
+<testcase name="Full Visual Validation Screenshots › 05 - Analysis page week 9 (latest)" classname="full-screenshots.spec.ts" time="30.578">
+<failure message="full-screenshots.spec.ts:32:7 05 - Analysis page week 9 (latest)" type="FAILURE">
+<![CDATA[  [chromium] › full-screenshots.spec.ts:32:7 › Full Visual Validation Screenshots › 05 - Analysis page week 9 (latest) 
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5000/analysis", waiting until "networkidle"
+
+
+      31 |
+      32 |   test('05 - Analysis page week 9 (latest)', async ({ page }) => {
+    > 33 |     await page.goto('/analysis', { waitUntil: 'networkidle', timeout: 30000 });
+         |                ^
+      34 |     // Wait for analysis data to fully load
+      35 |     await page.waitForTimeout(10000);
+      36 |     await page.screenshot({ path: `${DIR}/05-analysis-latest.png`, fullPage: true });
+        at C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\usdcop-trading-dashboard\tests\e2e\full-screenshots.spec.ts:33:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\test-failed-1.png]]
+
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\video.webm]]
+
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Full Visual Validation Screenshots › 06 - Analysis page scrolled to macro charts" classname="full-screenshots.spec.ts" time="40.819">
+</testcase>
+<testcase name="Full Visual Validation Screenshots › 07 - Analysis page scrolled to timeline" classname="full-screenshots.spec.ts" time="30.453">
+<failure message="full-screenshots.spec.ts:48:7 07 - Analysis page scrolled to timeline" type="FAILURE">
+<![CDATA[  [chromium] › full-screenshots.spec.ts:48:7 › Full Visual Validation Screenshots › 07 - Analysis page scrolled to timeline 
+
+    TimeoutError: page.goto: Timeout 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5000/analysis", waiting until "networkidle"
+
+
+      47 |
+      48 |   test('07 - Analysis page scrolled to timeline', async ({ page }) => {
+    > 49 |     await page.goto('/analysis', { waitUntil: 'networkidle', timeout: 30000 });
+         |                ^
+      50 |     await page.waitForTimeout(10000);
+      51 |     // Scroll further down to timeline
+      52 |     await page.evaluate(() => window.scrollBy(0, 2000));
+        at C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP\USDCOP-RL-Models\usdcop-trading-dashboard\tests\e2e\full-screenshots.spec.ts:49:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\video.webm]]
+
+[[ATTACHMENT|..\test-results\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Full Visual Validation Screenshots › 09 - Previous analysis screenshots (Mar 9)" classname="full-screenshots.spec.ts" time="0.575">
+<system-out>
+<![CDATA[tests/e2e/screenshots/health-check/03-dashboard-detailed.png: EXISTS
+tests/e2e/screenshots/health-check/03-dashboard-fixed.png: EXISTS
+tests/e2e/screenshots/health-check/04-production-fixed.png: EXISTS
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

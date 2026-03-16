@@ -1,0 +1,27 @@
+{
+  "backup_timestamp": "2026-03-15T03:13:44Z",
+  "ohlcv": {
+    "file": "usdcop_m5_ohlcv_backup.parquet",
+    "rows": 93181,
+    "symbols": [
+      "USD/COP"
+    ],
+    "date_range": [
+      "2020-01-02",
+      "2026-03-11"
+    ],
+    "size_bytes": 2855916,
+    "sha256": "c34cd2be388471434b4440d1d6c436be2a4962fde02d6b1c3a33412d8031f39f"
+  },
+  "macro": {
+    "file": "macro_indicators_daily_backup.parquet",
+    "rows": 10796,
+    "date_range": [
+      "1954-07-31",
+      "2026-03-12"
+    ],
+    "size_bytes": 273348,
+    "sha256": "7e39cafbc8f94694e0084db207e6334aabb64dd0b255c8b7dce4c569c5647f39",
+    "skipped": false
+  }
+}

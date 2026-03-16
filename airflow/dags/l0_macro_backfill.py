@@ -18,7 +18,7 @@ Output Files (data/pipeline/01_sources/consolidated/):
     - MACRO_MONTHLY_MASTER.csv, .parquet, .xlsx
     - MACRO_QUARTERLY_MASTER.csv, .parquet, .xlsx
 
-Schedule: Weekly Sunday 6:00 UTC + Manual trigger
+Schedule: Weekly Sunday 4:00 UTC + Manual trigger
 
 Version: 2.0.0
 """
@@ -1137,6 +1137,55 @@ Post-validation: {'PASSED' if post_val_results.get('passed') else 'FAILED'}
 
 
 # =============================================================================
+# TASK 8: REGENERATE MACRO_DAILY_CLEAN.PARQUET
+# =============================================================================
+
+def regenerate_macro_clean_parquet(**context) -> Dict[str, Any]:
+    """
+    Regenerate MACRO_DAILY_CLEAN.parquet from DB after backfill.
+
+    This file is used by H1/H5 training DAGs as a parquet fallback for macro
+    features. Without this, the parquet goes stale and training uses outdated
+    macro data.
+    """
+    from utils.dag_common import get_db_connection
+
+    logger.info("=" * 60)
+    logger.info("REGENERATING MACRO_DAILY_CLEAN.PARQUET")
+    logger.info("=" * 60)
+
+    conn = get_db_connection()
+    try:
+        df = pd.read_sql("""
+            SELECT fecha, dxy, vix, wti, brent, gold, ust10y, ust2y,
+                   ibr, tpm, embi_col, fedfunds, cpi_us, cpi_col,
+                   unemployment_us, cci_col, ppi_us
+            FROM macro_indicators_daily
+            ORDER BY fecha ASC
+        """, conn)
+    finally:
+        conn.close()
+
+    if df.empty:
+        logger.warning("No macro data in DB — skipping MACRO_DAILY_CLEAN regeneration")
+        return {"rows": 0, "skipped": True}
+
+    output_path = Path('/opt/airflow/data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet')
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Atomic write
+    tmp_path = output_path.with_suffix('.parquet.tmp')
+    df.to_parquet(tmp_path, index=False)
+    tmp_path.rename(output_path)
+
+    logger.info(
+        f"Regenerated MACRO_DAILY_CLEAN.parquet: {len(df)} rows, "
+        f"{df['fecha'].iloc[0]} to {df['fecha'].iloc[-1]}"
+    )
+    return {"rows": len(df), "date_range": [str(df['fecha'].iloc[0]), str(df['fecha'].iloc[-1])]}
+
+
+# =============================================================================
 # DAG DEFINITION
 # =============================================================================
 
@@ -1150,7 +1199,7 @@ with DAG(
     _MACRO_BACKFILL_DAG_ID,
     default_args=default_args,
     description='Professional macro backfill v2.0 with validation & alerting',
-    schedule_interval='0 6 * * 0',  # Sunday 6:00 UTC
+    schedule_interval='0 4 * * 0',  # Sunday 04:00 UTC (avoids collision with H5-L3 at 06:30)
     start_date=days_ago(1),
     catchup=False,
     max_active_runs=1,
@@ -1292,5 +1341,12 @@ with DAG(
     # Branch B: Extract path
     decide_task >> extract_task >> validate_task >> upsert_task >> merge_task
 
+    # Task 8: Regenerate MACRO_DAILY_CLEAN.parquet (used by H1/H5 training)
+    regen_clean_task = PythonOperator(
+        task_id='regenerate_macro_clean_parquet',
+        python_callable=regenerate_macro_clean_parquet,
+        trigger_rule='none_failed_min_one_success',
+    )
+
     # Common path after merge
-    merge_task >> export_task >> post_val_task >> report_task
+    merge_task >> export_task >> regen_clean_task >> post_val_task >> report_task

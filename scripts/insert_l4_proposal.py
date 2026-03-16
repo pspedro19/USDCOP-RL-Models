@@ -319,7 +319,7 @@ def insert_promotion_proposal(
     # Default: TimescaleDB container credentials
     db_url = os.environ.get(
         'DATABASE_URL',
-        'postgresql://admin:admin123@localhost:5432/usdcop_trading'
+        f'postgresql://admin:{os.environ.get("POSTGRES_PASSWORD", "")}@localhost:5432/usdcop_trading'
     )
 
     conn = psycopg2.connect(db_url)
@@ -470,7 +470,7 @@ def verify_tables_exist() -> bool:
 
     db_url = os.environ.get(
         'DATABASE_URL',
-        'postgresql://admin:admin123@localhost:5432/usdcop_trading'
+        f'postgresql://admin:{os.environ.get("POSTGRES_PASSWORD", "")}@localhost:5432/usdcop_trading'
     )
 
     try:

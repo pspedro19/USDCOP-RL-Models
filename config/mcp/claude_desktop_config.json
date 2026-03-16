@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "usdcop-news": {
+      "command": "python",
+      "args": ["src/news_engine/mcp_server.py"],
+      "cwd": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models"
+    }
+  }
+}

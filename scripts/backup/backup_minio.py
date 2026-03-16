@@ -73,7 +73,7 @@ class MinIOBackup:
         """Initialize MinIO connection parameters."""
         self.endpoint = endpoint or os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
         self.access_key = access_key or os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-        self.secret_key = secret_key or os.getenv("MINIO_SECRET_KEY", "minioadmin123")
+        self.secret_key = secret_key or os.getenv("MINIO_SECRET_KEY", "")
 
         # Configure mc alias
         self._setup_mc_alias()

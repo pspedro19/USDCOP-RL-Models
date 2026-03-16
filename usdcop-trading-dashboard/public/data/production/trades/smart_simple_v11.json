@@ -1,0 +1,60 @@
+{
+  "strategy_name": "Smart Simple v1.1.0",
+  "strategy_id": "smart_simple_v11",
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2026-01-01",
+    "end": "2026-02-13"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2026-01-26T09:00:00-05:00",
+      "exit_timestamp": "2026-01-28T12:50:00-05:00",
+      "side": "SHORT",
+      "entry_price": 3686.0,
+      "exit_price": 3631.13,
+      "pnl_usd": 297.72,
+      "pnl_pct": 2.9772,
+      "exit_reason": "take_profit",
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 10297.72,
+      "leverage": 2.0,
+      "confidence_tier": "LOW",
+      "hard_stop_pct": 2.98,
+      "take_profit_pct": 1.49
+    },
+    {
+      "trade_id": 2,
+      "timestamp": "2026-02-09T09:00:00-05:00",
+      "exit_timestamp": "2026-02-13T12:50:00-05:00",
+      "side": "LONG",
+      "entry_price": 3670.08,
+      "exit_price": 3662.54,
+      "pnl_usd": -38.49,
+      "pnl_pct": -0.3738,
+      "exit_reason": "week_end",
+      "equity_at_entry": 10297.72,
+      "equity_at_exit": 10259.23,
+      "leverage": 1.734,
+      "confidence_tier": "LOW",
+      "hard_stop_pct": 3.0,
+      "take_profit_pct": 1.5
+    }
+  ],
+  "summary": {
+    "total_trades": 2,
+    "winning_trades": 1,
+    "losing_trades": 1,
+    "win_rate": 50.0,
+    "total_pnl": 259.23,
+    "total_return_pct": 2.59,
+    "max_drawdown_pct": 0.37,
+    "sharpe_ratio": 5.602,
+    "direction_accuracy_pct": 50.0,
+    "profit_factor": 7.735,
+    "p_value": 0.2465,
+    "n_long": 1,
+    "n_short": 1
+  }
+}

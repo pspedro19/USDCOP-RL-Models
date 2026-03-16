@@ -57,6 +57,19 @@ DAG_TAGS_LIST = get_dag_tags(DAG_ID)
 
 logger = logging.getLogger(__name__)
 
+
+# =============================================================================
+# TASK 0: DATA FRESHNESS GATE
+# =============================================================================
+
+def validate_data_freshness(**context):
+    """Gate: verify L0 OHLCV + macro data are fresh before training."""
+    from utils.data_quality import validate_training_data_freshness
+
+    result = validate_training_data_freshness(ohlcv_max_age=3, macro_max_age=7)
+    logger.info(f"[H5-L3] Data freshness OK: {result}")
+    context['ti'].xcom_push(key='data_freshness', value=result)
+
 PROJECT_ROOT = Path('/opt/airflow')
 MODELS_DIR = PROJECT_ROOT / 'outputs' / 'forecasting' / 'h5_weekly_models' / 'latest'
 
@@ -359,4 +372,9 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    t_load >> t_train >> t_validate >> t_persist >> t_summary
+    t_data_gate = PythonOperator(
+        task_id='validate_data_freshness',
+        python_callable=validate_data_freshness,
+    )
+
+    t_data_gate >> t_load >> t_train >> t_validate >> t_persist >> t_summary

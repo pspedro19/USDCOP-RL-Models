@@ -43,7 +43,7 @@ fi
 echo "Configuring MinIO remote..."
 dvc remote modify minio endpointurl http://localhost:9000
 dvc remote modify --local minio access_key_id minioadmin
-dvc remote modify --local minio secret_access_key minioadmin123
+dvc remote modify --local minio secret_access_key "${MINIO_SECRET_KEY}"
 
 # Set as default remote
 dvc remote default minio

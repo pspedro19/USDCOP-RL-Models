@@ -9,11 +9,11 @@ Purpose:
     docker-compose up, eliminating the data gap between last seed export and now.
 
 Schedule:
-    0 18 * * * (18:00 UTC = 13:00 COT, after market close + all L0 updates)
+    0 20 * * 1-5 (20:00 UTC = 15:00 COT Mon-Fri, after macro update window)
 
 Flow:
-    health_check -> export_ohlcv_backup -> export_macro_backup
-                 -> write_manifest -> validate_backups
+    health_check -> export_ohlcv_backup -> refresh_daily_ohlcv_seed
+                 -> export_macro_backup -> write_manifest -> validate_backups
 
 Output files (inside /opt/airflow/data/backups/seeds/):
     usdcop_m5_ohlcv_backup.parquet
@@ -243,6 +243,50 @@ def write_manifest(**context):
     return manifest
 
 
+def refresh_daily_ohlcv_seed(**context):
+    """Aggregate 5-min bars into daily OHLCV seed parquet for Analysis + training fallback."""
+    logging.info("=" * 60)
+    logging.info("REFRESHING DAILY OHLCV SEED")
+    logging.info("=" * 60)
+
+    conn = get_db_connection()
+    try:
+        df = pd.read_sql("""
+            SELECT
+                date_trunc('day', time AT TIME ZONE 'America/Bogota')::date as time,
+                (array_agg(open ORDER BY time))[1] as open,
+                max(high) as high,
+                min(low) as low,
+                (array_agg(close ORDER BY time DESC))[1] as close
+            FROM usdcop_m5_ohlcv
+            WHERE symbol = 'USD/COP'
+            GROUP BY 1
+            ORDER BY 1
+        """, conn)
+    finally:
+        conn.close()
+
+    if df.empty:
+        logging.warning("No USD/COP data to aggregate — skipping daily seed refresh")
+        return {"rows": 0, "skipped": True}
+
+    df['time'] = pd.to_datetime(df['time'])
+
+    # Atomic write
+    output_path = Path('/opt/airflow/seeds/latest/usdcop_daily_ohlcv.parquet')
+    tmp_path = output_path.with_suffix('.parquet.tmp')
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df.to_parquet(tmp_path, index=False)
+    tmp_path.rename(output_path)
+
+    logging.info(
+        f"Refreshed daily OHLCV seed: {len(df)} rows, "
+        f"{df['time'].iloc[0].date()} to {df['time'].iloc[-1].date()}"
+    )
+    return {"rows": len(df), "date_range": [str(df['time'].iloc[0].date()), str(df['time'].iloc[-1].date())]}
+
+
 def validate_backups(**context):
     """Re-read parquets and verify row counts match manifest."""
     logging.info("=" * 60)
@@ -312,7 +356,7 @@ with DAG(
     dag_id=DAG_ID,
     default_args=default_args,
     description='L0: Daily DB backup to parquet for startup restore',
-    schedule_interval='0 18 * * *',  # 18:00 UTC = 13:00 COT, after market close
+    schedule_interval='0 20 * * 1-5',  # 20:00 UTC = 15:00 COT Mon-Fri, after macro update window
     start_date=datetime(2026, 2, 17),
     catchup=False,
     max_active_runs=1,
@@ -344,4 +388,9 @@ with DAG(
         python_callable=validate_backups,
     )
 
-    t_health >> t_ohlcv >> t_macro >> t_manifest >> t_validate
+    t_daily_ohlcv = PythonOperator(
+        task_id='refresh_daily_ohlcv_seed',
+        python_callable=refresh_daily_ohlcv_seed,
+    )
+
+    t_health >> t_ohlcv >> t_daily_ohlcv >> t_macro >> t_manifest >> t_validate

@@ -6,6 +6,7 @@ Filters test data to ONLY include 2025 (excludes 2026).
 This ensures FloatingExperimentPanel metrics match a 2025-only backtest.
 """
 
+import os
 import sys
 import json
 import logging
@@ -32,7 +33,7 @@ def get_db_connection():
         port=5432,
         database="usdcop_trading",
         user="admin",
-        password="admin123"
+        password=os.environ.get("POSTGRES_PASSWORD", "")
     )
 
 

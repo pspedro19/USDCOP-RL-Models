@@ -1227,7 +1227,6 @@ export function ForecastingBacktestSection() {
       // Try per-strategy summary first, fall back to generic
       let summaryData: ProductionSummary | null = null;
       const summaryPaths = [
-        `/data/production/summary_${sid}_2025.json`,
         '/data/production/summary_2025.json',
       ];
       for (const path of summaryPaths) {
@@ -1246,7 +1245,6 @@ export function ForecastingBacktestSection() {
       // Try per-strategy approval first, fall back to generic
       let approvalData: ApprovalState | null = null;
       const approvalPaths = [
-        `/data/production/approval_state_${sid}.json`,
         '/api/production/status',
       ];
       for (const path of approvalPaths) {

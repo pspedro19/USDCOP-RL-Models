@@ -9,7 +9,8 @@
 
 .PHONY: help install install-dev test test-unit test-contracts test-regression \
         test-integration coverage lint format typecheck validate validate-ssot \
-        validate-contracts docker-up docker-down docker-logs db-migrate db-status \
+        validate-contracts docker-up docker-down docker-logs compact compact-monitoring \
+        compact-down db-migrate db-status \
         db-validate db-reset migrate migrate-status migrate-create migrate-rollback \
         clean pre-commit
 
@@ -152,8 +153,8 @@ validate-contracts: ## Validate all data contracts
 # DOCKER
 # =============================================================================
 
-docker-up: ## Start all Docker services
-	@echo "$(CYAN)Starting Docker services...$(RESET)"
+docker-up: ## Start all Docker services (enterprise, 25+ containers)
+	@echo "$(CYAN)Starting ALL Docker services (enterprise)...$(RESET)"
 	$(DOCKER_COMPOSE) up -d
 	@echo "$(GREEN)Docker services started!$(RESET)"
 	@echo "$(YELLOW)Services available at:$(RESET)"
@@ -164,6 +165,40 @@ docker-up: ## Start all Docker services
 	@echo "  MLflow:        http://localhost:5001"
 	@echo "  pgAdmin:       http://localhost:5050"
 	@echo "  Prometheus:    http://localhost:9090"
+
+compact: ## Start compact mode (12 containers: DB, Airflow, APIs, MLflow, SignalBridge, Dashboard)
+	@echo "$(CYAN)Starting COMPACT mode (12 services, ~6-8GB RAM)...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.compact.yml up -d
+	@echo "$(GREEN)Compact services started!$(RESET)"
+	@echo "$(YELLOW)Services available at:$(RESET)"
+	@echo "  Dashboard:     http://localhost:5000"
+	@echo "  Airflow:       http://localhost:8080"
+	@echo "  Trading API:   http://localhost:8000"
+	@echo "  Analytics API: http://localhost:8001"
+	@echo "  Backtest API:  http://localhost:8003"
+	@echo "  SignalBridge:  http://localhost:8085"
+	@echo "  MLflow:        http://localhost:5001"
+	@echo "  MinIO Console: http://localhost:9001"
+	@echo ""
+	@echo "$(YELLOW)Add monitoring: make compact-monitoring$(RESET)"
+	@echo "$(YELLOW)Full enterprise: make docker-up$(RESET)"
+
+compact-monitoring: ## Start compact + Prometheus/Grafana/AlertManager (15 containers)
+	@echo "$(CYAN)Starting COMPACT + monitoring (15 services)...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.compact.yml --profile monitoring up -d
+	@echo "$(GREEN)Compact + monitoring started!$(RESET)"
+	@echo "$(YELLOW)All services available at:$(RESET)"
+	@echo "  Dashboard:     http://localhost:5000"
+	@echo "  Airflow:       http://localhost:8080"
+	@echo "  Grafana:       http://localhost:3002"
+	@echo "  Prometheus:    http://localhost:9090"
+	@echo "  AlertManager:  http://localhost:9094"
+	@echo "  + Trading, Analytics, Backtest, SignalBridge, MLflow, MinIO"
+
+compact-down: ## Stop compact mode services
+	@echo "$(CYAN)Stopping compact services...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.compact.yml --profile monitoring down
+	@echo "$(GREEN)Compact services stopped!$(RESET)"
 
 docker-down: ## Stop all Docker services
 	@echo "$(CYAN)Stopping Docker services...$(RESET)"

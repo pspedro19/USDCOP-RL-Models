@@ -16,6 +16,7 @@ This should reproduce the EXACT results from L4:
 - 29.7% return
 """
 
+import os
 import sys
 import json
 import logging
@@ -45,7 +46,7 @@ def get_db_connection():
         port=5432,
         database="usdcop_trading",
         user="admin",
-        password="admin123"
+        password=os.environ.get("POSTGRES_PASSWORD", "")
     )
 
 

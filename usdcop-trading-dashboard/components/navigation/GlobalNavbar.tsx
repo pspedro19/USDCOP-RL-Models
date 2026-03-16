@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, BarChart3, Calendar, Home, LogOut, User,
-  ChevronDown, Menu, X, Settings, Zap, Cpu
+  ChevronDown, Menu, X, Settings, Zap, Cpu, FileText
 } from 'lucide-react';
 
 interface GlobalNavbarProps {
-  currentPage?: 'hub' | 'dashboard' | 'forecasting' | 'signalbridge' | 'production';
+  currentPage?: 'hub' | 'dashboard' | 'forecasting' | 'signalbridge' | 'production' | 'analysis';
 }
 
 export function GlobalNavbar({ currentPage = 'hub' }: GlobalNavbarProps) {
@@ -42,6 +42,7 @@ export function GlobalNavbar({ currentPage = 'hub' }: GlobalNavbarProps) {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
     { id: 'production', label: 'Produccion', icon: Cpu, href: '/production' },
     { id: 'forecasting', label: 'Forecasting', icon: Calendar, href: '/forecasting' },
+    { id: 'analysis', label: 'Analisis', icon: FileText, href: '/analysis' },
     { id: 'signalbridge', label: 'SignalBridge', icon: Zap, href: '/execution/dashboard' },
   ];
 

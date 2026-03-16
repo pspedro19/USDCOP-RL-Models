@@ -69,7 +69,7 @@ class Config:
     POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "usdcop_trading")
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "admin")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "admin123")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
 
     # Redis
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")

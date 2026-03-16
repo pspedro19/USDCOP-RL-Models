@@ -76,3 +76,15 @@ scipy==1.11.4
 
 # Configuration Management
 pyyaml==6.0.1
+
+# ================================================
+# OpenTelemetry - Distributed Tracing (Jaeger)
+# ================================================
+opentelemetry-api==1.24.0
+opentelemetry-sdk==1.24.0
+opentelemetry-exporter-jaeger==1.21.0
+
+# ================================================
+# Sentry - Error Tracking (env-var gated)
+# ================================================
+sentry-sdk[fastapi]==1.45.0

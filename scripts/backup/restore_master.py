@@ -380,7 +380,7 @@ class MasterRestore:
 
         endpoint = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
         access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-        secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin123")
+        secret_key = os.getenv("MINIO_SECRET_KEY", "")
 
         # Configure mc alias
         subprocess.run(

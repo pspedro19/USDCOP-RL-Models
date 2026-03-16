@@ -44,14 +44,14 @@ DB_CONFIG = {
     'host': os.environ.get('POSTGRES_HOST', 'postgres'),
     'database': os.environ.get('POSTGRES_DB', 'usdcop_trading'),
     'user': os.environ.get('POSTGRES_USER', 'admin'),
-    'password': os.environ.get('POSTGRES_PASSWORD', 'admin123'),
+    'password': os.environ.get('POSTGRES_PASSWORD', ''),
 }
 
 # MinIO config
 MINIO_CONFIG = {
     'endpoint': os.environ.get('MINIO_ENDPOINT', 'minio:9000'),
     'access_key': os.environ.get('AWS_ACCESS_KEY_ID', 'minioadmin'),
-    'secret_key': os.environ.get('AWS_SECRET_ACCESS_KEY', 'minioadmin123'),
+    'secret_key': os.environ.get('AWS_SECRET_ACCESS_KEY', ''),
     'bucket': 'seeds',
     'secure': False,
 }

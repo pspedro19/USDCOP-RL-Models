@@ -53,7 +53,7 @@ class ServiceConfig:
     postgres_port: int = 5432
     postgres_db: str = "usdcop_trading"
     postgres_user: str = "admin"
-    postgres_password: str = "admin123"
+    postgres_password: str = ""
 
     # Redis
     redis_host: str = "redis"
@@ -81,7 +81,7 @@ class ServiceConfig:
             postgres_port=int(os.environ.get('POSTGRES_PORT', '5432')),
             postgres_db=os.environ.get('POSTGRES_DB', 'usdcop_trading'),
             postgres_user=os.environ.get('POSTGRES_USER', 'admin'),
-            postgres_password=os.environ.get('POSTGRES_PASSWORD', 'admin123'),
+            postgres_password=os.environ.get('POSTGRES_PASSWORD', ''),
             redis_host=os.environ.get('REDIS_HOST', 'redis'),
             redis_port=int(os.environ.get('REDIS_PORT', '6379')),
             redis_password=os.environ.get('REDIS_PASSWORD', ''),

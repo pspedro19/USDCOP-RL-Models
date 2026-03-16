@@ -97,6 +97,15 @@ MODEL_IDS = (
 )
 
 # Colombia holidays 2026
+def _check_model_freshness(**context):
+    """Soft check: warn if H1 models are older than 10 days (L3 may have failed)."""
+    from utils.data_quality import check_model_freshness
+
+    result = check_model_freshness(str(MODELS_DIR), extension="*.pkl", max_age_days=10)
+    context['ti'].xcom_push(key='model_freshness', value=result)
+    # Soft check — never fails, only warns
+
+
 COLOMBIA_HOLIDAYS_2026 = {
     "2026-01-01", "2026-01-12", "2026-03-23", "2026-04-02", "2026-04-03",
     "2026-05-01", "2026-05-18", "2026-06-08", "2026-06-15", "2026-06-29",
@@ -570,5 +579,11 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    # DAG flow: check market -> load -> predict -> persist -> summary
-    t_check_market >> t_load >> t_predict >> t_persist >> t_summary
+    t_model_check = PythonOperator(
+        task_id='check_model_freshness',
+        python_callable=_check_model_freshness,
+        provide_context=True,
+    )
+
+    # DAG flow: check market -> model freshness -> load -> predict -> persist -> summary
+    t_check_market >> t_model_check >> t_load >> t_predict >> t_persist >> t_summary

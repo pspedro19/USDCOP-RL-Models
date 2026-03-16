@@ -45,7 +45,7 @@ def get_db_connection():
 
     if not database_url:
         # Default for local development
-        database_url = "postgresql://admin:admin123@localhost:5432/usdcop_trading"
+        database_url = f"postgresql://admin:{os.environ.get('POSTGRES_PASSWORD', '')}@localhost:5432/usdcop_trading"
 
     print(f"Connecting to database...")
     return psycopg2.connect(database_url)

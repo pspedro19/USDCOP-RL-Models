@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 2
+      "actualWorkers": 8
     },
     "preserveOutput": "always",
     "reporter": [
@@ -43,7 +43,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "chromium",
         "name": "chromium",
@@ -52,14 +52,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "firefox",
         "name": "firefox",
@@ -68,14 +68,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "webkit",
         "name": "webkit",
@@ -84,14 +84,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "Mobile Chrome",
         "name": "Mobile Chrome",
@@ -100,14 +100,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "Mobile Safari",
         "name": "Mobile Safari",
@@ -116,14 +116,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "Microsoft Edge",
         "name": "Microsoft Edge",
@@ -132,14 +132,14 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       },
       {
         "outputDir": "C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP/USDCOP-RL-Models/usdcop-trading-dashboard/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 2
+          "actualWorkers": 8
         },
         "id": "Google Chrome",
         "name": "Google Chrome",
@@ -148,7 +148,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
+        "timeout": 120000
       }
     ],
     "shard": null,
@@ -165,18 +165,18 @@
   },
   "suites": [
     {
-      "title": "screenshot-check.spec.ts",
-      "file": "screenshot-check.spec.ts",
+      "title": "all-pages-health-check.spec.ts",
+      "file": "all-pages-health-check.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "Screenshot /production page",
+          "title": "5a. Analysis API: index returns 9 weeks",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 120000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "chromium",
@@ -186,12 +186,16 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6278,
+                  "duration": 358,
                   "errors": [],
-                  "stdout": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Analysis index: 9 weeks available\n"
+                    }
+                  ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-02-17T04:17:59.068Z",
+                  "startTime": "2026-03-12T01:49:48.024Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -199,18 +203,18 @@
               "status": "expected"
             }
           ],
-          "id": "6fabc0e0b6ba1248f787-9257719dd859a413650c",
-          "file": "screenshot-check.spec.ts",
-          "line": 3,
+          "id": "d8c51e3e60de464fa69f-a901baf1b39d9a114115",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 90,
           "column": 5
         },
         {
-          "title": "Screenshot /dashboard page",
+          "title": "5b. Analysis API: latest week JSON has all sections",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 120000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "chromium",
@@ -220,12 +224,25 @@
                   "workerIndex": 1,
                   "parallelIndex": 1,
                   "status": "passed",
-                  "duration": 6403,
+                  "duration": 660,
                   "errors": [],
-                  "stdout": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Weekly summary: \"Resumen Semanal del USD/COP (Semana 9 de 2026)...\"\n"
+                    },
+                    {
+                      "text": "[OK] Daily entries: 5 days\n"
+                    },
+                    {
+                      "text": "[OK] Macro snapshots: dxy, vix, wti, embi_col, ust10y, ibr, gold, brent\n"
+                    },
+                    {
+                      "text": "[OK] Macro charts: 8 variables, 82+ data points each\n"
+                    }
+                  ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-02-17T04:17:59.060Z",
+                  "startTime": "2026-03-12T01:49:47.987Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -233,21 +250,1295 @@
               "status": "expected"
             }
           ],
-          "id": "6fabc0e0b6ba1248f787-649bd1de6899fd14fad5",
-          "file": "screenshot-check.spec.ts",
-          "line": 10,
+          "id": "d8c51e3e60de464fa69f-8e6bc10edf22a1aad184",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 105,
           "column": 5
+        },
+        {
+          "title": "5c. Analysis API: DXY technical indicators valid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 579,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] DXY=97.63, RSI=51.0, MACD=0.0995, trend=above_sma20\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:47.985Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-f507cb3d37df216396d8",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 150,
+          "column": 5
+        },
+        {
+          "title": "5d. Analysis API: all 9 weeks load",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 3,
+                  "status": "passed",
+                  "duration": 14168,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] All 9 weeks loaded:\n  W01: 5 days, 8 vars\n  W02: 5 days, 8 vars\n  W03: 5 days, 8 vars\n  W04: 5 days, 8 vars\n  W05: 5 days, 8 vars\n  W06: 5 days, 8 vars\n  W07: 5 days, 8 vars\n  W08: 5 days, 8 vars\n  W09: 5 days, 8 vars\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:47.996Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-feabaa036b0fe1dff4e5",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 170,
+          "column": 5
+        },
+        {
+          "title": "5e. Analysis API: calendar endpoint",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 363,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Calendar endpoint responds\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.049Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-4a077cf9926f72b838f9",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 182,
+          "column": 5
+        },
+        {
+          "title": "5f. Analysis page renders content (not stuck loading)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 5,
+                  "status": "passed",
+                  "duration": 16076,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Analysis page rendered with content\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.116Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-2da3e96a67f3346da499",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 193,
+          "column": 5
+        },
+        {
+          "title": "5g. Analysis: SEMANA week selector visible",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 6,
+                  "status": "passed",
+                  "duration": 16340,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Week selector: \"SEMANA 1\"\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.003Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-c8881f937672f117f84c",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 206,
+          "column": 5
+        },
+        {
+          "title": "5h. Analysis: macro Recharts SVGs render",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 7,
+                  "status": "passed",
+                  "duration": 19011,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Recharts SVGs: 0, chart containers: 1\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.083Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-602bfbd5a515ed2385f3",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 216,
+          "column": 5
+        },
+        {
+          "title": "5i. Analysis: daily timeline has entries",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 19727,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Daily timeline section visible\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.423Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-4f4e6e354619ec60182a",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 235,
+          "column": 5
+        },
+        {
+          "title": "5j. Analysis: week navigation prev/next works",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 19215,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Week navigation: SEMANA 1 -> navigated\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.452Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-934d60f692c3799fecd0",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 243,
+          "column": 5
+        },
+        {
+          "title": "5k. Analysis: full page screenshot",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 2,
+                  "status": "passed",
+                  "duration": 25559,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "[OK] Full analysis page screenshot captured\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-03-12T01:49:48.596Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d8c51e3e60de464fa69f-a209ec2678b5bac51aef",
+          "file": "all-pages-health-check.spec.ts",
+          "line": 267,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "analysis-deep-validation.spec.ts",
+      "file": "analysis-deep-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Analysis Deep Validation",
+          "file": "analysis-deep-validation.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Analysis page renders fully with data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 48878,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Console errors (5):\n"
+                        },
+                        {
+                          "text": "  1. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                        },
+                        {
+                          "text": "  2. WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                        },
+                        {
+                          "text": "  3. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                        },
+                        {
+                          "text": "  4. WebSocket connection to 'ws://localhost:8000/socket.io/?EIO=4&transport=websocket' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                        },
+                        {
+                          "text": "  5. WebSocket connection to 'ws://localhost:8000/ws' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED\n"
+                        },
+                        {
+                          "text": "[OK] Week selector\n"
+                        },
+                        {
+                          "text": "[OK] Analysis content\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:49:48.686Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6f99b30da698e06d7842-174aa73e2b049a32f8b0",
+              "file": "analysis-deep-validation.spec.ts",
+              "line": 7,
+              "column": 7
+            },
+            {
+              "title": "Dashboard loads with full backtest data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 39813,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[OK] No console errors on /dashboard\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:02.240Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6f99b30da698e06d7842-b088bbf1950f9225d2a4",
+              "file": "analysis-deep-validation.spec.ts",
+              "line": 76,
+              "column": 7
+            },
+            {
+              "title": "Production page loads with 2026 data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 38282,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:04.426Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6f99b30da698e06d7842-ee08f7f78edaed54b824",
+              "file": "analysis-deep-validation.spec.ts",
+              "line": 111,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "analysis-page-validation.spec.ts",
+      "file": "analysis-page-validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "/analysis page — API Validation",
+          "file": "analysis-page-validation.spec.ts",
+          "line": 11,
+          "column": 6,
+          "specs": [
+            {
+              "title": "analysis index returns 7+ weeks",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 4434,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:04.579Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-6f575b8facb62a5f0aee",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 13,
+              "column": 7
+            },
+            {
+              "title": "weekly data W07 has all sections populated",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 5587,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:09.056Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-38fd222b0b86262016c0",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "DXY snapshot has valid technical indicators",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 3295,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:14.672Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-1ebf64ba81239f3358cb",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 57,
+              "column": 7
+            },
+            {
+              "title": "all 7 weekly files load successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 28451,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:18.054Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-d6762c66330ebc5d3c60",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 71,
+              "column": 7
+            },
+            {
+              "title": "calendar endpoint responds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 214,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:46.535Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-5d189daa0bb38dc805cf",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 82,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "/analysis page — UI Rendering",
+          "file": "analysis-page-validation.spec.ts",
+          "line": 90,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page renders with analysis content (not stuck loading)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 1580,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:46.770Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-29e9adcdf42c09a6f906",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 92,
+              "column": 7
+            },
+            {
+              "title": "week selector shows SEMANA with correct week number",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 1970,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:48.364Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-9fc122131f8133bbac3a",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 100,
+              "column": 7
+            },
+            {
+              "title": "8 macro charts are visible",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "failed",
+                      "duration": 21297,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Graficos Macro')\nExpected: visible\nTimeout: 20000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Graficos Macro')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Graficos Macro')\nExpected: visible\nTimeout: 20000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Graficos Macro')\u001b[22m\n\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\analysis-page-validation.spec.ts:113:31",
+                        "location": {
+                          "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\analysis-page-validation.spec.ts",
+                          "column": 31,
+                          "line": 113
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 111 |\u001b[39m     \u001b[90m// Wait for charts section\u001b[39m\n \u001b[90m 112 |\u001b[39m     \u001b[36mconst\u001b[39m chartsTitle \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Graficos Macro'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 113 |\u001b[39m     \u001b[36mawait\u001b[39m expect(chartsTitle)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m20000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                               \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 114 |\u001b[39m\n \u001b[90m 115 |\u001b[39m     \u001b[90m// Check for individual chart labels\u001b[39m\n \u001b[90m 116 |\u001b[39m     \u001b[36mconst\u001b[39m chartNames \u001b[33m=\u001b[39m [\u001b[32m'DXY'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'VIX'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'WTI'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'EMBI'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'Treasury 10Y'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'IBR'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'Oro'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'Brent'\u001b[39m]\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\analysis-page-validation.spec.ts",
+                            "column": 31,
+                            "line": 113
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('text=Graficos Macro')\nExpected: visible\nTimeout: 20000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('text=Graficos Macro')\u001b[22m\n\n\n  111 |     // Wait for charts section\n  112 |     const chartsTitle = page.locator('text=Graficos Macro');\n> 113 |     await expect(chartsTitle).toBeVisible({ timeout: 20000 });\n      |                               ^\n  114 |\n  115 |     // Check for individual chart labels\n  116 |     const chartNames = ['DXY', 'VIX', 'WTI', 'EMBI', 'Treasury 10Y', 'IBR', 'Oro', 'Brent'];\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\analysis-page-validation.spec.ts:113:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:50.346Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\analysis-page-validation---bbfa9--8-macro-charts-are-visible-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\analysis-page-validation.spec.ts",
+                        "column": 31,
+                        "line": 113
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-3da50a5031a383c6322c",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 108,
+              "column": 7
+            },
+            {
+              "title": "Recharts SVG elements render in chart grid",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-7b9846a92e9f59fc0db9",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 127,
+              "column": 7
+            },
+            {
+              "title": "daily timeline section is rendered",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-b66186661a44a729b5ab",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 139,
+              "column": 7
+            },
+            {
+              "title": "macro snapshot bar shows indicator values",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-56af3c0f3f305d0bd88c",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 150,
+              "column": 7
+            },
+            {
+              "title": "floating chat widget is visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-8afe686030dac8fcdfa1",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 157,
+              "column": 7
+            },
+            {
+              "title": "week navigation changes displayed data",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-6bd23214725003190760",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 169,
+              "column": 7
+            },
+            {
+              "title": "full page screenshot captures complete analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:51:11.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a9c5c9d2242a12c735d9-ebd98f576aaa592fe7d0",
+              "file": "analysis-page-validation.spec.ts",
+              "line": 188,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "full-screenshots.spec.ts",
+      "file": "full-screenshots.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Full Visual Validation Screenshots",
+          "file": "full-screenshots.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "05 - Analysis page week 9 (latest)",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "failed",
+                      "duration": 30578,
+                      "error": {
+                        "message": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n",
+                        "stack": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts:33:16",
+                        "location": {
+                          "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                          "column": 16,
+                          "line": 33
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 31 |\u001b[39m\n \u001b[90m 32 |\u001b[39m   test(\u001b[32m'05 - Analysis page week 9 (latest)'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 33 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/analysis'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m30000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 34 |\u001b[39m     \u001b[90m// Wait for analysis data to fully load\u001b[39m\n \u001b[90m 35 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m10000\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 36 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m \u001b[32m`${DIR}/05-analysis-latest.png`\u001b[39m\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                            "column": 16,
+                            "line": 33
+                          },
+                          "message": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n\n\n  31 |\n  32 |   test('05 - Analysis page week 9 (latest)', async ({ page }) => {\n> 33 |     await page.goto('/analysis', { waitUntil: 'networkidle', timeout: 30000 });\n     |                ^\n  34 |     // Wait for analysis data to fully load\n  35 |     await page.waitForTimeout(10000);\n  36 |     await page.screenshot({ path: `${DIR}/05-analysis-latest.png`, fullPage: true });\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts:33:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:07.327Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-ad1c8-nalysis-page-week-9-latest--chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                        "column": 16,
+                        "line": 33
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "b2f4f391e3076418c74f-038043c70500f84e6e86",
+              "file": "full-screenshots.spec.ts",
+              "line": 32,
+              "column": 7
+            },
+            {
+              "title": "06 - Analysis page scrolled to macro charts",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 40819,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:07.941Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b2f4f391e3076418c74f-1039d1553e0691b6fd57",
+              "file": "full-screenshots.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "07 - Analysis page scrolled to timeline",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 30453,
+                      "error": {
+                        "message": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n",
+                        "stack": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts:49:16",
+                        "location": {
+                          "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                          "column": 16,
+                          "line": 49
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 47 |\u001b[39m\n \u001b[90m 48 |\u001b[39m   test(\u001b[32m'07 - Analysis page scrolled to timeline'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 49 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/analysis'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m\u001b[33m,\u001b[39m timeout\u001b[33m:\u001b[39m \u001b[35m30000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 50 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForTimeout(\u001b[35m10000\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 51 |\u001b[39m     \u001b[90m// Scroll further down to timeline\u001b[39m\n \u001b[90m 52 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mevaluate(() \u001b[33m=>\u001b[39m window\u001b[33m.\u001b[39mscrollBy(\u001b[35m0\u001b[39m\u001b[33m,\u001b[39m \u001b[35m2000\u001b[39m))\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                            "column": 16,
+                            "line": 49
+                          },
+                          "message": "TimeoutError: page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5000/analysis\", waiting until \"networkidle\"\u001b[22m\n\n\n  47 |\n  48 |   test('07 - Analysis page scrolled to timeline', async ({ page }) => {\n> 49 |     await page.goto('/analysis', { waitUntil: 'networkidle', timeout: 30000 });\n     |                ^\n  50 |     await page.waitForTimeout(10000);\n  51 |     // Scroll further down to timeline\n  52 |     await page.evaluate(() => window.scrollBy(0, 2000));\n    at C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts:49:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:08.449Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\test-results\\full-screenshots-Full-Visu-5962a-s-page-scrolled-to-timeline-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\usdcop-trading-dashboard\\tests\\e2e\\full-screenshots.spec.ts",
+                        "column": 16,
+                        "line": 49
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "b2f4f391e3076418c74f-d17b85dbe01a5ed60095",
+              "file": "full-screenshots.spec.ts",
+              "line": 48,
+              "column": 7
+            },
+            {
+              "title": "09 - Previous analysis screenshots (Mar 9)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 575,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "tests/e2e/screenshots/health-check/03-dashboard-detailed.png: EXISTS\n"
+                        },
+                        {
+                          "text": "tests/e2e/screenshots/health-check/03-dashboard-fixed.png: EXISTS\n"
+                        },
+                        {
+                          "text": "tests/e2e/screenshots/health-check/04-production-fixed.png: EXISTS\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-12T01:50:14.424Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b2f4f391e3076418c74f-40ae62eb31adc6025070",
+              "file": "full-screenshots.spec.ts",
+              "line": 83,
+              "column": 7
+            }
+          ]
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-02-17T04:17:57.777Z",
-    "duration": 8189.1320000000005,
-    "expected": 2,
-    "skipped": 0,
-    "unexpected": 0,
+    "startTime": "2026-03-12T01:49:44.518Z",
+    "duration": 87221.677,
+    "expected": 23,
+    "skipped": 6,
+    "unexpected": 3,
     "flaky": 0
   }
 }

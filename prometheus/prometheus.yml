@@ -6,10 +6,11 @@ global:
     environment: 'production'
 
 # =============================================================================
-# ALERT RULES - Load from config/prometheus/rules/
+# ALERT RULES - Load from config/prometheus/rules/ and alerts/
 # =============================================================================
 rule_files:
   - /etc/prometheus/rules/*.yml
+  - /etc/prometheus/alerts/*.yml
 
 # =============================================================================
 # ALERTMANAGER - Connect to AlertManager for notifications
@@ -22,9 +23,16 @@ alerting:
       timeout: 10s
 
 scrape_configs:
+  # =============================================================================
+  # Self-monitoring
+  # =============================================================================
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+
+  # =============================================================================
+  # ACTIVE SERVICES — verified in docker-compose.yml
+  # =============================================================================
 
   - job_name: 'trading-api'
     static_configs:
@@ -38,52 +46,25 @@ scrape_configs:
     metrics_path: /metrics
     scrape_timeout: 10s
 
-  - job_name: 'multi-model-api'
+  - job_name: 'signalbridge-api'
     static_configs:
-      - targets: ['multi-model-api:8006']
+      - targets: ['signalbridge-api:8000']
     metrics_path: /metrics
     scrape_timeout: 10s
 
-  - job_name: 'postgres'
+  - job_name: 'mlops-inference-api'
     static_configs:
-      - targets: ['postgres-exporter:9187']
-
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis:6379']
-
-  - job_name: 'airflow'
-    static_configs:
-      - targets: ['airflow-webserver:8080']
+      - targets: ['mlops-inference-api:8090']
     metrics_path: /metrics
     scrape_timeout: 10s
 
-  # =============================================================================
-  # INFERENCE API - Main inference service for PPO model predictions
-  # =============================================================================
-  - job_name: 'inference-api'
+  - job_name: 'backtest-api'
     static_configs:
-      - targets: ['inference-api:8000']
+      - targets: ['backtest-api:8000']
     metrics_path: /metrics
-    scrape_interval: 15s
     scrape_timeout: 10s
 
-  # =============================================================================
-  # FEAST FEATURE SERVER - Feature store for online serving
-  # =============================================================================
-  - job_name: 'feast-server'
-    static_configs:
-      - targets: ['feast-server:6566']
-    metrics_path: /metrics
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # =============================================================================
-  # MLFLOW - ML experiment tracking
-  # =============================================================================
-  - job_name: 'mlflow'
-    static_configs:
-      - targets: ['mlflow:5000']
-    metrics_path: /metrics
-    scrape_interval: 30s
-    scrape_timeout: 10s
+  # NOTE: redis, airflow, and mlflow targets removed (2026-03-15)
+  # Redis needs redis_exporter sidecar to expose /metrics (not natively supported)
+  # Airflow and MLflow do not expose Prometheus metrics by default
+  # Re-add when exporters are configured

@@ -81,7 +81,7 @@ class BackendValidator:
             'port': int(os.environ.get('POSTGRES_PORT', '5432')),
             'database': os.environ.get('POSTGRES_DB', 'usdcop_trading'),
             'user': os.environ.get('POSTGRES_USER', 'admin'),
-            'password': os.environ.get('POSTGRES_PASSWORD', 'admin123')
+            'password': os.environ.get('POSTGRES_PASSWORD', '')
         }
 
         self.redis_config = {
@@ -93,7 +93,7 @@ class BackendValidator:
         self.minio_config = {
             'endpoint': os.environ.get('MINIO_ENDPOINT', 'localhost:9000'),
             'access_key': os.environ.get('MINIO_ACCESS_KEY', 'minioadmin'),
-            'secret_key': os.environ.get('MINIO_SECRET_KEY', 'minioadmin123'),
+            'secret_key': os.environ.get('MINIO_SECRET_KEY', ''),
             'secure': False
         }
 

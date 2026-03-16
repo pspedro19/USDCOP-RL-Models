@@ -1,0 +1,1 @@
+{"content": "```json\n{\n  \"coherencia\": 1.0,\n  \"accionabilidad\": 1.0,\n  \"precision\": 1.0,\n  \"completitud\": 1.0,\n  \"sesgo\": 1.0\n}\n```", "tokens_used": 1181, "model": "azure/gpt-4o-mini", "cost_usd": 0.000203, "cached": false, "_cached_at": "2026-03-13T04:05:12.874868"}

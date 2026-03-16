@@ -23,6 +23,7 @@ import sys
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.utils.trigger_rule import TriggerRule
 
 sys.path.insert(0, '/opt/airflow')
@@ -370,4 +371,15 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    t_check >> t_signal >> t_persist >> t_notify
+    t_wait_l3 = ExternalTaskSensor(
+        task_id='wait_for_h5_l3_training',
+        external_dag_id='forecast_h5_l3_weekly_training',
+        external_task_id=None,  # Wait for entire DAG
+        execution_delta=timedelta(hours=30, minutes=45),  # Sun 06:30 -> Mon 13:15
+        timeout=3600,  # 1 hour timeout
+        mode='reschedule',
+        poke_interval=300,
+        soft_fail=True,  # Don't block if L3 hasn't run (first-time setup)
+    )
+
+    t_wait_l3 >> t_check >> t_signal >> t_persist >> t_notify
