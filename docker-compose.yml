@@ -19,6 +19,7 @@ volumes:
   vault_data:
   loki_data:
   alertmanager_data:
+  promtail_positions:
 
 # Docker Secrets Configuration
 # ============================
@@ -100,7 +101,7 @@ services:
       # MinIO (for seeds)
       MINIO_ENDPOINT: minio:9000
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-${MINIO_SECRET_KEY}}
     volumes:
       - ./data:/app/data:ro
       - ./init-scripts:/app/init-scripts:ro
@@ -629,8 +630,8 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     volumes:
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin/pgpass:/pgpass:ro
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./docker/pgadmin/pgpass:/pgpass:ro
     ports:
       - "5050:80"
     networks:
@@ -715,6 +716,8 @@ services:
       - '--web.enable-lifecycle'
     volumes:
       - ./prometheus:/etc/prometheus
+      - ./config/prometheus/rules:/etc/prometheus/rules:ro
+      - ./config/prometheus/alerts:/etc/prometheus/alerts:ro
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
@@ -734,21 +737,24 @@ services:
       prometheus:
         condition: service_healthy
       loki:
-        condition: service_healthy
+        condition: service_started
       jaeger:
-        condition: service_healthy
+        condition: service_started
     environment:
       # SECURITY: Credentials from .env
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      # Database connection for TimescaleDB datasource
-      GF_DATABASE_TYPE: postgres
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      # Grafana uses internal SQLite DB (GF_DATABASE_TYPE not set = default sqlite3)
       # Provisioning paths
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
       # Enable anonymous access for read-only dashboards (optional)
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       # Timezone
       GF_DEFAULT_TIMEZONE: America/Bogota
+      # Postgres credentials for datasource provisioning
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-usdcop_trading}
     volumes:
       - grafana_data:/var/lib/grafana
       # Provisioning configuration
@@ -1234,13 +1240,17 @@ services:
   # ===========================================================================
   # HashiCorp Vault - Secrets Management
   # ===========================================================================
+  # Vault is optional for paper trading. Use: docker compose --profile full up -d
   vault:
     image: hashicorp/vault:1.15
     container_name: usdcop-vault
+    init: true
+    profiles:
+      - full
     cap_add:
       - IPC_LOCK
     ports:
-      - "8200:8200"
+      - "8201:8200"
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_TOKEN:-devtoken}
       VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
@@ -1249,7 +1259,7 @@ services:
       VAULT_LOG_LEVEL: info
     volumes:
       - vault_data:/vault/file
-      - ./config/vault:/vault/config:ro
+      - ./config/vault:/vault/config
       - ./scripts/vault:/vault/scripts:ro
     command: server -dev -dev-root-token-id=${VAULT_DEV_TOKEN:-devtoken}
     healthcheck:
@@ -1265,6 +1275,8 @@ services:
   vault-init:
     image: hashicorp/vault:1.15
     container_name: usdcop-vault-init
+    profiles:
+      - full
     depends_on:
       vault:
         condition: service_healthy
@@ -1348,10 +1360,11 @@ services:
       - ./config/promtail:/etc/promtail
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_positions:/tmp
     command: -config.file=/etc/promtail/promtail-config.yml
     depends_on:
       loki:
-        condition: service_healthy
+        condition: service_started
     networks:
       - usdcop-trading-network
     restart: unless-stopped
@@ -1363,7 +1376,7 @@ services:
     image: prom/alertmanager:v0.26.0
     container_name: usdcop-alertmanager
     ports:
-      - "9093:9093"
+      - "9094:9093"
     volumes:
       - ./config/alertmanager:/etc/alertmanager
       - alertmanager_data:/alertmanager
@@ -1393,7 +1406,7 @@ services:
   #     trading-api:
   #       condition: service_healthy
   #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
   #   ports:
   #     - "80:80"
   #     - "443:443"
@@ -1427,8 +1440,8 @@ services:
       - .env
     environment:
       # Note: Using direct values since env var interpolation has issues on some Windows setups
-      - DATABASE_URL=postgresql+asyncpg://admin:admin123@postgres:5432/usdcop_trading
-      - DATABASE_SYNC_URL=postgresql://admin:admin123@postgres:5432/usdcop_trading
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
+      - DATABASE_SYNC_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       - REDIS_URL=redis://redis:6379/0
       - VAULT_ADDR=http://vault:8200
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}

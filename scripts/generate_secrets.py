@@ -77,8 +77,17 @@ def create_secret_file(secrets_dir: Path, filename: str, value: str) -> bool:
     """Create a secret file with the given value."""
     filepath = secrets_dir / filename
 
-    # Don't overwrite existing files
-    if filepath.exists():
+    # Remove directory placeholder if it exists (common on Windows with git)
+    if filepath.is_dir():
+        try:
+            filepath.rmdir()
+            print(f"  [FIX] {filename} was a directory, removed")
+        except OSError:
+            print(f"  [ERROR] {filename} is a non-empty directory, cannot replace")
+            return False
+
+    # Don't overwrite existing files with content
+    if filepath.exists() and filepath.stat().st_size > 0:
         print(f"  [SKIP] {filename} already exists")
         return False
 
@@ -116,6 +125,11 @@ def main():
         default=None,
         help="Path to .env file (default: .env in project root)"
     )
+    parser.add_argument(
+        '--check',
+        action='store_true',
+        help="Check if all secrets exist and have content (no changes)"
+    )
     args = parser.parse_args()
 
     # Find project root and secrets directory
@@ -134,6 +148,27 @@ def main():
 
     # Ensure secrets directory exists
     secrets_dir.mkdir(exist_ok=True)
+
+    # Check mode: report status without modifying
+    if args.check:
+        print("Checking secret files:")
+        missing = []
+        for filename in SECRET_MAPPINGS:
+            filepath = secrets_dir / filename
+            if filepath.is_dir():
+                print(f"  [BROKEN] {filename} is a directory (not a file)")
+                missing.append(filename)
+            elif not filepath.exists() or filepath.stat().st_size == 0:
+                print(f"  [MISSING] {filename}")
+                missing.append(filename)
+            else:
+                print(f"  [OK] {filename}")
+        if missing:
+            print(f"\n{len(missing)} secrets missing/broken. Run: python scripts/generate_secrets.py --random --force")
+            sys.exit(1)
+        else:
+            print(f"\nAll {len(SECRET_MAPPINGS)} secrets present.")
+            sys.exit(0)
 
     # Load environment variables if not using random mode
     env_vars = {}

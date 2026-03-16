@@ -20,9 +20,9 @@ Two modes (self-routing via BranchPythonOperator):
    - At session end (12:55 COT): SmartExecutor.expire_session()
    - UPDATE forecast_executions with new state
 
-Schedule: */5 13-19 * * 1-5 (UTC = 8:00-14:55 COT, Mon-Fri)
-  - 13:00-17:55 UTC (8:00-12:55 COT): monitoring window
+Schedule: */5 18-22 * * 1-5 (UTC 18:00-22:55 = 13:00-17:55 COT, Mon-Fri)
   - 18:00-18:55 UTC (13:00-13:55 COT): entry window (L5c runs at 18:30 UTC)
+  - 19:00-22:55 UTC (14:00-17:55 COT): trailing stop monitoring
 
 Author: Trading Team
 Version: 1.0.0
@@ -52,6 +52,12 @@ from contracts.dag_registry import (
     get_dag_tags,
 )
 from utils.dag_common import get_db_connection
+from utils.signalbridge_client import (
+    get_execution_mode,
+    is_paper_mode,
+    place_order_via_bridge,
+    check_bridge_health,
+)
 
 DAG_ID = FORECAST_H1_L7_SMART_EXECUTOR
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -94,9 +100,16 @@ SESSION_END_UTC_MINUTE = 50  # use :50 to allow processing before :55
 
 
 def _get_executor() -> "SmartExecutor":
-    """Create a SmartExecutor instance from config."""
+    """Create a SmartExecutor instance from config.
+
+    Always uses PaperBroker for state tracking — the SignalBridge bridge
+    is called separately for live/testnet order placement.
+    """
     cfg = SmartExecutorConfig(**EXECUTOR_CONFIG)
     broker = PaperBroker(slippage_bps=cfg.slippage_bps)
+    exec_mode = get_execution_mode()
+    if exec_mode != "paper":
+        logger.info(f"[L7] EXECUTION_MODE={exec_mode} — orders will also be sent to SignalBridge")
     return SmartExecutor(cfg, broker)
 
 
@@ -248,6 +261,29 @@ def enter_position(**context) -> None:
 
         entry_price = float(price_row[0])
 
+        # Risk check before entry
+        try:
+            from src.trading.risk_enforcer import RiskEnforcer, RiskLimits, RiskDecision
+            enforcer = RiskEnforcer(limits=RiskLimits())
+            risk_result = enforcer.check_signal(
+                signal=dir_str, size=leverage, price=entry_price,
+                confidence=0.8,
+            )
+            if risk_result.decision == RiskDecision.BLOCK:
+                logger.warning(
+                    f"[L7] Risk check BLOCKED entry: {risk_result.reason.value} — "
+                    f"{risk_result.message}"
+                )
+                return
+            if risk_result.decision == RiskDecision.REDUCE:
+                logger.info(
+                    f"[L7] Risk check REDUCED leverage: {leverage:.2f} -> "
+                    f"{risk_result.adjusted_size:.2f}"
+                )
+                leverage = risk_result.adjusted_size
+        except ImportError:
+            logger.debug("[L7] RiskEnforcer not available, skipping risk check")
+
         # Execute entry
         executor = _get_executor()
         state = executor.enter_position(signal_date, direction, leverage, entry_price)
@@ -283,6 +319,35 @@ def enter_position(**context) -> None:
             f"[L7] ENTERED {dir_str} @ {state.entry_price:.2f}, "
             f"lev={leverage:.2f}x, id={exec_id}, signal={signal_date}"
         )
+
+        # SignalBridge: forward order to OMS when in testnet/live mode
+        if not is_paper_mode():
+            bridge_side = "sell" if direction == -1 else "buy"
+            bridge_result = place_order_via_bridge(
+                symbol="USD/COP",
+                side=bridge_side,
+                quantity=leverage,
+                price=entry_price,
+                signal_id=f"h1_{signal_date}",
+                confidence=0.8,
+                metadata={
+                    "dag": DAG_ID,
+                    "exec_id": str(exec_id),
+                    "direction": dir_str,
+                    "hard_stop_pct": EXECUTOR_CONFIG["hard_stop_pct"],
+                    "trail_pct": EXECUTOR_CONFIG["trail_pct"],
+                },
+            )
+            if bridge_result.success:
+                logger.info(
+                    f"[L7] SignalBridge order placed: id={bridge_result.execution_id}, "
+                    f"fill={bridge_result.fill_price:.2f}"
+                )
+            else:
+                logger.error(
+                    f"[L7] SignalBridge order FAILED: {bridge_result.error} "
+                    f"(paper position still tracked locally)"
+                )
 
         context['ti'].xcom_push(key='action', value={
             'type': 'entry', 'signal_date': signal_date,
@@ -490,7 +555,7 @@ with DAG(
     dag_id=DAG_ID,
     default_args=default_args,
     description='Smart Executor: trailing stop intraday execution for forecasting signals',
-    schedule_interval='*/5 13-19 * * 1-5',  # UTC = 8:00-14:55 COT
+    schedule_interval='*/5 18-22 * * 1-5',  # UTC 18:00-22:55 = 13:00-17:55 COT (after L5 inference)
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS_LIST,

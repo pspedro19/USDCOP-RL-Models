@@ -1,0 +1,339 @@
+# =============================================================================
+# Economic Calendar 2026 — Key Events for USDCOP Analysis
+# =============================================================================
+# Source: Federal Reserve, BanRep, BLS, DANE, BEA official schedules
+# Used by: WeeklyAnalysisGenerator._load_upcoming_events()
+# =============================================================================
+
+events:
+  # --- January 2026 ---
+  - date: "2026-01-02"
+    event: "ISM Manufacturing PMI (Dec)"
+    country: "US"
+    impact_level: "medium"
+
+  - date: "2026-01-10"
+    event: "US Non-Farm Payrolls (Dec)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-01-14"
+    event: "US CPI (Dec)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-01-29"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-01-30"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- February 2026 ---
+  - date: "2026-02-05"
+    event: "Colombia CPI (Jan)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-02-06"
+    event: "US Non-Farm Payrolls (Jan)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-02-11"
+    event: "US CPI (Jan)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-02-27"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  - date: "2026-02-26"
+    event: "US GDP Q4 (2nd Estimate)"
+    country: "US"
+    impact_level: "medium"
+
+  # --- March 2026 ---
+  - date: "2026-03-05"
+    event: "Colombia CPI (Feb)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-03-06"
+    event: "US Non-Farm Payrolls (Feb)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-03-11"
+    event: "US CPI (Feb)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-03-18"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-03-27"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  - date: "2026-03-26"
+    event: "US GDP Q4 (3rd Estimate)"
+    country: "US"
+    impact_level: "medium"
+
+  # --- April 2026 ---
+  - date: "2026-04-03"
+    event: "US Non-Farm Payrolls (Mar)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-04-07"
+    event: "Colombia CPI (Mar)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-04-14"
+    event: "US CPI (Mar)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-04-24"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  - date: "2026-04-29"
+    event: "US GDP Q1 (Advance)"
+    country: "US"
+    impact_level: "high"
+
+  # --- May 2026 ---
+  - date: "2026-05-05"
+    event: "Colombia CPI (Apr)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-05-08"
+    event: "US Non-Farm Payrolls (Apr)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-05-06"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-05-12"
+    event: "US CPI (Apr)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-05-29"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- June 2026 ---
+  - date: "2026-06-05"
+    event: "US Non-Farm Payrolls (May)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-06-05"
+    event: "Colombia CPI (May)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-06-10"
+    event: "US CPI (May)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-06-17"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-06-25"
+    event: "US GDP Q1 (3rd Estimate)"
+    country: "US"
+    impact_level: "medium"
+
+  - date: "2026-06-26"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- July 2026 ---
+  - date: "2026-07-02"
+    event: "US Non-Farm Payrolls (Jun)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-07-06"
+    event: "Colombia CPI (Jun)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-07-14"
+    event: "US CPI (Jun)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-07-29"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-07-29"
+    event: "US GDP Q2 (Advance)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-07-31"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- August 2026 ---
+  - date: "2026-08-05"
+    event: "Colombia CPI (Jul)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-08-07"
+    event: "US Non-Farm Payrolls (Jul)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-08-12"
+    event: "US CPI (Jul)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-08-28"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- September 2026 ---
+  - date: "2026-09-04"
+    event: "US Non-Farm Payrolls (Aug)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-09-07"
+    event: "Colombia CPI (Aug)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-09-11"
+    event: "US CPI (Aug)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-09-16"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-09-25"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- October 2026 ---
+  - date: "2026-10-02"
+    event: "US Non-Farm Payrolls (Sep)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-10-05"
+    event: "Colombia CPI (Sep)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-10-13"
+    event: "US CPI (Sep)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-10-29"
+    event: "US GDP Q3 (Advance)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-10-30"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- November 2026 ---
+  - date: "2026-11-04"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-11-05"
+    event: "Colombia CPI (Oct)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-11-06"
+    event: "US Non-Farm Payrolls (Oct)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-11-11"
+    event: "US CPI (Oct)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-11-25"
+    event: "US GDP Q3 (2nd Estimate)"
+    country: "US"
+    impact_level: "medium"
+
+  - date: "2026-11-27"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  # --- December 2026 ---
+  - date: "2026-12-04"
+    event: "US Non-Farm Payrolls (Nov)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-12-07"
+    event: "Colombia CPI (Nov)"
+    country: "CO"
+    impact_level: "medium"
+
+  - date: "2026-12-10"
+    event: "US CPI (Nov)"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-12-16"
+    event: "FOMC Decision"
+    country: "US"
+    impact_level: "high"
+
+  - date: "2026-12-18"
+    event: "BanRep Rate Decision"
+    country: "CO"
+    impact_level: "high"
+
+  - date: "2026-12-23"
+    event: "US GDP Q3 (3rd Estimate)"
+    country: "US"
+    impact_level: "medium"

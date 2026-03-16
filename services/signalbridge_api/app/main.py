@@ -118,6 +118,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Observability: Prometheus metrics + Jaeger tracing
+try:
+    from prometheus_client import make_asgi_app as _make_metrics_app
+    app.mount("/metrics", _make_metrics_app())
+except ImportError:
+    pass
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    _provider = TracerProvider(resource=Resource.create({"service.name": "signalbridge-api"}))
+    _provider.add_span_processor(BatchSpanProcessor(JaegerExporter(agent_host_name="jaeger", agent_port=6831)))
+    trace.set_tracer_provider(_provider)
+except ImportError:
+    pass
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,

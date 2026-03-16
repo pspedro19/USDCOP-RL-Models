@@ -30,3 +30,12 @@ yfinance>=0.2.0
 
 # Time series analysis
 statsmodels>=0.14.0
+
+# News Engine dependencies (required for news_daily_pipeline DAG)
+feedparser>=6.0
+vaderSentiment>=3.3
+
+# Forecasting model dependencies
+xgboost>=1.7.0
+lightgbm>=4.0.0
+catboost>=1.2.0

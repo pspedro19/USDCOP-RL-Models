@@ -396,8 +396,8 @@ class ForecastingDatasetLoader:
             except Exception as e:
                 logger.warning(f"[DataLoader] DB extension failed ({e}), using parquet only")
 
-        # Load macro (parquet)
-        df_macro = self._load_macro_from_parquet()
+        # Load macro (DB first, parquet fallback)
+        df_macro = self._load_macro()
 
         # Merge + features
         df = self._merge_macro(df_ohlcv, df_macro)

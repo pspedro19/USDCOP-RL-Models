@@ -90,7 +90,7 @@ DB_CONFIG = {
     "port": int(os.getenv("POSTGRES_PORT", 5432)),
     "database": os.getenv("POSTGRES_DB", "usdcop_trading"),
     "user": os.getenv("POSTGRES_USER", "admin"),
-    "password": os.getenv("POSTGRES_PASSWORD", "admin123"),
+    "password": os.getenv("POSTGRES_PASSWORD", ""),
 }
 
 MODEL_PATH = PROJECT_ROOT / "models" / "ppo_production" / "final_model.zip"

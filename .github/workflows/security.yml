@@ -70,9 +70,7 @@ jobs:
 
       - name: Install project dependencies (for accurate scanning)
         run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt || true
-          fi
+          pip install -e ".[dev,forecasting,database]" || pip install -e "." || true
         continue-on-error: true
 
       # -----------------------------------------------------------------------

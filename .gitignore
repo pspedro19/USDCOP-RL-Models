@@ -105,6 +105,8 @@ airflow/*.cfg
 *.csv
 !sample_data.csv
 !usdcop-trading-dashboard/public/forecasting/*.csv
+# Allow news historical CSV files (tracked with Git LFS)
+!data/news/*.csv
 
 # =============================================================================
 # MACRO SEEDS - 9 Master Files (D/M/Q × CSV/Parquet/Excel)
@@ -124,10 +126,12 @@ airflow/*.cfg
 # Allow trading data backups for deployment
 !data/backups/pre_v20_migration_20260109/*.csv.gz
 !data/backups/pre_v20_migration_20260109/*.sql.gz
-reports/
-backtest_results/
-trades/
-positions/
+/reports/
+/backtest_results/
+/trades/
+/positions/
+# Allow dashboard production trade exports (critical for disaster recovery)
+!usdcop-trading-dashboard/public/data/production/trades/
 
 # Secrets and credentials
 # SECURITY: .env files contain sensitive credentials and MUST NOT be tracked
@@ -198,6 +202,8 @@ research/
 # Claude Code project config (rules, experiments, specs) — MUST be tracked
 !.claude/
 !.claude/**
+# BUT exclude local settings (contains secrets/tokens)
+.claude/settings.local.json
 
 # Claude Code temporary files and directories
 tmpclaude-*/
@@ -249,6 +255,27 @@ seeds/v*/
 
 # Sensitive files
 cookies.txt
+test-auth.json
+test_auth.py
 
 # Temporary norm_stats from training runs
 config/v*_norm_stats.json
+
+# =============================================================================
+# ROOT CLEANUP: Prevent future clutter
+# =============================================================================
+# Training logs (should go to logs/ not root)
+/training_*.log
+
+# Temporary plan/scratch files
+/plan.md
+
+# Old env templates (archived to docker/archive/)
+.env.infrastructure
+.env.multimodel.example
+
+# Archive directories (kept locally, not in git)
+docs/archive/
+docker/archive/
+logs/archive/
+results/archive/.claude/settings.local.json

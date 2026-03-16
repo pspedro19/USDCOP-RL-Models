@@ -153,12 +153,12 @@ cur.execute("""
 
 ---
 
-## Deprecated Services
+## Deprecated Services (DELETED)
 
-These standalone async services have been absorbed into Airflow DAGs:
+These standalone async services were absorbed into Airflow DAGs and **no longer exist in the codebase**:
 
-| Service | Absorbed Into | Deprecation Date |
-|---------|--------------|------------------|
+| Service (deleted) | Absorbed Into | Deprecation Date |
+|-------------------|--------------|------------------|
 | `src/services/l1_nrt_data_service.py` | `l1_feature_refresh.py` + `l1_model_promotion.py` | 2026-02-12 |
 | `src/services/l5_nrt_inference_service.py` | `l5_multi_model_inference.py` (v6.0.0) | 2026-02-12 |
 
@@ -171,6 +171,5 @@ These standalone async services have been absorbed into Airflow DAGs:
 - Do NOT normalize features in L5 — L1 writes pre-normalized FLOAT[] to `inference_ready_nrt`
 - Do NOT skip `feature_order_hash` validation — hash mismatch = garbage predictions
 - Do NOT write to `inference_ready_nrt` from anywhere except L1 DAGs
-- Do NOT use the deprecated NRT services — they are kept for reference only
 - Do NOT bypass `ProductionContract` for model promotion — requires 2-vote approval
 - Do NOT add state features (position, time_norm) to `inference_ready_nrt` — L5 adds them at predict time

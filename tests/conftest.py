@@ -928,7 +928,7 @@ def db_config():
         'port': int(os.getenv('POSTGRES_PORT', '5432')),
         'database': os.getenv('POSTGRES_DB', 'usdcop_trading'),
         'user': os.getenv('POSTGRES_USER', 'admin'),
-        'password': os.getenv('POSTGRES_PASSWORD', 'admin123')
+        'password': os.getenv('POSTGRES_PASSWORD', '')
     }
 
 

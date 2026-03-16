@@ -97,8 +97,7 @@ groups:
         annotations:
           summary: "Champion and shadow models highly aligned"
           description: |
-            Agreement rate: {{ printf "%.1f%%" (sub 1 $value | mulf 100) }}
-
+            Divergence rate {{ $value }} is below 5%.
             Models are producing very similar predictions.
             Shadow model may be redundant or no significant
             improvement has been achieved.

@@ -404,6 +404,24 @@ app = FastAPI(
     openapi_tags=OPENAPI_TAGS,
 )
 
+# Observability: Prometheus metrics + Jaeger tracing
+try:
+    from prometheus_client import make_asgi_app as _make_metrics_app
+    app.mount("/metrics", _make_metrics_app())
+except ImportError:
+    pass
+try:
+    from opentelemetry import trace as _otel_trace
+    from opentelemetry.sdk.trace import TracerProvider as _TP
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor as _BSP
+    from opentelemetry.sdk.resources import Resource as _Res
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter as _JE
+    _p = _TP(resource=_Res.create({"service.name": "backtest-api"}))
+    _p.add_span_processor(_BSP(_JE(agent_host_name="jaeger", agent_port=6831)))
+    _otel_trace.set_tracer_provider(_p)
+except ImportError:
+    pass
+
 # Add CORS middleware with restricted origins (P0 Security Fix)
 # SECURITY: In production, only allow specific trusted origins
 _cors_origins = [

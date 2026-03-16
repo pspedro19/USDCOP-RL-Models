@@ -173,6 +173,16 @@ FORECAST_H5_L5C_VOL_TARGETING = FORECAST_H5_L5_VOL_TARGETING
 
 
 # =============================================================================
+# NEWS ENGINE & ANALYSIS DAGS
+# =============================================================================
+NEWS_DAILY_PIPELINE = "news_daily_pipeline"
+NEWS_ALERT_MONITOR = "news_alert_monitor"
+NEWS_WEEKLY_DIGEST = "news_weekly_digest"
+NEWS_MAINTENANCE = "news_maintenance"
+ANALYSIS_L8_DAILY_GENERATION = "analysis_l8_daily_generation"
+
+
+# =============================================================================
 # SHARED MONITORING DAGS
 # =============================================================================
 CORE_L6_ALERT_MONITOR = "core_l6_01_alert_monitor"
@@ -285,6 +295,13 @@ DAG_DEPENDENCIES: Dict[str, List[str]] = {
     FORECAST_H5_L5_VOL_TARGETING: [FORECAST_H5_L7_MULTIDAY_EXECUTOR],
     FORECAST_H5_L7_MULTIDAY_EXECUTOR: [],
     FORECAST_H5_L6_WEEKLY_MONITOR: [FORECAST_H5_L7_MULTIDAY_EXECUTOR],
+
+    # News Engine & Analysis
+    NEWS_DAILY_PIPELINE: [],  # Runs on schedule (3x daily)
+    NEWS_ALERT_MONITOR: [],  # Runs on schedule (every 30 min)
+    NEWS_WEEKLY_DIGEST: [NEWS_DAILY_PIPELINE],  # Depends on daily ingestion
+    NEWS_MAINTENANCE: [],  # Runs on schedule (Sunday)
+    ANALYSIS_L8_DAILY_GENERATION: [NEWS_DAILY_PIPELINE],  # Must run AFTER last news ingestion
 }
 
 
@@ -339,6 +356,13 @@ DAG_TAGS: Dict[str, List[str]] = {
     FORECAST_H5_L5_VOL_TARGETING: ["forecast", "h5", "l5", "vol-targeting", "weekly"],
     FORECAST_H5_L7_MULTIDAY_EXECUTOR: ["forecast", "h5", "l7", "execution", "multiday"],
     FORECAST_H5_L6_WEEKLY_MONITOR: ["forecast", "h5", "l6", "monitoring", "paper-trading", "weekly"],
+
+    # News Engine & Analysis
+    NEWS_DAILY_PIPELINE: ["news", "l0", "ingestion", "enrichment", "daily"],
+    NEWS_ALERT_MONITOR: ["news", "l0", "alert", "gdelt", "crisis"],
+    NEWS_WEEKLY_DIGEST: ["news", "l1", "digest", "weekly"],
+    NEWS_MAINTENANCE: ["news", "l0", "maintenance", "cleanup"],
+    ANALYSIS_L8_DAILY_GENERATION: ["analysis", "l8", "llm", "daily", "weekly"],
 
     # Shared Monitoring
     CORE_L6_ALERT_MONITOR: ["core", "l6", "alert", "system"],
@@ -448,6 +472,12 @@ def get_all_dag_ids() -> List[str]:
         FORECAST_H5_L5_VOL_TARGETING,
         FORECAST_H5_L7_MULTIDAY_EXECUTOR,
         FORECAST_H5_L6_WEEKLY_MONITOR,
+        # News Engine & Analysis
+        NEWS_DAILY_PIPELINE,
+        NEWS_ALERT_MONITOR,
+        NEWS_WEEKLY_DIGEST,
+        NEWS_MAINTENANCE,
+        ANALYSIS_L8_DAILY_GENERATION,
         # Shared Monitoring
         CORE_L6_ALERT_MONITOR,
         CORE_L6_WEEKLY_REPORT,
@@ -528,6 +558,12 @@ __all__ = [
     "CORE_L0_MACRO_BACKFILL",
     "CORE_L0_MACRO_UPDATE",
     "CORE_L0_SEED_BACKUP",
+    # News Engine & Analysis IDs
+    "NEWS_DAILY_PIPELINE",
+    "NEWS_ALERT_MONITOR",
+    "NEWS_WEEKLY_DIGEST",
+    "NEWS_MAINTENANCE",
+    "ANALYSIS_L8_DAILY_GENERATION",
     # Core L6 IDs
     "CORE_L6_ALERT_MONITOR",
     "CORE_L6_WEEKLY_REPORT",

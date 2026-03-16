@@ -49,7 +49,7 @@ DB_CONFIG = {
     'port': int(os.environ.get('POSTGRES_PORT', 5432)),
     'database': os.environ.get('POSTGRES_DB', 'usdcop'),
     'user': os.environ.get('POSTGRES_USER', 'admin'),
-    'password': os.environ.get('POSTGRES_PASSWORD', 'admin123')
+    'password': os.environ.get('POSTGRES_PASSWORD', '')
 }
 
 # Data paths - Support both local development and Docker container

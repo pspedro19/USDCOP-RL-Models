@@ -31,7 +31,7 @@ POSTGRES_CONFIG = {
     'port': 5432,
     'database': 'usdcop_trading',
     'user': 'admin',
-    'password': 'admin123'
+    'password': os.environ.get('POSTGRES_PASSWORD', '')
 }
 
 # Backup configuration

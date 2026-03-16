@@ -20,7 +20,7 @@ const pool = new Pool({
   port: parseInt(process.env.POSTGRES_PORT || '5432'),
   database: process.env.POSTGRES_DB || 'usdcop_trading',
   user: process.env.POSTGRES_USER || 'admin',
-  password: process.env.POSTGRES_PASSWORD || 'admin123',
+  password: process.env.POSTGRES_PASSWORD || '',
   max: 5,
   idleTimeoutMillis: 30000,
 });

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { NotificationProvider } from "@/components/ui/notification-manager";
 import { ModelProvider } from "@/contexts/ModelContext";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -99,11 +100,13 @@ export default function RootLayout({
           maxRetries={1}
           showDetails={true}
         >
-          <ModelProvider>
-            <NotificationProvider maxNotifications={5} defaultDuration={6000}>
-              {children}
-            </NotificationProvider>
-          </ModelProvider>
+          <QueryProvider>
+            <ModelProvider>
+              <NotificationProvider maxNotifications={5} defaultDuration={6000}>
+                {children}
+              </NotificationProvider>
+            </ModelProvider>
+          </QueryProvider>
         </ErrorBoundary>
       </body>
     </html>

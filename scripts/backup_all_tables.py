@@ -33,7 +33,7 @@ DB_HOST = os.environ.get("POSTGRES_HOST", "postgres")
 DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
 DB_NAME = os.environ.get("POSTGRES_DB", "usdcop_trading")
 DB_USER = os.environ.get("POSTGRES_USER", "admin")
-DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "admin123")
+DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "")
 
 # Tables to backup (organized by importance)
 CRITICAL_TABLES = [

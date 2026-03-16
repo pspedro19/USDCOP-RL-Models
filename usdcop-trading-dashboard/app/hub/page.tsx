@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
   BarChart3, TrendingUp, Activity, ChevronRight,
-  Calendar, LineChart, Zap, Target, ArrowRight, Cpu, FlaskConical
+  Calendar, LineChart, Zap, Target, ArrowRight, Cpu, FlaskConical, FileText
 } from 'lucide-react';
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
 
@@ -55,6 +55,17 @@ export default function HubPage() {
       glowColor: 'amber',
       href: '/forecasting',
       features: ['Proyeccion 7 dias', 'Intervalos de confianza', 'Tendencias macro', 'Analisis tecnico']
+    },
+    {
+      id: 'analysis',
+      title: 'Analisis Semanal',
+      subtitle: 'Inteligencia de mercado',
+      description: 'Analisis AI del USD/COP con indicadores macro, señales de modelos, noticias y calendario economico.',
+      icon: FileText,
+      gradient: 'from-indigo-500 to-violet-600',
+      glowColor: 'indigo',
+      href: '/analysis',
+      features: ['Analisis AI Diario', 'Graficos Macro', 'Timeline Semanal', 'Chat Asistente']
     },
     {
       id: 'execution',

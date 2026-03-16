@@ -16,6 +16,7 @@ This ensures metrics match between L4 validation and dashboard backtest
 when using the same date range.
 """
 
+import os
 import sys
 import json
 import argparse
@@ -45,7 +46,7 @@ def get_db_connection():
         port=5432,
         database="usdcop_trading",
         user="admin",
-        password="admin123"
+        password=os.environ.get("POSTGRES_PASSWORD", "")
     )
 
 

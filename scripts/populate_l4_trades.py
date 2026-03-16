@@ -9,6 +9,7 @@ Usage:
     python scripts/populate_l4_trades.py
 """
 
+import os
 import sys
 import json
 import logging
@@ -35,7 +36,7 @@ def get_db_connection():
         port=5432,
         database="usdcop_trading",
         user="admin",
-        password="admin123"
+        password=os.environ.get("POSTGRES_PASSWORD", "")
     )
 
 

@@ -42,7 +42,7 @@ def database_url() -> str:
     """Database connection URL"""
     return os.getenv(
         'TEST_DATABASE_URL',
-        os.getenv('DATABASE_URL', 'postgresql://admin:admin123@localhost:5432/usdcop_trading')
+        os.getenv('DATABASE_URL', 'postgresql://admin@localhost:5432/usdcop_trading')
     )
 
 
@@ -54,7 +54,7 @@ def db_config() -> Dict[str, Any]:
         'port': int(os.getenv('POSTGRES_PORT', '5432')),
         'database': os.getenv('POSTGRES_DB', 'usdcop_trading'),
         'user': os.getenv('POSTGRES_USER', 'admin'),
-        'password': os.getenv('POSTGRES_PASSWORD', 'admin123')
+        'password': os.getenv('POSTGRES_PASSWORD', '')
     }
 
 

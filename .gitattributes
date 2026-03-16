@@ -57,3 +57,14 @@ docker-compose*.yml text eol=lf
 models/**/*.zip binary
 seeds/*.parquet filter=lfs diff=lfs merge=lfs -text
 seeds/**/*.parquet filter=lfs diff=lfs merge=lfs -text
+
+# =============================================================================
+# News Engine historical data (Git LFS - large CSV/JSON files)
+# =============================================================================
+data/news/*.csv filter=lfs diff=lfs merge=lfs -text
+data/news/*.json filter=lfs diff=lfs merge=lfs -text
+
+# =============================================================================
+# Weekly analysis exports (Git LFS - 300-600KB each, grows weekly)
+# =============================================================================
+usdcop-trading-dashboard/public/data/analysis/weekly_*.json filter=lfs diff=lfs merge=lfs -text

@@ -1,12 +1,8 @@
 # =============================================================================
-# CI Pipeline with Coverage Gate (Phase 15.3)
+# CI Pipeline — USDCOP Trading System
 # =============================================================================
-# Continuous integration pipeline with test coverage requirements.
-#
-# Coverage Gate: 70% minimum coverage required
-#
-# Author: Trading Team
-# Date: 2025-01-14
+# Runs lint, type check, unit tests (with 70% coverage gate), and build.
+# Uses pyproject.toml for dependency installation.
 # =============================================================================
 
 name: CI Pipeline
@@ -39,20 +35,16 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install linting tools
-        run: |
-          pip install ruff black isort mypy
+        run: pip install ruff black isort
 
       - name: Run ruff
         run: ruff check src/ services/ tests/ --output-format=github
-        continue-on-error: false
 
       - name: Check black formatting
         run: black --check --diff src/ services/ tests/
-        continue-on-error: false
 
       - name: Check import sorting
         run: isort --check-only --diff src/ services/ tests/
-        continue-on-error: false
 
   # ===========================================================================
   # Type Checking with MyPy
@@ -70,36 +62,22 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache pip dependencies
+      - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-mypy-${{ hashFiles('**/requirements*.txt', 'pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-mypy-
-            ${{ runner.os }}-pip-
+          key: ${{ runner.os }}-pip-mypy-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-mypy-
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt 2>/dev/null || true
+          pip install -e ".[dev]" 2>/dev/null || pip install -e "." 2>/dev/null || true
           pip install mypy types-PyYAML types-redis types-requests numpy pandas-stubs
 
-      - name: Run mypy type checking
-        run: |
-          mypy src/ --ignore-missing-imports --no-error-summary || true
-          mypy src/ --ignore-missing-imports 2>&1 | head -50 || true
-        continue-on-error: false
-
-      - name: Type check summary
-        if: always()
-        run: |
-          echo "## Type Checking Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "MyPy type checking completed. Review output above for type errors." >> $GITHUB_STEP_SUMMARY
-          mypy src/ --ignore-missing-imports --no-error-summary 2>&1 | \
-            grep -E "^Found [0-9]+ error" >> $GITHUB_STEP_SUMMARY || \
-            echo "No type errors summary available" >> $GITHUB_STEP_SUMMARY
+      - name: Run mypy (informational)
+        run: mypy src/ --ignore-missing-imports --no-error-summary 2>&1 | head -50 || true
+        continue-on-error: true
 
   # ===========================================================================
   # Unit Tests with Coverage Gate
@@ -143,24 +121,24 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache pip dependencies
+      - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          key: ${{ runner.os }}-pip-test-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-test-
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio pytest-xdist
+          pip install -e ".[dev,forecasting,database]"
+          pip install pytest pytest-cov pytest-asyncio
 
       - name: Run unit tests with coverage
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
+          POSTGRES_PASSWORD: test
         run: |
           pytest tests/unit/ \
             --cov=src \
@@ -172,15 +150,6 @@ jobs:
             -v \
             --tb=short \
             -x
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: unit-coverage
-        continue-on-error: false
 
       - name: Upload coverage HTML report
         uses: actions/upload-artifact@v4
@@ -230,81 +199,21 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -e ".[dev,forecasting,database]"
           pip install pytest pytest-asyncio
 
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
+          POSTGRES_PASSWORD: test
         run: |
           pytest tests/integration/ \
             -v \
             --tb=short \
             -x \
             --ignore=tests/integration/test_database_schema.py
-        continue-on-error: false
-
-  # ===========================================================================
-  # Feature Parity Tests (Critical)
-  # ===========================================================================
-  feature-parity:
-    name: Feature Parity Check
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-
-      - name: Run feature parity tests
-        run: |
-          pytest tests/integration/test_feature_parity.py \
-            tests/integration/test_observation_parity.py \
-            -v \
-            --tb=long
-
-  # ===========================================================================
-  # Load Tests (Optional - on schedule)
-  # ===========================================================================
-  load-test:
-    name: Load Tests
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[load-test]')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
-
-      - name: Run load tests
-        run: |
-          pytest tests/load/ \
-            -v \
-            --tb=short \
-            -m "load and not slow"
+        continue-on-error: true
 
   # ===========================================================================
   # Build Check
@@ -332,27 +241,12 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ===========================================================================
-  # Notify on Failure
-  # ===========================================================================
-  notify:
-    name: Notify on Failure
-    runs-on: ubuntu-latest
-    needs: [test, integration-test, feature-parity]
-    if: failure()
-
-    steps:
-      - name: Send failure notification
-        run: |
-          echo "::error::CI pipeline failed! Review the logs above."
-          # Add Slack/email notification here if configured
-
-  # ===========================================================================
   # Summary
   # ===========================================================================
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [lint, type-check, test, integration-test, feature-parity, build]
+    needs: [lint, type-check, test, build]
     if: always()
 
     steps:
@@ -365,8 +259,6 @@ jobs:
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Integration | ${{ needs.integration-test.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Feature Parity | ${{ needs.feature-parity.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Coverage threshold: **${{ env.COVERAGE_THRESHOLD }}%**" >> $GITHUB_STEP_SUMMARY

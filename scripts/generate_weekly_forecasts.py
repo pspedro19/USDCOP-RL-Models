@@ -35,6 +35,7 @@ Date: 2026-02-15
 import argparse
 import csv
 import logging
+import os
 import sys
 import time
 import warnings
@@ -962,6 +963,32 @@ def main():
     logger.info(f"  CSV: {bt_rows} backtest + {ff_rows} forward_forecast = {len(all_csv_rows)} rows")
     logger.info(f"  Images: {total_images} total")
     logger.info(f"  Output: {OUTPUT_DIR}")
+
+    # MLflow experiment tracking (optional — silent if MLflow unavailable)
+    try:
+        import mlflow
+        mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001"))
+        mlflow.set_experiment("h1_weekly_forecasts")
+        with mlflow.start_run(run_name=f"forecast_{weeks[-1][0]}"):
+            mlflow.log_param("n_models", len(MODEL_IDS))
+            mlflow.log_param("n_horizons", len(HORIZONS))
+            mlflow.log_param("n_weeks", len(weeks))
+            mlflow.log_metric("csv_rows", len(all_csv_rows))
+            mlflow.log_metric("backtest_rows", bt_rows)
+            mlflow.log_metric("forward_rows", ff_rows)
+            mlflow.log_metric("total_images", total_images)
+            mlflow.log_metric("pipeline_time_sec", total_time)
+            # Log best model metrics from latest week backtest (H=1)
+            for row in all_csv_rows:
+                if row.get("view_type") == "backtest" and row.get("is_best_overall_model"):
+                    mlflow.log_metric("best_da_pct", float(row.get("direction_accuracy", 0)) * 100)
+                    mlflow.log_metric("best_sharpe", float(row.get("sharpe", 0)))
+                    mlflow.log_metric("best_return_pct", float(row.get("total_return", 0)) * 100)
+                    mlflow.log_param("best_model", row.get("model_id", "unknown"))
+                    break
+        logger.info(f"  MLflow run logged (experiment=h1_weekly_forecasts)")
+    except Exception as e:
+        logger.debug(f"  [MLflow] Skipped: {e}")
 
 
 if __name__ == "__main__":

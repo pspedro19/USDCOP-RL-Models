@@ -28,7 +28,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 DB_USER="${POSTGRES_USER:-admin}"
-DB_PASSWORD="${POSTGRES_PASSWORD:-admin123}"
+DB_PASSWORD="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var is required}"
 DB_NAME="${POSTGRES_DB:-usdcop_trading}"
 CONTAINER_NAME="${CONTAINER_NAME:-usdcop-postgres-timescale}"
 
