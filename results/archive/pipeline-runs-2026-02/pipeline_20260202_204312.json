@@ -1,0 +1,270 @@
+{
+  "start_time": "2026-02-02T19:44:12.836846",
+  "timesteps": 500000,
+  "l2": {
+    "dataset_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\RL_DS3_MACRO_CORE.csv",
+    "success": true
+  },
+  "l3": {
+    "success": true,
+    "version": "v20260202_194516",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_194516_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_194516_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_194516_contract.json",
+    "model_hash": "6a65cf1ecc9b4a21adcea5f6add23225e5ed1b9b2dc51648656e940f75774f72",
+    "dataset_hash": "c51cb6fc3e364338821ade08ca531afa03e8b470dd8b585004164589c4b9b7f9",
+    "norm_stats_hash": "99b8bb371be7efe52410afadc5a5f4ef89b97768881a1ada78c8807c01544d94",
+    "config_hash": "2d6180518b2142bd",
+    "training_duration_seconds": 3441.3447148799896,
+    "total_timesteps": 500000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "03d7fceb75ce0d9627f8a18264e14a47",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.7,
+      "dsr": 0.15,
+      "sortino": 0.05,
+      "regime_penalty": 0.15,
+      "holding_decay": 0.2,
+      "anti_gaming": 0.15
+    },
+    "errors": []
+  },
+  "l4": {
+    "period": {
+      "start": "2025-01-01 13:00:00",
+      "end": "2025-12-17 17:50:00",
+      "bars": 12714,
+      "trading_days": 88.29166666666667
+    },
+    "capital": {
+      "initial": 10000.0,
+      "final": 7967.044464308123,
+      "total_pnl": -2032.9555356918772,
+      "total_return_pct": -20.32955535691877
+    },
+    "annualized": {
+      "apr_simple": -58.02413912158788,
+      "apr_compound": -47.72609973931179
+    },
+    "risk": {
+      "max_drawdown_pct": 22.28097453195255,
+      "drawdown_duration_bars": 11480,
+      "sharpe_annual": -3.0455932381187183,
+      "sortino_annual": -5.075867389149597
+    },
+    "trades": {
+      "total": 22,
+      "winning": 15,
+      "losing": 7,
+      "win_rate_pct": 68.18181818181817,
+      "profit_factor": 2.781446248560097,
+      "avg_pnl": 69.32018401441053,
+      "avg_duration_hours": 47.06060606060607,
+      "avg_duration_bars": 564.7272727272727
+    },
+    "action_distribution": {
+      "long": 18.15464485172658,
+      "hold": 2.100212381027295,
+      "short": 79.74514276724612
+    },
+    "trade_details": [
+      {
+        "entry_bar": 7,
+        "exit_bar": 583,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 205.21777946119357,
+        "entry_time": "2025-01-01 13:35:00",
+        "exit_time": "2025-01-15 16:30:00"
+      },
+      {
+        "entry_bar": 589,
+        "exit_bar": 1165,
+        "bars_held": 576,
+        "direction": "LONG",
+        "pnl": -190.35511542277408,
+        "entry_time": "2025-01-15 17:00:00",
+        "exit_time": "2025-01-29 15:00:00"
+      },
+      {
+        "entry_bar": 1166,
+        "exit_bar": 1742,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 171.493906176534,
+        "entry_time": "2025-01-29 15:05:00",
+        "exit_time": "2025-02-12 13:05:00"
+      },
+      {
+        "entry_bar": 1743,
+        "exit_bar": 2319,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 59.982964983572785,
+        "entry_time": "2025-02-12 13:10:00",
+        "exit_time": "2025-02-25 16:20:00"
+      },
+      {
+        "entry_bar": 2320,
+        "exit_bar": 2896,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -133.78067056829713,
+        "entry_time": "2025-02-25 16:25:00",
+        "exit_time": "2025-03-11 14:25:00"
+      },
+      {
+        "entry_bar": 2921,
+        "exit_bar": 3497,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 85.49361532789288,
+        "entry_time": "2025-03-11 16:30:00",
+        "exit_time": "2025-03-26 14:50:00"
+      },
+      {
+        "entry_bar": 3517,
+        "exit_bar": 4093,
+        "bars_held": 576,
+        "direction": "LONG",
+        "pnl": 653.8107200816053,
+        "entry_time": "2025-03-26 16:30:00",
+        "exit_time": "2025-04-09 15:05:00"
+      },
+      {
+        "entry_bar": 4099,
+        "exit_bar": 4675,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 354.6869586803784,
+        "entry_time": "2025-04-09 15:35:00",
+        "exit_time": "2025-04-24 17:50:00"
+      },
+      {
+        "entry_bar": 4700,
+        "exit_bar": 5276,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 104.16750751456232,
+        "entry_time": "2025-04-25 14:55:00",
+        "exit_time": "2025-05-09 17:30:00"
+      },
+      {
+        "entry_bar": 5330,
+        "exit_bar": 5906,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 189.68947756910626,
+        "entry_time": "2025-05-12 17:00:00",
+        "exit_time": "2025-05-26 15:10:00"
+      },
+      {
+        "entry_bar": 5911,
+        "exit_bar": 6487,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -81.00533040919444,
+        "entry_time": "2025-05-26 15:35:00",
+        "exit_time": "2025-06-10 13:15:00"
+      },
+      {
+        "entry_bar": 6510,
+        "exit_bar": 7086,
+        "bars_held": 576,
+        "direction": "LONG",
+        "pnl": -252.42110253686093,
+        "entry_time": "2025-06-10 15:10:00",
+        "exit_time": "2025-06-24 17:40:00"
+      },
+      {
+        "entry_bar": 7087,
+        "exit_bar": 7663,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 86.24593582702893,
+        "entry_time": "2025-06-24 17:45:00",
+        "exit_time": "2025-07-09 15:40:00"
+      },
+      {
+        "entry_bar": 7671,
+        "exit_bar": 8247,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -102.76877334514771,
+        "entry_time": "2025-07-09 16:20:00",
+        "exit_time": "2025-07-23 14:20:00"
+      },
+      {
+        "entry_bar": 8270,
+        "exit_bar": 8846,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -5.760363756753622,
+        "entry_time": "2025-07-23 16:15:00",
+        "exit_time": "2025-08-06 14:25:00"
+      },
+      {
+        "entry_bar": 8847,
+        "exit_bar": 9423,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 53.75002811793978,
+        "entry_time": "2025-08-06 14:30:00",
+        "exit_time": "2025-08-21 16:00:00"
+      },
+      {
+        "entry_bar": 9469,
+        "exit_bar": 10045,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 16.972262779054482,
+        "entry_time": "2025-08-22 14:50:00",
+        "exit_time": "2025-09-04 17:55:00"
+      },
+      {
+        "entry_bar": 10060,
+        "exit_bar": 10636,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 145.89141680760235,
+        "entry_time": "2025-09-05 14:10:00",
+        "exit_time": "2025-09-18 17:25:00"
+      },
+      {
+        "entry_bar": 10652,
+        "exit_bar": 11228,
+        "bars_held": 576,
+        "direction": "LONG",
+        "pnl": 24.995965036176457,
+        "entry_time": "2025-09-19 13:45:00",
+        "exit_time": "2025-10-02 16:45:00"
+      },
+      {
+        "entry_bar": 11231,
+        "exit_bar": 11807,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 202.21371416517727,
+        "entry_time": "2025-10-02 17:00:00",
+        "exit_time": "2025-10-17 14:40:00"
+      }
+    ],
+    "passed": false,
+    "warnings": [
+      "Total return -20.3% < -20%"
+    ]
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T20:43:12.147477",
+  "duration_seconds": 3539.31063079834
+}

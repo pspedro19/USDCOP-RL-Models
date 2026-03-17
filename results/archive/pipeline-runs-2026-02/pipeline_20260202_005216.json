@@ -1,0 +1,59 @@
+{
+  "start_time": "2026-02-02T00:46:07.620432",
+  "timesteps": 100000,
+  "l2": {
+    "dataset_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\RL_DS3_MACRO_CORE.csv",
+    "success": true
+  },
+  "l3": {
+    "success": true,
+    "version": "v20260202_004659",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_004659_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_004659_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_004659_contract.json",
+    "model_hash": "840ba2ce6baeb96d660f8032d3722261a2b0a0c069e7a4a348749baa0d1f6785",
+    "dataset_hash": "c9f918b7f0f91279d8cf263bc04f9346dd9bad0bf1349185e4dbc9d7e792e6fa",
+    "norm_stats_hash": "a9dbf3ef42f1f59ad75d520eb76afc7cfa139e22a99a19c9fd16bf6ec80ea832",
+    "config_hash": "19a2d36bce916456",
+    "training_duration_seconds": 292.23243594169617,
+    "total_timesteps": 100000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "8531855184ee22eb68cbc376ed109a03",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.5,
+      "dsr": 0.3,
+      "sortino": 0.2,
+      "regime_penalty": 1.0,
+      "holding_decay": 1.0,
+      "anti_gaming": 1.0
+    },
+    "errors": []
+  },
+  "l4": {
+    "total_trades": 1,
+    "winning_trades": 1,
+    "win_rate": 100.0,
+    "total_return": 12.173926477073966,
+    "sharpe_ratio": 0,
+    "max_drawdown": 0.0,
+    "action_distribution": {
+      "long": 0.0,
+      "hold": 0.0,
+      "short": 100.0
+    },
+    "test_rows": 12664,
+    "passed": true
+  },
+  "end_time": "2026-02-02T00:52:16.266454",
+  "duration_seconds": 368.6460223197937
+}

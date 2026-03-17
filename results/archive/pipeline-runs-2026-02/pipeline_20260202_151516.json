@@ -1,0 +1,193 @@
+{
+  "start_time": "2026-02-02T14:57:14.408246",
+  "timesteps": 200000,
+  "l2": null,
+  "l3": {
+    "success": true,
+    "version": "v20260202_145724",
+    "model_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_145724_production\\final_model.zip",
+    "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\models\\ppo_v20260202_145724_production\\norm_stats.json",
+    "contract_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\config\\contracts\\v20260202_145724_contract.json",
+    "model_hash": "05ab8dd58470201bf78e214a966c6247c8d719c944bbc8a2869f82b7f7a164cb",
+    "dataset_hash": "c51cb6fc3e364338821ade08ca531afa03e8b470dd8b585004164589c4b9b7f9",
+    "norm_stats_hash": "dc2e9e5884ed39289c1ed9ddc214ff30ff8aef18e0d10e2c8b647da814636811",
+    "config_hash": "22d1a9375c1618ff",
+    "training_duration_seconds": 1039.7988367080688,
+    "total_timesteps": 200000,
+    "best_mean_reward": -Infinity,
+    "final_mean_reward": 0.0,
+    "mlflow_run_id": null,
+    "model_id": null,
+    "dvc_tag": null,
+    "dvc_pushed": false,
+    "feature_order_hash": "03d7fceb75ce0d9627f8a18264e14a47",
+    "lineage_record": null,
+    "reward_contract_id": "v1.0.0",
+    "reward_config_hash": null,
+    "reward_config_uri": null,
+    "curriculum_final_phase": "phase_1",
+    "reward_weights": {
+      "pnl": 0.7,
+      "dsr": 0.15,
+      "sortino": 0.05,
+      "regime_penalty": 0.15,
+      "holding_decay": 0.2,
+      "anti_gaming": 0.15
+    },
+    "errors": []
+  },
+  "l4": {
+    "period": {
+      "start": "2025-01-01 13:00:00",
+      "end": "2025-12-17 17:50:00",
+      "bars": 12714,
+      "trading_days": 88.29166666666667
+    },
+    "capital": {
+      "initial": 10000.0,
+      "final": 8627.51749746285,
+      "total_pnl": -1372.4825025371501,
+      "total_return_pct": -13.724825025371501
+    },
+    "annualized": {
+      "apr_simple": -39.17307303135764,
+      "apr_compound": -34.38443144600962
+    },
+    "risk": {
+      "max_drawdown_pct": 15.650613113666834,
+      "drawdown_duration_bars": 11100,
+      "sharpe_annual": -2.477066260991957,
+      "sortino_annual": -2.300261561783031
+    },
+    "trades": {
+      "total": 12,
+      "winning": 8,
+      "losing": 4,
+      "win_rate_pct": 66.66666666666666,
+      "profit_factor": 2.0639287976198344,
+      "avg_pnl": 47.013821876681334,
+      "avg_duration_hours": 44.659722222222214,
+      "avg_duration_bars": 535.9166666666666
+    },
+    "action_distribution": {
+      "long": 0.0,
+      "hold": 49.31959411625895,
+      "short": 50.68040588374105
+    },
+    "trade_details": [
+      {
+        "entry_bar": 1033,
+        "exit_bar": 1609,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 264.45958377472897,
+        "entry_time": "2025-01-27 14:00:00",
+        "exit_time": "2025-02-07 17:00:00"
+      },
+      {
+        "entry_bar": 2645,
+        "exit_bar": 3221,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 82.87776256718433,
+        "entry_time": "2025-03-05 13:30:00",
+        "exit_time": "2025-03-18 16:40:00"
+      },
+      {
+        "entry_bar": 3890,
+        "exit_bar": 4466,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -256.287192559495,
+        "entry_time": "2025-04-03 17:35:00",
+        "exit_time": "2025-04-21 15:25:00"
+      },
+      {
+        "entry_bar": 4496,
+        "exit_bar": 5072,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 19.455734202487626,
+        "entry_time": "2025-04-21 17:55:00",
+        "exit_time": "2025-05-06 15:30:00"
+      },
+      {
+        "entry_bar": 5645,
+        "exit_bar": 6221,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 104.194105302029,
+        "entry_time": "2025-05-20 13:15:00",
+        "exit_time": "2025-06-03 16:05:00"
+      },
+      {
+        "entry_bar": 6380,
+        "exit_bar": 6956,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 136.97255176761556,
+        "entry_time": "2025-06-06 14:20:00",
+        "exit_time": "2025-06-19 17:30:00"
+      },
+      {
+        "entry_bar": 7201,
+        "exit_bar": 7777,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 97.6699115233761,
+        "entry_time": "2025-06-26 17:20:00",
+        "exit_time": "2025-07-11 15:10:00"
+      },
+      {
+        "entry_bar": 8174,
+        "exit_bar": 8750,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -114.26287613925032,
+        "entry_time": "2025-07-22 13:15:00",
+        "exit_time": "2025-08-04 16:25:00"
+      },
+      {
+        "entry_bar": 8973,
+        "exit_bar": 9549,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 131.4681819898262,
+        "entry_time": "2025-08-11 14:00:00",
+        "exit_time": "2025-08-25 16:30:00"
+      },
+      {
+        "entry_bar": 9878,
+        "exit_bar": 10454,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": 257.33459037911064,
+        "entry_time": "2025-09-02 14:00:00",
+        "exit_time": "2025-09-15 17:15:00"
+      },
+      {
+        "entry_bar": 11792,
+        "exit_bar": 12368,
+        "bars_held": 576,
+        "direction": "SHORT",
+        "pnl": -136.59055021772946,
+        "entry_time": "2025-10-17 13:25:00",
+        "exit_time": "2025-11-05 13:40:00"
+      },
+      {
+        "entry_bar": 12618,
+        "exit_bar": 12713,
+        "bars_held": 95,
+        "direction": "SHORT",
+        "pnl": -23.12594006970763,
+        "entry_time": "2025-12-16 14:50:00",
+        "exit_time": "2025-12-17 17:50:00"
+      }
+    ],
+    "passed": true,
+    "warnings": []
+  },
+  "norm_stats_path": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP\\USDCOP-RL-Models\\data\\pipeline\\07_output\\datasets_5min\\DS3_MACRO_CORE_norm_stats.json",
+  "end_time": "2026-02-02T15:15:16.127280",
+  "duration_seconds": 1081.7205576896667
+}
