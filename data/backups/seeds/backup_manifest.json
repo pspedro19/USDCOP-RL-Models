@@ -1,17 +1,19 @@
 {
-  "backup_timestamp": "2026-03-15T03:13:44Z",
+  "backup_timestamp": "2026-03-16T20:00:26Z",
   "ohlcv": {
     "file": "usdcop_m5_ohlcv_backup.parquet",
-    "rows": 93181,
+    "rows": 93358,
     "symbols": [
-      "USD/COP"
+      "USD/BRL",
+      "USD/COP",
+      "USD/MXN"
     ],
     "date_range": [
       "2020-01-02",
-      "2026-03-11"
+      "2026-03-16"
     ],
-    "size_bytes": 2855916,
-    "sha256": "c34cd2be388471434b4440d1d6c436be2a4962fde02d6b1c3a33412d8031f39f"
+    "size_bytes": 2861573,
+    "sha256": "619fef586915ef852e925367ef15556fffd80992271b0b64dd1670881f0f29a6"
   },
   "macro": {
     "file": "macro_indicators_daily_backup.parquet",
