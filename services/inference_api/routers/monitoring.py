@@ -351,7 +351,7 @@ async def add_drift_observations_batch(
                     from src.core.contracts import FEATURE_ORDER
                     obs_array = np.array([obs.get(f, 0.0) for f in FEATURE_ORDER])
                     multivariate_detector.add_observation(obs_array)
-                except:
+                except Exception:
                     pass
 
             added_count += 1

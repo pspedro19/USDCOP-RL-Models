@@ -183,6 +183,79 @@ def compute_leverage(**context) -> Dict[str, Any]:
     adjusted_lev = asymmetric_lev * sizing_mult
     adjusted_lev = max(config.min_leverage, min(adjusted_lev, config.max_leverage))
 
+    # =========================================================================
+    # v2.0: REGIME GATE — compute Hurst and adjust sizing
+    # =========================================================================
+    from utils.regime_gate_live import compute_regime_from_db
+
+    conn_regime = get_db_connection()
+    try:
+        regime_data = compute_regime_from_db(conn_regime, lookback_days=60)
+    finally:
+        conn_regime.close()
+
+    regime_sizing = regime_data["sizing_factor"]
+    if regime_sizing <= 0:
+        logger.warning(
+            f"[H5-L5c] REGIME GATE BLOCKED: {regime_data['regime']} "
+            f"(Hurst={regime_data['hurst']:.3f}). Setting skip_trade=True"
+        )
+        # Mark signal as skip in DB
+        conn_skip = get_db_connection()
+        try:
+            cur_skip = conn_skip.cursor()
+            cur_skip.execute(
+                "UPDATE forecast_h5_signals SET skip_trade = TRUE WHERE id = %s",
+                (signal["signal_id"],)
+            )
+            conn_skip.commit()
+        finally:
+            conn_skip.close()
+
+        result = {
+            "realized_vol_21d": vol_data["realized_vol_21d"],
+            "raw_leverage": vt_signal.raw_leverage,
+            "clipped_leverage": vt_signal.clipped_leverage,
+            "asymmetric_leverage": asymmetric_lev,
+            "long_multiplier": LONG_MULTIPLIER,
+            "short_multiplier": SHORT_MULTIPLIER,
+            "sizing_multiplier": sizing_mult,
+            "adjusted_leverage": 0.0,
+            "hard_stop_pct": 0.0,
+            "take_profit_pct": 0.0,
+            "regime": regime_data["regime"],
+            "hurst": regime_data["hurst"],
+            "regime_blocked": True,
+        }
+        context['ti'].xcom_push(key='leverage', value=result)
+        return result
+
+    adjusted_lev *= regime_sizing
+    adjusted_lev = max(config.min_leverage, min(adjusted_lev, config.max_leverage))
+
+    # =========================================================================
+    # v2.0: DYNAMIC LEVERAGE — scale by rolling WR + drawdown
+    # =========================================================================
+    from utils.dynamic_leverage_live import compute_dynamic_leverage_from_db
+
+    dl_cfg = ss_config.get("dynamic_leverage", {})
+    if dl_cfg.get("enabled", True):
+        conn_dl = get_db_connection()
+        try:
+            dl_data = compute_dynamic_leverage_from_db(
+                conn_dl,
+                lookback_weeks=dl_cfg.get("lookback_weeks", 8),
+            )
+        finally:
+            conn_dl.close()
+
+        adjusted_lev *= dl_data["leverage_scaler"]
+        adjusted_lev = max(config.min_leverage, min(adjusted_lev, config.max_leverage))
+        logger.info(f"[H5-L5c] Dynamic leverage: WR={dl_data['rolling_wr']:.1f}%, "
+                     f"scaler={dl_data['leverage_scaler']:.2f}")
+    else:
+        dl_data = {"rolling_wr": 100.0, "current_dd_pct": 0.0, "leverage_scaler": 1.0}
+
     # Compute adaptive stops
     as_cfg = ss_config.get("adaptive_stops", {})
     stops_config = AdaptiveStopsConfig(
@@ -196,19 +269,30 @@ def compute_leverage(**context) -> Dict[str, Any]:
         config=stops_config,
     )
 
+    # =========================================================================
+    # v2.0: EFFECTIVE HARD STOP — cap portfolio-level loss
+    # =========================================================================
+    hs_portfolio_cap = as_cfg.get("effective_portfolio_cap_pct", 0.035)
+    if adjusted_lev > 0:
+        effective_hs = min(stops.hard_stop_pct, hs_portfolio_cap / adjusted_lev)
+        effective_tp = effective_hs * stops_config.tp_ratio
+    else:
+        effective_hs = stops.hard_stop_pct
+        effective_tp = stops.take_profit_pct
+
     dir_str = "LONG" if signal["direction"] == 1 else "SHORT"
     mult = LONG_MULTIPLIER if signal["direction"] == 1 else SHORT_MULTIPLIER
     logger.info(
         f"[H5-L5c] {dir_str}: raw_lev={vt_signal.raw_leverage:.3f}, "
         f"clipped={vt_signal.clipped_leverage:.3f}, "
         f"x{mult} -> asymmetric={asymmetric_lev:.3f}, "
-        f"x{sizing_mult:.2f} confidence -> adjusted={adjusted_lev:.3f}"
+        f"x{sizing_mult:.2f} confidence, "
+        f"x{regime_sizing:.2f} regime ({regime_data['regime']}, H={regime_data['hurst']:.3f}), "
+        f"x{dl_data['leverage_scaler']:.2f} dynamic -> final={adjusted_lev:.3f}"
     )
     logger.info(
-        f"[H5-L5c] ADAPTIVE STOPS: vol_daily={stops.realized_vol_daily:.4f}, "
-        f"vol_weekly={stops.realized_vol_weekly:.4f}, "
-        f"HS={stops.hard_stop_pct:.4f} ({stops.hard_stop_pct*100:.2f}%), "
-        f"TP={stops.take_profit_pct:.4f} ({stops.take_profit_pct*100:.2f}%)"
+        f"[H5-L5c] EFFECTIVE STOPS: HS={effective_hs*100:.2f}% (base={stops.hard_stop_pct*100:.2f}%, "
+        f"cap={hs_portfolio_cap*100:.1f}%/lev), TP={effective_tp*100:.2f}%"
     )
 
     result = {
@@ -220,8 +304,14 @@ def compute_leverage(**context) -> Dict[str, Any]:
         "short_multiplier": SHORT_MULTIPLIER,
         "sizing_multiplier": sizing_mult,
         "adjusted_leverage": adjusted_lev,
-        "hard_stop_pct": stops.hard_stop_pct,
-        "take_profit_pct": stops.take_profit_pct,
+        "hard_stop_pct": effective_hs,
+        "take_profit_pct": effective_tp,
+        "regime": regime_data["regime"],
+        "hurst": regime_data["hurst"],
+        "regime_sizing": regime_sizing,
+        "rolling_wr": dl_data["rolling_wr"],
+        "dl_scaler": dl_data["leverage_scaler"],
+        "regime_blocked": False,
     }
     context['ti'].xcom_push(key='leverage', value=result)
     return result
@@ -232,13 +322,18 @@ def compute_leverage(**context) -> Dict[str, Any]:
 # =============================================================================
 
 def persist_leverage(**context) -> Dict[str, Any]:
-    """Update forecast_h5_signals with vol-targeting and asymmetric leverage."""
+    """Update forecast_h5_signals with vol-targeting, regime gate, and dynamic leverage."""
     ti = context['ti']
     signal = ti.xcom_pull(key='signal', task_ids='load_signal')
     leverage = ti.xcom_pull(key='leverage', task_ids='compute_leverage')
 
     if not signal or not leverage:
         return {"persisted": False}
+
+    # If regime blocked, leverage data has skip info
+    if leverage.get("regime_blocked"):
+        logger.info(f"[H5-L5c] Regime blocked — signal {signal['signal_id']} marked as skip_trade")
+        return {"persisted": True, "regime_blocked": True}
 
     conn = get_db_connection()
     try:
@@ -253,7 +348,14 @@ def persist_leverage(**context) -> Dict[str, Any]:
                 short_multiplier = %s,
                 adjusted_leverage = %s,
                 hard_stop_pct = %s,
-                take_profit_pct = %s
+                take_profit_pct = %s,
+                regime = %s,
+                hurst_exponent = %s,
+                regime_leverage_scaler = %s,
+                rolling_wr_8w = %s,
+                dl_leverage_scaler = %s,
+                effective_hs_pct = %s,
+                effective_tp_pct = %s
             WHERE id = %s
         """, (
             leverage["realized_vol_21d"],
@@ -265,16 +367,24 @@ def persist_leverage(**context) -> Dict[str, Any]:
             leverage["adjusted_leverage"],
             leverage["hard_stop_pct"],
             leverage["take_profit_pct"],
+            leverage.get("regime"),
+            leverage.get("hurst"),
+            leverage.get("regime_sizing"),
+            leverage.get("rolling_wr"),
+            leverage.get("dl_scaler"),
+            leverage.get("hard_stop_pct"),
+            leverage.get("take_profit_pct"),
             signal["signal_id"],
         ))
         conn.commit()
         logger.info(
-            f"[H5-L5c] Updated signal {signal['signal_id']} with leverage + stops: "
+            f"[H5-L5c] Updated signal {signal['signal_id']}: "
+            f"regime={leverage.get('regime')}, H={leverage.get('hurst', 0):.3f}, "
             f"adj_lev={leverage['adjusted_leverage']:.3f}, "
             f"HS={leverage['hard_stop_pct']*100:.2f}%, "
             f"TP={leverage['take_profit_pct']*100:.2f}%"
         )
-        return {"persisted": True}
+        return {"persisted": True, "regime_blocked": False}
     finally:
         conn.close()
 

@@ -4,12 +4,9 @@
  * Returns the most recent PENDING_APPROVAL proposal for the given model_id
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 import { protectApiRoute } from '@/lib/auth/api-auth';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 export async function GET(
   request: NextRequest,

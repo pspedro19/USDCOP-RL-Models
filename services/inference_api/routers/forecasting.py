@@ -381,7 +381,7 @@ async def get_dashboard(
             dt = datetime.strptime(inf_date, "%Y-%m-%d")
             inf_week = dt.isocalendar()[1]
             inf_year = dt.year
-        except:
+        except Exception:
             inf_week = 0
             inf_year = datetime.now().year
     else:
@@ -400,7 +400,7 @@ async def get_dashboard(
         conn.close()
         if result:
             current_price = float(result[0])
-    except:
+    except Exception:
         pass
 
     return DashboardResponse(
@@ -571,7 +571,7 @@ async def health_check():
         cur.close()
         conn.close()
         health["postgresql"] = True
-    except:
+    except Exception:
         pass
 
     # Check CSV

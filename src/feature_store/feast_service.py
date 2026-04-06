@@ -476,7 +476,7 @@ class FeastInferenceService:
             if self._postgres_conn:
                 try:
                     self._postgres_conn.close()
-                except:
+                except Exception:
                     pass
                 self._postgres_conn = None
             raise FeastFeatureNotFoundError(f"PostgreSQL query failed: {e}")

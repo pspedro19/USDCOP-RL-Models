@@ -2,6 +2,10 @@
 
 > Each experiment is a frozen SSOT configuration file.
 > This rule defines how experiment configs are created, stored, and consumed.
+>
+> **Note (2026-04-06)**: The H5 Smart Simple strategy now uses `config/execution/smart_simple_v1.yaml`
+> as its SSOT (not pipeline_ssot.yaml which is for the RL track). Key v2.0 additions:
+> `regime_gate`, `dynamic_leverage`, `effective_portfolio_cap_pct`, `retraining.frequency: weekly`.
 
 ---
 

@@ -2,6 +2,8 @@
 
 > **Responsibility**: Authoritative source for file layouts, JSON export examples,
 > CSV data contract, PNG conventions, and page data flows.
+> **Updated 2026-04-06**: Candlestick API fix (was returning $4250 fallback data),
+> fallback data generation REMOVED in production, API now uses DATABASE_URL.
 > Strategy schemas (TradeRecord, MetricsSummary) are defined in `sdd-strategy-spec.md`.
 > Approval gate schemas are defined in `sdd-approval-spec.md`.
 >

@@ -91,7 +91,7 @@ def get_db_session() -> Generator:
         with get_db_session() as session:
             result = session.execute(text("SELECT * FROM table"))
             for row in result:
-                print(row)
+                logger.debug(str(row))
 
     Yields:
         SQLAlchemy Session object

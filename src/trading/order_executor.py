@@ -250,7 +250,7 @@ class OrderExecutor:
         )
 
         if result.success:
-            print(f"Order filled: {result.order}")
+            logger.info(f"Order filled: {result.order}")
     """
 
     def __init__(

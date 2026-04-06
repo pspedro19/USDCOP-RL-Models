@@ -19,7 +19,7 @@ Usage:
 
     # Subscribe to events
     def on_trade_closed(event: TradeEvent):
-        print(f"Trade {event.trade_id} closed with PnL: {event.pnl}")
+        logger.info(f"Trade {event.trade_id} closed with PnL: {event.pnl}")
 
     bus.subscribe("trade.closed", on_trade_closed)
 
@@ -650,7 +650,7 @@ def subscribe_to(
     Usage:
         @subscribe_to("trade.closed")
         def handle_trade_closed(event: TradeEvent):
-            print(f"Trade closed: {event.trade_id}")
+            logger.info(f"Trade closed: {event.trade_id}")
 
     Args:
         event_type: Event type to subscribe to

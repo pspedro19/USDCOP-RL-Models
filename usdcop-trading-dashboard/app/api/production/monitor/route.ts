@@ -4,12 +4,9 @@
  * Returns production model info, live state, equity curve, and pending experiments summary
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 import { validateApiAuth } from '@/lib/auth/api-auth';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 export async function GET(request: NextRequest) {
   // Validate authentication

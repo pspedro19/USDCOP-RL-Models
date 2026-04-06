@@ -144,7 +144,7 @@ airflow dags trigger core_l0_01_ohlcv_backfill
 airflow dags trigger core_l0_03_macro_backfill
 
 # 3. Run pending migrations
-for m in 043 044 045 046; do
+for m in 043 044 045 046 048 049; do
   docker exec -i usdcop-postgres-timescale psql -U admin -d usdcop_trading \
     < database/migrations/${m}_*.sql
 done
@@ -253,6 +253,7 @@ python scripts/train_and_export_smart_simple.py --phase both
 | **044_smart_simple_columns** | H5 confidence + stops cols | **Applied 2026-03-12** | Smart Simple v1.1 |
 | **045_newsengine_initial** | 8 News Engine tables | **Applied 2026-03-12** | News pipeline |
 | **046_weekly_analysis_tables** | 4 Analysis tables | **Applied 2026-03-12** | Analysis module |
+| **049_regime_gate_columns** | Regime + DL columns on forecast_h5_signals | **Applied 2026-04-06** | Smart Simple v2.0 |
 | 047_pgvector_embeddings | pgvector extension | Not applied | Future (embeddings) |
 
 ---

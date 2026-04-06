@@ -122,7 +122,7 @@ async def health_check(
         from app.services.websocket_bridge import WebSocketBridgeManager
         bridge = WebSocketBridgeManager.get_instance()
         inference_ws_healthy = bridge.is_connected if bridge else False
-    except:
+    except Exception:
         pass
 
     # Check exchange connections

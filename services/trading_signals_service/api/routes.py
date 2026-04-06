@@ -352,7 +352,7 @@ async def health_check():
             conn = get_db_connection()
             conn.close()
             db_connected = True
-        except:
+        except Exception:
             pass
 
         # Check Redis (optional - not implemented yet)

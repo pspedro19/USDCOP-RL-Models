@@ -26,6 +26,7 @@ on:
 env:
   PYTHON_VERSION: '3.11'
   DRIFT_ALERT_THRESHOLD: 'medium'
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
   drift-detection:

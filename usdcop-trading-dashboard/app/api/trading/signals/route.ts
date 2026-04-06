@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 import { createApiResponse, measureLatency } from '@/lib/types/api';
 import { withAuth } from '@/lib/auth/api-auth';
-
-// Database connection pool
-const pool = new Pool({
-  host: process.env.POSTGRES_HOST || 'usdcop-postgres-timescale',
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  database: process.env.POSTGRES_DB || 'usdcop_trading',
-  user: process.env.POSTGRES_USER || 'admin',
-  password: process.env.POSTGRES_PASSWORD || '',
-  max: 5,
-  idleTimeoutMillis: 30000,
-});
 
 interface L5Prediction {
   timestamp: string;

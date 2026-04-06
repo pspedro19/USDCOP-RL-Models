@@ -579,12 +579,12 @@ async def get_candlesticks(
         # If end_date is date-only (YYYY-MM-DD), extend to end of day (23:59:59)
         try:
             parsed_start = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-        except:
+        except Exception:
             parsed_start = datetime.fromisoformat(start_date)
 
         try:
             parsed_end = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-        except:
+        except Exception:
             parsed_end = datetime.fromisoformat(end_date)
 
         # If end_date has no time component (midnight), extend to end of day

@@ -427,7 +427,7 @@ class TrainingEngine:
                 try:
                     config_json = json.dumps(asdict(request.reward_config), sort_keys=True)
                     reward_config_hash = hashlib.sha256(config_json.encode()).hexdigest()[:16]
-                except:
+                except Exception:
                     pass
 
             # Get curriculum phase and weights from train_result if available
@@ -486,7 +486,7 @@ class TrainingEngine:
                     self._mlflow.set_tag("status", "FAILED")
                     self._mlflow.set_tag("error", str(e)[:250])
                     self._mlflow.end_run()
-                except:
+                except Exception:
                     pass
 
             return TrainingResult(
@@ -869,7 +869,7 @@ class TrainingEngine:
                 commit = result.stdout.strip()
                 self._mlflow.log_param("git_commit", commit[:12])
                 self._mlflow.set_tag("git.commit", commit)
-        except:
+        except Exception:
             pass
 
     def _train_model(
