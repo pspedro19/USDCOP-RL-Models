@@ -350,15 +350,17 @@ check_trading_day (ShortCircuit)
 
 ---
 
-## Operational Status (Updated 2026-03-13)
+## Operational Status (Updated 2026-04-06)
 
 ### News Pipeline: OPERATIONAL
-- `news_daily_pipeline` runs 3x/day, all 5 tasks complete successfully
-- Active sources: Investing.com (12 articles/run), Portafolio (10 articles/run)
-- Inactive: GDELT (rate limited), LaRepublica (no matches in 24h window), NewsAPI (no API key)
-- Sentiment: VADER working for all non-GDELT articles (avg ±0.1 range)
+- `news_daily_pipeline` runs 3x/day (02:00, 07:00, 13:00 COT), all tasks complete
+- Active sources: Investing.com (78 articles in DB), Portafolio (283 articles in DB)
+- Total articles in DB: 361 (as of 2026-04-06)
+- Inactive: GDELT (rate limited), LaRepublica (low match rate), NewsAPI (no API key)
+- LLM weekly analysis: W01-W15 generated (Azure OpenAI GPT-4o-mini, ~$0.01/week)
+- DB gap: `weekly_analysis` and `daily_analysis` tables have 0 rows (L8 writes to JSON only)
 - Container deps: `feedparser` + `vaderSentiment` must be installed after restart
-- Historical data: ~3,750 GDELT articles + ~1,918 Colombia articles in CSV (not yet in main DB table)
+- Historical data: ~13K Google News + ~3K GDELT + ~1.5K Investing articles in CSV
 
 ### Bugs Fixed (2026-03-12/13)
 1. `registry.enabled_adapters()` returns list, not tuples — fixed tuple unpacking

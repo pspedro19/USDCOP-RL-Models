@@ -160,7 +160,7 @@ def create_bucket_if_not_exists():
     try:
         subprocess.run(policy_cmd, capture_output=True, text=True)
         print(f"[SUCCESS] Set bucket policy for: {bucket_name}")
-    except:
+    except Exception:
         pass  # Policy setting is optional
     
     return True

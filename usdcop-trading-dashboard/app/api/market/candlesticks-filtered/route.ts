@@ -13,17 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  host: process.env.POSTGRES_HOST || 'usdcop-postgres-timescale',
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  database: process.env.POSTGRES_DB || 'usdcop_trading',
-  user: process.env.POSTGRES_USER || 'admin',
-  password: process.env.POSTGRES_PASSWORD || '',
-  max: 5,
-  idleTimeoutMillis: 30000,
-});
+import { pool } from '@/lib/db';
 
 // Market hours - two formats in database
 // OLD FORMAT (UTC): 13:00-17:55 UTC = 8:00-12:55 COT
@@ -54,8 +44,8 @@ function generateFallbackCandlesticks(startDate: string, endDate: string, limit:
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Base price around current USDCOP levels
-  let price = 4250 + Math.random() * 100;
+  // Base price around current USDCOP levels (updated 2026-04)
+  let price = 3700 + Math.random() * 50;
   const volatility = 0.0008; // 0.08% per bar typical
 
   let currentDate = new Date(start);
@@ -193,29 +183,20 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[Candlesticks Filtered API] Database error, using fallback:', error.message);
+    console.error('[Candlesticks Filtered API] Database error:', error.message);
 
-    // Generate fallback data when database is unavailable
-    const searchParams = request.nextUrl.searchParams;
-    const startDate = searchParams.get('start_date') || '2025-01-01';
-    const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
-    const limit = Math.min(parseInt(searchParams.get('limit') || '5000'), 50000);
-
-    const fallbackData = generateFallbackCandlesticks(startDate, endDate, limit);
-
+    // PRODUCTION: Never return fake data. Return error so frontend shows "no data" state.
     return NextResponse.json({
-      success: true,
+      success: false,
       symbol: 'USDCOP',
       timeframe: '5m',
-      start_date: startDate,
-      end_date: endDate,
-      count: fallbackData.length,
-      data: fallbackData,
+      count: 0,
+      data: [],
+      error: `Database unavailable: ${error.message}`,
       metadata: {
-        source: 'fallback_generated',
+        source: 'error',
         latency: Date.now() - startTime,
-        marketHours: '8:00 AM - 12:55 PM COT (Mon-Fri)',
-        note: 'Demo data - database unavailable. Prices are simulated for visualization only.'
+        note: 'Database connection failed. No fallback data in production.'
       }
     }, {
       headers: { 'Cache-Control': 'no-store, max-age=0' }

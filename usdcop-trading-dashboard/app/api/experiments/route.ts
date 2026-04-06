@@ -6,12 +6,9 @@
  * - limit: Max number of results (default 50)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 import { protectApiRoute } from '@/lib/auth/api-auth';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 export async function GET(request: NextRequest) {
   // Validate authentication (SKIP_AUTH=true bypasses auth for development)

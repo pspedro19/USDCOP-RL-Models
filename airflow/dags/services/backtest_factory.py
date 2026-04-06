@@ -622,7 +622,7 @@ class EvaluationBacktestRunner(AbstractBacktestRunner):
                         entry_time_val = pd.to_datetime(entry_time_val)
                     elif not isinstance(entry_time_val, dt):
                         entry_time_val = dt.now()  # Fallback
-                except:
+                except Exception:
                     entry_time_val = dt.now()
             else:
                 entry_time_val = dt.now()
@@ -635,7 +635,7 @@ class EvaluationBacktestRunner(AbstractBacktestRunner):
                         exit_time_val = pd.to_datetime(exit_time_val)
                     elif not isinstance(exit_time_val, dt):
                         exit_time_val = None
-                except:
+                except Exception:
                     exit_time_val = None
 
             # Ensure entry_price > 0 (required by contract)

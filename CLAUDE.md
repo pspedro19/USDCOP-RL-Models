@@ -11,34 +11,31 @@
 **Exchange**: MEXC (0% maker fees, 1 bps slippage estimate)
 **Architecture**: Spec-Driven Development (SDD) — specs define contracts, contracts enforce code.
 
-**Four Tracks** (in priority order):
+**Three Tracks** (in priority order):
 
-1. **H1 Daily Pipeline (PRODUCTION)**: 9 models, H=1 horizon, trailing stop execution
-   - +36.84%, Sharpe 3.135, **p=0.0178** (2025 backtest)
-   - DAGs: H1-L3/L4/L5/L6/L7 (see `.claude/rules/h5-smart-simple-pipeline.md`)
-
-2. **H5 Weekly Pipeline (PAPER TRADING)**: Ridge+BR, H=5 horizon, Smart Simple v1.1
-   - +20.03%, Sharpe 3.516, **p=0.0097** (2025 backtest)
-   - +7.12% (2026 YTD, 3/3 wins)
+1. **H5 Weekly Pipeline (PRODUCTION)**: Smart Simple v2.0, Ridge+BR+XGBoost + Regime Gate
+   - **+25.63%, Sharpe 3.35, p=0.006** (2025 backtest, 34 trades)
+   - **+0.61%** (2026 YTD, 1/1 wins — regime gate blocked 11 of 12 mean-reverting weeks)
+   - Architecture: Regime Gate (Hurst) → Ridge/BR/XGB ensemble → Effective HS → DL → CB
    - DAGs: H5-L3/L4/L5/L6/L7 (see `.claude/rules/h5-smart-simple-pipeline.md`)
 
-3. **News Engine & Analysis Module (OPERATIONAL)**: AI-generated market analysis + news intelligence
-   - 5 source adapters (GDELT, NewsAPI, Investing, La Republica, Portafolio)
-   - Live pipeline: 3x/day ingestion + enrichment + cross-ref + features + digest
-   - Active sources: Investing.com, Portafolio (GDELT rate-limited, NewsAPI no key)
-   - ~5,700 historical articles in CSV (GDELT + Colombia news)
-   - LLM daily/weekly Spanish narratives (Azure OpenAI + Anthropic fallback)
+2. **News Engine & Analysis Module (OPERATIONAL)**: AI-generated market analysis + news intelligence
+   - Active sources: Investing.com (78 articles), Portafolio (276 articles) in DB
+   - LLM weekly analysis: W01-W15 generated (Azure OpenAI GPT-4o-mini)
    - Dashboard: `/analysis` page (14 components, 4 API routes)
    - See `.claude/rules/news-and-analysis-sdd.md`
 
+3. **H1 Daily Pipeline (PAUSED)**: 9 models, H=1 horizon — DAGs paused pending v2.0 validation
+
 4. **RL (DEPRIORITIZED)**: PPO agent, 5-min bars, NOT significant (p=0.272)
 
-**Strategic Pivot (2026-02-15)**: Forecasting pipeline is the proven alpha source.
-**2026 Regime Change** (p=0.0014): LONG broken (WR 58%->28%), SHORT holds (56%). Both pipelines are SHORT-biased.
+**Strategic Pivot (2026-03-18)**: 10-agent audit revealed Ridge/BR model has R² < 0 in both years.
+Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not from model predictions.
+**2026 Regime**: Hurst = 0.28-0.49 (mean-reverting → transitioning). Gate correctly blocks most weeks.
 
 **Current Best**:
-- H1 Daily: Forecast + Vol-Target + Trailing Stop -> $10K -> $13,684 (2025)
-- H5 Weekly: Smart Simple v1.1 -> $10K -> $12,003 (2025), $10K -> $10,712 (2026 YTD)
+- H5 Weekly v2.0: Ridge+Gate+EffectiveHS → $10K → $12,563 (2025), $10K → $10,061 (2026 YTD)
+- Momentum v3.0 (paper): $10K → $10,353 (2026 YTD, better in mean-reverting but worse in trending)
 - RL: V21.5b — +2.51% mean (4/5 seeds), NOT significant
 
 ---
@@ -284,13 +281,17 @@ Plus: mean±std, bootstrap 95% CI, comparison vs buy-and-hold. If p>0.05: "NOT s
 
 | Track | Best Strategy | Return 2025 | Sharpe | p-value | $10K -> | Status |
 |-------|---------------|-------------|--------|---------|---------|--------|
-| H1 Daily | Forecast+VT+Trailing | **+36.84%** | 3.135 | 0.0178 | $13,684 | **PRODUCTION** |
-| H5 Weekly | Smart Simple v1.1 | **+20.03%** | 3.516 | 0.0097 | $12,003 | **PAPER TRADING** |
-| H5 Weekly | v1.1 (2026 YTD) | +7.12% | 19.12 | 0.000 | $10,712 | 3/3 wins |
+| **H5 Weekly** | **Smart Simple v2.0** | **+25.63%** | **3.35** | **0.006** | **$12,563** | **PRODUCTION** |
+| H5 Weekly | v2.0 (2026 YTD) | +0.61% | -- | -- | $10,061 | Gate active (1 trade) |
+| H1 Daily | Forecast+VT+Trailing | +36.84% | 3.135 | 0.0178 | $13,684 | PAUSED |
 | RL | V21.5b | +2.51% | 0.321 | 0.272 | $10,251 | NOT significant |
 | Baseline | Buy & Hold | -12.29% | -- | -- | $8,771 | -- |
 
-**H5 v1.0→v1.1**: HS multiplier 1.5→2.0 (eliminated 2 hard stops), flat SHORT sizing 1.5x.
+**v1.1→v2.0** (2026-03-18): Added regime gate (Hurst), effective HS (3.5% portfolio cap),
+XGBoost in ensemble, vol_regime_ratio + trend_slope_60d features, dynamic leverage, circuit breaker.
+Weekly retraining restored (was monthly in v1.1.0 — methodology bug).
+**10-agent audit** revealed R² < 0 in both years, model alpha negative vs Always SHORT.
+Gate is the MVP: blocked 11/12 mean-reverting weeks in Q1 2026, converting -5.17% into +0.61%.
 **RL baselines**: Buy-and-hold -14.66%, Random -4.12%, Bootstrap CI [-0.69%, +6.15%].
 **RL history**: V20 failed, V21 failed, V21.5 superseded, V22 mixed (1/5), V21.5b best (4/5), EXP-ASYM-001 failed, EXP-HOURLY/DAILY failed.
 

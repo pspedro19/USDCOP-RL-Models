@@ -9,12 +9,18 @@
 > - **Command Pattern** (`src/risk/commands.py`): Risk operations with undo/redo + audit
 > - **Enforcement Layer** (`src/trading/risk_enforcer.py`): 7 pluggable rules at execution time
 >
+> **v2.0 additions (2026-04-06):**
+> - **Regime Gate** (`src/forecasting/regime_gate.py`): Hurst-based market regime classifier. Blocks trading in mean-reverting markets. Deployed in L5 vol-targeting DAG.
+> - **Dynamic Leverage** (`src/forecasting/dynamic_leverage.py`): Scales leverage [0.25, 1.0] based on rolling WR and drawdown. Integrated in L5 DAG.
+> - **Effective HS** (`smart_simple_v1.yaml`): `min(HS_base, 3.5%/leverage)` caps portfolio-level loss per trade.
+> - DAG utilities: `airflow/dags/utils/regime_gate_live.py`, `dynamic_leverage_live.py`
+>
 > Interfaces: `src/core/interfaces/risk.py`
 > Constants: `src/core/constants.py`
 >
 > Contract: CTR-RISK-001
-> Version: 1.0.0
-> Date: 2026-03-14
+> Version: 2.0.0
+> Date: 2026-04-06
 
 ---
 

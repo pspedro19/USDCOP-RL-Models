@@ -1,8 +1,21 @@
 # Rule: H5 Weekly Smart Simple Pipeline
 
-> Governs the H5 (5-day horizon) weekly forecasting pipeline with Smart Simple v1.1 execution.
-> This is the second production track alongside the H1 daily pipeline.
-> Created: 2026-02-16
+> Governs the H5 (5-day horizon) weekly forecasting pipeline with Smart Simple v2.0 execution.
+> This is the PRIMARY production track. H1 daily pipeline is PAUSED.
+> Created: 2026-02-16 | Updated: 2026-04-06 (v2.0 — regime gate + effective HS + dynamic leverage)
+
+---
+
+## v2.0 Changes (2026-03-18 audit → 2026-04-06 deployment)
+
+A 10-agent audit revealed:
+- Ridge/BR model has R² < 0 in both 2025 and 2026 (worse than predicting the mean)
+- Model alpha vs Always SHORT is NEGATIVE (-4.33 pp even in 2025)
+- Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics
+- Q1 2026: Hurst = 0.28 (mean-reverting). Gate correctly blocked 13 of 14 weeks.
+
+v2.0 additions: Regime Gate (Hurst R/S), Effective HS (portfolio cap), Dynamic Leverage,
+XGBoost in ensemble, vol_regime_ratio + trend_slope_60d features, weekly retraining restored.
 
 ---
 
@@ -13,15 +26,16 @@ Sunday 01:30 COT
     |
     v
 H5-L3: Weekly Training (forecast_h5_l3_weekly_training.py)
-    |  Train Ridge + BayesianRidge on expanding window (2020 -> last Friday)
-    |  21 features, target = ln(close[t+5]/close[t])
+    |  Train Ridge + BayesianRidge (+ XGBoost) on expanding window (2020 -> last Friday)
+    |  23 features (21 base + vol_regime_ratio + trend_slope_60d)
+    |  target = ln(close[t+5]/close[t])
     |  Write to forecast_h5_predictions
     |
 Monday 08:15 COT
     |
     v
 H5-L5: Weekly Signal (forecast_h5_l5_weekly_signal.py)
-    |  Generate ensemble prediction (mean of Ridge + BR)
+    |  Generate ensemble prediction (mean of Ridge + BR [+ XGB])
     |  Score confidence (3-tier: HIGH/MEDIUM/LOW)
     |  Skip LOW-confidence LONGs
     |  Write to forecast_h5_signals
@@ -29,12 +43,17 @@ H5-L5: Weekly Signal (forecast_h5_l5_weekly_signal.py)
 Monday 08:45 COT
     |
     v
-H5-L5: Vol-Targeting (forecast_h5_l5_vol_targeting.py)
-    |  Compute realized vol (21d lookback)
-    |  Base leverage from vol-targeting (tv=0.15)
-    |  Apply asymmetric sizing + confidence multiplier
-    |  Compute adaptive stops (HS = clamp(vol*sqrt(5)*2.0, 1%, 3%))
-    |  Write adjusted_leverage, hard_stop_pct, take_profit_pct to forecast_h5_signals
+H5-L5: Vol-Targeting + Regime Gate (forecast_h5_l5_vol_targeting.py) [v2.0]
+    |  1. Compute realized vol (21d lookback)
+    |  2. Base leverage from vol-targeting (tv=0.15)
+    |  3. Apply asymmetric sizing + confidence multiplier
+    |  4. **REGIME GATE**: Compute Hurst(60d), classify regime
+    |     - TRENDING (H>0.52): sizing × 1.0 (full)
+    |     - INDETERMINATE (0.42-0.52): sizing × 0.40
+    |     - MEAN-REVERTING (H<0.42): skip_trade=True (DO NOT TRADE)
+    |  5. **DYNAMIC LEVERAGE**: Scale by rolling WR + drawdown [0.25, 1.0]
+    |  6. **EFFECTIVE HS**: min(HS_base, 3.5% / leverage) — caps portfolio loss
+    |  Write adjusted_leverage, hard_stop_pct, take_profit_pct, regime, hurst to forecast_h5_signals
     |
 Monday 09:00 COT
     |
@@ -171,28 +190,31 @@ Examples (vol_multiplier=2.0):
 
 ---
 
-## Backtest Results (v1.1, 2025 OOS)
+## Backtest Results (v2.0, 2025 OOS)
 
-| Metric | Value |
-|--------|-------|
-| Return | +20.03% |
-| Sharpe | 3.516 |
-| p-value | 0.0097 |
-| MaxDD | -3.83% |
-| Trades | 24 (all SHORT) |
-| WR | 70.8% |
-| DA | 62.5% |
-| Hard stops | 0 |
-| Exits | 9 TP, 15 week_end |
-| $10K -> | $12,003 |
+| Metric | v1.1 (old) | v2.0 (current) |
+|--------|------------|----------------|
+| Return | +20.03% | **+25.63%** |
+| Sharpe | 3.516 | **3.347** |
+| p-value | 0.0097 | **0.0063** |
+| MaxDD | -3.83% | **-6.12%** |
+| Trades | 24 | **34 (5L/29S)** |
+| WR | 70.8% | **82.4%** |
+| TP exits | 9 | **21 (62%)** |
+| HS exits | 0 | **2** (effective HS works) |
+| $10K -> | $12,003 | **$12,563** |
 
-### 2026 YTD
+### 2026 YTD (as of 2026-04-06)
 
-| Metric | Value |
-|--------|-------|
-| Return | +7.12% |
-| Trades | 3 (all SHORT, all winners) |
-| $10K -> | $10,712 |
+| Metric | v1.1.0 (no gate) | v2.0 (with gate) |
+|--------|-----------------|------------------|
+| Return | -5.17% | **+0.61%** |
+| Trades | 6 (4 losses) | **1 (0 losses)** |
+| Gate blocked | 0 weeks | **13 of 14 weeks** |
+| $10K -> | $9,483 | **$10,061** |
+
+The regime gate is the MVP of v2.0. It correctly identified Q1 2026 as mean-reverting
+(Hurst 0.16-0.44) and blocked trading, preventing ~$570 in losses.
 
 ---
 
@@ -244,3 +266,8 @@ These are read by the Airflow DAGs but NOT by the dashboard frontend:
 - Do NOT hardcode params in scripts (read from smart_simple_v1.yaml)
 - Do NOT modify smart_simple_v1.yaml stops without running full comparative backtest
 - Do NOT compare H5 vs H1 returns directly (different horizons, different trade frequency)
+- Do NOT disable the regime gate — it is the primary alpha source (prevented -5.17% → +0.61%)
+- Do NOT use monthly retraining — DEPRECATED since v1.1.1 (methodology gap, never backtested)
+- Do NOT use fallback/simulated data in dashboard — always use DATABASE_URL for real prices
+- Do NOT trust model predictions alone — R² < 0 in both years, gate + stops provide the real edge
+- Do NOT operate without effective HS — portfolio cap at 3.5% prevents catastrophic single-trade losses

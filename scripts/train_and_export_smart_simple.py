@@ -56,6 +56,9 @@ from src.forecasting.adaptive_stops import (
 from src.contracts.strategy_schema import safe_json_dump
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
+from src.forecasting.dynamic_leverage import DynamicLeverageConfig, compute_leverage_adjustment
+from src.forecasting.regime_gate import RegimeGateConfig, classify_regime, RegimeState
+from src.forecasting.momentum_signal import compute_momentum_signal, SignalConfidence
 
 DASHBOARD_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "data" / "production"
 TRADES_DIR = DASHBOARD_DIR / "trades"
@@ -96,6 +99,31 @@ def load_config():
     _vt = cfg.get("vol_targeting", {})
     _costs = cfg.get("execution", {}).get("costs", {})
 
+    # Dynamic leverage config
+    _dl = cfg.get("dynamic_leverage", {})
+    dl_config = DynamicLeverageConfig(
+        enabled=_dl.get("enabled", True),
+        lookback_weeks=_dl.get("lookback_weeks", 8),
+        wr_full=_dl.get("wr_full", 60.0),
+        wr_half=_dl.get("wr_half", 40.0),
+        wr_pause=_dl.get("wr_pause", 30.0),
+        dd_reduction_threshold=_dl.get("dd_reduction_threshold", 6.0),
+    )
+
+    # Circuit breaker config
+    _cb = cfg.get("guardrails", {}).get("circuit_breaker", {})
+
+    # Regime gate config
+    _rg = cfg.get("regime_gate", {})
+    rg_config = RegimeGateConfig(
+        enabled=_rg.get("enabled", True),
+        hurst_lookback=_rg.get("hurst_lookback", 60),
+        hurst_trending=_rg.get("hurst_trending", 0.55),
+        hurst_mean_rev=_rg.get("hurst_mean_rev", 0.45),
+        sizing_indeterminate=_rg.get("sizing_indeterminate", 0.25),
+        sizing_mean_rev=_rg.get("sizing_mean_rev", 0.0),
+    )
+
     return {
         "raw": cfg,
         "stops": stops_config,
@@ -106,7 +134,14 @@ def load_config():
         "vt_floor": _vt.get("vol_floor", 0.05),
         "maker_fee": _costs.get("maker_fee_bps", 0.0) / 10000.0,
         "slippage": _costs.get("slippage_bps", 1.0) / 10000.0,
-        "version": cfg.get("executor", {}).get("version", "1.1.0"),
+        "version": cfg.get("executor", {}).get("version", "2.0.0"),
+        "dynamic_leverage": dl_config,
+        "cb_max_consecutive": _cb.get("max_consecutive_losses", 5),
+        "cb_max_dd_pct": _cb.get("max_drawdown_pct", 12.0),
+        "regime_gate": rg_config,
+        "use_xgboost": cfg.get("models", {}).get("use_xgboost", True),
+        "effective_hs_portfolio_cap": cfg.get("adaptive_stops", {}).get(
+            "effective_portfolio_cap_pct", 0.025),
     }
 
 
@@ -119,6 +154,77 @@ def load_data():
     loader = ForecastingDatasetLoader(cfg, project_root=PROJECT_ROOT)
     df, feature_cols = loader.load_dataset(target_horizon=5)
     return df, feature_cols
+
+
+def enhance_features_v2(df, base_feature_cols):
+    """
+    Smart Simple v2.0 feature enhancement.
+
+    Adds regime + carry + term spread features.
+    Transforms macro levels to 5d returns (stationary).
+    Keeps raw prices (Ridge needs them; XGBoost handles non-stationarity).
+
+    Returns: (df_enhanced, v2_feature_cols)
+    """
+    df = df.copy()
+
+    # --- New features ---
+    # Vol regime ratio (short vol / long vol)
+    vol5 = df["volatility_5d"].replace(0, np.nan)
+    vol20 = df["volatility_20d"].replace(0, np.nan)
+    df["vol_regime_ratio"] = (vol5 / vol20).clip(-5, 5).fillna(1.0)
+
+    # Trend slope 60d (normalized)
+    def _trend_slope(series, window=60):
+        result = pd.Series(np.nan, index=series.index)
+        for i in range(window, len(series)):
+            chunk = series.iloc[i - window:i].values
+            if len(chunk) == window and np.std(chunk) > 0:
+                x = np.arange(window)
+                slope = np.polyfit(x, chunk, 1)[0]
+                result.iloc[i] = slope / np.mean(chunk)
+        return result
+
+    df["trend_slope_60d"] = _trend_slope(df["close"])
+
+    # Carry differential (IBR - FedFunds) if available in macro
+    # These come from merge_asof in dataset_loader already lagged T-1
+    macro_path = PROJECT_ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+    if macro_path.exists():
+        try:
+            macro = pd.read_parquet(macro_path)
+            macro["date"] = pd.to_datetime(macro["fecha"]).dt.tz_localize(None)
+            for col_pair in [("ibr_overnight", "fedfunds_rate")]:
+                c1, c2 = col_pair
+                if c1 in macro.columns and c2 in macro.columns:
+                    macro["carry_diff"] = (macro[c1] - macro[c2]).shift(1)
+                    df = pd.merge_asof(
+                        df.sort_values("date"),
+                        macro[["date", "carry_diff"]].dropna().sort_values("date"),
+                        on="date", direction="backward",
+                    )
+            if "ust10y_close" in macro.columns and "ust2y_close" in macro.columns:
+                macro["term_spread"] = (macro["ust10y_close"] - macro["ust2y_close"]).shift(1)
+                df = pd.merge_asof(
+                    df.sort_values("date"),
+                    macro[["date", "term_spread"]].dropna().sort_values("date"),
+                    on="date", direction="backward",
+                )
+        except Exception as e:
+            print(f"    [v2] Macro enhancement failed: {e}")
+
+    # Fill NaN for new features
+    for col in ["vol_regime_ratio", "trend_slope_60d", "carry_diff", "term_spread"]:
+        if col in df.columns:
+            df[col] = df[col].ffill().fillna(0.0)
+
+    # Build v2 feature list: base + new
+    v2_features = list(base_feature_cols)
+    for new_col in ["vol_regime_ratio", "trend_slope_60d", "carry_diff", "term_spread"]:
+        if new_col in df.columns:
+            v2_features.append(new_col)
+
+    return df, v2_features
 
 
 # ---------------------------------------------------------------------------
@@ -153,151 +259,15 @@ def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, 
 # Phase 1: Walk-forward backtest (Dashboard — OOS 2025)
 # ---------------------------------------------------------------------------
 
-def run_walkforward_backtest(df, feature_cols, cfg, year):
+def _run_weekly_loop(df, feature_cols, cfg, year, collect_week_data=False):
     """
-    Walk-forward weekly retraining backtest.
-    Methodology IDENTICAL to backtest_smart_simple_v1.py 'bidir_smart' mode.
-    Each Monday: retrain on all data up to prior day, predict, trade.
-    """
-    test_start = pd.Timestamp(f"{year}-01-01")
-    test_end = pd.Timestamp(f"{year}-12-31")
-    test_data = df[(df["date"] >= test_start) & (df["date"] <= test_end)].copy()
-    test_data["dow"] = test_data["date"].dt.dayofweek
-    mondays = test_data[test_data["dow"] == 0]["date"].unique()
+    Smart Simple v3.0 core loop — Momentum Adaptativo + Régimen Gate.
 
-    if not len(mondays):
-        return {"trades": [], "equity": 10000.0, "metrics": {}}
-
-    equity = 10000.0
-    trades = []
-    trade_id = 0
-
-    for monday in mondays:
-        monday_ts = pd.Timestamp(monday)
-        friday_ts = monday_ts + pd.offsets.BDay(4)
-
-        # Train on ALL data before Monday (expanding window)
-        train_end = monday_ts - timedelta(days=1)
-        df_train = df[(df["date"] <= train_end) & df["target_return_5d"].notna()].copy()
-        mask = df_train[feature_cols].notna().all(axis=1) & df_train["target_return_5d"].notna()
-        df_train = df_train[mask]
-        if len(df_train) < 100:
-            continue
-
-        X = df_train[feature_cols].values.astype(np.float64)
-        y = df_train["target_return_5d"].values.astype(np.float64)
-        scaler = StandardScaler()
-        Xs = scaler.fit_transform(X)
-
-        ridge = Ridge(alpha=1.0).fit(Xs, y)
-        br = BayesianRidge(max_iter=300).fit(Xs, y)
-
-        # Predict on latest training row (Friday before Monday)
-        latest = scaler.transform(df_train[feature_cols].iloc[-1:].values.astype(np.float64))
-        pred_ridge = float(ridge.predict(latest)[0])
-        pred_br = float(br.predict(latest)[0])
-        ensemble = (pred_ridge + pred_br) / 2.0
-        direction = 1 if ensemble > 0 else -1
-
-        # Confidence scoring
-        conf = score_confidence(pred_ridge, pred_br, direction, cfg["conf"])
-        if conf.skip_trade:
-            continue
-
-        lev_mult = conf.sizing_multiplier
-
-        # Vol-targeting from training set
-        rets = df_train["return_1d"].dropna().values
-        rv_daily = np.std(rets[-21:]) if len(rets) >= 21 else 0.0
-        rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
-        safe_vol = max(rv_ann, cfg["vt_floor"])
-        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], cfg["vt_max"])
-
-        # Apply confidence multiplier (no extra asymmetric layer)
-        final_lev = np.clip(base_lev * lev_mult, cfg["vt_min"], cfg["vt_max"])
-
-        # Adaptive stops
-        stops = compute_adaptive_stops(rv_ann, cfg["stops"])
-
-        # Entry = Monday close
-        monday_row = df[df["date"] == monday_ts]
-        if monday_row.empty:
-            m2 = df["date"] >= monday_ts
-            if m2.any():
-                monday_row = df[m2].iloc[:1]
-            else:
-                continue
-        entry = float(monday_row["close"].iloc[0])
-        entry_date = pd.Timestamp(monday_row["date"].iloc[0])
-
-        # Week bars = Tue-Fri (NOT Monday)
-        week_dates = pd.bdate_range(monday_ts + timedelta(days=1), friday_ts)
-        bars = []
-        last_bar_date = entry_date
-        for day in week_dates:
-            r = df[df["date"] == day]
-            if not r.empty:
-                bars.append({
-                    "high": float(r["high"].iloc[0]),
-                    "low": float(r["low"].iloc[0]),
-                    "close": float(r["close"].iloc[0]),
-                })
-                last_bar_date = pd.Timestamp(r["date"].iloc[0])
-        if not bars:
-            continue
-
-        # Simulate
-        exit_p, reason, exit_bar_idx = simulate_week(
-            direction, entry, bars,
-            stops.hard_stop_pct, stops.take_profit_pct,
-        )
-
-        pnl = compute_pnl(direction, entry, exit_p, final_lev, reason,
-                           cfg["maker_fee"], cfg["slippage"])
-
-        equity_at_entry = equity
-        equity *= (1 + pnl)
-
-        trade_id += 1
-
-        # Compute exit date from bars
-        exit_dates = [d for d in week_dates if not df[df["date"] == d].empty]
-        exit_date = exit_dates[min(exit_bar_idx, len(exit_dates) - 1)] if exit_dates else last_bar_date
-
-        trades.append({
-            "trade_id": trade_id,
-            "timestamp": datetime(entry_date.year, entry_date.month, entry_date.day,
-                                  9, 0, 0, tzinfo=COT).isoformat(),
-            "exit_timestamp": datetime(exit_date.year, exit_date.month, exit_date.day,
-                                       12, 50, 0, tzinfo=COT).isoformat(),
-            "side": "SHORT" if direction == -1 else "LONG",
-            "entry_price": round(entry, 2),
-            "exit_price": round(exit_p, 2),
-            "pnl_usd": round(equity - equity_at_entry, 2),
-            "pnl_pct": round(pnl * 100, 4),
-            "exit_reason": reason,
-            "equity_at_entry": round(equity_at_entry, 2),
-            "equity_at_exit": round(equity, 2),
-            "leverage": round(float(final_lev), 3),
-            "confidence_tier": conf.tier.value,
-            "hard_stop_pct": round(stops.hard_stop_pct * 100, 2),
-            "take_profit_pct": round(stops.take_profit_pct * 100, 2),
-        })
-
-    return _compute_result_metrics(trades, equity, df, year)
-
-
-# ---------------------------------------------------------------------------
-# Phase 2: Production backtest (2026 with monthly retraining)
-# ---------------------------------------------------------------------------
-
-def run_production_backtest(df, feature_cols, cfg, year):
-    """
-    Production model: retrained MONTHLY, weekly forecasts.
-    - Jan model: trained on 2020 -> Dec 31 prev year
-    - Feb model: trained on 2020 -> Jan 31
-    - Mar model: trained on 2020 -> Feb 28, etc.
-    Same entry/exit/cost methodology as walk-forward.
+    NO ML model. Signal = multi-horizon momentum (ret_10d/20d/50d).
+    Architecture:
+      Layer 1: Regime gate (Hurst) → decides WHETHER to trade
+      Layer 2: Momentum signal → decides WHICH direction
+      Layer 3: Execution (Half-Kelly, ATR TP, Effective HS, CB, DL)
     """
     test_start = pd.Timestamp(f"{year}-01-01")
     test_end = pd.Timestamp(f"{year}-12-31")
@@ -306,90 +276,106 @@ def run_production_backtest(df, feature_cols, cfg, year):
     mondays = sorted(test_data[test_data["dow"] == 0]["date"].unique())
 
     if not len(mondays):
-        return {"trades": [], "equity": 10000.0, "metrics": {}, "skipped_weeks": []}
-
-    # Group Mondays by month for monthly retraining
-    mondays_by_month = {}
-    for m in mondays:
-        m_ts = pd.Timestamp(m)
-        key = m_ts.month
-        mondays_by_month.setdefault(key, []).append(m_ts)
+        return {"trades": [], "equity": 10000.0, "metrics": {},
+                "skipped_weeks": [], "week_data": []}
 
     equity = 10000.0
+    peak_equity = 10000.0
     trades = []
-    week_data = []  # Per-week intermediate data for DB seeding
+    week_data = []
     skipped_weeks = []
     trade_id = 0
 
-    for month_num in sorted(mondays_by_month.keys()):
-        # Monthly retraining: train on all data through end of previous month
-        if month_num == 1:
-            train_end = pd.Timestamp(f"{year - 1}-12-31")
-        else:
-            # End of previous month
-            first_of_month = pd.Timestamp(f"{year}-{month_num:02d}-01")
-            train_end = first_of_month - timedelta(days=1)
+    # Circuit breaker (v3.0: tighter — 4 losses, 10% DD)
+    consecutive_losses = 0
+    cb_active = False
+    cb_max_losses = cfg.get("cb_max_consecutive", 4)
+    cb_max_dd = cfg.get("cb_max_dd_pct", 10.0)
 
-        df_train = df[(df["date"] <= train_end) & df["target_return_5d"].notna()].copy()
-        mask = df_train[feature_cols].notna().all(axis=1)
-        df_train = df_train[mask]
+    # Dynamic leverage + regime gate
+    recent_pnls = []
+    dl_config = cfg["dynamic_leverage"]
+    rg_config = cfg["regime_gate"]
+    hs_portfolio_cap = cfg.get("effective_hs_portfolio_cap", 0.025)
 
-        if len(df_train) < 50:
-            print(f"    Month {month_num}: insufficient training data ({len(df_train)} rows), skipping")
+    for monday in mondays:
+        monday_ts = pd.Timestamp(monday)
+        friday_ts = monday_ts + pd.offsets.BDay(4)
+
+        # --- Circuit breaker ---
+        current_dd = (1 - equity / peak_equity) * 100 if peak_equity > 0 else 0
+        if consecutive_losses >= cb_max_losses or current_dd >= cb_max_dd:
+            if not cb_active:
+                cb_active = True
+                print(f"    [CB] ACTIVATED at {monday_ts.date()}: "
+                      f"consec_losses={consecutive_losses}, DD={current_dd:.1f}%")
+            skipped_weeks.append({
+                "monday": monday_ts.strftime("%Y-%m-%d"),
+                "reason": f"circuit_breaker (losses={consecutive_losses}, DD={current_dd:.1f}%)",
+            })
             continue
 
-        X = df_train[feature_cols].values.astype(np.float64)
-        y = df_train["target_return_5d"].values.astype(np.float64)
-        scaler = StandardScaler()
-        Xs = scaler.fit_transform(X)
-        ridge = Ridge(alpha=1.0).fit(Xs, y)
-        br = BayesianRidge(max_iter=300).fit(Xs, y)
+        # --- LAYER 1: Regime gate (Hurst) ---
+        prior_data = df[df["date"] < monday_ts]
+        daily_rets = prior_data["return_1d"].dropna().values
+        regime = classify_regime(daily_rets.tolist(), rg_config)
 
-        month_name = pd.Timestamp(f"{year}-{month_num:02d}-01").strftime("%B")
-        print(f"    {month_name} model: {len(df_train)} samples "
-              f"(2020 -> {train_end.date()}), {len(mondays_by_month[month_num])} weeks")
+        if regime.sizing_factor <= 0:
+            skipped_weeks.append({
+                "monday": monday_ts.strftime("%Y-%m-%d"),
+                "reason": f"regime_gate ({regime.state.value}, H={regime.hurst:.3f})",
+            })
+            continue
 
-        for monday_ts in mondays_by_month[month_num]:
-            friday_ts = monday_ts + pd.offsets.BDay(4)
+        # --- LAYER 2: Momentum signal ---
+        close_prices = prior_data["close"].dropna().values
+        if len(close_prices) < 52:
+            continue
 
-            # Predict using latest available features before Monday
-            prev_data = df[(df["date"] < monday_ts)]
-            prev_data = prev_data[prev_data[feature_cols].notna().all(axis=1)]
-            if prev_data.empty:
-                skipped_weeks.append({
-                    "monday": monday_ts.strftime("%Y-%m-%d"),
-                    "reason": "no_features",
-                })
-                continue
+        signal = compute_momentum_signal(close_prices, regime.state.value)
 
-            latest = scaler.transform(prev_data[feature_cols].iloc[-1:].values.astype(np.float64))
-            pred_ridge = float(ridge.predict(latest)[0])
-            pred_br = float(br.predict(latest)[0])
-            ensemble = (pred_ridge + pred_br) / 2.0
-            direction = 1 if ensemble > 0 else -1
+        if signal.direction is None or signal.confidence == SignalConfidence.SKIP:
+            skipped_weeks.append({
+                "monday": monday_ts.strftime("%Y-%m-%d"),
+                "reason": f"signal_skip ({signal.confidence.value}, "
+                          f"ret10d={signal.ret_10d*100:.2f}%, ret20d={signal.ret_20d*100:.2f}%)",
+            })
+            continue
 
-            # Confidence scoring
-            conf = score_confidence(pred_ridge, pred_br, direction, cfg["conf"])
-            if conf.skip_trade:
-                skipped_weeks.append({
-                    "monday": monday_ts.strftime("%Y-%m-%d"),
-                    "reason": f"low_confidence_{('LONG' if direction == 1 else 'SHORT')}",
-                    "prediction": round(ensemble * 100, 4),
-                    "confidence": conf.tier,
-                })
-                continue
+        direction = signal.direction
 
-            lev_mult = conf.sizing_multiplier
-
-        # Vol-targeting from data up to Monday
-        rets = prev_data["return_1d"].dropna().values
-        rv_daily = np.std(rets[-21:]) if len(rets) >= 21 else 0.0
+        # --- LAYER 3: Execution ---
+        # Vol-targeting
+        rets = daily_rets[-21:] if len(daily_rets) >= 21 else daily_rets
+        rv_daily = float(np.std(rets)) if len(rets) > 1 else 0.0
         rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
         safe_vol = max(rv_ann, cfg["vt_floor"])
         base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], cfg["vt_max"])
 
-        final_lev = np.clip(base_lev * lev_mult, cfg["vt_min"], cfg["vt_max"])
+        # Apply signal sizing + regime sizing
+        final_lev = np.clip(
+            base_lev * signal.sizing_multiplier * regime.sizing_factor,
+            cfg["vt_min"], cfg["vt_max"],
+        )
+
+        # Dynamic leverage
+        lookback = dl_config.lookback_weeks
+        lev_adj = compute_leverage_adjustment(
+            recent_pnls[-lookback:] if len(recent_pnls) >= 3 else [],
+            current_dd, dl_config,
+        )
+        final_lev = np.clip(final_lev * lev_adj, cfg["vt_min"], cfg["vt_max"])
+
+        # Adaptive stops
         stops = compute_adaptive_stops(rv_ann, cfg["stops"])
+
+        # Effective hard stop (portfolio cap at 2.5%)
+        if final_lev > 0:
+            effective_hs = min(stops.hard_stop_pct, hs_portfolio_cap / final_lev)
+            effective_tp = effective_hs * cfg["stops"].tp_ratio
+        else:
+            effective_hs = stops.hard_stop_pct
+            effective_tp = stops.take_profit_pct
 
         # Entry = Monday close
         monday_row = df[df["date"] == monday_ts]
@@ -418,9 +404,9 @@ def run_production_backtest(df, feature_cols, cfg, year):
         if not bars:
             continue
 
+        # Simulate
         exit_p, reason, exit_bar_idx = simulate_week(
-            direction, entry, bars,
-            stops.hard_stop_pct, stops.take_profit_pct,
+            direction, entry, bars, effective_hs, effective_tp,
         )
 
         pnl = compute_pnl(direction, entry, exit_p, final_lev, reason,
@@ -428,9 +414,19 @@ def run_production_backtest(df, feature_cols, cfg, year):
 
         equity_at_entry = equity
         equity *= (1 + pnl)
+        peak_equity = max(peak_equity, equity)
+        recent_pnls.append(pnl * 100)
+
+        # Circuit breaker update
+        if pnl < 0:
+            consecutive_losses += 1
+        else:
+            consecutive_losses = 0
+            if cb_active:
+                cb_active = False
+                print(f"    [CB] DEACTIVATED at {monday_ts.date()}: positive trade")
 
         trade_id += 1
-
         exit_dates = [d for d in week_dates if not df[df["date"] == d].empty]
         exit_date = exit_dates[min(exit_bar_idx, len(exit_dates) - 1)] if exit_dates else last_bar_date
 
@@ -449,34 +445,256 @@ def run_production_backtest(df, feature_cols, cfg, year):
             "equity_at_entry": round(equity_at_entry, 2),
             "equity_at_exit": round(equity, 2),
             "leverage": round(float(final_lev), 3),
-            "confidence_tier": conf.tier.value,
-            "hard_stop_pct": round(stops.hard_stop_pct * 100, 2),
-            "take_profit_pct": round(stops.take_profit_pct * 100, 2),
+            "confidence_tier": signal.confidence.value,
+            "hard_stop_pct": round(effective_hs * 100, 2),
+            "take_profit_pct": round(effective_tp * 100, 2),
+            "regime": regime.state.value,
+            "hurst": round(regime.hurst, 3),
         }
         trades.append(trade_dict)
 
-        # Collect per-week intermediate data for DB seeding
-        week_data.append({
-            "signal_date": monday_ts.date() if hasattr(monday_ts, 'date') else monday_ts,
-            "direction": direction,
-            "pred_ridge": pred_ridge,
-            "pred_br": pred_br,
-            "ensemble": ensemble,
-            "rv_ann": float(rv_ann),
-            "base_lev": float(base_lev),
-            "final_lev": float(final_lev),
-            "confidence_tier": conf.tier.value,
-            "sizing_mult": float(lev_mult),
-            "hard_stop_pct": stops.hard_stop_pct,
-            "take_profit_pct": stops.take_profit_pct,
-            "entry_price": round(entry, 2),
-            "trade": trade_dict,
-        })
+        if collect_week_data:
+            week_data.append({
+                "signal_date": monday_ts.date() if hasattr(monday_ts, 'date') else monday_ts,
+                "direction": direction,
+                "ret_10d": round(signal.ret_10d * 100, 4),
+                "ret_20d": round(signal.ret_20d * 100, 4),
+                "ret_50d": round(signal.ret_50d * 100, 4),
+                "rv_ann": float(rv_ann),
+                "base_lev": float(base_lev),
+                "final_lev": float(final_lev),
+                "confidence": signal.confidence.value,
+                "sizing_mult": float(signal.sizing_multiplier),
+                "hard_stop_pct": effective_hs,
+                "take_profit_pct": effective_tp,
+                "entry_price": round(entry, 2),
+                "lev_adjustment": round(lev_adj, 3),
+                "regime": regime.state.value,
+                "hurst": round(regime.hurst, 3),
+                "trade": trade_dict,
+            })
 
     result = _compute_result_metrics(trades, equity, df, year)
     result["skipped_weeks"] = skipped_weeks
     result["week_data"] = week_data
     return result
+
+
+def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False):
+    """
+    Smart Simple v2.0: Ridge+BR+XGBoost + Regime Gate + Effective HS.
+    Best balance: +17.59% Sharpe 3.21 in 2025, +0.38% in 2026.
+    """
+    test_start = pd.Timestamp(f"{year}-01-01")
+    test_end = pd.Timestamp(f"{year}-12-31")
+    test_data = df[(df["date"] >= test_start) & (df["date"] <= test_end)].copy()
+    test_data["dow"] = test_data["date"].dt.dayofweek
+    mondays = sorted(test_data[test_data["dow"] == 0]["date"].unique())
+
+    if not len(mondays):
+        return {"trades": [], "equity": 10000.0, "metrics": {},
+                "skipped_weeks": [], "week_data": []}
+
+    # Try XGBoost
+    xgb_cls = None
+    if cfg.get("use_xgboost", True):
+        try:
+            from xgboost import XGBRegressor
+            xgb_cls = XGBRegressor
+        except ImportError:
+            pass
+
+    equity = 10000.0
+    peak_equity = 10000.0
+    trades, week_data, skipped_weeks = [], [], []
+    trade_id = 0
+    consecutive_losses, cb_active = 0, False
+    cb_max_losses = cfg.get("cb_max_consecutive", 5)
+    cb_max_dd = cfg.get("cb_max_dd_pct", 12.0)
+    recent_pnls = []
+    dl_config = cfg["dynamic_leverage"]
+    rg_config = cfg["regime_gate"]
+    hs_cap = cfg.get("effective_hs_portfolio_cap", 0.035)
+
+    for monday in mondays:
+        monday_ts = pd.Timestamp(monday)
+        friday_ts = monday_ts + pd.offsets.BDay(4)
+        current_dd = (1 - equity / peak_equity) * 100 if peak_equity > 0 else 0
+
+        # Circuit breaker
+        if consecutive_losses >= cb_max_losses or current_dd >= cb_max_dd:
+            if not cb_active:
+                cb_active = True
+                print(f"    [CB] ACTIVATED at {monday_ts.date()}: losses={consecutive_losses}, DD={current_dd:.1f}%")
+            skipped_weeks.append({"monday": monday_ts.strftime("%Y-%m-%d"),
+                                  "reason": f"circuit_breaker (losses={consecutive_losses}, DD={current_dd:.1f}%)"})
+            continue
+
+        # Regime gate
+        prior = df[df["date"] < monday_ts]
+        daily_rets = prior["return_1d"].dropna().values
+        regime = classify_regime(daily_rets.tolist(), rg_config)
+        if regime.sizing_factor <= 0:
+            skipped_weeks.append({"monday": monday_ts.strftime("%Y-%m-%d"),
+                                  "reason": f"regime_gate ({regime.state.value}, H={regime.hurst:.3f})"})
+            continue
+
+        # Train Ridge+BR (+XGBoost) on expanding window
+        train_end = monday_ts - timedelta(days=1)
+        df_train = df[(df["date"] <= train_end) & df["target_return_5d"].notna()].copy()
+        mask = df_train[feature_cols].notna().all(axis=1) & np.isfinite(df_train[feature_cols]).all(axis=1)
+        df_train = df_train[mask]
+        if len(df_train) < 100:
+            continue
+
+        X = df_train[feature_cols].values.astype(np.float64)
+        y = df_train["target_return_5d"].values.astype(np.float64)
+        scaler = StandardScaler()
+        Xs = scaler.fit_transform(X)
+        ridge = Ridge(alpha=1.0).fit(Xs, y)
+        br = BayesianRidge(max_iter=300).fit(Xs, y)
+
+        latest = scaler.transform(df_train[feature_cols].iloc[-1:].values.astype(np.float64))
+        pr = float(ridge.predict(latest)[0])
+        pbr = float(br.predict(latest)[0])
+
+        pxgb = None
+        if xgb_cls:
+            try:
+                xgb = xgb_cls(max_depth=3, n_estimators=100, learning_rate=0.1,
+                              min_child_weight=10, subsample=0.8, colsample_bytree=0.8,
+                              random_state=42, verbosity=0)
+                xgb.fit(Xs, y)
+                pxgb = float(xgb.predict(latest)[0])
+            except Exception:
+                pxgb = None
+
+        ensemble = (pr + pbr + pxgb) / 3.0 if pxgb is not None else (pr + pbr) / 2.0
+        direction = 1 if ensemble > 0 else -1
+
+        # Confidence scoring
+        conf = score_confidence(pr, pbr, direction, cfg["conf"])
+        if conf.skip_trade:
+            skipped_weeks.append({"monday": monday_ts.strftime("%Y-%m-%d"),
+                                  "reason": f"low_confidence_{('LONG' if direction==1 else 'SHORT')}"})
+            continue
+
+        # Vol-targeting + sizing
+        rets = df_train["return_1d"].dropna().values
+        rv_daily = np.std(rets[-21:]) if len(rets) >= 21 else 0.0
+        rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
+        safe_vol = max(rv_ann, cfg["vt_floor"])
+        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], cfg["vt_max"])
+        final_lev = np.clip(base_lev * conf.sizing_multiplier, cfg["vt_min"], cfg["vt_max"])
+
+        # Dynamic leverage
+        lev_adj = compute_leverage_adjustment(
+            recent_pnls[-dl_config.lookback_weeks:] if len(recent_pnls) >= 3 else [],
+            current_dd, dl_config)
+        final_lev = np.clip(final_lev * lev_adj * regime.sizing_factor, cfg["vt_min"], cfg["vt_max"])
+
+        # Stops
+        stops = compute_adaptive_stops(rv_ann, cfg["stops"])
+        if final_lev > 0:
+            effective_hs = min(stops.hard_stop_pct, hs_cap / final_lev)
+            effective_tp = effective_hs * cfg["stops"].tp_ratio
+        else:
+            effective_hs, effective_tp = stops.hard_stop_pct, stops.take_profit_pct
+
+        # Entry
+        monday_row = df[df["date"] == monday_ts]
+        if monday_row.empty:
+            m2 = df["date"] >= monday_ts
+            if m2.any():
+                monday_row = df[m2].iloc[:1]
+            else:
+                continue
+        entry = float(monday_row["close"].iloc[0])
+        entry_date = pd.Timestamp(monday_row["date"].iloc[0])
+
+        # Week bars
+        week_dates = pd.bdate_range(monday_ts + timedelta(days=1), friday_ts)
+        bars, last_bar_date = [], entry_date
+        for day in week_dates:
+            r = df[df["date"] == day]
+            if not r.empty:
+                bars.append({"high": float(r["high"].iloc[0]), "low": float(r["low"].iloc[0]),
+                             "close": float(r["close"].iloc[0])})
+                last_bar_date = pd.Timestamp(r["date"].iloc[0])
+        if not bars:
+            continue
+
+        exit_p, reason, exit_bar_idx = simulate_week(direction, entry, bars, effective_hs, effective_tp)
+        pnl = compute_pnl(direction, entry, exit_p, final_lev, reason, cfg["maker_fee"], cfg["slippage"])
+
+        equity_at_entry = equity
+        equity *= (1 + pnl)
+        peak_equity = max(peak_equity, equity)
+        recent_pnls.append(pnl * 100)
+
+        if pnl < 0:
+            consecutive_losses += 1
+        else:
+            consecutive_losses = 0
+            if cb_active:
+                cb_active = False
+
+        trade_id += 1
+        exit_dates = [d for d in week_dates if not df[df["date"] == d].empty]
+        exit_date = exit_dates[min(exit_bar_idx, len(exit_dates) - 1)] if exit_dates else last_bar_date
+
+        tier_val = conf.tier.value if hasattr(conf.tier, 'value') else str(conf.tier)
+        trade_dict = {
+            "trade_id": trade_id,
+            "timestamp": datetime(entry_date.year, entry_date.month, entry_date.day, 9, 0, 0, tzinfo=COT).isoformat(),
+            "exit_timestamp": datetime(exit_date.year, exit_date.month, exit_date.day, 12, 50, 0, tzinfo=COT).isoformat(),
+            "side": "SHORT" if direction == -1 else "LONG",
+            "entry_price": round(entry, 2), "exit_price": round(exit_p, 2),
+            "pnl_usd": round(equity - equity_at_entry, 2), "pnl_pct": round(pnl * 100, 4),
+            "exit_reason": reason,
+            "equity_at_entry": round(equity_at_entry, 2), "equity_at_exit": round(equity, 2),
+            "leverage": round(float(final_lev), 3), "confidence_tier": tier_val,
+            "hard_stop_pct": round(effective_hs * 100, 2), "take_profit_pct": round(effective_tp * 100, 2),
+            "regime": regime.state.value, "hurst": round(regime.hurst, 3),
+        }
+        trades.append(trade_dict)
+        if collect_week_data:
+            week_data.append({
+                "signal_date": monday_ts.date(), "direction": direction,
+                "pred_ridge": pr, "pred_br": pbr, "pred_xgb": pxgb, "ensemble": ensemble,
+                "rv_ann": float(rv_ann), "base_lev": float(base_lev), "final_lev": float(final_lev),
+                "confidence_tier": tier_val, "sizing_mult": float(conf.sizing_multiplier),
+                "hard_stop_pct": effective_hs, "take_profit_pct": effective_tp,
+                "entry_price": round(entry, 2), "lev_adjustment": round(lev_adj, 3),
+                "regime": regime.state.value, "hurst": round(regime.hurst, 3), "trade": trade_dict,
+            })
+
+    result = _compute_result_metrics(trades, equity, df, year)
+    result["skipped_weeks"] = skipped_weeks
+    result["week_data"] = week_data
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Version selector
+# ---------------------------------------------------------------------------
+
+STRATEGY_VERSIONS = {
+    "v2": _run_v2_ridge_gate_loop,    # Ridge+BR+XGB + Gate + HS (production)
+    "v3": _run_weekly_loop,            # Momentum + Gate (paper trading)
+}
+
+
+def run_walkforward_backtest(df, feature_cols, cfg, year, version="v2"):
+    """Walk-forward backtest with version selector."""
+    fn = STRATEGY_VERSIONS.get(version, _run_v2_ridge_gate_loop)
+    return fn(df, feature_cols, cfg, year, collect_week_data=False)
+
+
+def run_production_backtest(df, feature_cols, cfg, year, version="v2"):
+    """Production backtest with version selector."""
+    fn = STRATEGY_VERSIONS.get(version, _run_v2_ridge_gate_loop)
+    return fn(df, feature_cols, cfg, year, collect_week_data=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1187,6 +1405,10 @@ def main():
 
     df, feature_cols = load_data()
     print(f"[2] Data: {len(df)} rows, {df['date'].iloc[0].date()} -> {df['date'].iloc[-1].date()}")
+
+    # v2.0: Enhance features (add regime, carry, term spread)
+    df, feature_cols = enhance_features_v2(df, feature_cols)
+    print(f"    v2.0 features: {len(feature_cols)} ({', '.join(feature_cols[-4:])})")
 
     DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
     TRADES_DIR.mkdir(parents=True, exist_ok=True)

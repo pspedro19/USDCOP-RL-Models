@@ -815,7 +815,7 @@ def calculate_cagr(cumulative_pnl):
         total_return = cumulative_pnl.iloc[-1] / cumulative_pnl.iloc[0] if cumulative_pnl.iloc[0] != 0 else 1.0
         years = len(cumulative_pnl) / 252  # Assuming 252 trading days per year
         return (total_return ** (1 / years)) - 1 if years > 0 else 0.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -825,7 +825,7 @@ def calculate_sharpe_ratio(returns):
         if len(returns) == 0:
             return 0.0
         return returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -837,7 +837,7 @@ def calculate_sortino_ratio(returns):
         downside_returns = returns[returns < 0]
         downside_std = downside_returns.std() if len(downside_returns) > 0 else 0.0
         return returns.mean() / downside_std * np.sqrt(252) if downside_std > 0 else 0.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -849,7 +849,7 @@ def calculate_calmar_ratio(df):
         cagr = calculate_cagr(df['cumulative_pnl'])
         max_dd = abs(df['drawdown'].min())
         return cagr / max_dd if max_dd > 0 else 0.0
-    except:
+    except Exception:
         return 0.0
 
 # ==========================================
@@ -1016,7 +1016,7 @@ def get_l3_status():
         try:
             response = minio_client.get_object(bucket, 'usdcop_m5__04_l3_feature/_metadata/feature_spec.json')
             feature_spec = json.loads(response.read().decode('utf-8'))
-        except:
+        except Exception:
             logger.warning("Could not read feature_spec.json")
 
         # Extract feature count and list
@@ -1094,7 +1094,7 @@ def get_l4_status():
         try:
             response = minio_client.get_object(bucket, 'usdcop_m5__05_l4_rlready/checks_report.json')
             checks = json.loads(response.read().decode('utf-8'))
-        except:
+        except Exception:
             checks = {}
 
         # Extract from metadata structure
@@ -1108,7 +1108,7 @@ def get_l4_status():
         try:
             minio_client.stat_object(bucket, 'usdcop_m5__05_l4_rlready/_control/READY')
             quality_pass = True
-        except:
+        except Exception:
             quality_pass = False
 
         return {

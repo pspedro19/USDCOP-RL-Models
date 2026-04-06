@@ -39,8 +39,8 @@ authoritative list for multi-strategy support across the dashboard.
 
 | Strategy ID | Name | Type | Timeframe | Status | Pipeline Script |
 |-------------|------|------|-----------|--------|-----------------|
-| `smart_simple_v11` | Smart Simple v1.1.0 | ml_supervised | weekly | PAPER TRADING | `scripts/train_and_export_smart_simple.py` |
-| `forecast_vt_trailing` | Forecast + VT + Trail | ml_supervised | daily | PRODUCTION | `scripts/generate_weekly_forecasts.py` |
+| `smart_simple_v11` | Smart Simple v2.0.0 | ml_supervised | weekly | **PRODUCTION** | `scripts/train_and_export_smart_simple.py` |
+| `forecast_vt_trailing` | Forecast + VT + Trail | ml_supervised | daily | **PAUSED** | `scripts/generate_weekly_forecasts.py` |
 | `rl_v215b` | RL V21.5b | rl_ppo | intraday_5m | DEPRIORITIZED | `scripts/run_ssot_pipeline.py` |
 
 ### Strategy Status Enum

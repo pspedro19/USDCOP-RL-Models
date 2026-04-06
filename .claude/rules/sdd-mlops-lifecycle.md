@@ -3,6 +3,8 @@
 > Master operator's guide for the complete USDCOP trading system lifecycle.
 > Covers all 8 stages from first-time setup to production monitoring.
 > Follow stages sequentially for initial setup; Stage 7 runs automatically via Airflow.
+> **Updated 2026-04-06**: Smart Simple v2.0 with regime gate, effective HS, dynamic leverage.
+> H1 pipeline PAUSED. H5 is the PRIMARY production track.
 >
 > **Responsibility**: End-to-end operator workflow (WHAT to do, WHEN, and WHY).
 > For deep-dives into specific concerns, see the cross-referenced specs below.
@@ -428,18 +430,28 @@ Monday 09:00: Limit entry order placed at current price (0% maker fee)
 - LONG MEDIUM: 0.5x leverage
 - LONG LOW: **SKIP** (do not trade)
 
-### 2025 Backtest Results
+### 2025 Backtest Results (v2.0)
+
+| Metric | v1.1 (old) | v2.0 (current) |
+|--------|------------|----------------|
+| Return | +20.03% | **+25.63%** |
+| Sharpe | 3.516 | **3.347** |
+| p-value | 0.0097 | **0.0063** |
+| MaxDD | -3.83% | **-6.12%** |
+| Trades | 24 | **34 (5L/29S)** |
+| WR | 70.8% | **82.4%** |
+| TP exits | 9 | **21 (62%)** |
+| HS exits | 0 | **2** (effective HS) |
+| $10K → | $12,003 | **$12,563** |
+
+### 2026 YTD (v2.0, as of 2026-04-06)
 
 | Metric | Value |
 |--------|-------|
-| Return | +20.03% ($10K → $12,003) |
-| Sharpe | 3.516 |
-| p-value | 0.0097 |
-| MaxDD | -3.83% |
-| Trades | 24 (all SHORT) |
-| WR | 70.8% |
-| Hard stops | 0 |
-| Exits | 9 TP + 15 week_end |
+| Return | +0.61% ($10K → $10,061) |
+| Trades | 1 (0L/1S, 0 losses) |
+| Gate blocked | 13 of 14 weeks (mean-reverting) |
+| Alpha vs B&H | +3.43 pp |
 
 ---
 

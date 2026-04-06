@@ -119,7 +119,7 @@ class TradingCalendar:
         check_date = dt.date() if isinstance(dt, datetime) else dt
         try:
             return self._col_is_holiday(check_date)
-        except:
+        except Exception:
             return False
 
     def is_us_holiday(self, dt: Union[datetime, date]) -> bool:

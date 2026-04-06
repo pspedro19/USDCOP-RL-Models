@@ -48,7 +48,7 @@ airflow dags trigger core_l0_01_ohlcv_backfill
 airflow dags trigger core_l0_03_macro_backfill
 
 # Step 4: Run required migrations
-for m in 043 044 045 046; do
+for m in 043 044 045 046 048 049; do
   docker exec -i usdcop-postgres-timescale psql -U admin -d usdcop_trading \
     < database/migrations/${m}_*.sql
 done
@@ -109,7 +109,7 @@ airflow dags trigger core_l0_01_ohlcv_backfill
 airflow dags trigger core_l0_03_macro_backfill
 
 # 4. Run migrations
-for m in 043 044 045 046; do
+for m in 043 044 045 046 048 049; do
   docker exec -i usdcop-postgres-timescale psql -U admin -d usdcop_trading \
     < database/migrations/${m}_*.sql
 done

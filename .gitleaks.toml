@@ -1,0 +1,35 @@
+# Gitleaks configuration — allowlist for known false positives
+# See: https://github.com/gitleaks/gitleaks#configuration
+
+title = "USDCOP-RL Gitleaks Config"
+
+# Allowlist rules for known non-production secrets
+[[rules]]
+id = "docker-compose-dev-passwords"
+description = "Development passwords in docker-compose and config files"
+regex = '''admin123|redis123|minioadmin123|usdcop-trading-secret-key'''
+allowlist = true
+
+[allowlist]
+description = "Known development-only credentials (not production)"
+
+# These paths contain development/example credentials
+paths = [
+    '''\.env\.example''',
+    '''docker-compose.*\.yml''',
+    '''docker-compose.*\.yaml''',
+    '''data/backups/''',
+    '''tests/e2e/''',
+    '''\.md$''',
+]
+
+# These commits predate security hardening
+commits = []
+
+# Regex patterns that are false positives
+regexes = [
+    '''admin123''',          # Dev-only Docker Compose password
+    '''redis123''',          # Dev-only Redis password
+    '''minioadmin123''',     # Dev-only MinIO password
+    '''usdcop-trading-secret''',  # Dev-only NextAuth secret
+]

@@ -160,7 +160,7 @@ FORECAST_H5_L6_WEEKLY_MONITOR = "forecast_h5_l6_weekly_monitor"
 FORECAST_H5_L7_MULTIDAY_EXECUTOR = "forecast_h5_l7_multiday_executor"
 
 # Legacy forecasting constants (kept for backward compatibility)
-FORECAST_L5_WEEKLY_INFERENCE = FORECAST_H1_L3_WEEKLY_TRAINING
+FORECAST_L5_WEEKLY_INFERENCE = "forecast_l5_weekly_inference_legacy"
 FORECAST_L5_VOL_TARGETING = FORECAST_H1_L5_VOL_TARGETING
 FORECAST_L5_DAILY_INFERENCE = FORECAST_H1_L5_DAILY_INFERENCE
 FORECAST_L6_DRIFT_MONITOR = "forecast_l6_01_drift_monitor"

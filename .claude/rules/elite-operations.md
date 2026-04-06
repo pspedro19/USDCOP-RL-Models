@@ -5,8 +5,8 @@
 > and dashboard data completeness.
 >
 > Contract: CTR-OPS-001
-> Version: 1.0.0
-> Date: 2026-03-12
+> Version: 2.0.0
+> Date: 2026-04-06 (updated for Smart Simple v2.0 with regime gate)
 
 ---
 
@@ -14,9 +14,23 @@
 
 ```
 1. DATA INTEGRITY    — Never train on stale data, never trade on stale signals
-2. TRADING CONTINUITY — Signals must fire Mon-Fri without manual intervention
-3. DASHBOARD FRESHNESS — Core 4 pages (/forecasting, /dashboard, /production, /analysis) current. Also: /hub, /execution, /login
-4. OBSERVABILITY     — Know when something fails before it impacts trading
+2. REGIME AWARENESS  — Regime gate (Hurst) must run before every trade decision
+3. NO FAKE DATA      — Dashboard must NEVER show fallback/simulated prices
+4. TRADING CONTINUITY — Signals fire Mon-Fri; gate decides whether to trade
+5. DASHBOARD FRESHNESS — Core 4 pages current. Also: /hub, /execution, /login
+6. OBSERVABILITY     — Know when something fails before it impacts trading
+```
+
+### v2.0 Architecture (2026-04-06)
+
+```
+Strategy: Smart Simple v2.0 (Ridge+BR+XGB + Regime Gate + Effective HS + DL + CB)
+Production: +0.61% YTD (1 trade, gate blocked 13/14 mean-reverting weeks)
+Backtest:   +25.63% 2025 (Sharpe 3.35, p=0.006, 34 trades)
+Key files:  src/forecasting/regime_gate.py, dynamic_leverage.py, momentum_signal.py
+DAG utils:  airflow/dags/utils/regime_gate_live.py, dynamic_leverage_live.py
+Config:     config/execution/smart_simple_v1.yaml (regime_gate + dynamic_leverage sections)
+Migration:  048_regime_gate_columns.sql
 ```
 
 ---

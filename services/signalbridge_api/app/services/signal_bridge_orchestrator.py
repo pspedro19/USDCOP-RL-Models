@@ -516,7 +516,7 @@ class SignalBridgeOrchestrator:
             from app.services.websocket_bridge import WebSocketBridgeManager
             bridge = WebSocketBridgeManager.get_instance()
             ws_connected = bridge.is_connected if bridge else False
-        except:
+        except Exception:
             pass
 
         return BridgeStatus(

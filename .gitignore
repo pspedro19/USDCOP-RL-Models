@@ -279,3 +279,7 @@ docs/archive/
 docker/archive/
 logs/archive/
 results/archive/.claude/settings.local.json
+
+# Backup directories may contain secrets
+data/backups/**/.env
+data/backups/**/env/

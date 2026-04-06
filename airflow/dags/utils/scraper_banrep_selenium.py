@@ -195,7 +195,7 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
             WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
-        except:
+        except Exception:
             logger.error("Page did not load properly")
             return []
 
@@ -226,7 +226,7 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
                         btn.click()
                         time.sleep(3)
                         break
-                    except:
+                    except Exception:
                         ActionChains(driver).move_to_element(btn).click().perform()
                         time.sleep(3)
                         break
@@ -241,7 +241,7 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
                         parent.click()
                         time.sleep(3)
                         break
-                    except:
+                    except Exception:
                         pass
 
         except Exception as e:
@@ -294,7 +294,7 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
                     # Skip if value is not numeric
                     try:
                         valor = float(valor_str)
-                    except:
+                    except Exception:
                         continue
 
                     # Parse date - BanRep uses YYYY/MM/DD format
@@ -305,14 +305,14 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
                         try:
                             fecha = datetime.strptime(fecha_str, fmt).date()
                             break
-                        except:
+                        except Exception:
                             continue
 
                     # Try pandas for more flexible parsing
                     if fecha is None:
                         try:
                             fecha = pd.to_datetime(fecha_str).date()
-                        except:
+                        except Exception:
                             continue
 
                     if fecha is None:
@@ -355,7 +355,7 @@ def scrape_banrep_serie(driver, serie_config: dict, days: int = 60, download_dir
                 screenshot_path = f"/tmp/banrep_{serie_id}_debug.png"
                 driver.save_screenshot(screenshot_path)
                 logger.info(f"Debug screenshot saved: {screenshot_path}")
-            except:
+            except Exception:
                 pass
 
         return data
@@ -401,7 +401,7 @@ def fetch_from_datos_gov(serie_name: str) -> list:
                     fecha = pd.to_datetime(item.get('vigenciadesde', item.get('fecha'))).date()
                     valor = float(item.get('valor', 0))
                     result.append({'fecha': fecha, 'valor': valor})
-                except:
+                except Exception:
                     continue
 
             logger.info(f"datos.gov.co: Found {len(result)} records for {serie_name}")

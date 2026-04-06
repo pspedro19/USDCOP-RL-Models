@@ -545,7 +545,7 @@ class PostgresNotifySensorBase(BaseSensorOperator):
                 cur.execute(f"UNLISTEN {self.channel};")
                 cur.close()
                 self._listen_conn.close()
-            except:
+            except Exception:
                 pass
             self._listen_conn = None
 

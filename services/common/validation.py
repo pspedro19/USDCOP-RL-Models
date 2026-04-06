@@ -25,8 +25,11 @@ import re
 # CONSTANTS (import from SSOT where applicable)
 # =============================================================================
 
-# Import session length from SSOT (REQUIRED - no fallback)
-from src.core.constants import BARS_PER_SESSION
+# Import session length from SSOT (with fallback for containerized services)
+try:
+    from src.core.constants import BARS_PER_SESSION
+except ImportError:
+    BARS_PER_SESSION = 60  # 5h session / 5min bars = 60 bars
 
 # =============================================================================
 # SSOT IMPORTS - Issue 2.6 Remediation (2026-01-18)

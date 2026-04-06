@@ -63,6 +63,7 @@ adaptive_stops:
   hard_stop_min_pct: 0.01     # 1% minimo (mercados tranquilos)
   hard_stop_max_pct: 0.03     # 3% maximo (mercados volatiles)
   tp_ratio: 0.5               # TP = HS * 0.5
+  effective_portfolio_cap_pct: 0.035  # v3.0: max portfolio loss per trade = 3.5%
 
   # Ejemplos (vol_multiplier=2.0):
   # vol_ann=10% -> HS=2.81%, TP=1.41%
@@ -132,6 +133,35 @@ guardrails:
     action: "pause_and_alert"
 
 # ============================================================================
+# Dynamic leverage: scale down during drawdowns, restore on recovery
+# ============================================================================
+dynamic_leverage:
+  enabled: true
+  lookback_weeks: 8            # Rolling window for WR calculation
+  wr_full: 60.0                # WR >= 60% -> full leverage (1.0x scale)
+  wr_half: 40.0                # WR 40-60% -> ~50% leverage
+  wr_pause: 30.0               # WR < 30% -> min leverage (25% scale)
+  dd_reduction_threshold: 6.0  # DD > 6% -> halve leverage on top
+
+# ============================================================================
+# Retraining methodology (MUST match backtest)
+# ============================================================================
+retraining:
+  frequency: "weekly"          # Every Monday, expanding window from 2020
+  comment: "Monthly retraining is DEPRECATED (v1.1.0 bug). Weekly since v1.1.1."
+
+# ============================================================================
+# Regime gate: DO NOT trade in mean-reverting markets
+# ============================================================================
+regime_gate:
+  enabled: true
+  hurst_lookback: 60           # Days for Hurst R/S calculation
+  hurst_trending: 0.52         # v3.0: H > 0.52 = trending (captures 2025 H=0.532)
+  hurst_mean_rev: 0.42         # v3.0: H < 0.42 = mean-reverting (captures 2026 Q1 H=0.28)
+  sizing_indeterminate: 0.40   # v3.0: 40% sizing when regime unclear
+  sizing_mean_rev: 0.0         # 0% = do not trade
+
+# ============================================================================
 # Decision gates (semana 15 de paper trading)
 # ============================================================================
 gates:
@@ -161,8 +191,10 @@ models:
         max_iter: 300
 
   ensemble:
-    method: "mean"             # Promedio simple de 2 modelos
+    method: "mean"             # Promedio simple de modelos
     target: "ln(close[t+5]/close[t])"
+
+  use_xgboost: true            # v2.0: add XGBoost to ensemble (Ridge+BR+XGB)
 
 # ============================================================================
 # Features (21, identicas a Track A)

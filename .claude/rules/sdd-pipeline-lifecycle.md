@@ -80,7 +80,7 @@ manifest and spawns the correct pipeline. On approve, deploy fires automatically
 
 | Strategy | Script | Config YAML |
 |----------|--------|-------------|
-| Smart Simple v1.1 | `scripts/train_and_export_smart_simple.py` | `config/execution/smart_simple_v1.yaml` |
+| Smart Simple v2.0 | `scripts/train_and_export_smart_simple.py` | `config/execution/smart_simple_v1.yaml` |
 | H1 Forecast + VT + Trail | `scripts/generate_weekly_forecasts.py` | `config/execution/smart_executor_v1.yaml` |
 
 ---
@@ -106,7 +106,7 @@ and dashboard components, see `sdd-approval-spec.md`.
 
 | Strategy | Monitor DAG | Schedule |
 |----------|-------------|----------|
-| Smart Simple v1.1 (H5) | `forecast_h5_l6_weekly_monitor.py` | Fri 14:30 COT |
+| Smart Simple v2.0 (H5) | `forecast_h5_l6_weekly_monitor.py` | Fri 14:30 COT |
 | Forecast VT+Trail (H1) | `forecast_h1_l6_paper_monitor.py` | Mon-Fri 19:00 COT |
 
 ### Full Weekly DAG Schedule

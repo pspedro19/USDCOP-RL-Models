@@ -895,7 +895,7 @@ class BanRepBOPExtractionStrategy(ConfigurableExtractor):
                     driver.execute_script('arguments[0].click();', el)
                     logger.info(f"[BanRep-BOP] Clicked: {text[:40]}")
                     return True
-                except:
+                except Exception:
                     pass
         except Exception as e:
             logger.warning(f"[BanRep-BOP] Could not click '{text}': {e}")

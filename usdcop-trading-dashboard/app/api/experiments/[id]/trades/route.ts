@@ -13,12 +13,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 import { protectApiRoute } from '@/lib/auth/api-auth';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
 // Type for a backtest trade from database
 interface BacktestTrade {
