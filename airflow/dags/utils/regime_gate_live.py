@@ -9,6 +9,7 @@ Mirrors src/forecasting/regime_gate.py logic for DAG context.
 """
 
 import logging
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ def compute_hurst_rs(returns, max_k=20):
     for k in range(10, min(max_k + 1, N // 2)):
         rs_vals = []
         for start in range(0, N - k, k):
-            chunk = returns[start:start + k]
+            chunk = returns[start : start + k]
             mean_c = np.mean(chunk)
             Y = np.cumsum(chunk - mean_c)
             R = np.max(Y) - np.min(Y)
@@ -75,7 +76,8 @@ def compute_regime_from_db(conn, lookback_days=60, symbol="USD/COP"):
     """
     try:
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(
+            """
             SELECT close FROM (
                 SELECT DISTINCT ON (time::date) time, close
                 FROM usdcop_m5_ohlcv
@@ -83,7 +85,9 @@ def compute_regime_from_db(conn, lookback_days=60, symbol="USD/COP"):
                 ORDER BY time::date DESC, time DESC
                 LIMIT %s
             ) sub ORDER BY time ASC
-        """, (symbol, lookback_days + 5))
+        """,
+            (symbol, lookback_days + 5),
+        )
 
         rows = cur.fetchall()
         cur.close()

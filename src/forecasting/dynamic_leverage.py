@@ -9,21 +9,20 @@ Config lives in smart_simple_v1.yaml under `dynamic_leverage`.
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
 class DynamicLeverageConfig:
     enabled: bool = True
     lookback_weeks: int = 8
-    wr_full: float = 60.0       # WR >= 60% -> full leverage
-    wr_half: float = 40.0       # WR 40-60% -> 50% leverage
-    wr_pause: float = 30.0      # WR < 30% -> min leverage (25%)
+    wr_full: float = 60.0  # WR >= 60% -> full leverage
+    wr_half: float = 40.0  # WR 40-60% -> 50% leverage
+    wr_pause: float = 30.0  # WR < 30% -> min leverage (25%)
     dd_reduction_threshold: float = 6.0  # DD > 6% -> halve leverage
 
 
 def compute_leverage_adjustment(
-    recent_pnls: List[float],
+    recent_pnls: list[float],
     current_dd_pct: float,
     config: DynamicLeverageConfig,
 ) -> float:

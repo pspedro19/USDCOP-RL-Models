@@ -13,27 +13,26 @@ The signal adapts its confirmation requirements to the regime:
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
 
 class SignalConfidence(Enum):
-    CONFIRMED = "confirmed"        # Multi-horizon alignment in trending
-    UNCONFIRMED = "unconfirmed"    # Primary signal only, no confirmation
-    ALIGNED = "aligned"            # All 3 horizons agree in transition
-    SKIP = "skip"                  # Mixed signals or regime blocked
+    CONFIRMED = "confirmed"  # Multi-horizon alignment in trending
+    UNCONFIRMED = "unconfirmed"  # Primary signal only, no confirmation
+    ALIGNED = "aligned"  # All 3 horizons agree in transition
+    SKIP = "skip"  # Mixed signals or regime blocked
 
 
 @dataclass
 class MomentumSignal:
-    direction: Optional[int]       # +1 (LONG), -1 (SHORT), None (skip)
+    direction: int | None  # +1 (LONG), -1 (SHORT), None (skip)
     confidence: SignalConfidence
-    sizing_multiplier: float       # 1.0 (full), 0.6 (unconfirmed), 0.4 (transition)
+    sizing_multiplier: float  # 1.0 (full), 0.6 (unconfirmed), 0.4 (transition)
     ret_10d: float
     ret_20d: float
     ret_50d: float
-    regime: str                    # For logging
+    regime: str  # For logging
 
 
 def compute_momentum_signal(
@@ -64,7 +63,9 @@ def compute_momentum_signal(
             direction=None,
             confidence=SignalConfidence.SKIP,
             sizing_multiplier=0.0,
-            ret_10d=ret_10d, ret_20d=ret_20d, ret_50d=ret_50d,
+            ret_10d=ret_10d,
+            ret_20d=ret_20d,
+            ret_50d=ret_50d,
             regime=regime,
         )
 
@@ -75,7 +76,9 @@ def compute_momentum_signal(
                 direction=sig_20d,
                 confidence=SignalConfidence.CONFIRMED,
                 sizing_multiplier=1.0,
-                ret_10d=ret_10d, ret_20d=ret_20d, ret_50d=ret_50d,
+                ret_10d=ret_10d,
+                ret_20d=ret_20d,
+                ret_50d=ret_50d,
                 regime=regime,
             )
         else:
@@ -83,7 +86,9 @@ def compute_momentum_signal(
                 direction=sig_20d,
                 confidence=SignalConfidence.UNCONFIRMED,
                 sizing_multiplier=0.6,
-                ret_10d=ret_10d, ret_20d=ret_20d, ret_50d=ret_50d,
+                ret_10d=ret_10d,
+                ret_20d=ret_20d,
+                ret_50d=ret_50d,
                 regime=regime,
             )
 
@@ -93,7 +98,9 @@ def compute_momentum_signal(
             direction=sig_20d,
             confidence=SignalConfidence.ALIGNED,
             sizing_multiplier=0.4,
-            ret_10d=ret_10d, ret_20d=ret_20d, ret_50d=ret_50d,
+            ret_10d=ret_10d,
+            ret_20d=ret_20d,
+            ret_50d=ret_50d,
             regime=regime,
         )
     else:
@@ -101,6 +108,8 @@ def compute_momentum_signal(
             direction=None,
             confidence=SignalConfidence.SKIP,
             sizing_multiplier=0.0,
-            ret_10d=ret_10d, ret_20d=ret_20d, ret_50d=ret_50d,
+            ret_10d=ret_10d,
+            ret_20d=ret_20d,
+            ret_50d=ret_50d,
             regime=regime,
         )

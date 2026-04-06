@@ -8,14 +8,13 @@ Mirrors src/forecasting/dynamic_leverage.py for DAG context.
 """
 
 import logging
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-def compute_leverage_scaler(rolling_wr, current_dd_pct,
-                            wr_full=60.0, wr_half=40.0, wr_pause=30.0,
-                            dd_threshold=6.0):
+def compute_leverage_scaler(
+    rolling_wr, current_dd_pct, wr_full=60.0, wr_half=40.0, wr_pause=30.0, dd_threshold=6.0
+):
     """
     Compute leverage scale factor [0.25, 1.0] from rolling WR and drawdown.
     """
@@ -50,13 +49,16 @@ def compute_dynamic_leverage_from_db(conn, lookback_weeks=8):
         cur = conn.cursor()
 
         # Get recent closed executions
-        cur.execute("""
+        cur.execute(
+            """
             SELECT week_pnl_pct
             FROM forecast_h5_executions
             WHERE status = 'closed' AND week_pnl_pct IS NOT NULL
             ORDER BY signal_date DESC
             LIMIT %s
-        """, (lookback_weeks,))
+        """,
+            (lookback_weeks,),
+        )
 
         rows = cur.fetchall()
         cur.close()
@@ -73,13 +75,15 @@ def compute_dynamic_leverage_from_db(conn, lookback_weeks=8):
         equity = 10000.0
         peak = 10000.0
         for p in reversed(pnls):  # Oldest first
-            equity *= (1 + p)
+            equity *= 1 + p
             peak = max(peak, equity)
         current_dd = (1 - equity / peak) * 100 if peak > 0 else 0
 
         scaler = compute_leverage_scaler(rolling_wr, current_dd)
 
-        logger.info(f"Dynamic leverage: WR={rolling_wr:.1f}%, DD={current_dd:.1f}%, scaler={scaler:.2f}")
+        logger.info(
+            f"Dynamic leverage: WR={rolling_wr:.1f}%, DD={current_dd:.1f}%, scaler={scaler:.2f}"
+        )
         return {
             "rolling_wr": round(rolling_wr, 1),
             "current_dd_pct": round(current_dd, 2),

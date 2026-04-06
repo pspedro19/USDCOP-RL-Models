@@ -12,7 +12,6 @@ Config lives in smart_simple_v1.yaml under `regime_gate`.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
 
 import numpy as np
 
@@ -26,11 +25,11 @@ class RegimeState(Enum):
 @dataclass
 class RegimeGateConfig:
     enabled: bool = True
-    hurst_lookback: int = 60          # Days for Hurst calculation
-    hurst_trending: float = 0.52      # v3.0: H > 0.52 = trending (captures 2025 H=0.532)
-    hurst_mean_rev: float = 0.42      # v3.0: H < 0.42 = mean-reverting (captures 2026 Q1)
+    hurst_lookback: int = 60  # Days for Hurst calculation
+    hurst_trending: float = 0.52  # v3.0: H > 0.52 = trending (captures 2025 H=0.532)
+    hurst_mean_rev: float = 0.42  # v3.0: H < 0.42 = mean-reverting (captures 2026 Q1)
     sizing_indeterminate: float = 0.40  # v3.0: 40% sizing when indeterminate
-    sizing_mean_rev: float = 0.0       # 0% sizing = skip trade
+    sizing_mean_rev: float = 0.0  # 0% sizing = skip trade
 
 
 @dataclass
@@ -60,7 +59,7 @@ def compute_hurst_rs(returns: np.ndarray, max_k: int = 20) -> float:
     for k in range(10, min(max_k + 1, N // 2)):
         rs_vals = []
         for start in range(0, N - k, k):
-            chunk = returns[start:start + k]
+            chunk = returns[start : start + k]
             mean_c = np.mean(chunk)
             Y = np.cumsum(chunk - mean_c)
             R = np.max(Y) - np.min(Y)
@@ -80,7 +79,7 @@ def compute_hurst_rs(returns: np.ndarray, max_k: int = 20) -> float:
 
 
 def classify_regime(
-    daily_returns: List[float],
+    daily_returns: list[float],
     config: RegimeGateConfig,
 ) -> RegimeResult:
     """
@@ -100,7 +99,7 @@ def classify_regime(
             sizing_factor=1.0,
         )
 
-    rets = np.array(daily_returns[-config.hurst_lookback:])
+    rets = np.array(daily_returns[-config.hurst_lookback :])
     if len(rets) < 30:
         return RegimeResult(
             state=RegimeState.INDETERMINATE,
