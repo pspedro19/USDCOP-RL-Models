@@ -39,7 +39,7 @@ circuitbreaker==2.0.0
 prometheus-client==0.19.0
 
 # WebSocket Support (for multi-model-api)
-websockets==12.0
+websockets==16.0
 
 # Server-Sent Events (for trading-api-multi-model SSE streaming)
 sse-starlette==2.0.0
