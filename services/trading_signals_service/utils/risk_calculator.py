@@ -8,7 +8,7 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, Optional, Tuple
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class RiskCalculator:
         entry_price: float,
         stop_loss_price: float,
         max_position_size_pct: float = 0.1
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate position size based on risk management rules.
 
@@ -76,7 +76,7 @@ class RiskCalculator:
         is_long: bool,
         sl_multiplier: float = 2.0,
         tp_multiplier: float = 3.0
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate stop loss and take profit based on ATR.
 
@@ -124,7 +124,7 @@ class RiskCalculator:
         is_long: bool,
         sl_pct: float = 0.02,
         tp_pct: float = 0.03
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate stop loss and take profit based on percentage.
 
@@ -168,7 +168,7 @@ class RiskCalculator:
         take_profit: float,
         position_size: float,
         account_balance: float
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate comprehensive risk metrics for a trade.
 
@@ -226,7 +226,7 @@ class RiskCalculator:
         take_profit: float,
         is_long: bool,
         min_risk_reward: float = 1.5
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Validate if a trade setup meets risk management criteria.
 
@@ -270,7 +270,7 @@ class RiskCalculator:
 
         except Exception as e:
             logger.error(f"Error validating trade: {e}")
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"
 
     @staticmethod
     def calculate_kelly_criterion(

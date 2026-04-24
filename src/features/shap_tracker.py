@@ -21,7 +21,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -78,10 +78,10 @@ class SHAPReport:
     model_path: str
     timestamp: str
     n_samples: int
-    feature_importance: List[FeatureImportance] = field(default_factory=list)
-    action_breakdown: Dict[str, List[Dict[str, float]]] = field(default_factory=dict)
+    feature_importance: list[FeatureImportance] = field(default_factory=list)
+    action_breakdown: dict[str, list[dict[str, float]]] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "model_path": self.model_path,
@@ -110,8 +110,8 @@ class SHAPTracker:
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
-        feature_names: Optional[List[str]] = None,
+        model_path: str | None = None,
+        feature_names: list[str] | None = None,
         n_background_samples: int = 100,
     ):
         """
@@ -133,7 +133,7 @@ class SHAPTracker:
         if not SHAP_AVAILABLE:
             logger.warning("SHAP not available. Install with: pip install shap")
 
-    def load_model(self, model_path: Optional[str] = None) -> None:
+    def load_model(self, model_path: str | None = None) -> None:
         """
         Load model for SHAP analysis.
 
@@ -177,8 +177,8 @@ class SHAPTracker:
     def calculate_importance(
         self,
         observations: np.ndarray,
-        background_data: Optional[np.ndarray] = None,
-    ) -> List[FeatureImportance]:
+        background_data: np.ndarray | None = None,
+    ) -> list[FeatureImportance]:
         """
         Calculate feature importance using SHAP values.
 
@@ -245,7 +245,7 @@ class SHAPTracker:
 
         return importances
 
-    def get_action_breakdown(self) -> Dict[str, List[Dict[str, float]]]:
+    def get_action_breakdown(self) -> dict[str, list[dict[str, float]]]:
         """
         Get per-action feature importance breakdown.
 
@@ -278,7 +278,7 @@ class SHAPTracker:
     def generate_report(
         self,
         observations: np.ndarray,
-        background_data: Optional[np.ndarray] = None,
+        background_data: np.ndarray | None = None,
     ) -> SHAPReport:
         """
         Generate comprehensive SHAP report.
@@ -304,8 +304,8 @@ class SHAPTracker:
     def save_report(
         self,
         output_path: str,
-        observations: Optional[np.ndarray] = None,
-        background_data: Optional[np.ndarray] = None,
+        observations: np.ndarray | None = None,
+        background_data: np.ndarray | None = None,
     ) -> Path:
         """
         Generate and save SHAP report to file.
@@ -341,7 +341,7 @@ class SHAPTracker:
         logger.info(f"SHAP report saved to {output_path}")
         return output_path
 
-    def _get_importance_from_cached(self) -> List[FeatureImportance]:
+    def _get_importance_from_cached(self) -> list[FeatureImportance]:
         """Get importance from cached SHAP values."""
         all_shap = np.array(self._shap_values)
         mean_abs_shap = np.abs(all_shap).mean(axis=(0, 1))

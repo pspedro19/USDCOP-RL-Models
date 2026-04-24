@@ -8,8 +8,9 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Any
+
 import numpy as np
 from database.postgres_client import PostgresClient
 
@@ -22,7 +23,7 @@ class PerformanceAnalyzer:
     def __init__(self, db_client: PostgresClient):
         self.db = db_client
 
-    def get_models_health_status(self) -> Dict[str, Any]:
+    def get_models_health_status(self) -> dict[str, Any]:
         """
         Get health status for all active models.
 
@@ -68,7 +69,7 @@ class PerformanceAnalyzer:
             'models': model_health
         }
 
-    def _analyze_model_health(self, model_stats: Dict) -> Dict[str, Any]:
+    def _analyze_model_health(self, model_stats: dict) -> dict[str, Any]:
         """
         Analyze health status for a single model.
 
@@ -187,7 +188,7 @@ class PerformanceAnalyzer:
         self,
         model_id: str,
         days: int = 7
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get performance trends over time.
 
@@ -257,7 +258,7 @@ class PerformanceAnalyzer:
             }
         }
 
-    def _calculate_trend(self, values: List[float]) -> str:
+    def _calculate_trend(self, values: list[float]) -> str:
         """
         Calculate trend direction (improving, declining, stable).
 
@@ -294,7 +295,7 @@ class PerformanceAnalyzer:
     def get_model_comparison(
         self,
         window: str = '24h'
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Compare performance across all models.
 

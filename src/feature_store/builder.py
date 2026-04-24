@@ -26,11 +26,11 @@ import warnings
 
 # Import from canonical location
 from .builders import (
-    CanonicalFeatureBuilder,
     BuilderContext,
+    CanonicalFeatureBuilder,
+    FeatureCalculationError,
     NormStatsNotFoundError,
     ObservationDimensionError,
-    FeatureCalculationError,
 )
 
 # Alias for backward compatibility
@@ -51,10 +51,10 @@ def __getattr__(name):
 
 
 __all__ = [
-    "FeatureBuilder",
-    "CanonicalFeatureBuilder",
     "BuilderContext",
+    "CanonicalFeatureBuilder",
+    "FeatureBuilder",
+    "FeatureCalculationError",
     "NormStatsNotFoundError",
     "ObservationDimensionError",
-    "FeatureCalculationError",
 ]

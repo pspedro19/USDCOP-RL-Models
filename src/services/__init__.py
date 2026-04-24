@@ -18,8 +18,8 @@ from src.services.backtest_feature_builder import (
 # NRT Services (lazy import to avoid asyncpg dependency if not needed)
 try:
     from src.services.l1_nrt_data_service import (
-        L1NRTDataService,
         L1NRTConfig,
+        L1NRTDataService,
         L1NRTError,
         NormStatsHashMismatchError,
     )
@@ -31,8 +31,8 @@ except ImportError:
 
 try:
     from src.services.l5_nrt_inference_service import (
-        L5NRTInferenceService,
         L5NRTConfig,
+        L5NRTInferenceService,
     )
 except ImportError:
     L5NRTInferenceService = None  # type: ignore

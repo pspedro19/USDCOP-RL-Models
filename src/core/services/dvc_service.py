@@ -19,18 +19,15 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-import json
 import logging
-import os
 import subprocess
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Protocol
 
 # SSOT import for hash utilities
 from src.utils.hash_utils import compute_file_hash as _compute_file_hash_ssot
-from typing import Dict, List, Optional, Protocol, Union
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +39,11 @@ logger = logging.getLogger(__name__)
 class DVCRemote(Protocol):
     """Protocol for DVC remote storage backends."""
 
-    def push(self, paths: List[Path]) -> bool:
+    def push(self, paths: list[Path]) -> bool:
         """Push files to remote storage."""
         ...
 
-    def pull(self, paths: List[Path]) -> bool:
+    def pull(self, paths: list[Path]) -> bool:
         """Pull files from remote storage."""
         ...
 
@@ -106,14 +103,14 @@ class DVCResult:
 
     success: bool
     operation: str
-    paths: List[str]
-    tag: Optional[str] = None
-    remote: Optional[str] = None
-    hash: Optional[str] = None
-    error: Optional[str] = None
-    stdout: Optional[str] = None
+    paths: list[str]
+    tag: str | None = None
+    remote: str | None = None
+    hash: str | None = None
+    error: str | None = None
+    stdout: str | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for logging."""
         return {
             "success": self.success,
@@ -184,7 +181,7 @@ class DVCService:
 
     def _run_command(
         self,
-        args: List[str],
+        args: list[str],
         check: bool = True,
     ) -> subprocess.CompletedProcess:
         """Run DVC command with proper error handling."""
@@ -208,7 +205,7 @@ class DVCService:
         """Compute SHA256 hash of a file. SSOT: Delegates to src.utils.hash_utils"""
         return _compute_file_hash_ssot(path).full_hash
 
-    def add(self, path: Union[Path, str]) -> DVCResult:
+    def add(self, path: Path | str) -> DVCResult:
         """
         Add file or directory to DVC tracking.
 
@@ -249,7 +246,7 @@ class DVCService:
                 error=e.stderr,
             )
 
-    def push(self, paths: Optional[List[Path]] = None) -> DVCResult:
+    def push(self, paths: list[Path] | None = None) -> DVCResult:
         """
         Push tracked files to remote storage.
 
@@ -285,9 +282,9 @@ class DVCService:
 
     def add_and_push(
         self,
-        path: Union[Path, str],
-        tag: Optional[DVCTag] = None,
-        message: Optional[str] = None,
+        path: Path | str,
+        tag: DVCTag | None = None,
+        message: str | None = None,
     ) -> DVCResult:
         """
         Add file to DVC and push to remote in one operation.
@@ -342,8 +339,8 @@ class DVCService:
     def _git_add_and_commit(
         self,
         dvc_file: Path,
-        tag: Optional[DVCTag],
-        message: Optional[str],
+        tag: DVCTag | None,
+        message: str | None,
     ) -> None:
         """Add .dvc file to git and commit."""
         try:
@@ -383,7 +380,7 @@ class DVCService:
         except subprocess.CalledProcessError as e:
             logger.warning(f"Git tag failed: {e.stderr}")
 
-    def checkout(self, tag: Optional[str] = None, paths: Optional[List[Path]] = None) -> DVCResult:
+    def checkout(self, tag: str | None = None, paths: list[Path] | None = None) -> DVCResult:
         """
         Checkout specific version of tracked files.
 
@@ -428,7 +425,7 @@ class DVCService:
                 error=str(e),
             )
 
-    def pull(self, paths: Optional[List[Path]] = None) -> DVCResult:
+    def pull(self, paths: list[Path] | None = None) -> DVCResult:
         """
         Pull tracked files from remote storage.
 
@@ -462,7 +459,7 @@ class DVCService:
                 error=e.stderr,
             )
 
-    def get_current_tag(self) -> Optional[str]:
+    def get_current_tag(self) -> str | None:
         """Get current DVC-related git tag if any."""
         try:
             result = subprocess.run(
@@ -477,7 +474,7 @@ class DVCService:
             pass
         return None
 
-    def list_tags(self, prefix: str = "dataset-exp") -> List[str]:
+    def list_tags(self, prefix: str = "dataset-exp") -> list[str]:
         """List all git tags matching prefix."""
         try:
             result = subprocess.run(
@@ -497,7 +494,7 @@ class DVCService:
 # =============================================================================
 
 def create_dvc_service(
-    project_root: Optional[Path] = None,
+    project_root: Path | None = None,
     remote: str = "minio",
     auto_commit: bool = False,
 ) -> DVCService:
@@ -524,8 +521,8 @@ def create_dvc_service(
 
 
 __all__ = [
+    "DVCResult",
     "DVCService",
     "DVCTag",
-    "DVCResult",
     "create_dvc_service",
 ]

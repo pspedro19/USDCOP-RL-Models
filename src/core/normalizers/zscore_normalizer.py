@@ -19,13 +19,14 @@ Configuration:
 
 import json
 import math
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from typing import Dict, Optional, Union, Any
 
 # Import clip bounds from SSOT
-from src.core.constants import CLIP_MIN, CLIP_MAX
+from src.core.constants import CLIP_MAX, CLIP_MIN
 
 # Default path relative to project root
 DEFAULT_STATS_PATH = "config/norm_stats.json"
@@ -57,7 +58,7 @@ class ZScoreNormalizer:
     def __init__(
         self,
         stats_path: str = DEFAULT_STATS_PATH,
-        base_path: Optional[str] = None,
+        base_path: str | None = None,
         clip_values: bool = True
     ):
         """
@@ -80,7 +81,7 @@ class ZScoreNormalizer:
         self._stats = self._load_stats()
 
         # Cache for quick access
-        self._stats_cache: Dict[str, tuple] = {}
+        self._stats_cache: dict[str, tuple] = {}
         self._build_cache()
 
     def _find_project_root(self) -> Path:
@@ -111,7 +112,7 @@ class ZScoreNormalizer:
             return p
         return self._base_path / path
 
-    def _load_stats(self) -> Dict[str, Dict[str, float]]:
+    def _load_stats(self) -> dict[str, dict[str, float]]:
         """
         Load normalization statistics from JSON file.
 
@@ -128,7 +129,7 @@ class ZScoreNormalizer:
                 f"Searched from base: {self._base_path}"
             )
 
-        with open(self._stats_path, 'r', encoding='utf-8') as f:
+        with open(self._stats_path, encoding='utf-8') as f:
             stats = json.load(f)
 
         # Validate format
@@ -160,8 +161,8 @@ class ZScoreNormalizer:
     def normalize(
         self,
         feature_name: str,
-        value: Union[float, np.ndarray, pd.Series]
-    ) -> Union[float, np.ndarray, pd.Series]:
+        value: float | np.ndarray | pd.Series
+    ) -> float | np.ndarray | pd.Series:
         """
         Normalize a value using z-score normalization.
 
@@ -206,8 +207,8 @@ class ZScoreNormalizer:
     def denormalize(
         self,
         feature_name: str,
-        z_value: Union[float, np.ndarray, pd.Series]
-    ) -> Union[float, np.ndarray, pd.Series]:
+        z_value: float | np.ndarray | pd.Series
+    ) -> float | np.ndarray | pd.Series:
         """
         Denormalize a z-score back to original scale.
 
@@ -257,7 +258,7 @@ class ZScoreNormalizer:
         # Default for unknown features
         return (0.0, 1.0)
 
-    def get_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_stats(self, feature_name: str) -> dict[str, float]:
         """
         Get full statistics for a feature.
 
@@ -294,8 +295,8 @@ class ZScoreNormalizer:
 
     def normalize_dict(
         self,
-        features: Dict[str, float]
-    ) -> Dict[str, float]:
+        features: dict[str, float]
+    ) -> dict[str, float]:
         """
         Normalize a dictionary of feature values.
 
@@ -312,8 +313,8 @@ class ZScoreNormalizer:
 
     def denormalize_dict(
         self,
-        features: Dict[str, float]
-    ) -> Dict[str, float]:
+        features: dict[str, float]
+    ) -> dict[str, float]:
         """
         Denormalize a dictionary of z-score values.
 
@@ -328,7 +329,7 @@ class ZScoreNormalizer:
             for name, value in features.items()
         }
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Get normalizer configuration parameters.
 
@@ -353,7 +354,7 @@ class ZScoreNormalizer:
 # Factory function
 def create_zscore_normalizer(
     stats_path: str = DEFAULT_STATS_PATH,
-    base_path: Optional[str] = None
+    base_path: str | None = None
 ) -> ZScoreNormalizer:
     """
     Factory function to create a ZScoreNormalizer instance.

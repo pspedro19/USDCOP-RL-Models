@@ -9,19 +9,20 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-import time
 import logging
-from typing import Dict, Any, Optional
+import time
 from datetime import datetime
 from threading import Lock
+from typing import Any
 
 import numpy as np
 
 from src.core.interfaces.inference import (
-    IPredictor,
     InferenceResult,
+    IPredictor,
     SignalType,
 )
+
 from .model_loader import ONNXModelLoader
 
 logger = logging.getLogger(__name__)
@@ -133,7 +134,7 @@ class ONNXPredictor(IPredictor):
         return self._inference_count
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get inference statistics."""
         return {
             "model_name": self.model_name,

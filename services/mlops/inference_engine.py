@@ -13,14 +13,13 @@ Features:
 - Performance metrics tracking
 """
 
+import logging
 import os
 import time
-import logging
-from typing import Optional, Dict, List, Tuple, Any
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
-import json
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +29,7 @@ except ImportError:
     ort = None
     logging.warning("onnxruntime not installed. Install with: pip install onnxruntime")
 
-from mlops.config import MLOpsConfig, get_config, SignalType, ModelConfig
+from mlops.config import MLOpsConfig, ModelConfig, SignalType, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +39,12 @@ class InferenceResult:
     """Result of model inference."""
     signal: SignalType
     confidence: float
-    action_probs: Dict[str, float]
+    action_probs: dict[str, float]
     model_name: str
     latency_ms: float
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal": self.signal.value,
             "confidence": self.confidence,
@@ -61,13 +60,13 @@ class EnsembleResult:
     """Result of ensemble inference."""
     signal: SignalType
     confidence: float
-    action_probs: Dict[str, float]
-    individual_results: List[InferenceResult]
+    action_probs: dict[str, float]
+    individual_results: list[InferenceResult]
     ensemble_strategy: str
     total_latency_ms: float
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal": self.signal.value,
             "confidence": self.confidence,
@@ -84,14 +83,14 @@ class ModelSession:
 
     def __init__(self, config: ModelConfig):
         self.config = config
-        self.session: Optional[ort.InferenceSession] = None
+        self.session: ort.InferenceSession | None = None
         self.input_name: str = ""
-        self.output_names: List[str] = []
+        self.output_names: list[str] = []
         self._lock = Lock()
         self._inference_count = 0
         self._total_latency_ms = 0.0
 
-    def load(self, providers: List[str] = None):
+    def load(self, providers: list[str] = None):
         """Load the ONNX model."""
         if ort is None:
             raise ImportError("onnxruntime not installed")
@@ -189,7 +188,7 @@ class ModelSession:
         return self._total_latency_ms / self._inference_count
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         return {
             "model_name": self.config.name,
             "inference_count": self._inference_count,
@@ -210,13 +209,13 @@ class InferenceEngine:
         print(f"Signal: {result.signal}, Confidence: {result.confidence}")
     """
 
-    def __init__(self, config: Optional[MLOpsConfig] = None):
+    def __init__(self, config: MLOpsConfig | None = None):
         self.config = config or get_config()
-        self.models: Dict[str, ModelSession] = {}
+        self.models: dict[str, ModelSession] = {}
         self._loaded = False
         self._lock = Lock()
 
-    def load_models(self, providers: List[str] = None):
+    def load_models(self, providers: list[str] = None):
         """Load all configured models."""
         providers = providers or ['CPUExecutionProvider']
 
@@ -268,7 +267,7 @@ class InferenceEngine:
     def predict(
         self,
         observation: np.ndarray,
-        model_name: Optional[str] = None
+        model_name: str | None = None
     ) -> InferenceResult:
         """
         Run inference with a specific model.
@@ -339,8 +338,8 @@ class InferenceEngine:
 
     def _weighted_average(
         self,
-        results: List[InferenceResult]
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult]
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Combine results using weighted average of probabilities."""
         total_weight = 0.0
         combined = {"HOLD": 0.0, "BUY": 0.0, "SELL": 0.0}
@@ -369,8 +368,8 @@ class InferenceEngine:
 
     def _majority_vote(
         self,
-        results: List[InferenceResult]
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult]
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Combine results using majority vote."""
         votes = {"HOLD": 0, "BUY": 0, "SELL": 0}
 
@@ -396,10 +395,10 @@ class InferenceEngine:
         return self._loaded
 
     @property
-    def model_names(self) -> List[str]:
+    def model_names(self) -> list[str]:
         return list(self.models.keys())
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get inference statistics for all models."""
         return {
             "loaded": self._loaded,
@@ -407,7 +406,7 @@ class InferenceEngine:
             "models": {name: model.stats for name, model in self.models.items()},
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Run health check on inference engine."""
         health = {
             "status": "healthy" if self._loaded else "unhealthy",
@@ -435,7 +434,7 @@ class InferenceEngine:
 
 
 # Global engine instance
-_engine: Optional[InferenceEngine] = None
+_engine: InferenceEngine | None = None
 
 
 def get_inference_engine() -> InferenceEngine:
@@ -446,7 +445,7 @@ def get_inference_engine() -> InferenceEngine:
     return _engine
 
 
-def initialize_engine(config: Optional[MLOpsConfig] = None) -> InferenceEngine:
+def initialize_engine(config: MLOpsConfig | None = None) -> InferenceEngine:
     """Initialize and load the global inference engine."""
     global _engine
     _engine = InferenceEngine(config)

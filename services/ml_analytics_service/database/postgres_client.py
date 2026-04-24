@@ -8,11 +8,12 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-import psycopg2
+from contextlib import contextmanager
+from typing import Any
+
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
-from contextlib import contextmanager
+
 from config import DATABASE_CONFIG
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class PostgresClient:
             max_connections: Maximum pool size
         """
         self.config = DATABASE_CONFIG.to_dict()
-        self._pool: Optional[pool.ThreadedConnectionPool] = None
+        self._pool: pool.ThreadedConnectionPool | None = None
         self.min_connections = min_connections
         self.max_connections = max_connections
         self._initialize_pool()
@@ -73,9 +74,9 @@ class PostgresClient:
     def execute_query(
         self,
         query: str,
-        params: Optional[tuple] = None,
+        params: tuple | None = None,
         fetch: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Execute a SQL query and return results as list of dictionaries.
 
@@ -97,8 +98,8 @@ class PostgresClient:
     def execute_single(
         self,
         query: str,
-        params: Optional[tuple] = None
-    ) -> Optional[Dict[str, Any]]:
+        params: tuple | None = None
+    ) -> dict[str, Any] | None:
         """
         Execute a query and return single result as dictionary.
 
@@ -120,7 +121,7 @@ class PostgresClient:
     def execute_scalar(
         self,
         query: str,
-        params: Optional[tuple] = None
+        params: tuple | None = None
     ) -> Any:
         """
         Execute a query and return single scalar value.
@@ -132,19 +133,18 @@ class PostgresClient:
         Returns:
             Single value
         """
-        with self.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query, params)
-                result = cur.fetchone()
-                return result[0] if result else None
+        with self.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(query, params)
+            result = cur.fetchone()
+            return result[0] if result else None
 
     def get_inference_data(
         self,
-        model_id: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
+        model_id: str | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
         limit: int = 1000
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get inference data from dw.fact_rl_inference table.
 
@@ -207,10 +207,10 @@ class PostgresClient:
     def get_ohlcv_data(
         self,
         symbol: str = 'USD/COP',
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
         limit: int = 1000
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get OHLCV data from usdcop_m5_ohlcv table.
 

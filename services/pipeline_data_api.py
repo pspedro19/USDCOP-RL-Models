@@ -15,30 +15,29 @@ API para exponer datos de todas las capas del pipeline L0-L6:
 Cada capa expone endpoints específicos para acceder a sus datos.
 """
 
+import io
+import json
+import logging
+import os
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import psycopg2
+import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-import os
-import logging
-from pydantic import BaseModel
-import uvicorn
-import json
-import io
 
 # Import MinIO manifest reader
 from minio_manifest_reader import (
+    get_all_files_from_manifest,
+    get_manifest_metadata,
+    read_file_from_minio,
     read_l5_manifest,
     read_l6_manifest,
-    read_file_from_minio,
-    get_all_files_from_manifest,
-    get_manifest_metadata
 )
+from psycopg2.extras import RealDictCursor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,9 +76,9 @@ def get_db_connection():
         return conn
     except Exception as e:
         logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {e!s}")
 
-def execute_query(query: str, params: tuple = None) -> List[Dict]:
+def execute_query(query: str, params: tuple = None) -> list[dict]:
     """Execute query and return list of dicts"""
     conn = get_db_connection()
     try:
@@ -221,8 +220,8 @@ def health_check():
 def get_l0_raw_data(
     limit: int = Query(default=1000, ge=1, le=10000),
     offset: int = Query(default=0, ge=0),
-    start_date: Optional[str] = Query(default=None),
-    end_date: Optional[str] = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
     source: str = Query(default="all", description="postgres, minio, or all")
 ):
     """
@@ -783,7 +782,7 @@ def process_backtest_dataframe(df: pd.DataFrame, split: str) -> dict:
                 "profit_factor": float(
                     df[df['pnl'] > 0]['pnl'].sum() / abs(df[df['pnl'] < 0]['pnl'].sum())
                 ) if 'pnl' in df.columns and (df['pnl'] < 0).any() else 0.0,
-                "total_trades": int(len(df)),
+                "total_trades": len(df),
                 "winning_trades": int((df['pnl'] > 0).sum()) if 'pnl' in df.columns else 0,
                 "losing_trades": int((df['pnl'] < 0).sum()) if 'pnl' in df.columns else 0
             },
@@ -1161,7 +1160,7 @@ if __name__ == "__main__":
 # ==========================================
 
 
-def get_l0_extended_statistics() -> Dict[str, Any]:
+def get_l0_extended_statistics() -> dict[str, Any]:
     """
     Estadísticas extendidas de calidad L0:
     - Cobertura de barras por día (60/60 esperado)
@@ -1302,7 +1301,7 @@ def get_l0_extended():
 # ==========================================
 
 
-def verify_l1_grid_300s() -> Dict[str, Any]:
+def verify_l1_grid_300s() -> dict[str, Any]:
     """
     Verifica que cada barra esté exactamente 300s (5 min) después de la anterior
     dentro de la misma sesión de trading
@@ -1372,7 +1371,7 @@ def get_l1_grid_verification():
 # ==========================================
 
 
-def calculate_forward_ic(df: pd.DataFrame, feature_col: str, horizons: List[int] = [1, 5, 10]) -> Dict[str, float]:
+def calculate_forward_ic(df: pd.DataFrame, feature_col: str, horizons: list[int] = [1, 5, 10]) -> dict[str, float]:
     """
     Calcula Information Coefficient (IC) forward para detectar leakage
     IC = correlation(feature_t, return_t+horizon)
@@ -1468,6 +1467,7 @@ def get_l3_forward_ic(limit: int = 1000):
 # ==========================================
 
 import talib
+
 
 def calculate_all_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """

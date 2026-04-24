@@ -8,14 +8,13 @@ Created: 2025-12-17
 """
 
 import logging
-import time
-from typing import Optional, Dict, Any, Tuple
-import numpy as np
-import pandas as pd
+from typing import Any
 
-from ..models.model_loader import ONNXModelLoader, DummyModelLoader
-from ..models.signal_schema import SignalAction
+import numpy as np
+
 from ..config import get_config
+from ..models.model_loader import ONNXModelLoader
+from ..models.signal_schema import SignalAction
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 class InferenceService:
     """Real-time inference service"""
 
-    def __init__(self, model_loader: Optional[ONNXModelLoader] = None):
+    def __init__(self, model_loader: ONNXModelLoader | None = None):
         """
         Initialize inference service.
 
@@ -61,7 +60,7 @@ class InferenceService:
 
         return success
 
-    def prepare_features(self, market_data: Dict[str, Any]) -> np.ndarray:
+    def prepare_features(self, market_data: dict[str, Any]) -> np.ndarray:
         """
         Prepare features from market data for model input.
 
@@ -134,8 +133,8 @@ class InferenceService:
 
     def predict_action(
         self,
-        market_data: Dict[str, Any]
-    ) -> Tuple[SignalAction, float, float]:
+        market_data: dict[str, Any]
+    ) -> tuple[SignalAction, float, float]:
         """
         Predict trading action from market data.
 
@@ -181,7 +180,7 @@ class InferenceService:
             # Return conservative default
             return SignalAction.HOLD, 0.0, 0.0
 
-    def get_model_info(self) -> Dict[str, Any]:
+    def get_model_info(self) -> dict[str, Any]:
         """Get model information"""
         info = self.model_loader.get_model_info()
         info.update({
@@ -193,7 +192,7 @@ class InferenceService:
         })
         return info
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get inference statistics"""
         return {
             'total_inferences': self.inference_count,

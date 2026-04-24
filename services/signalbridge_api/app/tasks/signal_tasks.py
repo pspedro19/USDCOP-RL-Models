@@ -4,18 +4,18 @@ Signal processing Celery tasks.
 
 import asyncio
 from uuid import UUID
-from celery import shared_task
-from sqlalchemy import select, and_
 
-from app.tasks.celery_app import celery_app
-from app.core.database import SyncSessionLocal
-from app.models import Signal, TradingConfig, ExchangeCredential, Execution
-from app.contracts.signal import SignalAction
-from app.contracts.execution import OrderType, OrderSide, ExecutionStatus
-from app.contracts.exchange import SupportedExchange
-from app.adapters import get_exchange_adapter
-from app.services.vault import vault_service
 import structlog
+from sqlalchemy import and_
+
+from app.adapters import get_exchange_adapter
+from app.contracts.exchange import SupportedExchange
+from app.contracts.execution import ExecutionStatus, OrderSide, OrderType
+from app.contracts.signal import SignalAction
+from app.core.database import SyncSessionLocal
+from app.models import ExchangeCredential, Execution, Signal, TradingConfig
+from app.services.vault import vault_service
+from app.tasks.celery_app import celery_app
 
 logger = structlog.get_logger()
 

@@ -57,12 +57,11 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -77,9 +76,8 @@ except ImportError:
 from src.core.contracts.feature_contract import (
     FEATURE_ORDER,
     FEATURE_ORDER_HASH,
-    OBSERVATION_DIM,
 )
-from src.core.contracts.norm_stats_contract import load_norm_stats, NormStatsContract
+from src.core.contracts.norm_stats_contract import NormStatsContract, load_norm_stats
 
 logger = logging.getLogger(__name__)
 
@@ -147,12 +145,12 @@ class L1NRTDataService:
     """
 
     # Market feature names (first 18, excluding state features)
-    MARKET_FEATURES: Tuple[str, ...] = FEATURE_ORDER[:18]
+    MARKET_FEATURES: tuple[str, ...] = FEATURE_ORDER[:18]
 
     def __init__(
         self,
-        db_pool: "asyncpg.Pool",
-        config: Optional[L1NRTConfig] = None,
+        db_pool: asyncpg.Pool,
+        config: L1NRTConfig | None = None,
     ):
         """
         Initialize L1 NRT Data Service.
@@ -168,12 +166,12 @@ class L1NRTDataService:
         self.config = config or L1NRTConfig()
 
         # State
-        self._norm_stats: Optional[NormStatsContract] = None
-        self._norm_stats_hash: Optional[str] = None
+        self._norm_stats: NormStatsContract | None = None
+        self._norm_stats_hash: str | None = None
         self._feature_order_hash: str = FEATURE_ORDER_HASH
-        self._last_historical_ts: Optional[datetime] = None
+        self._last_historical_ts: datetime | None = None
         self._running: bool = False
-        self._model_id: Optional[str] = None
+        self._model_id: str | None = None
 
         logger.info("L1NRTDataService initialized")
 
@@ -181,7 +179,7 @@ class L1NRTDataService:
     # MODEL APPROVAL HANDLER
     # =========================================================================
 
-    async def on_model_approved(self, payload: Dict[str, Any]) -> None:
+    async def on_model_approved(self, payload: dict[str, Any]) -> None:
         """
         Handle model approval event.
 
@@ -268,7 +266,7 @@ class L1NRTDataService:
             dataset_path: Path to L2 dataset directory containing train.parquet, etc.
         """
         base = Path(dataset_path)
-        dfs: List[pd.DataFrame] = []
+        dfs: list[pd.DataFrame] = []
 
         # Load all splits
         for split in ["train", "val", "test"]:
@@ -370,7 +368,7 @@ class L1NRTDataService:
 
     async def _insert_batch(
         self,
-        rows: List[Tuple],
+        rows: list[tuple],
     ) -> int:
         """Insert a batch of rows to inference_ready_nrt."""
         if not rows:
@@ -392,7 +390,7 @@ class L1NRTDataService:
             )
             return len(rows)
 
-    def _extract_features(self, row: pd.Series) -> Optional[List[float]]:
+    def _extract_features(self, row: pd.Series) -> list[float] | None:
         """
         Extract and normalize 18 market features from a row.
 
@@ -527,7 +525,7 @@ class L1NRTDataService:
             inserted = await self._bulk_upsert_features(features_df, source="nrt")
             logger.info(f"L1: Appended {inserted} new NRT bars")
 
-    def _rows_to_dataframe(self, rows: List) -> pd.DataFrame:
+    def _rows_to_dataframe(self, rows: list) -> pd.DataFrame:
         """Convert asyncpg rows to pandas DataFrame."""
         if not rows:
             return pd.DataFrame()
@@ -647,16 +645,16 @@ class L1NRTDataService:
         return self._running
 
     @property
-    def model_id(self) -> Optional[str]:
+    def model_id(self) -> str | None:
         """Get current model ID."""
         return self._model_id
 
     @property
-    def norm_stats_hash(self) -> Optional[str]:
+    def norm_stats_hash(self) -> str | None:
         """Get current norm_stats hash."""
         return self._norm_stats_hash
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Get service status for health checks."""
         async with self.pool.acquire() as conn:
             count = await conn.fetchval(

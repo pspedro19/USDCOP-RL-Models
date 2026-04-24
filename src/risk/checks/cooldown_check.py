@@ -9,14 +9,14 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from src.core.interfaces.risk import (
-    IRiskCheck,
-    RiskContext,
-    RiskCheckResult,
-    RiskStatus,
     ICooldownManager,
+    IRiskCheck,
+    RiskCheckResult,
+    RiskContext,
+    RiskStatus,
 )
 
 
@@ -30,8 +30,8 @@ class CooldownCheck(IRiskCheck):
 
     def __init__(
         self,
-        cooldown_manager: Optional[ICooldownManager] = None,
-        is_active_fn: Optional[Callable[[], tuple[bool, Optional[int]]]] = None,
+        cooldown_manager: ICooldownManager | None = None,
+        is_active_fn: Callable[[], tuple[bool, int | None]] | None = None,
     ):
         """
         Args:

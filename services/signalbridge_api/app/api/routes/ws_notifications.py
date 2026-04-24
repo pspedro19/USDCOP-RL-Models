@@ -24,23 +24,17 @@ Date: 2026-01-22
 """
 
 import asyncio
-import json
 import logging
 from datetime import datetime
-from typing import Dict, Set, Optional, Any
-from uuid import UUID
+from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
+from app.contracts.execution import ExecutionStatus
 from app.contracts.signal_bridge import (
-    ExecutionNotification,
-    RiskAlertNotification,
-    KillSwitchNotification,
-    WebSocketMessage,
     TradingMode,
 )
-from app.contracts.execution import ExecutionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +58,13 @@ class ConnectionManager:
 
     def __init__(self):
         # user_id -> set of WebSocket connections
-        self._connections: Dict[str, Set[WebSocket]] = {}
+        self._connections: dict[str, set[WebSocket]] = {}
 
         # WebSocket -> set of subscribed topics
-        self._subscriptions: Dict[WebSocket, Set[str]] = {}
+        self._subscriptions: dict[WebSocket, set[str]] = {}
 
         # All active connections
-        self._all_connections: Set[WebSocket] = set()
+        self._all_connections: set[WebSocket] = set()
 
         # Statistics
         self._total_connections = 0
@@ -82,7 +76,7 @@ class ConnectionManager:
         return len(self._all_connections)
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get connection statistics."""
         return {
             "active_connections": self.active_connections,
@@ -371,7 +365,7 @@ async def notify_execution_updated(
     status: ExecutionStatus,
     filled_quantity: float = 0,
     filled_price: float = 0,
-    error_message: Optional[str] = None,
+    error_message: str | None = None,
 ) -> int:
     """Notify about execution status update."""
     message = {
@@ -409,8 +403,8 @@ async def notify_risk_alert(
 
 async def broadcast_kill_switch(
     active: bool,
-    reason: Optional[str] = None,
-    activated_by: Optional[str] = None,
+    reason: str | None = None,
+    activated_by: str | None = None,
 ) -> int:
     """Broadcast kill switch status change to all users."""
     message = {

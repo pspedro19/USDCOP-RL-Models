@@ -21,10 +21,9 @@ Created: 2025-01-14
 """
 
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
 class FeatureCircuitBreakerError(Exception):
     """Raised when circuit breaker is triggered."""
 
-    def __init__(self, nan_ratio: float, affected_features: List[str]):
+    def __init__(self, nan_ratio: float, affected_features: list[str]):
         self.nan_ratio = nan_ratio
         self.affected_features = affected_features
         super().__init__(
@@ -47,9 +46,9 @@ class FeatureCircuitBreakerError(Exception):
 class CircuitBreakerState:
     """Current state of the circuit breaker."""
     is_open: bool = False
-    opened_at: Optional[datetime] = None
+    opened_at: datetime | None = None
     nan_ratio: float = 0.0
-    affected_features: List[str] = field(default_factory=list)
+    affected_features: list[str] = field(default_factory=list)
     consecutive_failures: int = 0
 
 
@@ -87,7 +86,7 @@ class FeatureCircuitBreaker:
             logger.error(f"Circuit breaker: {e}")
     """
 
-    def __init__(self, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, config: CircuitBreakerConfig | None = None):
         """
         Initialize the circuit breaker.
 
@@ -96,7 +95,7 @@ class FeatureCircuitBreaker:
         """
         self.config = config or CircuitBreakerConfig()
         self._state = CircuitBreakerState()
-        self._feature_failure_counts: Dict[str, int] = {}
+        self._feature_failure_counts: dict[str, int] = {}
 
         logger.info(
             f"FeatureCircuitBreaker initialized: "
@@ -104,7 +103,7 @@ class FeatureCircuitBreaker:
             f"cooldown={self.config.cooldown_minutes}min"
         )
 
-    def check(self, features: Dict[str, float]) -> None:
+    def check(self, features: dict[str, float]) -> None:
         """
         Check feature quality and raise if circuit breaker triggered.
 
@@ -190,7 +189,7 @@ class FeatureCircuitBreaker:
         )
         return True
 
-    def _open_circuit(self, nan_ratio: float, affected: List[str]) -> None:
+    def _open_circuit(self, nan_ratio: float, affected: list[str]) -> None:
         """Open the circuit breaker."""
         self._state = CircuitBreakerState(
             is_open=True,
@@ -219,12 +218,12 @@ class FeatureCircuitBreaker:
         """Reset failure count for a feature."""
         self._feature_failure_counts[feature_name] = 0
 
-    def _emit_metrics(self, nan_ratio: float, nan_features: List[str]) -> None:
+    def _emit_metrics(self, nan_ratio: float, nan_features: list[str]) -> None:
         """Emit prometheus metrics."""
         try:
             from services.common.prometheus_metrics import (
-                FEATURE_NAN_RATIO,
                 CIRCUIT_BREAKER_STATE,
+                FEATURE_NAN_RATIO,
             )
             FEATURE_NAN_RATIO.set(nan_ratio)
             CIRCUIT_BREAKER_STATE.set(1 if self._state.is_open else 0)
@@ -236,7 +235,7 @@ class FeatureCircuitBreaker:
         """Check if circuit breaker is currently open."""
         return self._is_in_cooldown()
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """Get current state for debugging/monitoring."""
         return {
             "is_open": self._state.is_open,
@@ -262,11 +261,11 @@ class FeatureCircuitBreaker:
 # SINGLETON INSTANCE
 # =============================================================================
 
-_circuit_breaker: Optional[FeatureCircuitBreaker] = None
+_circuit_breaker: FeatureCircuitBreaker | None = None
 
 
 def get_circuit_breaker(
-    config: Optional[CircuitBreakerConfig] = None
+    config: CircuitBreakerConfig | None = None
 ) -> FeatureCircuitBreaker:
     """Get or create the global circuit breaker instance."""
     global _circuit_breaker

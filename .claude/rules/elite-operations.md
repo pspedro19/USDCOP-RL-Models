@@ -78,8 +78,10 @@ Migration:  048_regime_gate_columns.sql
 **Monday-Friday**:
 ```
 13:00-17:00  OHLCV realtime (every 5 min) + Macro update (hourly)
+13:00-18:00  core_watchdog hourly (8-13 COT): auto-heals stale data, forecasting, analysis
 07:00,12:00,18:00  News daily pipeline (3x UTC = 02:00,07:00,13:00 COT)
 13:15 Mon     H5-L5 Signal (ExternalTaskSensor on H5-L3)
+14:00 Mon     forecast_weekly_generation: regenerates /forecasting CSV + 76 PNGs (~7 min)
 18:00         H1-L5 Inference (model freshness check)
 18:30         H1-L5 Vol-Targeting
 18:35-22:00   H1-L7 Executor (narrowed from 13:00-19:00)
@@ -257,23 +259,46 @@ SELECT COUNT(*) FROM daily_analysis;
 
 ---
 
-## Container Dependencies (Not in Docker Image)
+## Container Dependencies (Baked into Image — fixed 2026-04-16)
 
-These packages must be installed in the Airflow scheduler container after restart:
+All required packages now live in `docker/Dockerfile.airflow-ml` and persist across rebuilds:
 
-```bash
-docker exec usdcop-airflow-scheduler python -m pip install feedparser vaderSentiment
+```dockerfile
+RUN pip install --no-cache-dir \
+    openai==1.54.0 \
+    anthropic==0.39.0 \
+    langgraph==0.2.50 \
+    feedparser==6.0.11 \
+    vaderSentiment==3.3.2
 ```
 
-- `feedparser`: Required by LaRepublica and Portafolio scrapers (RSS parsing)
-- `vaderSentiment`: Required for VADER sentiment scoring (fallback when GDELT tone unavailable)
+Verified imports baked into the Dockerfile verification step. `pip install` at runtime no longer
+needed. To update, edit the Dockerfile and rebuild:
 
-**TODO**: Add these to `requirements.txt` or Dockerfile to persist across container rebuilds.
-
-**After installing**: Restart the Airflow scheduler to clear cached module state:
 ```bash
-docker restart usdcop-airflow-scheduler
+docker compose -f docker-compose.compact.yml build airflow-scheduler
+docker compose -f docker-compose.compact.yml up -d --force-recreate airflow-scheduler airflow-webserver
 ```
+
+## Dashboard Bind-Mount (required for DAG JSON output to reach Next.js frontend)
+
+The `analysis_l8_daily_generation` DAG and `forecast_weekly_generation` DAG write to
+`usdcop-trading-dashboard/public/...`. Scheduler and webserver must bind-mount the host path
+so the Next.js frontend (also on host) sees the generated files:
+
+```yaml
+# docker-compose.compact.yml (airflow-scheduler + airflow-webserver)
+volumes:
+  - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
+  - ./scripts:/opt/airflow/scripts:ro
+```
+
+The `scripts:/opt/airflow/scripts` mount is required for `core_watchdog` auto-heal subprocess
+calls to resolve `/opt/airflow/scripts/generate_weekly_{forecasts,analysis}.py`.
+
+**Permissions**: The container runs as UID 50000 (airflow). Host host-side paths must be
+writable by group `root` (GID 0) OR `chmod -R 777` on `usdcop-trading-dashboard/public/data/analysis/`
+and `usdcop-trading-dashboard/public/forecasting/` for writes to succeed.
 
 ---
 

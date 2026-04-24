@@ -108,6 +108,14 @@ and dashboard components, see `sdd-approval-spec.md`.
 |----------|-------------|----------|
 | Smart Simple v2.0 (H5) | `forecast_h5_l6_weekly_monitor.py` | Fri 14:30 COT |
 | Forecast VT+Trail (H1) | `forecast_h1_l6_paper_monitor.py` | Mon-Fri 19:00 COT |
+| System-wide | `core_watchdog.py` | Hourly 8-13 COT Mon-Fri (auto-heals forecasting, analysis, backups, data freshness) |
+
+### Dashboard Data Generation DAGs
+
+| Target Page | DAG | Schedule | What it Runs |
+|-------------|-----|----------|--------------|
+| `/forecasting` | `forecast_weekly_generation.py` | **Mon 09:00 COT (14:00 UTC)** | `scripts/generate_weekly_forecasts.py --week <current>` → 63 backtest + 63 forward rows, 76 PNGs |
+| `/analysis` | `analysis_l8_daily_generation.py` | Mon-Fri 14:00 COT (19:00 UTC) | Daily: `WeeklyAnalysisGenerator.generate_for_date()`; Friday also regenerates full week JSON |
 
 ### Full Weekly DAG Schedule
 
@@ -131,6 +139,18 @@ and dashboard components, see `sdd-approval-spec.md`.
 | Mon-Fri | 13:30 | H1-L5 Vol-Target | `forecast_h1_l5_vol_targeting.py` | Position sizing + trailing params |
 | Mon-Fri | 13:35 | H1-L7 Executor | `forecast_h1_l7_smart_executor.py` | Place SHORT + trail |
 | Mon-Fri | 19:00 | H1-L6 Monitor | `forecast_h1_l6_paper_monitor.py` | Paper trading results |
+
+**Forecasting Weekly** (1 DAG):
+
+| Day | Time (COT) | DAG | File | Action |
+|-----|-----------|-----|------|--------|
+| Mon | 09:00 | Forecasting Gen | `forecast_weekly_generation.py` | Subprocess `scripts/generate_weekly_forecasts.py --week <current>` → populates `/forecasting` page (63 backtest + 63 forward rows, 76 PNGs) |
+
+**System Watchdog** (1 DAG):
+
+| Day | Time (COT) | DAG | File | Action |
+|-----|-----------|-----|------|--------|
+| Mon-Fri | 8,9,10,11,12,13 | System Watchdog | `core_watchdog.py` | 7 health checks + auto-heal (triggers OHLCV backfill, news, H5 signal, seed backup; runs `generate_weekly_forecasts.py` and `generate_weekly_analysis.py` as subprocess when stale) |
 
 ### Guardrails
 

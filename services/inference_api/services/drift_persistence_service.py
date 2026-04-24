@@ -13,10 +13,9 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-import logging
 import json
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+import logging
+
 import asyncpg
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ class DriftPersistenceService:
     - Manage alert lifecycle
     """
 
-    def __init__(self, db_pool: Optional[asyncpg.Pool] = None):
+    def __init__(self, db_pool: asyncpg.Pool | None = None):
         """
         Initialize the persistence service.
 
@@ -55,11 +54,11 @@ class DriftPersistenceService:
         features_drifted: int,
         drift_score: float,
         max_severity: str,
-        univariate_results: Optional[List[Dict]] = None,
-        multivariate_results: Optional[Dict] = None,
-        model_id: Optional[str] = None,
+        univariate_results: list[dict] | None = None,
+        multivariate_results: dict | None = None,
+        model_id: str | None = None,
         triggered_by: str = "scheduled",
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """
         Save a drift check result to the database.
 
@@ -128,11 +127,11 @@ class DriftPersistenceService:
         features_drifted: int,
         drift_score: float,
         max_severity: str,
-        univariate_results: Optional[List[Dict]],
-        multivariate_results: Optional[Dict],
-        model_id: Optional[str],
+        univariate_results: list[dict] | None,
+        multivariate_results: dict | None,
+        model_id: str | None,
         triggered_by: str,
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Direct insert without stored function (fallback)."""
         try:
             async with self.db_pool.acquire() as conn:
@@ -191,9 +190,9 @@ class DriftPersistenceService:
     async def get_drift_history(
         self,
         hours: int = 24,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
         limit: int = 100,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get drift check history.
 
@@ -238,7 +237,7 @@ class DriftPersistenceService:
             logger.error(f"Failed to get drift history: {e}")
             return []
 
-    async def get_active_alerts(self) -> List[Dict]:
+    async def get_active_alerts(self) -> list[dict]:
         """Get all active drift alerts."""
         if not self._enabled:
             return []
@@ -302,7 +301,7 @@ class DriftPersistenceService:
         self,
         alert_id: int,
         resolved_by: str,
-        resolution_notes: Optional[str] = None,
+        resolution_notes: str | None = None,
     ) -> bool:
         """
         Resolve a drift alert.
@@ -339,7 +338,7 @@ class DriftPersistenceService:
             logger.error(f"Failed to resolve alert: {e}")
             return False
 
-    async def get_summary_24h(self) -> Optional[Dict]:
+    async def get_summary_24h(self) -> dict | None:
         """Get 24-hour drift summary."""
         if not self._enabled:
             return None

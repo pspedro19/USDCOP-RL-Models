@@ -24,12 +24,8 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
 import logging
-
-if TYPE_CHECKING:
-    from .paper_trader import PaperTrade
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +44,8 @@ class TradeState(ABC):
         self,
         trade: "Trade",
         price: float,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
+        stop_loss: float | None = None,
+        take_profit: float | None = None
     ) -> "TradeState":
         """
         Handle price update and potentially transition to new state.
@@ -112,8 +108,8 @@ class PendingState(TradeState):
         self,
         trade: "Trade",
         price: float,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
+        stop_loss: float | None = None,
+        take_profit: float | None = None
     ) -> TradeState:
         """
         Handle price update in pending state.
@@ -192,8 +188,8 @@ class OpenState(TradeState):
         self,
         trade: "Trade",
         price: float,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
+        stop_loss: float | None = None,
+        take_profit: float | None = None
     ) -> TradeState:
         """
         Handle price update for open trade.
@@ -297,7 +293,7 @@ class ClosingState(TradeState):
     def __init__(
         self,
         reason: str = "unknown",
-        trigger_price: Optional[float] = None
+        trigger_price: float | None = None
     ):
         """
         Initialize closing state.
@@ -313,8 +309,8 @@ class ClosingState(TradeState):
         self,
         trade: "Trade",
         price: float,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
+        stop_loss: float | None = None,
+        take_profit: float | None = None
     ) -> TradeState:
         """
         Handle price update while closing.
@@ -393,8 +389,8 @@ class ClosedState(TradeState):
         self,
         trade: "Trade",
         price: float,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None
+        stop_loss: float | None = None,
+        take_profit: float | None = None
     ) -> TradeState:
         """
         Handle price update for closed trade.
@@ -450,10 +446,10 @@ class Trade:
         self,
         trade_id: str,
         direction: str = "LONG",
-        entry_price: Optional[float] = None,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None,
-        state: Optional[TradeState] = None
+        entry_price: float | None = None,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
+        state: TradeState | None = None
     ):
         """
         Initialize trade with initial state.
@@ -472,8 +468,8 @@ class Trade:
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self._state = state or PendingState()
-        self.exit_price: Optional[float] = None
-        self.close_reason: Optional[str] = None
+        self.exit_price: float | None = None
+        self.close_reason: str | None = None
 
     @property
     def state(self) -> TradeState:

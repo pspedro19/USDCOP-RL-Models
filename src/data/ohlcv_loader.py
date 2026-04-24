@@ -39,18 +39,15 @@ Usage:
     df_daily = loader.load_daily("2024-01-01", "2024-12-31")
 """
 
-import os
 import gzip
 import logging
+import os
 from pathlib import Path
-from typing import Dict, List, Optional, Union
-from datetime import datetime
 
 import pandas as pd
-import numpy as np
 
-from .calendar import TradingCalendar, filter_market_hours
-from .contracts import OHLCV_COLUMNS, OHLCV_REQUIRED, validate_ohlcv_columns
+from .calendar import TradingCalendar
+from .contracts import OHLCV_REQUIRED, validate_ohlcv_columns
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +91,9 @@ class UnifiedOHLCVLoader:
 
     def __init__(
         self,
-        connection_string: Optional[str] = None,
+        connection_string: str | None = None,
         fallback_csv: bool = True,
-        csv_path: Optional[Union[str, Path]] = None
+        csv_path: str | Path | None = None
     ):
         """
         Initialize OHLCV loader.
@@ -170,11 +167,11 @@ class UnifiedOHLCVLoader:
 
     def load_5min_multi(
         self,
-        symbols: List[str],
+        symbols: list[str],
         start_date: str,
         end_date: str,
         filter_market_hours: bool = True,
-    ) -> Dict[str, pd.DataFrame]:
+    ) -> dict[str, pd.DataFrame]:
         """
         Load 5-minute OHLCV data for multiple currency pairs.
 
@@ -207,7 +204,7 @@ class UnifiedOHLCVLoader:
         symbol: str,
         start_date: str,
         end_date: str,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """Load a single symbol from DB or file."""
         df = None
 
@@ -412,7 +409,7 @@ class UnifiedOHLCVLoader:
         self,
         start_date: str,
         end_date: str
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """Load daily data from parquet backup."""
         # Check for daily-specific backup file
         project_root = Path(__file__).parent.parent.parent
@@ -444,7 +441,7 @@ class UnifiedOHLCVLoader:
 
         return None
 
-    def _find_backup_file(self) -> Optional[Path]:
+    def _find_backup_file(self) -> Path | None:
         """Find available backup file."""
         # Check user-specified path first
         if self.csv_path and self.csv_path.exists():
@@ -545,7 +542,7 @@ class UnifiedOHLCVLoader:
 
         return daily
 
-    def get_latest_timestamp(self) -> Optional[pd.Timestamp]:
+    def get_latest_timestamp(self) -> pd.Timestamp | None:
         """
         Get the latest timestamp in the database.
 
@@ -560,11 +557,10 @@ class UnifiedOHLCVLoader:
 
             query = "SELECT MAX(time) as latest FROM usdcop_m5_ohlcv"
 
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query)
-                    result = cur.fetchone()
-                    return pd.Timestamp(result[0]) if result[0] else None
+            with psycopg2.connect(self.connection_string) as conn, conn.cursor() as cur:
+                cur.execute(query)
+                result = cur.fetchone()
+                return pd.Timestamp(result[0]) if result[0] else None
         except Exception as e:
             logger.warning(f"Failed to get latest timestamp: {e}")
             return None

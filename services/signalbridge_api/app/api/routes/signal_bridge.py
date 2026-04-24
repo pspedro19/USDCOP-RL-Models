@@ -19,32 +19,28 @@ Date: 2026-01-22
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.common import PaginatedResponse, SuccessResponse
+from app.contracts.execution import ExecutionStatus
 from app.contracts.signal_bridge import (
-    ManualSignalCreate,
-    InferenceSignalCreate,
-    ExecutionResult,
-    BridgeStatus,
     BridgeHealthCheck,
     BridgeStatistics,
+    BridgeStatus,
+    ExecutionResult,
+    InferenceSignalCreate,
     KillSwitchRequest,
-    ExecutionHistoryFilter,
-    UserRiskLimits,
-    UserRiskLimitsCreate,
-    UserRiskLimitsUpdate,
-    TradingMode,
+    ManualSignalCreate,
     RiskCheckResult,
+    UserRiskLimits,
+    UserRiskLimitsUpdate,
 )
-from app.contracts.common import SuccessResponse, PaginatedResponse
-from app.contracts.execution import ExecutionStatus
 from app.core.database import get_db_session
-from app.services.signal_bridge_orchestrator import SignalBridgeOrchestrator
 from app.middleware.auth import get_current_user
+from app.services.signal_bridge_orchestrator import SignalBridgeOrchestrator
 
 router = APIRouter(prefix="/signal-bridge", tags=["Signal Bridge"])
 
@@ -99,7 +95,7 @@ async def health_check(
         await orchestrator.db_session.execute("SELECT 1")
     except Exception as e:
         db_healthy = False
-        errors.append(f"Database: {str(e)}")
+        errors.append(f"Database: {e!s}")
 
     # Check Redis (via TradingFlags)
     try:
@@ -108,14 +104,14 @@ async def health_check(
         redis_healthy = flags.health_check()
     except Exception as e:
         redis_healthy = False
-        errors.append(f"Redis: {str(e)}")
+        errors.append(f"Redis: {e!s}")
 
     # Check Vault
     try:
         vault_healthy = await orchestrator.vault_service.health_check()
     except Exception as e:
         vault_healthy = False
-        errors.append(f"Vault: {str(e)}")
+        errors.append(f"Vault: {e!s}")
 
     # Check Inference WebSocket
     try:
@@ -139,7 +135,7 @@ async def health_check(
             except Exception:
                 exchange_status[exchange_name] = False
     except Exception as e:
-        errors.append(f"Exchange factory: {str(e)}")
+        errors.append(f"Exchange factory: {e!s}")
 
     # Determine overall status
     if not (db_healthy and redis_healthy):
@@ -305,12 +301,12 @@ async def get_kill_switch_status(
     description="Retrieve paginated execution history with optional filters.",
 )
 async def get_history(
-    exchange: Optional[str] = Query(None, description="Filter by exchange"),
-    symbol: Optional[str] = Query(None, description="Filter by symbol"),
-    exec_status: Optional[ExecutionStatus] = Query(None, alias="status", description="Filter by status"),
-    model_id: Optional[str] = Query(None, description="Filter by model"),
-    since: Optional[datetime] = Query(None, description="Start date"),
-    until: Optional[datetime] = Query(None, description="End date"),
+    exchange: str | None = Query(None, description="Filter by exchange"),
+    symbol: str | None = Query(None, description="Filter by symbol"),
+    exec_status: ExecutionStatus | None = Query(None, alias="status", description="Filter by status"),
+    model_id: str | None = Query(None, description="Filter by model"),
+    since: datetime | None = Query(None, description="Start date"),
+    until: datetime | None = Query(None, description="End date"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     user = Depends(get_current_user),

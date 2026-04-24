@@ -2,10 +2,10 @@
 Authentication contracts.
 """
 
-from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, SecretStr, field_validator
 import re
+from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
 
 from .common import BaseContract
 
@@ -79,7 +79,7 @@ class TokenPayload(BaseModel):
     """JWT token payload."""
 
     sub: str  # User ID
-    email: Optional[str] = None
+    email: str | None = None
     exp: datetime
     iat: datetime
     type: str = "access"

@@ -17,8 +17,9 @@ Date: 2026-01-22
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Optional, Callable, Any, Dict
+from typing import Any
 from uuid import UUID, uuid4
 
 import websockets
@@ -30,8 +31,6 @@ from websockets.exceptions import (
 
 from app.contracts.signal_bridge import (
     InferenceSignalCreate,
-    InferencePredictionMessage,
-    BridgeEventType,
 )
 from app.core.config import settings
 
@@ -69,9 +68,9 @@ class WebSocketBridge:
 
     def __init__(
         self,
-        inference_ws_url: Optional[str] = None,
-        on_signal_received: Optional[Callable[[InferenceSignalCreate], Any]] = None,
-        default_credential_id: Optional[UUID] = None,
+        inference_ws_url: str | None = None,
+        on_signal_received: Callable[[InferenceSignalCreate], Any] | None = None,
+        default_credential_id: UUID | None = None,
         reconnect_delay_base: float = 1.0,
         reconnect_delay_max: float = 60.0,
         ping_interval: float = 30.0,
@@ -106,10 +105,10 @@ class WebSocketBridge:
 
         # State
         self._connection_state = self.DISCONNECTED
-        self._websocket: Optional[websockets.WebSocketClientProtocol] = None
+        self._websocket: websockets.WebSocketClientProtocol | None = None
         self._running = False
-        self._consumer_task: Optional[asyncio.Task] = None
-        self._last_message_at: Optional[datetime] = None
+        self._consumer_task: asyncio.Task | None = None
+        self._last_message_at: datetime | None = None
         self._messages_received = 0
         self._signals_processed = 0
         self._errors_count = 0
@@ -125,7 +124,7 @@ class WebSocketBridge:
         return self._connection_state
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get connection statistics."""
         return {
             "state": self._connection_state,
@@ -263,7 +262,7 @@ class WebSocketBridge:
             logger.error(f"Error handling message: {e}")
             self._errors_count += 1
 
-    async def _handle_prediction(self, data: Dict[str, Any]) -> None:
+    async def _handle_prediction(self, data: dict[str, Any]) -> None:
         """
         Handle prediction message from inference API.
 
@@ -357,7 +356,7 @@ class WebSocketBridge:
         )
         await asyncio.sleep(delay)
 
-    async def send_message(self, message: Dict[str, Any]) -> bool:
+    async def send_message(self, message: dict[str, Any]) -> bool:
         """
         Send a message to the inference API (if bidirectional communication needed).
 
@@ -378,7 +377,7 @@ class WebSocketBridge:
             logger.error(f"Error sending message: {e}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """
         Perform health check on the WebSocket connection.
 
@@ -411,17 +410,17 @@ class WebSocketBridgeManager:
     Provides a singleton-like interface for the bridge.
     """
 
-    _instance: Optional[WebSocketBridge] = None
+    _instance: WebSocketBridge | None = None
 
     @classmethod
-    def get_instance(cls) -> Optional[WebSocketBridge]:
+    def get_instance(cls) -> WebSocketBridge | None:
         """Get the current bridge instance."""
         return cls._instance
 
     @classmethod
     def create_instance(
         cls,
-        on_signal_received: Optional[Callable[[InferenceSignalCreate], Any]] = None,
+        on_signal_received: Callable[[InferenceSignalCreate], Any] | None = None,
         **kwargs,
     ) -> WebSocketBridge:
         """

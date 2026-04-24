@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from collections import Counter, defaultdict
 from datetime import date, datetime
-from typing import Optional
 
 from src.news_engine.models import EnrichedArticle, NewsFeatureVector
 
@@ -42,7 +41,7 @@ class FeatureExporter:
     def export_daily(
         self,
         articles: list[EnrichedArticle],
-        snapshot_date: Optional[date] = None,
+        snapshot_date: date | None = None,
     ) -> NewsFeatureVector:
         """Compute ~60 features from a day's articles.
 

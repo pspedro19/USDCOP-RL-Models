@@ -26,13 +26,13 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from typing import Dict, List, Optional, Any
-from enum import Enum
-import logging
-import json
 import copy
+import json
+import logging
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,15 +70,15 @@ class PaperTrade:
     side: str
     entry_price: float
     entry_time: datetime
-    exit_price: Optional[float] = None
-    exit_time: Optional[datetime] = None
+    exit_price: float | None = None
+    exit_time: datetime | None = None
     pnl: float = 0.0
     pnl_pct: float = 0.0
     status: str = "open"
     size: float = 1.0
     direction: str = "LONG"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert trade to dictionary for serialization."""
         result = asdict(self)
         # Convert datetime objects to ISO format strings
@@ -93,7 +93,7 @@ class PaperTrade:
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PaperTrade':
+    def from_dict(cls, data: dict[str, Any]) -> 'PaperTrade':
         """Create PaperTrade from dictionary."""
         if isinstance(data.get('entry_time'), str):
             data['entry_time'] = datetime.fromisoformat(data['entry_time'])
@@ -145,21 +145,21 @@ class PaperTrader:
         self.enable_short = enable_short
 
         # Position tracking by model
-        self._positions: Dict[str, PaperTrade] = {}
+        self._positions: dict[str, PaperTrade] = {}
 
         # Trade history
-        self._trade_history: List[PaperTrade] = []
+        self._trade_history: list[PaperTrade] = []
 
         # Trade ID counter
         self._trade_counter = 0
 
         # Equity curve (capital after each trade)
-        self._equity_curve: List[Dict[str, Any]] = [
+        self._equity_curve: list[dict[str, Any]] = [
             {"timestamp": datetime.now(), "equity": initial_capital}
         ]
 
         # Model-specific equity tracking
-        self._model_equity: Dict[str, float] = {}
+        self._model_equity: dict[str, float] = {}
 
         logger.info(
             f"PaperTrader initialized with capital=${initial_capital:.2f}, "
@@ -190,8 +190,8 @@ class PaperTrader:
         model_id: str,
         signal: str,
         current_price: float,
-        timestamp: Optional[datetime] = None
-    ) -> Optional[PaperTrade]:
+        timestamp: datetime | None = None
+    ) -> PaperTrade | None:
         """
         Execute a trading signal from a model.
 
@@ -336,7 +336,7 @@ class PaperTrader:
         self,
         model_id: str,
         price: float,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> PaperTrade:
         """
         Close an existing position.
@@ -495,7 +495,7 @@ class PaperTrader:
         # For future async implementation
         self._persist_trade(trade)
 
-    def get_open_positions(self) -> List[PaperTrade]:
+    def get_open_positions(self) -> list[PaperTrade]:
         """
         Get all currently open positions.
 
@@ -504,7 +504,7 @@ class PaperTrader:
         """
         return list(self._positions.values())
 
-    def get_open_position(self, model_id: str) -> Optional[PaperTrade]:
+    def get_open_position(self, model_id: str) -> PaperTrade | None:
         """
         Get open position for a specific model.
 
@@ -522,9 +522,9 @@ class PaperTrader:
 
     def get_trade_history(
         self,
-        model_id: Optional[str] = None,
-        limit: Optional[int] = None
-    ) -> List[PaperTrade]:
+        model_id: str | None = None,
+        limit: int | None = None
+    ) -> list[PaperTrade]:
         """
         Get completed trade history.
 
@@ -545,7 +545,7 @@ class PaperTrader:
 
         return history
 
-    def get_equity_curve(self) -> List[float]:
+    def get_equity_curve(self) -> list[float]:
         """
         Get equity curve values.
 
@@ -554,7 +554,7 @@ class PaperTrader:
         """
         return [point["equity"] for point in self._equity_curve]
 
-    def get_equity_curve_with_timestamps(self) -> List[Dict[str, Any]]:
+    def get_equity_curve_with_timestamps(self) -> list[dict[str, Any]]:
         """
         Get equity curve with timestamps.
 
@@ -563,7 +563,7 @@ class PaperTrader:
         """
         return copy.deepcopy(self._equity_curve)
 
-    def get_unrealized_pnl(self, current_prices: Dict[str, float]) -> float:
+    def get_unrealized_pnl(self, current_prices: dict[str, float]) -> float:
         """
         Calculate unrealized PnL for all open positions.
 
@@ -593,7 +593,7 @@ class PaperTrader:
 
         return unrealized
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Calculate comprehensive trading statistics.
 
@@ -695,7 +695,7 @@ class PaperTrader:
             "short_pnl": round(sum(t.pnl for t in short_trades), 2)
         }
 
-    def get_model_statistics(self, model_id: str) -> Dict[str, Any]:
+    def get_model_statistics(self, model_id: str) -> dict[str, Any]:
         """
         Get statistics for a specific model.
 
@@ -735,7 +735,7 @@ class PaperTrader:
             )
         }
 
-    def get_all_model_statistics(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_model_statistics(self) -> dict[str, dict[str, Any]]:
         """
         Get statistics for all models that have traded.
 
@@ -805,8 +805,8 @@ class PaperTrader:
     def close_all_positions(
         self,
         current_price: float,
-        timestamp: Optional[datetime] = None
-    ) -> List[PaperTrade]:
+        timestamp: datetime | None = None
+    ) -> list[PaperTrade]:
         """
         Close all open positions.
 
@@ -848,7 +848,7 @@ class PaperTrader:
             f"PaperTrader reset to initial capital ${self.initial_capital}"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize paper trader state to dictionary."""
         return {
             "initial_capital": self.initial_capital,
@@ -875,7 +875,7 @@ class PaperTrader:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         db_connection: Any = None
     ) -> 'PaperTrader':
         """

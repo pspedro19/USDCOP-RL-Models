@@ -8,7 +8,7 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+
 import numpy as np
 import pandas as pd
 
@@ -62,7 +62,7 @@ class TechnicalIndicators:
         fast: int = 12,
         slow: int = 26,
         signal: int = 9
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate MACD (Moving Average Convergence Divergence).
 
@@ -77,7 +77,7 @@ class TechnicalIndicators:
         """
         try:
             if len(prices) < slow + signal:
-                logger.warning(f"Not enough data for MACD calculation")
+                logger.warning("Not enough data for MACD calculation")
                 return {'macd': 0.0, 'macd_signal': 0.0, 'macd_histogram': 0.0}
 
             # Calculate EMAs
@@ -108,7 +108,7 @@ class TechnicalIndicators:
         prices: pd.Series,
         period: int = 20,
         std_dev: float = 2.0
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate Bollinger Bands.
 
@@ -122,7 +122,7 @@ class TechnicalIndicators:
         """
         try:
             if len(prices) < period:
-                logger.warning(f"Not enough data for Bollinger Bands calculation")
+                logger.warning("Not enough data for Bollinger Bands calculation")
                 current_price = float(prices.iloc[-1])
                 return {
                     'bb_upper': current_price * 1.02,
@@ -200,7 +200,7 @@ class TechnicalIndicators:
         try:
             if len(high) < period + 1:
                 # Fallback to simple range
-                return float((high.iloc[-1] - low.iloc[-1]))
+                return float(high.iloc[-1] - low.iloc[-1])
 
             # Calculate True Range
             high_low = high - low
@@ -258,7 +258,7 @@ class TechnicalIndicators:
         ema_short: int = 20,
         ema_long: int = 50,
         atr_period: int = 14
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate all technical indicators at once.
 

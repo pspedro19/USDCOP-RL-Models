@@ -2,27 +2,27 @@
 Execution routes.
 """
 
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.middleware.auth import get_current_active_user
-from app.models import User
+from app.contracts.common import PaginatedResponse
+from app.contracts.exchange import SupportedExchange
 from app.contracts.execution import (
-    ExecutionResult,
     ExecutionCreate,
-    ExecutionSummary,
+    ExecutionFilter,
+    ExecutionResult,
     ExecutionStats,
     ExecutionStatus,
-    ExecutionFilter,
+    ExecutionSummary,
     OrderSide,
     TodayStats,
 )
-from app.contracts.exchange import SupportedExchange
-from app.contracts.common import PaginatedResponse, SuccessResponse
+from app.core.database import get_db
+from app.middleware.auth import get_current_active_user
+from app.models import User
 from app.services.execution import ExecutionService
 
 router = APIRouter(prefix="/executions", tags=["Executions"])
@@ -32,11 +32,11 @@ router = APIRouter(prefix="/executions", tags=["Executions"])
 async def list_executions(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    exchange: Optional[SupportedExchange] = None,
-    symbol: Optional[str] = None,
-    status: Optional[ExecutionStatus] = None,
-    side: Optional[OrderSide] = None,
-    since: Optional[datetime] = None,
+    exchange: SupportedExchange | None = None,
+    symbol: str | None = None,
+    status: ExecutionStatus | None = None,
+    side: OrderSide | None = None,
+    since: datetime | None = None,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):

@@ -29,17 +29,17 @@ Endpoints:
 - /api/bi/health-check - DWH health check
 """
 
-import os
 import logging
-from datetime import datetime, date, timedelta
-from typing import Optional, List, Dict, Any
+import os
+from datetime import date, datetime, timedelta
+from typing import Any
 
 import psycopg2
-from psycopg2.extras import RealDictCursor
-from fastapi import FastAPI, HTTPException, Query, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 import uvicorn
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from psycopg2.extras import RealDictCursor
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(
@@ -93,20 +93,20 @@ class ResponseEnvelope(BaseModel):
     """Standard response envelope."""
     ok: bool = True
     data: Any = None
-    meta: Optional[Dict[str, Any]] = None
-    error: Optional[Dict[str, str]] = None
+    meta: dict[str, Any] | None = None
+    error: dict[str, str] | None = None
 
 class OHLCVBar(BaseModel):
     """OHLCV bar model."""
     ts_utc: datetime
-    ts_cot: Optional[datetime] = None
+    ts_cot: datetime | None = None
     symbol: str
     open: float
     high: float
     low: float
     close: float
     volume: int
-    source: Optional[str] = None
+    source: str | None = None
 
 class AcquisitionRun(BaseModel):
     """L0 acquisition run model."""
@@ -119,8 +119,8 @@ class AcquisitionRun(BaseModel):
     date_range_end: datetime
     rows_fetched: int
     rows_inserted: int
-    stale_rate_pct: Optional[float] = None
-    coverage_pct: Optional[float] = None
+    stale_rate_pct: float | None = None
+    coverage_pct: float | None = None
     duration_sec: int
     quality_passed: bool
 
@@ -132,8 +132,8 @@ class QualityMetrics(BaseModel):
     accepted_episodes: int
     rejected_episodes: int
     grid_300s_ok: bool
-    repeated_ohlc_rate_pct: Optional[float] = None
-    coverage_pct: Optional[float] = None
+    repeated_ohlc_rate_pct: float | None = None
+    coverage_pct: float | None = None
     status_passed: bool
 
 class IndicatorValue(BaseModel):
@@ -143,7 +143,7 @@ class IndicatorValue(BaseModel):
     indicator_name: str
     indicator_family: str
     value: float
-    signal: Optional[str] = None
+    signal: str | None = None
 
 class BacktestTrade(BaseModel):
     """L6 backtest trade model."""
@@ -156,21 +156,21 @@ class BacktestTrade(BaseModel):
     entry_px: float
     exit_px: float
     pnl: float
-    pnl_pct: Optional[float] = None
-    pnl_bps: Optional[float] = None
+    pnl_pct: float | None = None
+    pnl_bps: float | None = None
 
 class BacktestSummary(BaseModel):
     """L6 backtest summary model."""
     run_id: str
     split: str
-    total_return: Optional[float] = None
-    cagr: Optional[float] = None
-    sharpe_ratio: Optional[float] = None
-    sortino_ratio: Optional[float] = None
-    max_drawdown: Optional[float] = None
-    total_trades: Optional[int] = None
-    win_rate: Optional[float] = None
-    profit_factor: Optional[float] = None
+    total_return: float | None = None
+    cagr: float | None = None
+    sharpe_ratio: float | None = None
+    sortino_ratio: float | None = None
+    max_drawdown: float | None = None
+    total_trades: int | None = None
+    win_rate: float | None = None
+    profit_factor: float | None = None
 
 # ==============================================================================
 # HEALTH CHECK
@@ -227,8 +227,8 @@ async def dwh_health_check():
 @app.get("/api/bi/bars", response_model=ResponseEnvelope)
 async def get_bars(
     symbol: str = Query("USD/COP", description="Symbol code"),
-    from_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-    to_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    from_date: str | None = Query(None, description="Start date (YYYY-MM-DD)"),
+    to_date: str | None = Query(None, description="End date (YYYY-MM-DD)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(200, ge=1, le=1000, description="Page size")
 ):
@@ -298,7 +298,7 @@ async def get_bars(
 
 @app.get("/api/bi/l0/acquisition-runs", response_model=ResponseEnvelope)
 async def get_acquisition_runs(
-    date: Optional[str] = Query(None, description="Date (YYYY-MM-DD)"),
+    date: str | None = Query(None, description="Date (YYYY-MM-DD)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200)
 ):
@@ -368,7 +368,7 @@ async def get_acquisition_runs(
 
 @app.get("/api/bi/l1/quality-daily", response_model=ResponseEnvelope)
 async def get_quality_daily(
-    date: Optional[str] = Query(None, description="Date (YYYY-MM-DD)"),
+    date: str | None = Query(None, description="Date (YYYY-MM-DD)"),
     symbol: str = Query("USD/COP"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200)
@@ -439,8 +439,8 @@ async def get_quality_daily(
 async def get_indicators(
     indicator: str = Query(..., description="Indicator name (e.g., RSI, MACD)"),
     symbol: str = Query("USD/COP"),
-    from_date: Optional[str] = Query(None),
-    to_date: Optional[str] = Query(None),
+    from_date: str | None = Query(None),
+    to_date: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(200, ge=1, le=1000)
 ):
@@ -564,8 +564,8 @@ async def get_backtest_trades(
 
 @app.get("/api/bi/l6/backtest/summary", response_model=ResponseEnvelope)
 async def get_backtest_summary(
-    run_id: Optional[str] = Query(None, description="Backtest run ID"),
-    split: Optional[str] = Query(None, description="Split (train/val/test)")
+    run_id: str | None = Query(None, description="Backtest run ID"),
+    split: str | None = Query(None, description="Split (train/val/test)")
 ):
     """Get backtest summary statistics."""
     try:

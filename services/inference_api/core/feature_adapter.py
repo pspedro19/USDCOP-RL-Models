@@ -40,25 +40,22 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 # Import from SSOT - these are the AUTHORITATIVE calculators
 from src.feature_store.core import (
+    FEATURE_CONTRACT,
+    FEATURE_ORDER,
+    OBSERVATION_DIM,
     ADXCalculator,
     ATRPercentCalculator,
     BaseCalculator,
-    CalculatorRegistry,
-    FEATURE_CONTRACT,
-    FEATURE_ORDER,
     LogReturnCalculator,
     MacroChangeCalculator,
     MacroZScoreCalculator,
-    OBSERVATION_DIM,
     RSICalculator,
-    SmoothingMethod,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,7 +68,7 @@ logger = logging.getLogger(__name__)
 class FeatureCircuitBreakerError(Exception):
     """Raised when circuit breaker is triggered due to data quality issues."""
 
-    def __init__(self, nan_ratio: float, affected_features: List[str]):
+    def __init__(self, nan_ratio: float, affected_features: list[str]):
         self.nan_ratio = nan_ratio
         self.affected_features = affected_features
         super().__init__(
@@ -131,9 +128,9 @@ class InferenceFeatureAdapter:
 
     def __init__(
         self,
-        norm_stats_path: Optional[str] = None,
-        circuit_breaker_config: Optional[FeatureCircuitBreakerConfig] = None,
-        gap_config: Optional[GapConfig] = None,
+        norm_stats_path: str | None = None,
+        circuit_breaker_config: FeatureCircuitBreakerConfig | None = None,
+        gap_config: GapConfig | None = None,
     ):
         """
         Initialize the InferenceFeatureAdapter.
@@ -153,8 +150,8 @@ class InferenceFeatureAdapter:
 
         # Circuit breaker state
         self._cb_config = circuit_breaker_config or FeatureCircuitBreakerConfig()
-        self._feature_failure_counts: Dict[str, int] = {}
-        self._last_circuit_break_time: Optional[float] = None
+        self._feature_failure_counts: dict[str, int] = {}
+        self._last_circuit_break_time: float | None = None
 
         # Gap handling
         self._gap_config = gap_config or GapConfig()
@@ -164,7 +161,7 @@ class InferenceFeatureAdapter:
             f"SSOT calculators (Wilder's EMA smoothing)"
         )
 
-    def _load_norm_stats_strict(self) -> Dict[str, Dict[str, float]]:
+    def _load_norm_stats_strict(self) -> dict[str, dict[str, float]]:
         """
         Load normalization statistics - FAIL FAST if not found.
 
@@ -187,13 +184,13 @@ class InferenceFeatureAdapter:
                 f"Model cannot produce correct predictions without exact training stats."
             )
 
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             stats = json.load(f)
 
         logger.info(f"Loaded norm_stats from {path}: {len(stats)} features")
         return stats
 
-    def _init_ssot_calculators(self) -> Dict[str, BaseCalculator]:
+    def _init_ssot_calculators(self) -> dict[str, BaseCalculator]:
         """
         Initialize calculators from SSOT feature_store.
 
@@ -234,7 +231,7 @@ class InferenceFeatureAdapter:
         self,
         df: pd.DataFrame,
         bar_idx: int
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate technical features using SSOT calculators.
 
@@ -266,7 +263,7 @@ class InferenceFeatureAdapter:
         self,
         df: pd.DataFrame,
         bar_idx: int
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate macro features using SSOT calculators.
 
@@ -340,7 +337,7 @@ class InferenceFeatureAdapter:
         z_score = (value - mean) / std
         return float(np.clip(z_score, self.CLIP_RANGE[0], self.CLIP_RANGE[1]))
 
-    def check_circuit_breaker(self, features: Dict[str, float]) -> None:
+    def check_circuit_breaker(self, features: dict[str, float]) -> None:
         """
         Check feature quality and raise if circuit breaker triggered.
 
@@ -443,12 +440,12 @@ class InferenceFeatureAdapter:
 
         return obs
 
-    def get_feature_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_feature_stats(self, feature_name: str) -> dict[str, float]:
         """Get normalization statistics for a feature."""
         return self._norm_stats.get(feature_name, {"mean": 0.0, "std": 1.0})
 
     @property
-    def calculators(self) -> Dict[str, BaseCalculator]:
+    def calculators(self) -> dict[str, BaseCalculator]:
         """Access to underlying SSOT calculators for testing."""
         return self._calculators
 
@@ -457,7 +454,7 @@ class InferenceFeatureAdapter:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_adapter_instance: Optional[InferenceFeatureAdapter] = None
+_adapter_instance: InferenceFeatureAdapter | None = None
 
 
 def get_feature_adapter() -> InferenceFeatureAdapter:

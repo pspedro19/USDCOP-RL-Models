@@ -10,8 +10,8 @@ Date: 2025-12-17
 """
 
 from abc import ABC, abstractmethod
+
 import numpy as np
-from typing import Dict
 
 
 class IObservationBuilder(ABC):
@@ -29,7 +29,7 @@ class IObservationBuilder(ABC):
     """
 
     @abstractmethod
-    def with_features(self, features: Dict[str, float]) -> 'IObservationBuilder':
+    def with_features(self, features: dict[str, float]) -> 'IObservationBuilder':
         """
         Set feature values for the observation.
 

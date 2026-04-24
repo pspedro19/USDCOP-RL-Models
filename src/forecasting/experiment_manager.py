@@ -27,7 +27,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional
 
 import pandas as pd
 import yaml
@@ -40,10 +40,10 @@ logger = logging.getLogger(__name__)
 
 try:
     from src.forecasting.contracts import (
-        HORIZONS,
-        MODEL_IDS,
-        MODEL_DEFINITIONS,
         FORECASTING_CONTRACT_VERSION,
+        HORIZONS,
+        MODEL_DEFINITIONS,
+        MODEL_IDS,
         ForecastingTrainingRequest,
         ForecastingTrainingResult,
     )
@@ -57,8 +57,8 @@ except ImportError:
 
 try:
     from src.forecasting.ab_statistics import (
-        ForecastABStatistics,
         ExperimentComparisonResult,
+        ForecastABStatistics,
         Recommendation,
     )
     AB_STATS_AVAILABLE = True
@@ -77,15 +77,15 @@ class ExperimentConfig:
     version: str = "1.0.0"
     description: str = ""
     hypothesis: str = ""
-    baseline_experiment: Optional[str] = None
+    baseline_experiment: str | None = None
 
     # Models and horizons
-    models: Optional[List[str]] = None  # None = all models
-    horizons: Optional[List[int]] = None  # None = all horizons
+    models: list[str] | None = None  # None = all models
+    horizons: list[int] | None = None  # None = all horizons
 
     # Feature configuration
-    feature_additions: List[str] = field(default_factory=list)
-    feature_removals: List[str] = field(default_factory=list)
+    feature_additions: list[str] = field(default_factory=list)
+    feature_removals: list[str] = field(default_factory=list)
     feature_contract_version: str = "1.0.0"
 
     # Training configuration
@@ -95,13 +95,13 @@ class ExperimentConfig:
 
     # Evaluation configuration
     primary_metric: str = "direction_accuracy"
-    secondary_metrics: List[str] = field(default_factory=lambda: ["rmse", "sharpe_ratio"])
+    secondary_metrics: list[str] = field(default_factory=lambda: ["rmse", "sharpe_ratio"])
     significance_level: float = 0.05
     bonferroni_correction: bool = True
 
     # MLflow configuration
     mlflow_enabled: bool = True
-    mlflow_experiment_name: Optional[str] = None
+    mlflow_experiment_name: str | None = None
 
     def __post_init__(self):
         if self.models is None:
@@ -125,7 +125,7 @@ class ExperimentConfig:
         content = json.dumps(config_dict, sort_keys=True)
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -150,9 +150,9 @@ class ExperimentConfig:
         }
 
     @classmethod
-    def from_yaml(cls, yaml_path: Union[str, Path]) -> "ExperimentConfig":
+    def from_yaml(cls, yaml_path: str | Path) -> "ExperimentConfig":
         """Load configuration from YAML file."""
-        with open(yaml_path, "r") as f:
+        with open(yaml_path) as f:
             data = yaml.safe_load(f)
 
         # Extract nested sections
@@ -195,19 +195,19 @@ class ExperimentRun:
     config_hash: str
 
     status: str = "pending"
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
-    training_metrics: Dict[str, Any] = field(default_factory=dict)
-    backtest_metrics: Dict[str, Dict[int, Dict[str, float]]] = field(default_factory=dict)
-    aggregate_metrics: Dict[str, Any] = field(default_factory=dict)
+    training_metrics: dict[str, Any] = field(default_factory=dict)
+    backtest_metrics: dict[str, dict[int, dict[str, float]]] = field(default_factory=dict)
+    aggregate_metrics: dict[str, Any] = field(default_factory=dict)
 
-    model_artifacts_path: Optional[str] = None
-    mlflow_run_ids: Dict[str, str] = field(default_factory=dict)
+    model_artifacts_path: str | None = None
+    mlflow_run_ids: dict[str, str] = field(default_factory=dict)
 
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for persistence."""
         return {
             "run_id": self.run_id,
@@ -236,7 +236,7 @@ class ExperimentRun:
 class ExperimentRepository:
     """Repository for experiment persistence operations."""
 
-    def __init__(self, db_connection_string: Optional[str] = None):
+    def __init__(self, db_connection_string: str | None = None):
         """
         Initialize repository.
 
@@ -296,7 +296,7 @@ class ExperimentRepository:
         conn.commit()
         cur.close()
 
-    def get_run(self, experiment_name: str, run_id: str) -> Optional[ExperimentRun]:
+    def get_run(self, experiment_name: str, run_id: str) -> ExperimentRun | None:
         """Get experiment run by ID."""
         conn = self._get_connection()
         cur = conn.cursor()
@@ -337,7 +337,7 @@ class ExperimentRepository:
             error_message=row[13],
         )
 
-    def get_latest_run(self, experiment_name: str) -> Optional[ExperimentRun]:
+    def get_latest_run(self, experiment_name: str) -> ExperimentRun | None:
         """Get latest successful run for an experiment."""
         conn = self._get_connection()
         cur = conn.cursor()
@@ -435,10 +435,10 @@ class ForecastExperimentManager:
 
     def __init__(
         self,
-        config: Optional[ExperimentConfig] = None,
-        config_path: Optional[Union[str, Path]] = None,
-        project_root: Optional[Path] = None,
-        db_connection_string: Optional[str] = None,
+        config: ExperimentConfig | None = None,
+        config_path: str | Path | None = None,
+        project_root: Path | None = None,
+        db_connection_string: str | None = None,
     ):
         """
         Initialize experiment manager.
@@ -496,7 +496,7 @@ class ForecastExperimentManager:
             status="pending",
         )
 
-    def train(self, run: ExperimentRun, dataset_path: Optional[str] = None) -> ExperimentRun:
+    def train(self, run: ExperimentRun, dataset_path: str | None = None) -> ExperimentRun:
         """
         Train models for the experiment.
 
@@ -562,7 +562,7 @@ class ForecastExperimentManager:
     def backtest(
         self,
         run: ExperimentRun,
-        actual_prices: Optional[pd.DataFrame] = None,
+        actual_prices: pd.DataFrame | None = None,
     ) -> ExperimentRun:
         """
         Run backtest evaluation for the experiment.
@@ -625,7 +625,7 @@ class ForecastExperimentManager:
     def compare_with_baseline(
         self,
         treatment_run: ExperimentRun,
-        baseline_name: Optional[str] = None,
+        baseline_name: str | None = None,
     ) -> Optional["ExperimentComparisonResult"]:
         """
         Compare experiment with baseline using A/B statistics.
@@ -714,7 +714,7 @@ class ForecastExperimentManager:
         run: ExperimentRun,
         model_id: str,
         horizon: int,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """Load predictions for a model/horizon from the run."""
         # This would load from the model artifacts or database
         # For now, return None as placeholder
@@ -725,7 +725,7 @@ class ForecastExperimentManager:
         predictions: pd.DataFrame,
         actual_prices: pd.DataFrame,
         horizon: int,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate backtest metrics for predictions."""
         # Placeholder implementation
         return {
@@ -737,7 +737,7 @@ class ForecastExperimentManager:
     def _prepare_results_for_comparison(
         self,
         run: ExperimentRun,
-    ) -> Dict[int, pd.DataFrame]:
+    ) -> dict[int, pd.DataFrame]:
         """Prepare run results for A/B comparison."""
         # Convert backtest_metrics to format expected by AB statistics
         results = {}
@@ -764,7 +764,7 @@ class ForecastExperimentManager:
 # =============================================================================
 
 def create_experiment_from_config(
-    config_path: Union[str, Path],
+    config_path: str | Path,
     **kwargs,
 ) -> ForecastExperimentManager:
     """

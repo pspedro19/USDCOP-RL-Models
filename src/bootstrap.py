@@ -19,7 +19,7 @@ Date: 2025-01-14
 """
 
 import logging
-from typing import Optional, Any
+from typing import Any
 
 from src.core.container import ServiceContainer
 from src.repositories import RepositoryFactory
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def bootstrap_production(
-    config: Optional[Any] = None,
-    redis_client: Optional[Any] = None,
+    config: Any | None = None,
+    redis_client: Any | None = None,
 ) -> ServiceContainer:
     """
     Configure all dependencies for production.

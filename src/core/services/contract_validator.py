@@ -19,12 +19,12 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-import hashlib
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -41,7 +41,6 @@ from src.core.contracts import (
     FEATURE_ORDER_HASH,
     OBSERVATION_DIM,
 )
-
 
 # =============================================================================
 # Enums and Data Classes
@@ -68,14 +67,14 @@ class ValidationError:
     message: str
     severity: ValidationSeverity
     stage: PipelineStage
-    expected: Optional[Any] = None
-    actual: Optional[Any] = None
-    context: Dict[str, Any] = field(default_factory=dict)
+    expected: Any | None = None
+    actual: Any | None = None
+    context: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:
         return f"[{self.severity.value.upper()}] {self.code}: {self.message}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "code": self.code,
             "message": self.message,
@@ -91,9 +90,9 @@ class ValidationError:
 class ValidationResult:
     """Result of contract validation."""
     is_valid: bool
-    errors: List[ValidationError] = field(default_factory=list)
-    warnings: List[ValidationError] = field(default_factory=list)
-    stage: Optional[PipelineStage] = None
+    errors: list[ValidationError] = field(default_factory=list)
+    warnings: list[ValidationError] = field(default_factory=list)
+    stage: PipelineStage | None = None
     validated_at: str = field(default_factory=lambda: __import__("datetime").datetime.now().isoformat())
 
     @property
@@ -121,7 +120,7 @@ class ValidationResult:
             stage=self.stage,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "is_valid": self.is_valid,
             "errors": [e.to_dict() for e in self.errors],
@@ -418,9 +417,9 @@ class ContractValidator:
 
     def validate_l1_features(
         self,
-        feature_columns: List[str],
-        n_features: Optional[int] = None,
-        feature_order_hash: Optional[str] = None,
+        feature_columns: list[str],
+        n_features: int | None = None,
+        feature_order_hash: str | None = None,
     ) -> ValidationResult:
         """
         Validate L1 feature generation output.
@@ -441,9 +440,9 @@ class ContractValidator:
 
     def validate_l3_training(
         self,
-        feature_order_hash: Optional[str] = None,
-        observation: Optional[np.ndarray] = None,
-        model_metadata: Optional[Dict[str, Any]] = None,
+        feature_order_hash: str | None = None,
+        observation: np.ndarray | None = None,
+        model_metadata: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """
         Validate L3 training inputs.
@@ -464,10 +463,10 @@ class ContractValidator:
 
     def validate_l5_inference(
         self,
-        model_feature_order_hash: Optional[str] = None,
-        model_norm_stats_hash: Optional[str] = None,
-        current_norm_stats_hash: Optional[str] = None,
-        observation: Optional[np.ndarray] = None,
+        model_feature_order_hash: str | None = None,
+        model_norm_stats_hash: str | None = None,
+        current_norm_stats_hash: str | None = None,
+        observation: np.ndarray | None = None,
     ) -> ValidationResult:
         """
         Validate L5 inference inputs.
@@ -493,9 +492,9 @@ class ContractValidator:
 
     def validate_feature_subset(
         self,
-        feature_columns: List[str],
+        feature_columns: list[str],
         variant_name: str,
-        expected_observation_dim: Optional[int] = None,
+        expected_observation_dim: int | None = None,
     ) -> ValidationResult:
         """
         Validate that a feature subset is a valid subset of FEATURE_ORDER.
@@ -606,8 +605,8 @@ class ContractValidator:
         self,
         from_stage: PipelineStage,
         to_stage: PipelineStage,
-        from_hashes: Dict[str, str],
-        to_hashes: Dict[str, str],
+        from_hashes: dict[str, str],
+        to_hashes: dict[str, str],
     ) -> ValidationResult:
         """
         Validate stage transition (e.g., L1→L3, L3→L5).
@@ -718,12 +717,12 @@ def create_contract_validator() -> ContractValidator:
 
 
 __all__ = [
-    "ContractValidator",
-    "ValidationResult",
-    "ValidationError",
-    "ValidationSeverity",
-    "PipelineStage",
     "ContractValidationError",
-    "validate_contract",
+    "ContractValidator",
+    "PipelineStage",
+    "ValidationError",
+    "ValidationResult",
+    "ValidationSeverity",
     "create_contract_validator",
+    "validate_contract",
 ]

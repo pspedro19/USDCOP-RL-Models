@@ -20,27 +20,39 @@ import re
 import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 import yaml
 
+from src.analysis.chart_generator import generate_all_charts
 from src.analysis.llm_client import LLMClient
 from src.analysis.macro_analyzer import MacroAnalyzer
-from src.analysis.chart_generator import generate_all_charts
 from src.analysis.prompt_templates import (
-    SYSTEM_DAILY, SYSTEM_WEEKLY,
-    DAILY_TEMPLATE, WEEKLY_TEMPLATE,
-    SYSTEM_DAILY_V2, SYSTEM_WEEKLY_V2,
-    DAILY_TEMPLATE_V2, WEEKLY_TEMPLATE_V2,
-    DAILY_OUTPUT_SCHEMA, WEEKLY_OUTPUT_SCHEMA,
-    build_macro_section, build_signal_section,
-    build_news_section, build_events_section,
+    DAILY_OUTPUT_SCHEMA,
+    DAILY_TEMPLATE,
+    DAILY_TEMPLATE_V2,
+    SYSTEM_DAILY,
+    SYSTEM_DAILY_V2,
+    SYSTEM_WEEKLY,
+    SYSTEM_WEEKLY_V2,
+    WEEKLY_OUTPUT_SCHEMA,
+    WEEKLY_TEMPLATE,
+    WEEKLY_TEMPLATE_V2,
+    WEEKLY_TEMPLATE_V3,
+    build_events_section,
+    build_macro_section,
+    build_macro_table_v2,
+    build_news_section,
+    build_prior_week_section,
+    build_regime_section,
+    build_signal_section,
 )
+from src.analysis.sources import build_fuentes_section
 from src.contracts.analysis_schema import (
-    WeeklyAnalysisRecord, DailyAnalysisRecord, WeeklyViewExport,
-    AnalysisIndexEntry, KEY_MACRO_VARIABLES, DISPLAY_NAMES,
+    AnalysisIndexEntry,
+    DailyAnalysisRecord,
+    WeeklyViewExport,
     _sanitize_for_json,
 )
 
@@ -64,8 +76,8 @@ class WeeklyAnalysisGenerator:
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
-        llm_client: Optional[LLMClient] = None,
+        config_path: str | None = None,
+        llm_client: LLMClient | None = None,
         dry_run: bool = False,
         mode: str = "default",
     ):
@@ -102,13 +114,13 @@ class WeeklyAnalysisGenerator:
         self.export_dir = PROJECT_ROOT / self.config["export"]["output_dir"]
 
         # Lazy-loaded caches
-        self._h5_trades_cache: Optional[dict] = None
-        self._h1_forward_cache: Optional[pd.DataFrame] = None
-        self._gdelt_sentiment_cache: Optional[pd.DataFrame] = None
-        self._all_articles_cache: Optional[pd.DataFrame] = None
-        self._calendar_cache: Optional[list] = None
+        self._h5_trades_cache: dict | None = None
+        self._h1_forward_cache: pd.DataFrame | None = None
+        self._gdelt_sentiment_cache: pd.DataFrame | None = None
+        self._all_articles_cache: pd.DataFrame | None = None
+        self._calendar_cache: list | None = None
         self._charts_generated = 0
-        self._llm_sentiment_scores: Optional[dict] = None  # title_hash -> score
+        self._llm_sentiment_scores: dict | None = None  # title_hash -> score
 
     def generate_for_date(self, target_date: date) -> DailyAnalysisRecord:
         """Generate daily analysis for a specific date."""
@@ -327,6 +339,12 @@ class WeeklyAnalysisGenerator:
         news_context = self._load_news_context(start, end)
         upcoming_events = self._load_upcoming_events(end)
 
+        # 5b. Load prior week JSON for V3 prompt continuity
+        prior_json = self._load_prior_week_json(iso_year, iso_week)
+
+        # 5c. Compute regime directly (bypasses LangGraph which may be unavailable)
+        regime_data = self._compute_regime_direct(macro_df, start, end)
+
         # 6. Generate weekly summary via LLM
         ohlcv_summary = self._load_weekly_ohlcv(start, end)
         weekly_llm = self._generate_weekly_summary(
@@ -336,6 +354,9 @@ class WeeklyAnalysisGenerator:
             h1_signals=h1_signals,
             news_context=news_context,
             upcoming_events=upcoming_events,
+            prior_json=prior_json,
+            regime_data=regime_data,
+            macro_snapshots_dict=macro_snapshots_dict,
         )
 
         # 7. Build export
@@ -374,6 +395,16 @@ class WeeklyAnalysisGenerator:
             news_context=news_context,
         )
 
+        # 7a. Attach regime data and prior outlook accuracy to export
+        if regime_data:
+            export.macro_regime = regime_data
+        if prior_json:
+            # Compute prior outlook accuracy if prior had scenarios and we have this week's OHLCV
+            prior_accuracy = self._evaluate_prior_outlook(prior_json, ohlcv_summary)
+            if prior_accuracy:
+                if isinstance(export.weekly_summary, dict):
+                    export.weekly_summary["prior_outlook_accuracy"] = prior_accuracy
+
         # 7b. LangGraph multi-agent enrichment (dual-track or langgraph-only)
         if self.mode != "legacy":
             self._enrich_with_langgraph(export, iso_year, iso_week, start, end)
@@ -402,12 +433,15 @@ class WeeklyAnalysisGenerator:
         snapshots: dict,
         ohlcv_summary: dict,
         daily_entries: list,
-        h5_signal: Optional[dict] = None,
-        h1_signals: Optional[dict] = None,
-        news_context: Optional[dict] = None,
-        upcoming_events: Optional[list] = None,
+        h5_signal: dict | None = None,
+        h1_signals: dict | None = None,
+        news_context: dict | None = None,
+        upcoming_events: list | None = None,
+        prior_json: dict | None = None,
+        regime_data: dict | None = None,
+        macro_snapshots_dict: dict | None = None,
     ) -> dict:
-        """Generate weekly summary via LLM (V1 or V2 depending on config)."""
+        """Generate weekly summary via LLM (V1, V2 structured, or V3 enhanced)."""
         signal_section = build_signal_section(
             h1_signal=h1_signals or {},
             h5_signal=h5_signal or {},
@@ -424,10 +458,55 @@ class WeeklyAnalysisGenerator:
             f"- Cambio: {ohlcv_summary.get('change_pct', 'N/A')}%"
         )
 
-        use_v2 = self.config.get("prompts", {}).get("version") == "v2"
+        prompt_version = self.config.get("prompts", {}).get("version", "v1")
+        use_v3 = prompt_version == "v3"
+        use_v2 = prompt_version == "v2"
         use_structured = self.config.get("prompts", {}).get("structured_output", False) and use_v2
 
-        if use_v2:
+        if use_v3:
+            # V3 enhanced template with regime, prior week, enhanced macro table
+            prior_week_section = build_prior_week_section(prior_json)
+            regime_section = build_regime_section(regime_data)
+            macro_table = build_macro_table_v2(macro_snapshots_dict or snapshots)
+
+            # Build compressed daily summaries
+            daily_summaries_lines = []
+            for de in daily_entries:
+                d_date = de.get("analysis_date", "?")
+                d_headline = de.get("headline", "")
+                d_sentiment = de.get("sentiment", "neutral")
+                d_close = de.get("usdcop_close", "N/A")
+                d_change = de.get("usdcop_change_pct", "N/A")
+                daily_summaries_lines.append(
+                    f"- **{d_date}**: {d_headline} | COP: {d_close} ({d_change}%) [{d_sentiment}]"
+                )
+            daily_summaries = "\n".join(daily_summaries_lines) if daily_summaries_lines else "- Sin resumenes diarios disponibles"
+
+            # Compute next week label
+            next_week = iso_week + 1
+            next_year = iso_year
+            # Handle year boundary (ISO weeks can be 52 or 53)
+            try:
+                date.fromisocalendar(next_year, next_week, 1)
+            except ValueError:
+                next_week = 1
+                next_year = iso_year + 1
+            next_week_label = f"Semana {next_week} de {next_year}"
+
+            user_prompt = WEEKLY_TEMPLATE_V3.format(
+                week=iso_week, year=iso_year,
+                start=start.isoformat(), end=end.isoformat(),
+                prior_week_section=prior_week_section,
+                regime_section=regime_section,
+                ohlcv_section=ohlcv_text,
+                macro_table=macro_table,
+                news_section=news_section,
+                signal_section=signal_section,
+                daily_summaries=daily_summaries,
+                next_week_label=next_week_label,
+            )
+            system_prompt = SYSTEM_WEEKLY
+        elif use_v2:
             macro_df = self._load_macro_data()
             macro_digest_text = self._compute_macro_digest_text(macro_df, end)
             user_prompt = WEEKLY_TEMPLATE_V2.format(
@@ -492,17 +571,30 @@ class WeeklyAnalysisGenerator:
                     "themes": self._extract_themes(content),
                 }
         else:
-            cache_key = f"weekly_{iso_year}_W{iso_week:02d}"
+            # V1 or V3 (both use markdown, not structured JSON)
+            version_tag = "v3" if use_v3 else "v1"
+            cache_key = f"weekly_{version_tag}_{iso_year}_W{iso_week:02d}"
             result = self.llm.generate(
                 system_prompt, user_prompt,
                 max_tokens=self.config["generation"]["weekly"]["max_tokens"],
                 cache_key=cache_key,
             )
+            content = result["content"]
+
+            # V3: Append deterministic fuentes section after LLM generation
+            if use_v3:
+                macro_keys = list((macro_snapshots_dict or snapshots or {}).keys())
+                fuentes = build_fuentes_section(
+                    macro_keys=macro_keys,
+                    news_highlights=news_highlights,
+                )
+                content = content + "\n\n" + fuentes
+
             return {
-                "content": result["content"],
-                "headline": self._extract_headline(result["content"]),
-                "sentiment": self._detect_sentiment(result["content"]),
-                "themes": self._extract_themes(result["content"]),
+                "content": content,
+                "headline": self._extract_headline(content),
+                "sentiment": self._detect_sentiment(content),
+                "themes": self._extract_themes(content),
             }
 
     def _compute_macro_digest_text(self, macro_df: pd.DataFrame, as_of: date) -> str:
@@ -817,6 +909,156 @@ class WeeklyAnalysisGenerator:
             json.dump(index_data, f, indent=2, ensure_ascii=False)
 
     # ------------------------------------------------------------------
+    # Prior week, regime, and outlook accuracy helpers
+    # ------------------------------------------------------------------
+
+    def _load_prior_week_json(self, iso_year: int, iso_week: int) -> dict | None:
+        """Load the previous week's analysis JSON for V3 prompt continuity.
+
+        Handles year boundaries (W01 -> previous year W52/W53).
+        """
+        prev_week = iso_week - 1
+        prev_year = iso_year
+        if prev_week < 1:
+            prev_year = iso_year - 1
+            # ISO year can have 52 or 53 weeks; try 53 first, fall back to 52
+            for w in (53, 52):
+                try:
+                    date.fromisocalendar(prev_year, w, 1)
+                    prev_week = w
+                    break
+                except ValueError:
+                    continue
+            else:
+                prev_week = 52
+
+        pattern = self.config["export"]["files"]["weekly_pattern"]
+        filename = pattern.format(year=prev_year, week=prev_week)
+        prior_path = self.export_dir / filename
+
+        if prior_path.exists():
+            try:
+                with open(prior_path, encoding="utf-8") as f:
+                    prior_json = json.load(f)
+                logger.info(f"Loaded prior week JSON: {prior_path.name}")
+                return prior_json
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning(f"Failed to load prior week JSON {prior_path}: {e}")
+                return None
+        else:
+            logger.info(f"No prior week JSON found at {prior_path}")
+            return None
+
+    def _compute_regime_direct(
+        self, macro_df: pd.DataFrame, start: date, end: date
+    ) -> dict | None:
+        """Compute macro regime directly (bypasses LangGraph).
+
+        Calls MacroRegimeEngine.analyze() which needs macro_df, cop_series,
+        week_start, week_end. Returns regime_data dict or None.
+        """
+        try:
+            from src.analysis.macro_regime import MacroRegimeEngine
+
+            regime_engine = MacroRegimeEngine()
+
+            # Load COP close series from daily OHLCV
+            ohlcv_path = PROJECT_ROOT / "seeds/latest/usdcop_daily_ohlcv.parquet"
+            if not ohlcv_path.exists():
+                logger.warning("Daily OHLCV not found, skipping regime detection")
+                return None
+
+            daily_df = pd.read_parquet(ohlcv_path)
+            if isinstance(daily_df.index, pd.DatetimeIndex):
+                daily_df = daily_df.reset_index()
+            if "time" in daily_df.columns:
+                daily_df["date"] = pd.to_datetime(daily_df["time"])
+                daily_df = daily_df.set_index("date").sort_index()
+            if "close" not in daily_df.columns:
+                logger.warning("No 'close' column in daily OHLCV, skipping regime detection")
+                return None
+
+            cop_series = daily_df["close"].dropna()
+            if cop_series.empty:
+                return None
+
+            regime_report = regime_engine.analyze(
+                macro_df=macro_df,
+                cop_series=cop_series,
+                week_start=start.isoformat(),
+                week_end=end.isoformat(),
+            )
+            regime_data = regime_report.to_dict() if regime_report else None
+            if regime_data:
+                logger.info(
+                    f"Regime detected: {regime_data.get('regime', {}).get('label', '?')} "
+                    f"(confidence: {regime_data.get('regime', {}).get('confidence', 0):.0%})"
+                )
+            return regime_data
+
+        except ImportError as e:
+            logger.warning(f"Regime engine import failed (missing deps like hmmlearn/ruptures): {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Regime detection failed (non-blocking): {e}")
+            return None
+
+    def _evaluate_prior_outlook(
+        self, prior_json: dict, current_ohlcv: dict
+    ) -> dict | None:
+        """Evaluate accuracy of the prior week's outlook vs actual outcome.
+
+        Returns a dict with accuracy metrics, or None if not enough data.
+        """
+        if not prior_json or not current_ohlcv:
+            return None
+
+        ws = prior_json.get("weekly_summary", {})
+        scenarios = ws.get("scenarios", {})
+        if not scenarios:
+            return None
+
+        actual_close = current_ohlcv.get("close")
+        actual_change_pct = current_ohlcv.get("change_pct")
+        if actual_close is None:
+            return None
+
+        result = {
+            "actual_close": actual_close,
+            "actual_change_pct": actual_change_pct,
+        }
+
+        # Check base scenario target
+        base = scenarios.get("base", {})
+        base_target = base.get("target")
+        if base_target is not None and actual_close is not None:
+            try:
+                error_pct = abs(float(actual_close) - float(base_target)) / float(base_target) * 100
+                result["base_target"] = base_target
+                result["base_error_pct"] = round(error_pct, 2)
+                result["base_hit"] = error_pct < 1.0  # Within 1% of target
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        # Check which scenario was closest
+        bull_target = scenarios.get("bull", {}).get("target")
+        bear_target = scenarios.get("bear", {}).get("target")
+
+        targets = {}
+        if base_target is not None:
+            targets["base"] = float(base_target)
+        if bull_target is not None:
+            targets["bull"] = float(bull_target)
+        if bear_target is not None:
+            targets["bear"] = float(bear_target)
+
+        if targets and actual_close is not None:
+            closest = min(targets, key=lambda k: abs(targets[k] - float(actual_close)))
+            result["closest_scenario"] = closest
+
+        return result
+
+    # ------------------------------------------------------------------
     # Signal / News / Events data loaders
     # ------------------------------------------------------------------
 
@@ -973,7 +1215,7 @@ class WeeklyAnalysisGenerator:
 
                 # Round-robin: pick 2-3 per source, cycling through sources
                 source_keys = list(source_groups.keys())
-                idx = {k: 0 for k in source_keys}
+                idx = dict.fromkeys(source_keys, 0)
                 while len(highlights) < 10 and any(idx[k] < len(source_groups[k]) for k in source_keys):
                     for k in source_keys:
                         if idx[k] < len(source_groups[k]) and len(highlights) < 10:
@@ -983,37 +1225,121 @@ class WeeklyAnalysisGenerator:
 
         return result
 
-    # USDCOP relevance keywords for scoring (Phase 5)
-    _RELEVANCE_KEYWORDS = {
-        "high": [
-            "dolar", "peso colombiano", "usd/cop", "usdcop", "tasa de cambio",
-            "banrep", "banco de la republica", "embi", "devaluacion", "revaluacion",
-        ],
-        "medium": [
-            "petroleo", "oil", "wti", "brent", "dxy", "dollar index",
-            "fed", "federal reserve", "tasa de interes", "interest rate",
-            "inflacion", "inflation", "colombia", "emergentes", "emerging",
-            "vix", "riesgo", "risk", "ibr", "tpm",
-        ],
-    }
+    # Regex-based relevance patterns for FX-specific scoring (Phase 5 v2)
+    # Score 3: Direct FX impact
+    _SCORE3_PATTERNS = [
+        re.compile(
+            r"\b(fed\b|fomc|powell|tasas?\s+de\s+inter[eé]s|rate\s+hike|rate\s+cut"
+            r"|banrep|banco\s+de\s+la\s+rep[uú]blica|tpm\b|ibr\b|pol[ií]tica\s+monetaria"
+            r"|wti\b|brent\b|petr[oó]leo|crude\s+oil|opec"
+            r"|dxy\b|d[oó]lar\s+index|dollar\s+strength"
+            r"|embi\b|riesgo\s+pa[ií]s|credit\s+default"
+            r"|usd/?cop|tipo\s+de\s+cambio|devaluaci[oó]n|revaluaci[oó]n"
+            r"|peso\s+colombiano|d[oó]lar\s+colombi)",
+            re.IGNORECASE,
+        ),
+    ]
+    # Score 2: Indirect impact
+    _SCORE2_PATTERNS = [
+        re.compile(
+            r"\b(exportaciones|importaciones|balanza\s+comercial"
+            r"|colcap|bolsa\s+de\s+colombia|ecopetrol"
+            r"|reforma\s+(tributaria|fiscal|pensional)"
+            r"|pib\b|gdp\b|desempleo|unemployment"
+            r"|emerging\s+markets|mercados?\s+emergentes|latam"
+            r"|vix\b|volatilidad|risk[\s-]off|risk[\s-]on"
+            r"|treasury|bonos\b|tes\b|deuda\s+p[uú]blica)",
+            re.IGNORECASE,
+        ),
+    ]
+    # Score 0: Noise exclusion
+    _NOISE_PATTERNS = [
+        re.compile(
+            r"\b(f[uú]tbol|soccer|liga\s+betplay|champions|gol\b"
+            r"|far[aá]ndula|celebridad|reality|netflix"
+            r"|hor[oó]scopo|receta|cocina|novela)",
+            re.IGNORECASE,
+        ),
+    ]
+
+    # COP impact keyword patterns for bearish/bullish estimation
+    _BEARISH_COP_PATTERNS = re.compile(
+        r"\b(rate\s+hike|sube\s+tasas|hawkish|fed\s+endurece"
+        r"|dxy\s+(sube|alza|fortalece)|dollar\s+strength"
+        r"|embi\s+(sube|alza)|riesgo\s+pa[ií]s\s+(sube|alza|aumenta)"
+        r"|petr[oó]leo\s+(cae|baja|desploma)|oil\s+(drop|fall|decline)"
+        r"|wti\s+(cae|baja)|brent\s+(cae|baja)"
+        r"|risk[\s-]off|aversion\s+(al\s+)?riesgo"
+        r"|fuga\s+de\s+capitales|capital\s+outflow"
+        r"|devaluaci[oó]n|peso\s+(cae|pierde|debilita))",
+        re.IGNORECASE,
+    )
+    _BULLISH_COP_PATTERNS = re.compile(
+        r"\b(rate\s+cut|baja\s+tasas|dovish|fed\s+suaviza"
+        r"|dxy\s+(cae|baja|debilita)|dollar\s+weak"
+        r"|embi\s+(cae|baja)|riesgo\s+pa[ií]s\s+(cae|baja|disminuye)"
+        r"|petr[oó]leo\s+(sube|alza|repunta)|oil\s+(rise|rally|surge)"
+        r"|wti\s+(sube|alza)|brent\s+(sube|alza)"
+        r"|risk[\s-]on|apetito\s+(por\s+)?riesgo"
+        r"|flujos?\s+de\s+inversi[oó]n|capital\s+inflow"
+        r"|revaluaci[oó]n|peso\s+(sube|gana|fortalece))",
+        re.IGNORECASE,
+    )
 
     @staticmethod
     def _score_relevance(title: str, language: str) -> float:
-        """Score article relevance to USDCOP trading (0-1)."""
-        title_lower = title.lower()
+        """Score article relevance to USDCOP trading (0-1).
+
+        Uses regex-based pattern matching with 3 tiers:
+        - Score 3 patterns (direct FX): +0.4
+        - Score 2 patterns (indirect):  +0.2
+        - Noise patterns: force 0.0
+        - Spanish language bonus: +0.15
+        """
+        text = title.lower()
+
+        # Check noise first — exclude irrelevant articles
+        for pat in WeeklyAnalysisGenerator._NOISE_PATTERNS:
+            if pat.search(text):
+                return 0.0
+
         score = 0.0
-        for kw in WeeklyAnalysisGenerator._RELEVANCE_KEYWORDS["high"]:
-            if kw in title_lower:
+
+        # Direct FX impact
+        for pat in WeeklyAnalysisGenerator._SCORE3_PATTERNS:
+            if pat.search(text):
                 score += 0.4
                 break
-        for kw in WeeklyAnalysisGenerator._RELEVANCE_KEYWORDS["medium"]:
-            if kw in title_lower:
+
+        # Indirect impact
+        for pat in WeeklyAnalysisGenerator._SCORE2_PATTERNS:
+            if pat.search(text):
                 score += 0.2
                 break
+
         # Prefer Spanish articles
         if language and str(language).lower().startswith("es"):
             score += 0.15
+
         return min(score, 1.0)
+
+    @staticmethod
+    def _estimate_cop_impact(title: str, summary: str = "") -> str:
+        """Estimate COP impact direction from article text.
+
+        Returns:
+            'bearish_cop', 'bullish_cop', or 'neutral'
+        """
+        text = f"{title} {summary}".lower()
+
+        bearish = bool(WeeklyAnalysisGenerator._BEARISH_COP_PATTERNS.search(text))
+        bullish = bool(WeeklyAnalysisGenerator._BULLISH_COP_PATTERNS.search(text))
+
+        if bearish and not bullish:
+            return "bearish_cop"
+        if bullish and not bearish:
+            return "bullish_cop"
+        return "neutral"
 
     def _load_news_highlights_for_day(self, target_date: date) -> list:
         """Load top news articles for a specific day from all sources.
@@ -1146,7 +1472,7 @@ class WeeklyAnalysisGenerator:
             return
 
         try:
-            from src.analysis.sentiment_analyzer import get_analyzer, _title_hash
+            from src.analysis.sentiment_analyzer import _title_hash, get_analyzer
 
             sentiment_cfg = self.config.get("sentiment", {})
             analyzer = get_analyzer(sentiment_cfg)
@@ -1330,9 +1656,10 @@ class WeeklyAnalysisGenerator:
 
         # 5. Live news_articles DB table (NewsEngine pipeline — enriched articles)
         try:
+            import os
+
             import psycopg2
             import psycopg2.extras
-            import os
             conn = psycopg2.connect(
                 host=os.environ.get("POSTGRES_HOST", "localhost"),
                 port=int(os.environ.get("POSTGRES_PORT", "5432")),
@@ -1501,8 +1828,9 @@ class WeeklyAnalysisGenerator:
     def _load_weekly_ohlcv_from_db(self, start: date, end: date) -> dict:
         """Fallback: aggregate daily OHLCV from 5-min bars in DB."""
         try:
-            import psycopg2
             import os as _os
+
+            import psycopg2
             db_url = _os.environ.get("DATABASE_URL")
             if not db_url:
                 logger.debug("No DATABASE_URL set, cannot fall back to DB for OHLCV")

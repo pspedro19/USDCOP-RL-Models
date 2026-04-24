@@ -13,24 +13,22 @@ Key metrics:
 Alerts when significant drift is detected, indicating potential model degradation.
 """
 
-import os
-import logging
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 import json
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
 try:
-    from evidently.report import Report
     from evidently.metric_preset import DataDriftPreset, DataQualityPreset
     from evidently.metrics import (
+        ColumnDriftMetric,
         DataDriftTable,
         DatasetDriftMetric,
-        ColumnDriftMetric,
     )
+    from evidently.report import Report
     EVIDENTLY_AVAILABLE = True
 except ImportError:
     EVIDENTLY_AVAILABLE = False
@@ -41,12 +39,12 @@ try:
 except ImportError:
     redis = None
 
-from mlops.config import MLOpsConfig, get_config
 from mlops.action_collapse_detector import (
-    ActionCollapseDetector,
     ActionCollapseConfig,
+    ActionCollapseDetector,
     ActionCollapseResult,
 )
+from mlops.config import MLOpsConfig, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +56,13 @@ class DriftResult:
     drift_detected: bool
     drift_share: float  # Proportion of features with drift
     dataset_drift: bool
-    drifted_features: List[str]
-    feature_scores: Dict[str, float]
+    drifted_features: list[str]
+    feature_scores: dict[str, float]
     reference_size: int
     current_size: int
     message: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "timestamp": self.timestamp,
             "drift_detected": self.drift_detected,
@@ -100,10 +98,10 @@ class DriftMonitor:
 
     def __init__(
         self,
-        reference_data: Optional[pd.DataFrame] = None,
-        config: Optional[MLOpsConfig] = None,
-        redis_client: Optional[redis.Redis] = None,
-        feature_columns: Optional[List[str]] = None,
+        reference_data: pd.DataFrame | None = None,
+        config: MLOpsConfig | None = None,
+        redis_client: redis.Redis | None = None,
+        feature_columns: list[str] | None = None,
     ):
         """
         Initialize drift monitor.
@@ -180,7 +178,7 @@ class DriftMonitor:
 
         logger.info(f"Reference stats computed: {len(self.feature_columns)} features, {len(self.reference_data)} samples")
 
-    def set_reference_data(self, reference_data: pd.DataFrame, feature_columns: Optional[List[str]] = None):
+    def set_reference_data(self, reference_data: pd.DataFrame, feature_columns: list[str] | None = None):
         """Set or update reference data."""
         self.reference_data = reference_data
         if feature_columns:
@@ -190,7 +188,7 @@ class DriftMonitor:
     def check_drift(
         self,
         current_data: pd.DataFrame,
-        custom_threshold: Optional[float] = None
+        custom_threshold: float | None = None
     ) -> DriftResult:
         """
         Check for data drift between reference and current data.
@@ -399,7 +397,7 @@ class DriftMonitor:
         except Exception as e:
             logger.error(f"Failed to store drift result: {e}")
 
-    def get_latest_result(self) -> Optional[DriftResult]:
+    def get_latest_result(self) -> DriftResult | None:
         """Get the most recent drift check result."""
         if not self.redis:
             return None
@@ -414,7 +412,7 @@ class DriftMonitor:
 
         return None
 
-    def get_drift_history(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_drift_history(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get drift check history."""
         if not self.redis:
             return []
@@ -426,7 +424,7 @@ class DriftMonitor:
             logger.error(f"Failed to get drift history: {e}")
             return []
 
-    def get_reference_stats(self) -> Optional[Dict[str, Any]]:
+    def get_reference_stats(self) -> dict[str, Any] | None:
         """Get stored reference data statistics."""
         if not self.redis:
             return None
@@ -454,7 +452,7 @@ class DriftMonitor:
 
     def check_action_drift(
         self,
-        action_history: List[str],
+        action_history: list[str],
         entropy_threshold: float = 0.5,
         dominance_threshold: float = 0.80
     ) -> ActionCollapseResult:
@@ -544,8 +542,8 @@ class DriftMonitor:
 def create_drift_monitor_from_db(
     connection_string: str,
     reference_query: str,
-    feature_columns: List[str],
-    config: Optional[MLOpsConfig] = None
+    feature_columns: list[str],
+    config: MLOpsConfig | None = None
 ) -> DriftMonitor:
     """
     Create a drift monitor with reference data from database.

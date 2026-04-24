@@ -20,10 +20,11 @@ This eliminates manual contract creation when training new model versions.
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Final
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -44,10 +45,10 @@ class DynamicFeatureContract:
     """
     version: str
     observation_dim: int
-    feature_order: Tuple[str, ...]
+    feature_order: tuple[str, ...]
     norm_stats_path: str
     model_path: str
-    clip_range: Tuple[float, float] = (-5.0, 5.0)
+    clip_range: tuple[float, float] = (-5.0, 5.0)
 
     # Technical indicator periods
     rsi_period: int = 9
@@ -61,11 +62,11 @@ class DynamicFeatureContract:
 
     # Metadata
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    created_from_dataset: Optional[str] = None
+    created_from_dataset: str | None = None
     sample_count: int = 0
 
     # Hash for integrity verification
-    contract_hash: Optional[str] = None
+    contract_hash: str | None = None
 
     def __post_init__(self):
         """Validate and compute hash after initialization"""
@@ -89,7 +90,7 @@ class DynamicFeatureContract:
         }, sort_keys=True)
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             "version": self.version,
@@ -111,7 +112,7 @@ class DynamicFeatureContract:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DynamicFeatureContract":
+    def from_dict(cls, data: dict[str, Any]) -> "DynamicFeatureContract":
         """Create contract from dictionary"""
         return cls(
             version=data["version"],
@@ -157,15 +158,15 @@ class NormStatsCalculator:
     This replaces manual norm_stats.json creation.
     """
 
-    def __init__(self, clip_range: Tuple[float, float] = (-5.0, 5.0)):
+    def __init__(self, clip_range: tuple[float, float] = (-5.0, 5.0)):
         self.clip_range = clip_range
 
     def calculate_from_dataframe(
         self,
         df: pd.DataFrame,
-        feature_columns: List[str],
-        exclude_state_features: List[str] = None
-    ) -> Dict[str, Dict[str, float]]:
+        feature_columns: list[str],
+        exclude_state_features: list[str] = None
+    ) -> dict[str, dict[str, float]]:
         """
         Calculate normalization statistics from DataFrame.
 
@@ -200,7 +201,7 @@ class NormStatsCalculator:
                 "std": float(values.std()),
                 "min": float(values.min()),
                 "max": float(values.max()),
-                "count": int(len(values)),
+                "count": len(values),
                 "null_pct": float(df[col].isna().mean()),
                 "percentile_1": float(np.percentile(values, 1)),
                 "percentile_99": float(np.percentile(values, 99)),
@@ -216,7 +217,7 @@ class NormStatsCalculator:
 
     def save_to_json(
         self,
-        stats: Dict[str, Dict[str, float]],
+        stats: dict[str, dict[str, float]],
         output_path: Path
     ) -> str:
         """
@@ -231,7 +232,7 @@ class NormStatsCalculator:
             json.dump(stats, f, indent=2)
 
         # Compute hash
-        with open(output_path, 'r') as f:
+        with open(output_path) as f:
             content = f.read()
 
         file_hash = hashlib.sha256(content.encode()).hexdigest()
@@ -272,10 +273,10 @@ class ContractFactory:
         self,
         dataset_path: Path,
         version: str,
-        feature_columns: List[str],
-        state_features: List[str] = None,
-        technical_periods: Dict[str, int] = None,
-        trading_hours: Dict[str, str] = None,
+        feature_columns: list[str],
+        state_features: list[str] = None,
+        technical_periods: dict[str, int] = None,
+        trading_hours: dict[str, str] = None,
     ) -> DynamicFeatureContract:
         """
         Create a complete feature contract from training dataset.
@@ -348,8 +349,8 @@ class ContractFactory:
     def create_from_config(
         self,
         version: str,
-        feature_config: Dict[str, Any],
-        norm_stats: Dict[str, Dict[str, float]],
+        feature_config: dict[str, Any],
+        norm_stats: dict[str, dict[str, float]],
     ) -> DynamicFeatureContract:
         """
         Create contract from explicit configuration (no dataset needed).
@@ -404,12 +405,12 @@ class ContractFactory:
                 f"Use create_from_dataset() or create_from_config() first."
             )
 
-        with open(contract_path, 'r') as f:
+        with open(contract_path) as f:
             data = json.load(f)
 
         return DynamicFeatureContract.from_dict(data)
 
-    def list_contracts(self) -> List[str]:
+    def list_contracts(self) -> list[str]:
         """List all available contract versions"""
         contracts = []
         for path in self.contracts_dir.glob("*_contract.json"):
@@ -438,7 +439,7 @@ class ContractRegistry:
     Provides unified access to both static and dynamic contracts.
     """
 
-    _contracts: Dict[str, DynamicFeatureContract] = {}
+    _contracts: dict[str, DynamicFeatureContract] = {}
     _initialized: bool = False
 
     @classmethod
@@ -495,7 +496,7 @@ class ContractRegistry:
         logger.info(f"Registered contract: {contract.version}")
 
     @classmethod
-    def list_versions(cls) -> List[str]:
+    def list_versions(cls) -> list[str]:
         """List all registered versions"""
         return list(cls._contracts.keys())
 
@@ -508,7 +509,7 @@ def create_contract_from_training(
     project_root: Path,
     dataset_path: Path,
     version: str,
-    feature_columns: List[str],
+    feature_columns: list[str],
     **kwargs
 ) -> DynamicFeatureContract:
     """

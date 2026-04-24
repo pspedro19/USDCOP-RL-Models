@@ -21,20 +21,15 @@ Version: 1.0.0
 Date: 2025-01-16
 """
 
+import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     Protocol,
-    Tuple,
 )
-import logging
-import uuid
 
 from .position_tracker import (
     Position,
@@ -108,17 +103,17 @@ class Order:
     side: OrderSide
     order_type: OrderType
     size: float
-    price: Optional[float] = None
+    price: float | None = None
     status: OrderStatus = OrderStatus.PENDING
     created_at: datetime = field(default_factory=datetime.now)
-    filled_at: Optional[datetime] = None
-    filled_price: Optional[float] = None
+    filled_at: datetime | None = None
+    filled_price: float | None = None
     filled_size: float = 0.0
     commission: float = 0.0
     slippage: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert order to dictionary."""
         return {
             "order_id": self.order_id,
@@ -151,13 +146,13 @@ class ExecutionResult:
         pnl: P&L from the execution (if closing position)
     """
     success: bool
-    order: Optional[Order] = None
-    position: Optional[Position] = None
+    order: Order | None = None
+    position: Position | None = None
     message: str = ""
     pnl: float = 0.0
     pnl_pct: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary."""
         return {
             "success": self.success,
@@ -201,7 +196,7 @@ class IRiskValidator(Protocol):
         self,
         signal: str,
         current_drawdown_pct: float
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Validate if a signal should be executed."""
         ...
 
@@ -256,8 +251,8 @@ class OrderExecutor:
     def __init__(
         self,
         position_tracker: PositionTracker,
-        config: Optional[ExecutorConfig] = None,
-        risk_validator: Optional[IRiskValidator] = None,
+        config: ExecutorConfig | None = None,
+        risk_validator: IRiskValidator | None = None,
     ) -> None:
         """
         Initialize the order executor.
@@ -275,8 +270,8 @@ class OrderExecutor:
         self._current_capital = self._config.initial_capital
 
         # Order tracking
-        self._pending_orders: Dict[str, Order] = {}
-        self._order_history: List[Order] = []
+        self._pending_orders: dict[str, Order] = {}
+        self._order_history: list[Order] = []
 
         # Statistics
         self._total_commission: float = 0.0
@@ -296,7 +291,7 @@ class OrderExecutor:
         model_id: str,
         signal: SignalType,
         current_price: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
         current_drawdown_pct: float = 0.0,
     ) -> ExecutionResult:
         """
@@ -595,8 +590,8 @@ class OrderExecutor:
     def close_all_positions(
         self,
         price: float,
-        timestamp: Optional[datetime] = None,
-    ) -> List[ExecutionResult]:
+        timestamp: datetime | None = None,
+    ) -> list[ExecutionResult]:
         """
         Close all open positions.
 
@@ -698,9 +693,9 @@ class OrderExecutor:
 
     def get_order_history(
         self,
-        model_id: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Order]:
+        model_id: str | None = None,
+        limit: int | None = None,
+    ) -> list[Order]:
         """
         Get order history.
 
@@ -721,7 +716,7 @@ class OrderExecutor:
 
         return history
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get execution statistics."""
         position_stats = self._position_tracker.get_statistics()
 
@@ -753,7 +748,7 @@ class OrderExecutor:
             f"OrderExecutor reset: capital=${self._config.initial_capital:.2f}"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize executor state."""
         return {
             "current_capital": self._current_capital,

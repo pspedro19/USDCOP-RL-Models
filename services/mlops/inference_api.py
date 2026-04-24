@@ -16,23 +16,23 @@ Designed for production deployment with:
 - Prometheus metrics
 """
 
+import logging
 import os
 import time
-import logging
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 import numpy as np
-
-from mlops.config import MLOpsConfig, get_config, SignalType, ModelConfig
-from mlops.inference_engine import InferenceEngine, get_inference_engine, InferenceResult, EnsembleResult
-from mlops.risk_manager import RiskManager, get_risk_manager, RiskCheckResult
-from mlops.feature_cache import FeatureCache, get_feature_cache
-from mlops.drift_monitor import DriftMonitor
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from mlops.config import MLOpsConfig, SignalType, get_config
+from mlops.feature_cache import FeatureCache
+from mlops.inference_engine import (
+    InferenceEngine,
+)
+from mlops.risk_manager import RiskManager
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +43,11 @@ logger = logging.getLogger(__name__)
 
 class InferenceRequest(BaseModel):
     """Request for model inference."""
-    observation: List[float] = Field(..., description="Feature vector for inference")
-    model_name: Optional[str] = Field(None, description="Specific model to use")
+    observation: list[float] = Field(..., description="Feature vector for inference")
+    model_name: str | None = Field(None, description="Specific model to use")
     use_ensemble: bool = Field(False, description="Use ensemble inference")
     enforce_risk_checks: bool = Field(True, description="Apply risk management checks")
-    timestamp: Optional[str] = Field(None, description="Feature timestamp for caching")
+    timestamp: str | None = Field(None, description="Feature timestamp for caching")
 
 
 class InferenceResponse(BaseModel):
@@ -56,12 +56,12 @@ class InferenceResponse(BaseModel):
     confidence: float
     approved: bool
     risk_status: str
-    action_probs: Dict[str, float]
+    action_probs: dict[str, float]
     latency_ms: float
     model_name: str
     timestamp: str
-    risk_metrics: Optional[Dict[str, Any]] = None
-    position_recommendation: Optional[Dict[str, Any]] = None
+    risk_metrics: dict[str, Any] | None = None
+    position_recommendation: dict[str, Any] | None = None
 
 
 class HealthResponse(BaseModel):
@@ -69,23 +69,23 @@ class HealthResponse(BaseModel):
     status: str
     environment: str
     timestamp: str
-    components: Dict[str, Any]
+    components: dict[str, Any]
 
 
 class RiskSummaryResponse(BaseModel):
     """Risk summary response."""
     timestamp: str
-    trading_status: Dict[str, Any]
-    daily_stats: Dict[str, Any]
-    limits: Dict[str, Any]
-    risk_utilization: Dict[str, Any]
+    trading_status: dict[str, Any]
+    daily_stats: dict[str, Any]
+    limits: dict[str, Any]
+    risk_utilization: dict[str, Any]
 
 
 class MetricsResponse(BaseModel):
     """Metrics response."""
-    inference_stats: Dict[str, Any]
-    risk_stats: Dict[str, Any]
-    cache_stats: Dict[str, Any]
+    inference_stats: dict[str, Any]
+    risk_stats: dict[str, Any]
+    cache_stats: dict[str, Any]
 
 
 class TradeResultRequest(BaseModel):
@@ -93,14 +93,14 @@ class TradeResultRequest(BaseModel):
     pnl: float = Field(..., description="Profit/loss in currency")
     pnl_percent: float = Field(..., description="Profit/loss as percentage")
     is_win: bool = Field(..., description="Whether trade was profitable")
-    trade_id: Optional[str] = Field(None, description="Trade identifier")
+    trade_id: str | None = Field(None, description="Trade identifier")
 
 
 # ============================================================================
 # Application Setup
 # ============================================================================
 
-def create_inference_app(config: Optional[MLOpsConfig] = None) -> FastAPI:
+def create_inference_app(config: MLOpsConfig | None = None) -> FastAPI:
     """
     Create FastAPI application with all MLOps components.
 
@@ -173,8 +173,9 @@ def create_inference_app(config: Optional[MLOpsConfig] = None) -> FastAPI:
     except Exception:
         pass
     try:
-        import sentry_sdk
         import os as _os
+
+        import sentry_sdk
         if _sentry_dsn := _os.environ.get("SENTRY_DSN"):
             sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1)
     except Exception:
@@ -333,11 +334,11 @@ def create_inference_app(config: Optional[MLOpsConfig] = None) -> FastAPI:
 
         except Exception as e:
             logger.error(f"Inference failed: {e}")
-            raise HTTPException(500, f"Inference failed: {str(e)}")
+            raise HTTPException(500, f"Inference failed: {e!s}")
 
     @app.post("/v1/inference/batch", tags=["Inference"])
     async def batch_inference(
-        requests: List[InferenceRequest],
+        requests: list[InferenceRequest],
         engine: InferenceEngine = Depends(get_engine),
     ):
         """Run batch inference on multiple observations."""
@@ -422,7 +423,7 @@ def create_inference_app(config: Optional[MLOpsConfig] = None) -> FastAPI:
             engine.load_single_model(name, onnx_path, observation_dim)
             return {"status": "loaded", "model": name}
         except Exception as e:
-            raise HTTPException(400, f"Failed to load model: {str(e)}")
+            raise HTTPException(400, f"Failed to load model: {e!s}")
 
     @app.get("/v1/cache/stats", tags=["Cache"])
     async def cache_stats(cache: FeatureCache = Depends(get_cache)):

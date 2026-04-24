@@ -12,13 +12,13 @@ Created: 2025-01-17
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import asyncpg
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..config import get_settings, FEATURE_ORDER
+from ..config import FEATURE_ORDER, get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lineage", tags=["lineage"])
@@ -33,19 +33,19 @@ settings = get_settings()
 class FeatureLineage(BaseModel):
     """Feature lineage information."""
 
-    feature_order: List[str] = Field(
+    feature_order: list[str] = Field(
         default_factory=list,
         description="Order of features in observation vector"
     )
-    values: Dict[str, float] = Field(
+    values: dict[str, float] = Field(
         default_factory=dict,
         description="Feature values keyed by name"
     )
-    source: Optional[str] = Field(
+    source: str | None = Field(
         default=None,
         description="Feature source (l1_pipeline, feast, fallback)"
     )
-    snapshot_version: Optional[str] = Field(
+    snapshot_version: str | None = Field(
         default=None,
         description="Version of feature snapshot schema"
     )
@@ -55,10 +55,10 @@ class ModelLineageInfo(BaseModel):
     """Model information for lineage tracking."""
 
     model_id: str = Field(..., description="Model identifier")
-    model_version: Optional[str] = Field(default=None, description="Model version")
-    model_hash: Optional[str] = Field(default=None, description="SHA256 hash of model file")
-    observation_dim: Optional[int] = Field(default=None, description="Input observation dimension")
-    action_space: Optional[int] = Field(default=None, description="Action space size")
+    model_version: str | None = Field(default=None, description="Model version")
+    model_hash: str | None = Field(default=None, description="SHA256 hash of model file")
+    observation_dim: int | None = Field(default=None, description="Input observation dimension")
+    action_space: int | None = Field(default=None, description="Action space size")
 
     model_config = {"protected_namespaces": ()}
 
@@ -66,19 +66,19 @@ class ModelLineageInfo(BaseModel):
 class DatasetLineage(BaseModel):
     """Dataset lineage information."""
 
-    training_dataset_id: Optional[int] = Field(default=None, description="Training dataset ID")
-    training_start_date: Optional[str] = Field(default=None, description="Training data start date")
-    training_end_date: Optional[str] = Field(default=None, description="Training data end date")
+    training_dataset_id: int | None = Field(default=None, description="Training dataset ID")
+    training_start_date: str | None = Field(default=None, description="Training data start date")
+    training_end_date: str | None = Field(default=None, description="Training data end date")
 
 
 class NormStatsLineage(BaseModel):
     """Normalization statistics lineage."""
 
-    norm_stats_hash: Optional[str] = Field(
+    norm_stats_hash: str | None = Field(
         default=None,
         description="SHA256 hash of norm_stats.json file"
     )
-    norm_stats_path: Optional[str] = Field(
+    norm_stats_path: str | None = Field(
         default=None,
         description="Path to norm_stats.json"
     )
@@ -90,12 +90,12 @@ class TradeLineage(BaseModel):
     trade_id: int = Field(..., description="Trade ID")
     timestamp: datetime = Field(..., description="Trade timestamp")
     signal: str = Field(..., description="Trading signal (LONG, SHORT, HOLD)")
-    prediction: Optional[float] = Field(default=None, description="Model prediction/confidence")
+    prediction: float | None = Field(default=None, description="Model prediction/confidence")
     features: FeatureLineage = Field(..., description="Feature lineage")
     model: ModelLineageInfo = Field(..., description="Model lineage")
-    dataset: Optional[DatasetLineage] = Field(default=None, description="Dataset lineage")
-    norm_stats_hash: Optional[str] = Field(default=None, description="Norm stats hash")
-    metadata: Dict[str, Any] = Field(
+    dataset: DatasetLineage | None = Field(default=None, description="Dataset lineage")
+    norm_stats_hash: str | None = Field(default=None, description="Norm stats hash")
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional metadata"
     )
@@ -107,43 +107,43 @@ class ModelLineage(BaseModel):
     """Complete lineage for a model."""
 
     model_id: str = Field(..., description="Model identifier")
-    model_version: Optional[str] = Field(default=None, description="Model version")
-    model_hash: Optional[str] = Field(default=None, description="Model file hash")
-    model_path: Optional[str] = Field(default=None, description="Model file path")
-    status: Optional[str] = Field(default=None, description="Model status")
+    model_version: str | None = Field(default=None, description="Model version")
+    model_hash: str | None = Field(default=None, description="Model file hash")
+    model_path: str | None = Field(default=None, description="Model file path")
+    status: str | None = Field(default=None, description="Model status")
 
     # Training info
-    observation_dim: Optional[int] = Field(default=None, description="Input dimension")
-    action_space: Optional[int] = Field(default=None, description="Action space size")
-    feature_order: Optional[List[str]] = Field(default=None, description="Feature order")
+    observation_dim: int | None = Field(default=None, description="Input dimension")
+    action_space: int | None = Field(default=None, description="Action space size")
+    feature_order: list[str] | None = Field(default=None, description="Feature order")
 
     # Dataset lineage
-    dataset: Optional[DatasetLineage] = Field(default=None, description="Training dataset info")
+    dataset: DatasetLineage | None = Field(default=None, description="Training dataset info")
 
     # Norm stats lineage
-    norm_stats_hash: Optional[str] = Field(default=None, description="Norm stats hash")
+    norm_stats_hash: str | None = Field(default=None, description="Norm stats hash")
 
     # Performance metrics
-    validation_metrics: Optional[Dict[str, Any]] = Field(
+    validation_metrics: dict[str, Any] | None = Field(
         default=None,
         description="Validation metrics"
     )
-    test_sharpe: Optional[float] = Field(default=None, description="Test Sharpe ratio")
-    test_max_drawdown: Optional[float] = Field(default=None, description="Test max drawdown")
-    test_win_rate: Optional[float] = Field(default=None, description="Test win rate")
+    test_sharpe: float | None = Field(default=None, description="Test Sharpe ratio")
+    test_max_drawdown: float | None = Field(default=None, description="Test max drawdown")
+    test_win_rate: float | None = Field(default=None, description="Test win rate")
 
     # Timestamps
-    created_at: Optional[datetime] = Field(default=None, description="Registration time")
-    deployed_at: Optional[datetime] = Field(default=None, description="Deployment time")
-    retired_at: Optional[datetime] = Field(default=None, description="Retirement time")
+    created_at: datetime | None = Field(default=None, description="Registration time")
+    deployed_at: datetime | None = Field(default=None, description="Deployment time")
+    retired_at: datetime | None = Field(default=None, description="Retirement time")
 
     # Trade statistics
-    trade_count: Optional[int] = Field(default=None, description="Number of trades with this model")
-    first_trade: Optional[datetime] = Field(default=None, description="First trade timestamp")
-    last_trade: Optional[datetime] = Field(default=None, description="Last trade timestamp")
+    trade_count: int | None = Field(default=None, description="Number of trades with this model")
+    first_trade: datetime | None = Field(default=None, description="First trade timestamp")
+    last_trade: datetime | None = Field(default=None, description="Last trade timestamp")
 
     # Config hash
-    config_hash: Optional[str] = Field(default=None, description="Config hash")
+    config_hash: str | None = Field(default=None, description="Config hash")
 
     model_config = {"protected_namespaces": ()}
 
@@ -156,7 +156,7 @@ class ModelLineage(BaseModel):
 class LineageService:
     """Service to retrieve lineage information from database."""
 
-    def __init__(self, db_pool: Optional[asyncpg.Pool] = None):
+    def __init__(self, db_pool: asyncpg.Pool | None = None):
         self._pool = db_pool
 
     async def _get_connection(self) -> asyncpg.Connection:
@@ -179,7 +179,7 @@ class LineageService:
         else:
             await conn.close()
 
-    async def get_trade_lineage(self, trade_id: int) -> Optional[TradeLineage]:
+    async def get_trade_lineage(self, trade_id: int) -> TradeLineage | None:
         """
         Get complete lineage for a trade.
 
@@ -288,7 +288,7 @@ class LineageService:
         finally:
             await self._release_connection(conn)
 
-    async def get_model_lineage(self, model_id: str) -> Optional[ModelLineage]:
+    async def get_model_lineage(self, model_id: str) -> ModelLineage | None:
         """
         Get complete lineage for a model.
 
@@ -452,7 +452,7 @@ async def get_trade_lineage(
         logger.error(f"Error getting trade lineage: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get trade lineage: {str(e)}"
+            detail=f"Failed to get trade lineage: {e!s}"
         )
 
 
@@ -510,15 +510,15 @@ async def get_model_lineage(
         logger.error(f"Error getting model lineage: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get model lineage: {str(e)}"
+            detail=f"Failed to get model lineage: {e!s}"
         )
 
 
 @router.get("/models")
 async def list_models_with_lineage(
     req: Request,
-    status: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    status: str | None = None,
+) -> list[dict[str, Any]]:
     """
     List all models with basic lineage information.
 
@@ -589,5 +589,5 @@ async def list_models_with_lineage(
         logger.error(f"Error listing models: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to list models: {str(e)}"
+            detail=f"Failed to list models: {e!s}"
         )

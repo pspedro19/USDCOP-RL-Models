@@ -15,7 +15,6 @@ from __future__ import annotations
 import logging
 import time
 from datetime import date
-from typing import Optional
 
 import pandas as pd
 
@@ -40,8 +39,11 @@ def preprocess_node(state: MasterAnalysisState) -> dict:
     skip file loading and use the injected data directly.
     """
     from src.analysis.agent_tools import (
-        load_daily_ohlcv, load_m5_ohlcv, load_macro_data,
-        load_gdelt_articles, get_cop_series,
+        get_cop_series,
+        load_daily_ohlcv,
+        load_gdelt_articles,
+        load_m5_ohlcv,
+        load_macro_data,
     )
 
     log = state.get("execution_log", [])
@@ -106,7 +108,7 @@ def preprocess_node(state: MasterAnalysisState) -> dict:
 
 def ta_agent_node(state: MasterAnalysisState) -> dict:
     """Technical Analysis agent: indicators + bias + scenarios."""
-    from src.analysis.agent_tools import run_technical_analysis, run_multi_timeframe
+    from src.analysis.agent_tools import run_multi_timeframe, run_technical_analysis
 
     log = state.get("execution_log", [])
     errors = state.get("errors", [])
@@ -304,9 +306,11 @@ def synthesizer_node(state: MasterAnalysisState) -> dict:
     Uses Reflection pattern: generate → evaluate → revise (max 3x).
     """
     from src.analysis.prompt_templates import (
-        build_ta_context, build_news_clusters_context,
-        build_regime_context, build_fx_context_section,
-        SYSTEM_SYNTHESIZER, EVALUATION_RUBRIC,
+        SYSTEM_SYNTHESIZER,
+        build_fx_context_section,
+        build_news_clusters_context,
+        build_regime_context,
+        build_ta_context,
     )
 
     log = state.get("execution_log", [])
@@ -544,7 +548,7 @@ def build_master_graph():
     Returns:
         Compiled LangGraph graph ready for .invoke().
     """
-    from langgraph.graph import StateGraph, END
+    from langgraph.graph import END, StateGraph
 
     graph = StateGraph(MasterAnalysisState)
 
@@ -601,8 +605,8 @@ def run_analysis_graph(
     iso_year: int,
     iso_week: int,
     dry_run: bool = False,
-    preloaded_data: Optional[dict] = None,
-    llm_client: Optional[object] = None,
+    preloaded_data: dict | None = None,
+    llm_client: object | None = None,
 ) -> MasterAnalysisState:
     """Convenience function to run the full analysis graph.
 
@@ -638,7 +642,7 @@ def run_analysis_graph(
     if preloaded_data:
         for key in ("ohlcv_daily", "ohlcv_m5", "macro_data", "cop_prices",
                      "gdelt_articles", "macro_digest", "events_calendar"):
-            if key in preloaded_data and preloaded_data[key]:
+            if preloaded_data.get(key):
                 initial_state[key] = preloaded_data[key]
 
     # Inject LLM client (Phase 1: so synthesizer uses configured client)

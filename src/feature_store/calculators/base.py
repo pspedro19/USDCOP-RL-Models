@@ -20,16 +20,14 @@ Created: 2025-01-12
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type
-import numpy as np
+
 import pandas as pd
 
 from ..contracts import (
     FeatureSpec,
-    FeatureValue,
-    SmoothingMethod,
     NormalizationMethod,
     NormalizationParams,
+    SmoothingMethod,
 )
 
 
@@ -66,7 +64,7 @@ class FeatureCalculator(ABC):
     def normalize(
         self,
         values: pd.Series,
-        params: Optional[NormalizationParams] = None
+        params: NormalizationParams | None = None
     ) -> pd.Series:
         """
         Normalize feature values using spec or provided params.
@@ -115,7 +113,7 @@ class FeatureCalculator(ABC):
     def calculate_and_normalize(
         self,
         data: pd.DataFrame,
-        norm_params: Optional[NormalizationParams] = None
+        norm_params: NormalizationParams | None = None
     ) -> pd.Series:
         """
         Calculate and normalize feature in one step.
@@ -136,7 +134,7 @@ class FeatureCalculator(ABC):
         return self.spec.name
 
     @property
-    def requires(self) -> List[str]:
+    def requires(self) -> list[str]:
         """Required input columns"""
         return self.spec.requires
 
@@ -151,7 +149,7 @@ class FeatureCalculator(ABC):
         series: pd.Series,
         method: SmoothingMethod,
         window: int,
-        alpha: Optional[float] = None
+        alpha: float | None = None
     ) -> pd.Series:
         """
         Apply smoothing to a series.
@@ -197,12 +195,12 @@ class CalculatorRegistry:
 
     Implements Factory Pattern for calculator creation.
     """
-    _calculators: Dict[str, Type[FeatureCalculator]] = {}
+    _calculators: dict[str, type[FeatureCalculator]] = {}
 
     @classmethod
     def register(cls, name: str):
         """Decorator to register a calculator"""
-        def decorator(calculator_cls: Type[FeatureCalculator]):
+        def decorator(calculator_cls: type[FeatureCalculator]):
             cls._calculators[name] = calculator_cls
             return calculator_cls
         return decorator
@@ -215,12 +213,12 @@ class CalculatorRegistry:
         return cls._calculators[name](spec)
 
     @classmethod
-    def list_calculators(cls) -> List[str]:
+    def list_calculators(cls) -> list[str]:
         """List registered calculators"""
         return list(cls._calculators.keys())
 
     @classmethod
-    def get_calculator_class(cls, name: str) -> Type[FeatureCalculator]:
+    def get_calculator_class(cls, name: str) -> type[FeatureCalculator]:
         """Get calculator class by name"""
         if name not in cls._calculators:
             raise KeyError(f"Unknown calculator: {name}")

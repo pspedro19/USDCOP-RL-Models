@@ -10,11 +10,11 @@ Frontend Zod schemas must match these definitions.
 @version 1.0.0
 """
 
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import date, datetime
+from datetime import date
 from enum import Enum
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # ============================================================================
 # ENUMS
@@ -60,9 +60,9 @@ class ModelMetrics(BaseModel):
     horizon_id: int
     direction_accuracy: float = Field(..., ge=0, le=100, description="DA percentage")
     rmse: float = Field(..., ge=0, description="Root Mean Squared Error")
-    mae: Optional[float] = Field(None, ge=0, description="Mean Absolute Error")
-    mape: Optional[float] = Field(None, description="Mean Absolute Percentage Error")
-    r2: Optional[float] = Field(None, description="R-squared")
+    mae: float | None = Field(None, ge=0, description="Mean Absolute Error")
+    mape: float | None = Field(None, description="Mean Absolute Percentage Error")
+    r2: float | None = Field(None, description="R-squared")
     sample_count: int = Field(..., ge=0, description="Number of samples")
 
 
@@ -77,22 +77,22 @@ class ModelComparison(BaseModel):
 
 class ModelListResponse(BaseModel):
     """Response for listing all models."""
-    models: List[ModelInfo]
+    models: list[ModelInfo]
     count: int
 
 
 class ModelDetailResponse(BaseModel):
     """Detailed model information."""
     model: ModelInfo
-    metrics_by_horizon: List[ModelMetrics]
+    metrics_by_horizon: list[ModelMetrics]
     total_forecasts: int
 
 
 class ModelRankingResponse(BaseModel):
     """Model ranking by metric."""
     metric: str
-    horizon: Optional[int]
-    rankings: List[ModelComparison]
+    horizon: int | None
+    rankings: list[ModelComparison]
 
 
 # ============================================================================
@@ -101,7 +101,7 @@ class ModelRankingResponse(BaseModel):
 
 class Forecast(BaseModel):
     """Single forecast record."""
-    id: Optional[str] = None
+    id: str | None = None
     inference_date: date
     inference_week: int = Field(..., ge=1, le=53)
     inference_year: int = Field(..., ge=2020, le=2100)
@@ -110,27 +110,27 @@ class Forecast(BaseModel):
     horizon_id: int
     base_price: float = Field(..., gt=0, description="Starting price")
     predicted_price: float = Field(..., gt=0, description="Forecasted price")
-    predicted_return_pct: Optional[float] = None
-    price_change: Optional[float] = None
+    predicted_return_pct: float | None = None
+    price_change: float | None = None
     direction: ForecastDirection
     signal: int = Field(..., ge=-1, le=1, description="-1=SELL, 0=HOLD, 1=BUY")
-    confidence: Optional[float] = Field(None, ge=0, le=1)
-    actual_price: Optional[float] = None
-    direction_correct: Optional[bool] = None
+    confidence: float | None = Field(None, ge=0, le=1)
+    actual_price: float | None = None
+    direction_correct: bool | None = None
 
 
 class ForecastListResponse(BaseModel):
     """Response for forecast list."""
     source: str = Field(..., description="Data source: postgresql, csv, none")
     count: int = Field(..., ge=0)
-    data: List[Forecast]
+    data: list[Forecast]
 
 
 class LatestForecastResponse(BaseModel):
     """Latest forecasts per model/horizon."""
     source: str
     count: int
-    data: List[Forecast]
+    data: list[Forecast]
 
 
 # ============================================================================
@@ -141,24 +141,24 @@ class Consensus(BaseModel):
     """Consensus forecast for a horizon."""
     inference_date: date
     horizon_id: int
-    horizon_label: Optional[str] = None
+    horizon_label: str | None = None
     avg_predicted_price: float
-    median_predicted_price: Optional[float] = None
-    std_predicted_price: Optional[float] = None
-    min_predicted_price: Optional[float] = None
-    max_predicted_price: Optional[float] = None
+    median_predicted_price: float | None = None
+    std_predicted_price: float | None = None
+    min_predicted_price: float | None = None
+    max_predicted_price: float | None = None
     consensus_direction: ForecastDirection
     bullish_count: int = Field(..., ge=0)
     bearish_count: int = Field(..., ge=0)
     total_models: int = Field(..., ge=0)
-    agreement_pct: Optional[float] = None
+    agreement_pct: float | None = None
 
 
 class ConsensusResponse(BaseModel):
     """Response for consensus forecasts."""
     source: str
     count: int
-    data: List[Consensus]
+    data: list[Consensus]
 
 
 # ============================================================================
@@ -168,9 +168,9 @@ class ConsensusResponse(BaseModel):
 class DashboardResponse(BaseModel):
     """Complete dashboard data in one response."""
     source: str
-    forecasts: List[Dict[str, Any]]
-    consensus: List[Dict[str, Any]]
-    metrics: List[Dict[str, Any]]
+    forecasts: list[dict[str, Any]]
+    consensus: list[dict[str, Any]]
+    metrics: list[dict[str, Any]]
     last_update: str
 
 
@@ -178,9 +178,9 @@ class WeekForecastResponse(BaseModel):
     """Forecasts for a specific week."""
     year: int
     week: int
-    forecasts: List[Dict[str, Any]]
-    minio_files: List[Dict[str, Any]]
-    minio_path: Optional[str] = None
+    forecasts: list[dict[str, Any]]
+    minio_files: list[dict[str, Any]]
+    minio_path: str | None = None
     source: str
     count: int
 
@@ -190,7 +190,7 @@ class HorizonForecastResponse(BaseModel):
     horizon: int
     source: str
     count: int
-    data: List[Dict[str, Any]]
+    data: list[dict[str, Any]]
 
 
 # ============================================================================
@@ -201,16 +201,16 @@ class ImageMetadata(BaseModel):
     """Metadata for a forecast image."""
     image_type: str  # backtest, forecast, heatmap
     model_id: str
-    horizon_id: Optional[int] = None
+    horizon_id: int | None = None
     filename: str
     url: str
-    size: Optional[int] = None
-    last_modified: Optional[str] = None
+    size: int | None = None
+    last_modified: str | None = None
 
 
 class ImageListResponse(BaseModel):
     """List of available images."""
-    images: List[ImageMetadata]
+    images: list[ImageMetadata]
     count: int
 
 
@@ -220,8 +220,8 @@ class ImageListResponse(BaseModel):
 
 class ForecastQueryParams(BaseModel):
     """Query parameters for forecast filtering."""
-    model: Optional[str] = None
-    horizon: Optional[int] = Field(None, ge=1, le=60)
-    week: Optional[int] = Field(None, ge=1, le=53)
-    year: Optional[int] = Field(None, ge=2020, le=2100)
+    model: str | None = None
+    horizon: int | None = Field(None, ge=1, le=60)
+    week: int | None = Field(None, ge=1, le=53)
+    year: int | None = Field(None, ge=2020, le=2100)
     limit: int = Field(100, ge=1, le=1000)

@@ -9,9 +9,8 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-from typing import Dict, Type, Optional
-from ..interfaces.feature_calculator import IFeatureCalculator
 from ...shared.exceptions import ConfigurationError
+from ..interfaces.feature_calculator import IFeatureCalculator
 
 
 class FeatureCalculatorFactory:
@@ -27,10 +26,10 @@ class FeatureCalculatorFactory:
         ret_calc = factory.create('returns', periods=1)
     """
 
-    _calculators: Dict[str, Type[IFeatureCalculator]] = {}
+    _calculators: dict[str, type[IFeatureCalculator]] = {}
 
     @classmethod
-    def register(cls, feature_type: str, calculator_class: Type[IFeatureCalculator]) -> None:
+    def register(cls, feature_type: str, calculator_class: type[IFeatureCalculator]) -> None:
         """
         Register a calculator class for a feature type.
 

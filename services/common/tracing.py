@@ -25,12 +25,12 @@ Contract: CTR-OBS-001
 import logging
 import os
 from contextlib import contextmanager
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Track initialized tracers
-_tracers: Dict[str, Any] = {}
+_tracers: dict[str, Any] = {}
 _initialized = False
 
 
@@ -65,10 +65,10 @@ def setup_tracing(
 
     try:
         from opentelemetry import trace
+        from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+        from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from opentelemetry.sdk.resources import Resource
-        from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 
         # Only initialize once
         if not _initialized:
@@ -158,11 +158,11 @@ class NoOpSpan:
         """Do nothing."""
         pass
 
-    def set_attributes(self, attributes: Dict[str, Any]) -> None:
+    def set_attributes(self, attributes: dict[str, Any]) -> None:
         """Do nothing."""
         pass
 
-    def add_event(self, name: str, attributes: Dict[str, Any] = None) -> None:
+    def add_event(self, name: str, attributes: dict[str, Any] = None) -> None:
         """Do nothing."""
         pass
 

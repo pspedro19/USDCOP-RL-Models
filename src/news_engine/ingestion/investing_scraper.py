@@ -20,9 +20,8 @@ import logging
 import random
 import re
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 from src.news_engine.config import ScraperConfig
 from src.news_engine.ingestion.base_adapter import SourceAdapter, parse_date_flexible
@@ -104,7 +103,7 @@ class InvestingSearchScraper(SourceAdapter):
     CHECKPOINT_DIR = Path("data/news")
     CHECKPOINT_FILE = Path("data/news/investing_search_checkpoint.json")
 
-    def __init__(self, config: Optional[ScraperConfig] = None):
+    def __init__(self, config: ScraperConfig | None = None):
         super().__init__(config)
         self.cfg = config or ScraperConfig()
         self._sessions: dict[str, object] = {}  # domain_key -> session
@@ -116,7 +115,7 @@ class InvestingSearchScraper(SourceAdapter):
 
     def fetch_latest(self, hours_back: int = 24) -> list[RawArticle]:
         """Fetch recent articles from all configured queries."""
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours_back)
         all_articles: list[RawArticle] = []
         seen_ids: set[int] = set()
 
@@ -156,9 +155,9 @@ class InvestingSearchScraper(SourceAdapter):
 
         # Ensure tz-aware
         if start_date.tzinfo is None:
-            start_date = start_date.replace(tzinfo=timezone.utc)
+            start_date = start_date.replace(tzinfo=UTC)
         if end_date.tzinfo is None:
-            end_date = end_date.replace(tzinfo=timezone.utc)
+            end_date = end_date.replace(tzinfo=UTC)
 
         queries = self._build_query_list()
         checkpoint = self._load_checkpoint()
@@ -185,7 +184,7 @@ class InvestingSearchScraper(SourceAdapter):
                 for art in articles:
                     pub = art.published_at
                     if pub.tzinfo is None:
-                        pub = pub.replace(tzinfo=timezone.utc)
+                        pub = pub.replace(tzinfo=UTC)
                     if start_date <= pub <= end_date + timedelta(days=1):
                         in_range.append(art)
 
@@ -237,7 +236,7 @@ class InvestingSearchScraper(SourceAdapter):
         lang: str,
         global_seen_ids: set[int],
         max_offset: int = 5000,
-        stop_before: Optional[datetime] = None,
+        stop_before: datetime | None = None,
     ) -> tuple[list[RawArticle], set[int]]:
         """Paginate through SearchInnerPage API for a single query.
 
@@ -304,7 +303,7 @@ class InvestingSearchScraper(SourceAdapter):
             # Early stop: if oldest article in batch is before cutoff
             if stop_before and oldest_in_batch:
                 if oldest_in_batch.tzinfo is None:
-                    oldest_in_batch = oldest_in_batch.replace(tzinfo=timezone.utc)
+                    oldest_in_batch = oldest_in_batch.replace(tzinfo=UTC)
                 if oldest_in_batch < stop_before:
                     break
 
@@ -324,7 +323,7 @@ class InvestingSearchScraper(SourceAdapter):
         domain_key: str,
         offset: int,
         limit: int,
-    ) -> Optional[list[dict]]:
+    ) -> list[dict] | None:
         """Fetch a single batch from SearchInnerPage API."""
         self._rotate_session_if_needed()
         session = self._get_session(domain_key)
@@ -379,7 +378,7 @@ class InvestingSearchScraper(SourceAdapter):
 
     def _parse_api_item(
         self, item: dict, base_url: str, lang: str,
-    ) -> Optional[RawArticle]:
+    ) -> RawArticle | None:
         """Convert a SearchInnerPage JSON item to RawArticle."""
         link = item.get("link", "")
         title = item.get("name", "") or item.get("description", "")
@@ -395,7 +394,7 @@ class InvestingSearchScraper(SourceAdapter):
         ts = item.get("dateTimestamp")
         if ts:
             try:
-                published_at = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+                published_at = datetime.fromtimestamp(int(ts), tz=UTC)
             except (ValueError, OSError, OverflowError):
                 pass
 
@@ -404,7 +403,7 @@ class InvestingSearchScraper(SourceAdapter):
             published_at = self._parse_article_date(date_str)
 
         if not published_at:
-            published_at = datetime.now(timezone.utc)
+            published_at = datetime.now(UTC)
 
         content = item.get("content", "") or ""
         summary = content[:300] if content else None
@@ -470,7 +469,7 @@ class InvestingSearchScraper(SourceAdapter):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _parse_article_date(text: str) -> Optional[datetime]:
+    def _parse_article_date(text: str) -> datetime | None:
         """Parse article date from various EN/ES formats.
 
         Handles:
@@ -493,7 +492,7 @@ class InvestingSearchScraper(SourceAdapter):
             match = pattern.search(text)
             if match:
                 n = int(match.group(1))
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 if unit == "minutes":
                     return now - timedelta(minutes=n)
                 elif unit == "hours":
@@ -516,14 +515,14 @@ class InvestingSearchScraper(SourceAdapter):
         # Try absolute formats
         for fmt in _DATE_FORMATS:
             try:
-                return datetime.strptime(normalized, fmt.lower()).replace(tzinfo=timezone.utc)
+                return datetime.strptime(normalized, fmt.lower()).replace(tzinfo=UTC)
             except ValueError:
                 continue
 
         # Try case-sensitive formats
         for fmt in _DATE_FORMATS:
             try:
-                return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc)
+                return datetime.strptime(text, fmt).replace(tzinfo=UTC)
             except ValueError:
                 continue
 

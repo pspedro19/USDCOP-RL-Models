@@ -20,10 +20,11 @@ Date: 2026-01-17
 """
 
 import logging
+from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Callable, Tuple, Generator
 from enum import Enum
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -54,16 +55,16 @@ class WalkForwardWindow:
     test_samples: int = 0
 
     # Results
-    train_sharpe: Optional[float] = None
-    test_sharpe: Optional[float] = None
-    train_returns: Optional[float] = None
-    test_returns: Optional[float] = None
-    train_win_rate: Optional[float] = None
-    test_win_rate: Optional[float] = None
-    max_drawdown: Optional[float] = None
+    train_sharpe: float | None = None
+    test_sharpe: float | None = None
+    train_returns: float | None = None
+    test_returns: float | None = None
+    train_win_rate: float | None = None
+    test_win_rate: float | None = None
+    max_drawdown: float | None = None
 
     # Additional metrics
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def train_period_days(self) -> int:
@@ -76,13 +77,13 @@ class WalkForwardWindow:
         return (self.test_end - self.test_start).days
 
     @property
-    def degradation_ratio(self) -> Optional[float]:
+    def degradation_ratio(self) -> float | None:
         """Ratio of test to train Sharpe (measures overfitting)."""
         if self.train_sharpe and self.test_sharpe:
             return self.test_sharpe / self.train_sharpe if self.train_sharpe != 0 else 0
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "window_id": self.window_id,
@@ -111,7 +112,7 @@ class WalkForwardReport:
     """Complete walk-forward validation report."""
     method: str
     total_windows: int
-    windows: List[WalkForwardWindow]
+    windows: list[WalkForwardWindow]
 
     # Aggregate metrics
     mean_test_sharpe: float
@@ -121,8 +122,8 @@ class WalkForwardReport:
 
     # Statistical tests
     is_statistically_significant: bool
-    t_statistic: Optional[float]
-    p_value: Optional[float]
+    t_statistic: float | None
+    p_value: float | None
 
     # Summary
     total_train_days: int
@@ -130,7 +131,7 @@ class WalkForwardReport:
     start_date: datetime
     end_date: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "method": self.method,
@@ -189,7 +190,7 @@ class WalkForwardValidator:
         self,
         train_period_days: int = 90,
         test_period_days: int = 30,
-        step_days: Optional[int] = None,
+        step_days: int | None = None,
         method: WalkForwardMethod = WalkForwardMethod.ROLLING,
         min_train_samples: int = 100,
     ):
@@ -209,13 +210,13 @@ class WalkForwardValidator:
         self.method = method
         self.min_train_samples = min_train_samples
 
-        self.windows: List[WalkForwardWindow] = []
+        self.windows: list[WalkForwardWindow] = []
 
     def generate_windows(
         self,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[WalkForwardWindow]:
+    ) -> list[WalkForwardWindow]:
         """
         Generate walk-forward windows.
 
@@ -281,7 +282,7 @@ class WalkForwardValidator:
         self,
         data: pd.DataFrame,
         date_column: str = "timestamp",
-    ) -> Generator[Tuple[WalkForwardWindow, pd.DataFrame, pd.DataFrame], None, None]:
+    ) -> Generator[tuple[WalkForwardWindow, pd.DataFrame, pd.DataFrame], None, None]:
         """
         Iterate through windows yielding train and test data.
 
@@ -315,7 +316,7 @@ class WalkForwardValidator:
         self,
         data: pd.DataFrame,
         train_func: Callable[[pd.DataFrame], Any],
-        evaluate_func: Callable[[Any, pd.DataFrame], Dict[str, float]],
+        evaluate_func: Callable[[Any, pd.DataFrame], dict[str, float]],
         date_column: str = "timestamp",
     ) -> WalkForwardReport:
         """
@@ -461,7 +462,7 @@ def quick_walk_forward(
     returns: pd.Series,
     train_days: int = 90,
     test_days: int = 30,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Quick walk-forward analysis on a returns series.
 
@@ -522,8 +523,8 @@ def quick_walk_forward(
 
 __all__ = [
     "WalkForwardMethod",
-    "WalkForwardWindow",
     "WalkForwardReport",
     "WalkForwardValidator",
+    "WalkForwardWindow",
     "quick_walk_forward",
 ]

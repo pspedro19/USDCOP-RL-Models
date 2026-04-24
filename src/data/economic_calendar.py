@@ -29,13 +29,13 @@ Uso:
 Version: 2.0.0 - Now reads from SSOT
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from datetime import datetime, timedelta, date
-from typing import Dict, Optional, Tuple, List, Union
-from dateutil.relativedelta import relativedelta
 import logging
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from dateutil.relativedelta import relativedelta
 
 try:
     import pytz
@@ -65,7 +65,7 @@ class EconomicCalendar:
     for publication schedules. Previene data leakage en pipelines de ML.
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         """
         Inicializar calendario económico.
 
@@ -74,8 +74,8 @@ class EconomicCalendar:
                         If None, uses default SSOT location.
         """
         # Build variables dict from SSOT
-        self.variables: Dict[str, dict] = {}
-        self.config: Dict = {'global_rules': {}}
+        self.variables: dict[str, dict] = {}
+        self.config: dict = {'global_rules': {}}
 
         if SSOT_AVAILABLE:
             self._load_from_ssot(config_path)
@@ -85,9 +85,9 @@ class EconomicCalendar:
         logger.info(f"Loaded {len(self.variables)} variables from SSOT")
 
         # Cache de fechas de publicación calculadas
-        self._pub_date_cache: Dict[Tuple[str, str], pd.Timestamp] = {}
+        self._pub_date_cache: dict[tuple[str, str], pd.Timestamp] = {}
 
-    def _load_from_ssot(self, config_path: Optional[Path] = None):
+    def _load_from_ssot(self, config_path: Path | None = None):
         """Load calendar data from SSOT."""
         ssot = MacroSSOT(config_path)
 
@@ -164,7 +164,7 @@ class EconomicCalendar:
             '_section': section,
         }
 
-    def get_variable_config(self, variable_name: str) -> Optional[dict]:
+    def get_variable_config(self, variable_name: str) -> dict | None:
         """
         Obtener configuración completa de una variable.
 
@@ -179,9 +179,9 @@ class EconomicCalendar:
     def get_publication_date(
         self,
         variable_name: str,
-        data_period: Union[str, pd.Timestamp, date],
+        data_period: str | pd.Timestamp | date,
         return_datetime: bool = False
-    ) -> Optional[Union[date, pd.Timestamp]]:
+    ) -> date | pd.Timestamp | None:
         """
         Calcular fecha de publicación para un dato específico.
 
@@ -210,9 +210,7 @@ class EconomicCalendar:
                 data_period = pd.Timestamp(data_period + '-01')
             else:
                 data_period = pd.Timestamp(data_period)
-        elif isinstance(data_period, date) and not isinstance(data_period, datetime):
-            data_period = pd.Timestamp(data_period)
-        elif isinstance(data_period, datetime):
+        elif (isinstance(data_period, date) and not isinstance(data_period, datetime)) or isinstance(data_period, datetime):
             data_period = pd.Timestamp(data_period)
 
         # Check cache
@@ -293,7 +291,7 @@ class EconomicCalendar:
     def get_publication_lag_days(
         self,
         variable_name: str,
-        data_period: Union[str, pd.Timestamp]
+        data_period: str | pd.Timestamp
     ) -> int:
         """
         Calcular días de lag entre fin del período y publicación.
@@ -431,9 +429,9 @@ class EconomicCalendar:
     def validate_no_leakage(
         self,
         df: pd.DataFrame,
-        test_timestamp: Union[str, pd.Timestamp],
+        test_timestamp: str | pd.Timestamp,
         variable_name: str
-    ) -> Dict:
+    ) -> dict:
         """
         Validar que no hay data leakage en un timestamp específico.
 
@@ -524,10 +522,10 @@ class EconomicCalendar:
     def validate_dataset_no_leakage(
         self,
         df: pd.DataFrame,
-        variables: List[str] = None,
+        variables: list[str] = None,
         sample_rate: int = 100,
         verbose: bool = False
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """
         Validar que todo el dataset no tiene leakage en ninguna variable.
 
@@ -599,11 +597,11 @@ class EconomicCalendar:
         validation = var_config.get('validation', {})
         return validation.get('leakage_risk', 'UNKNOWN')
 
-    def get_all_variables(self) -> List[str]:
+    def get_all_variables(self) -> list[str]:
         """Obtener lista de todas las variables."""
         return list(self.variables.keys())
 
-    def get_variables_by_risk(self, risk_level: str) -> List[str]:
+    def get_variables_by_risk(self, risk_level: str) -> list[str]:
         """
         Obtener variables por nivel de riesgo.
 
@@ -690,7 +688,7 @@ class EconomicCalendar:
 # Convenience Functions
 # =============================================================================
 
-def load_calendar(config_path: Optional[Path] = None) -> EconomicCalendar:
+def load_calendar(config_path: Path | None = None) -> EconomicCalendar:
     """Cargar calendario económico (singleton-like)."""
     return EconomicCalendar(config_path)
 
@@ -698,8 +696,8 @@ def load_calendar(config_path: Optional[Path] = None) -> EconomicCalendar:
 def get_publication_date(
     variable_name: str,
     data_period: str,
-    config_path: Optional[Path] = None
-) -> Optional[date]:
+    config_path: Path | None = None
+) -> date | None:
     """
     Función de conveniencia para obtener fecha de publicación.
 

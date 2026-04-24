@@ -11,14 +11,14 @@ Date: 2025-01-14
 
 import json
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Any
 
 from src.core.interfaces.repository import (
-    ITradeLogRepository,
     IListRepository,
     IStateRepository,
+    ITradeLogRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class TradeLogRepository(ITradeLogRepository):
     def __init__(
         self,
         list_repo: IListRepository,
-        state_repo: Optional[IStateRepository] = None,
+        state_repo: IStateRepository | None = None,
         timezone: str = "America/Bogota"
     ):
         """
@@ -67,7 +67,7 @@ class TradeLogRepository(ITradeLogRepository):
         """Get today's date string."""
         if self._tz:
             from datetime import datetime
-            import pytz
+
             return datetime.now(self._tz).strftime("%Y-%m-%d")
         return datetime.utcnow().strftime("%Y-%m-%d")
 
@@ -76,8 +76,8 @@ class TradeLogRepository(ITradeLogRepository):
         trade_id: str,
         signal: str,
         confidence: float,
-        pnl: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        pnl: float | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> bool:
         """Log a trade entry."""
         if not trade_id:
@@ -115,8 +115,8 @@ class TradeLogRepository(ITradeLogRepository):
     def get_recent_trades(
         self,
         limit: int = 100,
-        date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        date: str | None = None
+    ) -> list[dict[str, Any]]:
         """Get recent trades."""
         date = date or self._get_today()
         log_key = f"{self.KEY_LOG}:{date}"
@@ -128,7 +128,7 @@ class TradeLogRepository(ITradeLogRepository):
             logger.error(f"Failed to get recent trades: {e}")
             return []
 
-    def get_trade(self, trade_id: str) -> Optional[Dict[str, Any]]:
+    def get_trade(self, trade_id: str) -> dict[str, Any] | None:
         """Get specific trade by ID."""
         if not self._state_repo:
             return None
@@ -143,7 +143,7 @@ class TradeLogRepository(ITradeLogRepository):
     def update_trade(
         self,
         trade_id: str,
-        updates: Dict[str, Any]
+        updates: dict[str, Any]
     ) -> bool:
         """Update trade entry."""
         if not self._state_repo:

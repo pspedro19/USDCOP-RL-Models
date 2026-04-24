@@ -9,12 +9,12 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from src.core.interfaces.risk import (
     IRiskCheck,
-    RiskContext,
     RiskCheckResult,
+    RiskContext,
     RiskStatus,
 )
 
@@ -30,7 +30,7 @@ class DrawdownCheck(IRiskCheck):
     def __init__(
         self,
         max_drawdown: float = -0.01,  # -1%
-        trigger_circuit_breaker_fn: Optional[Callable[[str], None]] = None,
+        trigger_circuit_breaker_fn: Callable[[str], None] | None = None,
     ):
         """
         Args:

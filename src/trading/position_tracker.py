@@ -21,19 +21,15 @@ Version: 1.0.0
 Date: 2025-01-16
 """
 
-from dataclasses import dataclass, field, asdict
+import json
+import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     Protocol,
 )
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +80,14 @@ class Position:
     size: float
     entry_price: float
     entry_time: datetime
-    exit_price: Optional[float] = None
-    exit_time: Optional[datetime] = None
+    exit_price: float | None = None
+    exit_time: datetime | None = None
     status: PositionStatus = PositionStatus.OPEN
     pnl: float = 0.0
     pnl_pct: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert position to dictionary for serialization."""
         result = asdict(self)
         result['direction'] = self.direction.value
@@ -107,7 +103,7 @@ class Position:
         return json.dumps(self.to_dict(), default=str)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Position':
+    def from_dict(cls, data: dict[str, Any]) -> 'Position':
         """Create Position from dictionary."""
         data = data.copy()
         if isinstance(data.get('direction'), str):
@@ -207,16 +203,16 @@ class PositionTracker:
     def __init__(self) -> None:
         """Initialize the position tracker."""
         # Open positions by model_id
-        self._positions: Dict[str, Position] = {}
+        self._positions: dict[str, Position] = {}
 
         # Position history (closed positions)
-        self._history: List[Position] = []
+        self._history: list[Position] = []
 
         # Position ID counter
         self._position_counter: int = 0
 
         # Change listeners
-        self._listeners: List[PositionChangeListener] = []
+        self._listeners: list[PositionChangeListener] = []
 
         logger.info("PositionTracker initialized")
 
@@ -235,8 +231,8 @@ class PositionTracker:
         direction: PositionDirection,
         size: float,
         price: float,
-        timestamp: Optional[datetime] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        timestamp: datetime | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Position:
         """
         Open a new position.
@@ -291,7 +287,7 @@ class PositionTracker:
         self,
         model_id: str,
         price: float,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> Position:
         """
         Close an existing position.
@@ -356,8 +352,8 @@ class PositionTracker:
     def close_all_positions(
         self,
         price: float,
-        timestamp: Optional[datetime] = None,
-    ) -> List[Position]:
+        timestamp: datetime | None = None,
+    ) -> list[Position]:
         """
         Close all open positions.
 
@@ -389,15 +385,15 @@ class PositionTracker:
         """Check if model has an open position."""
         return model_id in self._positions
 
-    def get_position(self, model_id: str) -> Optional[Position]:
+    def get_position(self, model_id: str) -> Position | None:
         """Get open position for a model."""
         return self._positions.get(model_id)
 
-    def get_all_positions(self) -> List[Position]:
+    def get_all_positions(self) -> list[Position]:
         """Get all open positions."""
         return list(self._positions.values())
 
-    def get_position_direction(self, model_id: str) -> Optional[PositionDirection]:
+    def get_position_direction(self, model_id: str) -> PositionDirection | None:
         """Get direction of open position for a model."""
         position = self._positions.get(model_id)
         return position.direction if position else None
@@ -454,9 +450,9 @@ class PositionTracker:
 
     def get_history(
         self,
-        model_id: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Position]:
+        model_id: str | None = None,
+        limit: int | None = None,
+    ) -> list[Position]:
         """
         Get position history.
 
@@ -477,11 +473,11 @@ class PositionTracker:
 
         return history
 
-    def get_model_history(self, model_id: str) -> List[Position]:
+    def get_model_history(self, model_id: str) -> list[Position]:
         """Get all closed positions for a model."""
         return [p for p in self._history if p.model_id == model_id]
 
-    def get_total_pnl(self, model_id: Optional[str] = None) -> float:
+    def get_total_pnl(self, model_id: str | None = None) -> float:
         """
         Get total realized P&L.
 
@@ -495,7 +491,7 @@ class PositionTracker:
             return sum(p.pnl for p in self._history if p.model_id == model_id)
         return sum(p.pnl for p in self._history)
 
-    def get_trade_count(self, model_id: Optional[str] = None) -> int:
+    def get_trade_count(self, model_id: str | None = None) -> int:
         """
         Get number of closed trades.
 
@@ -513,7 +509,7 @@ class PositionTracker:
     # Statistics
     # =========================================================================
 
-    def get_statistics(self, model_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_statistics(self, model_id: str | None = None) -> dict[str, Any]:
         """
         Get comprehensive position statistics.
 
@@ -601,7 +597,7 @@ class PositionTracker:
         self._position_counter = 0
         logger.info("PositionTracker reset")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize tracker state to dictionary."""
         return {
             "positions": {
@@ -613,7 +609,7 @@ class PositionTracker:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'PositionTracker':
+    def from_dict(cls, data: dict[str, Any]) -> 'PositionTracker':
         """Restore tracker from dictionary."""
         tracker = cls()
         tracker._position_counter = data.get("position_counter", 0)

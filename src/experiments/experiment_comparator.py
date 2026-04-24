@@ -16,12 +16,12 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
+import json
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
-import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -31,8 +31,8 @@ try:
 except ImportError:
     SCIPY_AVAILABLE = False
 
-from .experiment_runner import ExperimentResult
 from .experiment_registry import FileBasedRegistry
+from .experiment_runner import ExperimentResult
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,13 @@ class MetricComparison:
     treatment_value: float
     absolute_difference: float
     relative_difference: float
-    p_value: Optional[float]
+    p_value: float | None
     is_significant: bool
-    confidence_interval: Optional[Tuple[float, float]]
-    effect_size: Optional[float]
+    confidence_interval: tuple[float, float] | None
+    effect_size: float | None
     winner: str  # "baseline", "treatment", or "tie"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "metric_name": self.metric_name,
@@ -80,12 +80,12 @@ class ExperimentComparison:
     baseline_version: str
     treatment_version: str
     comparison_date: datetime
-    metric_comparisons: Dict[str, MetricComparison]
+    metric_comparisons: dict[str, MetricComparison]
     primary_metric: str
     recommendation: str
     confidence_level: float
-    sample_sizes: Dict[str, int] = field(default_factory=dict)
-    warnings: List[str] = field(default_factory=list)
+    sample_sizes: dict[str, int] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
 
     def is_significantly_better(
         self,
@@ -161,7 +161,7 @@ class ExperimentComparison:
 
         return "\n".join(lines)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "baseline_name": self.baseline_name,
@@ -221,7 +221,7 @@ class ExperimentComparator:
         self,
         baseline: ExperimentResult,
         treatment: ExperimentResult,
-        metrics: Optional[List[str]] = None,
+        metrics: list[str] | None = None,
         primary_metric: str = "sharpe_ratio",
     ) -> ExperimentComparison:
         """
@@ -305,9 +305,9 @@ class ExperimentComparator:
 
     def compare_multiple_runs(
         self,
-        baseline_runs: List[ExperimentResult],
-        treatment_runs: List[ExperimentResult],
-        metrics: Optional[List[str]] = None,
+        baseline_runs: list[ExperimentResult],
+        treatment_runs: list[ExperimentResult],
+        metrics: list[str] | None = None,
         primary_metric: str = "sharpe_ratio",
     ) -> ExperimentComparison:
         """
@@ -469,7 +469,7 @@ class ExperimentComparator:
         baseline_values: np.ndarray,
         treatment_values: np.ndarray,
         alpha: float = 0.05,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate bootstrap confidence interval for difference.
 
@@ -505,8 +505,8 @@ class ExperimentComparator:
 def compare_experiments(
     baseline_name: str,
     treatment_name: str,
-    registry: Optional[Any] = None,
-    metrics: Optional[List[str]] = None,
+    registry: Any | None = None,
+    metrics: list[str] | None = None,
     primary_metric: str = "sharpe_ratio",
 ) -> ExperimentComparison:
     """
@@ -576,8 +576,8 @@ def compare_experiments(
 
 
 __all__ = [
-    "ExperimentComparison",
     "ExperimentComparator",
+    "ExperimentComparison",
     "MetricComparison",
     "compare_experiments",
 ]

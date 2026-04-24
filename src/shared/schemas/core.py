@@ -12,10 +12,8 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # =============================================================================
 # ENUMS - Shared between Frontend and Backend
@@ -130,12 +128,12 @@ class BaseSchema(BaseModel):
 class TimestampedSchema(BaseSchema):
     """Base schema with timestamp fields."""
 
-    created_at: Optional[datetime] = Field(
+    created_at: datetime | None = Field(
         default=None,
         description="Creation timestamp (UTC)",
         json_schema_extra={"format": "date-time"}
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None,
         description="Last update timestamp (UTC)",
         json_schema_extra={"format": "date-time"}

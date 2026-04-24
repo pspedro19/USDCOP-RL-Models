@@ -11,9 +11,7 @@ Date: 2025-01-14
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List, TypeVar, Generic
-from datetime import datetime
-
+from typing import Any, Optional, TypeVar
 
 T = TypeVar('T')
 
@@ -31,7 +29,7 @@ class IStateRepository(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         """
         Get state by key.
 
@@ -44,7 +42,7 @@ class IStateRepository(ABC):
         pass
 
     @abstractmethod
-    def set(self, key: str, value: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def set(self, key: str, value: dict[str, Any], ttl: int | None = None) -> bool:
         """
         Set state with optional TTL.
 
@@ -77,7 +75,7 @@ class IStateRepository(ABC):
         pass
 
     @abstractmethod
-    def get_ttl(self, key: str) -> Optional[int]:
+    def get_ttl(self, key: str) -> int | None:
         """
         Get remaining TTL for key.
 
@@ -96,7 +94,7 @@ class IHashRepository(ABC):
     """
 
     @abstractmethod
-    def hget(self, key: str, field: str) -> Optional[str]:
+    def hget(self, key: str, field: str) -> str | None:
         """Get single field from hash."""
         pass
 
@@ -106,12 +104,12 @@ class IHashRepository(ABC):
         pass
 
     @abstractmethod
-    def hgetall(self, key: str) -> Dict[str, str]:
+    def hgetall(self, key: str) -> dict[str, str]:
         """Get all fields from hash."""
         pass
 
     @abstractmethod
-    def hmset(self, key: str, mapping: Dict[str, str]) -> bool:
+    def hmset(self, key: str, mapping: dict[str, str]) -> bool:
         """Set multiple fields in hash."""
         pass
 
@@ -144,7 +142,7 @@ class IListRepository(ABC):
         pass
 
     @abstractmethod
-    def lrange(self, key: str, start: int, end: int) -> List[str]:
+    def lrange(self, key: str, start: int, end: int) -> list[str]:
         """Get range of values from list."""
         pass
 
@@ -167,7 +165,7 @@ class IDailyStatsRepository(ABC):
     """
 
     @abstractmethod
-    def get(self, date: Optional[str] = None) -> Optional['DailyStats']:
+    def get(self, date: str | None = None) -> Optional['DailyStats']:
         """
         Get daily stats for date.
 
@@ -197,7 +195,7 @@ class IDailyStatsRepository(ABC):
         self,
         start_date: str,
         end_date: str
-    ) -> List['DailyStats']:
+    ) -> list['DailyStats']:
         """
         Get stats for date range.
 
@@ -244,8 +242,8 @@ class ITradeLogRepository(ABC):
         trade_id: str,
         signal: str,
         confidence: float,
-        pnl: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        pnl: float | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> bool:
         """Log a trade entry."""
         pass
@@ -254,13 +252,13 @@ class ITradeLogRepository(ABC):
     def get_recent_trades(
         self,
         limit: int = 100,
-        date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        date: str | None = None
+    ) -> list[dict[str, Any]]:
         """Get recent trades."""
         pass
 
     @abstractmethod
-    def get_trade(self, trade_id: str) -> Optional[Dict[str, Any]]:
+    def get_trade(self, trade_id: str) -> dict[str, Any] | None:
         """Get specific trade by ID."""
         pass
 
@@ -273,7 +271,7 @@ class ICacheRepository(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get cached value."""
         pass
 

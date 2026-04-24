@@ -11,13 +11,12 @@ Date: 2025-01-14
 """
 
 import logging
-from typing import Optional
 
 from src.core.interfaces.repository import (
-    IStateRepository,
+    IDailyStatsRepository,
     IHashRepository,
     IListRepository,
-    IDailyStatsRepository,
+    IStateRepository,
     ITradeLogRepository,
 )
 
@@ -45,11 +44,11 @@ class RepositoryFactory:
     """
 
     _redis_client = None
-    _state_repo: Optional[IStateRepository] = None
-    _hash_repo: Optional[IHashRepository] = None
-    _list_repo: Optional[IListRepository] = None
-    _daily_stats_repo: Optional[IDailyStatsRepository] = None
-    _trade_log_repo: Optional[ITradeLogRepository] = None
+    _state_repo: IStateRepository | None = None
+    _hash_repo: IHashRepository | None = None
+    _list_repo: IListRepository | None = None
+    _daily_stats_repo: IDailyStatsRepository | None = None
+    _trade_log_repo: ITradeLogRepository | None = None
     _mode: str = "memory"  # "redis" or "memory"
     _timezone: str = "America/Bogota"
 

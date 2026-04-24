@@ -19,39 +19,35 @@ Version: 1.1.0
 Updated: 2025-12-17
 """
 
-from fastapi import FastAPI, WebSocket, HTTPException, Query, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import psycopg2
-import pandas as pd
-import numpy as np
-import json
 import asyncio
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-import os
+import json
 import logging
-from pydantic import BaseModel
-import uvicorn
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+
+import pandas as pd
 import pytz
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # DRY: Use shared modules
-from common.database import get_db_config, get_db_connection
 from common.config import get_trading_hours
+from common.database import get_db_config, get_db_connection
+from common.trading_calendar import TradingCalendar
 from common.validation import (
+    MAX_LIMIT,
+    SUPPORTED_TIMEFRAMES,
+    validate_date_range,
+    validate_limit,
     validate_symbol,
     validate_timeframe,
-    validate_limit,
-    validate_date_range,
-    SUPPORTED_TIMEFRAMES,
-    MAX_LIMIT,
 )
-from common.trading_calendar import TradingCalendar
 
 # Configuration from shared modules
 POSTGRES_CONFIG = get_db_config().to_dict()
@@ -68,7 +64,7 @@ TRADING_DAYS = _trading_hours.trading_days
 trading_cal = TradingCalendar()
 
 # Global variables for WebSocket management
-websocket_connections: List[WebSocket] = []
+websocket_connections: list[WebSocket] = []
 last_sent_timestamp = None
 
 # Data models
@@ -79,20 +75,20 @@ class CandlestickData(BaseModel):
     low: float
     close: float
     volume: float
-    ema_20: Optional[float] = None
-    ema_50: Optional[float] = None
-    bb_upper: Optional[float] = None
-    bb_middle: Optional[float] = None
-    bb_lower: Optional[float] = None
-    rsi: Optional[float] = None
+    ema_20: float | None = None
+    ema_50: float | None = None
+    bb_upper: float | None = None
+    bb_middle: float | None = None
+    bb_lower: float | None = None
+    rsi: float | None = None
 
 class MarketData(BaseModel):
     symbol: str
     price: float
     timestamp: str
     volume: float
-    bid: Optional[float] = None
-    ask: Optional[float] = None
+    bid: float | None = None
+    ask: float | None = None
     source: str
 
 class CandlestickResponse(BaseModel):
@@ -101,7 +97,7 @@ class CandlestickResponse(BaseModel):
     start_date: str
     end_date: str
     count: int
-    data: List[CandlestickData]
+    data: list[CandlestickData]
 
 class RealTimeUpdate(BaseModel):
     type: str = "price_update"
@@ -109,8 +105,8 @@ class RealTimeUpdate(BaseModel):
     price: float
     timestamp: str
     volume: float
-    change: Optional[float] = None
-    change_percent: Optional[float] = None
+    change: float | None = None
+    change_percent: float | None = None
     source: str
 
 def is_market_open() -> bool:
@@ -376,8 +372,9 @@ try:
 except Exception:
     pass
 try:
-    import sentry_sdk
     import os as _os
+
+    import sentry_sdk
     if _sentry_dsn := _os.environ.get("SENTRY_DSN"):
         sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1)
 except Exception:
@@ -519,14 +516,14 @@ async def get_latest_price(symbol: str = "USDCOP"):
         raise
     except Exception as e:
         logger.error(f"Error fetching latest price: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e!s}")
 
 @app.get("/api/candlesticks/{symbol}")
 async def get_candlesticks(
     symbol: str = "USDCOP",
     timeframe: str = Query("5m", description=f"Timeframe. Supported: {SUPPORTED_TIMEFRAMES}"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO format)"),
+    start_date: str | None = Query(None, description="Start date (ISO format)"),
+    end_date: str | None = Query(None, description="End date (ISO format)"),
     limit: int = Query(1000, ge=1, le=MAX_LIMIT, description=f"Maximum records (1-{MAX_LIMIT})"),
     include_indicators: bool = Query(True, description="Include technical indicators")
 ):
@@ -666,7 +663,7 @@ async def get_candlesticks(
         raise
     except Exception as e:
         logger.error(f"Error fetching candlesticks: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e!s}")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -688,7 +685,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
                 if data == "ping":
                     await websocket.send_text("pong")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat
                 await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.utcnow().isoformat()}))
 
@@ -794,7 +791,7 @@ async def get_symbol_stats(symbol: str = "USDCOP"):
         raise
     except Exception as e:
         logger.error(f"Error fetching stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e!s}")
 
 @app.get("/api/market-status")
 async def get_market_status_endpoint():
@@ -802,7 +799,7 @@ async def get_market_status_endpoint():
     return get_market_status()
 
 @app.get("/api/v1/trading-calendar/is-trading-day")
-async def is_trading_day_endpoint(date: Optional[str] = Query(None, description="Date to check (YYYY-MM-DD format, defaults to today)")):
+async def is_trading_day_endpoint(date: str | None = Query(None, description="Date to check (YYYY-MM-DD format, defaults to today)")):
     """
     Check if a date is a valid trading day.
 

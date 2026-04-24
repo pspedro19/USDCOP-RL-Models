@@ -15,19 +15,15 @@ Version: 1.0.0
 Date: 2025-01-16
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
     Literal,
-    Optional,
     Protocol,
-    Type,
     runtime_checkable,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -54,17 +50,17 @@ class TradeResult:
         metadata: Additional execution details
     """
     success: bool
-    trade_id: Optional[int] = None
+    trade_id: int | None = None
     signal: str = ""
-    entry_price: Optional[float] = None
-    exit_price: Optional[float] = None
+    entry_price: float | None = None
+    exit_price: float | None = None
     pnl: float = 0.0
     pnl_pct: float = 0.0
     timestamp: datetime = field(default_factory=datetime.now)
     message: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "success": self.success,
@@ -133,7 +129,7 @@ class ITradeExecutor(Protocol):
     a minimal interface for trade execution.
     """
 
-    def execute(self, signal: str, price: float, timestamp: Optional[datetime] = None) -> TradeResult:
+    def execute(self, signal: str, price: float, timestamp: datetime | None = None) -> TradeResult:
         """
         Execute a trading signal.
 
@@ -177,7 +173,7 @@ class ITradeExecutor(Protocol):
         """
         ...
 
-    def close_all(self, price: float, timestamp: Optional[datetime] = None) -> TradeResult:
+    def close_all(self, price: float, timestamp: datetime | None = None) -> TradeResult:
         """
         Close all open positions.
 
@@ -200,7 +196,7 @@ class ITradeExecutor(Protocol):
         ...
 
     @property
-    def statistics(self) -> Dict[str, Any]:
+    def statistics(self) -> dict[str, Any]:
         """Get execution statistics."""
         ...
 
@@ -231,11 +227,11 @@ class TradeExecutorFactory:
         result = executor.execute("LONG", 4250.50)
     """
 
-    _executors: Dict[str, Type[ITradeExecutor]] = {}
-    _instances: Dict[str, ITradeExecutor] = {}
+    _executors: dict[str, type[ITradeExecutor]] = {}
+    _instances: dict[str, ITradeExecutor] = {}
 
     @classmethod
-    def register(cls, mode: str, executor_class: Type[ITradeExecutor]) -> None:
+    def register(cls, mode: str, executor_class: type[ITradeExecutor]) -> None:
         """
         Register an executor class for a given mode.
 
@@ -272,8 +268,8 @@ class TradeExecutorFactory:
     def create(
         cls,
         mode: Literal["paper", "live", "backtest"],
-        config: Optional[ExecutorConfig] = None,
-        context: Optional[ExecutorContext] = None,
+        config: ExecutorConfig | None = None,
+        context: ExecutorContext | None = None,
     ) -> ITradeExecutor:
         """
         Create a trade executor for the specified mode.
@@ -319,8 +315,8 @@ class TradeExecutorFactory:
         cls,
         mode: Literal["paper", "live", "backtest"],
         instance_key: str,
-        config: Optional[ExecutorConfig] = None,
-        context: Optional[ExecutorContext] = None,
+        config: ExecutorConfig | None = None,
+        context: ExecutorContext | None = None,
     ) -> ITradeExecutor:
         """
         Create or retrieve a singleton executor instance.
@@ -393,8 +389,8 @@ class BaseTradeExecutor:
 
         # Position tracking
         self._position: float = 0.0
-        self._entry_price: Optional[float] = None
-        self._entry_time: Optional[datetime] = None
+        self._entry_price: float | None = None
+        self._entry_time: datetime | None = None
 
         # P&L tracking
         self._realized_pnl: float = 0.0
@@ -436,7 +432,7 @@ class BaseTradeExecutor:
         logger.info(f"Reset {self._mode} executor for model '{self._context.model_id}'")
 
     @property
-    def statistics(self) -> Dict[str, Any]:
+    def statistics(self) -> dict[str, Any]:
         win_rate = 0.0
         if self._trade_count > 0:
             win_rate = self._winning_trades / self._trade_count * 100
@@ -480,7 +476,7 @@ class PaperTradeExecutor(BaseTradeExecutor):
         self,
         signal: str,
         price: float,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> TradeResult:
         timestamp = timestamp or datetime.now()
         signal_upper = signal.upper().strip()
@@ -579,7 +575,7 @@ class PaperTradeExecutor(BaseTradeExecutor):
             metadata={"direction": direction, "size": size},
         )
 
-    def close_all(self, price: float, timestamp: Optional[datetime] = None) -> TradeResult:
+    def close_all(self, price: float, timestamp: datetime | None = None) -> TradeResult:
         timestamp = timestamp or datetime.now()
 
         if self._position == 0:
@@ -658,7 +654,7 @@ class BacktestExecutor(BaseTradeExecutor):
         self,
         signal: str,
         price: float,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> TradeResult:
         # Delegate to paper trading logic
         timestamp = timestamp or datetime.now()
@@ -723,7 +719,7 @@ class BacktestExecutor(BaseTradeExecutor):
             metadata={"direction": direction, "size": size},
         )
 
-    def close_all(self, price: float, timestamp: Optional[datetime] = None) -> TradeResult:
+    def close_all(self, price: float, timestamp: datetime | None = None) -> TradeResult:
         timestamp = timestamp or datetime.now()
 
         if self._position == 0:

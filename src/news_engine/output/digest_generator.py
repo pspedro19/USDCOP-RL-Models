@@ -7,9 +7,8 @@ Generates daily and weekly text digests from enriched articles.
 from __future__ import annotations
 
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import date, datetime
-from typing import Optional
 
 from src.news_engine.models import EnrichedArticle, NewsDigest
 
@@ -22,7 +21,7 @@ class DigestGenerator:
     def generate_daily(
         self,
         articles: list[EnrichedArticle],
-        digest_date: Optional[date] = None,
+        digest_date: date | None = None,
     ) -> NewsDigest:
         """Generate a daily digest."""
         digest_date = digest_date or date.today()
@@ -89,7 +88,7 @@ class DigestGenerator:
         total: int,
         by_source: dict,
         by_category: dict,
-        avg_sentiment: Optional[float],
+        avg_sentiment: float | None,
         top_keywords: list,
     ) -> str:
         """Build a textual summary for the digest."""

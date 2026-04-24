@@ -35,23 +35,24 @@ Date: 2025-01-14
 """
 
 # Legacy imports (backward compatible)
-from mlops.config import MLOpsConfig, RiskLimits, TradingHours
-from mlops.inference_engine import InferenceEngine, get_inference_engine
-from mlops.risk_manager import RiskManager, get_risk_manager
-from mlops.drift_monitor import DriftMonitor
-from mlops.feature_cache import FeatureCache
-
 # Modern bridge imports (SOLID architecture)
 from mlops.bridge import (
-    get_service_container,
-    get_inference_engine_v2,
-    get_risk_check_chain,
-    get_ensemble_strategy_registry,
-    get_repository_factory,
     get_daily_stats_repository,
+    get_ensemble_strategy_registry,
+    get_inference_engine_v2,
+    get_repository_factory,
+    get_risk_check_chain,
+    get_service_container,
     get_trade_log_repository,
+)
+from mlops.bridge import (
     health_check as bridge_health_check,
 )
+from mlops.config import MLOpsConfig, RiskLimits, TradingHours
+from mlops.drift_monitor import DriftMonitor
+from mlops.feature_cache import FeatureCache
+from mlops.inference_engine import InferenceEngine, get_inference_engine
+from mlops.risk_manager import RiskManager, get_risk_manager
 
 __all__ = [
     # Legacy (backward compatible)

@@ -31,17 +31,6 @@ Date: 2026-01-12
 # =============================================================================
 # CANONICAL FEATURE BUILDER (Contract-based, SSOT)
 # =============================================================================
-from .features.builder import (
-    FeatureBuilder,
-    create_feature_builder,
-)
-from .features.contract import (
-    FeatureContract,
-    FEATURE_CONTRACT,
-    get_contract,
-    FEATURE_ORDER,
-    OBSERVATION_DIM,
-)
 from .core.contracts.norm_stats_contract import load_norm_stats
 
 # =============================================================================
@@ -49,7 +38,20 @@ from .core.contracts.norm_stats_contract import load_norm_stats
 # =============================================================================
 from .core.services.feature_builder import (
     FeatureBuilder as FeatureBuilderLegacy,
+)
+from .core.services.feature_builder import (
     create_feature_builder as create_feature_builder_legacy,
+)
+from .features.builder import (
+    FeatureBuilder,
+    create_feature_builder,
+)
+from .features.contract import (
+    FEATURE_CONTRACT,
+    FEATURE_ORDER,
+    OBSERVATION_DIM,
+    FeatureContract,
+    get_contract,
 )
 
 # SOLID refactored version (optional, Phase 6)
@@ -58,6 +60,8 @@ from .core.services.feature_builder import (
 try:
     from .core.services.feature_builder_refactored import (
         FeatureBuilderRefactored,
+    )
+    from .core.services.feature_builder_refactored import (
         create_feature_builder as create_feature_builder_refactored,
     )
 except ImportError:
@@ -66,46 +70,43 @@ except ImportError:
     create_feature_builder_refactored = None
 
 # Configuration
+# Factories
+from .core.factories import FeatureCalculatorFactory, NormalizerFactory
+
+# Interfaces
+from .core.interfaces import IConfigLoader, IFeatureCalculator, INormalizer, IObservationBuilder
 from .shared.config_loader import ConfigLoader, get_config, load_feature_config
 from .shared.config_loader_adapter import ConfigLoaderAdapter
 
 # Exceptions
 from .shared.exceptions import (
-    USDCOPError,
     ConfigurationError,
-    FeatureCalculationError,
-    ValidationError,
-    ObservationDimensionError,
-    FeatureMissingError,
     # Legacy aliases
     FeatureBuilderError,
-    NormalizationError
-)
-
-# Interfaces
-from .core.interfaces import (
-    IFeatureCalculator,
-    INormalizer,
-    IObservationBuilder,
-    IConfigLoader
-)
-
-# Factories
-from .core.factories import (
-    FeatureCalculatorFactory,
-    NormalizerFactory
+    FeatureCalculationError,
+    FeatureMissingError,
+    NormalizationError,
+    ObservationDimensionError,
+    USDCOPError,
+    ValidationError,
 )
 
 # Calculators (SSOT: use feature_store.calculators)
 try:
     from .feature_store.calculators import (
-        BaseCalculator as BaseFeatureCalculator,
-        RSICalculator,
-        ATRPercentCalculator as ATRCalculator,
         ADXCalculator,
-        LogReturnCalculator as ReturnsCalculator,
-        MacroZScoreCalculator,
         MacroChangeCalculator,
+        MacroZScoreCalculator,
+        RSICalculator,
+    )
+    from .feature_store.calculators import (
+        ATRPercentCalculator as ATRCalculator,
+    )
+    from .feature_store.calculators import (
+        BaseCalculator as BaseFeatureCalculator,
+    )
+    from .feature_store.calculators import (
+        LogReturnCalculator as ReturnsCalculator,
     )
 except ImportError:
     # Fallback stubs if calculators module not available
@@ -118,15 +119,10 @@ except ImportError:
     MacroChangeCalculator = None
 
 # Normalizers
-from .core.normalizers import (
-    ZScoreNormalizer,
-    ClipNormalizer,
-    NoOpNormalizer,
-    CompositeNormalizer
-)
-
 # Builders
 from .core.builders import ObservationBuilder
+from .core.normalizers import ClipNormalizer, CompositeNormalizer, NoOpNormalizer, ZScoreNormalizer
+
 
 # Model Management - Lazy imports to avoid ONNX loading on import
 # These are imported on-demand when accessed
@@ -143,8 +139,8 @@ def __getattr__(name):
 
 # Trading (Paper Trading)
 from .trading import (
-    PaperTrader,
     PaperTrade,
+    PaperTrader,
     TradeDirection,
 )
 

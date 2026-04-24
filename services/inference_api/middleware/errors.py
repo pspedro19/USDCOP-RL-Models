@@ -27,7 +27,7 @@ Usage:
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -93,8 +93,8 @@ class ErrorDetail(BaseModel):
 
     error: str  # Error code (machine-readable)
     message: str  # Human-readable message
-    details: Optional[Dict[str, Any]] = None  # Additional context
-    request_id: Optional[str] = None  # Correlation ID for tracing
+    details: dict[str, Any] | None = None  # Additional context
+    request_id: str | None = None  # Correlation ID for tracing
     timestamp: str = None  # ISO timestamp
 
     def __init__(self, **data):
@@ -134,7 +134,7 @@ class APIException(Exception):
         message: str,
         status_code: int = 500,
         error_code: str = ErrorCode.INTERNAL_ERROR,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         self.message = message
         self.status_code = status_code
@@ -149,7 +149,7 @@ class ValidationException(APIException):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         error_code: str = ErrorCode.VALIDATION_ERROR
     ):
         super().__init__(
@@ -167,7 +167,7 @@ class NotFoundError(APIException):
         self,
         message: str,
         resource_type: str = "resource",
-        resource_id: Optional[str] = None
+        resource_id: str | None = None
     ):
         details = {"resource_type": resource_type}
         if resource_id:
@@ -199,7 +199,7 @@ class DatabaseError(APIException):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         super().__init__(
             message=message,
@@ -215,7 +215,7 @@ class InferenceError(APIException):
     def __init__(
         self,
         message: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         super().__init__(
             message=message,
@@ -251,7 +251,7 @@ class RateLimitError(APIException):
 # EXCEPTION HANDLERS
 # =============================================================================
 
-def get_correlation_id(request: Request) -> Optional[str]:
+def get_correlation_id(request: Request) -> str | None:
     """Extract correlation ID from request state."""
     return getattr(request.state, "correlation_id", None)
 

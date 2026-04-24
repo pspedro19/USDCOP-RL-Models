@@ -74,10 +74,13 @@ RUN pip install --no-cache-dir \
     onnx==1.16.2 \
     onnxruntime==1.18.1
 
-# LightGBM and XGBoost (for L5B)
+# LightGBM, XGBoost, CatBoost (for L5B + H1/H5 forecasting pipeline)
+# NOTE (2026-04-16): lightgbm>=4.6.0 required for sklearn>=1.8.0 compat (check_X_y removed force_all_finite)
+# catboost required for generate_weekly_forecasts.py (9-model zoo includes catboost_pure + hybrid_catboost)
 RUN pip install --no-cache-dir \
-    lightgbm==4.1.0 \
-    xgboost==2.0.3
+    lightgbm==4.6.0 \
+    xgboost==2.0.3 \
+    catboost==1.2.8
 
 # Additional utilities
 RUN pip install --no-cache-dir \
@@ -112,6 +115,21 @@ RUN pip install --no-cache-dir \
     seleniumbase==4.32.6
 
 # ============================================================================
+# LLM Providers & News Pipeline (for Analysis L8 DAG + News DAG)
+# ============================================================================
+# openai:          Azure OpenAI / OpenAI API (primary LLM for weekly analysis)
+# anthropic:       Claude API (fallback LLM provider)
+# langgraph:       LangGraph pipeline (v2 enrichment, optional)
+# feedparser:      RSS parsing (LaRepublica, Portafolio scrapers)
+# vaderSentiment:  VADER sentiment analysis (fallback when GDELT tone unavailable)
+RUN pip install --no-cache-dir \
+    openai==1.54.0 \
+    anthropic==0.39.0 \
+    langgraph==0.2.50 \
+    feedparser==6.0.11 \
+    vaderSentiment==3.3.2
+
+# ============================================================================
 # Verification
 # ============================================================================
 
@@ -126,7 +144,11 @@ RUN python -c "import scipy; print('scipy OK')" && \
     python -c "import onnxruntime; print(f'ONNX Runtime {onnxruntime.__version__} OK')" && \
     python -c "import pandas; import numpy; print('Data science stack OK')" && \
     python -c "import selenium; print(f'Selenium {selenium.__version__} OK')" && \
-    python -c "import undetected_chromedriver; print('undetected-chromedriver OK')"
+    python -c "import undetected_chromedriver; print('undetected-chromedriver OK')" && \
+    python -c "import openai; print(f'openai {openai.__version__} OK')" && \
+    python -c "import anthropic; print(f'anthropic {anthropic.__version__} OK')" && \
+    python -c "import feedparser; print(f'feedparser {feedparser.__version__} OK')" && \
+    python -c "from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer; print('vaderSentiment OK')"
 
 # ============================================================================
 # Configuration

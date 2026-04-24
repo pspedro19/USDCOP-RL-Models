@@ -80,20 +80,27 @@ DEFAULT_MERGE_TOLERANCE: Final[str] = "3D"       # 3-day tolerance for temporal 
 try:
     # Import canonical (production) values
     from src.core.contracts.feature_contract import (
-        OBSERVATION_DIM,
         FEATURE_ORDER,
         FEATURE_ORDER_HASH,
+        OBSERVATION_DIM,
     )
+    from src.core.contracts.feature_contracts_registry import (
+        CANONICAL_CONTRACT_ID,
+        FeatureContract,
+        get_norm_stats_path,
+        get_production_contract,
+        validate_model_contract,
+    )
+    from src.core.contracts.feature_contracts_registry import (
+        CONTRACTS as FEATURE_CONTRACTS,
+    )
+
     # Import registry functions for experiments
     from src.core.contracts.feature_contracts_registry import (
         get_contract as get_feature_contract,
-        get_production_contract,
-        validate_model_contract,
+    )
+    from src.core.contracts.feature_contracts_registry import (
         list_contracts as list_feature_contracts,
-        get_norm_stats_path,
-        FeatureContract,
-        CONTRACTS as FEATURE_CONTRACTS,
-        CANONICAL_CONTRACT_ID,
     )
     _FEATURE_REGISTRY_AVAILABLE = True
 except ImportError:
@@ -136,13 +143,13 @@ FEAST_REPO_PATH: Final[str] = "feature_repo/"
 # IMPORTANT: Action enum is defined in src.core.contracts.action_contract
 # The CORRECT order is: SELL=0, HOLD=1, BUY=2 (matches PPO model output)
 from src.core.contracts.action_contract import (
-    Action,
-    ACTION_SELL,
-    ACTION_HOLD,
     ACTION_BUY,
     ACTION_COUNT,
+    ACTION_HOLD,
     ACTION_NAMES,
+    ACTION_SELL,
     VALID_ACTIONS,
+    Action,
     InvalidActionError,
 )
 

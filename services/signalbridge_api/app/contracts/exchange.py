@@ -4,9 +4,9 @@ Exchange contracts.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, List
-from pydantic import BaseModel, Field, SecretStr
 from uuid import UUID
+
+from pydantic import BaseModel, Field, SecretStr
 
 from .common import BaseContract
 
@@ -31,17 +31,17 @@ class ExchangeCredentialsCreate(ExchangeCredentialsBase):
 
     api_key: SecretStr = Field(min_length=10)
     api_secret: SecretStr = Field(min_length=10)
-    passphrase: Optional[SecretStr] = None  # For exchanges that require it
+    passphrase: SecretStr | None = None  # For exchanges that require it
 
 
 class ExchangeCredentialsUpdate(BaseModel):
     """Update exchange credentials contract."""
 
-    label: Optional[str] = Field(None, min_length=1, max_length=100)
-    api_key: Optional[SecretStr] = Field(None, min_length=10)
-    api_secret: Optional[SecretStr] = Field(None, min_length=10)
-    passphrase: Optional[SecretStr] = None
-    is_active: Optional[bool] = None
+    label: str | None = Field(None, min_length=1, max_length=100)
+    api_key: SecretStr | None = Field(None, min_length=10)
+    api_secret: SecretStr | None = Field(None, min_length=10)
+    passphrase: SecretStr | None = None
+    is_active: bool | None = None
 
 
 class ExchangeCredentials(BaseContract):
@@ -55,8 +55,8 @@ class ExchangeCredentials(BaseContract):
     is_active: bool = True
     is_valid: bool = True
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    last_used: Optional[datetime] = None
+    updated_at: datetime | None = None
+    last_used: datetime | None = None
 
     # Masked keys for display
     api_key_masked: str = Field(description="Masked API key (e.g., 'abc...xyz')")
@@ -83,9 +83,9 @@ class ExchangeInfo(BaseContract):
     is_connected: bool = False
     supports_testnet: bool = True
     base_url: str
-    testnet_url: Optional[str] = None
+    testnet_url: str | None = None
     rate_limit: int = Field(description="Requests per minute")
-    features: List[str] = Field(default_factory=list)
+    features: list[str] = Field(default_factory=list)
 
 
 class ExchangeValidationResult(BaseModel):
@@ -93,8 +93,8 @@ class ExchangeValidationResult(BaseModel):
 
     is_valid: bool
     exchange: SupportedExchange
-    permissions: List[str] = Field(default_factory=list)
-    error_message: Optional[str] = None
+    permissions: list[str] = Field(default_factory=list)
+    error_message: str | None = None
 
 
 class ExchangeCredentialsWithSecret(ExchangeCredentials):
@@ -102,4 +102,4 @@ class ExchangeCredentialsWithSecret(ExchangeCredentials):
 
     api_key: str
     api_secret: str
-    passphrase: Optional[str] = None
+    passphrase: str | None = None

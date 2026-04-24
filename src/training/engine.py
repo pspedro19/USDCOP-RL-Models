@@ -40,24 +40,20 @@ import logging
 import os
 import subprocess
 import time
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Union
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
 from .config import (
-    PPO_HYPERPARAMETERS,
-    ENVIRONMENT_CONFIG,
     DATA_SPLIT_CONFIG,
     INDICATOR_CONFIG,
-    TrainingConfig,
     RewardConfig,
-    get_training_config,
-    get_ppo_hyperparameters,
     get_environment_config,
+    get_ppo_hyperparameters,
 )
 from .utils.reproducibility import set_reproducible_seeds
 
@@ -66,9 +62,9 @@ from .utils.reproducibility import set_reproducible_seeds
 # =============================================================================
 try:
     from src.core.services import (
+        DVCResult,
         DVCService,
         DVCTag,
-        DVCResult,
         create_dvc_service,
     )
     DVC_AVAILABLE = True
@@ -80,8 +76,8 @@ except ImportError:
 
 try:
     from src.core.services import (
-        LineageTracker,
         LineageRecord,
+        LineageTracker,
         create_lineage_tracker,
     )
     LINEAGE_AVAILABLE = True
@@ -96,15 +92,17 @@ FEATURE_ORDER_HASH = None
 FEATURE_ORDER = None
 try:
     from src.config.experiment_loader import (
-        load_experiment_config as _load_ssot,
         get_feature_order_hash as _get_ssot_hash,
+    )
+    from src.config.experiment_loader import (
+        load_experiment_config as _load_ssot,
     )
     _ssot_config = _load_ssot()
     FEATURE_ORDER_HASH = _ssot_config.feature_order_hash
     FEATURE_ORDER = _ssot_config.feature_order
 except (ImportError, FileNotFoundError):
     try:
-        from src.core.contracts.feature_contract import FEATURE_ORDER_HASH, FEATURE_ORDER
+        from src.core.contracts.feature_contract import FEATURE_ORDER, FEATURE_ORDER_HASH
     except ImportError:
         pass
 
@@ -127,42 +125,42 @@ class TrainingRequest:
     dataset_path: Path
 
     # Optional overrides (defaults from SSOT)
-    total_timesteps: Optional[int] = None
-    learning_rate: Optional[float] = None
+    total_timesteps: int | None = None
+    learning_rate: float | None = None
 
     # Reproducibility - CRITICAL for consistent training results
     seed: int = 42  # Fixed seed for reproducibility
 
     # Output configuration
-    output_dir: Optional[Path] = None
-    experiment_name: Optional[str] = None
+    output_dir: Path | None = None
+    experiment_name: str | None = None
 
     # Feature configuration
-    feature_columns: Optional[List[str]] = None
+    feature_columns: list[str] | None = None
 
     # MLflow
-    mlflow_tracking_uri: Optional[str] = None
+    mlflow_tracking_uri: str | None = None
     mlflow_enabled: bool = True
 
     # Database registration
-    db_connection_string: Optional[str] = None
+    db_connection_string: str | None = None
     auto_register: bool = True
 
     # Callbacks
-    on_progress: Optional[Callable[[str, int, int], None]] = None
+    on_progress: Callable[[str, int, int], None] | None = None
 
     # GAP 1: DVC integration for dataset versioning
     dvc_enabled: bool = True
-    dvc_remote: Optional[str] = "minio"  # DVC remote name
+    dvc_remote: str | None = "minio"  # DVC remote name
 
     # GAP 2: Lineage tracking
     lineage_enabled: bool = True
 
     # GAP 5: Experiment config path for artifact logging
-    experiment_config_path: Optional[Path] = None
+    experiment_config_path: Path | None = None
 
     # Reward system configuration (CTR-REWARD-SNAPSHOT-001)
-    reward_config: Optional["RewardConfig"] = None
+    reward_config: RewardConfig | None = None
     reward_contract_id: str = "v1.0.0"  # Default contract version
     enable_curriculum: bool = True  # Enable curriculum learning phases
 
@@ -178,15 +176,15 @@ class TrainingResult:
     version: str
 
     # Paths
-    model_path: Optional[Path] = None
-    norm_stats_path: Optional[Path] = None
-    contract_path: Optional[Path] = None
+    model_path: Path | None = None
+    norm_stats_path: Path | None = None
+    contract_path: Path | None = None
 
     # Hashes (for reproducibility)
-    model_hash: Optional[str] = None
-    dataset_hash: Optional[str] = None
-    norm_stats_hash: Optional[str] = None
-    config_hash: Optional[str] = None
+    model_hash: str | None = None
+    dataset_hash: str | None = None
+    norm_stats_hash: str | None = None
+    config_hash: str | None = None
 
     # Metrics
     training_duration_seconds: float = 0.0
@@ -198,30 +196,30 @@ class TrainingResult:
     training_seed: int = 42  # Seed used for this training run
 
     # MLflow
-    mlflow_run_id: Optional[str] = None
+    mlflow_run_id: str | None = None
 
     # Database
-    model_id: Optional[str] = None
+    model_id: str | None = None
 
     # GAP 1: DVC versioning
-    dvc_tag: Optional[str] = None
+    dvc_tag: str | None = None
     dvc_pushed: bool = False
 
     # GAP 2, 3: Lineage and contract tracking
-    feature_order_hash: Optional[str] = None
-    lineage_record: Optional[Dict[str, Any]] = None
+    feature_order_hash: str | None = None
+    lineage_record: dict[str, Any] | None = None
 
     # Reward system tracking (CTR-REWARD-SNAPSHOT-001)
-    reward_contract_id: Optional[str] = None
-    reward_config_hash: Optional[str] = None
-    reward_config_uri: Optional[str] = None
-    curriculum_final_phase: Optional[str] = None
-    reward_weights: Optional[Dict[str, float]] = None
+    reward_contract_id: str | None = None
+    reward_config_hash: str | None = None
+    reward_config_uri: str | None = None
+    curriculum_final_phase: str | None = None
+    reward_weights: dict[str, float] | None = None
 
     # Errors
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "version": self.version,
@@ -294,7 +292,7 @@ class TrainingEngine:
         self._lineage_tracker = None
         self._lineage_record = None
 
-    def _get_date_ranges(self) -> Dict[str, str]:
+    def _get_date_ranges(self) -> dict[str, str]:
         """
         Get date ranges from SSOT config for train/test split.
 
@@ -563,7 +561,7 @@ class TrainingEngine:
 
         return df, dataset_hash
 
-    def _find_l2_norm_stats(self, dataset_path: Path) -> Optional[Path]:
+    def _find_l2_norm_stats(self, dataset_path: Path) -> Path | None:
         """
         Find L2-generated norm_stats adjacent to dataset.
 
@@ -651,7 +649,7 @@ class TrainingEngine:
 
         if l2_norm_stats_path is not None and l2_norm_stats_path.exists():
             logger.info(f"[L2->L3] Using L2 norm_stats from: {l2_norm_stats_path}")
-            with open(l2_norm_stats_path, 'r') as f:
+            with open(l2_norm_stats_path) as f:
                 l2_stats = json.load(f)
 
             # Convert L2 format to engine format
@@ -662,7 +660,7 @@ class TrainingEngine:
             if "features" in l2_stats and isinstance(l2_stats["features"], dict):
                 # New format: features nested under "features" key
                 l2_features = l2_stats["features"]
-                logger.info(f"[L2->L3] Using nested 'features' key from L2 norm_stats")
+                logger.info("[L2->L3] Using nested 'features' key from L2 norm_stats")
             else:
                 # Legacy format: features directly at top level
                 # Skip metadata keys (start with "_")
@@ -690,7 +688,7 @@ class TrainingEngine:
 
             logger.info(f"[L2->L3] Loaded {len(norm_stats)} features from L2 norm_stats (avoiding double normalization)")
         else:
-            logger.warning(f"[L2->L3] L2 norm_stats not found, computing from data (this may cause normalization mismatch!)")
+            logger.warning("[L2->L3] L2 norm_stats not found, computing from data (this may cause normalization mismatch!)")
             # Calculate stats from data (original behavior)
             norm_stats = {}
             for col in market_features:
@@ -706,7 +704,7 @@ class TrainingEngine:
         # Add metadata
         norm_stats["_metadata"] = {
             "version": request.version,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "feature_count": len(market_features),
             "sample_count": len(df),
         }
@@ -765,7 +763,7 @@ class TrainingEngine:
             "warmup_bars": INDICATOR_CONFIG.warmup_bars,
             "trading_hours_start": "13:00",
             "trading_hours_end": "17:55",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "norm_stats_hash": norm_stats_hash,
             "sample_count": sample_count,
         }
@@ -793,7 +791,7 @@ class TrainingEngine:
         dataset_hash: str,
         norm_stats_hash: str,
         config_hash: str,
-        dvc_tag: Optional[str] = None
+        dvc_tag: str | None = None
     ) -> None:
         """Initialize MLflow tracking."""
         try:
@@ -886,7 +884,7 @@ class TrainingEngine:
         """
         from .environments import EnvironmentFactory, TradingEnvConfig
         from .environments.trading_env import ModularRewardStrategyAdapter
-        from .trainers import PPOTrainer, PPOConfig
+        from .trainers import PPOConfig, PPOTrainer
 
         # Get feature columns from SSOT or request
         feature_columns = request.feature_columns
@@ -968,8 +966,8 @@ class TrainingEngine:
 
         # Resolve algorithm name from pipeline SSOT if available
         try:
-            from src.training.algorithm_factory import resolve_algorithm_name
             from src.config.pipeline_config import load_pipeline_config
+            from src.training.algorithm_factory import resolve_algorithm_name
             pipeline_cfg = load_pipeline_config()
             ppo_config.algorithm_name = resolve_algorithm_name(pipeline_cfg)
         except Exception:
@@ -1036,7 +1034,7 @@ class TrainingEngine:
         self,
         request: TrainingRequest,
         train_result: Any
-    ) -> Optional[str]:
+    ) -> str | None:
         """Register model in database."""
         if not request.db_connection_string:
             logger.info("No DB connection, skipping registration")
@@ -1097,7 +1095,7 @@ class TrainingEngine:
         self,
         request: TrainingRequest,
         dataset_hash: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         GAP 1: Version dataset with DVC and push to remote.
 
@@ -1133,7 +1131,7 @@ class TrainingEngine:
             )
 
             if result.success:
-                logger.info(f"[GAP 1] Dataset versioned with DVC: tag={str(dvc_tag)}")
+                logger.info(f"[GAP 1] Dataset versioned with DVC: tag={dvc_tag!s}")
                 return {
                     "tag": str(dvc_tag),
                     "pushed": result.pushed,
@@ -1154,8 +1152,8 @@ class TrainingEngine:
         norm_stats_hash: str,
         config_hash: str,
         train_result: Any,
-        dvc_tag: Optional[str]
-    ) -> Optional[Dict[str, Any]]:
+        dvc_tag: str | None
+    ) -> dict[str, Any] | None:
         """
         GAP 2: Track complete lineage for this training run.
 
@@ -1273,9 +1271,9 @@ def run_training(
     project_root: Path,
     version: str,
     dataset_path: Path,
-    total_timesteps: Optional[int] = None,
+    total_timesteps: int | None = None,
     mlflow_enabled: bool = True,
-    db_connection_string: Optional[str] = None,
+    db_connection_string: str | None = None,
     **kwargs
 ) -> TrainingResult:
     """

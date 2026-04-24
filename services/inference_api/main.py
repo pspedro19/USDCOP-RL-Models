@@ -34,12 +34,16 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
+from . import __version__
+from .core.inference_engine import InferenceEngine
+from .middleware import setup_exception_handlers, setup_middleware
+from .middleware.auth import AuthMiddleware
+from .middleware.security_headers import RequestSizeLimitMiddleware, SecurityHeadersMiddleware
 from .routers import (
     backtest_router,
     config_router,
@@ -54,11 +58,6 @@ from .routers import (
     trades_router,
     websocket_router,
 )
-from .core.inference_engine import InferenceEngine
-from .middleware import setup_middleware, setup_exception_handlers
-from .middleware.auth import AuthMiddleware, API_KEY_HEADER
-from .middleware.security_headers import SecurityHeadersMiddleware, RequestSizeLimitMiddleware
-from . import __version__
 
 # Configure logging
 logging.basicConfig(
@@ -69,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 
 # Global auth middleware instance (initialized in lifespan)
-auth_middleware: Optional[AuthMiddleware] = None
+auth_middleware: AuthMiddleware | None = None
 
 
 async def get_db_pool():
@@ -143,13 +142,11 @@ async def lifespan(app: FastAPI):
 
     # Initialize drift detectors (Sprint 3: COMP-88)
     try:
+        from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
         from src.monitoring.drift_detector import (
-            FeatureDriftDetector,
-            MultivariateDriftDetector,
             create_drift_detector,
             create_multivariate_drift_detector,
         )
-        from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
 
         # Path to reference statistics
         project_root = Path(__file__).parent.parent.parent
@@ -200,7 +197,7 @@ async def lifespan(app: FastAPI):
         if drift_ref_path.exists():
             try:
                 import json
-                with open(drift_ref_path, 'r') as f:
+                with open(drift_ref_path) as f:
                     ref_data = json.load(f)
                 if "observations" in ref_data:
                     import numpy as np
@@ -412,10 +409,10 @@ except ImportError:
     pass
 try:
     from opentelemetry import trace as _otel_trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter as _JE
+    from opentelemetry.sdk.resources import Resource as _Res
     from opentelemetry.sdk.trace import TracerProvider as _TP
     from opentelemetry.sdk.trace.export import BatchSpanProcessor as _BSP
-    from opentelemetry.sdk.resources import Resource as _Res
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter as _JE
     _p = _TP(resource=_Res.create({"service.name": "backtest-api"}))
     _p.add_span_processor(_BSP(_JE(agent_host_name="jaeger", agent_port=6831)))
     _otel_trace.set_tracer_provider(_p)

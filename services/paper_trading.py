@@ -22,13 +22,13 @@ CHANGELOG v3.0.0:
 - DEPRECATED: Legacy FeatureCalculator (kept as fallback only)
 """
 
+import logging
 import os
 import sys
 import warnings
-import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -104,11 +104,11 @@ MIN_BARS_BETWEEN_TRADES = 6  # 30 min cooldown between trades
 MAX_TRADES_PER_DAY = 6  # Allow up to 6 trades per day
 
 
-def load_norm_stats() -> Dict:
+def load_norm_stats() -> dict:
     """Load normalization stats from config (SSOT)."""
     import json
     if NORM_STATS_PATH.exists():
-        with open(NORM_STATS_PATH, 'r') as f:
+        with open(NORM_STATS_PATH) as f:
             return json.load(f)
     else:
         logger.warning(f"Norm stats file not found at {NORM_STATS_PATH}, using defaults")
@@ -262,8 +262,9 @@ class FeatureCalculator:
         try:
             # Import SSOT calculators
             from src.feature_store.core import (
-                RSICalculator, ATRPercentCalculator, ADXCalculator,
-                LogReturnCalculator
+                ADXCalculator,
+                ATRPercentCalculator,
+                RSICalculator,
             )
 
             # Calculate technical features using SSOT (Wilder's EMA)
@@ -414,14 +415,14 @@ class FeatureCalculator:
 class PaperTradingEngine:
     """Enhanced paper trading that handles directional bias."""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.model_id = config["model_id"]
         self.initial_capital = config["initial_capital"]
         self.slippage_bps = config["slippage_bps"]
         self.feature_calc = FeatureCalculator()
-        self.trades: List[Dict] = []
-        self.equity_snapshots: List[Dict] = []
+        self.trades: list[dict] = []
+        self.equity_snapshots: list[dict] = []
         self.model = None
 
         self.position = 0.0
@@ -436,7 +437,7 @@ class PaperTradingEngine:
         self.model = PPO.load(str(MODEL_PATH))
         logger.info(f"Model loaded - obs_space: {self.model.observation_space.shape}")
 
-    def build_observation(self, row: pd.Series, feature_means: Dict, feature_stds: Dict,
+    def build_observation(self, row: pd.Series, feature_means: dict, feature_stds: dict,
                           current_step: int, episode_length: int) -> np.ndarray:
         obs = np.zeros(15, dtype=np.float32)
         for i, feat in enumerate(MARKET_FEATURES):
@@ -467,7 +468,7 @@ class PaperTradingEngine:
         slip = price * (self.slippage_bps / 10000)
         return price + slip if is_buy else price - slip
 
-    def run_simulation(self, ohlcv_df: pd.DataFrame, macro_df: pd.DataFrame) -> Dict:
+    def run_simulation(self, ohlcv_df: pd.DataFrame, macro_df: pd.DataFrame) -> dict:
         logger.info(f"Starting ENHANCED simulation with {len(ohlcv_df)} bars")
         logger.info(f"Entry threshold: +/-{ENTRY_THRESHOLD}")
         logger.info(f"Max position duration: {MAX_POSITION_BARS} bars")
@@ -648,7 +649,7 @@ class PaperTradingEngine:
             return 0.0
         return (self.peak_value - self.portfolio_value) / self.peak_value
 
-    def calculate_metrics(self) -> Dict:
+    def calculate_metrics(self) -> dict:
         total_return = (self.portfolio_value - self.initial_capital) / self.initial_capital * 100
         winning = sum(1 for t in self.trades if t["pnl_usd"] > 0)
         losing = len(self.trades) - winning
@@ -681,7 +682,7 @@ class PaperTradingEngine:
         }
 
 
-def save_results_to_db(results: Dict):
+def save_results_to_db(results: dict):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:

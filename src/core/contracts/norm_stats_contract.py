@@ -6,14 +6,12 @@ Define el contrato para norm_stats.json.
 Contract ID: CTR-NORM-STATS-001
 Version: 2.0.0
 """
-from dataclasses import dataclass
-from typing import Dict, Any, Optional, Tuple, Final
-from datetime import datetime, date
-from pathlib import Path
-import json
 import hashlib
-from pydantic import BaseModel, Field, field_validator
+import json
+from datetime import date, datetime
+from typing import Any, Final
 
+from pydantic import BaseModel, Field, field_validator
 
 NORM_STATS_CONTRACT_VERSION: Final[str] = "2.0.0"
 
@@ -22,8 +20,8 @@ class FeatureStats(BaseModel):
     """Estadísticas de una feature individual."""
     mean: float = Field(..., description="Feature mean")
     std: float = Field(..., gt=0, description="Feature std (must be > 0)")
-    min_val: Optional[float] = Field(None, alias="min", description="Observed minimum")
-    max_val: Optional[float] = Field(None, alias="max", description="Observed maximum")
+    min_val: float | None = Field(None, alias="min", description="Observed minimum")
+    max_val: float | None = Field(None, alias="max", description="Observed maximum")
 
     model_config = {"populate_by_name": True}
 
@@ -42,13 +40,13 @@ class NormStatsMetadata(BaseModel):
     sample_count: int = Field(..., gt=0, description="Number of samples used")
     data_start: date = Field(..., description="Start of data range")
     data_end: date = Field(..., description="End of data range")
-    dataset_hash: Optional[str] = Field(None, pattern=r"^[a-f0-9]{64}$")
+    dataset_hash: str | None = Field(None, pattern=r"^[a-f0-9]{64}$")
 
 
 class NormStatsContract(BaseModel):
     """Contrato completo de norm_stats.json."""
     metadata: NormStatsMetadata = Field(..., alias="_metadata")
-    features: Dict[str, FeatureStats]
+    features: dict[str, FeatureStats]
 
     model_config = {"populate_by_name": True}
 
@@ -73,7 +71,7 @@ class NormStatsContract(BaseModel):
         content = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "_metadata": self.metadata.model_dump(),
             "features": {
@@ -84,7 +82,7 @@ class NormStatsContract(BaseModel):
 
     @classmethod
     def from_file(cls, path: str) -> "NormStatsContract":
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         return cls(**data)
 
@@ -93,7 +91,7 @@ class NormStatsContractError(Exception):
     pass
 
 
-def load_norm_stats(path: str) -> Tuple["NormStatsContract", str]:
+def load_norm_stats(path: str) -> tuple["NormStatsContract", str]:
     """Carga norm_stats con validación y retorna hash."""
     try:
         contract = NormStatsContract.from_file(path)
@@ -104,7 +102,7 @@ def load_norm_stats(path: str) -> Tuple["NormStatsContract", str]:
 
 
 def save_norm_stats(
-    features: Dict[str, Dict[str, float]],
+    features: dict[str, dict[str, float]],
     path: str,
     sample_count: int,
     data_start: date,

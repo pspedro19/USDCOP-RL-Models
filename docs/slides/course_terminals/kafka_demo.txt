@@ -1,0 +1,20 @@
+=== Kafka producer demo ===
+2026-04-23 22:19:26,918 [producer] INFO kafka_bridge.producer starting: broker=redpanda:9092 topic=signals.h5 demo=True
+2026-04-23 22:19:26,930 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=redpanda:9092 <connecting> [IPv4 ('172.29.0.14', 9092)]>: connecting to redpanda:9092 [('172.29.0.14', 9092) IPv4]
+2026-04-23 22:19:26,934 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=redpanda:9092 <checking_api_versions_recv> [IPv4 ('172.29.0.14', 9092)]>: Broker version identified as 2.5
+2026-04-23 22:19:26,934 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=redpanda:9092 <connected> [IPv4 ('172.29.0.14', 9092)]>: Connection complete.
+2026-04-23 22:19:26,935 [producer] INFO connected to Kafka broker redpanda:9092
+2026-04-23 22:19:27,044 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=0 host=redpanda:9092 <connecting> [IPv4 ('172.29.0.14', 9092)]>: connecting to redpanda:9092 [('172.29.0.14', 9092) IPv4]
+2026-04-23 22:19:27,045 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=0 host=redpanda:9092 <connected> [IPv4 ('172.29.0.14', 9092)]>: Connection complete.
+2026-04-23 22:19:27,046 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=redpanda:9092 <connected> [IPv4 ('172.29.0.14', 9092)]>: Closing connection. 
+2026-04-23 22:19:27,106 [producer] INFO published week=2026-W17 direction=SHORT to signals.h5 partition=0 offset=3
+2026-04-23 22:19:27,159 [producer] INFO published week=2026-W18 direction=LONG to signals.h5 partition=0 offset=4
+2026-04-23 22:19:27,212 [producer] INFO published week=2026-W19 direction=SHORT to signals.h5 partition=0 offset=5
+2026-04-23 22:19:27,213 [producer] INFO demo complete: 3/3 published
+2026-04-23 22:19:27,213 [producer] INFO <KafkaProducer client_id=kafka-python-producer-1 transactional_id=None>: Closing the Kafka producer with 5 secs timeout.
+2026-04-23 22:19:27,213 [producer] INFO <BrokerConnection client_id=kafka-python-producer-1, node_id=0 host=redpanda:9092 <connected> [IPv4 ('172.29.0.14', 9092)]>: Closing connection. 
+
+=== Kafka consumer (last 10) ===
+2026-04-23 22:19:27,107 [consumer] INFO received 2026-04-23T22:19:27.107464+00:00 partition=0 offset=3 value={"week": "2026-W17", "direction": "SHORT", "confidence": 0.7, "ensemble_return": -0.012, "skip_trade": false, "hard_stop_pct": 2.8, "take_profit_pct": 1.4, "adjusted_leverage": 1.5, "timestamp": "2026-04-23T17:19:26.936273-05:00"}
+2026-04-23 22:19:27,160 [consumer] INFO received 2026-04-23T22:19:27.160214+00:00 partition=0 offset=4 value={"week": "2026-W18", "direction": "LONG", "confidence": 0.75, "ensemble_return": -0.008, "skip_trade": false, "hard_stop_pct": 2.7, "take_profit_pct": 1.35, "adjusted_leverage": 1.4, "timestamp": "2026-04-23T17:19:27.106952-05:00"}
+2026-04-23 22:19:27,214 [consumer] INFO received 2026-04-23T22:19:27.214334+00:00 partition=0 offset=5 value={"week": "2026-W19", "direction": "SHORT", "confidence": 0.8, "ensemble_return": -0.004, "skip_trade": false, "hard_stop_pct": 2.6, "take_profit_pct": 1.3, "adjusted_leverage": 1.3, "timestamp": "2026-04-23T17:19:27.160021-05:00"}

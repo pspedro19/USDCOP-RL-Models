@@ -24,17 +24,18 @@ Created: 2026-01-18
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     import pandas as pd
+
     from .storage_contracts import (
-        DatasetSnapshot,
-        ModelSnapshot,
-        BacktestSnapshot,
         ABComparisonSnapshot,
+        BacktestSnapshot,
+        DatasetSnapshot,
         LineageRecord,
+        ModelSnapshot,
     )
 
 
@@ -63,9 +64,9 @@ class ArtifactMetadata:
     created_at: datetime
     size_bytes: int
     storage_uri: str  # s3://bucket/path
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "artifact_id": self.artifact_id,
@@ -102,8 +103,8 @@ class IObjectStorageRepository(ABC):
         bucket: str,
         key: str,
         data: bytes,
-        metadata: Optional[Dict[str, Any]] = None,
-        content_type: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        content_type: str | None = None,
     ) -> ArtifactMetadata:
         """
         Store an object and return its metadata.
@@ -160,7 +161,7 @@ class IObjectStorageRepository(ABC):
         bucket: str,
         prefix: str,
         recursive: bool = True,
-    ) -> List[ArtifactMetadata]:
+    ) -> list[ArtifactMetadata]:
         """
         List objects matching prefix.
 
@@ -261,7 +262,7 @@ class IDatasetRepository(ABC):
         experiment_id: str,
         data: "pd.DataFrame",
         version: str,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> "DatasetSnapshot":
         """
         Save dataset to object storage.
@@ -286,7 +287,7 @@ class IDatasetRepository(ABC):
     def load_dataset(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> "pd.DataFrame":
         """
         Load dataset from object storage.
@@ -304,7 +305,7 @@ class IDatasetRepository(ABC):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> "DatasetSnapshot":
         """
         Get dataset snapshot (metadata without loading data).
@@ -319,7 +320,7 @@ class IDatasetRepository(ABC):
         pass
 
     @abstractmethod
-    def list_versions(self, experiment_id: str) -> List["DatasetSnapshot"]:
+    def list_versions(self, experiment_id: str) -> list["DatasetSnapshot"]:
         """
         List all dataset versions for an experiment.
 
@@ -335,8 +336,8 @@ class IDatasetRepository(ABC):
     def get_norm_stats(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
-    ) -> Dict[str, Dict[str, float]]:
+        version: str | None = None,
+    ) -> dict[str, dict[str, float]]:
         """
         Get normalization statistics for a dataset.
 
@@ -371,11 +372,11 @@ class IModelRepository(ABC):
     def save_model(
         self,
         experiment_id: str,
-        model_path: Union[str, Path],
-        norm_stats: Dict[str, Any],
-        config: Dict[str, Any],
+        model_path: str | Path,
+        norm_stats: dict[str, Any],
+        config: dict[str, Any],
         lineage: "LineageRecord",
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> "ModelSnapshot":
         """
         Save trained model to object storage.
@@ -404,7 +405,7 @@ class IModelRepository(ABC):
     def load_model(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> bytes:
         """
         Load model bytes from object storage.
@@ -422,7 +423,7 @@ class IModelRepository(ABC):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> "ModelSnapshot":
         """
         Get model snapshot (metadata without loading model).
@@ -437,7 +438,7 @@ class IModelRepository(ABC):
         pass
 
     @abstractmethod
-    def list_versions(self, experiment_id: str) -> List["ModelSnapshot"]:
+    def list_versions(self, experiment_id: str) -> list["ModelSnapshot"]:
         """
         List all model versions for an experiment.
 
@@ -454,7 +455,7 @@ class IModelRepository(ABC):
         self,
         experiment_id: str,
         version: str,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
     ) -> str:
         """
         Promote model to production bucket.
@@ -494,10 +495,10 @@ class IBacktestRepository(ABC):
         self,
         experiment_id: str,
         model_version: str,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         trades: "pd.DataFrame",
         equity_curve: "pd.DataFrame",
-        backtest_id: Optional[str] = None,
+        backtest_id: str | None = None,
     ) -> "BacktestSnapshot":
         """
         Save backtest results to object storage.
@@ -520,7 +521,7 @@ class IBacktestRepository(ABC):
         self,
         experiment_id: str,
         backtest_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Load backtest result.
 
@@ -534,7 +535,7 @@ class IBacktestRepository(ABC):
         pass
 
     @abstractmethod
-    def list_backtests(self, experiment_id: str) -> List["BacktestSnapshot"]:
+    def list_backtests(self, experiment_id: str) -> list["BacktestSnapshot"]:
         """
         List all backtests for an experiment.
 
@@ -569,7 +570,7 @@ class IABComparisonRepository(ABC):
         experiment_id: str,
         baseline_model: "ModelSnapshot",
         treatment_model: "ModelSnapshot",
-        result: Dict[str, Any],
+        result: dict[str, Any],
         shadow_trades: Optional["pd.DataFrame"] = None,
     ) -> "ABComparisonSnapshot":
         """
@@ -592,7 +593,7 @@ class IABComparisonRepository(ABC):
         self,
         experiment_id: str,
         comparison_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Load comparison result.
 

@@ -11,11 +11,10 @@ Version: 1.0.0
 Date: 2026-02-06
 """
 
-import inspect
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -35,7 +34,7 @@ class EnsemblePredictor:
 
     def __init__(
         self,
-        model_paths: List[Path],
+        model_paths: list[Path],
         min_consensus: int = 3,
         action_type: str = "discrete",
         threshold_long: float = 0.35,
@@ -62,7 +61,7 @@ class EnsemblePredictor:
 
         self._load_models(model_paths)
 
-    def _load_models(self, model_paths: List[Path]) -> None:
+    def _load_models(self, model_paths: list[Path]) -> None:
         """Load all models."""
         for path in model_paths:
             path = Path(path)
@@ -97,7 +96,7 @@ class EnsemblePredictor:
         self,
         obs: np.ndarray,
         deterministic: bool = True,
-    ) -> Tuple[int, float, Dict[str, Any]]:
+    ) -> tuple[int, float, dict[str, Any]]:
         """
         Get ensemble prediction via majority vote.
 
@@ -171,7 +170,7 @@ class EnsemblePredictor:
 
 def load_ensemble_from_multi_seed(
     base_dir: Path,
-    seeds: Optional[List[int]] = None,
+    seeds: list[int] | None = None,
     use_lstm: bool = False,
     **kwargs,
 ) -> EnsemblePredictor:

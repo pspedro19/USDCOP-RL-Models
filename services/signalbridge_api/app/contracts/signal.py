@@ -4,9 +4,10 @@ Trading signal contracts.
 
 from datetime import datetime
 from enum import IntEnum
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from .common import BaseContract
 
@@ -35,16 +36,16 @@ class TradingSignal(BaseContract):
     user_id: UUID
     symbol: str = Field(description="Trading pair (e.g., 'BTCUSDT')")
     action: SignalAction
-    price: Optional[float] = Field(None, ge=0)
-    quantity: Optional[float] = Field(None, ge=0)
-    stop_loss: Optional[float] = Field(None, ge=0)
-    take_profit: Optional[float] = Field(None, ge=0)
+    price: float | None = Field(None, ge=0)
+    quantity: float | None = Field(None, ge=0)
+    stop_loss: float | None = Field(None, ge=0)
+    take_profit: float | None = Field(None, ge=0)
     source: str = SignalSource.API
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
-    processed_at: Optional[datetime] = None
+    processed_at: datetime | None = None
     is_processed: bool = False
-    execution_id: Optional[UUID] = None
+    execution_id: UUID | None = None
 
 
 class SignalCreate(BaseModel):
@@ -52,12 +53,12 @@ class SignalCreate(BaseModel):
 
     symbol: str = Field(min_length=2, max_length=20)
     action: SignalAction
-    price: Optional[float] = Field(None, ge=0)
-    quantity: Optional[float] = Field(None, ge=0)
-    stop_loss: Optional[float] = Field(None, ge=0)
-    take_profit: Optional[float] = Field(None, ge=0)
+    price: float | None = Field(None, ge=0)
+    quantity: float | None = Field(None, ge=0)
+    stop_loss: float | None = Field(None, ge=0)
+    take_profit: float | None = Field(None, ge=0)
     source: str = SignalSource.API
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SignalWebhook(BaseModel):
@@ -65,12 +66,12 @@ class SignalWebhook(BaseModel):
 
     symbol: str
     action: str  # "buy", "sell", "close"
-    price: Optional[float] = None
-    quantity: Optional[float] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    passphrase: Optional[str] = None  # For webhook authentication
-    comment: Optional[str] = None
+    price: float | None = None
+    quantity: float | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    passphrase: str | None = None  # For webhook authentication
+    comment: str | None = None
 
     def to_signal_action(self) -> SignalAction:
         """Convert string action to SignalAction enum."""
@@ -99,9 +100,9 @@ class SignalStats(BaseContract):
 class SignalFilter(BaseModel):
     """Signal filtering parameters."""
 
-    action: Optional[SignalAction] = None
-    symbol: Optional[str] = None
-    source: Optional[str] = None
-    is_processed: Optional[bool] = None
-    since: Optional[datetime] = None
-    until: Optional[datetime] = None
+    action: SignalAction | None = None
+    symbol: str | None = None
+    source: str | None = None
+    is_processed: bool | None = None
+    since: datetime | None = None
+    until: datetime | None = None

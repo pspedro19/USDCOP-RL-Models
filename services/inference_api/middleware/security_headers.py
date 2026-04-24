@@ -24,7 +24,7 @@ Date: 2026-01-17
 
 import logging
 import os
-from typing import Callable, Optional, List
+from collections.abc import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -58,10 +58,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        csp_directives: Optional[str] = None,
+        csp_directives: str | None = None,
         hsts_max_age: int = 31536000,
         include_subdomains: bool = True,
-        exclude_paths: Optional[List[str]] = None,
+        exclude_paths: list[str] | None = None,
     ):
         """
         Initialize the security headers middleware.
@@ -260,7 +260,7 @@ def create_security_middleware_stack(
     app: ASGIApp,
     production_mode: bool = False,
     max_request_size: int = 1_000_000,
-    custom_csp: Optional[str] = None,
+    custom_csp: str | None = None,
 ) -> None:
     """
     Convenience function to add all security middleware to an app.
@@ -296,7 +296,7 @@ def create_security_middleware_stack(
 
 
 __all__ = [
-    "SecurityHeadersMiddleware",
     "RequestSizeLimitMiddleware",
+    "SecurityHeadersMiddleware",
     "create_security_middleware_stack",
 ]

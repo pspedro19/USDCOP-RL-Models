@@ -35,10 +35,11 @@ Created: 2025-12-26
 Consolidated: 2026-01-17
 """
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any
 
 import asyncpg
 import redis.asyncio as aioredis
@@ -134,13 +135,13 @@ class Period(str, Enum):
 
 class ModelConfig(BaseModel):
     """Model configuration parameters."""
-    learning_rate: Optional[float] = None
-    batch_size: Optional[int] = None
-    n_epochs: Optional[int] = None
-    gamma: Optional[float] = None
-    gae_lambda: Optional[float] = None
-    clip_range: Optional[float] = None
-    custom_params: Optional[Dict[str, Any]] = None
+    learning_rate: float | None = None
+    batch_size: int | None = None
+    n_epochs: int | None = None
+    gamma: float | None = None
+    gae_lambda: float | None = None
+    clip_range: float | None = None
+    custom_params: dict[str, Any] | None = None
 
 
 class BacktestMetrics(BaseModel):
@@ -152,8 +153,8 @@ class BacktestMetrics(BaseModel):
     win_rate: float = Field(..., ge=0, le=1, description="Win rate (0-1)")
     profit_factor: float = Field(..., description="Profit factor")
     total_trades: int = Field(..., ge=0, description="Total number of trades")
-    calmar_ratio: Optional[float] = None
-    avg_trade_duration_mins: Optional[float] = None
+    calmar_ratio: float | None = None
+    avg_trade_duration_mins: float | None = None
 
 
 class ModelSummary(BaseModel):
@@ -162,29 +163,29 @@ class ModelSummary(BaseModel):
     name: str = Field(..., description="Human-readable model name")
     model_type: str = Field(..., description="Model type (RL, ML, LLM, ENSEMBLE)")
     status: ModelStatus = Field(..., description="Current model status")
-    version: Optional[str] = None
-    description: Optional[str] = None
+    version: str | None = None
+    description: str | None = None
     is_active: bool = True
-    backtest_metrics: Optional[BacktestMetrics] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    backtest_metrics: BacktestMetrics | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class ModelDetail(ModelSummary):
     """Detailed model information including hyperparameters and features."""
-    hyperparameters: Optional[ModelConfig] = None
-    features_used: List[str] = Field(default_factory=list)
-    observation_space_dim: Optional[int] = None
-    action_space_dim: Optional[int] = None
-    training_episodes: Optional[int] = None
-    training_timesteps: Optional[int] = None
-    fold_id: Optional[int] = None
+    hyperparameters: ModelConfig | None = None
+    features_used: list[str] = Field(default_factory=list)
+    observation_space_dim: int | None = None
+    action_space_dim: int | None = None
+    training_episodes: int | None = None
+    training_timesteps: int | None = None
+    fold_id: int | None = None
 
 
 class ModelsListResponse(BaseModel):
     """Response for listing all models."""
     count: int
-    models: List[ModelSummary]
+    models: list[ModelSummary]
     timestamp: str
 
 
@@ -198,12 +199,12 @@ class Signal(BaseModel):
     side: TradeSide
     confidence: float = Field(..., ge=0, le=1)
     size: float = Field(..., ge=0, le=1)
-    entry_price: Optional[float] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    risk_usd: Optional[float] = None
-    reasoning: Optional[str] = None
-    features_snapshot: Optional[Dict[str, Any]] = None
+    entry_price: float | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    risk_usd: float | None = None
+    reasoning: str | None = None
+    features_snapshot: dict[str, Any] | None = None
 
 
 class SignalsResponse(BaseModel):
@@ -211,16 +212,16 @@ class SignalsResponse(BaseModel):
     model_id: str
     period: str
     count: int
-    signals: List[Signal]
+    signals: list[Signal]
     timestamp: str
 
 
 class LatestSignalResponse(BaseModel):
     """Response for the latest signal."""
     model_id: str
-    signal: Optional[Signal] = None
-    market_price: Optional[float] = None
-    age_seconds: Optional[int] = None
+    signal: Signal | None = None
+    market_price: float | None = None
+    age_seconds: int | None = None
     timestamp: str
 
 
@@ -232,18 +233,18 @@ class Trade(BaseModel):
     side: str
     quantity: float
     entry_price: float
-    current_price: Optional[float] = None
-    exit_price: Optional[float] = None
-    stop_loss: Optional[float] = None
-    take_profit: Optional[float] = None
-    unrealized_pnl: Optional[float] = None
-    realized_pnl: Optional[float] = None
-    pnl_percent: Optional[float] = None
+    current_price: float | None = None
+    exit_price: float | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    unrealized_pnl: float | None = None
+    realized_pnl: float | None = None
+    pnl_percent: float | None = None
     entry_time: str
-    exit_time: Optional[str] = None
-    holding_time_minutes: Optional[int] = None
+    exit_time: str | None = None
+    holding_time_minutes: int | None = None
     status: str
-    exit_reason: Optional[str] = None
+    exit_reason: str | None = None
     leverage: int = 1
 
 
@@ -253,7 +254,7 @@ class TradesResponse(BaseModel):
     period: str
     status_filter: str
     count: int
-    trades: List[Trade]
+    trades: list[Trade]
     total_pnl: float
     timestamp: str
 
@@ -262,7 +263,7 @@ class OpenPositionResponse(BaseModel):
     """Response for open position query."""
     model_id: str
     has_position: bool
-    position: Optional[Trade] = None
+    position: Trade | None = None
     timestamp: str
 
 
@@ -289,8 +290,8 @@ class LiveMetrics(BaseModel):
 class MetricsComparison(BaseModel):
     """Comparison of live vs backtest metrics."""
     live: LiveMetrics
-    backtest: Optional[BacktestMetrics] = None
-    divergence: Optional[Dict[str, float]] = None
+    backtest: BacktestMetrics | None = None
+    divergence: dict[str, float] | None = None
 
 
 class MetricsResponse(BaseModel):
@@ -309,8 +310,8 @@ class EquityPoint(BaseModel):
     equity_value: float
     return_pct: float
     drawdown_pct: float
-    cash_balance: Optional[float] = None
-    positions_value: Optional[float] = None
+    cash_balance: float | None = None
+    positions_value: float | None = None
 
 
 class EquityCurveResponse(BaseModel):
@@ -320,8 +321,8 @@ class EquityCurveResponse(BaseModel):
     end_date: str
     resolution: str
     data_points: int
-    data: List[EquityPoint]
-    summary: Dict[str, float]
+    data: list[EquityPoint]
+    summary: dict[str, float]
     timestamp: str
 
 
@@ -339,7 +340,7 @@ class ModelsCompareResponse(BaseModel):
     """Response for model comparison."""
     period: str
     models_compared: int
-    comparison: List[ModelComparisonItem]
+    comparison: list[ModelComparisonItem]
     best_sharpe: str
     best_return: str
     lowest_drawdown: str
@@ -353,21 +354,21 @@ class FeatureStats(BaseModel):
     name: str
     mean: float
     std: float
-    min_val: Optional[float] = None
-    max_val: Optional[float] = None
+    min_val: float | None = None
+    max_val: float | None = None
     category: str
 
 
 class FeatureCategory(BaseModel):
     """Group of features by category."""
     category: str
-    features: List[FeatureStats]
+    features: list[FeatureStats]
 
 
 class FeaturesResponse(BaseModel):
     """Response for features endpoint."""
     total_features: int
-    categories: List[FeatureCategory]
+    categories: list[FeatureCategory]
     timestamp: str
 
 
@@ -377,15 +378,15 @@ class ServiceHealth(BaseModel):
     """Health status of a service component."""
     name: str
     status: str
-    latency_ms: Optional[float] = None
-    details: Optional[Dict[str, Any]] = None
+    latency_ms: float | None = None
+    details: dict[str, Any] | None = None
 
 
 class HealthResponse(BaseModel):
     """Response for health check endpoint."""
     status: str
     version: str
-    services: List[ServiceHealth]
+    services: list[ServiceHealth]
     models_available: int
     timestamp: str
 
@@ -397,7 +398,7 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str
     timestamp: str
-    path: Optional[str] = None
+    path: str | None = None
 
 
 # =============================================================================
@@ -408,7 +409,7 @@ class DatabasePool:
     """Async PostgreSQL connection pool manager."""
 
     def __init__(self):
-        self._pool: Optional[asyncpg.Pool] = None
+        self._pool: asyncpg.Pool | None = None
 
     async def init(self):
         """Initialize the connection pool."""
@@ -435,12 +436,12 @@ class DatabasePool:
             raise RuntimeError("Database pool not initialized")
         return self._pool
 
-    async def fetch(self, query: str, *args) -> List[asyncpg.Record]:
+    async def fetch(self, query: str, *args) -> list[asyncpg.Record]:
         """Execute a query and fetch all results."""
         async with self.pool.acquire() as conn:
             return await conn.fetch(query, *args)
 
-    async def fetchrow(self, query: str, *args) -> Optional[asyncpg.Record]:
+    async def fetchrow(self, query: str, *args) -> asyncpg.Record | None:
         """Execute a query and fetch one result."""
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, *args)
@@ -460,7 +461,7 @@ class RedisCache:
     """Async Redis cache manager."""
 
     def __init__(self):
-        self._redis: Optional[aioredis.Redis] = None
+        self._redis: aioredis.Redis | None = None
 
     async def init(self):
         """Initialize Redis connection."""
@@ -489,7 +490,7 @@ class RedisCache:
     def available(self) -> bool:
         return self._redis is not None
 
-    async def get(self, key: str) -> Optional[str]:
+    async def get(self, key: str) -> str | None:
         """Get value from cache."""
         if not self.available:
             return None
@@ -562,7 +563,7 @@ async def get_cache() -> RedisCache:
 
 def parse_period(period: Period) -> tuple[datetime, datetime]:
     """Parse period enum to date range."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     end_date = now
 
     if period == Period.TODAY:
@@ -577,7 +578,7 @@ def parse_period(period: Period) -> tuple[datetime, datetime]:
     return start_date, end_date
 
 
-async def get_market_price(db: DatabasePool) -> Optional[float]:
+async def get_market_price(db: DatabasePool) -> float | None:
     """Get latest market price from database."""
     query = """
         SELECT close FROM usdcop_m5_ohlcv
@@ -599,7 +600,7 @@ async def validate_model_exists(db: DatabasePool, model_id: str) -> bool:
     return result is not None
 
 
-def calculate_divergence(live: LiveMetrics, backtest: BacktestMetrics) -> Dict[str, float]:
+def calculate_divergence(live: LiveMetrics, backtest: BacktestMetrics) -> dict[str, float]:
     """Calculate divergence between live and backtest metrics."""
     return {
         "sharpe_divergence": live.sharpe_ratio - backtest.sharpe_ratio,
@@ -678,7 +679,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content=ErrorResponse(
             error=exc.detail if isinstance(exc.detail, str) else "Error",
             detail=str(exc.detail),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             path=str(request.url.path),
         ).model_dump(),
     )
@@ -692,7 +693,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         content=ErrorResponse(
             error="Internal Server Error",
             detail=str(exc),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             path=str(request.url.path),
         ).model_dump(),
     )
@@ -808,7 +809,7 @@ async def health_check(
         version="1.0.0",
         services=services,
         models_available=model_count or 0,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -932,7 +933,7 @@ async def list_models(
     response = ModelsListResponse(
         count=len(models),
         models=models,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
     # Cache response
@@ -1143,7 +1144,7 @@ async def get_signals(
         period=period.value,
         count=len(signals),
         signals=signals,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1232,7 +1233,7 @@ async def get_latest_signal(
         signal=signal,
         market_price=market_price,
         age_seconds=age_seconds,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
     # Cache for 30 seconds
@@ -1283,7 +1284,7 @@ async def stream_signals(
             "data": json.dumps({
                 "model_id": model_id,
                 "message": "Connected to signal stream",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }),
         }
 
@@ -1340,7 +1341,7 @@ async def stream_signals(
                     yield {
                         "event": "heartbeat",
                         "data": json.dumps({
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         }),
                     }
 
@@ -1467,7 +1468,7 @@ async def get_trades(
         count=len(trades),
         trades=trades,
         total_pnl=round(total_pnl, 2),
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1549,7 +1550,7 @@ async def get_open_position(
         model_id=model_id,
         has_position=position is not None,
         position=position,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1704,7 +1705,7 @@ async def get_metrics(
             backtest=backtest,
             divergence=divergence,
         ),
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
     await cache.set(cache_key, response.model_dump_json(), Config.CACHE_TTL_MEDIUM)
@@ -1743,8 +1744,8 @@ async def get_equity_curve(
     if not await validate_model_exists(db, model_id):
         raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
 
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
-    end_date = datetime.now(timezone.utc)
+    start_date = datetime.now(UTC) - timedelta(days=days)
+    end_date = datetime.now(UTC)
 
     # Map resolution to interval for aggregation
     resolution_map = {
@@ -1774,7 +1775,7 @@ async def get_equity_curve(
         rows = await db.fetch(query, model_id, start_date, end_date)
     else:
         # Aggregate using time_bucket
-        query = f"""
+        query = """
             SELECT
                 time_bucket($4::interval, e.timestamp_utc) as timestamp_utc,
                 LAST(e.equity_value, e.timestamp_utc) as equity_value,
@@ -1823,7 +1824,7 @@ async def get_equity_curve(
         data_points=len(data),
         data=data,
         summary=summary,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -1973,7 +1974,7 @@ async def compare_models(
         best_sharpe=best_sharpe,
         best_return=best_return,
         lowest_drawdown=lowest_dd,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -2047,7 +2048,7 @@ async def list_features(
     response = FeaturesResponse(
         total_features=total_features,
         categories=categories,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
     await cache.set(cache_key, response.model_dump_json(), Config.CACHE_TTL_LONG)

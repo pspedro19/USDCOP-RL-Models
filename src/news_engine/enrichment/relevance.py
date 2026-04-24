@@ -6,10 +6,7 @@ Scores articles 0.0-1.0 based on keyword matches, source priority, and recency.
 
 from __future__ import annotations
 
-import re
-from datetime import datetime, timedelta
-from typing import Optional
-
+from datetime import datetime
 
 # High-priority keywords with weights
 KEYWORD_WEIGHTS = {
@@ -37,10 +34,10 @@ SOURCE_WEIGHTS = {
 
 def score_relevance(
     title: str,
-    content: Optional[str] = None,
-    summary: Optional[str] = None,
+    content: str | None = None,
+    summary: str | None = None,
     source_id: str = "",
-    published_at: Optional[datetime] = None,
+    published_at: datetime | None = None,
 ) -> float:
     """Compute relevance score for an article.
 

@@ -15,12 +15,10 @@ Part of Phase 4: MCP News Server implementation.
 import asyncio
 import json
 import logging
-import sys
-from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from src.news_engine.mcp_data_layer import NewsDataLayer, VALID_CATEGORIES
+from src.news_engine.mcp_data_layer import VALID_CATEGORIES, NewsDataLayer
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +107,11 @@ def _format_stats(stats: dict) -> str:
 )
 async def news_search(
     query: str,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-    source: Optional[str] = None,
-    language: Optional[str] = None,
-    category: Optional[str] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    source: str | None = None,
+    language: str | None = None,
+    category: str | None = None,
     limit: int = 20,
 ) -> str:
     """Search news articles by keyword with optional filters."""
@@ -142,8 +140,8 @@ async def news_search(
     ),
 )
 async def news_top_headlines(
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     limit: int = 10,
     diversify_sources: bool = True,
     min_relevance: float = 0.3,
@@ -173,8 +171,8 @@ async def news_top_headlines(
 )
 async def news_by_category(
     category: str,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     limit: int = 20,
 ) -> str:
     """Get articles filtered by enrichment category."""
@@ -204,8 +202,8 @@ async def news_by_category(
     ),
 )
 async def news_source_stats(
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> str:
     """Get source-level statistics for articles."""
     await _ensure_connected()
@@ -273,7 +271,7 @@ async def news_daily_briefing(
 )
 async def news_weekly_summary(
     week_start: str,
-    week_end: Optional[str] = None,
+    week_end: str | None = None,
     headlines_per_day: int = 5,
 ) -> str:
     """Get a weekly news summary with prompt-ready text."""
@@ -378,8 +376,9 @@ async def _ensure_connected():
 
 async def init_db_schema():
     """Create the news_articles_search table and indexes in PostgreSQL."""
-    import asyncpg
     import os
+
+    import asyncpg
 
     host = os.getenv("USDCOP_DB_HOST", "localhost")
     port = int(os.getenv("USDCOP_DB_PORT", "5432"))

@@ -7,16 +7,16 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-import logging
 import asyncio
 import json
-from typing import List, Set, Optional
-from datetime import datetime
-from fastapi import WebSocket, WebSocketDisconnect
+import logging
 from collections import deque
+from datetime import datetime
 
-from ..models.signal_schema import TradingSignal
+from fastapi import WebSocket, WebSocketDisconnect
+
 from ..config import get_config
+from ..models.signal_schema import TradingSignal
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ConnectionManager:
     """Manages WebSocket connections"""
 
     def __init__(self):
-        self.active_connections: Set[WebSocket] = set()
+        self.active_connections: set[WebSocket] = set()
         self.connection_count = 0
 
     async def connect(self, websocket: WebSocket):
@@ -79,7 +79,7 @@ class SignalBroadcaster:
         self.connection_manager = connection_manager
         self.config = get_config()
         self.message_queue: deque = deque(maxlen=self.config.ws_message_queue_size)
-        self.last_signal_id: Optional[str] = None
+        self.last_signal_id: str | None = None
 
     async def broadcast_signal(self, signal: TradingSignal):
         """
@@ -255,7 +255,7 @@ async def websocket_endpoint(
                     if data == "ping":
                         await websocket.send_text("pong")
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat on timeout
                 await signal_broadcaster.send_heartbeat()
 

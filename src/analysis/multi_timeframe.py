@@ -9,8 +9,7 @@ and confluent S/R levels across timeframes.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -103,7 +102,7 @@ class MultiTimeframeAnalyzer:
     def analyze_all_timeframes(
         self,
         data: dict[str, pd.DataFrame],
-        daily_df: Optional[pd.DataFrame] = None,
+        daily_df: pd.DataFrame | None = None,
     ) -> MultiTimeframeReport:
         """Run TA on each timeframe and compute alignment.
 

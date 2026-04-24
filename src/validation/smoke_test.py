@@ -19,11 +19,13 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 from enum import Enum
-import time
+from typing import Any
+
 import numpy as np
 
 
@@ -42,7 +44,7 @@ class ValidationCheck:
     status: ValidationStatus
     message: str = ""
     duration_ms: float = 0.0
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -63,11 +65,11 @@ class SmokeTestConfig:
     # Feature validation
     check_features_available: bool = True
     check_feature_ranges: bool = True
-    required_features: List[str] = field(default_factory=list)
+    required_features: list[str] = field(default_factory=list)
 
     # Output validation
     check_output_range: bool = True
-    expected_output_shape: Optional[tuple] = None
+    expected_output_shape: tuple | None = None
     output_min: float = -1.0
     output_max: float = 1.0
 
@@ -85,20 +87,20 @@ class SmokeTestResult:
     status: str = "not_run"
 
     # Individual checks
-    checks: List[ValidationCheck] = field(default_factory=list)
+    checks: list[ValidationCheck] = field(default_factory=list)
     passed_checks: int = 0
     failed_checks: int = 0
     skipped_checks: int = 0
     warning_checks: int = 0
 
     # Timing
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     total_duration_ms: float = 0.0
 
     # Errors
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def add_check(self, check: ValidationCheck) -> None:
         """Add a validation check result."""
@@ -128,7 +130,7 @@ class SmokeTest:
             deploy_model(model)
     """
 
-    def __init__(self, config: Optional[SmokeTestConfig] = None):
+    def __init__(self, config: SmokeTestConfig | None = None):
         """Initialize smoke test.
 
         Args:
@@ -142,7 +144,7 @@ class SmokeTest:
         self,
         model: Any,
         sample_input: np.ndarray,
-        feature_provider: Optional[Callable[[], Dict[str, float]]] = None,
+        feature_provider: Callable[[], dict[str, float]] | None = None,
     ) -> SmokeTestResult:
         """Run smoke tests on a model.
 
@@ -192,7 +194,7 @@ class SmokeTest:
                 self._check_output_range(result)
 
         except Exception as e:
-            result.errors.append(f"Smoke test failed with exception: {str(e)}")
+            result.errors.append(f"Smoke test failed with exception: {e!s}")
             result.add_check(ValidationCheck(
                 name="smoke_test_execution",
                 status=ValidationStatus.FAILED,
@@ -229,7 +231,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error checking model: {str(e)}"
+            check.message = f"Error checking model: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -269,7 +271,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error during prediction: {str(e)}"
+            check.message = f"Error during prediction: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -297,7 +299,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error checking determinism: {str(e)}"
+            check.message = f"Error checking determinism: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -340,7 +342,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error measuring latency: {str(e)}"
+            check.message = f"Error measuring latency: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -348,7 +350,7 @@ class SmokeTest:
     def _check_features_available(
         self,
         result: SmokeTestResult,
-        feature_provider: Callable[[], Dict[str, float]]
+        feature_provider: Callable[[], dict[str, float]]
     ) -> None:
         """Check that required features are available."""
         start = time.perf_counter()
@@ -377,7 +379,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error checking features: {str(e)}"
+            check.message = f"Error checking features: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -408,7 +410,7 @@ class SmokeTest:
 
         except Exception as e:
             check.status = ValidationStatus.FAILED
-            check.message = f"Error checking output range: {str(e)}"
+            check.message = f"Error checking output range: {e!s}"
 
         check.duration_ms = (time.perf_counter() - start) * 1000
         result.add_check(check)
@@ -435,10 +437,10 @@ def run_smoke_test(
 
 
 __all__ = [
-    'ValidationStatus',
-    'ValidationCheck',
+    'SmokeTest',
     'SmokeTestConfig',
     'SmokeTestResult',
-    'SmokeTest',
+    'ValidationCheck',
+    'ValidationStatus',
     'run_smoke_test',
 ]

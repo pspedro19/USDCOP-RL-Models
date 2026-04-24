@@ -13,13 +13,14 @@ Usage:
     app.include_router(monitor_router, prefix="/api/monitor", tags=["monitoring"])
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 # Add src to path for importing monitoring module
 SRC_PATH = Path(__file__).parent.parent / "src"
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Global model monitors registry
-_model_monitors: Dict[str, Any] = {}
+_model_monitors: dict[str, Any] = {}
 
 # Model metadata (should match multi_model_trading_api.py)
 MODEL_METADATA = {
@@ -76,7 +77,7 @@ class ModelHealthThresholds(BaseModel):
 class ModelHealthItem(BaseModel):
     """Health status for a single model"""
     model_id: str
-    action_drift_kl: Optional[float] = None
+    action_drift_kl: float | None = None
     stuck_behavior: bool
     rolling_sharpe: float
     actions_recorded: int
@@ -94,7 +95,7 @@ class ModelHealthResponse(BaseModel):
     healthy_count: int
     warning_count: int
     critical_count: int
-    models: List[ModelHealthItem]
+    models: list[ModelHealthItem]
 
 
 # ============================================================
@@ -135,7 +136,7 @@ async def get_model_health():
                     trades_recorded=0,
                     status="healthy",
                     details="Monitor not initialized - no data yet",
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                     thresholds=ModelHealthThresholds()
                 )
                 healthy_count += 1
@@ -150,7 +151,7 @@ async def get_model_health():
                     trades_recorded=status.get('trades_recorded', 0),
                     status=status.get('status', 'healthy'),
                     details=status.get('details', ''),
-                    timestamp=status.get('timestamp', datetime.now(timezone.utc).isoformat()),
+                    timestamp=status.get('timestamp', datetime.now(UTC).isoformat()),
                     thresholds=ModelHealthThresholds(
                         kl_warning=status.get('thresholds', {}).get('kl_warning', 0.3),
                         kl_critical=status.get('thresholds', {}).get('kl_critical', 0.5),
@@ -166,7 +167,7 @@ async def get_model_health():
             models_health.append(health_item)
 
         return ModelHealthResponse(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             total_models=len(models_health),
             healthy_count=healthy_count,
             warning_count=warning_count,
@@ -196,7 +197,7 @@ async def record_model_action(
             "recorded": False,
             "reason": "ModelMonitor not available",
             "model_id": model_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     try:
@@ -206,7 +207,7 @@ async def record_model_action(
             "model_id": model_id,
             "action": action,
             "actions_recorded": len(monitor.action_history),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     except Exception as e:
         logger.error(f"Error recording action for {model_id}: {e}")
@@ -231,7 +232,7 @@ async def record_model_pnl(
             "recorded": False,
             "reason": "ModelMonitor not available",
             "model_id": model_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     try:
@@ -242,7 +243,7 @@ async def record_model_pnl(
             "pnl": pnl,
             "trades_recorded": len(monitor.pnl_history),
             "rolling_sharpe": monitor.get_rolling_sharpe(),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     except Exception as e:
         logger.error(f"Error recording PnL for {model_id}: {e}")
@@ -252,7 +253,7 @@ async def record_model_pnl(
 @router.post("/{model_id}/set-baseline")
 async def set_model_baseline(
     model_id: str,
-    actions: List[float] = Query(..., description="List of baseline actions from backtest")
+    actions: list[float] = Query(..., description="List of baseline actions from backtest")
 ):
     """
     Set baseline action distribution from backtest data.
@@ -270,7 +271,7 @@ async def set_model_baseline(
             "set": False,
             "reason": "ModelMonitor not available",
             "model_id": model_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     try:
@@ -279,7 +280,7 @@ async def set_model_baseline(
             "set": True,
             "model_id": model_id,
             "baseline_samples": len(actions),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     except Exception as e:
         logger.error(f"Error setting baseline for {model_id}: {e}")
@@ -309,7 +310,7 @@ async def get_single_model_health(model_id: str):
             trades_recorded=0,
             status="healthy",
             details="Monitor not initialized - no data yet",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             thresholds=ModelHealthThresholds()
         )
 
@@ -324,7 +325,7 @@ async def get_single_model_health(model_id: str):
             trades_recorded=status.get('trades_recorded', 0),
             status=status.get('status', 'healthy'),
             details=status.get('details', ''),
-            timestamp=status.get('timestamp', datetime.now(timezone.utc).isoformat()),
+            timestamp=status.get('timestamp', datetime.now(UTC).isoformat()),
             thresholds=ModelHealthThresholds(
                 kl_warning=status.get('thresholds', {}).get('kl_warning', 0.3),
                 kl_critical=status.get('thresholds', {}).get('kl_critical', 0.5),
@@ -351,7 +352,7 @@ async def reset_model_monitor(model_id: str):
             "reset": False,
             "reason": "ModelMonitor not available",
             "model_id": model_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     try:
@@ -359,7 +360,7 @@ async def reset_model_monitor(model_id: str):
         return {
             "reset": True,
             "model_id": model_id,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
     except Exception as e:
         logger.error(f"Error resetting monitor for {model_id}: {e}")

@@ -174,10 +174,10 @@ macro_preprocessor:
 # Prompt Version (Phase 2)
 # ---------------------------------------------------------------------------
 prompts:
-  version: "v2"                  # "v1" = legacy, "v2" = chain-of-thought
+  version: "v3"                  # "v1" = legacy, "v2" = chain-of-thought, "v3" = enhanced with regime+prior+fuentes
   daily_steps: 6                 # V2: 6-step chain-of-thought
   weekly_steps: 7                # V2: 7 steps (6 + scenarios)
-  structured_output: true        # Use response_format=json_schema
+  structured_output: false       # V3 uses text output with deterministic fuentes appended
 
 # ---------------------------------------------------------------------------
 # Schedule (Reference — actual schedules in Airflow DAGs)

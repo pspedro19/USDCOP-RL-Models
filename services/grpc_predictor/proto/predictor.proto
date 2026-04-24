@@ -1,0 +1,61 @@
+// USDCOP H5 Smart Simple gRPC Prediction Service
+//
+// Shared contract — DO NOT change field numbers or service/RPC names
+// without coordinating with downstream consumers.
+//
+// Package : predictor
+// Service : PredictorService
+// Port    : 50051 (default)
+syntax = "proto3";
+
+package predictor;
+
+// ----------------------------------------------------------------------------
+// Service
+// ----------------------------------------------------------------------------
+service PredictorService {
+    // Predict produces a 5-day directional forecast (LONG/SHORT/FLAT) from
+    // a map of feature_name -> value. Features are the standard H5 set
+    // (e.g. "dxy_z", "wti_z", "rsi_14", "vol_regime_ratio", ...).
+    rpc Predict(PredictRequest) returns (PredictResponse);
+
+    // HealthCheck reports readiness and which model is loaded.
+    rpc HealthCheck(HealthRequest) returns (HealthResponse);
+}
+
+// ----------------------------------------------------------------------------
+// Predict messages
+// ----------------------------------------------------------------------------
+message PredictRequest {
+    // Feature vector as a map. Keys are feature names; values are
+    // pre-normalized (z-scored or raw-as-contracted) doubles.
+    map<string, double> features = 1;
+}
+
+message PredictResponse {
+    // "LONG", "SHORT", "FLAT" (or "UNKNOWN" on error).
+    string direction = 1;
+
+    // Confidence in [0.0, 1.0].
+    double confidence = 2;
+
+    // Signed ensemble log-return prediction (mean of Ridge + BR [+ XGB]).
+    double ensemble_return = 3;
+
+    // Model version string (e.g. "smart_simple_v2_2026W16" or "stub-<hash>").
+    string model_version = 4;
+}
+
+// ----------------------------------------------------------------------------
+// Health messages
+// ----------------------------------------------------------------------------
+message HealthRequest {}
+
+message HealthResponse {
+    // True when the server is ready to serve Predict calls.
+    bool ready = 1;
+
+    // Human-readable description of the loaded model, e.g.
+    // "ridge+br (latest/)", "stub-deterministic", or "none".
+    string model_loaded = 2;
+}

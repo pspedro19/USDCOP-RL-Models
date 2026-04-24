@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -57,9 +57,9 @@ class ValidationCheck:
     status: ValidationStatus
     severity: ValidationSeverity
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "status": self.status.value,
@@ -75,22 +75,22 @@ class DataQualityReport:
     dataset_path: str
     validated_at: datetime
     overall_status: ValidationStatus
-    checks: List[ValidationCheck]
-    summary: Dict[str, Any]
+    checks: list[ValidationCheck]
+    summary: dict[str, Any]
 
     @property
     def passed(self) -> bool:
         return self.overall_status == ValidationStatus.PASSED
 
     @property
-    def failed_checks(self) -> List[ValidationCheck]:
+    def failed_checks(self) -> list[ValidationCheck]:
         return [c for c in self.checks if c.status == ValidationStatus.FAILED]
 
     @property
-    def warning_checks(self) -> List[ValidationCheck]:
+    def warning_checks(self) -> list[ValidationCheck]:
         return [c for c in self.checks if c.status == ValidationStatus.WARNING]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "dataset_path": self.dataset_path,
             "validated_at": self.validated_at.isoformat(),
@@ -153,7 +153,7 @@ class DataQualityGate:
         "brent_change_1d", "rate_spread", "usdmxn_change_1d",
     ]
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the data quality gate.
 
@@ -206,7 +206,7 @@ class DataQualityGate:
         else:
             raise ValueError(f"Unsupported file format: {path.suffix}")
 
-        checks: List[ValidationCheck] = []
+        checks: list[ValidationCheck] = []
 
         # Run all validation checks
         checks.append(self._check_row_count(df))
@@ -633,8 +633,8 @@ class DataQualityGate:
 def validate_dataset_for_training(
     dataset_path: str,
     strict: bool = True,
-    config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Validate dataset before training.
 

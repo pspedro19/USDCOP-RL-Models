@@ -6,11 +6,10 @@ Implements the Strategy pattern for exchange integration.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from enum import Enum
+from typing import Any
 
 from app.contracts.exchange import SupportedExchange
-from app.contracts.execution import OrderType, OrderSide, ExecutionStatus
+from app.contracts.execution import ExecutionStatus, OrderSide
 
 
 @dataclass
@@ -32,15 +31,15 @@ class OrderResult:
     """Result of an order operation."""
 
     success: bool
-    order_id: Optional[str] = None
+    order_id: str | None = None
     status: ExecutionStatus = ExecutionStatus.PENDING
     filled_quantity: float = 0.0
     average_price: float = 0.0
     commission: float = 0.0
-    commission_asset: Optional[str] = None
-    executed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
-    raw_response: Optional[Dict[str, Any]] = None
+    commission_asset: str | None = None
+    executed_at: datetime | None = None
+    error_message: str | None = None
+    raw_response: dict[str, Any] | None = None
 
 
 @dataclass
@@ -81,7 +80,7 @@ class ExchangeAdapter(ABC):
         self,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = False,
     ):
         """
@@ -120,7 +119,7 @@ class ExchangeAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_balance(self, asset: Optional[str] = None) -> List[BalanceInfo]:
+    async def get_balance(self, asset: str | None = None) -> list[BalanceInfo]:
         """
         Get account balances.
 
@@ -238,8 +237,8 @@ class ExchangeAdapter(ABC):
 
     async def get_open_orders(
         self,
-        symbol: Optional[str] = None,
-    ) -> List[OrderResult]:
+        symbol: str | None = None,
+    ) -> list[OrderResult]:
         """
         Get all open orders.
 

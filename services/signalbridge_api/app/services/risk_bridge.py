@@ -16,29 +16,32 @@ Date: 2026-01-22
 
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.contracts.signal_bridge import (
+    InferenceSignalCreate,
     RiskCheckResult,
     RiskDecision,
     RiskReason,
-    InferenceSignalCreate,
     UserRiskLimits,
-    BridgeEventType,
 )
-from app.contracts.execution import OrderSide
 
 # Import from src/trading (add to Python path or use relative import based on setup)
 try:
     from src.trading.risk_enforcer import (
+        RiskCheckResult as CoreRiskCheckResult,
+    )
+    from src.trading.risk_enforcer import (
+        RiskDecision as CoreRiskDecision,
+    )
+    from src.trading.risk_enforcer import (
         RiskEnforcer,
         RiskLimits,
-        RiskCheckResult as CoreRiskCheckResult,
-        RiskDecision as CoreRiskDecision,
+    )
+    from src.trading.risk_enforcer import (
         RiskReason as CoreRiskReason,
     )
     RISK_ENFORCER_AVAILABLE = True
@@ -73,12 +76,12 @@ class RiskBridgeService:
     """
 
     # Cache for RiskEnforcer instances per user
-    _enforcers: Dict[UUID, Any] = {}
+    _enforcers: dict[UUID, Any] = {}
 
     def __init__(
         self,
         db_session: AsyncSession,
-        default_limits: Optional[Dict[str, Any]] = None,
+        default_limits: dict[str, Any] | None = None,
     ):
         """
         Initialize RiskBridgeService.
@@ -96,7 +99,7 @@ class RiskBridgeService:
                 "Ensure src/trading is in the Python path."
             )
 
-    async def get_user_limits(self, user_id: UUID) -> Optional[UserRiskLimits]:
+    async def get_user_limits(self, user_id: UUID) -> UserRiskLimits | None:
         """
         Get user-specific risk limits from database.
 
@@ -143,11 +146,11 @@ class RiskBridgeService:
     async def create_or_update_user_limits(
         self,
         user_id: UUID,
-        max_daily_loss_pct: Optional[float] = None,
-        max_trades_per_day: Optional[int] = None,
-        max_position_size_usd: Optional[float] = None,
-        cooldown_minutes: Optional[int] = None,
-        enable_short: Optional[bool] = None,
+        max_daily_loss_pct: float | None = None,
+        max_trades_per_day: int | None = None,
+        max_position_size_usd: float | None = None,
+        cooldown_minutes: int | None = None,
+        enable_short: bool | None = None,
     ) -> UserRiskLimits:
         """
         Create or update user risk limits in database.
@@ -163,8 +166,10 @@ class RiskBridgeService:
         Returns:
             Updated UserRiskLimits
         """
-        from sqlalchemy import text
         from uuid import uuid4
+
+        from sqlalchemy import text
+
         from app.core.config import settings
 
         # Get existing limits or use defaults
@@ -241,7 +246,7 @@ class RiskBridgeService:
     def _get_or_create_enforcer(
         self,
         user_id: UUID,
-        user_limits: Optional[UserRiskLimits] = None,
+        user_limits: UserRiskLimits | None = None,
     ) -> Any:
         """
         Get or create a RiskEnforcer instance for a user.
@@ -287,7 +292,7 @@ class RiskBridgeService:
         signal: InferenceSignalCreate,
         quantity: float,
         user_id: UUID,
-        current_price: Optional[float] = None,
+        current_price: float | None = None,
     ) -> RiskCheckResult:
         """
         Validate a signal against risk rules.
@@ -351,7 +356,7 @@ class RiskBridgeService:
             return RiskCheckResult(
                 decision=RiskDecision.BLOCK,
                 reason=RiskReason.KILL_SWITCH,
-                message=f"Risk validation error: {str(e)}",
+                message=f"Risk validation error: {e!s}",
                 metadata={"error": str(e)},
             )
 
@@ -359,7 +364,7 @@ class RiskBridgeService:
         self,
         signal: InferenceSignalCreate,
         quantity: float,
-        user_limits: Optional[UserRiskLimits],
+        user_limits: UserRiskLimits | None,
     ) -> RiskCheckResult:
         """
         Fallback validation when RiskEnforcer is not available.
@@ -447,7 +452,7 @@ class RiskBridgeService:
         except Exception as e:
             logger.error(f"Error recording trade result: {e}")
 
-    async def get_user_risk_status(self, user_id: UUID) -> Dict[str, Any]:
+    async def get_user_risk_status(self, user_id: UUID) -> dict[str, Any]:
         """
         Get current risk status for a user.
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Event-Driven Metrics - V7.1 Prometheus Metrics
 ===============================================
@@ -23,16 +22,15 @@ Contract: CTR-V7-METRICS
 
 import logging
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 # Try to import prometheus_client
 try:
-    from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry, generate_latest
+    from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, generate_latest
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -151,11 +149,11 @@ class EventDrivenMetrics:
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._notify_latencies: List[float] = []
+        self._notify_latencies: list[float] = []
         self._notify_count = 0
         self._notify_failed = 0
         self._feature_counts = {'postgresql': 0, 'redis': 0, 'fallback': 0}
-        self._circuit_states: Dict[str, CircuitState] = {}
+        self._circuit_states: dict[str, CircuitState] = {}
         self._dlq_counts = {'pending': 0, 'processing': 0, 'dead': 0}
         self._heartbeat_healthy = True
 
@@ -205,7 +203,7 @@ class EventDrivenMetrics:
 
         logger.info(f"Circuit breaker [{sensor_id}]: {state.name}")
 
-    def get_open_circuits(self) -> List[str]:
+    def get_open_circuits(self) -> list[str]:
         """Get list of sensors with open circuits."""
         with self._lock:
             return [
@@ -315,7 +313,7 @@ class EventDrivenMetrics:
 # GLOBAL METRICS INSTANCE
 # =============================================================================
 
-_metrics_instance: Optional[EventDrivenMetrics] = None
+_metrics_instance: EventDrivenMetrics | None = None
 
 
 def get_metrics() -> EventDrivenMetrics:

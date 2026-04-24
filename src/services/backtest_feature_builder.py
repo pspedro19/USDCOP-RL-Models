@@ -34,7 +34,6 @@ import datetime as dt
 import logging
 import warnings
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -100,8 +99,8 @@ class BacktestFeatureBuilder:
     def __init__(
         self,
         connection_string: str,
-        validator: Optional[BacktestDataValidator] = None,
-        config: Optional[FeatureBuildConfig] = None
+        validator: BacktestDataValidator | None = None,
+        config: FeatureBuildConfig | None = None
     ):
         self.engine = create_engine(connection_string)
         self.validator = validator or BacktestDataValidator(connection_string)

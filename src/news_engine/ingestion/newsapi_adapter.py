@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 import requests
 
@@ -25,7 +24,7 @@ class NewsAPIAdapter(SourceAdapter):
     source_id = "newsapi"
     source_name = "NewsAPI.org"
 
-    def __init__(self, config: Optional[NewsAPIConfig] = None):
+    def __init__(self, config: NewsAPIConfig | None = None):
         super().__init__(config)
         self.cfg = config or NewsAPIConfig()
         if not self.cfg.api_key:
@@ -79,7 +78,7 @@ class NewsAPIAdapter(SourceAdapter):
         self,
         query: str,
         from_date: datetime,
-        to_date: Optional[datetime] = None,
+        to_date: datetime | None = None,
     ) -> list[RawArticle]:
         params = {
             "q": query,

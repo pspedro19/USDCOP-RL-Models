@@ -14,19 +14,19 @@ Date: 2026-01-17
 """
 
 import logging
-from typing import Tuple, List, Any, Dict, Optional, Protocol, runtime_checkable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
 
 from src.core.contracts import (
-    Action,
-    OBSERVATION_DIM,
     ACTION_COUNT,
+    OBSERVATION_DIM,
+    Action,
+    InvalidActionError,
+    ModelInputError,
     validate_model_input,
     validate_model_output,
-    ModelInputError,
-    InvalidActionError,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class PredictionStats:
             return 0.0
         return self.successful_predictions / self.total_predictions
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "total_predictions": self.total_predictions,
@@ -96,7 +96,7 @@ class ValidatedPredictor:
         self,
         model: Any,
         strict_mode: bool = True,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         """
         Initialize ValidatedPredictor.
@@ -258,7 +258,7 @@ class ValidatedPredictor:
         self,
         action_idx: int,
         probabilities: np.ndarray,
-    ) -> Tuple[Action, np.ndarray]:
+    ) -> tuple[Action, np.ndarray]:
         """
         Validate model output and convert to Action enum.
 
@@ -294,7 +294,7 @@ class ValidatedPredictor:
 
         return action, probabilities
 
-    def predict(self, observation: np.ndarray) -> Tuple[Action, np.ndarray]:
+    def predict(self, observation: np.ndarray) -> tuple[Action, np.ndarray]:
         """
         Run validated prediction on a single observation.
 
@@ -346,7 +346,7 @@ class ValidatedPredictor:
     def predict_batch(
         self,
         observations: np.ndarray,
-    ) -> Tuple[List[Action], np.ndarray]:
+    ) -> tuple[list[Action], np.ndarray]:
         """
         Run validated predictions on a batch of observations.
 
@@ -372,8 +372,8 @@ class ValidatedPredictor:
             observations = observations.reshape(1, -1)
 
         batch_size = observations.shape[0]
-        actions: List[Action] = []
-        all_probabilities: List[np.ndarray] = []
+        actions: list[Action] = []
+        all_probabilities: list[np.ndarray] = []
 
         for i in range(batch_size):
             obs = observations[i:i+1]  # Keep 2D shape

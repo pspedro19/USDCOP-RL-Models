@@ -11,14 +11,13 @@ Contract: CTR-SHARED-API-001
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import Field, field_validator, model_validator
 
 from .core import BaseSchema, DataSource
 from .features import OBSERVATION_DIM
 from .trading import TradeSchema, TradeSummarySchema
-
 
 # =============================================================================
 # TYPE VARIABLES
@@ -72,7 +71,7 @@ class BacktestRequestSchema(BaseSchema):
         return v
 
     @model_validator(mode="after")
-    def validate_date_range(self) -> "BacktestRequestSchema":
+    def validate_date_range(self) -> BacktestRequestSchema:
         """Validate end_date > start_date and range <= 365 days."""
         start = date.fromisoformat(self.start_date)
         end = date.fromisoformat(self.end_date)
@@ -92,7 +91,7 @@ class InferenceRequestSchema(BaseSchema):
     POST /v1/inference
     """
 
-    observation: List[float] = Field(
+    observation: list[float] = Field(
         ...,
         min_length=OBSERVATION_DIM,
         max_length=OBSERVATION_DIM,
@@ -142,11 +141,11 @@ class ApiMetadataSchema(BaseSchema):
         description="Response timestamp (UTC)"
     )
     is_real_data: bool = Field(..., description="Whether data is real or mock")
-    latency_ms: Optional[float] = Field(
+    latency_ms: float | None = Field(
         default=None, ge=0, description="Request latency in milliseconds"
     )
-    cache_hit: Optional[bool] = Field(default=None, description="Whether cache was hit")
-    request_id: Optional[str] = Field(default=None, description="Request tracking ID")
+    cache_hit: bool | None = Field(default=None, description="Whether cache was hit")
+    request_id: str | None = Field(default=None, description="Request tracking ID")
 
 
 class ApiResponseSchema(BaseSchema, Generic[T]):
@@ -158,9 +157,9 @@ class ApiResponseSchema(BaseSchema, Generic[T]):
     model_config["extra"] = "allow"
 
     success: bool = Field(..., description="Whether request succeeded")
-    data: Optional[Any] = Field(default=None, description="Response data")
-    error: Optional[str] = Field(default=None, description="Error message if failed")
-    message: Optional[str] = Field(default=None, description="Additional message")
+    data: Any | None = Field(default=None, description="Response data")
+    error: str | None = Field(default=None, description="Error message if failed")
+    message: str | None = Field(default=None, description="Additional message")
     metadata: ApiMetadataSchema = Field(..., description="Response metadata")
 
 
@@ -176,14 +175,14 @@ class BacktestResponseSchema(BaseSchema):
         description="'database' if cached, 'generated' if newly computed"
     )
     trade_count: int = Field(..., ge=0, description="Number of trades generated")
-    trades: List[TradeSchema] = Field(..., description="List of trades")
-    summary: Optional[TradeSummarySchema] = Field(
+    trades: list[TradeSchema] = Field(..., description="List of trades")
+    summary: TradeSummarySchema | None = Field(
         default=None, description="Trade summary statistics"
     )
-    processing_time_ms: Optional[float] = Field(
+    processing_time_ms: float | None = Field(
         default=None, ge=0, description="Processing time in milliseconds"
     )
-    date_range: Optional[Dict[str, str]] = Field(
+    date_range: dict[str, str] | None = Field(
         default=None, description="Actual date range of data"
     )
 
@@ -213,12 +212,12 @@ class ErrorResponseSchema(BaseSchema):
 
     success: bool = Field(default=False)
     error: str = Field(..., description="Error message")
-    error_code: Optional[str] = Field(
+    error_code: str | None = Field(
         default=None,
         description="Machine-readable error code",
         examples=["INVALID_DATE_RANGE", "MODEL_NOT_FOUND", "DATABASE_ERROR"]
     )
-    details: Optional[Dict[str, Any]] = Field(
+    details: dict[str, Any] | None = Field(
         default=None, description="Additional error details"
     )
 
@@ -235,18 +234,18 @@ class ProgressUpdateSchema(BaseSchema):
         description="Status",
         examples=["running", "completed", "error"]
     )
-    message: Optional[str] = Field(default=None, description="Status message")
+    message: str | None = Field(default=None, description="Status message")
 
 
 class ReplayLoadResponseSchema(BaseSchema):
     """Response for replay load endpoint."""
 
-    trades: List[TradeSchema] = Field(..., description="Loaded trades")
+    trades: list[TradeSchema] = Field(..., description="Loaded trades")
     total: int = Field(..., ge=0, description="Total trade count")
-    summary: Optional[TradeSummarySchema] = Field(default=None)
+    summary: TradeSummarySchema | None = Field(default=None)
     source: str = Field(..., description="Data source")
-    date_range: Dict[str, str] = Field(..., description="Date range of data")
-    processing_time_ms: Optional[float] = Field(default=None, ge=0)
+    date_range: dict[str, str] = Field(..., description="Date range of data")
+    processing_time_ms: float | None = Field(default=None, ge=0)
 
 
 class ModelInfoSchema(BaseSchema):
@@ -256,7 +255,7 @@ class ModelInfoSchema(BaseSchema):
 
     model_id: str = Field(..., description="Model identifier")
     display_name: str = Field(..., description="Display name")
-    version: Optional[str] = Field(default=None, description="Model version")
+    version: str | None = Field(default=None, description="Model version")
     status: str = Field(
         ...,
         description="Model status",
@@ -266,13 +265,13 @@ class ModelInfoSchema(BaseSchema):
         default=OBSERVATION_DIM,
         description="Observation dimension"
     )
-    description: Optional[str] = Field(default=None, description="Model description")
+    description: str | None = Field(default=None, description="Model description")
 
 
 class ModelsResponseSchema(BaseSchema):
     """Response for models listing endpoint."""
 
-    models: List[ModelInfoSchema] = Field(..., description="Available models")
+    models: list[ModelInfoSchema] = Field(..., description="Available models")
     default_model: str = Field(..., description="Default model ID")
     total: int = Field(..., ge=0, description="Total model count")
 
@@ -283,15 +282,15 @@ class ModelsResponseSchema(BaseSchema):
 
 
 def create_api_response(
-    data: Optional[T] = None,
+    data: T | None = None,
     success: bool = True,
-    error: Optional[str] = None,
-    message: Optional[str] = None,
+    error: str | None = None,
+    message: str | None = None,
     data_source: DataSource = DataSource.POSTGRES,
     is_real_data: bool = True,
-    latency_ms: Optional[float] = None,
-    cache_hit: Optional[bool] = None,
-    request_id: Optional[str] = None,
+    latency_ms: float | None = None,
+    cache_hit: bool | None = None,
+    request_id: str | None = None,
 ) -> ApiResponseSchema:
     """Create a type-safe API response.
 

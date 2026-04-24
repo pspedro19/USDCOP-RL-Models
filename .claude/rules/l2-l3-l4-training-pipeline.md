@@ -290,6 +290,30 @@ Validated by `config.validate_training_backtest_parity()` before L4 runs.
 
 ---
 
+## MLflow Integration (status 2026-04-16)
+
+**Infrastructure ready, activation in roadmap.**
+
+MLflow tracking server is deployed at `http://localhost:5001` with SQLite backend + MinIO artifact
+store (`s3://mlflow`). Ad-hoc training scripts (e.g., `scripts/run_ssot_pipeline.py`) already log
+experiments with `mlflow.start_run()`.
+
+**Current gap**: The weekly training DAGs (`forecast_h1_l3_weekly_training`,
+`forecast_h5_l3_weekly_training`) do NOT log runs to MLflow. Models are saved to filesystem at
+`outputs/forecasting/h{1,5}_{daily,weekly}_models/latest/` only.
+
+**Roadmap**: Wrap L3 training tasks with MLflow context:
+```python
+with mlflow.start_run(run_name=f"{strategy}_W{week}_{seed}"):
+    mlflow.log_params(training_config)
+    mlflow.log_metrics(metrics)
+    mlflow.log_artifact(str(model_path))
+```
+
+Until then, mention MLflow as "tracking server desplegado; integración automática en DAGs en roadmap."
+
+---
+
 ## Configuration (SSOT)
 
 **Primary**: `config/pipeline_ssot.yaml`

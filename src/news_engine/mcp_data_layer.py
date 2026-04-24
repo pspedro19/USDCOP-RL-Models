@@ -7,12 +7,11 @@ and aggregation capabilities. Falls back to CSV when PostgreSQL is unavailable.
 Part of Phase 4: MCP News Server implementation.
 """
 
-import hashlib
 import logging
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 # USDCOP relevance keywords (3-tier weighting)
 # ---------------------------------------------------------------------------
 
-RELEVANCE_KEYWORDS: Dict[float, List[str]] = {
+RELEVANCE_KEYWORDS: dict[float, list[str]] = {
     3.0: [
         "usdcop", "dólar", "peso colombiano", "banrep",
         "tasa de cambio", "devaluación", "revaluación",
@@ -79,7 +78,7 @@ class NewsDataLayer:
         """Establish a connection. Returns a string describing the backend."""
         # Attempt PostgreSQL
         try:
-            import asyncpg  # noqa: F811
+            import asyncpg
 
             host = os.getenv("USDCOP_DB_HOST", "localhost")
             port = int(os.getenv("USDCOP_DB_PORT", "5432"))
@@ -150,13 +149,13 @@ class NewsDataLayer:
     async def search(
         self,
         query: str,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        source: Optional[str] = None,
-        language: Optional[str] = None,
-        category: Optional[str] = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        source: str | None = None,
+        language: str | None = None,
+        category: str | None = None,
         limit: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Full-text search across articles."""
         limit = min(limit, 100)
 
@@ -171,13 +170,13 @@ class NewsDataLayer:
     async def _pg_search(
         self,
         query: str,
-        date_from: Optional[str],
-        date_to: Optional[str],
-        source: Optional[str],
-        language: Optional[str],
-        category: Optional[str],
+        date_from: str | None,
+        date_to: str | None,
+        source: str | None,
+        language: str | None,
+        category: str | None,
         limit: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         conditions = ["to_tsvector('simple', title) @@ plainto_tsquery('simple', $1)"]
         params: list = [query]
         idx = 2
@@ -220,13 +219,13 @@ class NewsDataLayer:
     def _csv_search(
         self,
         query: str,
-        date_from: Optional[str],
-        date_to: Optional[str],
-        source: Optional[str],
-        language: Optional[str],
-        category: Optional[str],
+        date_from: str | None,
+        date_to: str | None,
+        source: str | None,
+        language: str | None,
+        category: str | None,
         limit: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         import pandas as pd
 
         df = self._csv_df.copy()
@@ -266,12 +265,12 @@ class NewsDataLayer:
 
     async def top_headlines(
         self,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
         limit: int = 10,
         diversify_sources: bool = True,
         min_relevance: float = 0.3,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Top USDCOP-relevant articles with optional source diversity."""
         limit = min(limit, 50)
 
@@ -285,12 +284,12 @@ class NewsDataLayer:
 
     async def _pg_top_headlines(
         self,
-        date_from: Optional[str],
-        date_to: Optional[str],
+        date_from: str | None,
+        date_to: str | None,
         limit: int,
         diversify_sources: bool,
         min_relevance: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         conditions = [f"relevance >= {min_relevance}"]
         params: list = []
         idx = 1
@@ -334,12 +333,12 @@ class NewsDataLayer:
 
     def _csv_top_headlines(
         self,
-        date_from: Optional[str],
-        date_to: Optional[str],
+        date_from: str | None,
+        date_to: str | None,
         limit: int,
         diversify_sources: bool,
         min_relevance: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         import pandas as pd
 
         df = self._csv_df.copy()
@@ -379,10 +378,10 @@ class NewsDataLayer:
     async def by_category(
         self,
         category: str,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
         limit: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Filter articles by enrichment category."""
         limit = min(limit, 100)
 
@@ -430,9 +429,9 @@ class NewsDataLayer:
 
     async def source_stats(
         self,
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> dict[str, Any]:
         """Volume, sentiment, and category breakdown by source."""
         if self.is_pg:
             return await self._pg_source_stats(date_from, date_to)
@@ -440,9 +439,9 @@ class NewsDataLayer:
 
     async def _pg_source_stats(
         self,
-        date_from: Optional[str],
-        date_to: Optional[str],
-    ) -> Dict[str, Any]:
+        date_from: str | None,
+        date_to: str | None,
+    ) -> dict[str, Any]:
         conditions: list = []
         params: list = []
         idx = 1
@@ -500,9 +499,9 @@ class NewsDataLayer:
 
     def _csv_source_stats(
         self,
-        date_from: Optional[str],
-        date_to: Optional[str],
-    ) -> Dict[str, Any]:
+        date_from: str | None,
+        date_to: str | None,
+    ) -> dict[str, Any]:
         import pandas as pd
 
         df = self._csv_df.copy()
@@ -518,7 +517,7 @@ class NewsDataLayer:
         if src_col in df.columns:
             grouped = df.groupby(src_col)
             for name, group in grouped:
-                entry: Dict[str, Any] = {
+                entry: dict[str, Any] = {
                     "source": name,
                     "article_count": len(group),
                 }
@@ -560,7 +559,7 @@ class NewsDataLayer:
         self,
         date_str: str,
         max_headlines: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Day-level summary grouped by category."""
         date_from = date_str
         # End of day
@@ -579,7 +578,7 @@ class NewsDataLayer:
         )
 
         # Group by category
-        categories: Dict[str, List[Dict[str, Any]]] = {}
+        categories: dict[str, list[dict[str, Any]]] = {}
         for art in articles:
             cat = art.get("category", "general") or "general"
             categories.setdefault(cat, []).append(art)
@@ -611,7 +610,7 @@ class NewsDataLayer:
         week_start: str,
         week_end: str,
         headlines_per_day: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Week summary with per-day breakdown and prompt injection text."""
         try:
             start_dt = datetime.fromisoformat(week_start)
@@ -623,8 +622,8 @@ class NewsDataLayer:
         except ValueError:
             end_dt = datetime.strptime(week_end, "%Y-%m-%d")
 
-        daily_summaries: List[Dict[str, Any]] = []
-        all_headlines: List[str] = []
+        daily_summaries: list[dict[str, Any]] = []
+        all_headlines: list[str] = []
 
         current = start_dt
         while current <= end_dt:
@@ -668,7 +667,7 @@ class NewsDataLayer:
     # Raw query (PG only)
     # ------------------------------------------------------------------
 
-    async def raw_query(self, sql: str) -> List[Dict[str, Any]]:
+    async def raw_query(self, sql: str) -> list[dict[str, Any]]:
         """Execute a read-only SQL query against PostgreSQL."""
         if not self.is_pg:
             raise RuntimeError(
@@ -694,11 +693,11 @@ class NewsDataLayer:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _df_to_dicts(self, df) -> List[Dict[str, Any]]:
+    def _df_to_dicts(self, df) -> list[dict[str, Any]]:
         """Convert a DataFrame slice to a list of serialisable dicts."""
         results = []
         for _, row in df.iterrows():
-            entry: Dict[str, Any] = {}
+            entry: dict[str, Any] = {}
             for col in df.columns:
                 if col.startswith("_"):
                     # Internal columns - convert _date to string

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Experiment SSOT Loader
 ======================
@@ -16,7 +15,7 @@ import hashlib
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import yaml
 
@@ -52,18 +51,18 @@ class FeatureConfig:
     category: str
     description: str
     source: str
-    input_column: Optional[str] = None
-    input_columns: Optional[List[str]] = None
-    formula: Optional[str] = None
-    calculator: Optional[str] = None
-    params: Dict[str, Any] = field(default_factory=dict)
-    normalization: Dict[str, Any] = field(default_factory=dict)
+    input_column: str | None = None
+    input_columns: list[str] | None = None
+    formula: str | None = None
+    calculator: str | None = None
+    params: dict[str, Any] = field(default_factory=dict)
+    normalization: dict[str, Any] = field(default_factory=dict)
     is_predictor: bool = True
     is_state: bool = False
     is_target: bool = False
-    importance: Optional[str] = None
-    note: Optional[str] = None
-    replaces: Optional[str] = None
+    importance: str | None = None
+    note: str | None = None
+    replaces: str | None = None
 
 
 @dataclass
@@ -133,7 +132,7 @@ class EnvironmentConfig:
     max_episode_steps: int
     max_drawdown: float
     max_position_holding: int
-    clip_range: Tuple[float, float]
+    clip_range: tuple[float, float]
     skip_z_suffix: bool
     # PHASE1 FIX: Action thresholds from SSOT
     thresholds: ThresholdConfig = field(default_factory=ThresholdConfig)
@@ -163,7 +162,7 @@ class TrainingConfig:
     vf_coef: float
     max_grad_norm: float
     patience: int
-    policy_kwargs: Dict[str, Any]
+    policy_kwargs: dict[str, Any]
     # FASE 2: Overfitting prevention
     lr_decay: LRDecayConfig = field(default_factory=LRDecayConfig)
     early_stopping: EarlyStoppingConfig = field(default_factory=EarlyStoppingConfig)
@@ -258,32 +257,32 @@ class ExperimentConfig:
     environment: EnvironmentConfig
     training: TrainingConfig
     reward: RewardConfig
-    features: List[FeatureConfig]
+    features: list[FeatureConfig]
     anti_leakage: AntiLeakageConfig
     logging: LoggingConfig
 
     # Derived fields
-    feature_order: Tuple[str, ...]
-    market_features: Tuple[str, ...]
-    state_features: Tuple[str, ...]
+    feature_order: tuple[str, ...]
+    market_features: tuple[str, ...]
+    state_features: tuple[str, ...]
     feature_order_hash: str
 
-    def get_feature_by_name(self, name: str) -> Optional[FeatureConfig]:
+    def get_feature_by_name(self, name: str) -> FeatureConfig | None:
         """Get feature config by name."""
         for f in self.features:
             if f.name == name:
                 return f
         return None
 
-    def get_features_by_category(self, category: str) -> List[FeatureConfig]:
+    def get_features_by_category(self, category: str) -> list[FeatureConfig]:
         """Get all features in a category."""
         return [f for f in self.features if f.category == category]
 
-    def get_predictor_features(self) -> List[FeatureConfig]:
+    def get_predictor_features(self) -> list[FeatureConfig]:
         """Get all predictor features (is_predictor=True)."""
         return [f for f in self.features if f.is_predictor]
 
-    def get_normalization_config(self) -> Dict[str, Dict[str, Any]]:
+    def get_normalization_config(self) -> dict[str, dict[str, Any]]:
         """Get normalization config for all features."""
         return {f.name: f.normalization for f in self.features}
 
@@ -292,11 +291,11 @@ class ExperimentConfig:
 # LOADER FUNCTION
 # =============================================================================
 
-_cached_config: Optional[ExperimentConfig] = None
+_cached_config: ExperimentConfig | None = None
 
 
 def load_experiment_config(
-    config_path: Optional[Path] = None,
+    config_path: Path | None = None,
     force_reload: bool = False
 ) -> ExperimentConfig:
     """
@@ -331,7 +330,7 @@ def load_experiment_config(
 
     logger.info(f"Loading experiment SSOT from: {path}")
 
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, encoding='utf-8') as f:
         raw = yaml.safe_load(f)
 
     # Parse meta
@@ -594,7 +593,7 @@ def load_experiment_config(
     return config
 
 
-def get_feature_order() -> Tuple[str, ...]:
+def get_feature_order() -> tuple[str, ...]:
     """Get feature order from SSOT. Convenience function."""
     config = load_experiment_config()
     return config.feature_order
@@ -654,7 +653,7 @@ def get_batch_size() -> int:
     return config.training.batch_size
 
 
-def get_ppo_hyperparameters() -> Dict[str, Any]:
+def get_ppo_hyperparameters() -> dict[str, Any]:
     """
     Get all PPO hyperparameters as a dict for Stable-Baselines3.
 
@@ -680,7 +679,7 @@ def get_ppo_hyperparameters() -> Dict[str, Any]:
     }
 
 
-def get_reward_weights() -> Dict[str, float]:
+def get_reward_weights() -> dict[str, float]:
     """
     Get all reward weights as a dict.
 
@@ -734,7 +733,7 @@ def get_holding_decay_config() -> HoldingDecayConfig:
     return config.reward.holding_decay_config
 
 
-def get_holding_decay_params() -> Dict[str, Any]:
+def get_holding_decay_params() -> dict[str, Any]:
     """
     Get holding decay parameters as a dict for HoldingDecay component.
 
@@ -753,7 +752,7 @@ def get_holding_decay_params() -> Dict[str, Any]:
     }
 
 
-def get_environment_config() -> Dict[str, Any]:
+def get_environment_config() -> dict[str, Any]:
     """
     Get environment configuration for TradingEnv.
 
@@ -828,7 +827,7 @@ def is_trailing_stop_enabled() -> bool:
     return config.environment.trailing_stop.enabled
 
 
-def get_trailing_stop_params() -> Dict[str, Any]:
+def get_trailing_stop_params() -> dict[str, Any]:
     """
     Get trailing stop parameters as a dict.
 
@@ -877,7 +876,7 @@ def get_early_stopping_config() -> EarlyStoppingConfig:
     return config.training.early_stopping
 
 
-def get_overfitting_prevention_config() -> Dict[str, Any]:
+def get_overfitting_prevention_config() -> dict[str, Any]:
     """
     Get complete overfitting prevention configuration from SSOT.
 
@@ -937,7 +936,7 @@ def get_rolling_window_months() -> int:
 # VALIDATION
 # =============================================================================
 
-def validate_feature_order(features: List[str]) -> bool:
+def validate_feature_order(features: list[str]) -> bool:
     """
     Validate that a list of features matches the SSOT order.
 
@@ -971,7 +970,6 @@ def get_feature_order_hash() -> str:
 # =============================================================================
 
 if __name__ == "__main__":
-    import json
 
     logging.basicConfig(level=logging.INFO)
 

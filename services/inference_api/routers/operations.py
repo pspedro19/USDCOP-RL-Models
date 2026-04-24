@@ -10,11 +10,11 @@ Endpoints:
 - POST /operations/pause - Soft pause (finish current, no new)
 """
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from pydantic import BaseModel
-from datetime import datetime, timezone
-from typing import Optional
 import logging
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/operations", tags=["operations"])
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class KillSwitchResponse(BaseModel):
     """Response model for kill switch activation."""
     success: bool
     mode: str
-    activated_at: Optional[str]
+    activated_at: str | None
     message: str
     positions_closed: int = 0
 
@@ -50,9 +50,9 @@ class OperationsStatusResponse(BaseModel):
     """Response model for operations status."""
     mode: str
     kill_switch_active: bool
-    activated_at: Optional[str]
-    activated_by: Optional[str]
-    reason: Optional[str]
+    activated_at: str | None
+    activated_by: str | None
+    reason: str | None
     timestamp: str
 
 
@@ -86,7 +86,7 @@ async def activate_kill_switch(
 
     _kill_switch_state = {
         "active": True,
-        "activated_at": datetime.now(timezone.utc).isoformat(),
+        "activated_at": datetime.now(UTC).isoformat(),
         "activated_by": request.activated_by,
         "reason": request.reason,
         "mode": "killed"
@@ -158,7 +158,7 @@ async def resume_trading(request: ResumeRequest):
         "mode": "normal",
         "message": "Trading resumed successfully",
         "resumed_by": request.resumed_by,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 
@@ -171,7 +171,7 @@ async def get_operations_status():
         activated_at=_kill_switch_state["activated_at"],
         activated_by=_kill_switch_state["activated_by"],
         reason=_kill_switch_state["reason"],
-        timestamp=datetime.now(timezone.utc).isoformat()
+        timestamp=datetime.now(UTC).isoformat()
     )
 
 
@@ -190,7 +190,7 @@ async def pause_trading(request: PauseRequest):
         "mode": "paused",
         "message": "Trading paused",
         "paused_by": request.paused_by,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
 
 
@@ -223,7 +223,7 @@ async def _send_kill_switch_notification(reason: str, activated_by: str):
 
         client = get_slack_client()
         await client.notify_kill_switch(reason, activated_by)
-        logger.info(f"Kill switch notification sent to Slack")
+        logger.info("Kill switch notification sent to Slack")
     except ImportError:
         logger.warning("Slack client not available, skipping notification")
     except Exception as e:
@@ -244,7 +244,7 @@ async def _log_kill_switch_event(request: KillSwitchRequest):
         "activated_by": request.activated_by,
         "close_positions": request.close_positions,
         "notify_team": request.notify_team,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }
     logger.info(f"AUDIT: {audit_entry}")
 

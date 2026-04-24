@@ -34,9 +34,9 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -61,7 +61,7 @@ class MultiSeedConfig:
         save_all_models: Whether to save all models or just the best
         parallel: Whether to train in parallel (future enhancement)
     """
-    seeds: List[int] = field(default_factory=lambda: [42, 123, 456, 789, 1337])
+    seeds: list[int] = field(default_factory=lambda: [42, 123, 456, 789, 1337])
     selection_metric: str = "best_mean_reward"
     max_cv_threshold: float = 0.30  # 30% CV threshold
     save_all_models: bool = True  # V22: Need ALL 5 for ensemble voting
@@ -79,8 +79,8 @@ class MultiSeedResult:
 
     # Best model info
     best_seed: int = 0
-    best_model_path: Optional[Path] = None
-    best_model_hash: Optional[str] = None
+    best_model_path: Path | None = None
+    best_model_hash: str | None = None
     best_mean_reward: float = 0.0
 
     # Aggregate statistics
@@ -91,20 +91,20 @@ class MultiSeedResult:
     max_reward: float = 0.0
 
     # V22: All model paths for ensemble
-    all_model_paths: List[Path] = field(default_factory=list)
-    all_model_rewards: Dict[int, float] = field(default_factory=dict)
+    all_model_paths: list[Path] = field(default_factory=list)
+    all_model_rewards: dict[int, float] = field(default_factory=dict)
 
     # Individual results
-    seed_results: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    seed_results: dict[int, dict[str, Any]] = field(default_factory=dict)
 
     # Warnings
     high_variance_warning: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     # Timing
     total_duration_seconds: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "best_seed": self.best_seed,
@@ -162,7 +162,7 @@ class MultiSeedTrainer:
     def train(
         self,
         base_request: TrainingRequest,
-        config: Optional[MultiSeedConfig] = None,
+        config: MultiSeedConfig | None = None,
     ) -> MultiSeedResult:
         """
         Train with multiple seeds and select best model.
@@ -185,7 +185,7 @@ class MultiSeedTrainer:
         logger.info(f"Max CV threshold: {config.max_cv_threshold:.0%}")
 
         # Train with each seed
-        results: Dict[int, TrainingResult] = {}
+        results: dict[int, TrainingResult] = {}
 
         for i, seed in enumerate(config.seeds):
             logger.info("-" * 50)
@@ -253,7 +253,7 @@ class MultiSeedTrainer:
 
     def _analyze_results(
         self,
-        results: Dict[int, TrainingResult],
+        results: dict[int, TrainingResult],
         config: MultiSeedConfig,
     ) -> MultiSeedResult:
         """Analyze results from all seeds."""
@@ -363,7 +363,7 @@ class MultiSeedTrainer:
                 "max_cv_threshold": config.max_cv_threshold,
             },
             "result": result.to_dict(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "version": base_request.version,
         }
 
@@ -382,8 +382,8 @@ def train_with_multiple_seeds(
     project_root: Path,
     version: str,
     dataset_path: Path,
-    seeds: Optional[List[int]] = None,
-    total_timesteps: Optional[int] = None,
+    seeds: list[int] | None = None,
+    total_timesteps: int | None = None,
     **kwargs
 ) -> MultiSeedResult:
     """
@@ -427,8 +427,8 @@ def train_with_multiple_seeds(
 # =============================================================================
 
 __all__ = [
-    "MultiSeedTrainer",
     "MultiSeedConfig",
     "MultiSeedResult",
+    "MultiSeedTrainer",
     "train_with_multiple_seeds",
 ]

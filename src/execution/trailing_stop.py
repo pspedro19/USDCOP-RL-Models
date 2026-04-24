@@ -25,7 +25,6 @@ Usage:
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class TrailingState(Enum):
@@ -61,9 +60,9 @@ class TrailingStopTracker:
 
         self.state = TrailingState.WAITING
         self.peak_price: float = entry_price  # best favorable price seen
-        self.exit_price: Optional[float] = None
-        self.exit_bar_idx: Optional[int] = None
-        self.exit_reason: Optional[str] = None
+        self.exit_price: float | None = None
+        self.exit_bar_idx: int | None = None
+        self.exit_reason: str | None = None
 
     def update(self, bar_high: float, bar_low: float, bar_close: float, bar_idx: int) -> TrailingState:
         """
@@ -133,7 +132,7 @@ class TrailingStopTracker:
         self.exit_reason = "session_close"
 
     @property
-    def pnl_pct(self) -> Optional[float]:
+    def pnl_pct(self) -> float | None:
         """Return PnL % of the trade, or None if still open."""
         if self.exit_price is None:
             return None

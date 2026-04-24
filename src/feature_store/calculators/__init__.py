@@ -23,50 +23,47 @@ Version: 1.0.0
 Created: 2025-01-12
 """
 
-from .base import FeatureCalculator, CalculatorRegistry
+from .base import CalculatorRegistry, FeatureCalculator
+from .macro import (
+    DXYZScoreCalculator,
+    EMBIZScoreCalculator,
+    MacroMomentumCalculator,
+    MacroZScoreCalculator,
+    RollingCorrelationCalculator,
+    VIXZScoreCalculator,
+    WTIZScoreCalculator,
+)
 
 # Import all calculators to register them
 from .momentum import (
-    RSICalculator,
     ADXCalculator,
     MACDSignalCalculator,
     MomentumCalculator,
     ROCCalculator,
+    RSICalculator,
     StochasticKCalculator,
     WilliamsRCalculator,
 )
-
+from .trend import (
+    CandleDirectionCalculator,
+    EMACalculator,
+    EMACrossoverCalculator,
+    EMADistanceCalculator,
+    HigherHighsCountCalculator,
+    LinearRegressionSlopeCalculator,
+    PricePositionCalculator,
+    SMACalculator,
+    TrendStrengthCalculator,
+)
 from .volatility import (
     ATRCalculator,
     ATRPercentCalculator,
-    BollingerWidthCalculator,
     BollingerPositionCalculator,
-    VolatilityRatioCalculator,
+    BollingerWidthCalculator,
     HistoricalVolatilityCalculator,
     ParkinsonVolatilityCalculator,
     RangePercentCalculator,
-)
-
-from .trend import (
-    EMACalculator,
-    SMACalculator,
-    EMADistanceCalculator,
-    EMACrossoverCalculator,
-    PricePositionCalculator,
-    TrendStrengthCalculator,
-    LinearRegressionSlopeCalculator,
-    HigherHighsCountCalculator,
-    CandleDirectionCalculator,
-)
-
-from .macro import (
-    MacroZScoreCalculator,
-    DXYZScoreCalculator,
-    VIXZScoreCalculator,
-    WTIZScoreCalculator,
-    EMBIZScoreCalculator,
-    MacroMomentumCalculator,
-    RollingCorrelationCalculator,
+    VolatilityRatioCalculator,
 )
 
 __all__ = [

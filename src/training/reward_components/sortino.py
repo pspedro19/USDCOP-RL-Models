@@ -10,11 +10,12 @@ Version: 1.0.0
 Created: 2026-01-19
 """
 
-import numpy as np
 from collections import deque
-from typing import Dict, Any, Optional
+from typing import Any
 
-from .base import RewardComponent, ComponentType, safe_divide
+import numpy as np
+
+from .base import ComponentType, RewardComponent, safe_divide
 
 
 class SortinoCalculator(RewardComponent):
@@ -127,7 +128,7 @@ class SortinoCalculator(RewardComponent):
         """Reset state for new episode."""
         self._returns.clear()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -139,7 +140,7 @@ class SortinoCalculator(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
 

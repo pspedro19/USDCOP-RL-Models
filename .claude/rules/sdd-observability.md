@@ -44,6 +44,25 @@
 
 ---
 
+## Operational Status Matrix (2026-04-16)
+
+Services below are **infrastructure-ready** but have activation gaps. Treat them accordingly.
+
+| Service | Infra Status | Activation Gap | Recommended Narrative |
+|---------|--------------|----------------|----------------------|
+| Prometheus | ✅ Active | 53 rules evaluating, metrics being scraped from 9 targets | Fully operational |
+| Grafana | ✅ Active | 4 dashboards provisioned, 4 datasources connected | Fully operational |
+| Loki + Promtail | ✅ Active | Log aggregation working, queries via Grafana Explore | Fully operational |
+| AlertManager | ⚠️ Infra ready | `SLACK_WEBHOOK_URL` placeholder empty in `.env`, PagerDuty service key not set | "Rules cargadas, activación pendiente de secrets. UI estática muestra 53 alert rules." |
+| Jaeger | ⚠️ Infra ready | 0 services instrumented with OpenTelemetry | Omitir del spec hasta instrumentación de servicios (roadmap) |
+| MinIO | ⚠️ Partially used | 11 buckets operativos; MLflow artifacts OK; DAGs no usan como backup destino | "Bucket storage disponible; modelos en filesystem. Roadmap: migración artefactos." |
+| MLflow | ⚠️ Partially used | Server + DB + S3 configurados; scripts ad-hoc loguean; DAGs L3 (H1/H5) NO loguean runs | "Tracking server desplegado; integración automática en DAGs en roadmap." |
+
+**What "infra ready" means**: The service is running, healthy, and accepts requests — but downstream
+callers or secrets are not yet wired. Don't present as broken; present as "ready for activation."
+
+---
+
 ## Service Inventory (7 Services)
 
 | Service | Image | Container | Port | Purpose | Health Check |

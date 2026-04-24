@@ -8,16 +8,16 @@ and prevents catastrophic losses.
 Run with: pytest src/tests/test_risk_manager.py -v
 """
 
-import pytest
-from datetime import datetime, timedelta
-from unittest.mock import patch
-import sys
 import os
+import sys
+from datetime import datetime, timedelta
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from src.risk.risk_manager import RiskManager, RiskLimits, TradeRecord
+from src.risk.risk_manager import RiskLimits, RiskManager
 
 
 class TestRiskManagerBasics:

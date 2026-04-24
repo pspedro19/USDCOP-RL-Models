@@ -15,7 +15,7 @@ Version: 1.0.0
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ class BacktestConfigSSOT:
     bars_per_trading_day: int = 144      # 12 hours * 12 bars/hour (5min bars)
     trading_days_per_year: int = 252     # Standard forex trading days
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "spread_bps": self.spread_bps,
@@ -94,13 +94,13 @@ def get_backtest_config() -> BacktestConfigSSOT:
     return BACKTEST_SSOT
 
 
-def get_backtest_config_dict() -> Dict[str, Any]:
+def get_backtest_config_dict() -> dict[str, Any]:
     """Get backtest config as dictionary."""
     return BACKTEST_SSOT.to_dict()
 
 
 # === VALIDATION ===
-def validate_config_consistency(external_config: Dict[str, Any]) -> bool:
+def validate_config_consistency(external_config: dict[str, Any]) -> bool:
     """
     Validate that an external config matches SSOT.
     Used to verify dashboard/API configs align with L4.

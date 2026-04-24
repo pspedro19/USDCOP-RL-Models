@@ -18,9 +18,10 @@ Usage:
 
 import logging
 import os
+
 from fastapi import FastAPI
 
-from .correlation import CorrelationIdMiddleware, CorrelationIdFilter
+from .correlation import CorrelationIdFilter, CorrelationIdMiddleware
 from .logging import RequestLoggingMiddleware
 from .rate_limit import RateLimitMiddleware, create_rate_limiter
 

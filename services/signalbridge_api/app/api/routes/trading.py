@@ -5,14 +5,14 @@ Trading configuration routes.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.middleware.auth import get_current_active_user
-from app.models import User
 from app.contracts.trading import (
     TradingConfig,
     TradingConfigUpdate,
     TradingStatus,
 )
+from app.core.database import get_db
+from app.middleware.auth import get_current_active_user
+from app.models import User
 from app.services.trading import TradingService
 
 router = APIRouter(prefix="/trading", tags=["Trading"])

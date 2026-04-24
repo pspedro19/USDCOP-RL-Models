@@ -1,0 +1,76 @@
+[0;34m
+╔═══════════════════════════════════════════════════════════════╗
+║     MLOps Course Project — Delivery Verification             ║
+║     USDCOP Trading System                                     ║
+╚═══════════════════════════════════════════════════════════════╝
+[0m
+UTC: 2026-04-23 22:19:32
+
+
+[0;34m━━━ 1. Required files ━━━[0m
+  [0;32m✅[0m Docker Compose (docker-compose.compact.yml)
+  [0;32m✅[0m gRPC proto definition (services/grpc_predictor/proto/predictor.proto)
+  [0;32m✅[0m gRPC server (services/grpc_predictor/server.py)
+  [0;32m✅[0m gRPC Dockerfile (services/grpc_predictor/Dockerfile)
+  [0;32m✅[0m Kafka producer (services/kafka_bridge/producer.py)
+  [0;32m✅[0m Kafka consumer (services/kafka_bridge/consumer.py)
+  [0;32m✅[0m Kafka bridge Dockerfile (services/kafka_bridge/Dockerfile)
+  [0;32m✅[0m Course project documentation (docs/COURSE_PROJECT.md)
+  [0;32m✅[0m MLflow logging script (scripts/log_training_to_mlflow.py)
+  [0;32m✅[0m Makefile (Makefile)
+  [0;32m✅[0m Integration tests (tests/integration/test_course_project.py)
+
+[0;34m━━━ 2. Makefile course targets ━━━[0m
+  [0;32m✅[0m Makefile target: course-up
+  [0;32m✅[0m Makefile target: course-demo
+  [0;32m✅[0m Makefile target: course-grpc
+  [0;32m✅[0m Makefile target: course-kafka
+  [0;32m✅[0m Makefile target: course-mlflow
+
+[0;34m━━━ 3. docker-compose services defined ━━━[0m
+  [0;32m✅[0m Service defined: redpanda
+  [0;32m✅[0m Service defined: grpc-predictor
+  [0;32m✅[0m Service defined: kafka-bridge-producer/consumer
+
+[0;34m━━━ 4. Running Docker containers ━━━[0m
+  [0;32m✅[0m Docker service running: usdcop-postgres-timescale
+  [0;32m✅[0m Docker service running: usdcop-redis
+  [0;32m✅[0m Docker service running: usdcop-airflow-scheduler
+  [0;31m❌[0m Docker service NOT running: usdcop-mlflow
+  [0;32m✅[0m Docker service running: usdcop-redpanda
+  [0;32m✅[0m Docker service running: usdcop-grpc-predictor
+
+[0;34m━━━ 5. Service endpoints ━━━[0m
+  [0;32m✅[0m PostgreSQL (localhost:5432) is reachable
+  [0;32m✅[0m Redis (localhost:6379) is reachable
+  [0;32m✅[0m gRPC predictor (localhost:50051) is reachable
+  [0;32m✅[0m Redpanda/Kafka (localhost:19092) is reachable
+  [0;32m✅[0m MLflow (http://localhost:5001) returned HTTP 200
+  [0;32m✅[0m Airflow (http://localhost:8080/health) returned HTTP 200
+  [0;32m✅[0m Redpanda Console (http://localhost:8088) returned HTTP 200
+  [0;32m✅[0m Grafana (http://localhost:3002) returned HTTP 302
+  [0;32m✅[0m SignalBridge (http://localhost:8085/health) returned HTTP 200
+
+[0;34m━━━ 6. gRPC Predict() roundtrip ━━━[0m
+  [0;32m✅[0m gRPC Predict() returned a response
+
+[0;34m━━━ 7. Kafka producer→consumer roundtrip ━━━[0m
+  [0;32m✅[0m Kafka producer published demo messages
+  [0;32m✅[0m Kafka consumer received message
+
+[0;34m━━━ 8. MLflow experiment tracking ━━━[0m
+  [0;32m✅[0m MLflow has 4 experiment(s) (run 'make course-mlflow' to log training runs)
+
+[0;34m━━━ 9. Course requirements compliance ━━━[0m
+  [0;32m✅[0m ≥2 non-REST technologies: gRPC + Kafka
+  [0;32m✅[0m Docker containerization: docker-compose.compact.yml
+  [0;32m✅[0m Orchestration: Airflow (27 DAGs) + MLflow (tracking)
+  [0;32m✅[0m Live demo: make course-demo
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+  [0;32mPASSED: 41[0m   [0;31mFAILED: 1[0m   [1;33mWARNINGS: 0[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+  [0;31m❌ 1 check(s) failed. Fix before presenting.[0m
+  [1;33mTip: run 'docker compose -f docker-compose.compact.yml up -d' first[0m
+

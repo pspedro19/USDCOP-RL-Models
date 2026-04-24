@@ -36,10 +36,10 @@ Usage:
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,42 +61,42 @@ class SSOTLineageRecord:
     created_at: datetime = field(default_factory=datetime.now)
 
     # SSOT tracking (NEW)
-    ssot_version: Optional[str] = None
-    ssot_config_hash: Optional[str] = None
-    ssot_based_on_model: Optional[str] = None
+    ssot_version: str | None = None
+    ssot_config_hash: str | None = None
+    ssot_based_on_model: str | None = None
 
     # Feature tracking
-    feature_order_hash: Optional[str] = None
-    observation_dim: Optional[int] = None
-    market_features_count: Optional[int] = None
+    feature_order_hash: str | None = None
+    observation_dim: int | None = None
+    market_features_count: int | None = None
 
     # Artifact hashes
-    dataset_hash: Optional[str] = None
-    norm_stats_hash: Optional[str] = None
-    model_hash: Optional[str] = None
-    config_hash: Optional[str] = None
+    dataset_hash: str | None = None
+    norm_stats_hash: str | None = None
+    model_hash: str | None = None
+    config_hash: str | None = None
 
     # DVC tracking
-    dvc_tag: Optional[str] = None
-    dvc_commit: Optional[str] = None
+    dvc_tag: str | None = None
+    dvc_commit: str | None = None
 
     # MLflow tracking
-    mlflow_run_id: Optional[str] = None
-    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: str | None = None
+    mlflow_experiment_id: str | None = None
 
     # Artifact paths
-    dataset_path: Optional[str] = None
-    norm_stats_path: Optional[str] = None
-    model_path: Optional[str] = None
+    dataset_path: str | None = None
+    norm_stats_path: str | None = None
+    model_path: str | None = None
 
     # Training/Backtest parity (CRITICAL)
     training_backtest_parity_verified: bool = False
-    parity_issues: List[str] = field(default_factory=list)
+    parity_issues: list[str] = field(default_factory=list)
 
     # Parent lineage
-    parent_run_id: Optional[str] = None
+    parent_run_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "run_id": self.run_id,
@@ -138,7 +138,7 @@ class SSOTLineageRecord:
             "parent_run_id": self.parent_run_id,
         }
 
-    def to_mlflow_params(self) -> Dict[str, str]:
+    def to_mlflow_params(self) -> dict[str, str]:
         """Convert to MLflow-compatible params."""
         params = {
             "ssot_version": self.ssot_version or "",
@@ -170,10 +170,10 @@ class SSOTComplianceReport:
     anti_leakage_verified: bool = False
 
     # Details
-    issues: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -192,7 +192,7 @@ class SSOTLineageIntegration:
     - DVC tag generation for SSOT versions
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         """
         Initialize with SSOT configuration.
 
@@ -242,12 +242,12 @@ class SSOTLineageIntegration:
         self,
         run_id: str,
         stage: str,
-        model_path: Optional[Path] = None,
-        dataset_path: Optional[Path] = None,
-        norm_stats_path: Optional[Path] = None,
-        mlflow_run_id: Optional[str] = None,
-        dvc_tag: Optional[str] = None,
-        parent_run_id: Optional[str] = None,
+        model_path: Path | None = None,
+        dataset_path: Path | None = None,
+        norm_stats_path: Path | None = None,
+        mlflow_run_id: str | None = None,
+        dvc_tag: str | None = None,
+        parent_run_id: str | None = None,
     ) -> SSOTLineageRecord:
         """
         Create a lineage record with full SSOT tracking.
@@ -309,10 +309,10 @@ class SSOTLineageIntegration:
 
     def validate_compliance(
         self,
-        model_path: Optional[Path] = None,
-        dataset_path: Optional[Path] = None,
-        norm_stats_path: Optional[Path] = None,
-        expected_feature_order: Optional[List[str]] = None,
+        model_path: Path | None = None,
+        dataset_path: Path | None = None,
+        norm_stats_path: Path | None = None,
+        expected_feature_order: list[str] | None = None,
     ) -> SSOTComplianceReport:
         """
         Validate compliance with SSOT configuration.
@@ -419,7 +419,7 @@ class SSOTLineageIntegration:
         self,
         lineage: SSOTLineageRecord,
         model_registry: "ModelRegistry",
-        model_metadata: Dict[str, Any],
+        model_metadata: dict[str, Any],
     ) -> str:
         """
         Register model with SSOT compliance information.
@@ -452,7 +452,7 @@ class SSOTLineageIntegration:
         logger.info(f"Registered model {model_id} with SSOT compliance tracking")
         return model_id
 
-    def integrate_with_dvc(self, lineage: SSOTLineageRecord) -> Optional[str]:
+    def integrate_with_dvc(self, lineage: SSOTLineageRecord) -> str | None:
         """
         Create DVC tag for this lineage record.
 
@@ -484,7 +484,7 @@ class SSOTLineageIntegration:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"ssot_v{self.config.version}_{run_id}_{timestamp}"
 
-    def _compute_file_hash(self, file_path: Optional[Path]) -> Optional[str]:
+    def _compute_file_hash(self, file_path: Path | None) -> str | None:
         """Compute SHA256 hash of a file."""
         if file_path is None or not Path(file_path).exists():
             return None
@@ -495,7 +495,7 @@ class SSOTLineageIntegration:
                 sha256.update(chunk)
         return sha256.hexdigest()[:16]
 
-    def get_ssot_summary(self) -> Dict[str, Any]:
+    def get_ssot_summary(self) -> dict[str, Any]:
         """Get summary of current SSOT configuration."""
         return {
             "version": self.config.version,
@@ -571,10 +571,10 @@ def get_ssot_config_hash() -> str:
 # =============================================================================
 
 __all__ = [
+    "SSOTComplianceReport",
     "SSOTLineageIntegration",
     "SSOTLineageRecord",
-    "SSOTComplianceReport",
     "create_ssot_lineage_record",
-    "validate_ssot_compliance",
     "get_ssot_config_hash",
+    "validate_ssot_compliance",
 ]

@@ -8,14 +8,13 @@ Follows the ExtractorRegistry pattern from L0 macro DAGs.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from src.news_engine.config import NewsEngineConfig
 from src.news_engine.ingestion.base_adapter import SourceAdapter
-from src.news_engine.ingestion.gdelt_adapter import GDELTDocAdapter, GDELTContextAdapter
-from src.news_engine.ingestion.newsapi_adapter import NewsAPIAdapter
+from src.news_engine.ingestion.gdelt_adapter import GDELTContextAdapter, GDELTDocAdapter
 from src.news_engine.ingestion.investing_scraper import InvestingSearchScraper
 from src.news_engine.ingestion.larepublica_scraper import LaRepublicaScraper
+from src.news_engine.ingestion.newsapi_adapter import NewsAPIAdapter
 from src.news_engine.ingestion.portafolio_scraper import PortafolioScraper
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ class SourceRegistry:
         self._adapters[adapter.source_id] = adapter
         self._enabled[adapter.source_id] = enabled
 
-    def get(self, source_id: str) -> Optional[SourceAdapter]:
+    def get(self, source_id: str) -> SourceAdapter | None:
         """Get adapter by source ID."""
         return self._adapters.get(source_id)
 
@@ -66,7 +65,7 @@ class SourceRegistry:
         return results
 
     @classmethod
-    def from_config(cls, config: Optional[NewsEngineConfig] = None) -> "SourceRegistry":
+    def from_config(cls, config: NewsEngineConfig | None = None) -> SourceRegistry:
         """Create registry with all adapters from config."""
         config = config or NewsEngineConfig()
         registry = cls()

@@ -9,15 +9,15 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-import numpy as np
-from typing import Optional, Union, List
 import logging
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 def calculate_sharpe_ratio(
-    returns: Union[np.ndarray, List[float]],
+    returns: np.ndarray | list[float],
     risk_free_rate: float = 0.0,
     periods_per_year: int = 252
 ) -> float:
@@ -48,7 +48,7 @@ def calculate_sharpe_ratio(
 
 
 def calculate_sortino_ratio(
-    returns: Union[np.ndarray, List[float]],
+    returns: np.ndarray | list[float],
     target_return: float = 0.0,
     periods_per_year: int = 252
 ) -> float:
@@ -80,7 +80,7 @@ def calculate_sortino_ratio(
 
 
 def calculate_cagr(
-    prices: Union[np.ndarray, List[float]],
+    prices: np.ndarray | list[float],
     periods_per_year: int = 252
 ) -> float:
     """
@@ -108,7 +108,7 @@ def calculate_cagr(
     return float(cagr)
 
 
-def calculate_max_drawdown(prices: Union[np.ndarray, List[float]]) -> float:
+def calculate_max_drawdown(prices: np.ndarray | list[float]) -> float:
     """
     Calculate maximum drawdown.
 
@@ -130,8 +130,8 @@ def calculate_max_drawdown(prices: Union[np.ndarray, List[float]]) -> float:
 
 
 def calculate_calmar_ratio(
-    returns: Union[np.ndarray, List[float]],
-    prices: Optional[Union[np.ndarray, List[float]]] = None,
+    returns: np.ndarray | list[float],
+    prices: np.ndarray | list[float] | None = None,
     periods_per_year: int = 252
 ) -> float:
     """
@@ -164,7 +164,7 @@ def calculate_calmar_ratio(
 
 
 def calculate_var(
-    returns: Union[np.ndarray, List[float]],
+    returns: np.ndarray | list[float],
     confidence_level: float = 0.95
 ) -> float:
     """
@@ -188,7 +188,7 @@ def calculate_var(
 
 
 def calculate_expected_shortfall(
-    returns: Union[np.ndarray, List[float]],
+    returns: np.ndarray | list[float],
     confidence_level: float = 0.95
 ) -> float:
     """
@@ -215,7 +215,7 @@ def calculate_expected_shortfall(
     return float(es) if not np.isnan(es) else var
 
 
-def calculate_win_rate(returns: Union[np.ndarray, List[float]]) -> float:
+def calculate_win_rate(returns: np.ndarray | list[float]) -> float:
     """
     Calculate win rate (percentage of positive returns).
 
@@ -235,7 +235,7 @@ def calculate_win_rate(returns: Union[np.ndarray, List[float]]) -> float:
     return float(wins / total)
 
 
-def calculate_profit_factor(returns: Union[np.ndarray, List[float]]) -> float:
+def calculate_profit_factor(returns: np.ndarray | list[float]) -> float:
     """
     Calculate profit factor (gross profit / gross loss).
 
@@ -259,8 +259,8 @@ def calculate_profit_factor(returns: Union[np.ndarray, List[float]]) -> float:
 
 
 def calculate_all_metrics(
-    returns: Union[np.ndarray, List[float]],
-    prices: Optional[Union[np.ndarray, List[float]]] = None,
+    returns: np.ndarray | list[float],
+    prices: np.ndarray | list[float] | None = None,
     periods_per_year: int = 252,
     risk_free_rate: float = 0.0
 ) -> dict:

@@ -3,11 +3,11 @@ Rate limiting middleware using Redis.
 """
 
 import time
-from typing import Optional
-from fastapi import Request, Response
+
+import redis.asyncio as redis
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-import redis.asyncio as redis
 
 from app.core.config import settings
 from app.core.exceptions import ErrorCode
@@ -22,13 +22,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        redis_url: Optional[str] = None,
-        requests_per_minute: Optional[int] = None,
+        redis_url: str | None = None,
+        requests_per_minute: int | None = None,
     ):
         super().__init__(app)
         self.redis_url = redis_url or settings.redis_url
         self.requests_per_minute = requests_per_minute or settings.rate_limit_per_minute
-        self._redis: Optional[redis.Redis] = None
+        self._redis: redis.Redis | None = None
 
     async def get_redis(self) -> redis.Redis:
         """Get or create Redis connection."""

@@ -16,10 +16,10 @@ Author: Pedro @ Lean Tech Solutions / Claude Code
 Date: 2026-01-09
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional, Union
-from dataclasses import dataclass
 
 
 @dataclass
@@ -361,7 +361,7 @@ def compare_with_benchmarks(
     model_trades: int = 0,
     model_wins: int = 0,
     transaction_cost: float = 0.002
-) -> Dict[str, Dict[str, float]]:
+) -> dict[str, dict[str, float]]:
     """
     Compare model performance with all benchmarks.
 
@@ -416,7 +416,7 @@ def compare_with_benchmarks(
     return comparison
 
 
-def print_benchmark_comparison(comparison: Dict[str, Dict[str, float]]) -> None:
+def print_benchmark_comparison(comparison: dict[str, dict[str, float]]) -> None:
     """Print formatted benchmark comparison table."""
     print("\n" + "=" * 80)
     print("BENCHMARK COMPARISON")

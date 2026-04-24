@@ -17,15 +17,14 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
 import requests
 
 from src.news_engine.config import GDELTConfig
 from src.news_engine.ingestion.base_adapter import SourceAdapter
-from src.news_engine.models import RawArticle, GDELTTimelinePoint
+from src.news_engine.models import GDELTTimelinePoint, RawArticle
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class GDELTDocAdapter(SourceAdapter):
     source_id = "gdelt_doc"
     source_name = "GDELT DOC 2.0"
 
-    def __init__(self, config: Optional[GDELTConfig] = None):
+    def __init__(self, config: GDELTConfig | None = None):
         super().__init__(config)
         self.cfg = config or GDELTConfig()
         self._last_request_time: float = 0.0
@@ -158,9 +157,9 @@ class GDELTDocAdapter(SourceAdapter):
         self,
         query: str,
         lang: str = "en",
-        timespan_hours: Optional[int] = None,
-        start_dt: Optional[datetime] = None,
-        end_dt: Optional[datetime] = None,
+        timespan_hours: int | None = None,
+        start_dt: datetime | None = None,
+        end_dt: datetime | None = None,
     ) -> list[RawArticle]:
         """Fetch articles for a single query.
 
@@ -236,7 +235,7 @@ class GDELTDocAdapter(SourceAdapter):
     # Parsing
     # ------------------------------------------------------------------
 
-    def _parse_article(self, art: dict, default_lang: str) -> Optional[RawArticle]:
+    def _parse_article(self, art: dict, default_lang: str) -> RawArticle | None:
         """Parse a single GDELT article dict into RawArticle."""
         url = art.get("url", "")
         title = art.get("title", "")
@@ -247,7 +246,7 @@ class GDELTDocAdapter(SourceAdapter):
             published = datetime.strptime(
                 art.get("seendate", ""),
                 "%Y%m%dT%H%M%SZ",
-            ).replace(tzinfo=timezone.utc)
+            ).replace(tzinfo=UTC)
         except (ValueError, TypeError):
             published = None
 
@@ -312,7 +311,7 @@ class GDELTDocAdapter(SourceAdapter):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _safe_parse_json(resp: requests.Response) -> Optional[dict]:
+    def _safe_parse_json(resp: requests.Response) -> dict | None:
         """Safely parse JSON from response, returning None on failure.
 
         GDELT returns plain text error messages (not JSON) when:
@@ -333,7 +332,7 @@ class GDELTDocAdapter(SourceAdapter):
             return None
 
     @staticmethod
-    def _parse_tone(tone_str: str) -> Optional[float]:
+    def _parse_tone(tone_str: str) -> float | None:
         """Parse GDELT tone string (comma-separated values, first is avg tone)."""
         if not tone_str:
             return None
@@ -398,7 +397,7 @@ class GDELTDocAdapter(SourceAdapter):
                     try:
                         dt = datetime.strptime(
                             point["date"], "%Y%m%dT%H%M%SZ"
-                        ).replace(tzinfo=timezone.utc)
+                        ).replace(tzinfo=UTC)
                         points.append(GDELTTimelinePoint(
                             date=dt,
                             value=float(point.get("value", 0)),
@@ -423,7 +422,7 @@ class GDELTContextAdapter(SourceAdapter):
     source_id = "gdelt_context"
     source_name = "GDELT Context 2.0"
 
-    def __init__(self, config: Optional[GDELTConfig] = None):
+    def __init__(self, config: GDELTConfig | None = None):
         super().__init__(config)
         self.cfg = config or GDELTConfig()
 
@@ -476,7 +475,7 @@ class GDELTContextAdapter(SourceAdapter):
                     try:
                         dt = datetime.strptime(
                             point["date"], "%Y%m%dT%H%M%SZ"
-                        ).replace(tzinfo=timezone.utc)
+                        ).replace(tzinfo=UTC)
                         points.append(GDELTTimelinePoint(
                             date=dt,
                             value=float(point.get("value", 0)),

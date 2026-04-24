@@ -8,10 +8,11 @@ based on actual price data and target metrics.
 
 import random
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
+
 import numpy as np
 
-from .config import DEMO_CONFIG, KEY_WINNING_TRADES
+from .config import DEMO_CONFIG
 
 
 class DemoTradeGenerator:
@@ -22,7 +23,7 @@ class DemoTradeGenerator:
     while ensuring the overall metrics match targets.
     """
 
-    def __init__(self, config: Optional[Any] = None):
+    def __init__(self, config: Any | None = None):
         self.config = config or DEMO_CONFIG
         self.random_seed = 42  # Reproducible results
         random.seed(self.random_seed)
@@ -32,9 +33,9 @@ class DemoTradeGenerator:
         self,
         start_date: str,
         end_date: str,
-        price_data: List[Dict[str, Any]],
+        price_data: list[dict[str, Any]],
         initial_capital: float = 10000.0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate demo trades for the given date range.
 
@@ -89,7 +90,7 @@ class DemoTradeGenerator:
             }
         }
 
-    def _build_price_lookup(self, price_data: List[Dict]) -> Dict[str, List[Dict]]:
+    def _build_price_lookup(self, price_data: list[dict]) -> dict[str, list[dict]]:
         """Build a lookup of prices by date."""
         lookup = {}
         for candle in price_data:
@@ -123,8 +124,8 @@ class DemoTradeGenerator:
         self,
         start_dt: datetime,
         end_dt: datetime,
-        price_by_date: Dict[str, List]
-    ) -> List[Tuple[datetime, str]]:
+        price_by_date: dict[str, list]
+    ) -> list[tuple[datetime, str]]:
         """Generate dates and sides for trades."""
         schedule = []
         current = start_dt
@@ -189,10 +190,10 @@ class DemoTradeGenerator:
 
     def _generate_trade_list(
         self,
-        schedule: List[Tuple[datetime, str]],
-        price_by_date: Dict[str, List],
+        schedule: list[tuple[datetime, str]],
+        price_by_date: dict[str, list],
         initial_capital: float
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Generate the actual trade list with realistic P&L."""
         trades = []
         equity = initial_capital
@@ -311,7 +312,7 @@ class DemoTradeGenerator:
 
         return trades
 
-    def _calculate_metrics(self, trades: List[Dict], initial_capital: float) -> Dict:
+    def _calculate_metrics(self, trades: list[dict], initial_capital: float) -> dict:
         """Calculate summary metrics from trades."""
         if not trades:
             return self._empty_metrics()
@@ -379,11 +380,11 @@ class DemoTradeGenerator:
 
     def _build_equity_curve(
         self,
-        trades: List[Dict],
+        trades: list[dict],
         initial_capital: float,
         start_dt: datetime,
         end_dt: datetime
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Build equity curve for charting."""
         curve = [{
             "timestamp": start_dt.isoformat() + "+00:00",
@@ -409,7 +410,7 @@ class DemoTradeGenerator:
 
         return curve
 
-    def _empty_result(self, start_date: str, end_date: str) -> Dict:
+    def _empty_result(self, start_date: str, end_date: str) -> dict:
         """Return empty result structure."""
         return {
             "success": True,
@@ -426,7 +427,7 @@ class DemoTradeGenerator:
             "equity_curve": [],
         }
 
-    def _empty_metrics(self) -> Dict:
+    def _empty_metrics(self) -> dict:
         """Return empty metrics structure."""
         return {
             "total_trades": 0,

@@ -10,12 +10,12 @@ Follows same pattern as src/core/contracts/feature_contract.py
 @version 1.0.0
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any
 import hashlib
 import json
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 _logger = logging.getLogger(__name__)
 
@@ -60,15 +60,15 @@ class EnsembleType(str, Enum):
 try:
     from src.forecasting.ssot_config import ForecastingSSOTConfig as _SSOTCfg
     _cfg = _SSOTCfg.load()
-    HORIZONS: Tuple[int, ...] = _cfg.get_horizons()
+    HORIZONS: tuple[int, ...] = _cfg.get_horizons()
     _logger.debug("[contracts] Loaded HORIZONS from YAML: %s", HORIZONS)
 except Exception as _e:
     _logger.debug("[contracts] YAML load failed (%s), using hardcoded fallback", _e)
     # Hardcoded fallback (same values as forecasting_ssot.yaml)
-    HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
+    HORIZONS: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 # Model definitions
-MODEL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
+MODEL_DEFINITIONS: dict[str, dict[str, Any]] = {
     # Linear Models
     "ridge": {
         "name": "Ridge Regression",
@@ -129,10 +129,10 @@ MODEL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
 }
 
 # All model IDs
-MODEL_IDS: Tuple[str, ...] = tuple(MODEL_DEFINITIONS.keys())
+MODEL_IDS: tuple[str, ...] = tuple(MODEL_DEFINITIONS.keys())
 
 # Horizon labels
-HORIZON_LABELS: Dict[int, str] = {
+HORIZON_LABELS: dict[int, str] = {
     1: "1 day",
     5: "5 days",
     10: "10 days",
@@ -143,7 +143,7 @@ HORIZON_LABELS: Dict[int, str] = {
 }
 
 # Horizon categories
-HORIZON_CATEGORIES: Dict[int, HorizonCategory] = {
+HORIZON_CATEGORIES: dict[int, HorizonCategory] = {
     1: HorizonCategory.SHORT,
     5: HorizonCategory.SHORT,
     10: HorizonCategory.MEDIUM,
@@ -166,12 +166,12 @@ except Exception:
 
 # Horizon-adaptive hyperparameters (SSOT)
 try:
-    HORIZON_CONFIGS: Dict[str, Dict[str, Any]] = {
+    HORIZON_CONFIGS: dict[str, dict[str, Any]] = {
         cat: dict(_cfg.raw["horizons"]["configs"][cat])
         for cat in ["short", "medium", "long"]
     }
 except Exception:
-    HORIZON_CONFIGS: Dict[str, Dict[str, Any]] = {
+    HORIZON_CONFIGS: dict[str, dict[str, Any]] = {
         "short": {
             "n_estimators": 50,
             "max_depth": 3,
@@ -202,7 +202,7 @@ except Exception:
     }
 
 
-def get_horizon_config(horizon: int) -> Dict[str, Any]:
+def get_horizon_config(horizon: int) -> dict[str, Any]:
     """Get horizon-specific hyperparameters."""
     category = HORIZON_CATEGORIES.get(horizon, HorizonCategory.MEDIUM)
     return HORIZON_CONFIGS[category.value]
@@ -215,16 +215,16 @@ def get_horizon_config(horizon: int) -> Dict[str, Any]:
 @dataclass
 class ForecastingTrainingRequest:
     """Request to train forecasting models."""
-    dataset_path: Optional[str] = None  # Path to dataset file (if not using SSOT)
+    dataset_path: str | None = None  # Path to dataset file (if not using SSOT)
     use_db: bool = False  # v2.0: If True, load from SSOT (PostgreSQL/Parquet)
     version: str = "auto"
     experiment_name: str = "forecasting_usdcop"
-    models: Optional[List[str]] = None  # None = all models
-    horizons: Optional[List[int]] = None  # None = all horizons
+    models: list[str] | None = None  # None = all models
+    horizons: list[int] | None = None  # None = all horizons
     mlflow_enabled: bool = True
-    mlflow_tracking_uri: Optional[str] = None
+    mlflow_tracking_uri: str | None = None
     minio_enabled: bool = True
-    db_connection_string: Optional[str] = None
+    db_connection_string: str | None = None
     walk_forward_windows: int = 5
 
     def __post_init__(self):
@@ -244,16 +244,16 @@ class ForecastingTrainingResult:
     version: str
     models_trained: int
     total_combinations: int  # models × horizons
-    best_model_per_horizon: Dict[int, str]
-    metrics_summary: Dict[str, Dict[int, float]]  # model → horizon → DA
+    best_model_per_horizon: dict[int, str]
+    metrics_summary: dict[str, dict[int, float]]  # model → horizon → DA
     model_artifacts_path: str
-    mlflow_experiment_id: Optional[str] = None
-    mlflow_run_ids: Dict[str, str] = field(default_factory=dict)
-    minio_artifacts_uri: Optional[str] = None
+    mlflow_experiment_id: str | None = None
+    mlflow_run_ids: dict[str, str] = field(default_factory=dict)
+    minio_artifacts_uri: str | None = None
     training_duration_seconds: float = 0.0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "version": self.version,
@@ -274,8 +274,8 @@ class ForecastingTrainingResult:
 class ForecastingInferenceRequest:
     """Request to run forecasting inference."""
     inference_date: str  # YYYY-MM-DD
-    models: Optional[List[str]] = None
-    horizons: Optional[List[int]] = None
+    models: list[str] | None = None
+    horizons: list[int] | None = None
     generate_ensembles: bool = True
     upload_images: bool = True
     persist_to_db: bool = True
@@ -299,7 +299,7 @@ class ForecastPrediction:
     predicted_return_pct: float
     direction: ForecastDirection
     signal: int  # -1=SELL, 0=HOLD, 1=BUY
-    confidence: Optional[float] = None
+    confidence: float | None = None
 
 
 @dataclass
@@ -309,13 +309,13 @@ class ForecastingInferenceResult:
     inference_date: str
     inference_week: int
     inference_year: int
-    predictions: List[ForecastPrediction]
-    ensembles: Dict[str, Dict[int, ForecastPrediction]]
-    consensus_by_horizon: Dict[int, Dict[str, Any]]
-    minio_week_path: Optional[str] = None
+    predictions: list[ForecastPrediction]
+    ensembles: dict[str, dict[int, ForecastPrediction]]
+    consensus_by_horizon: dict[int, dict[str, Any]]
+    minio_week_path: str | None = None
     images_uploaded: int = 0
     forecasts_persisted: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -326,11 +326,11 @@ class ModelMetrics:
     direction_accuracy: float
     rmse: float
     mae: float
-    mape: Optional[float] = None
-    r2: Optional[float] = None
-    sharpe_ratio: Optional[float] = None
-    max_drawdown: Optional[float] = None
-    profit_factor: Optional[float] = None
+    mape: float | None = None
+    r2: float | None = None
+    sharpe_ratio: float | None = None
+    max_drawdown: float | None = None
+    profit_factor: float | None = None
     sample_count: int = 0
 
 
@@ -369,7 +369,7 @@ def validate_horizon(horizon: int) -> bool:
     return horizon in HORIZONS
 
 
-def get_model_info(model_id: str) -> Optional[Dict[str, Any]]:
+def get_model_info(model_id: str) -> dict[str, Any] | None:
     """Get model definition by ID."""
     return MODEL_DEFINITIONS.get(model_id)
 

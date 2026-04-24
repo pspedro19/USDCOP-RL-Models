@@ -28,19 +28,19 @@ Created: 2025-01-16
 """
 
 from .canonical_feature_builder import (
-    IFeatureBuilder,
+    BuilderContext,
     CanonicalFeatureBuilder,
+    FeatureCalculationError,
+    IFeatureBuilder,
     NormStatsNotFoundError,
     ObservationDimensionError,
-    FeatureCalculationError,
-    BuilderContext,
 )
 
 __all__ = [
-    "IFeatureBuilder",
+    "BuilderContext",
     "CanonicalFeatureBuilder",
+    "FeatureCalculationError",
+    "IFeatureBuilder",
     "NormStatsNotFoundError",
     "ObservationDimensionError",
-    "FeatureCalculationError",
-    "BuilderContext",
 ]

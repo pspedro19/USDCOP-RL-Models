@@ -73,88 +73,82 @@ Usage:
 # BASE CLASSES AND TYPES
 # =============================================================================
 
+from .anti_gaming import (
+    ActionCorrelationTracker,
+    BiasDetector,
+    ChurnTracker,
+    InactivityTracker,
+)
+from .banrep_detector import BanrepInterventionDetector, InterventionStatus
 from .base import (
-    # Enums
-    MarketRegime,
-    ComponentType,
     # Dataclasses
     ComponentResult,
     ComponentStats,
-    # Base class
-    RewardComponent,
-    # Protocols
-    IRewardCalculator,
-    IRegimeDetector,
-    IRewardNormalizer,
+    ComponentType,
     ICostModel,
     IDecayModel,
+    IRegimeDetector,
+    # Protocols
+    IRewardCalculator,
+    IRewardNormalizer,
+    # Enums
+    MarketRegime,
+    # Base class
+    RewardComponent,
     # Helper functions
     clip_reward,
-    safe_divide,
     exponential_decay,
+    safe_divide,
     z_score,
 )
+from .close_reason_detector import CloseReasonDetector
+from .drawdown_penalty import DrawdownPenaltyComponent
 
 # =============================================================================
 # RISK METRICS
 # =============================================================================
-
 from .dsr import DifferentialSharpeRatio
-from .sortino import SortinoCalculator
-
-# =============================================================================
-# DETECTORS
-# =============================================================================
-
-from .regime_detector import StableRegimeDetector
-from .banrep_detector import BanrepInterventionDetector, InterventionStatus
-from .oil_tracker import (
-    OilCorrelationTracker,
-    OilCorrelationState,
-    OilMomentumSignal,
-)
-
-# =============================================================================
-# MARKET IMPACT
-# =============================================================================
-
-from .market_impact import AlmgrenChrissImpactModel, MarketImpactResult
+from .execution_alpha import ExecutionAlphaComponent
+from .flat_reward import FlatReward, FlatRewardConfig
 
 # =============================================================================
 # PENALTIES
 # =============================================================================
+from .holding_decay import GapRiskPenalty, HoldingDecay
 
-from .holding_decay import HoldingDecay, GapRiskPenalty
-from .anti_gaming import (
-    InactivityTracker,
-    ChurnTracker,
-    ActionCorrelationTracker,
-    BiasDetector,
+# =============================================================================
+# MARKET IMPACT
+# =============================================================================
+from .market_impact import AlmgrenChrissImpactModel, MarketImpactResult
+from .oil_tracker import (
+    OilCorrelationState,
+    OilCorrelationTracker,
+    OilMomentumSignal,
 )
-from .flat_reward import FlatReward, FlatRewardConfig
-from .close_reason_detector import CloseReasonDetector
-from .drawdown_penalty import DrawdownPenaltyComponent
-from .execution_alpha import ExecutionAlphaComponent
 
 # =============================================================================
 # TRANSFORMS
 # =============================================================================
-
 from .pnl_transforms import (
-    LogPnLTransform,
     AsymmetricPnLTransform,
     ClippedPnLTransform,
+    CompositePnLTransform,
+    LogPnLTransform,
     RankPnLTransform,
     ZScorePnLTransform,
-    CompositePnLTransform,
     create_default_pnl_transform,
 )
 
 # =============================================================================
+# DETECTORS
+# =============================================================================
+from .regime_detector import StableRegimeDetector
+
+# =============================================================================
 # NORMALIZERS
 # =============================================================================
-
 from .reward_normalizer import RewardNormalizer, RunningMeanStd
+from .sortino import SortinoCalculator
 
 # =============================================================================
 # EXPORTS

@@ -32,9 +32,9 @@ Date: 2026-01-17
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class ReadinessLevel(Enum):
 class FeatureReadiness:
     """Readiness status for a single feature."""
     feature_name: str
-    last_updated: Optional[datetime]
+    last_updated: datetime | None
     staleness_days: float
     max_allowed_staleness: float
     is_fresh: bool
@@ -74,8 +74,8 @@ class FeatureReadiness:
 class PipelineReadiness:
     """Readiness status for a data pipeline."""
     pipeline_name: str
-    last_success: Optional[datetime]
-    last_failure: Optional[datetime]
+    last_success: datetime | None
+    last_failure: datetime | None
     success_rate_24h: float
     avg_duration_seconds: float
     is_healthy: bool
@@ -100,12 +100,12 @@ class DailyDataReadinessReport:
     data_quality_score: float
 
     # Detailed breakdowns
-    feature_details: List[FeatureReadiness] = field(default_factory=list)
-    pipeline_details: List[PipelineReadiness] = field(default_factory=list)
+    feature_details: list[FeatureReadiness] = field(default_factory=list)
+    pipeline_details: list[PipelineReadiness] = field(default_factory=list)
 
     # Blocking indicators
-    blocking_issues: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    blocking_issues: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     # Metadata
     computation_time_ms: float = 0.0
@@ -130,7 +130,7 @@ class DailyDataReadinessReport:
             f"Warnings: {len(self.warnings)}"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "report_date": self.report_date.isoformat(),
@@ -193,8 +193,8 @@ class DataReadinessScorer:
 
     def __init__(
         self,
-        staleness_limits: Optional[Dict[str, float]] = None,
-        critical_features: Optional[List[str]] = None,
+        staleness_limits: dict[str, float] | None = None,
+        critical_features: list[str] | None = None,
     ):
         """
         Initialize the readiness scorer.
@@ -214,8 +214,8 @@ class DataReadinessScorer:
     def compute_feature_score(
         self,
         feature_name: str,
-        last_updated: Optional[datetime],
-        now: Optional[datetime] = None,
+        last_updated: datetime | None,
+        now: datetime | None = None,
     ) -> FeatureReadiness:
         """
         Compute readiness score for a single feature.
@@ -260,8 +260,8 @@ class DataReadinessScorer:
     def compute_pipeline_score(
         self,
         pipeline_name: str,
-        last_success: Optional[datetime],
-        last_failure: Optional[datetime],
+        last_success: datetime | None,
+        last_failure: datetime | None,
         success_rate_24h: float,
         avg_duration_seconds: float,
     ) -> PipelineReadiness:
@@ -311,8 +311,8 @@ class DataReadinessScorer:
 
     def generate_report(
         self,
-        feature_timestamps: Optional[Dict[str, datetime]] = None,
-        pipeline_stats: Optional[List[Dict]] = None,
+        feature_timestamps: dict[str, datetime] | None = None,
+        pipeline_stats: list[dict] | None = None,
         data_quality_score: float = 1.0,
     ) -> DailyDataReadinessReport:
         """
@@ -498,8 +498,8 @@ def update_prometheus_metrics(report: DailyDataReadinessReport) -> None:
 
 
 def compute_readiness_score(
-    feature_timestamps: Optional[Dict[str, datetime]] = None,
-    pipeline_stats: Optional[List[Dict]] = None,
+    feature_timestamps: dict[str, datetime] | None = None,
+    pipeline_stats: list[dict] | None = None,
     update_metrics: bool = True,
 ) -> DailyDataReadinessReport:
     """
@@ -527,7 +527,7 @@ def compute_readiness_score(
     return report
 
 
-def get_readiness_metrics() -> Dict[str, Any]:
+def get_readiness_metrics() -> dict[str, Any]:
     """
     Get current readiness metrics as a dictionary.
 
@@ -541,11 +541,11 @@ def get_readiness_metrics() -> Dict[str, Any]:
 
 
 __all__ = [
-    "ReadinessLevel",
-    "FeatureReadiness",
-    "PipelineReadiness",
     "DailyDataReadinessReport",
     "DataReadinessScorer",
+    "FeatureReadiness",
+    "PipelineReadiness",
+    "ReadinessLevel",
     "compute_readiness_score",
     "get_readiness_metrics",
     "update_prometheus_metrics",

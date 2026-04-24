@@ -34,17 +34,17 @@ CHANGELOG v2.0.0:
 
 import json
 import logging
-from dataclasses import dataclass, asdict
 from collections import deque
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
+from typing import Any
 
 import numpy as np
 from scipy import stats
 
 try:
-    from prometheus_client import Gauge, Counter
+    from prometheus_client import Counter, Gauge
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -113,11 +113,11 @@ class FeatureStats:
     q75: float
     sample_size: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FeatureStats':
+    def from_dict(cls, data: dict[str, Any]) -> 'FeatureStats':
         return cls(**data)
 
 
@@ -142,7 +142,7 @@ class DriftReport:
     timestamp: str
     features_checked: int
     features_drifted: int
-    drift_results: List[DriftResult]
+    drift_results: list[DriftResult]
     overall_drift_score: float
     alert_active: bool
 
@@ -157,10 +157,10 @@ class ReferenceStatsManager:
     Can load from file or compute from data.
     """
 
-    def __init__(self, stats_path: Optional[str] = None):
+    def __init__(self, stats_path: str | None = None):
         self.stats_path = stats_path
-        self.feature_stats: Dict[str, FeatureStats] = {}
-        self._raw_data: Dict[str, np.ndarray] = {}
+        self.feature_stats: dict[str, FeatureStats] = {}
+        self._raw_data: dict[str, np.ndarray] = {}
 
         if stats_path and Path(stats_path).exists():
             self.load_stats(stats_path)
@@ -168,7 +168,7 @@ class ReferenceStatsManager:
     def load_stats(self, path: str) -> bool:
         """Load reference statistics from JSON file."""
         try:
-            with open(path, 'r') as f:
+            with open(path) as f:
                 data = json.load(f)
 
             for feature_name, stats_dict in data.get("features", {}).items():
@@ -190,7 +190,7 @@ class ReferenceStatsManager:
         """Save reference statistics to JSON file."""
         try:
             data = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "features": {
                     name: stats.to_dict()
                     for name, stats in self.feature_stats.items()
@@ -250,7 +250,7 @@ class ReferenceStatsManager:
 
     def compute_all_stats(
         self,
-        data: Dict[str, np.ndarray],
+        data: dict[str, np.ndarray],
         store_raw: bool = True
     ) -> None:
         """Compute stats for all features in a dictionary."""
@@ -260,16 +260,16 @@ class ReferenceStatsManager:
             except Exception as e:
                 logger.warning(f"Could not compute stats for {feature_name}: {e}")
 
-    def get_reference_data(self, feature_name: str) -> Optional[np.ndarray]:
+    def get_reference_data(self, feature_name: str) -> np.ndarray | None:
         """Get raw reference data for a feature."""
         return self._raw_data.get(feature_name)
 
-    def get_stats(self, feature_name: str) -> Optional[FeatureStats]:
+    def get_stats(self, feature_name: str) -> FeatureStats | None:
         """Get statistics for a feature."""
         return self.feature_stats.get(feature_name)
 
     @property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> list[str]:
         """Get list of feature names with reference stats."""
         return list(self.feature_stats.keys())
 
@@ -308,7 +308,7 @@ class FeatureDriftDetector:
 
     def __init__(
         self,
-        reference_stats_path: Optional[str] = None,
+        reference_stats_path: str | None = None,
         p_value_threshold: float = 0.01,
         window_size: int = 1000,
         min_samples: int = 100
@@ -330,9 +330,9 @@ class FeatureDriftDetector:
         self.reference_manager = ReferenceStatsManager(reference_stats_path)
 
         # Current observation windows (per feature)
-        self._windows: Dict[str, deque] = {}
+        self._windows: dict[str, deque] = {}
         self._drifted_features: set = set()
-        self._last_check_results: List[DriftResult] = []
+        self._last_check_results: list[DriftResult] = []
 
         logger.info(
             f"FeatureDriftDetector initialized: "
@@ -341,7 +341,7 @@ class FeatureDriftDetector:
             f"reference_features={len(self.reference_manager.feature_names)}"
         )
 
-    def set_reference_data(self, data: Dict[str, np.ndarray]) -> None:
+    def set_reference_data(self, data: dict[str, np.ndarray]) -> None:
         """
         Set reference data for drift detection.
 
@@ -359,7 +359,7 @@ class FeatureDriftDetector:
         """Save current reference statistics to file."""
         return self.reference_manager.save_stats(path)
 
-    def add_observation(self, features: Dict[str, float]) -> None:
+    def add_observation(self, features: dict[str, float]) -> None:
         """
         Add a single observation to the sliding windows.
 
@@ -374,7 +374,7 @@ class FeatureDriftDetector:
             if not np.isnan(value):
                 self._windows[feature_name].append(float(value))
 
-    def add_batch(self, features_batch: List[Dict[str, float]]) -> None:
+    def add_batch(self, features_batch: list[dict[str, float]]) -> None:
         """
         Add a batch of observations.
 
@@ -395,7 +395,7 @@ class FeatureDriftDetector:
         else:
             return "high"
 
-    def check_drift_single(self, feature_name: str) -> Optional[DriftResult]:
+    def check_drift_single(self, feature_name: str) -> DriftResult | None:
         """
         Check drift for a single feature.
 
@@ -442,7 +442,7 @@ class FeatureDriftDetector:
             p_value=float(p_value),
             is_drifted=is_drifted,
             drift_severity=severity,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         # Update metrics
@@ -458,7 +458,7 @@ class FeatureDriftDetector:
 
         return result
 
-    def check_drift(self) -> List[DriftResult]:
+    def check_drift(self) -> list[DriftResult]:
         """
         Check drift for all features with sufficient data.
 
@@ -482,7 +482,7 @@ class FeatureDriftDetector:
 
         return results
 
-    def get_drifted_features(self) -> List[str]:
+    def get_drifted_features(self) -> list[str]:
         """Get list of features currently in drift state."""
         return list(self._drifted_features)
 
@@ -504,7 +504,7 @@ class FeatureDriftDetector:
             overall_score = 0.0
 
         return DriftReport(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             features_checked=len(results),
             features_drifted=drifted_count,
             drift_results=results,
@@ -519,7 +519,7 @@ class FeatureDriftDetector:
         logger.info("Drift detector windows reset")
 
     @property
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         """Get current detector status."""
         window_sizes = {
             name: len(window)
@@ -543,7 +543,7 @@ class FeatureDriftDetector:
 # =============================================================================
 
 def create_drift_detector(
-    reference_stats_path: Optional[str] = None,
+    reference_stats_path: str | None = None,
     p_value_threshold: float = 0.01,
     window_size: int = 1000
 ) -> FeatureDriftDetector:
@@ -567,7 +567,7 @@ def create_drift_detector(
 
 def compute_reference_stats_from_dataframe(
     df,
-    feature_columns: List[str],
+    feature_columns: list[str],
     output_path: str
 ) -> ReferenceStatsManager:
     """
@@ -607,7 +607,7 @@ class MultivariateDriftResult:
     threshold: float
     is_drifted: bool
     drift_severity: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 class MultivariateDriftDetector:
@@ -670,11 +670,11 @@ class MultivariateDriftDetector:
         self.pca_variance_threshold = pca_variance_threshold
 
         # Reference data
-        self._reference_data: Optional[np.ndarray] = None
-        self._reference_mean: Optional[np.ndarray] = None
-        self._reference_cov: Optional[np.ndarray] = None
-        self._pca_components: Optional[np.ndarray] = None
-        self._pca_mean: Optional[np.ndarray] = None
+        self._reference_data: np.ndarray | None = None
+        self._reference_mean: np.ndarray | None = None
+        self._reference_cov: np.ndarray | None = None
+        self._pca_components: np.ndarray | None = None
+        self._pca_mean: np.ndarray | None = None
 
         # Current window
         self._current_window: deque = deque(maxlen=window_size)
@@ -779,7 +779,7 @@ class MultivariateDriftDetector:
             for obs in observations:
                 self.add_observation(obs)
 
-    def _get_current_data(self) -> Optional[np.ndarray]:
+    def _get_current_data(self) -> np.ndarray | None:
         """Get current window as numpy array."""
         if len(self._current_window) < self.min_samples:
             return None
@@ -797,7 +797,7 @@ class MultivariateDriftDetector:
         ))
         return K.mean()
 
-    def compute_mmd(self) -> Optional[MultivariateDriftResult]:
+    def compute_mmd(self) -> MultivariateDriftResult | None:
         """
         Compute Maximum Mean Discrepancy between reference and current data.
 
@@ -833,7 +833,7 @@ class MultivariateDriftDetector:
         severity = self._get_severity("mmd", mmd)
 
         return MultivariateDriftResult(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             method="mmd",
             score=float(mmd),
             threshold=self.mmd_threshold,
@@ -848,7 +848,7 @@ class MultivariateDriftDetector:
             },
         )
 
-    def compute_wasserstein(self) -> Optional[MultivariateDriftResult]:
+    def compute_wasserstein(self) -> MultivariateDriftResult | None:
         """
         Compute approximate Wasserstein distance.
 
@@ -891,7 +891,7 @@ class MultivariateDriftDetector:
         severity = self._get_severity("wasserstein", avg_wasserstein)
 
         return MultivariateDriftResult(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             method="wasserstein",
             score=float(avg_wasserstein),
             threshold=self.wasserstein_threshold,
@@ -905,7 +905,7 @@ class MultivariateDriftDetector:
             },
         )
 
-    def compute_pca_reconstruction_error(self) -> Optional[MultivariateDriftResult]:
+    def compute_pca_reconstruction_error(self) -> MultivariateDriftResult | None:
         """
         Compute PCA reconstruction error for drift detection.
 
@@ -950,7 +950,7 @@ class MultivariateDriftDetector:
         severity = self._get_severity("pca_reconstruction", z_score)
 
         return MultivariateDriftResult(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             method="pca_reconstruction",
             score=float(z_score),
             threshold=pca_threshold,
@@ -978,8 +978,8 @@ class MultivariateDriftDetector:
 
     def check_multivariate_drift(
         self,
-        methods: Optional[List[str]] = None
-    ) -> Dict[str, MultivariateDriftResult]:
+        methods: list[str] | None = None
+    ) -> dict[str, MultivariateDriftResult]:
         """
         Run all multivariate drift detection methods.
 
@@ -1011,7 +1011,7 @@ class MultivariateDriftDetector:
 
         return results
 
-    def get_aggregate_drift_score(self) -> Dict[str, Any]:
+    def get_aggregate_drift_score(self) -> dict[str, Any]:
         """
         Get aggregate drift score combining all methods.
 
@@ -1036,7 +1036,7 @@ class MultivariateDriftDetector:
 
         return {
             "status": "checked",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "methods_checked": len(results),
             "any_drifted": any_drifted,
             "max_severity": max_severity,
@@ -1056,7 +1056,7 @@ class MultivariateDriftDetector:
         self._current_window.clear()
 
     @property
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         """Get detector status."""
         return {
             "n_features": self.n_features,

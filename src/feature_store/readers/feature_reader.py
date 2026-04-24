@@ -33,9 +33,8 @@ Created: 2026-01-17
 
 import hashlib
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from datetime import datetime
 
 import numpy as np
 
@@ -62,7 +61,7 @@ class FeatureResult:
     timestamp: datetime
     age_minutes: float
     norm_stats_hash: str
-    raw_features: Dict[str, float]
+    raw_features: dict[str, float]
     source: str = "l1_pipeline"
 
     def __post_init__(self):
@@ -85,7 +84,7 @@ class FeatureResult:
             return False
         return True
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
@@ -147,7 +146,7 @@ class FeatureReader:
     """
 
     # Default feature order from feature_store.core
-    DEFAULT_FEATURE_ORDER: Tuple[str, ...] = (
+    DEFAULT_FEATURE_ORDER: tuple[str, ...] = (
         "log_ret_5m", "log_ret_1h", "log_ret_4h",
         "rsi_9", "atr_pct", "adx_14",
         "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
@@ -157,7 +156,7 @@ class FeatureReader:
 
     def __init__(
         self,
-        feature_order: Optional[Tuple[str, ...]] = None,
+        feature_order: tuple[str, ...] | None = None,
         default_position: float = 0.0,
         default_time_normalized: float = 0.5,
     ):
@@ -188,7 +187,7 @@ class FeatureReader:
         )
 
     @property
-    def feature_order(self) -> Tuple[str, ...]:
+    def feature_order(self) -> tuple[str, ...]:
         """Get the feature order tuple."""
         return self._feature_order
 
@@ -200,9 +199,10 @@ class FeatureReader:
     def _compute_norm_stats_hash(self) -> str:
         """Compute hash of normalization stats for parity validation."""
         try:
-            from src.feature_store.core import NORM_STATS_PATH
-            from pathlib import Path
             import json
+            from pathlib import Path
+
+            from src.feature_store.core import NORM_STATS_PATH
 
             # Find norm stats file
             path = Path(NORM_STATS_PATH)
@@ -223,11 +223,11 @@ class FeatureReader:
     def get_latest_features(
         self,
         symbol: str,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
         max_age_minutes: float = 10.0,
-        position: Optional[float] = None,
-        time_normalized: Optional[float] = None,
-    ) -> Optional[FeatureResult]:
+        position: float | None = None,
+        time_normalized: float | None = None,
+    ) -> FeatureResult | None:
         """
         Get the latest features for inference.
 
@@ -331,7 +331,7 @@ class FeatureReader:
             finally:
                 cur.close()
 
-    def _validate_feature_order(self, features_dict: Dict[str, float]) -> bool:
+    def _validate_feature_order(self, features_dict: dict[str, float]) -> bool:
         """
         Validate that all required features are present.
 
@@ -352,7 +352,7 @@ class FeatureReader:
 
         return True
 
-    def _build_observation(self, raw_features: Dict[str, float]) -> np.ndarray:
+    def _build_observation(self, raw_features: dict[str, float]) -> np.ndarray:
         """
         Build observation array from raw features in FEATURE_ORDER.
 
@@ -391,7 +391,7 @@ class FeatureReader:
         start_time: datetime,
         end_time: datetime,
         limit: int = 1000,
-    ) -> List[FeatureResult]:
+    ) -> list[FeatureResult]:
         """
         Get historical features for a time range.
 
@@ -477,7 +477,7 @@ class FeatureReader:
         self,
         symbol: str,
         max_age_minutes: float = 10.0,
-    ) -> Tuple[bool, float, Optional[datetime]]:
+    ) -> tuple[bool, float, datetime | None]:
         """
         Check if features are fresh enough for inference.
 

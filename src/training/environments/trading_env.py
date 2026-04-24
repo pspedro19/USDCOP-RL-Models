@@ -22,14 +22,15 @@ Clean Code:
 - Comprehensive docstrings
 """
 
+import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Optional, Protocol
+
+import gymnasium as gym
 import numpy as np
 import pandas as pd
-import gymnasium as gym
 from gymnasium import spaces
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any, Protocol
-from enum import Enum
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def _load_pipeline_config():
         return None
 
 
-def _get_default_core_features() -> List[str]:
+def _get_default_core_features() -> list[str]:
     """Get core (market) features from pipeline SSOT or fallback."""
     config = _load_pipeline_config()
     if config:
@@ -69,7 +70,7 @@ def _get_default_core_features() -> List[str]:
     ]
 
 
-def _get_default_state_features() -> List[str]:
+def _get_default_state_features() -> list[str]:
     """Get state features from pipeline SSOT or fallback."""
     config = _load_pipeline_config()
     if config:
@@ -154,7 +155,7 @@ class StepResult:
     reward: float
     terminated: bool
     truncated: bool
-    info: Dict[str, Any]
+    info: dict[str, Any]
 
 
 # =============================================================================
@@ -225,7 +226,7 @@ class TradingEnvConfig:
 
     # Observation settings - V22: 28 features (19 market + 9 state)
     observation_dim: int = 28
-    clip_range: Tuple[float, float] = (-5.0, 5.0)
+    clip_range: tuple[float, float] = (-5.0, 5.0)
 
     # V22 P2: Action space configuration
     action_type: str = "discrete"  # "discrete" or "continuous"
@@ -259,15 +260,15 @@ class TradingEnvConfig:
 
     # Stop mode strategy: "fixed_pct" (default) or "atr_dynamic"
     stop_mode: str = "fixed_pct"
-    atr_stop: Dict[str, Any] = field(default_factory=dict)
+    atr_stop: dict[str, Any] = field(default_factory=dict)
 
     # Action interpretation: "threshold_3" (default) or "zone_5"
     action_interpretation: str = "threshold_3"
-    zone_5_config: Dict[str, Any] = field(default_factory=dict)
+    zone_5_config: dict[str, Any] = field(default_factory=dict)
 
     # Feature configuration - reads from experiment SSOT when available
-    core_features: List[str] = field(default_factory=lambda: _get_default_core_features())
-    state_features: List[str] = field(default_factory=lambda: _get_default_state_features())
+    core_features: list[str] = field(default_factory=lambda: _get_default_core_features())
+    state_features: list[str] = field(default_factory=lambda: _get_default_state_features())
 
     def __post_init__(self):
         """Validate configuration"""
@@ -324,8 +325,8 @@ class RewardStrategyAdapter:
             reward_config: Optional RewardConfig for customization
             enable_curriculum: Enable curriculum learning phases
         """
-        from ..reward_calculator import ModularRewardCalculator
         from ..config import RewardConfig
+        from ..reward_calculator import ModularRewardCalculator
 
         config = reward_config or RewardConfig()
         self._calculator = ModularRewardCalculator(
@@ -341,7 +342,7 @@ class RewardStrategyAdapter:
         self._last_action: int = 0
 
         # Track volatility for regime detection
-        self._volatility_window: List[float] = []
+        self._volatility_window: list[float] = []
         self._volatility_window_size = 20
 
     def calculate(
@@ -352,10 +353,10 @@ class RewardStrategyAdapter:
         market_return: float,
         step_count: int,
         episode_length: int,
-        volatility: Optional[float] = None,
+        volatility: float | None = None,
         hour_utc: int = 12,
         is_overnight: bool = False,
-        oil_return: Optional[float] = None,
+        oil_return: float | None = None,
         spread_bid_ask: float = 0.0,
         close_reason: str = "",
         forecast_direction: int = 0,
@@ -460,16 +461,16 @@ class RewardStrategyAdapter:
         self._calculator.reset()
 
     @property
-    def curriculum_phase(self) -> Optional[str]:
+    def curriculum_phase(self) -> str | None:
         """Get current curriculum phase."""
         return self._calculator.get_curriculum_phase()
 
     @property
-    def curriculum_stats(self) -> Optional[Dict[str, Any]]:
+    def curriculum_stats(self) -> dict[str, Any] | None:
         """Get curriculum statistics."""
         return self._calculator.get_curriculum_stats()
 
-    def get_reward_breakdown(self) -> Optional[Dict[str, float]]:
+    def get_reward_breakdown(self) -> dict[str, float] | None:
         """Get the breakdown of the last reward calculation."""
         last_breakdown = getattr(self._calculator, '_last_breakdown', None)
         if last_breakdown:
@@ -491,7 +492,7 @@ class ModularRewardStrategyAdapter(RewardStrategyAdapter):
         self,
         reward_config: Optional["RewardConfig"] = None,
         enable_curriculum: bool = True,
-        on_phase_change: Optional[callable] = None,
+        on_phase_change: callable | None = None,
     ):
         """
         Initialize modular reward strategy adapter.
@@ -503,7 +504,7 @@ class ModularRewardStrategyAdapter(RewardStrategyAdapter):
         """
         super().__init__(reward_config, enable_curriculum)
         self._on_phase_change = on_phase_change
-        self._regime_history: List[str] = []
+        self._regime_history: list[str] = []
 
     def step(self) -> bool:
         """
@@ -521,7 +522,7 @@ class ModularRewardStrategyAdapter(RewardStrategyAdapter):
             return True
         return False
 
-    def get_regime_distribution(self) -> Dict[str, int]:
+    def get_regime_distribution(self) -> dict[str, int]:
         """Get distribution of regimes seen during training."""
         from collections import Counter
         return dict(Counter(self._regime_history))
@@ -548,7 +549,7 @@ class DefaultRewardStrategy:
         loss_multiplier: float = 1.2,  # FIX: 2.0→1.2 (less aggressive loss penalty)
         trade_penalty: float = 0.01,
         profit_bonus: float = 0.0,  # Disabled (was counterproductive)
-        clip_range: Tuple[float, float] = (-5.0, 5.0),
+        clip_range: tuple[float, float] = (-5.0, 5.0),
     ):
         self.pnl_scale = pnl_scale
         self.loss_multiplier = loss_multiplier
@@ -608,10 +609,10 @@ class EnvObservationBuilder:
 
     def __init__(
         self,
-        norm_stats: Dict[str, Dict[str, float]],
-        core_features: List[str],
-        state_features: List[str],
-        clip_range: Tuple[float, float] = (-5.0, 5.0),
+        norm_stats: dict[str, dict[str, float]],
+        core_features: list[str],
+        state_features: list[str],
+        clip_range: tuple[float, float] = (-5.0, 5.0),
     ):
         self.norm_stats = norm_stats
         self.core_features = core_features
@@ -623,7 +624,7 @@ class EnvObservationBuilder:
     def build(
         self,
         feature_values: np.ndarray,
-        state_values: Dict[str, float],
+        state_values: dict[str, float],
     ) -> np.ndarray:
         """
         Build observation vector.
@@ -718,12 +719,12 @@ class TradingEnvironment(gym.Env):
     def __init__(
         self,
         df: pd.DataFrame,
-        norm_stats: Dict[str, Dict[str, float]],
+        norm_stats: dict[str, dict[str, float]],
         config: TradingEnvConfig,
-        reward_strategy: Optional[RewardStrategy] = None,
+        reward_strategy: RewardStrategy | None = None,
         stop_strategy: Optional["StopStrategy"] = None,
         action_interpreter: Optional["ActionInterpreter"] = None,
-        forecast_signals: Optional[Dict[str, Tuple[int, float]]] = None,
+        forecast_signals: dict[str, tuple[int, float]] | None = None,
     ):
         """
         Initialize trading environment.
@@ -813,7 +814,7 @@ class TradingEnvironment(gym.Env):
         )
 
         # State (initialized in reset)
-        self._portfolio: Optional[PortfolioState] = None
+        self._portfolio: PortfolioState | None = None
         self._current_idx: int = 0
         self._start_idx: int = 0
         self._step_count: int = 0
@@ -879,9 +880,9 @@ class TradingEnvironment(gym.Env):
 
     def reset(
         self,
-        seed: Optional[int] = None,
-        options: Optional[Dict] = None,
-    ) -> Tuple[np.ndarray, Dict]:
+        seed: int | None = None,
+        options: dict | None = None,
+    ) -> tuple[np.ndarray, dict]:
         """
         Reset environment to initial state.
 
@@ -940,7 +941,7 @@ class TradingEnvironment(gym.Env):
 
         return observation, info
 
-    def step(self, action) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+    def step(self, action) -> tuple[np.ndarray, float, bool, bool, dict]:
         """
         Execute one decision step, advancing decision_interval bars.
 
@@ -979,7 +980,7 @@ class TradingEnvironment(gym.Env):
         info['decision_bars_processed'] = bars_processed
         return obs, total_reward, terminated, truncated, info
 
-    def _step_single(self, action) -> Tuple[np.ndarray, float, bool, bool, Dict]:
+    def _step_single(self, action) -> tuple[np.ndarray, float, bool, bool, dict]:
         """
         Execute one single-bar step in the environment.
 
@@ -1028,10 +1029,7 @@ class TradingEnvironment(gym.Env):
             forecast_dir, _ = self._get_current_forecast()
             if forecast_dir != 0:
                 # Block LONG when forecast is SHORT
-                if forecast_dir == -1 and target_action == TradingAction.LONG:
-                    target_action = TradingAction.HOLD
-                # Block SHORT when forecast is LONG
-                elif forecast_dir == 1 and target_action == TradingAction.SHORT:
+                if (forecast_dir == -1 and target_action == TradingAction.LONG) or (forecast_dir == 1 and target_action == TradingAction.SHORT):
                     target_action = TradingAction.HOLD
 
         # V22 P2: Handle CLOSE action (flatten position)
@@ -1093,7 +1091,7 @@ class TradingEnvironment(gym.Env):
                 flatten_cost = self._execute_flatten()
                 net_pnl -= flatten_cost
                 self._trailing_stop_triggered_count += 1
-                logger.info(f"[TRAILING-STOP] Position closed")
+                logger.info("[TRAILING-STOP] Position closed")
 
         # PHASE 4: Check for voluntary profitable exit (agent chose to exit with profit)
         if was_in_position and position_changed and target_action == TradingAction.HOLD:
@@ -1241,7 +1239,7 @@ class TradingEnvironment(gym.Env):
         self._last_position_size = size
         return action
 
-    def _map_discrete_action(self, action: int) -> Tuple[TradingAction, bool]:
+    def _map_discrete_action(self, action: int) -> tuple[TradingAction, bool]:
         """
         V22 P2: Map Discrete(4) action to TradingAction + close flag.
 
@@ -1267,7 +1265,7 @@ class TradingEnvironment(gym.Env):
             return TradingAction.HOLD, True
         return TradingAction.HOLD, False
 
-    def _execute_action(self, target_action: TradingAction) -> Tuple[bool, float]:
+    def _execute_action(self, target_action: TradingAction) -> tuple[bool, float]:
         """
         Execute trading action.
 
@@ -1669,7 +1667,7 @@ class TradingEnvironment(gym.Env):
             state_values=state_values,
         )
 
-    def _get_current_forecast(self) -> Tuple[int, float]:
+    def _get_current_forecast(self) -> tuple[int, float]:
         """Get forecast direction and leverage for current bar's date.
 
         Returns:
@@ -1710,7 +1708,7 @@ class TradingEnvironment(gym.Env):
                 # Use first bar's feature as proxy
                 self._session_open_price = 0.0
 
-    def _get_info(self) -> Dict[str, Any]:
+    def _get_info(self) -> dict[str, Any]:
         """Get current info dictionary"""
         info = {
             "equity": self._portfolio.equity,
@@ -1738,7 +1736,7 @@ class TradingEnvironment(gym.Env):
 
         return info
 
-    def render(self, mode: str = "human") -> Optional[np.ndarray]:
+    def render(self, mode: str = "human") -> np.ndarray | None:
         """Render environment state"""
         if mode == "human":
             info = self._get_info()

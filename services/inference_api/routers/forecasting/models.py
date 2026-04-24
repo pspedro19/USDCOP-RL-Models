@@ -7,17 +7,16 @@ Endpoints for ML model information and metrics.
 @version 1.0.0
 """
 
-from fastapi import APIRouter, Query, HTTPException, Path
-from typing import Optional, List, Dict, Any
-import pandas as pd
-import os
 import logging
+import os
+
+import pandas as pd
+from fastapi import APIRouter, HTTPException, Path, Query
 
 from services.inference_api.contracts.forecasting import (
-    ModelListResponse,
-    ModelDetailResponse,
-    ModelRankingResponse,
     ModelInfo,
+    ModelListResponse,
+    ModelRankingResponse,
     ModelType,
 )
 
@@ -94,7 +93,7 @@ MODEL_DEFINITIONS = {
 DATA_PATH = os.environ.get('FORECASTING_DATA_PATH', 'data/processed')
 
 
-def get_csv_data() -> Optional[pd.DataFrame]:
+def get_csv_data() -> pd.DataFrame | None:
     """Load CSV data."""
     possible_paths = [
         os.path.join(DATA_PATH, 'bi', 'bi_dashboard_unified.csv'),
@@ -243,7 +242,7 @@ async def compare_model(
 )
 async def get_model_rankings(
     metric: str = Query("direction_accuracy", description="Metric to rank by"),
-    horizon: Optional[int] = Query(None, ge=1, le=60, description="Filter by horizon"),
+    horizon: int | None = Query(None, ge=1, le=60, description="Filter by horizon"),
 ):
     """Get ranked list of models by specified metric."""
     df = get_csv_data()

@@ -23,25 +23,23 @@ Date: 2026-01-19
 Contract: CTR-REWARD-REGISTRY-001
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Tuple, List, Final, Optional, Any, FrozenSet
+from dataclasses import dataclass
 from enum import Enum
-import hashlib
-import json
+from typing import Any, Final
 
 from src.training.config import (
-    RewardConfig,
-    DSRConfig,
-    SortinoConfig,
-    RegimeConfig,
-    MarketImpactConfig,
-    HoldingDecayConfig,
     AntiGamingConfig,
-    NormalizerConfig,
     BanrepDetectorConfig,
+    CurriculumConfig,
+    DSRConfig,
+    HoldingDecayConfig,
+    MarketImpactConfig,
+    NormalizerConfig,
     OilCorrelationConfig,
     PnLTransformConfig,
-    CurriculumConfig,
+    RegimeConfig,
+    RewardConfig,
+    SortinoConfig,
 )
 
 
@@ -73,11 +71,11 @@ class RewardContract:
     name: str
     description: str
     config: RewardConfig
-    enabled_components: FrozenSet[str]
+    enabled_components: frozenset[str]
     contract_type: RewardContractType = RewardContractType.EXPERIMENT
     is_production: bool = False
     deprecated: bool = False
-    superseded_by: Optional[str] = None
+    superseded_by: str | None = None
 
     @property
     def hash(self) -> str:
@@ -89,7 +87,7 @@ class RewardContract:
         """Number of enabled components."""
         return len(self.enabled_components)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize contract for logging/MLflow."""
         return {
             "contract_id": self.contract_id,
@@ -104,7 +102,7 @@ class RewardContract:
             "config": self.config.to_dict(),
         }
 
-    def get_component_weights(self) -> Dict[str, float]:
+    def get_component_weights(self) -> dict[str, float]:
         """Get weights for all components."""
         return {
             "pnl": self.config.weight_pnl,
@@ -121,7 +119,7 @@ class RewardContract:
 # =============================================================================
 
 # Full component set
-FULL_COMPONENTS: Final[FrozenSet[str]] = frozenset({
+FULL_COMPONENTS: Final[frozenset[str]] = frozenset({
     "dsr", "sortino", "regime_detector", "market_impact",
     "holding_decay", "gap_risk", "inactivity", "churn",
     "action_correlation", "bias_detector", "pnl_transform",
@@ -129,13 +127,13 @@ FULL_COMPONENTS: Final[FrozenSet[str]] = frozenset({
 })
 
 # Core components (essential for stable training)
-CORE_COMPONENTS: Final[FrozenSet[str]] = frozenset({
+CORE_COMPONENTS: Final[frozenset[str]] = frozenset({
     "dsr", "sortino", "regime_detector", "market_impact",
     "holding_decay", "pnl_transform", "reward_normalizer",
 })
 
 # Minimal components (for ablation studies)
-MINIMAL_COMPONENTS: Final[FrozenSet[str]] = frozenset({
+MINIMAL_COMPONENTS: Final[frozenset[str]] = frozenset({
     "dsr", "pnl_transform",
 })
 
@@ -364,7 +362,7 @@ CONTRACT_V1_3_0 = RewardContract(
 # CONTRACTS REGISTRY
 # =============================================================================
 
-REWARD_CONTRACTS: Final[Dict[str, RewardContract]] = {
+REWARD_CONTRACTS: Final[dict[str, RewardContract]] = {
     "v1.0.0": CONTRACT_V1_0_0,
     "v1.1.0": CONTRACT_V1_1_0,
     "v1.2.0": CONTRACT_V1_2_0,
@@ -417,8 +415,8 @@ def get_production_reward_contract() -> RewardContract:
 
 def validate_reward_contract(
     model_contract_id: str,
-    request_contract_id: Optional[str] = None,
-) -> Tuple[bool, str]:
+    request_contract_id: str | None = None,
+) -> tuple[bool, str]:
     """
     Validate compatibility between model and request reward contracts.
 
@@ -442,7 +440,7 @@ def validate_reward_contract(
     return True, ""
 
 
-def list_reward_contracts() -> List[Dict[str, Any]]:
+def list_reward_contracts() -> list[dict[str, Any]]:
     """List all available reward contracts."""
     return [c.to_dict() for c in REWARD_CONTRACTS.values()]
 
@@ -452,7 +450,7 @@ def create_custom_reward_contract(
     name: str,
     description: str,
     config: RewardConfig,
-    enabled_components: Optional[FrozenSet[str]] = None,
+    enabled_components: frozenset[str] | None = None,
 ) -> RewardContract:
     """
     Create a custom reward contract for experimentation.

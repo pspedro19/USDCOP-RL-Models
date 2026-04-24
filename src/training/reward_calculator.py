@@ -24,50 +24,48 @@ Design Principles:
 - Dependency Injection: Components injected via config
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-import numpy as np
 import logging
+from dataclasses import dataclass
+from typing import Any
 
-from src.training.config import RewardConfig, REWARD_CONFIG
+from src.training.config import REWARD_CONFIG, RewardConfig
 from src.training.curriculum_scheduler import (
-    CurriculumScheduler,
     CurriculumPhase,
+    CurriculumScheduler,
     create_curriculum_scheduler,
 )
 from src.training.reward_components import (
-    # Risk metrics
-    DifferentialSharpeRatio,
-    SortinoCalculator,
-    # Detectors
-    StableRegimeDetector,
-    BanrepInterventionDetector,
-    OilCorrelationTracker,
-    MarketRegime,
     # Market impact
     AlmgrenChrissImpactModel,
-    # Penalties
-    HoldingDecay,
-    GapRiskPenalty,
-    InactivityTracker,
-    ChurnTracker,
+    AsymmetricPnLTransform,
+    BanrepInterventionDetector,
     BiasDetector,
-    # Bonuses (PHASE2)
-    FlatReward,
+    ChurnTracker,
+    ClippedPnLTransform,
     # V22 P2: Close reason reward shaping
     CloseReasonDetector,
+    # Risk metrics
+    DifferentialSharpeRatio,
     # Drawdown penalty (Phase 5)
     DrawdownPenaltyComponent,
     # Execution alpha (EXP-RL-EXECUTOR)
     ExecutionAlphaComponent,
-    # Transforms
-    ZScorePnLTransform,
-    AsymmetricPnLTransform,
-    ClippedPnLTransform,
+    # Bonuses (PHASE2)
+    FlatReward,
+    GapRiskPenalty,
+    # Penalties
+    HoldingDecay,
+    InactivityTracker,
+    MarketRegime,
+    OilCorrelationTracker,
     # Normalizers
     RewardNormalizer,
+    SortinoCalculator,
+    # Detectors
+    StableRegimeDetector,
+    # Transforms
+    ZScorePnLTransform,
     # Base
-    RewardComponent,
     clip_reward,
 )
 
@@ -116,7 +114,7 @@ class RewardBreakdown:
     # Regime info
     current_regime: str = "NORMAL"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging."""
         return {
             "raw_pnl": self.raw_pnl,
@@ -160,7 +158,7 @@ class ModularRewardCalculator:
 
     def __init__(
         self,
-        config: Optional[RewardConfig] = None,
+        config: RewardConfig | None = None,
         enable_curriculum: bool = True,
         verbose: bool = False,
     ):
@@ -179,7 +177,7 @@ class ModularRewardCalculator:
         self._init_components()
 
         # Curriculum scheduler
-        self._curriculum: Optional[CurriculumScheduler] = None
+        self._curriculum: CurriculumScheduler | None = None
         if enable_curriculum and self._config.enable_curriculum:
             self._curriculum = create_curriculum_scheduler(
                 self._config,
@@ -261,7 +259,7 @@ class ModularRewardCalculator:
         )
 
         # Banrep detector (optional)
-        self._banrep: Optional[BanrepInterventionDetector] = None
+        self._banrep: BanrepInterventionDetector | None = None
         if cfg.enable_banrep_detection:
             self._banrep = BanrepInterventionDetector(
                 volatility_spike_zscore=cfg.banrep.volatility_spike_zscore,
@@ -273,7 +271,7 @@ class ModularRewardCalculator:
             )
 
         # Oil correlation (optional)
-        self._oil_tracker: Optional[OilCorrelationTracker] = None
+        self._oil_tracker: OilCorrelationTracker | None = None
         if cfg.enable_oil_tracking:
             self._oil_tracker = OilCorrelationTracker(
                 window_size=cfg.oil_correlation.window_size,
@@ -300,7 +298,7 @@ class ModularRewardCalculator:
         )
 
         # Reward normalizer
-        self._normalizer: Optional[RewardNormalizer] = None
+        self._normalizer: RewardNormalizer | None = None
         if cfg.enable_normalization:
             self._normalizer = RewardNormalizer(
                 decay=cfg.normalizer.decay,
@@ -311,7 +309,7 @@ class ModularRewardCalculator:
             )
 
         # PHASE 3 FIX: Flat reward with decay (anti-reward-hacking)
-        self._flat_reward: Optional[FlatReward] = None
+        self._flat_reward: FlatReward | None = None
         if getattr(cfg, 'enable_flat_reward', False):
             fr_cfg = getattr(cfg, 'flat_reward', None)
             if fr_cfg:
@@ -334,7 +332,7 @@ class ModularRewardCalculator:
             logger.info("[PHASE3] FlatReward component enabled with decay (anti-reward-hacking)")
 
         # Phase 5: Drawdown penalty
-        self._drawdown_penalty: Optional[DrawdownPenaltyComponent] = None
+        self._drawdown_penalty: DrawdownPenaltyComponent | None = None
         try:
             from src.config.pipeline_config import load_pipeline_config
             pipeline_cfg = load_pipeline_config()
@@ -349,7 +347,7 @@ class ModularRewardCalculator:
             pass
 
         # EXP-RL-EXECUTOR: Execution alpha component
-        self._execution_alpha: Optional[ExecutionAlphaComponent] = None
+        self._execution_alpha: ExecutionAlphaComponent | None = None
         try:
             from src.config.pipeline_config import load_pipeline_config
             pipeline_cfg = load_pipeline_config()
@@ -364,7 +362,7 @@ class ModularRewardCalculator:
             pass
 
         # V22 P2: Close reason reward shaping
-        self._close_reason_detector: Optional[CloseReasonDetector] = None
+        self._close_reason_detector: CloseReasonDetector | None = None
         try:
             from src.config.pipeline_config import load_pipeline_config
             pipeline_cfg = load_pipeline_config()
@@ -389,7 +387,7 @@ class ModularRewardCalculator:
         hour_utc: int = 15,
         is_overnight: bool = False,
         is_weekend: bool = False,
-        oil_return: Optional[float] = None,
+        oil_return: float | None = None,
         price_change: float = 0.0,
         close_reason: str = "",
         cumulative_return: float = 0.0,
@@ -397,7 +395,7 @@ class ModularRewardCalculator:
         session_open_price: float = 0.0,
         current_price: float = 0.0,
         has_position: bool = False,
-    ) -> Tuple[float, RewardBreakdown]:
+    ) -> tuple[float, RewardBreakdown]:
         """
         Calculate reward using all components.
 
@@ -686,7 +684,7 @@ class ModularRewardCalculator:
         if self._flat_reward:  # PHASE2
             self._flat_reward.reset_position()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive statistics from all components."""
         stats = {
             "total_steps": self._total_steps,
@@ -727,7 +725,7 @@ class ModularRewardCalculator:
 
         return stats
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get full configuration."""
         return self._config.to_dict()
 
@@ -737,18 +735,18 @@ class ModularRewardCalculator:
         return self._regime_detector.current_regime
 
     @property
-    def curriculum_phase(self) -> Optional[CurriculumPhase]:
+    def curriculum_phase(self) -> CurriculumPhase | None:
         """Get current curriculum phase."""
         if self._curriculum:
             return self._curriculum.current_phase
         return None
 
-    def get_curriculum_phase(self) -> Optional[str]:
+    def get_curriculum_phase(self) -> str | None:
         """Get current curriculum phase as string (for adapter compatibility)."""
         phase = self.curriculum_phase
         return phase.value if phase else None
 
-    def get_curriculum_stats(self) -> Optional[Dict[str, Any]]:
+    def get_curriculum_stats(self) -> dict[str, Any] | None:
         """Get curriculum statistics (for adapter compatibility)."""
         if self._curriculum:
             return self._curriculum.get_stats()
@@ -794,7 +792,7 @@ class LegacyRewardConfig:
 # =============================================================================
 
 def create_reward_calculator(
-    config: Optional[RewardConfig] = None,
+    config: RewardConfig | None = None,
     enable_curriculum: bool = True,
     verbose: bool = False,
 ) -> ModularRewardCalculator:
@@ -821,9 +819,9 @@ def create_reward_calculator(
 # =============================================================================
 
 __all__ = [
-    "ModularRewardCalculator",
-    "RewardCalculator",  # Backward compat
-    "RewardBreakdown",
     "LegacyRewardConfig",
+    "ModularRewardCalculator",
+    "RewardBreakdown",
+    "RewardCalculator",  # Backward compat
     "create_reward_calculator",
 ]

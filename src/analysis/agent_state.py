@@ -7,9 +7,7 @@ Typed state for the LangGraph multi-agent analysis graph.
 from __future__ import annotations
 
 import operator
-from typing import Annotated, Optional, TypedDict
-
-import pandas as pd
+from typing import Annotated, TypedDict
 
 
 class MasterAnalysisState(TypedDict, total=False):
@@ -34,25 +32,25 @@ class MasterAnalysisState(TypedDict, total=False):
     events_calendar: list[dict]    # Economic events
 
     # --- Pre-loaded data (Phase 0: MacroDataPreprocessor) ---
-    macro_digest: Optional[dict]           # MacroDigest from preprocessor
+    macro_digest: dict | None           # MacroDigest from preprocessor
 
     # --- Agent outputs ---
-    ta_report: Optional[dict]
-    mtf_analysis: Optional[dict]
-    news_intelligence: Optional[dict]
-    macro_regime: Optional[dict]
-    fx_context: Optional[dict]
-    political_bias_analysis: Optional[dict]  # Phase 3: Bias detection
+    ta_report: dict | None
+    mtf_analysis: dict | None
+    news_intelligence: dict | None
+    macro_regime: dict | None
+    fx_context: dict | None
+    political_bias_analysis: dict | None  # Phase 3: Bias detection
 
     # --- Synthesis (Reflection loop) ---
-    synthesis_draft: Optional[str]
-    synthesis_critique: Optional[str]
-    synthesis_quality: Optional[float]
+    synthesis_draft: str | None
+    synthesis_critique: str | None
+    synthesis_quality: float | None
     synthesis_revision: int
-    final_report: Optional[str]
+    final_report: str | None
 
     # --- Injected dependencies (not serialized, used by nodes) ---
-    _llm_client: Optional[object]          # Phase 1: Injected LLMClient
+    _llm_client: object | None          # Phase 1: Injected LLMClient
 
     # --- Metadata ---
     # Annotated with operator.add so parallel agents can append concurrently

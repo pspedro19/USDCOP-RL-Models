@@ -4,68 +4,70 @@ Contract-First Design - SSOT for all data structures.
 """
 
 from .auth import (
-    LoginRequest,
-    RegisterRequest,
     AuthToken,
-    TokenRefreshRequest,
+    LoginRequest,
     PasswordChangeRequest,
+    RegisterRequest,
+    TokenRefreshRequest,
 )
-from .user import (
-    UserProfile,
-    UserProfileUpdate,
-    UserCreate,
+from .common import (
+    ErrorResponse,
+    PaginatedResponse,
+    SuccessResponse,
 )
 from .exchange import (
+    ExchangeBalance,
     ExchangeCredentials,
     ExchangeCredentialsCreate,
     ExchangeCredentialsUpdate,
-    ExchangeBalance,
     ExchangeInfo,
     SupportedExchange,
+)
+from .execution import (
+    ExecutionRequest,
+    ExecutionResult,
+    ExecutionStats,
+    ExecutionStatus,
+    OrderSide,
+    OrderType,
+)
+from .signal import (
+    SignalAction,
+    SignalCreate,
+    SignalStats,
+    TradingSignal,
+)
+from .signal_bridge import (
+    APIKeyValidationResult,
+    BridgeEventType,
+    BridgeHealthCheck,
+    BridgeStatistics,
+    BridgeStatus,
+    ExecutionAuditEvent,
+    InferenceAction,
+    InferenceSignalCreate,
+    KillSwitchRequest,
+    ManualSignalCreate,
+    RiskCheckResult,
+    RiskDecision,
+    RiskReason,
+    TradingMode,
+    UserRiskLimits,
+    UserRiskLimitsCreate,
+    UserRiskLimitsUpdate,
+)
+from .signal_bridge import (
+    ExecutionResult as BridgeExecutionResult,
 )
 from .trading import (
     TradingConfig,
     TradingConfigUpdate,
     TradingStatus,
 )
-from .signal import (
-    TradingSignal,
-    SignalCreate,
-    SignalAction,
-    SignalStats,
-)
-from .execution import (
-    ExecutionRequest,
-    ExecutionResult,
-    ExecutionStatus,
-    ExecutionStats,
-    OrderType,
-    OrderSide,
-)
-from .common import (
-    PaginatedResponse,
-    SuccessResponse,
-    ErrorResponse,
-)
-from .signal_bridge import (
-    InferenceSignalCreate,
-    ManualSignalCreate,
-    ExecutionResult as BridgeExecutionResult,
-    BridgeStatus,
-    BridgeHealthCheck,
-    BridgeStatistics,
-    RiskCheckResult,
-    RiskDecision,
-    RiskReason,
-    TradingMode,
-    KillSwitchRequest,
-    UserRiskLimits,
-    UserRiskLimitsCreate,
-    UserRiskLimitsUpdate,
-    ExecutionAuditEvent,
-    BridgeEventType,
-    InferenceAction,
-    APIKeyValidationResult,
+from .user import (
+    UserCreate,
+    UserProfile,
+    UserProfileUpdate,
 )
 
 __all__ = [

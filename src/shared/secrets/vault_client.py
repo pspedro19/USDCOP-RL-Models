@@ -15,15 +15,15 @@ Version: 1.0.0
 Date: 2026-01-17
 """
 
+import logging
 import os
 import sys
-import time
-import logging
 import threading
-from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+import time
 from dataclasses import dataclass, field
 from functools import wraps
+from pathlib import Path
+from typing import Any, Optional
 
 # Flexible import for exceptions
 try:
@@ -73,7 +73,7 @@ class CachedSecret:
     value: Any
     expires_at: float
     path: str
-    key: Optional[str] = None
+    key: str | None = None
 
     def is_expired(self) -> bool:
         """Check if the cached secret has expired."""
@@ -90,11 +90,11 @@ class VaultConfig:
     auth_method: str = field(default_factory=lambda: os.environ.get("VAULT_AUTH_METHOD", "approle"))
 
     # AppRole credentials
-    role_id: Optional[str] = field(default_factory=lambda: os.environ.get("VAULT_ROLE_ID"))
-    secret_id: Optional[str] = field(default_factory=lambda: os.environ.get("VAULT_SECRET_ID"))
+    role_id: str | None = field(default_factory=lambda: os.environ.get("VAULT_ROLE_ID"))
+    secret_id: str | None = field(default_factory=lambda: os.environ.get("VAULT_SECRET_ID"))
 
     # Token authentication
-    token: Optional[str] = field(default_factory=lambda: os.environ.get("VAULT_TOKEN"))
+    token: str | None = field(default_factory=lambda: os.environ.get("VAULT_TOKEN"))
 
     # KV v2 secrets mount path
     mount_path: str = field(default_factory=lambda: os.environ.get("VAULT_MOUNT_PATH", "secret"))
@@ -157,16 +157,16 @@ class VaultClient:
     _instance: Optional["VaultClient"] = None
     _lock = threading.Lock()
 
-    def __new__(cls, config: Optional[VaultConfig] = None) -> "VaultClient":
+    def __new__(cls, config: VaultConfig | None = None) -> "VaultClient":
         """Thread-safe singleton pattern."""
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(VaultClient, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, config: Optional[VaultConfig] = None):
+    def __init__(self, config: VaultConfig | None = None):
         """
         Initialize the Vault client.
 
@@ -178,12 +178,12 @@ class VaultClient:
 
         self.config = config or VaultConfig()
         self._client = None
-        self._token: Optional[str] = None
-        self._token_ttl: Optional[int] = None
-        self._token_expires_at: Optional[float] = None
-        self._cache: Dict[str, CachedSecret] = {}
+        self._token: str | None = None
+        self._token_ttl: int | None = None
+        self._token_expires_at: float | None = None
+        self._cache: dict[str, CachedSecret] = {}
         self._cache_lock = threading.RLock()
-        self._renewal_timer: Optional[threading.Timer] = None
+        self._renewal_timer: threading.Timer | None = None
         self._vault_available: bool = False
 
         # Try to initialize Vault connection
@@ -306,7 +306,7 @@ class VaultClient:
         )
 
         try:
-            with open(jwt_path, "r") as f:
+            with open(jwt_path) as f:
                 jwt = f.read().strip()
 
             response = self._client.auth.kubernetes.login(
@@ -365,7 +365,7 @@ class VaultClient:
                 logger.error(f"Re-authentication failed: {auth_e}")
                 self._vault_available = False
 
-    def _get_from_cache(self, cache_key: str) -> Optional[Any]:
+    def _get_from_cache(self, cache_key: str) -> Any | None:
         """Get a value from cache if not expired."""
         with self._cache_lock:
             cached = self._cache.get(cache_key)
@@ -377,7 +377,7 @@ class VaultClient:
                 del self._cache[cache_key]
         return None
 
-    def _set_in_cache(self, cache_key: str, value: Any, path: str, key: Optional[str] = None) -> None:
+    def _set_in_cache(self, cache_key: str, value: Any, path: str, key: str | None = None) -> None:
         """Store a value in cache with TTL."""
         with self._cache_lock:
             self._cache[cache_key] = CachedSecret(
@@ -388,7 +388,7 @@ class VaultClient:
             )
             logger.debug(f"Cached {cache_key} for {self.config.cache_ttl}s")
 
-    def _read_kv_secret(self, path: str) -> Dict[str, Any]:
+    def _read_kv_secret(self, path: str) -> dict[str, Any]:
         """
         Read a secret from KV v2 secrets engine.
 
@@ -428,7 +428,7 @@ class VaultClient:
                 error_code="READ_FAILED"
             )
 
-    def _get_env_fallback(self, path: str, key: str) -> Optional[str]:
+    def _get_env_fallback(self, path: str, key: str) -> str | None:
         """
         Get secret value from environment variable as fallback.
 
@@ -500,7 +500,7 @@ class VaultClient:
 
         return None
 
-    def get_secret(self, path: str, key: Optional[str] = None) -> Any:
+    def get_secret(self, path: str, key: str | None = None) -> Any:
         """
         Get a secret from Vault with caching and environment fallback.
 
@@ -558,7 +558,7 @@ class VaultClient:
             error_code="NOT_FOUND"
         )
 
-    def get_twelvedata_key(self, index: int, group: Optional[str] = None) -> str:
+    def get_twelvedata_key(self, index: int, group: str | None = None) -> str:
         """
         Get a TwelveData API key by index.
 
@@ -585,7 +585,7 @@ class VaultClient:
 
         return self.get_secret(path, key)
 
-    def get_all_twelvedata_keys(self) -> Dict[str, str]:
+    def get_all_twelvedata_keys(self) -> dict[str, str]:
         """
         Get all available TwelveData API keys.
 
@@ -624,7 +624,7 @@ class VaultClient:
         """
         return self.get_secret("trading/database", "password")
 
-    def get_database_config(self) -> Dict[str, Any]:
+    def get_database_config(self) -> dict[str, Any]:
         """
         Get full database configuration.
 
@@ -676,7 +676,7 @@ class VaultClient:
         """Get Redis password."""
         return self.get_secret("trading/redis", "password")
 
-    def get_redis_config(self) -> Dict[str, Any]:
+    def get_redis_config(self) -> dict[str, Any]:
         """
         Get full Redis configuration.
 
@@ -703,7 +703,7 @@ class VaultClient:
         """Get JWT signing secret."""
         return self.get_secret("trading/jwt", "secret")
 
-    def get_minio_credentials(self) -> Tuple[str, str]:
+    def get_minio_credentials(self) -> tuple[str, str]:
         """
         Get MinIO credentials.
 
@@ -714,7 +714,7 @@ class VaultClient:
         secret_key = self.get_secret("trading/minio", "secret_key")
         return access_key, secret_key
 
-    def get_airflow_credentials(self) -> Dict[str, str]:
+    def get_airflow_credentials(self) -> dict[str, str]:
         """
         Get Airflow configuration secrets.
 
@@ -744,7 +744,7 @@ class VaultClient:
         """
         return self.get_secret(f"trading/llm/{provider.lower()}", "api_key")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Perform health check on Vault connection.
 
@@ -784,7 +784,7 @@ class VaultClient:
 
         return health
 
-    def clear_cache(self, path: Optional[str] = None) -> int:
+    def clear_cache(self, path: str | None = None) -> int:
         """
         Clear cached secrets.
 
@@ -826,7 +826,7 @@ class VaultClient:
         self.close()
 
 
-def get_vault_client(config: Optional[VaultConfig] = None) -> VaultClient:
+def get_vault_client(config: VaultConfig | None = None) -> VaultClient:
     """
     Get the global VaultClient singleton instance.
 

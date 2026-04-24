@@ -9,8 +9,7 @@ rather than discovering issues mid-backtest.
 import datetime as dt
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
-import pandas as pd
+
 from sqlalchemy import create_engine, text
 
 
@@ -27,8 +26,8 @@ class ValidationIssue:
     severity: ValidationSeverity
     category: str
     message: str
-    affected_dates: Optional[Tuple[dt.date, dt.date]] = None
-    recommendation: Optional[str] = None
+    affected_dates: tuple[dt.date, dt.date] | None = None
+    recommendation: str | None = None
 
 
 @dataclass(frozen=True)
@@ -36,7 +35,7 @@ class BacktestDataValidationResult:
     """Complete validation result - immutable for safety."""
     is_valid: bool
     validation_time: dt.datetime
-    date_range: Tuple[dt.date, dt.date]
+    date_range: tuple[dt.date, dt.date]
 
     # Data counts
     ohlcv_rows: int
@@ -48,14 +47,14 @@ class BacktestDataValidationResult:
     macro_coverage_pct: float
 
     # Issues found
-    issues: Tuple[ValidationIssue, ...]
+    issues: tuple[ValidationIssue, ...]
 
     @property
-    def blocking_issues(self) -> List[ValidationIssue]:
+    def blocking_issues(self) -> list[ValidationIssue]:
         return [i for i in self.issues if i.severity == ValidationSeverity.BLOCKING]
 
     @property
-    def warnings(self) -> List[ValidationIssue]:
+    def warnings(self) -> list[ValidationIssue]:
         return [i for i in self.issues if i.severity == ValidationSeverity.WARNING]
 
 

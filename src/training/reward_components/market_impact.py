@@ -17,11 +17,12 @@ Reference:
     Journal of Risk, 3, 5-40.
 """
 
-import numpy as np
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, Tuple
+from typing import Any
 
-from .base import RewardComponent, ComponentType, ICostModel, MarketRegime
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 @dataclass
@@ -33,7 +34,7 @@ class MarketImpactResult:
     temporary_impact_bps: float
     volatility_impact_bps: float
 
-    def to_dict(self) -> Dict[str, float]:
+    def to_dict(self) -> dict[str, float]:
         """Convert to dictionary."""
         return {
             "total_cost_bps": self.total_cost_bps,
@@ -68,7 +69,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
 
     # Default spread by hour (UTC) for USD/COP
     # Colombia trading hours: 8:00-13:00 COT = 13:00-18:00 UTC
-    DEFAULT_SPREAD_BY_HOUR: Dict[int, int] = {
+    DEFAULT_SPREAD_BY_HOUR: dict[int, int] = {
         13: 120,  # 8:00 COT - Pre-market, wide spread
         14: 90,   # 9:00 COT - Apertura
         15: 75,   # 10:00 COT - Peak liquidity
@@ -78,7 +79,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
     }
 
     # Cost multipliers by regime
-    DEFAULT_REGIME_MULTIPLIERS: Dict[str, float] = {
+    DEFAULT_REGIME_MULTIPLIERS: dict[str, float] = {
         "LOW_VOL": 0.8,
         "NORMAL": 1.0,
         "HIGH_VOL": 1.3,
@@ -87,8 +88,8 @@ class AlmgrenChrissImpactModel(RewardComponent):
 
     def __init__(
         self,
-        spread_by_hour: Optional[Dict[int, int]] = None,
-        regime_multipliers: Optional[Dict[str, float]] = None,
+        spread_by_hour: dict[int, int] | None = None,
+        regime_multipliers: dict[str, float] | None = None,
         permanent_impact_coef: float = 0.1,
         temporary_impact_coef: float = 0.3,
         volatility_impact_coef: float = 0.15,
@@ -121,7 +122,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         self._default_spread_bps = default_spread_bps
 
         # Last calculation result for detailed analysis
-        self._last_result: Optional[MarketImpactResult] = None
+        self._last_result: MarketImpactResult | None = None
 
     @property
     def name(self) -> str:
@@ -136,7 +137,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         hour_utc: int = 15,
         regime: str = "NORMAL",
         volatility: float = 0.01,
-        order_size_fraction: Optional[float] = None,
+        order_size_fraction: float | None = None,
         execution_time_bars: int = 1,
         **kwargs
     ) -> float:
@@ -175,7 +176,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         hour_utc: int,
         regime: str = "NORMAL",
         volatility: float = 0.01,
-        order_size_fraction: Optional[float] = None,
+        order_size_fraction: float | None = None,
         execution_time_bars: int = 1,
     ) -> MarketImpactResult:
         """
@@ -253,7 +254,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         """Reset state (stateless model, but interface compliance)."""
         self._last_result = None
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -268,7 +269,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
 
@@ -284,7 +285,7 @@ class AlmgrenChrissImpactModel(RewardComponent):
         return stats
 
     @property
-    def last_result(self) -> Optional[MarketImpactResult]:
+    def last_result(self) -> MarketImpactResult | None:
         """Get last calculation result."""
         return self._last_result
 

@@ -28,12 +28,13 @@ This component provides:
     - Signal for potential regime shifts
 """
 
-import numpy as np
 from collections import deque
-from typing import Dict, Any, Optional, Tuple
 from enum import Enum
+from typing import Any
 
-from .base import RewardComponent, ComponentType
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 class OilCorrelationState(Enum):
@@ -246,7 +247,7 @@ class OilCorrelationTracker(RewardComponent):
         self._current_state = OilCorrelationState.INSUFFICIENT_DATA
         self._current_correlation = 0.0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -258,7 +259,7 @@ class OilCorrelationTracker(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -387,7 +388,7 @@ class OilMomentumSignal(RewardComponent):
         self._oil_prices.clear()
         self._current_momentum = 0.0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -398,7 +399,7 @@ class OilMomentumSignal(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -418,7 +419,7 @@ class OilMomentumSignal(RewardComponent):
 # =============================================================================
 
 __all__ = [
-    "OilCorrelationTracker",
     "OilCorrelationState",
+    "OilCorrelationTracker",
     "OilMomentumSignal",
 ]

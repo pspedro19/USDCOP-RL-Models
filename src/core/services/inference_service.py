@@ -25,7 +25,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -33,19 +33,7 @@ from src.core.container import (
     ApplicationContext,
     Event,
     SignalType,
-    PredictionResult,
-    ILogger,
 )
-
-if TYPE_CHECKING:
-    from src.core.container import (
-        IFeatureBuilder,
-        IPredictor,
-        IEventBus,
-        IRiskManager,
-        ITradeRepository,
-    )
-
 
 # =============================================================================
 # DOMAIN EVENTS
@@ -78,14 +66,14 @@ class InferenceServiceResult:
     """Result of inference service call."""
     signal: SignalType
     confidence: float
-    action_probs: Dict[str, float]
+    action_probs: dict[str, float]
     position_size: float
     trade_allowed: bool
-    rejection_reason: Optional[str]
+    rejection_reason: str | None
     latency_ms: float
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal": self.signal.value,
             "confidence": self.confidence,
@@ -150,10 +138,10 @@ class InferenceService:
 
     def run_inference(
         self,
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
         position: float,
         bar_idx: int,
-        macro_data: Optional[Dict[str, Any]] = None,
+        macro_data: dict[str, Any] | None = None,
     ) -> InferenceServiceResult:
         """
         Run complete inference pipeline.
@@ -266,7 +254,7 @@ class InferenceService:
     def run_batch_inference(
         self,
         observations: np.ndarray,
-    ) -> List[Tuple[int, float]]:
+    ) -> list[tuple[int, float]]:
         """
         Run inference on batch of observations.
 
@@ -282,7 +270,7 @@ class InferenceService:
             results.append((action, confidence))
         return results
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get inference statistics."""
         return {
             "inference_count": self._inference_count,
@@ -303,7 +291,7 @@ class InferenceService:
         }
         return mapping.get(action, SignalType.HOLD)
 
-    def _get_action_probs(self, observation: np.ndarray) -> Dict[str, float]:
+    def _get_action_probs(self, observation: np.ndarray) -> dict[str, float]:
         """Get action probabilities if predictor supports it."""
         try:
             if hasattr(self._predictor, 'predict_with_probs'):
@@ -313,7 +301,7 @@ class InferenceService:
             pass
         return {"HOLD": 0.33, "BUY": 0.33, "SELL": 0.34}
 
-    def _publish_event(self, event_type: str, payload: Dict[str, Any]) -> None:
+    def _publish_event(self, event_type: str, payload: dict[str, Any]) -> None:
         """Publish domain event."""
         event = Event(
             event_type=event_type,
@@ -359,10 +347,10 @@ def create_inference_service_from_config(config: Any) -> InferenceService:
 # =============================================================================
 
 __all__ = [
+    'InferenceCompletedEvent',
+    'InferenceRequestedEvent',
     'InferenceService',
     'InferenceServiceResult',
-    'InferenceRequestedEvent',
-    'InferenceCompletedEvent',
     'TradeSignalGeneratedEvent',
     'create_inference_service',
     'create_inference_service_from_config',

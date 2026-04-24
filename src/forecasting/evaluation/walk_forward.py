@@ -7,14 +7,15 @@ Expanding window validation for time series models.
 @version 1.0.0
 """
 
+import logging
+from collections.abc import Generator
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List, Generator, Tuple
-from dataclasses import dataclass, field
-import logging
 
-from src.forecasting.models.base import BaseModel
 from src.forecasting.evaluation.metrics import Metrics, MetricsResult
+from src.forecasting.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,9 @@ class WalkForwardResult:
     model_name: str
     horizon: int
     n_folds: int
-    fold_results: List[FoldResult]
+    fold_results: list[FoldResult]
     avg_metrics: MetricsResult
-    std_metrics: Dict[str, float]
+    std_metrics: dict[str, float]
     all_predictions: np.ndarray
     all_actuals: np.ndarray
 
@@ -90,7 +91,7 @@ class WalkForwardValidator:
     def get_splits(
         self,
         n_samples: int,
-    ) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+    ) -> Generator[tuple[np.ndarray, np.ndarray], None, None]:
         """
         Generate train/test split indices.
 
@@ -209,7 +210,7 @@ class WalkForwardValidator:
         self,
         X_train: np.ndarray,
         X_test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Scale features using StandardScaler."""
         from sklearn.preprocessing import StandardScaler
 

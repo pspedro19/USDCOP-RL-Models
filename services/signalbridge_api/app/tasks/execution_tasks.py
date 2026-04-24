@@ -5,17 +5,17 @@ Execution Celery tasks.
 import asyncio
 from datetime import datetime, timedelta
 from uuid import UUID
-from celery import shared_task
-from sqlalchemy import select, and_
 
-from app.tasks.celery_app import celery_app
-from app.core.database import SyncSessionLocal
-from app.models import Execution, ExchangeCredential
-from app.contracts.execution import OrderType, OrderSide, ExecutionStatus
-from app.contracts.exchange import SupportedExchange
-from app.adapters import get_exchange_adapter
-from app.services.vault import vault_service
 import structlog
+from sqlalchemy import and_
+
+from app.adapters import get_exchange_adapter
+from app.contracts.exchange import SupportedExchange
+from app.contracts.execution import ExecutionStatus, OrderSide, OrderType
+from app.core.database import SyncSessionLocal
+from app.models import ExchangeCredential, Execution
+from app.services.vault import vault_service
+from app.tasks.celery_app import celery_app
 
 logger = structlog.get_logger()
 

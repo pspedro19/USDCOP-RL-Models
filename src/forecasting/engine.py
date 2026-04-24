@@ -13,43 +13,39 @@ Design Patterns:
 @version 1.0.0
 """
 
+import hashlib
+import json
 import logging
 import os
 import time
-import json
-import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
+
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
 
 from .contracts import (
     HORIZONS,
-    MODEL_IDS,
-    MODEL_DEFINITIONS,
-    HORIZON_CATEGORIES,
     EnsembleType,
     ForecastDirection,
-    ForecastingTrainingRequest,
-    ForecastingTrainingResult,
     ForecastingInferenceRequest,
     ForecastingInferenceResult,
+    ForecastingTrainingRequest,
+    ForecastingTrainingResult,
     ForecastPrediction,
-    ModelMetrics,
     get_horizon_config,
 )
 from .data_contracts import (
+    DATA_CONTRACT_HASH,
+    DATA_CONTRACT_VERSION,
     FEATURE_COLUMNS,
     NUM_FEATURES,
-    validate_feature_row,
-    DATA_CONTRACT_VERSION,
-    DATA_CONTRACT_HASH,
 )
-from .models.factory import ModelFactory
-from .evaluation.walk_forward import WalkForwardValidator
 from .evaluation.metrics import Metrics
+from .evaluation.walk_forward import WalkForwardValidator
+from .models.factory import ModelFactory
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +70,9 @@ class ForecastingEngine:
     def __init__(
         self,
         project_root: Path = None,
-        db_connection_string: Optional[str] = None,
-        minio_client: Optional[Any] = None,
-        mlflow_client: Optional[Any] = None,
+        db_connection_string: str | None = None,
+        minio_client: Any | None = None,
+        mlflow_client: Any | None = None,
     ):
         self.project_root = project_root or Path.cwd()
         self.db_connection_string = db_connection_string or os.environ.get("DATABASE_URL")
@@ -89,7 +85,7 @@ class ForecastingEngine:
         self._metrics = None
 
         # Model cache
-        self._loaded_models: Dict[str, Dict[int, Any]] = {}
+        self._loaded_models: dict[str, dict[int, Any]] = {}
 
     @property
     def model_factory(self) -> ModelFactory:
@@ -129,8 +125,8 @@ class ForecastingEngine:
         start_time = time.time()
         errors = []
         mlflow_run_ids = {}
-        metrics_summary: Dict[str, Dict[int, float]] = {}
-        best_model_per_horizon: Dict[int, str] = {}
+        metrics_summary: dict[str, dict[int, float]] = {}
+        best_model_per_horizon: dict[int, str] = {}
 
         logger.info("=" * 60)
         logger.info(f"Starting forecasting training v{request.version}")
@@ -207,9 +203,7 @@ class ForecastingEngine:
                         metrics_summary[model_id][horizon] = da
 
                         # Track best model per horizon
-                        if horizon not in best_model_per_horizon:
-                            best_model_per_horizon[horizon] = model_id
-                        elif da > metrics_summary[best_model_per_horizon[horizon]][horizon]:
+                        if horizon not in best_model_per_horizon or da > metrics_summary[best_model_per_horizon[horizon]][horizon]:
                             best_model_per_horizon[horizon] = model_id
 
                         models_trained += 1
@@ -230,7 +224,7 @@ class ForecastingEngine:
 
                     except Exception as e:
                         logger.error(f"Error training {model_id} H={horizon}: {e}")
-                        errors.append(f"{model_id}_h{horizon}: {str(e)}")
+                        errors.append(f"{model_id}_h{horizon}: {e!s}")
 
             # Step 4: Save metrics summary
             metrics_df = self._create_metrics_dataframe(metrics_summary)
@@ -244,7 +238,7 @@ class ForecastingEngine:
                     logger.info(f"Uploaded to MinIO: {minio_uri}")
                 except Exception as e:
                     logger.error(f"MinIO upload failed: {e}")
-                    errors.append(f"MinIO: {str(e)}")
+                    errors.append(f"MinIO: {e!s}")
 
             # Step 6: Persist metrics to database
             if request.db_connection_string:
@@ -257,7 +251,7 @@ class ForecastingEngine:
                     logger.info("Metrics persisted to database")
                 except Exception as e:
                     logger.error(f"DB persist failed: {e}")
-                    errors.append(f"DB: {str(e)}")
+                    errors.append(f"DB: {e!s}")
 
             duration = time.time() - start_time
 
@@ -350,7 +344,7 @@ class ForecastingEngine:
             X_latest = features[feature_cols].iloc[-1:].values
 
             # Generate predictions
-            all_predictions: Dict[str, Dict[int, float]] = {}
+            all_predictions: dict[str, dict[int, float]] = {}
 
             for model_id in request.models:
                 all_predictions[model_id] = {}
@@ -392,7 +386,7 @@ class ForecastingEngine:
 
                     except Exception as e:
                         logger.error(f"Prediction error {model_id} H={horizon}: {e}")
-                        errors.append(f"{model_id}_h{horizon}: {str(e)}")
+                        errors.append(f"{model_id}_h{horizon}: {e!s}")
 
             # Create ensembles
             ensembles = {}
@@ -419,7 +413,7 @@ class ForecastingEngine:
                     )
                 except Exception as e:
                     logger.error(f"DB persist failed: {e}")
-                    errors.append(f"DB: {str(e)}")
+                    errors.append(f"DB: {e!s}")
 
             # Upload images
             images_uploaded = 0
@@ -434,7 +428,7 @@ class ForecastingEngine:
                     )
                 except Exception as e:
                     logger.error(f"Image upload failed: {e}")
-                    errors.append(f"Images: {str(e)}")
+                    errors.append(f"Images: {e!s}")
 
             return ForecastingInferenceResult(
                 success=len(errors) == 0,
@@ -469,11 +463,11 @@ class ForecastingEngine:
 
     def _create_ensembles(
         self,
-        predictions: Dict[str, Dict[int, float]],
+        predictions: dict[str, dict[int, float]],
         current_price: float,
         inference_date: str,
-        horizons: List[int],
-    ) -> Dict[str, Dict[int, ForecastPrediction]]:
+        horizons: list[int],
+    ) -> dict[str, dict[int, ForecastPrediction]]:
         """Create ensemble predictions."""
         ensembles = {}
 
@@ -542,11 +536,11 @@ class ForecastingEngine:
 
     def _predictions_to_forecasts(
         self,
-        preds: Dict[int, float],
+        preds: dict[int, float],
         current_price: float,
         inference_date: str,
         model_id: str,
-    ) -> Dict[int, ForecastPrediction]:
+    ) -> dict[int, ForecastPrediction]:
         """Convert raw predictions to ForecastPrediction objects."""
         result = {}
         inf_date = datetime.strptime(inference_date, "%Y-%m-%d")
@@ -573,9 +567,9 @@ class ForecastingEngine:
 
     def _calculate_consensus(
         self,
-        predictions: List[ForecastPrediction],
-        horizons: List[int],
-    ) -> Dict[int, Dict[str, Any]]:
+        predictions: list[ForecastPrediction],
+        horizons: list[int],
+    ) -> dict[int, dict[str, Any]]:
         """Calculate consensus for each horizon."""
         consensus = {}
 
@@ -674,7 +668,7 @@ class ForecastingEngine:
         - OHLCV: bi.dim_daily_usdcop (Investing.com official)
         - Macro: macro_indicators_daily (DXY, WTI)
         """
-        from src.data import UnifiedOHLCVLoader, UnifiedMacroLoader
+        from src.data import UnifiedMacroLoader, UnifiedOHLCVLoader
 
         end_date = end_date or datetime.now().strftime("%Y-%m-%d")
         logger.info(f"Loading SSOT daily data: {start_date} to {end_date}")
@@ -736,7 +730,7 @@ class ForecastingEngine:
 
         return df
 
-    def _validate_features(self, df: pd.DataFrame) -> Tuple[bool, List[str]]:
+    def _validate_features(self, df: pd.DataFrame) -> tuple[bool, list[str]]:
         """
         Validate that DataFrame has all SSOT feature columns.
 
@@ -768,7 +762,7 @@ class ForecastingEngine:
 
         return len(errors) == 0, errors
 
-    def _prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, List[str]]:
+    def _prepare_features(self, df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         """
         Prepare features for training using SSOT column order.
 
@@ -797,7 +791,7 @@ class ForecastingEngine:
 
         return X, feature_cols
 
-    def _prepare_features_fallback(self, df: pd.DataFrame) -> Tuple[np.ndarray, List[str]]:
+    def _prepare_features_fallback(self, df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         """Fallback feature preparation when SSOT validation fails."""
         exclude_cols = {
             "date", "time", "timestamp",
@@ -820,8 +814,8 @@ class ForecastingEngine:
     def _create_targets(
         self,
         df: pd.DataFrame,
-        horizons: List[int],
-    ) -> Dict[int, np.ndarray]:
+        horizons: list[int],
+    ) -> dict[int, np.ndarray]:
         """Create log-return targets for each horizon."""
         targets = {}
 
@@ -847,7 +841,7 @@ class ForecastingEngine:
 
     def _create_metrics_dataframe(
         self,
-        metrics_summary: Dict[str, Dict[int, float]],
+        metrics_summary: dict[str, dict[int, float]],
     ) -> pd.DataFrame:
         """Create metrics dataframe from summary."""
         rows = []
@@ -866,7 +860,7 @@ class ForecastingEngine:
 
     def _persist_metrics_to_db(
         self,
-        metrics_summary: Dict[str, Dict[int, float]],
+        metrics_summary: dict[str, dict[int, float]],
         version: str,
         db_connection: str,
     ):
@@ -898,8 +892,8 @@ class ForecastingEngine:
 
     def _persist_forecasts_to_db(
         self,
-        predictions: List[ForecastPrediction],
-        ensembles: Dict[str, Dict[int, ForecastPrediction]],
+        predictions: list[ForecastPrediction],
+        ensembles: dict[str, dict[int, ForecastPrediction]],
         inference_week: int,
         inference_year: int,
     ) -> int:
@@ -1001,11 +995,11 @@ class ForecastingEngine:
 
     def _upload_forecast_images(
         self,
-        predictions: List[ForecastPrediction],
+        predictions: list[ForecastPrediction],
         year: int,
         week: int,
         inference_date: str,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         """Upload forecast images to MinIO."""
         # This would generate and upload visualization images
         # For now, return placeholder
@@ -1019,8 +1013,8 @@ class ForecastingEngine:
         horizon: int,
         wf_result: Any,
         experiment_name: str,
-        model_path: Optional[Path] = None,
-        params: Optional[Dict[str, Any]] = None,
+        model_path: Path | None = None,
+        params: dict[str, Any] | None = None,
     ) -> str:
         """
         Log training run to MLflow with full experiment tracking.
@@ -1160,7 +1154,7 @@ class ForecastingEngine:
         self,
         result: 'ForecastingTrainingResult',
         experiment_name: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Log overall training summary as a parent MLflow run.
 
@@ -1226,8 +1220,8 @@ class ForecastingEngine:
         horizon: int,
         run_id: str,
         model_path: Path,
-        metrics: Dict[str, float],
-    ) -> Optional[str]:
+        metrics: dict[str, float],
+    ) -> str | None:
         """
         Register model to MLflow Model Registry.
 

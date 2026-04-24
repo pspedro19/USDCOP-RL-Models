@@ -8,8 +8,9 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
+from typing import Any
+
 import numpy as np
 from database.postgres_client import PostgresClient
 
@@ -26,7 +27,7 @@ class MetricsCalculator:
         self,
         model_id: str,
         window: str = '24h'
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate rolling window metrics.
 
@@ -73,7 +74,7 @@ class MetricsCalculator:
             'predictions': self._calculate_prediction_stats(inferences)
         }
 
-    def _calculate_metrics(self, inferences: List[Dict]) -> Dict[str, float]:
+    def _calculate_metrics(self, inferences: list[dict]) -> dict[str, float]:
         """Calculate performance metrics from inference data"""
         if not inferences:
             return {}
@@ -135,7 +136,7 @@ class MetricsCalculator:
             'std_return': float(std_return)
         }
 
-    def _calculate_prediction_stats(self, inferences: List[Dict]) -> Dict[str, Any]:
+    def _calculate_prediction_stats(self, inferences: list[dict]) -> dict[str, Any]:
         """Calculate prediction statistics"""
         total = len(inferences)
         correct = sum(1 for inf in inferences if (inf.get('reward') or 0) > 0)
@@ -162,7 +163,7 @@ class MetricsCalculator:
         }
         return window_map.get(window, timedelta(hours=24))
 
-    def get_metrics_summary(self) -> Dict[str, Any]:
+    def get_metrics_summary(self) -> dict[str, Any]:
         """Get summary metrics for all models"""
         # Get unique model IDs
         query = """

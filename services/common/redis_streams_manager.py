@@ -21,19 +21,12 @@ import json
 import logging
 import os
 import uuid
+from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import (
     Any,
-    AsyncGenerator,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
 )
 
 import redis.asyncio as aioredis
@@ -52,12 +45,12 @@ logger = logging.getLogger(__name__)
 class StreamConfig:
     """Configuration for a single stream."""
     name: str
-    pattern: Optional[str] = None
+    pattern: str | None = None
     retention_ms: int = 86400000  # 24 hours
     maxlen: int = 10000
     approximate_maxlen: bool = True
-    consumer_groups: List[Dict[str, Any]] = field(default_factory=list)
-    message_schema: Dict[str, str] = field(default_factory=dict)
+    consumer_groups: list[dict[str, Any]] = field(default_factory=list)
+    message_schema: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -67,7 +60,7 @@ class RedisStreamsConfig:
     port: int = 6379
     password: str = ""
     db: int = 0
-    streams: Dict[str, StreamConfig] = field(default_factory=dict)
+    streams: dict[str, StreamConfig] = field(default_factory=dict)
 
     # Consumer settings
     block_timeout_ms: int = 5000
@@ -87,7 +80,7 @@ class RedisStreamsConfig:
     retry_interval_ms: int = 5000
 
     @classmethod
-    def from_yaml(cls, config_path: Optional[str] = None) -> "RedisStreamsConfig":
+    def from_yaml(cls, config_path: str | None = None) -> "RedisStreamsConfig":
         """Load configuration from YAML file."""
         if config_path is None:
             # Default: Look for config relative to services directory
@@ -157,7 +150,7 @@ class RedisStreamsManager:
     for producers and consumers.
     """
 
-    def __init__(self, config: Optional[RedisStreamsConfig] = None):
+    def __init__(self, config: RedisStreamsConfig | None = None):
         """
         Initialize the Redis Streams Manager.
 
@@ -165,8 +158,8 @@ class RedisStreamsManager:
             config: Configuration object. If None, loads from YAML.
         """
         self.config = config or RedisStreamsConfig.from_yaml()
-        self._redis: Optional[Redis] = None
-        self._connection_pool: Optional[aioredis.ConnectionPool] = None
+        self._redis: Redis | None = None
+        self._connection_pool: aioredis.ConnectionPool | None = None
         self._is_connected = False
 
     async def connect(self) -> None:
@@ -212,7 +205,7 @@ class RedisStreamsManager:
     async def create_stream(
         self,
         stream_name: str,
-        maxlen: Optional[int] = None,
+        maxlen: int | None = None,
         approximate: bool = True,
     ) -> bool:
         """
@@ -238,7 +231,7 @@ class RedisStreamsManager:
             # Create stream with initial message
             await redis.xadd(
                 stream_name,
-                {"_init": "stream_created", "_timestamp": datetime.now(timezone.utc).isoformat()},
+                {"_init": "stream_created", "_timestamp": datetime.now(UTC).isoformat()},
                 maxlen=maxlen or self.config.streams.get("signals", StreamConfig("")).maxlen,
                 approximate=approximate,
             )
@@ -286,7 +279,7 @@ class RedisStreamsManager:
                 return False
             raise
 
-    async def setup_streams_from_config(self) -> Dict[str, List[str]]:
+    async def setup_streams_from_config(self) -> dict[str, list[str]]:
         """
         Create all streams and consumer groups defined in config.
 
@@ -325,7 +318,7 @@ class RedisStreamsManager:
 
         return results
 
-    def get_stream_name(self, stream_key: str, model_id: Optional[str] = None) -> str:
+    def get_stream_name(self, stream_key: str, model_id: str | None = None) -> str:
         """
         Get the actual stream name from config key.
 
@@ -351,7 +344,7 @@ class RedisStreamsManager:
     def get_consumer(
         self,
         group_name: str,
-        consumer_name: Optional[str] = None,
+        consumer_name: str | None = None,
     ) -> "StreamConsumer":
         """
         Get a consumer instance.
@@ -402,7 +395,7 @@ class StreamProducer:
             return "1" if value else "0"
         return str(value)
 
-    def _prepare_message(self, data: Dict[str, Any]) -> Dict[str, str]:
+    def _prepare_message(self, data: dict[str, Any]) -> dict[str, str]:
         """Prepare message for publishing."""
         message = {}
 
@@ -412,7 +405,7 @@ class StreamProducer:
 
         # Add timestamp if configured
         if self.config.add_timestamp and "_timestamp" not in data:
-            message["_timestamp"] = datetime.now(timezone.utc).isoformat()
+            message["_timestamp"] = datetime.now(UTC).isoformat()
 
         # Serialize all values
         for key, value in data.items():
@@ -423,8 +416,8 @@ class StreamProducer:
     async def publish(
         self,
         stream_name: str,
-        data: Dict[str, Any],
-        maxlen: Optional[int] = None,
+        data: dict[str, Any],
+        maxlen: int | None = None,
         approximate: bool = True,
     ) -> str:
         """
@@ -462,7 +455,7 @@ class StreamProducer:
     async def publish_signal(
         self,
         model_id: str,
-        signal_data: Dict[str, Any],
+        signal_data: dict[str, Any],
     ) -> str:
         """
         Publish a signal to a model-specific stream.
@@ -510,8 +503,8 @@ class StreamProducer:
 
     async def publish_all_signals(
         self,
-        signals: Dict[str, Dict[str, Any]],
-    ) -> Dict[str, str]:
+        signals: dict[str, dict[str, Any]],
+    ) -> dict[str, str]:
         """
         Publish signals from multiple models.
 
@@ -549,10 +542,10 @@ class StreamProducer:
     async def publish_event(
         self,
         event_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         severity: str = "INFO",
-        model_id: Optional[str] = None,
-        correlation_id: Optional[str] = None,
+        model_id: str | None = None,
+        correlation_id: str | None = None,
     ) -> str:
         """
         Publish an event to the events/audit stream.
@@ -582,8 +575,8 @@ class StreamProducer:
 
     async def publish_market_data(
         self,
-        ohlcv: Dict[str, Any],
-        bar_number: Optional[int] = None,
+        ohlcv: dict[str, Any],
+        bar_number: int | None = None,
     ) -> str:
         """
         Publish market OHLCV data.
@@ -624,7 +617,7 @@ class StreamConsumer:
         self,
         manager: RedisStreamsManager,
         group_name: str,
-        consumer_name: Optional[str] = None,
+        consumer_name: str | None = None,
     ):
         """
         Initialize the consumer.
@@ -638,10 +631,10 @@ class StreamConsumer:
         self.config = manager.config
         self.group_name = group_name
         self.consumer_name = consumer_name or f"consumer-{uuid.uuid4().hex[:8]}"
-        self._subscriptions: Dict[str, Callable] = {}
+        self._subscriptions: dict[str, Callable] = {}
         self._running = False
 
-    def _deserialize_message(self, message: Dict[str, str]) -> Dict[str, Any]:
+    def _deserialize_message(self, message: dict[str, str]) -> dict[str, Any]:
         """Deserialize message values from Redis."""
         result = {}
         for key, value in message.items():
@@ -679,9 +672,9 @@ class StreamConsumer:
     async def read(
         self,
         stream_name: str,
-        count: Optional[int] = None,
-        block_ms: Optional[int] = None,
-    ) -> List[Tuple[str, str, Dict[str, Any]]]:
+        count: int | None = None,
+        block_ms: int | None = None,
+    ) -> list[tuple[str, str, dict[str, Any]]]:
         """
         Read messages from a stream using consumer group.
 
@@ -744,7 +737,7 @@ class StreamConsumer:
     async def ack_batch(
         self,
         stream_name: str,
-        message_ids: List[str],
+        message_ids: list[str],
     ) -> int:
         """
         Acknowledge multiple messages.
@@ -765,7 +758,7 @@ class StreamConsumer:
         self,
         stream_name: str,
         count: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get pending (unacknowledged) messages for this consumer.
 
@@ -795,9 +788,9 @@ class StreamConsumer:
     async def claim_pending(
         self,
         stream_name: str,
-        min_idle_ms: Optional[int] = None,
+        min_idle_ms: int | None = None,
         count: int = 10,
-    ) -> List[Tuple[str, Dict[str, Any]]]:
+    ) -> list[tuple[str, dict[str, Any]]]:
         """
         Claim pending messages from other consumers.
 
@@ -854,7 +847,7 @@ class StreamConsumer:
     async def subscribe_model(
         self,
         model_id: str,
-        callback: Callable[[str, str, Dict[str, Any]], Any],
+        callback: Callable[[str, str, dict[str, Any]], Any],
     ) -> None:
         """
         Subscribe to a model's signal stream.
@@ -880,7 +873,7 @@ class StreamConsumer:
 
     async def subscribe_all(
         self,
-        callback: Callable[[str, str, Dict[str, Any]], Any],
+        callback: Callable[[str, str, dict[str, Any]], Any],
     ) -> None:
         """
         Subscribe to the aggregated signals stream.
@@ -919,9 +912,7 @@ class StreamConsumer:
                 redis = await self.manager.ensure_connected()
 
                 # Build streams dict for xreadgroup
-                streams_dict = {
-                    stream: ">" for stream in self._subscriptions.keys()
-                }
+                streams_dict = dict.fromkeys(self._subscriptions.keys(), ">")
 
                 # Read from all subscribed streams
                 response = await redis.xreadgroup(
@@ -997,9 +988,9 @@ class SSEAdapter:
     def _format_sse(
         self,
         data: Any,
-        event: Optional[str] = None,
-        id: Optional[str] = None,
-        retry: Optional[int] = None,
+        event: str | None = None,
+        id: str | None = None,
+        retry: int | None = None,
     ) -> str:
         """Format data as SSE message."""
         lines = []
@@ -1023,7 +1014,7 @@ class SSEAdapter:
 
     async def sse_generator(
         self,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
         stream_type: str = "signals",
     ) -> AsyncGenerator[str, None]:
         """
@@ -1134,7 +1125,7 @@ class SSEAdapter:
 
     async def signals_sse(
         self,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         SSE generator specifically for trading signals.
@@ -1167,7 +1158,7 @@ class StreamUtilities:
         """Initialize utilities."""
         self.manager = manager
 
-    async def get_stream_info(self, stream_name: str) -> Dict[str, Any]:
+    async def get_stream_info(self, stream_name: str) -> dict[str, Any]:
         """
         Get detailed information about a stream.
 
@@ -1216,7 +1207,7 @@ class StreamUtilities:
         self,
         stream_name: str,
         group_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get pending messages summary for a consumer group.
 
@@ -1244,7 +1235,7 @@ class StreamUtilities:
                 return {"error": "Consumer group does not exist"}
             raise
 
-    async def get_all_streams_info(self) -> Dict[str, Dict[str, Any]]:
+    async def get_all_streams_info(self) -> dict[str, dict[str, Any]]:
         """Get info for all configured streams."""
         results = {}
 
@@ -1261,7 +1252,7 @@ class StreamUtilities:
     async def cleanup_old_messages(
         self,
         stream_name: str,
-        max_age_ms: Optional[int] = None,
+        max_age_ms: int | None = None,
     ) -> int:
         """
         Remove messages older than max_age.
@@ -1290,7 +1281,7 @@ class StreamUtilities:
 
         # Calculate MINID based on timestamp
         min_timestamp = int(
-            (datetime.now(timezone.utc).timestamp() * 1000) - max_age_ms
+            (datetime.now(UTC).timestamp() * 1000) - max_age_ms
         )
         min_id = f"{min_timestamp}-0"
 
@@ -1316,7 +1307,7 @@ class StreamUtilities:
             logger.warning(f"Error cleaning up stream {stream_name}: {e}")
             return 0
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """
         Check Redis Streams health.
 
@@ -1364,11 +1355,11 @@ class StreamUtilities:
 # =============================================================================
 
 # Singleton manager instance
-_manager: Optional[RedisStreamsManager] = None
+_manager: RedisStreamsManager | None = None
 
 
 def get_redis_streams_manager(
-    config: Optional[RedisStreamsConfig] = None,
+    config: RedisStreamsConfig | None = None,
 ) -> RedisStreamsManager:
     """
     Get or create the Redis Streams Manager singleton.
@@ -1394,7 +1385,7 @@ async def get_producer() -> StreamProducer:
 
 async def get_consumer(
     group_name: str,
-    consumer_name: Optional[str] = None,
+    consumer_name: str | None = None,
 ) -> StreamConsumer:
     """Get a consumer instance (convenience function)."""
     manager = get_redis_streams_manager()

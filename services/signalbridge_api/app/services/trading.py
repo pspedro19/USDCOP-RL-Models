@@ -2,20 +2,21 @@
 Trading configuration service.
 """
 
-from datetime import datetime, timedelta
-from typing import Optional, Dict
+from datetime import datetime
 from uuid import UUID
-from sqlalchemy import select, func, and_
+
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import TradingConfig, Execution, ExchangeCredential
+from app.contracts.exchange import SupportedExchange
 from app.contracts.trading import (
     TradingConfig as TradingConfigContract,
+)
+from app.contracts.trading import (
     TradingConfigUpdate,
     TradingStatus,
 )
-from app.contracts.exchange import SupportedExchange
-from app.core.exceptions import NotFoundError
+from app.models import ExchangeCredential, Execution, TradingConfig
 
 
 class TradingService:
@@ -24,7 +25,7 @@ class TradingService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_config(self, user_id: UUID) -> Optional[TradingConfig]:
+    async def get_config(self, user_id: UUID) -> TradingConfig | None:
         """Get trading config for a user."""
         result = await self.db.execute(
             select(TradingConfig).where(TradingConfig.user_id == user_id)
@@ -169,7 +170,7 @@ class TradingService:
             exchange_connections=exchange_connections,
         )
 
-    async def can_trade(self, user_id: UUID) -> tuple[bool, Optional[str]]:
+    async def can_trade(self, user_id: UUID) -> tuple[bool, str | None]:
         """
         Check if user can trade.
 

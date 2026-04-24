@@ -21,9 +21,9 @@ Date: 2026-02-15
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from .base import RewardComponent, ComponentType
+from .base import ComponentType, RewardComponent
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class ExecutionAlphaComponent(RewardComponent):
         self._n_calculations = 0
         self._stats.reset()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -124,7 +124,7 @@ class ExecutionAlphaComponent(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats["exec_alpha_cumulative"] = self._cumulative_alpha

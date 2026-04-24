@@ -12,15 +12,14 @@ Principle: Single query should show full lineage chain:
 @principle MLflow-First + DVC-Tracked
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
 import hashlib
 import json
 import logging
 import os
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,20 +60,20 @@ class LineageNode:
     id: str
     node_type: LineageNodeType
     name: str
-    version: Optional[str] = None
+    version: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Source references
-    mlflow_run_id: Optional[str] = None
-    dvc_tag: Optional[str] = None
-    db_record_id: Optional[int] = None
+    mlflow_run_id: str | None = None
+    dvc_tag: str | None = None
+    db_record_id: int | None = None
 
     # Hashes for reproducibility
-    content_hash: Optional[str] = None
-    config_hash: Optional[str] = None
+    content_hash: str | None = None
+    config_hash: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "node_type": self.node_type.value,
@@ -97,9 +96,9 @@ class LineageEdge:
     target_id: str
     relation: LineageRelation
     created_at: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "source_id": self.source_id,
             "target_id": self.target_id,
@@ -127,38 +126,38 @@ class LineageRecord:
     created_at: datetime = field(default_factory=datetime.now)
 
     # Dataset lineage
-    dataset_path: Optional[str] = None
-    dataset_hash: Optional[str] = None
-    dataset_dvc_tag: Optional[str] = None
-    dataset_version: Optional[str] = None
+    dataset_path: str | None = None
+    dataset_hash: str | None = None
+    dataset_dvc_tag: str | None = None
+    dataset_version: str | None = None
 
     # Feature lineage
-    feature_config_hash: Optional[str] = None
-    feature_order_hash: Optional[str] = None
-    num_features: Optional[int] = None
+    feature_config_hash: str | None = None
+    feature_order_hash: str | None = None
+    num_features: int | None = None
 
     # Training lineage
-    mlflow_experiment_id: Optional[str] = None
-    mlflow_run_id: Optional[str] = None
-    training_config_hash: Optional[str] = None
-    training_duration_seconds: Optional[float] = None
+    mlflow_experiment_id: str | None = None
+    mlflow_run_id: str | None = None
+    training_config_hash: str | None = None
+    training_duration_seconds: float | None = None
 
     # Model lineage
-    model_name: Optional[str] = None
-    model_version: Optional[str] = None
-    model_stage: Optional[str] = None
-    model_uri: Optional[str] = None
-    model_hash: Optional[str] = None
+    model_name: str | None = None
+    model_version: str | None = None
+    model_stage: str | None = None
+    model_uri: str | None = None
+    model_hash: str | None = None
 
     # Validation lineage
-    backtest_id: Optional[str] = None
-    validation_metrics: Dict[str, float] = field(default_factory=dict)
+    backtest_id: str | None = None
+    validation_metrics: dict[str, float] = field(default_factory=dict)
 
     # Inference lineage (for deployed models)
     inference_count: int = 0
-    last_inference_at: Optional[datetime] = None
+    last_inference_at: datetime | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "record_id": self.record_id,
             "pipeline": self.pipeline,
@@ -245,8 +244,8 @@ class LineageService:
 
     def __init__(
         self,
-        db_connection_string: Optional[str] = None,
-        mlflow_tracking_uri: Optional[str] = None,
+        db_connection_string: str | None = None,
+        mlflow_tracking_uri: str | None = None,
     ):
         self.db_connection_string = db_connection_string or os.environ.get("DATABASE_URL")
         self.mlflow_tracking_uri = mlflow_tracking_uri or os.environ.get(
@@ -254,9 +253,9 @@ class LineageService:
         )
 
         # In-memory cache (for testing/quick lookups)
-        self._nodes: Dict[str, LineageNode] = {}
-        self._edges: List[LineageEdge] = []
-        self._records: Dict[str, LineageRecord] = {}
+        self._nodes: dict[str, LineageNode] = {}
+        self._edges: list[LineageEdge] = []
+        self._records: dict[str, LineageRecord] = {}
 
     # =========================================================================
     # RECORD METHODS
@@ -266,10 +265,10 @@ class LineageService:
         self,
         name: str,
         path: str,
-        dvc_tag: Optional[str] = None,
-        content_hash: Optional[str] = None,
-        version: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        dvc_tag: str | None = None,
+        content_hash: str | None = None,
+        version: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageNode:
         """Record a dataset in the lineage graph."""
         node_id = f"dataset:{name}:{version or 'latest'}"
@@ -295,8 +294,8 @@ class LineageService:
         name: str,
         mlflow_run_id: str,
         dataset_node_id: str,
-        config_hash: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        config_hash: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageNode:
         """Record a training run in the lineage graph."""
         node_id = f"training:{name}:{mlflow_run_id[:8]}"
@@ -331,11 +330,11 @@ class LineageService:
         name: str,
         version: str,
         training_node_id: str,
-        mlflow_run_id: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_hash: Optional[str] = None,
+        mlflow_run_id: str | None = None,
+        model_uri: str | None = None,
+        model_hash: str | None = None,
         stage: str = "Staging",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LineageNode:
         """Record a model version in the lineage graph."""
         node_id = f"model:{name}:{version}"
@@ -405,14 +404,14 @@ class LineageService:
         pipeline: str,
         dataset_path: str,
         dataset_hash: str,
-        dataset_dvc_tag: Optional[str],
+        dataset_dvc_tag: str | None,
         mlflow_run_id: str,
         model_name: str,
         model_version: str,
         model_uri: str,
-        feature_config_hash: Optional[str] = None,
-        training_config_hash: Optional[str] = None,
-        validation_metrics: Optional[Dict[str, float]] = None,
+        feature_config_hash: str | None = None,
+        training_config_hash: str | None = None,
+        validation_metrics: dict[str, float] | None = None,
     ) -> LineageRecord:
         """
         Record complete lineage in a single call.
@@ -449,8 +448,8 @@ class LineageService:
     def get_model_lineage(
         self,
         model_name: str,
-        version: Optional[str] = None,
-    ) -> Optional[LineageRecord]:
+        version: str | None = None,
+    ) -> LineageRecord | None:
         """
         Get complete lineage for a model.
 
@@ -468,7 +467,7 @@ class LineageService:
     def get_dataset_descendants(
         self,
         dataset_id: str,
-    ) -> List[LineageNode]:
+    ) -> list[LineageNode]:
         """Get all models trained on a specific dataset."""
         descendants = []
 
@@ -483,7 +482,7 @@ class LineageService:
         self,
         node_id: str,
         direction: str = "upstream",  # "upstream" or "downstream"
-    ) -> List[LineageNode]:
+    ) -> list[LineageNode]:
         """Get the full lineage chain for a node."""
         chain = []
         visited = set()
@@ -515,7 +514,7 @@ class LineageService:
         self,
         model_name: str,
         version: str,
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Validate that a model has complete lineage.
 
@@ -671,8 +670,8 @@ class LineageService:
     def _query_lineage_from_db(
         self,
         model_name: str,
-        version: Optional[str],
-    ) -> Optional[LineageRecord]:
+        version: str | None,
+    ) -> LineageRecord | None:
         """Query lineage from database."""
         if not self.db_connection_string:
             return None
@@ -727,7 +726,7 @@ class LineageService:
 # SINGLETON INSTANCE
 # =============================================================================
 
-_lineage_service: Optional[LineageService] = None
+_lineage_service: LineageService | None = None
 
 
 def get_lineage_service() -> LineageService:

@@ -16,17 +16,14 @@ Contract: CTR-REPLAY-001
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 import numpy as np
-
-from src.contracts.signal_contract import UniversalSignalRecord
-from src.contracts.strategy_schema import StrategyTrade, StrategyStats
-from src.contracts.execution_strategies import ExecutionStrategy
-
 import pandas as pd
 
+from src.contracts.execution_strategies import ExecutionStrategy
+from src.contracts.signal_contract import UniversalSignalRecord
+from src.contracts.strategy_schema import StrategyStats, StrategyTrade
 
 # ---------------------------------------------------------------------------
 # ReplayResult
@@ -35,7 +32,7 @@ import pandas as pd
 @dataclass
 class ReplayResult:
     """Output of ReplayBacktestEngine.replay()."""
-    trades: List[StrategyTrade]
+    trades: list[StrategyTrade]
     stats: StrategyStats
     statistical_tests: dict
     signals_total: int
@@ -52,7 +49,7 @@ class ReplayResult:
 # ---------------------------------------------------------------------------
 
 def compute_strategy_stats(
-    trades: List[StrategyTrade],
+    trades: list[StrategyTrade],
     initial_capital: float,
 ) -> StrategyStats:
     """Compute StrategyStats from a list of trades."""
@@ -104,7 +101,7 @@ def compute_strategy_stats(
     trading_days = len(dates)
 
     # Exit reasons
-    exit_reasons: Dict[str, int] = {}
+    exit_reasons: dict[str, int] = {}
     for t in trades:
         exit_reasons[t.exit_reason] = exit_reasons.get(t.exit_reason, 0) + 1
 
@@ -127,7 +124,7 @@ def compute_strategy_stats(
 
 
 def compute_statistical_tests(
-    trades: List[StrategyTrade],
+    trades: list[StrategyTrade],
 ) -> dict:
     """Compute statistical tests from trades."""
     if not trades:
@@ -164,9 +161,9 @@ def compute_statistical_tests(
 
 
 def compute_direction_accuracy(
-    trades: List[StrategyTrade],
+    trades: list[StrategyTrade],
     ohlcv: pd.DataFrame,
-) -> Optional[float]:
+) -> float | None:
     """Compute direction accuracy: how often did the trade direction match actual move."""
     if not trades:
         return None
@@ -215,7 +212,7 @@ class ReplayBacktestEngine:
 
     def replay(
         self,
-        signals: List[UniversalSignalRecord],
+        signals: list[UniversalSignalRecord],
         ohlcv: pd.DataFrame,
     ) -> ReplayResult:
         """
@@ -229,7 +226,7 @@ class ReplayBacktestEngine:
             ReplayResult with trades, stats, and statistical tests.
         """
         equity = self.initial_capital
-        trades: List[StrategyTrade] = []
+        trades: list[StrategyTrade] = []
         skipped = 0
 
         for signal in signals:

@@ -14,7 +14,7 @@ Features:
 - Completely isolated from production code
 """
 
+from .config import DEMO_CONFIG, is_demo_model, is_investor_mode
 from .trade_generator import DemoTradeGenerator
-from .config import DEMO_CONFIG, is_investor_mode, is_demo_model
 
-__all__ = ['DemoTradeGenerator', 'DEMO_CONFIG', 'is_investor_mode', 'is_demo_model']
+__all__ = ['DEMO_CONFIG', 'DemoTradeGenerator', 'is_demo_model', 'is_investor_mode']

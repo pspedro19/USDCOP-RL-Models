@@ -77,9 +77,10 @@ __all__ = [
 
 import logging
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -93,15 +94,15 @@ _metrics_app = None
 
 try:
     from prometheus_client import (
-        Counter,
-        Histogram,
-        Gauge,
-        Info,
-        CollectorRegistry,
-        generate_latest,
         CONTENT_TYPE_LATEST,
-        multiprocess,
         REGISTRY,
+        CollectorRegistry,
+        Counter,
+        Gauge,
+        Histogram,
+        Info,
+        generate_latest,
+        multiprocess,
     )
     from prometheus_client.exposition import make_asgi_app
     PROMETHEUS_AVAILABLE = True
@@ -149,7 +150,7 @@ class NoOpInfo:
     def __init__(self, *args, **kwargs):
         pass
 
-    def info(self, val: Dict[str, str]):
+    def info(self, val: dict[str, str]):
         pass
 
 
@@ -378,7 +379,6 @@ def setup_prometheus_metrics(
 
         # Mount metrics endpoint
         try:
-            from starlette.routing import Mount
             app.mount("/metrics", _metrics_app)
             logger.info(f"Prometheus metrics exposed at /metrics for {service_name}")
         except Exception as e:
@@ -388,7 +388,7 @@ def setup_prometheus_metrics(
     logger.info(f"Prometheus metrics initialized for {service_name} v{service_version}")
 
 
-def get_metrics_app() -> Optional[Any]:
+def get_metrics_app() -> Any | None:
     """Get the Prometheus metrics ASGI app."""
     return _metrics_app
 
@@ -397,7 +397,7 @@ def get_metrics_app() -> Optional[Any]:
 # CONVENIENCE DECORATORS
 # =============================================================================
 
-def track_latency(histogram: Any, labels: Optional[Dict[str, str]] = None):
+def track_latency(histogram: Any, labels: dict[str, str] | None = None):
     """
     Decorator to track function execution time.
 
@@ -430,7 +430,7 @@ def track_latency(histogram: Any, labels: Optional[Dict[str, str]] = None):
     return decorator
 
 
-def track_latency_async(histogram: Any, labels: Optional[Dict[str, str]] = None):
+def track_latency_async(histogram: Any, labels: dict[str, str] | None = None):
     """
     Decorator to track async function execution time.
 
@@ -459,7 +459,7 @@ def track_latency_async(histogram: Any, labels: Optional[Dict[str, str]] = None)
     return decorator
 
 
-def count_requests(counter: Any, labels_fn: Optional[Callable] = None):
+def count_requests(counter: Any, labels_fn: Callable | None = None):
     """
     Decorator to count function calls.
 
@@ -485,7 +485,7 @@ def count_requests(counter: Any, labels_fn: Optional[Callable] = None):
                 else:
                     counter.inc()
                 return result
-            except Exception as e:
+            except Exception:
                 if labels_fn:
                     labels = labels_fn(*args, **kwargs)
                     labels["status"] = "error"

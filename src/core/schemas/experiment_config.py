@@ -33,10 +33,9 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
-
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 # =============================================================================
 # Sub-configurations
@@ -47,17 +46,17 @@ class DateRangeConfig(BaseModel):
 
     train_start: str = Field(..., description="Training data start date (YYYY-MM-DD)")
     train_end: str = Field(..., description="Training data end date (YYYY-MM-DD)")
-    validation_start: Optional[str] = Field(None, description="Validation data start date")
-    validation_end: Optional[str] = Field(None, description="Validation data end date")
-    test_start: Optional[str] = Field(None, description="Test data start date")
-    test_end: Optional[str] = Field(None, description="Test data end date")
+    validation_start: str | None = Field(None, description="Validation data start date")
+    validation_end: str | None = Field(None, description="Validation data end date")
+    test_start: str | None = Field(None, description="Test data start date")
+    test_end: str | None = Field(None, description="Test data end date")
 
 
 class DatasetConfig(BaseModel):
     """Dataset configuration for experiments."""
 
     version: str = Field(..., description="Dataset version string")
-    dvc_tag: Optional[str] = Field(None, description="DVC tag for this dataset version")
+    dvc_tag: str | None = Field(None, description="DVC tag for this dataset version")
     source: str = Field("data/processed/", description="Data source directory")
     date_range: DateRangeConfig = Field(..., description="Date range configuration")
     train_ratio: float = Field(0.7, ge=0, le=1, description="Training split ratio")
@@ -84,7 +83,7 @@ class NormalizationConfig(BaseModel):
 class FeaturesConfig(BaseModel):
     """Feature configuration for experiments."""
 
-    feature_order: List[str] = Field(..., min_length=1, description="Ordered list of features")
+    feature_order: list[str] = Field(..., min_length=1, description="Ordered list of features")
     normalization: NormalizationConfig = Field(default_factory=NormalizationConfig)
     contract_version: str = Field("1.0.0", description="Feature contract version")
 
@@ -131,7 +130,7 @@ class HyperparametersConfig(BaseModel):
 class NetworkLayerConfig(BaseModel):
     """Neural network layer configuration."""
 
-    layers: List[int] = Field([256, 256], min_length=1, description="Layer sizes")
+    layers: list[int] = Field([256, 256], min_length=1, description="Layer sizes")
     activation: str = Field("Tanh", description="Activation function")
 
 
@@ -179,7 +178,7 @@ class EvaluationConfig(BaseModel):
 
     n_episodes: int = Field(100, gt=0, description="Number of evaluation episodes")
     deterministic: bool = Field(True, description="Use deterministic policy")
-    metrics: List[str] = Field(
+    metrics: list[str] = Field(
         default=[
             "sharpe_ratio",
             "sortino_ratio",
@@ -199,7 +198,7 @@ class PromotionThresholds(BaseModel):
     min_win_rate: float = Field(0.45, ge=0, le=1, description="Minimum win rate")
     max_drawdown: float = Field(-0.15, le=0, description="Maximum drawdown (negative)")
     min_trades: int = Field(50, gt=0, description="Minimum number of trades")
-    min_staging_days: Optional[int] = Field(None, description="Minimum days in staging")
+    min_staging_days: int | None = Field(None, description="Minimum days in staging")
 
 
 class PromotionConfig(BaseModel):
@@ -223,7 +222,7 @@ class MLflowConfig(BaseModel):
     experiment_name: str = Field("usdcop-rl-training", description="MLflow experiment name")
     model_name: str = Field("usdcop-ppo-model", description="Model registry name")
     tracking_uri: str = Field("http://localhost:5000", description="MLflow tracking URI")
-    tags: Dict[str, str] = Field(default_factory=dict, description="MLflow tags")
+    tags: dict[str, str] = Field(default_factory=dict, description="MLflow tags")
 
 
 class ExperimentMetadata(BaseModel):
@@ -238,22 +237,22 @@ class ExperimentMetadata(BaseModel):
         default_factory=lambda: datetime.now().strftime("%Y-%m-%d"),
         description="Creation date",
     )
-    parent_experiment_id: Optional[str] = Field(
+    parent_experiment_id: str | None = Field(
         None, description="Parent experiment ID for lineage"
     )
-    tags: List[str] = Field(default_factory=list, description="Experiment tags")
+    tags: list[str] = Field(default_factory=list, description="Experiment tags")
 
 
 class ExpectedResults(BaseModel):
     """Expected results from training."""
 
-    sharpe_ratio: Optional[float] = None
-    sortino_ratio: Optional[float] = None
-    max_drawdown: Optional[float] = None
-    win_rate: Optional[float] = None
-    profit_factor: Optional[float] = None
-    total_trades: Optional[int] = None
-    notes: Optional[str] = None
+    sharpe_ratio: float | None = None
+    sortino_ratio: float | None = None
+    max_drawdown: float | None = None
+    win_rate: float | None = None
+    profit_factor: float | None = None
+    total_trades: int | None = None
+    notes: str | None = None
 
 
 # =============================================================================
@@ -282,7 +281,7 @@ class ExperimentConfig(BaseModel):
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     promotion: PromotionConfig = Field(default_factory=PromotionConfig)
     mlflow: MLflowConfig = Field(default_factory=MLflowConfig)
-    expected_results: Optional[ExpectedResults] = None
+    expected_results: ExpectedResults | None = None
 
     @computed_field
     @property
@@ -344,7 +343,7 @@ class ExperimentConfig(BaseModel):
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {path}")
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         return cls.model_validate(data)
@@ -364,7 +363,7 @@ class ExperimentConfig(BaseModel):
         with open(path, "w", encoding="utf-8") as f:
             yaml.dump(self.model_dump(exclude_none=True), f, default_flow_style=False)
 
-    def diff(self, other: "ExperimentConfig") -> Dict[str, Tuple[Any, Any]]:
+    def diff(self, other: "ExperimentConfig") -> dict[str, tuple[Any, Any]]:
         """
         Get differences between this config and another.
 
@@ -376,7 +375,7 @@ class ExperimentConfig(BaseModel):
         """
         diffs = {}
 
-        def compare_dicts(d1: Dict, d2: Dict, prefix: str = "") -> None:
+        def compare_dicts(d1: dict, d2: dict, prefix: str = "") -> None:
             all_keys = set(d1.keys()) | set(d2.keys())
             for key in all_keys:
                 path = f"{prefix}.{key}" if prefix else key
@@ -395,7 +394,7 @@ class ExperimentConfig(BaseModel):
 
         return diffs
 
-    def validate_for_training(self) -> List[str]:
+    def validate_for_training(self) -> list[str]:
         """
         Validate configuration is complete for training.
 
@@ -472,7 +471,7 @@ def create_experiment_from_baseline(
     data["experiment"]["created_at"] = datetime.now().strftime("%Y-%m-%d")
 
     # Apply overrides
-    def apply_overrides(target: Dict, source: Dict) -> None:
+    def apply_overrides(target: dict, source: dict) -> None:
         for key, value in source.items():
             if isinstance(value, dict) and key in target and isinstance(target[key], dict):
                 apply_overrides(target[key], value)
@@ -485,19 +484,19 @@ def create_experiment_from_baseline(
 
 
 __all__ = [
-    "ExperimentConfig",
-    "ExperimentMetadata",
     "DatasetConfig",
     "DateRangeConfig",
+    "EnvironmentConfig",
+    "EvaluationConfig",
+    "ExpectedResults",
+    "ExperimentConfig",
+    "ExperimentMetadata",
     "FeaturesConfig",
     "HyperparametersConfig",
-    "NetworkConfig",
-    "EnvironmentConfig",
-    "TrainingConfig",
-    "EvaluationConfig",
-    "PromotionConfig",
     "MLflowConfig",
-    "ExpectedResults",
-    "load_experiment_config",
+    "NetworkConfig",
+    "PromotionConfig",
+    "TrainingConfig",
     "create_experiment_from_baseline",
+    "load_experiment_config",
 ]

@@ -10,15 +10,15 @@ Version: 1.0.0
 Created: 2026-01-19
 """
 
-import numpy as np
 from collections import deque
-from typing import Dict, Any, Optional, Tuple
+from typing import Any
+
+import numpy as np
 
 from .base import (
-    RewardComponent,
     ComponentType,
     MarketRegime,
-    IRegimeDetector,
+    RewardComponent,
 )
 
 
@@ -194,7 +194,7 @@ class StableRegimeDetector(RewardComponent):
         self._proposed_regime = MarketRegime.NORMAL
         self._proposed_bars = 0
 
-    def get_regime_penalties(self) -> Dict[MarketRegime, float]:
+    def get_regime_penalties(self) -> dict[MarketRegime, float]:
         """Get default penalty multipliers for each regime."""
         return {
             MarketRegime.LOW_VOL: 0.0,
@@ -203,7 +203,7 @@ class StableRegimeDetector(RewardComponent):
             MarketRegime.CRISIS: 0.6,
         }
 
-    def get_regime_cost_multipliers(self) -> Dict[MarketRegime, float]:
+    def get_regime_cost_multipliers(self) -> dict[MarketRegime, float]:
         """Get cost multipliers for each regime."""
         return {
             MarketRegime.LOW_VOL: 0.8,
@@ -212,7 +212,7 @@ class StableRegimeDetector(RewardComponent):
             MarketRegime.CRISIS: 2.0,
         }
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -225,7 +225,7 @@ class StableRegimeDetector(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -247,7 +247,7 @@ class StableRegimeDetector(RewardComponent):
 
         return stats
 
-    def get_thresholds(self) -> Optional[Tuple[float, float, float]]:
+    def get_thresholds(self) -> tuple[float, float, float] | None:
         """
         Get current volatility thresholds.
 
@@ -270,4 +270,4 @@ class StableRegimeDetector(RewardComponent):
 # EXPORTS
 # =============================================================================
 
-__all__ = ["StableRegimeDetector", "MarketRegime"]
+__all__ = ["MarketRegime", "StableRegimeDetector"]

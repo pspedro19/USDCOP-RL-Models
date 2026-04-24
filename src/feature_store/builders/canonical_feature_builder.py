@@ -38,12 +38,11 @@ import hashlib
 import json
 import logging
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Protocol, Tuple, Union
+from typing import Any, Final, Protocol
 
 import numpy as np
 import pandas as pd
@@ -52,18 +51,15 @@ import pandas as pd
 from ..core import (
     FEATURE_CONTRACT,
     FEATURE_ORDER,
-    OBSERVATION_DIM,
     NORM_STATS_PATH,
-    FeatureContract,
-    SmoothingMethod,
+    OBSERVATION_DIM,
+    ADXCalculator,
+    ATRPercentCalculator,
     BaseCalculator,
     LogReturnCalculator,
-    RSICalculator,
-    ATRPercentCalculator,
-    ADXCalculator,
-    MacroZScoreCalculator,
     MacroChangeCalculator,
-    CalculatorRegistry,
+    MacroZScoreCalculator,
+    RSICalculator,
 )
 
 logger = logging.getLogger(__name__)
@@ -146,14 +142,14 @@ class IFeatureBuilder(Protocol):
     def build_observation(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame],
+        macro: pd.DataFrame | None,
         position: float,
         bar_idx: int,
     ) -> np.ndarray:
         """Build normalized observation vector."""
         ...
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Get ordered list of feature names."""
         ...
 
@@ -176,9 +172,9 @@ class FeatureSnapshot:
     timestamp: str
     bar_idx: int
     context: str
-    raw_features: Dict[str, float]
-    normalized_features: Dict[str, float]
-    observation: List[float]
+    raw_features: dict[str, float]
+    normalized_features: dict[str, float]
+    observation: list[float]
     norm_stats_hash: str
     calculation_time_ms: float
 
@@ -213,16 +209,16 @@ class CanonicalFeatureBuilder:
     """
 
     # Class-level constants from SSOT
-    FEATURE_ORDER: Final[Tuple[str, ...]] = FEATURE_ORDER
+    FEATURE_ORDER: Final[tuple[str, ...]] = FEATURE_ORDER
     OBSERVATION_DIM: Final[int] = OBSERVATION_DIM
-    CLIP_RANGE: Final[Tuple[float, float]] = FEATURE_CONTRACT.clip_range
+    CLIP_RANGE: Final[tuple[float, float]] = FEATURE_CONTRACT.clip_range
     VERSION: Final[str] = "1.0.0"  # Builder version for L1 DAG compatibility
 
     def __init__(
         self,
-        norm_stats: Dict[str, Dict[str, float]],
+        norm_stats: dict[str, dict[str, float]],
         context: BuilderContext = BuilderContext.TRAINING,
-        expected_hash: Optional[str] = None,
+        expected_hash: str | None = None,
     ):
         """
         Initialize CanonicalFeatureBuilder.
@@ -261,9 +257,9 @@ class CanonicalFeatureBuilder:
     @classmethod
     def for_training(
         cls,
-        config: Optional[Dict[str, Any]] = None,
-        norm_stats_path: Optional[str] = None,
-    ) -> "CanonicalFeatureBuilder":
+        config: dict[str, Any] | None = None,
+        norm_stats_path: str | None = None,
+    ) -> CanonicalFeatureBuilder:
         """
         Factory method for training context.
 
@@ -284,10 +280,10 @@ class CanonicalFeatureBuilder:
     @classmethod
     def for_inference(
         cls,
-        model_contract: Optional[Dict[str, Any]] = None,
-        norm_stats_path: Optional[str] = None,
-        expected_hash: Optional[str] = None,
-    ) -> "CanonicalFeatureBuilder":
+        model_contract: dict[str, Any] | None = None,
+        norm_stats_path: str | None = None,
+        expected_hash: str | None = None,
+    ) -> CanonicalFeatureBuilder:
         """
         Factory method for inference context.
 
@@ -318,10 +314,10 @@ class CanonicalFeatureBuilder:
     @classmethod
     def for_backtest(
         cls,
-        backtest_config: Optional[Dict[str, Any]] = None,
-        norm_stats_path: Optional[str] = None,
-        expected_hash: Optional[str] = None,
-    ) -> "CanonicalFeatureBuilder":
+        backtest_config: dict[str, Any] | None = None,
+        norm_stats_path: str | None = None,
+        expected_hash: str | None = None,
+    ) -> CanonicalFeatureBuilder:
         """
         Factory method for backtest context.
 
@@ -350,7 +346,7 @@ class CanonicalFeatureBuilder:
         )
 
     @staticmethod
-    def _load_norm_stats(path: str) -> Dict[str, Dict[str, float]]:
+    def _load_norm_stats(path: str) -> dict[str, dict[str, float]]:
         """
         Load normalization statistics from JSON file.
 
@@ -373,14 +369,14 @@ class CanonicalFeatureBuilder:
         if not p.exists():
             raise NormStatsNotFoundError(str(p))
 
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, encoding="utf-8") as f:
             stats = json.load(f)
 
         logger.debug(f"Loaded norm_stats from {p}: {len(stats)} features")
         return stats
 
     @staticmethod
-    def _compute_hash(norm_stats: Dict[str, Dict[str, float]]) -> str:
+    def _compute_hash(norm_stats: dict[str, dict[str, float]]) -> str:
         """
         Compute deterministic hash of norm_stats.
 
@@ -401,7 +397,7 @@ class CanonicalFeatureBuilder:
         json_str = json.dumps(sorted_stats, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(json_str.encode()).hexdigest()
 
-    def _init_calculators(self) -> Dict[str, BaseCalculator]:
+    def _init_calculators(self) -> dict[str, BaseCalculator]:
         """
         Initialize SSOT calculators for feature calculation.
 
@@ -461,11 +457,11 @@ class CanonicalFeatureBuilder:
     def build_observation(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame],
+        macro: pd.DataFrame | None,
         position: float,
         bar_idx: int,
-        time_normalized: Optional[float] = None,
-        timestamp: Optional[pd.Timestamp] = None,
+        time_normalized: float | None = None,
+        timestamp: pd.Timestamp | None = None,
     ) -> np.ndarray:
         """
         Build complete 15-dimensional observation vector.
@@ -535,7 +531,7 @@ class CanonicalFeatureBuilder:
     def build_batch(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame] = None,
+        macro: pd.DataFrame | None = None,
         normalize: bool = True,
     ) -> pd.DataFrame:
         """
@@ -614,8 +610,8 @@ class CanonicalFeatureBuilder:
         self,
         df: pd.DataFrame,
         position: float = 0.0,
-        time_normalized: Optional[float] = None,
-    ) -> Dict[str, float]:
+        time_normalized: float | None = None,
+    ) -> dict[str, float]:
         """
         Get latest features as a dictionary (L1 DAG compatibility method).
 
@@ -658,9 +654,9 @@ class CanonicalFeatureBuilder:
 
     def validate_features(
         self,
-        features: Dict[str, float],
+        features: dict[str, float],
         strict: bool = True,
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Validate a features dictionary (L1 DAG compatibility method).
 
@@ -714,7 +710,7 @@ class CanonicalFeatureBuilder:
 
         return len(errors) == 0, errors
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Get ordered list of feature names (15 total)."""
         return list(self.FEATURE_ORDER)
 
@@ -726,7 +722,7 @@ class CanonicalFeatureBuilder:
         """Get hash of normalization statistics for validation."""
         return self._norm_stats_hash
 
-    def get_norm_stats(self) -> Dict[str, Dict[str, float]]:
+    def get_norm_stats(self) -> dict[str, dict[str, float]]:
         """Get copy of normalization statistics."""
         return dict(self._norm_stats)
 
@@ -742,10 +738,10 @@ class CanonicalFeatureBuilder:
     def export_snapshot(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame],
+        macro: pd.DataFrame | None,
         position: float,
         bar_idx: int,
-        time_normalized: Optional[float] = None,
+        time_normalized: float | None = None,
     ) -> FeatureSnapshot:
         """
         Export complete feature snapshot for audit and reproducibility.
@@ -793,7 +789,7 @@ class CanonicalFeatureBuilder:
             calculation_time_ms=calc_time_ms,
         )
 
-    def to_json_contract(self) -> Dict[str, Any]:
+    def to_json_contract(self) -> dict[str, Any]:
         """
         Export builder configuration as JSON-serializable contract.
 
@@ -820,7 +816,7 @@ class CanonicalFeatureBuilder:
     # =========================================================================
 
     def _merge_data(
-        self, ohlcv: pd.DataFrame, macro: Optional[pd.DataFrame]
+        self, ohlcv: pd.DataFrame, macro: pd.DataFrame | None
     ) -> pd.DataFrame:
         """Merge OHLCV and macro data for calculators."""
         data = ohlcv.copy()
@@ -839,7 +835,7 @@ class CanonicalFeatureBuilder:
 
     def _calculate_raw_features(
         self, data: pd.DataFrame, bar_idx: int
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate raw feature values using SSOT calculators."""
         features = {}
 
@@ -869,8 +865,8 @@ class CanonicalFeatureBuilder:
         return features
 
     def _normalize_features(
-        self, raw: Dict[str, float]
-    ) -> Dict[str, float]:
+        self, raw: dict[str, float]
+    ) -> dict[str, float]:
         """Apply z-score normalization using training stats."""
         normalized = {}
         clip_min, clip_max = self.CLIP_RANGE
@@ -921,7 +917,7 @@ class CanonicalFeatureBuilder:
         normalized = (current_minutes - start_minutes) / duration
         return float(np.clip(normalized, 0.0, 1.0))
 
-    def _assemble_observation(self, features: Dict[str, float]) -> np.ndarray:
+    def _assemble_observation(self, features: dict[str, float]) -> np.ndarray:
         """Assemble observation array in contract order."""
         observation = np.zeros(self.OBSERVATION_DIM, dtype=np.float32)
 
@@ -966,12 +962,12 @@ class CanonicalFeatureBuilder:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_default_builder: Optional[CanonicalFeatureBuilder] = None
+_default_builder: CanonicalFeatureBuilder | None = None
 
 
 def get_canonical_builder(
     context: BuilderContext = BuilderContext.TRAINING,
-    norm_stats_path: Optional[str] = None,
+    norm_stats_path: str | None = None,
 ) -> CanonicalFeatureBuilder:
     """
     Get or create a CanonicalFeatureBuilder instance.

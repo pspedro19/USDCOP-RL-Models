@@ -10,7 +10,6 @@ Output: score (-1.0 to 1.0) + label (positive/negative/neutral).
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +32,9 @@ def _get_vader():
 
 def analyze_sentiment(
     title: str,
-    content: Optional[str] = None,
-    gdelt_tone: Optional[float] = None,
-) -> tuple[Optional[float], Optional[str]]:
+    content: str | None = None,
+    gdelt_tone: float | None = None,
+) -> tuple[float | None, str | None]:
     """Analyze sentiment of an article.
 
     Delegates to hybrid SentimentAnalyzer when available.
@@ -66,9 +65,9 @@ def analyze_sentiment(
 
 def _legacy_analyze_sentiment(
     title: str,
-    content: Optional[str] = None,
-    gdelt_tone: Optional[float] = None,
-) -> tuple[Optional[float], Optional[str]]:
+    content: str | None = None,
+    gdelt_tone: float | None = None,
+) -> tuple[float | None, str | None]:
     """Legacy sentiment: GDELT tone (primary) + VADER fallback."""
     # Primary: GDELT tone (range: -100 to +100, practical: -20 to +20)
     if gdelt_tone is not None:

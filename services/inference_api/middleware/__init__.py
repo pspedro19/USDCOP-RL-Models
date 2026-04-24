@@ -25,46 +25,45 @@ Usage:
     setup_middleware(app)
 """
 
-from .rate_limit import RateLimitMiddleware, RateLimitStrategy, create_rate_limiter
+# Authentication middleware (P0-3)
+from .auth import (
+    API_KEY_HEADER,
+    AuthMiddleware,
+    create_jwt_token,
+    generate_api_key,
+    get_key_prefix,
+)
 from .correlation import CorrelationIdMiddleware
-from .logging import RequestLoggingMiddleware
-from .setup import setup_middleware
 from .errors import (
+    APIException,
+    DatabaseError,
     ErrorCode,
     ErrorDetail,
-    APIException,
-    ValidationException,
-    NotFoundError,
-    ModelNotFoundError,
-    DatabaseError,
     InferenceError,
+    ModelNotFoundError,
+    NotFoundError,
     RateLimitError,
+    ValidationException,
     setup_exception_handlers,
+)
+from .logging import RequestLoggingMiddleware
+from .rate_limit import RateLimitMiddleware, RateLimitStrategy, create_rate_limiter
+
+# Enhanced rate limiting with per-user limits
+from .rate_limiter import (
+    AsyncTokenBucket,
+    AuthenticatedRateLimiter,
+    AuthenticatedRateLimitMiddleware,
+    create_authenticated_rate_limiter,
 )
 
 # Security middleware (P0 Security)
 from .security_headers import (
-    SecurityHeadersMiddleware,
     RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
     create_security_middleware_stack,
 )
-
-# Authentication middleware (P0-3)
-from .auth import (
-    AuthMiddleware,
-    generate_api_key,
-    create_jwt_token,
-    get_key_prefix,
-    API_KEY_HEADER,
-)
-
-# Enhanced rate limiting with per-user limits
-from .rate_limiter import (
-    AuthenticatedRateLimiter,
-    AuthenticatedRateLimitMiddleware,
-    AsyncTokenBucket,
-    create_authenticated_rate_limiter,
-)
+from .setup import setup_middleware
 
 __all__ = [
     # Authentication (P0-3)

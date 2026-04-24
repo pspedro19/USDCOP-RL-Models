@@ -32,8 +32,13 @@ DEFAULT_ARGS = {
 
 
 def _generate_daily_analysis(**context):
-    """Generate daily AI analysis for today."""
+    """Generate daily AI analysis for today AND update the weekly JSON incrementally.
+
+    This ensures the dashboard /analysis page shows the new daily entry immediately,
+    not just on Fridays when the full weekly summary regenerates.
+    """
     import sys
+    import json
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -51,6 +56,44 @@ def _generate_daily_analysis(**context):
         f"tokens={record.llm_tokens_used}, "
         f"cost=${record.llm_cost_usd:.4f}"
     )
+
+    # ── Incremental update: append today's entry to the weekly JSON ──
+    try:
+        iso_cal = today.isocalendar()
+        year, week = iso_cal[0], iso_cal[1]
+        project_root = Path(__file__).resolve().parents[2]
+        analysis_dir = project_root / "usdcop-trading-dashboard" / "public" / "data" / "analysis"
+        weekly_file = analysis_dir / f"weekly_{year}_W{week:02d}.json"
+
+        if weekly_file.exists():
+            with open(weekly_file) as f:
+                weekly_data = json.load(f)
+
+            # Add or replace today's entry in daily_entries
+            new_entry = record.to_dict()
+            date_str = today.isoformat()
+            existing_dates = {
+                de.get("date") or de.get("analysis_date")
+                for de in weekly_data.get("daily_entries", [])
+            }
+
+            if date_str not in existing_dates:
+                weekly_data.setdefault("daily_entries", []).append(new_entry)
+                # Sort by date
+                weekly_data["daily_entries"].sort(
+                    key=lambda x: x.get("date") or x.get("analysis_date") or ""
+                )
+
+                with open(weekly_file, "w") as f:
+                    json.dump(weekly_data, f, ensure_ascii=False, indent=2, default=str)
+
+                logger.info(f"Updated {weekly_file.name}: now {len(weekly_data['daily_entries'])} daily entries")
+            else:
+                logger.info(f"Daily entry for {date_str} already in {weekly_file.name}")
+        else:
+            logger.info(f"{weekly_file.name} does not exist yet — will be created on Friday or via backfill")
+    except Exception as e:
+        logger.warning(f"Failed to update weekly JSON incrementally (non-blocking): {e}")
 
     context["ti"].xcom_push(key="analysis_date", value=str(today))
     context["ti"].xcom_push(key="sentiment", value=record.sentiment)

@@ -3,7 +3,8 @@ Common contracts used across the application.
 """
 
 from datetime import datetime
-from typing import Generic, TypeVar, Optional, List, Any, Dict
+from typing import Any, Generic, TypeVar
+
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
@@ -22,13 +23,13 @@ class TimestampMixin(BaseModel):
     """Mixin for timestamps."""
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response."""
 
-    items: List[T]
+    items: list[T]
     total: int = Field(ge=0)
     page: int = Field(ge=1, default=1)
     limit: int = Field(ge=1, le=100, default=20)
@@ -44,7 +45,7 @@ class SuccessResponse(BaseModel):
 
     success: bool = True
     message: str = "Operation completed successfully"
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -53,7 +54,7 @@ class ErrorResponse(BaseModel):
     error: bool = True
     code: str
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
 
 class PaginationParams(BaseModel):

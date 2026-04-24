@@ -13,17 +13,17 @@ Available Repositories:
 """
 
 from .minio_repository import (
-    MinIORepository,
+    MinIOABComparisonRepository,
+    MinIOBacktestRepository,
     MinIODatasetRepository,
     MinIOModelRepository,
-    MinIOBacktestRepository,
-    MinIOABComparisonRepository,
+    MinIORepository,
 )
 
 __all__ = [
-    "MinIORepository",
+    "MinIOABComparisonRepository",
+    "MinIOBacktestRepository",
     "MinIODatasetRepository",
     "MinIOModelRepository",
-    "MinIOBacktestRepository",
-    "MinIOABComparisonRepository",
+    "MinIORepository",
 ]

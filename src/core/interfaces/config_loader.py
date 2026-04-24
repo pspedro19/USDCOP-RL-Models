@@ -10,7 +10,7 @@ Date: 2025-12-17
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 
 class IConfigLoader(ABC):
@@ -25,7 +25,7 @@ class IConfigLoader(ABC):
     """
 
     @abstractmethod
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """
         Get ordered list of features.
 
@@ -45,7 +45,7 @@ class IConfigLoader(ABC):
         pass
 
     @abstractmethod
-    def get_norm_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_norm_stats(self, feature_name: str) -> dict[str, float]:
         """
         Get normalization statistics for a feature.
 
@@ -58,7 +58,7 @@ class IConfigLoader(ABC):
         pass
 
     @abstractmethod
-    def get_clip_bounds(self, feature_name: str) -> Optional[tuple]:
+    def get_clip_bounds(self, feature_name: str) -> tuple | None:
         """
         Get clipping bounds for a feature.
 
@@ -71,7 +71,7 @@ class IConfigLoader(ABC):
         pass
 
     @abstractmethod
-    def get_technical_period(self, indicator: str) -> Optional[int]:
+    def get_technical_period(self, indicator: str) -> int | None:
         """
         Get period for technical indicator.
 
@@ -84,7 +84,7 @@ class IConfigLoader(ABC):
         pass
 
     @abstractmethod
-    def get_trading_params(self) -> Dict[str, Any]:
+    def get_trading_params(self) -> dict[str, Any]:
         """
         Get trading parameters.
 

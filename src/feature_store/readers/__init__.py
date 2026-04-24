@@ -38,15 +38,15 @@ Created: 2026-01-17
 """
 
 from .feature_reader import (
-    # Data classes
-    FeatureResult,
+    FeatureNotFoundError,
+    FeatureOrderMismatchError,
     # Main class
     FeatureReader,
     # Exceptions
     FeatureReaderError,
-    FeatureNotFoundError,
+    # Data classes
+    FeatureResult,
     StaleFeatureError,
-    FeatureOrderMismatchError,
 )
 
 __all__ = [

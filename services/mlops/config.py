@@ -12,13 +12,14 @@ Environment Variables:
     MLOPS_ENV: Environment (development/staging/production)
 """
 
+import logging
 import os
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
 from datetime import time
 from enum import Enum
+from typing import Any
+
 import yaml
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class TradingHours:
     end_hour: int = 12
     end_minute: int = 55
     timezone: str = "America/Bogota"
-    trading_days: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Mon-Fri
+    trading_days: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Mon-Fri
 
     @property
     def start_time(self) -> time:
@@ -84,7 +85,7 @@ class RiskLimits:
     cooldown_after_loss: int = 60  # 1 minute cooldown after loss
     cooldown_after_circuit_break: int = 300  # 5 minutes after circuit breaker
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "max_daily_loss": self.max_daily_loss,
             "max_daily_profit_target": self.max_daily_profit_target,
@@ -116,7 +117,7 @@ class RedisConfig:
     host: str = "redis"
     port: int = 6379
     db: int = 0
-    password: Optional[str] = None
+    password: str | None = None
     socket_timeout: int = 5
     retry_on_timeout: bool = True
 
@@ -152,7 +153,7 @@ class MLOpsConfig:
     environment: Environment = Environment.DEVELOPMENT
 
     # Model settings
-    models: List[ModelConfig] = field(default_factory=list)
+    models: list[ModelConfig] = field(default_factory=list)
     default_observation_dim: int = 45
     ensemble_strategy: str = "weighted_average"  # or "majority_vote"
 
@@ -280,7 +281,7 @@ class MLOpsConfig:
 
 
 # Global configuration instance
-_config: Optional[MLOpsConfig] = None
+_config: MLOpsConfig | None = None
 
 
 def get_config() -> MLOpsConfig:

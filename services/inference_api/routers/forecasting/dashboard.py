@@ -7,12 +7,13 @@ Aggregate endpoint for dashboard data.
 @version 1.0.0
 """
 
-from fastapi import APIRouter
-from typing import Dict, Any
-from datetime import datetime
-import pandas as pd
-import os
 import logging
+import os
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+from fastapi import APIRouter
 
 from services.inference_api.contracts.forecasting import DashboardResponse
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 DATA_PATH = os.environ.get('FORECASTING_DATA_PATH', 'data/processed')
 
 
-def get_dashboard_data() -> Dict[str, Any]:
+def get_dashboard_data() -> dict[str, Any]:
     """
     Load all dashboard data in one call.
 

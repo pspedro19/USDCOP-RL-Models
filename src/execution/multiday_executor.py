@@ -22,9 +22,8 @@ PnL = direction * leverage * (exit_price - entry_price) / entry_price
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from enum import Enum
-from typing import List, Optional, Tuple
 
 from src.execution.trailing_stop import (
     TrailingState,
@@ -50,16 +49,16 @@ class SubtradeState:
     subtrade_index: int = 0
     direction: int = 0               # +1 long, -1 short
     entry_price: float = 0.0
-    entry_timestamp: Optional[datetime] = None
-    exit_price: Optional[float] = None
-    exit_timestamp: Optional[datetime] = None
-    exit_reason: Optional[str] = None
+    entry_timestamp: datetime | None = None
+    exit_price: float | None = None
+    exit_timestamp: datetime | None = None
+    exit_reason: str | None = None
     peak_price: float = 0.0
     trailing_state: str = "waiting"   # waiting/active/triggered/expired
     bar_count: int = 0
-    pnl_pct: Optional[float] = None
-    pnl_unleveraged_pct: Optional[float] = None
-    cooldown_until: Optional[datetime] = None
+    pnl_pct: float | None = None
+    pnl_unleveraged_pct: float | None = None
+    cooldown_until: datetime | None = None
 
 
 @dataclass
@@ -69,14 +68,14 @@ class WeekExecutionState:
     direction: int = 0                  # +1 long, -1 short
     leverage: float = 1.0
     status: WeekStatus = WeekStatus.PENDING
-    entry_price: Optional[float] = None   # First subtrade entry
-    entry_timestamp: Optional[datetime] = None
-    exit_price: Optional[float] = None    # Last subtrade exit
-    exit_timestamp: Optional[datetime] = None
-    exit_reason: Optional[str] = None
-    subtrades: List[SubtradeState] = field(default_factory=list)
-    week_pnl_pct: Optional[float] = None
-    week_pnl_unleveraged_pct: Optional[float] = None
+    entry_price: float | None = None   # First subtrade entry
+    entry_timestamp: datetime | None = None
+    exit_price: float | None = None    # Last subtrade exit
+    exit_timestamp: datetime | None = None
+    exit_reason: str | None = None
+    subtrades: list[SubtradeState] = field(default_factory=list)
+    week_pnl_pct: float | None = None
+    week_pnl_unleveraged_pct: float | None = None
     config_version: str = "smart_executor_h5_v2"
 
 
@@ -198,7 +197,7 @@ class MultiDayExecutor:
         bar_low: float,
         bar_close: float,
         bar_timestamp: datetime,
-    ) -> Tuple[WeekExecutionState, Optional[str]]:
+    ) -> tuple[WeekExecutionState, str | None]:
         """
         Process one bar through the active subtrade's trailing stop.
 
@@ -331,7 +330,7 @@ class MultiDayExecutor:
         return bar_timestamp >= week_end_time
 
     @staticmethod
-    def compute_week_pnl(subtrades: List[SubtradeState], leverage: float) -> float:
+    def compute_week_pnl(subtrades: list[SubtradeState], leverage: float) -> float:
         """
         Compute total leveraged PnL for the week from all subtrades.
 
@@ -348,14 +347,14 @@ class MultiDayExecutor:
                 total += sub.pnl_pct
         return total
 
-    def _get_active_subtrade(self, state: WeekExecutionState) -> Optional[SubtradeState]:
+    def _get_active_subtrade(self, state: WeekExecutionState) -> SubtradeState | None:
         """Get the currently open subtrade (no exit_price yet)."""
         for sub in reversed(state.subtrades):
             if sub.exit_price is None:
                 return sub
         return None
 
-    def _get_last_closed_subtrade(self, state: WeekExecutionState) -> Optional[SubtradeState]:
+    def _get_last_closed_subtrade(self, state: WeekExecutionState) -> SubtradeState | None:
         """Get the most recently closed subtrade."""
         for sub in reversed(state.subtrades):
             if sub.exit_price is not None:

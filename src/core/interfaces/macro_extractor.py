@@ -20,7 +20,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @dataclass
@@ -40,8 +40,8 @@ class ExtractionResult:
         validation_passed: Whether data passed all validation checks
         validation_errors: List of validation error messages
     """
-    data: Dict[str, Dict[str, float]] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
+    data: dict[str, dict[str, float]] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
     records_extracted: int = 0
     source_name: str = ""
     extraction_time: datetime = field(default_factory=datetime.utcnow)
@@ -50,7 +50,7 @@ class ExtractionResult:
     retry_count: int = 0
     fallback_used: bool = False
     validation_passed: bool = True
-    validation_errors: List[str] = field(default_factory=list)
+    validation_errors: list[str] = field(default_factory=list)
 
     @property
     def is_successful(self) -> bool:
@@ -62,7 +62,7 @@ class ExtractionResult:
         """True if any errors occurred."""
         return len(self.errors) > 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for XCom serialization."""
         return {
             'data': self.data,
@@ -78,7 +78,7 @@ class ExtractionResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ExtractionResult':
+    def from_dict(cls, data: dict[str, Any]) -> ExtractionResult:
         """Create from dictionary (XCom deserialization)."""
         return cls(
             data=data.get('data', {}),
@@ -110,7 +110,7 @@ class MacroExtractionStrategy(Protocol):
 
     def extract(
         self,
-        indicators: Dict[str, str],
+        indicators: dict[str, str],
         lookback_days: int,
         **kwargs
     ) -> ExtractionResult:
@@ -137,7 +137,7 @@ class BaseMacroExtractor(ABC):
     Subclasses must implement extract() method.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize extractor with optional configuration.
 
@@ -155,7 +155,7 @@ class BaseMacroExtractor(ABC):
     @abstractmethod
     def extract(
         self,
-        indicators: Dict[str, str],
+        indicators: dict[str, str],
         lookback_days: int,
         **kwargs
     ) -> ExtractionResult:
@@ -172,7 +172,7 @@ class BaseMacroExtractor(ABC):
         """
         pass
 
-    def _normalize_date(self, date_value: Any) -> Optional[str]:
+    def _normalize_date(self, date_value: Any) -> str | None:
         """
         Normalize a date value to ISO format string.
 
@@ -201,8 +201,8 @@ class BaseMacroExtractor(ABC):
 
     def _create_result(
         self,
-        data: Dict[str, Dict[str, float]],
-        errors: List[str],
+        data: dict[str, dict[str, float]],
+        errors: list[str],
         start_time: datetime
     ) -> ExtractionResult:
         """
@@ -226,7 +226,7 @@ class BaseMacroExtractor(ABC):
             duration_seconds=(end_time - start_time).total_seconds(),
         )
 
-    def validate_indicators(self, indicators: Dict[str, str]) -> List[str]:
+    def validate_indicators(self, indicators: dict[str, str]) -> list[str]:
         """
         Validate indicator configuration.
 
@@ -262,7 +262,7 @@ class ConfigurableExtractor(BaseMacroExtractor):
         """
         return self.config.get(key, default)
 
-    def get_api_key(self) -> Optional[str]:
+    def get_api_key(self) -> str | None:
         """
         Get API key from environment or Vault.
 
@@ -341,7 +341,7 @@ class ConfigurableExtractor(BaseMacroExtractor):
 
         return True, ""
 
-    def get_validation_ranges(self) -> Dict[str, List[float]]:
+    def get_validation_ranges(self) -> dict[str, list[float]]:
         """
         Get all validation ranges from config.
 

@@ -33,9 +33,9 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class FeatureFlag:
     name: str
     enabled: bool = False
     description: str = ""
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     rollout_percentage: int = 100
 
     def is_enabled_for_rollout(self) -> bool:
@@ -73,7 +73,7 @@ class FeatureFlag:
             return False
         return random.randint(1, 100) <= self.rollout_percentage
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "name": self.name,
@@ -101,7 +101,7 @@ class FeatureFlags:
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
+        config_path: Path | None = None,
         reload_interval: int = 60,
     ):
         """
@@ -113,7 +113,7 @@ class FeatureFlags:
         """
         self.config_path = config_path or DEFAULT_CONFIG_PATH
         self.reload_interval = reload_interval
-        self._flags: Dict[str, FeatureFlag] = {}
+        self._flags: dict[str, FeatureFlag] = {}
         self._last_reload: float = 0.0
         self._lock = threading.RLock()
         self._config_mtime: float = 0.0
@@ -145,11 +145,11 @@ class FeatureFlags:
                     self._last_reload = time.time()
                     return
 
-                with open(self.config_path, "r", encoding="utf-8") as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     config = json.load(f)
 
-                now = datetime.now(timezone.utc)
-                new_flags: Dict[str, FeatureFlag] = {}
+                now = datetime.now(UTC)
+                new_flags: dict[str, FeatureFlag] = {}
 
                 for flag_name, flag_config in config.get("flags", {}).items():
                     if isinstance(flag_config, bool):
@@ -214,7 +214,7 @@ class FeatureFlags:
                 return default
             return flag.is_enabled_for_rollout()
 
-    def get_flag(self, flag_name: str) -> Optional[FeatureFlag]:
+    def get_flag(self, flag_name: str) -> FeatureFlag | None:
         """
         Get a specific feature flag by name.
 
@@ -229,7 +229,7 @@ class FeatureFlags:
         with self._lock:
             return self._flags.get(flag_name)
 
-    def get_all(self) -> Dict[str, FeatureFlag]:
+    def get_all(self) -> dict[str, FeatureFlag]:
         """
         Get all feature flags.
 
@@ -241,7 +241,7 @@ class FeatureFlags:
         with self._lock:
             return dict(self._flags)
 
-    def get_all_as_dict(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_as_dict(self) -> dict[str, dict[str, Any]]:
         """
         Get all flags as a dictionary suitable for JSON serialization.
 
@@ -276,7 +276,7 @@ class FeatureFlags:
         with self._lock:
             if flag_name in self._flags:
                 self._flags[flag_name].enabled = enabled
-                self._flags[flag_name].updated_at = datetime.now(timezone.utc)
+                self._flags[flag_name].updated_at = datetime.now(UTC)
             else:
                 self._flags[flag_name] = FeatureFlag(
                     name=flag_name,
@@ -286,12 +286,12 @@ class FeatureFlags:
 
 
 # Singleton instance
-_feature_flags_instance: Optional[FeatureFlags] = None
+_feature_flags_instance: FeatureFlags | None = None
 _instance_lock = threading.Lock()
 
 
 def get_feature_flags(
-    config_path: Optional[Path] = None,
+    config_path: Path | None = None,
     reload_interval: int = 60,
 ) -> FeatureFlags:
     """

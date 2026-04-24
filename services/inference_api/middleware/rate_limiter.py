@@ -26,10 +26,8 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from threading import Lock
-from typing import Dict, Optional, Tuple
 
-from fastapi import HTTPException, Request, Response, status
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -54,8 +52,8 @@ class AsyncTokenBucket:
     max_tokens: float
     refill_rate: float  # tokens per second
 
-    _tokens: Dict[str, float] = field(default_factory=dict)
-    _last_update: Dict[str, float] = field(default_factory=dict)
+    _tokens: dict[str, float] = field(default_factory=dict)
+    _last_update: dict[str, float] = field(default_factory=dict)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def __post_init__(self):
@@ -63,7 +61,7 @@ class AsyncTokenBucket:
         self._last_update = defaultdict(time.time)
         self._lock = asyncio.Lock()
 
-    async def consume(self, key: str, tokens: float = 1.0) -> Tuple[bool, float]:
+    async def consume(self, key: str, tokens: float = 1.0) -> tuple[bool, float]:
         """Try to consume tokens from the bucket.
 
         Args:
@@ -147,7 +145,7 @@ class AuthenticatedRateLimiter:
         self.use_database = use_database and db_pool is not None
 
         # In-memory rate limiters per user
-        self._limiters: Dict[str, AsyncTokenBucket] = {}
+        self._limiters: dict[str, AsyncTokenBucket] = {}
         self._limiter_lock = asyncio.Lock()
 
         logger.info(
@@ -172,8 +170,8 @@ class AuthenticatedRateLimiter:
         self,
         user_id: str,
         request: Request,
-        rate_limit: Optional[int] = None
-    ) -> Tuple[bool, Dict]:
+        rate_limit: int | None = None
+    ) -> tuple[bool, dict]:
         """Check if request is within rate limit.
 
         Args:
@@ -222,7 +220,7 @@ class AuthenticatedRateLimiter:
         self,
         key: str,
         rate_limit: int
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """Check rate limit using database state.
 
         This method is useful for distributed deployments where
@@ -323,8 +321,8 @@ class AuthenticatedRateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        rate_limiter: Optional[AuthenticatedRateLimiter] = None,
-        exclude_paths: Optional[list] = None,
+        rate_limiter: AuthenticatedRateLimiter | None = None,
+        exclude_paths: list | None = None,
         enabled: bool = True,
     ):
         super().__init__(app)

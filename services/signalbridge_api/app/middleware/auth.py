@@ -4,19 +4,18 @@ Authentication middleware and dependencies.
 
 import os
 from datetime import datetime
-from typing import Optional
-from uuid import UUID, uuid4
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from uuid import UUID
+
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.database import get_db
+from app.core.exceptions import ErrorCode
 from app.core.security import verify_token
-from app.core.exceptions import AuthenticationError, ErrorCode
 from app.models import User
 from app.services.user import UserService
-
 
 # HTTP Bearer security scheme
 security = HTTPBearer(auto_error=False)
@@ -42,7 +41,7 @@ class DevUser:
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """
@@ -144,9 +143,9 @@ async def get_current_active_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """
     Get current user if authenticated, None otherwise.
     Used for endpoints that work with or without authentication.

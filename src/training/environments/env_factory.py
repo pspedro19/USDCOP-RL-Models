@@ -17,17 +17,15 @@ Design Patterns:
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Type, Callable, Any, List, Tuple
-import pandas as pd
-import numpy as np
 
+import pandas as pd
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 
 from .trading_env import (
-    TradingEnvironment,
-    TradingEnvConfig,
     DefaultRewardStrategy,
     RewardStrategy,
+    TradingEnvConfig,
+    TradingEnvironment,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,12 +38,12 @@ logger = logging.getLogger(__name__)
 class RewardStrategyRegistry:
     """Registry of available reward strategies"""
 
-    _strategies: Dict[str, Type[RewardStrategy]] = {
+    _strategies: dict[str, type[RewardStrategy]] = {
         "default": DefaultRewardStrategy,
     }
 
     @classmethod
-    def register(cls, name: str, strategy_class: Type[RewardStrategy]) -> None:
+    def register(cls, name: str, strategy_class: type[RewardStrategy]) -> None:
         """Register a new reward strategy"""
         cls._strategies[name] = strategy_class
         logger.info(f"Registered reward strategy: {name}")
@@ -61,7 +59,7 @@ class RewardStrategyRegistry:
         return cls._strategies[name](**kwargs)
 
     @classmethod
-    def list_strategies(cls) -> List[str]:
+    def list_strategies(cls) -> list[str]:
         """List available strategies"""
         return list(cls._strategies.keys())
 
@@ -101,16 +99,16 @@ class EnvironmentFactory:
 
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self._dataset_cache: Dict[str, pd.DataFrame] = {}
-        self._norm_stats_cache: Dict[str, Dict] = {}
+        self._dataset_cache: dict[str, pd.DataFrame] = {}
+        self._norm_stats_cache: dict[str, dict] = {}
 
     def create(
         self,
         dataset_path: Path,
         norm_stats_path: Path,
-        config: Optional[TradingEnvConfig] = None,
-        reward_strategy: Optional[str] = "default",
-        reward_kwargs: Optional[Dict] = None,
+        config: TradingEnvConfig | None = None,
+        reward_strategy: str | None = "default",
+        reward_kwargs: dict | None = None,
         use_cache: bool = True,
     ) -> TradingEnvironment:
         """
@@ -157,11 +155,11 @@ class EnvironmentFactory:
         self,
         dataset_path: Path,
         norm_stats_path: Path,
-        config: Optional[TradingEnvConfig] = None,
+        config: TradingEnvConfig | None = None,
         n_envs: int = 1,
         use_subproc: bool = False,
         reward_strategy: str = "default",
-        reward_kwargs: Optional[Dict] = None,
+        reward_kwargs: dict | None = None,
     ) -> VecEnv:
         """
         Create vectorized environment for parallel training.
@@ -210,9 +208,9 @@ class EnvironmentFactory:
     def _split_by_dates(
         self,
         df: pd.DataFrame,
-        date_ranges: Dict[str, str],
+        date_ranges: dict[str, str],
         timestamp_col: str = 'timestamp'
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Split dataframe by date ranges from SSOT.
 
@@ -263,15 +261,15 @@ class EnvironmentFactory:
         self,
         dataset_path: Path,
         norm_stats_path: Path,
-        config: Optional[TradingEnvConfig] = None,
-        date_ranges: Optional[Dict[str, str]] = None,
+        config: TradingEnvConfig | None = None,
+        date_ranges: dict[str, str] | None = None,
         train_ratio: float = 0.7,
         val_ratio: float = 0.15,
         n_train_envs: int = 1,
         n_eval_envs: int = 1,
         reward_strategy: str = "default",
-        reward_kwargs: Optional[Dict] = None,
-    ) -> Dict[str, VecEnv]:
+        reward_kwargs: dict | None = None,
+    ) -> dict[str, VecEnv]:
         """
         Create train, validation, and test environments from a single dataset.
 
@@ -390,7 +388,7 @@ class EnvironmentFactory:
 
         return df
 
-    def _load_norm_stats(self, path: Path, use_cache: bool = True) -> Dict:
+    def _load_norm_stats(self, path: Path, use_cache: bool = True) -> dict:
         """Load normalization stats with optional caching"""
         path_str = str(path)
 
@@ -404,7 +402,7 @@ class EnvironmentFactory:
             raise FileNotFoundError(f"Norm stats not found: {full_path}")
 
         logger.info(f"Loading norm_stats: {full_path}")
-        with open(full_path, 'r') as f:
+        with open(full_path) as f:
             stats = json.load(f)
 
         if use_cache:
@@ -427,7 +425,7 @@ def create_training_env(
     project_root: Path,
     dataset_path: Path,
     norm_stats_path: Path,
-    config: Optional[TradingEnvConfig] = None,
+    config: TradingEnvConfig | None = None,
     n_envs: int = 1,
 ) -> VecEnv:
     """

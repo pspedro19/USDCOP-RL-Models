@@ -25,7 +25,6 @@ import logging
 import os
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
 
 from fastapi import HTTPException, Request, status
 from fastapi.security import APIKeyHeader
@@ -109,7 +108,7 @@ class AuthMiddleware:
 
         return False
 
-    async def verify_request(self, request: Request) -> Optional[str]:
+    async def verify_request(self, request: Request) -> str | None:
         """Verify request authentication.
 
         Checks API key or JWT token and returns user identifier.
@@ -301,7 +300,7 @@ class AuthMiddleware:
         return request.client.host if request.client else "unknown"
 
 
-def generate_api_key(prefix: str = "usdcop") -> Tuple[str, str]:
+def generate_api_key(prefix: str = "usdcop") -> tuple[str, str]:
     """Generate a new API key and its hash.
 
     Creates a cryptographically secure API key with the format:
@@ -332,7 +331,7 @@ def create_jwt_token(
     user_id: str,
     secret: str,
     expires_in: timedelta = timedelta(hours=24),
-    additional_claims: Optional[dict] = None
+    additional_claims: dict | None = None
 ) -> str:
     """Create a JWT token for a user.
 

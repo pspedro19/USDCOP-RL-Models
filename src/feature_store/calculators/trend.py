@@ -14,8 +14,8 @@ Created: 2025-01-12
 import numpy as np
 import pandas as pd
 
-from .base import FeatureCalculator, CalculatorRegistry
-from ..contracts import FeatureSpec, SmoothingMethod
+from ..contracts import SmoothingMethod
+from .base import CalculatorRegistry, FeatureCalculator
 
 
 @CalculatorRegistry.register("ema")

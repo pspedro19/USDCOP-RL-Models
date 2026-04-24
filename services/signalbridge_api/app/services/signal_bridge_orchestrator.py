@@ -21,45 +21,39 @@ Version: 1.0.0
 Date: 2026-01-22
 """
 
-import asyncio
 import logging
 import os
 from datetime import datetime
 from time import perf_counter
-from typing import Optional, Dict, Any, List
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.base import OrderResult
+from app.adapters.factory import ExchangeAdapterFactory
+from app.contracts.execution import ExecutionStatus, OrderSide
 from app.contracts.signal_bridge import (
-    InferenceSignalCreate,
-    ManualSignalCreate,
+    BridgeEventType,
+    BridgeStatus,
     ExecutionResult,
+    InferenceSignalCreate,
     RiskCheckResult,
     RiskDecision,
     RiskReason,
-    BridgeStatus,
-    BridgeHealthCheck,
-    BridgeEventType,
-    BridgeStatistics,
     TradingMode,
-    KillSwitchRequest,
-    ExecutionAuditCreate,
-    UserTradingState,
 )
-from app.contracts.execution import ExecutionStatus, OrderSide, OrderType
-from app.contracts.exchange import SupportedExchange
-from app.adapters.factory import ExchangeAdapterFactory
-from app.adapters.base import OrderResult
+from app.core.config import settings
 from app.services.risk_bridge import RiskBridgeService
 from app.services.vault import VaultService
-from app.core.config import settings
 
 # Import TradingFlagsRedis if available
 try:
     from src.config.trading_flags import (
         TradingFlagsRedis,
         get_trading_flags_redis,
+    )
+    from src.config.trading_flags import (
         TradingMode as CoreTradingMode,
     )
     TRADING_FLAGS_AVAILABLE = True
@@ -98,9 +92,9 @@ class SignalBridgeOrchestrator:
     def __init__(
         self,
         db_session: AsyncSession,
-        vault_service: Optional[VaultService] = None,
-        risk_bridge: Optional[RiskBridgeService] = None,
-        trading_mode: Optional[TradingMode] = None,
+        vault_service: VaultService | None = None,
+        risk_bridge: RiskBridgeService | None = None,
+        trading_mode: TradingMode | None = None,
     ):
         """
         Initialize the orchestrator.
@@ -131,11 +125,11 @@ class SignalBridgeOrchestrator:
         self._executions_success = 0
         self._executions_failed = 0
         self._blocked_by_risk = 0
-        self._last_signal_at: Optional[datetime] = None
-        self._last_execution_at: Optional[datetime] = None
+        self._last_signal_at: datetime | None = None
+        self._last_execution_at: datetime | None = None
 
         # Event listeners for notifications
-        self._listeners: List[callable] = []
+        self._listeners: list[callable] = []
 
         logger.info(f"SignalBridgeOrchestrator initialized, mode={self.trading_mode}")
 
@@ -167,7 +161,7 @@ class SignalBridgeOrchestrator:
         self,
         signal: InferenceSignalCreate,
         user_id: UUID,
-        credential_id: Optional[UUID] = None,
+        credential_id: UUID | None = None,
     ) -> ExecutionResult:
         """
         Process a signal through the full pipeline.
@@ -305,7 +299,7 @@ class SignalBridgeOrchestrator:
         execution_id: UUID,
         signal: InferenceSignalCreate,
         quantity: float,
-        price: Optional[float],
+        price: float | None,
         risk_result: RiskCheckResult,
         start_time: float,
     ) -> ExecutionResult:
@@ -484,7 +478,7 @@ class SignalBridgeOrchestrator:
 
             return self._error_result(execution_id, signal, str(e))
 
-    async def get_user_state(self, user_id: UUID) -> Dict[str, Any]:
+    async def get_user_state(self, user_id: UUID) -> dict[str, Any]:
         """
         Get current trading state for a user.
 
@@ -635,7 +629,7 @@ class SignalBridgeOrchestrator:
         self,
         signal: InferenceSignalCreate,
         user_id: UUID,
-        current_price: Optional[float] = None,
+        current_price: float | None = None,
     ) -> float:
         """
         Calculate position size based on user settings and portfolio.
@@ -678,7 +672,7 @@ class SignalBridgeOrchestrator:
 
         return position_size
 
-    async def _get_current_price(self, symbol: str) -> Optional[float]:
+    async def _get_current_price(self, symbol: str) -> float | None:
         """
         Get current market price for a symbol.
 
@@ -713,8 +707,9 @@ class SignalBridgeOrchestrator:
 
         # Try Redis cache
         try:
-            import redis
             import json
+
+            import redis
             r = redis.Redis(
                 host=os.environ.get("REDIS_HOST", "redis"),
                 port=int(os.environ.get("REDIS_PORT", "6379")),
@@ -735,7 +730,7 @@ class SignalBridgeOrchestrator:
         logger.warning(f"No price available for {symbol}")
         return None
 
-    async def _get_credentials(self, credential_id: UUID) -> Optional[Dict[str, Any]]:
+    async def _get_credentials(self, credential_id: UUID) -> dict[str, Any] | None:
         """Get exchange credentials from Vault."""
         try:
             return await self.vault_service.get_exchange_credentials(
@@ -746,7 +741,7 @@ class SignalBridgeOrchestrator:
             logger.error(f"Error fetching credentials: {e}")
             return None
 
-    def _get_kill_switch_reason(self) -> Optional[str]:
+    def _get_kill_switch_reason(self) -> str | None:
         """Get kill switch reason if active."""
         if self._trading_flags and self._trading_flags.kill_switch:
             state = self._trading_flags._get_flag_state("kill_switch")
@@ -759,7 +754,7 @@ class SignalBridgeOrchestrator:
         signal: InferenceSignalCreate,
         reason: RiskReason,
         message: str,
-        risk_result: Optional[RiskCheckResult] = None,
+        risk_result: RiskCheckResult | None = None,
     ) -> ExecutionResult:
         """Create a blocked execution result."""
         return ExecutionResult(
@@ -799,7 +794,7 @@ class SignalBridgeOrchestrator:
         self,
         execution_id: UUID,
         event_type: BridgeEventType,
-        event_data: Dict[str, Any],
+        event_data: dict[str, Any],
     ) -> None:
         """Record an audit event."""
         try:

@@ -17,14 +17,13 @@ SOLID Principles:
 - DIP: Depends on abstractions (Protocol)
 """
 
-import time
-import os
 import logging
-from abc import ABC, abstractmethod
+import os
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Protocol
 from threading import Lock
+from typing import Protocol
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -67,8 +66,8 @@ class TokenBucketStrategy:
     requests_per_minute: int = 100
     burst_size: int = 20
 
-    _buckets: Dict[str, float] = field(default_factory=dict)
-    _last_update: Dict[str, float] = field(default_factory=dict)
+    _buckets: dict[str, float] = field(default_factory=dict)
+    _last_update: dict[str, float] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
     def __post_init__(self):
@@ -121,7 +120,7 @@ class SlidingWindowStrategy:
 
     requests_per_minute: int = 100
 
-    _requests: Dict[str, list] = field(default_factory=dict)
+    _requests: dict[str, list] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
     def __post_init__(self):
@@ -169,8 +168,8 @@ class FixedWindowStrategy:
 
     requests_per_minute: int = 100
 
-    _counts: Dict[str, int] = field(default_factory=dict)
-    _window_start: Dict[str, float] = field(default_factory=dict)
+    _counts: dict[str, int] = field(default_factory=dict)
+    _window_start: dict[str, float] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
     def __post_init__(self):
@@ -271,8 +270,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        strategy: Optional[RateLimitStrategy] = None,
-        exclude_paths: Optional[list] = None,
+        strategy: RateLimitStrategy | None = None,
+        exclude_paths: list | None = None,
         enabled: bool = True,
     ):
         super().__init__(app)

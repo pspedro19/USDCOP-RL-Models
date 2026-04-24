@@ -348,6 +348,121 @@ def check_backups(**context):
     return {"status": "ok", "backup_status": backup_status}
 
 
+def check_minio_buckets(**context):
+    """CHECK 8b: Verify MinIO buckets + seed uploads.
+
+    Validates that the expected MinIO buckets exist and that seed backups
+    have been uploaded recently. Does NOT trigger auto-heal actions — missing
+    buckets require manual intervention (bucket creation / MinIO restore).
+
+    Expected buckets:
+      - mlflow                        (MLflow artifacts)
+      - 99-common-trading-models      (model artifacts)
+      - 99-common-trading-backups     (seed uploads)
+
+    For 99-common-trading-backups, checks at least one object under seeds/
+    prefix. If none found within the last 48h, returns 'stale' (warning only).
+    If MinIO is unreachable, returns 'error' without crashing the DAG.
+    """
+    expected_buckets = ["mlflow", "99-common-trading-models", "99-common-trading-backups"]
+    seeds_bucket = "99-common-trading-backups"
+    seeds_prefix = "seeds/"
+    stale_threshold_hours = 48
+
+    try:
+        import boto3
+        from botocore.client import Config as BotoConfig
+        from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
+    except ImportError as e:
+        logger.error(f"[Watchdog] boto3 not available: {e}")
+        return {"status": "error", "error": f"boto3 import failed: {e}"}
+
+    endpoint = os.environ.get("MINIO_ENDPOINT", "http://minio:9000")
+    access_key = os.environ.get("MINIO_ACCESS_KEY", "")
+    secret_key = os.environ.get("MINIO_SECRET_KEY", "")
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=BotoConfig(signature_version="s3v4", retries={"max_attempts": 2}),
+            region_name="us-east-1",
+        )
+
+        # List buckets
+        resp = s3.list_buckets()
+        existing = {b["Name"] for b in resp.get("Buckets", [])}
+        missing = [b for b in expected_buckets if b not in existing]
+
+        bucket_status = {b: (b in existing) for b in expected_buckets}
+
+        if missing:
+            logger.warning(f"[Watchdog] MinIO buckets MISSING: {missing}")
+            return {
+                "status": "missing",
+                "buckets": missing,
+                "bucket_status": bucket_status,
+                "endpoint": endpoint,
+            }
+
+        # Check seed uploads freshness
+        seed_info = {"object_count": 0, "latest_upload": None, "age_hours": None}
+        try:
+            objs = s3.list_objects_v2(Bucket=seeds_bucket, Prefix=seeds_prefix, MaxKeys=100)
+            contents = objs.get("Contents", []) or []
+            seed_info["object_count"] = len(contents)
+            if contents:
+                latest = max(contents, key=lambda o: o["LastModified"])
+                latest_ts = latest["LastModified"]
+                seed_info["latest_upload"] = latest_ts.isoformat()
+                age = datetime.now(timezone.utc) - latest_ts
+                age_hours = age.total_seconds() / 3600
+                seed_info["age_hours"] = round(age_hours, 1)
+
+                if age_hours > stale_threshold_hours:
+                    logger.warning(
+                        f"[Watchdog] MinIO seed uploads STALE: latest {age_hours:.1f}h ago"
+                    )
+                    return {
+                        "status": "stale",
+                        "bucket_status": bucket_status,
+                        "seed_info": seed_info,
+                        "threshold_hours": stale_threshold_hours,
+                    }
+            else:
+                # No seed uploads yet — warn but don't fail (DAG may not have run)
+                logger.warning(
+                    f"[Watchdog] MinIO {seeds_bucket}/{seeds_prefix} has no objects yet"
+                )
+                return {
+                    "status": "stale",
+                    "bucket_status": bucket_status,
+                    "seed_info": seed_info,
+                    "reason": "no_seed_uploads_yet",
+                }
+        except ClientError as e:
+            logger.warning(f"[Watchdog] Could not list {seeds_bucket}/{seeds_prefix}: {e}")
+            seed_info["error"] = str(e)
+
+        logger.info(
+            f"[Watchdog] MinIO OK: {len(expected_buckets)} buckets present, "
+            f"{seed_info['object_count']} seed objects"
+        )
+        return {"status": "ok", "bucket_status": bucket_status, "seed_info": seed_info}
+
+    except EndpointConnectionError as e:
+        logger.error(f"[Watchdog] MinIO unreachable at {endpoint}: {e}")
+        return {"status": "error", "error": f"unreachable: {e}", "endpoint": endpoint}
+    except (BotoCoreError, ClientError) as e:
+        logger.error(f"[Watchdog] MinIO error: {e}")
+        return {"status": "error", "error": str(e), "endpoint": endpoint}
+    except Exception as e:
+        logger.error(f"[Watchdog] Unexpected MinIO check failure: {e}")
+        return {"status": "error", "error": f"unexpected: {e}"}
+
+
 def auto_heal(**context):
     """
     Read all check results and trigger recovery actions.
@@ -367,6 +482,7 @@ def auto_heal(**context):
         "h5_signal": ti.xcom_pull(task_ids="check_h5_signal"),
         "news": ti.xcom_pull(task_ids="check_news"),
         "backups": ti.xcom_pull(task_ids="check_backups"),
+        "minio": ti.xcom_pull(task_ids="check_minio"),
     }
 
     for name, result in checks.items():
@@ -516,6 +632,7 @@ with DAG(
     t_h5 = PythonOperator(task_id="check_h5_signal", python_callable=check_h5_signal)
     t_news = PythonOperator(task_id="check_news", python_callable=check_news_pipeline)
     t_backups = PythonOperator(task_id="check_backups", python_callable=check_backups)
+    t_minio = PythonOperator(task_id="check_minio", python_callable=check_minio_buckets)
 
     t_heal = PythonOperator(
         task_id="auto_heal", python_callable=auto_heal, execution_timeout=timedelta(minutes=5)
@@ -523,4 +640,13 @@ with DAG(
     t_report = PythonOperator(task_id="generate_report", python_callable=generate_report)
 
     # All checks run in parallel, then heal, then report
-    [t_ohlcv, t_macro, t_forecast, t_analysis, t_h5, t_news, t_backups] >> t_heal >> t_report
+    [
+        t_ohlcv,
+        t_macro,
+        t_forecast,
+        t_analysis,
+        t_h5,
+        t_news,
+        t_backups,
+        t_minio,
+    ] >> t_heal >> t_report

@@ -18,13 +18,14 @@ Port: 8004
 import logging
 import sys
 from contextlib import asynccontextmanager
+
+from api.routes import init_services, router
+from database.postgres_client import PostgresClient
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import SERVICE_CONFIG
-from database.postgres_client import PostgresClient
-from api.routes import router, init_services
 
 # Configure logging
 logging.basicConfig(

@@ -19,14 +19,11 @@ Usage:
 @author Trading Team
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Optional, Any
-from enum import Enum
 import hashlib
 import json
-import os
-from pathlib import Path
-
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 # =============================================================================
 # ENUMS
@@ -88,7 +85,7 @@ class FeatureConfig:
     """Feature engineering configuration."""
 
     # Feature columns (SSOT - imported from data_contracts)
-    feature_columns: Tuple[str, ...] = (
+    feature_columns: tuple[str, ...] = (
         "close", "open", "high", "low",
         "return_1d", "return_5d", "return_10d", "return_20d",
         "volatility_5d", "volatility_10d", "volatility_20d",
@@ -98,7 +95,7 @@ class FeatureConfig:
     )
 
     # Target horizons (days)
-    target_horizons: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
+    target_horizons: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
     # Target column
     target_column: str = "close"
@@ -111,10 +108,10 @@ class FeatureConfig:
     ma_long_period: int = 50
 
     # Volatility windows
-    volatility_windows: Tuple[int, ...] = (5, 10, 20)
+    volatility_windows: tuple[int, ...] = (5, 10, 20)
 
     # Return windows
-    return_windows: Tuple[int, ...] = (1, 5, 10, 20)
+    return_windows: tuple[int, ...] = (1, 5, 10, 20)
 
     @property
     def num_features(self) -> int:
@@ -132,7 +129,7 @@ class TrainingConfig:
     expansion_step: int = 63   # ~3 months
 
     # Model defaults
-    default_params: Dict[str, Any] = field(default_factory=lambda: {
+    default_params: dict[str, Any] = field(default_factory=lambda: {
         "n_estimators": 500,
         "max_depth": 6,
         "learning_rate": 0.03,
@@ -257,7 +254,7 @@ class ForecastingConfig:
         content = json.dumps(config_dict, sort_keys=True)
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "version": self.version,
@@ -297,7 +294,7 @@ class ForecastingConfig:
 # SINGLETON INSTANCE
 # =============================================================================
 
-_config_instance: Optional[ForecastingConfig] = None
+_config_instance: ForecastingConfig | None = None
 
 
 def get_config() -> ForecastingConfig:

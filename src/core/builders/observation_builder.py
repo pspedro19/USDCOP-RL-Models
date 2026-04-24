@@ -23,16 +23,20 @@ Configuration:
 
 import json
 import math
-import numpy as np
 from pathlib import Path
-from typing import Dict, Optional, Union, List, Any
+from typing import Any
+
+import numpy as np
+
+from src.core.constants import (
+    CLIP_MAX,
+    CLIP_MIN,
+    OBSERVATION_DIM,
+)
 
 # Import constants from SSOT
 from src.core.constants import (
     FEATURE_ORDER as SSOT_FEATURE_ORDER,
-    OBSERVATION_DIM,
-    CLIP_MIN,
-    CLIP_MAX,
 )
 
 # Default paths relative to project root
@@ -65,9 +69,9 @@ class ObservationBuilder:
     """
 
     # Constants from SSOT (src/core/constants.py)
-    FEATURE_ORDER: List[str] = list(SSOT_FEATURE_ORDER)
-    CORE_FEATURES: List[str] = FEATURE_ORDER[:13]
-    STATE_FEATURES: List[str] = ["position", "time_normalized"]
+    FEATURE_ORDER: list[str] = list(SSOT_FEATURE_ORDER)
+    CORE_FEATURES: list[str] = FEATURE_ORDER[:13]
+    STATE_FEATURES: list[str] = ["position", "time_normalized"]
     OBS_DIM: int = OBSERVATION_DIM
     CLIP_MIN: float = CLIP_MIN
     CLIP_MAX: float = CLIP_MAX
@@ -75,8 +79,8 @@ class ObservationBuilder:
     def __init__(
         self,
         config_path: str = DEFAULT_CONFIG_PATH,
-        stats_path: Optional[str] = None,
-        base_path: Optional[str] = None
+        stats_path: str | None = None,
+        base_path: str | None = None
     ):
         """
         Initialize the ObservationBuilder.
@@ -132,7 +136,7 @@ class ObservationBuilder:
             return p
         return self._base_path / path
 
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self) -> dict[str, Any]:
         """
         Load the feature configuration file.
 
@@ -148,10 +152,10 @@ class ObservationBuilder:
                 f"Searched from base: {self._base_path}"
             )
 
-        with open(self._config_path, 'r', encoding='utf-8') as f:
+        with open(self._config_path, encoding='utf-8') as f:
             return json.load(f)
 
-    def _load_norm_stats(self) -> Dict[str, Dict[str, float]]:
+    def _load_norm_stats(self) -> dict[str, dict[str, float]]:
         """
         Load normalization statistics.
 
@@ -167,7 +171,7 @@ class ObservationBuilder:
                 f"Searched from base: {self._base_path}"
             )
 
-        with open(self._stats_path, 'r', encoding='utf-8') as f:
+        with open(self._stats_path, encoding='utf-8') as f:
             return json.load(f)
 
     def _validate_config(self) -> None:
@@ -202,7 +206,7 @@ class ObservationBuilder:
 
     def build(
         self,
-        market_features: Dict[str, float],
+        market_features: dict[str, float],
         position: float,
         time_normalized: float
     ) -> np.ndarray:
@@ -324,7 +328,7 @@ class ObservationBuilder:
         except (TypeError, ValueError):
             return 0.0
 
-    def get_feature_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_feature_stats(self, feature_name: str) -> dict[str, float]:
         """
         Get normalization statistics for a feature.
 
@@ -336,7 +340,7 @@ class ObservationBuilder:
         """
         return self._norm_stats.get(feature_name, {"mean": 0.0, "std": 1.0})
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """
         Get the loaded configuration.
 
@@ -345,7 +349,7 @@ class ObservationBuilder:
         """
         return self._config.copy()
 
-    def validate_features(self, market_features: Dict[str, float]) -> List[str]:
+    def validate_features(self, market_features: dict[str, float]) -> list[str]:
         """
         Validate that all required features are present.
 
@@ -368,7 +372,7 @@ class ObservationBuilder:
 # Convenience function for quick instantiation
 def create_observation_builder(
     config_path: str = DEFAULT_CONFIG_PATH,
-    base_path: Optional[str] = None
+    base_path: str | None = None
 ) -> ObservationBuilder:
     """
     Factory function to create an ObservationBuilder instance.

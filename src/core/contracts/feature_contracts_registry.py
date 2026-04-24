@@ -24,10 +24,10 @@ Date: 2026-01-18
 Contract: CTR-FEATURE-REGISTRY-001
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Tuple, List, Final, Optional
-from enum import Enum
 import hashlib
+from dataclasses import dataclass
+from enum import Enum
+from typing import Final
 
 
 class FeatureCategory(Enum):
@@ -55,12 +55,12 @@ class FeatureContract:
     contract_id: str
     name: str
     description: str
-    feature_order: Tuple[str, ...]
-    market_features: Tuple[str, ...]
-    state_features: Tuple[str, ...] = ("position", "time_normalized")
+    feature_order: tuple[str, ...]
+    market_features: tuple[str, ...]
+    state_features: tuple[str, ...] = ("position", "time_normalized")
     is_production: bool = False
     deprecated: bool = False
-    superseded_by: Optional[str] = None
+    superseded_by: str | None = None
 
     @property
     def observation_dim(self) -> int:
@@ -85,7 +85,7 @@ class FeatureContract:
         """Valida que la dimensión de observación coincida."""
         return obs_dim == self.observation_dim
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializa el contrato para logging/MLflow."""
         return {
             "contract_id": self.contract_id,
@@ -104,7 +104,7 @@ class FeatureContract:
 # =============================================================================
 
 # Estado features (común a todos los contratos)
-STATE_FEATURES: Final[Tuple[str, ...]] = ("position", "time_normalized")
+STATE_FEATURES: Final[tuple[str, ...]] = ("position", "time_normalized")
 
 # -----------------------------------------------------------------------------
 # v1.0.0 - PRODUCTION CONTRACT (15 features)
@@ -185,7 +185,7 @@ CONTRACT_V1_2_0 = FeatureContract(
 # CONTRACTS REGISTRY
 # =============================================================================
 
-CONTRACTS: Final[Dict[str, FeatureContract]] = {
+CONTRACTS: Final[dict[str, FeatureContract]] = {
     "v1.0.0": CONTRACT_V1_0_0,
     "v1.1.0": CONTRACT_V1_1_0,
     "v1.2.0": CONTRACT_V1_2_0,
@@ -196,7 +196,7 @@ CANONICAL_CONTRACT_ID: Final[str] = "v1.0.0"
 CANONICAL_CONTRACT: Final[FeatureContract] = CONTRACTS[CANONICAL_CONTRACT_ID]
 
 # Backward compatibility exports
-FEATURE_ORDER: Final[Tuple[str, ...]] = CANONICAL_CONTRACT.feature_order
+FEATURE_ORDER: Final[tuple[str, ...]] = CANONICAL_CONTRACT.feature_order
 OBSERVATION_DIM: Final[int] = CANONICAL_CONTRACT.observation_dim
 FEATURE_ORDER_HASH: Final[str] = CANONICAL_CONTRACT.hash
 
@@ -238,8 +238,8 @@ def get_production_contract() -> FeatureContract:
 
 def validate_model_contract(
     model_contract_id: str,
-    request_contract_id: Optional[str] = None,
-) -> Tuple[bool, str]:
+    request_contract_id: str | None = None,
+) -> tuple[bool, str]:
     """
     Valida compatibilidad entre modelo y request.
 
@@ -268,7 +268,7 @@ def validate_model_contract(
     return True, ""
 
 
-def list_contracts() -> List[Dict]:
+def list_contracts() -> list[dict]:
     """Lista todos los contratos disponibles."""
     return [c.to_dict() for c in CONTRACTS.values()]
 

@@ -22,7 +22,7 @@ Date: 2026-02-12
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -195,14 +195,14 @@ class SACAdapter(AlgorithmAdapter):
 # FACTORY REGISTRY
 # =============================================================================
 
-_ALGORITHM_REGISTRY: Dict[str, Type[AlgorithmAdapter]] = {
+_ALGORITHM_REGISTRY: dict[str, type[AlgorithmAdapter]] = {
     "ppo": PPOAdapter,
     "recurrent_ppo": RecurrentPPOAdapter,
     "sac": SACAdapter,
 }
 
 
-def register_algorithm(name: str, adapter_cls: Type[AlgorithmAdapter]) -> None:
+def register_algorithm(name: str, adapter_cls: type[AlgorithmAdapter]) -> None:
     """Register a new algorithm adapter.
 
     Args:
@@ -243,7 +243,7 @@ def create_algorithm(name: str, **adapter_kwargs) -> AlgorithmAdapter:
     return adapter_cls(**valid_kwargs)
 
 
-def get_algorithm_kwargs(config) -> Dict[str, Any]:
+def get_algorithm_kwargs(config) -> dict[str, Any]:
     """Extract algorithm-specific hyperparameters from SSOT config.
 
     Args:
@@ -281,7 +281,7 @@ def resolve_algorithm_name(config) -> str:
     return "ppo"
 
 
-def _get_ppo_kwargs(config) -> Dict[str, Any]:
+def _get_ppo_kwargs(config) -> dict[str, Any]:
     """Build PPO/RecurrentPPO kwargs from SSOT config."""
     ppo = config.ppo
     net_arch = list(
@@ -304,7 +304,7 @@ def _get_ppo_kwargs(config) -> Dict[str, Any]:
     return kwargs
 
 
-def _get_sac_kwargs(config) -> Dict[str, Any]:
+def _get_sac_kwargs(config) -> dict[str, Any]:
     """Build SAC kwargs from SSOT config."""
     sac_raw = config._raw.get("training", {}).get("sac", {})
     net_arch = list(

@@ -22,31 +22,30 @@ Created: 2025-01-12
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
 
 from .contracts import (
     FeatureVersion,
-    NormalizationStats,
-    NormalizationParams,
     NormalizationMethod,
+    NormalizationParams,
+    NormalizationStats,
 )
-from .registry import FeatureRegistry, get_registry
+from .registry import get_registry
 
 # Import FEATURE_ORDER from SSOT
 try:
-    from src.core.contracts import FEATURE_ORDER as SSOT_FEATURE_ORDER, OBSERVATION_DIM
+    from src.core.contracts import FEATURE_ORDER as SSOT_FEATURE_ORDER
+    from src.core.contracts import OBSERVATION_DIM
 except ImportError:
     SSOT_FEATURE_ORDER = None
     OBSERVATION_DIM = 15
 from .builder import FeatureBuilder
 from .calculators import (
-    RSICalculator,
     ADXCalculator,
     ATRPercentCalculator,
-    CalculatorRegistry,
+    RSICalculator,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,7 +81,7 @@ class InferenceObservationAdapter:
         "position", "time_normalized",
     )
 
-    def __init__(self, norm_stats_path: Optional[Path] = None):
+    def __init__(self, norm_stats_path: Path | None = None):
         """
         Initialize adapter with normalization stats.
 
@@ -100,9 +99,9 @@ class InferenceObservationAdapter:
         # Initialize unified calculators with specs
         self._init_calculators()
 
-        logger.info(f"InferenceObservationAdapter initialized with unified Feature Store")
+        logger.info("InferenceObservationAdapter initialized with unified Feature Store")
 
-    def _load_norm_stats(self, path: Optional[Path]) -> Dict[str, Dict[str, float]]:
+    def _load_norm_stats(self, path: Path | None) -> dict[str, dict[str, float]]:
         """Load normalization stats from JSON file"""
         if path is None:
             raise NormStatsNotFoundError("No norm_stats_path provided")
@@ -158,7 +157,7 @@ class InferenceObservationAdapter:
         df: pd.DataFrame,
         bar_idx: int,
         lookback: int = 50
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate technical indicators using unified calculators.
 
@@ -208,8 +207,8 @@ class InferenceObservationAdapter:
     def calculate_macro_features(
         self,
         row: pd.Series,
-        prev_row: Optional[pd.Series] = None
-    ) -> Dict[str, float]:
+        prev_row: pd.Series | None = None
+    ) -> dict[str, float]:
         """Calculate macro indicator features"""
         # Get raw values with defaults
         dxy = row.get("dxy", 100.0) or 100.0
@@ -320,7 +319,7 @@ class TrainingFeatureAdapter:
     def build_features(
         self,
         df: pd.DataFrame,
-        macro_df: Optional[pd.DataFrame] = None,
+        macro_df: pd.DataFrame | None = None,
         normalize: bool = True
     ) -> pd.DataFrame:
         """
@@ -340,7 +339,7 @@ class TrainingFeatureAdapter:
     def compute_normalization_stats(
         self,
         df: pd.DataFrame,
-        macro_df: Optional[pd.DataFrame] = None
+        macro_df: pd.DataFrame | None = None
     ) -> NormalizationStats:
         """
         Compute normalization statistics from training data.
@@ -388,7 +387,7 @@ class BacktestFeatureAdapter:
     def __init__(
         self,
         version: FeatureVersion = FeatureVersion.CURRENT,
-        norm_stats: Optional[NormalizationStats] = None
+        norm_stats: NormalizationStats | None = None
     ):
         """Initialize backtest adapter"""
         self.version = version
@@ -400,7 +399,7 @@ class BacktestFeatureAdapter:
     def build_features(
         self,
         df: pd.DataFrame,
-        macro_df: Optional[pd.DataFrame] = None
+        macro_df: pd.DataFrame | None = None
     ) -> pd.DataFrame:
         """
         Build features for backtest.
@@ -435,7 +434,7 @@ class AdapterFactory:
     @staticmethod
     def create_backtest_adapter(
         version: FeatureVersion = FeatureVersion.CURRENT,
-        norm_stats: Optional[NormalizationStats] = None
+        norm_stats: NormalizationStats | None = None
     ) -> BacktestFeatureAdapter:
         """Create adapter for backtest pipeline"""
         return BacktestFeatureAdapter(version, norm_stats)

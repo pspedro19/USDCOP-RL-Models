@@ -28,7 +28,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Tuple
+from typing import Any, Final
 
 import numpy as np
 
@@ -73,7 +73,7 @@ class CachedInferenceEngine:
     ENTITY_KEY: Final[str] = "timestamp"
 
     # Expected features (must match training - CTR-FEAT-001)
-    EXPECTED_FEATURES: Final[List[str]] = [
+    EXPECTED_FEATURES: Final[list[str]] = [
         "log_ret_5m",
         "log_ret_1h",
         "log_ret_4h",
@@ -95,7 +95,7 @@ class CachedInferenceEngine:
     EXPECTED_FEATURE_COUNT: Final[int] = 15
 
     # Feature ranges for validation
-    FEATURE_RANGES: Final[Dict[str, Tuple[float, float]]] = {
+    FEATURE_RANGES: Final[dict[str, tuple[float, float]]] = {
         "rsi_9": (0, 100),
         "atr_pct": (0, 0.5),  # 0-50% of price
         "adx_14": (0, 100),
@@ -107,7 +107,7 @@ class CachedInferenceEngine:
         self,
         feature_store_path: str = "feature_store/",
         fallback_enabled: bool = True,
-        norm_stats_path: Optional[str] = None,
+        norm_stats_path: str | None = None,
     ):
         """
         Initialize CachedInferenceEngine.
@@ -120,7 +120,7 @@ class CachedInferenceEngine:
         self.feature_store_path = feature_store_path
         self.fallback_enabled = fallback_enabled
         self.norm_stats_path = norm_stats_path
-        self.store: Optional[FeatureStore] = None
+        self.store: FeatureStore | None = None
 
         # Cache statistics
         self._cache_hits: int = 0
@@ -128,8 +128,8 @@ class CachedInferenceEngine:
         self._errors: int = 0
 
         # Latency tracking (in milliseconds)
-        self._feast_latencies: List[float] = []
-        self._fallback_latencies: List[float] = []
+        self._feast_latencies: list[float] = []
+        self._fallback_latencies: list[float] = []
         self._max_latency_samples: int = 1000
 
         # Initialize Feast store if available
@@ -159,7 +159,7 @@ class CachedInferenceEngine:
         self,
         timestamp: str,
         position: float = 0.0,
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, dict[str, Any]]:
         """
         Get features for inference.
 
@@ -243,7 +243,7 @@ class CachedInferenceEngine:
             f"Feast unavailable and fallback disabled"
         )
 
-    def _get_from_feast(self, timestamp: str) -> Optional[Dict[str, float]]:
+    def _get_from_feast(self, timestamp: str) -> dict[str, float] | None:
         """
         Retrieve features from Feast online store.
 
@@ -295,7 +295,7 @@ class CachedInferenceEngine:
             logger.debug(f"Feast query error: {e}")
             return None
 
-    def _compute_features_direct(self, timestamp: str) -> Dict[str, float]:
+    def _compute_features_direct(self, timestamp: str) -> dict[str, float]:
         """
         Compute features directly from database (fallback).
 
@@ -314,7 +314,7 @@ class CachedInferenceEngine:
 
         if self._fallback_builder is None:
             logger.warning("Fallback builder unavailable, returning zeros")
-            return {f: 0.0 for f in self.EXPECTED_FEATURES}
+            return dict.fromkeys(self.EXPECTED_FEATURES, 0.0)
 
         try:
             # Use the SSOT builder for feature computation
@@ -325,7 +325,7 @@ class CachedInferenceEngine:
         except Exception as e:
             logger.error(f"Fallback builder error: {e}")
             # Return zeros as last resort
-            return {f: 0.0 for f in self.EXPECTED_FEATURES}
+            return dict.fromkeys(self.EXPECTED_FEATURES, 0.0)
 
     def _create_fallback_builder(self):
         """
@@ -345,7 +345,7 @@ class CachedInferenceEngine:
             logger.warning(f"Failed to create fallback builder: {e}")
             return None
 
-    def _build_feature_vector(self, features: Dict[str, float]) -> np.ndarray:
+    def _build_feature_vector(self, features: dict[str, float]) -> np.ndarray:
         """
         Build feature vector in canonical order.
 
@@ -392,13 +392,13 @@ class CachedInferenceEngine:
         else:
             return (current_minutes - trading_start) / (trading_end - trading_start)
 
-    def _add_latency(self, latencies: List[float], value: float) -> None:
+    def _add_latency(self, latencies: list[float], value: float) -> None:
         """Add latency sample, maintaining max size for memory efficiency."""
         latencies.append(value)
         if len(latencies) > self._max_latency_samples:
             latencies.pop(0)
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """
         Get cache hit/miss statistics.
 
@@ -446,9 +446,9 @@ class CachedInferenceEngine:
 
     def validate_feature_consistency(
         self,
-        features: Dict[str, float],
-        expected_hash: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        features: dict[str, float],
+        expected_hash: str | None = None,
+    ) -> dict[str, Any]:
         """
         Validate features match expected schema and optionally hash.
 
@@ -520,7 +520,7 @@ class CachedInferenceEngine:
 
         return result
 
-    def _compute_feature_hash(self, features: Dict[str, float]) -> str:
+    def _compute_feature_hash(self, features: dict[str, float]) -> str:
         """
         Compute SHA256 hash of features for consistency validation.
 
@@ -547,7 +547,7 @@ class CachedInferenceEngine:
         self._fallback_latencies.clear()
         logger.info("Cache statistics reset")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Perform health check on the caching infrastructure.
 
@@ -588,9 +588,9 @@ class CachedInferenceEngine:
 # =============================================================================
 
 def create_cached_inference_engine(
-    feature_store_path: Optional[str] = None,
+    feature_store_path: str | None = None,
     fallback_enabled: bool = True,
-    norm_stats_path: Optional[str] = None,
+    norm_stats_path: str | None = None,
 ) -> CachedInferenceEngine:
     """
     Factory function to create CachedInferenceEngine.
@@ -642,7 +642,7 @@ if __name__ == "__main__":
         timestamp = args.timestamp or datetime.now().isoformat()
         try:
             features, metadata = engine.get_features(timestamp=timestamp, position=0.0)
-            print(f"Features retrieved successfully:")
+            print("Features retrieved successfully:")
             print(f"  Source: {metadata['source']}")
             print(f"  Latency: {metadata['latency_ms']:.2f}ms")
             print(f"  Feature count: {metadata['feature_count']}")

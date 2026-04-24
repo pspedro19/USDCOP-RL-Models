@@ -29,7 +29,7 @@ import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,10 @@ class HashResult:
     full_hash: str
     short_hash: str
     algorithm: str = "sha256"
-    source_path: Optional[str] = None
+    source_path: str | None = None
     source_type: str = "unknown"
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert to dictionary for logging."""
         return {
             "full_hash": self.full_hash,
@@ -72,7 +72,7 @@ class HashResult:
 # =============================================================================
 
 def compute_file_hash(
-    path: Union[str, Path],
+    path: str | Path,
     algorithm: str = "sha256",
     chunk_size: int = 8192
 ) -> HashResult:
@@ -128,7 +128,7 @@ def compute_file_hash(
 
 
 def compute_json_hash(
-    path: Union[str, Path],
+    path: str | Path,
     algorithm: str = "sha256"
 ) -> HashResult:
     """
@@ -163,7 +163,7 @@ def compute_json_hash(
     if not path.exists():
         raise FileNotFoundError(f"JSON file not found: {path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     # Canonicalize: sort keys and use minimal separators
@@ -223,7 +223,7 @@ def compute_string_hash(
 
 
 def compute_feature_order_hash(
-    feature_order: Union[List[str], Tuple[str, ...]],
+    feature_order: list[str] | tuple[str, ...],
     algorithm: str = "sha256"
 ) -> HashResult:
     """
@@ -264,9 +264,9 @@ def compute_feature_order_hash(
 
 
 def compute_dvc_hash(
-    data_path: Union[str, Path],
+    data_path: str | Path,
     dvc_executable: str = "dvc"
-) -> Optional[HashResult]:
+) -> HashResult | None:
     """
     Compute dataset hash using DVC.
 
@@ -327,11 +327,11 @@ def compute_dvc_hash(
 
 def log_hashes_to_mlflow(
     mlflow_module: Any,
-    model_path: Optional[Union[str, Path]] = None,
-    norm_stats_path: Optional[Union[str, Path]] = None,
-    dataset_path: Optional[Union[str, Path]] = None,
-    feature_order: Optional[Union[List[str], Tuple[str, ...]]] = None,
-) -> Dict[str, HashResult]:
+    model_path: str | Path | None = None,
+    norm_stats_path: str | Path | None = None,
+    dataset_path: str | Path | None = None,
+    feature_order: list[str] | tuple[str, ...] | None = None,
+) -> dict[str, HashResult]:
     """
     Log all training artifact hashes to MLflow.
 

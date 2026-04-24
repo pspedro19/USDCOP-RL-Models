@@ -8,10 +8,8 @@ IMPORTANTE: Este modulo implementa operaciones de datos SIN data leakage.
 - merge_asof nunca tiene tolerance
 """
 
-import pandas as pd
-import numpy as np
-from typing import Optional, List
 
+import pandas as pd
 
 # P0-10: Limite maximo para ffill (12 horas = 144 barras de 5min)
 FFILL_LIMIT_5MIN = 144  # 12 hours
@@ -21,7 +19,7 @@ FFILL_LIMIT_DAILY = 5   # 5 business days
 
 def safe_ffill(
     df: pd.DataFrame,
-    columns: Optional[List[str]] = None,
+    columns: list[str] | None = None,
     limit: int = FFILL_LIMIT_5MIN,
     inplace: bool = False
 ) -> pd.DataFrame:
@@ -171,7 +169,7 @@ def validate_no_future_data(
     return True
 
 
-def check_ffill_in_source(filepath: str) -> List[dict]:
+def check_ffill_in_source(filepath: str) -> list[dict]:
     """
     Analiza un archivo Python para encontrar ffill() sin limite.
 
@@ -213,7 +211,7 @@ def check_ffill_in_source(filepath: str) -> List[dict]:
     return issues
 
 
-def check_merge_asof_tolerance(filepath: str) -> List[dict]:
+def check_merge_asof_tolerance(filepath: str) -> list[dict]:
     """
     Analiza un archivo Python para encontrar merge_asof con tolerance.
 

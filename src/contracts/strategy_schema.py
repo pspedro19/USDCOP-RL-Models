@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass
 
 
 @dataclass
@@ -29,8 +28,8 @@ class StrategyTrade:
     equity_at_entry: float
     equity_at_exit: float
     leverage: float
-    exit_timestamp: Optional[str] = None
-    metadata: Optional[dict] = None
+    exit_timestamp: str | None = None
+    metadata: dict | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -47,14 +46,14 @@ class StrategyStats:
     """Universal strategy stats (goes into summary.strategies[strategy_id])."""
     final_equity: float
     total_return_pct: float
-    sharpe: Optional[float] = None
-    max_dd_pct: Optional[float] = None
-    win_rate_pct: Optional[float] = None
-    profit_factor: Optional[float] = None   # null if no losses (NEVER Infinity)
-    trading_days: Optional[int] = None
-    exit_reasons: Optional[dict] = None
-    n_long: Optional[int] = None
-    n_short: Optional[int] = None
+    sharpe: float | None = None
+    max_dd_pct: float | None = None
+    win_rate_pct: float | None = None
+    profit_factor: float | None = None   # null if no losses (NEVER Infinity)
+    trading_days: int | None = None
+    exit_reasons: dict | None = None
+    n_long: int | None = None
+    n_short: int | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -72,8 +71,8 @@ class StrategySummary:
     n_trading_days: int
     strategies: dict                     # Record<string, StrategyStats-like dict>
     statistical_tests: dict
-    direction_accuracy_pct: Optional[float] = None
-    monthly: Optional[dict] = None
+    direction_accuracy_pct: float | None = None
+    monthly: dict | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -117,15 +116,15 @@ class ApprovalState:
     gates: list                          # List[GateResult dicts]
     created_at: str
     last_updated: str
-    strategy_name: Optional[str] = None
-    backtest_year: Optional[int] = None
-    backtest_metrics: Optional[dict] = None
-    approved_by: Optional[str] = None
-    approved_at: Optional[str] = None
-    reviewer_notes: Optional[str] = None
-    rejected_by: Optional[str] = None
-    rejected_at: Optional[str] = None
-    rejection_reason: Optional[str] = None
+    strategy_name: str | None = None
+    backtest_year: int | None = None
+    backtest_metrics: dict | None = None
+    approved_by: str | None = None
+    approved_at: str | None = None
+    reviewer_notes: str | None = None
+    rejected_by: str | None = None
+    rejected_at: str | None = None
+    rejection_reason: str | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)

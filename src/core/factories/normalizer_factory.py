@@ -9,9 +9,9 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-from typing import Dict, Type
-from ..interfaces.normalizer import INormalizer
+
 from ...shared.exceptions import ConfigurationError
+from ..interfaces.normalizer import INormalizer
 
 
 class NormalizerFactory:
@@ -27,10 +27,10 @@ class NormalizerFactory:
         noop_norm = factory.create('noop')
     """
 
-    _normalizers: Dict[str, Type[INormalizer]] = {}
+    _normalizers: dict[str, type[INormalizer]] = {}
 
     @classmethod
-    def register(cls, normalizer_type: str, normalizer_class: Type[INormalizer]) -> None:
+    def register(cls, normalizer_type: str, normalizer_class: type[INormalizer]) -> None:
         """
         Register a normalizer class for a type.
 
@@ -85,7 +85,12 @@ class NormalizerFactory:
             INormalizer instance (ZScore + Clip, or NoOp)
         """
         # Import here to avoid circular dependency
-        from ..normalizers import ZScoreNormalizer, ClipNormalizer, CompositeNormalizer, NoOpNormalizer
+        from ..normalizers import (
+            ClipNormalizer,
+            CompositeNormalizer,
+            NoOpNormalizer,
+            ZScoreNormalizer,
+        )
 
         # If no stats, use NoOp
         if not norm_stats or norm_stats.get('std', 1.0) <= 0:

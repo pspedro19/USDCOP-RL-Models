@@ -20,11 +20,9 @@ All parameters are fixed (no optimization after pre-registration).
 @status PRE-REGISTERED
 """
 
-from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 
 # =============================================================================
 # F1: Trend Slope (60-day normalized OLS)
@@ -148,6 +146,7 @@ def hmm_regime_features(
           hmm_entropy:     -sum(p * log(p)) -- regime uncertainty
     """
     import warnings
+
     from hmmlearn.hmm import GaussianHMM
 
     log_returns = np.log(close / close.shift(1)).dropna()
@@ -159,8 +158,8 @@ def hmm_regime_features(
     )
 
     refit_indices = set(range(train_window, len(log_returns), refit_every))
-    current_model: Optional[GaussianHMM] = None
-    current_vol_order: Optional[np.ndarray] = None
+    current_model: GaussianHMM | None = None
+    current_vol_order: np.ndarray | None = None
 
     for i in range(train_window, len(log_returns)):
         # Re-fit on schedule
@@ -241,7 +240,7 @@ FEATURE_COLUMNS = {
 
 
 def build_regime_features(
-    df: pd.DataFrame, group: str, hmm_cache: Optional[pd.DataFrame] = None
+    df: pd.DataFrame, group: str, hmm_cache: pd.DataFrame | None = None
 ) -> pd.DataFrame:
     """Add regime features to a DataFrame based on treatment group.
 

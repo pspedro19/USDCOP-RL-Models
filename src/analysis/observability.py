@@ -18,7 +18,6 @@ import os
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ class AgentTrace:
     tokens_out: int = 0
     cost_usd: float = 0.0
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -48,7 +47,7 @@ class AnalysisTrace:
     end_time: float = 0.0
     total_duration_s: float = 0.0
     total_cost_usd: float = 0.0
-    quality_score: Optional[float] = None
+    quality_score: float | None = None
     revision_count: int = 0
     agents: dict[str, AgentTrace] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
@@ -62,7 +61,7 @@ class AnalysisObserver:
 
     def __init__(self):
         self._langfuse = None
-        self._current_trace: Optional[AnalysisTrace] = None
+        self._current_trace: AnalysisTrace | None = None
         self._init_langfuse()
 
     def _init_langfuse(self) -> None:
@@ -232,7 +231,7 @@ class AnalysisObserver:
 
 
 # Module-level singleton
-_observer: Optional[AnalysisObserver] = None
+_observer: AnalysisObserver | None = None
 
 
 def get_observer() -> AnalysisObserver:

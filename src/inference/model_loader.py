@@ -9,9 +9,9 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-import os
 import logging
-from typing import Optional, List, Tuple, Any
+import os
+from typing import Any
 
 import numpy as np
 
@@ -35,23 +35,23 @@ class ONNXModelLoader(IModelLoader):
         self._name = name
         self._session = None
         self._input_name: str = ""
-        self._output_names: List[str] = []
-        self._input_shape: Tuple[int, ...] = ()
+        self._output_names: list[str] = []
+        self._input_shape: tuple[int, ...] = ()
         self._loaded = False
-        self._providers: List[str] = []
+        self._providers: list[str] = []
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         return self._input_shape
 
     def is_loaded(self) -> bool:
         return self._loaded
 
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         """
         Load ONNX model from path.
 
@@ -143,11 +143,11 @@ class ONNXModelLoader(IModelLoader):
         return self._input_name
 
     @property
-    def output_names(self) -> List[str]:
+    def output_names(self) -> list[str]:
         """Get output tensor names."""
         return self._output_names
 
     @property
-    def providers(self) -> List[str]:
+    def providers(self) -> list[str]:
         """Get execution providers."""
         return self._providers

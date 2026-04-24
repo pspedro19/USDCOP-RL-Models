@@ -19,14 +19,16 @@ Clean Code:
 - Type hints throughout
 """
 
+import hashlib
 import json
 import logging
 import time
-import hashlib
-from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Union
+from typing import Any
+
 import numpy as np
 
 try:
@@ -34,9 +36,9 @@ try:
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import (
         BaseCallback,
-        EvalCallback,
         CallbackList,
         CheckpointCallback,
+        EvalCallback,
     )
     from stable_baselines3.common.vec_env import VecEnv
     SB3_AVAILABLE = True
@@ -70,7 +72,7 @@ class PPOConfig:
     gamma: float = 0.95
     gae_lambda: float = 0.95
     clip_range: float = 0.2
-    clip_range_vf: Optional[float] = None
+    clip_range_vf: float | None = None
 
     # Entropy and value coefficients
     ent_coef: float = 0.04  # Match SSOT default
@@ -78,7 +80,7 @@ class PPOConfig:
     max_grad_norm: float = 0.5
 
     # Network architecture
-    net_arch: List[int] = field(default_factory=lambda: [256, 256])
+    net_arch: list[int] = field(default_factory=lambda: [256, 256])
     activation_fn: str = "tanh"
 
     # Training settings
@@ -130,8 +132,8 @@ class PPOConfig:
             config = PPOConfig.from_ssot(total_timesteps=100_000)
         """
         try:
-            from src.training.config import get_ppo_hyperparameters
             from src.config import get_early_stopping_config, get_lr_decay_config
+            from src.training.config import get_ppo_hyperparameters
 
             # Load from SSOT
             hyperparams = get_ppo_hyperparameters(force_reload=True)
@@ -172,7 +174,7 @@ class PPOConfig:
             logger.warning(f"[PPOConfig] SSOT not available, using defaults: {e}")
             return cls(**overrides)
 
-    def to_sb3_kwargs(self) -> Dict[str, Any]:
+    def to_sb3_kwargs(self) -> dict[str, Any]:
         """Convert to Stable Baselines 3 kwargs"""
         activation_map = {
             "tanh": torch.nn.Tanh if SB3_AVAILABLE else None,
@@ -200,7 +202,7 @@ class PPOConfig:
             "verbose": self.verbose,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return asdict(self)
 
@@ -209,8 +211,8 @@ class PPOConfig:
 class TrainingResult:
     """Result of a training run"""
     success: bool
-    model_path: Optional[Path] = None
-    model_hash: Optional[str] = None
+    model_path: Path | None = None
+    model_hash: str | None = None
 
     # Timing
     training_duration_seconds: float = 0.0
@@ -222,13 +224,13 @@ class TrainingResult:
     final_mean_ep_length: float = 0.0
 
     # Evaluation results
-    eval_rewards: List[float] = field(default_factory=list)
-    eval_timesteps: List[int] = field(default_factory=list)
+    eval_rewards: list[float] = field(default_factory=list)
+    eval_timesteps: list[int] = field(default_factory=list)
 
     # Errors
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "success": self.success,
             "model_path": str(self.model_path) if self.model_path else None,
@@ -271,7 +273,7 @@ class ActionDistributionCallback(BaseCallback):
         self.threshold_short = threshold_short
         self.bias_alert_threshold = bias_alert_threshold
         self.target_hold_range = target_hold_range
-        self.actions: List[float] = []
+        self.actions: list[float] = []
 
         # Cumulative tracking
         self._total_long = 0
@@ -368,7 +370,7 @@ class ActionDistributionCallback(BaseCallback):
         return True
 
     @property
-    def action_distribution(self) -> Dict[str, float]:
+    def action_distribution(self) -> dict[str, float]:
         """Get cumulative action distribution."""
         total = self._total_long + self._total_short + self._total_hold
         if total == 0:
@@ -391,8 +393,8 @@ class MetricsCallback(BaseCallback):
 
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
-        self.eval_rewards: List[float] = []
-        self.eval_timesteps: List[int] = []
+        self.eval_rewards: list[float] = []
+        self.eval_timesteps: list[int] = []
         self.best_mean_reward: float = float("-inf")
 
     def _on_step(self) -> bool:
@@ -422,7 +424,7 @@ class ProgressCallback(BaseCallback):
         self,
         total_timesteps: int,
         report_freq: int = 10000,
-        on_progress: Optional[Callable[[int, int, float], None]] = None,
+        on_progress: Callable[[int, int, float], None] | None = None,
         verbose: int = 0,
     ):
         super().__init__(verbose)
@@ -486,12 +488,12 @@ class PPOTrainer:
     def __init__(
         self,
         train_env: VecEnv,
-        eval_env: Optional[VecEnv] = None,
-        config: Optional[PPOConfig] = None,
-        output_dir: Optional[Path] = None,
+        eval_env: VecEnv | None = None,
+        config: PPOConfig | None = None,
+        output_dir: Path | None = None,
         experiment_name: str = "ppo_training",
-        custom_callbacks: Optional[List[BaseCallback]] = None,
-        on_progress: Optional[Callable[[int, int, float], None]] = None,
+        custom_callbacks: list[BaseCallback] | None = None,
+        on_progress: Callable[[int, int, float], None] | None = None,
     ):
         """
         Initialize PPO trainer.
@@ -522,8 +524,8 @@ class PPOTrainer:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Model will be created in train()
-        self.model: Optional[PPO] = None
-        self._metrics_callback: Optional[MetricsCallback] = None
+        self.model: PPO | None = None
+        self._metrics_callback: MetricsCallback | None = None
 
         logger.info(
             f"PPOTrainer initialized: "
@@ -840,9 +842,9 @@ class PPOTrainer:
 
 def train_ppo(
     train_env: VecEnv,
-    eval_env: Optional[VecEnv] = None,
+    eval_env: VecEnv | None = None,
     total_timesteps: int = 500_000,
-    output_dir: Optional[Path] = None,
+    output_dir: Path | None = None,
     **ppo_kwargs,
 ) -> TrainingResult:
     """

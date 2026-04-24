@@ -19,9 +19,8 @@ Created: 2025-01-14
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ class GapStatistics:
     filled_forward: int = 0
     filled_zero: int = 0
     largest_gap_minutes: float = 0.0
-    gap_timestamps: List[str] = field(default_factory=list)
+    gap_timestamps: list[str] = field(default_factory=list)
 
 
 class GapHandler:
@@ -76,7 +75,7 @@ class GapHandler:
         stats = handler.get_stats()
     """
 
-    def __init__(self, config: Optional[GapConfig] = None):
+    def __init__(self, config: GapConfig | None = None):
         """
         Initialize the gap handler.
 
@@ -239,7 +238,7 @@ class GapHandler:
                 f"Gap detected: {gap['start']} - {gap['duration_minutes']:.0f} minutes"
             )
 
-    def validate_data(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def validate_data(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Validate data quality before processing.
 
@@ -308,7 +307,7 @@ class GapHandler:
 
         return df
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get gap handling statistics."""
         return {
             "total_gaps": self._stats.total_gaps,
@@ -327,10 +326,10 @@ class GapHandler:
 # SINGLETON INSTANCE
 # =============================================================================
 
-_gap_handler: Optional[GapHandler] = None
+_gap_handler: GapHandler | None = None
 
 
-def get_gap_handler(config: Optional[GapConfig] = None) -> GapHandler:
+def get_gap_handler(config: GapConfig | None = None) -> GapHandler:
     """Get or create the global gap handler instance."""
     global _gap_handler
     if _gap_handler is None:
@@ -342,7 +341,7 @@ def get_gap_handler(config: Optional[GapConfig] = None) -> GapHandler:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-def handle_gaps(df: pd.DataFrame, config: Optional[GapConfig] = None) -> pd.DataFrame:
+def handle_gaps(df: pd.DataFrame, config: GapConfig | None = None) -> pd.DataFrame:
     """
     Convenience function to handle gaps in a DataFrame.
 
@@ -359,8 +358,8 @@ def handle_gaps(df: pd.DataFrame, config: Optional[GapConfig] = None) -> pd.Data
 
 def validate_ohlcv_data(
     df: pd.DataFrame,
-    config: Optional[GapConfig] = None
-) -> Dict[str, Any]:
+    config: GapConfig | None = None
+) -> dict[str, Any]:
     """
     Validate OHLCV data for gaps and quality issues.
 

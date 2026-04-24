@@ -11,11 +11,9 @@ import hashlib
 import json
 import logging
 import os
-import time
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +46,8 @@ class AzureOpenAIProvider(LLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        endpoint: Optional[str] = None,
+        api_key: str | None = None,
+        endpoint: str | None = None,
         deployment: str = "gpt-4o-mini",
         api_version: str = "2024-12-01-preview",
     ):
@@ -109,7 +107,7 @@ class AnthropicProvider(LLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "claude-sonnet-4-5-20250514",
     ):
         self.api_key = api_key or os.environ.get("USDCOP_ANTHROPIC_API_KEY", "")
@@ -166,10 +164,10 @@ class LLMClient:
 
     def __init__(
         self,
-        primary: Optional[LLMProvider] = None,
-        fallback: Optional[LLMProvider] = None,
+        primary: LLMProvider | None = None,
+        fallback: LLMProvider | None = None,
         max_failures: int = 3,
-        cache_dir: Optional[str] = None,
+        cache_dir: str | None = None,
         cache_ttl_hours: int = 24,
     ):
         self.primary = primary or AzureOpenAIProvider()
@@ -191,7 +189,7 @@ class LLMClient:
         user_prompt: str,
         max_tokens: int = 2000,
         temperature: float = 0.7,
-        cache_key: Optional[str] = None,
+        cache_key: str | None = None,
     ) -> dict:
         """Generate response with fallback and caching.
 
@@ -242,10 +240,10 @@ class LLMClient:
         self,
         system_prompt: str,
         user_prompt: str,
-        response_format: Optional[dict] = None,
+        response_format: dict | None = None,
         max_tokens: int = 2000,
         temperature: float = 0.7,
-        cache_key: Optional[str] = None,
+        cache_key: str | None = None,
     ) -> dict:
         """Generate response with structured JSON output (response_format).
 
@@ -308,7 +306,7 @@ class LLMClient:
 
     @staticmethod
     def _generate_azure_structured(
-        provider: "AzureOpenAIProvider",
+        provider: AzureOpenAIProvider,
         system_prompt: str,
         user_prompt: str,
         response_format: dict,
@@ -398,13 +396,13 @@ class LLMClient:
     # File-based cache
     # ------------------------------------------------------------------
 
-    def _cache_path(self, key: str) -> Optional[Path]:
+    def _cache_path(self, key: str) -> Path | None:
         if not self.cache_dir:
             return None
         h = hashlib.md5(key.encode()).hexdigest()
         return self.cache_dir / f"{h}.json"
 
-    def _get_cached(self, key: str) -> Optional[dict]:
+    def _get_cached(self, key: str) -> dict | None:
         path = self._cache_path(key)
         if not path or not path.exists():
             return None

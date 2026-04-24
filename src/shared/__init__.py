@@ -13,15 +13,15 @@ Submodules:
 from .config_loader import ConfigLoader, get_config, load_feature_config
 from .config_loader_adapter import ConfigLoaderAdapter
 from .exceptions import (
-    USDCOPError,
     ConfigurationError,
-    FeatureCalculationError,
-    ValidationError,
-    ObservationDimensionError,
-    FeatureMissingError,
     # Legacy aliases
     FeatureBuilderError,
-    NormalizationError
+    FeatureCalculationError,
+    FeatureMissingError,
+    NormalizationError,
+    ObservationDimensionError,
+    USDCOPError,
+    ValidationError,
 )
 
 # Schemas submodule (import on demand to avoid circular imports)

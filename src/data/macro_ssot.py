@@ -31,7 +31,7 @@ import logging
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import yaml
 
@@ -52,29 +52,29 @@ class VariableIdentity:
 class ExtractionConfig:
     """Extraction configuration for a specific source."""
     primary_source: str
-    fallback_source: Optional[str] = None
+    fallback_source: str | None = None
     intraday: bool = False
-    source_configs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    source_configs: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass
 class PublicationSchedule:
     """Publication schedule for anti-leakage."""
     delay_days: int = 0
-    day_range: Optional[Tuple[int, int]] = None
-    typical_day: Optional[int] = None
-    time: Optional[str] = None
+    day_range: tuple[int, int] | None = None
+    typical_day: int | None = None
+    time: str | None = None
     timezone: str = "US/Eastern"
     month_lag: int = 1
-    quarter_lag: Optional[int] = None
-    days_after_quarter: Optional[int] = None
-    simultaneous_with: Optional[str] = None
+    quarter_lag: int | None = None
+    days_after_quarter: int | None = None
+    simultaneous_with: str | None = None
 
 
 @dataclass
 class ValidationConfig:
     """Validation configuration."""
-    expected_range: Tuple[float, float]
+    expected_range: tuple[float, float]
     leakage_risk: str  # 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
     priority: str  # 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
 
@@ -134,23 +134,23 @@ class MacroSSOT:
     _instance: Optional['MacroSSOT'] = None
     _initialized: bool = False
 
-    def __new__(cls, config_path: Optional[Path] = None):
+    def __new__(cls, config_path: Path | None = None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         if self._initialized:
             return
 
-        self._variables: Dict[str, MacroVariableDef] = {}
-        self._raw_config: Dict[str, Any] = {}
-        self._groups: Dict[str, List[str]] = {}
+        self._variables: dict[str, MacroVariableDef] = {}
+        self._raw_config: dict[str, Any] = {}
+        self._groups: dict[str, list[str]] = {}
 
         self._load_config(config_path)
         self._initialized = True
 
-    def _find_config_path(self, config_path: Optional[Path] = None) -> Path:
+    def _find_config_path(self, config_path: Path | None = None) -> Path:
         """Find the SSOT config file."""
         if config_path and config_path.exists():
             return config_path
@@ -169,12 +169,12 @@ class MacroSSOT:
             f"macro_variables_ssot.yaml not found in: {possible_paths}"
         )
 
-    def _load_config(self, config_path: Optional[Path] = None):
+    def _load_config(self, config_path: Path | None = None):
         """Load and parse the SSOT YAML file."""
         path = self._find_config_path(config_path)
         logger.info(f"Loading Macro SSOT from: {path}")
 
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             self._raw_config = yaml.safe_load(f)
 
         # Parse variables
@@ -187,7 +187,7 @@ class MacroSSOT:
 
         logger.info(f"Loaded {len(self._variables)} variables from SSOT")
 
-    def _parse_variable(self, name: str, config: Dict) -> MacroVariableDef:
+    def _parse_variable(self, name: str, config: dict) -> MacroVariableDef:
         """Parse a variable configuration into a MacroVariableDef."""
         # Identity
         identity_raw = config.get('identity', {})
@@ -261,56 +261,56 @@ class MacroSSOT:
     # PUBLIC API
     # =========================================================================
 
-    def get_variable(self, name: str) -> Optional[MacroVariableDef]:
+    def get_variable(self, name: str) -> MacroVariableDef | None:
         """Get a variable definition by canonical name."""
         return self._variables.get(name)
 
     @lru_cache(maxsize=1)
-    def get_all_variables(self) -> List[str]:
+    def get_all_variables(self) -> list[str]:
         """Get list of all variable names."""
         return list(self._variables.keys())
 
-    def get_all_variable_defs(self) -> Dict[str, MacroVariableDef]:
+    def get_all_variable_defs(self) -> dict[str, MacroVariableDef]:
         """Get all variable definitions."""
         return self._variables.copy()
 
-    def get_variables_by_source(self, source: str) -> List[str]:
+    def get_variables_by_source(self, source: str) -> list[str]:
         """Get all variables that use a specific primary source."""
         return [
             name for name, var in self._variables.items()
             if var.extraction.primary_source == source
         ]
 
-    def get_variables_by_frequency(self, frequency: str) -> List[str]:
+    def get_variables_by_frequency(self, frequency: str) -> list[str]:
         """Get all variables by frequency (daily, monthly, quarterly)."""
         return [
             name for name, var in self._variables.items()
             if var.identity.frequency == frequency
         ]
 
-    def get_intraday_variables(self) -> List[str]:
+    def get_intraday_variables(self) -> list[str]:
         """Get all variables that support intraday updates."""
         return [
             name for name, var in self._variables.items()
             if var.extraction.intraday
         ]
 
-    def get_non_intraday_variables(self) -> List[str]:
+    def get_non_intraday_variables(self) -> list[str]:
         """Get all variables that do NOT support intraday updates."""
         return [
             name for name, var in self._variables.items()
             if not var.extraction.intraday
         ]
 
-    def get_variables_by_group(self, group_name: str) -> List[str]:
+    def get_variables_by_group(self, group_name: str) -> list[str]:
         """Get variables in a named group."""
         return self._groups.get(group_name, [])
 
     def get_extraction_config(
         self,
         variable: str,
-        source: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        source: str | None = None
+    ) -> dict[str, Any] | None:
         """
         Get extraction configuration for a variable.
 
@@ -330,7 +330,7 @@ class MacroSSOT:
 
         return var.extraction.source_configs.get(source)
 
-    def get_publication_config(self, variable: str) -> Optional[Dict[str, Any]]:
+    def get_publication_config(self, variable: str) -> dict[str, Any] | None:
         """Get publication schedule config for a variable."""
         var = self._variables.get(variable)
         if not var:
@@ -363,7 +363,7 @@ class MacroSSOT:
             return 'UNKNOWN'
         return var.validation.leakage_risk
 
-    def get_expected_range(self, variable: str) -> Optional[Tuple[float, float]]:
+    def get_expected_range(self, variable: str) -> tuple[float, float] | None:
         """Get expected value range for validation."""
         var = self._variables.get(variable)
         if not var:
@@ -374,16 +374,16 @@ class MacroSSOT:
     # GLOBAL CONFIG ACCESS
     # =========================================================================
 
-    def get_global_config(self) -> Dict[str, Any]:
+    def get_global_config(self) -> dict[str, Any]:
         """Get global configuration settings."""
         return self._raw_config.get('global', {})
 
-    def get_source_config(self, source: str) -> Dict[str, Any]:
+    def get_source_config(self, source: str) -> dict[str, Any]:
         """Get source-level configuration."""
         sources = self._raw_config.get('sources', {})
         return sources.get(source, {})
 
-    def get_ffill_limits(self, target_frequency: str = 'daily') -> Dict[str, int]:
+    def get_ffill_limits(self, target_frequency: str = 'daily') -> dict[str, int]:
         """Get FFILL limits for a target frequency."""
         global_config = self.get_global_config()
         ffill_limits = global_config.get('ffill_limits', {})
@@ -393,7 +393,7 @@ class MacroSSOT:
     # CONVENIENCE METHODS FOR ADAPTERS
     # =========================================================================
 
-    def get_fred_variables(self) -> Dict[str, str]:
+    def get_fred_variables(self) -> dict[str, str]:
         """Get FRED series_id -> column mapping for FRED extractor."""
         result = {}
         for name, var in self._variables.items():
@@ -403,7 +403,7 @@ class MacroSSOT:
                 result[series_id] = name
         return result
 
-    def get_suameca_variables(self) -> Dict[int, str]:
+    def get_suameca_variables(self) -> dict[int, str]:
         """Get SUAMECA serie_id -> column mapping."""
         result = {}
         for name, var in self._variables.items():
@@ -413,7 +413,7 @@ class MacroSSOT:
                 result[serie_id] = name
         return result
 
-    def get_investing_variables(self) -> List[Dict[str, Any]]:
+    def get_investing_variables(self) -> list[dict[str, Any]]:
         """Get Investing.com variable configs."""
         result = []
         for name, var in self._variables.items():
@@ -431,7 +431,7 @@ class MacroSSOT:
                 })
         return result
 
-    def get_bcrp_variables(self) -> Dict[str, str]:
+    def get_bcrp_variables(self) -> dict[str, str]:
         """Get BCRP serie_code -> column mapping."""
         result = {}
         for name, var in self._variables.items():
@@ -446,12 +446,12 @@ class MacroSSOT:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-def get_ssot(config_path: Optional[Path] = None) -> MacroSSOT:
+def get_ssot(config_path: Path | None = None) -> MacroSSOT:
     """Get the MacroSSOT singleton instance."""
     return MacroSSOT(config_path)
 
 
-def get_variable(name: str) -> Optional[MacroVariableDef]:
+def get_variable(name: str) -> MacroVariableDef | None:
     """Convenience function to get a variable definition."""
     return MacroSSOT().get_variable(name)
 

@@ -51,10 +51,9 @@ Date: 2026-01-17
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, Final, List, Optional, Protocol, Tuple, Union
+from dataclasses import dataclass
+from typing import Final, Protocol
 
-import numpy as np
 import pandas as pd
 
 # Import centralized constants from SSOT
@@ -75,10 +74,10 @@ DEFAULT_DAILY_TOLERANCE: Final[str] = DEFAULT_MERGE_TOLERANCE  # 3 days for dail
 DEFAULT_INTRADAY_TOLERANCE: Final[str] = "1h"  # 1 hour for intraday data
 
 # Valid join directions
-VALID_JOIN_DIRECTIONS: Final[Tuple[str, ...]] = ("backward", "forward", "nearest")
+VALID_JOIN_DIRECTIONS: Final[tuple[str, ...]] = ("backward", "forward", "nearest")
 
 # Standard time column names for auto-detection
-STANDARD_TIME_COLUMNS: Final[Tuple[str, ...]] = (
+STANDARD_TIME_COLUMNS: Final[tuple[str, ...]] = (
     "timestamp",
     "date",
     "time",
@@ -87,7 +86,7 @@ STANDARD_TIME_COLUMNS: Final[Tuple[str, ...]] = (
 
 # Valid fill methods for missing data
 # NOTE: bfill is PROHIBITED - it creates lookahead bias by using future data
-VALID_FILL_METHODS: Final[Tuple[str, ...]] = ("ffill", "interpolate")
+VALID_FILL_METHODS: Final[tuple[str, ...]] = ("ffill", "interpolate")
 
 # Lookahead violation sample size for logging
 LOOKAHEAD_VIOLATION_SAMPLE_SIZE: Final[int] = 5
@@ -111,7 +110,7 @@ class TemporalJoinError(ValueError):
         context: Optional dictionary with additional context
     """
 
-    def __init__(self, message: str, context: Optional[Dict] = None):
+    def __init__(self, message: str, context: dict | None = None):
         self.message = message
         self.context = context or {}
         super().__init__(message)
@@ -267,7 +266,7 @@ class TemporalJoinConfig:
             allow_exact_matches=True,
         )
 
-    def to_dict(self) -> Dict[str, Union[str, bool]]:
+    def to_dict(self) -> dict[str, str | bool]:
         """Convert configuration to dictionary."""
         return {
             "tolerance": self.tolerance,
@@ -320,8 +319,8 @@ class JoinStatistics:
     matched_rows: int
     null_rows: int
     match_rate: float
-    null_columns: Tuple[Tuple[str, int], ...] = ()  # Frozen-compatible tuple
-    source_name: Optional[str] = None
+    null_columns: tuple[tuple[str, int], ...] = ()  # Frozen-compatible tuple
+    source_name: str | None = None
 
     def __str__(self) -> str:
         """Human-readable string representation."""
@@ -334,7 +333,7 @@ class JoinStatistics:
             f"match_rate={self.match_rate:.2%}"
         )
 
-    def get_null_columns_dict(self) -> Dict[str, int]:
+    def get_null_columns_dict(self) -> dict[str, int]:
         """Convert null_columns tuple to dictionary for easier access."""
         return dict(self.null_columns)
 
@@ -396,8 +395,8 @@ def _ensure_datetime(
 def _compute_join_statistics(
     result_df: pd.DataFrame,
     original_rows: int,
-    macro_columns: List[str],
-    source_name: Optional[str] = None
+    macro_columns: list[str],
+    source_name: str | None = None
 ) -> JoinStatistics:
     """
     Compute statistics for a join operation.
@@ -422,7 +421,7 @@ def _compute_join_statistics(
     total_rows = len(result_df)
 
     # Count nulls per column (build as list of tuples for frozen dataclass)
-    null_columns_list: List[Tuple[str, int]] = []
+    null_columns_list: list[tuple[str, int]] = []
     total_nulls = 0
     for col in macro_columns:
         if col in result_df.columns:
@@ -450,7 +449,7 @@ def merge_price_with_macro(
     macro_time_col: str = "date",
     tolerance: str = DEFAULT_DAILY_TOLERANCE,
     direction: str = "backward",
-    suffixes: Tuple[str, str] = ("", "_macro"),
+    suffixes: tuple[str, str] = ("", "_macro"),
 ) -> pd.DataFrame:
     """
     Merge price data with macro data using point-in-time correct temporal joins.
@@ -675,8 +674,8 @@ def validate_no_lookahead(
 
 def join_multiple_sources(
     price_df: pd.DataFrame,
-    macro_dfs: Dict[str, pd.DataFrame],
-    config: Optional[TemporalJoinConfig] = None,
+    macro_dfs: dict[str, pd.DataFrame],
+    config: TemporalJoinConfig | None = None,
 ) -> pd.DataFrame:
     """
     Join price data with multiple macro data sources sequentially.
@@ -742,8 +741,8 @@ def join_multiple_sources(
 
     # Start with price data
     result = price_df.copy()
-    all_stats: List[JoinStatistics] = []
-    source_columns: Dict[str, List[str]] = {}
+    all_stats: list[JoinStatistics] = []
+    source_columns: dict[str, list[str]] = {}
 
     # Join each source sequentially
     for source_name, macro_df in macro_dfs.items():
@@ -829,8 +828,8 @@ def join_multiple_sources(
 
 def get_join_statistics(
     merged_df: pd.DataFrame,
-    macro_columns: List[str],
-    source_name: Optional[str] = None
+    macro_columns: list[str],
+    source_name: str | None = None
 ) -> JoinStatistics:
     """
     Compute join statistics for an already-merged DataFrame.
@@ -873,7 +872,7 @@ class FillStrategy(Protocol):
         ...         return series.fillna(0)
     """
 
-    def fill(self, series: pd.Series, limit: Optional[int] = None) -> pd.Series:
+    def fill(self, series: pd.Series, limit: int | None = None) -> pd.Series:
         """Fill null values in a series."""
         ...
 
@@ -881,7 +880,7 @@ class FillStrategy(Protocol):
 class ForwardFillStrategy:
     """Forward fill strategy - propagates last valid observation forward."""
 
-    def fill(self, series: pd.Series, limit: Optional[int] = None) -> pd.Series:
+    def fill(self, series: pd.Series, limit: int | None = None) -> pd.Series:
         return series.ffill(limit=limit)
 
 
@@ -894,13 +893,13 @@ class ForwardFillStrategy:
 class InterpolateFillStrategy:
     """Linear interpolation fill strategy."""
 
-    def fill(self, series: pd.Series, limit: Optional[int] = None) -> pd.Series:
+    def fill(self, series: pd.Series, limit: int | None = None) -> pd.Series:
         return series.interpolate(method="linear", limit=limit)
 
 
 # Strategy registry for string-based lookup
 # NOTE: bfill is INTENTIONALLY EXCLUDED - it violates temporal causality
-_FILL_STRATEGIES: Dict[str, FillStrategy] = {
+_FILL_STRATEGIES: dict[str, FillStrategy] = {
     "ffill": ForwardFillStrategy(),
     "interpolate": InterpolateFillStrategy(),
 }
@@ -908,10 +907,10 @@ _FILL_STRATEGIES: Dict[str, FillStrategy] = {
 
 def fill_missing_macro(
     df: pd.DataFrame,
-    macro_columns: List[str],
+    macro_columns: list[str],
     method: str = "ffill",
-    limit: Optional[int] = None,
-    strategy: Optional[FillStrategy] = None,
+    limit: int | None = None,
+    strategy: FillStrategy | None = None,
 ) -> pd.DataFrame:
     """
     Fill missing macro values after temporal join.

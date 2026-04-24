@@ -13,10 +13,9 @@ This file provides helper functions to check if a model_id is demo mode
 and to load demo config from the database.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +87,7 @@ class DemoConfig:
     model_name: str = "Demo Mode (Investor Presentation)"
 
     # Monthly bias for trade direction (positive = more longs, negative = more shorts)
-    monthly_bias: Dict[int, float] = None
+    monthly_bias: dict[int, float] = None
 
     def __post_init__(self):
         if self.monthly_bias is None:
@@ -109,7 +108,7 @@ class DemoConfig:
             }
 
     @classmethod
-    def from_db_model(cls, model_record: Dict) -> "DemoConfig":
+    def from_db_model(cls, model_record: dict) -> "DemoConfig":
         """
         Create DemoConfig from a database model record.
 

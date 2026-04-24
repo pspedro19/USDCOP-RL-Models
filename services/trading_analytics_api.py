@@ -12,19 +12,19 @@ API completa para métricas dinámicas de trading:
 Todos los datos son calculados desde la base de datos real.
 """
 
+import logging
+import os
+from datetime import datetime, timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import psycopg2
+import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import psycopg2
 from psycopg2.extras import RealDictCursor
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-import os
-import logging
-from pydantic import BaseModel
-import uvicorn
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,8 +33,12 @@ logger = logging.getLogger(__name__)
 # DRY: Use shared modules
 from common.database import get_db_config
 from common.metrics import (
-    calculate_sharpe_ratio, calculate_sortino_ratio, calculate_cagr,
-    calculate_max_drawdown, calculate_calmar_ratio, calculate_var
+    calculate_cagr,
+    calculate_calmar_ratio,
+    calculate_max_drawdown,
+    calculate_sharpe_ratio,
+    calculate_sortino_ratio,
+    calculate_var,
 )
 
 # Database configuration (from shared module)
@@ -59,8 +63,9 @@ try:
 except Exception:
     pass
 try:
-    import sentry_sdk
     import os as _os
+
+    import sentry_sdk
     if _sentry_dsn := _os.environ.get("SENTRY_DSN"):
         sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1)
 except Exception:
@@ -92,7 +97,7 @@ def get_db_connection():
         return conn
     except Exception as e:
         logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {e!s}")
 
 def execute_query(query: str, params: tuple = None) -> pd.DataFrame:
     """Execute query and return DataFrame"""
@@ -615,7 +620,7 @@ async def get_risk_metrics(
 @app.get("/api/analytics/session-pnl")
 async def get_session_pnl(
     symbol: str = "USDCOP",
-    session_date: Optional[str] = None
+    session_date: str | None = None
 ):
     """
     Calculate P&L for a trading session
@@ -949,7 +954,7 @@ def get_spread_proxy(symbol: str = "USDCOP", days: int = 30):
 # ==========================================
 
 
-def calculate_trading_hours_progress() -> Dict[str, Any]:
+def calculate_trading_hours_progress() -> dict[str, Any]:
     """
     Calcula el progreso de la sesión de trading premium.
     Sesión: 08:00 - 12:55 COT (5 horas = 300 minutos = 60 barras M5)
@@ -960,8 +965,9 @@ def calculate_trading_hours_progress() -> Dict[str, Any]:
     Returns:
         dict: Status, progreso %, barras elapsed/total, tiempo restante
     """
-    import pytz
     from datetime import datetime
+
+    import pytz
 
     # Timezone Colombia
     cot = pytz.timezone('America/Bogota')

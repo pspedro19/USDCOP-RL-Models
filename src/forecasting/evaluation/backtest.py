@@ -7,14 +7,15 @@ Historical backtesting for forecasting models.
 @version 1.0.0
 """
 
+import logging
+from dataclasses import dataclass, field
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List, Tuple
-from dataclasses import dataclass, field
-import logging
 
-from src.forecasting.models.base import BaseModel
 from src.forecasting.evaluation.metrics import Metrics, MetricsResult
+from src.forecasting.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +28,9 @@ class BacktestResult:
     metrics: MetricsResult
     predictions: np.ndarray
     actuals: np.ndarray
-    dates: Optional[List] = None
-    feature_importance: Optional[Dict[str, float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    dates: list | None = None
+    feature_importance: dict[str, float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class BacktestEngine:
@@ -68,7 +69,7 @@ class BacktestEngine:
         X: np.ndarray,
         y: np.ndarray,
         horizon: int = 1,
-        dates: Optional[List] = None,
+        dates: list | None = None,
     ) -> BacktestResult:
         """
         Run a single backtest.
@@ -127,9 +128,9 @@ class BacktestEngine:
         self,
         model: BaseModel,
         X: np.ndarray,
-        targets: Dict[int, np.ndarray],
-        dates: Optional[List] = None,
-    ) -> Dict[int, BacktestResult]:
+        targets: dict[int, np.ndarray],
+        dates: list | None = None,
+    ) -> dict[int, BacktestResult]:
         """
         Run backtests for multiple horizons.
 
@@ -161,7 +162,7 @@ class BacktestEngine:
         self,
         X_train: np.ndarray,
         X_test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Scale features using StandardScaler.
 
@@ -183,7 +184,7 @@ class BacktestEngine:
         return X_train_scaled, X_test_scaled
 
     @staticmethod
-    def results_to_dataframe(results: Dict[int, BacktestResult]) -> pd.DataFrame:
+    def results_to_dataframe(results: dict[int, BacktestResult]) -> pd.DataFrame:
         """
         Convert multiple backtest results to a DataFrame.
 

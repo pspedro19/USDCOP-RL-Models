@@ -22,20 +22,17 @@ Usage:
     df_5min = loader.load_5min("2024-01-01", "2024-12-31")
 """
 
-import os
 import logging
+import os
 from pathlib import Path
-from typing import Optional, Union, List, Tuple
-from datetime import datetime
 
 import pandas as pd
-import numpy as np
 
 from .calendar import TradingCalendar
 from .contracts import (
+    FORECASTING_MACRO_COLUMNS,
     MACRO_DB_TO_FRIENDLY,
     RL_MACRO_COLUMNS,
-    FORECASTING_MACRO_COLUMNS,
 )
 from .safe_merge import FFILL_LIMIT_5MIN, safe_ffill
 
@@ -85,9 +82,9 @@ class UnifiedMacroLoader:
 
     def __init__(
         self,
-        connection_string: Optional[str] = None,
+        connection_string: str | None = None,
         fallback_parquet: bool = True,
-        parquet_path: Optional[Union[str, Path]] = None
+        parquet_path: str | Path | None = None
     ):
         """
         Initialize macro loader.
@@ -107,7 +104,7 @@ class UnifiedMacroLoader:
         self,
         start_date: str,
         end_date: str,
-        columns: Optional[List[str]] = None,
+        columns: list[str] | None = None,
         use_friendly_names: bool = True
     ) -> pd.DataFrame:
         """
@@ -164,7 +161,7 @@ class UnifiedMacroLoader:
         self,
         start_date: str,
         end_date: str,
-        columns: Optional[List[str]] = None,
+        columns: list[str] | None = None,
         ffill_limit: int = FFILL_LIMIT_5MIN
     ) -> pd.DataFrame:
         """
@@ -313,7 +310,7 @@ class UnifiedMacroLoader:
 
         return df
 
-    def _find_parquet_file(self) -> Optional[Path]:
+    def _find_parquet_file(self) -> Path | None:
         """Find available Parquet backup file."""
         # Check user-specified path first
         if self.parquet_path and self.parquet_path.exists():
@@ -395,7 +392,7 @@ class UnifiedMacroLoader:
         date_col = 'date' if 'date' in df.columns else 'fecha'
         return df[[date_col, 'dxy_close_lag1', 'oil_close_lag1']]
 
-    def get_available_columns(self) -> List[str]:
+    def get_available_columns(self) -> list[str]:
         """
         Get list of available macro columns.
 
@@ -408,7 +405,7 @@ class UnifiedMacroLoader:
         self,
         start_date: str,
         end_date: str
-    ) -> Tuple[float, List[str]]:
+    ) -> tuple[float, list[str]]:
         """
         Validate macro data coverage for date range.
 

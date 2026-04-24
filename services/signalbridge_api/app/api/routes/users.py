@@ -5,12 +5,12 @@ User routes.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.auth import PasswordChangeRequest
+from app.contracts.common import SuccessResponse
+from app.contracts.user import UserProfile, UserProfileUpdate
 from app.core.database import get_db
 from app.middleware.auth import get_current_active_user
 from app.models import User
-from app.contracts.user import UserProfile, UserProfileUpdate
-from app.contracts.auth import PasswordChangeRequest
-from app.contracts.common import SuccessResponse
 from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])

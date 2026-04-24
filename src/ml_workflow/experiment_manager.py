@@ -26,30 +26,26 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 
 from src.core.contracts.storage_contracts import (
-    DatasetSnapshot,
-    ModelSnapshot,
-    BacktestSnapshot,
     ABComparisonSnapshot,
+    BacktestSnapshot,
+    DatasetSnapshot,
     LineageRecord,
+    ModelSnapshot,
     RewardConfigSnapshot,
 )
 from src.core.factories.storage_factory import (
     StorageFactory,
-    get_dataset_repository,
-    get_model_repository,
-    get_backtest_repository,
-    get_ab_comparison_repository,
 )
 from src.core.interfaces.storage import (
+    IABComparisonRepository,
+    IBacktestRepository,
     IDatasetRepository,
     IModelRepository,
-    IBacktestRepository,
-    IABComparisonRepository,
     ObjectNotFoundError,
 )
 
@@ -100,7 +96,7 @@ class ExperimentManager:
     def __init__(
         self,
         experiment_id: str,
-        storage_factory: Optional[StorageFactory] = None,
+        storage_factory: StorageFactory | None = None,
     ):
         """
         Initialize experiment manager.
@@ -113,10 +109,10 @@ class ExperimentManager:
         self._factory = storage_factory or StorageFactory.get_instance()
 
         # Repositories (lazy-loaded)
-        self._dataset_repo: Optional[IDatasetRepository] = None
-        self._model_repo: Optional[IModelRepository] = None
-        self._backtest_repo: Optional[IBacktestRepository] = None
-        self._ab_repo: Optional[IABComparisonRepository] = None
+        self._dataset_repo: IDatasetRepository | None = None
+        self._model_repo: IModelRepository | None = None
+        self._backtest_repo: IBacktestRepository | None = None
+        self._ab_repo: IABComparisonRepository | None = None
 
         # Current user for lineage
         self._user = os.environ.get("USER", os.environ.get("USERNAME", "unknown"))
@@ -163,9 +159,9 @@ class ExperimentManager:
     def save_dataset(
         self,
         data: pd.DataFrame,
-        version: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        parent_version: Optional[str] = None,
+        version: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        parent_version: str | None = None,
     ) -> DatasetSnapshot:
         """
         Save dataset to MinIO.
@@ -210,7 +206,7 @@ class ExperimentManager:
         logger.info(f"Saved dataset {self._experiment_id}/{version}: {len(data)} rows")
         return snapshot
 
-    def load_dataset(self, version: Optional[str] = None) -> pd.DataFrame:
+    def load_dataset(self, version: str | None = None) -> pd.DataFrame:
         """
         Load dataset from MinIO.
 
@@ -222,7 +218,7 @@ class ExperimentManager:
         """
         return self.dataset_repo.load_dataset(self._experiment_id, version)
 
-    def get_dataset_snapshot(self, version: Optional[str] = None) -> DatasetSnapshot:
+    def get_dataset_snapshot(self, version: str | None = None) -> DatasetSnapshot:
         """
         Get dataset snapshot (metadata without data).
 
@@ -234,7 +230,7 @@ class ExperimentManager:
         """
         return self.dataset_repo.get_snapshot(self._experiment_id, version)
 
-    def list_dataset_versions(self) -> List[DatasetSnapshot]:
+    def list_dataset_versions(self) -> list[DatasetSnapshot]:
         """
         List all dataset versions.
 
@@ -243,7 +239,7 @@ class ExperimentManager:
         """
         return self.dataset_repo.list_versions(self._experiment_id)
 
-    def get_norm_stats(self, version: Optional[str] = None) -> Dict[str, Dict[str, float]]:
+    def get_norm_stats(self, version: str | None = None) -> dict[str, dict[str, float]]:
         """
         Get normalization statistics.
 
@@ -261,11 +257,11 @@ class ExperimentManager:
 
     def save_model(
         self,
-        model_path: Union[str, Path],
-        norm_stats: Dict[str, Any],
-        config: Dict[str, Any],
-        dataset_version: Optional[str] = None,
-        version: Optional[str] = None,
+        model_path: str | Path,
+        norm_stats: dict[str, Any],
+        config: dict[str, Any],
+        dataset_version: str | None = None,
+        version: str | None = None,
     ) -> ModelSnapshot:
         """
         Save trained model to MinIO.
@@ -320,7 +316,7 @@ class ExperimentManager:
         logger.info(f"Saved model {self._experiment_id}/{version}")
         return snapshot
 
-    def load_model(self, version: Optional[str] = None) -> bytes:
+    def load_model(self, version: str | None = None) -> bytes:
         """
         Load model bytes from MinIO.
 
@@ -332,7 +328,7 @@ class ExperimentManager:
         """
         return self.model_repo.load_model(self._experiment_id, version)
 
-    def get_model_snapshot(self, version: Optional[str] = None) -> ModelSnapshot:
+    def get_model_snapshot(self, version: str | None = None) -> ModelSnapshot:
         """
         Get model snapshot (metadata without model).
 
@@ -344,7 +340,7 @@ class ExperimentManager:
         """
         return self.model_repo.get_snapshot(self._experiment_id, version)
 
-    def list_model_versions(self) -> List[ModelSnapshot]:
+    def list_model_versions(self) -> list[ModelSnapshot]:
         """
         List all model versions.
 
@@ -356,7 +352,7 @@ class ExperimentManager:
     def promote_model(
         self,
         version: str,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
     ) -> str:
         """
         Promote model to production bucket.
@@ -387,7 +383,7 @@ class ExperimentManager:
         self,
         reward_config: "RewardConfig",
         contract_id: str,
-        model_version: Optional[str] = None,
+        model_version: str | None = None,
     ) -> RewardConfigSnapshot:
         """
         Save reward configuration to MinIO for lineage tracking.
@@ -493,7 +489,7 @@ class ExperimentManager:
         logger.info(f"Saved reward config {self._experiment_id}/{version}: hash={config_hash}")
         return snapshot
 
-    def load_reward_config(self, version: Optional[str] = None) -> Dict[str, Any]:
+    def load_reward_config(self, version: str | None = None) -> dict[str, Any]:
         """
         Load reward configuration from MinIO.
 
@@ -564,7 +560,7 @@ class ExperimentManager:
             created_at=datetime.fromisoformat(config.get("created_at", datetime.utcnow().isoformat())),
         )
 
-    def list_reward_configs(self) -> List[str]:
+    def list_reward_configs(self) -> list[str]:
         """
         List all reward config versions.
 
@@ -593,10 +589,10 @@ class ExperimentManager:
     def save_backtest(
         self,
         model_version: str,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         trades: pd.DataFrame,
         equity_curve: pd.DataFrame,
-        backtest_id: Optional[str] = None,
+        backtest_id: str | None = None,
     ) -> BacktestSnapshot:
         """
         Save backtest results to MinIO.
@@ -626,7 +622,7 @@ class ExperimentManager:
         )
         return snapshot
 
-    def load_backtest(self, backtest_id: str) -> Dict[str, Any]:
+    def load_backtest(self, backtest_id: str) -> dict[str, Any]:
         """
         Load backtest result.
 
@@ -638,7 +634,7 @@ class ExperimentManager:
         """
         return self.backtest_repo.load_backtest(self._experiment_id, backtest_id)
 
-    def list_backtests(self) -> List[BacktestSnapshot]:
+    def list_backtests(self) -> list[BacktestSnapshot]:
         """
         List all backtests.
 
@@ -656,8 +652,8 @@ class ExperimentManager:
         baseline_experiment_id: str,
         baseline_version: str,
         treatment_version: str,
-        result: Dict[str, Any],
-        shadow_trades: Optional[pd.DataFrame] = None,
+        result: dict[str, Any],
+        shadow_trades: pd.DataFrame | None = None,
     ) -> ABComparisonSnapshot:
         """
         Save A/B comparison results.
@@ -705,7 +701,7 @@ class ExperimentManager:
         snapshot = self.get_model_snapshot()
         return snapshot.storage_uri
 
-    def get_experiment_summary(self) -> Dict[str, Any]:
+    def get_experiment_summary(self) -> dict[str, Any]:
         """
         Get summary of experiment state.
 

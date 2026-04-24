@@ -19,36 +19,33 @@ Version: 1.0.0
 Created: 2026-01-18
 """
 
-import hashlib
 import json
 import logging
-import os
-import shutil
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 import yaml
 
-from src.core.interfaces.storage import (
-    ArtifactMetadata,
-    IObjectStorageRepository,
-    IDatasetRepository,
-    IModelRepository,
-    ObjectNotFoundError,
-    StorageError,
-)
 from src.core.contracts.storage_contracts import (
     EXPERIMENTS_BUCKET,
     PRODUCTION_BUCKET,
     DatasetSnapshot,
-    ModelSnapshot,
     LineageRecord,
+    ModelSnapshot,
+    build_s3_uri,
     compute_content_hash,
     compute_schema_hash,
-    build_s3_uri,
+)
+from src.core.interfaces.storage import (
+    ArtifactMetadata,
+    IDatasetRepository,
+    IModelRepository,
+    IObjectStorageRepository,
+    ObjectNotFoundError,
+    StorageError,
 )
 
 logger = logging.getLogger(__name__)
@@ -66,7 +63,7 @@ class LocalStorageRepository(IObjectStorageRepository):
     Mimics S3/MinIO API for testing purposes.
     """
 
-    def __init__(self, base_path: Union[str, Path]):
+    def __init__(self, base_path: str | Path):
         """
         Initialize with base storage path.
 
@@ -86,8 +83,8 @@ class LocalStorageRepository(IObjectStorageRepository):
         bucket: str,
         key: str,
         data: bytes,
-        metadata: Optional[Dict[str, Any]] = None,
-        content_type: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        content_type: str | None = None,
     ) -> ArtifactMetadata:
         """Store object to local filesystem."""
         try:
@@ -144,7 +141,7 @@ class LocalStorageRepository(IObjectStorageRepository):
 
         meta_path = path.with_suffix(path.suffix + ".meta.json")
         if meta_path.exists():
-            with open(meta_path, "r") as f:
+            with open(meta_path) as f:
                 meta = json.load(f)
         else:
             # Compute metadata from file
@@ -171,7 +168,7 @@ class LocalStorageRepository(IObjectStorageRepository):
         bucket: str,
         prefix: str,
         recursive: bool = True,
-    ) -> List[ArtifactMetadata]:
+    ) -> list[ArtifactMetadata]:
         """List objects matching prefix."""
         bucket_path = self._base_path / bucket
         if not bucket_path.exists():
@@ -269,7 +266,7 @@ class LocalDatasetRepository(IDatasetRepository):
         experiment_id: str,
         data: pd.DataFrame,
         version: str,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> DatasetSnapshot:
         """Save dataset to local storage."""
         base_path = f"{experiment_id}/{self.DATASET_PREFIX}/{version}"
@@ -337,7 +334,7 @@ class LocalDatasetRepository(IDatasetRepository):
     def load_dataset(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> pd.DataFrame:
         """Load dataset from local storage."""
         if version is None:
@@ -350,7 +347,7 @@ class LocalDatasetRepository(IDatasetRepository):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> DatasetSnapshot:
         """Get dataset snapshot from manifest."""
         if version is None:
@@ -382,7 +379,7 @@ class LocalDatasetRepository(IDatasetRepository):
             created_at=datetime.fromisoformat(manifest["created_at"]),
         )
 
-    def list_versions(self, experiment_id: str) -> List[DatasetSnapshot]:
+    def list_versions(self, experiment_id: str) -> list[DatasetSnapshot]:
         """List all dataset versions."""
         prefix = f"{experiment_id}/{self.DATASET_PREFIX}/"
         objects = self._storage.list_objects(self.BUCKET, prefix, recursive=False)
@@ -408,8 +405,8 @@ class LocalDatasetRepository(IDatasetRepository):
     def get_norm_stats(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
-    ) -> Dict[str, Dict[str, float]]:
+        version: str | None = None,
+    ) -> dict[str, dict[str, float]]:
         """Get normalization statistics."""
         if version is None:
             version = self._get_latest_version(experiment_id)
@@ -425,7 +422,7 @@ class LocalDatasetRepository(IDatasetRepository):
             raise ObjectNotFoundError(f"No datasets found for {experiment_id}")
         return versions[0].version
 
-    def _compute_norm_stats(self, data: pd.DataFrame) -> Dict[str, Dict[str, float]]:
+    def _compute_norm_stats(self, data: pd.DataFrame) -> dict[str, dict[str, float]]:
         """Compute normalization statistics."""
         stats = {}
         for col in data.columns:
@@ -462,11 +459,11 @@ class LocalModelRepository(IModelRepository):
     def save_model(
         self,
         experiment_id: str,
-        model_path: Union[str, Path],
-        norm_stats: Dict[str, Any],
-        config: Dict[str, Any],
+        model_path: str | Path,
+        norm_stats: dict[str, Any],
+        config: dict[str, Any],
         lineage: LineageRecord,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> ModelSnapshot:
         """Save trained model."""
         model_path = Path(model_path)
@@ -534,7 +531,7 @@ class LocalModelRepository(IModelRepository):
     def load_model(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> bytes:
         """Load model bytes."""
         if version is None:
@@ -546,7 +543,7 @@ class LocalModelRepository(IModelRepository):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> ModelSnapshot:
         """Get model snapshot."""
         if version is None:
@@ -595,7 +592,7 @@ class LocalModelRepository(IModelRepository):
             created_at=model_meta.created_at,
         )
 
-    def list_versions(self, experiment_id: str) -> List[ModelSnapshot]:
+    def list_versions(self, experiment_id: str) -> list[ModelSnapshot]:
         """List all model versions."""
         prefix = f"{experiment_id}/{self.MODELS_PREFIX}/"
         objects = self._storage.list_objects(self.BUCKET, prefix, recursive=False)
@@ -622,7 +619,7 @@ class LocalModelRepository(IModelRepository):
         self,
         experiment_id: str,
         version: str,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
     ) -> str:
         """Copy model to production bucket."""
         snapshot = self.get_snapshot(experiment_id, version)
@@ -658,7 +655,7 @@ class LocalModelRepository(IModelRepository):
 # =============================================================================
 
 __all__ = [
-    "LocalStorageRepository",
     "LocalDatasetRepository",
     "LocalModelRepository",
+    "LocalStorageRepository",
 ]

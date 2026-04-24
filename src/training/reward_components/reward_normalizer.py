@@ -15,10 +15,11 @@ Reference:
     Advances in Neural Information Processing Systems, 35.
 """
 
-import numpy as np
-from typing import Dict, Any, Optional
+from typing import Any
 
-from .base import RewardComponent, ComponentType, IRewardNormalizer
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 class RunningMeanStd:
@@ -86,7 +87,7 @@ class RunningMeanStd:
         self._var = 1.0
         self._count = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
         return {
             "mean": self._mean,
@@ -213,7 +214,7 @@ class RewardNormalizer(RewardComponent):
         """Force full reset of all statistics."""
         self._running_stats.reset()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -225,7 +226,7 @@ class RewardNormalizer(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -237,7 +238,7 @@ class RewardNormalizer(RewardComponent):
         return stats
 
     @property
-    def stats(self) -> Dict[str, float]:
+    def stats(self) -> dict[str, float]:
         """Convenience property for logging."""
         return {
             "reward_running_mean": self._running_stats.mean,

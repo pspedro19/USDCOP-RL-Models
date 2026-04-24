@@ -12,9 +12,9 @@ IMPORTANTE:
 - argmax produce: 0=SELL, 1=HOLD, 2=BUY
 - Este mapping es INMUTABLE y corresponde al modelo entrenado
 """
-from enum import IntEnum
-from typing import Dict, Tuple, Final, List
 from dataclasses import dataclass
+from enum import IntEnum
+from typing import Final
 
 
 class Action(IntEnum):
@@ -97,8 +97,8 @@ class InvalidActionError(ValueError):
 
 # Constants
 ACTION_CONTRACT_VERSION: Final[str] = "1.0.0"
-VALID_ACTIONS: Final[Tuple[int, ...]] = (0, 1, 2)
-ACTION_NAMES: Final[Dict[int, str]] = {0: "SELL", 1: "HOLD", 2: "BUY"}
+VALID_ACTIONS: Final[tuple[int, ...]] = (0, 1, 2)
+ACTION_NAMES: Final[dict[int, str]] = {0: "SELL", 1: "HOLD", 2: "BUY"}
 ACTION_COUNT: Final[int] = 3
 ACTION_PROBS_DIM: Final[int] = 3
 
@@ -106,7 +106,7 @@ ACTION_PROBS_DIM: Final[int] = 3
 @dataclass(frozen=True)
 class ModelOutputContract:
     """Contrato formal del output del modelo."""
-    valid_actions: Tuple[int, ...] = VALID_ACTIONS
+    valid_actions: tuple[int, ...] = VALID_ACTIONS
     confidence_min: float = 0.0
     confidence_max: float = 1.0
     action_probs_dim: int = ACTION_PROBS_DIM
@@ -114,7 +114,7 @@ class ModelOutputContract:
 
     def validate_output(
         self, action: int, confidence: float, action_probs: list = None
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Valida el output completo del modelo."""
         errors = []
 
@@ -151,7 +151,7 @@ def validate_model_output(
 
     if not is_valid and raise_on_error:
         raise InvalidActionError(
-            f"Model output validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+            "Model output validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
         )
 
     return is_valid

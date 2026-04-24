@@ -11,12 +11,10 @@ This module handles:
 - Grid generation for 5-min resampling
 """
 
-import pandas as pd
-import numpy as np
 from datetime import datetime, time, timedelta
-from typing import List, Optional, Tuple
 from functools import lru_cache
 
+import pandas as pd
 
 # =============================================================================
 # MARKET HOURS (COT = Colombia Time = UTC-5)
@@ -179,7 +177,7 @@ class TradingCalendar:
         )
         self._all_holidays = self._us_holidays.union(self._col_holidays)
 
-    def _parse_holidays(self, holidays: List[str]) -> set:
+    def _parse_holidays(self, holidays: list[str]) -> set:
         """Parse list of holiday strings to set of dates."""
         return {pd.Timestamp(h).date() for h in holidays}
 

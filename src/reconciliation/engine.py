@@ -11,9 +11,6 @@ Usage:
 import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Optional
-
-import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +24,10 @@ class InternalTrade:
     signal_date: date
     direction: str  # 'LONG' or 'SHORT'
     entry_price: float
-    exit_price: Optional[float]
+    exit_price: float | None
     leverage: float
-    pnl_pct: Optional[float]
-    exit_reason: Optional[str]
+    pnl_pct: float | None
+    exit_reason: str | None
 
 
 @dataclass
@@ -51,21 +48,21 @@ class ReconciliationItem:
 
     signal_date: date
     pipeline: str
-    direction: Optional[str]
-    internal_entry_price: Optional[float]
-    internal_exit_price: Optional[float]
-    internal_leverage: Optional[float]
-    internal_pnl_pct: Optional[float]
-    internal_exit_reason: Optional[str]
-    exchange_entry_price: Optional[float]
-    exchange_exit_price: Optional[float]
-    exchange_quantity: Optional[float]
-    exchange_commission: Optional[float]
+    direction: str | None
+    internal_entry_price: float | None
+    internal_exit_price: float | None
+    internal_leverage: float | None
+    internal_pnl_pct: float | None
+    internal_exit_reason: str | None
+    exchange_entry_price: float | None
+    exchange_exit_price: float | None
+    exchange_quantity: float | None
+    exchange_commission: float | None
     match_status: str  # 'match', 'slippage', 'missed_fill', 'extra_fill', 'qty_mismatch'
-    entry_slippage_bps: Optional[float] = None
-    exit_slippage_bps: Optional[float] = None
-    pnl_diff_pct: Optional[float] = None
-    notes: Optional[str] = None
+    entry_slippage_bps: float | None = None
+    exit_slippage_bps: float | None = None
+    pnl_diff_pct: float | None = None
+    notes: str | None = None
 
 
 @dataclass
@@ -80,10 +77,10 @@ class ReconciliationResult:
     discrepancies: int = 0
     missed_fills: int = 0
     extra_fills: int = 0
-    max_slippage_bps: Optional[float] = None
-    avg_slippage_bps: Optional[float] = None
+    max_slippage_bps: float | None = None
+    avg_slippage_bps: float | None = None
     items: list = field(default_factory=list)
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ReconciliationEngine:
@@ -228,8 +225,8 @@ class ReconciliationEngine:
         """Fetch fills from SignalBridge API for the given date."""
         fills = []
         try:
-            import urllib.request
             import json
+            import urllib.request
 
             url = (
                 f"{self.signalbridge_url}/api/signal-bridge/history"

@@ -22,12 +22,12 @@ Contrato: CTR-006
 """
 
 from .factory import (
-    Normalizer,
-    ZScoreNormalizer,
-    MinMaxNormalizer,
     ClipNormalizer,
+    MinMaxNormalizer,
     NoOpNormalizer,
+    Normalizer,
     NormalizerFactory,
+    ZScoreNormalizer,
 )
 
 __all__ = [

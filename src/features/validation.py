@@ -9,7 +9,6 @@ FeatureBuilder and ONNX model to prevent inference errors.
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +94,7 @@ def validate_feature_order_at_startup(
             f"Builder: {builder_order}\n"
             f"Model: {model_order}\n"
             f"Diferencias:\n" + "\n".join(diffs) + "\n"
-            f"Esto causara predicciones incorrectas."
+            "Esto causara predicciones incorrectas."
         )
         if strict:
             raise FeatureOrderMismatchError(msg)
@@ -106,7 +105,7 @@ def validate_feature_order_at_startup(
     return True
 
 
-def _extract_feature_order_from_onnx(model_path: Path) -> Optional[List[str]]:
+def _extract_feature_order_from_onnx(model_path: Path) -> list[str] | None:
     """
     Extrae feature_order del metadata del modelo ONNX.
 

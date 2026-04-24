@@ -10,10 +10,8 @@ Contract: CTR-ANALYSIS-SCHEMA-001
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import date, datetime
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Macro variable snapshot
@@ -28,32 +26,36 @@ class MacroSnapshot:
     value: float
 
     # Simple Moving Averages
-    sma_5: Optional[float] = None
-    sma_10: Optional[float] = None
-    sma_20: Optional[float] = None
-    sma_50: Optional[float] = None
+    sma_5: float | None = None
+    sma_10: float | None = None
+    sma_20: float | None = None
+    sma_50: float | None = None
 
     # Bollinger Bands (20-period, 2 std)
-    bollinger_upper_20: Optional[float] = None
-    bollinger_lower_20: Optional[float] = None
-    bollinger_width_20: Optional[float] = None
+    bollinger_upper_20: float | None = None
+    bollinger_lower_20: float | None = None
+    bollinger_width_20: float | None = None
 
     # RSI (Wilder's, 14-period)
-    rsi_14: Optional[float] = None
+    rsi_14: float | None = None
 
     # MACD (12, 26, 9)
-    macd_line: Optional[float] = None
-    macd_signal: Optional[float] = None
-    macd_histogram: Optional[float] = None
+    macd_line: float | None = None
+    macd_signal: float | None = None
+    macd_histogram: float | None = None
 
     # Rate of Change
-    roc_5: Optional[float] = None
-    roc_20: Optional[float] = None
+    roc_5: float | None = None
+    roc_20: float | None = None
 
     # Derived signals
-    z_score_20: Optional[float] = None
-    trend: Optional[str] = None       # above_sma20, below_sma20, golden_cross, death_cross
-    signal: Optional[str] = None      # overbought, oversold, neutral, bb_squeeze
+    z_score_20: float | None = None
+    z_score_60: float | None = None
+    z_score_252: float | None = None
+    interpretation: str | None = None   # Multi-window z-score interpretation (Spanish)
+    cop_impact: str | None = None       # bearish_cop, bullish_cop, neutral
+    trend: str | None = None       # above_sma20, below_sma20, golden_cross, death_cross
+    signal: str | None = None      # overbought, oversold, neutral, bb_squeeze
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -86,14 +88,14 @@ class DailyAnalysisRecord:
     iso_week: int
     day_of_week: int                       # 0=Mon, 4=Fri
 
-    headline: Optional[str] = None
-    summary_markdown: Optional[str] = None
-    sentiment: Optional[str] = None        # bullish, bearish, neutral, mixed
+    headline: str | None = None
+    summary_markdown: str | None = None
+    sentiment: str | None = None        # bullish, bearish, neutral, mixed
 
-    usdcop_close: Optional[float] = None
-    usdcop_change_pct: Optional[float] = None
-    usdcop_high: Optional[float] = None
-    usdcop_low: Optional[float] = None
+    usdcop_close: float | None = None
+    usdcop_change_pct: float | None = None
+    usdcop_high: float | None = None
+    usdcop_low: float | None = None
 
     h1_signal: dict = field(default_factory=dict)
     h5_status: dict = field(default_factory=dict)
@@ -101,9 +103,9 @@ class DailyAnalysisRecord:
     economic_events: list = field(default_factory=list)
     news_highlights: list = field(default_factory=list)
 
-    llm_model: Optional[str] = None
-    llm_tokens_used: Optional[int] = None
-    llm_cost_usd: Optional[float] = None
+    llm_model: str | None = None
+    llm_tokens_used: int | None = None
+    llm_cost_usd: float | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -124,9 +126,9 @@ class WeeklyAnalysisRecord:
     week_start: date
     week_end: date
 
-    summary_markdown: Optional[str] = None
-    headline: Optional[str] = None
-    sentiment: Optional[str] = None        # bullish, bearish, neutral, mixed
+    summary_markdown: str | None = None
+    headline: str | None = None
+    sentiment: str | None = None        # bullish, bearish, neutral, mixed
     themes: list = field(default_factory=list)
 
     ohlcv_summary: dict = field(default_factory=dict)
@@ -134,10 +136,10 @@ class WeeklyAnalysisRecord:
     h1_signals: list = field(default_factory=list)
     news_summary: dict = field(default_factory=dict)
 
-    llm_model: Optional[str] = None
-    llm_tokens_used: Optional[int] = None
-    llm_cost_usd: Optional[float] = None
-    generation_time_s: Optional[float] = None
+    llm_model: str | None = None
+    llm_tokens_used: int | None = None
+    llm_cost_usd: float | None = None
+    generation_time_s: float | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -157,11 +159,11 @@ class ChatMessage:
     role: str          # user, assistant, system
     content: str
     session_id: str
-    context_year: Optional[int] = None
-    context_week: Optional[int] = None
-    tokens_used: Optional[int] = None
-    llm_model: Optional[str] = None
-    created_at: Optional[datetime] = None
+    context_year: int | None = None
+    context_week: int | None = None
+    tokens_used: int | None = None
+    llm_model: str | None = None
+    created_at: datetime | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -189,14 +191,14 @@ class WeeklyViewExport:
     news_context: dict = field(default_factory=dict)
 
     # Multi-Agent Analysis outputs (Phase 4 — optional, set by LangGraph pipeline)
-    technical_analysis: Optional[dict] = None
-    mtf_analysis: Optional[dict] = None
-    news_intelligence: Optional[dict] = None
-    macro_regime: Optional[dict] = None
-    fx_context: Optional[dict] = None
-    political_bias_analysis: Optional[dict] = None  # Phase 3: Bias detection
-    quality_score: Optional[float] = None
-    synthesis_markdown: Optional[str] = None
+    technical_analysis: dict | None = None
+    mtf_analysis: dict | None = None
+    news_intelligence: dict | None = None
+    macro_regime: dict | None = None
+    fx_context: dict | None = None
+    political_bias_analysis: dict | None = None  # Phase 3: Bias detection
+    quality_score: float | None = None
+    synthesis_markdown: str | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -215,8 +217,8 @@ class AnalysisIndexEntry:
     week: int
     start: str        # ISO date
     end: str          # ISO date
-    sentiment: Optional[str] = None
-    headline: Optional[str] = None
+    sentiment: str | None = None
+    headline: str | None = None
     has_weekly: bool = False
     daily_count: int = 0
 
@@ -273,8 +275,8 @@ DISPLAY_NAMES = {
 class TechnicalAnalysisOutput:
     """Technical analysis output from TA agent."""
     current_price: float = 0.0
-    atr: Optional[float] = None
-    atr_pct: Optional[float] = None
+    atr: float | None = None
+    atr_pct: float | None = None
     volatility_regime: str = "normal"
     indicators: dict = field(default_factory=dict)
     dominant_bias: str = "neutral"
@@ -328,8 +330,8 @@ class FXContextOutput:
     banrep: dict = field(default_factory=dict)
     risk_factors: list = field(default_factory=list)
     fx_narrative: str = ""
-    cop_weekly_change_pct: Optional[float] = None
-    cop_level: Optional[float] = None
+    cop_weekly_change_pct: float | None = None
+    cop_level: float | None = None
     sensitivity_impacts: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -354,11 +356,11 @@ class PoliticalBiasOutput:
 @dataclass
 class FullAnalysisReport:
     """Complete multi-agent analysis report."""
-    technical: Optional[dict] = None
-    mtf_analysis: Optional[dict] = None
-    news: Optional[dict] = None
-    macro: Optional[dict] = None
-    fx: Optional[dict] = None
+    technical: dict | None = None
+    mtf_analysis: dict | None = None
+    news: dict | None = None
+    macro: dict | None = None
+    fx: dict | None = None
     markdown_report: str = ""
     quality_score: float = 0.0
     cost_usd: float = 0.0

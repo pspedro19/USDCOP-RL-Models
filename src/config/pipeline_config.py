@@ -18,11 +18,11 @@ Version: 2.0.0
 """
 
 import logging
-import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Callable
-from functools import lru_cache
+from typing import Any
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -35,20 +35,20 @@ logger = logging.getLogger(__name__)
 class NormalizationConfig:
     """Normalization configuration for a feature."""
     method: str = "zscore"  # zscore, minmax, none, clip
-    clip: Tuple[float, float] = (-5, 5)
+    clip: tuple[float, float] = (-5, 5)
     compute_on: str = "train_only"
-    input_range: Optional[Tuple[float, float]] = None
-    output_range: Optional[Tuple[float, float]] = None
+    input_range: tuple[float, float] | None = None
+    output_range: tuple[float, float] | None = None
 
 
 @dataclass
 class PreprocessingConfig:
     """Preprocessing configuration for a feature."""
     dropna: bool = True
-    ffill_limit: Optional[int] = None
+    ffill_limit: int | None = None
     shift: int = 0
-    clip_outliers: Optional[Tuple[float, float]] = None
-    floor: Optional[float] = None
+    clip_outliers: tuple[float, float] | None = None
+    floor: float | None = None
 
 
 @dataclass
@@ -59,18 +59,18 @@ class FeatureDefinition:
     category: str
     description: str
     source: str
-    input_columns: List[str]
-    calculator: Optional[str]
-    params: Dict[str, Any]
+    input_columns: list[str]
+    calculator: str | None
+    params: dict[str, Any]
     preprocessing: PreprocessingConfig
     normalization: NormalizationConfig
     importance: str = "MEDIUM"
     is_state: bool = False
-    custom_formula: Optional[str] = None
-    note: Optional[str] = None
+    custom_formula: str | None = None
+    note: str | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "FeatureDefinition":
+    def from_dict(cls, data: dict[str, Any]) -> "FeatureDefinition":
         """Create FeatureDefinition from SSOT dictionary."""
         preprocessing_data = data.get("preprocessing", {})
         normalization_data = data.get("normalization", {})
@@ -119,7 +119,7 @@ class PPOConfig:
     gamma: float = 0.98     # V21: Was 0.95
     gae_lambda: float = 0.95
     clip_range: float = 0.2
-    clip_range_vf: Optional[float] = None
+    clip_range_vf: float | None = None
     ent_coef: float = 0.01  # V21: Was 0.02/0.005
     vf_coef: float = 0.5
     max_grad_norm: float = 0.5
@@ -179,7 +179,7 @@ class RewardConfig:
     weight_holding_decay: float = 0.05   # V21: was 0.20
     weight_anti_gaming: float = 0.00     # V21: DISABLED (was 0.10)
     weight_flat_reward: float = 0.0      # V21: DISABLED (was 0.05)
-    pnl_clip_range: Tuple[float, float] = (-0.1, 0.1)
+    pnl_clip_range: tuple[float, float] = (-0.1, 0.1)
     pnl_zscore_window: int = 100
     asymmetric_loss_mult: float = 1.0    # V21: symmetric (was 1.5)
     holding_decay_half_life: int = 576   # V21: was 144
@@ -243,7 +243,7 @@ class EnsembleConfig:
 class TemporalFeaturesConfig:
     """V22 P1: Temporal feature configuration."""
     enabled: bool = True
-    features: List[str] = field(default_factory=lambda: ["hour_sin", "hour_cos", "dow_sin", "dow_cos"])
+    features: list[str] = field(default_factory=lambda: ["hour_sin", "hour_cos", "dow_sin", "dow_cos"])
 
 
 @dataclass
@@ -316,7 +316,7 @@ class PipelineConfig:
     This is the SINGLE interface for all layers to access configuration.
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         """Load configuration from SSOT file."""
         if config_path is None:
             # Find config relative to this file
@@ -325,7 +325,7 @@ class PipelineConfig:
         if not config_path.exists():
             raise FileNotFoundError(f"Pipeline SSOT not found: {config_path}")
 
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             self._raw = yaml.safe_load(f)
 
         self._config_path = config_path
@@ -470,10 +470,10 @@ class PipelineConfig:
         # Parse features
         self._features = self._parse_features()
 
-    def _parse_v22_config(self, training: Dict) -> None:
+    def _parse_v22_config(self, training: dict) -> None:
         """V22: Parse ensemble, LSTM, position sizing, close shaping, walk-forward, SAC."""
         # Algorithm name (backward compat: derive from lstm.enabled if absent)
-        self._algorithm_name = training.get("algorithm", None)
+        self._algorithm_name = training.get("algorithm")
 
         # SAC config (only parsed, used when algorithm="sac")
         sac_data = training.get("sac", {})
@@ -563,7 +563,7 @@ class PipelineConfig:
             n_splits=wf_data.get("n_splits", 4),
         )
 
-    def _parse_features(self) -> List[FeatureDefinition]:
+    def _parse_features(self) -> list[FeatureDefinition]:
         """Parse feature definitions from SSOT."""
         features = []
 
@@ -587,23 +587,23 @@ class PipelineConfig:
     # PUBLIC API - Methods for each layer
     # =========================================================================
 
-    def get_feature_definitions(self) -> List[FeatureDefinition]:
+    def get_feature_definitions(self) -> list[FeatureDefinition]:
         """Get all feature definitions sorted by order."""
         return self._features
 
-    def get_market_features(self) -> List[FeatureDefinition]:
+    def get_market_features(self) -> list[FeatureDefinition]:
         """Get only market features (not state)."""
         return [f for f in self._features if not f.is_state]
 
-    def get_state_features(self) -> List[FeatureDefinition]:
+    def get_state_features(self) -> list[FeatureDefinition]:
         """Get only state features."""
         return [f for f in self._features if f.is_state]
 
-    def get_feature_order(self) -> Tuple[str, ...]:
+    def get_feature_order(self) -> tuple[str, ...]:
         """Get feature names in correct order."""
         return tuple(f.name for f in self._features)
 
-    def get_feature_by_name(self, name: str) -> Optional[FeatureDefinition]:
+    def get_feature_by_name(self, name: str) -> FeatureDefinition | None:
         """Get a specific feature by name."""
         for f in self._features:
             if f.name == name:
@@ -614,35 +614,35 @@ class PipelineConfig:
         """Get total observation dimension."""
         return self._raw.get("features", {}).get("observation_dim", 20)
 
-    def get_calculators(self) -> Dict[str, Dict[str, str]]:
+    def get_calculators(self) -> dict[str, dict[str, str]]:
         """Get calculator registry definition."""
         return self._raw.get("calculators", {})
 
-    def get_preprocessing_config(self) -> Dict[str, Any]:
+    def get_preprocessing_config(self) -> dict[str, Any]:
         """Get preprocessing configuration."""
         return self._raw.get("preprocessing", {})
 
-    def get_validation_config(self) -> Dict[str, Any]:
+    def get_validation_config(self) -> dict[str, Any]:
         """Get validation gates configuration."""
         return self._raw.get("validation", {})
 
-    def get_curriculum_config(self) -> Dict[str, Any]:
+    def get_curriculum_config(self) -> dict[str, Any]:
         """Get curriculum learning configuration."""
         return self._raw.get("training", {}).get("curriculum", {})
 
-    def get_training_schedule(self) -> Dict[str, Any]:
+    def get_training_schedule(self) -> dict[str, Any]:
         """Get training schedule (timesteps, checkpoints, etc.)."""
         return self._raw.get("training", {}).get("schedule", {})
 
-    def get_trading_schedule(self) -> Dict[str, Any]:
+    def get_trading_schedule(self) -> dict[str, Any]:
         """Get trading schedule constants (bars_per_day, bars_per_year, etc.)."""
         return self._raw.get("trading_schedule", {})
 
-    def get_macro_column_map(self) -> Dict[str, str]:
+    def get_macro_column_map(self) -> dict[str, str]:
         """Get macro column mapping (source DB names → SSOT feature names)."""
         return self._raw.get("paths", {}).get("sources", {}).get("macro_column_map", {})
 
-    def get_state_feature_names(self) -> List[str]:
+    def get_state_feature_names(self) -> list[str]:
         """Get state feature names list from SSOT."""
         return [f.name for f in self.get_state_features()]
 
@@ -661,7 +661,7 @@ class PipelineConfig:
             return "recurrent_ppo"
         return "ppo"
 
-    def get_algorithm_config(self) -> Dict[str, Any]:
+    def get_algorithm_config(self) -> dict[str, Any]:
         """Get algorithm-specific hyperparameter dict for the factory."""
         from src.training.algorithm_factory import get_algorithm_kwargs
         return get_algorithm_kwargs(self)
@@ -676,7 +676,7 @@ class PipelineConfig:
         """Get the model this config is based on."""
         return self._raw.get("_meta", {}).get("based_on_model", "unknown")
 
-    def validate_training_backtest_parity(self) -> List[str]:
+    def validate_training_backtest_parity(self) -> list[str]:
         """
         Validate that training and backtest configs are aligned.
         Returns list of mismatches (empty if OK).
@@ -737,7 +737,7 @@ class PipelineConfig:
 
         return issues
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export full config as dictionary."""
         return self._raw
 
@@ -746,9 +746,9 @@ class PipelineConfig:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_cached_pipeline_config: Optional[PipelineConfig] = None
+_cached_pipeline_config: PipelineConfig | None = None
 
-def load_pipeline_config(config_path: Optional[str] = None) -> PipelineConfig:
+def load_pipeline_config(config_path: str | None = None) -> PipelineConfig:
     """
     Load pipeline configuration (cached).
 
@@ -780,7 +780,7 @@ def load_pipeline_config(config_path: Optional[str] = None) -> PipelineConfig:
     return _cached_pipeline_config
 
 
-def get_feature_order() -> Tuple[str, ...]:
+def get_feature_order() -> tuple[str, ...]:
     """Quick access to feature order."""
     return load_pipeline_config().get_feature_order()
 
@@ -828,27 +828,27 @@ if __name__ == "__main__":
         print(f"   State: {len(config.get_state_features())}")
         print(f"   Observation dim: {config.get_observation_dim()}")
 
-        print(f"\n[Training Config]")
+        print("\n[Training Config]")
         print(f"   PPO LR: {config.ppo.learning_rate}")
         print(f"   Timesteps: {config.get_training_schedule().get('total_timesteps')}")
         print(f"   Transaction cost: {config.environment.transaction_cost_bps} bps")
         print(f"   Thresholds: [{config.environment.threshold_short}, {config.environment.threshold_long}]")
 
-        print(f"\n[Backtest Config]")
+        print("\n[Backtest Config]")
         print(f"   Transaction cost: {config.backtest.transaction_cost_bps} bps")
         print(f"   Thresholds: [{config.backtest.threshold_short}, {config.backtest.threshold_long}]")
         print(f"   Stop loss: {config.backtest.stop_loss_pct*100}%")
         print(f"   Take profit: {config.backtest.take_profit_pct*100}%")
 
-        print(f"\n[Parity Check]")
+        print("\n[Parity Check]")
         issues = config.validate_training_backtest_parity()
         if issues:
             for issue in issues:
                 print(f"   [X] {issue}")
         else:
-            print(f"   [OK] Training and Backtest configs are aligned")
+            print("   [OK] Training and Backtest configs are aligned")
 
-        print(f"\n[Date Ranges]")
+        print("\n[Date Ranges]")
         print(f"   Train: {config.date_ranges.train_start} -> {config.date_ranges.train_end}")
         print(f"   Val:   {config.date_ranges.val_start} -> {config.date_ranges.val_end}")
         print(f"   Test:  {config.date_ranges.test_start} -> {config.date_ranges.test_end}")

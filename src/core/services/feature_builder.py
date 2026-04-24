@@ -31,16 +31,20 @@ CHANGELOG v4.0.0:
 - REMOVED: Legacy fallback mode (CanonicalFeatureBuilder is always available)
 """
 
+import logging
 import warnings
+
 import numpy as np
 import pandas as pd
-import logging
-from typing import Dict, List, Optional, Tuple
 
 # Import constants from SSOT
 from src.core.constants import (
-    RSI_PERIOD, ATR_PERIOD, ADX_PERIOD,
-    BARS_PER_SESSION, CLIP_MIN, CLIP_MAX,
+    ADX_PERIOD,
+    ATR_PERIOD,
+    BARS_PER_SESSION,
+    CLIP_MAX,
+    CLIP_MIN,
+    RSI_PERIOD,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,7 +79,7 @@ class FeatureBuilder:
 
     _deprecation_warned: bool = False
 
-    def __init__(self, config_path: Optional[str] = None, config_loader=None):
+    def __init__(self, config_path: str | None = None, config_loader=None):
         """
         Initialize FeatureBuilder.
 
@@ -103,11 +107,11 @@ class FeatureBuilder:
         """Return observation dimension from SSOT."""
         return self._obs_dim
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Return ordered list of feature names."""
         return self._feature_order.copy()
 
-    def get_norm_stats(self, feature_name: str = None) -> Dict:
+    def get_norm_stats(self, feature_name: str = None) -> dict:
         """Get normalization statistics."""
         stats = self._canonical.get_norm_stats()
         if feature_name:
@@ -116,10 +120,10 @@ class FeatureBuilder:
 
     def build_observation(
         self,
-        features_dict: Dict[str, float],
+        features_dict: dict[str, float],
         position: float,
         bar_number: int,
-        episode_length: Optional[int] = None
+        episode_length: int | None = None
     ) -> np.ndarray:
         """
         Build observation array from pre-computed features.
@@ -152,7 +156,7 @@ class FeatureBuilder:
 
         return obs
 
-    def calculate_time_normalized(self, bar_number: int, episode_length: Optional[int] = None) -> float:
+    def calculate_time_normalized(self, bar_number: int, episode_length: int | None = None) -> float:
         """Calculate time_normalized value."""
         if episode_length is None:
             episode_length = self._episode_length
@@ -171,7 +175,7 @@ class FeatureBuilder:
         return True
 
     @property
-    def feature_order(self) -> List[str]:
+    def feature_order(self) -> list[str]:
         """Get ordered list of features."""
         return self._feature_order
 
@@ -181,7 +185,7 @@ class FeatureBuilder:
         return self._obs_dim
 
 
-def create_feature_builder(config_path: Optional[str] = None, config_loader=None) -> FeatureBuilder:
+def create_feature_builder(config_path: str | None = None, config_loader=None) -> FeatureBuilder:
     """
     Factory function - DEPRECATED.
     Use CanonicalFeatureBuilder factory methods instead.

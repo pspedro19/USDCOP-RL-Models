@@ -10,8 +10,7 @@ Outputs: TechnicalAnalysisReport with bias, signals, scenarios, watch list.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
@@ -43,11 +42,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IchimokuReading:
-    tenkan: Optional[float] = None
-    kijun: Optional[float] = None
-    senkou_a: Optional[float] = None
-    senkou_b: Optional[float] = None
-    chikou: Optional[float] = None
+    tenkan: float | None = None
+    kijun: float | None = None
+    senkou_a: float | None = None
+    senkou_b: float | None = None
+    chikou: float | None = None
     price_vs_cloud: str = "neutral"  # above, below, inside
     tk_cross: str = "none"           # bullish, bearish, none
     cloud_color: str = "neutral"     # green, red, neutral
@@ -58,10 +57,10 @@ class IchimokuReading:
 
 @dataclass
 class SuperTrendReading:
-    value: Optional[float] = None
+    value: float | None = None
     direction: str = "neutral"       # bullish, bearish
     flip_detected: bool = False
-    distance_pct: Optional[float] = None
+    distance_pct: float | None = None
     acting_as: str = "none"          # support, resistance
 
     def to_dict(self) -> dict:
@@ -70,9 +69,9 @@ class SuperTrendReading:
 
 @dataclass
 class MACDReading:
-    macd_line: Optional[float] = None
-    signal_line: Optional[float] = None
-    histogram: Optional[float] = None
+    macd_line: float | None = None
+    signal_line: float | None = None
+    histogram: float | None = None
     histogram_direction: str = "flat"  # expanding, contracting, flat
     cross: str = "none"                # bullish, bearish, none
     divergence: str = "none"           # bullish, bearish, none
@@ -83,12 +82,12 @@ class MACDReading:
 
 @dataclass
 class FibonacciLevels:
-    swing_high: Optional[float] = None
-    swing_low: Optional[float] = None
+    swing_high: float | None = None
+    swing_low: float | None = None
     direction: str = "none"   # retracement_up, retracement_down
     levels: dict = field(default_factory=dict)  # {0.236: price, 0.382: ..., 0.5: ..., 0.618: ...}
-    nearest_support: Optional[float] = None
-    nearest_resistance: Optional[float] = None
+    nearest_support: float | None = None
+    nearest_resistance: float | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -110,10 +109,10 @@ class SupportResistance:
 class TradingScenario:
     direction: str = "long"     # long, short
     entry_condition: str = ""
-    entry_price: Optional[float] = None
-    stop_loss: Optional[float] = None
+    entry_price: float | None = None
+    stop_loss: float | None = None
     targets: list[float] = field(default_factory=list)
-    risk_reward: Optional[float] = None
+    risk_reward: float | None = None
     confidence: str = "medium"  # high, medium, low
     profile: str = "swing"     # scalp, intraday, swing
 
@@ -124,15 +123,15 @@ class TradingScenario:
 @dataclass
 class TechnicalAnalysisReport:
     current_price: float = 0.0
-    atr: Optional[float] = None
-    atr_pct: Optional[float] = None
+    atr: float | None = None
+    atr_pct: float | None = None
     volatility_regime: str = "normal"  # low, normal, high
 
     ichimoku: IchimokuReading = field(default_factory=IchimokuReading)
     supertrend: SuperTrendReading = field(default_factory=SuperTrendReading)
     macd: MACDReading = field(default_factory=MACDReading)
-    rsi: Optional[float] = None
-    bollinger_width: Optional[float] = None
+    rsi: float | None = None
+    bollinger_width: float | None = None
     bollinger_position: str = "middle"  # upper, middle, lower
 
     dominant_bias: str = "neutral"      # bullish, bearish, neutral

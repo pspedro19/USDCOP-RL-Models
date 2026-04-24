@@ -15,48 +15,44 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 from pydantic import BaseModel
 
 # Import all schemas
 from . import (
-    # Core
-    SignalType,
-    TradeSide,
-    TradeStatus,
-    OrderSide,
-    MarketStatus,
-    DataSource,
+    FEATURE_ORDER,
     # Features
     OBSERVATION_DIM,
-    FEATURE_ORDER,
-    NamedFeatures,
-    ObservationSchema,
-    FeatureSnapshotSchema,
-    NormalizationStatsSchema,
+    ApiMetadataSchema,
+    BacktestRequestSchema,
+    BacktestResponseSchema,
     # Trading
     CandlestickSchema,
-    SignalSchema,
-    TradeSchema,
-    TradeSummarySchema,
-    TradeMetadataSchema,
-    # API
-    BacktestRequestSchema,
-    InferenceRequestSchema,
-    BacktestResponseSchema,
-    HealthResponseSchema,
+    DataSource,
     ErrorResponseSchema,
-    ApiMetadataSchema,
-    ApiResponseSchema,
+    FeatureSnapshotSchema,
+    HealthResponseSchema,
+    InferenceRequestSchema,
+    MarketStatus,
     ModelInfoSchema,
     ModelsResponseSchema,
+    NamedFeatures,
+    NormalizationStatsSchema,
+    ObservationSchema,
+    OrderSide,
+    SignalSchema,
+    # Core
+    SignalType,
+    TradeMetadataSchema,
+    TradeSchema,
+    TradeSide,
+    TradeStatus,
+    TradeSummarySchema,
 )
-
 
 # =============================================================================
 # CONSTANTS
@@ -85,7 +81,7 @@ TYPESCRIPT_IMPORTS = '''import { z } from 'zod';
 # =============================================================================
 
 
-PYTHON_TO_TS: Dict[str, str] = {
+PYTHON_TO_TS: dict[str, str] = {
     "str": "string",
     "int": "number",
     "float": "number",
@@ -131,7 +127,7 @@ def python_type_to_ts(python_type: str) -> str:
     return PYTHON_TO_TS.get(python_type, python_type)
 
 
-def python_type_to_zod(python_type: str, field_info: Dict[str, Any]) -> str:
+def python_type_to_zod(python_type: str, field_info: dict[str, Any]) -> str:
     """Convert Python type to Zod schema."""
     # Handle Optional
     if python_type.startswith("Optional["):
@@ -185,14 +181,14 @@ def python_type_to_zod(python_type: str, field_info: Dict[str, Any]) -> str:
 # =============================================================================
 
 
-def generate_enum_ts(enum_class: Type) -> str:
+def generate_enum_ts(enum_class: type) -> str:
     """Generate TypeScript enum from Python enum."""
     name = enum_class.__name__
     values = [f"  {m.name} = '{m.value}'," for m in enum_class]
     return f"export enum {name} {{\n" + "\n".join(values) + "\n}\n"
 
 
-def generate_enum_zod(enum_class: Type) -> str:
+def generate_enum_zod(enum_class: type) -> str:
     """Generate Zod enum from Python enum."""
     name = enum_class.__name__
     values = [f"'{m.value}'" for m in enum_class]
@@ -220,7 +216,7 @@ def get_field_type(field) -> str:
     return str(annotation).replace("typing.", "")
 
 
-def generate_interface_ts(model: Type[BaseModel]) -> str:
+def generate_interface_ts(model: type[BaseModel]) -> str:
     """Generate TypeScript interface from Pydantic model."""
     name = model.__name__
     fields = []
@@ -235,7 +231,7 @@ def generate_interface_ts(model: Type[BaseModel]) -> str:
     return f"export interface {name} {{\n" + "\n".join(fields) + "\n}\n"
 
 
-def generate_zod_schema(model: Type[BaseModel]) -> str:
+def generate_zod_schema(model: type[BaseModel]) -> str:
     """Generate Zod schema from Pydantic model."""
     name = model.__name__
     fields = []
@@ -359,10 +355,10 @@ export * from './schemas';
     (output_dir / "index.ts").write_text(index_content)
 
     print(f"Generated TypeScript files in {output_dir}:")
-    print(f"  - enums.ts")
-    print(f"  - types.ts")
-    print(f"  - schemas.ts")
-    print(f"  - index.ts")
+    print("  - enums.ts")
+    print("  - types.ts")
+    print("  - schemas.ts")
+    print("  - index.ts")
 
 
 def generate_openapi_spec(output_path: Path) -> None:

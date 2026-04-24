@@ -10,9 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -79,8 +77,8 @@ def load_macro_data() -> pd.DataFrame:
 
 
 def load_gdelt_articles(
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> list[dict]:
     """Load GDELT articles from CSV, optionally filtered by date range."""
     path = PROJECT_ROOT / "data/news/gdelt_articles_historical.csv"
@@ -109,8 +107,8 @@ def load_gdelt_articles(
 
 
 def load_gdelt_sentiment(
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> pd.DataFrame:
     """Load GDELT daily sentiment CSV."""
     path = PROJECT_ROOT / "data/news/gdelt_daily_sentiment.csv"
@@ -158,7 +156,7 @@ def run_technical_analysis(
 
 def run_multi_timeframe(
     m5_df: pd.DataFrame,
-    daily_df: Optional[pd.DataFrame] = None,
+    daily_df: pd.DataFrame | None = None,
 ) -> dict:
     """Run multi-timeframe analysis."""
     from src.analysis.multi_timeframe import MultiTimeframeAnalyzer
@@ -199,7 +197,7 @@ def run_fx_context(
     cop_series: pd.Series,
     week_start: str,
     week_end: str,
-    events_calendar: Optional[list[dict]] = None,
+    events_calendar: list[dict] | None = None,
 ) -> dict:
     """Run FX context analysis."""
     from src.analysis.fx_context import FXContextEngine
@@ -211,7 +209,7 @@ def run_fx_context(
 def compute_macro_snapshots(
     macro_df: pd.DataFrame,
     target_date: date,
-    variables: Optional[list[str]] = None,
+    variables: list[str] | None = None,
 ) -> dict:
     """Compute macro snapshots using existing MacroAnalyzer."""
     from src.analysis.macro_analyzer import MacroAnalyzer

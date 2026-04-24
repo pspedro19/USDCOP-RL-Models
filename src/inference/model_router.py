@@ -19,13 +19,13 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-import time
 import logging
 import threading
-from typing import Optional, Dict, Any, Tuple
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import UTC, datetime
+from typing import Any
 
 import numpy as np
 
@@ -39,7 +39,7 @@ except ImportError:
     MlflowClient = None
 
 try:
-    from prometheus_client import Counter, Histogram, Gauge
+    from prometheus_client import Counter, Gauge, Histogram
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
@@ -116,7 +116,7 @@ class PredictionResult:
 class RouterPrediction:
     """Complete prediction result from the router."""
     champion: PredictionResult
-    shadow: Optional[PredictionResult]
+    shadow: PredictionResult | None
     agree: bool
     divergence: float  # Absolute difference in actions
     champion_used: bool  # Always True in normal operation
@@ -147,10 +147,10 @@ class ModelWrapper:
         self.stage = stage
         self.threshold_long = threshold_long
         self.threshold_short = threshold_short
-        self.loaded_at = datetime.now(timezone.utc)
+        self.loaded_at = datetime.now(UTC)
         self._lock = threading.Lock()
 
-    def predict(self, observation: np.ndarray) -> Tuple[float, float]:
+    def predict(self, observation: np.ndarray) -> tuple[float, float]:
         """
         Run prediction on observation.
 
@@ -195,7 +195,7 @@ class ModelWrapper:
         return "HOLD"
 
     @property
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         """Get model information."""
         return {
             "name": self.name,
@@ -259,9 +259,9 @@ class ModelRouter:
         self.enable_shadow = enable_shadow
         self.model_name = model_name
 
-        self._champion: Optional[ModelWrapper] = None
-        self._shadow: Optional[ModelWrapper] = None
-        self._client: Optional[MlflowClient] = None
+        self._champion: ModelWrapper | None = None
+        self._shadow: ModelWrapper | None = None
+        self._client: MlflowClient | None = None
         self._lock = threading.RLock()
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="model_router")
 
@@ -282,7 +282,7 @@ class ModelRouter:
         # Load models
         self._load_models()
 
-    def _load_model(self, stage: str) -> Optional[ModelWrapper]:
+    def _load_model(self, stage: str) -> ModelWrapper | None:
         """
         Load a model from MLflow by stage.
 
@@ -346,7 +346,7 @@ class ModelRouter:
             if self.enable_shadow:
                 self._shadow = self._load_model(self.shadow_stage)
 
-    def reload_models(self) -> Dict[str, Any]:
+    def reload_models(self) -> dict[str, Any]:
         """
         Hot reload both models.
 
@@ -356,7 +356,7 @@ class ModelRouter:
         result = {
             "champion": {"success": False, "version": None},
             "shadow": {"success": False, "version": None},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         with self._lock:
@@ -404,7 +404,7 @@ class ModelRouter:
         self,
         champion_model: Any,
         champion_version: str = "local",
-        shadow_model: Optional[Any] = None,
+        shadow_model: Any | None = None,
         shadow_version: str = "local-shadow"
     ) -> None:
         """
@@ -461,7 +461,7 @@ class ModelRouter:
             latency_ms=latency_ms,
             model_name=model.name,
             model_version=model.version,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
     def predict(self, observation: np.ndarray) -> RouterPrediction:
@@ -484,8 +484,8 @@ class ModelRouter:
             if self._champion is None:
                 raise RuntimeError("Champion model not loaded")
 
-            champion_result: Optional[PredictionResult] = None
-            shadow_result: Optional[PredictionResult] = None
+            champion_result: PredictionResult | None = None
+            shadow_result: PredictionResult | None = None
 
             # Execute in parallel if shadow is enabled
             if self.enable_shadow and self._shadow is not None:
@@ -568,12 +568,12 @@ class ModelRouter:
             )
 
     @property
-    def champion(self) -> Optional[ModelWrapper]:
+    def champion(self) -> ModelWrapper | None:
         """Get champion model wrapper."""
         return self._champion
 
     @property
-    def shadow(self) -> Optional[ModelWrapper]:
+    def shadow(self) -> ModelWrapper | None:
         """Get shadow model wrapper."""
         return self._shadow
 
@@ -596,7 +596,7 @@ class ModelRouter:
             return 1.0
         return sum(self._agreement_history) / len(self._agreement_history)
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get router status and statistics."""
         status = {
             "ready": self.is_ready,

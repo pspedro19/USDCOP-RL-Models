@@ -15,10 +15,9 @@ SOLID Principles:
 - OCP: Log format can be extended without modification
 """
 
-import time
-import os
 import logging
-from typing import Optional, Set
+import os
+import time
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -46,7 +45,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        exclude_paths: Optional[Set[str]] = None,
+        exclude_paths: set[str] | None = None,
         log_request_body: bool = False,
         log_response_body: bool = False,
         slow_request_threshold_ms: float = 1000.0,
@@ -121,7 +120,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms = (time.perf_counter() - start_time) * 1000
             logger.error(
                 f"Request failed: {request.method} {path} "
-                f"after {duration_ms:.2f}ms - {type(e).__name__}: {str(e)} "
+                f"after {duration_ms:.2f}ms - {type(e).__name__}: {e!s} "
                 f"[{correlation_id}]",
                 exc_info=True
             )

@@ -5,11 +5,10 @@ Define metadata obligatoria para cada modelo.
 
 Contract ID: CTR-MODEL-METADATA-001
 """
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
-import hashlib
 
 
 class ModelMetadata(BaseModel):
@@ -26,11 +25,11 @@ class ModelMetadata(BaseModel):
     action_dim: int = Field(3, description="Action dimension")
 
     # Optional but recommended
-    training_date: Optional[datetime] = Field(None, description="When model was trained")
-    framework_version: Optional[str] = Field(None, description="e.g., stable-baselines3==2.0.0")
-    python_version: Optional[str] = Field(None, description="e.g., 3.11.5")
-    training_sharpe: Optional[float] = Field(None, description="Sharpe from training")
-    validation_sharpe: Optional[float] = Field(None, description="Sharpe from validation")
+    training_date: datetime | None = Field(None, description="When model was trained")
+    framework_version: str | None = Field(None, description="e.g., stable-baselines3==2.0.0")
+    python_version: str | None = Field(None, description="e.g., 3.11.5")
+    training_sharpe: float | None = Field(None, description="Sharpe from training")
+    validation_sharpe: float | None = Field(None, description="Sharpe from validation")
 
     @field_validator("observation_dim")
     @classmethod
@@ -53,7 +52,7 @@ class ModelMetadata(BaseModel):
             raise ValueError(f"Hash must be 64 hex chars, got {len(v)}")
         return v
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return self.model_dump()
 
     @classmethod

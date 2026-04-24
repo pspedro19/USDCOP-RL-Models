@@ -23,12 +23,13 @@ Usage:
         # Alert or disable model
 """
 
-import numpy as np
-from collections import deque
-from typing import List, Optional, Dict, Any
-from scipy.stats import entropy
 import logging
-from datetime import datetime, timezone
+from collections import deque
+from datetime import UTC, datetime
+from typing import Any
+
+import numpy as np
+from scipy.stats import entropy
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +65,8 @@ class ModelMonitor:
         self.window_size = window_size
         self.action_history: deque = deque(maxlen=window_size)
         self.pnl_history: deque = deque(maxlen=window_size)
-        self.baseline_action_dist: Optional[np.ndarray] = None
-        self._baseline_bins: Optional[np.ndarray] = None
+        self.baseline_action_dist: np.ndarray | None = None
+        self._baseline_bins: np.ndarray | None = None
         self._num_bins = 20  # Number of bins for discretizing continuous actions
 
         logger.info(f"ModelMonitor initialized with window_size={window_size}")
@@ -88,7 +89,7 @@ class ModelMonitor:
         """
         self.pnl_history.append(float(pnl))
 
-    def set_baseline(self, actions: List[float]) -> None:
+    def set_baseline(self, actions: list[float]) -> None:
         """
         Establish baseline action distribution from backtest/historical data.
 
@@ -247,7 +248,7 @@ class ModelMonitor:
 
         return float(np.clip(sharpe, -10.0, 10.0))  # Cap extreme values
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """
         Get comprehensive health status for the monitored model.
 
@@ -298,7 +299,7 @@ class ModelMonitor:
             "actions_recorded": len(self.action_history),
             "trades_recorded": len(self.pnl_history),
             "status": status,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "details": details,
             "thresholds": {
                 "kl_warning": self.KL_THRESHOLD_WARNING,
@@ -323,7 +324,7 @@ class ModelMonitor:
 # Convenience function for creating pre-configured monitors
 def create_model_monitor(
     window_size: int = 100,
-    baseline_actions: Optional[List[float]] = None
+    baseline_actions: list[float] | None = None
 ) -> ModelMonitor:
     """
     Factory function to create a configured ModelMonitor.

@@ -12,13 +12,13 @@ Created: 2025-01-17
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import asyncpg
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..config import get_settings, FEATURE_ORDER
+from ..config import FEATURE_ORDER, get_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/replay", tags=["replay"])
@@ -42,7 +42,7 @@ class ReplayRequest(BaseModel):
         default="USDCOP",
         description="Trading symbol (default: USDCOP)"
     )
-    model_id: Optional[str] = Field(
+    model_id: str | None = Field(
         default=None,
         description="Optional model ID to filter by specific model inference"
     )
@@ -57,19 +57,19 @@ class ReplayResponse(BaseModel):
         ...,
         description="Timestamp of the replayed features"
     )
-    features: Dict[str, float] = Field(
+    features: dict[str, float] = Field(
         ...,
         description="Feature values keyed by feature name"
     )
-    prediction: Optional[float] = Field(
+    prediction: float | None = Field(
         default=None,
         description="Model prediction value if available"
     )
-    signal: Optional[str] = Field(
+    signal: str | None = Field(
         default=None,
         description="Trading signal (LONG, SHORT, HOLD)"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional metadata (model_id, source, etc.)"
     )
@@ -80,11 +80,11 @@ class ReplayResponse(BaseModel):
 class FeatureSnapshot(BaseModel):
     """Internal model for feature snapshot from database."""
 
-    version: Optional[str] = None
-    timestamp: Optional[str] = None
-    bar_idx: Optional[int] = None
-    raw_features: Optional[Dict[str, float]] = None
-    normalized_features: Optional[Dict[str, float]] = None
+    version: str | None = None
+    timestamp: str | None = None
+    bar_idx: int | None = None
+    raw_features: dict[str, float] | None = None
+    normalized_features: dict[str, float] | None = None
 
 
 # =============================================================================
@@ -102,7 +102,7 @@ class FeatureReader:
     3. inference_features_5m (materialized view)
     """
 
-    def __init__(self, db_pool: Optional[asyncpg.Pool] = None):
+    def __init__(self, db_pool: asyncpg.Pool | None = None):
         self._pool = db_pool
 
     async def _get_connection(self) -> asyncpg.Connection:
@@ -129,8 +129,8 @@ class FeatureReader:
         self,
         timestamp: datetime,
         symbol: str = "USDCOP",
-        model_id: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        model_id: str | None = None,
+    ) -> dict[str, Any] | None:
         """
         Get features at a specific timestamp.
 
@@ -176,8 +176,8 @@ class FeatureReader:
         conn: asyncpg.Connection,
         timestamp: datetime,
         symbol: str,
-        model_id: Optional[str],
-    ) -> Optional[Dict[str, Any]]:
+        model_id: str | None,
+    ) -> dict[str, Any] | None:
         """Get features from trades_history table."""
         try:
             # Build query with optional model_id filter
@@ -246,7 +246,7 @@ class FeatureReader:
         conn: asyncpg.Connection,
         timestamp: datetime,
         symbol: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get features from dw.fact_rl_inference table."""
         try:
             query = """
@@ -299,7 +299,7 @@ class FeatureReader:
         conn: asyncpg.Connection,
         timestamp: datetime,
         symbol: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get features from inference_features_5m materialized view."""
         try:
             query = """
@@ -410,7 +410,7 @@ async def replay_features(
         logger.error(f"Error replaying features: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to replay features: {str(e)}"
+            detail=f"Failed to replay features: {e!s}"
         )
 
 
@@ -418,7 +418,7 @@ async def replay_features(
 async def replay_features_get(
     timestamp: str,
     symbol: str = "USDCOP",
-    model_id: Optional[str] = None,
+    model_id: str | None = None,
     req: Request = None,
 ) -> ReplayResponse:
     """

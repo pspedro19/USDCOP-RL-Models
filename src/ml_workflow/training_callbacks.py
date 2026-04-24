@@ -17,11 +17,10 @@ FASE 2 Implementation (2026-02-02):
 
 import logging
 import os
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Callable, List
-import json
-import numpy as np
+from typing import Any
 
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 
@@ -150,7 +149,7 @@ class ValidationEarlyStoppingCallback(BaseCallback):
         n_eval_episodes: int = 5,
         patience: int = 5,
         min_improvement: float = 0.01,
-        best_model_save_path: Optional[str] = None,
+        best_model_save_path: str | None = None,
         verbose: int = 1,
     ):
         """
@@ -176,8 +175,8 @@ class ValidationEarlyStoppingCallback(BaseCallback):
         # Tracking
         self._best_mean_reward = float('-inf')
         self._no_improvement_count = 0
-        self._eval_rewards: List[float] = []
-        self._eval_timesteps: List[int] = []
+        self._eval_rewards: list[float] = []
+        self._eval_timesteps: list[int] = []
         self._stopped_early = False
 
     def _on_training_start(self) -> None:
@@ -279,7 +278,7 @@ class ValidationEarlyStoppingCallback(BaseCallback):
         return self._best_mean_reward
 
     @property
-    def eval_history(self) -> Dict[str, List]:
+    def eval_history(self) -> dict[str, list]:
         """Get evaluation history."""
         return {
             "rewards": self._eval_rewards,
@@ -298,9 +297,9 @@ def create_overfitting_prevention_callbacks(
     final_lr: float = 0.00003,
     eval_freq: int = 25_000,
     patience: int = 5,
-    best_model_save_path: Optional[str] = None,
+    best_model_save_path: str | None = None,
     verbose: int = 1,
-) -> List[BaseCallback]:
+) -> list[BaseCallback]:
     """
     Factory function to create FASE 2 overfitting prevention callbacks.
 
@@ -385,9 +384,9 @@ class ModelRegistrationCallback(BaseCallback):
         self,
         model_save_path: str,
         version: str,
-        db_connection_string: Optional[str] = None,
-        training_info: Optional[Dict[str, Any]] = None,
-        on_registration_complete: Optional[Callable[[str], None]] = None,
+        db_connection_string: str | None = None,
+        training_info: dict[str, Any] | None = None,
+        on_registration_complete: Callable[[str], None] | None = None,
         verbose: int = 1
     ):
         """
@@ -408,9 +407,9 @@ class ModelRegistrationCallback(BaseCallback):
         self.training_info = training_info or {}
         self.on_registration_complete = on_registration_complete
 
-        self._training_start_time: Optional[datetime] = None
+        self._training_start_time: datetime | None = None
         self._best_reward: float = float('-inf')
-        self._final_metrics: Dict[str, Any] = {}
+        self._final_metrics: dict[str, Any] = {}
 
     def _on_training_start(self) -> None:
         """Llamado al inicio del training."""
@@ -458,7 +457,7 @@ class ModelRegistrationCallback(BaseCallback):
         if model_id and self.on_registration_complete:
             self.on_registration_complete(model_id)
 
-    def _register_model(self) -> Optional[str]:
+    def _register_model(self) -> str | None:
         """Registra el modelo en la base de datos."""
         try:
             from src.ml_workflow.model_registry import ModelRegistry
@@ -563,8 +562,8 @@ class ModelRegistrationEvalCallback(EvalCallback):
         eval_env,
         best_model_save_path: str,
         version: str,
-        db_connection_string: Optional[str] = None,
-        training_info: Optional[Dict[str, Any]] = None,
+        db_connection_string: str | None = None,
+        training_info: dict[str, Any] | None = None,
         n_eval_episodes: int = 10,
         eval_freq: int = 10000,
         verbose: int = 1,
@@ -701,8 +700,8 @@ def create_training_callback(
     model_save_path: str,
     version: str,
     eval_env=None,
-    db_connection_string: Optional[str] = None,
-    training_info: Optional[Dict[str, Any]] = None,
+    db_connection_string: str | None = None,
+    training_info: dict[str, Any] | None = None,
     use_eval_callback: bool = True,
     n_eval_episodes: int = 10,
     eval_freq: int = 10000,

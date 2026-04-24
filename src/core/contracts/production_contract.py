@@ -24,13 +24,13 @@ Usage:
     # Load specific model
     contract = ProductionContract.from_db(conn, model_id="exp1_v1_20260131")
 """
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, Tuple
-from datetime import datetime
+import hashlib
 import json
 import logging
-import hashlib
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -67,20 +67,20 @@ class ProductionContract:
 
     # Paths a artifacts
     norm_stats_path: str
-    config_path: Optional[str] = None
+    config_path: str | None = None
 
     # Approval info (segundo voto)
     l4_proposal_id: str = ""
     l4_recommendation: str = ""
     l4_confidence: float = 0.0
     approved_by: str = ""
-    approved_at: Optional[datetime] = None
+    approved_at: datetime | None = None
 
     # Metrics from L4 backtest
-    metrics: Dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
     # Lineage completo
-    lineage: Dict[str, Any] = field(default_factory=dict)
+    lineage: dict[str, Any] = field(default_factory=dict)
 
     # Status
     is_active: bool = True
@@ -89,7 +89,7 @@ class ProductionContract:
     # Timestamps
     created_at: datetime = field(default_factory=datetime.utcnow)
     deployed_at: datetime = field(default_factory=datetime.utcnow)
-    archived_at: Optional[datetime] = None
+    archived_at: datetime | None = None
 
     @classmethod
     def get_active(cls, conn) -> Optional["ProductionContract"]:
@@ -223,7 +223,7 @@ class ProductionContract:
             )
         return matches
 
-    def validate_norm_stats(self, norm_stats_path: Optional[str] = None) -> Tuple[bool, str]:
+    def validate_norm_stats(self, norm_stats_path: str | None = None) -> tuple[bool, str]:
         """
         Validar que norm_stats.json coincide con el hash esperado.
 
@@ -266,7 +266,7 @@ class ProductionContract:
         """Get Path object for norm_stats file."""
         return Path(self.norm_stats_path)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dict for API."""
         return {
             "model_id": self.model_id,
@@ -290,7 +290,7 @@ class ProductionContract:
             "deployed_at": self.deployed_at.isoformat() if self.deployed_at else None,
         }
 
-    def validate_all(self, current_feature_hash: str) -> Tuple[bool, List[str]]:
+    def validate_all(self, current_feature_hash: str) -> tuple[bool, list[str]]:
         """
         Run all validations.
 
@@ -320,7 +320,7 @@ class ProductionContract:
         return len(errors) == 0, errors
 
 
-def get_production_contract(conn) -> Optional[ProductionContract]:
+def get_production_contract(conn) -> ProductionContract | None:
     """
     Convenience function to get the active production contract.
 

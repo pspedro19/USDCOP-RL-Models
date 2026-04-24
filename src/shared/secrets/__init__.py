@@ -44,18 +44,18 @@ Date: 2026-01-17
 """
 
 from .vault_client import (
+    CachedSecret,
+    VaultAuthenticationError,
     # Main classes
     VaultClient,
     VaultConfig,
-    CachedSecret,
+    VaultConnectionError,
+    # Exceptions
+    VaultError,
+    VaultSecretNotFoundError,
     # Helper functions
     get_vault_client,
     require_secret,
-    # Exceptions
-    VaultError,
-    VaultConnectionError,
-    VaultAuthenticationError,
-    VaultSecretNotFoundError,
 )
 
 __all__ = [

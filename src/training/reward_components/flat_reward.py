@@ -33,11 +33,12 @@ Created: 2026-02-02
 Updated: 2026-02-02 - PHASE 3 anti-reward-hacking with decay
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
 
-from .base import RewardComponent, ComponentType
+from .base import ComponentType, RewardComponent
 
 
 @dataclass
@@ -60,7 +61,7 @@ class FlatRewardConfig:
     # History window for tracking counterfactual
     history_window: int = 10
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "scale": self.scale,
             "min_move_threshold": self.min_move_threshold,
@@ -152,7 +153,7 @@ class FlatReward(RewardComponent):
 
         # State tracking
         self._consecutive_flat_bars = 0
-        self._return_history: List[float] = []
+        self._return_history: list[float] = []
 
         # Statistics
         self._total_loss_avoided = 0.0
@@ -235,7 +236,7 @@ class FlatReward(RewardComponent):
         """Reset when position changes."""
         self._consecutive_flat_bars = 0
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         base_stats = super().get_stats()
         base_stats.update({
@@ -245,7 +246,7 @@ class FlatReward(RewardComponent):
         })
         return base_stats
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         base_config = super().get_config()
         base_config.update({

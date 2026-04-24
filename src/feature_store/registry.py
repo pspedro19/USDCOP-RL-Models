@@ -23,18 +23,17 @@ Created: 2025-01-12
 
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from .contracts import (
-    FeatureVersion,
-    FeatureSpec,
-    FeatureSetSpec,
-    FeatureCategory,
     CalculationParams,
-    NormalizationParams,
+    FeatureCategory,
+    FeatureSetSpec,
+    FeatureSpec,
+    FeatureVersion,
     NormalizationMethod,
+    NormalizationParams,
     NormalizationStats,
     SmoothingMethod,
 )
@@ -257,8 +256,8 @@ class FeatureRegistry:
         rsi_spec = registry.get_feature("rsi_9", FeatureVersion.CURRENT)
     """
     _instance: Optional["FeatureRegistry"] = None
-    _feature_sets: Dict[FeatureVersion, FeatureSetSpec] = {}
-    _normalization_stats: Dict[FeatureVersion, NormalizationStats] = {}
+    _feature_sets: dict[FeatureVersion, FeatureSetSpec] = {}
+    _normalization_stats: dict[FeatureVersion, NormalizationStats] = {}
 
     def __new__(cls) -> "FeatureRegistry":
         if cls._instance is None:
@@ -298,7 +297,7 @@ class FeatureRegistry:
             raise KeyError(f"Unknown feature: {name} in {version.value}")
         return feature
 
-    def get_feature_names(self, version: FeatureVersion) -> List[str]:
+    def get_feature_names(self, version: FeatureVersion) -> list[str]:
         """Get ordered list of feature names"""
         return self.get_feature_set(version).get_feature_names()
 
@@ -313,7 +312,7 @@ class FeatureRegistry:
     def load_normalization_stats(
         self,
         version: FeatureVersion,
-        path: Optional[Path] = None
+        path: Path | None = None
     ) -> NormalizationStats:
         """
         Load normalization stats from file or config.
@@ -371,9 +370,9 @@ class FeatureRegistry:
 
     def validate_feature_vector(
         self,
-        values: Dict[str, float],
+        values: dict[str, float],
         version: FeatureVersion
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate feature vector against specification.
 
@@ -413,7 +412,7 @@ class FeatureRegistry:
 
         return errors
 
-    def list_versions(self) -> List[FeatureVersion]:
+    def list_versions(self) -> list[FeatureVersion]:
         """List all registered versions"""
         return list(self._feature_sets.keys())
 
@@ -437,7 +436,7 @@ def get_current_spec() -> FeatureSetSpec:
     return get_registry().get_feature_set(FeatureVersion.CURRENT)
 
 
-def get_feature_names() -> List[str]:
+def get_feature_names() -> list[str]:
     """
     Get ordered feature names for the current production feature set.
 

@@ -7,14 +7,13 @@ Contract ID: CTR-MODEL-INPUT-001
 Version: 1.0.0
 """
 from dataclasses import dataclass
-from typing import Tuple, Final, Optional, List
+from typing import Final
+
 import numpy as np
 
 from .feature_contract import (
-    FEATURE_CONTRACT,
     FEATURE_ORDER,
     OBSERVATION_DIM,
-    FeatureContractError,
 )
 
 
@@ -25,14 +24,14 @@ class ModelInputContract:
     supports_batch: bool = True
     dtype: np.dtype = np.float32
     requires_normalized: bool = True
-    clip_range: Tuple[float, float] = (-5.0, 5.0)
-    feature_order: Tuple[str, ...] = FEATURE_ORDER
+    clip_range: tuple[float, float] = (-5.0, 5.0)
+    feature_order: tuple[str, ...] = FEATURE_ORDER
 
     def validate(
         self,
         observation: np.ndarray,
-        norm_stats_hash: Optional[str] = None,
-        expected_hash: Optional[str] = None,
+        norm_stats_hash: str | None = None,
+        expected_hash: str | None = None,
     ) -> None:
         """Valida que la observación cumple el contrato."""
         # Normalize shape to 2D
@@ -84,7 +83,7 @@ class ObservationValidator:
 
     def __init__(
         self,
-        expected_norm_stats_hash: Optional[str] = None,
+        expected_norm_stats_hash: str | None = None,
         strict_mode: bool = True,
     ):
         self._contract = MODEL_INPUT_CONTRACT
@@ -96,7 +95,7 @@ class ObservationValidator:
     def validate_and_prepare(
         self,
         observation: np.ndarray,
-        norm_stats_hash: Optional[str] = None,
+        norm_stats_hash: str | None = None,
     ) -> np.ndarray:
         """Valida y prepara una observación para el modelo."""
         self._validation_count += 1
@@ -143,8 +142,8 @@ class ObservationValidator:
 
 def validate_model_input(
     observation: np.ndarray,
-    norm_stats_hash: Optional[str] = None,
-    expected_hash: Optional[str] = None,
+    norm_stats_hash: str | None = None,
+    expected_hash: str | None = None,
 ) -> np.ndarray:
     """Función de conveniencia para validar input del modelo."""
     if not isinstance(observation, np.ndarray):

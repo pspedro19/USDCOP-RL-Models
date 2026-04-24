@@ -3,28 +3,27 @@ Execution service for managing trade executions.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
 from uuid import UUID
-from sqlalchemy import select, func, and_, desc
+
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Execution, ExchangeCredential
+from app.adapters import get_exchange_adapter
+from app.contracts.exchange import SupportedExchange
 from app.contracts.execution import (
-    ExecutionRequest,
-    ExecutionResult,
     ExecutionCreate,
-    ExecutionSummary,
+    ExecutionFilter,
+    ExecutionResult,
     ExecutionStats,
     ExecutionStatus,
-    ExecutionFilter,
-    OrderType,
+    ExecutionSummary,
     OrderSide,
+    OrderType,
     TodayStats,
 )
-from app.contracts.exchange import SupportedExchange
-from app.adapters import get_exchange_adapter
+from app.core.exceptions import ExchangeError, NotFoundError, ValidationError
+from app.models import ExchangeCredential, Execution
 from app.services.vault import vault_service
-from app.core.exceptions import NotFoundError, ExchangeError, ValidationError
 
 
 class ExecutionService:
@@ -37,7 +36,7 @@ class ExecutionService:
         self,
         execution_id: UUID,
         user_id: UUID,
-    ) -> Optional[Execution]:
+    ) -> Execution | None:
         """Get a specific execution."""
         result = await self.db.execute(
             select(Execution).where(
@@ -52,10 +51,10 @@ class ExecutionService:
     async def get_executions(
         self,
         user_id: UUID,
-        filters: Optional[ExecutionFilter] = None,
+        filters: ExecutionFilter | None = None,
         page: int = 1,
         limit: int = 20,
-    ) -> Tuple[List[Execution], int]:
+    ) -> tuple[list[Execution], int]:
         """
         Get executions for a user with filtering and pagination.
 

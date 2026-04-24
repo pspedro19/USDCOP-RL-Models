@@ -19,10 +19,10 @@ Reference:
     Proceedings of the 26th annual international conference on machine learning.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.training.config import CurriculumConfig, RewardConfig
 from src.training.reward_components.base import MarketRegime
@@ -43,7 +43,7 @@ class PhaseConfig:
     description: str
 
     # Regime filtering
-    allowed_regimes: Tuple[MarketRegime, ...]
+    allowed_regimes: tuple[MarketRegime, ...]
 
     # Cost scaling
     cost_multiplier: float
@@ -53,8 +53,8 @@ class PhaseConfig:
     end_step: int
 
     # Optional: Early transition criteria
-    min_sharpe_for_advance: Optional[float] = None
-    min_win_rate_for_advance: Optional[float] = None
+    min_sharpe_for_advance: float | None = None
+    min_win_rate_for_advance: float | None = None
 
     @property
     def is_regime_allowed(self) -> Callable[[MarketRegime], bool]:
@@ -70,12 +70,12 @@ class CurriculumState:
     phase_start_step: int = 0
 
     # Performance tracking per phase
-    phase_rewards: List[float] = field(default_factory=list)
+    phase_rewards: list[float] = field(default_factory=list)
     phase_sharpe: float = 0.0
     phase_win_rate: float = 0.0
 
     # Phase transition history
-    transitions: List[Tuple[int, CurriculumPhase, CurriculumPhase]] = field(default_factory=list)
+    transitions: list[tuple[int, CurriculumPhase, CurriculumPhase]] = field(default_factory=list)
 
     def record_transition(self, from_phase: CurriculumPhase, to_phase: CurriculumPhase) -> None:
         """Record a phase transition."""
@@ -104,7 +104,7 @@ class CurriculumScheduler:
     def __init__(
         self,
         config: CurriculumConfig,
-        callback_on_phase_change: Optional[Callable[[CurriculumPhase, CurriculumPhase], None]] = None,
+        callback_on_phase_change: Callable[[CurriculumPhase, CurriculumPhase], None] | None = None,
     ):
         """
         Initialize curriculum scheduler.
@@ -123,7 +123,7 @@ class CurriculumScheduler:
         # State
         self._state = CurriculumState()
 
-    def _build_phases(self, config: CurriculumConfig) -> Dict[CurriculumPhase, PhaseConfig]:
+    def _build_phases(self, config: CurriculumConfig) -> dict[CurriculumPhase, PhaseConfig]:
         """Build phase configurations from config."""
         return {
             CurriculumPhase.PHASE_1: PhaseConfig(
@@ -174,7 +174,7 @@ class CurriculumScheduler:
         return self.current_config.cost_multiplier
 
     @property
-    def allowed_regimes(self) -> Tuple[MarketRegime, ...]:
+    def allowed_regimes(self) -> tuple[MarketRegime, ...]:
         """Get currently allowed regimes."""
         if not self._enabled:
             return (MarketRegime.NORMAL, MarketRegime.LOW_VOL,
@@ -187,7 +187,7 @@ class CurriculumScheduler:
             return True
         return regime in self.allowed_regimes
 
-    def step(self, reward: Optional[float] = None) -> bool:
+    def step(self, reward: float | None = None) -> bool:
         """
         Advance curriculum by one step.
 
@@ -236,7 +236,7 @@ class CurriculumScheduler:
         if self._callback:
             self._callback(old_phase, new_phase)
 
-    def get_progress(self) -> Dict[str, Any]:
+    def get_progress(self) -> dict[str, Any]:
         """Get curriculum progress information."""
         current_config = self.current_config
 
@@ -263,7 +263,7 @@ class CurriculumScheduler:
             "enabled": self._enabled,
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get curriculum statistics."""
         stats = self.get_progress()
 
@@ -321,7 +321,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
         advance_sharpe_threshold: float = 0.5,
         advance_win_rate_threshold: float = 0.52,
         min_phase_steps: int = 10000,
-        callback_on_phase_change: Optional[Callable[[CurriculumPhase, CurriculumPhase], None]] = None,
+        callback_on_phase_change: Callable[[CurriculumPhase, CurriculumPhase], None] | None = None,
     ):
         """
         Initialize adaptive scheduler.
@@ -342,7 +342,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
         # Additional tracking
         self._phase_trades = 0
         self._phase_wins = 0
-        self._trade_returns: List[float] = []
+        self._trade_returns: list[float] = []
 
     def record_trade(self, pnl: float) -> None:
         """
@@ -360,7 +360,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
         if self._phase_trades > 0:
             self._state.phase_win_rate = self._phase_wins / self._phase_trades
 
-    def step(self, reward: Optional[float] = None) -> bool:
+    def step(self, reward: float | None = None) -> bool:
         """
         Advance with potential early advancement check.
 
@@ -434,7 +434,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
 
         return mean / std
 
-    def _get_next_phase(self, current: CurriculumPhase) -> Optional[CurriculumPhase]:
+    def _get_next_phase(self, current: CurriculumPhase) -> CurriculumPhase | None:
         """Get the next phase after current."""
         phase_order = [CurriculumPhase.PHASE_1, CurriculumPhase.PHASE_2, CurriculumPhase.PHASE_3]
         idx = phase_order.index(current)
@@ -449,7 +449,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
         self._phase_wins = 0
         self._trade_returns = []
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get extended statistics."""
         stats = super().get_stats()
         stats.update({
@@ -469,7 +469,7 @@ class AdaptiveCurriculumScheduler(CurriculumScheduler):
 def create_curriculum_scheduler(
     reward_config: RewardConfig,
     adaptive: bool = False,
-    callback: Optional[Callable[[CurriculumPhase, CurriculumPhase], None]] = None,
+    callback: Callable[[CurriculumPhase, CurriculumPhase], None] | None = None,
 ) -> CurriculumScheduler:
     """
     Create a curriculum scheduler from reward configuration.
@@ -499,10 +499,10 @@ def create_curriculum_scheduler(
 # =============================================================================
 
 __all__ = [
-    "CurriculumPhase",
-    "PhaseConfig",
-    "CurriculumState",
-    "CurriculumScheduler",
     "AdaptiveCurriculumScheduler",
+    "CurriculumPhase",
+    "CurriculumScheduler",
+    "CurriculumState",
+    "PhaseConfig",
     "create_curriculum_scheduler",
 ]

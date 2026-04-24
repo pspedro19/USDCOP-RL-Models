@@ -13,11 +13,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,7 @@ class ArticleEnriched:
     keywords: list[str] = field(default_factory=list)
     bias_label: str = ""       # center, left-center, right-center
     factuality: str = ""       # high, mixed, low
-    embedding: Optional[list[float]] = None
+    embedding: list[float] | None = None
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -348,7 +346,7 @@ class NewsIntelligenceEngine:
                 return cat
         return "general"
 
-    def _compute_sentiment(self, title: str, gdelt_tone: Optional[float] = None) -> float:
+    def _compute_sentiment(self, title: str, gdelt_tone: float | None = None) -> float:
         """Compute sentiment score (-1 to +1).
 
         Delegates to SentimentAnalyzer (hybrid ensemble) when available.
@@ -400,7 +398,7 @@ class NewsIntelligenceEngine:
     # Embedding + Clustering (FAISS in-memory)
     # ------------------------------------------------------------------
 
-    def embed_titles(self, titles: list[str]) -> Optional[np.ndarray]:
+    def embed_titles(self, titles: list[str]) -> np.ndarray | None:
         """Generate embeddings for a list of titles.
 
         Returns:
@@ -575,7 +573,7 @@ class NewsIntelligenceEngine:
         self,
         query: str,
         n_results: int = 10,
-        filters: Optional[dict] = None,
+        filters: dict | None = None,
         db_conn: object = None,
     ) -> list[dict]:
         """Search historical articles via pgvector with SQL metadata filtering.

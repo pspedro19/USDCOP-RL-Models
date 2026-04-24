@@ -14,12 +14,12 @@ Data Lineage:
 @contract CTR-FORECAST-DATA-001
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional, Tuple, Any
 import hashlib
 import json
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 _logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ CONSENSUS_TABLE = "bi.fact_consensus"
 METRICS_TABLE = "bi.fact_model_metrics"
 
 # Required columns for raw daily data
-RAW_DAILY_COLUMNS: Tuple[str, ...] = (
+RAW_DAILY_COLUMNS: tuple[str, ...] = (
     "date",
     "open",
     "high",
@@ -77,12 +77,12 @@ TARGET_COLUMN = "close"  # Daily USDCOP close price
 try:
     from src.forecasting.ssot_config import ForecastingSSOTConfig as _SSOTCfg
     _cfg = _SSOTCfg.load()
-    FEATURE_COLUMNS: Tuple[str, ...] = _cfg.get_feature_columns()
-    TARGET_HORIZONS: Tuple[int, ...] = _cfg.get_horizons()
+    FEATURE_COLUMNS: tuple[str, ...] = _cfg.get_feature_columns()
+    TARGET_HORIZONS: tuple[int, ...] = _cfg.get_horizons()
     _logger.debug("[data_contracts] Loaded %d features from YAML", len(FEATURE_COLUMNS))
 except Exception as _e:
     _logger.debug("[data_contracts] YAML load failed (%s), using hardcoded fallback", _e)
-    FEATURE_COLUMNS: Tuple[str, ...] = (
+    FEATURE_COLUMNS: tuple[str, ...] = (
         # Price-based
         "close",
         "open",
@@ -111,7 +111,7 @@ except Exception as _e:
         "vix_close_lag1",
         "embi_close_lag1",
     )
-    TARGET_HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
+    TARGET_HORIZONS: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 # Number of features (for validation)
 NUM_FEATURES = len(FEATURE_COLUMNS)
@@ -265,7 +265,7 @@ class DailyOHLCV:
     volume: int = 0
     source: DataSource = DataSource.TWELVEDATA
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "date": self.date,
             "open": self.open,
@@ -294,9 +294,9 @@ class DailyFetchResult:
     records_fetched: int
     records_inserted: int
     records_updated: int
-    date_range: Tuple[str, str]  # (start, end)
+    date_range: tuple[str, str]  # (start, end)
     gaps_filled: int = 0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -312,17 +312,17 @@ class FeatureBuildResult:
     """Result of feature building."""
     success: bool
     rows_generated: int
-    feature_columns: List[str]
-    date_range: Tuple[str, str]
-    null_counts: Dict[str, int] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
+    feature_columns: list[str]
+    date_range: tuple[str, str]
+    null_counts: dict[str, int] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
 
 
 # =============================================================================
 # VALIDATION
 # =============================================================================
 
-def validate_daily_record(record: Dict[str, Any]) -> Tuple[bool, List[str]]:
+def validate_daily_record(record: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate a daily OHLCV record."""
     errors = []
 
@@ -353,7 +353,7 @@ def validate_daily_record(record: Dict[str, Any]) -> Tuple[bool, List[str]]:
     return len(errors) == 0, errors
 
 
-def validate_feature_row(row: Dict[str, Any]) -> Tuple[bool, List[str]]:
+def validate_feature_row(row: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate a feature row has all required columns."""
     errors = []
 

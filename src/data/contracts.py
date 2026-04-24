@@ -33,13 +33,12 @@ This module defines the Single Source of Truth (SSOT) for:
 """
 
 from dataclasses import dataclass
-from typing import Dict, Tuple, List, Optional
 
 # =============================================================================
 # MACRO COLUMN MAPPINGS (DB → Friendly Name)
 # =============================================================================
 
-MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
+MACRO_DB_TO_FRIENDLY: dict[str, str] = {
     # FOREX
     "fxrt_index_dxy_usa_d_dxy": "dxy",
     "fxrt_spot_usdcop_col_d_usdcop": "usdcop",
@@ -107,7 +106,7 @@ MACRO_DB_TO_FRIENDLY: Dict[str, str] = {
 }
 
 # Reverse mapping (Friendly → DB)
-MACRO_FRIENDLY_TO_DB: Dict[str, str] = {v: k for k, v in MACRO_DB_TO_FRIENDLY.items()}
+MACRO_FRIENDLY_TO_DB: dict[str, str] = {v: k for k, v in MACRO_DB_TO_FRIENDLY.items()}
 
 
 # =============================================================================
@@ -118,12 +117,12 @@ MACRO_FRIENDLY_TO_DB: Dict[str, str] = {v: k for k, v in MACRO_DB_TO_FRIENDLY.it
 @dataclass(frozen=True)
 class MacroColumnMeta:
     source: str               # Primary source: "investing", "fred", "banrep", etc.
-    fallback: Optional[str]   # Fallback source or None
+    fallback: str | None   # Fallback source or None
     frequency: str            # "D", "M", "Q", "A"
     country: str              # "USA", "COL", "GLB", "MEX", "CHL"
     description: str
 
-MACRO_COLUMN_METADATA: Dict[str, MacroColumnMeta] = {
+MACRO_COLUMN_METADATA: dict[str, MacroColumnMeta] = {
     # FOREX
     "fxrt_index_dxy_usa_d_dxy": MacroColumnMeta("investing", "fred", "D", "USA", "Dollar Index (DXY)"),
     "fxrt_spot_usdcop_col_d_usdcop": MacroColumnMeta("investing", None, "D", "COL", "USD/COP Spot"),
@@ -183,7 +182,7 @@ MACRO_COLUMN_METADATA: Dict[str, MacroColumnMeta] = {
 # =============================================================================
 
 # Macro columns used by RL training (subset of all macro)
-RL_MACRO_COLUMNS: Tuple[str, ...] = (
+RL_MACRO_COLUMNS: tuple[str, ...] = (
     "dxy",
     "vix",
     "embi",
@@ -200,7 +199,7 @@ RL_MACRO_COLUMNS: Tuple[str, ...] = (
 )
 
 # Calculated columns for RL
-RL_CALCULATED_COLUMNS: Tuple[str, ...] = (
+RL_CALCULATED_COLUMNS: tuple[str, ...] = (
     "rate_spread",      # col10y - ust10y
     "dxy_change_1d",    # dxy.pct_change(1)
     "vix_regime",       # 1 if vix < 20, 2 if 20-30, 3 if > 30
@@ -212,13 +211,13 @@ RL_CALCULATED_COLUMNS: Tuple[str, ...] = (
 # =============================================================================
 
 # Macro columns used by Forecasting (subset of all macro)
-FORECASTING_MACRO_COLUMNS: Tuple[str, ...] = (
+FORECASTING_MACRO_COLUMNS: tuple[str, ...] = (
     "dxy",
     "wti",
 )
 
 # SSOT: 19 features in exact order for Forecasting
-FORECASTING_FEATURES: Tuple[str, ...] = (
+FORECASTING_FEATURES: tuple[str, ...] = (
     # OHLC (4)
     "close",
     "open",
@@ -249,14 +248,14 @@ FORECASTING_FEATURES: Tuple[str, ...] = (
 NUM_FORECASTING_FEATURES: int = 19
 
 # Target horizons for forecasting (days)
-FORECASTING_HORIZONS: Tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
+FORECASTING_HORIZONS: tuple[int, ...] = (1, 5, 10, 15, 20, 25, 30)
 
 # Target column names
-FORECASTING_TARGETS: Tuple[str, ...] = tuple(
+FORECASTING_TARGETS: tuple[str, ...] = tuple(
     f"target_{h}d" for h in FORECASTING_HORIZONS
 )
 
-FORECASTING_RETURN_TARGETS: Tuple[str, ...] = tuple(
+FORECASTING_RETURN_TARGETS: tuple[str, ...] = tuple(
     f"target_return_{h}d" for h in FORECASTING_HORIZONS
 )
 
@@ -280,7 +279,7 @@ FORECASTING_CONSENSUS_TABLE = "bi.fact_consensus"
 # OHLCV SCHEMA (5-minute for RL)
 # =============================================================================
 
-OHLCV_COLUMNS: Tuple[str, ...] = (
+OHLCV_COLUMNS: tuple[str, ...] = (
     "time",
     "open",
     "high",
@@ -289,7 +288,7 @@ OHLCV_COLUMNS: Tuple[str, ...] = (
     "volume",
 )
 
-OHLCV_REQUIRED: Tuple[str, ...] = (
+OHLCV_REQUIRED: tuple[str, ...] = (
     "time",
     "open",
     "high",
@@ -302,7 +301,7 @@ OHLCV_REQUIRED: Tuple[str, ...] = (
 # DAILY OHLCV SCHEMA (for Forecasting)
 # =============================================================================
 
-DAILY_OHLCV_COLUMNS: Tuple[str, ...] = (
+DAILY_OHLCV_COLUMNS: tuple[str, ...] = (
     "date",
     "open",
     "high",
@@ -312,7 +311,7 @@ DAILY_OHLCV_COLUMNS: Tuple[str, ...] = (
     "source",  # 'investing', 'twelvedata', 'manual'
 )
 
-DAILY_OHLCV_REQUIRED: Tuple[str, ...] = (
+DAILY_OHLCV_REQUIRED: tuple[str, ...] = (
     "date",
     "open",
     "high",
@@ -321,7 +320,7 @@ DAILY_OHLCV_REQUIRED: Tuple[str, ...] = (
 )
 
 # Valid sources for daily data
-DAILY_OHLCV_SOURCES: Tuple[str, ...] = (
+DAILY_OHLCV_SOURCES: tuple[str, ...] = (
     "investing",      # Primary: Investing.com official values
     "twelvedata",     # Secondary: TwelveData API
     "manual",         # Manual entry/corrections
@@ -333,7 +332,7 @@ DAILY_OHLCV_SOURCES: Tuple[str, ...] = (
 # VALIDATION HELPERS
 # =============================================================================
 
-def validate_forecasting_features(df_columns: List[str]) -> Tuple[bool, List[str]]:
+def validate_forecasting_features(df_columns: list[str]) -> tuple[bool, list[str]]:
     """
     Validate that DataFrame has all required forecasting features.
 
@@ -347,7 +346,7 @@ def validate_forecasting_features(df_columns: List[str]) -> Tuple[bool, List[str
     return len(missing) == 0, missing
 
 
-def validate_ohlcv_columns(df_columns: List[str]) -> Tuple[bool, List[str]]:
+def validate_ohlcv_columns(df_columns: list[str]) -> tuple[bool, list[str]]:
     """
     Validate that DataFrame has all required OHLCV columns.
 
@@ -361,17 +360,17 @@ def validate_ohlcv_columns(df_columns: List[str]) -> Tuple[bool, List[str]]:
     return len(missing) == 0, missing
 
 
-def get_db_columns_for_rl() -> List[str]:
+def get_db_columns_for_rl() -> list[str]:
     """Get list of DB column names needed for RL pipeline."""
     return [MACRO_FRIENDLY_TO_DB.get(col, col) for col in RL_MACRO_COLUMNS]
 
 
-def get_db_columns_for_forecasting() -> List[str]:
+def get_db_columns_for_forecasting() -> list[str]:
     """Get list of DB column names needed for Forecasting pipeline."""
     return [MACRO_FRIENDLY_TO_DB.get(col, col) for col in FORECASTING_MACRO_COLUMNS]
 
 
-def validate_daily_ohlcv_columns(df_columns: List[str]) -> Tuple[bool, List[str]]:
+def validate_daily_ohlcv_columns(df_columns: list[str]) -> tuple[bool, list[str]]:
     """
     Validate that DataFrame has all required daily OHLCV columns.
 

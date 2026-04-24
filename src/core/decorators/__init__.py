@@ -32,22 +32,20 @@ Version: 1.0.0
 """
 
 from .resilience import (
-    # Decorators
-    with_retry,
-    with_timing,
-    with_circuit_breaker,
-    with_timeout,
-    with_fallback,
-
     # Circuit Breaker
     CircuitBreaker,
+    CircuitBreakerOpenError,
     CircuitBreakerState,
     CircuitBreakerStats,
-    CircuitBreakerOpenError,
-
     # Utilities
     get_circuit_breaker,
     reset_all_circuit_breakers,
+    with_circuit_breaker,
+    with_fallback,
+    # Decorators
+    with_retry,
+    with_timeout,
+    with_timing,
 )
 
 __all__ = [

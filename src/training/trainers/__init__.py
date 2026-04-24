@@ -5,12 +5,12 @@ Professional trainer implementations for RL training.
 """
 
 from .ppo_trainer import (
-    PPOTrainer,
-    PPOConfig,
-    TrainingResult,
     ActionDistributionCallback,
     MetricsCallback,
+    PPOConfig,
+    PPOTrainer,
     ProgressCallback,
+    TrainingResult,
     train_ppo,
 )
 

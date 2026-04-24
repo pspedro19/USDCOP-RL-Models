@@ -10,8 +10,9 @@ Date: 2025-12-17
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any, Optional
 
 
 class IFeatureCalculator(ABC):
@@ -81,7 +82,7 @@ class IFeatureCalculator(ABC):
         """
         pass
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Get calculator parameters (optional, can be overridden).
 

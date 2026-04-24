@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Dict
 import json
 import logging
+import os
 import sys
 
 from airflow import DAG
@@ -328,6 +329,190 @@ def notify_signal(**context) -> None:
 
 
 # =============================================================================
+# TASK 5: PUBLISH SIGNAL TO KAFKA (MLOps course project — gRPC+Kafka compliance)
+# =============================================================================
+
+def publish_signal_to_kafka(**context) -> Dict[str, Any]:
+    """
+    Publish the just-generated H5 ensemble signal to the Kafka topic ``signals.h5``.
+
+    This task exists to satisfy the MLOps course project requirement of integrating
+    Kafka as one of the two required course technologies (alongside gRPC). It is
+    STRICTLY ADDITIVE: it runs after the normal DB write (``persist_signal``) and
+    never alters the core signal-generation flow. Any failure (missing broker,
+    missing ``kafka-python`` package, serialization error, etc.) is swallowed and
+    logged as a warning so the DAG remains green.
+
+    Flow:
+      1. Pull the signal dict from XCom (produced by ``generate_signal``). If
+         absent, fall back to re-querying the most recent row from
+         ``forecast_h5_signals``.
+      2. Build the course-defined JSON contract (see module docstring / task
+         docstring below).
+      3. Connect to Kafka at ``$KAFKA_BROKER`` (default ``redpanda:9092``) and
+         publish to topic ``signals.h5``.
+      4. Always return a status dict — never raise.
+
+    Contract of the published message::
+
+        {
+          "week": "2026-W17",
+          "signal_date": "2026-04-20",
+          "direction": "SHORT",
+          "confidence_tier": "HIGH",
+          "confidence": 0.85,
+          "ensemble_return": -0.012,
+          "skip_trade": false,
+          "hard_stop_pct": 2.81,
+          "take_profit_pct": 1.41,
+          "adjusted_leverage": 1.5,
+          "regime": "trending",
+          "hurst": 0.55,
+          "timestamp": "2026-04-23T14:00:00-05:00",
+          "source": "airflow_h5_l5"
+        }
+    """
+    try:
+        try:
+            from kafka import KafkaProducer
+        except ImportError:
+            logger.warning(
+                "[H5-L5b][kafka] kafka-python not installed, skipping Kafka publish"
+            )
+            return {"published": False, "reason": "kafka-python not installed"}
+
+        ti = context['ti']
+        signal_data = ti.xcom_pull(key='signal', task_ids='generate_signal')
+
+        # Fallback: re-query DB for the most recent row if XCom is empty
+        # (e.g., when this task runs after an upstream failure).
+        db_row: Dict[str, Any] = {}
+        if not signal_data:
+            logger.warning(
+                "[H5-L5b][kafka] No signal in XCom, attempting DB fallback"
+            )
+            try:
+                conn = get_db_connection()
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        """
+                        SELECT signal_date, inference_week, inference_year,
+                               ensemble_return, direction, confidence_tier,
+                               confidence_agreement, confidence_magnitude,
+                               sizing_multiplier, skip_trade,
+                               hard_stop_pct, take_profit_pct, adjusted_leverage,
+                               regime, hurst
+                        FROM forecast_h5_signals
+                        ORDER BY signal_date DESC
+                        LIMIT 1
+                        """
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        cols = [d[0] for d in cur.description]
+                        db_row = dict(zip(cols, row))
+                finally:
+                    conn.close()
+            except Exception as db_err:
+                logger.warning(
+                    f"[H5-L5b][kafka] DB fallback failed: {db_err}"
+                )
+
+            if not db_row:
+                logger.warning(
+                    "[H5-L5b][kafka] No signal available, skipping publish"
+                )
+                return {"published": False, "reason": "no signal available"}
+
+        # Normalize values from either XCom or DB fallback.
+        def _get(key: str, default: Any = None) -> Any:
+            if signal_data and key in signal_data:
+                return signal_data[key]
+            return db_row.get(key, default)
+
+        direction_raw = _get("direction")
+        if isinstance(direction_raw, int):
+            direction_str = "LONG" if direction_raw == 1 else (
+                "SHORT" if direction_raw == -1 else "FLAT"
+            )
+        elif isinstance(direction_raw, str):
+            direction_str = direction_raw.upper()
+        else:
+            direction_str = "FLAT"
+
+        iso_year = _get("inference_year")
+        iso_week = _get("inference_week")
+        if iso_year and iso_week:
+            week_str = f"{int(iso_year):04d}-W{int(iso_week):02d}"
+        else:
+            week_str = None
+
+        agreement = _get("confidence_agreement")
+        try:
+            confidence_float = float(1.0 - min(1.0, max(0.0, float(agreement) * 100.0))) \
+                if agreement is not None else None
+        except (TypeError, ValueError):
+            confidence_float = None
+
+        payload = {
+            "week": week_str,
+            "signal_date": str(_get("signal_date")) if _get("signal_date") else None,
+            "direction": direction_str,
+            "confidence_tier": _get("confidence_tier"),
+            "confidence": confidence_float,
+            "ensemble_return": _get("ensemble_return"),
+            "skip_trade": bool(_get("skip_trade", False)),
+            "hard_stop_pct": _get("hard_stop_pct"),
+            "take_profit_pct": _get("take_profit_pct"),
+            "adjusted_leverage": _get("adjusted_leverage", _get("sizing_multiplier")),
+            "regime": _get("regime"),
+            "hurst": _get("hurst"),
+            "timestamp": datetime.now().astimezone().isoformat(),
+            "source": "airflow_h5_l5",
+        }
+
+        broker = os.environ.get("KAFKA_BROKER", "redpanda:9092")
+        topic = "signals.h5"
+
+        logger.info(
+            f"[H5-L5b][kafka] Publishing to {broker}/{topic}: "
+            f"week={payload['week']} direction={payload['direction']} "
+            f"skip_trade={payload['skip_trade']}"
+        )
+
+        producer = KafkaProducer(
+            bootstrap_servers=broker,
+            value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
+            acks="all",
+            retries=1,
+            request_timeout_ms=5000,
+            api_version_auto_timeout_ms=5000,
+        )
+        try:
+            future = producer.send(topic, value=payload)
+            # Short block so we surface obvious broker errors, but cap at 5s.
+            future.get(timeout=5)
+            producer.flush(timeout=5)
+        finally:
+            try:
+                producer.close(timeout=5)
+            except Exception:
+                pass
+
+        logger.info(
+            f"[H5-L5b][kafka] Published signal for {payload['week']} to {topic}"
+        )
+        return {"published": True, "topic": topic, "broker": broker}
+
+    except Exception as exc:  # Never fail the DAG over Kafka
+        logger.warning(
+            f"[H5-L5b][kafka] Kafka publish failed (non-fatal): {exc}"
+        )
+        return {"published": False, "reason": str(exc)}
+
+
+# =============================================================================
 # DAG DEFINITION
 # =============================================================================
 
@@ -371,6 +556,16 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
+    # MLOps course project (gRPC+Kafka compliance): optional, always-runs-after
+    # task that publishes the generated signal to the ``signals.h5`` Kafka topic.
+    # Never blocks or fails the DAG regardless of upstream status or Kafka health.
+    t_kafka = PythonOperator(
+        task_id='publish_signal_to_kafka',
+        python_callable=publish_signal_to_kafka,
+        trigger_rule=TriggerRule.ALL_DONE,
+        retries=0,
+    )
+
     t_wait_l3 = ExternalTaskSensor(
         task_id='wait_for_h5_l3_training',
         external_dag_id='forecast_h5_l3_weekly_training',
@@ -383,3 +578,4 @@ with DAG(
     )
 
     t_wait_l3 >> t_check >> t_signal >> t_persist >> t_notify
+    t_persist >> t_kafka

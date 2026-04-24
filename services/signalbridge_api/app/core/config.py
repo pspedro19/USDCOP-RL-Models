@@ -3,11 +3,11 @@ Application configuration using Pydantic Settings.
 Single Source of Truth (SSOT) for all configuration values.
 """
 
+import json
 from functools import lru_cache
-from typing import List, Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import json
 
 
 class Settings(BaseSettings):
@@ -51,15 +51,15 @@ class Settings(BaseSettings):
     vault_encryption_key: str = Field(default="change-me-32-byte-encryption-key")
 
     # Supabase (optional)
-    supabase_url: Optional[str] = Field(default=None)
-    supabase_key: Optional[str] = Field(default=None)
-    supabase_jwt_secret: Optional[str] = Field(default=None)
+    supabase_url: str | None = Field(default=None)
+    supabase_key: str | None = Field(default=None)
+    supabase_jwt_secret: str | None = Field(default=None)
 
     # Rate Limiting
     rate_limit_per_minute: int = Field(default=60)
 
     # CORS
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default=["http://localhost:5173", "http://localhost:3000"]
     )
 

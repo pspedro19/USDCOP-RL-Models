@@ -7,9 +7,10 @@ Metrics for evaluating forecasting model performance.
 @version 1.0.0
 """
 
-import numpy as np
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
 
 
 @dataclass
@@ -18,10 +19,10 @@ class MetricsResult:
     direction_accuracy: float
     rmse: float
     mae: float
-    mape: Optional[float]
+    mape: float | None
     r2: float
-    sharpe_ratio: Optional[float]
-    max_drawdown: Optional[float]
+    sharpe_ratio: float | None
+    max_drawdown: float | None
     sample_count: int
 
 
@@ -94,7 +95,7 @@ class Metrics:
         return float(np.mean(np.abs(y_true - y_pred)))
 
     @staticmethod
-    def mape(y_true: np.ndarray, y_pred: np.ndarray) -> Optional[float]:
+    def mape(y_true: np.ndarray, y_pred: np.ndarray) -> float | None:
         """
         Calculate Mean Absolute Percentage Error.
 
@@ -191,8 +192,8 @@ class Metrics:
         cls,
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        returns: Optional[np.ndarray] = None,
-        equity_curve: Optional[np.ndarray] = None,
+        returns: np.ndarray | None = None,
+        equity_curve: np.ndarray | None = None,
     ) -> MetricsResult:
         """
         Compute all metrics at once.
@@ -218,7 +219,7 @@ class Metrics:
         )
 
     @classmethod
-    def to_dict(cls, result: MetricsResult) -> Dict[str, Any]:
+    def to_dict(cls, result: MetricsResult) -> dict[str, Any]:
         """Convert MetricsResult to dictionary."""
         return {
             'direction_accuracy': result.direction_accuracy,

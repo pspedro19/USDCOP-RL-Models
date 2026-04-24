@@ -24,10 +24,9 @@ Usage:
     app.add_middleware(TracingMiddleware)
 """
 
-import time
 import logging
-from typing import Callable, Optional, Set
-from urllib.parse import urlparse
+import time
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -67,10 +66,10 @@ class TracingMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        exclude_paths: Optional[Set[str]] = None,
+        exclude_paths: set[str] | None = None,
         service_name: str = "inference-api",
         record_query_params: bool = True,
-        record_headers: Optional[list] = None,
+        record_headers: list | None = None,
     ):
         """
         Initialize tracing middleware.
@@ -113,7 +112,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
 
         try:
             from opentelemetry import trace
-            from opentelemetry.trace import StatusCode, SpanKind
+            from opentelemetry.trace import SpanKind, StatusCode
         except ImportError:
             # OpenTelemetry not available, pass through
             return await call_next(request)
@@ -195,7 +194,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
         # Fall back to actual path
         return request.url.path
 
-    def _extract_context(self, headers: dict) -> Optional[object]:
+    def _extract_context(self, headers: dict) -> object | None:
         """Extract trace context from request headers."""
         try:
             from opentelemetry import propagate
@@ -255,9 +254,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
             span.set_attribute("http.response_content_length", int(content_length))
 
         # Set span status based on HTTP status code
-        if response.status_code >= 500:
-            span.set_status(StatusCode.ERROR, f"HTTP {response.status_code}")
-        elif response.status_code >= 400:
+        if response.status_code >= 500 or response.status_code >= 400:
             span.set_status(StatusCode.ERROR, f"HTTP {response.status_code}")
         else:
             span.set_status(StatusCode.OK)
@@ -290,10 +287,10 @@ class TracingMiddleware(BaseHTTPMiddleware):
 def setup_tracing_middleware(
     app: FastAPI,
     service_name: str = "inference-api",
-    jaeger_endpoint: Optional[str] = None,
+    jaeger_endpoint: str | None = None,
     sampling_rate: float = 0.1,
     enabled: bool = True,
-    exclude_paths: Optional[Set[str]] = None,
+    exclude_paths: set[str] | None = None,
 ) -> bool:
     """
     Setup complete tracing infrastructure for FastAPI application.
@@ -430,7 +427,7 @@ class SpanContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Extract and propagate span context."""
         try:
-            from opentelemetry import trace, propagate
+            from opentelemetry import propagate, trace
 
             # Extract context from headers
             context = propagate.extract(dict(request.headers))

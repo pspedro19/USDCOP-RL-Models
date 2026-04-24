@@ -33,10 +33,9 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Tuple, Union
+from typing import Any, Final
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -54,7 +53,7 @@ except ImportError:
     FeastError = Exception
 
 # Import CanonicalFeatureBuilder as fallback (SSOT)
-from .builders import CanonicalFeatureBuilder, BuilderContext
+from .builders import CanonicalFeatureBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +73,7 @@ MARKET_CLOSE_HOUR = 17  # 17:00 COT (extended session)
 MARKET_OPEN_DAYS = {0, 1, 2, 3, 4}  # Monday-Friday
 
 
-def is_market_hours(dt: Optional[datetime] = None) -> bool:
+def is_market_hours(dt: datetime | None = None) -> bool:
     """
     Check if current time is within Colombian trading hours.
 
@@ -89,11 +88,11 @@ def is_market_hours(dt: Optional[datetime] = None) -> bool:
         True if within trading hours, False otherwise
     """
     if dt is None:
-        dt = datetime.now(timezone.utc)
+        dt = datetime.now(UTC)
 
     # Convert to Colombia timezone
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
 
     cot_time = dt.astimezone(COT_TIMEZONE)
 
@@ -139,8 +138,8 @@ class FeastMetrics:
     errors: int = 0
 
     # Latency tracking (in milliseconds)
-    feast_latencies: List[float] = field(default_factory=list)
-    fallback_latencies: List[float] = field(default_factory=list)
+    feast_latencies: list[float] = field(default_factory=list)
+    fallback_latencies: list[float] = field(default_factory=list)
 
     # Max samples to keep for latency calculation
     MAX_LATENCY_SAMPLES: int = 1000
@@ -162,7 +161,7 @@ class FeastMetrics:
         self.total_requests += 1
         self.errors += 1
 
-    def _add_latency(self, latencies: List[float], value: float) -> None:
+    def _add_latency(self, latencies: list[float], value: float) -> None:
         """Add latency sample, maintaining max size."""
         latencies.append(value)
         if len(latencies) > self.MAX_LATENCY_SAMPLES:
@@ -203,7 +202,7 @@ class FeastMetrics:
             return 0.0
         return float(np.percentile(self.feast_latencies, 95))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export metrics as dictionary."""
         return {
             "total_requests": self.total_requests,
@@ -298,16 +297,16 @@ class FeastInferenceService:
     # at module import time (see _load_ssot_feature_config above)
     # ==========================================================================
     OBSERVATION_DIM: Final[int] = _SSOT_DIM
-    FEATURE_ORDER: Final[Tuple[str, ...]] = _SSOT_ORDER
+    FEATURE_ORDER: Final[tuple[str, ...]] = _SSOT_ORDER
 
     def __init__(
         self,
-        feast_repo_path: Optional[str] = None,
-        fallback_builder: Optional[CanonicalFeatureBuilder] = None,
+        feast_repo_path: str | None = None,
+        fallback_builder: CanonicalFeatureBuilder | None = None,
         enable_metrics: bool = True,
         enable_fallback: bool = True,
         enable_hybrid_mode: bool = True,
-        postgres_conn_string: Optional[str] = None,
+        postgres_conn_string: str | None = None,
     ):
         """
         Initialize FeastInferenceService.
@@ -330,7 +329,7 @@ class FeastInferenceService:
         )
 
         # Initialize Feast store (Redis backend)
-        self._feast_store: Optional[FeatureStore] = None
+        self._feast_store: FeatureStore | None = None
         self._feast_available = False
         self._initialize_feast()
 
@@ -415,7 +414,7 @@ class FeastInferenceService:
         symbol: str,
         bar_id: str,
         position: float,
-        time_normalized: Optional[float] = None,
+        time_normalized: float | None = None,
     ) -> np.ndarray:
         """
         V7.1 Hybrid: Retrieve features directly from PostgreSQL during market hours.
@@ -490,10 +489,10 @@ class FeastInferenceService:
         symbol: str,
         bar_id: str,
         position: float,
-        ohlcv_df: Optional[pd.DataFrame] = None,
-        macro_df: Optional[pd.DataFrame] = None,
-        bar_idx: Optional[int] = None,
-        time_normalized: Optional[float] = None,
+        ohlcv_df: pd.DataFrame | None = None,
+        macro_df: pd.DataFrame | None = None,
+        bar_idx: int | None = None,
+        time_normalized: float | None = None,
     ) -> np.ndarray:
         """
         Get features for inference.
@@ -586,10 +585,10 @@ class FeastInferenceService:
         symbol: str,
         bar_id: str,
         position: float,
-        ohlcv_df: Optional[pd.DataFrame] = None,
-        macro_df: Optional[pd.DataFrame] = None,
-        bar_idx: Optional[int] = None,
-        time_normalized: Optional[float] = None,
+        ohlcv_df: pd.DataFrame | None = None,
+        macro_df: pd.DataFrame | None = None,
+        bar_idx: int | None = None,
+        time_normalized: float | None = None,
     ) -> np.ndarray:
         """
         Async version of get_features.
@@ -622,7 +621,7 @@ class FeastInferenceService:
             ),
         )
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Check health of the Feast service.
 
@@ -631,7 +630,7 @@ class FeastInferenceService:
         """
         health = {
             "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "feast_installed": FEAST_AVAILABLE,
             "feast_available": self._feast_available,
             "fallback_enabled": self._enable_fallback,
@@ -662,7 +661,7 @@ class FeastInferenceService:
 
         return health
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """
         Get service metrics.
 
@@ -691,7 +690,7 @@ class FeastInferenceService:
         symbol: str,
         bar_id: str,
         position: float,
-        time_normalized: Optional[float] = None,
+        time_normalized: float | None = None,
     ) -> np.ndarray:
         """
         Retrieve features from Feast online store.
@@ -762,11 +761,11 @@ class FeastInferenceService:
 
     def _get_from_fallback(
         self,
-        ohlcv_df: Optional[pd.DataFrame],
-        macro_df: Optional[pd.DataFrame],
+        ohlcv_df: pd.DataFrame | None,
+        macro_df: pd.DataFrame | None,
         position: float,
-        bar_idx: Optional[int],
-        time_normalized: Optional[float] = None,
+        bar_idx: int | None,
+        time_normalized: float | None = None,
     ) -> np.ndarray:
         """
         Retrieve features using fallback CanonicalFeatureBuilder.
@@ -820,8 +819,8 @@ class FeastInferenceService:
 # =============================================================================
 
 def create_feast_service(
-    feast_repo_path: Optional[str] = None,
-    fallback_norm_stats_path: Optional[str] = None,
+    feast_repo_path: str | None = None,
+    fallback_norm_stats_path: str | None = None,
     enable_metrics: bool = True,
 ) -> FeastInferenceService:
     """

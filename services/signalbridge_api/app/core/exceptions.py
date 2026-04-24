@@ -4,7 +4,8 @@ Follows the error handling contract from the spec.
 """
 
 from enum import Enum
-from typing import Optional, Any, Dict
+from typing import Any
+
 from fastapi import HTTPException, status
 
 
@@ -55,7 +56,7 @@ class SignalBridgeException(Exception):
         message: str,
         error_code: ErrorCode = ErrorCode.INTERNAL_ERROR,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         self.message = message
         self.error_code = error_code
@@ -63,7 +64,7 @@ class SignalBridgeException(Exception):
         self.details = details or {}
         super().__init__(self.message)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert exception to dictionary for API response."""
         return {
             "error": True,
@@ -87,7 +88,7 @@ class AuthenticationError(SignalBridgeException):
         self,
         message: str = "Authentication failed",
         error_code: ErrorCode = ErrorCode.INVALID_CREDENTIALS,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
@@ -103,7 +104,7 @@ class AuthorizationError(SignalBridgeException):
     def __init__(
         self,
         message: str = "Access denied",
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
@@ -120,7 +121,7 @@ class ValidationError(SignalBridgeException):
         self,
         message: str = "Validation error",
         error_code: ErrorCode = ErrorCode.VALIDATION_ERROR,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
@@ -137,7 +138,7 @@ class ExchangeError(SignalBridgeException):
         self,
         message: str = "Exchange error",
         error_code: ErrorCode = ErrorCode.EXCHANGE_CONNECTION_FAILED,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
@@ -154,7 +155,7 @@ class VaultError(SignalBridgeException):
         self,
         message: str = "Vault error",
         error_code: ErrorCode = ErrorCode.VAULT_ENCRYPTION_FAILED,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
@@ -170,8 +171,8 @@ class RateLimitError(SignalBridgeException):
     def __init__(
         self,
         message: str = "Rate limit exceeded",
-        retry_after: Optional[int] = None,
-        details: Optional[Dict[str, Any]] = None,
+        retry_after: int | None = None,
+        details: dict[str, Any] | None = None,
     ):
         if retry_after:
             details = details or {}
@@ -191,9 +192,9 @@ class NotFoundError(SignalBridgeException):
     def __init__(
         self,
         message: str = "Resource not found",
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        details: dict[str, Any] | None = None,
     ):
         if resource_type or resource_id:
             details = details or {}
@@ -216,7 +217,7 @@ class ConflictError(SignalBridgeException):
     def __init__(
         self,
         message: str = "Resource already exists",
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(
             message=message,
