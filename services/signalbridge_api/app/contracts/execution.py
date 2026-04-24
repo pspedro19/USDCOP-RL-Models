@@ -4,13 +4,13 @@ Execution contracts.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from .common import BaseContract
 from .exchange import SupportedExchange
-from .signal import SignalAction
 
 
 class OrderType(str, Enum):
@@ -48,17 +48,17 @@ class ExecutionRequest(BaseContract):
 
     id: UUID
     user_id: UUID
-    signal_id: Optional[UUID] = None
+    signal_id: UUID | None = None
     exchange: SupportedExchange
     credential_id: UUID
     symbol: str
     side: OrderSide
     order_type: OrderType = OrderType.MARKET
     quantity: float = Field(gt=0)
-    price: Optional[float] = Field(None, ge=0)
-    stop_loss: Optional[float] = Field(None, ge=0)
-    take_profit: Optional[float] = Field(None, ge=0)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    price: float | None = Field(None, ge=0)
+    stop_loss: float | None = Field(None, ge=0)
+    take_profit: float | None = Field(None, ge=0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
 
 
@@ -67,31 +67,31 @@ class ExecutionResult(BaseContract):
 
     id: UUID
     request_id: UUID
-    exchange_order_id: Optional[str] = None
+    exchange_order_id: str | None = None
     status: ExecutionStatus
     filled_quantity: float = Field(ge=0, default=0)
     average_price: float = Field(ge=0, default=0)
     commission: float = Field(ge=0, default=0)
-    commission_asset: Optional[str] = None
-    executed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
-    raw_response: Optional[Dict[str, Any]] = None
+    commission_asset: str | None = None
+    executed_at: datetime | None = None
+    error_message: str | None = None
+    raw_response: dict[str, Any] | None = None
 
 
 class ExecutionCreate(BaseModel):
     """Create execution request contract."""
 
-    signal_id: Optional[UUID] = None
+    signal_id: UUID | None = None
     exchange: SupportedExchange
     credential_id: UUID
     symbol: str = Field(min_length=2, max_length=20)
     side: OrderSide
     order_type: OrderType = OrderType.MARKET
     quantity: float = Field(gt=0)
-    price: Optional[float] = Field(None, ge=0)
-    stop_loss: Optional[float] = Field(None, ge=0)
-    take_profit: Optional[float] = Field(None, ge=0)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    price: float | None = Field(None, ge=0)
+    stop_loss: float | None = Field(None, ge=0)
+    take_profit: float | None = Field(None, ge=0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecutionSummary(BaseContract):
@@ -107,7 +107,7 @@ class ExecutionSummary(BaseContract):
     filled_quantity: float = 0
     average_price: float = 0
     created_at: datetime
-    executed_at: Optional[datetime] = None
+    executed_at: datetime | None = None
 
 
 class ExecutionStats(BaseContract):
@@ -126,12 +126,12 @@ class ExecutionStats(BaseContract):
 class ExecutionFilter(BaseModel):
     """Execution filtering parameters."""
 
-    exchange: Optional[SupportedExchange] = None
-    symbol: Optional[str] = None
-    side: Optional[OrderSide] = None
-    status: Optional[ExecutionStatus] = None
-    since: Optional[datetime] = None
-    until: Optional[datetime] = None
+    exchange: SupportedExchange | None = None
+    symbol: str | None = None
+    side: OrderSide | None = None
+    status: ExecutionStatus | None = None
+    since: datetime | None = None
+    until: datetime | None = None
 
 
 class TodayStats(BaseContract):

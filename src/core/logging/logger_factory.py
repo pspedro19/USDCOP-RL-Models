@@ -20,15 +20,15 @@
 # Date: 2026-01-16
 # =============================================================================
 
+import json
 import logging
 import os
 import sys
-import json
 import threading
-from datetime import datetime, timezone
-from functools import lru_cache
-from typing import Any, Dict, Optional
 from contextvars import ContextVar
+from datetime import UTC, datetime
+from functools import lru_cache
+from typing import Any
 
 try:
     import structlog
@@ -41,7 +41,7 @@ except ImportError:
 # Context Variables for Request Tracking
 # =============================================================================
 # These allow automatic propagation of context across async boundaries
-request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 service_name_var: ContextVar[str] = ContextVar("service_name", default="unknown")
 
 
@@ -77,8 +77,8 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format the log record as JSON."""
         # Base log entry
-        log_entry: Dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+        log_entry: dict[str, Any] = {
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -220,7 +220,7 @@ class LoggerFactory:
 
     _configured: bool = False
     _lock: threading.Lock = threading.Lock()
-    _root_handler: Optional[logging.Handler] = None
+    _root_handler: logging.Handler | None = None
     _service_name: str = "usdcop-trading"
     _environment: str = "production"
 
@@ -229,8 +229,8 @@ class LoggerFactory:
         cls,
         level: str = "INFO",
         json_format: bool = True,
-        service_name: Optional[str] = None,
-        environment: Optional[str] = None,
+        service_name: str | None = None,
+        environment: str | None = None,
     ) -> None:
         """
         Configure the logging system. Should be called once at application startup.
@@ -359,7 +359,7 @@ class LoggerFactory:
         request_id_var.set(None)
 
     @classmethod
-    def get_request_id(cls) -> Optional[str]:
+    def get_request_id(cls) -> str | None:
         """Get the current request ID, if set."""
         return request_id_var.get()
 
@@ -452,8 +452,8 @@ class TradingLogger:
         self,
         model_id: str,
         duration_ms: float,
-        action: Optional[str] = None,
-        confidence: Optional[float] = None,
+        action: str | None = None,
+        confidence: float | None = None,
         **kwargs
     ) -> None:
         """Log an inference operation."""

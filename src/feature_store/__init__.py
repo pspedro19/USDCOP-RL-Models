@@ -39,92 +39,87 @@ Created: 2025-01-12
 """
 
 # Core module - Single Source of Truth
-from .core import (
-    # Enums
-    FeatureVersion,
-    FeatureCategory,
-    SmoothingMethod,
-    NormalizationMethod,
+# Adapters for backward compatibility
+from .adapters import (
+    AdapterFactory,
+    BacktestFeatureAdapter,
+    InferenceObservationAdapter,
+    NormStatsNotFoundError,
+    TrainingFeatureAdapter,
+)
 
-    # Contracts
-    FeatureContract,
+# Canonical Feature Builder - SINGLE SOURCE OF TRUTH
+from .builders import (
+    BuilderContext,
+    CanonicalFeatureBuilder,
+    FeatureCalculationError,
+    IFeatureBuilder,
+    ObservationDimensionError,
+)
+
+# Pydantic contracts (for advanced use cases)
+from .contracts import (
+    CalculationParams,
+    CalculationRequest,
+    CalculationResult,
+    FeatureBatch,
+    FeatureSetSpec,
+    FeatureSpec,
+    FeatureVector,
+    MacroDataInput,
+    NormalizationParams,
+    NormalizationStats,
+    RawDataInput,
+)
+from .core import (
     FEATURE_CONTRACT,
     FEATURE_ORDER,
-    OBSERVATION_DIM,
     NORM_STATS_PATH,
-    TechnicalPeriods,
-    TradingHours,
-
+    OBSERVATION_DIM,
+    ADXCalculator,
+    ATRPercentCalculator,
+    BaseCalculator,
+    CalculatorRegistry,
+    FeatureCategory,
+    # Contracts
+    FeatureContract,
+    # Enums
+    FeatureVersion,
     # Calculators
     IFeatureCalculator,
-    BaseCalculator,
     LogReturnCalculator,
-    RSICalculator,
-    ATRPercentCalculator,
-    ADXCalculator,
-    MacroZScoreCalculator,
     MacroChangeCalculator,
-    CalculatorRegistry,
-
+    MacroZScoreCalculator,
+    NormalizationMethod,
+    RSICalculator,
+    SmoothingMethod,
+    TechnicalPeriods,
+    TradingHours,
     # Builder
     UnifiedFeatureBuilder,
-
     # Factories
     get_contract,
     get_feature_builder,
 )
 
-# Pydantic contracts (for advanced use cases)
-from .contracts import (
-    FeatureSpec,
-    FeatureSetSpec,
-    FeatureVector,
-    FeatureBatch,
-    NormalizationStats,
-    NormalizationParams,
-    CalculationParams,
-    RawDataInput,
-    MacroDataInput,
-    CalculationRequest,
-    CalculationResult,
-)
-
-# Adapters for backward compatibility
-from .adapters import (
-    InferenceObservationAdapter,
-    TrainingFeatureAdapter,
-    BacktestFeatureAdapter,
-    AdapterFactory,
-    NormStatsNotFoundError,
-)
-
-# Canonical Feature Builder - SINGLE SOURCE OF TRUTH
-from .builders import (
-    IFeatureBuilder,
-    CanonicalFeatureBuilder,
-    BuilderContext,
-    ObservationDimensionError,
-    FeatureCalculationError,
-)
-
 # Feast Inference Service - Feature retrieval with fallback
 from .feast_service import (
-    FeastInferenceService,
-    FeastServiceError,
     FeastConnectionError,
     FeastFeatureNotFoundError,
+    FeastInferenceService,
     FeastMetrics,
+    FeastServiceError,
     create_feast_service,
 )
 
 # Feature Readers - Read pre-computed features from L1 pipeline
 from .readers import (
-    FeatureResult,
+    FeatureNotFoundError,
+    FeatureOrderMismatchError,
     FeatureReader,
     FeatureReaderError,
-    FeatureNotFoundError,
+    FeatureResult,
     StaleFeatureError,
-    FeatureOrderMismatchError,
 )
 
 __all__ = [

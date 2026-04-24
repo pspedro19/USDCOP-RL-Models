@@ -19,10 +19,11 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Callable, Any, Tuple
 from datetime import datetime
 from enum import Enum
+
 import numpy as np
 import pandas as pd
 
@@ -67,9 +68,9 @@ class Trade:
     entry_time: datetime
     entry_price: float
     direction: SignalType
-    exit_bar: Optional[int] = None
-    exit_time: Optional[datetime] = None
-    exit_price: Optional[float] = None
+    exit_bar: int | None = None
+    exit_time: datetime | None = None
+    exit_price: float | None = None
     pnl: float = 0.0
     pnl_pct: float = 0.0
     slippage_cost: float = 0.0
@@ -117,24 +118,24 @@ class BacktestResult:
     metrics: BacktestMetrics = field(default_factory=BacktestMetrics)
 
     # Series data
-    equity_curve: List[float] = field(default_factory=list)
-    returns: List[float] = field(default_factory=list)
-    drawdown: List[float] = field(default_factory=list)
-    positions: List[int] = field(default_factory=list)
+    equity_curve: list[float] = field(default_factory=list)
+    returns: list[float] = field(default_factory=list)
+    drawdown: list[float] = field(default_factory=list)
+    positions: list[int] = field(default_factory=list)
 
     # Trade list
-    trades: List[Trade] = field(default_factory=list)
+    trades: list[Trade] = field(default_factory=list)
 
     # Metadata
-    config: Optional[BacktestConfig] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    config: BacktestConfig | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     duration_seconds: float = 0.0
     bars_processed: int = 0
 
     # Validation
     lookahead_detected: bool = False
-    validation_errors: List[str] = field(default_factory=list)
+    validation_errors: list[str] = field(default_factory=list)
 
 
 class UnifiedBacktestEngine:
@@ -155,7 +156,7 @@ class UnifiedBacktestEngine:
         result = engine.run(ohlcv_data, strategy_func)
     """
 
-    def __init__(self, config: Optional[BacktestConfig] = None):
+    def __init__(self, config: BacktestConfig | None = None):
         """Initialize the backtest engine.
 
         Args:
@@ -167,16 +168,16 @@ class UnifiedBacktestEngine:
         self._position: int = 0  # -1, 0, 1
         self._entry_price: float = 0.0
         self._entry_bar: int = 0
-        self._entry_time: Optional[datetime] = None
+        self._entry_time: datetime | None = None
         self._equity: float = self.config.initial_capital
         self._cash: float = self.config.initial_capital
         self._current_bar: int = 0
 
         # Records
-        self._trades: List[Trade] = []
-        self._equity_curve: List[float] = []
-        self._returns: List[float] = []
-        self._positions: List[int] = []
+        self._trades: list[Trade] = []
+        self._equity_curve: list[float] = []
+        self._returns: list[float] = []
+        self._positions: list[int] = []
 
     def reset(self) -> None:
         """Reset engine state for a new backtest."""
@@ -274,7 +275,7 @@ class UnifiedBacktestEngine:
         signal: SignalType,
         price: float,
         bar: int,
-        time: Optional[datetime]
+        time: datetime | None
     ) -> None:
         """Execute a trading signal.
 
@@ -308,7 +309,7 @@ class UnifiedBacktestEngine:
         direction: int,
         price: float,
         bar: int,
-        time: Optional[datetime]
+        time: datetime | None
     ) -> None:
         """Open a new position.
 
@@ -338,7 +339,7 @@ class UnifiedBacktestEngine:
         self,
         price: float,
         bar: int,
-        time: Optional[datetime]
+        time: datetime | None
     ) -> None:
         """Close current position.
 
@@ -476,7 +477,7 @@ class UnifiedBacktestEngine:
 
         return metrics
 
-    def _calculate_drawdown(self) -> List[float]:
+    def _calculate_drawdown(self) -> list[float]:
         """Calculate drawdown series."""
         if not self._equity_curve:
             return []
@@ -515,11 +516,11 @@ def create_backtest_engine(
 
 
 __all__ = [
-    'SignalType',
     'BacktestConfig',
-    'Trade',
     'BacktestMetrics',
     'BacktestResult',
+    'SignalType',
+    'Trade',
     'UnifiedBacktestEngine',
     'create_backtest_engine',
 ]

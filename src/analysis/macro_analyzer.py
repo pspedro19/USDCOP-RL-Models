@@ -11,14 +11,29 @@ from __future__ import annotations
 
 import logging
 from datetime import date, timedelta
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 
-from src.contracts.analysis_schema import MacroSnapshot, KEY_MACRO_VARIABLES, DISPLAY_NAMES
+from src.contracts.analysis_schema import DISPLAY_NAMES, KEY_MACRO_VARIABLES, MacroSnapshot
 
 logger = logging.getLogger(__name__)
+
+# Direction of macro variable impact on COP:
+#   +1 = higher variable → weaker COP (bearish COP)
+#   -1 = higher variable → stronger COP (bullish COP)
+MACRO_COP_DIRECTION: dict[str, int] = {
+    "dxy": +1,
+    "vix": +1,
+    "embi_col": +1,
+    "ust10y": +1,
+    "ust2y": +1,
+    "gold": +1,
+    "wti": -1,
+    "brent": -1,
+    "ibr": -1,
+    "tpm": -1,
+}
 
 
 class MacroAnalyzer:
@@ -56,7 +71,7 @@ class MacroAnalyzer:
         series: pd.Series,
         variable_key: str,
         as_of_date: date,
-    ) -> Optional[MacroSnapshot]:
+    ) -> MacroSnapshot | None:
         """Compute all indicators for a single variable as of a given date.
 
         Args:
@@ -107,8 +122,16 @@ class MacroAnalyzer:
             roc_series = self.compute_roc(series, period)
             roc[period] = _safe_float(roc_series.loc[:as_of_date].iloc[-1])
 
-        # Z-score (20-period)
-        z_score = self._compute_z_score(series, 20, as_of_date)
+        # Z-scores (multi-window)
+        z_score_20 = self._compute_z_score(series, 20, as_of_date)
+        z_score_60 = self._compute_z_score(series, 60, as_of_date)
+        z_score_252 = self._compute_z_score(series, 252, as_of_date)
+
+        # Multi-window interpretation (Spanish)
+        interpretation = self._interpret_z_scores(z_score_20, z_score_60)
+
+        # COP impact based on directionality
+        cop_impact = self._compute_cop_impact(variable_key, z_score_20)
 
         # Trend
         trend = self._compute_trend(current_value, smas, series, as_of_date)
@@ -134,7 +157,11 @@ class MacroAnalyzer:
             macd_histogram=macd_hist,
             roc_5=roc.get(5),
             roc_20=roc.get(20),
-            z_score_20=z_score,
+            z_score_20=z_score_20,
+            z_score_60=z_score_60,
+            z_score_252=z_score_252,
+            interpretation=interpretation,
+            cop_impact=cop_impact,
             trend=trend,
             signal=signal,
         )
@@ -143,7 +170,7 @@ class MacroAnalyzer:
         self,
         macro_df: pd.DataFrame,
         as_of_date: date,
-        variables: Optional[list[str]] = None,
+        variables: list[str] | None = None,
     ) -> dict[str, MacroSnapshot]:
         """Compute snapshots for all key macro variables.
 
@@ -181,7 +208,7 @@ class MacroAnalyzer:
         series: pd.Series,
         variable_key: str,
         end_date: date,
-        lookback_days: Optional[int] = None,
+        lookback_days: int | None = None,
     ) -> list[dict]:
         """Get time series data formatted for Recharts frontend.
 
@@ -286,7 +313,7 @@ class MacroAnalyzer:
         series: pd.Series,
         period: int,
         as_of_date: date,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Compute z-score vs rolling mean/std."""
         rolling_mean = series.rolling(window=period, min_periods=1).mean()
         rolling_std = series.rolling(window=period, min_periods=1).std()
@@ -299,6 +326,49 @@ class MacroAnalyzer:
         except (IndexError, KeyError):
             pass
         return None
+
+    @staticmethod
+    def _interpret_z_scores(
+        z_20: float | None,
+        z_60: float | None,
+    ) -> str | None:
+        """Generate a Spanish interpretation from multi-window z-scores."""
+        if z_20 is None:
+            return None
+
+        abs_z20 = abs(z_20)
+        abs_z60 = abs(z_60) if z_60 is not None else 0.0
+        direction = "alto" if z_20 > 0 else "bajo"
+
+        if abs_z20 > 2.0 and abs_z60 > 1.5:
+            return f"EXTREMO {direction} — persistente, posible cambio estructural"
+        if abs_z20 > 2.0:
+            return f"EXTREMO {direction} corto plazo — probablemente mean-reverting"
+        if abs_z20 > 1.5 and abs_z60 < 0.5:
+            return "spike corto plazo, sin tendencia en 60d"
+        if abs_z20 > 0.5:
+            return f"moderadamente {direction}"
+        return "en zona neutral"
+
+    @staticmethod
+    def _compute_cop_impact(
+        variable_key: str,
+        z_20: float | None,
+    ) -> str | None:
+        """Estimate COP impact using variable directionality and z-score."""
+        if z_20 is None:
+            return None
+
+        direction = MACRO_COP_DIRECTION.get(variable_key)
+        if direction is None:
+            return "neutral"
+
+        effective = z_20 * direction
+        if effective > 1.0:
+            return "bearish_cop"
+        elif effective < -1.0:
+            return "bullish_cop"
+        return "neutral"
 
     @staticmethod
     def _compute_trend(
@@ -332,11 +402,11 @@ class MacroAnalyzer:
 
     @staticmethod
     def _compute_signal(
-        rsi: Optional[float],
-        bb_upper: Optional[float],
-        bb_lower: Optional[float],
+        rsi: float | None,
+        bb_upper: float | None,
+        bb_lower: float | None,
         value: float,
-        bb_width: Optional[float],
+        bb_width: float | None,
     ) -> str:
         """Compute composite signal."""
         if rsi is not None:
@@ -356,7 +426,7 @@ class MacroAnalyzer:
         return "neutral"
 
     @staticmethod
-    def _find_column(df: pd.DataFrame, variable_key: str) -> Optional[str]:
+    def _find_column(df: pd.DataFrame, variable_key: str) -> str | None:
         """Find the column name in macro DataFrame for a variable key."""
         # Direct match
         if variable_key in df.columns:
@@ -384,7 +454,7 @@ class MacroAnalyzer:
         return None
 
 
-def _safe_float(val) -> Optional[float]:
+def _safe_float(val) -> float | None:
     """Convert to float safely, returning None for NaN/inf."""
     if val is None:
         return None

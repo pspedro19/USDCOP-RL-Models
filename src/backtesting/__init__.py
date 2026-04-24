@@ -10,16 +10,16 @@ Components:
 
 from .walk_forward import (
     WalkForwardMethod,
-    WalkForwardWindow,
     WalkForwardReport,
     WalkForwardValidator,
+    WalkForwardWindow,
     quick_walk_forward,
 )
 
 __all__ = [
     "WalkForwardMethod",
-    "WalkForwardWindow",
     "WalkForwardReport",
     "WalkForwardValidator",
+    "WalkForwardWindow",
     "quick_walk_forward",
 ]

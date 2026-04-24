@@ -12,11 +12,10 @@ Created: 2026-01-19
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
-import numpy as np
+from typing import Any, Protocol, runtime_checkable
 
+import numpy as np
 
 # =============================================================================
 # ENUMS
@@ -52,9 +51,9 @@ class ComponentResult:
     value: float
     component_name: str
     component_type: ComponentType
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
         return {
             "value": self.value,
@@ -96,7 +95,7 @@ class ComponentStats:
         self.max_value = float('-inf')
         self.last_value = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
         return {
             "call_count": self.call_count,
@@ -188,7 +187,7 @@ class RewardComponent(ABC):
         """Enable/disable component."""
         self._enabled = value
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get component statistics for logging.
 
@@ -199,7 +198,7 @@ class RewardComponent(ABC):
             f"{self.name}_stats": self._stats.to_dict(),
         }
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """
         Get component configuration.
 
@@ -237,7 +236,7 @@ class IRewardCalculator(Protocol):
         bars_held: int,
         current_drawdown: float,
         **kwargs
-    ) -> Tuple[float, Any]:
+    ) -> tuple[float, Any]:
         """Calculate total reward with breakdown."""
         ...
 

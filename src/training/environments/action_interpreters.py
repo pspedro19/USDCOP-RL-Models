@@ -21,7 +21,6 @@ Date: 2026-02-12
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ class ActionInterpreter(ABC):
     """Abstract action interpreter."""
 
     @abstractmethod
-    def interpret(self, raw_action: float) -> Tuple:
+    def interpret(self, raw_action: float) -> tuple:
         """Interpret raw continuous action value.
 
         Args:
@@ -56,7 +55,7 @@ class ThresholdInterpreter(ActionInterpreter):
         self._threshold_long = threshold_long
         self._threshold_short = threshold_short
 
-    def interpret(self, raw_action: float) -> Tuple:
+    def interpret(self, raw_action: float) -> tuple:
         from src.training.environments.trading_env import TradingAction
 
         if raw_action > self._threshold_long:
@@ -96,7 +95,7 @@ class ZoneInterpreter(ActionInterpreter):
         self._half_short = half_short_threshold
         self._full_short = full_short_threshold
 
-    def interpret(self, raw_action: float) -> Tuple:
+    def interpret(self, raw_action: float) -> tuple:
         from src.training.environments.trading_env import TradingAction
 
         if raw_action >= self._full_long:

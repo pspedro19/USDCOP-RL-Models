@@ -20,8 +20,7 @@ Version: 1.0.0
 import logging
 import math
 from collections import deque
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -42,7 +41,7 @@ class ActionCollapseResult:
     entropy: float
 
     # Action distribution {HOLD: %, LONG: %, SHORT: %}
-    distribution: Dict[str, float]
+    distribution: dict[str, float]
 
     # Whether collapse is detected
     is_collapsed: bool
@@ -54,7 +53,7 @@ class ActionCollapseResult:
     dominant_pct: float
 
     # Warning message if any
-    warning: Optional[str] = None
+    warning: str | None = None
 
     # Severity level (0=OK, 1=WARNING, 2=CRITICAL)
     severity: int = 0
@@ -116,7 +115,7 @@ class ActionCollapseDetector:
             logger.critical(f"Mode collapse detected: {result.warning}")
     """
 
-    def __init__(self, config: Optional[ActionCollapseConfig] = None):
+    def __init__(self, config: ActionCollapseConfig | None = None):
         """
         Initialize the action collapse detector.
 
@@ -143,7 +142,7 @@ class ActionCollapseDetector:
         self._action_history.append(action_upper)
         self._total_actions += 1
 
-    def record_batch(self, actions: List[str]) -> None:
+    def record_batch(self, actions: list[str]) -> None:
         """
         Record multiple actions at once.
 
@@ -153,7 +152,7 @@ class ActionCollapseDetector:
         for action in actions:
             self.record(action)
 
-    def check(self, action_history: Optional[List[str]] = None) -> ActionCollapseResult:
+    def check(self, action_history: list[str] | None = None) -> ActionCollapseResult:
         """
         Check for action collapse.
 
@@ -239,7 +238,7 @@ class ActionCollapseDetector:
             severity=severity,
         )
 
-    def _calculate_entropy(self, distribution: Dict[str, float]) -> float:
+    def _calculate_entropy(self, distribution: dict[str, float]) -> float:
         """
         Calculate Shannon entropy of action distribution.
 
@@ -257,7 +256,7 @@ class ActionCollapseDetector:
                 entropy -= prob * math.log2(prob)
         return entropy
 
-    def get_recent_distribution(self, n_samples: int = 50) -> Dict[str, float]:
+    def get_recent_distribution(self, n_samples: int = 50) -> dict[str, float]:
         """
         Get action distribution for the most recent N samples.
 
@@ -283,7 +282,7 @@ class ActionCollapseDetector:
         self,
         window_a: int = 100,
         window_b: int = 100
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """
         Detect if action distribution has shifted between two windows.
 
@@ -314,7 +313,7 @@ class ActionCollapseDetector:
         shift_threshold = 0.1
         return js_div > shift_threshold, js_div
 
-    def _count_to_dist(self, actions: List[str]) -> Dict[str, float]:
+    def _count_to_dist(self, actions: list[str]) -> dict[str, float]:
         """Convert action list to distribution."""
         counts = {"HOLD": 0, "LONG": 0, "SHORT": 0}
         for action in actions:
@@ -325,8 +324,8 @@ class ActionCollapseDetector:
 
     def _js_divergence(
         self,
-        p: Dict[str, float],
-        q: Dict[str, float]
+        p: dict[str, float],
+        q: dict[str, float]
     ) -> float:
         """Calculate Jensen-Shannon divergence between two distributions."""
         # Calculate midpoint distribution
@@ -367,7 +366,7 @@ class ActionCollapseDetector:
 
 # Convenience function
 def check_action_collapse(
-    actions: List[str],
+    actions: list[str],
     entropy_threshold: float = 0.5,
     dominance_threshold: float = 0.80
 ) -> ActionCollapseResult:

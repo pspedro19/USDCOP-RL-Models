@@ -9,8 +9,7 @@ Reuses existing MacroAnalyzer for SMA/BB/RSI/MACD (no duplication).
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RegimeState:
     label: str = "transition"     # risk_on, transition, risk_off
-    since: Optional[str] = None   # ISO date when regime started
+    since: str | None = None   # ISO date when regime started
     confidence: float = 0.0
     transition_probabilities: dict = field(default_factory=dict)
 
@@ -116,7 +115,7 @@ COLUMN_ALIASES = {
 }
 
 
-def _find_column(df: pd.DataFrame, key: str) -> Optional[str]:
+def _find_column(df: pd.DataFrame, key: str) -> str | None:
     """Find the best matching column for a macro variable key."""
     for alias in COLUMN_ALIASES.get(key, [key]):
         if alias in df.columns:

@@ -10,10 +10,11 @@ MLOps-3 Features:
 """
 
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
-from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 
 try:
@@ -51,18 +52,18 @@ class ModelInfo(BaseModel):
     """Model information"""
     model_id: str
     display_name: str
-    version: Optional[str] = None
+    version: str | None = None
     status: str  # "available", "loaded", "not_found"
     db_status: str  # "registered", "deployed" - raw database status
     observation_dim: int
-    description: Optional[str] = None
+    description: str | None = None
 
     model_config = {"protected_namespaces": ()}
 
 
 class ModelsResponse(BaseModel):
     """Response for models listing"""
-    models: List[ModelInfo]
+    models: list[ModelInfo]
     default_model: str
     total: int
 
@@ -71,13 +72,13 @@ class PromoteResponse(BaseModel):
     """Response for model promotion"""
     success: bool
     promoted_model: str
-    previous_deployed: Optional[str] = None
+    previous_deployed: str | None = None
     message: str
 
 
 class RollbackRequest(BaseModel):
     """Request for model rollback"""
-    target_version: Optional[int] = None  # None = previous model
+    target_version: int | None = None  # None = previous model
     reason: str
     initiated_by: str = "dashboard"
 
@@ -96,7 +97,7 @@ class PromoteRequest(BaseModel):
     target_stage: str  # 'staging' or 'production'
     reason: str
     promoted_by: str = "dashboard"
-    checklist: Optional[Dict[str, bool]] = None
+    checklist: dict[str, bool] | None = None
     skip_staging_time: bool = False  # For test override
 
 
@@ -116,25 +117,25 @@ class RollbackTarget(BaseModel):
     model_id: str
     version: str
     archived_at: str
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
 
     model_config = {"protected_namespaces": ()}
 
 
 class RollbackTargetsResponse(BaseModel):
     """Response for rollback targets listing"""
-    current_production: Optional[Dict[str, Any]]
-    available_targets: List[RollbackTarget]
-    recommendation: Optional[RollbackTarget]
+    current_production: dict[str, Any] | None
+    available_targets: list[RollbackTarget]
+    recommendation: RollbackTarget | None
 
 
 class ReloadResponse(BaseModel):
     """Response for model reload operation"""
     success: bool
-    reloaded_models: List[str]
-    failed_models: List[str]
+    reloaded_models: list[str]
+    failed_models: list[str]
     timestamp: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
     message: str
 
 
@@ -149,6 +150,7 @@ async def load_model_configs_from_db():
 
     try:
         import asyncpg
+
         from ..config import get_settings
 
         settings = get_settings()
@@ -210,7 +212,7 @@ async def load_model_configs_from_db():
         MODEL_CONFIGS = {}
 
 
-def find_model_file(model_id: str, models_dir: Path) -> Optional[Path]:
+def find_model_file(model_id: str, models_dir: Path) -> Path | None:
     """Find model file by pattern matching"""
     config = MODEL_CONFIGS.get(model_id, {})
     patterns = config.get("patterns", [f"{model_id}*.zip"])
@@ -258,7 +260,7 @@ async def list_models(request: Request):
         settings = get_settings()
         models_dir = settings.project_root / "models"
 
-    models: List[ModelInfo] = []
+    models: list[ModelInfo] = []
 
     for model_id, config in MODEL_CONFIGS.items():
         model_file = find_model_file(model_id, models_dir)
@@ -352,6 +354,7 @@ async def promote_model(model_id: str, request: Request):
 
     try:
         import asyncpg
+
         from ..config import get_settings
 
         settings = get_settings()
@@ -435,7 +438,7 @@ async def promote_model(model_id: str, request: Request):
         logger.error(f"Failed to promote model: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to promote model: {str(e)}"
+            detail=f"Failed to promote model: {e!s}"
         )
 
 
@@ -461,7 +464,7 @@ async def reload_models(request: Request, background_tasks: BackgroundTasks):
     Returns:
         ReloadResponse with status of each model reload
     """
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     reloaded = []
     failed = []
     details = {}
@@ -559,7 +562,7 @@ async def reload_models(request: Request, background_tasks: BackgroundTasks):
         MODEL_RELOAD_FAILURES.inc()
         raise HTTPException(
             status_code=500,
-            detail=f"Model reload failed: {str(e)}"
+            detail=f"Model reload failed: {e!s}"
         )
 
 
@@ -593,7 +596,7 @@ async def get_router_status(request: Request):
         logger.error(f"Error getting router status: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get router status: {str(e)}"
+            detail=f"Failed to get router status: {e!s}"
         )
 
 
@@ -612,6 +615,7 @@ async def get_rollback_targets():
     """
     try:
         import asyncpg
+
         from ..config import get_settings
 
         settings = get_settings()
@@ -689,7 +693,7 @@ async def get_rollback_targets():
         logger.error(f"Failed to get rollback targets: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get rollback targets: {str(e)}"
+            detail=f"Failed to get rollback targets: {e!s}"
         )
 
 
@@ -716,6 +720,7 @@ async def rollback_model(
 
     try:
         import asyncpg
+
         from ..config import get_settings
 
         settings = get_settings()
@@ -819,7 +824,7 @@ async def rollback_model(
         raise
     except Exception as e:
         logger.error(f"Rollback failed: {e}")
-        raise HTTPException(500, f"Rollback failed: {str(e)}")
+        raise HTTPException(500, f"Rollback failed: {e!s}")
 
 
 @router.post("/models/{model_id}/promote", response_model=PromoteRequestResponse)
@@ -841,7 +846,7 @@ async def promote_model_with_validation(
     - Staging: Sharpe >= 0.5, Win Rate >= 45%, Drawdown <= 15%, Trades >= 50
     - Production: Sharpe >= 1.0, Win Rate >= 50%, Drawdown <= 10%, Trades >= 100
     """
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime
 
     PROMOTION_THRESHOLDS = {
         "staging": {
@@ -861,6 +866,7 @@ async def promote_model_with_validation(
 
     try:
         import asyncpg
+
         from ..config import get_settings
 
         settings = get_settings()
@@ -949,7 +955,7 @@ async def promote_model_with_validation(
             # Check staging time for production promotion
             if target_stage == 'deployed' and not request_body.skip_staging_time:
                 if current_stage == 'staging' and model['created_at']:
-                    days_in_staging = (datetime.now(timezone.utc) - model['created_at'].replace(tzinfo=timezone.utc)).days
+                    days_in_staging = (datetime.now(UTC) - model['created_at'].replace(tzinfo=UTC)).days
                     if days_in_staging < thresholds.get('min_staging_days', 7):
                         metrics_passed = False
                         validation_errors.append(
@@ -1008,7 +1014,7 @@ async def promote_model_with_validation(
                 previous_stage=current_stage,
                 message=f"Successfully promoted {model_id} to {request_body.target_stage}",
                 metrics_passed=metrics_passed,
-                promoted_at=datetime.now(timezone.utc).isoformat()
+                promoted_at=datetime.now(UTC).isoformat()
             )
 
         finally:
@@ -1018,7 +1024,7 @@ async def promote_model_with_validation(
         raise
     except Exception as e:
         logger.error(f"Promotion failed: {e}")
-        raise HTTPException(500, f"Promotion failed: {str(e)}")
+        raise HTTPException(500, f"Promotion failed: {e!s}")
 
 
 # =========================================================================

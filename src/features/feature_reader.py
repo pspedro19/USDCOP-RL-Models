@@ -20,10 +20,10 @@ Version: 1.0.0
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
-import numpy as np
+from datetime import datetime
+from typing import Any
 
+import numpy as np
 
 # Expected feature order for model input
 EXPECTED_FEATURE_ORDER = [
@@ -48,27 +48,27 @@ class FeatureReadResult:
     """Result container for feature read operations."""
 
     # Feature data
-    features: Optional[Dict[str, float]] = None
-    feature_vector: Optional[np.ndarray] = None
+    features: dict[str, float] | None = None
+    feature_vector: np.ndarray | None = None
 
     # Metadata
-    timestamp: Optional[datetime] = None
+    timestamp: datetime | None = None
     age_seconds: float = 0.0
 
     # Validation status
     is_valid: bool = False
     is_stale: bool = False
-    missing_features: List[str] = field(default_factory=list)
-    extra_features: List[str] = field(default_factory=list)
+    missing_features: list[str] = field(default_factory=list)
+    extra_features: list[str] = field(default_factory=list)
 
     # Error info
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class FeatureValidationError(Exception):
     """Raised when feature validation fails."""
 
-    def __init__(self, message: str, missing: Optional[List[str]] = None):
+    def __init__(self, message: str, missing: list[str] | None = None):
         super().__init__(message)
         self.missing = missing or []
 
@@ -93,10 +93,10 @@ class FeatureReader:
 
     def __init__(
         self,
-        expected_features: Optional[List[str]] = None,
+        expected_features: list[str] | None = None,
         max_age_seconds: float = 300.0,
         strict_order: bool = True,
-        default_values: Optional[Dict[str, float]] = None,
+        default_values: dict[str, float] | None = None,
     ):
         """Initialize the feature reader.
 
@@ -112,11 +112,11 @@ class FeatureReader:
         self.default_values = default_values or {}
 
         # Internal state
-        self._feature_cache: Optional[Dict[str, float]] = None
-        self._cache_timestamp: Optional[datetime] = None
-        self._feature_store: Dict[str, Dict[str, Any]] = {}
+        self._feature_cache: dict[str, float] | None = None
+        self._cache_timestamp: datetime | None = None
+        self._feature_store: dict[str, dict[str, Any]] = {}
 
-    def set_feature_store(self, store: Dict[str, Dict[str, Any]]) -> None:
+    def set_feature_store(self, store: dict[str, dict[str, Any]]) -> None:
         """Set the feature store to read from.
 
         Args:
@@ -126,8 +126,8 @@ class FeatureReader:
 
     def add_features(
         self,
-        features: Dict[str, float],
-        timestamp: Optional[datetime] = None
+        features: dict[str, float],
+        timestamp: datetime | None = None
     ) -> None:
         """Add features to the internal store (for testing).
 
@@ -150,7 +150,7 @@ class FeatureReader:
 
     def get_latest_features(
         self,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> FeatureReadResult:
         """Get the latest features from the store.
 
@@ -170,8 +170,8 @@ class FeatureReader:
             return result
 
         # Extract features
-        features: Dict[str, float] = {}
-        oldest_timestamp: Optional[datetime] = None
+        features: dict[str, float] = {}
+        oldest_timestamp: datetime | None = None
 
         for feature_name in self.expected_features:
             if feature_name in self._feature_store:
@@ -211,8 +211,8 @@ class FeatureReader:
 
     def validate_feature_order(
         self,
-        feature_names: List[str]
-    ) -> Tuple[bool, List[str]]:
+        feature_names: list[str]
+    ) -> tuple[bool, list[str]]:
         """Validate that feature names match expected order.
 
         Args:
@@ -221,7 +221,7 @@ class FeatureReader:
         Returns:
             Tuple of (is_valid, list_of_differences)
         """
-        differences: List[str] = []
+        differences: list[str] = []
 
         if len(feature_names) != len(self.expected_features):
             differences.append(
@@ -253,8 +253,8 @@ class FeatureReader:
     def check_max_age(
         self,
         feature_timestamp: datetime,
-        reference_time: Optional[datetime] = None
-    ) -> Tuple[bool, float]:
+        reference_time: datetime | None = None
+    ) -> tuple[bool, float]:
         """Check if features are within max age limit.
 
         Args:
@@ -271,8 +271,8 @@ class FeatureReader:
 
     def _validate_features(
         self,
-        features: Dict[str, float]
-    ) -> Dict[str, List[str]]:
+        features: dict[str, float]
+    ) -> dict[str, list[str]]:
         """Internal validation of feature dictionary.
 
         Args:
@@ -291,7 +291,7 @@ class FeatureReader:
 
     def _build_feature_vector(
         self,
-        features: Dict[str, float]
+        features: dict[str, float]
     ) -> np.ndarray:
         """Build numpy array from features in correct order.
 
@@ -314,8 +314,8 @@ class FeatureReader:
 
 
 __all__ = [
-    'FeatureReader',
-    'FeatureReadResult',
-    'FeatureValidationError',
     'EXPECTED_FEATURE_ORDER',
+    'FeatureReadResult',
+    'FeatureReader',
+    'FeatureValidationError',
 ]

@@ -28,10 +28,11 @@ Usage:
 """
 
 import functools
-import time
 import logging
-from typing import Optional, Dict, Any, Callable, TypeVar, Union
+import time
+from collections.abc import Callable
 from contextlib import contextmanager
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,8 @@ AsyncF = TypeVar("AsyncF", bound=Callable[..., Any])
 
 
 def traced(
-    name: Optional[str] = None,
-    attributes: Optional[Dict[str, Any]] = None,
+    name: str | None = None,
+    attributes: dict[str, Any] | None = None,
     record_exception: bool = True,
     record_result: bool = False,
 ) -> Callable[[F], F]:
@@ -76,7 +77,8 @@ def traced(
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            from .otel_setup import get_tracer, record_exception as otel_record_exception
+            from .otel_setup import get_tracer
+            from .otel_setup import record_exception as otel_record_exception
 
             tracer = get_tracer(func.__module__)
 
@@ -117,8 +119,8 @@ def traced(
 
 
 def traced_async(
-    name: Optional[str] = None,
-    attributes: Optional[Dict[str, Any]] = None,
+    name: str | None = None,
+    attributes: dict[str, Any] | None = None,
     record_exception: bool = True,
     record_result: bool = False,
 ) -> Callable[[AsyncF], AsyncF]:
@@ -151,7 +153,8 @@ def traced_async(
 
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            from .otel_setup import get_tracer, record_exception as otel_record_exception
+            from .otel_setup import get_tracer
+            from .otel_setup import record_exception as otel_record_exception
 
             tracer = get_tracer(func.__module__)
 
@@ -257,8 +260,8 @@ class MLSpanBuilder:
     def inference(
         self,
         model_id: str,
-        model_version: Optional[str] = None,
-        feature_count: Optional[int] = None,
+        model_version: str | None = None,
+        feature_count: int | None = None,
         deterministic: bool = True,
         **extra_attributes: Any,
     ):
@@ -308,7 +311,7 @@ class MLSpanBuilder:
     def feature_build(
         self,
         feature_version: str,
-        feature_names: Optional[list] = None,
+        feature_names: list | None = None,
         source: str = "database",
         **extra_attributes: Any,
     ):
@@ -355,7 +358,7 @@ class MLSpanBuilder:
         self,
         model_id: str,
         prediction_type: str = "continuous",
-        observation_dim: Optional[int] = None,
+        observation_dim: int | None = None,
         **extra_attributes: Any,
     ):
         """
@@ -489,11 +492,11 @@ class MLSpanBuilder:
 
 
 def add_ml_attributes(
-    model_id: Optional[str] = None,
-    feature_version: Optional[str] = None,
-    confidence: Optional[float] = None,
-    signal: Optional[str] = None,
-    action: Optional[float] = None,
+    model_id: str | None = None,
+    feature_version: str | None = None,
+    confidence: float | None = None,
+    signal: str | None = None,
+    action: float | None = None,
     **kwargs: Any,
 ) -> None:
     """
@@ -541,11 +544,11 @@ def add_ml_attributes(
 
 
 def add_trading_attributes(
-    symbol: Optional[str] = None,
-    position: Optional[str] = None,
-    entry_price: Optional[float] = None,
-    exit_price: Optional[float] = None,
-    pnl: Optional[float] = None,
+    symbol: str | None = None,
+    position: str | None = None,
+    entry_price: float | None = None,
+    exit_price: float | None = None,
+    pnl: float | None = None,
     **kwargs: Any,
 ) -> None:
     """

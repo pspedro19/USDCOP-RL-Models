@@ -32,9 +32,8 @@ CHANGELOG v3.0.0:
 
 from __future__ import annotations
 
-import warnings
 import logging
-from typing import Dict, Optional, Tuple
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -88,7 +87,7 @@ class FeatureBuilder:
         """Return observation dimension from SSOT."""
         return self._canonical.get_observation_dim()
 
-    def get_feature_names(self) -> Tuple[str, ...]:
+    def get_feature_names(self) -> tuple[str, ...]:
         """Return feature names in contract order."""
         return tuple(self._canonical.get_feature_order())
 
@@ -112,7 +111,7 @@ class FeatureBuilder:
         )
 
     @property
-    def norm_stats(self) -> Dict[str, Dict[str, float]]:
+    def norm_stats(self) -> dict[str, dict[str, float]]:
         """Get normalization stats from SSOT."""
         return self._canonical.get_norm_stats()
 

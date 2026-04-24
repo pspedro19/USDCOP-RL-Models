@@ -7,10 +7,8 @@ Optional Slack webhook notification.
 
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
-from typing import Optional
 
 import requests
 
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 class AlertSystem:
     """Breaking news alert system."""
 
-    def __init__(self, config: Optional[AlertConfig] = None):
+    def __init__(self, config: AlertConfig | None = None):
         self.cfg = config or AlertConfig()
 
     def check_articles(self, articles: list[EnrichedArticle]) -> list[dict]:
@@ -77,7 +75,7 @@ class AlertSystem:
         current_count: int,
         historical_mean: float,
         historical_std: float,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Check if current article volume is a spike."""
         if historical_std <= 0:
             return None

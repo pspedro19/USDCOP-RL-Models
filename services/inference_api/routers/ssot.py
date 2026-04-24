@@ -17,10 +17,30 @@ Date: 2026-01-18
 
 import hashlib
 import json
-from typing import Any, Dict, List
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
+
+from src.core.constants import (
+    ADX_PERIOD,
+    ATR_PERIOD,
+    CLIP_MAX,
+    CLIP_MIN,
+    DEFAULT_STOP_LOSS_PCT,
+    HIGH_CONFIDENCE_THRESHOLD,
+    MAX_DRAWDOWN_PCT,
+    MAX_POSITION_SIZE,
+    MIN_CONFIDENCE_THRESHOLD,
+    RSI_PERIOD,
+    THRESHOLD_LONG,
+    THRESHOLD_SHORT,
+    TRADING_END_HOUR,
+    TRADING_START_HOUR,
+    TRADING_TIMEZONE,
+    UTC_OFFSET_BOGOTA,
+    WARMUP_BARS,
+)
 
 # Import SSOT from contracts
 from src.core.contracts import (
@@ -29,34 +49,15 @@ from src.core.contracts import (
     OBSERVATION_DIM,
 )
 from src.core.contracts.action_contract import (
-    Action,
+    ACTION_CONTRACT_VERSION,
     ACTION_COUNT,
     ACTION_NAMES,
     VALID_ACTIONS,
-    ACTION_CONTRACT_VERSION,
+    Action,
 )
 from src.core.contracts.feature_contract import (
     FEATURE_CONTRACT_VERSION,
     FEATURE_SPECS,
-)
-from src.core.constants import (
-    RSI_PERIOD,
-    ATR_PERIOD,
-    ADX_PERIOD,
-    WARMUP_BARS,
-    CLIP_MIN,
-    CLIP_MAX,
-    THRESHOLD_LONG,
-    THRESHOLD_SHORT,
-    MIN_CONFIDENCE_THRESHOLD,
-    HIGH_CONFIDENCE_THRESHOLD,
-    MAX_POSITION_SIZE,
-    DEFAULT_STOP_LOSS_PCT,
-    MAX_DRAWDOWN_PCT,
-    TRADING_TIMEZONE,
-    TRADING_START_HOUR,
-    TRADING_END_HOUR,
-    UTC_OFFSET_BOGOTA,
 )
 
 router = APIRouter(prefix="/ssot", tags=["ssot"])
@@ -69,21 +70,21 @@ router = APIRouter(prefix="/ssot", tags=["ssot"])
 class FeatureContractResponse(BaseModel):
     """Feature contract SSOT response."""
     version: str
-    feature_order: List[str]
+    feature_order: list[str]
     feature_order_hash: str
     observation_dim: int
     market_features_count: int
     state_features_count: int
-    feature_specs: Dict[str, Any]
+    feature_specs: dict[str, Any]
 
 
 class ActionContractResponse(BaseModel):
     """Action contract SSOT response."""
     version: str
-    actions: Dict[str, int]
+    actions: dict[str, int]
     action_count: int
-    action_names: Dict[int, str]
-    valid_actions: List[int]
+    action_names: dict[int, str]
+    valid_actions: list[int]
 
 
 class IndicatorsResponse(BaseModel):
@@ -145,8 +146,8 @@ class ValidationRequest(BaseModel):
 class ValidationResponse(BaseModel):
     """Validation result response."""
     valid: bool
-    errors: List[str]
-    warnings: List[str]
+    errors: list[str]
+    warnings: list[str]
     backend_hash: str
 
 

@@ -22,20 +22,20 @@ const DISPLAY_NAMES: Record<string, string> = {
   brent: 'Brent',
 };
 
-const DATA_SOURCES: Record<string, string> = {
-  dxy: 'Investing.com',
-  vix: 'CBOE / Investing.com',
-  wti: 'NYMEX / Investing.com',
-  embi_col: 'JP Morgan / BanRep',
-  ust10y: 'FRED (US Treasury)',
-  ust2y: 'FRED (US Treasury)',
-  ibr: 'BanRep',
-  tpm: 'BanRep',
-  gold: 'Investing.com',
-  brent: 'ICE / Investing.com',
-  fedfunds: 'FRED',
-  cpi_us: 'BLS / FRED',
-  cpi_col: 'DANE',
+const DATA_SOURCES: Record<string, { name: string; url: string }> = {
+  dxy:      { name: 'Investing.com',       url: 'https://www.investing.com/indices/usdollar' },
+  vix:      { name: 'CBOE / Investing.com', url: 'https://www.investing.com/indices/volatility-s-p-500' },
+  wti:      { name: 'NYMEX / Investing.com', url: 'https://www.investing.com/commodities/crude-oil' },
+  embi_col: { name: 'JP Morgan / BanRep',  url: 'https://www.banrep.gov.co/es/estadisticas/spreads-deuda-publica' },
+  ust10y:   { name: 'FRED (US Treasury)',   url: 'https://fred.stlouisfed.org/series/DGS10' },
+  ust2y:    { name: 'FRED (US Treasury)',   url: 'https://fred.stlouisfed.org/series/DGS2' },
+  ibr:      { name: 'BanRep',              url: 'https://www.banrep.gov.co/es/estadisticas/tasas-interes-interbancarias' },
+  tpm:      { name: 'BanRep',              url: 'https://www.banrep.gov.co/es/estadisticas/tasas-intervencion-politica-monetaria' },
+  gold:     { name: 'Investing.com',       url: 'https://www.investing.com/commodities/gold' },
+  brent:    { name: 'ICE / Investing.com', url: 'https://www.investing.com/commodities/brent-oil' },
+  fedfunds: { name: 'FRED',               url: 'https://fred.stlouisfed.org/series/FEDFUNDS' },
+  cpi_us:   { name: 'BLS / FRED',         url: 'https://fred.stlouisfed.org/series/CPIAUCSL' },
+  cpi_col:  { name: 'DANE',               url: 'https://www.dane.gov.co/index.php/estadisticas-por-tema/precios-y-costos/indice-de-precios-al-consumidor-ipc' },
 };
 
 export function MacroChartGrid({ charts, onChartClick }: MacroChartGridProps) {
@@ -64,7 +64,15 @@ export function MacroChartGrid({ charts, onChartClick }: MacroChartGridProps) {
               <div>
                 <h3 className="text-sm font-semibold text-white">{name}</h3>
                 {DATA_SOURCES[key] && (
-                  <p className="text-[10px] text-gray-600 mt-0.5">Fuente: {DATA_SOURCES[key]}</p>
+                  <a
+                    href={DATA_SOURCES[key].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-gray-600 mt-0.5 hover:text-cyan-400 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Fuente: {DATA_SOURCES[key].name} ↗
+                  </a>
                 )}
               </div>
               {chart.png_url && (

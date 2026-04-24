@@ -14,12 +14,11 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-from datetime import datetime, timedelta
-from typing import Optional, List, Tuple
-from pydantic import BaseModel, Field, validator, root_validator
-from fastapi import HTTPException, Query
 import re
+from datetime import datetime
 
+from fastapi import HTTPException
+from pydantic import BaseModel, Field, root_validator, validator
 
 # =============================================================================
 # CONSTANTS (import from SSOT where applicable)
@@ -37,9 +36,9 @@ except ImportError:
 # Import canonical validation from feature contract
 try:
     from src.core.contracts.feature_contract import (
-        validate_feature_vector,
-        OBSERVATION_DIM,
         FEATURE_CONTRACT,
+        OBSERVATION_DIM,
+        validate_feature_vector,
     )
     SSOT_VALIDATION_AVAILABLE = True
 except ImportError:
@@ -85,8 +84,8 @@ class TimeframeParam(BaseModel):
 
 class DateRangeParam(BaseModel):
     """Validated date range parameters"""
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    start_date: str | None = None
+    end_date: str | None = None
 
     @validator('start_date', 'end_date', pre=True)
     def validate_date_format(cls, v):
@@ -135,7 +134,7 @@ class InferenceRequest(BaseModel):
     SSOT: Observation dimension from src.core.contracts.feature_contract.OBSERVATION_DIM
     Issue 2.6 Remediation: Uses canonical validation.
     """
-    observation: List[float] = Field(..., min_items=OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15,
+    observation: list[float] = Field(..., min_items=OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15,
                                       max_items=OBSERVATION_DIM if SSOT_VALIDATION_AVAILABLE else 15)
     position: float = Field(..., ge=-1.0, le=1.0)
     step: int = Field(..., ge=1, le=BARS_PER_SESSION)
@@ -241,9 +240,9 @@ def validate_limit(limit: int) -> int:
 
 
 def validate_date_range(
-    start_date: Optional[str],
-    end_date: Optional[str]
-) -> Tuple[Optional[datetime], Optional[datetime]]:
+    start_date: str | None,
+    end_date: str | None
+) -> tuple[datetime | None, datetime | None]:
     """
     Validate date range parameters.
 
@@ -315,7 +314,7 @@ def validate_bar_number(bar_number: int) -> int:
     return bar_number
 
 
-def validate_observation(observation: List[float]) -> List[float]:
+def validate_observation(observation: list[float]) -> list[float]:
     """
     Validate observation vector for RL inference.
 
@@ -365,7 +364,7 @@ def validate_observation(observation: List[float]) -> List[float]:
                 raise
             raise HTTPException(
                 status_code=400,
-                detail=f"Observation validation error: {str(e)}"
+                detail=f"Observation validation error: {e!s}"
             )
     else:
         # Legacy fallback validation

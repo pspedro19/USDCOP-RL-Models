@@ -23,8 +23,8 @@ Date: 2026-01-17
 
 import logging
 from dataclasses import dataclass
-from typing import Tuple, Optional, List, Dict, Any
 from enum import Enum
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -55,21 +55,21 @@ class ABTestResult:
     # Statistical measures
     statistic: float
     p_value: float
-    confidence_interval: Tuple[float, float]
+    confidence_interval: tuple[float, float]
     confidence_level: float
 
     # Interpretation
     is_significant: bool
     significance_level: str
-    effect_size: Optional[float]
-    effect_size_interpretation: Optional[str]
+    effect_size: float | None
+    effect_size_interpretation: str | None
 
     # Sample info
     control_n: int
     treatment_n: int
-    power: Optional[float]
+    power: float | None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "test_name": self.test_name,
@@ -296,7 +296,7 @@ class ABStatistics:
         control_returns: np.ndarray,
         treatment_returns: np.ndarray,
         n_bootstrap: int = 10000,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Calculate bootstrap confidence interval for Sharpe ratio difference.
 
@@ -400,7 +400,7 @@ class ABStatistics:
         prior_alpha: float = 1.0,
         prior_beta: float = 1.0,
         n_samples: int = 100000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Bayesian A/B test using Beta-Binomial model.
 
@@ -455,10 +455,10 @@ class ABStatistics:
 # =============================================================================
 
 def compare_models(
-    model_a_metrics: Dict[str, Any],
-    model_b_metrics: Dict[str, Any],
+    model_a_metrics: dict[str, Any],
+    model_b_metrics: dict[str, Any],
     confidence_level: float = 0.95,
-) -> Dict[str, ABTestResult]:
+) -> dict[str, ABTestResult]:
     """
     Compare two models across multiple metrics.
 
@@ -529,9 +529,9 @@ def get_minimum_test_duration(
 
 
 __all__ = [
-    "SignificanceLevel",
-    "ABTestResult",
     "ABStatistics",
+    "ABTestResult",
+    "SignificanceLevel",
     "compare_models",
     "get_minimum_test_duration",
 ]

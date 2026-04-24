@@ -15,13 +15,11 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import List, Optional
 
 import pandas as pd
-
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -72,10 +70,10 @@ class UniversalSignalRecord:
     leverage: float             # Final leverage after vol-target + multipliers
 
     # --- Stop/Target Levels (None = not used) ---
-    hard_stop_pct: Optional[float] = None       # e.g. 0.0281 for 2.81%
-    take_profit_pct: Optional[float] = None
-    trailing_activation_pct: Optional[float] = None
-    trailing_distance_pct: Optional[float] = None
+    hard_stop_pct: float | None = None       # e.g. 0.0281 for 2.81%
+    take_profit_pct: float | None = None
+    trailing_activation_pct: float | None = None
+    trailing_distance_pct: float | None = None
 
     # --- Entry ---
     entry_price: float = 0.0           # Price at signal time
@@ -86,7 +84,7 @@ class UniversalSignalRecord:
     bar_frequency: str = "daily"       # "daily" | "weekly" | "5min"
 
     # --- Strategy Metadata (opaque) ---
-    metadata: Optional[dict] = None    # model_predictions, confidence_tier, etc.
+    metadata: dict | None = None    # model_predictions, confidence_tier, etc.
 
     def to_dict(self) -> dict:
         """Convert to dict for serialization."""
@@ -136,7 +134,7 @@ class SignalStore:
     ]
 
     @staticmethod
-    def save_parquet(signals: List[UniversalSignalRecord], path: Path) -> None:
+    def save_parquet(signals: list[UniversalSignalRecord], path: Path) -> None:
         """Save signals to parquet file."""
         if not signals:
             pd.DataFrame().to_parquet(path)
@@ -170,7 +168,7 @@ class SignalStore:
         df.to_parquet(path, index=False)
 
     @staticmethod
-    def load_parquet(path: Path) -> List[UniversalSignalRecord]:
+    def load_parquet(path: Path) -> list[UniversalSignalRecord]:
         """Load signals from parquet file."""
         df = pd.read_parquet(path)
         if df.empty:
@@ -204,7 +202,7 @@ class SignalStore:
         return signals
 
     @staticmethod
-    def save_json(signals: List[UniversalSignalRecord], path: Path) -> None:
+    def save_json(signals: list[UniversalSignalRecord], path: Path) -> None:
         """Save signals to JSON file (safe serialization)."""
         data = [s.to_dict() for s in signals]
         data = _sanitize_for_json(data)
@@ -213,7 +211,7 @@ class SignalStore:
             json.dump(data, f, indent=2, default=str)
 
     @staticmethod
-    def load_json(path: Path) -> List[UniversalSignalRecord]:
+    def load_json(path: Path) -> list[UniversalSignalRecord]:
         """Load signals from JSON file."""
         with open(path) as f:
             data = json.load(f)

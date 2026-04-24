@@ -16,12 +16,13 @@ Changes: Added thread-safe singleton with double-checked locking
 """
 
 import json
-import yaml
 import sys
 import threading
-from pathlib import Path
-from typing import Dict, Any, Optional, List
 from functools import lru_cache
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 # Flexible import for exceptions
 try:
@@ -56,17 +57,17 @@ class ConfigLoader:
     _trading_calendar = None
     _database_config = None
 
-    def __new__(cls, config_dir: Optional[str] = None):
+    def __new__(cls, config_dir: str | None = None):
         """Thread-safe singleton pattern using double-checked locking"""
         if cls._instance is None:
             with cls._lock:  # Acquire lock before second check
                 # Double-checked locking pattern
                 if cls._instance is None:
-                    cls._instance = super(ConfigLoader, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, config_dir: Optional[str] = None):
+    def __init__(self, config_dir: str | None = None):
         """
         Initialize configuration loader.
 
@@ -92,12 +93,12 @@ class ConfigLoader:
         feature_config_path = self.config_dir / "feature_config.json"
         if not feature_config_path.exists():
             raise ConfigurationError(
-                f"Configuration file not found",
+                "Configuration file not found",
                 config_path=str(feature_config_path)
             )
 
         try:
-            with open(feature_config_path, 'r', encoding='utf-8') as f:
+            with open(feature_config_path, encoding='utf-8') as f:
                 self._feature_config = json.load(f)
         except json.JSONDecodeError as e:
             raise ConfigurationError(
@@ -109,7 +110,7 @@ class ConfigLoader:
         calendar_path = self.config_dir / "trading_calendar.json"
         if calendar_path.exists():
             try:
-                with open(calendar_path, 'r', encoding='utf-8') as f:
+                with open(calendar_path, encoding='utf-8') as f:
                     self._trading_calendar = json.load(f)
             except json.JSONDecodeError as e:
                 raise ConfigurationError(
@@ -127,7 +128,7 @@ class ConfigLoader:
         db_config_path = self.config_dir / "database.yaml"
         if db_config_path.exists():
             try:
-                with open(db_config_path, 'r', encoding='utf-8') as f:
+                with open(db_config_path, encoding='utf-8') as f:
                     self._database_config = yaml.safe_load(f)
             except yaml.YAMLError as e:
                 raise ConfigurationError(
@@ -173,7 +174,7 @@ class ConfigLoader:
     # =========================================================================
 
     @property
-    def feature_config(self) -> Dict[str, Any]:
+    def feature_config(self) -> dict[str, Any]:
         """Get full feature configuration dictionary"""
         return self._feature_config
 
@@ -182,11 +183,11 @@ class ConfigLoader:
         """Get configuration version"""
         return self._feature_config['_meta']['version']
 
-    def get_feature_config(self) -> Dict[str, Any]:
+    def get_feature_config(self) -> dict[str, Any]:
         """Get full feature configuration (method version)"""
         return self._feature_config
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Get ordered list of 13 features for model input"""
         return self._feature_config['observation_space']['order']
 
@@ -194,7 +195,7 @@ class ConfigLoader:
         """Get total observation dimension (13 features + 2 state = 15)"""
         return self._feature_config['observation_space']['total_obs_dim']
 
-    def get_norm_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_norm_stats(self, feature_name: str) -> dict[str, float]:
         """
         Get normalization statistics for a feature.
 
@@ -213,7 +214,7 @@ class ConfigLoader:
                         return item.get('norm_stats', {})
         return {}
 
-    def get_clip_bounds(self, feature_name: str) -> Optional[tuple]:
+    def get_clip_bounds(self, feature_name: str) -> tuple | None:
         """
         Get clipping bounds for a feature.
 
@@ -233,7 +234,7 @@ class ConfigLoader:
                             return tuple(clip)
         return None
 
-    def get_technical_period(self, indicator: str) -> Optional[int]:
+    def get_technical_period(self, indicator: str) -> int | None:
         """
         Get period for a technical indicator.
 
@@ -250,18 +251,18 @@ class ConfigLoader:
                     return item.get('period')
         return None
 
-    def get_trading_params(self) -> Dict[str, Any]:
+    def get_trading_params(self) -> dict[str, Any]:
         """Get all trading parameters"""
         return self._feature_config.get('trading', {})
 
-    def get_sql_features(self) -> List[str]:
+    def get_sql_features(self) -> list[str]:
         """Get list of features calculated in SQL"""
         if 'compute_strategy' in self._feature_config:
             sql_calc = self._feature_config['compute_strategy'].get('sql_calculated', {})
             return sql_calc.get('features', [])
         return []
 
-    def get_python_features(self) -> List[str]:
+    def get_python_features(self) -> list[str]:
         """Get list of features calculated in Python"""
         if 'compute_strategy' in self._feature_config:
             python_calc = self._feature_config['compute_strategy'].get('python_calculated', {})
@@ -273,15 +274,15 @@ class ConfigLoader:
     # =========================================================================
 
     @property
-    def trading_calendar(self) -> Dict[str, Any]:
+    def trading_calendar(self) -> dict[str, Any]:
         """Get full trading calendar configuration"""
         return self._trading_calendar
 
-    def get_trading_calendar(self) -> Dict[str, Any]:
+    def get_trading_calendar(self) -> dict[str, Any]:
         """Get full trading calendar configuration (method version)"""
         return self._trading_calendar
 
-    def get_market_hours(self) -> Dict[str, Any]:
+    def get_market_hours(self) -> dict[str, Any]:
         """
         Get market hours configuration.
 
@@ -293,7 +294,7 @@ class ConfigLoader:
             return self._trading_calendar['market_hours']
         return self._feature_config['trading']['market_hours']
 
-    def get_holidays(self, year: int = 2025, country: str = 'colombia') -> List[str]:
+    def get_holidays(self, year: int = 2025, country: str = 'colombia') -> list[str]:
         """
         Get list of holiday dates for the specified year and country.
 
@@ -321,7 +322,7 @@ class ConfigLoader:
                 return holidays_data
         return []
 
-    def get_schedules(self) -> Dict[str, Any]:
+    def get_schedules(self) -> dict[str, Any]:
         """
         Get DAG scheduling configuration.
 
@@ -337,15 +338,15 @@ class ConfigLoader:
     # =========================================================================
 
     @property
-    def database_config(self) -> Dict[str, Any]:
+    def database_config(self) -> dict[str, Any]:
         """Get full database configuration"""
         return self._database_config
 
-    def get_database_config(self) -> Dict[str, Any]:
+    def get_database_config(self) -> dict[str, Any]:
         """Get full database configuration (method version)"""
         return self._database_config
 
-    def get_postgres_config(self) -> Dict[str, Any]:
+    def get_postgres_config(self) -> dict[str, Any]:
         """Get PostgreSQL connection configuration"""
         return self._database_config.get('postgres', {})
 
@@ -363,7 +364,7 @@ class ConfigLoader:
         conn_strings = postgres.get('connection_strings', {})
         return conn_strings.get(dialect, '')
 
-    def get_table_config(self, table_name: str) -> Optional[Dict[str, Any]]:
+    def get_table_config(self, table_name: str) -> dict[str, Any] | None:
         """
         Get configuration for a specific table.
 
@@ -377,7 +378,7 @@ class ConfigLoader:
         return tables.get(table_name)
 
 
-def get_config(config_dir: Optional[str] = None) -> ConfigLoader:
+def get_config(config_dir: str | None = None) -> ConfigLoader:
     """
     Get global configuration instance.
 
@@ -394,7 +395,7 @@ def get_config(config_dir: Optional[str] = None) -> ConfigLoader:
 
 
 @lru_cache(maxsize=1)
-def load_feature_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+def load_feature_config(config_path: str | None = None) -> dict[str, Any]:
     """
     Load feature configuration with caching.
 

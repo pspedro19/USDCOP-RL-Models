@@ -22,11 +22,9 @@ Date: 2026-01-17
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
+from datetime import UTC, datetime
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -43,12 +41,12 @@ class FeatureExpectation:
     dtype: str  # "float64", "int64", "datetime64[ns]", etc.
     nullable: bool = True
     max_null_percentage: float = 5.0  # Maximum allowed null percentage
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
+    min_value: float | None = None
+    max_value: float | None = None
     must_be_positive: bool = False
     must_be_negative: bool = False
-    expected_mean_range: Optional[Tuple[float, float]] = None
-    expected_std_range: Optional[Tuple[float, float]] = None
+    expected_mean_range: tuple[float, float] | None = None
+    expected_std_range: tuple[float, float] | None = None
 
 
 # Default expectations for common trading features
@@ -174,10 +172,10 @@ class ValidationResult:
     total_expectations: int
     failed_expectations: int
     passed_expectations: int
-    results: List[ExpectationResult]
-    summary: Dict[str, Any]
+    results: list[ExpectationResult]
+    summary: dict[str, Any]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "timestamp": self.timestamp,
@@ -225,7 +223,7 @@ class FeatureValidator:
 
     def __init__(
         self,
-        expectations: Optional[Dict[str, FeatureExpectation]] = None,
+        expectations: dict[str, FeatureExpectation] | None = None,
         strict_mode: bool = False,
         max_freshness_hours: float = 24.0,
     ):
@@ -240,7 +238,7 @@ class FeatureValidator:
         self.expectations = expectations or DEFAULT_FEATURE_EXPECTATIONS
         self.strict_mode = strict_mode
         self.max_freshness_hours = max_freshness_hours
-        self._results: List[ExpectationResult] = []
+        self._results: list[ExpectationResult] = []
 
     def _add_result(
         self,
@@ -333,8 +331,8 @@ class FeatureValidator:
         self,
         df: pd.DataFrame,
         column: str,
-        min_value: Optional[float],
-        max_value: Optional[float],
+        min_value: float | None,
+        max_value: float | None,
     ) -> bool:
         """Validate values are within expected range."""
         if column not in df.columns:
@@ -399,7 +397,7 @@ class FeatureValidator:
         self,
         df: pd.DataFrame,
         column: str,
-        expected_range: Tuple[float, float],
+        expected_range: tuple[float, float],
     ) -> bool:
         """Validate mean is within expected range."""
         if column not in df.columns:
@@ -447,9 +445,9 @@ class FeatureValidator:
                 success = False
                 details = "No valid timestamps found"
             else:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 if max_timestamp.tzinfo is None:
-                    max_timestamp = max_timestamp.replace(tzinfo=timezone.utc)
+                    max_timestamp = max_timestamp.replace(tzinfo=UTC)
 
                 age_hours = (now - max_timestamp).total_seconds() / 3600
                 success = age_hours <= self.max_freshness_hours
@@ -554,7 +552,7 @@ class FeatureValidator:
         passed = [r for r in self._results if r.success]
 
         return ValidationResult(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             success=len(failed) == 0,
             total_expectations=len(self._results),
             failed_expectations=len(failed),
@@ -575,7 +573,7 @@ class FeatureValidator:
 
 def validate_features(
     df: pd.DataFrame,
-    expectations: Optional[Dict[str, FeatureExpectation]] = None,
+    expectations: dict[str, FeatureExpectation] | None = None,
     raise_on_failure: bool = False,
 ) -> ValidationResult:
     """
@@ -630,11 +628,11 @@ def create_validator_for_inference() -> FeatureValidator:
 
 
 __all__ = [
-    "FeatureExpectation",
-    "ExpectationResult",
-    "ValidationResult",
-    "FeatureValidator",
     "DEFAULT_FEATURE_EXPECTATIONS",
-    "validate_features",
+    "ExpectationResult",
+    "FeatureExpectation",
+    "FeatureValidator",
+    "ValidationResult",
     "create_validator_for_inference",
+    "validate_features",
 ]

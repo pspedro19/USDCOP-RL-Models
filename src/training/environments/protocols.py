@@ -21,9 +21,9 @@ Usage:
     env = TradingEnvironment(reward_calculator=MyRewardCalculator())
 """
 
-from typing import Dict, List, Optional, Protocol, Tuple, Any, runtime_checkable
-import numpy as np
+from typing import Any, Protocol, runtime_checkable
 
+import numpy as np
 
 # =============================================================================
 # CORE PROTOCOLS
@@ -120,7 +120,7 @@ class PositionTracker(Protocol):
         """Get current position as float (-1, 0, 1)."""
         ...
 
-    def get_state_features(self) -> Tuple[float, float]:
+    def get_state_features(self) -> tuple[float, float]:
         """Get state features: (position, time_normalized)."""
         ...
 
@@ -161,7 +161,7 @@ class StateObserver(Protocol):
         """
         ...
 
-    def get_feature_names(self) -> List[str]:
+    def get_feature_names(self) -> list[str]:
         """Get names of all features in order."""
         ...
 
@@ -219,7 +219,7 @@ class ActionDiscretizer(Protocol):
         """
         ...
 
-    def get_thresholds(self) -> Tuple[float, float]:
+    def get_thresholds(self) -> tuple[float, float]:
         """Get (short_threshold, long_threshold)."""
         ...
 
@@ -238,7 +238,7 @@ class EpisodeTerminator(Protocol):
         max_steps: int,
         drawdown: float,
         max_drawdown: float,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Check if episode should terminate.
 
@@ -260,7 +260,7 @@ class MarketDataProvider(Protocol):
     Provides OHLCV and derived features.
     """
 
-    def get_bar(self, index: int) -> Dict[str, float]:
+    def get_bar(self, index: int) -> dict[str, float]:
         """Get OHLCV data for a specific bar."""
         ...
 
@@ -289,11 +289,11 @@ class NormalizationProvider(Protocol):
         """Normalize a single feature value."""
         ...
 
-    def normalize_batch(self, features: Dict[str, float]) -> np.ndarray:
+    def normalize_batch(self, features: dict[str, float]) -> np.ndarray:
         """Normalize all features and return array in order."""
         ...
 
-    def get_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_stats(self, feature_name: str) -> dict[str, float]:
         """Get normalization stats (mean, std) for a feature."""
         ...
 
@@ -343,7 +343,7 @@ ContinuousAction = float
 DiscreteAction = int
 
 # Step result type
-StepResult = Tuple[Observation, float, bool, bool, Dict[str, Any]]
+StepResult = tuple[Observation, float, bool, bool, dict[str, Any]]
 
 # Reset result type
-ResetResult = Tuple[Observation, Dict[str, Any]]
+ResetResult = tuple[Observation, dict[str, Any]]

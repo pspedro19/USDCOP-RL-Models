@@ -17,7 +17,6 @@ import json
 import logging
 import random
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 
@@ -66,7 +65,7 @@ def set_reproducible_seeds(seed: int) -> None:
     logger.info(f"Reproducible seeds set: {seed}")
 
 
-def compute_file_hash(path: Union[str, Path], chunk_size: int = 8192) -> str:
+def compute_file_hash(path: str | Path, chunk_size: int = 8192) -> str:
     """
     Compute SHA256 hash of a file.
 
@@ -85,7 +84,7 @@ def compute_file_hash(path: Union[str, Path], chunk_size: int = 8192) -> str:
     return _compute_file_hash_ssot(path, chunk_size=chunk_size).full_hash
 
 
-def compute_json_hash(path: Union[str, Path]) -> str:
+def compute_json_hash(path: str | Path) -> str:
     """
     Compute hash of JSON file (canonical form).
 
@@ -99,7 +98,7 @@ def compute_json_hash(path: Union[str, Path]) -> str:
     if not path.exists():
         raise FileNotFoundError(f"JSON not found: {path}")
 
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, encoding='utf-8') as f:
         data = json.load(f)
 
     canonical = json.dumps(data, sort_keys=True, separators=(',', ':'))
@@ -107,7 +106,7 @@ def compute_json_hash(path: Union[str, Path]) -> str:
 
 
 __all__ = [
-    "set_reproducible_seeds",
     "compute_file_hash",
     "compute_json_hash",
+    "set_reproducible_seeds",
 ]

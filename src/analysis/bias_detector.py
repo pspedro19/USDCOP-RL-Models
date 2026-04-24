@@ -9,7 +9,6 @@ Two-layer bias detection:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +191,7 @@ class PoliticalBiasDetector:
             "total_analyzed": len(articles),
         }
 
-    def _assess_cluster_bias(self, cluster: dict, llm_client: object) -> Optional[dict]:
+    def _assess_cluster_bias(self, cluster: dict, llm_client: object) -> dict | None:
         """Assess narrative bias of a single cluster using LLM."""
         titles = cluster.get("representative_titles", [])[:5]
         if not titles:

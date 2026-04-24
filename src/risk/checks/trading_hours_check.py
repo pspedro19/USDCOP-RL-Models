@@ -10,15 +10,15 @@ Date: 2025-01-14
 """
 
 from datetime import datetime, time
-from typing import Optional, Set
+
 import pytz
 
 from src.core.interfaces.risk import (
     IRiskCheck,
-    RiskContext,
-    RiskCheckResult,
-    RiskStatus,
     ITradingHoursChecker,
+    RiskCheckResult,
+    RiskContext,
+    RiskStatus,
 )
 
 
@@ -37,7 +37,7 @@ class TradingHoursCheck(IRiskCheck, ITradingHoursChecker):
         self,
         start_time: time = time(8, 0),
         end_time: time = time(16, 0),
-        trading_days: Optional[Set[int]] = None,
+        trading_days: set[int] | None = None,
         timezone_str: str = "America/Bogota",
     ):
         self._start_time = start_time

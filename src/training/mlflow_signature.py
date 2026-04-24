@@ -3,11 +3,12 @@ MLflow Model Signature - Proper Implementation
 ==============================================
 Crea y attach la signature correctamente al modelo.
 """
-import numpy as np
 from typing import TYPE_CHECKING
 
-from src.core.contracts.feature_contract import OBSERVATION_DIM
+import numpy as np
+
 from src.core.contracts.action_contract import ACTION_COUNT
+from src.core.contracts.feature_contract import OBSERVATION_DIM
 
 if TYPE_CHECKING:
     from mlflow.models.signature import ModelSignature

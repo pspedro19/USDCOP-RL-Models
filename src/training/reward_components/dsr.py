@@ -10,10 +10,11 @@ Version: 1.0.0
 Created: 2026-01-19
 """
 
-import numpy as np
-from typing import Dict, Any, Optional
+from typing import Any
 
-from .base import RewardComponent, ComponentType, safe_divide
+import numpy as np
+
+from .base import ComponentType, RewardComponent, safe_divide
 
 
 class DifferentialSharpeRatio(RewardComponent):
@@ -137,7 +138,7 @@ class DifferentialSharpeRatio(RewardComponent):
         self._B = 0.0
         self._count = 0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -147,7 +148,7 @@ class DifferentialSharpeRatio(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({

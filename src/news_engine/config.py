@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -190,7 +189,7 @@ class NewsEngineConfig:
     enabled: bool = True
 
     @classmethod
-    def from_env(cls) -> "NewsEngineConfig":
+    def from_env(cls) -> NewsEngineConfig:
         """Create config from environment variables."""
         return cls(
             database=DatabaseConfig(

@@ -8,15 +8,14 @@ Created: 2025-12-17
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
 from datetime import datetime
 
-from services.metrics_calculator import MetricsCalculator
-from services.drift_detector import DriftDetector
-from services.prediction_tracker import PredictionTracker
-from services.performance_analyzer import PerformanceAnalyzer
 from database.postgres_client import PostgresClient
+from fastapi import APIRouter, HTTPException, Query
+from services.drift_detector import DriftDetector
+from services.metrics_calculator import MetricsCalculator
+from services.performance_analyzer import PerformanceAnalyzer
+from services.prediction_tracker import PredictionTracker
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +23,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Initialize services (will be set in main.py)
-db_client: Optional[PostgresClient] = None
-metrics_calc: Optional[MetricsCalculator] = None
-drift_detector: Optional[DriftDetector] = None
-prediction_tracker: Optional[PredictionTracker] = None
-performance_analyzer: Optional[PerformanceAnalyzer] = None
+db_client: PostgresClient | None = None
+metrics_calc: MetricsCalculator | None = None
+drift_detector: DriftDetector | None = None
+prediction_tracker: PredictionTracker | None = None
+performance_analyzer: PerformanceAnalyzer | None = None
 
 
 def init_services(db: PostgresClient):

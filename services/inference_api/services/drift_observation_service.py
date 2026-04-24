@@ -20,12 +20,13 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
+import asyncio
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING
-import numpy as np
 from collections import deque
 from datetime import datetime
-import asyncio
+from typing import TYPE_CHECKING, Optional
+
+import numpy as np
 
 if TYPE_CHECKING:
     from src.monitoring.drift_detector import (
@@ -51,7 +52,7 @@ class DriftObservationService:
         self,
         drift_detector: Optional['FeatureDriftDetector'] = None,
         multivariate_detector: Optional['MultivariateDriftDetector'] = None,
-        feature_order: Optional[List[str]] = None,
+        feature_order: list[str] | None = None,
         buffer_size: int = 100,
         auto_flush: bool = True,
     ):
@@ -90,7 +91,7 @@ class DriftObservationService:
         self._observations_buffered = 0
         self._flushes = 0
         self._errors = 0
-        self._last_observation_time: Optional[datetime] = None
+        self._last_observation_time: datetime | None = None
 
         logger.info(
             f"DriftObservationService initialized: "
@@ -101,8 +102,8 @@ class DriftObservationService:
 
     def observe(
         self,
-        observation_dict: Optional[Dict[str, float]] = None,
-        observation_array: Optional[np.ndarray] = None,
+        observation_dict: dict[str, float] | None = None,
+        observation_array: np.ndarray | None = None,
     ) -> bool:
         """
         Add an observation to the drift detectors.
@@ -155,8 +156,8 @@ class DriftObservationService:
 
     async def observe_async(
         self,
-        observation_dict: Optional[Dict[str, float]] = None,
-        observation_array: Optional[np.ndarray] = None,
+        observation_dict: dict[str, float] | None = None,
+        observation_array: np.ndarray | None = None,
         buffer: bool = False,
     ) -> bool:
         """
@@ -209,8 +210,8 @@ class DriftObservationService:
 
     def observe_batch(
         self,
-        observations_dict: Optional[List[Dict[str, float]]] = None,
-        observations_array: Optional[np.ndarray] = None,
+        observations_dict: list[dict[str, float]] | None = None,
+        observations_array: np.ndarray | None = None,
     ) -> int:
         """
         Add multiple observations at once.
@@ -236,7 +237,7 @@ class DriftObservationService:
 
         return count
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get service statistics."""
         return {
             "observations_total": self._observations_total,
@@ -250,7 +251,7 @@ class DriftObservationService:
             "feature_count": len(self.feature_order),
         }
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get service status for health checks."""
         univariate_ready = (
             self.drift_detector is not None and

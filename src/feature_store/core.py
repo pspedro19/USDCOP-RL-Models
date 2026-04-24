@@ -42,25 +42,21 @@ Version: 2.0.0
 Created: 2025-01-12
 """
 
-import json
 import logging
-import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Dict, Final, List, Optional, Protocol, Tuple, Type
+from typing import Final, Optional, Protocol
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, field_validator, model_validator
 
 # Import canonical SSOT from src.core.contracts (REQUIRED - no fallback)
 from src.core.contracts import (
     FEATURE_ORDER as SSOT_FEATURE_ORDER,
+)
+from src.core.contracts import (
     OBSERVATION_DIM as SSOT_OBSERVATION_DIM,
-    FEATURE_CONTRACT as SSOT_FEATURE_CONTRACT,
 )
 
 logger = logging.getLogger(__name__)
@@ -130,9 +126,9 @@ class FeatureContract:
     """
     version: str = "current"
     observation_dim: int = SSOT_OBSERVATION_DIM  # From SSOT
-    feature_order: Tuple[str, ...] = SSOT_FEATURE_ORDER  # From SSOT
+    feature_order: tuple[str, ...] = SSOT_FEATURE_ORDER  # From SSOT
     norm_stats_path: str = "config/norm_stats.json"
-    clip_range: Tuple[float, float] = (-5.0, 5.0)
+    clip_range: tuple[float, float] = (-5.0, 5.0)
 
     # Trading hours
     trading_hours_start: str = "13:00"
@@ -149,10 +145,10 @@ class FeatureContract:
     # Metadata
     created_at: str = "2025-01-12"
 
-    def get_trading_hours(self) -> Dict[str, str]:
+    def get_trading_hours(self) -> dict[str, str]:
         return {"start": self.trading_hours_start, "end": self.trading_hours_end}
 
-    def get_technical_periods(self) -> Dict[str, int]:
+    def get_technical_periods(self) -> dict[str, int]:
         return {"rsi": self.rsi_period, "atr": self.atr_period, "adx": self.adx_period}
 
 
@@ -186,7 +182,7 @@ class IFeatureCalculator(Protocol):
         ...
 
     @property
-    def requires(self) -> List[str]:
+    def requires(self) -> list[str]:
         """Required columns"""
         ...
 
@@ -207,7 +203,7 @@ class BaseCalculator(ABC):
     def __init__(
         self,
         name: str,
-        requires: List[str],
+        requires: list[str],
         smoothing: SmoothingMethod = SmoothingMethod.NONE,
         window: int = 1
     ):
@@ -221,7 +217,7 @@ class BaseCalculator(ABC):
         return self._name
 
     @property
-    def requires(self) -> List[str]:
+    def requires(self) -> list[str]:
         return self._requires
 
     def calculate(self, data: pd.DataFrame, bar_idx: int) -> float:
@@ -615,7 +611,7 @@ class CalculatorRegistry:
     """
 
     _instance: Optional["CalculatorRegistry"] = None
-    _calculators: Dict[str, BaseCalculator] = {}
+    _calculators: dict[str, BaseCalculator] = {}
 
     def __new__(cls) -> "CalculatorRegistry":
         if cls._instance is None:
@@ -655,7 +651,7 @@ class CalculatorRegistry:
 
         logger.info(f"Initialized {len(self._calculators)} feature calculators")
 
-    def get(self, name: str) -> Optional[BaseCalculator]:
+    def get(self, name: str) -> BaseCalculator | None:
         """Get calculator by name"""
         return self._calculators.get(name)
 
@@ -663,7 +659,7 @@ class CalculatorRegistry:
         """Register a calculator"""
         self._calculators[calculator.name] = calculator
 
-    def list_calculators(self) -> List[str]:
+    def list_calculators(self) -> list[str]:
         """List all registered calculator names"""
         return list(self._calculators.keys())
 
@@ -703,13 +699,13 @@ class UnifiedFeatureBuilder:
         self.contract = FEATURE_CONTRACT
         self.norm_stats = self._canonical.get_norm_stats()
 
-        logger.info(f"UnifiedFeatureBuilder initialized (delegates to CanonicalFeatureBuilder)")
+        logger.info("UnifiedFeatureBuilder initialized (delegates to CanonicalFeatureBuilder)")
 
     def get_observation_dim(self) -> int:
         """Get observation dimension"""
         return self._canonical.get_observation_dim()
 
-    def get_feature_names(self) -> Tuple[str, ...]:
+    def get_feature_names(self) -> tuple[str, ...]:
         """Get feature names in order"""
         return tuple(self._canonical.get_feature_order())
 

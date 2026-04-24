@@ -1,0 +1,41 @@
+{
+  "name": "video-pitch",
+  "version": "0.1.0",
+  "description": "SignalBridge / Global Minds pitch video — Remotion + Playwright hybrid",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "studio": "remotion studio",
+    "build": "remotion render",
+    "render:pitch-final": "remotion render PitchFinal out/pitch-final-1080p.mp4 --concurrency=3",
+    "render:pitch-raw": "remotion render PitchRaw out/pitch-raw-1080p.mp4 --concurrency=3",
+    "render:pitch-vertical": "remotion render PitchFinalVertical out/pitch-final-vertical.mp4 --concurrency=3",
+    "render:all": "npm run render:pitch-raw && npm run render:pitch-final && npm run render:pitch-vertical",
+    "render:4k": "remotion render PitchFinal out/pitch-final-4k.mp4 --scale=2",
+    "render:hook-gif": "remotion render PitchFinal out/hook.gif --frames=0-150 --codec=gif",
+    "still:sanity": "remotion still PitchFinal --frame=0 --scale=0.25 --output=out/previews/sanity-f0.png"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.448",
+    "@remotion/captions": "^4.0.448",
+    "@remotion/cli": "^4.0.448",
+    "@remotion/google-fonts": "^4.0.448",
+    "@remotion/media-utils": "^4.0.448",
+    "@remotion/paths": "^4.0.448",
+    "@remotion/renderer": "^4.0.448",
+    "@remotion/shapes": "^4.0.448",
+    "@remotion/transitions": "^4.0.448",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "remotion": "^4.0.448",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.59.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}

@@ -20,16 +20,14 @@ No string matching like "v1" in model_id - that's FRAGILE and error-prone.
 
 import logging
 from pathlib import Path
-from typing import Dict, Type, Optional, Protocol
-from functools import lru_cache
+from typing import Protocol
 
-from .observation_builder import ObservationBuilder
 from ..contracts.model_contract import (
-    BuilderType,
-    ModelRegistry,
-    get_model_contract,
     BuilderNotRegisteredError,
+    BuilderType,
+    get_model_contract,
 )
+from .observation_builder import ObservationBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -75,18 +73,18 @@ class BuilderFactory:
     """
 
     # Registry of builder types to builder classes
-    _builder_classes: Dict[BuilderType, Type[BuilderInstance]] = {
+    _builder_classes: dict[BuilderType, type[BuilderInstance]] = {
         BuilderType.CURRENT_15DIM: ObservationBuilder,
     }
 
     # Cache of instantiated builders (to avoid re-loading norm_stats)
-    _builder_instances: Dict[BuilderType, BuilderInstance] = {}
+    _builder_instances: dict[BuilderType, BuilderInstance] = {}
 
     @classmethod
     def register_builder(
         cls,
         builder_type: BuilderType,
-        builder_class: Type[BuilderInstance]
+        builder_class: type[BuilderInstance]
     ) -> None:
         """
         Register a new builder type.
@@ -102,7 +100,7 @@ class BuilderFactory:
     def get_builder(
         cls,
         model_id: str,
-        norm_stats_path: Optional[Path] = None
+        norm_stats_path: Path | None = None
     ) -> BuilderInstance:
         """
         Get observation builder for a model ID.
@@ -130,7 +128,7 @@ class BuilderFactory:
     def get_builder_by_type(
         cls,
         builder_type: BuilderType,
-        norm_stats_path: Optional[Path] = None
+        norm_stats_path: Path | None = None
     ) -> BuilderInstance:
         """
         Get observation builder by explicit BuilderType.
@@ -181,7 +179,7 @@ class BuilderFactory:
         logger.info("Builder cache cleared")
 
     @classmethod
-    def list_builders(cls) -> Dict[str, str]:
+    def list_builders(cls) -> dict[str, str]:
         """List all registered builder types"""
         return {
             bt.value: bc.__name__

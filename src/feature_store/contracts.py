@@ -22,10 +22,10 @@ Created: 2025-01-12
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
-from pydantic import BaseModel, Field, field_validator, model_validator
-import numpy as np
+from typing import Any
 
+import numpy as np
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # =============================================================================
 # ENUMS
@@ -88,7 +88,7 @@ class CalculationParams(BaseContract):
     """Parameters for feature calculation"""
     window: int = Field(ge=1, description="Lookback window")
     smoothing: SmoothingMethod = Field(default=SmoothingMethod.EMA)
-    alpha: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    alpha: float | None = Field(default=None, ge=0.0, le=1.0)
 
     @model_validator(mode="after")
     def validate_alpha(self) -> "CalculationParams":
@@ -102,12 +102,12 @@ class CalculationParams(BaseContract):
 class NormalizationParams(BaseContract):
     """Parameters for feature normalization"""
     method: NormalizationMethod = Field(default=NormalizationMethod.ZSCORE)
-    mean: Optional[float] = Field(default=None)
-    std: Optional[float] = Field(default=None)
-    min_val: Optional[float] = Field(default=None)
-    max_val: Optional[float] = Field(default=None)
-    rolling_window: Optional[int] = Field(default=None, ge=1)
-    clip_range: Tuple[float, float] = Field(default=(-3.0, 3.0))
+    mean: float | None = Field(default=None)
+    std: float | None = Field(default=None)
+    min_val: float | None = Field(default=None)
+    max_val: float | None = Field(default=None)
+    rolling_window: int | None = Field(default=None, ge=1)
+    clip_range: tuple[float, float] = Field(default=(-3.0, 3.0))
 
     @model_validator(mode="after")
     def validate_params(self) -> "NormalizationParams":
@@ -142,10 +142,10 @@ class FeatureSpec(BaseContract):
     normalization: NormalizationParams
 
     # Dependencies
-    requires: List[str] = Field(default_factory=list, description="Required input columns")
+    requires: list[str] = Field(default_factory=list, description="Required input columns")
 
     # Validation
-    valid_range: Optional[Tuple[float, float]] = Field(default=None)
+    valid_range: tuple[float, float] | None = Field(default=None)
     allow_nan: bool = Field(default=False)
 
     @property
@@ -161,7 +161,7 @@ class FeatureSetSpec(BaseContract):
     Defines all features in a specific version (v1, current, etc.)
     """
     version: FeatureVersion
-    features: List[FeatureSpec]
+    features: list[FeatureSpec]
     dimension: int = Field(ge=1)
     description: str = Field(default="")
 
@@ -174,14 +174,14 @@ class FeatureSetSpec(BaseContract):
             )
         return self
 
-    def get_feature(self, name: str) -> Optional[FeatureSpec]:
+    def get_feature(self, name: str) -> FeatureSpec | None:
         """Get feature by name"""
         for f in self.features:
             if f.name == name:
                 return f
         return None
 
-    def get_feature_names(self) -> List[str]:
+    def get_feature_names(self) -> list[str]:
         """Get ordered list of feature names"""
         return [f.name for f in self.features]
 
@@ -210,7 +210,7 @@ class FeatureVector(BaseContract):
     """Complete feature vector for a single observation"""
     version: FeatureVersion
     timestamp: datetime
-    values: Dict[str, float]
+    values: dict[str, float]
     is_normalized: bool = Field(default=False)
 
     @model_validator(mode="after")
@@ -221,7 +221,7 @@ class FeatureVector(BaseContract):
                 raise ValueError(f"Feature {name} has non-finite value: {value}")
         return self
 
-    def to_array(self, feature_order: List[str]) -> np.ndarray:
+    def to_array(self, feature_order: list[str]) -> np.ndarray:
         """Convert to numpy array in specified order"""
         return np.array([self.values[name] for name in feature_order])
 
@@ -233,7 +233,7 @@ class FeatureVector(BaseContract):
 class FeatureBatch(BaseContract):
     """Batch of feature vectors for training/backtest"""
     version: FeatureVersion
-    vectors: List[FeatureVector]
+    vectors: list[FeatureVector]
     is_normalized: bool = Field(default=False)
 
     def to_dataframe(self):
@@ -283,7 +283,7 @@ class NormalizationStats(BaseContract):
     and inference normalization.
     """
     version: FeatureVersion
-    stats: Dict[str, NormalizationParams]
+    stats: dict[str, NormalizationParams]
     computed_at: datetime = Field(default_factory=datetime.utcnow)
     sample_size: int = Field(ge=1)
 
@@ -293,7 +293,7 @@ class NormalizationStats(BaseContract):
             raise KeyError(f"No normalization stats for feature: {feature_name}")
         return self.stats[feature_name]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dict"""
         return {
             "version": self.version.value,
@@ -313,7 +313,7 @@ class NormalizationStats(BaseContract):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "NormalizationStats":
+    def from_dict(cls, data: dict[str, Any]) -> "NormalizationStats":
         """Create from serialized dict"""
         stats = {}
         for name, params in data["stats"].items():
@@ -341,9 +341,9 @@ class NormalizationStats(BaseContract):
 class FeatureRegistryEntry(TimestampedContract):
     """Entry in feature registry"""
     feature_set: FeatureSetSpec
-    normalization_stats: Optional[NormalizationStats] = None
+    normalization_stats: NormalizationStats | None = None
     is_active: bool = Field(default=True)
-    trained_models: List[str] = Field(default_factory=list)
+    trained_models: list[str] = Field(default_factory=list)
 
 
 # =============================================================================
@@ -357,7 +357,7 @@ class RawDataInput(BaseContract):
     high: float
     low: float
     close: float
-    volume: Optional[float] = None
+    volume: float | None = None
 
     @model_validator(mode="after")
     def validate_ohlc(self) -> "RawDataInput":
@@ -374,24 +374,24 @@ class RawDataInput(BaseContract):
 class MacroDataInput(BaseContract):
     """Input contract for macro indicators"""
     timestamp: datetime
-    dxy: Optional[float] = None      # Dollar index
-    vix: Optional[float] = None      # Volatility index
-    wti: Optional[float] = None      # Oil price
-    embi: Optional[float] = None     # Emerging market bond index
+    dxy: float | None = None      # Dollar index
+    vix: float | None = None      # Volatility index
+    wti: float | None = None      # Oil price
+    embi: float | None = None     # Emerging market bond index
 
 
 class CalculationRequest(BaseContract):
     """Request to calculate features"""
     version: FeatureVersion
-    raw_data: List[RawDataInput]
-    macro_data: Optional[List[MacroDataInput]] = None
+    raw_data: list[RawDataInput]
+    macro_data: list[MacroDataInput] | None = None
     normalize: bool = Field(default=True)
-    normalization_stats: Optional[NormalizationStats] = None
+    normalization_stats: NormalizationStats | None = None
 
 
 class CalculationResult(TimestampedContract):
     """Result of feature calculation"""
     version: FeatureVersion
     features: FeatureBatch
-    warnings: List[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     calculation_time_ms: float = Field(ge=0)

@@ -15,10 +15,9 @@ state only for fill simulation within a single Airflow task execution.
 
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 
 class OrderSide(Enum):
@@ -49,7 +48,7 @@ class OrderResult:
 class PositionInfo:
     """Current position state from the broker's perspective."""
     is_open: bool
-    side: Optional[OrderSide] = None
+    side: OrderSide | None = None
     entry_price: float = 0.0
     quantity: float = 0.0
     unrealized_pnl: float = 0.0
@@ -90,7 +89,7 @@ class PaperBroker(BrokerAdapter):
 
     def __init__(self, slippage_bps: float = 1.0):
         self.slippage_bps = slippage_bps
-        self._position: Optional[PositionInfo] = None
+        self._position: PositionInfo | None = None
 
     def place_order(
         self, side: OrderSide, price: float, quantity: float = 1.0
@@ -116,7 +115,7 @@ class PaperBroker(BrokerAdapter):
             fill_price=round(fill_price, 6),
             quantity=quantity,
             slippage_bps=self.slippage_bps,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def close_position(self, price: float) -> OrderResult:
@@ -129,7 +128,7 @@ class PaperBroker(BrokerAdapter):
                 fill_price=0.0,
                 quantity=0.0,
                 slippage_bps=self.slippage_bps,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
         close_side = (
@@ -152,7 +151,7 @@ class PaperBroker(BrokerAdapter):
             fill_price=round(fill_price, 6),
             quantity=qty,
             slippage_bps=self.slippage_bps,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def get_position(self) -> PositionInfo:

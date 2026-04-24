@@ -22,59 +22,59 @@ Date: 2025-01-14
 """
 
 # Original interfaces
-from .feature_calculator import IFeatureCalculator
-from .normalizer import INormalizer
-from .observation_builder import IObservationBuilder
 from .config_loader import IConfigLoader
+from .feature_calculator import IFeatureCalculator
 
 # Inference interfaces (Phase 2 - Strategy Pattern)
 from .inference import (
-    SignalType,
-    InferenceResult,
     EnsembleResult,
-    IModelLoader,
-    IPredictor,
     IEnsembleStrategy,
     IHealthChecker,
     IInferenceEngine,
+    IModelLoader,
+    InferenceResult,
+    IPredictor,
+    SignalType,
+)
+from .normalizer import INormalizer
+from .observation_builder import IObservationBuilder
+
+# Repository interfaces (Phase 4 - Repository Pattern)
+from .repository import (
+    ICacheRepository,
+    IDailyStatsRepository,
+    IHashRepository,
+    IListRepository,
+    IStateRepository,
+    ITradeLogRepository,
 )
 
 # Risk interfaces (Phase 3 - Chain of Responsibility)
 from .risk import (
-    RiskStatus,
-    RiskContext,
-    RiskCheckResult,
     DailyStats,
     FullRiskCheckResult,
-    IRiskCheck,
-    ITradingHoursChecker,
     ICircuitBreaker,
     ICooldownManager,
     IPositionSizer,
+    IRiskCheck,
     IRiskManager,
-)
-
-# Repository interfaces (Phase 4 - Repository Pattern)
-from .repository import (
-    IStateRepository,
-    IHashRepository,
-    IListRepository,
-    IDailyStatsRepository,
-    ITradeLogRepository,
-    ICacheRepository,
+    ITradingHoursChecker,
+    RiskCheckResult,
+    RiskContext,
+    RiskStatus,
 )
 
 # Storage interfaces (Phase 5 - MinIO-First Architecture)
 from .storage import (
     ArtifactMetadata,
-    IObjectStorageRepository,
+    IABComparisonRepository,
+    IBacktestRepository,
     IDatasetRepository,
     IModelRepository,
-    IBacktestRepository,
-    IABComparisonRepository,
+    IntegrityError,
+    IObjectStorageRepository,
     ObjectNotFoundError,
     StorageError,
-    IntegrityError,
 )
 
 __all__ = [

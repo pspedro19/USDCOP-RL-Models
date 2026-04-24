@@ -46,6 +46,8 @@ volumes:
   airflow_plugins:
   prometheus_data:
   grafana_data:
+  redpanda_data:
+  kafka_bridge_data:
 
 services:
   # ===========================================================================
@@ -189,6 +191,7 @@ services:
       bash -c "
       airflow db init &&
       airflow users create --username ${AIRFLOW_USER} --firstname Admin --lastname User --role Admin --email admin@admin.com --password ${AIRFLOW_PASSWORD} &&
+      airflow pools set api_requests 8 'Pool for rate-limited API requests' || true &&
       pip install -r /opt/airflow/configs/../requirements.txt || true
       "
     networks:
@@ -260,6 +263,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       PYTHONPATH: /opt/airflow:/opt/airflow/dags
+      POLARS_SKIP_CPU_CHECK: "1"
       TWELVEDATA_API_KEY_1: ${TWELVEDATA_API_KEY_1}
       TWELVEDATA_API_KEY_2: ${TWELVEDATA_API_KEY_2}
       TWELVEDATA_API_KEY_3: ${TWELVEDATA_API_KEY_3}
@@ -294,16 +298,24 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       FRED_API_KEY: ${FRED_API_KEY}
+      USDCOP_AZURE_OPENAI_API_KEY: ${USDCOP_AZURE_OPENAI_API_KEY}
+      USDCOP_AZURE_OPENAI_ENDPOINT: ${USDCOP_AZURE_OPENAI_ENDPOINT}
+      USDCOP_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
-      - ./scripts:/opt/scripts
+      - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./data:/opt/airflow/data
+      - ./seeds:/opt/airflow/seeds:rw
+      - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     command: airflow scheduler
@@ -337,6 +349,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       PYTHONPATH: /opt/airflow:/opt/airflow/dags
+      POLARS_SKIP_CPU_CHECK: "1"
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB}
@@ -345,11 +358,13 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
-      - ./scripts:/opt/scripts
+      - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./data:/opt/airflow/data
+      - ./seeds:/opt/airflow/seeds:rw
+      - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     ports:
@@ -561,6 +576,9 @@ services:
       NEXTAUTH_URL: http://localhost:5000
       DEBUG_AUTH: "true"
       AUTH_BYPASS_ENABLED: "true"
+    volumes:
+      - ./usdcop-trading-dashboard/public/data:/app/public/data:ro
+      - ./usdcop-trading-dashboard/public/forecasting:/app/public/forecasting:ro
     ports:
       - "5000:3000"
     networks:
@@ -670,3 +688,101 @@ services:
         limits:
           memory: 256M
     restart: unless-stopped
+
+  # ===========================================================================
+  # TIER 5: Course Project — Kafka-compatible broker + gRPC + Kafka bridges
+  # ===========================================================================
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.7
+    container_name: usdcop-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --check=false
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
+    ports:
+      - "19092:19092"
+      - "8082:8082"
+      - "9644:9644"
+    networks:
+      - usdcop-trading-network
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.6.0
+    container_name: usdcop-redpanda-console
+    depends_on:
+      - redpanda
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8088:8080"
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+
+  grpc-predictor:
+    build:
+      context: ./services/grpc_predictor
+      dockerfile: Dockerfile
+    container_name: usdcop-grpc-predictor
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./outputs/forecasting:/app/outputs/forecasting:ro
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import grpc; from predictor_pb2 import HealthRequest; from predictor_pb2_grpc import PredictorServiceStub; ch=grpc.insecure_channel(\"localhost:50051\"); s=PredictorServiceStub(ch); r=s.HealthCheck(HealthRequest(), timeout=2); exit(0 if r.ready else 1)' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  kafka-bridge-producer:
+    build:
+      context: ./services/kafka_bridge
+      dockerfile: Dockerfile
+    container_name: usdcop-kafka-producer
+    depends_on:
+      - redpanda
+      - postgres
+    environment:
+      MODE: producer
+      KAFKA_BROKER: redpanda:9092
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/usdcop_trading
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    volumes:
+      - kafka_bridge_data:/data
+
+  kafka-bridge-consumer:
+    build:
+      context: ./services/kafka_bridge
+      dockerfile: Dockerfile
+    container_name: usdcop-kafka-consumer
+    depends_on:
+      - redpanda
+    environment:
+      MODE: consumer
+      KAFKA_BROKER: redpanda:9092
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    volumes:
+      - kafka_bridge_data:/data

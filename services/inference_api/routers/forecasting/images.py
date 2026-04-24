@@ -7,16 +7,16 @@ Endpoints for serving forecast visualization images.
 @version 1.0.0
 """
 
-from fastapi import APIRouter, HTTPException, Path, Query
-from fastapi.responses import FileResponse
-from typing import Optional, List
-import os
 import logging
+import os
 from glob import glob
 
+from fastapi import APIRouter, HTTPException, Path
+from fastapi.responses import FileResponse
+
 from services.inference_api.contracts.forecasting import (
-    ImageMetadata,
     ImageListResponse,
+    ImageMetadata,
 )
 
 router = APIRouter()
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 IMAGES_PATH = os.environ.get('FORECASTING_IMAGES_PATH', 'public/forecasting')
 
 
-def get_image_path(image_type: str, model: str, horizon: Optional[int] = None) -> Optional[str]:
+def get_image_path(image_type: str, model: str, horizon: int | None = None) -> str | None:
     """
     Construct image path based on type and model.
 
@@ -48,7 +48,7 @@ def get_image_path(image_type: str, model: str, horizon: Optional[int] = None) -
     return path if os.path.exists(path) else None
 
 
-def list_available_images() -> List[ImageMetadata]:
+def list_available_images() -> list[ImageMetadata]:
     """List all available forecast images."""
     images = []
 

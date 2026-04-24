@@ -15,8 +15,7 @@ Date: 2026-01-22
 """
 
 import logging
-from typing import List, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import ccxt.async_support as ccxt
 
@@ -32,7 +31,7 @@ class PermissionCheck:
     name: str
     has_permission: bool
     is_dangerous: bool = False
-    warning: Optional[str] = None
+    warning: str | None = None
 
 
 class APIKeyValidator:
@@ -95,7 +94,7 @@ class APIKeyValidator:
         exchange: SupportedExchange,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = False,
     ) -> APIKeyValidationResult:
         """
@@ -139,8 +138,8 @@ class APIKeyValidator:
         testnet: bool = False,
     ) -> APIKeyValidationResult:
         """Validate Binance API key."""
-        warnings: List[str] = []
-        permissions: List[str] = []
+        warnings: list[str] = []
+        permissions: list[str] = []
 
         # Create CCXT client
         exchange_class = ccxt.binance
@@ -231,19 +230,19 @@ class APIKeyValidator:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.BINANCE,
-                error_message=f"Authentication failed: {str(e)}",
+                error_message=f"Authentication failed: {e!s}",
             )
         except ccxt.PermissionDenied as e:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.BINANCE,
-                error_message=f"Permission denied: {str(e)}",
+                error_message=f"Permission denied: {e!s}",
             )
         except Exception as e:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.BINANCE,
-                error_message=f"Validation error: {str(e)}",
+                error_message=f"Validation error: {e!s}",
             )
         finally:
             await exchange.close()
@@ -255,8 +254,8 @@ class APIKeyValidator:
         testnet: bool = False,
     ) -> APIKeyValidationResult:
         """Validate MEXC API key."""
-        warnings: List[str] = []
-        permissions: List[str] = []
+        warnings: list[str] = []
+        permissions: list[str] = []
 
         # Create CCXT client
         exchange = ccxt.mexc({
@@ -305,19 +304,19 @@ class APIKeyValidator:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.MEXC,
-                error_message=f"Authentication failed: {str(e)}",
+                error_message=f"Authentication failed: {e!s}",
             )
         except ccxt.PermissionDenied as e:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.MEXC,
-                error_message=f"Permission denied: {str(e)}",
+                error_message=f"Permission denied: {e!s}",
             )
         except Exception as e:
             return APIKeyValidationResult(
                 is_valid=False,
                 exchange=SupportedExchange.MEXC,
-                error_message=f"Validation error: {str(e)}",
+                error_message=f"Validation error: {e!s}",
             )
         finally:
             await exchange.close()
@@ -327,9 +326,9 @@ class APIKeyValidator:
         exchange: SupportedExchange,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = False,
-    ) -> List[PermissionCheck]:
+    ) -> list[PermissionCheck]:
         """
         Check individual permissions for an API key.
 
@@ -343,7 +342,7 @@ class APIKeyValidator:
             testnet=testnet,
         )
 
-        checks: List[PermissionCheck] = []
+        checks: list[PermissionCheck] = []
 
         # Check trading permission
         checks.append(PermissionCheck(

@@ -6,7 +6,6 @@ Spanish-language prompts for daily analysis, weekly summary, and chat.
 
 from __future__ import annotations
 
-
 # ---------------------------------------------------------------------------
 # System prompts
 # ---------------------------------------------------------------------------
@@ -26,21 +25,24 @@ Reglas:
 - Incluye perspectiva para el dia siguiente si hay eventos relevantes
 - Al final, incluye seccion "### Fuentes" con links a las noticias citadas"""
 
-SYSTEM_WEEKLY = """Eres un analista financiero senior especializado en el mercado cambiario colombiano (USD/COP).
-Tu tarea es generar un resumen semanal completo en español.
+SYSTEM_WEEKLY = """Eres un analista FX senior especializado en mercados emergentes latinoamericanos,
+enfocado en el par USD/COP. Tu audiencia es un trader algoritmico que necesita señales claras.
 
-Reglas:
-- Escribe en español profesional
-- Estructura: resumen ejecutivo, analisis por tema, señales de modelos, perspectiva
-- Menciona indicadores macro clave con valores concretos (DXY, VIX, petroleo, EMBI)
-- Relaciona eventos macro con movimientos del USD/COP — justifica con datos numericos
-- Cuando referencie noticias, incluye el hipervinculo markdown: [titulo fuente](URL)
-- Relaciona noticias con movimientos del mercado — no las menciones de forma aislada
-- Incluye analisis de señales de los modelos H1 (diario) y H5 (semanal)
-- Respalda cada afirmacion con datos: valores, variaciones %, z-scores, niveles SMA/RSI
-- Maximo 1000 palabras
-- Formato markdown con secciones ##, listas, y tablas cuando sea util
-- Al final, incluye seccion "### Fuentes" con links a las noticias citadas"""
+REGLAS ABSOLUTAS:
+1. USA SOLO los datos proporcionados. Nunca inventes precios, fechas o eventos.
+2. Cada afirmacion DEBE referenciar un dato concreto del contexto (valor, z-score, %).
+3. El outlook DEBE ser probabilistico con rango numerico especifico.
+4. Conecta con la semana anterior — nunca escribas un analisis aislado.
+5. Prioriza el regimen detectado: analiza primero el driver dominante.
+6. Maximo 800 palabras. Densidad sobre extension.
+7. NO incluyas seccion "Fuentes" — se genera automaticamente.
+
+PROHIBIDO:
+- "el mercado se mantuvo relativamente estable"
+- "los inversores estan atentos a"
+- "habra que ver como se desarrolla"
+- "en un contexto de incertidumbre global"
+- Cualquier frase generica que podrias escribir sin leer los datos"""
 
 SYSTEM_CHAT = """Eres un asistente financiero del sistema de trading USDCOP. Tienes acceso al contexto
 de la semana actual incluyendo señales de modelos, indicadores macro, y noticias relevantes.
@@ -383,6 +385,286 @@ Responde con JSON:
   }},
   "data_quality_notes": ["string"]
 }}"""
+
+
+# ---------------------------------------------------------------------------
+# V3 Enhanced Weekly Template (with regime, prior week, enhanced macro)
+# ---------------------------------------------------------------------------
+
+WEEKLY_TEMPLATE_V3 = """Genera el resumen semanal del USD/COP para Semana {week} de {year} ({start} al {end}).
+
+## Contexto Semana Anterior
+{prior_week_section}
+
+## Regimen Detectado
+{regime_section}
+
+## OHLCV Semanal
+{ohlcv_section}
+
+## Indicadores Macro (z-scores y tendencias)
+{macro_table}
+
+## Noticias Relevantes
+{news_section}
+
+## Señales de Modelos
+{signal_section}
+
+## Resumenes Diarios
+{daily_summaries}
+
+---
+Genera el analisis con la siguiente estructura EXACTA:
+
+### Recap Semana Anterior
+(Evalua si el outlook previo fue acertado. Si no hay semana anterior, indica que es la primera.)
+
+### Regimen y Contexto
+(Describe el regimen actual y el driver dominante con datos concretos.)
+
+### Analisis de Noticias (solo score >= 3)
+(Solo noticias con relevancia alta. Si no hay, omite la seccion.)
+
+### Drivers Dominantes (solo |z_20d| > 0.5)
+(Variables macro con z-score significativo. Conecta con movimiento COP.)
+
+### Outlook {next_week_label}
+- Sesgo: Bearish COP [X%] | Neutral [Y%] | Bullish COP [Z%]
+- Rango esperado: [XXXX] - [YYYY]
+- Catalizador bajista: ...
+- Catalizador alcista: ...
+- Nivel de alerta: Normal/Atencion/Alerta"""
+
+
+def build_prior_week_section(prior_json: dict | None) -> str:
+    """Build a compact context block from the previous week's analysis JSON.
+
+    Args:
+        prior_json: Loaded JSON from weekly_YYYY_WXX.json of the prior week,
+                    or None if no prior week exists.
+
+    Returns:
+        Formatted string for the {prior_week_section} slot in WEEKLY_TEMPLATE_V3.
+    """
+    if prior_json is None:
+        return "Primera semana de analisis — sin contexto previo."
+
+    lines = []
+
+    # Extract weekly summary
+    ws = prior_json.get("weekly_summary", {})
+    headline = ws.get("headline", "")
+    sentiment = ws.get("sentiment", "neutral")
+    themes = ws.get("themes", [])
+    ohlcv = ws.get("ohlcv", {})
+
+    if headline:
+        lines.append(f"- **Titular**: {headline}")
+    if sentiment:
+        lines.append(f"- **Sentimiento**: {sentiment}")
+
+    # OHLCV from prior week
+    close = ohlcv.get("close")
+    change_pct = ohlcv.get("change_pct")
+    if close is not None:
+        lines.append(f"- **Cierre**: {close}")
+    if change_pct is not None:
+        lines.append(f"- **Cambio semanal**: {change_pct}%")
+
+    # Themes
+    if themes:
+        theme_list = themes if isinstance(themes, list) else []
+        theme_strs = []
+        for t in theme_list[:3]:
+            if isinstance(t, dict):
+                theme_strs.append(t.get("theme", str(t)))
+            else:
+                theme_strs.append(str(t))
+        if theme_strs:
+            lines.append(f"- **Temas clave**: {', '.join(theme_strs)}")
+
+    # Outlook / scenarios from prior week (if available)
+    scenarios = ws.get("scenarios", {})
+    if scenarios:
+        base = scenarios.get("base", {})
+        if base:
+            target = base.get("target", "N/A")
+            prob = base.get("probability", "N/A")
+            desc = base.get("description", "")
+            lines.append(f"- **Outlook previo (base)**: target={target}, prob={prob}%")
+            if desc:
+                lines.append(f"  {desc}")
+
+    # Markdown from prior week (extract first 2 sentences for context)
+    markdown = ws.get("markdown", "")
+    if markdown and not headline:
+        first_lines = markdown.split("\n")
+        for fl in first_lines[:3]:
+            fl = fl.strip()
+            if fl and not fl.startswith("#"):
+                lines.append(f"- {fl}")
+                break
+
+    return "\n".join(lines) if lines else "Sin datos de la semana anterior."
+
+
+def build_regime_section(regime_data: dict | None) -> str:
+    """Format regime detection data for the weekly template.
+
+    Args:
+        regime_data: Dict from MacroRegimeReport.to_dict(), or None.
+
+    Returns:
+        Formatted string for the {regime_section} slot.
+    """
+    if not regime_data:
+        return "Regimen no disponible (datos insuficientes o motor desactivado)."
+
+    lines = []
+
+    # Regime state
+    regime = regime_data.get("regime", {})
+    if regime:
+        label_map = {
+            "risk_on": "Apetito por riesgo (Risk-On)",
+            "risk_off": "Aversion al riesgo (Risk-Off)",
+            "transition": "Transicion",
+        }
+        label = label_map.get(regime.get("label", ""), regime.get("label", "desconocido"))
+        confidence = regime.get("confidence", 0)
+        since = regime.get("since", "N/A")
+        lines.append(f"- **Regimen**: {label} (confianza: {confidence:.0%}, desde: {since})")
+
+        # Transition probabilities
+        trans = regime.get("transition_probabilities", {})
+        if trans:
+            parts = [f"{k}: {v:.0%}" for k, v in trans.items()]
+            lines.append(f"- **Prob. transicion**: {', '.join(parts)}")
+
+    # Granger leaders
+    leaders = regime_data.get("granger_leaders", [])
+    if leaders:
+        lines.append("- **Variables lideres (Granger)**:")
+        for g in leaders[:3]:
+            var = g.get("variable", "").upper()
+            lag = g.get("optimal_lag", "?")
+            p = g.get("p_value", 1.0)
+            direction = g.get("direction", "")
+            lines.append(f"  - {var}: lag={lag}d, p={p:.3f}, dir={direction}")
+
+    # Z-score alerts
+    alerts = regime_data.get("zscore_alerts", [])
+    if alerts:
+        lines.append("- **Alertas z-score**:")
+        for a in alerts[:4]:
+            var_name = a.get("variable_name", a.get("variable", ""))
+            z = a.get("z_score", 0)
+            interp = a.get("interpretation", "")
+            lines.append(f"  - {var_name}: z={z:+.2f} — {interp}")
+
+    # Insights
+    insights = regime_data.get("insights", [])
+    if insights:
+        lines.append("- **Insights**:")
+        for ins in insights[:3]:
+            lines.append(f"  - {ins}")
+
+    return "\n".join(lines) if lines else "Sin datos de regimen."
+
+
+# COP impact reference for macro table builder
+_MACRO_COP_IMPACT_SHORT = {
+    "dxy": "Positiva (DXY↑ → COP↓)",
+    "vix": "Positiva (VIX↑ → COP↓)",
+    "wti": "Negativa (WTI↑ → COP↑)",
+    "brent": "Negativa (Brent↑ → COP↑)",
+    "gold": "Negativa (Gold↑ → COP↑)",
+    "embi_col": "Positiva (EMBI↑ → COP↓)",
+    "ust10y": "Positiva (UST↑ → COP↓)",
+    "ust2y": "Positiva (UST↑ → COP↓)",
+    "ibr": "Negativa (IBR↑ → COP↑)",
+    "tpm": "Negativa (TPM↑ → COP↑)",
+    "fedfunds": "Positiva (FF↑ → COP↓)",
+    "cpi_us": "Indirecta",
+    "cpi_col": "Indirecta",
+}
+
+
+def build_macro_table_v2(macro_snapshots: dict) -> str:
+    """Build an enhanced macro table with z-scores and COP impact interpretation.
+
+    Args:
+        macro_snapshots: Dict of {key: snapshot_dict} where each snapshot_dict
+                         contains fields from MacroSnapshot.to_dict() plus optional
+                         chart_data. Each snapshot has: variable_name, value,
+                         sma_5, sma_10, sma_20, sma_50, z_score, rsi_14, trend, etc.
+
+    Returns:
+        Formatted markdown table string for the {macro_table} slot.
+    """
+    if not macro_snapshots:
+        return "Sin datos macro disponibles."
+
+    lines = [
+        "| Variable | Valor | SMA-20 | z_20d | Tendencia | Impacto COP | Interpretacion |",
+        "|----------|-------|--------|-------|-----------|-------------|----------------|",
+    ]
+
+    for key, snap in macro_snapshots.items():
+        if isinstance(snap, dict):
+            name = snap.get("variable_name", key)
+            value = snap.get("value")
+            sma_20 = snap.get("sma_20")
+            z_score = snap.get("z_score")
+            trend = snap.get("trend", "neutral")
+            rsi = snap.get("rsi_14")
+        else:
+            # MacroSnapshot object
+            name = getattr(snap, "variable_name", key)
+            value = getattr(snap, "value", None)
+            sma_20 = getattr(snap, "sma_20", None)
+            z_score = getattr(snap, "z_score", None)
+            trend = getattr(snap, "trend", "neutral")
+            rsi = getattr(snap, "rsi_14", None)
+
+        # Format value
+        val_str = f"{value:.2f}" if value is not None else "N/A"
+        sma_str = f"{sma_20:.2f}" if sma_20 is not None else "-"
+        z_str = f"{z_score:+.2f}" if z_score is not None else "-"
+
+        # Trend arrow
+        trend_map = {"up": "Alcista", "down": "Bajista", "neutral": "Lateral"}
+        trend_str = trend_map.get(trend, trend or "?")
+
+        # COP impact
+        cop_impact = _MACRO_COP_IMPACT_SHORT.get(key, "No definida")
+
+        # Interpretation based on z-score
+        if z_score is not None:
+            abs_z = abs(z_score)
+            if abs_z > 2.0:
+                interp = "EXTREMO"
+            elif abs_z > 1.0:
+                interp = "Significativo"
+            elif abs_z > 0.5:
+                interp = "Moderado"
+            else:
+                interp = "Normal"
+            # Add RSI context if available
+            if rsi is not None:
+                if rsi > 70:
+                    interp += f" (RSI {rsi:.0f} sobrecompra)"
+                elif rsi < 30:
+                    interp += f" (RSI {rsi:.0f} sobreventa)"
+        else:
+            interp = "-"
+
+        lines.append(
+            f"| {name} | {val_str} | {sma_str} | {z_str} | {trend_str} | {cop_impact} | {interp} |"
+        )
+
+    return "\n".join(lines)
 
 
 # JSON output schemas for structured output (response_format)

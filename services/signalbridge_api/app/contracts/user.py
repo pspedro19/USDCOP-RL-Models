@@ -3,11 +3,11 @@ User contracts.
 """
 
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, SecretStr
 from uuid import UUID
 
-from .common import BaseContract, TimestampMixin
+from pydantic import BaseModel, EmailStr, Field, SecretStr
+
+from .common import BaseContract
 
 
 class UserBase(BaseModel):
@@ -30,7 +30,7 @@ class UserProfile(BaseContract):
     email: EmailStr
     name: str
     created_at: datetime
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     is_active: bool = True
     is_verified: bool = False
 
@@ -38,12 +38,12 @@ class UserProfile(BaseContract):
 class UserProfileUpdate(BaseModel):
     """User profile update contract."""
 
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
-    email: Optional[EmailStr] = None
+    name: str | None = Field(None, min_length=2, max_length=100)
+    email: EmailStr | None = None
 
 
 class UserInDB(UserProfile):
     """User model as stored in database (internal use)."""
 
     hashed_password: str
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None

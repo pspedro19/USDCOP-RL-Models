@@ -16,6 +16,13 @@
 | T1: Live DB | OHLCV, macro, forecasts, signals, trades | PostgreSQL (TimescaleDB) | Realtime | Until disk full |
 | T2: Seed Parquets | OHLCV daily + 5-min, macro, daily OHLCV | `seeds/latest/` + `data/backups/seeds/` | Daily (`l0_seed_backup` DAG, Mon-Fri 20:00 UTC) | Overwritten daily |
 | T3: Git LFS | Seed parquets committed to repo | Git LFS | On backfill completion | Full history |
+| T4 (roadmap): MinIO buckets | Model artifacts, seed backups | `s3://99-common-trading-models`, `s3://99-common-trading-backups` | On model promotion | Bucket-managed |
+
+> **MinIO status (2026-04-16)**: 11 buckets operational. Currently used by init-scripts for seed
+> fallback reading (`s3://99-common-trading-models`, `s3://mlflow`). The backup DAG does NOT yet
+> write model artifacts to MinIO — models persist on filesystem only. **Roadmap**: migrate model
+> artifacts + weekly seed backups to MinIO for off-host durability. Mention as "bucket storage
+> available for artifacts; currently models in filesystem, migration in roadmap."
 
 ### Backup Files
 

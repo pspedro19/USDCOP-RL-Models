@@ -9,12 +9,12 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from src.core.interfaces.risk import (
     IRiskCheck,
-    RiskContext,
     RiskCheckResult,
+    RiskContext,
     RiskStatus,
 )
 
@@ -31,7 +31,7 @@ class ConsecutiveLossesCheck(IRiskCheck):
         self,
         max_consecutive_losses: int = 3,
         cooldown_seconds: int = 300,  # 5 minutes
-        set_cooldown_fn: Optional[Callable[[int, str], None]] = None,
+        set_cooldown_fn: Callable[[int, str], None] | None = None,
     ):
         """
         Args:

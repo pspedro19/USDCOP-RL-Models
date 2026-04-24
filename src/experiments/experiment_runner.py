@@ -18,13 +18,15 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-import logging
-import json
 import hashlib
+import json
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Any
+
 import numpy as np
 
 try:
@@ -34,17 +36,17 @@ except ImportError:
     MLFLOW_AVAILABLE = False
 
 try:
-    from stable_baselines3 import PPO, A2C, SAC, TD3, DQN
+    from stable_baselines3 import A2C, DQN, PPO, SAC, TD3
     from stable_baselines3.common.callbacks import (
-        EvalCallback,
-        CheckpointCallback,
         CallbackList,
+        CheckpointCallback,
+        EvalCallback,
     )
     SB3_AVAILABLE = True
 except ImportError:
     SB3_AVAILABLE = False
 
-from .experiment_config import ExperimentConfig, Algorithm
+from .experiment_config import Algorithm, ExperimentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -62,35 +64,35 @@ class ExperimentResult:
     run_id: str
     status: str  # "success", "failed", "cancelled"
     started_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
     duration_seconds: float
 
     # Training results
-    training_metrics: Dict[str, float] = field(default_factory=dict)
+    training_metrics: dict[str, float] = field(default_factory=dict)
 
     # Evaluation results
-    eval_metrics: Dict[str, float] = field(default_factory=dict)
+    eval_metrics: dict[str, float] = field(default_factory=dict)
 
     # Backtest results
-    backtest_metrics: Dict[str, float] = field(default_factory=dict)
+    backtest_metrics: dict[str, float] = field(default_factory=dict)
 
     # Combined metrics (for comparison)
-    metrics: Dict[str, float] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
 
     # Artifacts
-    model_path: Optional[str] = None
-    config_path: Optional[str] = None
-    artifacts: Dict[str, str] = field(default_factory=dict)
+    model_path: str | None = None
+    config_path: str | None = None
+    artifacts: dict[str, str] = field(default_factory=dict)
 
     # MLflow tracking
-    mlflow_run_id: Optional[str] = None
-    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: str | None = None
+    mlflow_experiment_id: str | None = None
 
     # Errors
-    error: Optional[str] = None
-    traceback: Optional[str] = None
+    error: str | None = None
+    traceback: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "experiment_name": self.experiment_name,
@@ -120,7 +122,7 @@ class ExperimentResult:
     @classmethod
     def load(cls, path: Path) -> "ExperimentResult":
         """Load result from JSON file."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         data["started_at"] = datetime.fromisoformat(data["started_at"])
@@ -166,7 +168,7 @@ class ExperimentRunner:
     def __init__(
         self,
         config: ExperimentConfig,
-        output_dir: Optional[Path] = None,
+        output_dir: Path | None = None,
         dry_run: bool = False,
     ):
         """
@@ -193,12 +195,12 @@ class ExperimentRunner:
         self.env = None
         self.eval_env = None
         self.model = None
-        self.started_at: Optional[datetime] = None
+        self.started_at: datetime | None = None
         self._mlflow_run = None
 
         # Callbacks
-        self.pre_train_hooks: List[Callable] = []
-        self.post_train_hooks: List[Callable] = []
+        self.pre_train_hooks: list[Callable] = []
+        self.post_train_hooks: list[Callable] = []
 
         logger.info(f"ExperimentRunner initialized: {config.experiment.name} (run: {self.run_id})")
 
@@ -331,7 +333,7 @@ class ExperimentRunner:
 
         return CallbackList(callbacks) if callbacks else None
 
-    def train(self) -> Dict[str, float]:
+    def train(self) -> dict[str, float]:
         """
         Train the model.
 
@@ -373,7 +375,7 @@ class ExperimentRunner:
 
         return metrics
 
-    def evaluate(self) -> Dict[str, float]:
+    def evaluate(self) -> dict[str, float]:
         """
         Evaluate the trained model.
 
@@ -404,7 +406,7 @@ class ExperimentRunner:
 
         return metrics
 
-    def backtest(self) -> Dict[str, float]:
+    def backtest(self) -> dict[str, float]:
         """
         Run backtest on the trained model.
 
@@ -445,7 +447,7 @@ class ExperimentRunner:
 
         return metrics
 
-    def _generate_placeholder_backtest_metrics(self) -> Dict[str, float]:
+    def _generate_placeholder_backtest_metrics(self) -> dict[str, float]:
         """Generate placeholder metrics when backtester not available."""
         # Placeholder for testing
         return {
@@ -554,7 +556,7 @@ class ExperimentRunner:
 
         return result
 
-    def _flatten_config(self) -> Dict[str, Any]:
+    def _flatten_config(self) -> dict[str, Any]:
         """Flatten config for MLflow params."""
         flat = {}
         config_dict = self.config.to_dict()
@@ -574,7 +576,7 @@ class ExperimentRunner:
 
 def run_experiment(
     config_path: str,
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     dry_run: bool = False,
 ) -> ExperimentResult:
     """
@@ -599,4 +601,4 @@ def run_experiment(
     return runner.run()
 
 
-__all__ = ["ExperimentRunner", "ExperimentResult", "run_experiment"]
+__all__ = ["ExperimentResult", "ExperimentRunner", "run_experiment"]

@@ -12,28 +12,11 @@ IMPORTANT: Use get_observation_builder() from builder_factory,
 NOT direct instantiation of builder classes.
 """
 
-from .data_loader import DataLoader
-from .inference_engine import InferenceEngine
-from .trade_simulator import TradeSimulator
-from .trade_persister import TradePersister
-from .observation_builder import ObservationBuilder, NormStatsNotFoundError
-
-# Import the SSOT Feature Adapter (Phase 10 - Feature Consistency)
-from .feature_adapter import (
-    InferenceFeatureAdapter,
-    FeatureCircuitBreakerError,
-    FeatureCircuitBreakerConfig,
-    get_feature_adapter,
-    calculate_rsi_wilder,
-    calculate_atr_wilder,
-    calculate_adx_wilder,
-)
-
 # Import the new BuilderFactory - this is the PREFERRED way to get builders
 from .builder_factory import (
     BuilderFactory,
-    get_observation_builder,  # PREFERRED - uses explicit registration
     get_builder_for_type,
+    get_observation_builder,  # PREFERRED - uses explicit registration
 )
 
 # Import CachedInferenceEngine - P1-3: Feast caching for low-latency inference
@@ -41,6 +24,22 @@ from .cached_inference import (
     CachedInferenceEngine,
     create_cached_inference_engine,
 )
+from .data_loader import DataLoader
+
+# Import the SSOT Feature Adapter (Phase 10 - Feature Consistency)
+from .feature_adapter import (
+    FeatureCircuitBreakerConfig,
+    FeatureCircuitBreakerError,
+    InferenceFeatureAdapter,
+    calculate_adx_wilder,
+    calculate_atr_wilder,
+    calculate_rsi_wilder,
+    get_feature_adapter,
+)
+from .inference_engine import InferenceEngine
+from .observation_builder import NormStatsNotFoundError, ObservationBuilder
+from .trade_persister import TradePersister
+from .trade_simulator import TradeSimulator
 
 __all__ = [
     # Core services

@@ -46,12 +46,10 @@ Architecture:
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -76,14 +74,14 @@ logger = logging.getLogger(__name__)
 
 class IWebSocketManager(Protocol):
     """Protocol for WebSocket broadcast."""
-    async def broadcast(self, message: Dict[str, Any]) -> None:
+    async def broadcast(self, message: dict[str, Any]) -> None:
         """Broadcast message to connected clients."""
         ...
 
 
 class NoOpWebSocketManager:
     """No-op WebSocket manager for testing or when WS is unavailable."""
-    async def broadcast(self, message: Dict[str, Any]) -> None:
+    async def broadcast(self, message: dict[str, Any]) -> None:
         logger.debug(f"L5: WS broadcast (no-op): {message.get('type', 'unknown')}")
 
 
@@ -127,9 +125,9 @@ class L5NRTInferenceService:
 
     def __init__(
         self,
-        db_pool: "asyncpg.Pool",
-        ws_manager: Optional[IWebSocketManager] = None,
-        config: Optional[L5NRTConfig] = None,
+        db_pool: asyncpg.Pool,
+        ws_manager: IWebSocketManager | None = None,
+        config: L5NRTConfig | None = None,
     ):
         """
         Initialize L5 NRT Inference Service.
@@ -147,13 +145,13 @@ class L5NRTInferenceService:
         self.config = config or L5NRTConfig()
 
         # Model state
-        self._model: Optional[PPO] = None
-        self._model_id: Optional[str] = None
-        self._model_path: Optional[str] = None
+        self._model: PPO | None = None
+        self._model_id: str | None = None
+        self._model_path: str | None = None
 
         # Position tracking (for state features)
         self._position: float = 0.0  # -1 (short), 0 (flat), 1 (long)
-        self._entry_price: Optional[float] = None
+        self._entry_price: float | None = None
         self._unrealized_pnl: float = 0.0
 
         logger.info("L5NRTInferenceService initialized")
@@ -162,7 +160,7 @@ class L5NRTInferenceService:
     # MODEL APPROVAL HANDLER
     # =========================================================================
 
-    async def on_model_approved(self, payload: Dict[str, Any]) -> None:
+    async def on_model_approved(self, payload: dict[str, Any]) -> None:
         """
         Handle model approval event - ONLY load model.
 
@@ -201,7 +199,7 @@ class L5NRTInferenceService:
     # FEATURES READY HANDLER - THE CORE INFERENCE LOGIC
     # =========================================================================
 
-    async def on_features_ready(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def on_features_ready(self, payload: dict[str, Any]) -> dict[str, Any] | None:
         """
         Handle features_ready event - run inference.
 
@@ -370,7 +368,7 @@ class L5NRTInferenceService:
         return self._model is not None
 
     @property
-    def model_id(self) -> Optional[str]:
+    def model_id(self) -> str | None:
         """Get current model ID."""
         return self._model_id
 
@@ -379,7 +377,7 @@ class L5NRTInferenceService:
         """Get current position."""
         return self._position
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Get service status for health checks."""
         async with self.pool.acquire() as conn:
             signal_count = await conn.fetchval(

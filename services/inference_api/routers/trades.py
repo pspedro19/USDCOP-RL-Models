@@ -7,13 +7,12 @@ Provides endpoints for:
 - Most recent trade retrieval
 """
 
-from datetime import datetime, timezone
-from typing import List, Optional
 import logging
+from datetime import datetime
 
-from fastapi import APIRouter, Request, Query, HTTPException
-from pydantic import BaseModel, Field
 import asyncpg
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 from ..config import get_settings
 from ..models.responses import TradeResponse
@@ -38,25 +37,25 @@ class TradesSummary(BaseModel):
     total_pnl: float = Field(description="Total profit/loss in USD")
     total_pnl_percent: float = Field(description="Total P&L as percentage of initial capital")
     avg_pnl: float = Field(description="Average P&L per trade")
-    avg_duration_minutes: Optional[float] = Field(
+    avg_duration_minutes: float | None = Field(
         default=None, description="Average trade duration in minutes"
     )
     max_drawdown_percent: float = Field(
         default=0.0, description="Maximum drawdown as percentage"
     )
-    sharpe_ratio: Optional[float] = Field(
+    sharpe_ratio: float | None = Field(
         default=None, description="Sharpe ratio (if sufficient trades)"
     )
     best_trade_pnl: float = Field(default=0.0, description="Best trade P&L")
     worst_trade_pnl: float = Field(default=0.0, description="Worst trade P&L")
-    period_start: Optional[str] = Field(default=None, description="Start of period")
-    period_end: Optional[str] = Field(default=None, description="End of period")
+    period_start: str | None = Field(default=None, description="Start of period")
+    period_end: str | None = Field(default=None, description="End of period")
 
 
 class TradesListResponse(BaseModel):
     """Response for trades list endpoint"""
 
-    trades: List[TradeResponse]
+    trades: list[TradeResponse]
     total: int = Field(description="Total number of trades matching filters")
     page: int = Field(description="Current page number")
     page_size: int = Field(description="Number of trades per page")
@@ -66,7 +65,7 @@ class TradesListResponse(BaseModel):
 class LatestTradeResponse(BaseModel):
     """Response for latest trade endpoint"""
 
-    trade: Optional[TradeResponse] = None
+    trade: TradeResponse | None = None
     message: str = "Success"
 
 
@@ -129,13 +128,13 @@ async def list_trades(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=500, description="Trades per page"),
-    model_id: Optional[str] = Query(None, description="Filter by model ID"),
-    side: Optional[str] = Query(None, description="Filter by side (long/short)"),
-    status: Optional[str] = Query(None, description="Filter by status (open/closed)"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO format)"),
-    min_pnl: Optional[float] = Query(None, description="Minimum P&L filter"),
-    max_pnl: Optional[float] = Query(None, description="Maximum P&L filter"),
+    model_id: str | None = Query(None, description="Filter by model ID"),
+    side: str | None = Query(None, description="Filter by side (long/short)"),
+    status: str | None = Query(None, description="Filter by status (open/closed)"),
+    start_date: str | None = Query(None, description="Start date (ISO format)"),
+    end_date: str | None = Query(None, description="End date (ISO format)"),
+    min_pnl: float | None = Query(None, description="Minimum P&L filter"),
+    max_pnl: float | None = Query(None, description="Maximum P&L filter"),
     sort_by: str = Query("entry_time", description="Sort field"),
     sort_order: str = Query("desc", description="Sort order (asc/desc)"),
 ):
@@ -238,7 +237,7 @@ async def list_trades(
         raise
     except Exception as e:
         logger.error(f"Failed to list trades: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to list trades: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list trades: {e!s}")
     finally:
         await conn.close()
 
@@ -246,9 +245,9 @@ async def list_trades(
 @router.get("/trades/summary", response_model=TradesSummary)
 async def get_trades_summary(
     request: Request,
-    model_id: Optional[str] = Query(None, description="Filter by model ID"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO format)"),
+    model_id: str | None = Query(None, description="Filter by model ID"),
+    start_date: str | None = Query(None, description="Start date (ISO format)"),
+    end_date: str | None = Query(None, description="End date (ISO format)"),
 ):
     """
     Get trading performance summary.
@@ -381,7 +380,7 @@ async def get_trades_summary(
         logger.error(f"Failed to get trades summary: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get trades summary: {str(e)}"
+            detail=f"Failed to get trades summary: {e!s}"
         )
     finally:
         await conn.close()
@@ -390,7 +389,7 @@ async def get_trades_summary(
 @router.get("/trades/latest", response_model=LatestTradeResponse)
 async def get_latest_trade(
     request: Request,
-    model_id: Optional[str] = Query(None, description="Filter by model ID"),
+    model_id: str | None = Query(None, description="Filter by model ID"),
 ):
     """
     Get the most recent trade.
@@ -439,7 +438,7 @@ async def get_latest_trade(
         logger.error(f"Failed to get latest trade: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get latest trade: {str(e)}"
+            detail=f"Failed to get latest trade: {e!s}"
         )
     finally:
         await conn.close()
@@ -475,7 +474,7 @@ async def get_trade_by_id(
         logger.error(f"Failed to get trade {trade_id}: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get trade: {str(e)}"
+            detail=f"Failed to get trade: {e!s}"
         )
     finally:
         await conn.close()

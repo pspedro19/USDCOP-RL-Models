@@ -9,12 +9,12 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-import os
 import json
-from typing import Dict, Any, Optional, List
+import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class TradingHoursConfig:
     end_hour: int = 12
     end_minute: int = 55
     timezone: str = "America/Bogota"
-    trading_days: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Mon-Fri
+    trading_days: list[int] = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Mon-Fri
 
     def is_trading_time(self, hour: int, minute: int, weekday: int) -> bool:
         """Check if given time is within trading hours"""
@@ -89,7 +89,7 @@ class ServiceConfig:
 
 
 # Singleton config instance
-_service_config: Optional[ServiceConfig] = None
+_service_config: ServiceConfig | None = None
 
 
 def get_service_config() -> ServiceConfig:
@@ -105,7 +105,7 @@ def get_trading_hours() -> TradingHoursConfig:
     return get_service_config().trading_hours
 
 
-def load_feature_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+def load_feature_config(config_path: str | None = None) -> dict[str, Any]:
     """
     Load feature_config.json.
 

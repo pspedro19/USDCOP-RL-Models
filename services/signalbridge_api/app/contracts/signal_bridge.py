@@ -17,14 +17,14 @@ Date: 2026-01-22
 
 from datetime import datetime
 from enum import Enum, IntEnum
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from .common import BaseContract
 from .exchange import SupportedExchange
 from .execution import ExecutionStatus, OrderSide
-
 
 # =============================================================================
 # Enums - SSOT Aligned
@@ -110,7 +110,7 @@ class InferenceSignalCreate(BaseModel):
     symbol: str = Field(min_length=2, max_length=20, description="Trading pair (e.g., BTCUSDT)")
     credential_id: UUID = Field(description="Exchange credential to use")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Signal timestamp")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional signal data")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional signal data")
 
     @property
     def action_enum(self) -> InferenceAction:
@@ -135,10 +135,10 @@ class ManualSignalCreate(BaseModel):
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     symbol: str = Field(min_length=2, max_length=20)
     credential_id: UUID
-    quantity: Optional[float] = Field(None, gt=0, description="Override position size")
-    stop_loss: Optional[float] = Field(None, ge=0)
-    take_profit: Optional[float] = Field(None, ge=0)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    quantity: float | None = Field(None, gt=0, description="Override position size")
+    stop_loss: float | None = Field(None, ge=0)
+    take_profit: float | None = Field(None, ge=0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class KillSwitchRequest(BaseModel):
@@ -160,8 +160,8 @@ class RiskCheckResult(BaseContract):
     decision: RiskDecision
     reason: RiskReason
     message: str
-    adjusted_size: Optional[float] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    adjusted_size: float | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def is_allowed(self) -> bool:
@@ -179,21 +179,21 @@ class ExecutionResult(BaseContract):
     Result of processing a signal through the bridge.
     """
     success: bool
-    execution_id: Optional[UUID] = None
+    execution_id: UUID | None = None
     signal_id: UUID
     status: ExecutionStatus
-    exchange: Optional[SupportedExchange] = None
-    symbol: Optional[str] = None
-    side: Optional[OrderSide] = None
+    exchange: SupportedExchange | None = None
+    symbol: str | None = None
+    side: OrderSide | None = None
     requested_quantity: float = 0
     filled_quantity: float = 0
     filled_price: float = 0
     commission: float = 0
-    risk_check: Optional[RiskCheckResult] = None
-    error_message: Optional[str] = None
-    executed_at: Optional[datetime] = None
-    processing_time_ms: Optional[float] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    risk_check: RiskCheckResult | None = None
+    error_message: str | None = None
+    executed_at: datetime | None = None
+    processing_time_ms: float | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class BridgeStatus(BaseContract):
@@ -203,15 +203,15 @@ class BridgeStatus(BaseContract):
     """
     is_active: bool = Field(description="Whether the bridge is processing signals")
     kill_switch_active: bool = Field(description="Emergency stop status")
-    kill_switch_reason: Optional[str] = None
+    kill_switch_reason: str | None = None
     trading_mode: TradingMode = Field(description="Current trading mode")
-    connected_exchanges: List[SupportedExchange] = Field(default_factory=list)
+    connected_exchanges: list[SupportedExchange] = Field(default_factory=list)
     pending_executions: int = Field(ge=0, default=0)
-    last_signal_at: Optional[datetime] = None
-    last_execution_at: Optional[datetime] = None
+    last_signal_at: datetime | None = None
+    last_execution_at: datetime | None = None
     inference_ws_connected: bool = Field(default=False, description="WebSocket to inference API")
     uptime_seconds: float = Field(ge=0, default=0)
-    stats: Optional[Dict[str, Any]] = None
+    stats: dict[str, Any] | None = None
 
 
 class BridgeHealthCheck(BaseContract):
@@ -221,8 +221,8 @@ class BridgeHealthCheck(BaseContract):
     redis: bool
     vault: bool
     inference_ws: bool
-    exchanges: Dict[str, bool] = Field(default_factory=dict)
-    errors: List[str] = Field(default_factory=list)
+    exchanges: dict[str, bool] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
 
 
 # =============================================================================
@@ -234,15 +234,15 @@ class UserRiskLimits(BaseContract):
     User-specific risk limits stored in database.
     These override the default RiskEnforcer limits for a specific user.
     """
-    id: Optional[UUID] = None
+    id: UUID | None = None
     user_id: UUID
     max_daily_loss_pct: float = Field(default=2.00, ge=0, le=100)
     max_trades_per_day: int = Field(default=10, ge=1, le=1000)
     max_position_size_usd: float = Field(default=1000.00, ge=0)
     cooldown_minutes: int = Field(default=15, ge=0, le=1440)
     enable_short: bool = Field(default=False)
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class UserRiskLimitsCreate(BaseModel):
@@ -256,11 +256,11 @@ class UserRiskLimitsCreate(BaseModel):
 
 class UserRiskLimitsUpdate(BaseModel):
     """Update user risk limits (partial)."""
-    max_daily_loss_pct: Optional[float] = Field(None, ge=0, le=100)
-    max_trades_per_day: Optional[int] = Field(None, ge=1, le=1000)
-    max_position_size_usd: Optional[float] = Field(None, ge=0)
-    cooldown_minutes: Optional[int] = Field(None, ge=0, le=1440)
-    enable_short: Optional[bool] = None
+    max_daily_loss_pct: float | None = Field(None, ge=0, le=100)
+    max_trades_per_day: int | None = Field(None, ge=1, le=1000)
+    max_position_size_usd: float | None = Field(None, ge=0)
+    cooldown_minutes: int | None = Field(None, ge=0, le=1440)
+    enable_short: bool | None = None
 
 
 # =============================================================================
@@ -272,10 +272,10 @@ class ExecutionAuditEvent(BaseContract):
     Audit event for execution tracking.
     Used for compliance and debugging.
     """
-    id: Optional[UUID] = None
+    id: UUID | None = None
     execution_id: UUID
     event_type: BridgeEventType
-    event_data: Dict[str, Any] = Field(default_factory=dict)
+    event_data: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -283,7 +283,7 @@ class ExecutionAuditCreate(BaseModel):
     """Create an audit event."""
     execution_id: UUID
     event_type: BridgeEventType
-    event_data: Dict[str, Any] = Field(default_factory=dict)
+    event_data: dict[str, Any] = Field(default_factory=dict)
 
 
 # =============================================================================
@@ -294,7 +294,7 @@ class WebSocketMessage(BaseModel):
     """Base WebSocket message format."""
     type: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    data: Dict[str, Any] = Field(default_factory=dict)
+    data: dict[str, Any] = Field(default_factory=dict)
 
 
 class InferencePredictionMessage(WebSocketMessage):
@@ -305,7 +305,7 @@ class InferencePredictionMessage(WebSocketMessage):
     action: int
     confidence: float
     symbol: str
-    features: Optional[Dict[str, float]] = None
+    features: dict[str, float] | None = None
 
 
 class ExecutionNotification(WebSocketMessage):
@@ -315,7 +315,7 @@ class ExecutionNotification(WebSocketMessage):
     status: ExecutionStatus
     filled_quantity: float = 0
     filled_price: float = 0
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class RiskAlertNotification(WebSocketMessage):
@@ -330,8 +330,8 @@ class KillSwitchNotification(WebSocketMessage):
     """Kill switch status change notification."""
     type: str = "kill_switch"
     active: bool
-    reason: Optional[str] = None
-    activated_by: Optional[str] = None
+    reason: str | None = None
+    activated_by: str | None = None
 
 
 # =============================================================================
@@ -340,12 +340,12 @@ class KillSwitchNotification(WebSocketMessage):
 
 class ExecutionHistoryFilter(BaseModel):
     """Filter parameters for execution history."""
-    exchange: Optional[SupportedExchange] = None
-    symbol: Optional[str] = None
-    status: Optional[ExecutionStatus] = None
-    model_id: Optional[str] = None
-    since: Optional[datetime] = None
-    until: Optional[datetime] = None
+    exchange: SupportedExchange | None = None
+    symbol: str | None = None
+    status: ExecutionStatus | None = None
+    model_id: str | None = None
+    since: datetime | None = None
+    until: datetime | None = None
     page: int = Field(ge=1, default=1)
     limit: int = Field(ge=1, le=100, default=20)
 
@@ -362,8 +362,8 @@ class BridgeStatistics(BaseContract):
     avg_execution_time_ms: float = 0.0
     period_start: datetime
     period_end: datetime
-    by_exchange: Dict[str, int] = Field(default_factory=dict)
-    by_model: Dict[str, int] = Field(default_factory=dict)
+    by_exchange: dict[str, int] = Field(default_factory=dict)
+    by_model: dict[str, int] = Field(default_factory=dict)
 
 
 # =============================================================================
@@ -376,9 +376,9 @@ class APIKeyValidationResult(BaseContract):
     exchange: SupportedExchange
     has_trading_permission: bool = False
     has_withdraw_permission: bool = False  # Should be False for safety
-    permissions: List[str] = Field(default_factory=list)
-    error_message: Optional[str] = None
-    warnings: List[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
+    error_message: str | None = None
+    warnings: list[str] = Field(default_factory=list)
 
 
 class UserTradingState(BaseContract):
@@ -391,6 +391,6 @@ class UserTradingState(BaseContract):
     daily_trades: int = Field(default=0, ge=0, description="Number of trades today")
     open_positions: int = Field(default=0, ge=0, description="Number of open positions")
     total_exposure_usd: float = Field(default=0.0, ge=0, description="Total exposure in USD")
-    last_trade_at: Optional[datetime] = None
-    cooldown_until: Optional[datetime] = None
+    last_trade_at: datetime | None = None
+    cooldown_until: datetime | None = None
     is_in_cooldown: bool = Field(default=False)

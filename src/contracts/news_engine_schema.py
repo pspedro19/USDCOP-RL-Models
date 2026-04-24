@@ -9,10 +9,8 @@ Contract: CTR-NEWS-SCHEMA-001
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, date
-from typing import Optional
-
+from dataclasses import asdict, dataclass, field
+from datetime import date, datetime
 
 # ---------------------------------------------------------------------------
 # Source registry
@@ -46,23 +44,23 @@ class ArticleRecord:
     url_hash: str
     title: str
     published_at: datetime
-    content: Optional[str] = None
-    summary: Optional[str] = None
-    category: Optional[str] = None
-    subcategory: Optional[str] = None
+    content: str | None = None
+    summary: str | None = None
+    category: str | None = None
+    subcategory: str | None = None
     relevance_score: float = 0.0
-    sentiment_score: Optional[float] = None
-    sentiment_label: Optional[str] = None
-    gdelt_tone: Optional[float] = None
-    keywords: Optional[list] = None
-    entities: Optional[list] = None
+    sentiment_score: float | None = None
+    sentiment_label: str | None = None
+    gdelt_tone: float | None = None
+    keywords: list | None = None
+    entities: list | None = None
     language: str = "es"
     country_focus: str = "CO"
     is_breaking: bool = False
     is_weekly_relevant: bool = False
-    image_url: Optional[str] = None
-    author: Optional[str] = None
-    raw_json: Optional[dict] = None
+    image_url: str | None = None
+    author: str | None = None
+    raw_json: dict | None = None
 
     def validate(self) -> list:
         """Return list of validation errors (empty = valid)."""
@@ -97,11 +95,11 @@ class DigestRecord:
     total_articles: int = 0
     by_source: dict = field(default_factory=dict)
     by_category: dict = field(default_factory=dict)
-    avg_sentiment: Optional[float] = None
+    avg_sentiment: float | None = None
     top_keywords: list = field(default_factory=list)
     top_articles: list = field(default_factory=list)
     cross_ref_count: int = 0
-    summary_text: Optional[str] = None
+    summary_text: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -134,10 +132,10 @@ class CrossReferenceRecord:
     topic: str
     cluster_date: date
     article_count: int = 0
-    avg_sentiment: Optional[float] = None
-    dominant_category: Optional[str] = None
+    avg_sentiment: float | None = None
+    dominant_category: str | None = None
     sources_involved: list = field(default_factory=list)
-    summary: Optional[str] = None
+    summary: str | None = None
     article_ids: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -155,13 +153,13 @@ class IngestionLogRecord:
     """Ingestion run log entry."""
     source_id: str
     run_type: str = "scheduled"
-    started_at: Optional[datetime] = None
-    finished_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
     articles_fetched: int = 0
     articles_new: int = 0
     articles_updated: int = 0
     errors: int = 0
-    error_details: Optional[str] = None
+    error_details: str | None = None
     status: str = "running"
 
     def to_dict(self) -> dict:

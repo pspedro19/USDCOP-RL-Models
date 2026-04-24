@@ -24,13 +24,13 @@ Version: 1.0.0
 Date: 2026-02-03
 """
 
-import json
 import hashlib
+import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -45,9 +45,9 @@ class DatasetBuildResult:
     val_df: pd.DataFrame
     test_df: pd.DataFrame
     full_df: pd.DataFrame
-    norm_stats: Dict[str, Any]
-    lineage: Dict[str, Any]
-    feature_columns: List[str]
+    norm_stats: dict[str, Any]
+    lineage: dict[str, Any]
+    feature_columns: list[str]
 
     @property
     def observation_dim(self) -> int:
@@ -69,7 +69,7 @@ class SSOTDatasetBuilder:
     - Automatic data quality validation
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         """
         Initialize builder with SSOT configuration.
 
@@ -82,13 +82,6 @@ class SSOTDatasetBuilder:
         # Import calculator registry
         from src.features.calculator_registry import (
             get_calculator_registry,
-            calculate_log_returns,
-            calculate_rsi_wilders,
-            calculate_volatility_pct,
-            calculate_trend_z,
-            calculate_macro_zscore,
-            calculate_spread_zscore,
-            calculate_pct_change,
         )
         self.registry = get_calculator_registry()
 
@@ -100,10 +93,10 @@ class SSOTDatasetBuilder:
     def build(
         self,
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame] = None,
-        output_dir: Optional[Path] = None,
-        dataset_prefix: Optional[str] = None,
-        df_aux_ohlcv: Optional[Dict[str, pd.DataFrame]] = None,
+        df_macro: pd.DataFrame | None = None,
+        output_dir: Path | None = None,
+        dataset_prefix: str | None = None,
+        df_aux_ohlcv: dict[str, pd.DataFrame] | None = None,
     ) -> DatasetBuildResult:
         """
         Build complete dataset from OHLCV and macro data.
@@ -189,8 +182,8 @@ class SSOTDatasetBuilder:
     def _prepare_data(
         self,
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame]
-    ) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
+        df_macro: pd.DataFrame | None
+    ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
         """Prepare and validate input data."""
         # Ensure datetime index
         df_ohlcv = df_ohlcv.copy()
@@ -239,7 +232,7 @@ class SSOTDatasetBuilder:
     def _calculate_features(
         self,
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame]
+        df_macro: pd.DataFrame | None
     ) -> pd.DataFrame:
         """Calculate all market features from SSOT definitions."""
         # Separate OHLCV and macro features
@@ -291,8 +284,8 @@ class SSOTDatasetBuilder:
         self,
         feature_def: "FeatureDefinition",
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame]
-    ) -> Optional[pd.Series]:
+        df_macro: pd.DataFrame | None
+    ) -> pd.Series | None:
         """Calculate a single feature based on its definition."""
         calculator_name = feature_def.calculator
         params = feature_def.params.copy()
@@ -417,7 +410,7 @@ class SSOTDatasetBuilder:
         self,
         feature_def: "FeatureDefinition",
         df_ohlcv: pd.DataFrame,
-    ) -> Optional[pd.Series]:
+    ) -> pd.Series | None:
         """Calculate a feature from auxiliary OHLCV data.
 
         Handles "pairname.column" notation in input_columns.
@@ -480,7 +473,7 @@ class SSOTDatasetBuilder:
         self,
         formula: str,
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame]
+        df_macro: pd.DataFrame | None
     ) -> pd.Series:
         """Evaluate a custom formula."""
         # Build context
@@ -499,7 +492,7 @@ class SSOTDatasetBuilder:
         self,
         df_ohlcv: pd.DataFrame,
         df_features: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame]
+        df_macro: pd.DataFrame | None
     ) -> pd.DataFrame:
         """Merge OHLCV, features, and optionally macro into single DataFrame."""
         # Start with features (has same index as OHLCV)
@@ -541,7 +534,7 @@ class SSOTDatasetBuilder:
     def _split_data(
         self,
         df: pd.DataFrame
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Split data into train/val/test based on SSOT config.
 
         Respects use_fixed_dates flag:
@@ -597,8 +590,8 @@ class SSOTDatasetBuilder:
     def _compute_norm_stats(
         self,
         train_df: pd.DataFrame,
-        feature_cols: List[str]
-    ) -> Dict[str, Any]:
+        feature_cols: list[str]
+    ) -> dict[str, Any]:
         """Compute normalization statistics from training data only."""
         stats = {}
 
@@ -649,8 +642,8 @@ class SSOTDatasetBuilder:
     def _apply_normalization(
         self,
         df: pd.DataFrame,
-        feature_cols: List[str],
-        norm_stats: Dict[str, Any]
+        feature_cols: list[str],
+        norm_stats: dict[str, Any]
     ) -> pd.DataFrame:
         """Apply normalization to features using pre-computed stats."""
         df = df.copy()
@@ -705,8 +698,8 @@ class SSOTDatasetBuilder:
         train_df: pd.DataFrame,
         val_df: pd.DataFrame,
         test_df: pd.DataFrame,
-        feature_cols: List[str],
-    ) -> Dict[str, Any]:
+        feature_cols: list[str],
+    ) -> dict[str, Any]:
         """
         Compute descriptive statistics for each dataset split.
 
@@ -776,7 +769,7 @@ class SSOTDatasetBuilder:
 
         return stats
 
-    def _log_descriptive_stats(self, stats: Dict[str, Any], feature_cols: List[str]) -> None:
+    def _log_descriptive_stats(self, stats: dict[str, Any], feature_cols: list[str]) -> None:
         """Log descriptive statistics summary to console."""
         logger.info("=" * 70)
         logger.info("L2 DESCRIPTIVE STATISTICS")
@@ -811,23 +804,23 @@ class SSOTDatasetBuilder:
         # Drift warnings
         drift = stats.get("distribution_drift", {})
         if drift:
-            logger.info(f"\n  DISTRIBUTION DRIFT (train→val, >0.5 std):")
+            logger.info("\n  DISTRIBUTION DRIFT (train→val, >0.5 std):")
             for feat, d in list(drift.items())[:10]:
                 level = "WARNING" if d > 1.0 else "info"
                 logger.info(f"    {feat}: {d:.2f} std {'⚠️' if d > 1.0 else ''}")
         else:
-            logger.info(f"\n  Distribution drift: None detected (all features <0.5 std)")
+            logger.info("\n  Distribution drift: None detected (all features <0.5 std)")
 
         logger.info("=" * 70)
 
     def _build_lineage(
         self,
         df_ohlcv: pd.DataFrame,
-        df_macro: Optional[pd.DataFrame],
+        df_macro: pd.DataFrame | None,
         train_df: pd.DataFrame,
         val_df: pd.DataFrame,
         test_df: pd.DataFrame
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build lineage tracking information."""
         feature_cols = [f.name for f in self.config.get_market_features()]
         feature_order_hash = hashlib.md5(",".join(feature_cols).encode()).hexdigest()
@@ -864,9 +857,9 @@ class SSOTDatasetBuilder:
         train_df: pd.DataFrame,
         val_df: pd.DataFrame,
         test_df: pd.DataFrame,
-        norm_stats: Dict[str, Any],
-        lineage: Dict[str, Any],
-        descriptive_stats: Optional[Dict[str, Any]] = None,
+        norm_stats: dict[str, Any],
+        lineage: dict[str, Any],
+        descriptive_stats: dict[str, Any] | None = None,
     ) -> None:
         """Save all outputs to disk."""
         output_dir = Path(output_dir)
@@ -899,8 +892,8 @@ class SSOTDatasetBuilder:
 
 def build_production_dataset(
     df_ohlcv: pd.DataFrame,
-    df_macro: Optional[pd.DataFrame] = None,
-    output_dir: Optional[Path] = None
+    df_macro: pd.DataFrame | None = None,
+    output_dir: Path | None = None
 ) -> DatasetBuildResult:
     """
     Convenience function to build production dataset.
@@ -942,7 +935,7 @@ if __name__ == "__main__":
             Path(args.output)
         )
 
-        print(f"\nDataset built successfully!")
+        print("\nDataset built successfully!")
         print(f"  Train: {len(result.train_df)} rows")
         print(f"  Val: {len(result.val_df)} rows")
         print(f"  Test: {len(result.test_df)} rows")

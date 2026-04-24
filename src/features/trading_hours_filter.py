@@ -52,20 +52,13 @@ from __future__ import annotations
 
 import json
 import logging
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, date, time, timedelta
+from dataclasses import dataclass
+from datetime import date, datetime, time
 from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
-    Dict,
-    FrozenSet,
-    List,
-    Optional,
     Protocol,
-    Tuple,
-    Union,
     runtime_checkable,
 )
 
@@ -75,10 +68,9 @@ import pytz
 
 # Import centralized constants from SSOT
 from src.core.constants import (
-    TRADING_TIMEZONE,
-    TRADING_START_HOUR,
     TRADING_END_HOUR,
-    UTC_OFFSET_BOGOTA,
+    TRADING_START_HOUR,
+    TRADING_TIMEZONE,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,8 +90,8 @@ DEFAULT_START_HOUR = TRADING_START_HOUR
 DEFAULT_END_HOUR = TRADING_END_HOUR
 
 # Weekday indices (Monday=0, Friday=4) - immutable
-TRADING_WEEKDAYS: FrozenSet[int] = frozenset({0, 1, 2, 3, 4})
-WEEKEND_DAYS: FrozenSet[int] = frozenset({5, 6})
+TRADING_WEEKDAYS: frozenset[int] = frozenset({0, 1, 2, 3, 4})
+WEEKEND_DAYS: frozenset[int] = frozenset({5, 6})
 
 # Named constants for hours (no magic numbers)
 HOUR_MIN = 0
@@ -161,7 +153,7 @@ class ITradingHoursFilter(Protocol):
 
     def is_trading_time(
         self,
-        timestamp: Union[datetime, pd.Timestamp],
+        timestamp: datetime | pd.Timestamp,
     ) -> bool:
         """
         Check if timestamp is within trading hours.
@@ -189,7 +181,7 @@ class ITradingHoursFilter(Protocol):
         ...
 
     @property
-    def holidays(self) -> FrozenSet[str]:
+    def holidays(self) -> frozenset[str]:
         """Set of all holiday dates (YYYY-MM-DD format)."""
         ...
 
@@ -230,7 +222,7 @@ class TradingSession:
 
     def is_within_session(
         self,
-        timestamp: Union[datetime, pd.Timestamp],
+        timestamp: datetime | pd.Timestamp,
     ) -> bool:
         """
         Check if timestamp falls within this trading session.
@@ -262,7 +254,7 @@ class TradingSession:
     def get_session_bounds(
         self,
         date_obj: date,
-    ) -> Tuple[datetime, datetime]:
+    ) -> tuple[datetime, datetime]:
         """
         Get absolute datetime bounds for session on given date.
 
@@ -303,8 +295,8 @@ class TradingCalendarConfig:
     start_minute: int
     end_hour: int
     end_minute: int
-    holidays_colombia: FrozenSet[str]
-    holidays_usa: FrozenSet[str]
+    holidays_colombia: frozenset[str]
+    holidays_usa: frozenset[str]
     bars_per_session: int
     bar_duration_minutes: int
 
@@ -355,11 +347,11 @@ class TradingCalendarConfig:
         )
 
     @property
-    def all_holidays(self) -> FrozenSet[str]:
+    def all_holidays(self) -> frozenset[str]:
         """Combined set of all holidays."""
         return self.holidays_colombia | self.holidays_usa
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export configuration as dictionary."""
         return {
             "timezone": self.timezone,
@@ -384,7 +376,7 @@ class ConfigLoadError(Exception):
 
 
 def load_trading_calendar_config(
-    config_path: Optional[Union[str, Path]] = None,
+    config_path: str | Path | None = None,
 ) -> TradingCalendarConfig:
     """
     Load trading calendar configuration from JSON file (SSOT).
@@ -421,7 +413,7 @@ def load_trading_calendar_config(
         )
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         raise ConfigLoadError(
@@ -510,7 +502,7 @@ class TradingHoursFilter:
 
     def __init__(
         self,
-        config: Optional[TradingCalendarConfig] = None,
+        config: TradingCalendarConfig | None = None,
         *,  # Force keyword arguments after this
         include_us_holidays: bool = True,
     ) -> None:
@@ -557,7 +549,7 @@ class TradingHoursFilter:
         return self._config.timezone
 
     @property
-    def holidays(self) -> FrozenSet[str]:
+    def holidays(self) -> frozenset[str]:
         """Set of all holiday dates (YYYY-MM-DD format)."""
         return self._holidays
 
@@ -680,7 +672,7 @@ class TradingHoursFilter:
         self,
         original: int,
         final: int,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> None:
         """Log filtering retention statistics."""
         if original == 0:
@@ -702,7 +694,7 @@ class TradingHoursFilter:
 
     def is_trading_time(
         self,
-        timestamp: Union[datetime, pd.Timestamp],
+        timestamp: datetime | pd.Timestamp,
     ) -> bool:
         """
         Check if a single timestamp is within trading hours.
@@ -759,7 +751,7 @@ class TradingHoursFilter:
 
     def add_holiday(
         self,
-        holiday_date: Union[str, date],
+        holiday_date: str | date,
         holiday_type: HolidayType = HolidayType.CUSTOM,
     ) -> None:
         """
@@ -784,7 +776,7 @@ class TradingHoursFilter:
 
         logger.info(f"Added holiday: {date_str} (type={holiday_type.value})")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export filter configuration as dictionary."""
         return {
             "timezone": self._config.timezone,
@@ -829,7 +821,7 @@ class TradingHoursFilterFactory:
 
     def __init__(
         self,
-        config_path: Optional[Union[str, Path]] = None,
+        config_path: str | Path | None = None,
     ) -> None:
         """
         Initialize factory.
@@ -844,7 +836,7 @@ class TradingHoursFilterFactory:
         market_type: MarketType = MarketType.COLOMBIA,
         *,
         include_us_holidays: bool = True,
-        custom_config: Optional[TradingCalendarConfig] = None,
+        custom_config: TradingCalendarConfig | None = None,
     ) -> TradingHoursFilter:
         """
         Create a trading hours filter for specified market.
@@ -895,7 +887,7 @@ class TradingHoursFilterFactory:
 # SINGLETON & CONVENIENCE FUNCTIONS
 # =============================================================================
 
-_default_filter: Optional[TradingHoursFilter] = None
+_default_filter: TradingHoursFilter | None = None
 
 
 def get_trading_hours_filter(
@@ -945,7 +937,7 @@ def filter_to_trading_hours(
 
 
 def is_trading_time(
-    timestamp: Union[datetime, pd.Timestamp],
+    timestamp: datetime | pd.Timestamp,
 ) -> bool:
     """
     Convenience: Check if timestamp is trading time using default filter.
@@ -1100,7 +1092,7 @@ if __name__ == "__main__":
     for dt, desc in test_times:
         is_valid = filter_obj.is_trading_time(dt)
         status = "Yes" if is_valid else "No"
-        print(f"{str(dt):<35} {desc:<30} {status}")
+        print(f"{dt!s:<35} {desc:<30} {status}")
 
     print("\n")
 

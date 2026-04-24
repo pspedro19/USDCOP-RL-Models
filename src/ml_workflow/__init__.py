@@ -20,53 +20,6 @@ NOTE: Training pipeline has been moved to src/training/engine.py
       Use: from src.training import TrainingEngine, run_training
 """
 
-from .experiment_tracker import MLWorkflowTracker, ExperimentLog
-
-# Dynamic contract factory
-from .dynamic_contract_factory import (
-    DynamicFeatureContract,
-    NormStatsCalculator,
-    ContractFactory,
-    ContractRegistry,
-    create_contract_from_training,
-    get_contract,
-)
-
-# Artifact policy (MLflow-First + DVC-Tracked)
-from .artifact_policy import (
-    ArtifactType,
-    StorageBackend,
-    ModelStage,
-    ArtifactPolicy,
-    ArtifactLocation,
-    get_artifact_policy,
-    enforce_mlflow_first,
-    enforce_dvc_tracking,
-)
-
-# Lineage service
-from .lineage_service import (
-    LineageService,
-    LineageRecord,
-    LineageNode,
-    LineageEdge,
-    get_lineage_service,
-)
-
-# Run manifest (pipeline lineage tracking)
-from .run_manifest import RunManifest
-
-# Promotion gate
-from .promotion_gate import (
-    PromotionGate,
-    ValidationResult,
-    ValidationIssue,
-    MLflowFirstValidator,
-    DVCTrackedValidator,
-    create_default_gate,
-    create_strict_gate,
-)
-
 # Re-export training from new location for backwards compatibility
 # DEPRECATED: Import directly from src.training instead
 from src.training import (
@@ -74,6 +27,52 @@ from src.training import (
     TrainingRequest,
     run_training,
 )
+
+# Artifact policy (MLflow-First + DVC-Tracked)
+from .artifact_policy import (
+    ArtifactLocation,
+    ArtifactPolicy,
+    ArtifactType,
+    ModelStage,
+    StorageBackend,
+    enforce_dvc_tracking,
+    enforce_mlflow_first,
+    get_artifact_policy,
+)
+
+# Dynamic contract factory
+from .dynamic_contract_factory import (
+    ContractFactory,
+    ContractRegistry,
+    DynamicFeatureContract,
+    NormStatsCalculator,
+    create_contract_from_training,
+    get_contract,
+)
+from .experiment_tracker import ExperimentLog, MLWorkflowTracker
+
+# Lineage service
+from .lineage_service import (
+    LineageEdge,
+    LineageNode,
+    LineageRecord,
+    LineageService,
+    get_lineage_service,
+)
+
+# Promotion gate
+from .promotion_gate import (
+    DVCTrackedValidator,
+    MLflowFirstValidator,
+    PromotionGate,
+    ValidationIssue,
+    ValidationResult,
+    create_default_gate,
+    create_strict_gate,
+)
+
+# Run manifest (pipeline lineage tracking)
+from .run_manifest import RunManifest
 
 __all__ = [
     # Experiment tracking

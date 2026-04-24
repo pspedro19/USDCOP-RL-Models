@@ -11,9 +11,9 @@ Date: 2025-01-14
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 import numpy as np
 
@@ -30,12 +30,12 @@ class InferenceResult:
     """Result of model inference."""
     signal: SignalType
     confidence: float
-    action_probs: Dict[str, float]
+    action_probs: dict[str, float]
     model_name: str
     latency_ms: float
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal": self.signal.value,
             "confidence": self.confidence,
@@ -58,7 +58,7 @@ class IModelLoader(ABC):
     """
 
     @abstractmethod
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         """
         Load model from path.
 
@@ -88,7 +88,7 @@ class IModelLoader(ABC):
 
     @property
     @abstractmethod
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """Get expected input shape."""
         pass
 
@@ -137,9 +137,9 @@ class IEnsembleStrategy(ABC):
     @abstractmethod
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """
         Combine multiple inference results.
 
@@ -161,7 +161,7 @@ class IHealthChecker(ABC):
     """
 
     @abstractmethod
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Run health check.
 
@@ -186,7 +186,7 @@ class IInferenceEngine(IPredictor, IHealthChecker, ABC):
     """
 
     @abstractmethod
-    def load_models(self, providers: Optional[List[str]] = None) -> bool:
+    def load_models(self, providers: list[str] | None = None) -> bool:
         """Load all configured models."""
         pass
 
@@ -196,13 +196,13 @@ class IInferenceEngine(IPredictor, IHealthChecker, ABC):
         pass
 
     @abstractmethod
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get inference statistics."""
         pass
 
     @property
     @abstractmethod
-    def model_names(self) -> List[str]:
+    def model_names(self) -> list[str]:
         """Get list of loaded model names."""
         pass
 
@@ -212,13 +212,13 @@ class EnsembleResult:
     """Result of ensemble inference."""
     signal: SignalType
     confidence: float
-    action_probs: Dict[str, float]
-    individual_results: List[InferenceResult]
+    action_probs: dict[str, float]
+    individual_results: list[InferenceResult]
     ensemble_strategy: str
     total_latency_ms: float
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "signal": self.signal.value,
             "confidence": self.confidence,

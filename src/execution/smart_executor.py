@@ -17,10 +17,9 @@ PnL = direction * leverage * (exit_price - entry_price) / entry_price
 @version 1.0.0
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from src.execution.broker_adapter import BrokerAdapter, OrderSide, OrderStatus
 from src.execution.trailing_stop import (
@@ -45,16 +44,16 @@ class ExecutionState:
     status: ExecutionStatus = ExecutionStatus.IDLE
     direction: int = 0         # +1 long, -1 short
     leverage: float = 1.0
-    entry_price: Optional[float] = None
-    entry_timestamp: Optional[datetime] = None
-    exit_price: Optional[float] = None
-    exit_timestamp: Optional[datetime] = None
-    exit_reason: Optional[str] = None
-    peak_price: Optional[float] = None
+    entry_price: float | None = None
+    entry_timestamp: datetime | None = None
+    exit_price: float | None = None
+    exit_timestamp: datetime | None = None
+    exit_reason: str | None = None
+    peak_price: float | None = None
     trailing_state: str = "waiting"
     bar_count: int = 0
-    pnl_pct: Optional[float] = None
-    pnl_unleveraged_pct: Optional[float] = None
+    pnl_pct: float | None = None
+    pnl_unleveraged_pct: float | None = None
     config_version: str = "smart_executor_v1"
 
 
@@ -181,7 +180,7 @@ class SmartExecutor:
         if tracker_state == TrailingState.TRIGGERED:
             new_state.status = ExecutionStatus.CLOSED
             new_state.exit_price = tracker.exit_price
-            new_state.exit_timestamp = datetime.now(timezone.utc)
+            new_state.exit_timestamp = datetime.now(UTC)
             new_state.exit_reason = tracker.exit_reason
             self._compute_pnl(new_state)
             self.broker.close_position(bar_close)
@@ -221,7 +220,7 @@ class SmartExecutor:
             trailing_state="expired",
             bar_count=state.bar_count,
             exit_price=close_result.fill_price if close_result.status == OrderStatus.FILLED else last_close,
-            exit_timestamp=datetime.now(timezone.utc),
+            exit_timestamp=datetime.now(UTC),
             exit_reason="session_close",
             config_version=state.config_version,
         )

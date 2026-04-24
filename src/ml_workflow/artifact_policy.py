@@ -15,14 +15,11 @@ Principle: "MLflow-First + DVC-Tracked"
 @principle MLflow-First + DVC-Tracked
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
-import hashlib
-import json
-import os
 import logging
+import os
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -69,15 +66,15 @@ class ArtifactStorageRule:
     """Rule for storing a specific artifact type."""
     artifact_type: ArtifactType
     primary_backend: StorageBackend
-    secondary_backend: Optional[StorageBackend] = None
+    secondary_backend: StorageBackend | None = None
     metadata_backend: StorageBackend = StorageBackend.POSTGRESQL
-    versioning_backend: Optional[StorageBackend] = None
+    versioning_backend: StorageBackend | None = None
     is_mandatory: bool = True
     retention_days: int = 365
 
 
 # Define the canonical storage rules
-ARTIFACT_STORAGE_RULES: Dict[ArtifactType, ArtifactStorageRule] = {
+ARTIFACT_STORAGE_RULES: dict[ArtifactType, ArtifactStorageRule] = {
     ArtifactType.DATASET: ArtifactStorageRule(
         artifact_type=ArtifactType.DATASET,
         primary_backend=StorageBackend.DVC,        # DVC is primary for datasets
@@ -213,10 +210,10 @@ class ArtifactLocation:
     """Resolved location for an artifact."""
     artifact_type: ArtifactType
     primary_uri: str
-    secondary_uri: Optional[str] = None
-    metadata_uri: Optional[str] = None
-    version: Optional[str] = None
-    hash: Optional[str] = None
+    secondary_uri: str | None = None
+    metadata_uri: str | None = None
+    version: str | None = None
+    hash: str | None = None
 
 
 class ArtifactPolicy:
@@ -242,9 +239,9 @@ class ArtifactPolicy:
 
     def __init__(
         self,
-        mlflow_tracking_uri: Optional[str] = None,
-        minio_endpoint: Optional[str] = None,
-        db_connection_string: Optional[str] = None,
+        mlflow_tracking_uri: str | None = None,
+        minio_endpoint: str | None = None,
+        db_connection_string: str | None = None,
     ):
         self.mlflow_tracking_uri = mlflow_tracking_uri or os.environ.get(
             "MLFLOW_TRACKING_URI", "http://localhost:5000"
@@ -303,7 +300,7 @@ class ArtifactPolicy:
         model_name: str = "model",
         version: str = "latest",
         pipeline: str = "rl",
-        horizon: Optional[int] = None,
+        horizon: int | None = None,
         **kwargs
     ) -> ArtifactLocation:
         """Resolve model storage location."""
@@ -361,7 +358,7 @@ class ArtifactPolicy:
         self,
         rule: ArtifactStorageRule,
         experiment_name: str = "default",
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
         **kwargs
     ) -> ArtifactLocation:
         """Resolve metrics storage location."""
@@ -410,7 +407,7 @@ class ArtifactPolicy:
         self,
         artifact_type: ArtifactType,
         actual_location: str,
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Validate that an artifact is stored according to policy.
 
@@ -451,7 +448,7 @@ class ArtifactPolicy:
 
         return len(violations) == 0, violations
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export policy as dictionary."""
         return {
             "principle": "MLflow-First + DVC-Tracked",
@@ -519,7 +516,7 @@ def enforce_dvc_tracking(func):
 # SINGLETON INSTANCE
 # =============================================================================
 
-_policy_instance: Optional[ArtifactPolicy] = None
+_policy_instance: ArtifactPolicy | None = None
 
 
 def get_artifact_policy() -> ArtifactPolicy:

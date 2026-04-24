@@ -9,7 +9,7 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+from typing import Any
 
 # Handle import for both package and standalone execution
 try:
@@ -37,7 +37,7 @@ class ConfigLoaderAdapter(IConfigLoader):
         features = config.get_feature_order()
     """
 
-    def __init__(self, config_dir: Optional[str] = None):
+    def __init__(self, config_dir: str | None = None):
         """
         Initialize adapter.
 
@@ -46,7 +46,7 @@ class ConfigLoaderAdapter(IConfigLoader):
         """
         self._config = ConfigLoader(config_dir)
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Get ordered list of features."""
         return self._config.get_feature_order()
 
@@ -54,19 +54,19 @@ class ConfigLoaderAdapter(IConfigLoader):
         """Get total observation dimension."""
         return self._config.get_obs_dim()
 
-    def get_norm_stats(self, feature_name: str) -> Dict[str, float]:
+    def get_norm_stats(self, feature_name: str) -> dict[str, float]:
         """Get normalization statistics for a feature."""
         return self._config.get_norm_stats(feature_name)
 
-    def get_clip_bounds(self, feature_name: str) -> Optional[tuple]:
+    def get_clip_bounds(self, feature_name: str) -> tuple | None:
         """Get clipping bounds for a feature."""
         return self._config.get_clip_bounds(feature_name)
 
-    def get_technical_period(self, indicator: str) -> Optional[int]:
+    def get_technical_period(self, indicator: str) -> int | None:
         """Get period for technical indicator."""
         return self._config.get_technical_period(indicator)
 
-    def get_trading_params(self) -> Dict[str, Any]:
+    def get_trading_params(self) -> dict[str, Any]:
         """Get trading parameters."""
         return self._config.get_trading_params()
 
@@ -76,19 +76,19 @@ class ConfigLoaderAdapter(IConfigLoader):
         return self._config.version
 
     # Additional methods from original ConfigLoader
-    def get_feature_config(self) -> Dict[str, Any]:
+    def get_feature_config(self) -> dict[str, Any]:
         """Get full feature configuration."""
         return self._config.get_feature_config()
 
-    def get_market_hours(self) -> Dict[str, Any]:
+    def get_market_hours(self) -> dict[str, Any]:
         """Get market hours configuration."""
         return self._config.get_market_hours()
 
-    def get_holidays(self, year: int = 2025, country: str = 'colombia') -> List[str]:
+    def get_holidays(self, year: int = 2025, country: str = 'colombia') -> list[str]:
         """Get holiday dates."""
         return self._config.get_holidays(year, country)
 
-    def get_postgres_config(self) -> Dict[str, Any]:
+    def get_postgres_config(self) -> dict[str, Any]:
         """Get PostgreSQL configuration."""
         return self._config.get_postgres_config()
 
@@ -96,7 +96,7 @@ class ConfigLoaderAdapter(IConfigLoader):
         """Get database connection string."""
         return self._config.get_connection_string(dialect)
 
-    def get_table_config(self, table_name: str) -> Optional[Dict[str, Any]]:
+    def get_table_config(self, table_name: str) -> dict[str, Any] | None:
         """Get table configuration."""
         return self._config.get_table_config(table_name)
 

@@ -53,10 +53,10 @@ import hashlib
 import json
 import logging
 import os
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class PPOHyperparameters:
     # Reproducibility
     seed: int = 42
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return asdict(self)
 
@@ -123,7 +123,7 @@ class PPOHyperparameters:
         return hashlib.sha256(config_str.encode()).hexdigest()[:16]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> PPOHyperparameters:
+    def from_dict(cls, data: dict[str, Any]) -> PPOHyperparameters:
         """Create from dictionary, filtering invalid fields."""
         valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
         filtered = {k: v for k, v in data.items() if k in valid_fields}
@@ -187,11 +187,11 @@ class NetworkConfig:
     Defines the policy and value function network architectures
     used by the PPO agent.
     """
-    policy_layers: Tuple[int, ...] = (256, 256)
-    value_layers: Tuple[int, ...] = (256, 256)
+    policy_layers: tuple[int, ...] = (256, 256)
+    value_layers: tuple[int, ...] = (256, 256)
     activation: str = "Tanh"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "policy_layers": list(self.policy_layers),
             "value_layers": list(self.value_layers),
@@ -199,7 +199,7 @@ class NetworkConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> NetworkConfig:
+    def from_dict(cls, data: dict[str, Any]) -> NetworkConfig:
         return cls(
             policy_layers=tuple(data.get("policy_layers", data.get("pi", [256, 256]))),
             value_layers=tuple(data.get("value_layers", data.get("vf", [256, 256]))),
@@ -246,11 +246,11 @@ class EnvironmentConfig:
     threshold_long: float = 0.60      # PHASE1: Requires 60% confidence
     threshold_short: float = -0.60    # PHASE1: Wider HOLD zone
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> EnvironmentConfig:
+    def from_dict(cls, data: dict[str, Any]) -> EnvironmentConfig:
         valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
         filtered = {k: v for k, v in data.items() if k in valid_fields}
         return cls(**filtered)
@@ -319,7 +319,7 @@ class DataSplitConfig:
         if abs(total - 1.0) > 0.001:
             raise ValueError(f"Split ratios must sum to 1.0, got {total}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -347,7 +347,7 @@ class IndicatorConfig:
         """Minimum bars needed before indicators are valid."""
         return max(self.rsi_period, self.atr_period, self.adx_period)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "warmup_bars": self.warmup_bars}
 
 
@@ -367,7 +367,7 @@ class DSRConfig:
     scale: float = 1.0
     weight: float = 0.3
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -380,7 +380,7 @@ class SortinoConfig:
     scale: float = 1.0
     weight: float = 0.2
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -394,7 +394,7 @@ class RegimeConfig:
     history_window: int = 500
     smoothing_window: int = 5
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -408,11 +408,11 @@ class MarketImpactConfig:
     typical_order_fraction: float = 0.001
     default_spread_bps: int = 100
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
-def _load_holding_decay_from_ssot() -> Dict[str, Any]:
+def _load_holding_decay_from_ssot() -> dict[str, Any]:
     """Load HoldingDecayConfig values from pipeline_ssot.yaml (unified SSOT)."""
     try:
         from src.config.pipeline_config import load_pipeline_config
@@ -445,11 +445,11 @@ class HoldingDecayConfig:
     enable_overnight_boost: bool = True
     overnight_multiplier: float = 1.5  # PHASE1: softer overnight
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_ssot(cls) -> "HoldingDecayConfig":
+    def from_ssot(cls) -> HoldingDecayConfig:
         """Create HoldingDecayConfig from SSOT values (DRY principle)."""
         ssot_values = _load_holding_decay_from_ssot()
         if ssot_values:
@@ -476,7 +476,7 @@ class AntiGamingConfig:
     bias_penalty: float = 0.1
     bias_min_samples: int = 50
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -489,7 +489,7 @@ class NormalizerConfig:
     warmup_steps: int = 1000
     per_episode_reset: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -503,7 +503,7 @@ class BanrepDetectorConfig:
     reversal_threshold: float = 0.02
     min_history: int = 50
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -516,7 +516,7 @@ class OilCorrelationConfig:
     breakdown_penalty: float = 0.1
     min_samples: int = 10
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -531,7 +531,7 @@ class PnLTransformConfig:
     asymmetric_win_mult: float = 1.0
     asymmetric_loss_mult: float = 1.5
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -546,7 +546,7 @@ class CurriculumConfig:
     phase_2_cost_mult: float = 0.75
     phase_3_cost_mult: float = 1.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -580,7 +580,7 @@ class FlatRewardConfig:
     decay_half_life: int = 12    # PHASE3: 1 hour (12 bars * 5min)
     decay_max: float = 0.9       # PHASE3: 90% max reduction
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -624,7 +624,7 @@ class RewardConfig:
     enable_oil_tracking: bool = False  # Off by default - requires oil data
     enable_flat_reward: bool = False   # V21: Disabled (was True) - causes HOLD bias
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "dsr": self.dsr.to_dict(),
             "sortino": self.sortino.to_dict(),
@@ -658,7 +658,7 @@ class RewardConfig:
         return hashlib.sha256(config_str.encode()).hexdigest()[:16]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RewardConfig":
+    def from_dict(cls, data: dict[str, Any]) -> RewardConfig:
         """Create from dictionary."""
         return cls(
             dsr=DSRConfig(**data.get("dsr", {})) if data.get("dsr") else DSRConfig(),
@@ -777,7 +777,7 @@ class MLflowConfig:
     model_name: str = "usdcop-ppo-model"
     enabled: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -816,33 +816,33 @@ class TrainingConfig:
     mlflow: MLflowConfig = field(default_factory=MLflowConfig)
 
     # Dataset configuration
-    dataset_path: Optional[Path] = None
+    dataset_path: Path | None = None
     dataset_name: str = "RL_DS3_MACRO_CORE.csv"
     dataset_dir: str = "5min"
 
     # Output paths
-    model_output_dir: Optional[Path] = None
-    norm_stats_output_path: Optional[Path] = None
-    contract_output_path: Optional[Path] = None
+    model_output_dir: Path | None = None
+    norm_stats_output_path: Path | None = None
+    contract_output_path: Path | None = None
 
     # Database
-    db_connection_string: Optional[str] = None
+    db_connection_string: str | None = None
 
     # Options
     auto_register: bool = True
     run_backtest_validation: bool = False
-    backtest_start_date: Optional[str] = None
-    backtest_end_date: Optional[str] = None
+    backtest_start_date: str | None = None
+    backtest_end_date: str | None = None
 
     # Metadata
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def __post_init__(self):
         """Set defaults based on version."""
         if not self.experiment_name:
             self.experiment_name = f"ppo_{self.version}_{datetime.now().strftime('%Y%m%d')}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "version": self.version,
@@ -874,7 +874,7 @@ class TrainingConfig:
         return hashlib.sha256(config_str.encode()).hexdigest()[:16]
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> TrainingConfig:
+    def from_dict(cls, data: dict[str, Any]) -> TrainingConfig:
         """Create from dictionary."""
         hp_data = data.get("hyperparameters", data.get("train", {}))
         network_data = data.get("network", {})
@@ -937,7 +937,7 @@ def get_training_config(version: str = "current", **overrides) -> TrainingConfig
     return TrainingConfig(version=version, **overrides)
 
 
-def load_config_from_yaml(yaml_path: Union[str, Path]) -> TrainingConfig:
+def load_config_from_yaml(yaml_path: str | Path) -> TrainingConfig:
     """
     Load training configuration from params.yaml.
 
@@ -960,7 +960,7 @@ def load_config_from_yaml(yaml_path: Union[str, Path]) -> TrainingConfig:
         logger.warning(f"params.yaml not found at {yaml_path}, using defaults")
         return get_training_config()
 
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         data = yaml.safe_load(f)
 
     # Extract hyperparameters from 'train' section
@@ -1036,7 +1036,7 @@ def get_project_root() -> Path:
 # Validation Functions
 # =============================================================================
 
-def validate_config(config: TrainingConfig) -> List[str]:
+def validate_config(config: TrainingConfig) -> list[str]:
     """
     Validate training configuration.
 

@@ -22,11 +22,12 @@ Date: 2026-02-03
 """
 
 import logging
-import importlib
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
 from dataclasses import dataclass
-import pandas as pd
+from typing import Any, Optional
+
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -354,7 +355,7 @@ class CalculatorRegistry:
     """
 
     def __init__(self):
-        self._calculators: Dict[str, CalculatorInfo] = {}
+        self._calculators: dict[str, CalculatorInfo] = {}
         self._register_builtins()
 
     def _register_builtins(self) -> None:
@@ -459,7 +460,7 @@ class CalculatorRegistry:
         )
         logger.info(f"Registered calculator: {name}")
 
-    def get(self, name: str) -> Optional[CalculatorInfo]:
+    def get(self, name: str) -> CalculatorInfo | None:
         """Get calculator by name."""
         return self._calculators.get(name)
 
@@ -490,7 +491,7 @@ class CalculatorRegistry:
             logger.error(f"Calculator {calculator_name} failed: {e}")
             raise
 
-    def list_calculators(self) -> List[str]:
+    def list_calculators(self) -> list[str]:
         """List all registered calculator names."""
         return list(self._calculators.keys())
 
@@ -499,7 +500,7 @@ class CalculatorRegistry:
 # GLOBAL REGISTRY INSTANCE
 # =============================================================================
 
-_registry: Optional[CalculatorRegistry] = None
+_registry: CalculatorRegistry | None = None
 
 
 def get_calculator_registry() -> CalculatorRegistry:
@@ -516,10 +517,10 @@ def get_calculator_registry() -> CalculatorRegistry:
 
 def calculate_features_ssot(
     df_ohlcv: pd.DataFrame,
-    df_macro: Optional[pd.DataFrame] = None,
+    df_macro: pd.DataFrame | None = None,
     config: Optional["PipelineConfig"] = None,
-    df_aux_ohlcv: Optional[Dict[str, pd.DataFrame]] = None,
-) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    df_aux_ohlcv: dict[str, pd.DataFrame] | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
     """
     Calculate all market features defined in pipeline_ssot.yaml.
 
@@ -635,11 +636,11 @@ def calculate_features_ssot(
 
 def _get_input_series(
     source: str,
-    input_columns: List[str],
+    input_columns: list[str],
     df_ohlcv: pd.DataFrame,
-    df_macro: Optional[pd.DataFrame],
+    df_macro: pd.DataFrame | None,
     preprocessing: "PreprocessingConfig"
-) -> List[pd.Series]:
+) -> list[pd.Series]:
     """
     Get input series for a calculator based on source and columns.
 
@@ -686,11 +687,11 @@ def _get_input_series(
 
 
 def _get_aux_input_series(
-    input_columns: List[str],
+    input_columns: list[str],
     df_ohlcv: pd.DataFrame,
-    df_aux_ohlcv: Dict[str, pd.DataFrame],
+    df_aux_ohlcv: dict[str, pd.DataFrame],
     preprocessing: "PreprocessingConfig",
-) -> List[pd.Series]:
+) -> list[pd.Series]:
     """Get input series from auxiliary OHLCV DataFrames.
 
     Handles "pairname.column" notation: e.g., "usdmxn.close" looks up
@@ -737,7 +738,7 @@ def _get_aux_input_series(
 def _eval_custom_formula(
     formula: str,
     df_ohlcv: pd.DataFrame,
-    df_macro: Optional[pd.DataFrame]
+    df_macro: pd.DataFrame | None
 ) -> pd.Series:
     """
     Evaluate a custom formula string.
@@ -780,9 +781,9 @@ def _eval_custom_formula(
 def normalize_features(
     df: pd.DataFrame,
     config: Optional["PipelineConfig"] = None,
-    train_mask: Optional[pd.Series] = None,
-    existing_stats: Optional[Dict[str, Dict[str, float]]] = None
-) -> Tuple[pd.DataFrame, Dict[str, Dict[str, float]]]:
+    train_mask: pd.Series | None = None,
+    existing_stats: dict[str, dict[str, float]] | None = None
+) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """
     Normalize features according to SSOT specifications.
 

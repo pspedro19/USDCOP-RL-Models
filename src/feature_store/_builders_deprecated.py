@@ -33,7 +33,6 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
 
 import numpy as np
 import pandas as pd
@@ -42,12 +41,11 @@ from .core import (
     FEATURE_CONTRACT,
     FEATURE_ORDER,
     OBSERVATION_DIM,
-    CalculatorRegistry,
-    RSICalculator,
-    ATRPercentCalculator,
     ADXCalculator,
+    ATRPercentCalculator,
+    CalculatorRegistry,
     LogReturnCalculator,
-    SmoothingMethod,
+    RSICalculator,
 )
 
 logger = logging.getLogger(__name__)
@@ -82,7 +80,7 @@ class BuilderContext:
     builder_version: str
     feature_count: int
     calculation_time_ms: float = 0.0
-    warnings: List[str] = None
+    warnings: list[str] = None
 
     def __post_init__(self):
         if self.warnings is None:
@@ -258,7 +256,7 @@ class CanonicalFeatureBuilder(IFeatureBuilder):
         self,
         df: pd.DataFrame,
         position: float = 0.0,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> np.ndarray:
         """
         Get feature vector in canonical order for the latest bar.
@@ -309,8 +307,8 @@ class CanonicalFeatureBuilder(IFeatureBuilder):
         self,
         df: pd.DataFrame,
         position: float = 0.0,
-        timestamp: Optional[datetime] = None
-    ) -> Dict[str, float]:
+        timestamp: datetime | None = None
+    ) -> dict[str, float]:
         """
         Get latest features as a dictionary.
 
@@ -345,7 +343,7 @@ class CanonicalFeatureBuilder(IFeatureBuilder):
 
         return result
 
-    def validate_features(self, features: Dict[str, float]) -> Tuple[bool, List[str]]:
+    def validate_features(self, features: dict[str, float]) -> tuple[bool, list[str]]:
         """
         Validate feature dictionary against contract.
 
@@ -476,7 +474,7 @@ class CanonicalFeatureBuilder(IFeatureBuilder):
 
     def _compute_time_normalized_single(
         self,
-        timestamp: Optional[datetime] = None
+        timestamp: datetime | None = None
     ) -> float:
         """Compute normalized time for a single timestamp."""
         if timestamp is None:

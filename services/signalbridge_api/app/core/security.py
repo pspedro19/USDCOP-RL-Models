@@ -3,14 +3,12 @@ Security utilities for authentication and password management.
 Implements JWT token creation/verification and password hashing.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Any
-from jose import jwt, JWTError
+from datetime import UTC, datetime, timedelta
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import SecretStr
 
 from .config import settings
-
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,21 +26,21 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     data: dict,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             minutes=settings.access_token_expire_minutes
         )
 
     to_encode.update({
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "type": "access",
     })
 
@@ -55,21 +53,21 @@ def create_access_token(
 
 def create_refresh_token(
     data: dict,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT refresh token."""
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             days=settings.refresh_token_expire_days
         )
 
     to_encode.update({
         "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "type": "refresh",
     })
 
@@ -80,7 +78,7 @@ def create_refresh_token(
     )
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
+def verify_token(token: str, token_type: str = "access") -> dict | None:
     """
     Verify and decode a JWT token.
 
@@ -107,7 +105,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[dict]:
         return None
 
 
-def decode_token_unsafe(token: str) -> Optional[dict]:
+def decode_token_unsafe(token: str) -> dict | None:
     """
     Decode a JWT token without verification (for inspection only).
     WARNING: Do not use this for authentication!

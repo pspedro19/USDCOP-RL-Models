@@ -14,11 +14,10 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-import logging
 import json
-from datetime import datetime
-from typing import Dict, List, Optional, Any
+import logging
 from pathlib import Path
+from typing import Any
 
 try:
     import asyncpg
@@ -52,7 +51,7 @@ class ExperimentRegistry:
         best = await registry.get_best_run("my_experiment", metric="sharpe_ratio")
     """
 
-    def __init__(self, db_pool: Optional[Any] = None):
+    def __init__(self, db_pool: Any | None = None):
         """
         Initialize registry.
 
@@ -91,7 +90,7 @@ class ExperimentRegistry:
             await self.db_pool.close()
             self._connected = False
 
-    async def register_run(self, result: ExperimentResult) -> Optional[int]:
+    async def register_run(self, result: ExperimentResult) -> int | None:
         """
         Register an experiment run.
 
@@ -145,9 +144,9 @@ class ExperimentRegistry:
     async def get_runs(
         self,
         experiment_name: str,
-        status: Optional[str] = None,
+        status: str | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get runs for an experiment.
 
@@ -199,7 +198,7 @@ class ExperimentRegistry:
         experiment_name: str,
         metric: str = "sharpe_ratio",
         higher_is_better: bool = True,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get best run for an experiment.
 
@@ -237,7 +236,7 @@ class ExperimentRegistry:
             logger.error(f"Failed to get best run: {e}")
             return None
 
-    async def get_run_by_id(self, run_id: str) -> Optional[Dict[str, Any]]:
+    async def get_run_by_id(self, run_id: str) -> dict[str, Any] | None:
         """
         Get run by run_id.
 
@@ -267,9 +266,9 @@ class ExperimentRegistry:
 
     async def compare_runs(
         self,
-        run_ids: List[str],
-        metrics: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
+        run_ids: list[str],
+        metrics: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Compare multiple runs.
 
@@ -321,7 +320,7 @@ class ExperimentRegistry:
     async def get_experiment_summary(
         self,
         experiment_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get summary statistics for an experiment.
 
@@ -361,7 +360,7 @@ class ExperimentRegistry:
             logger.error(f"Failed to get summary: {e}")
             return None
 
-    async def list_experiments(self) -> List[Dict[str, Any]]:
+    async def list_experiments(self) -> list[dict[str, Any]]:
         """
         List all experiments with run counts.
 
@@ -421,7 +420,7 @@ class FileBasedRegistry:
 
         return str(result_path)
 
-    def get_runs(self, experiment_name: str) -> List[ExperimentResult]:
+    def get_runs(self, experiment_name: str) -> list[ExperimentResult]:
         """Get runs from files."""
         exp_dir = self.base_dir / experiment_name
         if not exp_dir.exists():
@@ -441,7 +440,7 @@ class FileBasedRegistry:
         self,
         experiment_name: str,
         metric: str = "sharpe_ratio",
-    ) -> Optional[ExperimentResult]:
+    ) -> ExperimentResult | None:
         """Get best run by metric."""
         runs = self.get_runs(experiment_name)
         successful = [r for r in runs if r.status == "success"]

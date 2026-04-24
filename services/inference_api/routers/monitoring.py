@@ -25,11 +25,11 @@ DEPENDENCIES FOR REAL DATA (not demo/fallback):
    - Typically 500-1000 samples from training data
 """
 
-from fastapi import APIRouter, Request, Query, Body
-from datetime import datetime
-from typing import Optional, List, Dict, Any
 import logging
+from datetime import datetime
+
 import numpy as np
+from fastapi import APIRouter, Body, Query, Request
 
 router = APIRouter(tags=["monitoring"])
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 @router.get("/drift")
 async def get_drift_report(
     req: Request,
-    features: Optional[str] = Query(None, description="Comma-separated feature names to check"),
+    features: str | None = Query(None, description="Comma-separated feature names to check"),
     include_multivariate: bool = Query(True, description="Include multivariate drift methods"),
 ):
     """
@@ -150,7 +150,7 @@ async def get_drift_report(
 async def get_drift_history(
     req: Request,
     hours: int = Query(24, ge=1, le=168, description="Hours of history to retrieve"),
-    feature: Optional[str] = Query(None, description="Specific feature to get history for"),
+    feature: str | None = Query(None, description="Specific feature to get history for"),
 ):
     """
     Get historical drift detection results.
@@ -268,7 +268,7 @@ async def reset_drift_windows(req: Request):
 @router.post("/drift/observe")
 async def add_drift_observation(
     req: Request,
-    observation: Dict[str, float] = Body(..., description="Feature observation as dict"),
+    observation: dict[str, float] = Body(..., description="Feature observation as dict"),
 ):
     """
     Add an observation to drift detection windows.
@@ -323,7 +323,7 @@ async def add_drift_observation(
 @router.post("/drift/observe/batch")
 async def add_drift_observations_batch(
     req: Request,
-    observations: List[Dict[str, float]] = Body(..., description="List of feature observations"),
+    observations: list[dict[str, float]] = Body(..., description="List of feature observations"),
 ):
     """
     Add multiple observations to drift detection windows in batch.
@@ -373,7 +373,7 @@ async def add_drift_observations_batch(
 @router.post("/drift/reference/multivariate")
 async def set_multivariate_reference(
     req: Request,
-    observations: List[List[float]] = Body(..., description="2D array of reference observations"),
+    observations: list[list[float]] = Body(..., description="2D array of reference observations"),
 ):
     """
     Set reference data for multivariate drift detection.
@@ -473,7 +473,7 @@ async def get_drift_status(req: Request):
 @router.post("/drift/persist")
 async def persist_drift_check(
     req: Request,
-    model_id: Optional[str] = Query(None, description="Model ID for the check"),
+    model_id: str | None = Query(None, description="Model ID for the check"),
     triggered_by: str = Query("manual", description="What triggered the check"),
 ):
     """
@@ -608,7 +608,7 @@ async def resolve_alert(
     req: Request,
     alert_id: int,
     resolved_by: str = Query(..., description="User resolving the alert"),
-    notes: Optional[str] = Query(None, description="Resolution notes"),
+    notes: str | None = Query(None, description="Resolution notes"),
 ):
     """Resolve a drift alert."""
     persistence = getattr(req.app.state, 'drift_persistence_service', None)

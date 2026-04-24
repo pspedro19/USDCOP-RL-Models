@@ -9,9 +9,10 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Union
+import pandas as pd
+
 from ..interfaces.normalizer import INormalizer
 
 
@@ -37,7 +38,7 @@ class ClipNormalizer(INormalizer):
         self.min_val = min_val
         self.max_val = max_val
 
-    def normalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def normalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Apply clipping.
 
@@ -54,7 +55,7 @@ class ClipNormalizer(INormalizer):
                 return 0.0
             return max(self.min_val, min(self.max_val, value))
 
-    def denormalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def denormalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Clipping is not reversible, so just return the value.
 

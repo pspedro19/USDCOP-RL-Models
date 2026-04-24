@@ -3,11 +3,13 @@ Data Loader for OHLCV and Macro data from PostgreSQL
 """
 
 import asyncio
-from datetime import datetime, date
-from typing import List, Dict, Any, Optional
+from datetime import datetime
+from typing import Any
+
 import asyncpg
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from ..config import get_settings
 
 settings = get_settings()
@@ -40,7 +42,7 @@ class DataLoader:
     """
 
     def __init__(self):
-        self._pool: Optional[asyncpg.Pool] = None
+        self._pool: asyncpg.Pool | None = None
 
     async def _get_pool(self) -> asyncpg.Pool:
         """Get or create connection pool"""
@@ -230,7 +232,7 @@ class DataLoader:
         self,
         start_date: str,
         end_date: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get statistics about available data for a date range.
 

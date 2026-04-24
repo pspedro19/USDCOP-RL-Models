@@ -38,6 +38,10 @@ export interface MacroVariableSnapshot {
   roc_5: number | null;
   roc_20: number | null;
   z_score_20: number | null;
+  z_score_60?: number | null;
+  z_score_252?: number | null;
+  interpretation?: string;
+  cop_impact?: string;
   trend: string | null;
   signal: string | null;
   chart_data?: MacroChartPoint[];

@@ -12,14 +12,13 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, date
-from typing import Optional
+from datetime import date
 
 import psycopg2
 import psycopg2.extras
 
 from src.news_engine.config import DatabaseConfig
-from src.news_engine.models import RawArticle, EnrichedArticle, CrossReference, NewsDigest
+from src.news_engine.models import CrossReference, EnrichedArticle, NewsDigest
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 class NewsDatabase:
     """PostgreSQL operations for NewsEngine tables (migration 045)."""
 
-    def __init__(self, config: Optional[DatabaseConfig] = None):
+    def __init__(self, config: DatabaseConfig | None = None):
         self.config = config or DatabaseConfig()
         self._conn = None
 
@@ -294,7 +293,7 @@ class NewsDatabase:
         snapshot_date: date,
         features: dict,
         article_count: int = 0,
-        source_counts: Optional[dict] = None,
+        source_counts: dict | None = None,
     ) -> None:
         """Upsert daily feature snapshot."""
         sql = """
@@ -338,7 +337,7 @@ class NewsDatabase:
         articles_fetched: int = 0,
         articles_new: int = 0,
         errors: int = 0,
-        error_details: Optional[str] = None,
+        error_details: str | None = None,
         status: str = "success",
     ) -> None:
         """Log the end of an ingestion run."""

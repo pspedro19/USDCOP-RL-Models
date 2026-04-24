@@ -27,10 +27,9 @@ Version: 2.4.0
 Date: 2026-01-17
 """
 
-from .model_loader import ONNXModelLoader
-from .predictor import ONNXPredictor
 from .ensemble_predictor import EnsemblePredictor, load_ensemble_from_multi_seed
 from .inference_engine import InferenceEngine
+from .model_loader import ONNXModelLoader
 from .model_router import (
     ModelRouter,
     ModelWrapper,
@@ -38,15 +37,16 @@ from .model_router import (
     RouterPrediction,
     create_model_router,
 )
+from .predictor import ONNXPredictor
 from .shadow_pnl import (
-    VirtualTrade,
     ShadowMetrics,
     ShadowPnLTracker,
+    VirtualTrade,
 )
 from .validated_predictor import (
-    ValidatedPredictor,
-    PredictionStats,
     PredictableModel,
+    PredictionStats,
+    ValidatedPredictor,
 )
 
 __all__ = [

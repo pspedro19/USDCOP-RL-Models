@@ -3,13 +3,13 @@ Exchange Adapter Factory.
 Implements Factory pattern for creating exchange adapters.
 """
 
-from typing import Dict, Type, Optional
 
 from app.contracts.exchange import SupportedExchange
-from app.core.exceptions import ValidationError, ErrorCode
+from app.core.exceptions import ErrorCode, ValidationError
+
 from .base import ExchangeAdapter
-from .mexc import MEXCAdapter
 from .binance import BinanceAdapter
+from .mexc import MEXCAdapter
 
 
 class ExchangeAdapterFactory:
@@ -19,7 +19,7 @@ class ExchangeAdapterFactory:
     """
 
     # Registry of exchange adapters
-    _adapters: Dict[SupportedExchange, Type[ExchangeAdapter]] = {
+    _adapters: dict[SupportedExchange, type[ExchangeAdapter]] = {
         SupportedExchange.MEXC: MEXCAdapter,
         SupportedExchange.BINANCE: BinanceAdapter,
     }
@@ -30,7 +30,7 @@ class ExchangeAdapterFactory:
         exchange: SupportedExchange,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = False,
     ) -> ExchangeAdapter:
         """
@@ -69,7 +69,7 @@ class ExchangeAdapterFactory:
     def register(
         cls,
         exchange: SupportedExchange,
-        adapter_class: Type[ExchangeAdapter],
+        adapter_class: type[ExchangeAdapter],
     ) -> None:
         """
         Register a new exchange adapter.
@@ -95,7 +95,7 @@ def get_exchange_adapter(
     exchange: SupportedExchange,
     api_key: str,
     api_secret: str,
-    passphrase: Optional[str] = None,
+    passphrase: str | None = None,
     testnet: bool = False,
 ) -> ExchangeAdapter:
     """

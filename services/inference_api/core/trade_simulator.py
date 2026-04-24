@@ -3,14 +3,15 @@ Trade Simulator
 Simulates trades based on model signals and calculates P&L
 """
 
-import pandas as pd
-import numpy as np
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
 from ..config import get_settings
-from .observation_builder import ObservationBuilder
 from .inference_engine import InferenceEngine
+from .observation_builder import ObservationBuilder
 
 settings = get_settings()
 
@@ -24,16 +25,16 @@ class Trade:
     entry_time: datetime
     entry_price: float
     entry_bar: int
-    exit_time: Optional[datetime] = None
-    exit_price: Optional[float] = None
-    exit_bar: Optional[int] = None
+    exit_time: datetime | None = None
+    exit_price: float | None = None
+    exit_bar: int | None = None
     pnl_usd: float = 0.0
     pnl_pct: float = 0.0
-    exit_reason: Optional[str] = None
+    exit_reason: str | None = None
     equity_at_entry: float = 0.0
-    equity_at_exit: Optional[float] = None
+    equity_at_exit: float | None = None
     entry_confidence: float = 0.0
-    exit_confidence: Optional[float] = None
+    exit_confidence: float | None = None
     duration_bars: int = 0
 
 
@@ -45,7 +46,7 @@ class SimulationState:
     position: str = "FLAT"  # "FLAT", "LONG", "SHORT"
     position_size: float = 0.0  # Fraction of equity in trade (0.5-1.0)
     entry_price: float = 0.0
-    entry_time: Optional[datetime] = None
+    entry_time: datetime | None = None
     entry_bar: int = 0
     entry_confidence: float = 0.0
     trade_count: int = 0
@@ -111,9 +112,9 @@ class TradeSimulator:
         inference_engine: InferenceEngine,
         observation_builder: ObservationBuilder,
         model_id: str = "ppo_primary",
-        progress_callback: Optional[callable] = None,
-        trade_callback: Optional[callable] = None
-    ) -> List[Trade]:
+        progress_callback: callable | None = None,
+        trade_callback: callable | None = None
+    ) -> list[Trade]:
         """
         Run full simulation on historical data.
 
@@ -131,7 +132,7 @@ class TradeSimulator:
         # Set model-specific thresholds
         self._set_model_thresholds(model_id)
 
-        trades: List[Trade] = []
+        trades: list[Trade] = []
         state = SimulationState(equity=self.initial_capital, peak_equity=self.initial_capital)
 
         total_bars = len(df)
@@ -285,7 +286,7 @@ class TradeSimulator:
         current_price: float,
         timestamp: datetime,
         model_id: str
-    ) -> Optional[Trade]:
+    ) -> Trade | None:
         """
         Force close position if held too long (Position Bias Fix).
         This prevents the model from holding a single position for months/years.
@@ -349,7 +350,7 @@ class TradeSimulator:
         timestamp: datetime,
         bar_idx: int,
         model_id: str
-    ) -> Optional[Trade]:
+    ) -> Trade | None:
         """Check if stop-loss or take-profit is triggered"""
         if state.position == "FLAT":
             return None
@@ -407,7 +408,7 @@ class TradeSimulator:
         timestamp: datetime,
         bar_idx: int,
         model_id: str
-    ) -> Optional[Trade]:
+    ) -> Trade | None:
         """
         Process a trading signal and update state.
 
@@ -549,7 +550,7 @@ class TradeSimulator:
 
         return trade
 
-    def calculate_summary(self, trades: List[Trade]) -> Dict[str, Any]:
+    def calculate_summary(self, trades: list[Trade]) -> dict[str, Any]:
         """Calculate summary statistics for trades"""
         if not trades:
             return {

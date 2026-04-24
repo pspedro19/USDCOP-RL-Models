@@ -11,23 +11,21 @@ Version: 2.0.0 - SSOT consolidation
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
-
-from .core import BaseSchema
 
 # =============================================================================
 # SSOT IMPORTS - Single Source of Truth
 # =============================================================================
 # FEATURE_ORDER and OBSERVATION_DIM are imported from the canonical source.
 # NO FALLBACK - if import fails, error should be raised to detect configuration issues.
-
 from src.core.contracts.feature_contract import (
     FEATURE_ORDER,
     OBSERVATION_DIM,
 )
 
+from .core import BaseSchema
 
 # Type alias for feature order (Literal type for type checking)
 FeatureOrderType = Literal[
@@ -56,7 +54,7 @@ class NormalizationStatsSchema(BaseSchema):
     clip_max: float = Field(default=5.0, description="Maximum clip value")
 
     @property
-    def clip_range(self) -> Tuple[float, float]:
+    def clip_range(self) -> tuple[float, float]:
         """Get clip range as tuple."""
         return (self.clip_min, self.clip_max)
 
@@ -94,7 +92,7 @@ class NamedFeatures(BaseSchema):
         ..., ge=0, le=1, description="Normalized session time"
     )
 
-    def to_observation(self) -> List[float]:
+    def to_observation(self) -> list[float]:
         """Convert to observation vector in canonical order."""
         return [
             self.log_ret_5m, self.log_ret_1h, self.log_ret_4h,
@@ -105,7 +103,7 @@ class NamedFeatures(BaseSchema):
         ]
 
     @classmethod
-    def from_observation(cls, observation: List[float]) -> "NamedFeatures":
+    def from_observation(cls, observation: list[float]) -> NamedFeatures:
         """Create from observation vector."""
         if len(observation) != OBSERVATION_DIM:
             raise ValueError(
@@ -136,7 +134,7 @@ class ObservationSchema(BaseSchema):
     This is the raw 15-dimensional vector passed to the model.
     """
 
-    values: List[float] = Field(
+    values: list[float] = Field(
         ...,
         min_length=OBSERVATION_DIM,
         max_length=OBSERVATION_DIM,
@@ -146,7 +144,7 @@ class ObservationSchema(BaseSchema):
 
     @field_validator("values")
     @classmethod
-    def validate_length(cls, v: List[float]) -> List[float]:
+    def validate_length(cls, v: list[float]) -> list[float]:
         """Validate observation vector length."""
         if len(v) != OBSERVATION_DIM:
             raise ValueError(
@@ -171,7 +169,7 @@ class MarketContextSchema(BaseSchema):
     estimated_slippage_bps: float = Field(
         ..., ge=0, description="Estimated slippage in basis points"
     )
-    execution_price: Optional[float] = Field(
+    execution_price: float | None = Field(
         default=None, description="Execution price (if filled)"
     )
     timestamp_utc: str = Field(..., description="Timestamp in UTC (ISO format)")
@@ -183,20 +181,20 @@ class FeatureSnapshotSchema(BaseSchema):
     Combines observation vector with named features and market context.
     """
 
-    observation: List[float] = Field(
+    observation: list[float] = Field(
         ...,
         min_length=OBSERVATION_DIM,
         max_length=OBSERVATION_DIM,
         description=f"Raw observation vector ({OBSERVATION_DIM} dims)"
     )
     features: NamedFeatures = Field(..., description="Named features")
-    market_context: Optional[MarketContextSchema] = Field(
+    market_context: MarketContextSchema | None = Field(
         default=None, description="Market context"
     )
     contract_version: str = Field(default="v1", description="Contract version")
 
     @model_validator(mode="after")
-    def validate_consistency(self) -> "FeatureSnapshotSchema":
+    def validate_consistency(self) -> FeatureSnapshotSchema:
         """Ensure observation and features are consistent."""
         expected = self.features.to_observation()
         for i, (obs, exp) in enumerate(zip(self.observation, expected)):
@@ -241,7 +239,7 @@ def create_observation(
     )
 
 
-def validate_observation(observation: List[float]) -> bool:
+def validate_observation(observation: list[float]) -> bool:
     """Validate an observation vector.
 
     Returns True if valid, False otherwise.

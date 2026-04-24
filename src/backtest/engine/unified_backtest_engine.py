@@ -52,12 +52,11 @@ import hashlib
 import json
 import logging
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Protocol, Tuple, Union
+from typing import Any, Final, Protocol
 
 import numpy as np
 import pandas as pd
@@ -89,7 +88,7 @@ class TradeDirection(IntEnum):
         return self.name
 
     @classmethod
-    def from_action(cls, action: int) -> "TradeDirection":
+    def from_action(cls, action: int) -> TradeDirection:
         """
         Convert model action to TradeDirection.
 
@@ -155,7 +154,7 @@ class BacktestConfig:
     threshold_long: float = 0.33
     threshold_short: float = -0.33
     allow_short: bool = True
-    max_position_hold_bars: Optional[int] = None
+    max_position_hold_bars: int | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -181,7 +180,7 @@ class BacktestConfig:
         """Get slippage as decimal (bps / 10000)."""
         return self.slippage_bps / 10000.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "start_date": self.start_date.isoformat(),
@@ -247,7 +246,7 @@ class Trade:
     bars_held: int
     entry_signal_confidence: float = 0.0
     exit_reason: str = "signal"
-    features_snapshot: Optional[Dict[str, float]] = None
+    features_snapshot: dict[str, float] | None = None
     transaction_costs: float = 0.0
 
     @property
@@ -255,7 +254,7 @@ class Trade:
         """Check if trade was profitable."""
         return self.pnl_absolute > 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "trade_id": self.trade_id,
@@ -322,7 +321,7 @@ class BacktestMetrics:
     max_consecutive_wins: int = 0
     max_consecutive_losses: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary for serialization."""
         return {
             "total_return": round(self.total_return, 6),
@@ -396,15 +395,15 @@ class BacktestResult:
     """
     config: BacktestConfig
     metrics: BacktestMetrics
-    trades: List[Trade]
+    trades: list[Trade]
     equity_curve: pd.DataFrame
     daily_returns: pd.Series
     execution_time_seconds: float = 0.0
     bars_processed: int = 0
-    start_timestamp: Optional[datetime] = None
-    end_timestamp: Optional[datetime] = None
+    start_timestamp: datetime | None = None
+    end_timestamp: datetime | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary for serialization."""
         return {
             "config": self.config.to_dict(),
@@ -416,7 +415,7 @@ class BacktestResult:
             "end_timestamp": self.end_timestamp.isoformat() if self.end_timestamp else None,
         }
 
-    def save(self, path: Union[str, Path]) -> None:
+    def save(self, path: str | Path) -> None:
         """Save result to JSON file."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -456,7 +455,7 @@ class IBacktestModelLoader(Protocol):
         """Load model from path."""
         ...
 
-    def predict(self, observation: np.ndarray) -> Tuple[int, float, np.ndarray]:
+    def predict(self, observation: np.ndarray) -> tuple[int, float, np.ndarray]:
         """
         Run prediction.
 
@@ -480,7 +479,7 @@ class StubModelLoader:
 
     def __init__(self) -> None:
         self._loaded = False
-        self._model_path: Optional[str] = None
+        self._model_path: str | None = None
 
     def load(self, path: str) -> bool:
         """Simulate loading a model."""
@@ -489,7 +488,7 @@ class StubModelLoader:
         logger.warning(f"StubModelLoader: Simulating model load from {path}")
         return True
 
-    def predict(self, observation: np.ndarray) -> Tuple[int, float, np.ndarray]:
+    def predict(self, observation: np.ndarray) -> tuple[int, float, np.ndarray]:
         """
         Return dummy prediction (HOLD with 0.5 confidence).
 
@@ -514,7 +513,7 @@ class IBacktestFeatureBuilder(Protocol):
     def build_observation(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame],
+        macro: pd.DataFrame | None,
         position: float,
         bar_idx: int,
     ) -> np.ndarray:
@@ -542,7 +541,7 @@ class StubFeatureBuilder:
     def build_observation(
         self,
         ohlcv: pd.DataFrame,
-        macro: Optional[pd.DataFrame],
+        macro: pd.DataFrame | None,
         position: float,
         bar_idx: int,
     ) -> np.ndarray:
@@ -601,8 +600,8 @@ class UnifiedBacktestEngine:
     def __init__(
         self,
         config: BacktestConfig,
-        model_loader: Optional[IBacktestModelLoader] = None,
-        feature_builder: Optional[IBacktestFeatureBuilder] = None,
+        model_loader: IBacktestModelLoader | None = None,
+        feature_builder: IBacktestFeatureBuilder | None = None,
     ):
         """
         Initialize UnifiedBacktestEngine.
@@ -630,15 +629,15 @@ class UnifiedBacktestEngine:
         self._equity: float = config.initial_capital
         self._position: TradeDirection = TradeDirection.FLAT
         self._position_entry_price: float = 0.0
-        self._position_entry_time: Optional[datetime] = None
+        self._position_entry_time: datetime | None = None
         self._position_entry_bar: int = 0
         self._position_entry_confidence: float = 0.0
-        self._position_features: Optional[Dict[str, float]] = None
+        self._position_features: dict[str, float] | None = None
 
         # Trade tracking
-        self._trades: List[Trade] = []
+        self._trades: list[Trade] = []
         self._trade_counter: int = 0
-        self._equity_history: List[Tuple[datetime, float]] = []
+        self._equity_history: list[tuple[datetime, float]] = []
 
         logger.info(f"UnifiedBacktestEngine initialized with config hash: {config.get_config_hash()}")
 
@@ -665,8 +664,8 @@ class UnifiedBacktestEngine:
         """Create feature builder, with fallback to stub."""
         try:
             from src.feature_store.builders import (
-                CanonicalFeatureBuilder,
                 BuilderContext,
+                CanonicalFeatureBuilder,
             )
 
             builder = CanonicalFeatureBuilder.for_backtest(
@@ -689,7 +688,7 @@ class UnifiedBacktestEngine:
     def run(
         self,
         ohlcv_df: pd.DataFrame,
-        macro_df: Optional[pd.DataFrame] = None,
+        macro_df: pd.DataFrame | None = None,
     ) -> BacktestResult:
         """
         Run backtest on provided data.
@@ -848,7 +847,7 @@ class UnifiedBacktestEngine:
     def _process_bar(
         self,
         ohlcv_df: pd.DataFrame,
-        macro_df: Optional[pd.DataFrame],
+        macro_df: pd.DataFrame | None,
         bar_idx: int,
     ) -> None:
         """
@@ -1304,7 +1303,7 @@ class UnifiedBacktestEngine:
         )
 
     def _calculate_max_consecutive(
-        self, pnls: List[float], positive: bool
+        self, pnls: list[float], positive: bool
     ) -> int:
         """Calculate maximum consecutive wins or losses."""
         max_streak = 0
@@ -1333,7 +1332,7 @@ class _ONNXModelLoaderAdapter:
     def load(self, path: str) -> bool:
         return self._loader.is_loaded() or self._loader.load(path)
 
-    def predict(self, observation: np.ndarray) -> Tuple[int, float, np.ndarray]:
+    def predict(self, observation: np.ndarray) -> tuple[int, float, np.ndarray]:
         """Run prediction and return (action, confidence, probs)."""
         if observation.ndim == 1:
             observation = observation.reshape(1, -1)
@@ -1368,7 +1367,7 @@ def create_backtest_engine(
     threshold_long: float = 0.33,
     threshold_short: float = -0.33,
     allow_short: bool = True,
-    max_position_hold_bars: Optional[int] = None,
+    max_position_hold_bars: int | None = None,
 ) -> UnifiedBacktestEngine:
     """
     Factory function to create UnifiedBacktestEngine.

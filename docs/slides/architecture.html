@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USDCOP Trading System Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  a { color: #60a5fa; text-decoration: none; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid #334155;
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .header h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #f1f5f9;
+    white-space: nowrap;
+  }
+  .header .subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: auto;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    background: #1e293b;
+    border-bottom: 2px solid #334155;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent;
+  }
+  .tab-bar::-webkit-scrollbar { height: 4px; }
+  .tab-bar::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: #e2e8f0; background: #1e293b; }
+  .tab-btn.active { color: #f1f5f9; }
+  .tab-btn .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  /* accent colors per tab */
+  .tab-btn[data-tab="0"].active { border-bottom-color: #10b981; }
+  .tab-btn[data-tab="0"] .dot { background: #10b981; }
+  .tab-btn[data-tab="1"].active { border-bottom-color: #6b7280; }
+  .tab-btn[data-tab="1"] .dot { background: #6b7280; }
+  .tab-btn[data-tab="2"].active { border-bottom-color: #f59e0b; }
+  .tab-btn[data-tab="2"] .dot { background: #f59e0b; }
+  .tab-btn[data-tab="3"].active { border-bottom-color: #ef4444; }
+  .tab-btn[data-tab="3"] .dot { background: #ef4444; }
+  .tab-btn[data-tab="4"].active { border-bottom-color: #a855f7; }
+  .tab-btn[data-tab="4"] .dot { background: #a855f7; }
+  .tab-btn[data-tab="5"].active { border-bottom-color: #3b82f6; }
+  .tab-btn[data-tab="5"] .dot { background: #3b82f6; }
+  .tab-btn[data-tab="6"].active { border-bottom-color: #14b8a6; }
+  .tab-btn[data-tab="6"] .dot { background: #14b8a6; }
+
+  /* Content area */
+  .content { flex: 1; padding: 1.5rem 2rem 2rem; overflow-y: auto; }
+  .slide { display: none; }
+  .slide.active { display: block; }
+
+  /* Slide header */
+  .slide-header { margin-bottom: 1.5rem; }
+  .slide-header h2 {
+    font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.5rem;
+  }
+  .slide-header .meta {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.6rem;
+    border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-green { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+  .badge-yellow { background: #78350f; color: #fcd34d; border: 1px solid #f59e0b; }
+  .badge-gray { background: #374151; color: #9ca3af; border: 1px solid #6b7280; }
+  .badge-red { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+  .badge-blue { background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6; }
+  .badge-purple { background: #4a1d96; color: #c4b5fd; border: 1px solid #8b5cf6; }
+  .badge-teal { background: #134e4a; color: #5eead4; border: 1px solid #14b8a6; }
+  .slide-desc {
+    font-size: 0.9rem; color: #94a3b8; font-style: italic; margin-top: 0.5rem;
+  }
+
+  /* Diagram container */
+  .diagram-container {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+  }
+  .diagram-container .mermaid svg { max-width: 100%; height: auto; }
+
+  /* Tables */
+  .tables-section h3 {
+    font-size: 1rem; font-weight: 600; color: #cbd5e1;
+    margin-bottom: 0.75rem; margin-top: 1.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #334155;
+  }
+  .tables-section h3:first-child { margin-top: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+  }
+  thead th {
+    background: #1e293b;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid #334155;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #1e293b;
+    color: #cbd5e1;
+    vertical-align: top;
+  }
+  tbody tr:hover { background: rgba(59, 130, 246, 0.05); }
+  code {
+    background: #334155; color: #93c5fd; padding: 0.1em 0.35em;
+    border-radius: 4px; font-size: 0.8em; font-family: 'SF Mono', Consolas, monospace;
+  }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid #334155;
+    padding: 0.75rem 2rem;
+    font-size: 0.72rem;
+    color: #475569;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .header { padding: 0.75rem 1rem; }
+    .header h1 { font-size: 1.1rem; }
+    .content { padding: 1rem; }
+    .tab-btn { padding: 0.6rem 0.85rem; font-size: 0.72rem; }
+    .slide-header h2 { font-size: 1.2rem; }
+    table { font-size: 0.75rem; }
+    thead th, tbody td { padding: 0.4rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>USDCOP Trading System Architecture</h1>
+  <span class="subtitle">39 DAGs | 14 Active | 25 Paused | 7 Layers</span>
+</div>
+
+<div class="tab-bar" id="tabBar"></div>
+
+<div class="content" id="content"></div>
+
+<div class="footer">
+  USDCOP Trading System Architecture | 39 DAGs | Generated 2026-04-17
+</div>
+
+<script>
+const slides = [
+  {
+    label: "L0 Data",
+    title: "Slide 1/7 -- L0 DATA OPS: Data Foundation",
+    dags: "5 DAGs", active: 5, paused: 0,
+    badgeClass: "badge-green",
+    desc: "Everything starts here: 3 FX pairs every 5 min + 40 macro variables hourly.",
+    mermaid: `flowchart TB
+    subgraph EXT["EXTERNAL SOURCES"]
+        TD["TwelveData API<br/>3 FX: COP / MXN / BRL<br/>8 API keys rotation"]
+        MACRO_API["FRED + Investing.com<br/>BanRep + BCRP<br/>DANE + Fedesarrollo<br/>BanRep BOP"]
+    end
+
+    subgraph RT["L0 REALTIME -- Market Hours 8:00-12:55 COT, Mon-Fri"]
+        direction TB
+        ORT["<b>core_l0_02_ohlcv_realtime</b><br/>every 5 min | 3 FX pairs<br/>TradingCalendar + CircuitBreaker<br/>BRL: fetch UTC, convert COT"]
+        MUP["<b>core_l0_04_macro_update</b><br/>hourly 8-12 COT<br/>7 extractors via ExtractorRegistry<br/>Rewrites last 15 records/variable"]
+    end
+
+    subgraph BATCH["L0 BATCH -- Weekly + Manual"]
+        OBF["<b>core_l0_01_ohlcv_backfill</b><br/>MANUAL trigger<br/>Seed restore if DB empty<br/>Gap detection MIN to MAX<br/>Exports updated seeds"]
+        MBF["<b>core_l0_03_macro_backfill</b><br/>Sunday 23:00 COT<br/>7 sources full extraction<br/>Generates 9 MASTER files"]
+    end
+
+    subgraph BKP["L0 BACKUP -- Daily Durability"]
+        SBK["<b>core_l0_05_seed_backup</b><br/>Daily 15:00 COT<br/>DB to parquet + MinIO upload<br/>Atomic writes + manifest hash"]
+    end
+
+    subgraph DB["PostgreSQL + TimescaleDB"]
+        OHLCV[("usdcop_m5_ohlcv<br/>286,839 rows<br/>3 FX pairs")]
+        MACRO[("macro_indicators_daily<br/>10,819 rows | 40 vars")]
+    end
+
+    subgraph FS["Seed Files"]
+        SEEDS["seeds/latest/*.parquet<br/>MACRO_DAILY_CLEAN.parquet<br/>data/backups/seeds/*"]
+    end
+
+    subgraph S3["MinIO s3://"]
+        MINIO["99-common-trading-backups<br/>seeds/YYYY-MM-DD/"]
+    end
+
+    TD --> ORT & OBF
+    MACRO_API --> MUP & MBF
+
+    ORT -->|"UPSERT (time,symbol)"| OHLCV
+    OBF -->|"restore + gap fill"| OHLCV
+    MUP -->|"FrequencyRouter"| MACRO
+    MBF -->|"full extract"| MACRO
+    MBF --> SEEDS
+    OBF --> SEEDS
+    SBK -->|"DB to parquet"| SEEDS
+    SBK -->|"boto3 put_object"| MINIO
+
+    OHLCV -.->|"consumed by"| DOWNSTREAM["L3 Training + L1 Features + L8 Analysis"]
+    MACRO -.->|"consumed by"| DOWNSTREAM
+
+    style RT fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style BATCH fill:#1e3a5f,stroke:#3b82f6,color:#dbeafe
+    style BKP fill:#4a1d96,stroke:#8b5cf6,color:#ede9fe
+    style DB fill:#7c2d12,stroke:#ea580c,color:#fed7aa
+    style S3 fill:#065f46,stroke:#34d399,color:#d1fae5`,
+    tables: `
+      <h3>Data Freshness Thresholds</h3>
+      <table>
+        <thead><tr><th>Data</th><th>Max Staleness</th><th>Gate Type</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td>OHLCV 5-min</td><td>3 days</td><td><span class="badge badge-red">BLOCKING</span></td><td>Training halted</td></tr>
+          <tr><td>Macro daily</td><td>7 days</td><td><span class="badge badge-red">BLOCKING</span></td><td>Training halted</td></tr>
+          <tr><td>Model artifacts</td><td>10 days</td><td><span class="badge badge-yellow">WARNING</span></td><td>Inference continues</td></tr>
+          <tr><td>News articles</td><td>24 hours</td><td><span class="badge badge-gray">NONE</span></td><td>Analysis lacks context</td></tr>
+        </tbody>
+      </table>
+      <h3>Key Tables</h3>
+      <table>
+        <thead><tr><th>Table</th><th>PK</th><th>Update Frequency</th><th>Consumers</th></tr></thead>
+        <tbody>
+          <tr><td><code>usdcop_m5_ohlcv</code></td><td><code>(time, symbol)</code></td><td>Every 5 min</td><td>L1, L3 H1/H5, L8</td></tr>
+          <tr><td><code>macro_indicators_daily</code></td><td><code>fecha</code></td><td>Hourly</td><td>L3 H1/H5, L8 Analysis</td></tr>
+          <tr><td><code>macro_indicators_monthly</code></td><td><code>fecha</code></td><td>Weekly</td><td>L3 (macro features)</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "L1+L2 Features",
+    title: "Slide 2/7 -- L1+L2 FEATURE OPS: Feature Engineering & Datasets",
+    dags: "4 DAGs", active: 0, paused: 4,
+    badgeClass: "badge-gray",
+    desc: "Prepare normalized observations for RL models. Anti-leakage by design.",
+    mermaid: `flowchart TB
+    subgraph L0["L0 DATA (upstream)"]
+        OHLCV[("usdcop_m5_ohlcv<br/>5-min bars")]
+        MACRO[("macro_indicators_daily<br/>40 variables")]
+    end
+
+    subgraph L1["L1 FEATURE COMPUTATION -- every 5 min"]
+        direction TB
+        FR["<b>rl_l1_01_feature_refresh</b><br/>every 5 min 8-12 COT<br/>STATUS: PAUSED<br/><br/>CanonicalFeatureBuilder computes:<br/>18 market features<br/>Wilder EMA for RSI/ATR/ADX<br/>Z-score normalize, clip -5 to +5"]
+        MP["<b>rl_l1_03_model_promotion</b><br/>MANUAL trigger<br/>STATUS: PAUSED<br/><br/>TRUNCATE + recompute ALL<br/>historical features with NEW<br/>norm_stats from approved model"]
+    end
+
+    subgraph NRT["inference_ready_nrt Table"]
+        NRTTBL[("inference_ready_nrt<br/>FLOAT[] 18 features<br/>+ price + hashes<br/>+ pg_notify trigger")]
+    end
+
+    subgraph L2["L2 DATASET BUILD -- Manual"]
+        direction TB
+        DS["<b>rl_l2_01_dataset_build</b><br/>MANUAL | PAUSED<br/><br/>1. Load OHLCV + Macro<br/>2. merge_asof = T-1 anti-leakage<br/>3. Fixed date splits<br/>4. norm_stats FROM TRAIN ONLY<br/>5. Z-score, clip -5 to +5"]
+        DR["<b>rl_l2_02_drift_retrain</b><br/>ON DRIFT EVENT | PAUSED<br/><br/>KS test drift detection"]
+    end
+
+    subgraph L2OUT["L2 Output Files"]
+        TRAIN["train.parquet | val.parquet<br/>test.parquet | norm_stats.json<br/>lineage.json"]
+    end
+
+    OHLCV --> FR
+    MACRO --> FR
+    FR -->|"FLOAT 18 + normalize"| NRTTBL
+    FR -->|"pg_notify features_ready"| L5_SENSOR["L5 FeatureReadySensor"]
+    MP -->|"bulk recompute"| NRTTBL
+
+    OHLCV --> DS
+    MACRO --> DS
+    DS --> TRAIN
+    DR --> TRAIN
+
+    NRTTBL -.->|"consumed by"| RL_L5["RL L5 Inference"]
+    TRAIN -.->|"consumed by"| RL_L3["RL L3 Training (PPO)"]
+
+    style L1 fill:#1e3a5f,stroke:#3b82f6,color:#dbeafe
+    style L2 fill:#312e81,stroke:#6366f1,color:#e0e7ff
+    style NRT fill:#7c2d12,stroke:#ea580c,color:#fed7aa`,
+    tables: `
+      <h3>Anti-Leakage Mechanisms</h3>
+      <table>
+        <thead><tr><th>Mechanism</th><th>Where</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>Train-only norm_stats</td><td>L2 step 5</td><td>mean/std computed ONLY on training split</td></tr>
+          <tr><td>Macro T-1 shift</td><td>L2 step 3</td><td><code>merge_asof(direction='backward')</code> ensures yesterday's macro</td></tr>
+          <tr><td>Fixed date splits</td><td>L2 step 4</td><td>Chronological, no random shuffle, dates from SSOT YAML</td></tr>
+          <tr><td>Feature hash validation</td><td>L1 write</td><td>SHA256 of FEATURE_ORDER stored alongside features</td></tr>
+        </tbody>
+      </table>
+      <h3>Why H1/H5 Skip L1+L2</h3>
+      <table>
+        <thead><tr><th>Track</th><th>Data Source</th><th>Uses L1/L2?</th></tr></thead>
+        <tbody>
+          <tr><td>H5 Weekly (PRODUCTION)</td><td>Loads seed parquets directly in L3</td><td>No</td></tr>
+          <tr><td>H1 Daily (PAUSED)</td><td>Loads seed parquets directly in L3</td><td>No</td></tr>
+          <tr><td>RL PPO (DEPRIORITIZED)</td><td><code>inference_ready_nrt</code> + L2 parquets</td><td>Yes</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "L3+L4 Training",
+    title: "Slide 3/7 -- L3+L4 TRAINING OPS: Model Training & Validation",
+    dags: "8 DAGs", active: 1, paused: 7,
+    badgeClass: "badge-yellow",
+    desc: "Sunday: retrain everything. L4: backtest OOS + 5 automatic gates + human approval.",
+    mermaid: `flowchart TB
+    subgraph INPUTS["INPUT DATA (from L0)"]
+        OHLCV_SEED["seeds/latest/<br/>usdcop_daily_ohlcv.parquet<br/>~3K rows, 2020-2026"]
+        MACRO_CLEAN["MACRO_DAILY_CLEAN.parquet<br/>17 macro cols cleaned"]
+        M5_SEED["usdcop_m5_ohlcv.parquet<br/>~90K rows, 5-min bars<br/>(RL only)"]
+    end
+
+    subgraph L3["L3 MODEL TRAINING -- Sunday"]
+        direction TB
+        H5L3["<b>forecast_h5_l3_weekly_training</b><br/>Sun 01:30 COT | ACTIVE<br/><br/>1. validate_data_freshness<br/>2. build 23 features<br/>3. train Ridge + BayesianRidge<br/>4. EXPANDING window 2020 to last Fri<br/>5. MLflow log"]
+        H1L3["<b>forecast_h1_l3_weekly_training</b><br/>Sun 01:00 COT | PAUSED<br/><br/>9 models x 7 horizons = 63 variants"]
+    end
+
+    subgraph MODELS_63["9 MODELS x 7 HORIZONS"]
+        LINEAR["LINEAR<br/>Ridge | Bayesian Ridge | ARD"]
+        BOOST["BOOSTING<br/>XGBoost | LightGBM | CatBoost"]
+        HYBRID["HYBRID<br/>Hybrid XGB | Hybrid LGB | Hybrid CB"]
+    end
+
+    subgraph L4["L4 VALIDATION & APPROVAL"]
+        direction TB
+        H5L4["<b>forecast_h5_l4_backtest_promotion</b><br/>MANUAL | PAUSED"]
+        RL_EXP["<b>rl_l4_01_experiment_runner</b><br/>MANUAL | PAUSED"]
+        RL_BT["<b>rl_l4_02_backtest_validation</b><br/>MANUAL | PAUSED"]
+    end
+
+    subgraph GATES["5 AUTOMATIC GATES (Vote 1/2)"]
+        G1["min_return_pct > -15%"]
+        G2["min_sharpe > 0.0"]
+        G3["max_drawdown < 20%"]
+        G4["min_trades >= 10"]
+        G5["p-value < 0.05"]
+    end
+
+    subgraph APPROVAL["HUMAN APPROVAL (Vote 2/2)"]
+        DASH["/dashboard: Review + Approve"]
+    end
+
+    OHLCV_SEED --> H5L3 & H1L3
+    MACRO_CLEAN --> H5L3 & H1L3
+    M5_SEED --> RL_EXP & RL_BT
+
+    H5L3 -->|"models"| H5L4
+    H1L3 -.-> MODELS_63
+    H5L4 --> GATES --> APPROVAL
+    APPROVAL -->|"APPROVED"| DEPLOY["Stage 6: --phase production"]
+
+    style L3 fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style L4 fill:#4a1d96,stroke:#8b5cf6,color:#ede9fe
+    style GATES fill:#78350f,stroke:#f59e0b,color:#fef3c7
+    style APPROVAL fill:#7c2d12,stroke:#ef4444,color:#fecaca
+    style MODELS_63 fill:#1e3a5f,stroke:#3b82f6,color:#dbeafe`,
+    tables: `
+      <h3>The 63 Variants Matrix</h3>
+      <table>
+        <thead><tr><th>Model</th><th>H=1</th><th>H=5</th><th>H=10</th><th>H=15</th><th>H=20</th><th>H=25</th><th>H=30</th></tr></thead>
+        <tbody>
+          <tr><td>Ridge</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>Bayesian Ridge</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>ARD</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>XGBoost</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>LightGBM</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>CatBoost</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>Hybrid XGB</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>Hybrid LGB</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+          <tr><td>Hybrid CB</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td><td>DA%</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-top:0.5rem;">Only Ridge + BR at H=5 go to PRODUCTION (Smart Simple v2.0). The other 61 variants feed the /forecasting dashboard for model comparison.</p>
+      <h3>RL Experiment Protocol</h3>
+      <table>
+        <thead><tr><th>Rule</th><th>Enforcement</th></tr></thead>
+        <tbody>
+          <tr><td>ONE variable per experiment</td><td>Never change action space + model + features simultaneously</td></tr>
+          <tr><td>5 seeds minimum</td><td>[42, 123, 456, 789, 1337], no exceptions</td></tr>
+          <tr><td>Statistical validation</td><td>p &lt; 0.05, DA &gt; 55%, Sharpe &gt; 1.0, CI excludes zero</td></tr>
+          <tr><td>Compare vs baselines</td><td>Buy-and-hold (-12.29%), random agent (-4.12%)</td></tr>
+          <tr><td>Frozen SSOT config</td><td>Each experiment = complete pipeline_ssot.yaml</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "L5+L7 Execution",
+    title: "Slide 4/7 -- L5+L7 SIGNAL & EXECUTION: Decide and Act",
+    dags: "6 DAGs", active: 3, paused: 3,
+    badgeClass: "badge-red",
+    desc: "Monday: generate signal + regime gate. Mon-Fri: monitor TP/HS. Friday: close.",
+    mermaid: `flowchart TB
+    subgraph L3OUT["FROM L3 (Sunday training)"]
+        MODELS["Ridge.pkl + BR.pkl<br/>h5_weekly_models/latest/"]
+        FEATURES["21 features from<br/>daily OHLCV + macro"]
+    end
+
+    subgraph L5_SIGNAL["L5 SIGNAL GENERATION -- Monday 08:15 COT"]
+        SIG["<b>forecast_h5_l5_weekly_signal</b><br/>Mon 08:15 COT | ACTIVE<br/><br/>1. Load Ridge + BR models<br/>2. Ensemble = mean(ridge, br)<br/>3. Confidence scoring 3-tier:<br/>   HIGH | MEDIUM | LOW"]
+    end
+
+    subgraph L5_VOL["L5 VOL-TARGETING + REGIME GATE -- Monday 08:45 COT"]
+        VOL["<b>forecast_h5_l5_vol_targeting</b><br/>Mon 08:45 COT | ACTIVE<br/><br/>REGIME GATE (Hurst R/S 60d):<br/>  TRENDING H>0.52: x1.0<br/>  INDETERMINATE: x0.40<br/>  MEAN-REVERTING H<0.42: SKIP<br/><br/>EFFECTIVE HS:<br/>  min(HS_base, 3.5%/leverage)<br/><br/>Adaptive stops:<br/>  HS = clamp(vol x 2.0, 1%, 3%)<br/>  TP = HS x 0.5"]
+    end
+
+    subgraph SIGNAL_OUT["SIGNAL OUTPUT"]
+        SIG_TBL[("forecast_h5_signals<br/>direction | confidence<br/>leverage | stops<br/>regime | hurst")]
+    end
+
+    subgraph L7["L7 EXECUTION -- Mon-Fri */30 9:00-13:00 COT"]
+        EXEC["<b>forecast_h5_l7_multiday_executor</b><br/>Mon-Fri every 30 min | ACTIVE<br/><br/>MON: Place limit entry<br/>MON-FRI: Monitor TP/HS<br/>FRI 12:50: Close position"]
+    end
+
+    subgraph L7_OUT["EXECUTION OUTPUT"]
+        EXEC_TBL[("forecast_h5_executions<br/>+ forecast_h5_subtrades")]
+    end
+
+    subgraph PAUSED_L5["PAUSED TRACKS"]
+        H1_INF["H1 inference | PAUSED"]
+        H1_VOL["H1 vol-targeting | PAUSED"]
+        H1_EXEC["H1 smart executor | PAUSED"]
+    end
+
+    MODELS --> SIG
+    FEATURES --> SIG
+    SIG -->|"signal + confidence"| L5_VOL
+    L5_VOL --> SIG_TBL
+    SIG_TBL -->|"read signal"| EXEC
+    EXEC --> EXEC_TBL
+
+    EXEC_TBL -.->|"consumed by"| L6["L6 Weekly Monitor"]
+
+    style L5_SIGNAL fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style L5_VOL fill:#78350f,stroke:#f59e0b,color:#fef3c7
+    style L7 fill:#7c2d12,stroke:#ef4444,color:#fecaca
+    style PAUSED_L5 fill:#374151,stroke:#6b7280,color:#9ca3af`,
+    tables: `
+      <h3>Regime Gate Impact (2026 YTD)</h3>
+      <table>
+        <thead><tr><th>Metric</th><th>Without Gate (v1.1.0)</th><th>With Gate (v2.0)</th></tr></thead>
+        <tbody>
+          <tr><td>Return</td><td style="color:#fca5a5;">-5.17%</td><td style="color:#6ee7b7;">+0.61%</td></tr>
+          <tr><td>Trades</td><td>6 (4 losses)</td><td>1 (0 losses)</td></tr>
+          <tr><td>Weeks blocked</td><td>0</td><td>13 of 14 (mean-reverting)</td></tr>
+          <tr><td>$10K becomes</td><td style="color:#fca5a5;">$9,483</td><td style="color:#6ee7b7;">$10,061</td></tr>
+        </tbody>
+      </table>
+      <h3>Sizing Rules</h3>
+      <table>
+        <thead><tr><th>Direction</th><th>Confidence</th><th>Leverage</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>SHORT</td><td>HIGH / MEDIUM / LOW</td><td>1.5x</td><td><span class="badge badge-green">TRADE</span></td></tr>
+          <tr><td>LONG</td><td>HIGH</td><td>1.0x</td><td><span class="badge badge-green">TRADE</span></td></tr>
+          <tr><td>LONG</td><td>MEDIUM</td><td>0.5x</td><td><span class="badge badge-green">TRADE</span></td></tr>
+          <tr><td>LONG</td><td>LOW</td><td>0.0x</td><td><span class="badge badge-red">SKIP</span> (net = -0.75%)</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "L6 Monitoring",
+    title: "Slide 5/7 -- L6 MONITORING OPS: Evaluate and Protect",
+    dags: "7 DAGs", active: 1, paused: 6,
+    badgeClass: "badge-purple",
+    desc: "Friday: was this week profitable? Are guardrails triggered? Should we keep trading?",
+    mermaid: `flowchart TB
+    subgraph INPUTS["FROM L7 EXECUTION"]
+        EXEC[("forecast_h5_executions<br/>Weekly trade results")]
+        SUBS[("forecast_h5_subtrades<br/>Individual entries/exits")]
+    end
+
+    subgraph L6_ACTIVE["L6 ACTIVE -- H5 Weekly Monitor"]
+        H5MON["<b>forecast_h5_l6_weekly_monitor</b><br/>Friday 14:30 COT | ACTIVE<br/><br/>1. Calculate weekly metrics<br/>2. Check 4 guardrails<br/>3. Promotion gates (week 15)<br/>4. Write paper trading record"]
+    end
+
+    subgraph GUARDRAILS["4 GUARDRAILS"]
+        CB["CIRCUIT BREAKER<br/>5 consecutive losses<br/>OR 12% drawdown<br/>PAUSE TRADING"]
+        LI["LONG INSISTENCE<br/>over 60% LONGs in 8 weeks<br/>ALERT ONLY"]
+        RDS["ROLLING DA SHORT<br/>SHORT DA below 55% in 16 weeks<br/>PAUSE SHORTS"]
+        RDL["ROLLING DA LONG<br/>LONG DA below 45% in 16 weeks<br/>PAUSE LONGS"]
+    end
+
+    subgraph L6_PAUSED["L6 PAUSED TRACKS"]
+        H1MON["H1 paper monitor | PAUSED"]
+        RL_PROD["RL production monitor | PAUSED"]
+        RL_DRIFT["RL drift monitor | PAUSED"]
+        ALERT["core alert monitor | PAUSED"]
+        WEEKLY_RPT["weekly report | PAUSED"]
+        RECON["reconciliation daily | PAUSED"]
+    end
+
+    subgraph OUTPUT["MONITORING OUTPUT"]
+        PAPER[("forecast_h5_paper_trading")]
+        VIEWS["v_h5_performance_summary<br/>v_h5_collapse_monitor"]
+    end
+
+    EXEC --> H5MON
+    SUBS --> H5MON
+    H5MON --> GUARDRAILS
+    H5MON --> PAPER
+    H5MON --> VIEWS
+
+    style L6_ACTIVE fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style GUARDRAILS fill:#78350f,stroke:#f59e0b,color:#fef3c7
+    style L6_PAUSED fill:#374151,stroke:#6b7280,color:#9ca3af`,
+    tables: `
+      <h3>Risk Management Architecture (3 Layers)</h3>
+      <table>
+        <thead><tr><th>Layer</th><th>Checks</th><th>Action on Fail</th></tr></thead>
+        <tbody>
+          <tr><td>1. Chain of Responsibility</td><td>9 checks: HOLD, trading hours, circuit breaker, cooldown, confidence, daily loss, drawdown, consecutive losses, max trades</td><td>Block signal</td></tr>
+          <tr><td>2. Risk Enforcer</td><td>7 rules: kill switch, daily loss, trade limit, cooldown, short permission, position size, confidence</td><td>ALLOW / REDUCE / BLOCK</td></tr>
+          <tr><td>3. Kill Switch</td><td>Highest priority override</td><td>ALL trades blocked, only exits pass</td></tr>
+        </tbody>
+      </table>
+      <h3>Promotion Gates (Week 15)</h3>
+      <table>
+        <thead><tr><th>Gate</th><th>Pass</th><th>Fail</th></tr></thead>
+        <tbody>
+          <tr><td>DA overall &gt; 55% AND SHORT &gt; 60%</td><td>Promote to live</td><td>Check keep conditions</td></tr>
+          <tr><td>DA overall &lt; 50%</td><td>--</td><td>Discard strategy</td></tr>
+          <tr><td>SHORT DA &gt; 60% but LONG DA &lt; 45%</td><td>--</td><td>Switch to SHORT-only</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "L8 Intelligence",
+    title: "Slide 6/7 -- INTELLIGENCE: News + AI Analysis + Dashboard Generation",
+    dags: "6 DAGs", active: 3, paused: 3,
+    badgeClass: "badge-blue",
+    desc: "What does the market say? Generate daily intelligence + populate dashboard pages.",
+    mermaid: `flowchart TB
+    subgraph NEWS_IN["NEWS INGESTION (5 Sources)"]
+        PORT["Portafolio.co<br/>RSS + feedparser<br/>486 articles"]
+        INVS["Investing.com<br/>Search API<br/>123 articles"]
+        GDELT["GDELT 2.0<br/>Rate limited"]
+        LREP["La Republica<br/>RSS"]
+        NAPI["NewsAPI.org<br/>Disabled"]
+    end
+
+    subgraph NEWS_DAGS["NEWS PIPELINE DAGs"]
+        NDP["<b>news_daily_pipeline</b><br/>3x/day | ACTIVE<br/><br/>Ingest from 5 sources<br/>Enrich: 9 categories<br/>Relevance + Sentiment<br/>Cross-reference clustering<br/>Export ~60 daily features"]
+        NAM["<b>news_alert_monitor</b> | PAUSED"]
+        NWD["<b>news_weekly_digest</b> | PAUSED"]
+        NMT["<b>news_maintenance</b> | PAUSED"]
+    end
+
+    subgraph ANALYSIS["L8 AI ANALYSIS DAG"]
+        L8["<b>analysis_l8_daily_generation</b><br/>14:00 COT Mon-Fri | ACTIVE<br/><br/>MacroAnalyzer: SMA, BB, RSI,<br/>MACD, ROC, z-score (8 vars)<br/><br/>LLM: Azure OpenAI primary<br/>Claude fallback, Spanish<br/>Cost: ~$0.004/week<br/><br/>FRIDAY: weekly summary +<br/>8 macro chart PNGs"]
+    end
+
+    subgraph FORECAST_GEN["FORECASTING DASHBOARD"]
+        FWG["<b>forecast_weekly_generation</b><br/>Mon 09:00 COT | ACTIVE<br/><br/>9 models x 7 horizons x 19 weeks<br/>= 1,260 CSV rows + 310 PNGs<br/>Runtime ~90 min"]
+    end
+
+    subgraph DASHBOARD["DASHBOARD PAGES"]
+        ANAL_PAGE["/analysis<br/>WeekSelector + DailyTimeline<br/>MacroCharts + Chat"]
+        FORE_PAGE["/forecasting<br/>MetricsRanking + Backtest<br/>Forward + Ensembles"]
+    end
+
+    PORT & INVS & GDELT & LREP & NAPI --> NDP
+    NDP -.->|"Sensor"| L8
+
+    L8 --> ANAL_PAGE
+    FWG --> FORE_PAGE
+
+    style NEWS_DAGS fill:#1e3a5f,stroke:#3b82f6,color:#dbeafe
+    style ANALYSIS fill:#4a1d96,stroke:#8b5cf6,color:#ede9fe
+    style FORECAST_GEN fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style DASHBOARD fill:#7c2d12,stroke:#ea580c,color:#fed7aa`,
+    tables: `
+      <h3>13 PNGs Per Week</h3>
+      <table>
+        <thead><tr><th>#</th><th>PNG</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td>1-9</td><td><code>forward_{model}_{week}.png</code></td><td>Price curve for each of 9 models</td></tr>
+          <tr><td>10</td><td><code>forward_consensus_{week}.png</code></td><td>Average of all 9 models</td></tr>
+          <tr><td>11</td><td><code>forward_ensemble_top_3_{week}.png</code></td><td>Top 3 by direction accuracy</td></tr>
+          <tr><td>12</td><td><code>forward_ensemble_best_of_breed_{week}.png</code></td><td>Best linear + best boosting + best hybrid</td></tr>
+          <tr><td>13</td><td><code>forward_ensemble_top_6_mean_{week}.png</code></td><td>Top 6 averaged</td></tr>
+        </tbody>
+      </table>
+      <h3>LLM Configuration</h3>
+      <table>
+        <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Primary</td><td>Azure OpenAI GPT-4o-mini</td></tr>
+          <tr><td>Fallback</td><td>Anthropic Claude Sonnet</td></tr>
+          <tr><td>Language</td><td>Spanish</td></tr>
+          <tr><td>Cache</td><td>File-based, TTL 24h</td></tr>
+          <tr><td>Budget</td><td>$1/day, $15/month</td></tr>
+          <tr><td>Actual cost</td><td>~$0.004/week</td></tr>
+        </tbody>
+      </table>`
+  },
+  {
+    label: "System Ops",
+    title: "Slide 7/7 -- SYSTEM OPS: Watchdog & Orchestration",
+    dags: "3 DAGs", active: 1, paused: 2,
+    badgeClass: "badge-teal",
+    desc: "Who watches the watchers? The watchdog runs hourly, detects issues, and fixes them.",
+    mermaid: `flowchart TB
+    subgraph WD["CORE WATCHDOG -- Hourly 8-13 COT Mon-Fri"]
+        WATCHDOG["<b>core_watchdog</b><br/>Hourly 8:00-13:00 COT | ACTIVE<br/>8 HEALTH CHECKS + AUTO-HEAL"]
+    end
+
+    subgraph CHECKS["8 HEALTH CHECKS"]
+        direction TB
+        C1["1. check_ohlcv<br/>Stale if > 15 min"]
+        C2["2. check_macro<br/>Stale if > 2 days"]
+        C3["3. check_forecasting<br/>CSV current week?"]
+        C4["4. check_analysis<br/>Weekly JSON exists?"]
+        C5["5. check_h5_signal<br/>Monday: signal exists?"]
+        C6["6. check_news<br/>Stale if > 24h"]
+        C7["7. check_backups<br/>Stale if > 48h"]
+        C8["8. check_minio<br/>3 buckets + objects?"]
+    end
+
+    subgraph HEAL["AUTO-HEAL ACTIONS"]
+        direction TB
+        A1["trigger ohlcv_realtime"]
+        A2["trigger macro_update"]
+        A3["run generate_weekly_forecasts.py"]
+        A4["run generate_weekly_analysis.py"]
+        A5["trigger h5_weekly_signal"]
+        A6["trigger news_daily_pipeline"]
+        A7["trigger seed_backup"]
+        A8["trigger ohlcv_backfill"]
+    end
+
+    subgraph INFRA["INFRASTRUCTURE (11 Services)"]
+        direction TB
+        PG["PostgreSQL+TimescaleDB :5432"]
+        RD["Redis :6379"]
+        MN["MinIO :9001 | 13 buckets"]
+        ML["MLflow :5001"]
+        AF["Airflow :8080 | 39 DAGs"]
+        SB["SignalBridge :8085"]
+        DS["Dashboard :5000 | 8 pages"]
+    end
+
+    WATCHDOG --> CHECKS
+    C1 -->|"stale"| A1 & A8
+    C2 -->|"stale"| A2
+    C3 -->|"stale"| A3
+    C4 -->|"missing"| A4
+    C5 -->|"missing"| A5
+    C6 -->|"stale"| A6
+    C7 -->|"stale"| A7
+
+    style WD fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style CHECKS fill:#1e3a5f,stroke:#3b82f6,color:#dbeafe
+    style HEAL fill:#78350f,stroke:#f59e0b,color:#fef3c7
+    style INFRA fill:#065f46,stroke:#34d399,color:#d1fae5`,
+    tables: `
+      <h3>Infrastructure Health Matrix</h3>
+      <table>
+        <thead><tr><th>Service</th><th>Port</th><th>Status</th><th>Integration</th></tr></thead>
+        <tbody>
+          <tr><td>PostgreSQL+TimescaleDB</td><td>5432</td><td><span class="badge badge-green">HEALTHY</span></td><td>All DAGs read/write</td></tr>
+          <tr><td>Redis</td><td>6379</td><td><span class="badge badge-green">HEALTHY</span></td><td>Airflow broker, caching</td></tr>
+          <tr><td>MinIO</td><td>9001</td><td><span class="badge badge-green">HEALTHY</span></td><td>Seed backups, MLflow artifacts</td></tr>
+          <tr><td>MLflow</td><td>5001</td><td><span class="badge badge-green">HEALTHY</span></td><td>L3 training logs</td></tr>
+          <tr><td>Airflow</td><td>8080</td><td><span class="badge badge-green">HEALTHY</span></td><td>39 DAGs orchestrated</td></tr>
+          <tr><td>SignalBridge</td><td>8085</td><td><span class="badge badge-green">HEALTHY</span></td><td>Paper trading OMS</td></tr>
+          <tr><td>Dashboard</td><td>5000</td><td><span class="badge badge-green">HEALTHY</span></td><td>8 pages, real-time data</td></tr>
+          <tr><td>Trading API</td><td>8000</td><td><span class="badge badge-green">HEALTHY</span></td><td>Market data WebSocket</td></tr>
+          <tr><td>Analytics API</td><td>8001</td><td><span class="badge badge-green">HEALTHY</span></td><td>Trading analytics</td></tr>
+          <tr><td>Backtest API</td><td>8003</td><td><span class="badge badge-green">HEALTHY</span></td><td>Replay engine</td></tr>
+          <tr><td>pgAdmin</td><td>5050</td><td><span class="badge badge-green">HEALTHY</span></td><td>DB management</td></tr>
+        </tbody>
+      </table>
+      <h3>39 DAGs Summary</h3>
+      <table>
+        <thead><tr><th>Track</th><th>Active</th><th>Paused</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>L0 Data</td><td style="color:#6ee7b7;">5</td><td>0</td><td>5</td></tr>
+          <tr><td>L1+L2 Feature (RL)</td><td>0</td><td style="color:#94a3b8;">4</td><td>4</td></tr>
+          <tr><td>L3+L4 Training</td><td style="color:#6ee7b7;">1</td><td style="color:#94a3b8;">7</td><td>8</td></tr>
+          <tr><td>L5+L7 Signal+Exec</td><td style="color:#6ee7b7;">3</td><td style="color:#94a3b8;">3</td><td>6</td></tr>
+          <tr><td>L6 Monitoring</td><td style="color:#6ee7b7;">1</td><td style="color:#94a3b8;">6</td><td>7</td></tr>
+          <tr><td>News+Analysis+Dashboard</td><td style="color:#6ee7b7;">3</td><td style="color:#94a3b8;">3</td><td>6</td></tr>
+          <tr><td>System Watchdog</td><td style="color:#6ee7b7;">1</td><td style="color:#94a3b8;">2</td><td>3</td></tr>
+          <tr style="font-weight:700;border-top:2px solid #475569;"><td>TOTAL</td><td style="color:#6ee7b7;">14</td><td style="color:#94a3b8;">25</td><td>39</td></tr>
+        </tbody>
+      </table>`
+  }
+];
+
+// Build tab bar
+const tabBar = document.getElementById('tabBar');
+const content = document.getElementById('content');
+const rendered = new Set();
+
+slides.forEach((s, i) => {
+  // Tab button
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+  btn.dataset.tab = i;
+  btn.innerHTML = `<span class="dot"></span>${s.label}`;
+  btn.addEventListener('click', () => switchTab(i));
+  tabBar.appendChild(btn);
+
+  // Slide panel
+  const slide = document.createElement('div');
+  slide.className = 'slide' + (i === 0 ? ' active' : '');
+  slide.id = 'slide-' + i;
+  slide.innerHTML = `
+    <div class="slide-header">
+      <h2>${s.title}</h2>
+      <div class="meta">
+        <span class="badge ${s.badgeClass}">${s.dags}</span>
+        <span class="badge badge-green">${s.active} ACTIVE</span>
+        ${s.paused > 0 ? `<span class="badge badge-gray">${s.paused} PAUSED</span>` : ''}
+      </div>
+      <div class="slide-desc">${s.desc}</div>
+    </div>
+    <div class="diagram-container">
+      <div class="mermaid" id="mermaid-${i}">${s.mermaid}</div>
+    </div>
+    <div class="tables-section">${s.tables}</div>
+  `;
+  content.appendChild(slide);
+});
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-tab="${idx}"]`).classList.add('active');
+  document.getElementById('slide-' + idx).classList.add('active');
+  renderDiagram(idx);
+}
+
+async function renderDiagram(idx) {
+  if (rendered.has(idx)) return;
+  rendered.add(idx);
+  const el = document.getElementById('mermaid-' + idx);
+  const code = el.textContent;
+  el.textContent = '';
+  try {
+    const { svg } = await mermaid.render('mermaid-svg-' + idx, code);
+    el.innerHTML = svg;
+  } catch (e) {
+    el.innerHTML = '<pre style="color:#f87171;font-size:0.8rem;">Diagram render error: ' + e.message + '</pre>';
+  }
+}
+
+// Initialize mermaid
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  securityLevel: 'loose',
+  flowchart: { htmlLabels: true, curve: 'basis' },
+  themeVariables: {
+    darkMode: true,
+    background: '#1e293b',
+    primaryColor: '#1e3a5f',
+    primaryTextColor: '#e2e8f0',
+    primaryBorderColor: '#3b82f6',
+    lineColor: '#475569',
+    secondaryColor: '#064e3b',
+    tertiaryColor: '#4a1d96',
+    fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+    fontSize: '13px'
+  }
+});
+
+// Render first tab
+renderDiagram(0);
+</script>
+</body>
+</html>

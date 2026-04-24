@@ -5,9 +5,10 @@ Uses Feature Contract as SSOT for norm_stats path and FEATURE_ORDER
 
 import os
 import sys
-from pathlib import Path
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings
 
 # Add project root to path for imports
 _project_root = Path(__file__).parent.parent.parent
@@ -110,7 +111,7 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()

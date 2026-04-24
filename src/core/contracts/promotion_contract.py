@@ -31,12 +31,12 @@ Usage:
     # Save to database
     proposal.save_to_db(conn)
 """
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, Tuple
-from datetime import datetime
-from enum import Enum
 import json
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -77,15 +77,15 @@ class BacktestMetrics:
     test_period_end: str      # ISO date string
 
     # Optional extended metrics
-    calmar_ratio: Optional[float] = None
-    sortino_ratio: Optional[float] = None
-    avg_win: Optional[float] = None
-    avg_loss: Optional[float] = None
-    max_consecutive_losses: Optional[int] = None
-    recovery_factor: Optional[float] = None
-    final_equity: Optional[float] = None
+    calmar_ratio: float | None = None
+    sortino_ratio: float | None = None
+    avg_win: float | None = None
+    avg_loss: float | None = None
+    max_consecutive_losses: int | None = None
+    recovery_factor: float | None = None
+    final_equity: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "sharpe_ratio": self.sharpe_ratio,
@@ -106,7 +106,7 @@ class BacktestMetrics:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BacktestMetrics":
+    def from_dict(cls, data: dict[str, Any]) -> "BacktestMetrics":
         """Create from dictionary."""
         return cls(
             sharpe_ratio=data.get("sharpe_ratio", 0.0),
@@ -141,7 +141,7 @@ class CriteriaResult:
         """Human-readable status string."""
         return "PASS" if self.passed else "FAIL"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -152,7 +152,7 @@ class CriteriaResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CriteriaResult":
+    def from_dict(cls, data: dict[str, Any]) -> "CriteriaResult":
         """Create from dictionary."""
         return cls(
             name=data.get("name", ""),
@@ -185,14 +185,14 @@ class PromotionProposal:
     metrics: BacktestMetrics
 
     # Resultados de criterios
-    criteria_results: List[CriteriaResult] = field(default_factory=list)
+    criteria_results: list[CriteriaResult] = field(default_factory=list)
 
     # Comparación vs baseline (si existe)
-    vs_baseline: Optional[Dict[str, float]] = None
-    baseline_model_id: Optional[str] = None
+    vs_baseline: dict[str, float] | None = None
+    baseline_model_id: str | None = None
 
     # Lineage completo
-    lineage: Dict[str, str] = field(default_factory=dict)
+    lineage: dict[str, str] = field(default_factory=dict)
 
     # Status
     status: PromotionStatus = PromotionStatus.PENDING_APPROVAL
@@ -200,11 +200,11 @@ class PromotionProposal:
 
     # Timestamps
     created_at: datetime = field(default_factory=datetime.utcnow)
-    expires_at: Optional[datetime] = None
-    reviewed_at: Optional[datetime] = None
-    reviewer: Optional[str] = None
-    reviewer_email: Optional[str] = None
-    reviewer_notes: Optional[str] = None
+    expires_at: datetime | None = None
+    reviewed_at: datetime | None = None
+    reviewer: str | None = None
+    reviewer_email: str | None = None
+    reviewer_notes: str | None = None
 
     def __post_init__(self):
         """Set default expiration if not provided."""
@@ -216,11 +216,11 @@ class PromotionProposal:
         """Check if all criteria passed."""
         return all(cr.passed for cr in self.criteria_results)
 
-    def get_failed_criteria(self) -> List[CriteriaResult]:
+    def get_failed_criteria(self) -> list[CriteriaResult]:
         """Get list of failed criteria."""
         return [cr for cr in self.criteria_results if not cr.passed]
 
-    def approve(self, reviewer: str, reviewer_email: str, notes: Optional[str] = None) -> None:
+    def approve(self, reviewer: str, reviewer_email: str, notes: str | None = None) -> None:
         """
         Approve this proposal (segundo voto).
 
@@ -235,7 +235,7 @@ class PromotionProposal:
         self.reviewer_email = reviewer_email
         self.reviewer_notes = notes
 
-    def reject(self, reviewer: str, reviewer_email: str, notes: Optional[str] = None) -> None:
+    def reject(self, reviewer: str, reviewer_email: str, notes: str | None = None) -> None:
         """
         Reject this proposal.
 
@@ -256,7 +256,7 @@ class PromotionProposal:
             return False
         return datetime.utcnow() > self.expires_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dict for API/DB."""
         return {
             "proposal_id": self.proposal_id,
@@ -281,7 +281,7 @@ class PromotionProposal:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PromotionProposal":
+    def from_dict(cls, data: dict[str, Any]) -> "PromotionProposal":
         """Create from dictionary."""
         metrics = BacktestMetrics.from_dict(data.get("metrics", {}))
         criteria_results = [
@@ -418,7 +418,7 @@ class PromotionProposal:
             cur.close()
 
     @classmethod
-    def get_pending_proposals(cls, conn) -> List["PromotionProposal"]:
+    def get_pending_proposals(cls, conn) -> list["PromotionProposal"]:
         """
         Get all pending proposals.
 
@@ -452,9 +452,9 @@ class PromotionProposal:
 
 def evaluate_criteria(
     metrics: BacktestMetrics,
-    success_criteria: Dict[str, float],
-    comparison: Optional[Dict[str, float]] = None,
-) -> Tuple[List[CriteriaResult], bool]:
+    success_criteria: dict[str, float],
+    comparison: dict[str, float] | None = None,
+) -> tuple[list[CriteriaResult], bool]:
     """
     Evaluate backtest metrics against success criteria.
 
@@ -519,9 +519,9 @@ def evaluate_criteria(
 
 
 def determine_recommendation(
-    criteria_results: List[CriteriaResult],
-    comparison: Optional[Dict[str, float]] = None,
-) -> Tuple[PromotionRecommendation, float, str]:
+    criteria_results: list[CriteriaResult],
+    comparison: dict[str, float] | None = None,
+) -> tuple[PromotionRecommendation, float, str]:
     """
     Determine promotion recommendation based on criteria results.
 

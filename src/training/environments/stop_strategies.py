@@ -17,7 +17,6 @@ Date: 2026-02-12
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class StopStrategy(ABC):
     """Abstract stop-loss/take-profit strategy."""
 
     @abstractmethod
-    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> Optional[str]:
+    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> str | None:
         """Check if a stop condition is met.
 
         Args:
@@ -65,7 +64,7 @@ class FixedPctStopStrategy(StopStrategy):
         self._sl_pct = stop_loss_pct
         self._tp_pct = take_profit_pct
 
-    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> Optional[str]:
+    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> str | None:
         if unrealized_pnl_pct < self._sl_pct:
             logger.info(
                 f"[STOP-LOSS] Fixed: {unrealized_pnl_pct:.2%} < {self._sl_pct:.2%}"
@@ -119,8 +118,8 @@ class ATRDynamicStopStrategy(StopStrategy):
         self._max_tp = max_tp_pct  # Positive
 
         # Per-position state
-        self._current_sl: Optional[float] = None
-        self._current_tp: Optional[float] = None
+        self._current_sl: float | None = None
+        self._current_tp: float | None = None
 
     def on_position_open(self, **context) -> None:
         """Compute stop levels from entry ATR.
@@ -147,7 +146,7 @@ class ATRDynamicStopStrategy(StopStrategy):
         self._current_sl = None
         self._current_tp = None
 
-    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> Optional[str]:
+    def check_stop(self, unrealized_pnl_pct: float, bars_held: int) -> str | None:
         if self._current_sl is None or self._current_tp is None:
             return None
 

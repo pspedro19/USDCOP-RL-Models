@@ -21,42 +21,40 @@ Version: 1.0.0
 Created: 2026-01-18
 """
 
-import hashlib
 import json
 import logging
 import os
-import yaml
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
+import yaml
 from minio import Minio
 from minio.error import S3Error
 
-from src.core.interfaces.storage import (
-    ArtifactMetadata,
-    IObjectStorageRepository,
-    IDatasetRepository,
-    IModelRepository,
-    IBacktestRepository,
-    IABComparisonRepository,
-    ObjectNotFoundError,
-    StorageError,
-)
 from src.core.contracts.storage_contracts import (
     EXPERIMENTS_BUCKET,
     PRODUCTION_BUCKET,
-    DatasetSnapshot,
-    ModelSnapshot,
-    BacktestSnapshot,
     ABComparisonSnapshot,
+    BacktestSnapshot,
+    DatasetSnapshot,
     LineageRecord,
+    ModelSnapshot,
+    build_s3_uri,
     compute_content_hash,
     compute_schema_hash,
-    compute_json_hash,
-    build_s3_uri,
+)
+from src.core.interfaces.storage import (
+    ArtifactMetadata,
+    IABComparisonRepository,
+    IBacktestRepository,
+    IDatasetRepository,
+    IModelRepository,
+    IObjectStorageRepository,
+    ObjectNotFoundError,
+    StorageError,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,7 +88,7 @@ class MinIORepository(IObjectStorageRepository):
         access_key: str,
         secret_key: str,
         secure: bool = False,
-        region: Optional[str] = None,
+        region: str | None = None,
     ):
         """
         Initialize MinIO client.
@@ -138,8 +136,8 @@ class MinIORepository(IObjectStorageRepository):
         bucket: str,
         key: str,
         data: bytes,
-        metadata: Optional[Dict[str, Any]] = None,
-        content_type: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        content_type: str | None = None,
     ) -> ArtifactMetadata:
         """Store object and return metadata with computed hash."""
         try:
@@ -241,7 +239,7 @@ class MinIORepository(IObjectStorageRepository):
         bucket: str,
         prefix: str,
         recursive: bool = True,
-    ) -> List[ArtifactMetadata]:
+    ) -> list[ArtifactMetadata]:
         """List objects matching prefix."""
         try:
             objects = self._client.list_objects(bucket, prefix=prefix, recursive=recursive)
@@ -357,7 +355,7 @@ class MinIODatasetRepository(IDatasetRepository):
         experiment_id: str,
         data: pd.DataFrame,
         version: str,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> DatasetSnapshot:
         """Save dataset to MinIO with all supporting files."""
         base_path = f"{experiment_id}/{self.DATASET_PREFIX}/{version}"
@@ -456,7 +454,7 @@ class MinIODatasetRepository(IDatasetRepository):
     def load_dataset(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> pd.DataFrame:
         """Load dataset from MinIO."""
         if version is None:
@@ -472,7 +470,7 @@ class MinIODatasetRepository(IDatasetRepository):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> DatasetSnapshot:
         """Get dataset snapshot from manifest."""
         if version is None:
@@ -504,7 +502,7 @@ class MinIODatasetRepository(IDatasetRepository):
             created_at=datetime.fromisoformat(manifest["created_at"]),
         )
 
-    def list_versions(self, experiment_id: str) -> List[DatasetSnapshot]:
+    def list_versions(self, experiment_id: str) -> list[DatasetSnapshot]:
         """List all dataset versions for an experiment."""
         prefix = f"{experiment_id}/{self.DATASET_PREFIX}/"
         objects = self._storage.list_objects(self.BUCKET, prefix, recursive=False)
@@ -528,8 +526,8 @@ class MinIODatasetRepository(IDatasetRepository):
     def get_norm_stats(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
-    ) -> Dict[str, Dict[str, float]]:
+        version: str | None = None,
+    ) -> dict[str, dict[str, float]]:
         """Get normalization statistics."""
         if version is None:
             version = self._get_latest_version(experiment_id)
@@ -545,7 +543,7 @@ class MinIODatasetRepository(IDatasetRepository):
             raise ObjectNotFoundError(f"No datasets found for {experiment_id}")
         return versions[0].version
 
-    def _compute_norm_stats(self, data: pd.DataFrame) -> Dict[str, Dict[str, float]]:
+    def _compute_norm_stats(self, data: pd.DataFrame) -> dict[str, dict[str, float]]:
         """Compute normalization statistics for numeric columns."""
         stats = {}
         for col in data.columns:
@@ -595,11 +593,11 @@ class MinIOModelRepository(IModelRepository):
     def save_model(
         self,
         experiment_id: str,
-        model_path: Union[str, Path],
-        norm_stats: Dict[str, Any],
-        config: Dict[str, Any],
+        model_path: str | Path,
+        norm_stats: dict[str, Any],
+        config: dict[str, Any],
         lineage: LineageRecord,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> ModelSnapshot:
         """Save trained model to MinIO."""
         model_path = Path(model_path)
@@ -712,7 +710,7 @@ class MinIOModelRepository(IModelRepository):
     def load_model(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> bytes:
         """Load model bytes from MinIO."""
         if version is None:
@@ -724,7 +722,7 @@ class MinIOModelRepository(IModelRepository):
     def get_snapshot(
         self,
         experiment_id: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> ModelSnapshot:
         """Get model snapshot."""
         if version is None:
@@ -779,7 +777,7 @@ class MinIOModelRepository(IModelRepository):
             created_at=model_meta.created_at,
         )
 
-    def list_versions(self, experiment_id: str) -> List[ModelSnapshot]:
+    def list_versions(self, experiment_id: str) -> list[ModelSnapshot]:
         """List all model versions for an experiment."""
         prefix = f"{experiment_id}/{self.MODELS_PREFIX}/"
         objects = self._storage.list_objects(self.BUCKET, prefix, recursive=False)
@@ -802,7 +800,7 @@ class MinIOModelRepository(IModelRepository):
         self,
         experiment_id: str,
         version: str,
-        model_id: Optional[str] = None,
+        model_id: str | None = None,
     ) -> str:
         """Copy model to production bucket."""
         # Generate model_id if not provided
@@ -865,10 +863,10 @@ class MinIOBacktestRepository(IBacktestRepository):
         self,
         experiment_id: str,
         model_version: str,
-        result: Dict[str, Any],
+        result: dict[str, Any],
         trades: pd.DataFrame,
         equity_curve: pd.DataFrame,
-        backtest_id: Optional[str] = None,
+        backtest_id: str | None = None,
     ) -> BacktestSnapshot:
         """Save backtest results to MinIO."""
         if backtest_id is None:
@@ -933,13 +931,13 @@ class MinIOBacktestRepository(IBacktestRepository):
         self,
         experiment_id: str,
         backtest_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Load backtest result."""
         result_key = f"{experiment_id}/{self.BACKTESTS_PREFIX}/{backtest_id}/result.json"
         result_bytes = self._storage.get_object(self.BUCKET, result_key)
         return json.loads(result_bytes)
 
-    def list_backtests(self, experiment_id: str) -> List[BacktestSnapshot]:
+    def list_backtests(self, experiment_id: str) -> list[BacktestSnapshot]:
         """List all backtests for an experiment."""
         prefix = f"{experiment_id}/{self.BACKTESTS_PREFIX}/"
         objects = self._storage.list_objects(self.BUCKET, prefix, recursive=False)
@@ -1009,8 +1007,8 @@ class MinIOABComparisonRepository(IABComparisonRepository):
         experiment_id: str,
         baseline_model: ModelSnapshot,
         treatment_model: ModelSnapshot,
-        result: Dict[str, Any],
-        shadow_trades: Optional[pd.DataFrame] = None,
+        result: dict[str, Any],
+        shadow_trades: pd.DataFrame | None = None,
     ) -> ABComparisonSnapshot:
         """Save A/B comparison results."""
         comparison_id = (
@@ -1072,7 +1070,7 @@ class MinIOABComparisonRepository(IABComparisonRepository):
         self,
         experiment_id: str,
         comparison_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Load comparison result."""
         result_key = f"{experiment_id}/{self.COMPARISONS_PREFIX}/{comparison_id}/ab_result.json"
         result_bytes = self._storage.get_object(self.BUCKET, result_key)

@@ -3,15 +3,16 @@ SignalBridge API - Main Application Entry Point
 """
 
 from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import structlog
 
-from app.core.config import settings
-from app.core.database import init_db, close_db
-from app.core.exceptions import SignalBridgeException
 from app.api import api_router
+from app.core.config import settings
+from app.core.database import close_db
+from app.core.exceptions import SignalBridgeException
 from app.middleware.rate_limit import RateLimitMiddleware
 
 # Configure structured logging
@@ -37,10 +38,10 @@ async def lifespan(app: FastAPI):
     # Initialize bridges to consume signals from:
     # 1. WebSocket (for backtests and dashboard)
     # 2. Redis Streams (for live trading from L5 DAG)
-    from app.services.websocket_bridge import WebSocketBridgeManager
+    from app.core.database import get_db_context
     from app.services.redis_streams_bridge import RedisStreamsBridgeManager
     from app.services.signal_bridge_orchestrator import SignalBridgeOrchestrator
-    from app.core.database import get_db_context
+    from app.services.websocket_bridge import WebSocketBridgeManager
 
     async def handle_signal(signal):
         """Handle incoming signal from Inference API or L5 DAG."""
@@ -126,10 +127,10 @@ except ImportError:
     pass
 try:
     from opentelemetry import trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
     _provider = TracerProvider(resource=Resource.create({"service.name": "signalbridge-api"}))
     _provider.add_span_processor(BatchSpanProcessor(JaegerExporter(agent_host_name="jaeger", agent_port=6831)))
     trace.set_tracer_provider(_provider)

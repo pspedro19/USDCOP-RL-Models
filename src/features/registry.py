@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -40,7 +40,7 @@ class NormalizationConfig:
     clip: tuple = field(default_factory=lambda: (-5.0, 5.0))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "NormalizationConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "NormalizationConfig":
         """Create from dictionary."""
         clip = data.get("clip", [-5.0, 5.0])
         if isinstance(clip, list):
@@ -65,14 +65,14 @@ class FeatureDefinition:
     name: str
     order: int
     category: str
-    calculator: Optional[str]
+    calculator: str | None
     source: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     normalization: NormalizationConfig
     description: str
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "FeatureDefinition":
+    def from_dict(cls, data: dict[str, Any]) -> "FeatureDefinition":
         """Create from dictionary."""
         return cls(
             name=data["name"],
@@ -112,13 +112,13 @@ class FeatureRegistry:
 
     _instance: Optional["FeatureRegistry"] = None
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize registry from configuration dictionary."""
         self._config = config
         self._meta = config.get("_meta", {})
         self._observation_space = config.get("observation_space", {})
-        self._features: Dict[str, FeatureDefinition] = {}
-        self._features_by_order: Dict[int, FeatureDefinition] = {}
+        self._features: dict[str, FeatureDefinition] = {}
+        self._features_by_order: dict[int, FeatureDefinition] = {}
 
         # Parse feature definitions
         for feature_data in config.get("features", []):
@@ -134,7 +134,7 @@ class FeatureRegistry:
         )
 
     @classmethod
-    def load(cls, config_path: Optional[Path] = None) -> "FeatureRegistry":
+    def load(cls, config_path: Path | None = None) -> "FeatureRegistry":
         """Load registry from YAML configuration.
 
         Implements Singleton pattern - returns same instance on subsequent calls.
@@ -155,14 +155,14 @@ class FeatureRegistry:
                 f"Feature registry config not found: {path}"
             )
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         cls._instance = cls(config)
         return cls._instance
 
     @classmethod
-    def reload(cls, config_path: Optional[Path] = None) -> "FeatureRegistry":
+    def reload(cls, config_path: Path | None = None) -> "FeatureRegistry":
         """Force reload of registry (clears singleton)."""
         cls._instance = None
         return cls.load(config_path)
@@ -222,33 +222,33 @@ class FeatureRegistry:
             raise KeyError(f"Feature at order {order} not found")
         return self._features_by_order[order]
 
-    def get_all_features(self) -> List[FeatureDefinition]:
+    def get_all_features(self) -> list[FeatureDefinition]:
         """Get all features sorted by order."""
         return [
             self._features_by_order[i]
             for i in range(self.total_dimension)
         ]
 
-    def get_market_features(self) -> List[FeatureDefinition]:
+    def get_market_features(self) -> list[FeatureDefinition]:
         """Get only market features (not state)."""
         return [f for f in self.get_all_features() if f.is_market_feature]
 
-    def get_state_features(self) -> List[FeatureDefinition]:
+    def get_state_features(self) -> list[FeatureDefinition]:
         """Get only state features."""
         return [f for f in self.get_all_features() if f.is_state_feature]
 
-    def get_feature_order(self) -> List[str]:
+    def get_feature_order(self) -> list[str]:
         """Get canonical feature order as list of names."""
         return self._observation_space.get("order", [])
 
-    def get_features_by_category(self, category: str) -> List[FeatureDefinition]:
+    def get_features_by_category(self, category: str) -> list[FeatureDefinition]:
         """Get features filtered by category."""
         return [
             f for f in self._features.values()
             if f.category == category
         ]
 
-    def get_features_by_source(self, source: str) -> List[FeatureDefinition]:
+    def get_features_by_source(self, source: str) -> list[FeatureDefinition]:
         """Get features filtered by data source."""
         return [
             f for f in self._features.values()
@@ -259,7 +259,7 @@ class FeatureRegistry:
     # Validation
     # =========================================================================
 
-    def validate_feature_vector(self, vector: List[float]) -> bool:
+    def validate_feature_vector(self, vector: list[float]) -> bool:
         """Validate that feature vector has correct dimension."""
         if len(vector) != self.total_dimension:
             raise ValueError(
@@ -268,7 +268,7 @@ class FeatureRegistry:
             )
         return True
 
-    def get_validation_constraints(self) -> Dict[str, Any]:
+    def get_validation_constraints(self) -> dict[str, Any]:
         """Get validation constraints from config."""
         return self._config.get("validation", {})
 
@@ -276,7 +276,7 @@ class FeatureRegistry:
     # Serialization
     # =========================================================================
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert registry to dictionary for serialization."""
         return {
             "version": self.version,
@@ -309,7 +309,7 @@ def get_registry() -> FeatureRegistry:
     return FeatureRegistry.load()
 
 
-def get_feature_order() -> List[str]:
+def get_feature_order() -> list[str]:
     """Get the canonical feature order."""
     return get_registry().get_feature_order()
 

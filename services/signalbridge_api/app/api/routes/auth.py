@@ -5,21 +5,20 @@ Authentication routes.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.auth import (
+    AuthToken,
+    LoginRequest,
+    RegisterRequest,
+    TokenRefreshRequest,
+)
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.exceptions import ErrorCode
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     verify_token,
 )
-from app.core.config import settings
-from app.core.exceptions import AuthenticationError, ErrorCode
-from app.contracts.auth import (
-    LoginRequest,
-    RegisterRequest,
-    AuthToken,
-    TokenRefreshRequest,
-)
-from app.contracts.user import UserProfile
 from app.services.user import UserService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

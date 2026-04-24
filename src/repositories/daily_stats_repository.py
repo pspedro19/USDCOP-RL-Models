@@ -10,8 +10,8 @@ Date: 2025-01-14
 """
 
 import logging
-from typing import Optional, List, Any
 from datetime import datetime, timedelta
+from typing import Any
 
 from src.core.interfaces.repository import (
     IDailyStatsRepository,
@@ -58,7 +58,7 @@ class DailyStatsRepository(IDailyStatsRepository):
         """Get Redis key for date."""
         return f"{self.KEY_PREFIX}:{date}"
 
-    def get(self, date: Optional[str] = None) -> Optional[DailyStats]:
+    def get(self, date: str | None = None) -> DailyStats | None:
         """Get daily stats for date."""
         date = date or self._get_today()
         key = self._get_key(date)
@@ -114,7 +114,7 @@ class DailyStatsRepository(IDailyStatsRepository):
         self,
         start_date: str,
         end_date: str
-    ) -> List[DailyStats]:
+    ) -> list[DailyStats]:
         """Get stats for date range."""
         stats_list = []
 
@@ -154,7 +154,7 @@ class DailyStatsRepository(IDailyStatsRepository):
             return float(self._repo.hincrby(key, field, amount))
         return self._repo.hincrbyfloat(key, field, amount)
 
-    def get_or_create(self, date: Optional[str] = None) -> DailyStats:
+    def get_or_create(self, date: str | None = None) -> DailyStats:
         """Get stats or create empty record."""
         date = date or self._get_today()
         stats = self.get(date)

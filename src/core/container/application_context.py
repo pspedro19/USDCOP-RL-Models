@@ -37,9 +37,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from .protocols import (
+    ICacheProvider,
+    IDailyStatsRepository,
     IEventBus,
     IFeatureBuilder,
     ILoggerFactory,
@@ -48,9 +50,6 @@ from .protocols import (
     IRiskManager,
     IStateRepository,
     ITradeRepository,
-    IDailyStatsRepository,
-    ICacheProvider,
-    IConfigProvider,
 )
 
 if TYPE_CHECKING:
@@ -109,7 +108,7 @@ class StandardLoggerFactory:
 
     def __init__(self, log_level: int = logging.INFO):
         self._log_level = log_level
-        self._loggers: Dict[str, StandardLoggerAdapter] = {}
+        self._loggers: dict[str, StandardLoggerAdapter] = {}
 
     def get_logger(self, name: str) -> StandardLoggerAdapter:
         if name not in self._loggers:
@@ -124,13 +123,13 @@ class InMemoryStateRepository:
     """In-memory implementation for testing and local development."""
 
     def __init__(self):
-        self._store: Dict[str, Dict[str, Any]] = {}
-        self._ttls: Dict[str, Optional[int]] = {}
+        self._store: dict[str, dict[str, Any]] = {}
+        self._ttls: dict[str, int | None] = {}
 
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         return self._store.get(key)
 
-    def set(self, key: str, value: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def set(self, key: str, value: dict[str, Any], ttl: int | None = None) -> bool:
         self._store[key] = value
         self._ttls[key] = ttl
         return True
@@ -148,22 +147,22 @@ class InMemoryTradeRepository:
     """In-memory trade repository for testing."""
 
     def __init__(self):
-        self._trades: Dict[str, Dict[str, Any]] = {}
+        self._trades: dict[str, dict[str, Any]] = {}
         self._counter = 0
 
-    def save_trade(self, trade: Dict[str, Any]) -> str:
+    def save_trade(self, trade: dict[str, Any]) -> str:
         self._counter += 1
         trade_id = f"trade_{self._counter}"
         trade["trade_id"] = trade_id
         self._trades[trade_id] = trade
         return trade_id
 
-    def get_trade(self, trade_id: str) -> Optional[Dict[str, Any]]:
+    def get_trade(self, trade_id: str) -> dict[str, Any] | None:
         return self._trades.get(trade_id)
 
     def get_trades(
         self,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         limit: int = 100,
     ) -> list:
         trades = list(self._trades.values())
@@ -181,9 +180,9 @@ class InMemoryCacheProvider:
     """In-memory cache for testing and local development."""
 
     def __init__(self):
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         return self._cache.get(key)
 
     def set(self, key: str, value: Any, ttl: int = 300) -> bool:
@@ -204,15 +203,15 @@ class InMemoryDailyStatsRepository:
     """In-memory daily stats repository for testing."""
 
     def __init__(self):
-        self._stats: Dict[str, Dict[str, Any]] = {}
+        self._stats: dict[str, dict[str, Any]] = {}
 
-    def get(self, date: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def get(self, date: str | None = None) -> dict[str, Any] | None:
         if date is None:
             from datetime import datetime
             date = datetime.now().strftime("%Y-%m-%d")
         return self._stats.get(date)
 
-    def save(self, stats: Dict[str, Any]) -> bool:
+    def save(self, stats: dict[str, Any]) -> bool:
         date = stats.get("date")
         if date:
             self._stats[date] = stats
@@ -303,7 +302,7 @@ class NullRiskManager:
 class DictConfigProvider:
     """Simple dict-based config provider."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self._config = config
 
     def get(self, key: str, default: Any = None) -> Any:
@@ -316,7 +315,7 @@ class DictConfigProvider:
                 return default
         return value
 
-    def get_section(self, section: str) -> Dict[str, Any]:
+    def get_section(self, section: str) -> dict[str, Any]:
         return self._config.get(section, {})
 
 
@@ -367,10 +366,10 @@ class ApplicationContext:
     @classmethod
     def create_production(
         cls,
-        config: "TradingConfig",
-        redis_client: Optional[Any] = None,
-        db_url: Optional[str] = None,
-    ) -> "ApplicationContext":
+        config: TradingConfig,
+        redis_client: Any | None = None,
+        db_url: str | None = None,
+    ) -> ApplicationContext:
         """
         Create production context with real implementations.
 
@@ -475,7 +474,7 @@ class ApplicationContext:
         return context
 
     @classmethod
-    def create_minimal(cls, config: Optional[Any] = None) -> "ApplicationContext":
+    def create_minimal(cls, config: Any | None = None) -> ApplicationContext:
         """
         Create minimal context with null/in-memory implementations.
 
@@ -505,7 +504,7 @@ class ApplicationContext:
         )
 
     @classmethod
-    def create_for_testing(cls, **overrides) -> "ApplicationContext":
+    def create_for_testing(cls, **overrides) -> ApplicationContext:
         """
         Create test context with mocks.
 
@@ -577,7 +576,7 @@ class ApplicationContext:
 
         return cls(**defaults)
 
-    def with_overrides(self, **overrides) -> "ApplicationContext":
+    def with_overrides(self, **overrides) -> ApplicationContext:
         """
         Create a new context with specific dependencies overridden.
 
@@ -612,7 +611,7 @@ class ApplicationContext:
         current.update(overrides)
         return ApplicationContext(**current)
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Run health checks on all components.
 
@@ -670,7 +669,7 @@ class ContextHolder:
 
     WARNING: This is a transitional pattern. Direct DI is preferred.
     """
-    _context: Optional[ApplicationContext] = None
+    _context: ApplicationContext | None = None
 
     @classmethod
     def set(cls, context: ApplicationContext) -> None:
@@ -695,7 +694,7 @@ class ContextHolder:
         return cls._context
 
     @classmethod
-    def get_optional(cls) -> Optional[ApplicationContext]:
+    def get_optional(cls) -> ApplicationContext | None:
         """Get context or None if not set."""
         return cls._context
 

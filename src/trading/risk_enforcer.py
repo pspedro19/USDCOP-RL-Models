@@ -23,28 +23,23 @@ Version: 1.0.0
 Date: 2025-01-16
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     Protocol,
-    Tuple,
 )
-import logging
 
 from src.core.constants import (
+    CONSECUTIVE_LOSS_LIMIT,
+    COOLDOWN_MINUTES,
     MAX_DAILY_LOSS_PCT,
+    MAX_DAILY_TRADES,
     MAX_DRAWDOWN_PCT,
     MAX_POSITION_SIZE,
     MIN_CONFIDENCE_THRESHOLD,
-    MAX_DAILY_TRADES,
-    CONSECUTIVE_LOSS_LIMIT,
-    COOLDOWN_MINUTES,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,8 +85,8 @@ class RiskCheckResult:
     decision: RiskDecision
     reason: RiskReason
     message: str
-    adjusted_size: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    adjusted_size: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_allowed(self) -> bool:
@@ -103,7 +98,7 @@ class RiskCheckResult:
         """Check if trade is blocked."""
         return self.decision == RiskDecision.BLOCK
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "decision": self.decision.value,
@@ -160,7 +155,7 @@ class RiskState:
     """
     kill_switch_active: bool = False
     daily_blocked: bool = False
-    cooldown_until: Optional[datetime] = None
+    cooldown_until: datetime | None = None
     trade_count_today: int = 0
     daily_pnl_pct: float = 0.0
     consecutive_losses: int = 0
@@ -512,8 +507,8 @@ class RiskEnforcer:
 
     def __init__(
         self,
-        limits: Optional[RiskLimits] = None,
-        rules: Optional[List[IRiskRule]] = None,
+        limits: RiskLimits | None = None,
+        rules: list[IRiskRule] | None = None,
     ) -> None:
         """
         Initialize the risk enforcer.
@@ -526,7 +521,7 @@ class RiskEnforcer:
         self._state = RiskState()
 
         # Default rules in evaluation order
-        self._rules: List[IRiskRule] = rules or [
+        self._rules: list[IRiskRule] = rules or [
             KillSwitchRule(),
             DailyLossRule(),
             TradeLimitRule(),
@@ -616,7 +611,7 @@ class RiskEnforcer:
         self,
         signal: str,
         current_drawdown_pct: float
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Validate signal (compatibility with existing RiskManager interface).
 
@@ -771,7 +766,7 @@ class RiskEnforcer:
     # Status and Statistics
     # =========================================================================
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current risk status."""
         cooldown_remaining = 0.0
         if self._state.cooldown_until:
@@ -843,7 +838,7 @@ class RiskEnforcer:
                 return True
         return False
 
-    def get_rules(self) -> List[str]:
+    def get_rules(self) -> list[str]:
         """Get list of rule names."""
         return [r.name for r in self._rules]
 

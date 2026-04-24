@@ -7,7 +7,6 @@ Assigns one of 9 categories based on title + content keyword matching.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 # Category rules: {category: [keyword_patterns]}
 CATEGORY_RULES = {
@@ -70,9 +69,9 @@ _COMPILED_RULES = {
 
 def categorize_article(
     title: str,
-    content: Optional[str] = None,
-    summary: Optional[str] = None,
-) -> tuple[Optional[str], Optional[str]]:
+    content: str | None = None,
+    summary: str | None = None,
+) -> tuple[str | None, str | None]:
     """Assign category and subcategory based on keyword matching.
 
     Returns:

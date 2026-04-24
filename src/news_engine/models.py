@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -24,19 +23,19 @@ class RawArticle:
     source_id: str
     published_at: datetime
 
-    content: Optional[str] = None
-    summary: Optional[str] = None
-    image_url: Optional[str] = None
-    author: Optional[str] = None
+    content: str | None = None
+    summary: str | None = None
+    image_url: str | None = None
+    author: str | None = None
     language: str = "es"
     country_focus: str = "CO"
 
     # GDELT-specific
-    gdelt_tone: Optional[float] = None          # -100 to 100 (practical: -20 to 20)
-    gdelt_volume: Optional[int] = None
+    gdelt_tone: float | None = None          # -100 to 100 (practical: -20 to 20)
+    gdelt_volume: int | None = None
 
     # Raw response for debugging
-    raw_json: Optional[dict] = None
+    raw_json: dict | None = None
 
     @property
     def url_hash(self) -> str:
@@ -50,11 +49,11 @@ class EnrichedArticle:
     """Article after enrichment pipeline (SDD-04)."""
     raw: RawArticle
 
-    category: Optional[str] = None
-    subcategory: Optional[str] = None
+    category: str | None = None
+    subcategory: str | None = None
     relevance_score: float = 0.0
-    sentiment_score: Optional[float] = None     # -1.0 to 1.0
-    sentiment_label: Optional[str] = None       # positive, negative, neutral
+    sentiment_score: float | None = None     # -1.0 to 1.0
+    sentiment_label: str | None = None       # positive, negative, neutral
     keywords: list = field(default_factory=list)
     entities: list = field(default_factory=list)
     is_breaking: bool = False
@@ -75,10 +74,10 @@ class CrossReference:
     topic: str
     cluster_date: datetime
     articles: list = field(default_factory=list)  # List of article IDs
-    avg_sentiment: Optional[float] = None
-    dominant_category: Optional[str] = None
+    avg_sentiment: float | None = None
+    dominant_category: str | None = None
     sources_involved: list = field(default_factory=list)
-    summary: Optional[str] = None
+    summary: str | None = None
 
 
 @dataclass
@@ -89,11 +88,11 @@ class NewsDigest:
     total_articles: int = 0
     by_source: dict = field(default_factory=dict)
     by_category: dict = field(default_factory=dict)
-    avg_sentiment: Optional[float] = None
+    avg_sentiment: float | None = None
     top_keywords: list = field(default_factory=list)
     top_articles: list = field(default_factory=list)
     cross_ref_count: int = 0
-    summary_text: Optional[str] = None
+    summary_text: str | None = None
 
 
 @dataclass

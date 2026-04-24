@@ -3,11 +3,12 @@ Trade Persister
 Saves and retrieves trades from PostgreSQL
 """
 
-import asyncio
-from datetime import datetime, date
-from typing import List, Optional, Dict, Any
-import asyncpg
 import logging
+from datetime import date, datetime
+from typing import Any
+
+import asyncpg
+
 from ..config import get_settings
 from .trade_simulator import Trade
 
@@ -26,7 +27,7 @@ class TradePersister:
     """
 
     def __init__(self):
-        self._pool: Optional[asyncpg.Pool] = None
+        self._pool: asyncpg.Pool | None = None
 
     async def _get_pool(self) -> asyncpg.Pool:
         """Get or create connection pool"""
@@ -53,7 +54,7 @@ class TradePersister:
         start_date: str,
         end_date: str,
         model_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get existing trades for a date range.
 
@@ -160,7 +161,7 @@ class TradePersister:
 
     async def save_trades(
         self,
-        trades: List[Trade],
+        trades: list[Trade],
         batch_size: int = 100
     ) -> int:
         """

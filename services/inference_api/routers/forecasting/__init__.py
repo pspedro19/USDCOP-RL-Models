@@ -15,10 +15,10 @@ Routes:
 
 from fastapi import APIRouter
 
-from services.inference_api.routers.forecasting.forecasts import router as forecasts_router
-from services.inference_api.routers.forecasting.models import router as models_router
-from services.inference_api.routers.forecasting.images import router as images_router
 from services.inference_api.routers.forecasting.dashboard import router as dashboard_router
+from services.inference_api.routers.forecasting.forecasts import router as forecasts_router
+from services.inference_api.routers.forecasting.images import router as images_router
+from services.inference_api.routers.forecasting.models import router as models_router
 
 # Main forecasting router
 router = APIRouter(prefix="/forecasting", tags=["forecasting"])

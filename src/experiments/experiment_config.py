@@ -9,13 +9,14 @@ Author: Trading Team
 Date: 2026-01-17
 """
 
-from typing import List, Optional, Dict, Any, Union, Literal
-from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import date
 from enum import Enum
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # Import SSOT contracts
-from src.core.contracts import OBSERVATION_DIM, FEATURE_ORDER
+from src.core.contracts import OBSERVATION_DIM
 
 
 class Algorithm(str, Enum):
@@ -80,22 +81,22 @@ class ExperimentMetadata(BaseModel):
     """Experiment metadata configuration."""
     name: str = Field(..., min_length=3, max_length=64, pattern=r"^[a-z0-9_-]+$")
     version: str = Field(..., pattern=r"^\d+\.\d+\.\d+$")
-    description: Optional[str] = Field(None, max_length=500)
-    hypothesis: Optional[str] = Field(None, max_length=1000)
-    tags: List[str] = Field(default_factory=list)
-    baseline_experiment: Optional[str] = None
-    owner: Optional[str] = None
+    description: str | None = Field(None, max_length=500)
+    hypothesis: str | None = Field(None, max_length=1000)
+    tags: list[str] = Field(default_factory=list)
+    baseline_experiment: str | None = None
+    owner: str | None = None
 
 
 class PolicyKwargs(BaseModel):
     """Policy network configuration."""
-    net_arch: List[int] = Field(default=[64, 64])
+    net_arch: list[int] = Field(default=[64, 64])
     activation_fn: ActivationFn = ActivationFn.TANH
     ortho_init: bool = True
 
     @field_validator("net_arch")
     @classmethod
-    def validate_net_arch(cls, v: List[int]) -> List[int]:
+    def validate_net_arch(cls, v: list[int]) -> list[int]:
         if not v:
             raise ValueError("net_arch must have at least one layer")
         if any(x <= 0 for x in v):
@@ -107,7 +108,7 @@ class ModelConfig(BaseModel):
     """Model architecture configuration."""
     algorithm: Algorithm = Algorithm.PPO
     policy: PolicyType = PolicyType.MLP
-    policy_kwargs: Optional[PolicyKwargs] = None
+    policy_kwargs: PolicyKwargs | None = None
 
 
 class LearningRateSchedule(BaseModel):
@@ -120,18 +121,18 @@ class LearningRateSchedule(BaseModel):
 class TrainingConfig(BaseModel):
     """Training hyperparameters configuration."""
     total_timesteps: int = Field(..., ge=1000)
-    learning_rate: Union[float, LearningRateSchedule] = 0.0003
+    learning_rate: float | LearningRateSchedule = 0.0003
     n_steps: int = Field(2048, ge=1)
     batch_size: int = Field(64, ge=1)
     n_epochs: int = Field(10, ge=1)
     gamma: float = Field(0.95, ge=0, le=1)  # SSOT: experiment_ssot.yaml
     gae_lambda: float = Field(0.95, ge=0, le=1)
     clip_range: float = Field(0.2, ge=0, le=1)
-    clip_range_vf: Optional[float] = None
+    clip_range_vf: float | None = None
     ent_coef: float = Field(0.0, ge=0)
     vf_coef: float = Field(0.5, ge=0)
     max_grad_norm: float = Field(0.5, ge=0)
-    seed: Optional[int] = None
+    seed: int | None = None
     device: Literal["auto", "cpu", "cuda"] = "auto"
 
     @field_validator("learning_rate")
@@ -275,8 +276,8 @@ class EnvironmentConfig(BaseModel):
     observation_dim: int = Field(default=OBSERVATION_DIM)  # Validated by validator below
     action_type: Literal["continuous", "discrete"] = "continuous"
     reward_function: RewardFunction = RewardFunction.SHARPE
-    reward_kwargs: Optional[RewardKwargs] = None
-    normalization: Optional[NormalizationConfig] = None
+    reward_kwargs: RewardKwargs | None = None
+    normalization: NormalizationConfig | None = None
 
     @field_validator("observation_dim")
     @classmethod
@@ -291,14 +292,14 @@ class EnvironmentConfig(BaseModel):
 class DataConfig(BaseModel):
     """Data configuration with preprocessing validation."""
     source: DataSource = DataSource.FEAST
-    train_start: Optional[date] = None
-    train_end: Optional[date] = None
+    train_start: date | None = None
+    train_end: date | None = None
     validation_split: float = Field(0.1, ge=0, le=0.5)
     feature_set: Literal["v1", "v2", "custom"] = "v1"
-    custom_features: Optional[List[str]] = None
+    custom_features: list[str] | None = None
 
     # Preprocessing config (GAP 7: validates no bfill/ffill)
-    preprocessing: Optional[PreprocessingConfig] = Field(
+    preprocessing: PreprocessingConfig | None = Field(
         default_factory=PreprocessingConfig,
         description="Preprocessing configuration with data leakage prevention"
     )
@@ -326,8 +327,8 @@ class DataConfig(BaseModel):
 
 class BacktestConfig(BaseModel):
     """Backtest configuration."""
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: date | None = None
+    end_date: date | None = None
     initial_capital: float = Field(100000, ge=0)
     position_size: float = Field(1.0, ge=0, le=1)
     slippage_bps: float = Field(5, ge=0)
@@ -343,10 +344,10 @@ class StatisticalTestsConfig(BaseModel):
 
 class EvaluationConfig(BaseModel):
     """Evaluation configuration."""
-    metrics: List[Metric] = Field(..., min_length=1)
+    metrics: list[Metric] = Field(..., min_length=1)
     primary_metric: Metric = Metric.SHARPE_RATIO
-    backtest: Optional[BacktestConfig] = None
-    statistical_tests: Optional[StatisticalTestsConfig] = None
+    backtest: BacktestConfig | None = None
+    statistical_tests: StatisticalTestsConfig | None = None
 
     @model_validator(mode="after")
     def validate_primary_metric(self):
@@ -357,10 +358,10 @@ class EvaluationConfig(BaseModel):
 
 class MLflowConfig(BaseModel):
     """MLflow tracking configuration."""
-    experiment_name: Optional[str] = None
+    experiment_name: str | None = None
     tracking_uri: str = "http://localhost:5000"
     log_model: bool = True
-    log_artifacts: List[str] = Field(default=["model", "config", "metrics"])
+    log_artifacts: list[str] = Field(default=["model", "config", "metrics"])
 
 
 class EarlyStoppingConfig(BaseModel):
@@ -374,7 +375,7 @@ class CallbacksConfig(BaseModel):
     """Training callbacks configuration."""
     eval_freq: int = Field(10000, ge=100)
     save_freq: int = Field(50000, ge=100)
-    early_stopping: Optional[EarlyStoppingConfig] = None
+    early_stopping: EarlyStoppingConfig | None = None
     tensorboard: bool = True
 
 
@@ -398,11 +399,11 @@ class ExperimentConfig(BaseModel):
     experiment: ExperimentMetadata
     model: ModelConfig
     training: TrainingConfig
-    environment: Optional[EnvironmentConfig] = None
-    data: Optional[DataConfig] = None
+    environment: EnvironmentConfig | None = None
+    data: DataConfig | None = None
     evaluation: EvaluationConfig
-    mlflow: Optional[MLflowConfig] = None
-    callbacks: Optional[CallbacksConfig] = None
+    mlflow: MLflowConfig | None = None
+    callbacks: CallbacksConfig | None = None
 
     @model_validator(mode="after")
     def set_defaults(self):
@@ -427,7 +428,7 @@ class ExperimentConfig(BaseModel):
         """Get unique run name."""
         return f"{self.experiment.name}_v{self.experiment.version}"
 
-    def to_training_kwargs(self) -> Dict[str, Any]:
+    def to_training_kwargs(self) -> dict[str, Any]:
         """Convert to kwargs for stable_baselines3."""
         kwargs = {
             "learning_rate": self.training.learning_rate
@@ -472,7 +473,7 @@ class ExperimentConfig(BaseModel):
             return mapping.get(self.model.policy_kwargs.activation_fn, nn.Tanh)
         return nn.Tanh
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return self.model_dump(mode="json")
 

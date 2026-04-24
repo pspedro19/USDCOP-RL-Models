@@ -15,34 +15,33 @@ Version: 2.1.0
 Date: 2025-01-14
 """
 
-from .risk_manager import RiskManager, RiskLimits
-
 # Chain of Responsibility pattern (Phase 3)
 from .checks import (
-    HoldSignalCheck,
-    TradingHoursCheck,
     CircuitBreakerCheck,
-    CooldownCheck,
     ConfidenceCheck,
+    ConsecutiveLossesCheck,
+    CooldownCheck,
     DailyLossLimitCheck,
     DrawdownCheck,
-    ConsecutiveLossesCheck,
+    HoldSignalCheck,
     MaxTradesCheck,
     RiskCheckChain,
+    TradingHoursCheck,
 )
 
 # Command Pattern for risk operations
 from .commands import (
-    Command,
-    CommandResult,
-    CommandInvoker,
-    TriggerCircuitBreakerCommand,
-    SetCooldownCommand,
-    ClearCooldownCommand,
-    ResetKillSwitchCommand,
-    UpdateRiskLimitsCommand,
     BlockTradingCommand,
+    ClearCooldownCommand,
+    Command,
+    CommandInvoker,
+    CommandResult,
+    ResetKillSwitchCommand,
+    SetCooldownCommand,
+    TriggerCircuitBreakerCommand,
+    UpdateRiskLimitsCommand,
 )
+from .risk_manager import RiskLimits, RiskManager
 
 __all__ = [
     # Legacy interface

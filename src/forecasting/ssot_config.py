@@ -16,7 +16,7 @@ Version: 1.0.0
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import yaml
 
@@ -42,7 +42,7 @@ class ForecastingSSOTConfig:
     """Loads and provides typed access to forecasting_ssot.yaml."""
 
     _instance: Optional["ForecastingSSOTConfig"] = None
-    _instance_path: Optional[str] = None
+    _instance_path: str | None = None
 
     def __init__(self, raw: dict, config_path: str):
         self._raw = raw
@@ -50,7 +50,7 @@ class ForecastingSSOTConfig:
         self._validate()
 
     @classmethod
-    def load(cls, path: Optional[str] = None) -> "ForecastingSSOTConfig":
+    def load(cls, path: str | None = None) -> "ForecastingSSOTConfig":
         """Load config, cached after first call per path."""
         if path is None:
             resolved = _find_project_root() / _DEFAULT_CONFIG
@@ -65,7 +65,7 @@ class ForecastingSSOTConfig:
         if cls._instance is not None and cls._instance_path == resolved_str:
             return cls._instance
 
-        with open(resolved, "r", encoding="utf-8") as f:
+        with open(resolved, encoding="utf-8") as f:
             raw = yaml.safe_load(f)
 
         instance = cls(raw, resolved_str)
@@ -102,7 +102,7 @@ class ForecastingSSOTConfig:
     # Feature accessors
     # ---------------------------------------------------------------
 
-    def get_feature_columns(self) -> Tuple[str, ...]:
+    def get_feature_columns(self) -> tuple[str, ...]:
         """Return the 21 SSOT feature column names."""
         return tuple(self._raw["features"]["columns"])
 
@@ -113,11 +113,11 @@ class ForecastingSSOTConfig:
     # Model accessors
     # ---------------------------------------------------------------
 
-    def get_model_ids(self) -> Tuple[str, ...]:
+    def get_model_ids(self) -> tuple[str, ...]:
         """Return all model IDs (e.g., ridge, bayesian_ridge, ...)."""
         return tuple(self._raw["models"].keys())
 
-    def get_model_def(self, model_id: str) -> Dict[str, Any]:
+    def get_model_def(self, model_id: str) -> dict[str, Any]:
         """Return full model definition dict."""
         return dict(self._raw["models"][model_id])
 
@@ -125,11 +125,11 @@ class ForecastingSSOTConfig:
         """Return model type: linear, boosting, or hybrid."""
         return self._raw["models"][model_id]["type"]
 
-    def get_model_params(self, model_id: str) -> Dict[str, Any]:
+    def get_model_params(self, model_id: str) -> dict[str, Any]:
         """Return model-specific params dict."""
         return dict(self._raw["models"][model_id].get("params", {}))
 
-    def get_param_translation(self, model_id: str) -> Dict[str, str]:
+    def get_param_translation(self, model_id: str) -> dict[str, str]:
         """Return param name translation map (e.g., CatBoost)."""
         return dict(self._raw["models"][model_id].get("param_translation", {}))
 
@@ -137,7 +137,7 @@ class ForecastingSSOTConfig:
     # Horizon accessors
     # ---------------------------------------------------------------
 
-    def get_horizons(self) -> Tuple[int, ...]:
+    def get_horizons(self) -> tuple[int, ...]:
         """Return all horizon values."""
         return tuple(self._raw["horizons"]["values"])
 
@@ -149,7 +149,7 @@ class ForecastingSSOTConfig:
                 return cat_name
         return "medium"
 
-    def get_horizon_config(self, horizon: int) -> Dict[str, Any]:
+    def get_horizon_config(self, horizon: int) -> dict[str, Any]:
         """Return horizon-specific hyperparameters."""
         cat = self.get_horizon_category(horizon)
         return dict(self._raw["horizons"]["configs"][cat])
@@ -158,11 +158,11 @@ class ForecastingSSOTConfig:
     # Data source accessors
     # ---------------------------------------------------------------
 
-    def get_data_source(self, name: str) -> Dict[str, Any]:
+    def get_data_source(self, name: str) -> dict[str, Any]:
         """Return data source config (ohlcv, macro, monitoring)."""
         return dict(self._raw["data_sources"][name])
 
-    def get_macro_column_mapping(self) -> Dict[str, str]:
+    def get_macro_column_mapping(self) -> dict[str, str]:
         """Return macro DB/parquet column -> feature name mapping."""
         return dict(self._raw["data_sources"]["macro"]["column_mapping"])
 
@@ -173,7 +173,7 @@ class ForecastingSSOTConfig:
     # Walk-forward accessors
     # ---------------------------------------------------------------
 
-    def get_wf_config(self) -> Dict[str, Any]:
+    def get_wf_config(self) -> dict[str, Any]:
         """Return walk-forward validation config."""
         return dict(self._raw["walk_forward"])
 
@@ -181,11 +181,11 @@ class ForecastingSSOTConfig:
     # Track accessors
     # ---------------------------------------------------------------
 
-    def get_track_config(self, track: str) -> Dict[str, Any]:
+    def get_track_config(self, track: str) -> dict[str, Any]:
         """Return track config (h1 or h5)."""
         return dict(self._raw["tracks"][track])
 
-    def get_track_model_ids(self, track: str) -> Tuple[str, ...]:
+    def get_track_model_ids(self, track: str) -> tuple[str, ...]:
         """Return model IDs for a specific track."""
         track_cfg = self._raw["tracks"][track]
         models = track_cfg.get("models", "all")

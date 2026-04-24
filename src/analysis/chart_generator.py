@@ -10,9 +10,7 @@ from __future__ import annotations
 import logging
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -28,7 +26,7 @@ def generate_variable_chart(
     lookback_days: int = 90,
     figsize: tuple = (12, 6),
     dpi: int = 150,
-) -> Optional[str]:
+) -> str | None:
     """Generate a PNG chart for a single macro variable.
 
     Chart includes:
@@ -41,8 +39,8 @@ def generate_variable_chart(
     try:
         import matplotlib
         matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
         import matplotlib.dates as mdates
+        import matplotlib.pyplot as plt
     except ImportError:
         logger.error("matplotlib not installed — pip install matplotlib")
         return None

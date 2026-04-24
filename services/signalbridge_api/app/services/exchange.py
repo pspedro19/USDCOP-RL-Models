@@ -3,22 +3,22 @@ Exchange service for managing exchange credentials and connections.
 """
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select, and_
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ExchangeCredential, CredentialAuditLog
+from app.adapters import get_exchange_adapter
 from app.contracts.exchange import (
+    ExchangeBalance,
     ExchangeCredentials,
     ExchangeCredentialsCreate,
     ExchangeCredentialsUpdate,
-    ExchangeBalance,
     SupportedExchange,
 )
-from app.adapters import get_exchange_adapter
+from app.core.exceptions import NotFoundError
+from app.models import CredentialAuditLog, ExchangeCredential
 from app.services.vault import vault_service
-from app.core.exceptions import NotFoundError, ExchangeError, ErrorCode
 
 
 class ExchangeService:
@@ -30,9 +30,9 @@ class ExchangeService:
     async def get_credentials(
         self,
         user_id: UUID,
-        credential_id: Optional[UUID] = None,
-        exchange: Optional[SupportedExchange] = None,
-    ) -> List[ExchangeCredential]:
+        credential_id: UUID | None = None,
+        exchange: SupportedExchange | None = None,
+    ) -> list[ExchangeCredential]:
         """
         Get exchange credentials for a user.
 
@@ -61,7 +61,7 @@ class ExchangeService:
         self,
         credential_id: UUID,
         user_id: UUID,
-    ) -> Optional[ExchangeCredential]:
+    ) -> ExchangeCredential | None:
         """Get a specific credential."""
         result = await self.db.execute(
             select(ExchangeCredential).where(
@@ -77,7 +77,7 @@ class ExchangeService:
         self,
         user_id: UUID,
         data: ExchangeCredentialsCreate,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> ExchangeCredential:
         """
         Create new exchange credentials.
@@ -141,7 +141,7 @@ class ExchangeService:
         user_id: UUID,
         credential_id: UUID,
         data: ExchangeCredentialsUpdate,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> ExchangeCredential:
         """
         Update exchange credentials.
@@ -217,7 +217,7 @@ class ExchangeService:
         self,
         user_id: UUID,
         credential_id: UUID,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> bool:
         """
         Delete exchange credentials.
@@ -317,7 +317,7 @@ class ExchangeService:
         self,
         user_id: UUID,
         credential_id: UUID,
-    ) -> List[ExchangeBalance]:
+    ) -> list[ExchangeBalance]:
         """
         Get balances for an exchange credential.
 

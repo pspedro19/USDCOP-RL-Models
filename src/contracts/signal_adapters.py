@@ -18,25 +18,23 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 from pathlib import Path
-from typing import List, Optional
 
 import numpy as np
 import pandas as pd
 import yaml
 
 from src.contracts.signal_contract import (
-    UniversalSignalRecord,
-    SignalDirection,
     BarFrequency,
     EntryType,
-)
-from src.forecasting.confidence_scorer import (
-    ConfidenceConfig,
-    score_confidence,
+    UniversalSignalRecord,
 )
 from src.forecasting.adaptive_stops import (
     AdaptiveStopsConfig,
     compute_adaptive_stops,
+)
+from src.forecasting.confidence_scorer import (
+    ConfidenceConfig,
+    score_confidence,
 )
 
 logger = logging.getLogger(__name__)
@@ -156,7 +154,7 @@ class H5SmartSimpleAdapter:
     with mode="bidir_smart".
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         cfg_path = config_path or (PROJECT_ROOT / "config" / "execution" / "smart_simple_v1.yaml")
         cfg = _load_yaml_config(cfg_path)
 
@@ -198,7 +196,7 @@ class H5SmartSimpleAdapter:
         df: pd.DataFrame,
         feature_cols: list,
         year: int,
-    ) -> List[UniversalSignalRecord]:
+    ) -> list[UniversalSignalRecord]:
         """
         Walk-forward signal generation for H5.
 
@@ -211,7 +209,7 @@ class H5SmartSimpleAdapter:
 
         Returns list of signals (one per trading week).
         """
-        from sklearn.linear_model import Ridge, BayesianRidge
+        from sklearn.linear_model import BayesianRidge, Ridge
         from sklearn.preprocessing import StandardScaler
 
         test_start = pd.Timestamp(f"{year}-01-01")
@@ -326,7 +324,7 @@ class H1ForecastVTAdapter:
     Direction: SHORT-only (2026 regime).
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         cfg_path = config_path or (PROJECT_ROOT / "config" / "execution" / "smart_executor_v1.yaml")
         cfg = _load_yaml_config(cfg_path)
 
@@ -352,14 +350,14 @@ class H1ForecastVTAdapter:
         df: pd.DataFrame,
         feature_cols: list,
         year: int,
-    ) -> List[UniversalSignalRecord]:
+    ) -> list[UniversalSignalRecord]:
         """
         Walk-forward daily signal generation for H1.
 
         Retrain weekly (every Sunday/start-of-week), predict each trading day.
         9-model ensemble, top_3 by prediction magnitude.
         """
-        from sklearn.linear_model import Ridge, BayesianRidge, ARDRegression
+        from sklearn.linear_model import ARDRegression, BayesianRidge, Ridge
         from sklearn.preprocessing import StandardScaler
 
         try:
@@ -521,9 +519,9 @@ class RLPPOAdapter:
 
     def __init__(
         self,
-        model_path: Optional[Path] = None,
-        norm_stats_path: Optional[Path] = None,
-        config_path: Optional[Path] = None,
+        model_path: Path | None = None,
+        norm_stats_path: Path | None = None,
+        config_path: Path | None = None,
     ):
         self.model_path = model_path
         self.norm_stats_path = norm_stats_path
@@ -543,7 +541,7 @@ class RLPPOAdapter:
         self,
         ohlcv_5min: pd.DataFrame,
         year: int,
-    ) -> List[UniversalSignalRecord]:
+    ) -> list[UniversalSignalRecord]:
         """
         Step through 5-min bars, run model.predict(), produce signals.
 

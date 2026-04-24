@@ -16,12 +16,13 @@ is not available in real-time. The Banrep typically intervenes to
 defend the Colombian Peso during rapid depreciation.
 """
 
-import numpy as np
 from collections import deque
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Any
 
-from .base import RewardComponent, ComponentType
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 class InterventionStatus(Enum):
@@ -219,7 +220,7 @@ class BanrepInterventionDetector(RewardComponent):
         self._last_spike_bar = 0
         self._total_bars = 0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -232,7 +233,7 @@ class BanrepInterventionDetector(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({

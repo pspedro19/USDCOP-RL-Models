@@ -22,11 +22,11 @@ Security:
     - Supports both Docker secrets and local development
 """
 
-import os
 import logging
-from pathlib import Path
-from typing import Optional, Dict
+import os
 from functools import lru_cache
+from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,8 @@ class SecretManager:
 
     def __init__(
         self,
-        secrets_dir: Optional[str] = None,
-        docker_secrets_path: Optional[str] = None,
+        secrets_dir: str | None = None,
+        docker_secrets_path: str | None = None,
         cache_secrets: bool = True
     ):
         """
@@ -76,7 +76,7 @@ class SecretManager:
             self.local_secrets_path = self._find_secrets_dir()
 
         self._cache_enabled = cache_secrets
-        self._cache: Dict[str, str] = {}
+        self._cache: dict[str, str] = {}
 
         logger.debug(f"SecretManager initialized with local_secrets_path={self.local_secrets_path}")
 
@@ -104,7 +104,7 @@ class SecretManager:
             cls._instance = cls()
         return cls._instance
 
-    def get_secret(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, name: str, default: str | None = None) -> str | None:
         """
         Get a secret value by name.
 
@@ -152,23 +152,23 @@ class SecretManager:
 
         return value
 
-    def _read_docker_secret(self, name: str) -> Optional[str]:
+    def _read_docker_secret(self, name: str) -> str | None:
         """Read a secret from Docker secrets path."""
         secret_path = self.docker_secrets_path / name
 
         if secret_path.exists() and secret_path.is_file():
             try:
-                with open(secret_path, "r", encoding="utf-8") as f:
+                with open(secret_path, encoding="utf-8") as f:
                     value = f.read().strip()
                     if value:
                         logger.debug(f"Secret '{name}' loaded from Docker secrets")
                         return value
-            except (IOError, PermissionError) as e:
+            except (OSError, PermissionError) as e:
                 logger.warning(f"Failed to read Docker secret '{name}': {type(e).__name__}")
 
         return None
 
-    def _read_local_secret(self, name: str) -> Optional[str]:
+    def _read_local_secret(self, name: str) -> str | None:
         """Read a secret from local secrets directory."""
         # Try with and without .txt extension
         possible_paths = [
@@ -179,17 +179,17 @@ class SecretManager:
         for secret_path in possible_paths:
             if secret_path.exists() and secret_path.is_file():
                 try:
-                    with open(secret_path, "r", encoding="utf-8") as f:
+                    with open(secret_path, encoding="utf-8") as f:
                         value = f.read().strip()
                         if value:
                             logger.debug(f"Secret '{name}' loaded from local file")
                             return value
-                except (IOError, PermissionError) as e:
+                except (OSError, PermissionError) as e:
                     logger.warning(f"Failed to read local secret '{name}': {type(e).__name__}")
 
         return None
 
-    def _read_env_var(self, name: str) -> Optional[str]:
+    def _read_env_var(self, name: str) -> str | None:
         """Read a secret from environment variable."""
         # Try exact name and uppercase version
         env_names = [name, name.upper(), name.lower()]
@@ -227,7 +227,7 @@ class SecretManager:
         """Clear the secrets cache."""
         self._cache.clear()
 
-    def list_available_secrets(self) -> Dict[str, str]:
+    def list_available_secrets(self) -> dict[str, str]:
         """
         List all available secrets and their sources.
 
@@ -253,19 +253,19 @@ class SecretManager:
         return available
 
     # Convenience methods for common secrets
-    def get_db_password(self) -> Optional[str]:
+    def get_db_password(self) -> str | None:
         """Get database password."""
         return self.get_secret("db_password") or self.get_secret("POSTGRES_PASSWORD")
 
-    def get_redis_password(self) -> Optional[str]:
+    def get_redis_password(self) -> str | None:
         """Get Redis password."""
         return self.get_secret("redis_password") or self.get_secret("REDIS_PASSWORD")
 
-    def get_minio_secret_key(self) -> Optional[str]:
+    def get_minio_secret_key(self) -> str | None:
         """Get MinIO secret key."""
         return self.get_secret("minio_secret_key") or self.get_secret("MINIO_SECRET_KEY")
 
-    def get_api_key(self, provider: str, index: int = 1) -> Optional[str]:
+    def get_api_key(self, provider: str, index: int = 1) -> str | None:
         """
         Get an API key for a provider.
 
@@ -292,10 +292,10 @@ class SecretManager:
 
 
 # Module-level singleton access
-_default_manager: Optional[SecretManager] = None
+_default_manager: SecretManager | None = None
 
 
-def get_secret(name: str, default: Optional[str] = None) -> Optional[str]:
+def get_secret(name: str, default: str | None = None) -> str | None:
     """
     Get a secret using the default SecretManager instance.
 
@@ -340,6 +340,6 @@ def get_secret_required(name: str) -> str:
 
 # Backwards compatibility with simple get_secret function
 @lru_cache(maxsize=128)
-def get_secret_cached(name: str) -> Optional[str]:
+def get_secret_cached(name: str) -> str | None:
     """Get a secret with caching (deprecated, use SecretManager instead)."""
     return get_secret(name)

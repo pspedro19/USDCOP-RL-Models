@@ -10,9 +10,8 @@ Reuses MacroAnalyzer internals for indicator computation.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, asdict
-from datetime import date, timedelta
-from typing import Optional
+from dataclasses import asdict, dataclass, field
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -89,31 +88,31 @@ class VariableDigest:
     variable_key: str
     group: str
     impact_direction: str
-    current_value: Optional[float] = None
-    last_update: Optional[str] = None
+    current_value: float | None = None
+    last_update: str | None = None
 
     # Changes
-    change_1d_pct: Optional[float] = None
-    change_1w_pct: Optional[float] = None
-    change_1m_pct: Optional[float] = None
+    change_1d_pct: float | None = None
+    change_1w_pct: float | None = None
+    change_1m_pct: float | None = None
 
     # Context
-    z_score_20d: Optional[float] = None
-    z_score_60d: Optional[float] = None
-    percentile_252d: Optional[float] = None
-    range_90d_low: Optional[float] = None
-    range_90d_high: Optional[float] = None
-    trend_slope: Optional[float] = None  # Linear regression slope over 20d
+    z_score_20d: float | None = None
+    z_score_60d: float | None = None
+    percentile_252d: float | None = None
+    range_90d_low: float | None = None
+    range_90d_high: float | None = None
+    trend_slope: float | None = None  # Linear regression slope over 20d
 
     # Flags
-    daily_move_class: Optional[str] = None   # "large_up", "large_down", "normal"
+    daily_move_class: str | None = None   # "large_up", "large_down", "normal"
     is_anomaly: bool = False                  # |z_score_20d| > 2
     near_90d_high: bool = False               # Within 2% of 90d high
     near_90d_low: bool = False                # Within 2% of 90d low
 
     # Correlation with COP
-    correlation_20d: Optional[float] = None
-    correlation_60d: Optional[float] = None
+    correlation_20d: float | None = None
+    correlation_60d: float | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -173,7 +172,7 @@ class MacroDigest:
             lines.append("\n### Correlaciones con COP (20d vs 60d)")
             for var_key, corr in sorted(
                 self.correlations.items(),
-                key=lambda x: abs((x[1].get("shift") or 0)),
+                key=lambda x: abs(x[1].get("shift") or 0),
                 reverse=True,
             )[:5]:
                 c20 = corr.get("correlation_20d")
@@ -195,7 +194,7 @@ class MacroDataPreprocessor:
     Adds: percentiles, correlation shifts, anomaly detection, group assessments.
     """
 
-    def __init__(self, analyzer: Optional[MacroAnalyzer] = None):
+    def __init__(self, analyzer: MacroAnalyzer | None = None):
         self.analyzer = analyzer or MacroAnalyzer()
 
     def compute_digest(
@@ -278,7 +277,7 @@ class MacroDataPreprocessor:
         impact_direction: str,
         cop_series: pd.Series,
         as_of_date: date,
-    ) -> Optional[VariableDigest]:
+    ) -> VariableDigest | None:
         """Compute digest for a single variable."""
         try:
             # Slice to as_of_date
@@ -354,7 +353,7 @@ class MacroDataPreprocessor:
             return None
 
     @staticmethod
-    def _z_score(series: pd.Series, window: int) -> Optional[float]:
+    def _z_score(series: pd.Series, window: int) -> float | None:
         """Compute z-score vs rolling mean/std."""
         if len(series) < window:
             return None
@@ -367,7 +366,7 @@ class MacroDataPreprocessor:
         return None
 
     @staticmethod
-    def _percentile(series: pd.Series, window: int) -> Optional[float]:
+    def _percentile(series: pd.Series, window: int) -> float | None:
         """Compute percentile rank within lookback window."""
         if len(series) < 10:
             return None
@@ -377,7 +376,7 @@ class MacroDataPreprocessor:
         return round(float(rank) * 100, 1)
 
     @staticmethod
-    def _trend_slope(series: pd.Series, window: int) -> Optional[float]:
+    def _trend_slope(series: pd.Series, window: int) -> float | None:
         """Linear regression slope over last N periods (normalized by mean)."""
         if len(series) < window:
             return None
@@ -401,7 +400,7 @@ class MacroDataPreprocessor:
         cop_series: pd.Series,
         window: int,
         as_of_date: date,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Compute rolling correlation between variable and COP close."""
         try:
             # Align dates
@@ -477,7 +476,7 @@ class MacroDataPreprocessor:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _pct_change(series: pd.Series, periods: int) -> Optional[float]:
+def _pct_change(series: pd.Series, periods: int) -> float | None:
     """Compute percentage change over N periods."""
     if len(series) <= periods:
         return None
@@ -488,7 +487,7 @@ def _pct_change(series: pd.Series, periods: int) -> Optional[float]:
     return round(((current - past) / abs(past)) * 100, 4)
 
 
-def _fmt_pct(val: Optional[float]) -> str:
+def _fmt_pct(val: float | None) -> str:
     """Format percentage for display."""
     if val is None:
         return "N/A"

@@ -9,16 +9,16 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-import time
 import logging
-from typing import Optional, Dict, Any, List
-from threading import Lock
+import time
 from dataclasses import dataclass
+from threading import Lock
+from typing import Any
 
 from src.core.interfaces.repository import (
-    IStateRepository,
     IHashRepository,
     IListRepository,
+    IStateRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class CachedValue:
     """Value with optional TTL."""
     value: Any
-    expires_at: Optional[float] = None
+    expires_at: float | None = None
 
     def is_expired(self) -> bool:
         if self.expires_at is None:
@@ -49,9 +49,9 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
     """
 
     def __init__(self):
-        self._store: Dict[str, CachedValue] = {}
-        self._hashes: Dict[str, Dict[str, str]] = {}
-        self._lists: Dict[str, List[str]] = {}
+        self._store: dict[str, CachedValue] = {}
+        self._hashes: dict[str, dict[str, str]] = {}
+        self._lists: dict[str, list[str]] = {}
         self._lock = Lock()
 
     def _cleanup_expired(self):
@@ -68,7 +68,7 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
     # IStateRepository implementation
     # =========================================================================
 
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         """Get state by key."""
         with self._lock:
             self._cleanup_expired()
@@ -80,8 +80,8 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
     def set(
         self,
         key: str,
-        value: Dict[str, Any],
-        ttl: Optional[int] = None
+        value: dict[str, Any],
+        ttl: int | None = None
     ) -> bool:
         """Set state with optional TTL."""
         with self._lock:
@@ -104,7 +104,7 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
             cached = self._store.get(key)
             return cached is not None and not cached.is_expired()
 
-    def get_ttl(self, key: str) -> Optional[int]:
+    def get_ttl(self, key: str) -> int | None:
         """Get remaining TTL for key."""
         with self._lock:
             cached = self._store.get(key)
@@ -117,7 +117,7 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
     # IHashRepository implementation
     # =========================================================================
 
-    def hget(self, key: str, field: str) -> Optional[str]:
+    def hget(self, key: str, field: str) -> str | None:
         """Get single field from hash."""
         with self._lock:
             hash_data = self._hashes.get(key, {})
@@ -131,12 +131,12 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
             self._hashes[key][field] = value
             return True
 
-    def hgetall(self, key: str) -> Dict[str, str]:
+    def hgetall(self, key: str) -> dict[str, str]:
         """Get all fields from hash."""
         with self._lock:
             return self._hashes.get(key, {}).copy()
 
-    def hmset(self, key: str, mapping: Dict[str, str]) -> bool:
+    def hmset(self, key: str, mapping: dict[str, str]) -> bool:
         """Set multiple fields in hash."""
         with self._lock:
             if key not in self._hashes:
@@ -185,7 +185,7 @@ class InMemoryStateRepository(IStateRepository, IHashRepository, IListRepository
             self._lists[key].extend(values)
             return len(self._lists[key])
 
-    def lrange(self, key: str, start: int, end: int) -> List[str]:
+    def lrange(self, key: str, start: int, end: int) -> list[str]:
         """Get range of values from list."""
         with self._lock:
             lst = self._lists.get(key, [])

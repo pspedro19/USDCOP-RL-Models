@@ -18,12 +18,11 @@ Version: 1.0.0
 Created: 2026-01-18
 """
 
-from dataclasses import dataclass, asdict, field
-from datetime import datetime
-from typing import Any, Dict, FrozenSet, List, Optional, Tuple, Union
 import hashlib
 import json
-
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 # =============================================================================
 # CONSTANTS
@@ -50,26 +49,26 @@ class LineageRecord:
     """
     artifact_type: str  # 'dataset', 'model', 'backtest', 'comparison'
     artifact_id: str
-    parent_id: Optional[str]  # Previous artifact in chain
-    parent_type: Optional[str]
+    parent_id: str | None  # Previous artifact in chain
+    parent_type: str | None
 
     # Source information
-    source_uri: Optional[str]  # s3:// URI of source
-    source_hash: Optional[str]
+    source_uri: str | None  # s3:// URI of source
+    source_hash: str | None
 
     # Transformation metadata
-    transform_name: Optional[str]  # e.g., 'l2_preprocessing', 'l3_training'
-    transform_params: Optional[Tuple[Tuple[str, str], ...]]  # Frozen dict as tuples
+    transform_name: str | None  # e.g., 'l2_preprocessing', 'l3_training'
+    transform_params: tuple[tuple[str, str], ...] | None  # Frozen dict as tuples
 
     # Temporal context
     created_at: datetime
     created_by: str  # User or DAG that created this
 
     # Git/DVC tracking
-    git_commit: Optional[str] = None
-    dvc_version: Optional[str] = None
+    git_commit: str | None = None
+    dvc_version: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary."""
         return {
             "artifact_type": self.artifact_type,
@@ -87,7 +86,7 @@ class LineageRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LineageRecord":
+    def from_dict(cls, data: dict[str, Any]) -> "LineageRecord":
         """Create from dictionary."""
         transform_params = data.get("transform_params")
         if transform_params and isinstance(transform_params, dict):
@@ -149,7 +148,7 @@ class DatasetSnapshot:
     size_bytes: int
 
     # Feature schema
-    feature_columns: Tuple[str, ...]  # Frozen list as tuple
+    feature_columns: tuple[str, ...]  # Frozen list as tuple
     feature_order_hash: str
 
     # Temporal range
@@ -157,11 +156,11 @@ class DatasetSnapshot:
     date_range_end: str
 
     # Lineage
-    parent_version: Optional[str]
-    lineage: Optional[LineageRecord]
+    parent_version: str | None
+    lineage: LineageRecord | None
     created_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary (for XCom)."""
         return {
             "experiment_id": self.experiment_id,
@@ -183,7 +182,7 @@ class DatasetSnapshot:
             "created_at": self.created_at.isoformat(),
         }
 
-    def to_xcom_dict(self) -> Dict[str, Any]:
+    def to_xcom_dict(self) -> dict[str, Any]:
         """
         Serialize for Airflow XCom (minimal for quick access).
 
@@ -202,7 +201,7 @@ class DatasetSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DatasetSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> "DatasetSnapshot":
         """Create from dictionary."""
         feature_columns = data.get("feature_columns", [])
         if isinstance(feature_columns, list):
@@ -272,24 +271,24 @@ class ModelSnapshot:
     observation_dim: int
     action_space: int
     feature_order_hash: str
-    feature_order: Tuple[str, ...]  # Actual feature order for validation
+    feature_order: tuple[str, ...]  # Actual feature order for validation
 
     # Performance metrics (from backtest)
-    test_sharpe: Optional[float]
-    test_max_drawdown: Optional[float]
-    test_win_rate: Optional[float]
-    test_total_return: Optional[float]
+    test_sharpe: float | None
+    test_max_drawdown: float | None
+    test_win_rate: float | None
+    test_total_return: float | None
 
     # Training metadata
     training_duration_seconds: float
-    mlflow_run_id: Optional[str]
-    best_reward: Optional[float]
+    mlflow_run_id: str | None
+    best_reward: float | None
 
     # Lineage - link to dataset
-    dataset_snapshot: Optional[DatasetSnapshot]
+    dataset_snapshot: DatasetSnapshot | None
     created_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary."""
         return {
             "experiment_id": self.experiment_id,
@@ -316,7 +315,7 @@ class ModelSnapshot:
             "created_at": self.created_at.isoformat(),
         }
 
-    def to_xcom_dict(self) -> Dict[str, Any]:
+    def to_xcom_dict(self) -> dict[str, Any]:
         """
         Serialize for Airflow XCom (minimal for quick access).
         """
@@ -332,7 +331,7 @@ class ModelSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModelSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> "ModelSnapshot":
         """Create from dictionary."""
         feature_order = data.get("feature_order", [])
         if isinstance(feature_order, list):
@@ -403,8 +402,8 @@ class BacktestSnapshot:
     max_drawdown: float
     win_rate: float
     total_trades: int
-    profit_factor: Optional[float]
-    avg_trade_return: Optional[float]
+    profit_factor: float | None
+    avg_trade_return: float | None
 
     # Integrity
     result_hash: str
@@ -414,7 +413,7 @@ class BacktestSnapshot:
     backtest_end: str
     created_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary."""
         return {
             "experiment_id": self.experiment_id,
@@ -437,7 +436,7 @@ class BacktestSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BacktestSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> "BacktestSnapshot":
         """Create from dictionary."""
         created_at = data.get("created_at")
         if isinstance(created_at, str):
@@ -509,13 +508,13 @@ class RewardConfigSnapshot:
     curriculum_phase_3_steps: int
 
     # Full config (frozen as tuple of tuples for immutability)
-    component_configs: Tuple[Tuple[str, str], ...]  # Name -> JSON serialized config
+    component_configs: tuple[tuple[str, str], ...]  # Name -> JSON serialized config
 
     # Metadata
     created_at: datetime
 
     @property
-    def enabled_components(self) -> Tuple[str, ...]:
+    def enabled_components(self) -> tuple[str, ...]:
         """Get names of enabled components."""
         enabled = []
         if self.weight_pnl > 0:
@@ -538,7 +537,7 @@ class RewardConfigSnapshot:
             enabled.append("normalizer")
         return tuple(enabled)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary."""
         return {
             "experiment_id": self.experiment_id,
@@ -564,7 +563,7 @@ class RewardConfigSnapshot:
             "created_at": self.created_at.isoformat(),
         }
 
-    def to_xcom_dict(self) -> Dict[str, Any]:
+    def to_xcom_dict(self) -> dict[str, Any]:
         """Minimal serialization for Airflow XCom."""
         return {
             "experiment_id": self.experiment_id,
@@ -575,7 +574,7 @@ class RewardConfigSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RewardConfigSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> "RewardConfigSnapshot":
         """Create from dictionary."""
         component_configs = data.get("component_configs", {})
         if isinstance(component_configs, dict):
@@ -688,7 +687,7 @@ class ABComparisonSnapshot:
 
     # Storage URI
     storage_uri: str           # ab_result.json
-    shadow_trades_uri: Optional[str]  # shadow_trades.parquet
+    shadow_trades_uri: str | None  # shadow_trades.parquet
 
     # Models compared
     baseline_experiment_id: str
@@ -720,7 +719,7 @@ class ABComparisonSnapshot:
 
     created_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to serializable dictionary."""
         return {
             "comparison_id": self.comparison_id,
@@ -750,7 +749,7 @@ class ABComparisonSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ABComparisonSnapshot":
+    def from_dict(cls, data: dict[str, Any]) -> "ABComparisonSnapshot":
         """Create from dictionary."""
         created_at = data.get("created_at")
         if isinstance(created_at, str):
@@ -802,7 +801,7 @@ def compute_content_hash(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()[:16]
 
 
-def compute_schema_hash(columns: List[str]) -> str:
+def compute_schema_hash(columns: list[str]) -> str:
     """
     Compute hash of column schema.
 
@@ -816,7 +815,7 @@ def compute_schema_hash(columns: List[str]) -> str:
     return hashlib.sha256(schema_str.encode()).hexdigest()[:16]
 
 
-def compute_json_hash(data: Dict[str, Any]) -> str:
+def compute_json_hash(data: dict[str, Any]) -> str:
     """
     Compute hash of JSON-serializable data.
 
@@ -832,7 +831,7 @@ def compute_json_hash(data: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()[:16]
 
 
-def parse_s3_uri(uri: str) -> Tuple[str, str]:
+def parse_s3_uri(uri: str) -> tuple[str, str]:
     """
     Parse S3 URI into bucket and key.
 

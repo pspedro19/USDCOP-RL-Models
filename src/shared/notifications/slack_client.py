@@ -10,13 +10,13 @@ Events:
 - Drift detection
 """
 
-import os
-import logging
 import asyncio
-from typing import Optional, Dict, Any, List
+import logging
+import os
 from dataclasses import dataclass
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+
 import aiohttp
 
 logger = logging.getLogger(__name__)
@@ -33,8 +33,8 @@ class AlertSeverity(Enum):
 class SlackMessage:
     channel: str
     text: str
-    blocks: Optional[List[Dict]] = None
-    thread_ts: Optional[str] = None
+    blocks: list[dict] | None = None
+    thread_ts: str | None = None
 
 
 class SlackClient:
@@ -56,9 +56,9 @@ class SlackClient:
         AlertSeverity.CRITICAL: "#9c27b0",
     }
 
-    def __init__(self, webhook_url: Optional[str] = None):
+    def __init__(self, webhook_url: str | None = None):
         self.webhook_url = webhook_url or os.environ.get('SLACK_WEBHOOK_URL')
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -70,8 +70,8 @@ class SlackClient:
         title: str,
         message: str,
         severity: AlertSeverity = AlertSeverity.INFO,
-        fields: Optional[Dict[str, str]] = None,
-        actions: Optional[List[Dict]] = None,
+        fields: dict[str, str] | None = None,
+        actions: list[dict] | None = None,
     ):
         """
         Send formatted alert to Slack.
@@ -165,7 +165,7 @@ class SlackClient:
         from_stage: str,
         to_stage: str,
         promoted_by: str,
-        metrics: Optional[Dict] = None,
+        metrics: dict | None = None,
     ):
         """Notify model promotion event."""
         fields = {
@@ -258,7 +258,7 @@ class SlackClient:
 
 
 # Global instance
-_slack_client: Optional[SlackClient] = None
+_slack_client: SlackClient | None = None
 
 
 def get_slack_client() -> SlackClient:

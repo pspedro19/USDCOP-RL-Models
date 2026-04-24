@@ -10,16 +10,14 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import List, Optional
 import logging
 
 from src.core.interfaces.risk import (
     IRiskCheck,
-    RiskContext,
     RiskCheckResult,
+    RiskContext,
     RiskStatus,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +49,7 @@ class RiskCheckChain:
             execute_trade()
     """
 
-    def __init__(self, checks: Optional[List[IRiskCheck]] = None):
+    def __init__(self, checks: list[IRiskCheck] | None = None):
         """
         Args:
             checks: List of checks to run (will be sorted by order)
@@ -130,7 +128,7 @@ class RiskCheckChain:
                 return RiskCheckResult(
                     approved=False,
                     status=RiskStatus.SYSTEM_ERROR,
-                    message=f"Risk check '{check.name}' failed with error: {str(e)}",
+                    message=f"Risk check '{check.name}' failed with error: {e!s}",
                     metadata={
                         "check_name": check.name,
                         "error": str(e),
@@ -147,7 +145,7 @@ class RiskCheckChain:
         )
 
     @property
-    def check_names(self) -> List[str]:
+    def check_names(self) -> list[str]:
         """Get list of check names in execution order."""
         return self._check_names.copy()
 
@@ -159,7 +157,7 @@ class RiskCheckChain:
     @classmethod
     def with_defaults(
         cls,
-        config: Optional[dict] = None,
+        config: dict | None = None,
         circuit_breaker=None,
         cooldown_manager=None,
         trigger_circuit_breaker_fn=None,
@@ -178,15 +176,15 @@ class RiskCheckChain:
         Returns:
             Configured RiskCheckChain
         """
-        from .hold_signal_check import HoldSignalCheck
-        from .trading_hours_check import TradingHoursCheck
         from .circuit_breaker_check import CircuitBreakerCheck
-        from .cooldown_check import CooldownCheck
         from .confidence_check import ConfidenceCheck
+        from .consecutive_losses_check import ConsecutiveLossesCheck
+        from .cooldown_check import CooldownCheck
         from .daily_loss_check import DailyLossLimitCheck
         from .drawdown_check import DrawdownCheck
-        from .consecutive_losses_check import ConsecutiveLossesCheck
+        from .hold_signal_check import HoldSignalCheck
         from .max_trades_check import MaxTradesCheck
+        from .trading_hours_check import TradingHoursCheck
 
         config = config or {}
 

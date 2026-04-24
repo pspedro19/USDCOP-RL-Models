@@ -19,10 +19,11 @@ Formula:
 Where lambda controls decay speed (higher = faster penalty accumulation).
 """
 
-import numpy as np
-from typing import Dict, Any, Optional, Tuple
+from typing import Any
 
-from .base import RewardComponent, ComponentType, IDecayModel
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 class HoldingDecay(RewardComponent):
@@ -91,7 +92,7 @@ class HoldingDecay(RewardComponent):
 
     def calculate(
         self,
-        holding_bars: Optional[int] = None,
+        holding_bars: int | None = None,
         is_overnight: bool = False,
         has_position: bool = True,
         **kwargs
@@ -162,7 +163,7 @@ class HoldingDecay(RewardComponent):
         effective_bars = bars - self._flat_threshold
         return 1.0 - np.exp(-self._lambda * effective_bars)
 
-    def get_penalty_schedule(self, max_bars: int = 100) -> Dict[int, float]:
+    def get_penalty_schedule(self, max_bars: int = 100) -> dict[int, float]:
         """
         Get penalty schedule for visualization.
 
@@ -186,7 +187,7 @@ class HoldingDecay(RewardComponent):
         """Reset holding counter when position is closed."""
         self._current_holding_bars = 0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -199,7 +200,7 @@ class HoldingDecay(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -314,7 +315,7 @@ class GapRiskPenalty(RewardComponent):
         """Reset state for new episode."""
         pass  # Stateless within episode
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -324,7 +325,7 @@ class GapRiskPenalty(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -339,4 +340,4 @@ class GapRiskPenalty(RewardComponent):
 # EXPORTS
 # =============================================================================
 
-__all__ = ["HoldingDecay", "GapRiskPenalty"]
+__all__ = ["GapRiskPenalty", "HoldingDecay"]

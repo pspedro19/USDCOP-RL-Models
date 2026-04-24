@@ -3,20 +3,22 @@ Backtest Orchestrator
 Coordinates the entire backtest pipeline
 """
 
-import time
 import asyncio
 import json
+import logging
 import queue
 import threading
-from typing import List, Dict, Any, Optional, AsyncGenerator
-import logging
+import time
+from collections.abc import AsyncGenerator
+from typing import Any
+
+from ..core import get_observation_builder
 from ..core.data_loader import DataLoader
 from ..core.inference_engine import InferenceEngine
 from ..core.observation_builder import ObservationBuilder
-from ..core import get_observation_builder
-from ..core.trade_simulator import TradeSimulator, Trade
 from ..core.trade_persister import TradePersister
-from ..models.responses import BacktestResponse, TradeResponse, BacktestSummary, ProgressUpdate
+from ..core.trade_simulator import Trade, TradeSimulator
+from ..models.responses import BacktestResponse, BacktestSummary, ProgressUpdate, TradeResponse
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +244,7 @@ class BacktestOrchestrator:
         ))
 
         # Run simulation with real-time trade streaming
-        trades: List[Trade] = []
+        trades: list[Trade] = []
         trade_queue: queue.Queue = queue.Queue()
         simulation_done = threading.Event()
         current_equity = 10000.0  # Initial equity
@@ -375,7 +377,7 @@ class BacktestOrchestrator:
 
     def _calculate_summary_from_dicts(
         self,
-        trades: List[Dict[str, Any]]
+        trades: list[dict[str, Any]]
     ) -> BacktestSummary:
         """Calculate summary from trade dictionaries"""
         if not trades:

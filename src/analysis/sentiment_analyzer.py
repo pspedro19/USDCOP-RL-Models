@@ -24,7 +24,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ class FXImpactRules:
     MAX_ADJUSTMENT = 0.3
 
     @classmethod
-    def compute_adjustment(cls, title: str, content: Optional[str] = None) -> tuple[float, list[str]]:
+    def compute_adjustment(cls, title: str, content: str | None = None) -> tuple[float, list[str]]:
         """Compute FX impact adjustment for an article.
 
         Returns:
@@ -182,7 +181,7 @@ class SentimentAnalyzer:
 
     DEFAULT_THRESHOLDS = {"positive": 0.15, "negative": -0.15}
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: dict | None = None):
         self._config = config or {}
         self._multilingual_pipeline = None
         self._finbert_pipeline = None
@@ -246,7 +245,7 @@ class SentimentAnalyzer:
     # Individual model scores
     # ------------------------------------------------------------------
 
-    def _score_multilingual(self, text: str) -> Optional[float]:
+    def _score_multilingual(self, text: str) -> float | None:
         """Score with multilingual model. Returns [-1, 1] or None."""
         if self._multilingual_pipeline is None:
             return None
@@ -269,7 +268,7 @@ class SentimentAnalyzer:
             logger.debug(f"Multilingual scoring failed: {e}")
             return None
 
-    def _score_finbert(self, text: str) -> Optional[float]:
+    def _score_finbert(self, text: str) -> float | None:
         """Score with FinBERT (English only). Returns [-1, 1] or None."""
         if self._finbert_pipeline is None:
             return None
@@ -298,10 +297,10 @@ class SentimentAnalyzer:
     def _blend_scores(
         self,
         language: str,
-        multilingual_score: Optional[float] = None,
-        finbert_score: Optional[float] = None,
-        llm_score: Optional[float] = None,
-        gdelt_score: Optional[float] = None,
+        multilingual_score: float | None = None,
+        finbert_score: float | None = None,
+        llm_score: float | None = None,
+        gdelt_score: float | None = None,
     ) -> tuple[float, dict, float]:
         """Blend available scores using language-specific weights.
 
@@ -358,10 +357,10 @@ class SentimentAnalyzer:
     def analyze_single(
         self,
         title: str,
-        content: Optional[str] = None,
-        language: Optional[str] = None,
-        gdelt_tone: Optional[float] = None,
-        llm_score: Optional[float] = None,
+        content: str | None = None,
+        language: str | None = None,
+        gdelt_tone: float | None = None,
+        llm_score: float | None = None,
     ) -> SentimentResult:
         """Analyze sentiment of a single article.
 
@@ -427,7 +426,7 @@ class SentimentAnalyzer:
     def analyze_batch(
         self,
         articles: list[dict],
-        llm_scores: Optional[dict[str, float]] = None,
+        llm_scores: dict[str, float] | None = None,
     ) -> list[SentimentResult]:
         """Analyze sentiment for a batch of articles.
 
@@ -592,7 +591,7 @@ def _score_to_label(score: float, pos_thresh: float = 0.15, neg_thresh: float = 
 # Singleton access
 # ---------------------------------------------------------------------------
 
-def get_analyzer(config: Optional[dict] = None) -> SentimentAnalyzer:
+def get_analyzer(config: dict | None = None) -> SentimentAnalyzer:
     """Get or create the module-level SentimentAnalyzer singleton.
 
     Config is loaded from weekly_analysis_ssot.yaml if not provided.

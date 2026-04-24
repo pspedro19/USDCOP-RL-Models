@@ -19,15 +19,15 @@ Created: 2025-12-17
 Version: 2.0.0
 """
 
-from datetime import datetime, date, timedelta
-from typing import List, Tuple, Union, Optional, Dict, Set
 import logging
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import pytz
 
 try:
-    from colombian_holidays import is_holiday as col_is_holiday, list_holidays as col_list_holidays
+    from colombian_holidays import is_holiday as col_is_holiday
+    from colombian_holidays import list_holidays as col_list_holidays
     HAS_COLOMBIAN_HOLIDAYS = True
 except ImportError:
     HAS_COLOMBIAN_HOLIDAYS = False
@@ -128,7 +128,7 @@ class TradingCalendar:
             self.us_holidays = holidays.US(years=range(2015, 2030))
 
         # Cache for Colombian holidays (year -> set of dates)
-        self._col_holiday_cache: Dict[int, Set[date]] = {}
+        self._col_holiday_cache: dict[int, set[date]] = {}
 
         if not HAS_COLOMBIAN_HOLIDAYS:
             logger.warning(
@@ -136,7 +136,7 @@ class TradingCalendar:
                 "Holiday validation will be incomplete!"
             )
 
-    def _get_col_holidays_for_year(self, year: int) -> Set[date]:
+    def _get_col_holidays_for_year(self, year: int) -> set[date]:
         """
         Get Colombian holidays for a specific year (cached).
 
@@ -164,7 +164,7 @@ class TradingCalendar:
 
         return self._col_holiday_cache[year]
 
-    def is_weekend(self, dt: Union[datetime, date]) -> bool:
+    def is_weekend(self, dt: datetime | date) -> bool:
         """
         Check if date is a weekend (Saturday or Sunday).
 
@@ -177,7 +177,7 @@ class TradingCalendar:
         weekday = dt.weekday()
         return weekday in WEEKEND_DAYS
 
-    def is_colombian_holiday(self, dt: Union[datetime, date]) -> bool:
+    def is_colombian_holiday(self, dt: datetime | date) -> bool:
         """
         Check if date is a Colombian holiday.
 
@@ -202,7 +202,7 @@ class TradingCalendar:
             holidays_set = self._get_col_holidays_for_year(check_date.year)
             return check_date in holidays_set
 
-    def is_us_holiday(self, dt: Union[datetime, date]) -> bool:
+    def is_us_holiday(self, dt: datetime | date) -> bool:
         """
         Check if date is a US holiday (for macro data validation).
 
@@ -218,7 +218,7 @@ class TradingCalendar:
         check_date = dt.date() if isinstance(dt, datetime) else dt
         return check_date in self.us_holidays
 
-    def is_trading_day(self, dt: Union[datetime, date]) -> bool:
+    def is_trading_day(self, dt: datetime | date) -> bool:
         """
         Check if date is a valid trading day.
 
@@ -247,7 +247,7 @@ class TradingCalendar:
 
         return True
 
-    def get_violation_reason(self, dt: Union[datetime, date]) -> Optional[str]:
+    def get_violation_reason(self, dt: datetime | date) -> str | None:
         """
         Get reason why date is not a trading day.
 
@@ -316,7 +316,7 @@ class TradingCalendar:
         self,
         df: pd.DataFrame,
         date_col: str = 'timestamp'
-    ) -> Tuple[bool, List[Dict[str, Union[datetime, str]]]]:
+    ) -> tuple[bool, list[dict[str, datetime | str]]]:
         """
         Validate that DataFrame contains no holidays or weekends.
 
@@ -370,7 +370,7 @@ class TradingCalendar:
         start: date,
         end: date,
         include_weekends: bool = True
-    ) -> List[Tuple[date, str]]:
+    ) -> list[tuple[date, str]]:
         """
         Get all holidays and weekends in date range.
 
@@ -409,7 +409,7 @@ class TradingCalendar:
         self,
         start: date,
         end: date
-    ) -> List[date]:
+    ) -> list[date]:
         """
         Get all valid trading days in date range.
 
@@ -440,7 +440,7 @@ class TradingCalendar:
 
     def get_next_trading_day(
         self,
-        dt: Union[datetime, date],
+        dt: datetime | date,
         skip_current: bool = False
     ) -> date:
         """
@@ -473,7 +473,7 @@ class TradingCalendar:
 
     def get_previous_trading_day(
         self,
-        dt: Union[datetime, date],
+        dt: datetime | date,
         skip_current: bool = False
     ) -> date:
         """
@@ -584,7 +584,7 @@ def get_calendar(
     return _default_calendar
 
 
-def is_trading_day(dt: Union[datetime, date]) -> bool:
+def is_trading_day(dt: datetime | date) -> bool:
     """Convenience: Check if date is a trading day."""
     return get_calendar().is_trading_day(dt)
 
@@ -594,7 +594,7 @@ def filter_trading_days(df: pd.DataFrame, date_col: str = 'timestamp') -> pd.Dat
     return get_calendar().filter_trading_days(df, date_col)
 
 
-def validate_no_holidays(df: pd.DataFrame, date_col: str = 'timestamp') -> Tuple[bool, List[Dict]]:
+def validate_no_holidays(df: pd.DataFrame, date_col: str = 'timestamp') -> tuple[bool, list[dict]]:
     """Convenience: Validate DataFrame contains no holidays/weekends."""
     return get_calendar().validate_no_holidays(df, date_col)
 
@@ -749,7 +749,7 @@ def validate_training_data(
 # PRODUCTION INFERENCE VALIDATION
 # =============================================================================
 
-def validate_inference_time(dt: Optional[datetime] = None) -> Tuple[bool, str]:
+def validate_inference_time(dt: datetime | None = None) -> tuple[bool, str]:
     """
     Validate that current time is valid for production inference.
 

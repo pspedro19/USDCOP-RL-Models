@@ -24,11 +24,11 @@ Date: 2026-01-22
 Contract: CTR-FORECASTING-001
 """
 
-from datetime import date, datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 import logging
 import os
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -39,13 +39,13 @@ from pydantic import BaseModel, Field
 
 try:
     from src.forecasting.contracts import (
+        FORECASTING_CONTRACT_HASH,
+        FORECASTING_CONTRACT_VERSION,
+        HORIZON_LABELS,
         HORIZONS,
         MODEL_IDS,
-        HORIZON_LABELS,
-        ForecastDirection,
         EnsembleType,
-        FORECASTING_CONTRACT_VERSION,
-        FORECASTING_CONTRACT_HASH,
+        ForecastDirection,
     )
     CONTRACTS_AVAILABLE = True
 except ImportError:
@@ -76,13 +76,13 @@ class ForecastItem(BaseModel):
     model_id: str
     horizon: int
     inference_date: str
-    target_date: Optional[str] = None
-    base_price: Optional[float] = None
-    predicted_price: Optional[float] = None
+    target_date: str | None = None
+    base_price: float | None = None
+    predicted_price: float | None = None
     predicted_return_pct: float
     direction: str
     signal: int
-    confidence: Optional[float] = None
+    confidence: float | None = None
 
 
 class ConsensusItem(BaseModel):
@@ -101,10 +101,10 @@ class DashboardResponse(BaseModel):
     inference_date: str
     inference_week: int
     inference_year: int
-    current_price: Optional[float] = None
-    forecasts: List[ForecastItem]
-    consensus: List[ConsensusItem]
-    ensembles: Dict[str, List[ForecastItem]] = Field(default_factory=dict)
+    current_price: float | None = None
+    forecasts: list[ForecastItem]
+    consensus: list[ConsensusItem]
+    ensembles: dict[str, list[ForecastItem]] = Field(default_factory=dict)
     data_source: str  # "postgresql" or "csv"
     contract_version: str = FORECASTING_CONTRACT_VERSION
 
@@ -114,7 +114,7 @@ class ModelInfo(BaseModel):
     model_id: str
     model_name: str
     model_type: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class ModelMetrics(BaseModel):
@@ -122,8 +122,8 @@ class ModelMetrics(BaseModel):
     model_id: str
     horizon: int
     direction_accuracy: float
-    rmse: Optional[float] = None
-    mae: Optional[float] = None
+    rmse: float | None = None
+    mae: float | None = None
     sample_count: int
 
 
@@ -141,9 +141,9 @@ def get_db_connection():
 
 
 def query_postgresql_forecasts(
-    inference_date: Optional[str] = None,
+    inference_date: str | None = None,
     limit: int = 100,
-) -> Optional[List[Dict[str, Any]]]:
+) -> list[dict[str, Any]] | None:
     """
     Query forecasts from PostgreSQL.
 
@@ -200,7 +200,7 @@ def query_postgresql_forecasts(
         return None
 
 
-def query_postgresql_consensus(inference_date: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
+def query_postgresql_consensus(inference_date: str | None = None) -> list[dict[str, Any]] | None:
     """Query consensus from PostgreSQL."""
     try:
         conn = get_db_connection()
@@ -256,7 +256,7 @@ def query_postgresql_consensus(inference_date: Optional[str] = None) -> Optional
 # CSV FALLBACK HELPERS
 # =============================================================================
 
-def load_csv_forecasts() -> Optional[List[Dict[str, Any]]]:
+def load_csv_forecasts() -> list[dict[str, Any]] | None:
     """
     Load forecasts from CSV fallback.
 
@@ -297,7 +297,7 @@ def load_csv_forecasts() -> Optional[List[Dict[str, Any]]]:
     return None
 
 
-def compute_consensus_from_forecasts(forecasts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def compute_consensus_from_forecasts(forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Compute consensus from individual forecasts."""
     from collections import defaultdict
 
@@ -343,7 +343,7 @@ def compute_consensus_from_forecasts(forecasts: List[Dict[str, Any]]) -> List[Di
 
 @router.get("/dashboard", response_model=DashboardResponse)
 async def get_dashboard(
-    inference_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
+    inference_date: str | None = Query(None, description="Date in YYYY-MM-DD format"),
 ):
     """
     Get forecasting dashboard data.
@@ -416,11 +416,11 @@ async def get_dashboard(
     )
 
 
-@router.get("/forecasts", response_model=List[ForecastItem])
+@router.get("/forecasts", response_model=list[ForecastItem])
 async def get_forecasts(
-    inference_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
-    model_id: Optional[str] = Query(None, description="Filter by model ID"),
-    horizon: Optional[int] = Query(None, description="Filter by horizon"),
+    inference_date: str | None = Query(None, description="Date in YYYY-MM-DD format"),
+    model_id: str | None = Query(None, description="Filter by model ID"),
+    horizon: int | None = Query(None, description="Filter by horizon"),
     limit: int = Query(100, ge=1, le=1000),
 ):
     """
@@ -445,9 +445,9 @@ async def get_forecasts(
     return [ForecastItem(**f) for f in forecasts[:limit]]
 
 
-@router.get("/consensus", response_model=List[ConsensusItem])
+@router.get("/consensus", response_model=list[ConsensusItem])
 async def get_consensus(
-    inference_date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
+    inference_date: str | None = Query(None, description="Date in YYYY-MM-DD format"),
 ):
     """
     Get consensus by horizon.
@@ -470,7 +470,7 @@ async def get_consensus(
     return [ConsensusItem(**c) for c in consensus]
 
 
-@router.get("/models", response_model=List[ModelInfo])
+@router.get("/models", response_model=list[ModelInfo])
 async def get_models():
     """
     Get list of available forecasting models.
@@ -496,10 +496,10 @@ async def get_models():
         ]
 
 
-@router.get("/metrics", response_model=List[ModelMetrics])
+@router.get("/metrics", response_model=list[ModelMetrics])
 async def get_metrics(
-    model_id: Optional[str] = Query(None, description="Filter by model ID"),
-    horizon: Optional[int] = Query(None, description="Filter by horizon"),
+    model_id: str | None = Query(None, description="Filter by model ID"),
+    horizon: int | None = Query(None, description="Filter by horizon"),
 ):
     """
     Get model performance metrics.

@@ -2,16 +2,15 @@
 Webhook routes for external signal sources (TradingView, etc).
 """
 
-from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.signal import SignalCreate, SignalWebhook
 from app.core.database import get_db
-from app.core.config import settings
 from app.models import User
-from app.contracts.signal import SignalCreate, SignalWebhook, SignalAction
 from app.services.signal import SignalService
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
@@ -94,7 +93,7 @@ async def tradingview_webhook(
 async def custom_webhook(
     user_id: UUID,
     data: SignalCreate,
-    x_api_key: Optional[str] = Header(None),
+    x_api_key: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     """

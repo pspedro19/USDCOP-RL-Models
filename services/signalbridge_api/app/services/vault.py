@@ -5,13 +5,13 @@ Implements AES-256-GCM as specified in the spec.
 
 import base64
 import os
-from typing import Tuple
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from app.core.config import settings
-from app.core.exceptions import VaultError, ErrorCode
+from app.core.exceptions import ErrorCode, VaultError
 
 
 class VaultService:
@@ -57,7 +57,7 @@ class VaultService:
         )
         return kdf.derive(self._master_key.encode())
 
-    def encrypt(self, plaintext: str) -> Tuple[str, str]:
+    def encrypt(self, plaintext: str) -> tuple[str, str]:
         """
         Encrypt plaintext using AES-256-GCM.
 
@@ -90,7 +90,7 @@ class VaultService:
 
         except Exception as e:
             raise VaultError(
-                message=f"Encryption failed: {str(e)}",
+                message=f"Encryption failed: {e!s}",
                 error_code=ErrorCode.VAULT_ENCRYPTION_FAILED,
             )
 
@@ -128,7 +128,7 @@ class VaultService:
 
         except Exception as e:
             raise VaultError(
-                message=f"Decryption failed: {str(e)}",
+                message=f"Decryption failed: {e!s}",
                 error_code=ErrorCode.VAULT_DECRYPTION_FAILED,
             )
 
@@ -152,7 +152,7 @@ class VaultService:
         self,
         encrypted_base64: str,
         old_key_version: str,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """
         Re-encrypt data with current key version.
         Used for key rotation.
@@ -192,8 +192,8 @@ class VaultService:
                 "testnet": bool
             }
         """
-        from uuid import UUID
         from sqlalchemy import text
+
         from app.contracts.exchange import SupportedExchange
 
         if db_session is None:
@@ -268,6 +268,7 @@ class VaultService:
             credential_id: UUID of created credential
         """
         from uuid import uuid4
+
         from sqlalchemy import text
 
         if db_session is None:

@@ -10,11 +10,11 @@ Provides WebSocket endpoints for:
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Dict, Set, Optional, Any
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
 router = APIRouter(tags=["websocket"])
@@ -34,8 +34,8 @@ class PredictionMessage(BaseModel):
     timestamp: str
     signal: str  # BUY, SELL, HOLD
     confidence: float
-    features: Optional[Dict[str, float]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    features: dict[str, float] | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class SubscribeMessage(BaseModel):
@@ -63,9 +63,9 @@ class ConnectionInfo:
 
     websocket: WebSocket
     client_id: str
-    connected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    subscriptions: Set[str] = field(default_factory=set)
-    last_ping: Optional[datetime] = None
+    connected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    subscriptions: set[str] = field(default_factory=set)
+    last_ping: datetime | None = None
 
 
 class ConnectionManager:
@@ -80,7 +80,7 @@ class ConnectionManager:
     """
 
     def __init__(self):
-        self.active_connections: Dict[str, ConnectionInfo] = {}
+        self.active_connections: dict[str, ConnectionInfo] = {}
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, client_id: str) -> None:
@@ -115,7 +115,7 @@ class ConnectionManager:
             {
                 "type": "connected",
                 "client_id": client_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "message": "Connected to USDCOP prediction stream",
             },
             client_id,
@@ -183,7 +183,7 @@ class ConnectionManager:
             await self.disconnect(client_id)
             return False
 
-    async def broadcast(self, message: dict, channel: Optional[str] = None) -> int:
+    async def broadcast(self, message: dict, channel: str | None = None) -> int:
         """
         Broadcast a message to all connected clients.
 
@@ -227,12 +227,12 @@ class ConnectionManager:
         """
         async with self._lock:
             if client_id in self.active_connections:
-                self.active_connections[client_id].last_ping = datetime.now(timezone.utc)
+                self.active_connections[client_id].last_ping = datetime.now(UTC)
 
         await self.send_personal_message(
             {
                 "type": "pong",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
             client_id,
         )
@@ -267,8 +267,8 @@ async def broadcast_prediction(
     model_id: str,
     signal: str,
     confidence: float,
-    features: Optional[Dict[str, float]] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    features: dict[str, float] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> int:
     """
     Broadcast a prediction update to all subscribed clients.
@@ -299,7 +299,7 @@ async def broadcast_prediction(
     message = {
         "type": "prediction",
         "model_id": model_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "signal": signal,
         "confidence": confidence,
     }
@@ -324,7 +324,7 @@ async def broadcast_trade(trade_data: dict) -> int:
     """
     message = {
         "type": "trade",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         **trade_data,
     }
     return await manager.broadcast(message, channel="trades")
@@ -334,7 +334,7 @@ async def broadcast_alert(
     alert_type: str,
     message: str,
     severity: str = "info",
-    data: Optional[dict] = None,
+    data: dict | None = None,
 ) -> int:
     """
     Broadcast an alert to all subscribed clients.
@@ -353,7 +353,7 @@ async def broadcast_alert(
         "alert_type": alert_type,
         "message": message,
         "severity": severity,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     if data:
@@ -370,7 +370,7 @@ async def broadcast_alert(
 @router.websocket("/ws/predictions")
 async def websocket_predictions(
     websocket: WebSocket,
-    client_id: Optional[str] = Query(None, description="Client identifier"),
+    client_id: str | None = Query(None, description="Client identifier"),
 ):
     """
     WebSocket endpoint for real-time predictions.
@@ -411,7 +411,7 @@ async def websocket_predictions(
     """
     # Generate client ID if not provided
     if not client_id:
-        client_id = f"client-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+        client_id = f"client-{datetime.now(UTC).strftime('%Y%m%d%H%M%S%f')}"
 
     await manager.connect(websocket, client_id)
 
@@ -443,7 +443,7 @@ async def websocket_predictions(
                         {
                             "type": "subscribed",
                             "channels": channels,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         },
                         client_id,
                     )
@@ -457,7 +457,7 @@ async def websocket_predictions(
                         {
                             "type": "unsubscribed",
                             "channels": channels,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         },
                         client_id,
                     )
@@ -492,5 +492,5 @@ async def get_websocket_connections():
     return {
         "connection_count": manager.get_connection_count(),
         "connections": manager.get_connection_info(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }

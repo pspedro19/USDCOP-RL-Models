@@ -9,9 +9,10 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Union
+import pandas as pd
+
 from ..interfaces.normalizer import INormalizer
 
 
@@ -31,7 +32,7 @@ class NoOpNormalizer(INormalizer):
         """Initialize no-op normalizer."""
         pass
 
-    def normalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def normalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Return value unchanged.
 
@@ -46,7 +47,7 @@ class NoOpNormalizer(INormalizer):
                 return 0.0
         return value
 
-    def denormalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def denormalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Return value unchanged.
 

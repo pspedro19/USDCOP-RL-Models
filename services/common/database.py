@@ -15,13 +15,14 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional, List
+import os
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any
+
 import psycopg2
 from psycopg2 import pool
-from contextlib import contextmanager
 
 try:
     import pandas as pd
@@ -41,7 +42,7 @@ class DatabaseConfig:
     user: str
     password: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for psycopg2.connect()"""
         return {
             'host': self.host,
@@ -80,7 +81,7 @@ def get_db_config() -> DatabaseConfig:
 
 
 # Legacy compatibility: Export as dict
-def get_postgres_config() -> Dict[str, Any]:
+def get_postgres_config() -> dict[str, Any]:
     """Get PostgreSQL config as dictionary (legacy compatibility)"""
     return get_db_config().to_dict()
 
@@ -89,7 +90,7 @@ def get_postgres_config() -> Dict[str, Any]:
 POSTGRES_CONFIG = None  # Lazily initialized
 
 
-def _get_postgres_config_dict() -> Dict[str, Any]:
+def _get_postgres_config_dict() -> dict[str, Any]:
     """Lazy initialization of POSTGRES_CONFIG"""
     global POSTGRES_CONFIG
     if POSTGRES_CONFIG is None:
@@ -97,7 +98,7 @@ def _get_postgres_config_dict() -> Dict[str, Any]:
     return POSTGRES_CONFIG
 
 
-def get_db_connection(config: Optional[DatabaseConfig] = None) -> psycopg2.extensions.connection:
+def get_db_connection(config: DatabaseConfig | None = None) -> psycopg2.extensions.connection:
     """
     Get a database connection.
 
@@ -127,13 +128,13 @@ def get_db_connection(config: Optional[DatabaseConfig] = None) -> psycopg2.exten
 
 
 # Connection pool singleton
-_connection_pool: Optional[pool.ThreadedConnectionPool] = None
+_connection_pool: pool.ThreadedConnectionPool | None = None
 
 
 def get_connection_pool(
     min_connections: int = 1,
     max_connections: int = 10,
-    config: Optional[DatabaseConfig] = None
+    config: DatabaseConfig | None = None
 ) -> pool.ThreadedConnectionPool:
     """
     Get or create a thread-safe connection pool.
@@ -186,9 +187,9 @@ def get_pooled_connection():
 
 def execute_query(
     query: str,
-    params: Optional[tuple] = None,
-    config: Optional[DatabaseConfig] = None
-) -> List[tuple]:
+    params: tuple | None = None,
+    config: DatabaseConfig | None = None
+) -> list[tuple]:
     """
     Execute a query and return results as list of tuples.
 
@@ -215,8 +216,8 @@ def execute_query(
 
 def execute_query_df(
     query: str,
-    params: Optional[tuple] = None,
-    config: Optional[DatabaseConfig] = None
+    params: tuple | None = None,
+    config: DatabaseConfig | None = None
 ):
     """
     Execute a query and return results as pandas DataFrame.

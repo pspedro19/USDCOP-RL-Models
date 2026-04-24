@@ -20,10 +20,9 @@ import json
 import logging
 import platform
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def generate_run_id() -> str:
     return f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 
-def get_git_sha() -> Optional[str]:
+def get_git_sha() -> str | None:
     """Get short git commit hash. Returns None if git is unavailable."""
     try:
         result = subprocess.run(
@@ -59,10 +58,10 @@ class RunManifest:
 
     def __init__(
         self,
-        experiment_id: Optional[str] = None,
+        experiment_id: str | None = None,
         seed: int = 42,
         multi_seed: bool = False,
-        seeds: Optional[List[int]] = None,
+        seeds: list[int] | None = None,
     ):
         self.run_id = generate_run_id()
         self.experiment_id = experiment_id
@@ -80,23 +79,23 @@ class RunManifest:
             "all_seeds": seeds or [seed],
         }
 
-        self._layers: Dict[str, Optional[Dict[str, Any]]] = {
+        self._layers: dict[str, dict[str, Any] | None] = {
             "l2": None,
             "l3": None,
             "l4_val": None,
             "l4_test": None,
         }
 
-        self._timing: Dict[str, Optional[str]] = {
+        self._timing: dict[str, str | None] = {
             "l2_completed_at": None,
             "l3_completed_at": None,
             "l4_val_completed_at": None,
             "l4_test_completed_at": None,
         }
 
-        self._lineage: Optional[Dict[str, Any]] = None
+        self._lineage: dict[str, Any] | None = None
 
-    def record_l2(self, l2_result: Dict[str, Any]) -> None:
+    def record_l2(self, l2_result: dict[str, Any]) -> None:
         """Record L2 dataset build results."""
         self._layers["l2"] = {
             "train_rows": l2_result.get("train_rows"),
@@ -110,7 +109,7 @@ class RunManifest:
         self._timing["l2_completed_at"] = datetime.now().isoformat()
         logger.info(f"Manifest: L2 recorded ({l2_result.get('train_rows')} train rows)")
 
-    def record_l3(self, l3_result: Dict[str, Any]) -> None:
+    def record_l3(self, l3_result: dict[str, Any]) -> None:
         """Record L3 training results."""
         self._layers["l3"] = {
             "model_path": l3_result.get("model_path"),
@@ -125,7 +124,7 @@ class RunManifest:
         self._timing["l3_completed_at"] = datetime.now().isoformat()
         logger.info(f"Manifest: L3 recorded (model at {l3_result.get('model_dir')})")
 
-    def record_l4(self, l4_result: Dict[str, Any], stage: str = "l4_test") -> None:
+    def record_l4(self, l4_result: dict[str, Any], stage: str = "l4_test") -> None:
         """Record L4 backtest results.
 
         Args:
@@ -225,7 +224,7 @@ class RunManifest:
             logger.warning(f"Manifest: Lineage computation failed: {e}")
             self._lineage = {"error": str(e)}
 
-    def _build_summary(self) -> Dict[str, Any]:
+    def _build_summary(self) -> dict[str, Any]:
         """Build summary section from recorded layers."""
         stages_completed = []
         if self._layers["l2"]:
@@ -240,7 +239,7 @@ class RunManifest:
         # Use l4_test for summary metrics, fallback to l4_val
         l4 = self._layers.get("l4_test") or self._layers.get("l4_val")
 
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "stages_completed": stages_completed,
             "overall_result": None,
             "total_return_pct": None,
@@ -259,7 +258,7 @@ class RunManifest:
 
         return summary
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize manifest to dictionary."""
         return {
             "manifest_version": MANIFEST_VERSION,

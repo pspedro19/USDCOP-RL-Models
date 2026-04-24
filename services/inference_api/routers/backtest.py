@@ -6,11 +6,13 @@ Supports two modes based on model_id selection:
 - ppo_primary: Real PPO model backtesting
 """
 
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import StreamingResponse
 import logging
+
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
+
 from ..models.requests import BacktestRequest
-from ..models.responses import BacktestResponse, ErrorResponse
+from ..models.responses import BacktestResponse
 from ..orchestrator.backtest_orchestrator import BacktestOrchestrator
 
 # Import demo mode (isolated module)
@@ -79,7 +81,7 @@ async def run_backtest(request: BacktestRequest, req: Request):
 
     except Exception as e:
         logger.error(f"Backtest error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {e!s}")
 
 
 async def _run_demo_backtest(request: BacktestRequest, req: Request):
@@ -87,8 +89,9 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
     Run demo backtest with optimized results for investor presentations.
     Completely isolated from production code.
     """
-    import asyncpg
     from datetime import datetime as dt
+
+    import asyncpg
 
     # Convert string dates to date objects for asyncpg
     start_dt = dt.strptime(request.start_date, "%Y-%m-%d").date()
@@ -228,7 +231,7 @@ async def _demo_stream_generator(request: BacktestRequest, req: Request):
     await asyncio.sleep(0.15)
 
     # Running progress - now stream trades one by one
-    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.1, 'current_bar': 0, 'total_bars': total_trades * 10, 'trades_generated': 0, 'status': 'running', 'message': f'Loaded data, starting simulation...'}})}\n\n"
+    yield f"data: {json.dumps({'type': 'progress', 'data': {'progress': 0.1, 'current_bar': 0, 'total_bars': total_trades * 10, 'trades_generated': 0, 'status': 'running', 'message': 'Loaded data, starting simulation...'}})}\n\n"
     await asyncio.sleep(0.1)
 
     # Calculate delay per trade to create smooth animation
@@ -325,10 +328,10 @@ async def run_real_backtest(
     - **end_date**: End date (YYYY-MM-DD)
     """
     import json
+    from pathlib import Path
+
     import asyncpg
     import pandas as pd
-    import numpy as np
-    from pathlib import Path
 
     logger.info(f"[REAL BACKTEST] Running for proposal {proposal_id}: {start_date} to {end_date}")
 
@@ -459,8 +462,8 @@ async def run_real_backtest(
             raise HTTPException(status_code=400, detail="No data in specified date range")
 
         # 4. Run backtest using REAL BacktestEngine
-        from src.evaluation.backtest_engine import BacktestEngine, BacktestConfig
         from src.config.experiment_loader import get_feature_order
+        from src.evaluation.backtest_engine import BacktestConfig, BacktestEngine
 
         # Get feature columns
         try:
@@ -568,12 +571,12 @@ async def run_real_backtest_stream(
     - trade: {trade_id, side, entry_price, exit_price, pnl, ...}
     - complete: {summary, config, date_range}
     """
+    import asyncio
     import json
+    from pathlib import Path
+
     import asyncpg
     import pandas as pd
-    import numpy as np
-    from pathlib import Path
-    import asyncio
 
     async def generate_stream():
         try:
@@ -707,8 +710,8 @@ async def run_real_backtest_stream(
             yield f"data: {json.dumps({'type': 'status', 'message': f'Running backtest on {total_bars} bars...'})}\n\n"
 
             # 4. Run backtest with streaming
-            from src.evaluation.backtest_engine import BacktestEngine, BacktestConfig
             from src.config.experiment_loader import get_feature_order
+            from src.evaluation.backtest_engine import BacktestConfig, BacktestEngine
 
             try:
                 feature_cols = list(get_feature_order()[:18])

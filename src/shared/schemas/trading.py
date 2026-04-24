@@ -10,21 +10,17 @@ Contract: CTR-SHARED-TRADE-001
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from .core import (
     BaseSchema,
-    TimestampedSchema,
+    OrderSide,
     SignalType,
+    TimestampedSchema,
     TradeSide,
     TradeStatus,
-    OrderSide,
 )
-from .features import FeatureSnapshotSchema, OBSERVATION_DIM
-
+from .features import FeatureSnapshotSchema
 
 # =============================================================================
 # MARKET DATA SCHEMAS
@@ -42,12 +38,12 @@ class CandlestickSchema(BaseSchema):
     high: float = Field(..., ge=0, description="High price")
     low: float = Field(..., ge=0, description="Low price")
     close: float = Field(..., ge=0, description="Close price")
-    volume: Optional[float] = Field(
+    volume: float | None = Field(
         default=None, ge=0, description="Volume (often 0 for FX)"
     )
 
     @model_validator(mode="after")
-    def validate_ohlc(self) -> "CandlestickSchema":
+    def validate_ohlc(self) -> CandlestickSchema:
         """Validate OHLC consistency."""
         if self.high < self.low:
             raise ValueError(f"high ({self.high}) must be >= low ({self.low})")
@@ -67,7 +63,7 @@ class MarketContextSchema(BaseSchema):
     estimated_slippage_bps: float = Field(
         default=0.0, ge=0, description="Estimated slippage in basis points"
     )
-    execution_price: Optional[float] = Field(
+    execution_price: float | None = Field(
         default=None, description="Actual execution price"
     )
     timestamp_utc: str = Field(..., description="UTC timestamp (ISO format)")
@@ -86,14 +82,14 @@ class TechnicalIndicatorsSchema(BaseSchema):
     model_config = BaseSchema.model_config.copy()
     model_config["extra"] = "allow"
 
-    rsi: Optional[float] = Field(default=None, ge=0, le=100)
-    macd: Optional[float] = Field(default=None)
-    macd_signal: Optional[float] = Field(default=None)
-    ema_20: Optional[float] = Field(default=None, ge=0)
-    ema_50: Optional[float] = Field(default=None, ge=0)
-    atr: Optional[float] = Field(default=None, ge=0)
-    bollinger_upper: Optional[float] = Field(default=None)
-    bollinger_lower: Optional[float] = Field(default=None)
+    rsi: float | None = Field(default=None, ge=0, le=100)
+    macd: float | None = Field(default=None)
+    macd_signal: float | None = Field(default=None)
+    ema_20: float | None = Field(default=None, ge=0)
+    ema_50: float | None = Field(default=None, ge=0)
+    atr: float | None = Field(default=None, ge=0)
+    bollinger_upper: float | None = Field(default=None)
+    bollinger_lower: float | None = Field(default=None)
 
 
 class SignalSchema(BaseSchema):
@@ -111,35 +107,35 @@ class SignalSchema(BaseSchema):
     price: float = Field(..., gt=0, description="Price at signal time")
 
     # Risk management
-    stop_loss: Optional[float] = Field(default=None, description="Stop loss price")
-    take_profit: Optional[float] = Field(default=None, description="Take profit price")
+    stop_loss: float | None = Field(default=None, description="Stop loss price")
+    take_profit: float | None = Field(default=None, description="Take profit price")
 
     # Explanation
-    reasoning: List[str] = Field(
+    reasoning: list[str] = Field(
         default_factory=list, description="Signal reasoning/factors"
     )
-    risk_score: Optional[float] = Field(
+    risk_score: float | None = Field(
         default=None, ge=0, le=1, description="Risk score (0-1)"
     )
-    expected_return: Optional[float] = Field(
+    expected_return: float | None = Field(
         default=None, description="Expected return percentage"
     )
-    time_horizon: Optional[str] = Field(
+    time_horizon: str | None = Field(
         default=None, description="Expected time horizon"
     )
 
     # Model info
     model_source: str = Field(..., description="Model identifier")
-    model_id: Optional[str] = Field(default=None, description="Specific model ID")
-    latency: Optional[float] = Field(
+    model_id: str | None = Field(default=None, description="Specific model ID")
+    latency: float | None = Field(
         default=None, ge=0, description="Inference latency (ms)"
     )
 
     # Technical indicators
-    technical_indicators: Optional[TechnicalIndicatorsSchema] = Field(default=None)
+    technical_indicators: TechnicalIndicatorsSchema | None = Field(default=None)
 
     # Data type
-    data_type: Optional[str] = Field(
+    data_type: str | None = Field(
         default=None,
         description="Data type: backtest, out_of_sample, live"
     )
@@ -157,18 +153,18 @@ class TradeMetadataSchema(BaseSchema):
     """
 
     confidence: float = Field(..., ge=0, le=1, description="Entry confidence")
-    action_probs: Optional[List[float]] = Field(
+    action_probs: list[float] | None = Field(
         default=None,
         min_length=3,
         max_length=3,
         description="Action probabilities [HOLD, LONG, SHORT]"
     )
-    critic_value: Optional[float] = Field(default=None, description="Critic value")
-    entropy: Optional[float] = Field(default=None, ge=0, description="Policy entropy")
-    advantage: Optional[float] = Field(default=None, description="Advantage estimate")
+    critic_value: float | None = Field(default=None, description="Critic value")
+    entropy: float | None = Field(default=None, ge=0, description="Policy entropy")
+    advantage: float | None = Field(default=None, description="Advantage estimate")
     model_version: str = Field(..., description="Model version used")
     norm_stats_version: str = Field(..., description="Normalization stats version")
-    model_hash: Optional[str] = Field(default=None, description="Model file hash")
+    model_hash: str | None = Field(default=None, description="Model file hash")
 
 
 class TradeSchema(TimestampedSchema):
@@ -184,12 +180,12 @@ class TradeSchema(TimestampedSchema):
     # Timestamps
     timestamp: str = Field(..., description="Entry timestamp (ISO format)")
     entry_time: str = Field(..., description="Entry time (ISO format)")
-    exit_time: Optional[str] = Field(default=None, description="Exit time")
+    exit_time: str | None = Field(default=None, description="Exit time")
 
     # Trade details
     side: TradeSide = Field(..., description="Trade direction")
     entry_price: float = Field(..., gt=0, description="Entry price")
-    exit_price: Optional[float] = Field(default=None, description="Exit price")
+    exit_price: float | None = Field(default=None, description="Exit price")
     size: float = Field(default=1.0, gt=0, description="Position size")
 
     # P&L
@@ -200,38 +196,38 @@ class TradeSchema(TimestampedSchema):
 
     # Status
     status: TradeStatus = Field(default=TradeStatus.CLOSED)
-    duration_minutes: Optional[int] = Field(
+    duration_minutes: int | None = Field(
         default=None, ge=0, description="Trade duration in minutes"
     )
-    exit_reason: Optional[str] = Field(default=None, description="Exit reason")
+    exit_reason: str | None = Field(default=None, description="Exit reason")
 
     # Equity tracking
-    equity_at_entry: Optional[float] = Field(default=None, description="Equity at entry")
-    equity_at_exit: Optional[float] = Field(default=None, description="Equity at exit")
+    equity_at_entry: float | None = Field(default=None, description="Equity at entry")
+    equity_at_exit: float | None = Field(default=None, description="Equity at exit")
 
     # Confidence
-    entry_confidence: Optional[float] = Field(
+    entry_confidence: float | None = Field(
         default=None, ge=0, le=1, description="Entry confidence"
     )
-    exit_confidence: Optional[float] = Field(
+    exit_confidence: float | None = Field(
         default=None, ge=0, le=1, description="Exit confidence"
     )
 
     # Additional metadata
-    commission: Optional[float] = Field(default=None, ge=0)
-    market_regime: Optional[str] = Field(default=None)
-    max_adverse_excursion: Optional[float] = Field(
+    commission: float | None = Field(default=None, ge=0)
+    market_regime: str | None = Field(default=None)
+    max_adverse_excursion: float | None = Field(
         default=None, description="Maximum adverse excursion"
     )
-    max_favorable_excursion: Optional[float] = Field(
+    max_favorable_excursion: float | None = Field(
         default=None, description="Maximum favorable excursion"
     )
 
     # Feature snapshot (optional)
-    features_snapshot: Optional[FeatureSnapshotSchema] = Field(
+    features_snapshot: FeatureSnapshotSchema | None = Field(
         default=None, description="Features at trade entry"
     )
-    model_metadata: Optional[TradeMetadataSchema] = Field(
+    model_metadata: TradeMetadataSchema | None = Field(
         default=None, description="Model inference metadata"
     )
 
@@ -251,21 +247,21 @@ class TradeSummarySchema(BaseSchema):
 
     # Risk metrics
     max_drawdown_pct: float = Field(..., ge=0, description="Maximum drawdown %")
-    sharpe_ratio: Optional[float] = Field(default=None, description="Sharpe ratio")
-    sortino_ratio: Optional[float] = Field(default=None, description="Sortino ratio")
-    profit_factor: Optional[float] = Field(default=None, ge=0, description="Profit factor")
+    sharpe_ratio: float | None = Field(default=None, description="Sharpe ratio")
+    sortino_ratio: float | None = Field(default=None, description="Sortino ratio")
+    profit_factor: float | None = Field(default=None, ge=0, description="Profit factor")
 
     # Trade statistics
-    avg_win: Optional[float] = Field(default=None, description="Average winning trade")
-    avg_loss: Optional[float] = Field(default=None, description="Average losing trade")
-    largest_win: Optional[float] = Field(default=None, description="Largest win")
-    largest_loss: Optional[float] = Field(default=None, description="Largest loss")
-    avg_trade_duration_minutes: Optional[float] = Field(
+    avg_win: float | None = Field(default=None, description="Average winning trade")
+    avg_loss: float | None = Field(default=None, description="Average losing trade")
+    largest_win: float | None = Field(default=None, description="Largest win")
+    largest_loss: float | None = Field(default=None, description="Largest loss")
+    avg_trade_duration_minutes: float | None = Field(
         default=None, ge=0, description="Average trade duration"
     )
 
     @model_validator(mode="after")
-    def validate_counts(self) -> "TradeSummarySchema":
+    def validate_counts(self) -> TradeSummarySchema:
         """Validate trade counts."""
         if self.winning_trades + self.losing_trades > self.total_trades:
             raise ValueError(
@@ -284,16 +280,16 @@ class EquityPointSchema(BaseSchema):
 
     timestamp: str = Field(..., description="Timestamp (ISO format)")
     value: float = Field(..., description="Equity value")
-    drawdown_pct: Optional[float] = Field(default=None, ge=0, le=100)
-    position: Optional[OrderSide] = Field(default=None)
-    price: Optional[float] = Field(default=None, gt=0)
+    drawdown_pct: float | None = Field(default=None, ge=0, le=100)
+    position: OrderSide | None = Field(default=None)
+    price: float | None = Field(default=None, gt=0)
 
 
 class EquityCurveSchema(BaseSchema):
     """Equity curve data."""
 
     model_id: str = Field(..., description="Model identifier")
-    points: List[EquityPointSchema] = Field(..., min_length=1)
+    points: list[EquityPointSchema] = Field(..., min_length=1)
 
     # Summary
     start_value: float = Field(..., gt=0)

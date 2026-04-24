@@ -8,8 +8,8 @@ Created: 2025-12-17
 """
 
 import os
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -32,7 +32,7 @@ class DatabaseConfig:
     user: str
     password: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'host': self.host,
             'port': self.port,
@@ -46,7 +46,7 @@ class DatabaseConfig:
 class MetricsConfig:
     """Metrics calculation configuration"""
     # Rolling window options
-    windows: Dict[str, str] = None
+    windows: dict[str, str] = None
 
     # Drift detection thresholds
     drift_warning_threshold: float = 0.15

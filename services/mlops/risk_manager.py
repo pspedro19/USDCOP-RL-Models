@@ -16,15 +16,15 @@ Implements multiple layers of protection:
 All state is persisted in Redis for reliability.
 """
 
+import json
+import logging
 import os
 import sys
-import time
-import logging
-from typing import Optional, Dict, Tuple, Any, List, Callable
-from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-import json
+from typing import Any
+
 import pytz
 
 try:
@@ -38,7 +38,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from mlops.config import MLOpsConfig, get_config, RiskLimits, TradingHours, SignalType
+from mlops.config import MLOpsConfig, SignalType, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,12 @@ logger = logging.getLogger(__name__)
 _NEW_ARCH_AVAILABLE = False
 try:
     from src.core.interfaces.risk import (
-        RiskContext,
         RiskCheckResult as NewRiskCheckResult,
+    )
+    from src.core.interfaces.risk import (
+        RiskContext,
+    )
+    from src.core.interfaces.risk import (
         RiskStatus as NewRiskStatus,
     )
     from src.risk.checks import RiskCheckChain
@@ -85,9 +89,9 @@ class DailyStats:
     losing_trades: int = 0
     consecutive_losses: int = 0
     consecutive_wins: int = 0
-    last_trade_time: Optional[str] = None
+    last_trade_time: str | None = None
     circuit_breaker_triggered: bool = False
-    circuit_breaker_reason: Optional[str] = None
+    circuit_breaker_reason: str | None = None
 
     @property
     def win_rate(self) -> float:
@@ -95,7 +99,7 @@ class DailyStats:
             return 0.0
         return self.winning_trades / self.trades_count
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "date": self.date,
             "pnl": self.pnl,
@@ -123,11 +127,11 @@ class RiskCheckResult:
     adjusted_signal: SignalType
     confidence: float
     daily_stats: DailyStats
-    risk_metrics: Dict[str, Any]
+    risk_metrics: dict[str, Any]
     message: str
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "approved": self.approved,
             "status": self.status.value,
@@ -175,8 +179,8 @@ class RiskManager:
 
     def __init__(
         self,
-        config: Optional[MLOpsConfig] = None,
-        redis_client: Optional[redis.Redis] = None,
+        config: MLOpsConfig | None = None,
+        redis_client: redis.Redis | None = None,
         use_chain: bool = False,
     ):
         self.config = config or get_config()
@@ -200,11 +204,11 @@ class RiskManager:
             self.redis = None
             logger.warning("Redis not available. Using in-memory state (not recommended for production)")
 
-        self._memory_stats: Dict[str, DailyStats] = {}
+        self._memory_stats: dict[str, DailyStats] = {}
 
         # New SOLID architecture: RiskCheckChain integration
         self._use_chain = use_chain and _NEW_ARCH_AVAILABLE
-        self._risk_chain: Optional['RiskCheckChain'] = None
+        self._risk_chain: RiskCheckChain | None = None
 
         if self._use_chain:
             self._initialize_risk_chain()
@@ -247,12 +251,12 @@ class RiskManager:
         """Get current time in Colombia timezone."""
         return datetime.now(self.timezone)
 
-    def _get_stats_key(self, date_str: Optional[str] = None) -> str:
+    def _get_stats_key(self, date_str: str | None = None) -> str:
         """Get Redis key for daily stats."""
         date_str = date_str or self._get_today()
         return f"{self.KEY_DAILY_STATS}:{date_str}"
 
-    def get_daily_stats(self, date_str: Optional[str] = None) -> DailyStats:
+    def get_daily_stats(self, date_str: str | None = None) -> DailyStats:
         """Get daily trading statistics."""
         date_str = date_str or self._get_today()
 
@@ -310,7 +314,7 @@ class RiskManager:
         else:
             self._memory_stats[stats.date] = stats
 
-    def is_trading_hours(self) -> Tuple[bool, str]:
+    def is_trading_hours(self) -> tuple[bool, str]:
         """Check if current time is within trading hours."""
         now = self._get_now()
         current_time = now.time()
@@ -327,7 +331,7 @@ class RiskManager:
 
         return True, "Within trading hours"
 
-    def is_cooldown_active(self) -> Tuple[bool, Optional[int]]:
+    def is_cooldown_active(self) -> tuple[bool, int | None]:
         """Check if cooldown period is active."""
         if not self.redis:
             return False, None
@@ -347,7 +351,7 @@ class RiskManager:
             self.redis.setex(cooldown_key, seconds, reason)
             logger.info(f"Cooldown set for {seconds}s: {reason}")
 
-    def is_circuit_breaker_active(self) -> Tuple[bool, Optional[str]]:
+    def is_circuit_breaker_active(self) -> tuple[bool, str | None]:
         """Check if circuit breaker is triggered."""
         stats = self.get_daily_stats()
         return stats.circuit_breaker_triggered, stats.circuit_breaker_reason
@@ -599,7 +603,7 @@ class RiskManager:
         pnl: float,
         pnl_percent: float,
         is_win: bool,
-        trade_id: Optional[str] = None
+        trade_id: str | None = None
     ):
         """
         Update statistics after a trade completes.
@@ -669,7 +673,7 @@ class RiskManager:
         self,
         confidence: float,
         current_capital: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get recommended position size based on risk parameters.
 
@@ -724,7 +728,7 @@ class RiskManager:
         self._save_daily_stats(stats)
         logger.info(f"Daily stats reset for {today}")
 
-    def get_risk_summary(self) -> Dict[str, Any]:
+    def get_risk_summary(self) -> dict[str, Any]:
         """Get comprehensive risk summary."""
         stats = self.get_daily_stats()
         is_trading, hours_msg = self.is_trading_hours()
@@ -752,7 +756,7 @@ class RiskManager:
 
 
 # Global risk manager instance
-_risk_manager: Optional[RiskManager] = None
+_risk_manager: RiskManager | None = None
 
 
 def get_risk_manager(use_chain: bool = False) -> RiskManager:
@@ -769,8 +773,8 @@ def get_risk_manager(use_chain: bool = False) -> RiskManager:
 
 
 def initialize_risk_manager(
-    config: Optional[MLOpsConfig] = None,
-    redis_client: Optional[redis.Redis] = None,
+    config: MLOpsConfig | None = None,
+    redis_client: redis.Redis | None = None,
     use_chain: bool = False,
 ) -> RiskManager:
     """

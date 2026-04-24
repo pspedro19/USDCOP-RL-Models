@@ -57,28 +57,29 @@ Changelog:
 """
 
 import json
+import logging
 import warnings
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Final, Protocol, Tuple, runtime_checkable
-import logging
+from typing import Final, Optional, Protocol, runtime_checkable
+
+# SSOT Import: Feature dimensions and order from canonical source
+from src.core.contracts.feature_contract import (
+    FEATURE_CONTRACT,
+    FEATURE_CONTRACT_VERSION,
+    FEATURE_ORDER,
+    FEATURE_ORDER_HASH,
+    OBSERVATION_DIM,
+    FeatureContract,
+)
 
 # SSOT Import: Hash utilities from canonical source
 from src.utils.hash_utils import (
     compute_file_hash as _compute_file_hash_ssot,
-    compute_json_hash as _compute_json_hash_ssot,
 )
-
-# SSOT Import: Feature dimensions and order from canonical source
-from src.core.contracts.feature_contract import (
-    OBSERVATION_DIM,
-    FEATURE_ORDER,
-    FEATURE_CONTRACT,
-    FEATURE_CONTRACT_VERSION,
-    FEATURE_ORDER_HASH,
-    FeatureContract,
+from src.utils.hash_utils import (
+    compute_json_hash as _compute_json_hash_ssot,
 )
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,7 @@ class BuilderType(Enum):
 
 
 # Mapping from BuilderType to expected observation dimension (SSOT aligned)
-BUILDER_TYPE_DIMS: Final[Dict['BuilderType', int]] = {
+BUILDER_TYPE_DIMS: Final[dict['BuilderType', int]] = {
     BuilderType.CURRENT_15DIM: OBSERVATION_DIM,
 }
 
@@ -180,14 +181,14 @@ class ModelContract:
     norm_stats_path: str
     model_path: str
     description: str = ""
-    norm_stats_hash: Optional[str] = None
-    model_hash: Optional[str] = None
+    norm_stats_hash: str | None = None
+    model_hash: str | None = None
     # P0-02: Feast Feature Service integration
-    feature_service_name: Optional[str] = None
+    feature_service_name: str | None = None
     # Training metadata for lineage and reproducibility
-    training_dataset_hash: Optional[str] = None
-    training_start_date: Optional[str] = None
-    training_end_date: Optional[str] = None
+    training_dataset_hash: str | None = None
+    training_start_date: str | None = None
+    training_end_date: str | None = None
 
     def __post_init__(self):
         """
@@ -269,7 +270,7 @@ class ModelContract:
     def validate_against_feature_contract(
         self,
         feature_contract: Optional['FeatureContract'] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate this ModelContract against the FeatureContract SSOT.
 
@@ -291,7 +292,7 @@ class ModelContract:
             >>> if errors:
             ...     raise ValueError(f"Validation failed: {errors}")
         """
-        errors: List[str] = []
+        errors: list[str] = []
         fc = feature_contract or FEATURE_CONTRACT
 
         # 1. Validate observation dimension matches SSOT
@@ -318,7 +319,7 @@ class ModelContract:
 
         return errors
 
-    def get_expected_feature_order(self) -> Tuple[str, ...]:
+    def get_expected_feature_order(self) -> tuple[str, ...]:
         """
         Get the expected feature order from the SSOT FeatureContract.
 
@@ -336,7 +337,7 @@ class ModelContract:
         """
         return FEATURE_CONTRACT_VERSION
 
-    def to_dict(self) -> Dict[str, any]:
+    def to_dict(self) -> dict[str, any]:
         """
         Convert ModelContract to dictionary for serialization.
 
@@ -438,7 +439,7 @@ class IModelRegistry(Protocol):
         """
         ...
 
-    def list_models(self) -> Dict[str, ModelContract]:
+    def list_models(self) -> dict[str, ModelContract]:
         """
         List all registered model contracts.
 
@@ -489,7 +490,7 @@ class ModelRegistry:
         ...     v2 = ModelRegistry.get("ppo_v2")
     """
 
-    _contracts: Dict[str, ModelContract] = {}
+    _contracts: dict[str, ModelContract] = {}
     _initialized: bool = False
 
     @classmethod
@@ -529,7 +530,7 @@ class ModelRegistry:
         return cls._contracts[model_id]
 
     @classmethod
-    def list_models(cls) -> Dict[str, ModelContract]:
+    def list_models(cls) -> dict[str, ModelContract]:
         """
         List all registered models.
 
@@ -631,7 +632,6 @@ class ModelRegistry:
 
         Backward compatible: missing fields default to None.
         """
-        import sys
         from pathlib import Path
 
         # Find project root
@@ -646,7 +646,7 @@ class ModelRegistry:
 
         for contract_file in contracts_dir.glob("*_contract.json"):
             try:
-                with open(contract_file, 'r') as f:
+                with open(contract_file) as f:
                     data = json.load(f)
 
                 version = data.get("version", "")
@@ -763,7 +763,7 @@ class ContractValidator:
 
         logger.info(f"Contract validated for {contract.model_id}")
 
-    def load_norm_stats(self, contract: ModelContract) -> Dict[str, Dict[str, float]]:
+    def load_norm_stats(self, contract: ModelContract) -> dict[str, dict[str, float]]:
         """
         Load normalization stats for a contract.
 
@@ -787,7 +787,7 @@ class ContractValidator:
                 f"Ensure proper deployment configuration."
             )
 
-        with open(norm_stats_path, 'r') as f:
+        with open(norm_stats_path) as f:
             stats = json.load(f)
 
         logger.info(f"Loaded norm_stats for {contract.model_id}: {len(stats)} features")
@@ -828,12 +828,12 @@ class ContractFactory:
         norm_stats_path: str,
         model_path: str,
         description: str = "",
-        feature_service_name: Optional[str] = None,
-        norm_stats_hash: Optional[str] = None,
-        model_hash: Optional[str] = None,
-        training_dataset_hash: Optional[str] = None,
-        training_start_date: Optional[str] = None,
-        training_end_date: Optional[str] = None,
+        feature_service_name: str | None = None,
+        norm_stats_hash: str | None = None,
+        model_hash: str | None = None,
+        training_dataset_hash: str | None = None,
+        training_start_date: str | None = None,
+        training_end_date: str | None = None,
         validate: bool = True,
     ) -> ModelContract:
         """
@@ -888,7 +888,7 @@ class ContractFactory:
 
     @staticmethod
     def from_dict(
-        data: Dict[str, any],
+        data: dict[str, any],
         validate: bool = True,
     ) -> ModelContract:
         """
@@ -998,7 +998,7 @@ class ContractFactory:
 def validate_model_against_features(
     model_contract: ModelContract,
     feature_contract: Optional['FeatureContract'] = None,
-) -> Tuple[bool, List[str]]:
+) -> tuple[bool, list[str]]:
     """
     Validate a ModelContract against FeatureContract SSOT.
 
@@ -1022,8 +1022,8 @@ def validate_model_against_features(
 
 def validate_feature_service_name(
     feature_service_name: str,
-    known_services: Optional[List[str]] = None,
-) -> Tuple[bool, str]:
+    known_services: list[str] | None = None,
+) -> tuple[bool, str]:
     """
     Validate that a feature service name is known.
 
@@ -1091,7 +1091,7 @@ def get_ssot_observation_dim() -> int:
     return OBSERVATION_DIM
 
 
-def get_ssot_feature_order() -> Tuple[str, ...]:
+def get_ssot_feature_order() -> tuple[str, ...]:
     """
     Get the SSOT feature order from feature_contract.py.
 

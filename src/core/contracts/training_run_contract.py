@@ -6,34 +6,31 @@ Define los params, metrics, y artifacts obligatorios para MLflow logging.
 Contract ID: CTR-TRAINING-RUN-001
 """
 from dataclasses import dataclass, field
-from typing import Set, Dict, Any, List, TYPE_CHECKING
+from typing import Any
 
 # Lazy import to avoid MLflow/PySpark issues at module load
-if TYPE_CHECKING:
-    import mlflow
-    from mlflow.tracking import MlflowClient
 
 
 @dataclass
 class TrainingRunContract:
     """Contrato de lo que debe loguearse en cada training run."""
 
-    required_params: Set[str] = field(default_factory=lambda: {
+    required_params: set[str] = field(default_factory=lambda: {
         "dataset_hash", "norm_stats_hash", "learning_rate", "batch_size",
         "n_epochs", "total_timesteps", "gamma", "gae_lambda", "clip_range",
         "ent_coef", "seed", "observation_dim", "action_dim", "policy_type",
         "feature_contract_version", "action_contract_version",
     })
 
-    required_metrics: Set[str] = field(default_factory=lambda: {
+    required_metrics: set[str] = field(default_factory=lambda: {
         "final_mean_reward", "best_mean_reward", "total_episodes", "training_time_seconds",
     })
 
-    required_artifacts: Set[str] = field(default_factory=lambda: {
+    required_artifacts: set[str] = field(default_factory=lambda: {
         "model", "norm_stats.json",
     })
 
-    required_tags: Set[str] = field(default_factory=lambda: {
+    required_tags: set[str] = field(default_factory=lambda: {
         "mlflow.runName", "version", "environment", "framework",
     })
 
@@ -79,17 +76,17 @@ class TrainingRunValidator:
     def __init__(self, strict: bool = True):
         self._contract = TRAINING_RUN_CONTRACT
         self._strict = strict
-        self._logged_params: Set[str] = set()
-        self._logged_metrics: Set[str] = set()
-        self._logged_artifacts: Set[str] = set()
-        self._logged_tags: Set[str] = set()
+        self._logged_params: set[str] = set()
+        self._logged_metrics: set[str] = set()
+        self._logged_artifacts: set[str] = set()
+        self._logged_tags: set[str] = set()
 
     def log_param(self, key: str, value: Any) -> None:
         import mlflow
         mlflow.log_param(key, value)
         self._logged_params.add(key)
 
-    def log_params(self, params: Dict[str, Any]) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         import mlflow
         mlflow.log_params(params)
         self._logged_params.update(params.keys())
@@ -99,7 +96,7 @@ class TrainingRunValidator:
         mlflow.log_metric(key, value, step=step)
         self._logged_metrics.add(key)
 
-    def log_metrics(self, metrics: Dict[str, float], step: int = None) -> None:
+    def log_metrics(self, metrics: dict[str, float], step: int = None) -> None:
         import mlflow
         mlflow.log_metrics(metrics, step=step)
         self._logged_metrics.update(metrics.keys())
@@ -132,7 +129,7 @@ class TrainingRunValidator:
         missing.extend([f"tag:{t}" for t in missing_tags])
 
         if missing and self._strict:
-            raise TrainingContractError(f"Missing required items:\n" + "\n".join(f"  - {m}" for m in sorted(missing)))
+            raise TrainingContractError("Missing required items:\n" + "\n".join(f"  - {m}" for m in sorted(missing)))
         elif missing:
             import logging
             logging.warning(f"Training run missing items: {missing}")

@@ -24,9 +24,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any
 
-from src.core.contracts.storage_contracts import ModelSnapshot, BacktestSnapshot
+from src.core.contracts.storage_contracts import BacktestSnapshot, ModelSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +49,10 @@ class ValidationIssue:
     rule_name: str
     severity: ValidationSeverity
     message: str
-    actual_value: Optional[Any] = None
-    expected_value: Optional[Any] = None
+    actual_value: Any | None = None
+    expected_value: Any | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "rule_name": self.rule_name,
@@ -67,22 +67,22 @@ class ValidationIssue:
 class ValidationResult:
     """Complete validation result."""
     passed: bool
-    issues: List[ValidationIssue]
+    issues: list[ValidationIssue]
     validated_at: datetime = field(default_factory=datetime.utcnow)
-    model_version: Optional[str] = None
-    experiment_id: Optional[str] = None
+    model_version: str | None = None
+    experiment_id: str | None = None
 
     @property
-    def errors(self) -> List[ValidationIssue]:
+    def errors(self) -> list[ValidationIssue]:
         """Get only errors."""
         return [i for i in self.issues if i.severity == ValidationSeverity.ERROR]
 
     @property
-    def warnings(self) -> List[ValidationIssue]:
+    def warnings(self) -> list[ValidationIssue]:
         """Get only warnings."""
         return [i for i in self.issues if i.severity == ValidationSeverity.WARNING]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "passed": self.passed,
@@ -113,9 +113,9 @@ class IValidator(ABC):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         """
         Validate model against rules.
 
@@ -145,9 +145,9 @@ class HashIntegrityValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         if not model.model_hash:
@@ -184,9 +184,9 @@ class FeatureContractValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         # Check feature order exists
@@ -212,7 +212,7 @@ class FeatureContractValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.ERROR,
-                message=f"Observation dimension mismatch",
+                message="Observation dimension mismatch",
                 actual_value=model.observation_dim,
                 expected_value=expected_dim,
             ))
@@ -223,7 +223,7 @@ class FeatureContractValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.ERROR,
-                message=f"Action space mismatch",
+                message="Action space mismatch",
                 actual_value=model.action_space,
                 expected_value=expected_action_space,
             ))
@@ -241,9 +241,9 @@ class PerformanceValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         if backtest is None:
@@ -261,7 +261,7 @@ class PerformanceValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.ERROR,
-                message=f"Sharpe ratio below minimum",
+                message="Sharpe ratio below minimum",
                 actual_value=round(backtest.sharpe_ratio, 2),
                 expected_value=f">= {min_sharpe}",
             ))
@@ -272,7 +272,7 @@ class PerformanceValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.ERROR,
-                message=f"Max drawdown exceeds limit",
+                message="Max drawdown exceeds limit",
                 actual_value=f"{backtest.max_drawdown:.2%}",
                 expected_value=f"<= {max_drawdown_limit:.2%}",
             ))
@@ -283,7 +283,7 @@ class PerformanceValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.WARNING,
-                message=f"Win rate below recommended",
+                message="Win rate below recommended",
                 actual_value=f"{backtest.win_rate:.2%}",
                 expected_value=f">= {min_win_rate:.2%}",
             ))
@@ -294,7 +294,7 @@ class PerformanceValidator(IValidator):
             issues.append(ValidationIssue(
                 rule_name=self.name,
                 severity=ValidationSeverity.ERROR,
-                message=f"Insufficient trades for statistical significance",
+                message="Insufficient trades for statistical significance",
                 actual_value=backtest.total_trades,
                 expected_value=f">= {min_trades}",
             ))
@@ -312,9 +312,9 @@ class LineageValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         # Check dataset snapshot exists
@@ -360,9 +360,9 @@ class MLflowFirstValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         # MLflow-First is mandatory
@@ -414,9 +414,9 @@ class DVCTrackedValidator(IValidator):
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot],
-        config: Dict[str, Any],
-    ) -> List[ValidationIssue]:
+        backtest: BacktestSnapshot | None,
+        config: dict[str, Any],
+    ) -> list[ValidationIssue]:
         issues = []
 
         # DVC tracking is mandatory
@@ -470,7 +470,7 @@ class PromotionGate:
         ...         print(f"Error: {error.message}")
     """
 
-    DEFAULT_VALIDATORS: List[IValidator] = [
+    DEFAULT_VALIDATORS: list[IValidator] = [
         HashIntegrityValidator(),
         FeatureContractValidator(),
         PerformanceValidator(),
@@ -481,8 +481,8 @@ class PromotionGate:
 
     def __init__(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        validators: Optional[List[IValidator]] = None,
+        config: dict[str, Any] | None = None,
+        validators: list[IValidator] | None = None,
     ):
         """
         Initialize promotion gate.
@@ -501,7 +501,7 @@ class PromotionGate:
     def validate(
         self,
         model: ModelSnapshot,
-        backtest: Optional[BacktestSnapshot] = None,
+        backtest: BacktestSnapshot | None = None,
     ) -> ValidationResult:
         """
         Validate model against all rules.
@@ -513,7 +513,7 @@ class PromotionGate:
         Returns:
             ValidationResult with pass/fail and issues
         """
-        all_issues: List[ValidationIssue] = []
+        all_issues: list[ValidationIssue] = []
 
         for validator in self._validators:
             try:
@@ -560,7 +560,7 @@ class PromotionGate:
 # =============================================================================
 
 
-DEFAULT_GATE_CONFIG: Dict[str, Any] = {
+DEFAULT_GATE_CONFIG: dict[str, Any] = {
     # Feature contract
     "expected_observation_dim": 15,
     "expected_action_space": 3,

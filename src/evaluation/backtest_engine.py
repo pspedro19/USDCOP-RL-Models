@@ -18,15 +18,14 @@ SSOT Compliance:
 - Uses raw_log_ret_5m for PnL calculation
 """
 
-import json
 import logging
-import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ class BacktestConfig:
     max_drawdown_pct: float = 25.0  # Added
 
     @classmethod
-    def from_pipeline_ssot(cls, config_path: Optional[Path] = None) -> "BacktestConfig":
+    def from_pipeline_ssot(cls, config_path: Path | None = None) -> "BacktestConfig":
         """Load configuration from pipeline_ssot.yaml (PREFERRED)."""
         try:
             from src.config.pipeline_config import load_pipeline_config
@@ -107,7 +106,7 @@ class BacktestConfig:
             return cls()
 
     @classmethod
-    def from_ssot(cls, ssot_path: Optional[Path] = None) -> "BacktestConfig":
+    def from_ssot(cls, ssot_path: Path | None = None) -> "BacktestConfig":
         """Load configuration from SSOT file (legacy - prefer from_pipeline_ssot)."""
         # First try pipeline_ssot.yaml
         try:
@@ -208,17 +207,17 @@ class BacktestResult:
     avg_duration_hours: float
 
     # Action distribution
-    action_distribution: Dict[str, float]
+    action_distribution: dict[str, float]
 
     # Detailed records
-    trades: List[TradeRecord] = field(default_factory=list)
-    equity_curve: List[float] = field(default_factory=list)
+    trades: list[TradeRecord] = field(default_factory=list)
+    equity_curve: list[float] = field(default_factory=list)
 
     # Validation
     passed: bool = False
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "period": {
@@ -299,8 +298,8 @@ class BacktestEngine:
     def __init__(
         self,
         config: BacktestConfig,
-        norm_stats: Dict[str, Dict[str, float]],
-        feature_cols: List[str],
+        norm_stats: dict[str, dict[str, float]],
+        feature_cols: list[str],
     ):
         """
         Initialize backtest engine.
@@ -335,10 +334,10 @@ class BacktestEngine:
         self.entry_price = 0.0
 
         # Tracking
-        self.trades: List[TradeRecord] = []
+        self.trades: list[TradeRecord] = []
         self.trade_pnl_accumulator = 0.0
-        self.equity_curve: List[float] = [self.capital]
-        self.returns: List[float] = []
+        self.equity_curve: list[float] = [self.capital]
+        self.returns: list[float] = []
         self.actions_taken = {'long': 0, 'hold': 0, 'short': 0}
         self._bar_idx = 0
 
@@ -722,9 +721,9 @@ class BacktestEngine:
 def run_backtest(
     model,
     df: pd.DataFrame,
-    norm_stats: Dict[str, Dict[str, float]],
-    config: Optional[BacktestConfig] = None,
-    test_start: Optional[str] = None,
+    norm_stats: dict[str, dict[str, float]],
+    config: BacktestConfig | None = None,
+    test_start: str | None = None,
 ) -> BacktestResult:
     """
     Run a complete backtest with a trained model.

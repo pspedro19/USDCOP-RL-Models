@@ -11,10 +11,10 @@ Proporciona:
 
 import json
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import Any
 
 # SSOT import for hash utilities
 from src.utils.hash_utils import compute_file_hash as _compute_file_hash_ssot
@@ -37,31 +37,31 @@ class ModelMetadata:
     model_path: str
     model_hash: str
     norm_stats_hash: str
-    config_hash: Optional[str]
+    config_hash: str | None
     observation_dim: int
     action_space: int
-    feature_order: List[str]
+    feature_order: list[str]
     status: str
-    created_at: Optional[datetime] = None
-    deployed_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    deployed_at: datetime | None = None
 
     # MinIO-First: S3 URIs
-    s3_model_uri: Optional[str] = None
-    s3_norm_stats_uri: Optional[str] = None
-    s3_config_uri: Optional[str] = None
+    s3_model_uri: str | None = None
+    s3_norm_stats_uri: str | None = None
+    s3_config_uri: str | None = None
 
     # Lineage tracking
-    source_experiment_id: Optional[str] = None
-    source_experiment_version: Optional[str] = None
-    feature_order_hash: Optional[str] = None
-    mlflow_run_id: Optional[str] = None
+    source_experiment_id: str | None = None
+    source_experiment_version: str | None = None
+    feature_order_hash: str | None = None
+    mlflow_run_id: str | None = None
 
     # Performance metrics
-    test_sharpe: Optional[float] = None
-    test_max_drawdown: Optional[float] = None
-    test_win_rate: Optional[float] = None
-    test_total_return: Optional[float] = None
-    test_total_trades: Optional[int] = None
+    test_sharpe: float | None = None
+    test_max_drawdown: float | None = None
+    test_win_rate: float | None = None
+    test_total_return: float | None = None
+    test_total_trades: int | None = None
 
     def is_minio_first(self) -> bool:
         """Check if model uses MinIO-first storage."""
@@ -130,8 +130,8 @@ class ModelRegistry:
         self,
         model_path: Path,
         version: str,
-        training_info: Optional[Dict[str, Any]] = None,
-        feature_order: Optional[List[str]] = None
+        training_info: dict[str, Any] | None = None,
+        feature_order: list[str] | None = None
     ) -> str:
         """
         Registra un modelo con todos sus hashes.
@@ -199,9 +199,9 @@ class ModelRegistry:
         model_path: str,
         model_hash: str,
         norm_stats_hash: str,
-        config_hash: Optional[str],
-        feature_order: List[str],
-        training_info: Dict
+        config_hash: str | None,
+        feature_order: list[str],
+        training_info: dict
     ):
         """Inserta registro en BD."""
         self.conn.execute("""
@@ -223,7 +223,7 @@ class ModelRegistry:
     def verify_model_integrity(
         self,
         model_id: str,
-        model_path: Optional[Path] = None
+        model_path: Path | None = None
     ) -> bool:
         """
         Verifica integridad del modelo contra registro.
@@ -314,7 +314,7 @@ class ModelRegistry:
         logger.info(f"Modelo retired: {model_id}")
         return True
 
-    def get_active_models(self) -> List[ModelMetadata]:
+    def get_active_models(self) -> list[ModelMetadata]:
         """
         Obtiene lista de modelos deployed.
 
@@ -331,7 +331,7 @@ class ModelRegistry:
 
         return [self._row_to_metadata(row) for row in rows]
 
-    def get_model_metadata(self, model_id: str) -> Optional[ModelMetadata]:
+    def get_model_metadata(self, model_id: str) -> ModelMetadata | None:
         """
         Obtiene metadata de un modelo.
 
@@ -354,7 +354,7 @@ class ModelRegistry:
 
         return self._row_to_metadata(row)
 
-    def _row_to_metadata(self, row: Dict) -> ModelMetadata:
+    def _row_to_metadata(self, row: dict) -> ModelMetadata:
         """Convierte row de BD a ModelMetadata."""
         feature_order = row.get('feature_order')
         if isinstance(feature_order, str):

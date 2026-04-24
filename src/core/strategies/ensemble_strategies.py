@@ -18,7 +18,6 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import Dict, List, Tuple, Optional, Type
 import logging
 
 from src.core.interfaces.inference import (
@@ -48,9 +47,9 @@ class WeightedAverageStrategy(IEnsembleStrategy):
 
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Weighted average of action probabilities."""
         if not results:
             return {"HOLD": 1.0, "BUY": 0.0, "SELL": 0.0}, SignalType.HOLD, 0.0
@@ -98,9 +97,9 @@ class MajorityVoteStrategy(IEnsembleStrategy):
 
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Simple majority vote."""
         if not results:
             return {"HOLD": 1.0, "BUY": 0.0, "SELL": 0.0}, SignalType.HOLD, 0.0
@@ -140,9 +139,9 @@ class SoftVoteStrategy(IEnsembleStrategy):
 
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Simple average of probabilities."""
         if not results:
             return {"HOLD": 1.0, "BUY": 0.0, "SELL": 0.0}, SignalType.HOLD, 0.0
@@ -181,9 +180,9 @@ class ConfidenceWeightedStrategy(IEnsembleStrategy):
 
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Weight by confidence."""
         if not results:
             return {"HOLD": 1.0, "BUY": 0.0, "SELL": 0.0}, SignalType.HOLD, 0.0
@@ -222,9 +221,9 @@ class BestModelStrategy(IEnsembleStrategy):
 
     def combine(
         self,
-        results: List[InferenceResult],
-        weights: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, float], SignalType, float]:
+        results: list[InferenceResult],
+        weights: dict[str, float] | None = None
+    ) -> tuple[dict[str, float], SignalType, float]:
         """Use most confident model."""
         if not results:
             return {"HOLD": 1.0, "BUY": 0.0, "SELL": 0.0}, SignalType.HOLD, 0.0
@@ -261,7 +260,7 @@ class EnsembleStrategyRegistry:
         names = EnsembleStrategyRegistry.list_strategies()
     """
 
-    _strategies: Dict[str, IEnsembleStrategy] = {}
+    _strategies: dict[str, IEnsembleStrategy] = {}
     _initialized: bool = False
 
     @classmethod
@@ -329,7 +328,7 @@ class EnsembleStrategyRegistry:
         return cls._strategies[name]
 
     @classmethod
-    def list_strategies(cls) -> List[str]:
+    def list_strategies(cls) -> list[str]:
         """Get list of available strategy names."""
         cls._ensure_initialized()
         return list(cls._strategies.keys())

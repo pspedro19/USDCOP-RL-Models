@@ -23,7 +23,6 @@ Version: 1.0.0
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -52,8 +51,8 @@ class ForecastingDatasetLoader:
     def __init__(
         self,
         config: ForecastingSSOTConfig,
-        db_url: Optional[str] = None,
-        project_root: Optional[Path] = None,
+        db_url: str | None = None,
+        project_root: Path | None = None,
     ):
         self.config = config
         self.db_url = db_url or os.environ.get("DATABASE_URL")
@@ -61,8 +60,8 @@ class ForecastingDatasetLoader:
 
     def load_dataset(
         self,
-        target_horizon: Optional[int] = None,
-    ) -> Tuple[pd.DataFrame, List[str]]:
+        target_horizon: int | None = None,
+    ) -> tuple[pd.DataFrame, list[str]]:
         """
         Load OHLCV + macro, build features, optionally compute target.
 
@@ -108,7 +107,7 @@ class ForecastingDatasetLoader:
             return df
         return self._load_ohlcv_from_parquet()
 
-    def _load_ohlcv_from_db(self) -> Optional[pd.DataFrame]:
+    def _load_ohlcv_from_db(self) -> pd.DataFrame | None:
         """Try loading OHLCV from PostgreSQL."""
         if not self.db_url:
             return None
@@ -177,7 +176,7 @@ class ForecastingDatasetLoader:
             return df
         return self._load_macro_from_parquet()
 
-    def _load_macro_from_db(self) -> Optional[pd.DataFrame]:
+    def _load_macro_from_db(self) -> pd.DataFrame | None:
         """Try loading macro from PostgreSQL."""
         if not self.db_url:
             return None
@@ -337,9 +336,9 @@ class ForecastingDatasetLoader:
 
     def load_dataset_with_db_extension(
         self,
-        target_horizon: Optional[int] = None,
+        target_horizon: int | None = None,
         db_conn_func=None,
-    ) -> Tuple[pd.DataFrame, List[str]]:
+    ) -> tuple[pd.DataFrame, list[str]]:
         """
         Load from parquet, then extend with latest DB rows (if available).
         Used by Airflow DAGs that have DB access and want the freshest data.

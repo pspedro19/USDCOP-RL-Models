@@ -20,13 +20,13 @@ If norm_stats are not found, it raises an error rather than
 using hardcoded defaults that would produce WRONG predictions.
 """
 
+import logging
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import json
-import logging
-from typing import Dict, Optional
-from pathlib import Path
-from ..config import get_settings, FEATURE_ORDER
+
+from ..config import FEATURE_ORDER, get_settings
 
 # Import from SSOT
 try:
@@ -37,16 +37,14 @@ except ImportError:
 # Import the SSOT adapter
 from .feature_adapter import (
     InferenceFeatureAdapter,
-    FeatureCircuitBreakerError,
-    FeatureCircuitBreakerConfig,
 )
 
 # Import Feast service for online feature serving (P1-3 remediation)
 try:
     from src.feature_store.feast_service import (
         FeastInferenceService,
-        create_feast_service,
         FeastServiceError,
+        create_feast_service,
     )
     FEAST_SERVICE_AVAILABLE = True
 except ImportError:
@@ -97,9 +95,9 @@ class ObservationBuilder:
 
     def __init__(
         self,
-        norm_stats_path: Optional[Path] = None,
+        norm_stats_path: Path | None = None,
         enable_feast: bool = True,
-        feast_repo_path: Optional[str] = None,
+        feast_repo_path: str | None = None,
     ):
         """
         Initialize ObservationBuilder.
@@ -123,7 +121,7 @@ class ObservationBuilder:
             raise NormStatsNotFoundError(str(e))
 
         # Initialize Feast service if available and enabled (P1-3 remediation)
-        self._feast_service: Optional[FeastInferenceService] = None
+        self._feast_service: FeastInferenceService | None = None
         self._feast_enabled = enable_feast and FEAST_SERVICE_AVAILABLE
 
         if self._feast_enabled:
@@ -149,7 +147,7 @@ class ObservationBuilder:
             f"Feast={self._feast_enabled})"
         )
 
-    def _load_norm_stats_strict(self, path: Optional[Path] = None) -> Dict[str, Dict[str, float]]:
+    def _load_norm_stats_strict(self, path: Path | None = None) -> dict[str, dict[str, float]]:
         """
         DEPRECATED: Now handled by InferenceFeatureAdapter.
 
@@ -171,7 +169,7 @@ class ObservationBuilder:
         df: pd.DataFrame,
         bar_idx: int,
         lookback: int = 50
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate technical indicators for a given bar.
 
@@ -265,8 +263,8 @@ class ObservationBuilder:
     def calculate_macro_features(
         self,
         row: pd.Series,
-        prev_row: Optional[pd.Series] = None
-    ) -> Dict[str, float]:
+        prev_row: pd.Series | None = None
+    ) -> dict[str, float]:
         """
         Calculate macro indicator features.
 
@@ -322,7 +320,7 @@ class ObservationBuilder:
         position: float,
         time_normalized: float = 0.5,
         symbol: str = "USD/COP",
-        bar_id: Optional[str] = None,
+        bar_id: str | None = None,
         use_feast: bool = True,
     ) -> np.ndarray:
         """
@@ -375,7 +373,7 @@ class ObservationBuilder:
             check_circuit_breaker=True
         )
 
-    def get_feast_health(self) -> Dict:
+    def get_feast_health(self) -> dict:
         """Get Feast service health status (P1-3 remediation)."""
         if self._feast_service is None:
             return {
@@ -385,7 +383,7 @@ class ObservationBuilder:
             }
         return self._feast_service.health_check()
 
-    def get_feast_metrics(self) -> Dict:
+    def get_feast_metrics(self) -> dict:
         """Get Feast service metrics (P1-3 remediation)."""
         if self._feast_service is None:
             return {"feast_enabled": False, "metrics_available": False}

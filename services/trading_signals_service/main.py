@@ -19,16 +19,16 @@ Usage:
     uvicorn main:app --host 0.0.0.0 --port 8003
 """
 
+import asyncio
 import logging
 import sys
-from datetime import datetime
 from contextlib import asynccontextmanager
-import asyncio
+from datetime import datetime
 
+import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
 
 # Configure logging
 logging.basicConfig(
@@ -42,18 +42,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import modules
-from config import get_config
+from api.routes import router, set_services
+from api.websocket import ConnectionManager, SignalBroadcaster, heartbeat_loop, websocket_endpoint
 from models.model_loader import ONNXModelLoader
 from services.inference_service import InferenceService
-from services.signal_generator import SignalGenerator
 from services.position_manager import PositionManager
-from api.routes import router, set_services
-from api.websocket import (
-    ConnectionManager,
-    SignalBroadcaster,
-    websocket_endpoint,
-    heartbeat_loop
-)
+from services.signal_generator import SignalGenerator
+
+from config import get_config
 
 # Global service instances
 inference_service: InferenceService = None

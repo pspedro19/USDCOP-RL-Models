@@ -17,8 +17,82 @@ Both pipelines are **SHORT-biased** due to a 2026 regime change (p=0.0014) that 
 
 ---
 
+## 🎓 MLOps Course Project — Final Deliverable
+
+> Presentation: **2026-04-23** • Repository: **2026-04-30**
+> Full deliverable doc: [docs/COURSE_PROJECT.md](docs/COURSE_PROJECT.md)
+
+### Course requirements compliance
+
+| Requirement | Status | Where |
+|---|---|---|
+| ≥2 non-REST course technologies | ✅ **gRPC + Kafka** | `services/grpc_predictor/`, `services/kafka_bridge/` |
+| Docker containerization | ✅ 15+ services | `docker-compose.compact.yml` |
+| Orchestration (best grade) | ✅ Airflow + MLflow | `airflow/dags/`, MLflow @ :5001 |
+| Functional live demo | ✅ | `make course-demo` |
+| Toy-model-acceptable | ✅ H5 Smart Simple (Ridge + BR + XGB) | Realistic but simple ML |
+| Cloud (optional) | ⬜ All local Docker | — |
+| Federated learning (optional) | ⬜ | — |
+
+### Quickstart (~3 minutes to demo-ready)
+
+```bash
+# 1. Clone + start
+git clone <repo-url> && cd USDCOP-RL-Models
+docker compose -f docker-compose.compact.yml up -d
+sleep 60   # Wait for services to initialize
+
+# 2. Run full demo (8-10 min walkthrough)
+make course-demo
+
+# 3. Individual demos
+make course-grpc     # gRPC Predict() call
+make course-kafka    # Kafka producer→consumer roundtrip
+make course-mlflow   # MLflow runs in experiment tracker
+
+# 4. Open the UIs
+# Airflow:         http://localhost:8080
+# MLflow:          http://localhost:5001
+# Grafana:         http://localhost:3002
+# Redpanda Console http://localhost:8088
+# Dashboard:       http://localhost:5000
+# gRPC:            localhost:50051 (use client_example.py)
+```
+
+### Architecture snapshot (MLOps course view)
+
+```
+┌─────────────────┐   ┌──────────────┐   ┌────────────────┐
+│ Airflow DAGs    │──▶│ MLflow runs  │   │ gRPC Predictor │
+│ (27, L0→L7)     │   │ (:5001)      │◀──│ (:50051)       │
+└────────┬────────┘   └──────────────┘   └────────────────┘
+         │                                        ▲
+         ▼                                        │
+┌─────────────────┐     ┌──────────────────┐     │
+│ Signal DAG L5   │────▶│ Kafka / Redpanda │     │
+│ (Mon 08:15 COT) │     │ topic signals.h5 │     │
+└─────────────────┘     └────────┬─────────┘     │
+                                 ▼               │
+                       ┌─────────────────────────┴──┐
+                       │ SignalBridge OMS (:8085)   │
+                       │ (FastAPI — REST baseline)  │
+                       └────────────────────────────┘
+```
+
+### Team
+
+| Name | Role | Email |
+|---|---|---|
+| _(TBD)_ | Lead / MLOps | — |
+| _(TBD)_ | — | — |
+| _(TBD)_ | — | — |
+| _(TBD)_ | — | — |
+
+---
+
 ## Table of Contents
 
+- [MLOps Course Project — Final Deliverable](#-mlops-course-project--final-deliverable)
 - [Architecture Overview](#architecture-overview)
 - [Quick Start](#quick-start)
 - [Four Tracks](#four-tracks)

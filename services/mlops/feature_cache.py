@@ -14,13 +14,13 @@ Features:
 SSOT: Uses FEATURE_ORDER and OBSERVATION_DIM from src.core.contracts
 """
 
+import json
 import logging
 import sys
-from typing import Optional, Dict, List, Any, Tuple
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-import json
+from typing import Any
 
 import numpy as np
 
@@ -34,9 +34,9 @@ _project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
 # Import FEATURE_ORDER and OBSERVATION_DIM from SSOT (REQUIRED - no fallback)
-from src.core.contracts import FEATURE_ORDER, OBSERVATION_DIM
-
 from mlops.config import MLOpsConfig, get_config
+
+from src.core.contracts import FEATURE_ORDER
 
 logger = logging.getLogger(__name__)
 
@@ -45,16 +45,16 @@ logger = logging.getLogger(__name__)
 class CachedFeatures:
     """Container for cached feature data."""
     timestamp: str
-    features: Dict[str, float]
-    feature_vector: List[float]
+    features: dict[str, float]
+    feature_vector: list[float]
     source: str
-    ttl_remaining: Optional[int] = None
+    ttl_remaining: int | None = None
 
     def to_numpy(self) -> np.ndarray:
         """Convert to numpy array for inference."""
         return np.array(self.feature_vector, dtype=np.float32)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "timestamp": self.timestamp,
             "features": self.features,
@@ -102,13 +102,13 @@ class FeatureCache:
     #   13-14: State (position, time_normalized)
 
     # DEFAULT_FEATURE_ORDER from SSOT (no fallback)
-    DEFAULT_FEATURE_ORDER: Tuple[str, ...] = FEATURE_ORDER
+    DEFAULT_FEATURE_ORDER: tuple[str, ...] = FEATURE_ORDER
 
     def __init__(
         self,
-        config: Optional[MLOpsConfig] = None,
-        redis_client: Optional[redis.Redis] = None,
-        feature_order: Optional[List[str]] = None,
+        config: MLOpsConfig | None = None,
+        redis_client: redis.Redis | None = None,
+        feature_order: list[str] | None = None,
         default_ttl: int = 300,  # 5 minutes
     ):
         """
@@ -144,7 +144,7 @@ class FeatureCache:
             logger.warning("Redis not available. Feature cache disabled.")
 
         # In-memory fallback
-        self._memory_cache: Dict[str, Dict[str, Any]] = {}
+        self._memory_cache: dict[str, dict[str, Any]] = {}
         self._cache_hits = 0
         self._cache_misses = 0
 
@@ -155,8 +155,8 @@ class FeatureCache:
     def set_features(
         self,
         timestamp: str,
-        features: Dict[str, float],
-        ttl: Optional[int] = None,
+        features: dict[str, float],
+        ttl: int | None = None,
         source: str = "pipeline"
     ) -> bool:
         """
@@ -215,7 +215,7 @@ class FeatureCache:
             self._memory_cache[timestamp] = data
             return True
 
-    def get_features(self, timestamp: str) -> Optional[CachedFeatures]:
+    def get_features(self, timestamp: str) -> CachedFeatures | None:
         """
         Retrieve features from cache.
 
@@ -266,7 +266,7 @@ class FeatureCache:
             self._cache_misses += 1
             return None
 
-    def get_latest(self) -> Optional[CachedFeatures]:
+    def get_latest(self) -> CachedFeatures | None:
         """Get the most recent cached features."""
         if self.redis:
             try:
@@ -283,7 +283,7 @@ class FeatureCache:
 
         return None
 
-    def get_batch(self, timestamps: List[str]) -> Dict[str, Optional[CachedFeatures]]:
+    def get_batch(self, timestamps: list[str]) -> dict[str, CachedFeatures | None]:
         """
         Retrieve multiple feature sets.
 
@@ -372,7 +372,7 @@ class FeatureCache:
 
         return count
 
-    def get_history(self, limit: int = 100) -> List[str]:
+    def get_history(self, limit: int = 100) -> list[str]:
         """Get recent cached timestamps."""
         if self.redis:
             try:
@@ -383,7 +383,7 @@ class FeatureCache:
         else:
             return sorted(self._memory_cache.keys(), reverse=True)[:limit]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         stats = {
             "hits": self._cache_hits,
@@ -410,7 +410,7 @@ class FeatureCache:
 
         return stats
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check cache health."""
         health = {
             "status": "healthy",
@@ -439,7 +439,7 @@ class FeatureCache:
 
 
 # Global instance
-_feature_cache: Optional[FeatureCache] = None
+_feature_cache: FeatureCache | None = None
 
 
 def get_feature_cache() -> FeatureCache:
@@ -451,8 +451,8 @@ def get_feature_cache() -> FeatureCache:
 
 
 def initialize_feature_cache(
-    config: Optional[MLOpsConfig] = None,
-    feature_order: Optional[List[str]] = None
+    config: MLOpsConfig | None = None,
+    feature_order: list[str] | None = None
 ) -> FeatureCache:
     """Initialize global feature cache."""
     global _feature_cache

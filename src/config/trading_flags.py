@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import lru_cache
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class TradingFlags:
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.utcnow)
-    kill_switch_reason: Optional[str] = None
+    kill_switch_reason: str | None = None
 
     @classmethod
     def from_env(cls) -> TradingFlags:
@@ -302,7 +302,7 @@ class TradingFlags:
 
         return TradingMode.LIVE
 
-    def validate_for_production(self) -> Tuple[bool, List[str]]:
+    def validate_for_production(self) -> tuple[bool, list[str]]:
         """
         Validate flags for production deployment.
 
@@ -322,7 +322,7 @@ class TradingFlags:
                     logger.error(f"Production validation failed: {error}")
                 raise ConfigurationError("Invalid production configuration")
         """
-        errors: List[str] = []
+        errors: list[str] = []
 
         # Environment checks
         if self.environment != "production":
@@ -357,7 +357,7 @@ class TradingFlags:
         is_valid = len(errors) == 0
         return is_valid, errors
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert flags to dictionary for serialization/logging.
 
@@ -401,7 +401,7 @@ TradingFlagsEnv = TradingFlags
 # Singleton Pattern with Thread-Safe Caching
 # =============================================================================
 
-_trading_flags_cache: Optional[TradingFlags] = None
+_trading_flags_cache: TradingFlags | None = None
 _trading_flags_lock = threading.Lock()
 
 
@@ -583,7 +583,7 @@ def get_current_trading_mode() -> TradingMode:
 # Backward Compatibility Functions
 # =============================================================================
 
-@lru_cache()
+@lru_cache
 def get_trading_flags_env() -> TradingFlags:
     """
     Get singleton TradingFlags instance (backward compatibility alias).
@@ -638,7 +638,7 @@ try:
     class FlagState:
         """State of a trading flag in the database."""
         enabled: bool
-        reason: Optional[str]
+        reason: str | None
         updated_at: datetime
         updated_by: str
 
@@ -686,9 +686,9 @@ try:
                 db_connection: Optional database connection. If None, creates new connection.
             """
             self._conn = db_connection
-            self._cache: Dict[str, FlagState] = {}
+            self._cache: dict[str, FlagState] = {}
             self._cache_ttl_seconds = 10
-            self._last_fetch: Optional[datetime] = None
+            self._last_fetch: datetime | None = None
             self._ensure_table()
 
         def _get_connection(self):
@@ -824,7 +824,7 @@ try:
             """Set inference enabled state."""
             self._set_flag(self.FLAG_INFERENCE_ENABLED, enabled, reason, updated_by)
 
-        def get_all_flags(self, force_refresh: bool = False) -> Dict[str, Any]:
+        def get_all_flags(self, force_refresh: bool = False) -> dict[str, Any]:
             """Get all trading flags with their states."""
             self._fetch_flags(force=force_refresh)
             return {
@@ -835,7 +835,7 @@ try:
                 "cached_at": self._last_fetch.isoformat() if self._last_fetch else None,
             }
 
-        def is_trading_allowed(self) -> Tuple[bool, str]:
+        def is_trading_allowed(self) -> tuple[bool, str]:
             """Check if trading operations are allowed."""
             if self.kill_switch:
                 return False, "Kill switch is active"
@@ -843,7 +843,7 @@ try:
                 return False, "System in maintenance mode"
             return True, "Trading allowed"
 
-        def is_inference_allowed(self) -> Tuple[bool, str]:
+        def is_inference_allowed(self) -> tuple[bool, str]:
             """Check if inference operations are allowed."""
             if self.kill_switch:
                 return False, "Kill switch is active"
@@ -852,7 +852,7 @@ try:
             return True, "Inference allowed"
 
     # Singleton for database-backed flags
-    _trading_flags_db: Optional[TradingFlagsDB] = None
+    _trading_flags_db: TradingFlagsDB | None = None
 
     def get_trading_flags_db() -> TradingFlagsDB:
         """Get the singleton TradingFlagsDB instance."""
@@ -880,8 +880,9 @@ except ImportError:
 # =============================================================================
 
 try:
-    import redis
     import json
+
+    import redis
 
     class TradingFlagsRedis:
         """
@@ -927,9 +928,9 @@ try:
 
         def __init__(
             self,
-            redis_client: Optional[redis.Redis] = None,
-            host: Optional[str] = None,
-            port: Optional[int] = None,
+            redis_client: redis.Redis | None = None,
+            host: str | None = None,
+            port: int | None = None,
             db: int = 0,
             enable_pubsub: bool = True,
         ):
@@ -991,7 +992,7 @@ try:
                     return True  # Fail safe: assume kill switch is ON
                 return False
 
-        def _get_flag_state(self, flag_name: str) -> Optional[Dict[str, Any]]:
+        def _get_flag_state(self, flag_name: str) -> dict[str, Any] | None:
             """Get full flag state from Redis."""
             try:
                 data = self._redis.get(self._key(flag_name))
@@ -1006,7 +1007,7 @@ try:
             self,
             flag_name: str,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """Internal method to set a flag value in Redis."""
@@ -1022,7 +1023,7 @@ try:
             self,
             flag_name: str,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """Set a flag value in Redis with pub/sub notification."""
@@ -1064,7 +1065,7 @@ try:
         def set_kill_switch(
             self,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """
@@ -1086,7 +1087,7 @@ try:
         def set_maintenance_mode(
             self,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """Set maintenance mode state."""
@@ -1095,7 +1096,7 @@ try:
         def set_paper_trading(
             self,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """Set paper trading mode state."""
@@ -1104,13 +1105,13 @@ try:
         def set_inference_enabled(
             self,
             enabled: bool,
-            reason: Optional[str] = None,
+            reason: str | None = None,
             updated_by: str = "system",
         ):
             """Set inference enabled state."""
             self._set_flag(self.FLAG_INFERENCE_ENABLED, enabled, reason, updated_by)
 
-        def get_all_flags(self) -> Dict[str, Any]:
+        def get_all_flags(self) -> dict[str, Any]:
             """Get all trading flags with their states."""
             result = {}
             for flag in [
@@ -1123,7 +1124,7 @@ try:
                 result[flag] = state if state else {"enabled": False, "reason": "Not set"}
             return result
 
-        def is_trading_allowed(self) -> Tuple[bool, str]:
+        def is_trading_allowed(self) -> tuple[bool, str]:
             """Check if trading operations are allowed."""
             if self.kill_switch:
                 return False, "Kill switch is active"
@@ -1131,7 +1132,7 @@ try:
                 return False, "System in maintenance mode"
             return True, "Trading allowed"
 
-        def is_inference_allowed(self) -> Tuple[bool, str]:
+        def is_inference_allowed(self) -> tuple[bool, str]:
             """Check if inference operations are allowed."""
             if self.kill_switch:
                 return False, "Kill switch is active"
@@ -1166,7 +1167,7 @@ try:
                 return False
 
     # Singleton for Redis-backed flags
-    _trading_flags_redis: Optional[TradingFlagsRedis] = None
+    _trading_flags_redis: TradingFlagsRedis | None = None
 
     def get_trading_flags_redis() -> TradingFlagsRedis:
         """Get the singleton TradingFlagsRedis instance."""

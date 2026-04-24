@@ -4,21 +4,23 @@ Health Router - Health check and status endpoints
 P2-1 Remediation: Added /metrics endpoint for Prometheus scraping
 """
 
+import logging
+from datetime import datetime
+
+import asyncpg
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
-from datetime import datetime
-import asyncpg
-import logging
-from ..models.responses import HealthResponse
-from ..config import get_settings
+
 from .. import __version__
+from ..config import get_settings
 from ..core.metrics import (
-    get_metrics,
-    get_content_type,
-    update_active_models,
-    set_api_info,
     PROMETHEUS_AVAILABLE,
+    get_content_type,
+    get_metrics,
+    set_api_info,
+    update_active_models,
 )
+from ..models.responses import HealthResponse
 
 router = APIRouter(tags=["health"])
 logger = logging.getLogger(__name__)
@@ -140,7 +142,6 @@ async def check_all_consistency(verify_hashes: bool = False):
     """
     try:
         from ..services.consistency_validator import ConsistencyValidatorService
-        from ..contracts.model_contract import ModelRegistry
 
         validator = ConsistencyValidatorService(settings.project_root)
         reports = validator.validate_all_models(verify_hashes)

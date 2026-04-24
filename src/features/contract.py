@@ -29,10 +29,10 @@ warnings.warn(
 
 # Import from SSOT (REQUIRED - no fallback)
 from src.core.contracts.feature_contract import (
-    FeatureContract,
     FEATURE_CONTRACT,
     FEATURE_ORDER,
     OBSERVATION_DIM,
+    FeatureContract,
 )
 
 # Additional imports from feature_store for backward compatibility
@@ -47,11 +47,11 @@ NORM_STATS_PATH: Final = "config/norm_stats.json"
 
 # Re-export for backward compatibility
 __all__ = [
-    "FeatureContract",
     "FEATURE_CONTRACT",
     "FEATURE_ORDER",
-    "OBSERVATION_DIM",
     "NORM_STATS_PATH",
+    "OBSERVATION_DIM",
+    "FeatureContract",
     "TechnicalPeriods",
     "TradingHours",
     "get_contract",

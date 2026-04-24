@@ -23,7 +23,7 @@ Date: 2026-01-17
 import json
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Union
+from typing import Any
 
 import yaml
 
@@ -44,7 +44,7 @@ DEFAULT_EXPERIMENTS_DIR = Path("config/experiments")
 DEFAULT_SCHEMA_PATH = Path("config/schemas/experiment.schema.json")
 
 
-def load_yaml(path: Union[str, Path]) -> Dict[str, Any]:
+def load_yaml(path: str | Path) -> dict[str, Any]:
     """
     Load YAML file.
 
@@ -62,11 +62,11 @@ def load_yaml(path: Union[str, Path]) -> Dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Experiment config not found: {path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
-def load_schema(schema_path: Optional[Path] = None) -> Optional[Dict[str, Any]]:
+def load_schema(schema_path: Path | None = None) -> dict[str, Any] | None:
     """
     Load JSON Schema for validation.
 
@@ -83,14 +83,14 @@ def load_schema(schema_path: Optional[Path] = None) -> Optional[Dict[str, Any]]:
         logger.warning(f"Schema not found: {schema_path}")
         return None
 
-    with open(schema_path, "r", encoding="utf-8") as f:
+    with open(schema_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def validate_with_jsonschema(
-    config_dict: Dict[str, Any],
-    schema: Optional[Dict[str, Any]] = None,
-) -> List[str]:
+    config_dict: dict[str, Any],
+    schema: dict[str, Any] | None = None,
+) -> list[str]:
     """
     Validate configuration against JSON Schema.
 
@@ -121,7 +121,7 @@ def validate_with_jsonschema(
     return errors
 
 
-def validate_with_pydantic(config_dict: Dict[str, Any]) -> List[str]:
+def validate_with_pydantic(config_dict: dict[str, Any]) -> list[str]:
     """
     Validate configuration with Pydantic models.
 
@@ -144,9 +144,9 @@ def validate_with_pydantic(config_dict: Dict[str, Any]) -> List[str]:
 
 
 def validate_experiment_config(
-    config_path: Union[str, Path],
+    config_path: str | Path,
     strict: bool = True,
-) -> List[str]:
+) -> list[str]:
     """
     Validate experiment configuration file.
 
@@ -190,7 +190,7 @@ def validate_experiment_config(
 
 
 def load_experiment_config(
-    config_path: Union[str, Path],
+    config_path: str | Path,
     validate: bool = True,
 ) -> ExperimentConfig:
     """
@@ -235,8 +235,8 @@ def load_experiment_config(
 
 
 def list_available_experiments(
-    experiments_dir: Optional[Path] = None,
-) -> List[Dict[str, Any]]:
+    experiments_dir: Path | None = None,
+) -> list[dict[str, Any]]:
     """
     List all available experiment configurations.
 
@@ -297,8 +297,8 @@ def list_available_experiments(
 
 def get_experiment_by_name(
     name: str,
-    experiments_dir: Optional[Path] = None,
-) -> Optional[ExperimentConfig]:
+    experiments_dir: Path | None = None,
+) -> ExperimentConfig | None:
     """
     Get experiment configuration by name.
 
@@ -323,7 +323,7 @@ def get_experiment_by_name(
 def create_experiment_from_template(
     name: str,
     template: str = "baseline_ppo_v1",
-    output_path: Optional[Path] = None,
+    output_path: Path | None = None,
     **overrides,
 ) -> Path:
     """
@@ -371,9 +371,9 @@ def create_experiment_from_template(
 
 
 __all__ = [
+    "create_experiment_from_template",
+    "get_experiment_by_name",
+    "list_available_experiments",
     "load_experiment_config",
     "validate_experiment_config",
-    "list_available_experiments",
-    "get_experiment_by_name",
-    "create_experiment_from_template",
 ]

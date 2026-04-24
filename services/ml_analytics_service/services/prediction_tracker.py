@@ -8,8 +8,9 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Any
+
 from database.postgres_client import PostgresClient
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class PredictionTracker:
         self,
         model_id: str,
         window: str = '24h'
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate prediction accuracy metrics.
 
@@ -90,11 +91,11 @@ class PredictionTracker:
     def get_prediction_history(
         self,
         model_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         page: int = 1,
         page_size: int = 100
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get historical predictions with outcomes.
 
@@ -193,7 +194,7 @@ class PredictionTracker:
         self,
         model_id: str,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Compare predictions against actual market outcomes.
 
@@ -248,7 +249,7 @@ class PredictionTracker:
 
         return comparisons
 
-    def _calculate_by_action(self, predictions: List[Dict]) -> List[Dict]:
+    def _calculate_by_action(self, predictions: list[dict]) -> list[dict]:
         """Calculate statistics by action type"""
         actions = {}
 
@@ -294,7 +295,7 @@ class PredictionTracker:
 
         return by_action
 
-    def _build_confusion_matrix(self, predictions: List[Dict]) -> Dict[str, Dict[str, int]]:
+    def _build_confusion_matrix(self, predictions: list[dict]) -> dict[str, dict[str, int]]:
         """Build confusion matrix for predictions"""
         matrix = {
             'LONG': {'LONG': 0, 'SHORT': 0, 'HOLD': 0},

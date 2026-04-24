@@ -15,22 +15,17 @@ Version: 1.0.0
 Date: 2026-01-16
 """
 
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
     Protocol,
-    Tuple,
     TypeVar,
     runtime_checkable,
 )
-from dataclasses import dataclass
-from enum import Enum
 
 import numpy as np
-
 
 # =============================================================================
 # TYPE VARIABLES
@@ -49,7 +44,7 @@ class Event:
     """Base class for all domain events."""
     event_type: str
     timestamp: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
 
 
 # =============================================================================
@@ -70,8 +65,8 @@ class IFeatureBuilder(Protocol):
 
     def build_observation(
         self,
-        ohlcv: Dict[str, Any],
-        macro: Optional[Dict[str, Any]],
+        ohlcv: dict[str, Any],
+        macro: dict[str, Any] | None,
         position: float,
         bar_idx: int,
     ) -> np.ndarray:
@@ -95,7 +90,7 @@ class IFeatureBuilder(Protocol):
         ...
 
     @property
-    def feature_order(self) -> List[str]:
+    def feature_order(self) -> list[str]:
         """Get ordered list of feature names."""
         ...
 
@@ -113,7 +108,7 @@ class IFeatureCalculator(Protocol):
         """Feature name identifier."""
         ...
 
-    def calculate(self, data: Dict[str, Any]) -> float:
+    def calculate(self, data: dict[str, Any]) -> float:
         """
         Calculate feature value from input data.
 
@@ -189,7 +184,7 @@ class IModelLoader(Protocol):
         ...
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """Get expected input shape."""
         ...
 
@@ -215,7 +210,7 @@ class PredictionResult:
     """Result of model prediction."""
     action: int
     confidence: float
-    action_probs: Dict[str, float]
+    action_probs: dict[str, float]
     latency_ms: float
 
 
@@ -227,7 +222,7 @@ class IPredictor(Protocol):
     Single Responsibility: Execute inference on observations.
     """
 
-    def predict(self, observation: np.ndarray) -> Tuple[int, float]:
+    def predict(self, observation: np.ndarray) -> tuple[int, float]:
         """
         Run inference on observation.
 
@@ -269,7 +264,7 @@ class ITradeRepository(Protocol):
     Supports saving and querying trade records.
     """
 
-    def save_trade(self, trade: Dict[str, Any]) -> str:
+    def save_trade(self, trade: dict[str, Any]) -> str:
         """
         Save a trade record.
 
@@ -281,7 +276,7 @@ class ITradeRepository(Protocol):
         """
         ...
 
-    def get_trade(self, trade_id: str) -> Optional[Dict[str, Any]]:
+    def get_trade(self, trade_id: str) -> dict[str, Any] | None:
         """
         Get trade by ID.
 
@@ -295,9 +290,9 @@ class ITradeRepository(Protocol):
 
     def get_trades(
         self,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: dict[str, Any] | None = None,
         limit: int = 100,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get trades matching filters.
 
@@ -310,7 +305,7 @@ class ITradeRepository(Protocol):
         """
         ...
 
-    def get_recent_trades(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_recent_trades(self, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get most recent trades.
 
@@ -331,11 +326,11 @@ class IStateRepository(Protocol):
     Used for caching, session state, and temporary data.
     """
 
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         """Get state by key."""
         ...
 
-    def set(self, key: str, value: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def set(self, key: str, value: dict[str, Any], ttl: int | None = None) -> bool:
         """Set state with optional TTL."""
         ...
 
@@ -354,11 +349,11 @@ class IDailyStatsRepository(Protocol):
     Protocol for daily trading statistics persistence.
     """
 
-    def get(self, date: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def get(self, date: str | None = None) -> dict[str, Any] | None:
         """Get daily stats for date (default: today)."""
         ...
 
-    def save(self, stats: Dict[str, Any]) -> bool:
+    def save(self, stats: dict[str, Any]) -> bool:
         """Save daily stats."""
         ...
 
@@ -483,7 +478,7 @@ class IHealthChecker(Protocol):
     Protocol for health check operations.
     """
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Run health check.
 
@@ -513,7 +508,7 @@ class IRiskManager(Protocol):
         signal: SignalType,
         confidence: float,
         position: float,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Check if a trade is allowed by risk rules.
 
@@ -568,7 +563,7 @@ class IConfigProvider(Protocol):
         """
         ...
 
-    def get_section(self, section: str) -> Dict[str, Any]:
+    def get_section(self, section: str) -> dict[str, Any]:
         """
         Get entire configuration section.
 
@@ -591,7 +586,7 @@ class ICacheProvider(Protocol):
     Protocol for caching operations.
     """
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get cached value."""
         ...
 
@@ -632,9 +627,9 @@ class IEnsembleStrategy(Protocol):
 
     def combine(
         self,
-        results: List[PredictionResult],
-        weights: Optional[Dict[str, float]] = None,
-    ) -> Tuple[int, float, Dict[str, float]]:
+        results: list[PredictionResult],
+        weights: dict[str, float] | None = None,
+    ) -> tuple[int, float, dict[str, float]]:
         """
         Combine multiple prediction results.
 

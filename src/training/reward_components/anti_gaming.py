@@ -24,12 +24,10 @@ Background:
 These components detect and penalize such behaviors.
 """
 
-import numpy as np
-from collections import deque, Counter
-from typing import Dict, Any, List, Optional
-from enum import Enum
+from collections import Counter, deque
+from typing import Any
 
-from .base import RewardComponent, ComponentType
+from .base import ComponentType, RewardComponent
 
 
 class InactivityTracker(RewardComponent):
@@ -126,7 +124,7 @@ class InactivityTracker(RewardComponent):
         """Reset state for new episode."""
         self._flat_bars = 0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -136,7 +134,7 @@ class InactivityTracker(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -243,7 +241,7 @@ class ChurnTracker(RewardComponent):
         """Reset state for new episode."""
         self._trade_history.clear()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -254,7 +252,7 @@ class ChurnTracker(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -391,7 +389,7 @@ class ActionCorrelationTracker(RewardComponent):
         """Reset state for new episode."""
         self._action_history.clear()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -402,7 +400,7 @@ class ActionCorrelationTracker(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         if len(self._action_history) > 0:
@@ -527,7 +525,7 @@ class BiasDetector(RewardComponent):
         self._total_bars = 0
         self._bias_detected = False
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -537,7 +535,7 @@ class BiasDetector(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
 
@@ -576,8 +574,8 @@ class BiasDetector(RewardComponent):
 # =============================================================================
 
 __all__ = [
-    "InactivityTracker",
-    "ChurnTracker",
     "ActionCorrelationTracker",
     "BiasDetector",
+    "ChurnTracker",
+    "InactivityTracker",
 ]

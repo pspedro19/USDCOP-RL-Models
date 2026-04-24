@@ -20,14 +20,13 @@ Key Differences from RL A/B Testing:
 @contract CTR-FORECAST-AB-001
 """
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
 import hashlib
 import json
 import logging
-import warnings
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -95,14 +94,14 @@ class StatisticalTestResult:
     p_value: float
     significant: bool
     significance_level: SignificanceLevel
-    effect_size: Optional[float] = None
-    effect_interpretation: Optional[EffectSize] = None
-    confidence_interval: Optional[Tuple[float, float]] = None
+    effect_size: float | None = None
+    effect_interpretation: EffectSize | None = None
+    confidence_interval: tuple[float, float] | None = None
     sample_size_baseline: int = 0
     sample_size_treatment: int = 0
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "test_name": self.test_name,
             "statistic": self.statistic,
@@ -129,7 +128,7 @@ class HorizonComparisonResult:
     statistical_test: StatisticalTestResult
     winner: str  # "baseline", "treatment", "tie"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "horizon": self.horizon,
             "baseline_metric": self.baseline_metric,
@@ -148,14 +147,14 @@ class ExperimentComparisonResult:
     treatment_experiment: str
     comparison_date: str
     primary_metric: str
-    horizon_results: Dict[int, HorizonComparisonResult]
+    horizon_results: dict[int, HorizonComparisonResult]
     aggregate_result: StatisticalTestResult
     recommendation: Recommendation
     confidence_score: float  # 0-1 confidence in recommendation
-    summary: Dict[str, Any] = field(default_factory=dict)
-    warnings: List[str] = field(default_factory=list)
+    summary: dict[str, Any] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "baseline_experiment": self.baseline_experiment,
             "treatment_experiment": self.treatment_experiment,
@@ -485,7 +484,7 @@ class StatisticalTestFactory:
         return cls._tests[test_name](**kwargs)
 
     @classmethod
-    def get_available_tests(cls) -> List[str]:
+    def get_available_tests(cls) -> list[str]:
         """Get list of available tests."""
         return list(cls._tests.keys())
 
@@ -703,11 +702,11 @@ class ForecastABStatistics:
 
     def compare_by_horizon(
         self,
-        baseline_results: Dict[int, pd.DataFrame],
-        treatment_results: Dict[int, pd.DataFrame],
+        baseline_results: dict[int, pd.DataFrame],
+        treatment_results: dict[int, pd.DataFrame],
         actual_prices: pd.DataFrame,
         metric: str = "direction_accuracy",
-    ) -> Dict[int, HorizonComparisonResult]:
+    ) -> dict[int, HorizonComparisonResult]:
         """
         Compare experiments across all horizons.
 
@@ -759,8 +758,8 @@ class ForecastABStatistics:
         self,
         baseline_name: str,
         treatment_name: str,
-        baseline_results: Dict[int, pd.DataFrame],
-        treatment_results: Dict[int, pd.DataFrame],
+        baseline_results: dict[int, pd.DataFrame],
+        treatment_results: dict[int, pd.DataFrame],
         actual_prices: pd.DataFrame,
         primary_metric: str = "direction_accuracy",
     ) -> ExperimentComparisonResult:

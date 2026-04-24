@@ -2,31 +2,31 @@
 Exchange credential routes.
 """
 
-from typing import List, Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.middleware.auth import get_current_active_user
-from app.models import User
+from app.adapters import ExchangeAdapterFactory
+from app.contracts.common import SuccessResponse
 from app.contracts.exchange import (
+    ExchangeBalance,
     ExchangeCredentials,
     ExchangeCredentialsCreate,
     ExchangeCredentialsUpdate,
-    ExchangeBalance,
     ExchangeInfo,
-    SupportedExchange,
     ExchangeValidationResult,
+    SupportedExchange,
 )
-from app.contracts.common import SuccessResponse
+from app.core.database import get_db
+from app.middleware.auth import get_current_active_user
+from app.models import User
 from app.services.exchange import ExchangeService
-from app.adapters import ExchangeAdapterFactory
 
 router = APIRouter(prefix="/exchanges", tags=["Exchanges"])
 
 
-@router.get("/supported", response_model=List[ExchangeInfo])
+@router.get("/supported", response_model=list[ExchangeInfo])
 async def get_supported_exchanges():
     """
     Get list of supported exchanges.
@@ -47,9 +47,9 @@ async def get_supported_exchanges():
     ]
 
 
-@router.get("/credentials", response_model=List[ExchangeCredentials])
+@router.get("/credentials", response_model=list[ExchangeCredentials])
 async def list_credentials(
-    exchange: Optional[SupportedExchange] = None,
+    exchange: SupportedExchange | None = None,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -197,7 +197,7 @@ async def validate_credential(
     )
 
 
-@router.get("/credentials/{credential_id}/balances", response_model=List[ExchangeBalance])
+@router.get("/credentials/{credential_id}/balances", response_model=list[ExchangeBalance])
 async def get_balances(
     credential_id: UUID,
     current_user: User = Depends(get_current_active_user),

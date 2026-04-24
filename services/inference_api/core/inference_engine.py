@@ -5,11 +5,11 @@ Handles model loading and prediction
 CLAUDE-T16 / GEMINI-T15: Supports dynamic model loading from model_registry
 """
 
-import os
-import numpy as np
-from pathlib import Path
-from typing import Dict, Tuple, Optional
 import logging
+import os
+from pathlib import Path
+
+import numpy as np
 
 # Try to import stable_baselines3
 try:
@@ -27,10 +27,10 @@ try:
 except ImportError:
     PSYCOPG2_AVAILABLE = False
 
-from ..config import get_settings
-
 # Import thresholds from SSOT (REQUIRED - no fallback)
 from src.core.constants import THRESHOLD_LONG, THRESHOLD_SHORT
+
+from ..config import get_settings
 
 # P2-2: Import hash validation utilities
 try:
@@ -63,16 +63,16 @@ class InferenceEngine:
     }
 
     def __init__(self):
-        self.models: Dict[str, any] = {}
-        self.model_metadata: Dict[str, dict] = {}  # Store metadata for loaded models
+        self.models: dict[str, any] = {}
+        self.model_metadata: dict[str, dict] = {}  # Store metadata for loaded models
         self.threshold_long = settings.threshold_long
         self.threshold_short = settings.threshold_short
         self._db_url = os.environ.get("DATABASE_URL")
 
         # Post-prediction hook for drift observation (set by main.py)
-        self.post_predict_hook: Optional[callable] = None
+        self.post_predict_hook: callable | None = None
 
-    def load_model(self, model_id: str, model_path: Optional[Path] = None) -> bool:
+    def load_model(self, model_id: str, model_path: Path | None = None) -> bool:
         """
         Load a PPO model into memory.
 
@@ -220,7 +220,7 @@ class InferenceEngine:
             logger.warning(f"norm_stats hash validation error: {e}")
             return {"status": "error", "error": str(e)}
 
-    def _get_norm_stats_hash_from_registry(self, model_id: str) -> Optional[str]:
+    def _get_norm_stats_hash_from_registry(self, model_id: str) -> str | None:
         """Get norm_stats_hash from model_registry table."""
         if not PSYCOPG2_AVAILABLE or not self._db_url:
             return None
@@ -250,7 +250,7 @@ class InferenceEngine:
             logger.debug(f"Could not get norm_stats_hash from registry: {e}")
             return None
 
-    def _get_model_path_from_registry(self, model_id: str) -> Optional[str]:
+    def _get_model_path_from_registry(self, model_id: str) -> str | None:
         """
         Query model_registry table for model path.
 
@@ -341,7 +341,7 @@ class InferenceEngine:
         observation: np.ndarray,
         model_id: str = "ppo_primary",
         deterministic: bool = True
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Run inference on a single observation.
 
@@ -409,7 +409,7 @@ class InferenceEngine:
         self,
         observation: np.ndarray,
         model_id: str = "ppo_primary"
-    ) -> Tuple[str, float, float]:
+    ) -> tuple[str, float, float]:
         """
         Predict and return signal with confidence.
 

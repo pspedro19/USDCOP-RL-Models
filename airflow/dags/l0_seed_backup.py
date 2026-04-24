@@ -29,6 +29,7 @@ Contract: CTR-L0-SEED-BACKUP-001
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
 import pandas as pd
 import json
 import hashlib
@@ -340,6 +341,125 @@ def validate_backups(**context):
     return {'status': 'ok', 'errors': []}
 
 
+def upload_to_minio(**context):
+    """
+    Best-effort upload of local backup files to MinIO bucket
+    `99-common-trading-backups` under key prefix `seeds/{YYYY-MM-DD}/...`.
+
+    This is T4 (off-host durability) in the backup tier hierarchy. On any
+    MinIO outage or credential issue this task logs the failure but returns
+    successfully — local backups (T3) remain the authoritative recovery path.
+    """
+    logging.info("=" * 60)
+    logging.info("UPLOADING BACKUPS TO MINIO (best-effort, off-host T4)")
+    logging.info("=" * 60)
+
+    bucket = '99-common-trading-backups'
+    endpoint_url = os.environ.get('MINIO_ENDPOINT_URL', 'http://minio:9000')
+    access_key = os.environ.get('MINIO_ACCESS_KEY')
+    secret_key = os.environ.get('MINIO_SECRET_KEY')
+
+    files_to_upload = [
+        'usdcop_m5_ohlcv_backup.parquet',
+        'macro_indicators_daily_backup.parquet',
+        'backup_manifest.json',
+    ]
+
+    # Date-partitioned prefix using today's UTC date (matches backup_timestamp convention)
+    date_partition = datetime.utcnow().strftime('%Y-%m-%d')
+    key_prefix = f'seeds/{date_partition}'
+
+    result = {
+        'uploaded': [],
+        'skipped': [],
+        'failed': [],
+        'bucket': bucket,
+        'key_prefix': key_prefix,
+        'status': 'ok',
+    }
+
+    if not access_key or not secret_key:
+        logging.warning(
+            "MINIO_ACCESS_KEY / MINIO_SECRET_KEY not set in environment; "
+            "skipping MinIO upload (local backups remain valid)."
+        )
+        result['status'] = 'skipped_no_credentials'
+        return result
+
+    try:
+        import boto3
+        from botocore.config import Config as BotoConfig
+        from botocore.exceptions import BotoCoreError, ClientError
+    except ImportError as e:
+        logging.warning(f"boto3 not available ({e}); skipping MinIO upload.")
+        result['status'] = 'skipped_no_boto3'
+        return result
+
+    try:
+        s3 = boto3.client(
+            's3',
+            endpoint_url=endpoint_url,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name='us-east-1',
+            config=BotoConfig(signature_version='s3v4', retries={'max_attempts': 3}),
+        )
+    except Exception as e:
+        logging.warning(f"Failed to build boto3 S3 client for MinIO: {e}")
+        result['status'] = 'client_init_failed'
+        return result
+
+    for filename in files_to_upload:
+        local_path = BACKUP_DIR / filename
+        if not local_path.exists():
+            logging.warning(f"Skip (missing locally): {local_path}")
+            result['skipped'].append(filename)
+            continue
+
+        key = f'{key_prefix}/{filename}'
+        size_bytes = local_path.stat().st_size
+
+        try:
+            # put_object with a file handle is idempotent: any existing object
+            # at the same key is overwritten atomically by MinIO.
+            with open(local_path, 'rb') as fh:
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=key,
+                    Body=fh,
+                    ContentType=(
+                        'application/json' if filename.endswith('.json')
+                        else 'application/octet-stream'
+                    ),
+                )
+            logging.info(
+                f"Uploaded s3://{bucket}/{key} ({size_bytes:,} bytes)"
+            )
+            result['uploaded'].append({'key': key, 'size_bytes': size_bytes})
+        except (BotoCoreError, ClientError) as e:
+            logging.warning(
+                f"MinIO upload FAILED for {filename} -> s3://{bucket}/{key}: {e} "
+                "(continuing; local backup is still valid)"
+            )
+            result['failed'].append({'file': filename, 'error': str(e)})
+        except Exception as e:  # defensive catch-all for best-effort guarantee
+            logging.warning(
+                f"Unexpected error uploading {filename}: {e} "
+                "(continuing; local backup is still valid)"
+            )
+            result['failed'].append({'file': filename, 'error': str(e)})
+
+    logging.info(
+        f"MinIO upload summary: uploaded={len(result['uploaded'])}, "
+        f"skipped={len(result['skipped'])}, failed={len(result['failed'])}"
+    )
+    if result['failed']:
+        result['status'] = 'partial_failure'
+
+    # Best-effort: always return success so the DAG run is not marked failed.
+    return result
+
+
 # =============================================================================
 # DAG DEFINITION
 # =============================================================================
@@ -393,4 +513,13 @@ with DAG(
         python_callable=refresh_daily_ohlcv_seed,
     )
 
-    t_health >> t_ohlcv >> t_daily_ohlcv >> t_macro >> t_manifest >> t_validate
+    t_minio_upload = PythonOperator(
+        task_id='upload_to_minio',
+        python_callable=upload_to_minio,
+        # Best-effort off-host durability: run even if one of the upstream
+        # backup subtasks failed, as long as at least one succeeded. The task
+        # itself never raises on MinIO outage, so DAG success is preserved.
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    )
+
+    t_health >> t_ohlcv >> t_daily_ohlcv >> t_macro >> t_manifest >> t_validate >> t_minio_upload

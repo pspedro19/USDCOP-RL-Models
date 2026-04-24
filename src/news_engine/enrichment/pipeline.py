@@ -7,13 +7,12 @@ Takes RawArticle list → enriches each → returns EnrichedArticle list.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from src.news_engine.models import RawArticle, EnrichedArticle
 from src.news_engine.enrichment.categorizer import categorize_article
 from src.news_engine.enrichment.relevance import score_relevance
 from src.news_engine.enrichment.sentiment import analyze_sentiment
-from src.news_engine.enrichment.tagger import extract_keywords, extract_entities
+from src.news_engine.enrichment.tagger import extract_entities, extract_keywords
+from src.news_engine.models import EnrichedArticle, RawArticle
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +92,7 @@ class EnrichmentPipeline:
     def _detect_breaking(
         article: RawArticle,
         relevance: float,
-        sentiment_score: Optional[float],
+        sentiment_score: float | None,
     ) -> bool:
         """Detect if an article is breaking news."""
         # High relevance + extreme sentiment

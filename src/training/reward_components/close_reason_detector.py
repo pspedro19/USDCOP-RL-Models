@@ -12,7 +12,7 @@ Date: 2026-02-06
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class CloseReasonDetector:
     - trailing_stop: Trailing stop triggered → neutral
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         config = config or {}
         self.sl_multiplier = config.get("stop_loss_mult", 1.5)
         self.tp_multiplier = config.get("take_profit_mult", 1.2)
@@ -107,6 +107,6 @@ class CloseReasonDetector:
         """Reset statistics for new episode."""
         pass  # Keep lifetime stats
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get close reason statistics."""
         return {f"close_reason_{k}": v for k, v in self._stats.items()}

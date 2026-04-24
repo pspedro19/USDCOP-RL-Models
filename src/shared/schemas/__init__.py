@@ -28,60 +28,57 @@ Contract: CTR-SHARED-001
 Version: 1.0.0
 """
 
+from .api import (
+    ApiMetadataSchema,
+    # Response models
+    ApiResponseSchema,
+    # Request models
+    BacktestRequestSchema,
+    BacktestResponseSchema,
+    ErrorResponseSchema,
+    HealthResponseSchema,
+    InferenceRequestSchema,
+    ModelInfoSchema,
+    ModelsResponseSchema,
+    ProgressUpdateSchema,
+    ReplayLoadRequestSchema,
+    ReplayLoadResponseSchema,
+    # Wrappers
+    create_api_response,
+)
 from .core import (
-    # Enums
-    SignalType,
-    TradeSide,
-    TradeStatus,
-    OrderSide,
-    MarketStatus,
-    DataSource,
     # Core models
     BaseSchema,
+    DataSource,
+    MarketStatus,
+    OrderSide,
+    # Enums
+    SignalType,
     TimestampedSchema,
+    TradeSide,
+    TradeStatus,
 )
-
+from .features import (
+    FEATURE_ORDER,
+    OBSERVATION_DIM,
+    # Feature contracts (new names)
+    FeatureOrderType,
+    FeatureSnapshotSchema,
+    NamedFeatures,
+    NormalizationStatsSchema,
+    ObservationSchema,
+    validate_observation,
+)
 from .trading import (
-    # Trade models
-    TradeSchema,
-    TradeMetadataSchema,
-    TradeSummarySchema,
-    # Signal models
-    SignalSchema,
     # Market models
     CandlestickSchema,
     MarketContextSchema,
-)
-
-from .features import (
-    # Feature contracts (new names)
-    FeatureOrderType,
-    NamedFeatures,
-    FeatureSnapshotSchema,
-    NormalizationStatsSchema,
-    ObservationSchema,
-    OBSERVATION_DIM,
-    FEATURE_ORDER,
-    validate_observation,
-)
-
-from .api import (
-    # Request models
-    BacktestRequestSchema,
-    InferenceRequestSchema,
-    ReplayLoadRequestSchema,
-    # Response models
-    ApiResponseSchema,
-    ApiMetadataSchema,
-    BacktestResponseSchema,
-    HealthResponseSchema,
-    ErrorResponseSchema,
-    ProgressUpdateSchema,
-    ReplayLoadResponseSchema,
-    ModelInfoSchema,
-    ModelsResponseSchema,
-    # Wrappers
-    create_api_response,
+    # Signal models
+    SignalSchema,
+    TradeMetadataSchema,
+    # Trade models
+    TradeSchema,
+    TradeSummarySchema,
 )
 
 __all__ = [

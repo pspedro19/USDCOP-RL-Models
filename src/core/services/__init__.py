@@ -37,34 +37,33 @@ Usage:
     result = validator.validate_l5_inference(model_feature_order_hash=hash)
 """
 
-from .feature_builder import FeatureBuilder, create_feature_builder
+# Contract Validator for L1→L3→L5 validation (GAP 3, 10)
+from .contract_validator import (
+    ContractValidationError,
+    ContractValidator,
+    PipelineStage,
+    ValidationError,
+    ValidationResult,
+    ValidationSeverity,
+    create_contract_validator,
+    validate_contract,
+)
 
 # DVC Service for dataset versioning (GAP 1)
 from .dvc_service import (
+    DVCResult,
     DVCService,
     DVCTag,
-    DVCResult,
     create_dvc_service,
 )
+from .feature_builder import FeatureBuilder, create_feature_builder
 
 # Lineage Tracker for artifact/hash tracking (GAP 2, 4, 5)
 from .lineage_tracker import (
-    LineageTracker,
     LineageRecord,
+    LineageTracker,
     LineageTrackerBuilder,
     create_lineage_tracker,
-)
-
-# Contract Validator for L1→L3→L5 validation (GAP 3, 10)
-from .contract_validator import (
-    ContractValidator,
-    ValidationResult,
-    ValidationError,
-    ValidationSeverity,
-    PipelineStage,
-    ContractValidationError,
-    validate_contract,
-    create_contract_validator,
 )
 
 # SOLID refactored version (optional, Phase 6)
@@ -77,10 +76,10 @@ except ImportError:
 
 # Inference service with proper DI (P0-5)
 from .inference_service import (
+    InferenceCompletedEvent,
+    InferenceRequestedEvent,
     InferenceService,
     InferenceServiceResult,
-    InferenceRequestedEvent,
-    InferenceCompletedEvent,
     TradeSignalGeneratedEvent,
     create_inference_service,
     create_inference_service_from_config,

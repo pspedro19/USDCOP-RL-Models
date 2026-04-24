@@ -28,24 +28,16 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
+import asyncio
 import functools
-import time
 import logging
 import threading
-import asyncio
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    Tuple,
-    List
-)
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +58,7 @@ class CircuitBreakerOpenError(Exception):
     def __init__(
         self,
         message: str = "Circuit breaker is open",
-        reset_time: Optional[datetime] = None
+        reset_time: datetime | None = None
     ):
         super().__init__(message)
         self.reset_time = reset_time
@@ -80,8 +72,8 @@ class CircuitBreakerStats:
     successful_calls: int = 0
     failed_calls: int = 0
     rejected_calls: int = 0
-    last_failure_time: Optional[datetime] = None
-    last_success_time: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    last_success_time: datetime | None = None
     state: CircuitBreakerState = CircuitBreakerState.CLOSED
     state_changed_at: datetime = field(default_factory=datetime.now)
 
@@ -90,9 +82,9 @@ def with_retry(
     max_attempts: int = 3,
     delay: float = 1.0,
     backoff: float = 2.0,
-    exceptions: Tuple[Type[Exception], ...] = (Exception,),
-    on_retry: Optional[Callable[[Exception, int], None]] = None,
-    logger_instance: Optional[logging.Logger] = None
+    exceptions: tuple[type[Exception], ...] = (Exception,),
+    on_retry: Callable[[Exception, int], None] | None = None,
+    logger_instance: logging.Logger | None = None
 ) -> Callable[[F], F]:
     """
     Decorator for retrying failed operations with exponential backoff.
@@ -123,7 +115,7 @@ def with_retry(
     def decorator(func: F) -> F:
         @functools.wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Optional[Exception] = None
+            last_exception: Exception | None = None
             current_delay = delay
 
             for attempt in range(1, max_attempts + 1):
@@ -167,7 +159,7 @@ def with_retry(
 
         @functools.wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Optional[Exception] = None
+            last_exception: Exception | None = None
             current_delay = delay
 
             for attempt in range(1, max_attempts + 1):
@@ -215,13 +207,13 @@ def with_retry(
 
 
 def with_timing(
-    func: Optional[F] = None,
+    func: F | None = None,
     *,
-    logger_instance: Optional[logging.Logger] = None,
+    logger_instance: logging.Logger | None = None,
     log_level: int = logging.DEBUG,
-    threshold_ms: Optional[float] = None,
-    callback: Optional[Callable[[str, float], None]] = None
-) -> Union[F, Callable[[F], F]]:
+    threshold_ms: float | None = None,
+    callback: Callable[[str, float], None] | None = None
+) -> F | Callable[[F], F]:
     """
     Decorator for measuring and logging execution time.
 
@@ -319,8 +311,8 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         reset_timeout: float = 60.0,
         half_open_max_calls: int = 1,
-        excluded_exceptions: Tuple[Type[Exception], ...] = (),
-        on_state_change: Optional[Callable[[CircuitBreakerState, CircuitBreakerState], None]] = None
+        excluded_exceptions: tuple[type[Exception], ...] = (),
+        on_state_change: Callable[[CircuitBreakerState, CircuitBreakerState], None] | None = None
     ):
         """
         Initialize circuit breaker.
@@ -342,7 +334,7 @@ class CircuitBreaker:
         self._failure_count = 0
         self._success_count = 0
         self._half_open_calls = 0
-        self._last_failure_time: Optional[datetime] = None
+        self._last_failure_time: datetime | None = None
         self._lock = threading.RLock()
 
         # Statistics
@@ -579,9 +571,9 @@ def with_circuit_breaker(
     failure_threshold: int = 5,
     reset_timeout: float = 60.0,
     half_open_max_calls: int = 1,
-    excluded_exceptions: Tuple[Type[Exception], ...] = (),
-    name: Optional[str] = None,
-    on_state_change: Optional[Callable[[CircuitBreakerState, CircuitBreakerState], None]] = None
+    excluded_exceptions: tuple[type[Exception], ...] = (),
+    name: str | None = None,
+    on_state_change: Callable[[CircuitBreakerState, CircuitBreakerState], None] | None = None
 ) -> Callable[[F], F]:
     """
     Decorator for applying circuit breaker pattern to a function.
@@ -640,7 +632,7 @@ def with_circuit_breaker(
     return decorator
 
 
-def get_circuit_breaker(name: str) -> Optional[CircuitBreaker]:
+def get_circuit_breaker(name: str) -> CircuitBreaker | None:
     """
     Get a circuit breaker by name.
 
@@ -710,7 +702,7 @@ def with_timeout(
                     func(*args, **kwargs),
                     timeout=timeout_seconds
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if raise_on_timeout:
                     raise TimeoutError(
                         f"'{func.__name__}' timed out after {timeout_seconds}s"

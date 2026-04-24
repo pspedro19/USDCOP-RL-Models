@@ -17,11 +17,12 @@ Transforms available:
 5. ZScorePnL: Normalize using rolling z-score
 """
 
-import numpy as np
 from collections import deque
-from typing import Dict, Any, Optional, Callable
+from typing import Any
 
-from .base import RewardComponent, ComponentType, safe_divide
+import numpy as np
+
+from .base import ComponentType, RewardComponent
 
 
 class LogPnLTransform(RewardComponent):
@@ -98,7 +99,7 @@ class LogPnLTransform(RewardComponent):
         """Reset state (stateless transform)."""
         pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -185,7 +186,7 @@ class AsymmetricPnLTransform(RewardComponent):
         """Reset state (stateless transform)."""
         pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -258,7 +259,7 @@ class ClippedPnLTransform(RewardComponent):
         """Reset state."""
         pass
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -267,7 +268,7 @@ class ClippedPnLTransform(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -355,7 +356,7 @@ class RankPnLTransform(RewardComponent):
         """Reset state for new episode."""
         self._pnl_history.clear()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -365,7 +366,7 @@ class RankPnLTransform(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -477,7 +478,7 @@ class ZScorePnLTransform(RewardComponent):
         self._var = 1.0
         self._count = 0
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -488,7 +489,7 @@ class ZScorePnLTransform(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats.update({
@@ -510,7 +511,7 @@ class CompositePnLTransform(RewardComponent):
 
     def __init__(
         self,
-        transforms: Optional[list] = None,
+        transforms: list | None = None,
     ):
         """
         Initialize composite transform.
@@ -562,7 +563,7 @@ class CompositePnLTransform(RewardComponent):
         for transform in self._transforms:
             transform.reset()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -571,7 +572,7 @@ class CompositePnLTransform(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         for i, transform in enumerate(self._transforms):
@@ -603,11 +604,11 @@ def create_default_pnl_transform() -> CompositePnLTransform:
 # =============================================================================
 
 __all__ = [
-    "LogPnLTransform",
     "AsymmetricPnLTransform",
     "ClippedPnLTransform",
+    "CompositePnLTransform",
+    "LogPnLTransform",
     "RankPnLTransform",
     "ZScorePnLTransform",
-    "CompositePnLTransform",
     "create_default_pnl_transform",
 ]

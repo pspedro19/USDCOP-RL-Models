@@ -23,16 +23,16 @@ import logging
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Optional
 
 import yaml
 
 from src.core.interfaces.storage import (
-    IObjectStorageRepository,
+    IABComparisonRepository,
+    IBacktestRepository,
     IDatasetRepository,
     IModelRepository,
-    IBacktestRepository,
-    IABComparisonRepository,
+    IObjectStorageRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class StorageConfig:
         access_key: str = "minioadmin",
         secret_key: str = "minioadmin",
         secure: bool = False,
-        region: Optional[str] = None,
+        region: str | None = None,
         experiments_bucket: str = "experiments",
         production_bucket: str = "production",
         dvc_bucket: str = "dvc-storage",
@@ -121,7 +121,7 @@ class StorageConfig:
         )
 
     @classmethod
-    def from_file(cls, config_path: Optional[Union[str, Path]] = None) -> "StorageConfig":
+    def from_file(cls, config_path: str | Path | None = None) -> "StorageConfig":
         """
         Load config from YAML file with env overrides.
 
@@ -134,7 +134,7 @@ class StorageConfig:
             logger.warning(f"Config file not found: {config_path}, using defaults")
             return cls.from_env()
 
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             data = yaml.safe_load(f) or {}
 
         # Environment variables override file config
@@ -165,7 +165,7 @@ class StorageConfig:
             ),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "backend": self.backend.value,
@@ -203,7 +203,7 @@ class StorageFactory:
     """
 
     _instance: Optional["StorageFactory"] = None
-    _object_storage: Optional[IObjectStorageRepository] = None
+    _object_storage: IObjectStorageRepository | None = None
 
     def __init__(self, config: StorageConfig):
         """
@@ -221,7 +221,7 @@ class StorageFactory:
         return cls(StorageConfig.from_env())
 
     @classmethod
-    def from_config(cls, config_path: Optional[Union[str, Path]] = None) -> "StorageFactory":
+    def from_config(cls, config_path: str | Path | None = None) -> "StorageFactory":
         """Create factory from config file."""
         return cls(StorageConfig.from_file(config_path))
 
@@ -283,7 +283,9 @@ class StorageFactory:
             )
 
         elif self._config.backend == StorageBackend.LOCAL:
-            from src.infrastructure.repositories.local_storage_repository import LocalStorageRepository
+            from src.infrastructure.repositories.local_storage_repository import (
+                LocalStorageRepository,
+            )
             self._object_storage = LocalStorageRepository(
                 base_path=Path(self._config.endpoint)
             )
@@ -296,7 +298,9 @@ class StorageFactory:
     def create_dataset_repository(self) -> IDatasetRepository:
         """Create high-level dataset repository."""
         if self._config.backend == StorageBackend.LOCAL:
-            from src.infrastructure.repositories.local_storage_repository import LocalDatasetRepository
+            from src.infrastructure.repositories.local_storage_repository import (
+                LocalDatasetRepository,
+            )
             return LocalDatasetRepository(self.create_object_storage())
 
         from src.infrastructure.repositories.minio_repository import MinIODatasetRepository
@@ -305,7 +309,9 @@ class StorageFactory:
     def create_model_repository(self) -> IModelRepository:
         """Create high-level model repository."""
         if self._config.backend == StorageBackend.LOCAL:
-            from src.infrastructure.repositories.local_storage_repository import LocalModelRepository
+            from src.infrastructure.repositories.local_storage_repository import (
+                LocalModelRepository,
+            )
             return LocalModelRepository(self.create_object_storage())
 
         from src.infrastructure.repositories.minio_repository import MinIOModelRepository

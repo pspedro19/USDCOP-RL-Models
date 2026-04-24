@@ -25,8 +25,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Protocol, Union
-import shutil
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -50,15 +49,15 @@ class ArtifactStore(Protocol):
 class MetadataStore(Protocol):
     """Protocol for metadata storage."""
 
-    def log_params(self, params: Dict[str, Any]) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         """Log parameters."""
         ...
 
-    def log_metrics(self, metrics: Dict[str, float]) -> None:
+    def log_metrics(self, metrics: dict[str, float]) -> None:
         """Log metrics."""
         ...
 
-    def get_run_params(self, run_id: str) -> Dict[str, Any]:
+    def get_run_params(self, run_id: str) -> dict[str, Any]:
         """Get parameters for a run."""
         ...
 
@@ -82,38 +81,38 @@ class LineageRecord:
     created_at: datetime = field(default_factory=datetime.now)
 
     # Hashes for integrity
-    config_hash: Optional[str] = None
-    dataset_hash: Optional[str] = None
-    norm_stats_hash: Optional[str] = None
-    feature_order_hash: Optional[str] = None
-    model_hash: Optional[str] = None
+    config_hash: str | None = None
+    dataset_hash: str | None = None
+    norm_stats_hash: str | None = None
+    feature_order_hash: str | None = None
+    model_hash: str | None = None
 
     # DVC tracking
-    dvc_tag: Optional[str] = None
-    dvc_commit: Optional[str] = None
+    dvc_tag: str | None = None
+    dvc_commit: str | None = None
 
     # MLflow tracking
-    mlflow_run_id: Optional[str] = None
-    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: str | None = None
+    mlflow_experiment_id: str | None = None
 
     # Artifact paths
-    config_path: Optional[str] = None
-    dataset_path: Optional[str] = None
-    norm_stats_path: Optional[str] = None
-    model_path: Optional[str] = None
+    config_path: str | None = None
+    dataset_path: str | None = None
+    norm_stats_path: str | None = None
+    model_path: str | None = None
 
     # Artifact URIs (for download)
-    config_uri: Optional[str] = None
-    norm_stats_uri: Optional[str] = None
-    model_uri: Optional[str] = None
+    config_uri: str | None = None
+    norm_stats_uri: str | None = None
+    model_uri: str | None = None
 
     # Pipeline stage
     stage: str = "unknown"  # L1_features, L3_training, L5_inference
 
     # Parent lineage (for chaining)
-    parent_run_id: Optional[str] = None
+    parent_run_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "run_id": self.run_id,
@@ -144,7 +143,7 @@ class LineageRecord:
             "parent_run_id": self.parent_run_id,
         }
 
-    def to_mlflow_params(self) -> Dict[str, str]:
+    def to_mlflow_params(self) -> dict[str, str]:
         """Convert to MLflow-compatible params dict."""
         params = {}
 
@@ -177,7 +176,7 @@ class LineageRecord:
 
         return params
 
-    def to_xcom(self) -> Dict[str, Any]:
+    def to_xcom(self) -> dict[str, Any]:
         """Convert to XCom-compatible dict for Airflow."""
         return {
             "run_id": self.run_id,
@@ -190,7 +189,7 @@ class LineageRecord:
         }
 
     @classmethod
-    def from_xcom(cls, xcom_data: Dict[str, Any], experiment_name: str) -> "LineageRecord":
+    def from_xcom(cls, xcom_data: dict[str, Any], experiment_name: str) -> "LineageRecord":
         """Create from XCom data."""
         return cls(
             run_id=xcom_data.get("run_id", ""),
@@ -212,7 +211,7 @@ class LineageRecord:
     @classmethod
     def load(cls, path: Path) -> "LineageRecord":
         """Load lineage record from JSON file."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         return cls(
@@ -276,13 +275,13 @@ class LineageTrackerBuilder:
         self._record.model_hash = model_hash
         return self
 
-    def with_dvc_info(self, tag: str, commit: Optional[str] = None) -> "LineageTrackerBuilder":
+    def with_dvc_info(self, tag: str, commit: str | None = None) -> "LineageTrackerBuilder":
         """Add DVC tracking info."""
         self._record.dvc_tag = tag
         self._record.dvc_commit = commit
         return self
 
-    def with_mlflow_info(self, run_id: str, experiment_id: Optional[str] = None) -> "LineageTrackerBuilder":
+    def with_mlflow_info(self, run_id: str, experiment_id: str | None = None) -> "LineageTrackerBuilder":
         """Add MLflow tracking info."""
         self._record.mlflow_run_id = run_id
         self._record.mlflow_experiment_id = experiment_id
@@ -290,10 +289,10 @@ class LineageTrackerBuilder:
 
     def with_artifact_paths(
         self,
-        config_path: Optional[str] = None,
-        dataset_path: Optional[str] = None,
-        norm_stats_path: Optional[str] = None,
-        model_path: Optional[str] = None,
+        config_path: str | None = None,
+        dataset_path: str | None = None,
+        norm_stats_path: str | None = None,
+        model_path: str | None = None,
     ) -> "LineageTrackerBuilder":
         """Add artifact paths."""
         self._record.config_path = config_path
@@ -304,9 +303,9 @@ class LineageTrackerBuilder:
 
     def with_artifact_uris(
         self,
-        config_uri: Optional[str] = None,
-        norm_stats_uri: Optional[str] = None,
-        model_uri: Optional[str] = None,
+        config_uri: str | None = None,
+        norm_stats_uri: str | None = None,
+        model_uri: str | None = None,
     ) -> "LineageTrackerBuilder":
         """Add artifact URIs."""
         self._record.config_uri = config_uri
@@ -360,7 +359,7 @@ class LineageTracker:
     def __init__(
         self,
         project_root: Path,
-        mlflow_tracking_uri: Optional[str] = None,
+        mlflow_tracking_uri: str | None = None,
     ):
         """
         Initialize lineage tracker.
@@ -401,7 +400,7 @@ class LineageTracker:
 
     def compute_json_hash(self, path: Path) -> str:
         """Compute hash of JSON file (normalized)."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         normalized = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(normalized.encode()).hexdigest()[:16]
@@ -411,11 +410,11 @@ class LineageTracker:
         experiment_name: str,
         experiment_version: str,
         run_id: str,
-        config_path: Optional[Path] = None,
-        dataset_path: Optional[Path] = None,
-        norm_stats_path: Optional[Path] = None,
-        model_path: Optional[Path] = None,
-        dvc_tag: Optional[str] = None,
+        config_path: Path | None = None,
+        dataset_path: Path | None = None,
+        norm_stats_path: Path | None = None,
+        model_path: Path | None = None,
+        dvc_tag: str | None = None,
         stage: str = "L3_training",
     ) -> LineageRecord:
         """
@@ -499,7 +498,7 @@ class LineageTracker:
         self,
         run_id: str,
         dest_dir: Path,
-    ) -> Dict[str, Path]:
+    ) -> dict[str, Path]:
         """
         Download all artifacts for a model run.
 
@@ -549,7 +548,7 @@ class LineageTracker:
         self,
         baseline_experiment_name: str,
         dest_dir: Path,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Download baseline experiment artifacts for comparison.
 
@@ -674,9 +673,9 @@ class LineageTracker:
 
     def compute_experiment_diff(
         self,
-        baseline_artifacts: Dict[str, Any],
-        treatment_artifacts: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        baseline_artifacts: dict[str, Any],
+        treatment_artifacts: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Compute diff between baseline and treatment experiment artifacts.
 
@@ -712,7 +711,7 @@ class LineageTracker:
             if key == "feature_order_hash" and baseline_val != treatment_val:
                 diff["compatible"] = False
                 diff["warnings"].append(
-                    f"CRITICAL: Feature order hash mismatch - results not comparable"
+                    "CRITICAL: Feature order hash mismatch - results not comparable"
                 )
 
         # Compare metrics
@@ -751,7 +750,7 @@ class LineageTracker:
         self,
         current_lineage: LineageRecord,
         parent_lineage: LineageRecord,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate that lineage chain is consistent.
 
@@ -800,8 +799,8 @@ class LineageTracker:
 # =============================================================================
 
 def create_lineage_tracker(
-    project_root: Optional[Path] = None,
-    mlflow_tracking_uri: Optional[str] = None,
+    project_root: Path | None = None,
+    mlflow_tracking_uri: str | None = None,
 ) -> LineageTracker:
     """
     Factory function to create LineageTracker.
@@ -823,8 +822,8 @@ def create_lineage_tracker(
 
 
 __all__ = [
-    "LineageTracker",
     "LineageRecord",
+    "LineageTracker",
     "LineageTrackerBuilder",
     "create_lineage_tracker",
 ]

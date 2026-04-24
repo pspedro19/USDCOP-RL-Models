@@ -10,8 +10,8 @@ Date: 2025-12-17
 """
 
 from abc import ABC, abstractmethod
+
 import pandas as pd
-from typing import Union
 
 
 class INormalizer(ABC):
@@ -29,7 +29,7 @@ class INormalizer(ABC):
     """
 
     @abstractmethod
-    def normalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def normalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Normalize a single value or series.
 
@@ -42,7 +42,7 @@ class INormalizer(ABC):
         pass
 
     @abstractmethod
-    def denormalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def denormalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Reverse normalization (optional, for some strategies).
 

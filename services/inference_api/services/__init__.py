@@ -5,16 +5,16 @@ Business logic services for the inference API.
 """
 
 from .consistency_validator import (
-    ConsistencyValidatorService,
     ConsistencyReport,
+    ConsistencyValidatorService,
     ValidationResult,
     ValidationStatus,
     validate_model_consistency,
 )
 
 __all__ = [
-    "ConsistencyValidatorService",
     "ConsistencyReport",
+    "ConsistencyValidatorService",
     "ValidationResult",
     "ValidationStatus",
     "validate_model_consistency",

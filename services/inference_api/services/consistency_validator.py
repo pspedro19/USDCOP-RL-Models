@@ -19,24 +19,23 @@ CRITICAL: This service ensures:
 4. Feature order consistency
 """
 
-import logging
 import json
+import logging
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Any
 
 from ..contracts.model_contract import (
+    BuilderType,
+    ContractValidator,
     ModelContract,
     ModelRegistry,
-    ContractValidator,
-    BuilderType,
-    get_model_contract,
-    compute_json_hash,
-    compute_file_hash,
     NormStatsNotFoundError,
-    HashVerificationError,
+    compute_file_hash,
+    compute_json_hash,
+    get_model_contract,
 )
 from ..core.builder_factory import BuilderFactory, get_observation_builder
 
@@ -57,14 +56,14 @@ class ValidationResult:
     check_name: str
     status: ValidationStatus
     message: str
-    details: Optional[Dict[str, Any]] = None
-    timestamp: Optional[datetime] = None
+    details: dict[str, Any] | None = None
+    timestamp: datetime | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "check_name": self.check_name,
             "status": self.status.value,
@@ -79,7 +78,7 @@ class ConsistencyReport:
     """Complete consistency validation report"""
     model_id: str
     overall_status: ValidationStatus
-    checks: List[ValidationResult]
+    checks: list[ValidationResult]
     validation_time_ms: float
     timestamp: datetime
 
@@ -92,10 +91,10 @@ class ConsistencyReport:
         return any(c.status == ValidationStatus.WARNING for c in self.checks)
 
     @property
-    def failed_checks(self) -> List[ValidationResult]:
+    def failed_checks(self) -> list[ValidationResult]:
         return [c for c in self.checks if c.status == ValidationStatus.FAILED]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "model_id": self.model_id,
             "overall_status": self.overall_status.value,
@@ -148,7 +147,7 @@ class ConsistencyValidatorService:
         import time
         start_time = time.time()
 
-        checks: List[ValidationResult] = []
+        checks: list[ValidationResult] = []
 
         # 1. Validate model contract registration
         checks.append(self._check_model_registration(model_id))
@@ -164,7 +163,7 @@ class ConsistencyValidatorService:
             checks.append(ValidationResult(
                 check_name="contract_retrieval",
                 status=ValidationStatus.FAILED,
-                message=f"Failed to get contract: {str(e)}",
+                message=f"Failed to get contract: {e!s}",
             ))
             return self._build_report(model_id, checks, start_time)
 
@@ -209,7 +208,7 @@ class ConsistencyValidatorService:
             return ValidationResult(
                 check_name="model_registration",
                 status=ValidationStatus.FAILED,
-                message=f"Model '{model_id}' not registered: {str(e)}",
+                message=f"Model '{model_id}' not registered: {e!s}",
             )
 
     def _check_norm_stats_exists(self, contract: ModelContract) -> ValidationResult:
@@ -288,7 +287,7 @@ class ConsistencyValidatorService:
             )
 
         try:
-            with open(norm_stats_path, 'r') as f:
+            with open(norm_stats_path) as f:
                 stats = json.load(f)
 
             # Check for known wrong default values
@@ -329,7 +328,7 @@ class ConsistencyValidatorService:
             return ValidationResult(
                 check_name="norm_stats_not_defaults",
                 status=ValidationStatus.WARNING,
-                message=f"Could not validate norm_stats content: {str(e)}",
+                message=f"Could not validate norm_stats content: {e!s}",
             )
 
     def _check_model_file_exists(self, contract: ModelContract) -> ValidationResult:
@@ -351,7 +350,7 @@ class ConsistencyValidatorService:
                 details={"expected_path": str(model_path)},
             )
 
-    def _check_hash_integrity(self, contract: ModelContract) -> List[ValidationResult]:
+    def _check_hash_integrity(self, contract: ModelContract) -> list[ValidationResult]:
         """Check hash integrity for model and norm_stats"""
         results = []
 
@@ -381,7 +380,7 @@ class ConsistencyValidatorService:
                     results.append(ValidationResult(
                         check_name="norm_stats_hash",
                         status=ValidationStatus.WARNING,
-                        message=f"Could not compute norm_stats hash: {str(e)}",
+                        message=f"Could not compute norm_stats hash: {e!s}",
                     ))
         else:
             results.append(ValidationResult(
@@ -416,7 +415,7 @@ class ConsistencyValidatorService:
                     results.append(ValidationResult(
                         check_name="model_hash",
                         status=ValidationStatus.WARNING,
-                        message=f"Could not compute model hash: {str(e)}",
+                        message=f"Could not compute model hash: {e!s}",
                     ))
         else:
             results.append(ValidationResult(
@@ -438,7 +437,7 @@ class ConsistencyValidatorService:
             return ValidationResult(
                 check_name="builder_instantiation",
                 status=ValidationStatus.PASSED,
-                message=f"Builder instantiated successfully",
+                message="Builder instantiated successfully",
                 details={
                     "builder_class": builder.__class__.__name__,
                     "observation_dim": getattr(builder, 'OBSERVATION_DIM', 'unknown'),
@@ -448,14 +447,14 @@ class ConsistencyValidatorService:
             return ValidationResult(
                 check_name="builder_instantiation",
                 status=ValidationStatus.FAILED,
-                message=f"CRITICAL: Builder failed to instantiate - norm_stats not found",
+                message="CRITICAL: Builder failed to instantiate - norm_stats not found",
                 details={"error": str(e)},
             )
         except Exception as e:
             return ValidationResult(
                 check_name="builder_instantiation",
                 status=ValidationStatus.FAILED,
-                message=f"Builder failed to instantiate: {str(e)}",
+                message=f"Builder failed to instantiate: {e!s}",
                 details={"error": str(e)},
             )
 
@@ -496,13 +495,13 @@ class ConsistencyValidatorService:
             return ValidationResult(
                 check_name="feature_order",
                 status=ValidationStatus.WARNING,
-                message=f"Could not validate feature order: {str(e)}",
+                message=f"Could not validate feature order: {e!s}",
             )
 
     def _build_report(
         self,
         model_id: str,
-        checks: List[ValidationResult],
+        checks: list[ValidationResult],
         start_time: float
     ) -> ConsistencyReport:
         """Build final consistency report"""
@@ -525,7 +524,7 @@ class ConsistencyValidatorService:
             timestamp=datetime.utcnow(),
         )
 
-    def validate_all_models(self, verify_hashes: bool = False) -> Dict[str, ConsistencyReport]:
+    def validate_all_models(self, verify_hashes: bool = False) -> dict[str, ConsistencyReport]:
         """Validate all registered models"""
         reports = {}
         for model_id in ModelRegistry.list_models():
@@ -539,7 +538,7 @@ class ConsistencyValidatorService:
 
 def validate_model_consistency(
     model_id: str,
-    project_root: Optional[Path] = None,
+    project_root: Path | None = None,
     verify_hashes: bool = False
 ) -> ConsistencyReport:
     """

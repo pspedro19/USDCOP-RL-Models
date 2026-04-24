@@ -312,7 +312,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
-      - ./scripts:/opt/scripts
+      - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
@@ -400,7 +400,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/configs:/opt/airflow/configs
-      - ./scripts:/opt/scripts
+      - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models

@@ -4,18 +4,20 @@ Uses CCXT for unified exchange access.
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 import ccxt.async_support as ccxt
 
 from app.contracts.exchange import SupportedExchange
-from app.contracts.execution import OrderSide, ExecutionStatus
-from app.core.exceptions import ExchangeError, ErrorCode
+from app.contracts.execution import ExecutionStatus, OrderSide
+from app.core.exceptions import ErrorCode, ExchangeError
+
 from .base import (
-    ExchangeAdapter,
     BalanceInfo,
+    ExchangeAdapter,
     OrderResult,
-    TickerInfo,
     SymbolInfo,
+    TickerInfo,
 )
 
 
@@ -36,7 +38,7 @@ class BinanceAdapter(ExchangeAdapter):
         self,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = False,
     ):
         super().__init__(api_key, api_secret, passphrase, testnet)
@@ -73,11 +75,11 @@ class BinanceAdapter(ExchangeAdapter):
             return False
         except Exception as e:
             raise ExchangeError(
-                message=f"Failed to validate Binance credentials: {str(e)}",
+                message=f"Failed to validate Binance credentials: {e!s}",
                 error_code=ErrorCode.EXCHANGE_AUTHENTICATION_FAILED,
             )
 
-    async def get_balance(self, asset: Optional[str] = None) -> List[BalanceInfo]:
+    async def get_balance(self, asset: str | None = None) -> list[BalanceInfo]:
         """Get account balances."""
         try:
             balance = await self._exchange.fetch_balance()
@@ -103,12 +105,12 @@ class BinanceAdapter(ExchangeAdapter):
 
         except ccxt.AuthenticationError as e:
             raise ExchangeError(
-                message=f"Binance authentication failed: {str(e)}",
+                message=f"Binance authentication failed: {e!s}",
                 error_code=ErrorCode.EXCHANGE_AUTHENTICATION_FAILED,
             )
         except Exception as e:
             raise ExchangeError(
-                message=f"Failed to get Binance balance: {str(e)}",
+                message=f"Failed to get Binance balance: {e!s}",
                 error_code=ErrorCode.EXCHANGE_CONNECTION_FAILED,
             )
 
@@ -131,7 +133,7 @@ class BinanceAdapter(ExchangeAdapter):
 
         except Exception as e:
             raise ExchangeError(
-                message=f"Failed to get Binance ticker: {str(e)}",
+                message=f"Failed to get Binance ticker: {e!s}",
                 error_code=ErrorCode.EXCHANGE_CONNECTION_FAILED,
             )
 
@@ -168,7 +170,7 @@ class BinanceAdapter(ExchangeAdapter):
             raise
         except Exception as e:
             raise ExchangeError(
-                message=f"Failed to get Binance symbol info: {str(e)}",
+                message=f"Failed to get Binance symbol info: {e!s}",
                 error_code=ErrorCode.EXCHANGE_CONNECTION_FAILED,
             )
 
@@ -194,19 +196,19 @@ class BinanceAdapter(ExchangeAdapter):
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.REJECTED,
-                error_message=f"Insufficient balance: {str(e)}",
+                error_message=f"Insufficient balance: {e!s}",
             )
         except ccxt.InvalidOrder as e:
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.REJECTED,
-                error_message=f"Invalid order: {str(e)}",
+                error_message=f"Invalid order: {e!s}",
             )
         except Exception as e:
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.FAILED,
-                error_message=f"Order failed: {str(e)}",
+                error_message=f"Order failed: {e!s}",
             )
 
     async def place_limit_order(
@@ -233,19 +235,19 @@ class BinanceAdapter(ExchangeAdapter):
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.REJECTED,
-                error_message=f"Insufficient balance: {str(e)}",
+                error_message=f"Insufficient balance: {e!s}",
             )
         except ccxt.InvalidOrder as e:
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.REJECTED,
-                error_message=f"Invalid order: {str(e)}",
+                error_message=f"Invalid order: {e!s}",
             )
         except Exception as e:
             return OrderResult(
                 success=False,
                 status=ExecutionStatus.FAILED,
-                error_message=f"Order failed: {str(e)}",
+                error_message=f"Order failed: {e!s}",
             )
 
     async def cancel_order(
@@ -277,7 +279,7 @@ class BinanceAdapter(ExchangeAdapter):
                 success=False,
                 order_id=order_id,
                 status=ExecutionStatus.FAILED,
-                error_message=f"Cancel failed: {str(e)}",
+                error_message=f"Cancel failed: {e!s}",
             )
 
     async def get_order_status(
@@ -304,13 +306,13 @@ class BinanceAdapter(ExchangeAdapter):
                 success=False,
                 order_id=order_id,
                 status=ExecutionStatus.FAILED,
-                error_message=f"Failed to get order status: {str(e)}",
+                error_message=f"Failed to get order status: {e!s}",
             )
 
     async def get_open_orders(
         self,
-        symbol: Optional[str] = None,
-    ) -> List[OrderResult]:
+        symbol: str | None = None,
+    ) -> list[OrderResult]:
         """Get all open orders."""
         try:
             normalized = self.normalize_symbol(symbol) if symbol else None
@@ -320,11 +322,11 @@ class BinanceAdapter(ExchangeAdapter):
 
         except Exception as e:
             raise ExchangeError(
-                message=f"Failed to get open orders: {str(e)}",
+                message=f"Failed to get open orders: {e!s}",
                 error_code=ErrorCode.EXCHANGE_CONNECTION_FAILED,
             )
 
-    def _parse_order_result(self, order: Dict[str, Any]) -> OrderResult:
+    def _parse_order_result(self, order: dict[str, Any]) -> OrderResult:
         """Parse CCXT order response to OrderResult."""
         status_map = {
             "open": ExecutionStatus.SUBMITTED,

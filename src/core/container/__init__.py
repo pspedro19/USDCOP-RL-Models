@@ -27,53 +27,53 @@ Date: 2026-01-16
 from .application_context import (
     ApplicationContext,
     ContextHolder,
+    DictConfigProvider,
+    InMemoryCacheProvider,
+    InMemoryDailyStatsRepository,
+    InMemoryStateRepository,
+    InMemoryTradeRepository,
     # Default implementations
     NullEventBus,
-    NullPredictor,
-    NullModelLoader,
     NullFeatureBuilder,
+    NullModelLoader,
+    NullPredictor,
     NullRiskManager,
     StandardLoggerAdapter,
     StandardLoggerFactory,
-    InMemoryStateRepository,
-    InMemoryTradeRepository,
-    InMemoryCacheProvider,
-    InMemoryDailyStatsRepository,
-    DictConfigProvider,
 )
 
 # Protocol interfaces
 from .protocols import (
     # Base types
     Event,
-    SignalType,
-    PredictionResult,
     EventListener,
+    # Cache protocols
+    ICacheProvider,
+    # Config protocols
+    IConfigProvider,
+    IDailyStatsRepository,
+    IEnsembleStrategy,
+    # Event protocols
+    IEventBus,
     # Feature protocols
     IFeatureBuilder,
     IFeatureCalculator,
-    INormalizer,
-    # Model protocols
-    IModelLoader,
-    IPredictor,
-    IEnsembleStrategy,
-    # Repository protocols
-    ITradeRepository,
-    IStateRepository,
-    IDailyStatsRepository,
-    # Event protocols
-    IEventBus,
+    # Health protocols
+    IHealthChecker,
     # Logging protocols
     ILogger,
     ILoggerFactory,
-    # Health protocols
-    IHealthChecker,
+    # Model protocols
+    IModelLoader,
+    INormalizer,
+    IPredictor,
     # Risk protocols
     IRiskManager,
-    # Config protocols
-    IConfigProvider,
-    # Cache protocols
-    ICacheProvider,
+    IStateRepository,
+    # Repository protocols
+    ITradeRepository,
+    PredictionResult,
+    SignalType,
 )
 
 # Legacy service container (deprecated - use ApplicationContext instead)

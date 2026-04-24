@@ -8,12 +8,12 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
 from collections import deque
+from datetime import datetime, timedelta
+from typing import Any
 
-from ..models.signal_schema import TradingSignal, SignalAction
 from ..config import get_config
+from ..models.signal_schema import SignalAction, TradingSignal
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class Position:
         self,
         signal: TradingSignal,
         entry_time: datetime,
-        position_id: Optional[str] = None
+        position_id: str | None = None
     ):
         self.position_id = position_id or signal.signal_id
         self.signal = signal
@@ -37,9 +37,9 @@ class Position:
         self.current_pnl = 0.0
         self.current_pnl_pct = 0.0
         self.status = "OPEN"
-        self.exit_time: Optional[datetime] = None
-        self.exit_price: Optional[float] = None
-        self.exit_reason: Optional[str] = None
+        self.exit_time: datetime | None = None
+        self.exit_price: float | None = None
+        self.exit_reason: str | None = None
 
     def update(self, current_price: float):
         """Update position with current price"""
@@ -55,7 +55,7 @@ class Position:
         else:
             self.current_pnl_pct = 0.0
 
-    def check_exit_conditions(self, current_price: float) -> Optional[str]:
+    def check_exit_conditions(self, current_price: float) -> str | None:
         """
         Check if position should be exited.
 
@@ -93,7 +93,7 @@ class Position:
             f"Reason={exit_reason}"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert position to dictionary"""
         return {
             'position_id': self.position_id,
@@ -119,9 +119,9 @@ class PositionManager:
     def __init__(self):
         """Initialize position manager"""
         self.config = get_config()
-        self.active_positions: Dict[str, Position] = {}
+        self.active_positions: dict[str, Position] = {}
         self.signal_history: deque = deque(maxlen=self.config.signal_history_limit)
-        self.closed_positions: List[Position] = []
+        self.closed_positions: list[Position] = []
 
         # Statistics
         self.total_signals = 0
@@ -189,7 +189,7 @@ class PositionManager:
         position_id: str,
         exit_price: float,
         exit_reason: str
-    ) -> Optional[Position]:
+    ) -> Position | None:
         """
         Close a specific position.
 
@@ -235,14 +235,14 @@ class PositionManager:
 
         logger.info(f"Closed {len(position_ids)} positions: {reason}")
 
-    def get_active_positions(self) -> List[Dict[str, Any]]:
+    def get_active_positions(self) -> list[dict[str, Any]]:
         """Get list of active positions"""
         return [pos.to_dict() for pos in self.active_positions.values()]
 
     def get_closed_positions(
         self,
-        limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get list of closed positions.
 
@@ -257,9 +257,9 @@ class PositionManager:
 
     def get_signal_history(
         self,
-        limit: Optional[int] = None,
-        action_filter: Optional[SignalAction] = None
-    ) -> List[TradingSignal]:
+        limit: int | None = None,
+        action_filter: SignalAction | None = None
+    ) -> list[TradingSignal]:
         """
         Get signal history with optional filtering.
 
@@ -282,13 +282,13 @@ class PositionManager:
 
         return signals
 
-    def get_latest_signal(self) -> Optional[TradingSignal]:
+    def get_latest_signal(self) -> TradingSignal | None:
         """Get the most recent signal"""
         if self.signal_history:
             return self.signal_history[-1]
         return None
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get position and signal statistics"""
         win_rate = (
             self.winning_positions / self.total_positions_closed * 100

@@ -3,20 +3,20 @@ Signal service for managing trading signals.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional
 from uuid import UUID
-from sqlalchemy import select, func, and_, desc
+
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Signal
 from app.contracts.signal import (
-    TradingSignal,
-    SignalCreate,
     SignalAction,
-    SignalStats,
+    SignalCreate,
     SignalFilter,
+    SignalStats,
+    TradingSignal,
 )
 from app.core.exceptions import NotFoundError
+from app.models import Signal
 
 
 class SignalService:
@@ -29,7 +29,7 @@ class SignalService:
         self,
         signal_id: UUID,
         user_id: UUID,
-    ) -> Optional[Signal]:
+    ) -> Signal | None:
         """Get a specific signal."""
         result = await self.db.execute(
             select(Signal).where(
@@ -44,10 +44,10 @@ class SignalService:
     async def get_signals(
         self,
         user_id: UUID,
-        filters: Optional[SignalFilter] = None,
+        filters: SignalFilter | None = None,
         page: int = 1,
         limit: int = 20,
-    ) -> tuple[List[Signal], int]:
+    ) -> tuple[list[Signal], int]:
         """
         Get signals for a user with filtering and pagination.
 
@@ -127,7 +127,7 @@ class SignalService:
     async def mark_processed(
         self,
         signal_id: UUID,
-        execution_id: Optional[UUID] = None,
+        execution_id: UUID | None = None,
     ) -> Signal:
         """
         Mark a signal as processed.
@@ -164,7 +164,7 @@ class SignalService:
         self,
         user_id: UUID,
         limit: int = 5,
-    ) -> List[Signal]:
+    ) -> list[Signal]:
         """Get most recent signals."""
         result = await self.db.execute(
             select(Signal)
@@ -176,8 +176,8 @@ class SignalService:
 
     async def get_pending_signals(
         self,
-        user_id: Optional[UUID] = None,
-    ) -> List[Signal]:
+        user_id: UUID | None = None,
+    ) -> list[Signal]:
         """Get unprocessed signals."""
         query = select(Signal).where(Signal.is_processed == False)
 

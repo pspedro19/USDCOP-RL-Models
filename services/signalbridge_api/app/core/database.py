@@ -2,18 +2,18 @@
 Database connection and session management.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from .config import settings
-
 
 # Async engine for FastAPI
 async_engine = create_async_engine(

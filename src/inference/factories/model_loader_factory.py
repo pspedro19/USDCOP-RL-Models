@@ -15,20 +15,15 @@ Version: 1.0.0
 Date: 2025-01-16
 """
 
+import logging
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
     Protocol,
-    Tuple,
-    Type,
     runtime_checkable,
 )
-import logging
-import os
 
 import numpy as np
 
@@ -58,7 +53,7 @@ class ModelLoaderConfig:
         optimize: Whether to enable model optimization
         num_threads: Number of inference threads
     """
-    providers: List[str] = field(default_factory=lambda: ["CPUExecutionProvider"])
+    providers: list[str] = field(default_factory=lambda: ["CPUExecutionProvider"])
     device: str = "cpu"
     warmup_iterations: int = 10
     optimize: bool = True
@@ -84,11 +79,11 @@ class IModelLoaderProtocol(Protocol):
         ...
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """Get expected input shape."""
         ...
 
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         """
         Load model from path.
 
@@ -153,11 +148,11 @@ class ModelLoaderFactory:
             output = loader.predict(observation)
     """
 
-    _loaders: Dict[LoaderType, Type[IModelLoaderProtocol]] = {}
-    _instances: Dict[str, IModelLoaderProtocol] = {}
+    _loaders: dict[LoaderType, type[IModelLoaderProtocol]] = {}
+    _instances: dict[str, IModelLoaderProtocol] = {}
 
     @classmethod
-    def register(cls, loader_type: LoaderType, loader_class: Type[IModelLoaderProtocol]) -> None:
+    def register(cls, loader_type: LoaderType, loader_class: type[IModelLoaderProtocol]) -> None:
         """
         Register a loader class for a given type.
 
@@ -190,7 +185,7 @@ class ModelLoaderFactory:
         cls,
         loader_type: LoaderType,
         name: str,
-        config: Optional[ModelLoaderConfig] = None,
+        config: ModelLoaderConfig | None = None,
     ) -> IModelLoaderProtocol:
         """
         Create a model loader of the specified type.
@@ -232,8 +227,8 @@ class ModelLoaderFactory:
     def create_from_path(
         cls,
         path: str,
-        name: Optional[str] = None,
-        config: Optional[ModelLoaderConfig] = None,
+        name: str | None = None,
+        config: ModelLoaderConfig | None = None,
     ) -> IModelLoaderProtocol:
         """
         Create a model loader based on file extension.
@@ -272,7 +267,7 @@ class ModelLoaderFactory:
         cls,
         loader_type: LoaderType,
         name: str,
-        config: Optional[ModelLoaderConfig] = None,
+        config: ModelLoaderConfig | None = None,
     ) -> IModelLoaderProtocol:
         """
         Get or create a singleton loader instance.
@@ -299,7 +294,7 @@ class ModelLoaderFactory:
         logger.info("Cleared all singleton loader instances")
 
     @classmethod
-    def get_registered_types(cls) -> List[LoaderType]:
+    def get_registered_types(cls) -> list[LoaderType]:
         """Get list of all registered loader types."""
         return list(cls._loaders.keys())
 
@@ -322,7 +317,7 @@ class BaseModelLoader:
         self._name = name
         self._config = config
         self._loaded = False
-        self._input_shape: Tuple[int, ...] = ()
+        self._input_shape: tuple[int, ...] = ()
         self._model: Any = None
 
     @property
@@ -330,13 +325,13 @@ class BaseModelLoader:
         return self._name
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         return self._input_shape
 
     def is_loaded(self) -> bool:
         return self._loaded
 
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         raise NotImplementedError
 
     def warmup(self, iterations: int = 10) -> None:
@@ -357,9 +352,9 @@ class ONNXLoader(BaseModelLoader):
         super().__init__(name, config)
         self._session = None
         self._input_name: str = ""
-        self._output_names: List[str] = []
+        self._output_names: list[str] = []
 
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         """Load ONNX model from path."""
         try:
             import onnxruntime as ort
@@ -457,10 +452,10 @@ class SB3Loader(BaseModelLoader):
         super().__init__(name, config)
         self._algorithm = None
 
-    def load(self, path: str, providers: Optional[List[str]] = None) -> bool:
+    def load(self, path: str, providers: list[str] | None = None) -> bool:
         """Load SB3 model from path."""
         try:
-            from stable_baselines3 import PPO, SAC, TD3, A2C, DQN
+            from stable_baselines3 import A2C, DQN, PPO, SAC, TD3
         except ImportError:
             logger.error("stable-baselines3 not installed. Install with: pip install stable-baselines3")
             return False

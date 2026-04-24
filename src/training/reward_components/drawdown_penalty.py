@@ -17,9 +17,9 @@ Date: 2026-02-12
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from .base import RewardComponent, ComponentType
+from .base import ComponentType, RewardComponent
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class DrawdownPenaltyComponent(RewardComponent):
         self._cumulative_return = 0.0
         self._stats.reset()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         """Get component configuration."""
         config = super().get_config()
         config.update({
@@ -105,7 +105,7 @@ class DrawdownPenaltyComponent(RewardComponent):
         })
         return config
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get component statistics."""
         stats = super().get_stats()
         stats["drawdown_peak_return"] = self._peak_return

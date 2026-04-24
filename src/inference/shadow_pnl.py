@@ -28,9 +28,8 @@ Date: 2026-01-17
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
 
 import numpy as np
 
@@ -57,9 +56,9 @@ class VirtualTrade:
     signal: int  # -1 (short), 0 (flat), +1 (long)
     entry_price: float
     entry_time: datetime
-    exit_price: Optional[float] = None
-    exit_time: Optional[datetime] = None
-    pnl: Optional[float] = None
+    exit_price: float | None = None
+    exit_time: datetime | None = None
+    pnl: float | None = None
 
     @property
     def is_closed(self) -> bool:
@@ -67,7 +66,7 @@ class VirtualTrade:
         return self.exit_price is not None
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Get trade duration in seconds."""
         if self.exit_time is None or self.entry_time is None:
             return None
@@ -187,14 +186,14 @@ class ShadowPnLTracker:
 
         # Position tracking
         self.virtual_position: int = 0  # -1 (short), 0 (flat), +1 (long)
-        self._current_trade: Optional[VirtualTrade] = None
+        self._current_trade: VirtualTrade | None = None
 
         # Trade history
-        self.trades: List[VirtualTrade] = []
+        self.trades: list[VirtualTrade] = []
 
         # Signal history for agreement calculation
-        self.champion_signals: List[int] = []
-        self.shadow_signals: List[int] = []
+        self.champion_signals: list[int] = []
+        self.shadow_signals: list[int] = []
 
         logger.info(f"ShadowPnLTracker initialized for model: {model_id}")
 
@@ -270,7 +269,7 @@ class ShadowPnLTracker:
         self,
         price: float,
         timestamp: datetime,
-    ) -> Optional[float]:
+    ) -> float | None:
         """
         Close the current virtual position.
 
@@ -384,7 +383,7 @@ class ShadowPnLTracker:
         return self.virtual_position != 0
 
     @property
-    def unrealized_pnl(self) -> Optional[float]:
+    def unrealized_pnl(self) -> float | None:
         """
         Get unrealized PnL for current open position.
 
@@ -413,7 +412,7 @@ class ShadowPnLTracker:
             current_price - self._current_trade.entry_price
         )
 
-    def get_total_pnl(self, current_price: Optional[float] = None) -> float:
+    def get_total_pnl(self, current_price: float | None = None) -> float:
         """
         Get total PnL (realized + unrealized).
 

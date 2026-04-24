@@ -15,10 +15,10 @@ Security:
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
 from services.shared.feature_flags import get_feature_flags
@@ -34,7 +34,7 @@ router = APIRouter(prefix="/config", tags=["config"])
 
 class TradingFlagsResponse(BaseModel):
     """Response model for trading flags endpoint."""
-    flags: Dict[str, Dict[str, Any]]
+    flags: dict[str, dict[str, Any]]
     count: int
     timestamp: str
     config_source: str
@@ -70,7 +70,7 @@ class FlagUpdateRequest(BaseModel):
     """Request model for updating a single flag."""
     flag_name: str
     enabled: bool
-    confirmation: Optional[str] = None
+    confirmation: str | None = None
 
 
 class FlagUpdateResponse(BaseModel):
@@ -104,7 +104,7 @@ def _set_kill_switch(active: bool, reason: str, activated_by: str) -> None:
     try:
         from .operations import _kill_switch_state
         _kill_switch_state["active"] = active
-        _kill_switch_state["activated_at"] = datetime.now(timezone.utc).isoformat() if active else None
+        _kill_switch_state["activated_at"] = datetime.now(UTC).isoformat() if active else None
         _kill_switch_state["activated_by"] = activated_by if active else None
         _kill_switch_state["reason"] = reason if active else None
         _kill_switch_state["mode"] = "killed" if active else "normal"
@@ -133,7 +133,7 @@ async def get_trading_flags():
     return TradingFlagsResponse(
         flags=all_flags,
         count=len(all_flags),
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         config_source=str(flags.config_path),
     )
 
@@ -178,7 +178,7 @@ async def activate_kill_switch(
         )
 
     # Activate kill switch
-    activated_at = datetime.now(timezone.utc).isoformat()
+    activated_at = datetime.now(UTC).isoformat()
     _set_kill_switch(True, request.reason, request.activated_by)
 
     # Log critical event
@@ -229,7 +229,7 @@ async def reload_flags():
         return ReloadFlagsResponse(
             success=True,
             flags_loaded=count,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             message=f"Successfully reloaded {count} feature flags from config",
         )
     except Exception as e:
@@ -238,7 +238,7 @@ async def reload_flags():
             status_code=500,
             detail={
                 "error": "reload_failed",
-                "message": f"Failed to reload flags: {str(e)}",
+                "message": f"Failed to reload flags: {e!s}",
             }
         )
 
@@ -269,7 +269,7 @@ async def get_flag(flag_name: str):
     return {
         "flag": flag.to_dict(),
         "is_enabled": flag.is_enabled_for_rollout(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -312,7 +312,7 @@ async def update_flag(flag_name: str, request: FlagUpdateRequest):
         flag_name=flag_name,
         enabled=request.enabled,
         message=f"Flag '{flag_name}' set to {request.enabled} (runtime override, not persisted)",
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -332,7 +332,7 @@ async def config_health():
         "flags_loaded": len(all_flags),
         "config_path": str(flags.config_path),
         "config_exists": flags.config_path.exists(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

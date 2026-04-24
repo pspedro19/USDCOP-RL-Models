@@ -11,8 +11,8 @@ Date: 2025-01-14
 
 from src.core.interfaces.risk import (
     IRiskCheck,
-    RiskContext,
     RiskCheckResult,
+    RiskContext,
     RiskStatus,
 )
 

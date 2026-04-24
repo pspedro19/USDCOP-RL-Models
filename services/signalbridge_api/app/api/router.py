@@ -6,13 +6,13 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     auth_router,
-    users_router,
     exchanges_router,
-    trading_router,
-    signals_router,
     executions_router,
-    webhooks_router,
     signal_bridge_router,
+    signals_router,
+    trading_router,
+    users_router,
+    webhooks_router,
     ws_notifications_router,
 )
 

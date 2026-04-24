@@ -11,9 +11,9 @@ Date: 2025-01-14
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class RiskStatus(str, Enum):
@@ -42,9 +42,9 @@ class RiskContext:
     consecutive_wins: int = 0
     trades_today: int = 0
     win_rate: float = 0.0
-    last_trade_time: Optional[str] = None
+    last_trade_time: str | None = None
     enforce_trading_hours: bool = True
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -53,7 +53,7 @@ class RiskCheckResult:
     approved: bool
     status: RiskStatus
     message: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def should_continue_chain(self) -> bool:
@@ -120,7 +120,7 @@ class ITradingHoursChecker(ABC):
     """
 
     @abstractmethod
-    def is_trading_hours(self) -> Tuple[bool, str]:
+    def is_trading_hours(self) -> tuple[bool, str]:
         """
         Check if current time is within trading hours.
 
@@ -144,7 +144,7 @@ class ICircuitBreaker(ABC):
     """
 
     @abstractmethod
-    def is_active(self) -> Tuple[bool, Optional[str]]:
+    def is_active(self) -> tuple[bool, str | None]:
         """
         Check if circuit breaker is active.
 
@@ -177,7 +177,7 @@ class ICooldownManager(ABC):
     """
 
     @abstractmethod
-    def is_active(self) -> Tuple[bool, Optional[int]]:
+    def is_active(self) -> tuple[bool, int | None]:
         """
         Check if cooldown is active.
 
@@ -271,7 +271,7 @@ class IRiskManager(ABC):
         pnl: float,
         pnl_percent: float,
         is_win: bool,
-        trade_id: Optional[str] = None
+        trade_id: str | None = None
     ) -> None:
         """Update statistics after trade completion."""
         pass
@@ -295,9 +295,9 @@ class DailyStats:
     losing_trades: int = 0
     consecutive_losses: int = 0
     consecutive_wins: int = 0
-    last_trade_time: Optional[str] = None
+    last_trade_time: str | None = None
     circuit_breaker_triggered: bool = False
-    circuit_breaker_reason: Optional[str] = None
+    circuit_breaker_reason: str | None = None
 
     @property
     def win_rate(self) -> float:
@@ -305,7 +305,7 @@ class DailyStats:
             return 0.0
         return self.winning_trades / self.trades_count
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "date": self.date,
             "pnl": self.pnl,
@@ -333,13 +333,13 @@ class FullRiskCheckResult:
     adjusted_signal: str
     confidence: float
     daily_stats: DailyStats
-    risk_metrics: Dict[str, Any]
+    risk_metrics: dict[str, Any]
     message: str
     timestamp: str
     checks_passed: list = field(default_factory=list)
-    check_that_failed: Optional[str] = None
+    check_that_failed: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "approved": self.approved,
             "status": self.status.value,

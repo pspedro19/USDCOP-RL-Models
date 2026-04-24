@@ -12,7 +12,7 @@
         validate-contracts docker-up docker-down docker-logs compact compact-monitoring \
         compact-down db-migrate db-status \
         db-validate db-reset migrate migrate-status migrate-create migrate-rollback \
-        clean pre-commit
+        clean pre-commit mlflow-log mlflow-log-dry
 
 # Default target
 .DEFAULT_GOAL := help
@@ -289,6 +289,19 @@ pre-commit: ## Run pre-commit hooks on all files
 	@echo "$(GREEN)Pre-commit checks completed!$(RESET)"
 
 # =============================================================================
+# MLFLOW (retroactive logging of existing training artifacts)
+# =============================================================================
+
+mlflow-log: ## Log existing H5 training artifacts to MLflow (idempotent)
+	@echo "$(CYAN)Logging training artifacts to MLflow...$(RESET)"
+	$(PYTHON) scripts/log_training_to_mlflow.py
+	@echo "$(GREEN)MLflow logging completed!$(RESET)"
+
+mlflow-log-dry: ## Preview what mlflow-log would do (no MLflow calls)
+	@echo "$(CYAN)Dry-run: previewing MLflow logging...$(RESET)"
+	$(PYTHON) scripts/log_training_to_mlflow.py --dry-run
+
+# =============================================================================
 # COMPOSITE TARGETS
 # =============================================================================
 
@@ -300,3 +313,30 @@ check: lint typecheck validate ## Run all checks (lint, typecheck, validate)
 
 all: install-dev check test coverage ## Full development setup and verification
 	@echo "$(GREEN)Full setup and verification completed!$(RESET)"
+
+# =============================================================================
+# COURSE MLOPS PROJECT — Demo targets
+# =============================================================================
+
+.PHONY: course-up course-demo course-grpc course-kafka course-mlflow course-status course-down
+
+course-up:          ## Start all course project services (compact + new)
+	docker compose -f docker-compose.compact.yml up -d
+
+course-demo:        ## Run full live demo (~8-10 min)
+	@bash scripts/demo/demo_full.sh
+
+course-grpc:        ## Demo gRPC predictor only
+	@bash scripts/demo/demo_grpc.sh
+
+course-kafka:       ## Demo Kafka producer+consumer
+	@bash scripts/demo/demo_kafka.sh
+
+course-mlflow:      ## Log existing training runs to MLflow + show URL
+	@bash scripts/demo/demo_mlflow.sh
+
+course-status:      ## Show status of course project services
+	@docker compose -f docker-compose.compact.yml ps | grep -E "(redpanda|grpc-predictor|kafka-bridge|mlflow|airflow|signalbridge)"
+
+course-down:        ## Stop all course project services
+	docker compose -f docker-compose.compact.yml down

@@ -56,26 +56,25 @@ Environment Variables:
 """
 
 # Core setup functions
-from .otel_setup import (
-    init_tracing,
-    get_tracer,
-    get_current_span,
-    add_span_attribute,
-    add_span_event,
-    record_exception,
-    get_trace_context,
-    inject_trace_context,
-    extract_trace_context,
-    shutdown_tracing,
-)
-
 # Decorators
 from .decorators import (
-    traced,
-    traced_async,
     MLSpanBuilder,
     add_ml_attributes,
     add_trading_attributes,
+    traced,
+    traced_async,
+)
+from .otel_setup import (
+    add_span_attribute,
+    add_span_event,
+    extract_trace_context,
+    get_current_span,
+    get_trace_context,
+    get_tracer,
+    init_tracing,
+    inject_trace_context,
+    record_exception,
+    shutdown_tracing,
 )
 
 __all__ = [

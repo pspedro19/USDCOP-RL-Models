@@ -8,11 +8,13 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from typing import Any
+
 import numpy as np
-from scipy import stats
 from database.postgres_client import PostgresClient
+from scipy import stats
+
 from config import METRICS_CONFIG
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ class DriftDetector:
         model_id: str,
         window_hours: int = 24,
         baseline_days: int = 7
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Detect data and concept drift.
 
@@ -116,9 +118,9 @@ class DriftDetector:
 
     def _calculate_data_drift(
         self,
-        recent_data: List[Dict],
-        baseline_data: List[Dict]
-    ) -> Dict[str, Any]:
+        recent_data: list[dict],
+        baseline_data: list[dict]
+    ) -> dict[str, Any]:
         """
         Calculate data drift using Kolmogorov-Smirnov test.
 
@@ -176,9 +178,9 @@ class DriftDetector:
 
     def _calculate_concept_drift(
         self,
-        recent_data: List[Dict],
-        baseline_data: List[Dict]
-    ) -> Dict[str, Any]:
+        recent_data: list[dict],
+        baseline_data: list[dict]
+    ) -> dict[str, Any]:
         """
         Calculate concept drift (prediction accuracy change).
 
@@ -209,7 +211,7 @@ class DriftDetector:
     def get_drift_by_feature(
         self,
         model_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get drift detection results grouped by feature.
 

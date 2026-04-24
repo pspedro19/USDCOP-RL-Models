@@ -198,6 +198,16 @@ PostgreSQL+TimescaleDB (5432), Redis (6379), MinIO (9001), Airflow (8080), Signa
 Vault (8200), Prometheus (9090), Grafana (3002), AlertManager (9093), Loki (3100), Promtail, pgAdmin (5050), MLflow (5001).
 See `sdd-observability.md`.
 
+**Infra lista, activación en próximos pasos (status realista 2026-04-16):**
+- **MinIO** — 11 buckets operativos pero actualmente solo usado por init-scripts (seed fallback).
+  Bucket storage disponible para artefactos; los modelos se persisten en filesystem. **Roadmap**: migración modelos → MinIO.
+- **MLflow** — Tracking server + SQLite + artifact store desplegados. Scripts ad-hoc loguean runs,
+  DAGs L3 (H1/H5) no lo invocan. **Roadmap**: integración automatizada en `forecast_h1_l3_weekly_training` y `forecast_h5_l3_weekly_training`.
+- **AlertManager** — Rules cargadas (53 alertas), Slack webhook vacío por defecto. Usar la UI estática
+  para reglas; alertas activas requieren `SLACK_WEBHOOK_URL` en `.env`. **No crítico** si se opera en local.
+- **Jaeger** — Deployado pero 0 servicios instrumentados (OpenTelemetry no implementado). Omitir del
+  spec operacional hasta que se instrumenten servicios. **Roadmap**: bajo demanda.
+
 ### CI/CD & Testing
 9 GitHub Actions: ci, deploy, security (x2), contracts-check, drift-check, dvc-validate, experiment, canary-promote.
 Makefile: 268 lines (test, lint, docker, db, validate). 70% coverage gate. See `sdd-cicd-testing.md`.
@@ -221,18 +231,21 @@ data/pipeline/04_cleaning/output/
 
 ---
 
-## DAG SCHEDULE (26 DAGs)
+## DAG SCHEDULE (27 DAGs + watchdog)
 
 | Pipeline | DAGs | Key Timing (COT) | Spec |
 |----------|------|-------------------|------|
 | **H1 Daily** | 5 | Sun 01:00 train; Mon-Fri 13:00 signal, 13:30 vol-target, 13:35 executor, 19:00 monitor | `h5-smart-simple-pipeline.md` |
 | **H5 Weekly** | 5 | Sun 01:30 train; Mon 08:15 signal, 08:45 vol-target; Mon-Fri */30 9-13 executor; Fri 14:30 monitor | `h5-smart-simple-pipeline.md` |
-| **L0 Data** | 5 | OHLCV: */5 8-12 Mon-Fri; Macro: hourly 8-12 Mon-Fri; Backfill: Sun/Manual; Seed backup: daily 13:00 | `l0-data-governance.md` |
+| **Forecasting Weekly** | 1 | **Mon 09:00 COT** (14:00 UTC) — `forecast_weekly_generation` regenerates dashboard CSV + 76 PNGs | `sdd-dashboard-integration.md` |
+| **L0 Data** | 5 | OHLCV: */5 8-12 Mon-Fri; Macro: hourly 8-12 Mon-Fri; Backfill: Sun/Manual; Seed backup: daily 15:00 | `l0-data-governance.md` |
 | **RL** | 6 | All manual/event-triggered except L1 (*/5 8-12 Mon-Fri) | `l1-l5-inference-pipeline.md` |
 | **News+Analysis** | 5 | News: 3x/day (02,07,13 COT); Alert: */30; Weekly digest: Mon; Analysis L8: 14:00 Mon-Fri | `news-and-analysis-sdd.md` |
+| **Watchdog** | 1 | `core_watchdog`: hourly 8-13 COT Mon-Fri; auto-heals stale data, forecasting, analysis | `elite-operations.md` |
 
 > H1 and H5 retrain **WEEKLY** (every Sunday). Expanding window grows ~5 rows/week.
 > Analysis DAG runs 2h after last news ingestion to ensure fresh articles.
+> `forecast_weekly_generation` runs Mon 09:00 COT post-training; also triggered by watchdog auto-heal if stale.
 > See `elite-operations.md` for collision-free timeline and `data-freshness-enforcement.md` for thresholds.
 
 ---

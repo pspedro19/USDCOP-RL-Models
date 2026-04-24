@@ -13,10 +13,9 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-import sys
-import os
 import logging
-from typing import Optional, Any
+import os
+import sys
 from functools import lru_cache
 
 # Add project root to path if needed
@@ -39,8 +38,9 @@ def _ensure_bootstrap():
         return _container
 
     try:
-        from src.bootstrap import bootstrap_production, get_container
         from mlops.config import get_config
+
+        from src.bootstrap import bootstrap_production
 
         config = get_config()
         _container = bootstrap_production(config)

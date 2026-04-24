@@ -28,23 +28,20 @@ Version: 1.0.0
 """
 
 from .event_bus import (
-    # Core classes
-    EventBus,
+    AsyncEventHandler,
     BaseEvent,
-    TradeEvent,
-    RiskEvent,
-    SystemEvent,
-
     # Types
     Event,
+    # Core classes
+    EventBus,
     EventHandler,
-    AsyncEventHandler,
-    Subscription,
     EventPriority,
-
     # Protocol
     IEventBus,
-
+    RiskEvent,
+    Subscription,
+    SystemEvent,
+    TradeEvent,
     # Utilities
     get_event_bus,
     subscribe_to,

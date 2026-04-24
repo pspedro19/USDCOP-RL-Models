@@ -12,12 +12,12 @@ Date: 2025-01-14
 
 import json
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 from src.core.interfaces.repository import (
-    IStateRepository,
     IHashRepository,
     IListRepository,
+    IStateRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
     # IStateRepository implementation
     # =========================================================================
 
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         """Get state by key."""
         try:
             data = self._redis.get(key)
@@ -58,8 +58,8 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
     def set(
         self,
         key: str,
-        value: Dict[str, Any],
-        ttl: Optional[int] = None
+        value: dict[str, Any],
+        ttl: int | None = None
     ) -> bool:
         """Set state with optional TTL."""
         try:
@@ -90,7 +90,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
             logger.error(f"Redis EXISTS error for key '{key}': {e}")
             return False
 
-    def get_ttl(self, key: str) -> Optional[int]:
+    def get_ttl(self, key: str) -> int | None:
         """Get remaining TTL for key."""
         try:
             ttl = self._redis.ttl(key)
@@ -103,7 +103,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
     # IHashRepository implementation
     # =========================================================================
 
-    def hget(self, key: str, field: str) -> Optional[str]:
+    def hget(self, key: str, field: str) -> str | None:
         """Get single field from hash."""
         try:
             return self._redis.hget(key, field)
@@ -120,7 +120,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
             logger.error(f"Redis HSET error for key '{key}', field '{field}': {e}")
             return False
 
-    def hgetall(self, key: str) -> Dict[str, str]:
+    def hgetall(self, key: str) -> dict[str, str]:
         """Get all fields from hash."""
         try:
             return self._redis.hgetall(key) or {}
@@ -128,7 +128,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
             logger.error(f"Redis HGETALL error for key '{key}': {e}")
             return {}
 
-    def hmset(self, key: str, mapping: Dict[str, str]) -> bool:
+    def hmset(self, key: str, mapping: dict[str, str]) -> bool:
         """Set multiple fields in hash."""
         try:
             self._redis.hset(key, mapping=mapping)
@@ -173,7 +173,7 @@ class RedisStateRepository(IStateRepository, IHashRepository, IListRepository):
             logger.error(f"Redis RPUSH error for key '{key}': {e}")
             return 0
 
-    def lrange(self, key: str, start: int, end: int) -> List[str]:
+    def lrange(self, key: str, start: int, end: int) -> list[str]:
         """Get range of values from list."""
         try:
             return self._redis.lrange(key, start, end)

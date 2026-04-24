@@ -9,16 +9,15 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
-from typing import Optional
 
 from src.news_engine.models import RawArticle
 
 logger = logging.getLogger(__name__)
 
 
-def parse_date_flexible(date_str: str) -> Optional[datetime]:
+def parse_date_flexible(date_str: str) -> datetime | None:
     """Parse dates from RSS feeds with multiple format support.
 
     Handles:
@@ -44,7 +43,7 @@ def parse_date_flexible(date_str: str) -> Optional[datetime]:
     # Try common simple formats
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
         try:
-            return datetime.strptime(date_str, fmt).replace(tzinfo=timezone.utc)
+            return datetime.strptime(date_str, fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
 
@@ -67,7 +66,7 @@ class SourceAdapter(ABC):
 
     def __init__(self, config=None):
         self.config = config
-        self._last_fetch_time: Optional[datetime] = None
+        self._last_fetch_time: datetime | None = None
         self._error_count: int = 0
         self._max_retries: int = 3
         self._retry_delay: float = 2.0

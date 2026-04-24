@@ -9,8 +9,9 @@ Version: 1.0.0
 Date: 2025-12-17
 """
 
+
 import pandas as pd
-from typing import Union, List
+
 from ..interfaces.normalizer import INormalizer
 
 
@@ -29,7 +30,7 @@ class CompositeNormalizer(INormalizer):
         normalized = composite.normalize(120.0)  # (120-100)/10 = 2.0, clip to [-4,4] = 2.0
     """
 
-    def __init__(self, normalizers: List[INormalizer]):
+    def __init__(self, normalizers: list[INormalizer]):
         """
         Initialize composite normalizer.
 
@@ -38,7 +39,7 @@ class CompositeNormalizer(INormalizer):
         """
         self.normalizers = normalizers
 
-    def normalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def normalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Apply all normalizers in sequence.
 
@@ -53,7 +54,7 @@ class CompositeNormalizer(INormalizer):
             result = normalizer.normalize(result)
         return result
 
-    def denormalize(self, value: Union[float, pd.Series]) -> Union[float, pd.Series]:
+    def denormalize(self, value: float | pd.Series) -> float | pd.Series:
         """
         Apply denormalization in reverse order.
 

@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime
 
 from src.news_engine.config import CrossReferenceConfig
-from src.news_engine.models import EnrichedArticle, CrossReference
+from src.news_engine.models import CrossReference, EnrichedArticle
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +20,13 @@ logger = logging.getLogger(__name__)
 class CrossReferenceEngine:
     """Clusters related articles across sources."""
 
-    def __init__(self, config: Optional[CrossReferenceConfig] = None):
+    def __init__(self, config: CrossReferenceConfig | None = None):
         self.cfg = config or CrossReferenceConfig()
 
     def find_clusters(
         self,
         articles: list[EnrichedArticle],
-        cluster_date: Optional[datetime] = None,
+        cluster_date: datetime | None = None,
     ) -> list[CrossReference]:
         """Find topic clusters in a list of enriched articles.
 
@@ -157,7 +156,7 @@ class CrossReferenceEngine:
         stopwords = {
             "el", "la", "los", "las", "de", "del", "en", "con", "por", "para",
             "un", "una", "que", "se", "su", "al", "es", "no", "lo", "y", "a",
-            "the", "a", "an", "in", "of", "to", "for", "and", "is", "on", "at",
+            "the", "an", "in", "of", "to", "for", "and", "is", "on", "at",
         }
         words = set(text.lower().split())
         return words - stopwords

@@ -25,18 +25,16 @@ Version: 1.0.0
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any
 
 import yaml
 
 from src.core.interfaces.macro_extractor import (
     BaseMacroExtractor,
-    ExtractionResult,
-    MacroExtractionStrategy,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +70,9 @@ class MacroExtractorFactory:
     """
 
     # Class-level registry of strategy classes
-    _strategies: Dict[MacroSource, Type[BaseMacroExtractor]] = {}
+    _strategies: dict[MacroSource, type[BaseMacroExtractor]] = {}
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """
         Initialize factory with configuration.
 
@@ -82,8 +80,8 @@ class MacroExtractorFactory:
             config_path: Path to l0_macro_sources.yaml
         """
         self.config_path = config_path or '/opt/airflow/config/l0_macro_sources.yaml'
-        self.config: Dict[str, Any] = {}
-        self._instances: Dict[MacroSource, BaseMacroExtractor] = {}
+        self.config: dict[str, Any] = {}
+        self._instances: dict[MacroSource, BaseMacroExtractor] = {}
         self._load_config()
 
     def _load_config(self) -> None:
@@ -91,7 +89,7 @@ class MacroExtractorFactory:
         try:
             config_file = Path(self.config_path)
             if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
+                with open(config_file, encoding='utf-8') as f:
                     self.config = yaml.safe_load(f) or {}
                 logger.info(f"[Factory] Loaded config from {self.config_path}")
             else:
@@ -102,7 +100,7 @@ class MacroExtractorFactory:
             self.config = {}
 
     @classmethod
-    def register(cls, source: MacroSource, strategy_class: Type[BaseMacroExtractor]) -> None:
+    def register(cls, source: MacroSource, strategy_class: type[BaseMacroExtractor]) -> None:
         """
         Register a strategy class for a source.
 
@@ -129,7 +127,7 @@ class MacroExtractorFactory:
         Returns:
             Decorator function
         """
-        def decorator(strategy_class: Type[BaseMacroExtractor]) -> Type[BaseMacroExtractor]:
+        def decorator(strategy_class: type[BaseMacroExtractor]) -> type[BaseMacroExtractor]:
             cls.register(source, strategy_class)
             return strategy_class
         return decorator
@@ -184,7 +182,7 @@ class MacroExtractorFactory:
             self._instances[source] = self.create(source, **kwargs)
         return self._instances[source]
 
-    def create_all_extractors(self) -> Dict[MacroSource, BaseMacroExtractor]:
+    def create_all_extractors(self) -> dict[MacroSource, BaseMacroExtractor]:
         """
         Create extractors for all enabled sources.
 
@@ -202,14 +200,14 @@ class MacroExtractorFactory:
                     logger.info(f"[Factory] Created extractor for {source.value}")
                 else:
                     logger.warning(f"[Factory] No strategy registered for {source.value}")
-            except ValueError as e:
+            except ValueError:
                 logger.warning(f"[Factory] Unknown source in config: {source_name}")
             except Exception as e:
                 logger.error(f"[Factory] Failed to create extractor for {source_name}: {e}")
 
         return extractors
 
-    def get_source_config(self, source: MacroSource) -> Dict[str, Any]:
+    def get_source_config(self, source: MacroSource) -> dict[str, Any]:
         """
         Get configuration for a specific source.
 
@@ -221,7 +219,7 @@ class MacroExtractorFactory:
         """
         return self.config.get('sources', {}).get(source.value, {})
 
-    def get_indicators_for_source(self, source: MacroSource) -> Dict[str, str]:
+    def get_indicators_for_source(self, source: MacroSource) -> dict[str, str]:
         """
         Get indicator mappings for a source.
 
@@ -289,10 +287,10 @@ class MacroExtractorFactory:
 
 
 # Singleton factory instance (lazy initialization)
-_factory_instance: Optional[MacroExtractorFactory] = None
+_factory_instance: MacroExtractorFactory | None = None
 
 
-def get_extractor_factory(config_path: Optional[str] = None) -> MacroExtractorFactory:
+def get_extractor_factory(config_path: str | None = None) -> MacroExtractorFactory:
     """
     Get the singleton factory instance.
 

@@ -12,11 +12,8 @@ USDCOP-specific domain knowledge:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, asdict
-from datetime import date
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -53,7 +50,7 @@ COLUMN_ALIASES = {
 }
 
 
-def _find_col(df: pd.DataFrame, key: str) -> Optional[str]:
+def _find_col(df: pd.DataFrame, key: str) -> str | None:
     """Find matching column for a macro variable key."""
     for alias in COLUMN_ALIASES.get(key, [key]):
         if alias in df.columns:
@@ -70,9 +67,9 @@ def _find_col(df: pd.DataFrame, key: str) -> Optional[str]:
 
 @dataclass
 class CarryTradeAnalysis:
-    ibr_rate: Optional[float] = None
-    fed_funds_rate: Optional[float] = None
-    differential_pct: Optional[float] = None  # IBR - FedFunds
+    ibr_rate: float | None = None
+    fed_funds_rate: float | None = None
+    differential_pct: float | None = None  # IBR - FedFunds
     differential_trend: str = "stable"  # narrowing, widening, stable
     carry_attractiveness: str = "neutral"  # attractive, neutral, unattractive
     interpretation: str = ""
@@ -83,10 +80,10 @@ class CarryTradeAnalysis:
 
 @dataclass
 class OilImpact:
-    wti_current: Optional[float] = None
-    wti_weekly_change_pct: Optional[float] = None
-    brent_current: Optional[float] = None
-    estimated_cop_impact_pct: Optional[float] = None
+    wti_current: float | None = None
+    wti_weekly_change_pct: float | None = None
+    brent_current: float | None = None
+    estimated_cop_impact_pct: float | None = None
     interpretation: str = ""
 
     def to_dict(self) -> dict:
@@ -95,9 +92,9 @@ class OilImpact:
 
 @dataclass
 class BanRepContext:
-    tpm_current: Optional[float] = None
-    ibr_current: Optional[float] = None
-    next_meeting: Optional[str] = None    # ISO date or "unknown"
+    tpm_current: float | None = None
+    ibr_current: float | None = None
+    next_meeting: str | None = None    # ISO date or "unknown"
     rate_expectation: str = "hold"        # cut, hold, hike
     interpretation: str = ""
 
@@ -123,8 +120,8 @@ class FXContextReport:
     banrep: BanRepContext = field(default_factory=BanRepContext)
     risk_factors: list[RiskFactor] = field(default_factory=list)
     fx_narrative: str = ""  # 3-5 sentence Spanish narrative
-    cop_weekly_change_pct: Optional[float] = None
-    cop_level: Optional[float] = None
+    cop_weekly_change_pct: float | None = None
+    cop_level: float | None = None
     sensitivity_impacts: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -153,7 +150,7 @@ class FXContextEngine:
         cop_series: pd.Series,
         week_start: str,
         week_end: str,
-        events_calendar: Optional[list[dict]] = None,
+        events_calendar: list[dict] | None = None,
     ) -> FXContextReport:
         """Full FX context analysis.
 
@@ -319,7 +316,7 @@ class FXContextEngine:
     def _banrep_context(
         self,
         macro_df: pd.DataFrame,
-        events_calendar: Optional[list[dict]],
+        events_calendar: list[dict] | None,
         report: FXContextReport,
     ) -> None:
         """BanRep policy rate context."""

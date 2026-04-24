@@ -10,24 +10,22 @@ Version: 2.0.0
 Date: 2025-01-14
 """
 
-import os
 import logging
-from typing import Optional, Dict, List, Any
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
 from src.core.interfaces.inference import (
-    IInferenceEngine,
-    IHealthChecker,
-    InferenceResult,
     EnsembleResult,
-    SignalType,
+    IInferenceEngine,
+    InferenceResult,
 )
 from src.core.strategies.ensemble_strategies import EnsembleStrategyRegistry
+
+from .ensemble_predictor import EnsemblePredictor
 from .model_loader import ONNXModelLoader
 from .predictor import ONNXPredictor
-from .ensemble_predictor import EnsemblePredictor
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +55,7 @@ class InferenceEngine(IInferenceEngine):
 
     def __init__(
         self,
-        config: Optional[Any] = None,
+        config: Any | None = None,
         ensemble_strategy: str = "weighted_average",
     ):
         """
@@ -69,9 +67,9 @@ class InferenceEngine(IInferenceEngine):
         self._ensemble_strategy = ensemble_strategy
 
         # Internal components
-        self._loaders: Dict[str, ONNXModelLoader] = {}
-        self._predictors: Dict[str, ONNXPredictor] = {}
-        self._ensemble: Optional[EnsemblePredictor] = None
+        self._loaders: dict[str, ONNXModelLoader] = {}
+        self._predictors: dict[str, ONNXPredictor] = {}
+        self._ensemble: EnsemblePredictor | None = None
         self._loaded = False
 
     @property
@@ -81,7 +79,7 @@ class InferenceEngine(IInferenceEngine):
             return next(iter(self._predictors.keys()))
         return "none"
 
-    def load_models(self, providers: Optional[List[str]] = None) -> bool:
+    def load_models(self, providers: list[str] | None = None) -> bool:
         """
         Load all configured models.
 
@@ -140,7 +138,7 @@ class InferenceEngine(IInferenceEngine):
         onnx_path: str,
         observation_dim: int = 45,
         weight: float = 1.0,
-        providers: Optional[List[str]] = None,
+        providers: list[str] | None = None,
     ) -> bool:
         """
         Load a single model manually.
@@ -189,7 +187,7 @@ class InferenceEngine(IInferenceEngine):
     def predict(
         self,
         observation: np.ndarray,
-        model_name: Optional[str] = None
+        model_name: str | None = None
     ) -> InferenceResult:
         """
         Run inference with a specific model.
@@ -239,11 +237,11 @@ class InferenceEngine(IInferenceEngine):
         return self._loaded and len(self._predictors) > 0
 
     @property
-    def model_names(self) -> List[str]:
+    def model_names(self) -> list[str]:
         """Get list of loaded model names."""
         return list(self._predictors.keys())
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get inference statistics."""
         return {
             "loaded": self._loaded,
@@ -255,7 +253,7 @@ class InferenceEngine(IInferenceEngine):
             },
         }
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """
         Run health check on inference engine.
 
@@ -306,6 +304,6 @@ class InferenceEngine(IInferenceEngine):
 
         logger.info(f"Changed ensemble strategy to: {strategy_name}")
 
-    def get_available_strategies(self) -> List[str]:
+    def get_available_strategies(self) -> list[str]:
         """Get list of available ensemble strategies."""
         return EnsembleStrategyRegistry.list_strategies()

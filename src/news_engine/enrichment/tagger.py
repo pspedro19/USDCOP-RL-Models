@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Optional
-
 
 # Named entity patterns (financial context)
 ENTITY_PATTERNS = [
@@ -45,7 +43,7 @@ FINANCIAL_KEYWORDS = [
 
 def extract_keywords(
     title: str,
-    content: Optional[str] = None,
+    content: str | None = None,
     max_keywords: int = 10,
 ) -> list[str]:
     """Extract relevant financial keywords from text.
@@ -79,7 +77,7 @@ def extract_keywords(
 
 def extract_entities(
     title: str,
-    content: Optional[str] = None,
+    content: str | None = None,
 ) -> list[str]:
     """Extract named entities using pattern matching."""
     text = (title or "") + " " + (content or "")

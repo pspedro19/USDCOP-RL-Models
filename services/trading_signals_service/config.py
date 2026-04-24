@@ -7,11 +7,9 @@ Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 """
 
-import os
-from typing import Optional
-from dataclasses import dataclass, field
-from pathlib import Path
 import logging
+import os
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +149,7 @@ class SignalServiceConfig:
 
 
 # Global configuration singleton
-_config: Optional[SignalServiceConfig] = None
+_config: SignalServiceConfig | None = None
 
 
 def get_config() -> SignalServiceConfig:

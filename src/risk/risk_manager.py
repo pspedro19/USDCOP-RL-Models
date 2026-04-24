@@ -30,10 +30,9 @@ Usage:
         logger.warning(f"Trade blocked: {reason}")
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Tuple, Optional, List
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -109,7 +108,7 @@ class RiskManager:
         # State tracking
         self._kill_switch_active: bool = False
         self._daily_blocked: bool = False
-        self._cooldown_until: Optional[datetime] = None
+        self._cooldown_until: datetime | None = None
 
         # Daily counters
         self._trade_count_today: int = 0
@@ -117,7 +116,7 @@ class RiskManager:
         self._consecutive_losses: int = 0
 
         # Trade history for analysis
-        self._trade_history: List[TradeRecord] = []
+        self._trade_history: list[TradeRecord] = []
 
         # Track the current trading day
         self._current_day: datetime = datetime.now().date()
@@ -135,7 +134,7 @@ class RiskManager:
         self,
         signal: str,
         current_drawdown_pct: float
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Validate if a trading signal should be executed.
 
@@ -427,7 +426,7 @@ class RiskManager:
             logger.info(f"Day change detected: {self._current_day} -> {today}")
             self.reset_daily()
 
-    def get_trade_history(self, limit: int = 100) -> List[dict]:
+    def get_trade_history(self, limit: int = 100) -> list[dict]:
         """
         Get recent trade history.
 

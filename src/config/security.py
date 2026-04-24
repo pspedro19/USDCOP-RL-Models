@@ -8,7 +8,6 @@ Todas las credenciales DEBEN venir de variables de entorno.
 """
 
 import os
-from typing import Optional
 from dataclasses import dataclass
 
 
@@ -39,7 +38,7 @@ class SecuritySettings:
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "usdcop_trading"
-    api_secret_key: Optional[str] = None
+    api_secret_key: str | None = None
 
     @classmethod
     def from_env(cls) -> "SecuritySettings":
@@ -100,8 +99,8 @@ class SecuritySettings:
 
         if self.postgres_password.lower() in insecure_passwords:
             raise SecurityError(
-                f"Password inseguro detectado. "
-                f"Use un password fuerte y unico."
+                "Password inseguro detectado. "
+                "Use un password fuerte y unico."
             )
 
         # Verificar longitud minima

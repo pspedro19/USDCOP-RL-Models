@@ -9,12 +9,10 @@ Created: 2025-12-17
 
 import logging
 import time
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import numpy as np
+from typing import Any
 
-from ..models.signal_schema import TradingSignal, SignalAction, SignalMetadata
 from ..config import get_config
+from ..models.signal_schema import SignalAction, SignalMetadata, TradingSignal
 from .inference_service import InferenceService
 
 logger = logging.getLogger(__name__)
@@ -36,9 +34,9 @@ class SignalGenerator:
 
     def generate_signal(
         self,
-        market_data: Dict[str, Any],
-        technical_indicators: Optional[Dict[str, float]] = None
-    ) -> Optional[TradingSignal]:
+        market_data: dict[str, Any],
+        technical_indicators: dict[str, float] | None = None
+    ) -> TradingSignal | None:
         """
         Generate a trading signal from market data.
 
@@ -157,8 +155,8 @@ class SignalGenerator:
         self,
         current_price: float,
         action: SignalAction,
-        market_data: Dict[str, Any]
-    ) -> Dict[str, float]:
+        market_data: dict[str, Any]
+    ) -> dict[str, float]:
         """
         Calculate stop loss and take profit levels using ATR.
 
@@ -195,7 +193,7 @@ class SignalGenerator:
     def _calculate_position_size(
         self,
         confidence: float,
-        market_data: Dict[str, Any]
+        market_data: dict[str, Any]
     ) -> float:
         """
         Calculate position size based on confidence and volatility.
@@ -226,9 +224,9 @@ class SignalGenerator:
     def _generate_reasoning(
         self,
         action: SignalAction,
-        market_data: Dict[str, Any],
+        market_data: dict[str, Any],
         confidence: float
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate human-readable reasoning for the signal.
 
@@ -295,8 +293,8 @@ class SignalGenerator:
 
     def _extract_technical_factors(
         self,
-        market_data: Dict[str, Any]
-    ) -> Dict[str, float]:
+        market_data: dict[str, Any]
+    ) -> dict[str, float]:
         """
         Extract technical indicator values for signal record.
 
@@ -321,7 +319,7 @@ class SignalGenerator:
 
         return factors
 
-    def _determine_trend(self, market_data: Dict[str, Any]) -> str:
+    def _determine_trend(self, market_data: dict[str, Any]) -> str:
         """
         Determine current trend direction.
 
@@ -342,7 +340,7 @@ class SignalGenerator:
 
         return "sideways"
 
-    def _determine_market_regime(self, market_data: Dict[str, Any]) -> str:
+    def _determine_market_regime(self, market_data: dict[str, Any]) -> str:
         """
         Determine current market regime.
 
@@ -366,7 +364,7 @@ class SignalGenerator:
         else:
             return "normal"
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get signal generation statistics"""
         return {
             'signals_generated': self.signals_generated,

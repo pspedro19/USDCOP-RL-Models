@@ -73,10 +73,10 @@ Date: 2026-01-17
 """
 
 from .slack_client import (
+    AlertSeverity,
     # Main classes
     SlackClient,
     SlackMessage,
-    AlertSeverity,
     # Helper functions
     get_slack_client,
     send_slack_alert,

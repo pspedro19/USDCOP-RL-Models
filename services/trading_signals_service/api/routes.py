@@ -8,23 +8,20 @@ Created: 2025-12-17
 """
 
 import logging
-from typing import Optional, List
-from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Query, Depends
-from fastapi.responses import JSONResponse
-import psycopg2
-import pandas as pd
+from datetime import datetime
 
-from ..models.signal_schema import (
-    TradingSignal,
-    SignalResponse,
-    SignalHistoryResponse,
-    GenerateSignalRequest,
-    SignalAction,
-    HealthCheckResponse,
-    ErrorResponse
-)
+import pandas as pd
+import psycopg2
+from fastapi import APIRouter, HTTPException, Query
+
 from ..config import get_config
+from ..models.signal_schema import (
+    GenerateSignalRequest,
+    HealthCheckResponse,
+    SignalAction,
+    SignalHistoryResponse,
+    SignalResponse,
+)
 from ..utils.technical_indicators import TechnicalIndicators
 
 logger = logging.getLogger(__name__)
@@ -85,9 +82,9 @@ async def get_latest_signal():
 @router.get("/history", response_model=SignalHistoryResponse)
 async def get_signal_history(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of signals"),
-    action: Optional[SignalAction] = Query(None, description="Filter by action type"),
-    start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
-    end_date: Optional[str] = Query(None, description="End date (ISO format)")
+    action: SignalAction | None = Query(None, description="Filter by action type"),
+    start_date: str | None = Query(None, description="Start date (ISO format)"),
+    end_date: str | None = Query(None, description="End date (ISO format)")
 ):
     """Get signal history with optional filtering"""
     try:

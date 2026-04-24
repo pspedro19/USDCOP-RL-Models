@@ -13,11 +13,12 @@ Contract ID: CTR-FEATURE-001
 Version: 3.0.0
 Updated: 2026-02-01 (Unified with experiment_ssot.yaml)
 """
-from typing import Tuple, Dict, Final, List, Any
+import hashlib
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Final
+
 import numpy as np
-import hashlib
 
 # =============================================================================
 # IMPORT FROM EXPERIMENT SSOT (Primary source)
@@ -32,17 +33,23 @@ _SSOT_FEATURE_ORDER_HASH = None
 
 try:
     from src.config.experiment_loader import (
-        load_experiment_config,
         get_feature_order as ssot_get_feature_order,
-        get_observation_dim as ssot_get_observation_dim,
+    )
+    from src.config.experiment_loader import (
         get_feature_order_hash as ssot_get_feature_order_hash,
+    )
+    from src.config.experiment_loader import (
+        get_observation_dim as ssot_get_observation_dim,
+    )
+    from src.config.experiment_loader import (
+        load_experiment_config,
     )
     _config = load_experiment_config()
     _SSOT_FEATURE_ORDER = _config.feature_order
     _SSOT_OBSERVATION_DIM = _config.pipeline.observation_dim
     _SSOT_FEATURE_ORDER_HASH = _config.feature_order_hash
     _EXPERIMENT_SSOT_AVAILABLE = True
-except (ImportError, FileNotFoundError) as e:
+except (ImportError, FileNotFoundError):
     pass  # Will use fallback below
 
 # =============================================================================
@@ -56,13 +63,19 @@ try:
     from .feature_contracts_registry import (
         CANONICAL_CONTRACT,
         CANONICAL_CONTRACT_ID,
-        FEATURE_ORDER as REGISTRY_FEATURE_ORDER,
-        OBSERVATION_DIM as REGISTRY_OBSERVATION_DIM,
-        FEATURE_ORDER_HASH as REGISTRY_FEATURE_ORDER_HASH,
+        CONTRACTS,
+        FeatureContract,
         get_contract,
         get_production_contract,
-        FeatureContract,
-        CONTRACTS,
+    )
+    from .feature_contracts_registry import (
+        FEATURE_ORDER as REGISTRY_FEATURE_ORDER,
+    )
+    from .feature_contracts_registry import (
+        FEATURE_ORDER_HASH as REGISTRY_FEATURE_ORDER_HASH,
+    )
+    from .feature_contracts_registry import (
+        OBSERVATION_DIM as REGISTRY_OBSERVATION_DIM,
     )
     _REGISTRY_AVAILABLE = True
 except ImportError:
@@ -76,16 +89,16 @@ except ImportError:
 
 if _EXPERIMENT_SSOT_AVAILABLE:
     # Use experiment SSOT (preferred - unified L2/L3 config)
-    FEATURE_ORDER: Final[Tuple[str, ...]] = _SSOT_FEATURE_ORDER
+    FEATURE_ORDER: Final[tuple[str, ...]] = _SSOT_FEATURE_ORDER
     OBSERVATION_DIM: Final[int] = _SSOT_OBSERVATION_DIM
     FEATURE_ORDER_HASH: Final[str] = _SSOT_FEATURE_ORDER_HASH
 elif _REGISTRY_AVAILABLE:
-    FEATURE_ORDER: Final[Tuple[str, ...]] = REGISTRY_FEATURE_ORDER
+    FEATURE_ORDER: Final[tuple[str, ...]] = REGISTRY_FEATURE_ORDER
     OBSERVATION_DIM: Final[int] = REGISTRY_OBSERVATION_DIM
     FEATURE_ORDER_HASH: Final[str] = REGISTRY_FEATURE_ORDER_HASH
 else:
     # Fallback - EXP-B-001 features (20 total: 18 market + 2 state)
-    FEATURE_ORDER: Final[Tuple[str, ...]] = (
+    FEATURE_ORDER: Final[tuple[str, ...]] = (
         "log_ret_5m",        # 0: 5-minute log return
         "log_ret_1h",        # 1: 1-hour log return
         "log_ret_4h",        # 2: 4-hour log return
@@ -142,7 +155,7 @@ class FeatureSpec:
     source: str = ""
 
 
-FEATURE_SPECS: Final[Dict[str, FeatureSpec]] = {
+FEATURE_SPECS: Final[dict[str, FeatureSpec]] = {
     # Returns (4) - EXP-B-001: +log_ret_1d
     "log_ret_5m": FeatureSpec("log_ret_5m", 0, FeatureType.TECHNICAL, FeatureUnit.ZSCORE, "5-minute log return", source="L1_features"),
     "log_ret_1h": FeatureSpec("log_ret_1h", 1, FeatureType.TECHNICAL, FeatureUnit.ZSCORE, "1-hour log return", source="L1_features"),
@@ -186,9 +199,9 @@ FEATURE_SPECS: Final[Dict[str, FeatureSpec]] = {
 class FeatureContract:
     version: str = FEATURE_CONTRACT_VERSION
     observation_dim: int = OBSERVATION_DIM
-    feature_order: Tuple[str, ...] = FEATURE_ORDER
+    feature_order: tuple[str, ...] = FEATURE_ORDER
     feature_order_hash: str = FEATURE_ORDER_HASH
-    clip_range: Tuple[float, float] = (-5.0, 5.0)
+    clip_range: tuple[float, float] = (-5.0, 5.0)
     dtype: str = "float32"
     normalization_method: str = "zscore"
 
@@ -202,13 +215,13 @@ class FeatureContract:
             raise FeatureContractError(f"No spec for feature: {name}")
         return FEATURE_SPECS[name]
 
-    def get_features_by_type(self, ftype: FeatureType) -> List[str]:
+    def get_features_by_type(self, ftype: FeatureType) -> list[str]:
         return [name for name, spec in FEATURE_SPECS.items() if spec.type == ftype]
 
-    def get_normalizable_features(self) -> List[str]:
+    def get_normalizable_features(self) -> list[str]:
         return [name for name, spec in FEATURE_SPECS.items() if spec.requires_normalization]
 
-    def validate_observation(self, obs: np.ndarray, strict: bool = True) -> Tuple[bool, List[str]]:
+    def validate_observation(self, obs: np.ndarray, strict: bool = True) -> tuple[bool, list[str]]:
         errors = []
 
         if obs.shape != (self.observation_dim,):
@@ -234,7 +247,7 @@ class FeatureContract:
 
         return len(errors) == 0, errors
 
-    def validate_feature_dict(self, features: Dict[str, float]) -> Tuple[bool, List[str]]:
+    def validate_feature_dict(self, features: dict[str, float]) -> tuple[bool, list[str]]:
         errors = []
         missing = set(self.feature_order) - set(features.keys())
         if missing:
@@ -244,13 +257,13 @@ class FeatureContract:
             errors.append(f"Extra features: {sorted(extra)}")
         return len(errors) == 0, errors
 
-    def dict_to_array(self, features: Dict[str, float]) -> np.ndarray:
+    def dict_to_array(self, features: dict[str, float]) -> np.ndarray:
         is_valid, errors = self.validate_feature_dict(features)
         if not is_valid:
             raise FeatureContractError(f"Cannot convert: {errors}")
         return np.array([features[name] for name in self.feature_order], dtype=np.float32)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "observation_dim": self.observation_dim,
@@ -272,7 +285,7 @@ FEATURE_CONTRACT: Final[FeatureContract] = FeatureContract()
 def validate_feature_vector(obs: np.ndarray, raise_on_error: bool = True, strict: bool = True) -> bool:
     is_valid, errors = FEATURE_CONTRACT.validate_observation(obs, strict=strict)
     if not is_valid and raise_on_error:
-        raise FeatureContractError(f"Feature validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
+        raise FeatureContractError("Feature validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
     return is_valid
 
 
@@ -280,9 +293,9 @@ def get_feature_index(name: str) -> int:
     return FEATURE_CONTRACT.get_feature_index(name)
 
 
-def get_feature_names() -> List[str]:
+def get_feature_names() -> list[str]:
     return list(FEATURE_ORDER)
 
 
-def features_dict_to_array(features: Dict[str, float]) -> np.ndarray:
+def features_dict_to_array(features: dict[str, float]) -> np.ndarray:
     return FEATURE_CONTRACT.dict_to_array(features)

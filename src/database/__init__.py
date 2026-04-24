@@ -17,10 +17,11 @@ Version: 1.0.0
 Created: 2026-01-17
 """
 
-import os
 import logging
+import os
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -154,8 +155,8 @@ def get_psycopg2_connection():
 
 
 __all__ = [
+    "DATABASE_CONFIG",
+    "get_connection_string",
     "get_db_session",
     "get_psycopg2_connection",
-    "get_connection_string",
-    "DATABASE_CONFIG",
 ]

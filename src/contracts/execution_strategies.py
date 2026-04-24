@@ -15,19 +15,15 @@ Contract: CTR-EXEC-STRATEGY-001
 
 from __future__ import annotations
 
-import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 
 from src.contracts.signal_contract import UniversalSignalRecord
 from src.contracts.strategy_schema import StrategyTrade
 from src.forecasting.adaptive_stops import check_hard_stop, check_take_profit, get_exit_price
-
 
 # ---------------------------------------------------------------------------
 # Abstract Base
@@ -42,7 +38,7 @@ class ExecutionStrategy(ABC):
         signal: UniversalSignalRecord,
         ohlcv: pd.DataFrame,
         equity: float,
-    ) -> Optional[StrategyTrade]:
+    ) -> StrategyTrade | None:
         """
         Execute a signal against OHLCV bars, return a trade or None.
 
@@ -78,7 +74,7 @@ class WeeklyTPHSExecution(ExecutionStrategy):
     This replicates the exact logic from backtest_smart_simple_v1.py.
     """
 
-    def __init__(self, config: Optional[WeeklyTPHSConfig] = None):
+    def __init__(self, config: WeeklyTPHSConfig | None = None):
         self.config = config or WeeklyTPHSConfig()
         self._trade_counter = 0
 
@@ -87,7 +83,7 @@ class WeeklyTPHSExecution(ExecutionStrategy):
         signal: UniversalSignalRecord,
         ohlcv: pd.DataFrame,
         equity: float,
-    ) -> Optional[StrategyTrade]:
+    ) -> StrategyTrade | None:
         """Execute a weekly signal against daily OHLCV bars."""
         if signal.skip_trade or signal.direction == 0:
             return None
@@ -162,7 +158,7 @@ class WeeklyTPHSExecution(ExecutionStrategy):
         self,
         direction: int,
         entry: float,
-        bars: List[dict],
+        bars: list[dict],
         hard_stop_pct: float,
         take_profit_pct: float,
     ) -> tuple:
@@ -232,7 +228,7 @@ class DailyTrailingStopExecution(ExecutionStrategy):
     Uses TrailingStopTracker from src/execution/trailing_stop.py.
     """
 
-    def __init__(self, config: Optional[DailyTrailingStopConfig] = None):
+    def __init__(self, config: DailyTrailingStopConfig | None = None):
         self.config = config or DailyTrailingStopConfig()
         self._trade_counter = 0
 
@@ -241,9 +237,13 @@ class DailyTrailingStopExecution(ExecutionStrategy):
         signal: UniversalSignalRecord,
         ohlcv: pd.DataFrame,
         equity: float,
-    ) -> Optional[StrategyTrade]:
+    ) -> StrategyTrade | None:
         """Execute a daily signal against 5-min OHLCV bars."""
-        from src.execution.trailing_stop import TrailingStopTracker, TrailingStopConfig, TrailingState
+        from src.execution.trailing_stop import (
+            TrailingState,
+            TrailingStopConfig,
+            TrailingStopTracker,
+        )
 
         if signal.skip_trade or signal.direction == 0:
             return None
@@ -360,7 +360,7 @@ class IntradaySLTPExecution(ExecutionStrategy):
     This simulates the RL execution logic from BacktestEngine.
     """
 
-    def __init__(self, config: Optional[IntradaySLTPConfig] = None):
+    def __init__(self, config: IntradaySLTPConfig | None = None):
         self.config = config or IntradaySLTPConfig()
         self._trade_counter = 0
 
@@ -369,7 +369,7 @@ class IntradaySLTPExecution(ExecutionStrategy):
         signal: UniversalSignalRecord,
         ohlcv: pd.DataFrame,
         equity: float,
-    ) -> Optional[StrategyTrade]:
+    ) -> StrategyTrade | None:
         """Execute an intraday signal against 5-min OHLCV bars."""
         if signal.skip_trade or signal.direction == 0:
             return None

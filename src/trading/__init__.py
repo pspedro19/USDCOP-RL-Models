@@ -42,20 +42,36 @@ Version: 2.0.0
 """
 
 # Legacy Paper Trading (maintained for backward compatibility)
+# Trading Flags (Week 1) - Re-export from SSOT (src.config.trading_flags)
+# NOTE: The canonical TradingFlags is in src.config.trading_flags
+# This re-export maintains backward compatibility with existing imports
+from src.config.trading_flags import (
+    TradingFlags,
+    TradingMode,
+    activate_kill_switch,
+    deactivate_kill_switch,
+    get_trading_flags,
+    is_kill_switch_active,
+    is_live_trading_enabled,
+    is_paper_trading_enabled,
+    reload_trading_flags,
+    reset_trading_flags_cache,
+)
+
+from .order_executor import (
+    ExecutionResult,
+    ExecutorConfig,
+    Order,
+    OrderExecutor,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+    SignalType,
+)
 from .paper_trader import (
     PaperTrade,
     PaperTrader,
     TradeDirection,
-)
-
-# State Pattern for trade lifecycle
-from .states import (
-    TradeState,
-    PendingState,
-    OpenState,
-    ClosingState,
-    ClosedState,
-    Trade,
 )
 
 # New SOLID Components (P2 Clean Code)
@@ -65,42 +81,25 @@ from .position_tracker import (
     PositionStatus,
     PositionTracker,
 )
-
-from .order_executor import (
-    Order,
-    OrderType,
-    OrderSide,
-    OrderStatus,
-    SignalType,
-    ExecutionResult,
-    ExecutorConfig,
-    OrderExecutor,
-)
-
 from .risk_enforcer import (
-    RiskDecision,
-    RiskReason,
     RiskCheckResult,
-    RiskLimits,
-    RiskState,
+    RiskDecision,
     RiskEnforcer,
+    RiskLimits,
+    RiskReason,
+    RiskState,
 )
 
-# Trading Flags (Week 1) - Re-export from SSOT (src.config.trading_flags)
-# NOTE: The canonical TradingFlags is in src.config.trading_flags
-# This re-export maintains backward compatibility with existing imports
-from src.config.trading_flags import (
-    TradingFlags,
-    TradingMode,
-    get_trading_flags,
-    reload_trading_flags,
-    reset_trading_flags_cache,
-    activate_kill_switch,
-    deactivate_kill_switch,
-    is_live_trading_enabled,
-    is_paper_trading_enabled,
-    is_kill_switch_active,
+# State Pattern for trade lifecycle
+from .states import (
+    ClosedState,
+    ClosingState,
+    OpenState,
+    PendingState,
+    Trade,
+    TradeState,
 )
+
 
 # Backward compatibility aliases
 def load_trading_flags(force_reload: bool = False) -> TradingFlags:

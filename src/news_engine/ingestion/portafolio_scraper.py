@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 import requests
 
@@ -26,7 +25,7 @@ class PortafolioScraper(SourceAdapter):
     source_id = "portafolio"
     source_name = "Portafolio"
 
-    def __init__(self, config: Optional[ScraperConfig] = None):
+    def __init__(self, config: ScraperConfig | None = None):
         super().__init__(config)
         self.cfg = config or ScraperConfig()
 
@@ -151,7 +150,7 @@ class PortafolioScraper(SourceAdapter):
         logger.info(f"[portafolio] Sitemap: {len(articles)} articles")
         return articles
 
-    def scrape_article_content(self, url: str) -> Optional[str]:
+    def scrape_article_content(self, url: str) -> str | None:
         """Scrape full article content from URL."""
         try:
             from bs4 import BeautifulSoup

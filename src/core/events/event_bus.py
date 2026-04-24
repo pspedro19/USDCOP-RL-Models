@@ -36,26 +36,16 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Set,
-    Union,
-    runtime_checkable
-)
-from collections import defaultdict
 import asyncio
 import logging
 import threading
-import weakref
+from collections import defaultdict
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import Any, Optional, Protocol, Union, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +85,7 @@ class TradeEvent(BaseEvent):
     trade_id: str = ""
     signal: str = ""
     pnl: float = 0.0
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -119,7 +109,7 @@ class RiskEvent(BaseEvent):
     """
     event_type: str = ""  # "circuit_breaker", "cooldown", "max_drawdown"
     reason: str = ""
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.details is None:
@@ -144,7 +134,7 @@ class SystemEvent(BaseEvent):
     event_type: str = ""  # "startup", "shutdown", "error", "warning"
     component: str = ""
     message: str = ""
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.details is None:
@@ -256,9 +246,9 @@ class EventBus(IEventBus):
         if getattr(self, "_initialized", False):
             return
 
-        self._subscribers: Dict[str, List[Subscription]] = defaultdict(list)
-        self._wildcard_subscribers: Dict[str, List[Subscription]] = defaultdict(list)
-        self._event_history: List[Event] = []
+        self._subscribers: dict[str, list[Subscription]] = defaultdict(list)
+        self._wildcard_subscribers: dict[str, list[Subscription]] = defaultdict(list)
+        self._event_history: list[Event] = []
         self._max_history = max_history
         self._enable_async = enable_async
         self._lock = threading.RLock()
@@ -270,7 +260,7 @@ class EventBus(IEventBus):
             self._executor = None
 
         # Async event loop reference
-        self._async_loop: Optional[asyncio.AbstractEventLoop] = None
+        self._async_loop: asyncio.AbstractEventLoop | None = None
 
         self._initialized = True
         logger.info(
@@ -452,7 +442,7 @@ class EventBus(IEventBus):
     def _get_matching_handlers(
         self,
         event_key: str
-    ) -> List[Subscription]:
+    ) -> list[Subscription]:
         """
         Get all handlers matching an event key.
 
@@ -464,7 +454,7 @@ class EventBus(IEventBus):
         Returns:
             List of matching subscriptions sorted by priority
         """
-        handlers: List[Subscription] = []
+        handlers: list[Subscription] = []
 
         with self._lock:
             # Exact match subscribers
@@ -557,9 +547,9 @@ class EventBus(IEventBus):
 
     def get_history(
         self,
-        event_type: Optional[str] = None,
+        event_type: str | None = None,
         limit: int = 100
-    ) -> List[Event]:
+    ) -> list[Event]:
         """
         Get event history, optionally filtered by type.
 
@@ -581,7 +571,7 @@ class EventBus(IEventBus):
 
         return history[-limit:][::-1]  # Most recent first
 
-    def get_subscriber_count(self, event_type: Optional[str] = None) -> int:
+    def get_subscriber_count(self, event_type: str | None = None) -> int:
         """
         Get count of subscribers.
 
@@ -642,7 +632,7 @@ def get_event_bus() -> EventBus:
 def subscribe_to(
     event_type: str,
     priority: EventPriority = EventPriority.NORMAL,
-    bus: Optional[EventBus] = None
+    bus: EventBus | None = None
 ):
     """
     Decorator for subscribing a function to events.

@@ -20,9 +20,8 @@ Contrato: CTR-006
 """
 
 import logging
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Protocol, Tuple, Type, Union
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -98,7 +97,7 @@ class ZScoreNormalizer:
 
     mean: float = 0.0
     std: float = 1.0
-    clip: Tuple[float, float] = field(default_factory=lambda: (-5.0, 5.0))
+    clip: tuple[float, float] = field(default_factory=lambda: (-5.0, 5.0))
 
     def __post_init__(self):
         if self.std <= 0:
@@ -144,11 +143,11 @@ class MinMaxNormalizer:
 
     min_val: float = 0.0
     max_val: float = 1.0
-    output_range: Tuple[float, float] = field(default_factory=lambda: (0.0, 1.0))
+    output_range: tuple[float, float] = field(default_factory=lambda: (0.0, 1.0))
 
     def __post_init__(self):
         if self.max_val <= self.min_val:
-            logger.warning(f"MinMaxNormalizer: max <= min, using defaults")
+            logger.warning("MinMaxNormalizer: max <= min, using defaults")
             object.__setattr__(self, 'min_val', 0.0)
             object.__setattr__(self, 'max_val', 1.0)
         if isinstance(self.output_range, list):
@@ -199,7 +198,7 @@ class ClipNormalizer:
         clip: Tuple of (min, max) for clipping
     """
 
-    clip: Tuple[float, float] = field(default_factory=lambda: (-1.0, 1.0))
+    clip: tuple[float, float] = field(default_factory=lambda: (-1.0, 1.0))
 
     def __post_init__(self):
         if isinstance(self.clip, list):
@@ -265,7 +264,7 @@ class NormalizerFactory:
         normalizer = NormalizerFactory.from_config(config)
     """
 
-    _registry: Dict[str, Type] = {
+    _registry: dict[str, type] = {
         "zscore": ZScoreNormalizer,
         "z-score": ZScoreNormalizer,
         "minmax": MinMaxNormalizer,
@@ -307,7 +306,7 @@ class NormalizerFactory:
         return normalizer_class(**valid_kwargs)
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> Normalizer:
+    def from_config(cls, config: dict[str, Any]) -> Normalizer:
         """
         Create normalizer from configuration dictionary.
 
@@ -333,7 +332,7 @@ class NormalizerFactory:
         return cls.create(method, **params)
 
     @classmethod
-    def register(cls, name: str, normalizer_class: Type) -> None:
+    def register(cls, name: str, normalizer_class: type) -> None:
         """
         Register a new normalizer type.
 
@@ -350,7 +349,7 @@ class NormalizerFactory:
         return list(set(cls._registry.keys()))
 
     @staticmethod
-    def _filter_kwargs(normalizer_class: Type, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_kwargs(normalizer_class: type, kwargs: dict[str, Any]) -> dict[str, Any]:
         """Filter kwargs to only include valid parameters for the class."""
         import inspect
 
@@ -388,7 +387,7 @@ def create_normalizer(method: str, **kwargs) -> Normalizer:
 
 def normalize_feature(
     value: float,
-    config: Dict[str, Any]
+    config: dict[str, Any]
 ) -> float:
     """
     Normalize a single feature value using config.

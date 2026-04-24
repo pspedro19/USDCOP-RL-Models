@@ -9,14 +9,14 @@ Version: 1.0.0
 Date: 2025-01-14
 """
 
-from typing import Optional, Callable
+from collections.abc import Callable
 
 from src.core.interfaces.risk import (
-    IRiskCheck,
-    RiskContext,
-    RiskCheckResult,
-    RiskStatus,
     ICircuitBreaker,
+    IRiskCheck,
+    RiskCheckResult,
+    RiskContext,
+    RiskStatus,
 )
 
 
@@ -30,8 +30,8 @@ class CircuitBreakerCheck(IRiskCheck):
 
     def __init__(
         self,
-        circuit_breaker: Optional[ICircuitBreaker] = None,
-        is_active_fn: Optional[Callable[[], tuple[bool, Optional[str]]]] = None,
+        circuit_breaker: ICircuitBreaker | None = None,
+        is_active_fn: Callable[[], tuple[bool, str | None]] | None = None,
     ):
         """
         Args:

@@ -16,10 +16,9 @@ Usage:
     correlation_id = request.state.correlation_id
 """
 
-import uuid
 import logging
+import uuid
 from contextvars import ContextVar
-from typing import Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -27,12 +26,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 logger = logging.getLogger(__name__)
 
 # Context variable for correlation ID (thread-safe)
-correlation_id_var: ContextVar[Optional[str]] = ContextVar(
+correlation_id_var: ContextVar[str | None] = ContextVar(
     "correlation_id", default=None
 )
 
 
-def get_correlation_id() -> Optional[str]:
+def get_correlation_id() -> str | None:
     """Get the current correlation ID from context.
 
     Use this in logging handlers or service calls.

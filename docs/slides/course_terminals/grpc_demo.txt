@@ -1,0 +1,19 @@
+=== gRPC evidence ===
+[client] connecting to localhost:50051
+[client] -> HealthCheck
+[client] <- HealthCheck: ready=True model_loaded='stub-deterministic'
+[client] -> Predict with sample features:
+                          dxy_z = +0.5000
+                     embi_col_z = -0.1000
+                         rsi_14 = +45.0000
+                trend_slope_60d = -0.0020
+                       ust10y_z = +0.2000
+                          vix_z = +0.8000
+               vol_regime_ratio = +1.1500
+                          wti_z = -0.3000
+[client] <- Predict response:
+           direction        = LONG
+           confidence       = 0.1120
+           ensemble_return  = +0.001120
+           model_version    = stub-67efba80
+

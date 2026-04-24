@@ -7,19 +7,19 @@ Endpoints for accessing forecast data.
 @version 1.0.0
 """
 
-from fastapi import APIRouter, Query, HTTPException, Depends, Path
-from typing import Optional, List, Dict, Any
-from datetime import date
-import pandas as pd
-import os
 import logging
+import os
+from typing import Any
+
+import pandas as pd
+from fastapi import APIRouter, Path, Query
 
 from services.inference_api.contracts.forecasting import (
-    ForecastListResponse,
-    LatestForecastResponse,
     ConsensusResponse,
-    WeekForecastResponse,
+    ForecastListResponse,
     HorizonForecastResponse,
+    LatestForecastResponse,
+    WeekForecastResponse,
 )
 
 router = APIRouter()
@@ -30,7 +30,7 @@ DATA_PATH = os.environ.get('FORECASTING_DATA_PATH', 'data/processed')
 CSV_FILENAME = 'bi_dashboard_unified.csv'
 
 
-def get_csv_path() -> Optional[str]:
+def get_csv_path() -> str | None:
     """Find the dashboard CSV file."""
     possible_paths = [
         os.path.join(DATA_PATH, 'bi', CSV_FILENAME),
@@ -47,10 +47,10 @@ def get_csv_path() -> Optional[str]:
 
 
 def load_forecasts_from_csv(
-    model: Optional[str] = None,
-    horizon: Optional[int] = None,
+    model: str | None = None,
+    horizon: int | None = None,
     limit: int = 100,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Load forecasts from CSV file."""
     csv_path = get_csv_path()
 
@@ -86,10 +86,10 @@ def load_forecasts_from_csv(
     description="Retrieve USD/COP forecasts with optional model/horizon/week filters.",
 )
 async def get_forecasts(
-    model: Optional[str] = Query(None, description="Filter by model name"),
-    horizon: Optional[int] = Query(None, ge=1, le=60, description="Filter by horizon"),
-    week: Optional[int] = Query(None, ge=1, le=53, description="Filter by week"),
-    year: Optional[int] = Query(None, ge=2020, le=2100, description="Filter by year"),
+    model: str | None = Query(None, description="Filter by model name"),
+    horizon: int | None = Query(None, ge=1, le=60, description="Filter by horizon"),
+    week: int | None = Query(None, ge=1, le=53, description="Filter by week"),
+    year: int | None = Query(None, ge=2020, le=2100, description="Filter by year"),
     limit: int = Query(100, ge=1, le=1000, description="Max results"),
 ):
     """Get forecasts from database or CSV fallback."""

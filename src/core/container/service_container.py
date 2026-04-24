@@ -33,9 +33,10 @@ Date: 2025-01-14
 
 import logging
 import warnings
-from typing import Any, Callable, Dict, Optional, TypeVar, Type
-from threading import Lock
+from collections.abc import Callable
 from enum import Enum
+from threading import Lock
+from typing import Any, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +78,11 @@ class ServiceContainer:
     _lock = Lock()
 
     def __init__(self):
-        self._singletons: Dict[str, Any] = {}
-        self._factories: Dict[str, Callable[['ServiceContainer'], Any]] = {}
-        self._lifetimes: Dict[str, Lifetime] = {}
-        self._scopes: Dict[str, Dict[str, Any]] = {}
-        self._current_scope: Optional[str] = None
+        self._singletons: dict[str, Any] = {}
+        self._factories: dict[str, Callable[[ServiceContainer], Any]] = {}
+        self._lifetimes: dict[str, Lifetime] = {}
+        self._scopes: dict[str, dict[str, Any]] = {}
+        self._current_scope: str | None = None
         self._container_lock = Lock()
 
     @classmethod
@@ -160,7 +161,7 @@ class ServiceContainer:
     def register_type(
         self,
         name: str,
-        service_type: Type[T],
+        service_type: type[T],
         lifetime: Lifetime = Lifetime.SINGLETON,
         **kwargs
     ) -> 'ServiceContainer':
@@ -223,7 +224,7 @@ class ServiceContainer:
             logger.debug(f"Resolved service: {name}")
             return instance
 
-    def resolve_typed(self, name: str, expected_type: Type[T]) -> T:
+    def resolve_typed(self, name: str, expected_type: type[T]) -> T:
         """
         Resolve with type checking.
 
@@ -247,7 +248,7 @@ class ServiceContainer:
 
         return instance
 
-    def try_resolve(self, name: str) -> Optional[Any]:
+    def try_resolve(self, name: str) -> Any | None:
         """
         Try to resolve, return None if not found.
 
@@ -327,7 +328,7 @@ class ServiceContainer:
             self._current_scope = None
             logger.info("ServiceContainer cleared")
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check health of registered services."""
         health = {
             "status": "healthy",

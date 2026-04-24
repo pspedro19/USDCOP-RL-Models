@@ -20,12 +20,13 @@ Date: 2026-01-23
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Optional, Callable, Any, Dict, List
+from typing import Any
 from uuid import UUID, uuid4
 
 import redis.asyncio as aioredis
-from redis.exceptions import ConnectionError, TimeoutError, ResponseError
+from redis.exceptions import ConnectionError, ResponseError, TimeoutError
 
 from app.contracts.signal_bridge import InferenceSignalCreate
 from app.core.config import settings
@@ -65,12 +66,12 @@ class RedisStreamsBridge:
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
+        redis_url: str | None = None,
         stream_name: str = "signals:ppo_primary:stream",
         consumer_group: str = "signalbridge",
-        consumer_name: Optional[str] = None,
-        on_signal_received: Optional[Callable[[InferenceSignalCreate], Any]] = None,
-        default_credential_id: Optional[UUID] = None,
+        consumer_name: str | None = None,
+        on_signal_received: Callable[[InferenceSignalCreate], Any] | None = None,
+        default_credential_id: UUID | None = None,
         reconnect_delay_base: float = 1.0,
         reconnect_delay_max: float = 60.0,
         block_timeout_ms: int = 5000,
@@ -107,10 +108,10 @@ class RedisStreamsBridge:
 
         # State
         self._connection_state = self.DISCONNECTED
-        self._redis: Optional[aioredis.Redis] = None
+        self._redis: aioredis.Redis | None = None
         self._running = False
-        self._consumer_task: Optional[asyncio.Task] = None
-        self._last_message_at: Optional[datetime] = None
+        self._consumer_task: asyncio.Task | None = None
+        self._last_message_at: datetime | None = None
         self._messages_received = 0
         self._signals_processed = 0
         self._errors_count = 0
@@ -126,7 +127,7 @@ class RedisStreamsBridge:
         return self._connection_state
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get connection statistics."""
         return {
             "state": self._connection_state,
@@ -278,7 +279,7 @@ class RedisStreamsBridge:
             else:
                 raise
 
-    async def _handle_message(self, message_id: str, data: Dict[str, str]) -> None:
+    async def _handle_message(self, message_id: str, data: dict[str, str]) -> None:
         """
         Handle incoming Redis Stream message.
 
@@ -379,7 +380,7 @@ class RedisStreamsBridge:
         )
         await asyncio.sleep(delay)
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """
         Perform health check on the Redis connection.
 
@@ -414,17 +415,17 @@ class RedisStreamsBridgeManager:
     Provides a singleton-like interface for the bridge.
     """
 
-    _instance: Optional[RedisStreamsBridge] = None
+    _instance: RedisStreamsBridge | None = None
 
     @classmethod
-    def get_instance(cls) -> Optional[RedisStreamsBridge]:
+    def get_instance(cls) -> RedisStreamsBridge | None:
         """Get the current bridge instance."""
         return cls._instance
 
     @classmethod
     def create_instance(
         cls,
-        on_signal_received: Optional[Callable[[InferenceSignalCreate], Any]] = None,
+        on_signal_received: Callable[[InferenceSignalCreate], Any] | None = None,
         **kwargs,
     ) -> RedisStreamsBridge:
         """

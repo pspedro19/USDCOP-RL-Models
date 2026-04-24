@@ -9,11 +9,11 @@ Previene:
 - P-hacking por busqueda exhaustiva
 """
 
-from dataclasses import dataclass, asdict
+import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-import json
-from typing import Optional, Dict, List, Any
+from typing import Any
 
 
 @dataclass
@@ -24,10 +24,10 @@ class ExperimentLog:
     phase: str  # 'exploration', 'validation', 'test'
     hyperparameters: dict
     validation_looked: bool
-    metrics: Optional[dict] = None
+    metrics: dict | None = None
     notes: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializa a dict JSON-compatible."""
         d = asdict(self)
         d['timestamp'] = self.timestamp.isoformat()
@@ -54,7 +54,7 @@ class MLWorkflowTracker:
     MAX_VALIDATION_LOOKS_WARNING = 20
     MAX_VALIDATION_LOOKS_ERROR = 50
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         """
         Inicializa el tracker.
 
@@ -263,7 +263,7 @@ class MLWorkflowTracker:
         else:
             return "CRITICAL"
 
-    def get_audit_trail(self) -> List[dict]:
+    def get_audit_trail(self) -> list[dict]:
         """
         Retorna el audit trail completo.
 

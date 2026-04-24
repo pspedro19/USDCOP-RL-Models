@@ -23,7 +23,7 @@ except ImportError as e:
 
 def main():
     # Read the file
-    with open(API_FILE, 'r', encoding='utf-8') as f:
+    with open(API_FILE, encoding='utf-8') as f:
         lines = f.readlines()
 
     # Check if already installed

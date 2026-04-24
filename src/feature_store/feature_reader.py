@@ -26,14 +26,15 @@ Version: 1.0.0
 Created: 2026-01-17
 """
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List, Tuple
+import json
 import logging
 import os
-import psycopg2
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
 import numpy as np
-import json
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +79,8 @@ class FeatureRecord:
     """A single feature record from the database."""
     timestamp: datetime
     features: np.ndarray
-    norm_stats_hash: Optional[str]
-    builder_version: Optional[str]
+    norm_stats_hash: str | None
+    builder_version: str | None
     age_seconds: float
 
     def is_fresh(self, max_age_minutes: int = 10) -> bool:
@@ -176,7 +177,7 @@ class FeatureReader:
         self,
         symbol: str,
         timestamp: datetime,
-    ) -> Optional[FeatureRecord]:
+    ) -> FeatureRecord | None:
         """
         Get features for a specific timestamp.
 
@@ -273,7 +274,7 @@ class FeatureReader:
         self,
         symbol: str,
         max_age_minutes: int = 10,
-    ) -> Optional[FeatureRecord]:
+    ) -> FeatureRecord | None:
         """
         Get the latest available features.
 
@@ -286,7 +287,7 @@ class FeatureReader:
         """
         return self.get_features(symbol, datetime.now())
 
-    def get_feature_metadata(self) -> Dict[str, Any]:
+    def get_feature_metadata(self) -> dict[str, Any]:
         """
         Get metadata about the latest features.
 
@@ -341,8 +342,8 @@ class FeatureReader:
     def check_norm_stats_hash(
         self,
         expected_hash: str,
-        timestamp: Optional[datetime] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        timestamp: datetime | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Check if the norm_stats_hash matches expected.
 
@@ -402,7 +403,7 @@ class FeatureReader:
 
 
 # Singleton instance for convenience
-_feature_reader: Optional[FeatureReader] = None
+_feature_reader: FeatureReader | None = None
 
 
 def get_feature_reader() -> FeatureReader:

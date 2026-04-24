@@ -24,9 +24,9 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from src.core.contracts.storage_contracts import ModelSnapshot, BacktestSnapshot
+from src.core.contracts.storage_contracts import ModelSnapshot
 from src.core.factories.storage_factory import StorageFactory
 from src.core.interfaces.storage import ObjectNotFoundError
 from src.ml_workflow.experiment_manager import ExperimentManager
@@ -54,16 +54,16 @@ class PromotionStatus(str, Enum):
 class PromotionResult:
     """Result of a promotion attempt."""
     status: PromotionStatus
-    model_id: Optional[str]
+    model_id: str | None
     experiment_id: str
     model_version: str
-    production_uri: Optional[str]
+    production_uri: str | None
     validation_passed: bool
-    validation_errors: List[str]
-    promoted_at: Optional[datetime]
-    error_message: Optional[str]
+    validation_errors: list[str]
+    promoted_at: datetime | None
+    error_message: str | None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "status": self.status.value,
@@ -106,7 +106,7 @@ class PromotionService:
 
     def __init__(
         self,
-        storage_factory: Optional[StorageFactory] = None,
+        storage_factory: StorageFactory | None = None,
         db_connection=None,
     ):
         """
@@ -123,8 +123,8 @@ class PromotionService:
         self,
         experiment_id: str,
         model_version: str,
-        model_id: Optional[str] = None,
-        validation_config: Optional[Dict[str, Any]] = None,
+        model_id: str | None = None,
+        validation_config: dict[str, Any] | None = None,
         skip_validation: bool = False,
         dry_run: bool = False,
     ) -> PromotionResult:
@@ -225,8 +225,8 @@ class PromotionService:
         self,
         manager: ExperimentManager,
         model_snapshot: ModelSnapshot,
-        config: Dict[str, Any],
-    ) -> List[str]:
+        config: dict[str, Any],
+    ) -> list[str]:
         """
         Validate model meets promotion criteria.
 
@@ -370,9 +370,9 @@ class PromotionService:
 
     def get_promotion_history(
         self,
-        experiment_id: Optional[str] = None,
+        experiment_id: str | None = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get promotion history from model_registry.
 
@@ -410,7 +410,7 @@ class PromotionService:
 # =============================================================================
 
 __all__ = [
-    "PromotionStatus",
     "PromotionResult",
     "PromotionService",
+    "PromotionStatus",
 ]

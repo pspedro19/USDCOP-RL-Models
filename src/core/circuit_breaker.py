@@ -20,15 +20,15 @@ Date: 2026-01-17
 
 import asyncio
 import logging
+import threading
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from collections import deque
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, Generic
-from collections import deque
-import threading
+from typing import Any, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +58,9 @@ class CircuitBreakerStats:
     failed_requests: int = 0
     rejected_requests: int = 0  # Requests rejected when open
     state_transitions: int = 0
-    last_failure_time: Optional[datetime] = None
-    last_success_time: Optional[datetime] = None
-    last_state_change: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    last_success_time: datetime | None = None
+    last_state_change: datetime | None = None
     current_state: CircuitState = CircuitState.CLOSED
 
     @property
@@ -76,7 +76,7 @@ class CircuitBreakerStats:
         """Calculate current success rate."""
         return 1.0 - self.failure_rate
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "total_requests": self.total_requests,
@@ -140,8 +140,8 @@ class CircuitBreaker:
     def __init__(
         self,
         name: str,
-        config: Optional[CircuitBreakerConfig] = None,
-        fallback: Optional[Callable[[], Any]] = None,
+        config: CircuitBreakerConfig | None = None,
+        fallback: Callable[[], Any] | None = None,
     ):
         """
         Initialize circuit breaker.
@@ -158,8 +158,8 @@ class CircuitBreaker:
         self._state = CircuitState.CLOSED
         self._failure_count = 0
         self._success_count = 0
-        self._last_failure_time: Optional[float] = None
-        self._last_state_change: Optional[float] = None
+        self._last_failure_time: float | None = None
+        self._last_state_change: float | None = None
 
         # Sliding window for failure rate
         self._recent_results: deque = deque(maxlen=self.config.window_size)
@@ -201,7 +201,7 @@ class CircuitBreaker:
 
         self.stats.state_transitions += 1
         self.stats.current_state = new_state
-        self.stats.last_state_change = datetime.now(timezone.utc)
+        self.stats.last_state_change = datetime.now(UTC)
 
         logger.warning(
             f"CircuitBreaker '{self.name}' state transition: "
@@ -234,7 +234,7 @@ class CircuitBreaker:
         """Record a successful call."""
         with self._lock:
             self.stats.successful_requests += 1
-            self.stats.last_success_time = datetime.now(timezone.utc)
+            self.stats.last_success_time = datetime.now(UTC)
             self._recent_results.append(True)
 
             if self._state == CircuitState.HALF_OPEN:
@@ -251,7 +251,7 @@ class CircuitBreaker:
 
         with self._lock:
             self.stats.failed_requests += 1
-            self.stats.last_failure_time = datetime.now(timezone.utc)
+            self.stats.last_failure_time = datetime.now(UTC)
             self._last_failure_time = time.time()
             self._recent_results.append(False)
             self._failure_count += 1
@@ -365,7 +365,7 @@ class CircuitBreaker:
             self._last_failure_time = time.time()
             logger.warning(f"CircuitBreaker '{self.name}' manually opened")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current circuit breaker status."""
         with self._lock:
             return {
@@ -410,14 +410,14 @@ class CircuitBreakerRegistry:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._breakers: Dict[str, CircuitBreaker] = {}
+                    cls._instance._breakers: dict[str, CircuitBreaker] = {}
         return cls._instance
 
     def get_or_create(
         self,
         name: str,
-        config: Optional[CircuitBreakerConfig] = None,
-        fallback: Optional[Callable] = None,
+        config: CircuitBreakerConfig | None = None,
+        fallback: Callable | None = None,
     ) -> CircuitBreaker:
         """
         Get existing circuit breaker or create new one.
@@ -434,11 +434,11 @@ class CircuitBreakerRegistry:
             self._breakers[name] = CircuitBreaker(name, config, fallback)
         return self._breakers[name]
 
-    def get(self, name: str) -> Optional[CircuitBreaker]:
+    def get(self, name: str) -> CircuitBreaker | None:
         """Get circuit breaker by name."""
         return self._breakers.get(name)
 
-    def get_all_statuses(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_statuses(self) -> dict[str, dict[str, Any]]:
         """Get status of all circuit breakers."""
         return {
             name: breaker.get_status()
@@ -459,7 +459,7 @@ def circuit_breaker(
     name: str,
     failure_threshold: int = 5,
     timeout_seconds: float = 30.0,
-    fallback: Optional[Callable] = None,
+    fallback: Callable | None = None,
 ) -> Callable:
     """
     Decorator to apply circuit breaker to a function.
@@ -478,24 +478,24 @@ def circuit_breaker(
     return breaker
 
 
-def get_circuit_breaker(name: str) -> Optional[CircuitBreaker]:
+def get_circuit_breaker(name: str) -> CircuitBreaker | None:
     """Get a circuit breaker from the global registry."""
     return CircuitBreakerRegistry().get(name)
 
 
-def get_all_circuit_breaker_statuses() -> Dict[str, Dict[str, Any]]:
+def get_all_circuit_breaker_statuses() -> dict[str, dict[str, Any]]:
     """Get status of all circuit breakers in the registry."""
     return CircuitBreakerRegistry().get_all_statuses()
 
 
 __all__ = [
-    "CircuitState",
-    "CircuitBreakerError",
-    "CircuitBreakerStats",
-    "CircuitBreakerConfig",
     "CircuitBreaker",
+    "CircuitBreakerConfig",
+    "CircuitBreakerError",
     "CircuitBreakerRegistry",
+    "CircuitBreakerStats",
+    "CircuitState",
     "circuit_breaker",
-    "get_circuit_breaker",
     "get_all_circuit_breaker_statuses",
+    "get_circuit_breaker",
 ]

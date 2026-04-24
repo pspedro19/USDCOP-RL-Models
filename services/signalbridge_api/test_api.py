@@ -3,9 +3,10 @@ Script de pruebas para verificar que el API funciona correctamente.
 Ejecutar con: python test_api.py
 """
 
-import httpx
 import asyncio
 from pprint import pprint
+
+import httpx
 
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"

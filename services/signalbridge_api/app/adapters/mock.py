@@ -17,18 +17,17 @@ Date: 2026-01-22
 import asyncio
 import random
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from uuid import uuid4
 
 from app.adapters.base import (
-    ExchangeAdapter,
     BalanceInfo,
+    ExchangeAdapter,
     OrderResult,
-    TickerInfo,
     SymbolInfo,
+    TickerInfo,
 )
 from app.contracts.exchange import SupportedExchange
-from app.contracts.execution import OrderSide, ExecutionStatus
+from app.contracts.execution import ExecutionStatus, OrderSide
 
 
 class MockExchangeAdapter(ExchangeAdapter):
@@ -103,9 +102,9 @@ class MockExchangeAdapter(ExchangeAdapter):
         self,
         api_key: str,
         api_secret: str,
-        passphrase: Optional[str] = None,
+        passphrase: str | None = None,
         testnet: bool = True,
-        initial_balances: Optional[Dict[str, float]] = None,
+        initial_balances: dict[str, float] | None = None,
         failure_rate: float = 0.0,
         latency_ms: int = 50,
         slippage_bps: int = 5,
@@ -130,14 +129,14 @@ class MockExchangeAdapter(ExchangeAdapter):
         self.slippage_bps = slippage_bps
 
         # Initialize balances
-        self._balances: Dict[str, float] = initial_balances or {"USDT": 10000.0}
+        self._balances: dict[str, float] = initial_balances or {"USDT": 10000.0}
 
         # Track orders
-        self._orders: Dict[str, OrderResult] = {}
+        self._orders: dict[str, OrderResult] = {}
         self._order_count = 0
 
         # Simulated prices (can be updated)
-        self._prices: Dict[str, float] = self.DEFAULT_PRICES.copy()
+        self._prices: dict[str, float] = self.DEFAULT_PRICES.copy()
 
     @property
     def exchange_name(self) -> SupportedExchange:
@@ -181,7 +180,7 @@ class MockExchangeAdapter(ExchangeAdapter):
         await self._simulate_latency()
         return not self._should_fail()
 
-    async def get_balance(self, asset: Optional[str] = None) -> List[BalanceInfo]:
+    async def get_balance(self, asset: str | None = None) -> list[BalanceInfo]:
         """Get simulated balances."""
         await self._simulate_latency()
 
@@ -410,8 +409,8 @@ class MockExchangeAdapter(ExchangeAdapter):
 
     async def get_open_orders(
         self,
-        symbol: Optional[str] = None,
-    ) -> List[OrderResult]:
+        symbol: str | None = None,
+    ) -> list[OrderResult]:
         """Get all open orders."""
         await self._simulate_latency()
 
@@ -421,11 +420,11 @@ class MockExchangeAdapter(ExchangeAdapter):
         ]
         return open_orders
 
-    def get_order_history(self) -> List[OrderResult]:
+    def get_order_history(self) -> list[OrderResult]:
         """Get all orders (mock-specific method for testing)."""
         return list(self._orders.values())
 
-    def reset(self, initial_balances: Optional[Dict[str, float]] = None) -> None:
+    def reset(self, initial_balances: dict[str, float] | None = None) -> None:
         """Reset mock state (useful for testing)."""
         self._balances = initial_balances or {"USDT": 10000.0}
         self._orders.clear()

@@ -32,29 +32,29 @@ Environment Variables:
     OTEL_ENABLED: Enable/disable tracing (default: true)
 """
 
-import os
 import logging
-from typing import Optional, Dict, Any
+import os
 from contextvars import ContextVar
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Context variable for current span (thread-safe)
-_current_span_context: ContextVar[Optional[Any]] = ContextVar(
+_current_span_context: ContextVar[Any | None] = ContextVar(
     "current_span_context", default=None
 )
 
 # Global tracer provider (initialized once)
-_tracer_provider: Optional[Any] = None
+_tracer_provider: Any | None = None
 _initialized: bool = False
 
 
 def init_tracing(
     service_name: str,
-    jaeger_endpoint: Optional[str] = None,
+    jaeger_endpoint: str | None = None,
     service_version: str = "1.0.0",
     sampling_rate: float = 0.1,
-    additional_attributes: Optional[Dict[str, str]] = None,
+    additional_attributes: dict[str, str] | None = None,
     enabled: bool = True,
 ) -> bool:
     """
@@ -104,13 +104,13 @@ def init_tracing(
     try:
         # Import OpenTelemetry components
         from opentelemetry import trace
-        from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
         from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-        from opentelemetry.sdk.trace.sampling import TraceIdRatioBased, ParentBased
         from opentelemetry.propagate import set_global_textmap
         from opentelemetry.propagators.b3 import B3MultiFormat
+        from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 
         # Get configuration from environment or parameters
         jaeger_endpoint = jaeger_endpoint or os.environ.get(
@@ -338,7 +338,7 @@ def add_span_attribute(key: str, value: Any) -> None:
         span.set_attribute(key, value)
 
 
-def add_span_event(name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+def add_span_event(name: str, attributes: dict[str, Any] | None = None) -> None:
     """
     Add an event to the current span.
 
@@ -357,7 +357,7 @@ def add_span_event(name: str, attributes: Optional[Dict[str, Any]] = None) -> No
         span.add_event(name, attributes=attributes or {})
 
 
-def record_exception(exception: Exception, attributes: Optional[Dict[str, Any]] = None) -> None:
+def record_exception(exception: Exception, attributes: dict[str, Any] | None = None) -> None:
     """
     Record an exception in the current span.
 
@@ -382,7 +382,7 @@ def record_exception(exception: Exception, attributes: Optional[Dict[str, Any]] 
             pass
 
 
-def get_trace_context() -> Dict[str, str]:
+def get_trace_context() -> dict[str, str]:
     """
     Get the current trace context for propagation.
 
@@ -398,14 +398,14 @@ def get_trace_context() -> Dict[str, str]:
     """
     try:
         from opentelemetry import propagate
-        carrier: Dict[str, str] = {}
+        carrier: dict[str, str] = {}
         propagate.inject(carrier)
         return carrier
     except ImportError:
         return {}
 
 
-def inject_trace_context(carrier: Dict[str, str]) -> None:
+def inject_trace_context(carrier: dict[str, str]) -> None:
     """
     Inject trace context into a carrier (e.g., HTTP headers).
 
@@ -424,7 +424,7 @@ def inject_trace_context(carrier: Dict[str, str]) -> None:
         pass
 
 
-def extract_trace_context(carrier: Dict[str, str]) -> Any:
+def extract_trace_context(carrier: dict[str, str]) -> Any:
     """
     Extract trace context from a carrier.
 
@@ -499,10 +499,10 @@ class _NoOpSpan:
     def set_attribute(self, key: str, value: Any) -> None:
         pass
 
-    def add_event(self, name: str, attributes: Optional[Dict] = None) -> None:
+    def add_event(self, name: str, attributes: dict | None = None) -> None:
         pass
 
-    def record_exception(self, exception: Exception, attributes: Optional[Dict] = None) -> None:
+    def record_exception(self, exception: Exception, attributes: dict | None = None) -> None:
         pass
 
     def set_status(self, status: Any, description: str = None) -> None:

@@ -19,13 +19,13 @@ Usage:
     # Load from database
     contract = ExperimentContract.from_db(conn, contract_id="CTR-EXP-exp1")
 """
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, Tuple
-from pathlib import Path
 import hashlib
 import json
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
 
 try:
     import yaml
@@ -34,7 +34,7 @@ except ImportError:
     YAML_AVAILABLE = False
 
 # Import SSOT feature order hash
-from .feature_contract import FEATURE_ORDER_HASH, FEATURE_CONTRACT_VERSION
+from .feature_contract import FEATURE_CONTRACT_VERSION, FEATURE_ORDER_HASH
 
 logger = logging.getLogger(__name__)
 
@@ -70,17 +70,17 @@ class ExperimentContract:
     date_ranges_version: str            # e.g., "1.0.0"
 
     # Config congelada (inmutable)
-    frozen_config: Dict[str, Any] = field(default_factory=dict)
+    frozen_config: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
-    yaml_path: Optional[str] = None
+    yaml_path: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     # Derived config sections (convenience)
-    model_config: Dict[str, Any] = field(default_factory=dict)
-    training_config: Dict[str, Any] = field(default_factory=dict)
-    reward_config: Dict[str, Any] = field(default_factory=dict)
-    success_criteria: Dict[str, Any] = field(default_factory=dict)
+    model_config: dict[str, Any] = field(default_factory=dict)
+    training_config: dict[str, Any] = field(default_factory=dict)
+    reward_config: dict[str, Any] = field(default_factory=dict)
+    success_criteria: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_yaml(cls, yaml_path: Path) -> "ExperimentContract":
@@ -212,7 +212,7 @@ class ExperimentContract:
         finally:
             cur.close()
 
-    def save_to_db(self, conn) -> Optional[int]:
+    def save_to_db(self, conn) -> int | None:
         """
         Guardar contrato en base de datos (inmutable - no actualiza si existe).
 
@@ -259,7 +259,7 @@ class ExperimentContract:
         finally:
             cur.close()
 
-    def get_hyperparameters(self) -> Dict[str, Any]:
+    def get_hyperparameters(self) -> dict[str, Any]:
         """Get model hyperparameters from frozen config."""
         return {
             "learning_rate": self.model_config.get("learning_rate", 3e-4),
@@ -273,7 +273,7 @@ class ExperimentContract:
             "max_grad_norm": self.model_config.get("max_grad_norm", 0.5),
         }
 
-    def get_reward_weights(self) -> Dict[str, float]:
+    def get_reward_weights(self) -> dict[str, float]:
         """Get reward weights from frozen config."""
         weights = self.reward_config.get("weights", {})
         return {
@@ -283,7 +283,7 @@ class ExperimentContract:
             "transaction": weights.get("transaction", -0.0005),
         }
 
-    def get_success_criteria(self) -> Dict[str, float]:
+    def get_success_criteria(self) -> dict[str, float]:
         """Get success criteria for L4 evaluation."""
         return {
             "min_sharpe": self.success_criteria.get("min_sharpe", 0.5),
@@ -293,7 +293,7 @@ class ExperimentContract:
             "improvement_threshold": self.success_criteria.get("improvement_threshold", 0.05),
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convertir a diccionario para serialización."""
         return {
             "contract_id": self.contract_id,
@@ -309,7 +309,7 @@ class ExperimentContract:
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-    def validate(self) -> Tuple[bool, List[str]]:
+    def validate(self) -> tuple[bool, list[str]]:
         """
         Validar integridad del contrato.
 
@@ -347,10 +347,10 @@ class ExperimentContract:
 
 
 def load_experiment_contract(
-    yaml_path: Optional[Path] = None,
-    contract_id: Optional[str] = None,
+    yaml_path: Path | None = None,
+    contract_id: str | None = None,
     conn=None,
-) -> Optional[ExperimentContract]:
+) -> ExperimentContract | None:
     """
     Convenience function to load an experiment contract.
 

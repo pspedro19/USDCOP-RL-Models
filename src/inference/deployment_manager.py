@@ -17,13 +17,12 @@ Contract: CTR-DEPLOY-001
 import hashlib
 import json
 import logging
-import os
 import random
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 import yaml
 
@@ -57,15 +56,15 @@ class ModelDeployment:
     model_hash: str
     stage: DeploymentStage
     deployed_at: datetime
-    promoted_at: Optional[datetime] = None
-    rolled_back_at: Optional[datetime] = None
-    rollback_reason: Optional[str] = None
+    promoted_at: datetime | None = None
+    rolled_back_at: datetime | None = None
+    rollback_reason: str | None = None
     traffic_percent: float = 0.0
-    metrics: Dict[str, float] = field(default_factory=dict)
-    config_hash: Optional[str] = None
-    mlflow_run_id: Optional[str] = None
+    metrics: dict[str, float] = field(default_factory=dict)
+    config_hash: str | None = None
+    mlflow_run_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "model_id": self.model_id,
             "model_path": self.model_path,
@@ -82,7 +81,7 @@ class ModelDeployment:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModelDeployment":
+    def from_dict(cls, data: dict[str, Any]) -> "ModelDeployment":
         return cls(
             model_id=data["model_id"],
             model_path=data["model_path"],
@@ -117,7 +116,7 @@ class CanaryStageConfig:
     name: str
     traffic_percent: int
     duration_hours: int
-    success_criteria: Dict[str, float]
+    success_criteria: dict[str, float]
     on_failure: str
     on_success: str
 
@@ -127,10 +126,10 @@ class PromotionDecision:
     """Result of a promotion decision."""
     should_promote: bool
     current_stage: DeploymentStage
-    next_stage: Optional[DeploymentStage]
+    next_stage: DeploymentStage | None
     reason: str
-    metrics: Dict[str, float]
-    criteria_met: Dict[str, bool]
+    metrics: dict[str, float]
+    criteria_met: dict[str, bool]
 
 
 class DeploymentManager:
@@ -146,8 +145,8 @@ class DeploymentManager:
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
-        state_path: Optional[Path] = None,
+        config_path: Path | None = None,
+        state_path: Path | None = None,
     ):
         """
         Initialize the deployment manager.
@@ -203,10 +202,10 @@ class DeploymentManager:
 
     def _load_state(self):
         """Load deployment state from disk."""
-        self.champion: Optional[ModelDeployment] = None
-        self.challenger: Optional[ModelDeployment] = None
-        self.deployment_history: List[ModelDeployment] = []
-        self.last_rollback: Optional[datetime] = None
+        self.champion: ModelDeployment | None = None
+        self.challenger: ModelDeployment | None = None
+        self.deployment_history: list[ModelDeployment] = []
+        self.last_rollback: datetime | None = None
 
         if self.state_path.exists():
             try:
@@ -254,8 +253,8 @@ class DeploymentManager:
         model_id: str,
         model_path: str,
         model_hash: str,
-        config_hash: Optional[str] = None,
-        mlflow_run_id: Optional[str] = None,
+        config_hash: str | None = None,
+        mlflow_run_id: str | None = None,
     ) -> ModelDeployment:
         """
         Deploy a new model to shadow mode.
@@ -290,7 +289,7 @@ class DeploymentManager:
         logger.info(f"[Deploy] Model {model_id} deployed to SHADOW mode")
         return deployment
 
-    def promote(self, metrics: Dict[str, float]) -> PromotionDecision:
+    def promote(self, metrics: dict[str, float]) -> PromotionDecision:
         """
         Attempt to promote the challenger to the next stage.
 
@@ -378,7 +377,7 @@ class DeploymentManager:
             criteria_met=criteria_met,
         )
 
-    def _execute_promotion(self, next_stage: DeploymentStage, metrics: Dict[str, float]):
+    def _execute_promotion(self, next_stage: DeploymentStage, metrics: dict[str, float]):
         """Execute the promotion to the next stage."""
         if not self.challenger:
             return
@@ -404,7 +403,7 @@ class DeploymentManager:
         self._save_state()
         logger.info(f"[Deploy] Promoted to {next_stage.value}")
 
-    def _get_stage_config(self, stage: DeploymentStage) -> Optional[CanaryStageConfig]:
+    def _get_stage_config(self, stage: DeploymentStage) -> CanaryStageConfig | None:
         """Get configuration for a deployment stage."""
         stage_name_map = {
             DeploymentStage.SHADOW: "shadow",
@@ -419,7 +418,7 @@ class DeploymentManager:
                 return config
         return None
 
-    def _get_next_stage(self, current: DeploymentStage) -> Optional[DeploymentStage]:
+    def _get_next_stage(self, current: DeploymentStage) -> DeploymentStage | None:
         """Get the next stage in the promotion sequence."""
         sequence = [
             DeploymentStage.SHADOW,
@@ -441,7 +440,7 @@ class DeploymentManager:
     # Rollback Operations
     # =========================================================================
 
-    def check_rollback_triggers(self, metrics: Dict[str, float]) -> Optional[RollbackTrigger]:
+    def check_rollback_triggers(self, metrics: dict[str, float]) -> RollbackTrigger | None:
         """
         Check if any rollback trigger conditions are met.
 
@@ -547,7 +546,7 @@ class DeploymentManager:
     # Traffic Splitting
     # =========================================================================
 
-    def should_use_challenger(self, trade_id: Optional[str] = None) -> bool:
+    def should_use_challenger(self, trade_id: str | None = None) -> bool:
         """
         Determine if a trade should use the challenger model.
 
@@ -573,7 +572,7 @@ class DeploymentManager:
         # Random splitting fallback
         return random.random() * 100 < self.challenger.traffic_percent
 
-    def get_active_model_path(self, trade_id: Optional[str] = None) -> str:
+    def get_active_model_path(self, trade_id: str | None = None) -> str:
         """
         Get the path of the model to use for a trade.
 
@@ -591,7 +590,7 @@ class DeploymentManager:
 
         raise RuntimeError("No active model available")
 
-    def get_deployment_status(self) -> Dict[str, Any]:
+    def get_deployment_status(self) -> dict[str, Any]:
         """Get current deployment status."""
         return {
             "champion": self.champion.to_dict() if self.champion else None,
@@ -607,7 +606,7 @@ class DeploymentManager:
 # Convenience functions for DAG/API usage
 # =============================================================================
 
-_manager_instance: Optional[DeploymentManager] = None
+_manager_instance: DeploymentManager | None = None
 
 
 def get_deployment_manager() -> DeploymentManager:
@@ -623,14 +622,14 @@ def deploy_model_to_shadow(
     model_path: str,
     model_hash: str,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Deploy a model to shadow mode."""
     manager = get_deployment_manager()
     deployment = manager.deploy_to_shadow(model_id, model_path, model_hash, **kwargs)
     return deployment.to_dict()
 
 
-def check_and_promote(metrics: Dict[str, float]) -> Dict[str, Any]:
+def check_and_promote(metrics: dict[str, float]) -> dict[str, Any]:
     """Check promotion criteria and promote if met."""
     manager = get_deployment_manager()
     decision = manager.promote(metrics)
@@ -643,7 +642,7 @@ def check_and_promote(metrics: Dict[str, float]) -> Dict[str, Any]:
     }
 
 
-def check_rollback_needed(metrics: Dict[str, float]) -> Dict[str, Any]:
+def check_rollback_needed(metrics: dict[str, float]) -> dict[str, Any]:
     """Check if rollback is needed based on metrics."""
     manager = get_deployment_manager()
     trigger = manager.check_rollback_triggers(metrics)

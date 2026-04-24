@@ -18,18 +18,17 @@ Date: 2026-01-17
 """
 
 import logging
-from typing import Optional
 
 try:
     from prometheus_client import (
+        CONTENT_TYPE_LATEST,
+        REGISTRY,
+        CollectorRegistry,
         Counter,
-        Histogram,
         Gauge,
+        Histogram,
         Info,
         generate_latest,
-        CONTENT_TYPE_LATEST,
-        CollectorRegistry,
-        REGISTRY,
     )
     PROMETHEUS_AVAILABLE = True
 except ImportError:

@@ -20,8 +20,8 @@ Date: 2026-01-17
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple, Any
+from datetime import UTC, datetime
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -39,14 +39,14 @@ class MultivariateDriftResult:
     """Result of multivariate drift detection."""
     method: str
     statistic: float
-    p_value: Optional[float]
+    p_value: float | None
     threshold: float
     is_drifted: bool
     drift_severity: str  # "none", "low", "medium", "high"
-    feature_contributions: Optional[Dict[str, float]]  # Per-feature contribution
+    feature_contributions: dict[str, float] | None  # Per-feature contribution
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "method": self.method,
@@ -65,11 +65,11 @@ class MultivariateDriftReport:
     """Complete multivariate drift report."""
     timestamp: str
     overall_is_drifted: bool
-    results: List[MultivariateDriftResult]
-    pca_variance_explained: Optional[float]
-    correlation_change: Optional[float]
+    results: list[MultivariateDriftResult]
+    pca_variance_explained: float | None
+    correlation_change: float | None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "timestamp": self.timestamp,
@@ -134,20 +134,20 @@ class MultivariateDriftDetector:
         self.n_pca_components = n_pca_components
 
         # Reference data
-        self._reference_data: Optional[np.ndarray] = None
-        self._reference_mean: Optional[np.ndarray] = None
-        self._reference_std: Optional[np.ndarray] = None
-        self._reference_correlation: Optional[np.ndarray] = None
-        self._pca_components: Optional[np.ndarray] = None
-        self._pca_mean: Optional[np.ndarray] = None
-        self._reconstruction_error_mean: Optional[float] = None
-        self._reconstruction_error_std: Optional[float] = None
-        self._feature_names: List[str] = []
+        self._reference_data: np.ndarray | None = None
+        self._reference_mean: np.ndarray | None = None
+        self._reference_std: np.ndarray | None = None
+        self._reference_correlation: np.ndarray | None = None
+        self._pca_components: np.ndarray | None = None
+        self._pca_mean: np.ndarray | None = None
+        self._reconstruction_error_mean: float | None = None
+        self._reconstruction_error_std: float | None = None
+        self._feature_names: list[str] = []
 
     def set_reference(
         self,
         data: np.ndarray,
-        feature_names: Optional[List[str]] = None,
+        feature_names: list[str] | None = None,
     ) -> None:
         """
         Set reference data for drift detection.
@@ -221,8 +221,8 @@ class MultivariateDriftDetector:
         reference: np.ndarray,
         current: np.ndarray,
         kernel: str = "rbf",
-        gamma: Optional[float] = None,
-    ) -> Tuple[float, Optional[float]]:
+        gamma: float | None = None,
+    ) -> tuple[float, float | None]:
         """
         Compute Maximum Mean Discrepancy between two distributions.
 
@@ -334,7 +334,7 @@ class MultivariateDriftDetector:
     def compute_pca_reconstruction_error(
         self,
         data: np.ndarray,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Compute PCA reconstruction error.
 
@@ -371,7 +371,7 @@ class MultivariateDriftDetector:
     def compute_correlation_change(
         self,
         current: np.ndarray,
-    ) -> Tuple[float, Dict[str, float]]:
+    ) -> tuple[float, dict[str, float]]:
         """
         Compute change in feature correlations.
 
@@ -418,7 +418,7 @@ class MultivariateDriftDetector:
             current_data = current_data.reshape(-1, 1)
 
         results = []
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
 
         # 1. Maximum Mean Discrepancy
         mmd, mmd_p = self.compute_mmd(self._reference_data, current_data)
@@ -500,7 +500,7 @@ class MultivariateDriftDetector:
 
 def create_multivariate_detector(
     reference_data: np.ndarray,
-    feature_names: Optional[List[str]] = None,
+    feature_names: list[str] | None = None,
 ) -> MultivariateDriftDetector:
     """
     Create and initialize a multivariate drift detector.
@@ -520,7 +520,7 @@ def create_multivariate_detector(
 def quick_multivariate_check(
     reference: np.ndarray,
     current: np.ndarray,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Quick multivariate drift check.
 
@@ -545,9 +545,9 @@ def quick_multivariate_check(
 
 
 __all__ = [
-    "MultivariateDriftResult",
-    "MultivariateDriftReport",
     "MultivariateDriftDetector",
+    "MultivariateDriftReport",
+    "MultivariateDriftResult",
     "create_multivariate_detector",
     "quick_multivariate_check",
 ]

@@ -17,12 +17,13 @@ Version: 1.0.0
 Date: 2026-02-02
 """
 
+import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Tuple
-import json
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,7 @@ class WalkForwardRLWindow:
     val_rows: int = 0
 
     # Training results
-    model_path: Optional[str] = None
+    model_path: str | None = None
     training_timesteps: int = 0
     training_duration_seconds: float = 0.0
 
@@ -57,11 +58,11 @@ class WalkForwardRLWindow:
     val_max_drawdown: float = 0.0
 
     # Action distribution
-    action_distribution: Dict[str, float] = field(default_factory=dict)
+    action_distribution: dict[str, float] = field(default_factory=dict)
 
     # Status
     success: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def degradation_ratio(self) -> float:
@@ -80,7 +81,7 @@ class WalkForwardRLWindow:
         """Number of days in validation period."""
         return (self.val_end - self.val_start).days
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "window_id": self.window_id,
@@ -111,7 +112,7 @@ class WalkForwardRLWindow:
 @dataclass
 class WalkForwardRLReport:
     """Complete walk-forward RL training report."""
-    windows: List[WalkForwardRLWindow]
+    windows: list[WalkForwardRLWindow]
     method: str  # "rolling" or "anchored"
 
     # Aggregate metrics
@@ -125,7 +126,7 @@ class WalkForwardRLReport:
     # Best model selection
     best_window_id: int = -1
     best_val_sharpe: float = float('-inf')
-    best_model_path: Optional[str] = None
+    best_model_path: str | None = None
 
     # Summary
     total_windows: int = 0
@@ -133,7 +134,7 @@ class WalkForwardRLReport:
     total_train_days: int = 0
     total_val_days: int = 0
 
-    def select_best_model(self) -> Optional[WalkForwardRLWindow]:
+    def select_best_model(self) -> WalkForwardRLWindow | None:
         """Select the best model based on validation Sharpe."""
         best = None
         for w in self.windows:
@@ -144,7 +145,7 @@ class WalkForwardRLReport:
                 best = w
         return best
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "method": self.method,
@@ -194,7 +195,7 @@ class WalkForwardRLTrainer:
         self,
         train_period_months: int = 12,
         val_period_months: int = 3,
-        step_months: Optional[int] = None,
+        step_months: int | None = None,
         method: str = "rolling",  # "rolling" or "anchored"
         min_train_rows: int = 50000,
         date_column: str = "timestamp",
@@ -217,13 +218,13 @@ class WalkForwardRLTrainer:
         self.min_train_rows = min_train_rows
         self.date_column = date_column
 
-        self.windows: List[WalkForwardRLWindow] = []
+        self.windows: list[WalkForwardRLWindow] = []
 
     def generate_windows(
         self,
         start_date: datetime,
         end_date: datetime,
-    ) -> List[WalkForwardRLWindow]:
+    ) -> list[WalkForwardRLWindow]:
         """
         Generate walk-forward windows.
 
@@ -292,8 +293,8 @@ class WalkForwardRLTrainer:
     def run(
         self,
         data: pd.DataFrame,
-        train_func: Callable[[pd.DataFrame, Path, int], Dict[str, Any]],
-        eval_func: Callable[[Path, pd.DataFrame], Dict[str, float]],
+        train_func: Callable[[pd.DataFrame, Path, int], dict[str, Any]],
+        eval_func: Callable[[Path, pd.DataFrame], dict[str, float]],
         output_dir: Path,
         timesteps_per_window: int = 100_000,
     ) -> WalkForwardRLReport:
@@ -476,8 +477,8 @@ def create_walk_forward_trainer_from_ssot() -> WalkForwardRLTrainer:
 
 
 __all__ = [
-    "WalkForwardRLWindow",
     "WalkForwardRLReport",
     "WalkForwardRLTrainer",
+    "WalkForwardRLWindow",
     "create_walk_forward_trainer_from_ssot",
 ]

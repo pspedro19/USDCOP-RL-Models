@@ -10,17 +10,17 @@ Date: 2025-01-14
 """
 
 from .ensemble_strategies import (
-    WeightedAverageStrategy,
-    MajorityVoteStrategy,
-    SoftVoteStrategy,
     ConfidenceWeightedStrategy,
     EnsembleStrategyRegistry,
+    MajorityVoteStrategy,
+    SoftVoteStrategy,
+    WeightedAverageStrategy,
 )
 
 __all__ = [
-    'WeightedAverageStrategy',
-    'MajorityVoteStrategy',
-    'SoftVoteStrategy',
     'ConfidenceWeightedStrategy',
     'EnsembleStrategyRegistry',
+    'MajorityVoteStrategy',
+    'SoftVoteStrategy',
+    'WeightedAverageStrategy',
 ]

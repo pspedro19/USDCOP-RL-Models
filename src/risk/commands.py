@@ -36,15 +36,14 @@ Author: USD/COP Trading System
 Version: 1.0.0
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
-import logging
-import copy
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from .risk_manager import RiskManager, RiskLimits
+    from .risk_manager import RiskManager
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ class CommandResult:
     success: bool
     message: str
     timestamp: datetime = field(default_factory=datetime.now)
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -81,8 +80,8 @@ class Command(ABC):
     def __init__(self):
         """Initialize command with execution tracking."""
         self._executed: bool = False
-        self._executed_at: Optional[datetime] = None
-        self._result: Optional[CommandResult] = None
+        self._executed_at: datetime | None = None
+        self._result: CommandResult | None = None
 
     @abstractmethod
     def execute(self) -> CommandResult:
@@ -120,12 +119,12 @@ class Command(ABC):
         return self._executed
 
     @property
-    def executed_at(self) -> Optional[datetime]:
+    def executed_at(self) -> datetime | None:
         """Get execution timestamp."""
         return self._executed_at
 
     @property
-    def result(self) -> Optional[CommandResult]:
+    def result(self) -> CommandResult | None:
         """Get execution result."""
         return self._result
 
@@ -165,7 +164,7 @@ class TriggerCircuitBreakerCommand(Command):
         self,
         risk_manager: "RiskManager",
         reason: str,
-        cooldown_minutes: Optional[int] = None
+        cooldown_minutes: int | None = None
     ):
         """
         Initialize circuit breaker command.
@@ -181,7 +180,7 @@ class TriggerCircuitBreakerCommand(Command):
         self._cooldown_minutes = cooldown_minutes
 
         # State for undo
-        self._previous_cooldown_until: Optional[datetime] = None
+        self._previous_cooldown_until: datetime | None = None
         self._previous_consecutive_losses: int = 0
 
     def execute(self) -> CommandResult:
@@ -293,7 +292,7 @@ class SetCooldownCommand(Command):
         self._reason = reason
 
         # State for undo
-        self._previous_cooldown_until: Optional[datetime] = None
+        self._previous_cooldown_until: datetime | None = None
 
     def execute(self) -> CommandResult:
         """
@@ -395,7 +394,7 @@ class ClearCooldownCommand(Command):
         self._reason = reason
 
         # State for undo
-        self._previous_cooldown_until: Optional[datetime] = None
+        self._previous_cooldown_until: datetime | None = None
         self._previous_consecutive_losses: int = 0
 
     def execute(self) -> CommandResult:
@@ -605,7 +604,7 @@ class UpdateRiskLimitsCommand(Command):
     def __init__(
         self,
         risk_manager: "RiskManager",
-        new_limits: Dict[str, Any],
+        new_limits: dict[str, Any],
         reason: str = "limit adjustment"
     ):
         """
@@ -622,7 +621,7 @@ class UpdateRiskLimitsCommand(Command):
         self._reason = reason
 
         # State for undo
-        self._previous_limits: Dict[str, Any] = {}
+        self._previous_limits: dict[str, Any] = {}
 
     def execute(self) -> CommandResult:
         """
@@ -825,8 +824,8 @@ class CommandInvoker:
         Args:
             max_history: Maximum commands to keep in history
         """
-        self._history: List[Command] = []
-        self._redo_stack: List[Command] = []
+        self._history: list[Command] = []
+        self._redo_stack: list[Command] = []
         self._max_history = max_history
 
     def execute(self, command: Command) -> CommandResult:
@@ -912,7 +911,7 @@ class CommandInvoker:
         """Check if redo is available."""
         return len(self._redo_stack) > 0
 
-    def get_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get command history.
 
@@ -941,9 +940,9 @@ class CommandInvoker:
 
     def execute_batch(
         self,
-        commands: List[Command],
+        commands: list[Command],
         stop_on_failure: bool = True
-    ) -> List[CommandResult]:
+    ) -> list[CommandResult]:
         """
         Execute multiple commands in sequence.
 

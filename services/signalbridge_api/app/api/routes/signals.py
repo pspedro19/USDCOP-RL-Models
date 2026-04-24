@@ -2,23 +2,23 @@
 Signal routes.
 """
 
-from typing import List, Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.contracts.common import PaginatedResponse
+from app.contracts.signal import (
+    SignalAction,
+    SignalCreate,
+    SignalFilter,
+    SignalStats,
+    TradingSignal,
+)
 from app.core.database import get_db
 from app.middleware.auth import get_current_active_user
 from app.models import User
-from app.contracts.signal import (
-    TradingSignal,
-    SignalCreate,
-    SignalAction,
-    SignalStats,
-    SignalFilter,
-)
-from app.contracts.common import PaginatedResponse
 from app.services.signal import SignalService
 
 router = APIRouter(prefix="/signals", tags=["Signals"])
@@ -28,10 +28,10 @@ router = APIRouter(prefix="/signals", tags=["Signals"])
 async def list_signals(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    action: Optional[int] = None,
-    symbol: Optional[str] = None,
-    is_processed: Optional[bool] = None,
-    since: Optional[datetime] = None,
+    action: int | None = None,
+    symbol: str | None = None,
+    is_processed: bool | None = None,
+    since: datetime | None = None,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -81,7 +81,7 @@ async def create_signal(
     return signal_service.to_response(signal)
 
 
-@router.get("/recent", response_model=List[TradingSignal])
+@router.get("/recent", response_model=list[TradingSignal])
 async def get_recent_signals(
     limit: int = Query(5, ge=1, le=20),
     current_user: User = Depends(get_current_active_user),
