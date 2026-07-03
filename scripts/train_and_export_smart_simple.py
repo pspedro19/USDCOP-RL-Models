@@ -931,6 +931,63 @@ def export_approval_state(result_2025, cfg):
 
 
 # ---------------------------------------------------------------------------
+# Versioned immutable bundle + dynamic registry (CTR-STRAT-REGISTRY-001)
+# ADDITIVE: this NEVER touches the legacy production/*.json above. It writes a
+# content-addressed copy under strategies/<sid>/backtests/<version>/ so a new
+# model version becomes a selectable, replayable entry in the frontend without
+# overwriting prior versions or breaking existing consumptions.
+# ---------------------------------------------------------------------------
+
+def publish_versioned_bundle(cfg, summary, trades, year, *, gates=None, status="experimental"):
+    """Publish a versioned, immutable backtest bundle and refresh the registry.
+
+    Fully guarded: any failure prints a warning and returns None — the legacy
+    export flow is the source of truth and must never be blocked by this.
+    """
+    try:
+        from src.contracts.strategy_manifest import BundlePublisher
+    except Exception as e:  # pragma: no cover - import guard
+        print(f"    [registry] skipped (import): {e}")
+        return None
+
+    try:
+        version = str(cfg.get("version", "0.0.0"))
+        data_dir = DASHBOARD_DIR.parent  # .../public/data
+        strat_stats = summary.get("strategies", {}).get(summary.get("strategy_id", ""), {})
+        headline = {
+            "return_pct": strat_stats.get("total_return_pct"),
+            "sharpe": strat_stats.get("sharpe"),
+            "max_dd_pct": strat_stats.get("max_dd_pct"),
+            "win_rate_pct": strat_stats.get("win_rate_pct"),
+            "p_value": (summary.get("statistical_tests") or {}).get("p_value"),
+            "trades": strat_stats.get("trading_days"),
+        }
+        publisher = BundlePublisher(data_dir, generated_at=datetime.now(timezone.utc).isoformat())
+        result = publisher.publish(
+            strategy_id=summary.get("strategy_id", "smart_simple_v11"),
+            asset_id="usdcop",
+            symbol="USD/COP",
+            display_name=summary.get("strategy_name", f"Smart Simple v{version}"),
+            pipeline_type="ml_forecasting",
+            timeframe="weekly",
+            version=version,
+            year=year,
+            summary=summary,
+            trades=trades,
+            gates=gates,
+            headline=headline,
+            status=status,
+            trained_at=datetime.now(timezone.utc).isoformat(),
+        )
+        tag = "new" if result.get("wrote_new_files") else "immutable-hit"
+        print(f"    -> registry: strategies/{summary.get('strategy_id')}/backtests/{version}/ ({year}, {tag})")
+        return result
+    except Exception as e:  # pragma: no cover - never break legacy flow
+        print(f"    [registry] skipped: {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
 # DB seeding (--seed-db flag, used by deploy API)
 # ---------------------------------------------------------------------------
 
@@ -1449,6 +1506,17 @@ def main():
             safe_json_dump(approval, f)
         print(f"    -> approval_state.json (recommendation: {approval.get('backtest_recommendation', 'N/A')})")
 
+        # ADDITIVE: versioned immutable bundle + registry refresh (never touches legacy files above)
+        publish_versioned_bundle(
+            cfg, summary_2025, trades_2025, 2025,
+            gates={
+                "passed": sum(1 for g in approval.get("gates", []) if g.get("passed")),
+                "of": len(approval.get("gates", [])),
+                "recommendation": approval.get("backtest_recommendation"),
+            },
+            status="experimental",
+        )
+
         if not args.no_png:
             generate_pngs(result_2025, df, 2025, DASHBOARD_DIR)
 
@@ -1509,6 +1577,9 @@ def main():
         with open(TRADES_DIR / "smart_simple_v11.json", "w") as f:
             safe_json_dump(trades_2026, f)
         print(f"    -> trades/smart_simple_v11.json ({m26.get('n_trades', 0)} trades)")
+
+        # ADDITIVE: versioned immutable bundle + registry refresh (never touches legacy files above)
+        publish_versioned_bundle(cfg, summary_2026, trades_2026, 2026, status="production")
 
         if not args.no_png:
             generate_pngs(result_2026, df, 2026, DASHBOARD_DIR)

@@ -117,9 +117,21 @@ class StrategyBundleManifest:
     def to_dict(self) -> dict[str, Any]:
         return _sanitize_for_json(asdict(self))
 
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> "StrategyBundleManifest":
+        backtests = [BacktestEntry(**b) for b in raw.get("backtests", [])]
+        model_versions = [ModelVersionEntry(**m) for m in raw.get("model_versions", [])]
+        known = set(cls.__dataclass_fields__)
+        base = {k: v for k, v in raw.items() if k in known and k not in ("backtests", "model_versions")}
+        return cls(**base, backtests=backtests, model_versions=model_versions)
+
     @property
     def backtest_years(self) -> list[int]:
         return sorted({b.year for b in self.backtests})
+
+    @property
+    def versions(self) -> list[str]:
+        return sorted({b.model_version for b in self.backtests})
 
 
 @dataclass
@@ -353,3 +365,139 @@ class RegistryBuilder:
         with out.open("w", encoding="utf-8") as f:
             safe_json_dump(index.to_dict(), f, indent=2)
         return out
+
+
+# ---------------------------------------------------------------------------
+# BundlePublisher — publish a training run's backtest as an immutable, versioned bundle
+# ---------------------------------------------------------------------------
+class BundlePublisher:
+    """Publishes one training run's backtest as an IMMUTABLE, versioned bundle and upserts the
+    per-strategy manifest, then refreshes the registry index.
+
+    Implements the immutability keystone (CTR-STRAT-REGISTRY-001 §5): a backtest is content-
+    addressed by (strategy_id, model_version, year) and is NEVER overwritten. Training a new
+    model version (e.g. changed hyperparameters/features -> bumped config version) publishes a
+    NEW immutable entry that coexists with prior versions -> the frontend can list every version
+    and replay each independently.
+
+    ADDITIVE / non-breaking: this writes ONLY under strategies/<sid>/... and registry.json.
+    It never touches the legacy production/*.json files the current frontend consumes.
+    """
+
+    def __init__(self, data_dir: Path, generated_at: str):
+        self.data_dir = Path(data_dir)
+        self.generated_at = generated_at
+
+    def _bundle_dir(self, sid: str) -> Path:
+        return self.data_dir / "strategies" / sid
+
+    def _manifest_path(self, sid: str) -> Path:
+        return self._bundle_dir(sid) / "manifest.json"
+
+    @staticmethod
+    def _write_immutable(path: Path, payload: Any) -> bool:
+        """Write JSON only if the target does not already exist. Returns True if written,
+        False if it already existed (immutability preserved)."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            return False
+        with path.open("w", encoding="utf-8") as f:
+            safe_json_dump(payload, f, indent=2)
+        return True
+
+    def _load_manifest(self, sid: str) -> StrategyBundleManifest | None:
+        p = self._manifest_path(sid)
+        if not p.exists():
+            return None
+        try:
+            return StrategyBundleManifest.from_dict(json.loads(p.read_text(encoding="utf-8")))
+        except (json.JSONDecodeError, OSError, TypeError):
+            return None
+
+    def publish(
+        self,
+        *,
+        strategy_id: str,
+        asset_id: str,
+        symbol: str,
+        display_name: str,
+        pipeline_type: str,
+        timeframe: str,
+        version: str,
+        year: int,
+        summary: dict[str, Any],
+        trades: dict[str, Any],
+        gates: dict[str, Any] | None = None,
+        headline: dict[str, Any] | None = None,
+        signals: Any | None = None,
+        status: str = "experimental",
+        trained_at: str | None = None,
+        refresh_registry: bool = True,
+    ) -> dict[str, Any]:
+        """Publish (strategy_id, version, year). Idempotent + immutable. Returns a summary dict."""
+        sid = strategy_id
+        chart = (_DEFAULT_ASSETS.get(asset_id) or {}).get("chart_symbol") or chart_symbol_for(symbol)
+        vdir = self._bundle_dir(sid) / "backtests" / version
+
+        summary_rel = f"strategies/{sid}/backtests/{version}/summary_{year}.json"
+        trades_rel = f"strategies/{sid}/backtests/{version}/trades_{year}.json"
+        wrote_summary = self._write_immutable(vdir / f"summary_{year}.json", summary)
+        wrote_trades = self._write_immutable(vdir / f"trades_{year}.json", trades)
+
+        signals_rel: str | None = None
+        if signals is not None:
+            signals_rel = f"strategies/{sid}/backtests/{version}/signals_{year}.json"
+            self._write_immutable(vdir / f"signals_{year}.json", signals)
+
+        replayable = (vdir / f"trades_{year}.json").exists()
+        entry = BacktestEntry(
+            model_version=version,
+            year=year,
+            immutable_id=f"{sid}__{version}__{year}",
+            summary=summary_rel,
+            trades=trades_rel,
+            signals=signals_rel,
+            replayable=replayable,
+            gates=gates or {},
+            headline=headline or {},
+        )
+
+        # Load existing manifest (keeps prior versions) or create a new one.
+        m = self._load_manifest(sid) or StrategyBundleManifest(
+            strategy_id=sid,
+            asset_id=asset_id,
+            symbol=symbol,
+            chart_symbol=chart,
+            display_name=display_name,
+            pipeline_type=pipeline_type,
+            timeframe=timeframe,
+            status=status,
+        )
+        # Upsert the (version, year) backtest entry — coexistence across versions.
+        m.backtests = [b for b in m.backtests if not (b.model_version == version and b.year == year)]
+        m.backtests.append(entry)
+        # Upsert the model version; the just-published one becomes the active version.
+        m.model_versions = [mv for mv in m.model_versions if mv.version != version]
+        for mv in m.model_versions:
+            mv.active = False
+        m.model_versions.append(ModelVersionEntry(version=version, active=True, trained_at=trained_at))
+        m.capabilities["replay"] = any(b.replayable for b in m.backtests)
+        m.produced_by = {"source": "BundlePublisher", "version": version, "year": year, "generated_at": self.generated_at}
+
+        with self._manifest_path(sid).open("w", encoding="utf-8") as f:
+            safe_json_dump(m.to_dict(), f, indent=2)
+
+        if refresh_registry:
+            RegistryBuilder(self.data_dir, generated_at=self.generated_at).write(
+                RegistryBuilder(self.data_dir, generated_at=self.generated_at).build(write_manifests=False)
+            )
+
+        return {
+            "strategy_id": sid,
+            "version": version,
+            "year": year,
+            "wrote_new_files": bool(wrote_summary and wrote_trades),
+            "immutable_hit": not (wrote_summary and wrote_trades),
+            "versions": m.versions,
+            "manifest": str(self._manifest_path(sid)),
+        }

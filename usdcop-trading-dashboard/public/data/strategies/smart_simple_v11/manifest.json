@@ -9,13 +9,15 @@
   "status": "production",
   "schema_version": "1.0.0",
   "capabilities": {
-    "replay": false,
+    "replay": true,
     "live": true,
     "approval": true
   },
   "produced_by": {
-    "source": "legacy_shim",
-    "adapter": "LegacyBundleAdapter"
+    "source": "BundlePublisher",
+    "version": "2.0.0",
+    "year": 2025,
+    "generated_at": "2026-07-03T18:05:35.152023+00:00"
   },
   "backtests": [
     {
@@ -36,6 +38,20 @@
         "sharpe": 3.347,
         "p_value": 0.0063
       }
+    },
+    {
+      "model_version": "2.0.0",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__2.0.0__2025",
+      "summary": "strategies/smart_simple_v11/backtests/2.0.0/summary_2025.json",
+      "trades": "strategies/smart_simple_v11/backtests/2.0.0/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {},
+      "headline": {
+        "return_pct": 25.63,
+        "sharpe": 3.347
+      }
     }
   ],
   "production": {
@@ -51,8 +67,17 @@
   "model_versions": [
     {
       "version": "1.0.0",
-      "active": true,
+      "active": false,
       "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "2.0.0",
+      "active": true,
+      "trained_at": "2026-04-06T01:30:00Z",
       "train_window": null,
       "feature_hash": null,
       "norm_stats_hash": null,
