@@ -25,7 +25,7 @@ Clean Code:
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
 import gymnasium as gym
 import numpy as np
@@ -492,7 +492,7 @@ class ModularRewardStrategyAdapter(RewardStrategyAdapter):
         self,
         reward_config: Optional["RewardConfig"] = None,
         enable_curriculum: bool = True,
-        on_phase_change: callable | None = None,
+        on_phase_change: Optional[Callable] = None,
     ):
         """
         Initialize modular reward strategy adapter.

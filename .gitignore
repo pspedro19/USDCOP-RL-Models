@@ -283,3 +283,15 @@ results/archive/.claude/settings.local.json
 # Backup directories may contain secrets
 data/backups/**/.env
 data/backups/**/env/
+
+# ---------------------------------------------------------------------------
+# Source-code packages accidentally matched by the broad `models/` (line ~52) and
+# `state/` (line ~192) rules above. These are Python SOURCE, not artifacts. Without
+# these negations a fresh clone/checkout is missing src/forecasting/models and
+# src/core/state, which breaks the entire `src` package on import. Fixed 2026-07-03.
+!src/forecasting/models/
+!src/forecasting/models/**
+!src/models/
+!src/models/**
+!src/core/state/
+!src/core/state/**
