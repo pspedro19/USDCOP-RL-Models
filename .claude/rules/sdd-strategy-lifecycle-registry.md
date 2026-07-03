@@ -13,9 +13,28 @@
 > for the as-built state and `sdd-multi-asset-onboarding.md` for the AssetProfile it consumes.
 >
 > Contract: CTR-STRAT-REGISTRY-001
-> Version: 1.0.0
+> Version: 1.1.0
 > Date: 2026-07-03
-> Status: PROPOSED (target architecture; current state is single-strategy hardcoded)
+> Status: IMPLEMENTED (file-based backend + frontend) · PROPOSED (DAG factory §6.3)
+>
+> **Implementation status (2026-07-03)** — the file-based registry + versioned immutable
+> bundle + dynamic frontend are BUILT and tested; the DAG factory (§6.3) remains the
+> proposed scale-out. Delivered, all ADDITIVE (no legacy consumption modified):
+>
+> | Piece | Artifact | State |
+> |-------|----------|-------|
+> | Manifest + registry contracts (Contracts A/B) | `src/contracts/strategy_manifest.py` (`StrategyBundleManifest`, `RegistryIndex`, `LegacyBundleAdapter`, `RegistryBuilder`) | ✅ |
+> | Immutable versioned publisher (§5) | `strategy_manifest.py::BundlePublisher` — content-addressed `(strategy_id, version, year)`, never overwrites | ✅ |
+> | Pipeline wiring | `scripts/train_and_export_smart_simple.py::publish_versioned_bundle()` — called AFTER legacy writes, guarded | ✅ |
+> | DAG EXIT contract (§6.2) | `airflow/dags/utils/register_bundle.py::register_strategy_bundle()` | ✅ |
+> | Registry index API (Contract B) | `GET /api/registry` (`app/api/registry/route.ts`) — legacy fallback shim (§11 step 1) | ✅ |
+> | Manifest API (Contract A) | `GET /api/strategies/[strategyId]/manifest` | ✅ |
+> | Promote API | `POST /api/registry/promote` `{strategy_id, version, status?}` — flips active version in manifest + syncs registry status | ✅ |
+> | Version dropdown + per-version replay + Promote button | `components/production/ForecastingBacktestSection.tsx` (version state, `loadVersionData`, `handleVersionChange`, `handlePromote`) | ✅ |
+> | Replay per version | Client-side (Option A): version dropdown overrides `summary`+`trades`; existing replay machinery + `TradingChartWithSignals` react automatically. No backend/SSE needed | ✅ |
+> | Tests | `tests/contracts/test_strategy_registry.py` (8: immutability, coexistence, legacy-untouched, JSON-safe, chart-symbol derived, discovery) | ✅ |
+> | DAG factory (config-driven pipeline gen) | §6.3 | ⏳ PROPOSED |
+> | `asset_id`/`symbol` column on `forecast_h5_*` tables | migration | ⏳ PROPOSED |
 
 ---
 
@@ -318,17 +337,39 @@ manifest-driven.
 
 ## 11. Migration Path (from today's hardcoded state)
 
-1. **Shim first (no pipeline change)**: add `/api/registry` that synthesizes a registry +
-   manifest from the existing `strategies.json` + `summary_2025.json`. Frontend switches to
-   registry lookups. Immediate: UI stops hardcoding `smart_simple_v11`/2025.
-2. **Versioned immutable paths**: change export scripts to write `backtests/<version>/…` and
-   emit `manifest.json` (Contract A). Stop overwriting.
-3. **DAG exit contract**: add `register_bundle` task to H5/H1 backtest DAGs (Contract C §6.2).
-4. **AssetProfile + chart symbol**: thread `symbol` from manifest into `TradingChartWithSignals`.
-5. **DAG factory**: when onboarding the 2nd asset (XAU), introduce the factory (§6.3) instead of
-   copying H5 DAGs.
-6. **Reconcile feature-contract drift** (`sdd-architecture-overview.md` §5.3) before multiplying
-   strategies — do not multiply a drifted baseline.
+1. ✅ **DONE — Shim first (no pipeline change)**: `GET /api/registry` reads `registry.json`,
+   synthesizes from legacy `strategies.json` when absent. Frontend resolves selectors from it.
+2. ✅ **DONE — Versioned immutable paths**: `BundlePublisher` writes `backtests/<version>/…` +
+   `manifest.json` (Contract A) via `publish_versioned_bundle()` in the export script; never
+   overwrites (immutability proven by test `test_republish_same_version_is_immutable`).
+3. ✅ **DONE — DAG exit contract**: `register_strategy_bundle()` util ready
+   (`airflow/dags/utils/register_bundle.py`) for the `register_bundle` final task (Contract C §6.2).
+4. ✅ **DONE — chart symbol from manifest**: `ForecastingBacktestSection` passes
+   `symbol={manifest?.chart_symbol || 'USDCOP'}` into `TradingChartWithSignals` (fallback-safe).
+   Version dropdown + per-version replay + `POST /api/registry/promote` button all wired.
+5. ⏳ **PROPOSED — DAG factory**: when onboarding the 2nd asset (XAU), introduce the factory
+   (§6.3) instead of copying H5 DAGs.
+6. ⏳ **PROPOSED — Reconcile feature-contract drift** (`sdd-architecture-overview.md` §5.3)
+   before multiplying strategies — do not multiply a drifted baseline.
+
+### 11.1 Delivered API surface (all additive, off `PROTECTED_API_ROUTES`)
+
+| Route | Method | Reads/Writes | Response |
+|-------|--------|--------------|----------|
+| `/api/registry` | GET | `public/data/registry.json` (fallback: `production/strategies.json`) | RegistryIndex |
+| `/api/strategies/[strategyId]/manifest` | GET | `public/data/strategies/<sid>/manifest.json` (slug-guarded) | StrategyBundleManifest |
+| `/api/registry/promote` | POST `{strategy_id, version, status?}` | writes manifest `model_versions[].active` + `production.model_version` + optional `status`; best-effort registry `status` sync | `{success, active_version, status}` |
+
+### 11.2 Frontend replay decision (Option A — client-side)
+
+Per-version replay is driven **purely client-side** from static JSON — no SSE/backtest-api.
+On version select, `loadVersionData()` fetches the version's `summary`/`trades` (served from
+`public/` at `/data/<relative-path>`) and overrides the `summary`+`trades` React state; the
+existing self-contained replay machinery in `ForecastingBacktestSection` (replayIndex, play
+speed, `visibleTrades`, progressive `chartEndDate`) and `TradingChartWithSignals`'
+`isReplayMode`+`replayTrades` props re-render automatically. Approval stays strategy-level
+(untouched). The backtest-api SSE path is keyed by `model_id`+date-range only and does NOT
+know the per-version bundle layout — intentionally not used for per-version replay.
 
 ---
 

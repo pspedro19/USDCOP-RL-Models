@@ -1172,6 +1172,33 @@ function computeTradeMetrics(trades: StrategyTrade[], initialCapital: number) {
 // ============================================================================
 // Main Component Export
 // ============================================================================
+// ── Dynamic strategy registry (CTR-STRAT-REGISTRY-001) — lightweight manifest types.
+// Served by /api/strategies/[id]/manifest. Purely additive: if the route/manifest is
+// absent (e.g. legacy build) the version UI silently no-ops and the page behaves as before.
+interface ManifestBacktest {
+  model_version: string;
+  year: number;
+  immutable_id: string;
+  summary: string; // path relative to public/data
+  trades: string; // path relative to public/data
+  signals: string | null;
+  replayable: boolean;
+  gates?: Record<string, unknown>;
+  headline?: Record<string, unknown>;
+}
+interface ManifestModelVersion {
+  version: string;
+  active: boolean;
+  trained_at?: string | null;
+}
+interface StrategyManifestLite {
+  strategy_id: string;
+  chart_symbol?: string;
+  status?: string;
+  backtests: ManifestBacktest[];
+  model_versions: ManifestModelVersion[];
+}
+
 export function ForecastingBacktestSection() {
   const [registry, setRegistry] = useState<StrategyRegistry | null>(null);
   const [selectedStrategyId, setSelectedStrategyId] = useState<string>('');
@@ -1190,6 +1217,12 @@ export function ForecastingBacktestSection() {
   const replayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [replayStartDate, setReplayStartDate] = useState('2025-01-01');
   const [replayEndDate, setReplayEndDate] = useState('2025-12-31');
+
+  // Version registry state (additive; graceful no-op if manifest/route absent)
+  const [manifest, setManifest] = useState<StrategyManifestLite | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string>('');
+  const [isPromoting, setIsPromoting] = useState(false);
+  const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
 
   // Filter trades by replay date range, then apply replay index
   const filteredTrades = trades.filter(t => {
@@ -1306,6 +1339,86 @@ export function ForecastingBacktestSection() {
     setShowAllTrades(false);
     loadStrategyData(sid);
   }, [loadStrategyData]);
+
+  // ── Version registry: load a per-version immutable bundle (CTR-STRAT-REGISTRY-001) ──
+  // Overrides summary + trades from the versioned artifacts; all downstream derived
+  // state (KPIs, chart replay, trade table) reacts automatically. Approval is left
+  // untouched — it is strategy-level, not version-level.
+  const loadVersionData = useCallback(async (bt: ManifestBacktest) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [sRes, tRes] = await Promise.all([
+        fetch(`/data/${bt.summary}`),
+        fetch(`/data/${bt.trades}`),
+      ]);
+      if (sRes.ok) setSummary(await sRes.json());
+      const td = tRes.ok ? await tRes.json() : null;
+      setTrades(td?.trades ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error loading version bundle');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch the strategy manifest; default the version selection to the entry matching the
+  // already-shown legacy data (production/*), else the active version — so the dropdown is
+  // consistent with what loadStrategyData rendered without changing default behavior.
+  const loadManifest = useCallback(async (sid: string) => {
+    try {
+      const res = await fetch(`/api/strategies/${sid}/manifest`);
+      if (!res.ok) { setManifest(null); setSelectedVersion(''); return; }
+      const m: StrategyManifestLite = await res.json();
+      setManifest(m);
+      const legacy = (m.backtests ?? []).find(b => b.summary?.startsWith('production/'));
+      const active = (m.model_versions ?? []).find(v => v.active)?.version;
+      const first = (m.backtests ?? [])[0]?.model_version;
+      setSelectedVersion(legacy?.model_version ?? active ?? first ?? '');
+    } catch {
+      setManifest(null);
+      setSelectedVersion('');
+    }
+  }, []);
+
+  // Load the manifest whenever the strategy changes (separate from the legacy loaders
+  // so the default view stays byte-identical to prior behavior).
+  useEffect(() => {
+    if (selectedStrategyId) loadManifest(selectedStrategyId);
+  }, [selectedStrategyId, loadManifest]);
+
+  const handleVersionChange = useCallback((version: string) => {
+    setSelectedVersion(version);
+    setReplayIndex(-1);
+    setIsPlaying(false);
+    setShowAllTrades(false);
+    const bt = manifest?.backtests?.find(b => b.model_version === version);
+    if (bt) loadVersionData(bt);
+  }, [manifest, loadVersionData]);
+
+  const handlePromote = useCallback(async () => {
+    if (!manifest || !selectedVersion) return;
+    setIsPromoting(true);
+    setPromoteMsg(null);
+    try {
+      const res = await fetch('/api/registry/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy_id: manifest.strategy_id, version: selectedVersion, status: 'production' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPromoteMsg(`v${selectedVersion} promovida`);
+        await loadManifest(manifest.strategy_id);
+      } else {
+        setPromoteMsg(data.error ?? 'promote falló');
+      }
+    } catch (e) {
+      setPromoteMsg(e instanceof Error ? e.message : 'error');
+    } finally {
+      setIsPromoting(false);
+    }
+  }, [manifest, selectedVersion, loadManifest]);
 
   // Replay animation effect
   useEffect(() => {
@@ -1461,6 +1574,36 @@ export function ForecastingBacktestSection() {
                 />
               </div>
             )}
+            {/* Version selector + promote (CTR-STRAT-REGISTRY-001) — additive, renders only
+                when a manifest with versioned backtests is available */}
+            {manifest && (manifest.backtests?.length ?? 0) >= 1 && (
+              <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-[11px] uppercase tracking-wide text-slate-500">Versión</span>
+                <select
+                  value={selectedVersion}
+                  onChange={(e) => handleVersionChange(e.target.value)}
+                  className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500"
+                >
+                  {manifest.backtests.map((b) => {
+                    const isActive = manifest.model_versions?.find((v) => v.version === b.model_version)?.active;
+                    return (
+                      <option key={b.immutable_id} value={b.model_version}>
+                        {`v${b.model_version}${isActive ? ' ★' : ''}${b.replayable ? '' : ' (sin replay)'} · ${b.year}`}
+                      </option>
+                    );
+                  })}
+                </select>
+                <button
+                  onClick={handlePromote}
+                  disabled={isPromoting || !!manifest.model_versions?.find((v) => v.version === selectedVersion)?.active}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Marcar esta versión como activa para la estrategia"
+                >
+                  {isPromoting ? 'Promoviendo…' : 'Promover a activa'}
+                </button>
+                {promoteMsg && <span className="text-xs text-slate-400">{promoteMsg}</span>}
+              </div>
+            )}
             <p className="text-sm sm:text-base text-slate-400 max-w-2xl">
               {summary.strategy_name || strategyId} | {dynamicMetrics ? visibleTrades.length : (best ? (best.n_long ?? 0) + (best.n_short ?? 0) : trades.length)} trades | DA {displayDA?.toFixed(1) ?? '-'}%
             </p>
@@ -1546,8 +1689,8 @@ export function ForecastingBacktestSection() {
           <Suspense fallback={<ChartLoadingFallback />}>
             <div className="rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
               <TradingChartWithSignals
-                key={`backtest-chart-${strategyId}-2025`}
-                symbol="USDCOP"
+                key={`backtest-chart-${strategyId}-${selectedVersion || '2025'}`}
+                symbol={manifest?.chart_symbol || 'USDCOP'}
                 timeframe="5m"
                 height={400}
                 showSignals={true}

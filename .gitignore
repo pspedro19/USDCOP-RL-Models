@@ -18,7 +18,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+# Anchor to repo root: the setuptools MANIFEST artifact only appears at the package root.
+# Unanchored `MANIFEST` also matched nested `manifest/` dirs (Windows Git is case-insensitive),
+# which wrongly ignored the Next.js route app/api/strategies/[strategyId]/manifest/. Fixed 2026-07-03.
+/MANIFEST
 *.pyc
 
 # Virtual Environments
