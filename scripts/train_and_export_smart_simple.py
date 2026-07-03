@@ -69,8 +69,11 @@ COT = timezone(timedelta(hours=-5))
 # Config & Data
 # ---------------------------------------------------------------------------
 
-def load_config():
-    cfg_path = PROJECT_ROOT / "config" / "execution" / "smart_simple_v1.yaml"
+def load_config(config_path=None, version_override=None, strategy_id=None):
+    """Load the Smart Simple SSOT. Optional overrides enable A/B testing without editing
+    the SSOT: point --config at a frozen experiment YAML, and stamp a distinct --version /
+    --strategy-id so each run publishes its own immutable, replayable bundle."""
+    cfg_path = Path(config_path) if config_path else PROJECT_ROOT / "config" / "execution" / "smart_simple_v1.yaml"
     with open(cfg_path) as f:
         cfg = yaml.safe_load(f)
 
@@ -134,7 +137,8 @@ def load_config():
         "vt_floor": _vt.get("vol_floor", 0.05),
         "maker_fee": _costs.get("maker_fee_bps", 0.0) / 10000.0,
         "slippage": _costs.get("slippage_bps", 1.0) / 10000.0,
-        "version": cfg.get("executor", {}).get("version", "2.0.0"),
+        "version": version_override or cfg.get("executor", {}).get("version", "2.0.0"),
+        "strategy_id": strategy_id or "smart_simple_v11",
         "dynamic_leverage": dl_config,
         "cb_max_consecutive": _cb.get("max_consecutive_losses", 5),
         "cb_max_dd_pct": _cb.get("max_drawdown_pct", 12.0),
@@ -785,10 +789,11 @@ def export_summary(result, year, cfg):
     if not m:
         return {}
 
+    sid = cfg.get("strategy_id", "smart_simple_v11")
     summary = {
         "generated_at": datetime.now().isoformat(),
         "strategy_name": f"Smart Simple v{cfg['version']}",
-        "strategy_id": "smart_simple_v11",
+        "strategy_id": sid,
         "year": year,
         "initial_capital": 10000.0,
         "n_trading_days": m["n_trades"] * 5,
@@ -798,7 +803,7 @@ def export_summary(result, year, cfg):
                 "final_equity": round(10000 * (1 + m["bh_return_pct"] / 100), 2),
                 "total_return_pct": m["bh_return_pct"],
             },
-            "smart_simple_v11": {
+            sid: {
                 "final_equity": m["final_equity"],
                 "total_return_pct": m["total_return_pct"],
                 "sharpe": m["sharpe"],
@@ -846,7 +851,7 @@ def export_trades(result, year, cfg):
 
     return {
         "strategy_name": f"Smart Simple v{cfg['version']}",
-        "strategy_id": "smart_simple_v11",
+        "strategy_id": cfg.get("strategy_id", "smart_simple_v11"),
         "initial_capital": 10000.0,
         "date_range": {
             "start": f"{year}-01-01",
@@ -898,7 +903,7 @@ def export_approval_state(result_2025, cfg):
 
     return {
         "status": "PENDING_APPROVAL",
-        "strategy": "smart_simple_v11",
+        "strategy": cfg.get("strategy_id", "smart_simple_v11"),
         "strategy_name": f"Smart Simple v{cfg['version']}",
         "backtest_year": 2025,
         "backtest_recommendation": "PROMOTE" if n_passed == len(gates) else "REVIEW",
@@ -1418,6 +1423,19 @@ def parse_args():
         "--seed-db", action="store_true",
         help="Seed H5 DB tables with production trades (used by deploy API)"
     )
+    # A/B testing knobs (additive): train a variant config as a distinct version/strategy.
+    parser.add_argument(
+        "--config", default=None,
+        help="Path to a config YAML override (default: config/execution/smart_simple_v1.yaml)"
+    )
+    parser.add_argument(
+        "--version", default=None,
+        help="Version tag for the published immutable bundle (default: config executor.version)"
+    )
+    parser.add_argument(
+        "--strategy-id", default=None,
+        help="Strategy id for this run (default: smart_simple_v11). Use a new id for a new branch."
+    )
     return parser.parse_args()
 
 
@@ -1454,8 +1472,12 @@ def main():
     print(f"  Phase: {args.phase}")
     print("=" * 70)
 
-    cfg = load_config()
-    print(f"\n[1] Config: Smart Simple v{cfg['version']}")
+    cfg = load_config(
+        config_path=args.config,
+        version_override=args.version,
+        strategy_id=args.strategy_id,
+    )
+    print(f"\n[1] Config: {cfg['strategy_id']} v{cfg['version']} (source: {args.config or 'smart_simple_v1.yaml'})")
     print(f"    Stops: HS=clamp(vol*sqrt(5)*{cfg['stops'].vol_multiplier}, "
           f"{cfg['stops'].hard_stop_min_pct*100:.0f}%, {cfg['stops'].hard_stop_max_pct*100:.0f}%), "
           f"TP=HS*{cfg['stops'].tp_ratio}")
@@ -1497,9 +1519,9 @@ def main():
         print(f"    -> summary_2025.json (OOS walk-forward)")
 
         trades_2025 = export_trades(result_2025, 2025, cfg)
-        with open(TRADES_DIR / "smart_simple_v11_2025.json", "w") as f:
+        with open(TRADES_DIR / f"{cfg['strategy_id']}_2025.json", "w") as f:
             safe_json_dump(trades_2025, f)
-        print(f"    -> trades/smart_simple_v11_2025.json ({m25.get('n_trades', 0)} trades)")
+        print(f"    -> trades/{cfg['strategy_id']}_2025.json ({m25.get('n_trades', 0)} trades)")
 
         approval = export_approval_state(result_2025, cfg)
         with open(DASHBOARD_DIR / "approval_state.json", "w") as f:
@@ -1574,9 +1596,9 @@ def main():
         print(f"    -> summary.json (production 2026)")
 
         trades_2026 = export_trades(result_2026, 2026, cfg)
-        with open(TRADES_DIR / "smart_simple_v11.json", "w") as f:
+        with open(TRADES_DIR / f"{cfg['strategy_id']}.json", "w") as f:
             safe_json_dump(trades_2026, f)
-        print(f"    -> trades/smart_simple_v11.json ({m26.get('n_trades', 0)} trades)")
+        print(f"    -> trades/{cfg['strategy_id']}.json ({m26.get('n_trades', 0)} trades)")
 
         # ADDITIVE: versioned immutable bundle + registry refresh (never touches legacy files above)
         publish_versioned_bundle(cfg, summary_2026, trades_2026, 2026, status="production")

@@ -1,0 +1,59 @@
+{
+  "strategy_id": "smart_simple_aggr",
+  "asset_id": "usdcop",
+  "symbol": "USD/COP",
+  "chart_symbol": "USDCOP",
+  "display_name": "Smart Simple v1.0.0",
+  "pipeline_type": "ml_forecasting",
+  "timeframe": "weekly",
+  "status": "experimental",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.0.0",
+    "year": 2025,
+    "generated_at": "2026-07-03T18:41:35.631964+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2025,
+      "immutable_id": "smart_simple_aggr__1.0.0__2025",
+      "summary": "strategies/smart_simple_aggr/backtests/1.0.0/summary_2025.json",
+      "trades": "strategies/smart_simple_aggr/backtests/1.0.0/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 29.47,
+        "sharpe": 4.042,
+        "max_dd_pct": 4.07,
+        "win_rate_pct": 79.4,
+        "p_value": 0.0011,
+        "trades": 170
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": true,
+      "trained_at": "2026-07-03T18:41:35.631964+00:00",
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

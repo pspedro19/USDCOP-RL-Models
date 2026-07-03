@@ -15,9 +15,9 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "2.0.0",
+    "version": "3.0.0-B",
     "year": 2025,
-    "generated_at": "2026-07-03T18:05:35.152023+00:00"
+    "generated_at": "2026-07-03T18:41:14.350864+00:00"
   },
   "backtests": [
     {
@@ -52,10 +52,54 @@
         "return_pct": 25.63,
         "sharpe": 3.347
       }
+    },
+    {
+      "model_version": "3.0.0-A",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__3.0.0-A__2025",
+      "summary": "strategies/smart_simple_v11/backtests/3.0.0-A/summary_2025.json",
+      "trades": "strategies/smart_simple_v11/backtests/3.0.0-A/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 26.58,
+        "sharpe": 3.119,
+        "max_dd_pct": 6.3,
+        "win_rate_pct": 77.1,
+        "p_value": 0.0073,
+        "trades": 175
+      }
+    },
+    {
+      "model_version": "3.0.0-B",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__3.0.0-B__2025",
+      "summary": "strategies/smart_simple_v11/backtests/3.0.0-B/summary_2025.json",
+      "trades": "strategies/smart_simple_v11/backtests/3.0.0-B/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 18.73,
+        "sharpe": 3.107,
+        "max_dd_pct": 4.81,
+        "win_rate_pct": 83.9,
+        "p_value": 0.0155,
+        "trades": 155
+      }
     }
   ],
   "production": {
-    "model_version": "1.0.0",
+    "model_version": "2.0.0",
     "year": 2026,
     "summary": "production/summary.json",
     "trades": "production/trades/smart_simple_v11.json"
@@ -82,6 +126,30 @@
       "feature_hash": null,
       "norm_stats_hash": null,
       "artifact_uri": null
+    },
+    {
+      "version": "3.0.0-A",
+      "active": false,
+      "trained_at": "2026-07-03T18:40:34.487133+00:00",
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "3.0.0-B",
+      "active": false,
+      "trained_at": "2026-07-03T18:41:14.350864+00:00",
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
     }
-  ]
+  ],
+  "promoted": {
+    "version": "2.0.0",
+    "status": "production",
+    "promoted_at": "2026-07-03T18:46:12.792Z",
+    "promoted_by": "dashboard_user"
+  }
 }

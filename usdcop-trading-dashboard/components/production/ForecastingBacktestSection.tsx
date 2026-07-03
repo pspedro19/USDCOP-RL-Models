@@ -1307,19 +1307,43 @@ export function ForecastingBacktestSection() {
     }
   }, []);
 
-  // Load strategy registry on mount
+  // Load strategy registry on mount. Prefer the dynamic /api/registry (includes new
+  // strategies/branches with active-version metrics); fall back to the legacy strategies.json
+  // so older builds keep working. Additive — no behavior change when only one strategy exists.
   useEffect(() => {
     const loadRegistry = async () => {
       try {
-        const res = await fetch('/data/production/strategies.json');
-        if (res.ok) {
-          const data: StrategyRegistry = await res.json();
+        let data: StrategyRegistry | null = null;
+        const regRes = await fetch('/api/registry');
+        if (regRes.ok) {
+          const idx = await regRes.json();
+          data = {
+            strategies: (idx.strategies ?? []).map((s: {
+              strategy_id: string; display_name?: string; pipeline_type?: string; status?: string;
+              backtest_years?: number[]; return_pct?: number; sharpe?: number; p_value?: number;
+            }) => ({
+              strategy_id: s.strategy_id,
+              strategy_name: s.display_name ?? s.strategy_id,
+              pipeline: s.pipeline_type ?? 'ml_forecasting',
+              status: s.status === 'production' ? 'APPROVED' : (s.status ?? 'PAPER'),
+              backtest_year: s.backtest_years?.[0] ?? 2025,
+              return_pct: s.return_pct ?? 0,
+              sharpe: s.sharpe ?? 0,
+              p_value: s.p_value ?? 0,
+            })),
+            default_strategy: idx.default?.strategy_id ?? '',
+          };
+        }
+        if (!data) {
+          const res = await fetch('/data/production/strategies.json');
+          if (res.ok) data = await res.json();
+        }
+        if (data && data.strategies?.length) {
           setRegistry(data);
           const defaultId = data.default_strategy || data.strategies[0]?.strategy_id || 'smart_simple_v11';
           setSelectedStrategyId(defaultId);
           loadStrategyData(defaultId);
         } else {
-          // No registry file — fall back to loading default strategy
           setSelectedStrategyId('smart_simple_v11');
           loadStrategyData('smart_simple_v11');
         }
@@ -1371,15 +1395,20 @@ export function ForecastingBacktestSection() {
       if (!res.ok) { setManifest(null); setSelectedVersion(''); return; }
       const m: StrategyManifestLite = await res.json();
       setManifest(m);
-      const legacy = (m.backtests ?? []).find(b => b.summary?.startsWith('production/'));
+      // Default to the active version; make the displayed bundle match it so any strategy
+      // (including new branches) renders its own data. For smart_simple_v11 the active 2.0.0
+      // bundle is byte-equivalent to the legacy view, so the default render is unchanged.
       const active = (m.model_versions ?? []).find(v => v.active)?.version;
       const first = (m.backtests ?? [])[0]?.model_version;
-      setSelectedVersion(legacy?.model_version ?? active ?? first ?? '');
+      const version = active ?? first ?? '';
+      setSelectedVersion(version);
+      const bt = (m.backtests ?? []).find(b => b.model_version === version);
+      if (bt) loadVersionData(bt);
     } catch {
       setManifest(null);
       setSelectedVersion('');
     }
-  }, []);
+  }, [loadVersionData]);
 
   // Load the manifest whenever the strategy changes (separate from the legacy loaders
   // so the default view stays byte-identical to prior behavior).

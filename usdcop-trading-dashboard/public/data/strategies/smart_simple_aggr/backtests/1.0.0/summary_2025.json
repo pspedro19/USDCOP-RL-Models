@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-07-03T13:41:35.594089",
+  "strategy_name": "Smart Simple v1.0.0",
+  "strategy_id": "smart_simple_aggr",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "n_trading_days": 170,
+  "direction_accuracy_pct": 79.4,
+  "strategies": {
+    "buy_and_hold": {
+      "final_equity": 8552.0,
+      "total_return_pct": -14.48
+    },
+    "smart_simple_aggr": {
+      "final_equity": 12947.07,
+      "total_return_pct": 29.47,
+      "sharpe": 4.042,
+      "max_dd_pct": 4.07,
+      "win_rate_pct": 79.4,
+      "profit_factor": 3.096,
+      "trading_days": 170,
+      "exit_reasons": {
+        "week_end": 8,
+        "take_profit": 21,
+        "hard_stop": 5
+      },
+      "n_long": 5,
+      "n_short": 29
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0011,
+    "significant": true
+  },
+  "monthly": {
+    "months": [
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-04",
+      "2025-05",
+      "2025-06",
+      "2025-07",
+      "2025-08",
+      "2025-09",
+      "2025-10",
+      "2025-11",
+      "2025-12"
+    ],
+    "trades": [
+      4,
+      3,
+      4,
+      1,
+      4,
+      4,
+      2,
+      2,
+      5,
+      2,
+      1,
+      2
+    ],
+    "pnl_pct": [
+      4.51,
+      2.47,
+      1.18,
+      1.33,
+      6.33,
+      4.41,
+      0.76,
+      3.07,
+      -0.31,
+      1.48,
+      -1.06,
+      2.07
+    ]
+  }
+}

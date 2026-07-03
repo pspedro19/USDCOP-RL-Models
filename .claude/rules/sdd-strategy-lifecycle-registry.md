@@ -360,6 +360,32 @@ manifest-driven.
 | `/api/strategies/[strategyId]/manifest` | GET | `public/data/strategies/<sid>/manifest.json` (slug-guarded) | StrategyBundleManifest |
 | `/api/registry/promote` | POST `{strategy_id, version, status?}` | writes manifest `model_versions[].active` + `production.model_version` + optional `status`; best-effort registry `status` sync | `{success, active_version, status}` |
 
+### 11.3 A/B testing recipe (verified end-to-end 2026-07-03)
+
+The export script accepts additive overrides so a variant config trains as a distinct,
+replayable version (or a new strategy branch) WITHOUT editing the SSOT:
+
+```bash
+# A/B as two VERSIONS of the same strategy (dropdown lets you replay each + promote the winner):
+python scripts/train_and_export_smart_simple.py --phase backtest --no-png \
+    --config config/experiments/ab_test_a.yaml --version 3.0.0-A
+python scripts/train_and_export_smart_simple.py --phase backtest --no-png \
+    --config config/experiments/ab_test_b.yaml --version 3.0.0-B
+
+# A NEW STRATEGY BRANCH (appears as its own entry in the strategy dropdown):
+python scripts/train_and_export_smart_simple.py --phase backtest --no-png \
+    --config config/experiments/ab_test_c_branch.yaml --version 1.0.0 --strategy-id smart_simple_aggr
+```
+
+Each run publishes an immutable `(strategy_id, version, year)` bundle and refreshes the
+registry. `--config` points at a frozen experiment YAML (distinct hyperparameters →
+genuinely different walk-forward backtest); `--version` tags the bundle; `--strategy-id`
+(optional) registers a new branch. Verified live: registry lists both strategies with
+active-version metrics; the version dropdown replays each A/B bundle client-side; the
+Promote button flips the active version. `RegistryBuilder` carries each strategy's
+active-version headline (`return_pct`, `sharpe`, `p_value`, `active_version`) so the
+strategy selector shows real numbers without an N+1 manifest fetch.
+
 ### 11.2 Frontend replay decision (Option A — client-side)
 
 Per-version replay is driven **purely client-side** from static JSON — no SSE/backtest-api.

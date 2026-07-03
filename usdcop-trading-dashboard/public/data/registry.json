@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T18:05:35.152023+00:00",
+  "generated_at": "2026-07-03T18:49:16.960216+00:00",
   "assets": [
     {
       "asset_id": "usdcop",
@@ -10,6 +10,24 @@
     }
   ],
   "strategies": [
+    {
+      "strategy_id": "smart_simple_aggr",
+      "asset_id": "usdcop",
+      "status": "experimental",
+      "display_name": "Smart Simple v1.0.0",
+      "pipeline_type": "ml_forecasting",
+      "timeframe": "weekly",
+      "manifest": "strategies/smart_simple_aggr/manifest.json",
+      "backtest_years": [
+        2025
+      ],
+      "has_production": false,
+      "has_replay": true,
+      "active_version": "1.0.0",
+      "return_pct": 29.47,
+      "sharpe": 4.042,
+      "p_value": 0.0011
+    },
     {
       "strategy_id": "smart_simple_v11",
       "asset_id": "usdcop",
@@ -22,7 +40,11 @@
         2025
       ],
       "has_production": true,
-      "has_replay": true
+      "has_replay": true,
+      "active_version": "2.0.0",
+      "return_pct": 25.63,
+      "sharpe": 3.347,
+      "p_value": null
     }
   ],
   "default": {

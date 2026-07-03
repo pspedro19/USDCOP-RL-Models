@@ -152,6 +152,24 @@ def test_json_safety_infinity_and_nan_become_null(tmp_path):
     assert data["profit_factor"] is None and data["ratio"] is None
 
 
+def test_registry_entry_carries_active_version_headline(tmp_path):
+    # The strategy selector needs real metrics without an N+1 manifest fetch: the registry
+    # entry must expose the ACTIVE version's headline. Publish v1 then v2 (v2 becomes active).
+    pub = sm.BundlePublisher(tmp_path, generated_at="t0")
+    pub.publish(strategy_id="s1", asset_id="usdcop", symbol="USD/COP", display_name="S1",
+                pipeline_type="ml_forecasting", timeframe="weekly", version="1.0.0", year=2025,
+                summary=make_summary("s1", 2025, 10.0), trades=make_trades("s1"),
+                headline={"return_pct": 10.0, "sharpe": 1.5, "p_value": 0.04})
+    pub.publish(strategy_id="s1", asset_id="usdcop", symbol="USD/COP", display_name="S1",
+                pipeline_type="ml_forecasting", timeframe="weekly", version="2.0.0", year=2025,
+                summary=make_summary("s1", 2025, 22.0), trades=make_trades("s1"),
+                headline={"return_pct": 22.0, "sharpe": 3.1, "p_value": 0.01})
+    registry = json.loads((tmp_path / "registry.json").read_text())
+    entry = next(s for s in registry["strategies"] if s["strategy_id"] == "s1")
+    assert entry["active_version"] == "2.0.0"
+    assert entry["return_pct"] == 22.0 and entry["sharpe"] == 3.1 and entry["p_value"] == 0.01
+
+
 def test_chart_symbol_derived_not_hardcoded(tmp_path):
     pub = sm.BundlePublisher(tmp_path, generated_at="t0")
     pub.publish(

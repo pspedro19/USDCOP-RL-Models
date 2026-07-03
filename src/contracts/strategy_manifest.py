@@ -133,6 +133,23 @@ class StrategyBundleManifest:
     def versions(self) -> list[str]:
         return sorted({b.model_version for b in self.backtests})
 
+    @property
+    def active_version(self) -> str | None:
+        for mv in self.model_versions:
+            if mv.active:
+                return mv.version
+        return self.model_versions[-1].version if self.model_versions else None
+
+    @property
+    def active_backtest(self) -> "BacktestEntry | None":
+        """The backtest entry for the active version (prefers a replayable one), else the last."""
+        av = self.active_version
+        matches = [b for b in self.backtests if b.model_version == av]
+        for b in matches:
+            if b.replayable:
+                return b
+        return matches[0] if matches else (self.backtests[-1] if self.backtests else None)
+
 
 @dataclass
 class RegistryStrategyEntry:
@@ -146,6 +163,12 @@ class RegistryStrategyEntry:
     backtest_years: list[int] = field(default_factory=list)
     has_production: bool = False
     has_replay: bool = False
+    # Active-version headline metrics — let the frontend strategy selector show real numbers
+    # without an N+1 manifest fetch. All optional (default None) → additive, backward-compatible.
+    active_version: str | None = None
+    return_pct: float | None = None
+    sharpe: float | None = None
+    p_value: float | None = None
 
 
 @dataclass
@@ -334,8 +357,10 @@ class RegistryBuilder:
             meta = _DEFAULT_ASSETS.get(aid, {"symbol": aid.upper(), "chart_symbol": aid.upper(), "display_name": aid.upper(), "asset_class": "unknown"})
             assets.append({"asset_id": aid, **meta})
 
-        strategies = [
-            RegistryStrategyEntry(
+        def _entry(m: StrategyBundleManifest) -> RegistryStrategyEntry:
+            ab = m.active_backtest
+            h = ab.headline if ab else {}
+            return RegistryStrategyEntry(
                 strategy_id=m.strategy_id,
                 asset_id=m.asset_id,
                 status=m.status,
@@ -346,9 +371,13 @@ class RegistryBuilder:
                 backtest_years=m.backtest_years,
                 has_production=m.production is not None,
                 has_replay=m.capabilities.get("replay", False),
+                active_version=m.active_version,
+                return_pct=h.get("return_pct"),
+                sharpe=h.get("sharpe"),
+                p_value=h.get("p_value"),
             )
-            for m in sorted(manifests.values(), key=lambda x: x.strategy_id)
-        ]
+
+        strategies = [_entry(m) for m in sorted(manifests.values(), key=lambda x: x.strategy_id)]
 
         # Default: first production strategy, else first discovered.
         default_m = next((m for m in manifests.values() if m.status == "production"), None) or next(iter(manifests.values()), None)

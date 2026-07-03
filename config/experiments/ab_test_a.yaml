@@ -1,0 +1,149 @@
+# A/B experiment config — A · tight stops / loose gate / Ridge+BR (auto-generated, frozen)
+# Tighter stops + looser regime gate takes more trades; test if TP capture beats whipsaw.
+
+executor:
+  name: smart_simple_v1
+  description: Bidirectional, flat SHORT 1.5x, adaptive stops HS 2.0x, sin trailing
+  status: paper
+  version: 3.0.0-A
+direction:
+  mode: bidirectional_asymmetric
+  comment: 'SHORT DA estable 62-72% (4 anios). LONG DA inestable 25-69%.
+
+    LONGs son trades exploratorios: capturar alpha cuando existe,
+
+    minimizar dano cuando falla.
+
+    '
+confidence:
+  agreement_tight: 0.001
+  agreement_loose: 0.005
+  magnitude_high: 0.008
+  magnitude_medium: 0.004
+  short:
+    HIGH: 1.5
+    MEDIUM: 1.5
+    LOW: 1.5
+  long:
+    HIGH: 1.0
+    MEDIUM: 0.5
+    LOW: 0.0
+adaptive_stops:
+  vol_multiplier: 1.5
+  hard_stop_min_pct: 0.01
+  hard_stop_max_pct: 0.03
+  tp_ratio: 0.6
+  effective_portfolio_cap_pct: 0.035
+vol_targeting:
+  target_vol: 0.15
+  max_leverage: 2.0
+  min_leverage: 0.5
+  vol_lookback: 21
+  vol_floor: 0.05
+execution:
+  trailing_stop:
+    enabled: false
+  re_entry:
+    enabled: false
+  week_lifecycle:
+    entry_day: monday
+    entry_time_cot: 09:00
+    exit_day: friday
+    exit_time_cot: '12:50'
+  order_type:
+    entry: limit
+    take_profit: limit
+    hard_stop: limit
+    week_end: market
+  costs:
+    maker_fee_bps: 0.0
+    taker_fee_bps: 0.0
+    slippage_bps: 1.0
+guardrails:
+  long_insistence_alarm:
+    window_weeks: 8
+    threshold_pct: 60
+    action: alert_only
+  rolling_da_monitor:
+    window_weeks: 16
+    min_trades_for_eval: 6
+    short_floor_da: 55
+    long_floor_da: 45
+    action: pause_direction
+  circuit_breaker:
+    max_consecutive_losses: 5
+    max_drawdown_pct: 12.0
+    action: pause_and_alert
+dynamic_leverage:
+  enabled: true
+  lookback_weeks: 8
+  wr_full: 60.0
+  wr_half: 40.0
+  wr_pause: 30.0
+  dd_reduction_threshold: 6.0
+retraining:
+  frequency: weekly
+  comment: Monthly retraining is DEPRECATED (v1.1.0 bug). Weekly since v1.1.1.
+regime_gate:
+  enabled: true
+  hurst_lookback: 60
+  hurst_trending: 0.5
+  hurst_mean_rev: 0.4
+  sizing_indeterminate: 0.5
+  sizing_mean_rev: 0.0
+gates:
+  evaluation_week: 15
+  promote_threshold:
+    da_overall: 55
+    da_short: 60
+  discard_threshold:
+    da_overall: 50
+  keep_conditions:
+    da_short_min: 60
+    da_long_min: 45
+models:
+  list:
+  - name: ridge
+    type: sklearn.linear_model.Ridge
+    params:
+      alpha: 1.0
+  - name: bayesian_ridge
+    type: sklearn.linear_model.BayesianRidge
+    params:
+      max_iter: 300
+  ensemble:
+    method: mean
+    target: ln(close[t+5]/close[t])
+  use_xgboost: false
+features:
+  count: 21
+  list:
+  - close
+  - open
+  - high
+  - low
+  - return_1d
+  - return_5d
+  - return_10d
+  - return_20d
+  - volatility_5d
+  - volatility_10d
+  - volatility_20d
+  - rsi_14d
+  - ma_ratio_20d
+  - ma_ratio_50d
+  - day_of_week
+  - month
+  - is_month_end
+  - dxy_close_lag1
+  - oil_close_lag1
+  - vix_close_lag1
+  - embi_close_lag1
+_meta:
+  experiment_id: AB-TIGHT-A
+  label: A · tight stops / loose gate / Ridge+BR
+  based_on: smart_simple_v1.yaml
+  variable_changed: vol_multiplier 2.0->1.5, tp_ratio 0.5->0.6, gate 0.52/0.42->0.50/0.40,
+    xgboost off
+  hypothesis: Tighter stops + looser regime gate takes more trades; test if TP capture
+    beats whipsaw.
