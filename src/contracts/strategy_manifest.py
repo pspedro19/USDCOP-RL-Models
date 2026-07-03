@@ -1,0 +1,355 @@
+"""Strategy Bundle Manifest & Dynamic Registry contract.
+
+Implements CTR-STRAT-REGISTRY-001 (see .claude/rules/sdd-strategy-lifecycle-registry.md).
+
+This module is the SSOT for how a strategy describes itself to the frontend so the UI can be
+built dynamically (multi-strategy, multi-asset, multi-version, multi-year) with zero hardcoded
+strategy_id / symbol / year.
+
+Two artifacts:
+  - StrategyBundleManifest  -> public/data/strategies/<strategy_id>/manifest.json
+  - RegistryIndex           -> public/data/registry.json  (dynamic discovery index)
+
+Design (SOLID):
+  - Dataclasses = the contract (pure data, no I/O).
+  - LegacyBundleAdapter = single responsibility: legacy production/*.json -> manifest (shim).
+  - RegistryBuilder = single responsibility: discover manifests -> registry index.
+
+DRY: JSON safety is delegated to strategy_schema.safe_json_dump (never re-implemented here).
+"""
+from __future__ import annotations
+
+import json
+import math
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
+
+# NOTE (intentional decoupling): the registry/manifest tool is a JSON-only leaf. It must run
+# WITHOUT the ML/forecasting stack (which `src.contracts.__init__` eager-imports). So JSON safety
+# is inlined here rather than imported from strategy_schema — it mirrors
+# strategy_schema.safe_json_dump exactly (Infinity/NaN -> null). Keep the two in lockstep.
+
+
+def _sanitize_for_json(obj: Any) -> Any:
+    """Recursively replace Infinity/NaN floats with None so JSON.parse() never breaks."""
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
+
+
+def safe_json_dump(data: Any, fp: Any, **kwargs: Any) -> None:
+    """JSON dump that never emits Infinity/NaN. Mirrors strategy_schema.safe_json_dump."""
+    kwargs.setdefault("indent", 2)
+    json.dump(_sanitize_for_json(data), fp, allow_nan=False, **kwargs)
+
+
+SCHEMA_VERSION = "1.0.0"
+
+# Asset display metadata. USD/COP is the only tradeable asset today; new assets (XAU, BTC)
+# arrive via config/assets/<asset_id>.yaml (AssetProfile) — see sdd-multi-asset-onboarding.md.
+# chart_symbol is what TradingChartWithSignals must render (no slash).
+_DEFAULT_ASSETS: dict[str, dict[str, str]] = {
+    "usdcop": {"symbol": "USD/COP", "chart_symbol": "USDCOP", "display_name": "USD/COP", "asset_class": "fx"},
+    "xauusd": {"symbol": "XAU/USD", "chart_symbol": "XAUUSD", "display_name": "Gold", "asset_class": "commodity"},
+    "btcusd": {"symbol": "BTC/USD", "chart_symbol": "BTCUSD", "display_name": "Bitcoin", "asset_class": "crypto"},
+}
+
+
+def chart_symbol_for(symbol: str) -> str:
+    """Derive the UI chart symbol from a provider symbol (e.g. 'USD/COP' -> 'USDCOP')."""
+    return symbol.replace("/", "").replace(" ", "").upper()
+
+
+# ---------------------------------------------------------------------------
+# Contract dataclasses
+# ---------------------------------------------------------------------------
+@dataclass
+class BacktestEntry:
+    """One immutable backtest, keyed by (model_version, year). NEVER overwritten (spec §5)."""
+
+    model_version: str
+    year: int
+    immutable_id: str
+    summary: str  # path relative to public/data/
+    trades: str
+    signals: str | None = None  # present iff replayable
+    replayable: bool = False
+    gates: dict[str, Any] = field(default_factory=dict)  # {passed, of, recommendation}
+    headline: dict[str, Any] = field(default_factory=dict)  # {return_pct, sharpe, p_value}
+
+
+@dataclass
+class ModelVersionEntry:
+    version: str
+    active: bool = False
+    trained_at: str | None = None
+    train_window: str | None = None
+    feature_hash: str | None = None
+    norm_stats_hash: str | None = None
+    artifact_uri: str | None = None
+
+
+@dataclass
+class StrategyBundleManifest:
+    """Self-describing strategy bundle — the only thing the UI needs to render a strategy."""
+
+    strategy_id: str
+    asset_id: str
+    symbol: str
+    chart_symbol: str
+    display_name: str
+    pipeline_type: str  # ml_forecasting | rl | rule_based | hybrid
+    timeframe: str  # weekly | daily | intraday_5m
+    status: str  # experimental | paper | production | archived
+    schema_version: str = SCHEMA_VERSION
+    capabilities: dict[str, bool] = field(default_factory=lambda: {"replay": False, "live": False, "approval": True})
+    produced_by: dict[str, Any] = field(default_factory=dict)
+    backtests: list[BacktestEntry] = field(default_factory=list)
+    production: dict[str, Any] | None = None
+    approval: dict[str, Any] | None = None
+    model_versions: list[ModelVersionEntry] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return _sanitize_for_json(asdict(self))
+
+    @property
+    def backtest_years(self) -> list[int]:
+        return sorted({b.year for b in self.backtests})
+
+
+@dataclass
+class RegistryStrategyEntry:
+    strategy_id: str
+    asset_id: str
+    status: str
+    display_name: str
+    pipeline_type: str
+    timeframe: str
+    manifest: str  # path relative to public/data/
+    backtest_years: list[int] = field(default_factory=list)
+    has_production: bool = False
+    has_replay: bool = False
+
+
+@dataclass
+class RegistryIndex:
+    """The dynamic index the frontend fetches to build all selectors (spec §4)."""
+
+    generated_at: str
+    assets: list[dict[str, str]]
+    strategies: list[RegistryStrategyEntry]
+    default: dict[str, str]
+    schema_version: str = SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return _sanitize_for_json(asdict(self))
+
+
+# ---------------------------------------------------------------------------
+# LegacyBundleAdapter — synthesize a manifest from the current flat layout (migration shim)
+# ---------------------------------------------------------------------------
+class LegacyBundleAdapter:
+    """Builds a StrategyBundleManifest from the legacy public/data/production/*.json layout.
+
+    This is the non-destructive migration shim (spec §11 step 1): it references the EXISTING
+    legacy files so the current USDCOP dashboard keeps working while gaining a dynamic registry.
+    Paths in the manifest are relative to `public/data/`.
+    """
+
+    def __init__(self, data_dir: Path):
+        self.data_dir = data_dir
+        self.prod_dir = data_dir / "production"
+
+    def _load_json(self, rel: str) -> dict[str, Any] | None:
+        p = self.data_dir / rel
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return None
+
+    def _discover_backtest_years(self, strategy_id: str) -> list[int]:
+        years: set[int] = set()
+        for f in self.prod_dir.glob("summary_*.json"):
+            stem = f.stem  # summary_2025
+            tail = stem.rsplit("_", 1)[-1]
+            if tail.isdigit():
+                years.add(int(tail))
+        return sorted(years)
+
+    def build(self, entry: dict[str, Any]) -> StrategyBundleManifest:
+        strategy_id = entry["strategy_id"]
+        asset_id = entry.get("asset_id", "usdcop")
+        asset = _DEFAULT_ASSETS.get(asset_id, _DEFAULT_ASSETS["usdcop"])
+        symbol = entry.get("symbol", asset["symbol"])
+
+        approval = self._load_json("production/approval_state.json") or {}
+        model_version = entry.get("version") or "1.0.0"
+
+        backtests: list[BacktestEntry] = []
+        for year in self._discover_backtest_years(strategy_id):
+            summary = self._load_json(f"production/summary_{year}.json") or {}
+            stats = (summary.get("strategies") or {}).get(strategy_id, {})
+            trades_rel = f"production/trades/{strategy_id}_{year}.json"
+            has_trades = (self.data_dir / trades_rel).exists()
+            gates = approval.get("gates", []) if approval.get("backtest_year") == year else []
+            backtests.append(
+                BacktestEntry(
+                    model_version=model_version,
+                    year=year,
+                    immutable_id=f"{strategy_id}__{model_version}__{year}",
+                    summary=f"production/summary_{year}.json",
+                    trades=trades_rel if has_trades else "",
+                    signals=None,  # legacy has no stored signals parquet yet -> replay disabled
+                    replayable=False,
+                    gates={
+                        "passed": sum(1 for g in gates if g.get("passed")),
+                        "of": len(gates),
+                        "recommendation": approval.get("backtest_recommendation", "REVIEW"),
+                    },
+                    headline={
+                        "return_pct": stats.get("total_return_pct"),
+                        "sharpe": stats.get("sharpe"),
+                        "p_value": (summary.get("statistical_tests") or {}).get("p_value"),
+                    },
+                )
+            )
+
+        production = None
+        if (self.data_dir / "production/summary.json").exists():
+            prod_summary = self._load_json("production/summary.json") or {}
+            production = {
+                "model_version": model_version,
+                "year": prod_summary.get("year"),
+                "summary": "production/summary.json",
+                "trades": f"production/trades/{strategy_id}.json",
+            }
+
+        # Lifecycle status is distinct from approval status. The legacy strategies.json `status`
+        # field carries the APPROVAL state ("APPROVED"/"PENDING_APPROVAL"), not lifecycle. Derive
+        # lifecycle: an approved strategy with production output is "production", else "paper".
+        approval_status = approval.get("status", "PENDING_APPROVAL")
+        lifecycle_status = "production" if (production is not None and approval_status == "APPROVED") else "paper"
+
+        return StrategyBundleManifest(
+            strategy_id=strategy_id,
+            asset_id=asset_id,
+            symbol=symbol,
+            chart_symbol=asset["chart_symbol"],
+            display_name=entry.get("strategy_name", strategy_id),
+            pipeline_type=entry.get("pipeline", entry.get("pipeline_type", "ml_forecasting")),
+            timeframe=entry.get("timeframe", "weekly"),
+            status=lifecycle_status,
+            capabilities={"replay": any(b.replayable for b in backtests), "live": production is not None, "approval": True},
+            produced_by={"source": "legacy_shim", "adapter": "LegacyBundleAdapter"},
+            backtests=backtests,
+            production=production,
+            approval={"file": "production/approval_state.json", "status": approval.get("status", "PENDING_APPROVAL")},
+            model_versions=[ModelVersionEntry(version=model_version, active=True)],
+        )
+
+
+# ---------------------------------------------------------------------------
+# RegistryBuilder — discover manifests -> registry index
+# ---------------------------------------------------------------------------
+class RegistryBuilder:
+    """Scans the dashboard data dir and produces a dynamic registry index.
+
+    Discovery order (both supported, so new + legacy coexist during migration):
+      1. New layout:    public/data/strategies/<sid>/manifest.json
+      2. Legacy layout: public/data/production/strategies.json (synthesized via LegacyBundleAdapter)
+    """
+
+    def __init__(self, data_dir: Path, generated_at: str):
+        self.data_dir = data_dir
+        self.generated_at = generated_at
+        self.strategies_dir = data_dir / "strategies"
+        self.legacy = LegacyBundleAdapter(data_dir)
+
+    def _load_manifest(self, path: Path) -> StrategyBundleManifest | None:
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return None
+        backtests = [BacktestEntry(**b) for b in raw.get("backtests", [])]
+        model_versions = [ModelVersionEntry(**m) for m in raw.get("model_versions", [])]
+        known = {f.name for f in StrategyBundleManifest.__dataclass_fields__.values()}
+        base = {k: v for k, v in raw.items() if k in known and k not in ("backtests", "model_versions")}
+        return StrategyBundleManifest(**base, backtests=backtests, model_versions=model_versions)
+
+    def _synthesize_legacy_manifests(self) -> list[StrategyBundleManifest]:
+        legacy_index = self.legacy._load_json("production/strategies.json") or {}
+        manifests: list[StrategyBundleManifest] = []
+        for entry in legacy_index.get("strategies", []):
+            sid = entry.get("strategy_id")
+            if not sid:
+                continue
+            # Do not clobber a hand-authored/new-layout manifest.
+            if (self.strategies_dir / sid / "manifest.json").exists():
+                continue
+            manifests.append(self.legacy.build(entry))
+        return manifests
+
+    def build(self, *, write_manifests: bool = True) -> RegistryIndex:
+        manifests: dict[str, StrategyBundleManifest] = {}
+
+        # 1. New-layout manifests (authoritative).
+        if self.strategies_dir.exists():
+            for mf in self.strategies_dir.glob("*/manifest.json"):
+                m = self._load_manifest(mf)
+                if m:
+                    manifests[m.strategy_id] = m
+
+        # 2. Legacy shim (only for strategies without a new-layout manifest).
+        for m in self._synthesize_legacy_manifests():
+            manifests.setdefault(m.strategy_id, m)
+            if write_manifests:
+                out = self.strategies_dir / m.strategy_id / "manifest.json"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                with out.open("w", encoding="utf-8") as f:
+                    safe_json_dump(m.to_dict(), f, indent=2)
+
+        # Assemble assets referenced by the discovered strategies.
+        asset_ids = {m.asset_id for m in manifests.values()} or {"usdcop"}
+        assets = []
+        for aid in sorted(asset_ids):
+            meta = _DEFAULT_ASSETS.get(aid, {"symbol": aid.upper(), "chart_symbol": aid.upper(), "display_name": aid.upper(), "asset_class": "unknown"})
+            assets.append({"asset_id": aid, **meta})
+
+        strategies = [
+            RegistryStrategyEntry(
+                strategy_id=m.strategy_id,
+                asset_id=m.asset_id,
+                status=m.status,
+                display_name=m.display_name,
+                pipeline_type=m.pipeline_type,
+                timeframe=m.timeframe,
+                manifest=f"strategies/{m.strategy_id}/manifest.json",
+                backtest_years=m.backtest_years,
+                has_production=m.production is not None,
+                has_replay=m.capabilities.get("replay", False),
+            )
+            for m in sorted(manifests.values(), key=lambda x: x.strategy_id)
+        ]
+
+        # Default: first production strategy, else first discovered.
+        default_m = next((m for m in manifests.values() if m.status == "production"), None) or next(iter(manifests.values()), None)
+        default = (
+            {"asset_id": default_m.asset_id, "strategy_id": default_m.strategy_id}
+            if default_m
+            else {"asset_id": "usdcop", "strategy_id": "smart_simple_v11"}
+        )
+
+        return RegistryIndex(generated_at=self.generated_at, assets=assets, strategies=strategies, default=default)
+
+    def write(self, index: RegistryIndex) -> Path:
+        out = self.data_dir / "registry.json"
+        with out.open("w", encoding="utf-8") as f:
+            safe_json_dump(index.to_dict(), f, indent=2)
+        return out

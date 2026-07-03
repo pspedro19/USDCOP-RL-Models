@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-07-03T17:18:19.801230+00:00",
+  "assets": [
+    {
+      "asset_id": "usdcop",
+      "symbol": "USD/COP",
+      "chart_symbol": "USDCOP",
+      "display_name": "USD/COP",
+      "asset_class": "fx"
+    }
+  ],
+  "strategies": [
+    {
+      "strategy_id": "smart_simple_v11",
+      "asset_id": "usdcop",
+      "status": "production",
+      "display_name": "Smart Simple v1.1.0",
+      "pipeline_type": "ml_forecasting",
+      "timeframe": "weekly",
+      "manifest": "strategies/smart_simple_v11/manifest.json",
+      "backtest_years": [
+        2025
+      ],
+      "has_production": true,
+      "has_replay": false
+    }
+  ],
+  "default": {
+    "asset_id": "usdcop",
+    "strategy_id": "smart_simple_v11"
+  },
+  "schema_version": "1.0.0"
+}

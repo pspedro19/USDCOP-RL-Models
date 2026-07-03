@@ -111,6 +111,9 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 | `sdd-risk-management.md` | **Risk Checks & Circuit Breakers** | 9-check chain, command pattern, RiskEnforcer 7 rules, kill switch audit |
 | `sdd-observability.md` | **Monitoring & Alerting** | Prometheus 37+ rules, Grafana 4 dashboards, AlertManager Slack/PagerDuty |
 | `sdd-cicd-testing.md` | **CI/CD & Quality Gates** | 9 GitHub Actions, Makefile 268 lines, 70% coverage gate, contract validation |
+| `sdd-architecture-overview.md` | **As-built architecture map** | Infra (docker full/compact), 38 DAGs, contracts + drift findings, 13-page visual inventory, USD/COP coupling map |
+| `sdd-multi-asset-onboarding.md` | **Add a new tradeable asset (BTC, Gold)** | `AssetProfile` contract, file-touch map, 24/7 problem, SDD stages + TDD test-contract (A1–F1) |
+| `sdd-strategy-lifecycle-registry.md` | **Dynamic multi-strategy registry + replay** | StrategyBundleManifest, registry.json, DAG entry/exit I/O contract, immutable versioned backtests, replay API, DAG factory, TDD (R1–R9) |
 
 ### SDD Contracts
 

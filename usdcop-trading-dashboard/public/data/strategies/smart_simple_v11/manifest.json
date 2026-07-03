@@ -1,0 +1,62 @@
+{
+  "strategy_id": "smart_simple_v11",
+  "asset_id": "usdcop",
+  "symbol": "USD/COP",
+  "chart_symbol": "USDCOP",
+  "display_name": "Smart Simple v1.1.0",
+  "pipeline_type": "ml_forecasting",
+  "timeframe": "weekly",
+  "status": "production",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": false,
+    "live": true,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "legacy_shim",
+    "adapter": "LegacyBundleAdapter"
+  },
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__1.0.0__2025",
+      "summary": "production/summary_2025.json",
+      "trades": "production/trades/smart_simple_v11_2025.json",
+      "signals": null,
+      "replayable": false,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 25.63,
+        "sharpe": 3.347,
+        "p_value": 0.0063
+      }
+    }
+  ],
+  "production": {
+    "model_version": "1.0.0",
+    "year": 2026,
+    "summary": "production/summary.json",
+    "trades": "production/trades/smart_simple_v11.json"
+  },
+  "approval": {
+    "file": "production/approval_state.json",
+    "status": "APPROVED"
+  },
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

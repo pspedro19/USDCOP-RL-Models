@@ -317,6 +317,7 @@ services:
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./data:/opt/airflow/data
+      - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     command: airflow scheduler
@@ -405,6 +406,7 @@ services:
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./data:/opt/airflow/data
+      - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
     ports:
