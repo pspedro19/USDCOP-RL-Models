@@ -295,3 +295,7 @@ data/backups/**/env/
 !src/models/**
 !src/core/state/
 !src/core/state/**
+# ...but never track compiled artifacts inside those re-included source packages.
+src/forecasting/models/**/__pycache__/
+src/models/**/__pycache__/
+src/core/state/**/__pycache__/
