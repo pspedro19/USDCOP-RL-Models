@@ -2,6 +2,7 @@
 API Routes module.
 """
 
+from .admin import router as admin_router
 from .auth import router as auth_router
 from .exchanges import router as exchanges_router
 from .executions import router as executions_router
@@ -13,6 +14,7 @@ from .webhooks import router as webhooks_router
 from .ws_notifications import router as ws_notifications_router
 
 __all__ = [
+    "admin_router",
     "auth_router",
     "exchanges_router",
     "executions_router",

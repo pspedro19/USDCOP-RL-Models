@@ -159,6 +159,25 @@ def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 
     if df.empty:
         return 0
 
+    # Resilience to schema drift: a backup parquet may carry columns that the
+    # freshly-initialized table does not have (schema evolved after the dump).
+    # Insert only the intersection so restore never aborts on an extra column.
+    _c = conn.cursor()
+    _c.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = %s",
+        (table_name.split('.')[-1],),
+    )
+    target_cols = {r[0] for r in _c.fetchall()}
+    _c.close()
+    if target_cols:
+        extra = [c for c in df.columns if c not in target_cols]
+        if extra:
+            print(f"    Note: dropping {len(extra)} col(s) absent in {table_name}: "
+                  f"{extra[:5]}{'...' if len(extra) > 5 else ''}")
+            df = df[[c for c in df.columns if c in target_cols]]
+        if df.empty or len(df.columns) == 0:
+            return 0
+
     # Handle JSON columns - convert to JSON strings for PostgreSQL JSONB
     if json_columns:
         for col in json_columns:

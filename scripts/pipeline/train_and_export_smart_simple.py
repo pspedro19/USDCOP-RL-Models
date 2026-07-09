@@ -45,7 +45,9 @@ import yaml
 from sklearn.linear_model import Ridge, BayesianRidge
 from sklearn.preprocessing import StandardScaler
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Script lives at scripts/pipeline/<this>.py → repo root is parents[2]
+# (was parent.parent when this file was at scripts/ root; updated after the 2026-07 scripts reorg).
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.forecasting.confidence_scorer import ConfidenceConfig, score_confidence
@@ -59,6 +61,9 @@ from src.forecasting.dataset_loader import ForecastingDatasetLoader
 from src.forecasting.dynamic_leverage import DynamicLeverageConfig, compute_leverage_adjustment
 from src.forecasting.regime_gate import RegimeGateConfig, classify_regime, RegimeState
 from src.forecasting.momentum_signal import compute_momentum_signal, SignalConfidence
+# SSOT v2.0 feature enhancement — shared with the live H5-L3/L5 Airflow pipeline
+# so train == backtest == inference (audit A3-02).
+from src.forecasting.enhance_v2 import enhance_features_v2
 
 DASHBOARD_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "data" / "production"
 TRADES_DIR = DASHBOARD_DIR / "trades"
@@ -160,75 +165,6 @@ def load_data():
     return df, feature_cols
 
 
-def enhance_features_v2(df, base_feature_cols):
-    """
-    Smart Simple v2.0 feature enhancement.
-
-    Adds regime + carry + term spread features.
-    Transforms macro levels to 5d returns (stationary).
-    Keeps raw prices (Ridge needs them; XGBoost handles non-stationarity).
-
-    Returns: (df_enhanced, v2_feature_cols)
-    """
-    df = df.copy()
-
-    # --- New features ---
-    # Vol regime ratio (short vol / long vol)
-    vol5 = df["volatility_5d"].replace(0, np.nan)
-    vol20 = df["volatility_20d"].replace(0, np.nan)
-    df["vol_regime_ratio"] = (vol5 / vol20).clip(-5, 5).fillna(1.0)
-
-    # Trend slope 60d (normalized)
-    def _trend_slope(series, window=60):
-        result = pd.Series(np.nan, index=series.index)
-        for i in range(window, len(series)):
-            chunk = series.iloc[i - window:i].values
-            if len(chunk) == window and np.std(chunk) > 0:
-                x = np.arange(window)
-                slope = np.polyfit(x, chunk, 1)[0]
-                result.iloc[i] = slope / np.mean(chunk)
-        return result
-
-    df["trend_slope_60d"] = _trend_slope(df["close"])
-
-    # Carry differential (IBR - FedFunds) if available in macro
-    # These come from merge_asof in dataset_loader already lagged T-1
-    macro_path = PROJECT_ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
-    if macro_path.exists():
-        try:
-            macro = pd.read_parquet(macro_path)
-            macro["date"] = pd.to_datetime(macro["fecha"]).dt.tz_localize(None)
-            for col_pair in [("ibr_overnight", "fedfunds_rate")]:
-                c1, c2 = col_pair
-                if c1 in macro.columns and c2 in macro.columns:
-                    macro["carry_diff"] = (macro[c1] - macro[c2]).shift(1)
-                    df = pd.merge_asof(
-                        df.sort_values("date"),
-                        macro[["date", "carry_diff"]].dropna().sort_values("date"),
-                        on="date", direction="backward",
-                    )
-            if "ust10y_close" in macro.columns and "ust2y_close" in macro.columns:
-                macro["term_spread"] = (macro["ust10y_close"] - macro["ust2y_close"]).shift(1)
-                df = pd.merge_asof(
-                    df.sort_values("date"),
-                    macro[["date", "term_spread"]].dropna().sort_values("date"),
-                    on="date", direction="backward",
-                )
-        except Exception as e:
-            print(f"    [v2] Macro enhancement failed: {e}")
-
-    # Fill NaN for new features
-    for col in ["vol_regime_ratio", "trend_slope_60d", "carry_diff", "term_spread"]:
-        if col in df.columns:
-            df[col] = df[col].ffill().fillna(0.0)
-
-    # Build v2 feature list: base + new
-    v2_features = list(base_feature_cols)
-    for new_col in ["vol_regime_ratio", "trend_slope_60d", "carry_diff", "term_spread"]:
-        if new_col in df.columns:
-            v2_features.append(new_col)
-
-    return df, v2_features
 
 
 # ---------------------------------------------------------------------------
@@ -546,19 +482,26 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
         # Train Ridge+BR (+XGBoost) on expanding window
         train_end = monday_ts - timedelta(days=1)
         df_train = df[(df["date"] <= train_end) & df["target_return_5d"].notna()].copy()
-        mask = df_train[feature_cols].notna().all(axis=1) & np.isfinite(df_train[feature_cols]).all(axis=1)
+        # Build the feature matrix as a numpy float64 array up front. Coercing via
+        # pd.to_numeric first neutralises object/nullable-extension dtypes that can
+        # slip in on the extended (2026) slice — np.isfinite raises TypeError on a
+        # DataFrame with such dtypes, whereas it is well-defined on a float ndarray.
+        # np.isfinite is False for NaN, so this single mask subsumes the old notna check.
+        feats = df_train[feature_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=np.float64)
+        mask = np.isfinite(feats).all(axis=1)
         df_train = df_train[mask]
+        feats = feats[mask]
         if len(df_train) < 100:
             continue
 
-        X = df_train[feature_cols].values.astype(np.float64)
-        y = df_train["target_return_5d"].values.astype(np.float64)
+        X = feats
+        y = df_train["target_return_5d"].to_numpy(dtype=np.float64)
         scaler = StandardScaler()
         Xs = scaler.fit_transform(X)
         ridge = Ridge(alpha=1.0).fit(Xs, y)
         br = BayesianRidge(max_iter=300).fit(Xs, y)
 
-        latest = scaler.transform(df_train[feature_cols].iloc[-1:].values.astype(np.float64))
+        latest = scaler.transform(feats[-1:])
         pr = float(ridge.predict(latest)[0])
         pbr = float(br.predict(latest)[0])
 
@@ -919,7 +862,7 @@ def export_approval_state(result_2025, cfg):
         },
         "deploy_manifest": {
             "pipeline_type": "ml_forecasting",
-            "script": "scripts/train_and_export_smart_simple.py",
+            "script": "scripts/pipeline/train_and_export_smart_simple.py",
             "args": ["--phase", "production", "--no-png", "--seed-db"],
             "config_path": "config/execution/smart_simple_v1.yaml",
             "db_tables": [
@@ -943,7 +886,8 @@ def export_approval_state(result_2025, cfg):
 # overwriting prior versions or breaking existing consumptions.
 # ---------------------------------------------------------------------------
 
-def publish_versioned_bundle(cfg, summary, trades, year, *, gates=None, status="experimental"):
+def publish_versioned_bundle(cfg, summary, trades, year, *, gates=None, status="experimental",
+                             phase="backtest"):
     """Publish a versioned, immutable backtest bundle and refresh the registry.
 
     Fully guarded: any failure prints a warning and returns None — the legacy
@@ -983,9 +927,14 @@ def publish_versioned_bundle(cfg, summary, trades, year, *, gates=None, status="
             headline=headline,
             status=status,
             trained_at=datetime.now(timezone.utc).isoformat(),
+            phase=phase,
         )
-        tag = "new" if result.get("wrote_new_files") else "immutable-hit"
-        print(f"    -> registry: strategies/{summary.get('strategy_id')}/backtests/{version}/ ({year}, {tag})")
+        if phase == "production":
+            print(f"    -> registry: strategies/{summary.get('strategy_id')}/production/ "
+                  f"({year}, mutable + manifest.production pointer)")
+        else:
+            tag = "new" if result.get("wrote_new_files") else "immutable-hit"
+            print(f"    -> registry: strategies/{summary.get('strategy_id')}/backtests/{version}/ ({year}, {tag})")
         return result
     except Exception as e:  # pragma: no cover - never break legacy flow
         print(f"    [registry] skipped: {e}")
@@ -1019,9 +968,37 @@ def seed_h5_db_tables(result_2026, cfg):
         print("    [WARN] psycopg2 not installed, skipping DB seeding")
         return
 
+    # Robust numpy->postgres adaptation: walk-forward outputs carry numpy scalar
+    # types (np.bool_, np.int64, np.float64) that psycopg2 cannot adapt natively
+    # ("can't adapt type 'numpy.bool_'"). Register adapters once so every INSERT
+    # binds them as native SQL. (DRY: same class of fix as the ridge-gate loop.)
+    try:
+        import numpy as _np
+        from psycopg2.extensions import register_adapter, AsIs, Float
+
+        register_adapter(_np.bool_, lambda v: AsIs("true" if bool(v) else "false"))
+        for _t in (_np.int64, _np.int32, _np.int16, _np.int8):
+            register_adapter(_t, lambda v: AsIs(int(v)))
+        for _t in (_np.float64, _np.float32):
+            register_adapter(_t, lambda v: Float(float(v)))
+    except Exception as _e:  # noqa: BLE001 — adaptation is best-effort hardening
+        print(f"    [WARN] numpy adapter registration skipped: {_e}")
+
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
-        print("    [WARN] DATABASE_URL not set, skipping DB seeding")
+        # Fallback: construct from the standard POSTGRES_* vars so seeding works
+        # when invoked from the airflow scheduler / data-seeder (which set the
+        # individual vars, not DATABASE_URL). Mirrors scripts/ops/backup helpers.
+        pg_user = os.environ.get("POSTGRES_USER")
+        pg_pass = os.environ.get("POSTGRES_PASSWORD")
+        pg_host = os.environ.get("POSTGRES_HOST")
+        pg_port = os.environ.get("POSTGRES_PORT", "5432")
+        pg_db = os.environ.get("POSTGRES_DB")
+        if pg_user and pg_host and pg_db:
+            db_url = f"postgresql://{pg_user}:{pg_pass or ''}@{pg_host}:{pg_port}/{pg_db}"
+            print("    [DB] DATABASE_URL not set — built from POSTGRES_* env vars")
+    if not db_url:
+        print("    [WARN] No DATABASE_URL and no POSTGRES_* env — skipping DB seeding")
         return
 
     trades = result_2026.get("trades", [])
@@ -1289,7 +1266,7 @@ def seed_h5_db_tables(result_2026, cfg):
 # PNG generation (optional, matplotlib)
 # ---------------------------------------------------------------------------
 
-def generate_pngs(result, df, year, output_dir):
+def generate_pngs(result, df, year, output_dir, version="2.0.0"):
     """Generate equity curve, monthly PnL, and trade distribution PNGs."""
     try:
         import matplotlib
@@ -1330,7 +1307,7 @@ def generate_pngs(result, df, year, output_dir):
 
         fig, ax = plt.subplots(figsize=(12, 5), facecolor=BG)
         ax.set_facecolor(BG)
-        ax.plot(dates, eq, color=GREEN, linewidth=2, label=f"Smart Simple v1.1")
+        ax.plot(dates, eq, color=GREEN, linewidth=2, label=f"Smart Simple v{version}")
         if len(bh_dates) > 0:
             ax.plot(bh_dates, bh_eq, color=GRAY, linewidth=1, linestyle="--", label="Buy & Hold", alpha=0.7)
         ax.axhline(y=10000, color=GRAY, linewidth=0.5, linestyle=":")
@@ -1540,7 +1517,7 @@ def main():
         )
 
         if not args.no_png:
-            generate_pngs(result_2025, df, 2025, DASHBOARD_DIR)
+            generate_pngs(result_2025, df, 2025, DASHBOARD_DIR, version=cfg["version"])
 
         # MLflow experiment tracking (optional — silent if MLflow unavailable)
         try:
@@ -1601,10 +1578,11 @@ def main():
         print(f"    -> trades/{cfg['strategy_id']}.json ({m26.get('n_trades', 0)} trades)")
 
         # ADDITIVE: versioned immutable bundle + registry refresh (never touches legacy files above)
-        publish_versioned_bundle(cfg, summary_2026, trades_2026, 2026, status="production")
+        publish_versioned_bundle(cfg, summary_2026, trades_2026, 2026, status="production",
+                                 phase="production")  # live year is MUTABLE (audit A4-01)
 
         if not args.no_png:
-            generate_pngs(result_2026, df, 2026, DASHBOARD_DIR)
+            generate_pngs(result_2026, df, 2026, DASHBOARD_DIR, version=cfg["version"])
 
         # DB seeding (--seed-db flag, typically set by deploy API)
         if args.seed_db:

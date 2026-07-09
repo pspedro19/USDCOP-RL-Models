@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 interface StrategyInfo {
   strategy_id: string;
   strategy_name: string;
+  asset_id: string;
+  asset_name: string;
   pipeline: string;
   status: string;
   return_pct: number;
@@ -27,25 +29,65 @@ interface StrategyInfo {
   p_value: number;
 }
 
-function HeaderStrategyDropdown() {
+/**
+ * Header strategy selector — reads the SSOT registry (/api/registry) so EVERY trained
+ * strategy (USD/COP, Gold, BTC) is selectable, grouped by asset. Controlled: the parent
+ * owns the selected id and passes it to ForecastingBacktestSection, so picking a strategy
+ * here drives that section's backtest replay. Adding a strategy/asset to the registry makes
+ * it appear here automatically — no code change (DRY / open-closed).
+ */
+function HeaderStrategyDropdown({
+  selectedId,
+  onSelect,
+}: {
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
-  const [selected, setSelected] = useState<StrategyInfo | null>(null);
 
   useEffect(() => {
-    fetch('/data/production/strategies.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.strategies) {
-          setStrategies(data.strategies);
-          const def = data.strategies.find((s: StrategyInfo) => s.strategy_id === data.default_strategy) || data.strategies[0];
-          setSelected(def);
+    fetch('/api/registry')
+      .then(r => (r.ok ? r.json() : null))
+      .then(idx => {
+        if (!idx?.strategies) return;
+        const assetName: Record<string, string> = {};
+        (idx.assets ?? []).forEach((a: { asset_id: string; display_name?: string }) => {
+          assetName[a.asset_id] = a.display_name ?? a.asset_id;
+        });
+        const list: StrategyInfo[] = idx.strategies.map((s: {
+          strategy_id: string; asset_id: string; display_name?: string; pipeline_type?: string;
+          status?: string; return_pct?: number; sharpe?: number; p_value?: number;
+        }) => ({
+          strategy_id: s.strategy_id,
+          strategy_name: s.display_name ?? s.strategy_id,
+          asset_id: s.asset_id,
+          asset_name: assetName[s.asset_id] ?? s.asset_id,
+          pipeline: s.pipeline_type ?? 'rule_based',
+          status: s.status === 'production' ? 'APPROVED' : (s.status ?? 'experimental'),
+          return_pct: s.return_pct ?? 0,
+          sharpe: s.sharpe ?? 0,
+          p_value: s.p_value ?? 0,
+        }));
+        setStrategies(list);
+        // Initialise the shared selection to the registry default (once, if uncontrolled).
+        if (!selectedId && list.length) {
+          onSelect(idx.default?.strategy_id ?? list[0].strategy_id);
         }
       })
       .catch(() => {});
+    // Registry is immutable per session; load once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const selected = strategies.find(s => s.strategy_id === selectedId) ?? null;
   if (!selected) return null;
+
+  // Group by asset so the user scans USD/COP, Gold and BTC strategies separately.
+  const byAsset = strategies.reduce<Record<string, StrategyInfo[]>>((acc, s) => {
+    (acc[s.asset_id] ??= []).push(s);
+    return acc;
+  }, {});
 
   return (
     <div className="relative">
@@ -61,7 +103,7 @@ function HeaderStrategyDropdown() {
         <div className="text-left">
           <div className="font-bold text-white text-sm">{selected.strategy_name}</div>
           <div className="text-[10px] text-slate-400">
-            {selected.pipeline} | +{selected.return_pct.toFixed(1)}% | Sharpe {selected.sharpe.toFixed(2)}
+            {selected.asset_name} | +{selected.return_pct.toFixed(1)}% | Sharpe {selected.sharpe.toFixed(2)}
           </div>
         </div>
         <Badge
@@ -79,38 +121,42 @@ function HeaderStrategyDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-slate-800 border-2 border-cyan-500/30 rounded-xl overflow-hidden shadow-2xl min-w-[320px]">
-          <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700/50">
-            <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Estrategia Activa</span>
-          </div>
-          {strategies.map((s) => (
-            <button
-              key={s.strategy_id}
-              className={cn(
-                "w-full flex items-center justify-between px-4 py-3",
-                "hover:bg-cyan-500/10 transition-colors text-left",
-                s.strategy_id === selected.strategy_id && "bg-cyan-500/5 border-l-2 border-cyan-400"
-              )}
-              onClick={() => { setSelected(s); setIsOpen(false); }}
-            >
-              <div>
-                <div className="text-white font-semibold text-sm">{s.strategy_name}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  {s.pipeline} | +{s.return_pct.toFixed(1)}% | Sharpe {s.sharpe.toFixed(2)} | p={s.p_value.toFixed(4)}
-                </div>
+        <div className="absolute top-full left-0 mt-2 z-50 bg-slate-800 border-2 border-cyan-500/30 rounded-xl overflow-hidden shadow-2xl min-w-[340px] max-h-[70vh] overflow-y-auto">
+          {Object.entries(byAsset).map(([assetId, list]) => (
+            <div key={assetId}>
+              <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700/50 sticky top-0">
+                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{list[0].asset_name}</span>
               </div>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[9px] font-bold ml-3 shrink-0",
-                  s.status === 'APPROVED'
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                )}
-              >
-                {s.status}
-              </Badge>
-            </button>
+              {list.map((s) => (
+                <button
+                  key={s.strategy_id}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3",
+                    "hover:bg-cyan-500/10 transition-colors text-left",
+                    s.strategy_id === selected.strategy_id && "bg-cyan-500/5 border-l-2 border-cyan-400"
+                  )}
+                  onClick={() => { onSelect(s.strategy_id); setIsOpen(false); }}
+                >
+                  <div>
+                    <div className="text-white font-semibold text-sm">{s.strategy_name}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {s.pipeline} | +{s.return_pct.toFixed(1)}% | Sharpe {s.sharpe.toFixed(2)} | p={s.p_value.toFixed(4)}
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[9px] font-bold ml-3 shrink-0",
+                      s.status === 'APPROVED'
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                    )}
+                  >
+                    {s.status}
+                  </Badge>
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -203,6 +249,9 @@ function LivePriceDisplay() {
 // ============================================================================
 function DashboardContent() {
   const [lastUpdate, setLastUpdate] = useState<string>('--:--:--');
+  // Shared strategy selection: the header selector and the backtest section stay in sync,
+  // so choosing a USD/COP, Gold or BTC strategy up here replays it below.
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string>('');
 
   // Set time only on client to avoid hydration mismatch
   useEffect(() => {
@@ -225,9 +274,9 @@ function DashboardContent() {
             {/* Left: Title + Strategy Dropdown */}
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
-                Dashboard
+                Backtest
               </h1>
-              <HeaderStrategyDropdown />
+              <HeaderStrategyDropdown selectedId={selectedStrategyId} onSelect={setSelectedStrategyId} />
             </div>
 
             {/* Right: Live Price */}
@@ -253,7 +302,7 @@ function DashboardContent() {
             Forecasting Backtest (2025 OOS) + Approval
             Self-contained component with strategy selector
         ================================================================ */}
-        <ForecastingBacktestSection />
+        <ForecastingBacktestSection controlledStrategyId={selectedStrategyId} onStrategyChange={setSelectedStrategyId} />
 
         {/* ================================================================
             Footer

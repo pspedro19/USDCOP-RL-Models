@@ -40,11 +40,11 @@ import pandas as pd
 from scipy import stats
 
 # Project root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/analysis/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Reuse from vol_target_backtest (same project, not duplicating)
-from scripts.vol_target_backtest import (
+from scripts.lib.vol_target_backtest import (
     BacktestMetrics,
     FoldPredictions,
     VolTargetConfig,

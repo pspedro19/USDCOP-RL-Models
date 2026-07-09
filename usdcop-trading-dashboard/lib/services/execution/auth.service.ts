@@ -66,22 +66,20 @@ export const authService = {
     // Validate request
     validateData(LoginRequestSchema, data, 'login request');
 
-    if (MOCK_MODE) {
+    // Audit A8-09: mock auth must NEVER ship a hardcoded bypass credential in the
+    // client bundle. Mock mode is dev-only (NODE_ENV guard) and accepts no password —
+    // it just returns the mock session for local UI work.
+    if (MOCK_MODE && process.env.NODE_ENV !== 'production') {
       await sleep(500);
-
-      // Accept any email with password "password123" for demo
-      if (data.password === 'password123' || data.email === 'demo@signalbridge.com') {
-        return {
-          user: { ...mockUser, email: data.email },
-          tokens: {
-            access_token: 'mock-jwt-token-' + Date.now(),
-            token_type: 'bearer',
-            expires_at: new Date(Date.now() + 3600000).toISOString(),
-            refresh_token: 'mock-refresh-token',
-          },
-        };
-      }
-      throw new Error('Invalid credentials');
+      return {
+        user: { ...mockUser, email: data.email },
+        tokens: {
+          access_token: 'mock-jwt-token-' + Date.now(),
+          token_type: 'bearer',
+          expires_at: new Date(Date.now() + 3600000).toISOString(),
+          refresh_token: 'mock-refresh-token',
+        },
+      };
     }
 
     const response = await api.post<AuthResponse>('/auth/login', data);
@@ -104,7 +102,8 @@ export const authService = {
       };
     }
 
-    const response = await api.post<AuthResponse>('/auth/signup', data);
+    // Backend route is /auth/register (was incorrectly /auth/signup).
+    const response = await api.post<AuthResponse>('/auth/register', data);
     return validateData(AuthResponseSchema, response.data, 'auth response');
   },
 

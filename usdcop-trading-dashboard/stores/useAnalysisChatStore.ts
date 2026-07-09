@@ -5,6 +5,7 @@ interface AnalysisChatState {
   isOpen: boolean;
   messages: ChatMessage[];
   sessionId: string;
+  contextAsset: string;
   contextYear: number;
   contextWeek: number;
   isTyping: boolean;
@@ -14,7 +15,7 @@ interface AnalysisChatState {
   toggle: () => void;
   open: () => void;
   close: () => void;
-  setContext: (year: number, week: number) => void;
+  setContext: (asset: string, year: number, week: number) => void;
   addMessage: (message: ChatMessage) => void;
   setTyping: (typing: boolean) => void;
   addTokens: (tokens: number) => void;
@@ -30,6 +31,7 @@ export const useAnalysisChatStore = create<AnalysisChatState>((set) => ({
   isOpen: false,
   messages: [],
   sessionId: generateSessionId(),
+  contextAsset: 'usdcop',
   contextYear: 2026,
   contextWeek: 1,
   isTyping: false,
@@ -39,7 +41,7 @@ export const useAnalysisChatStore = create<AnalysisChatState>((set) => ({
   open: () => set({ isOpen: true }),
   close: () => set({ isOpen: false }),
 
-  setContext: (year, week) => set({ contextYear: year, contextWeek: week }),
+  setContext: (asset, year, week) => set({ contextAsset: asset, contextYear: year, contextWeek: week }),
 
   addMessage: (message) =>
     set((s) => ({ messages: [...s.messages, message] })),

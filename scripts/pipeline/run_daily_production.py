@@ -41,7 +41,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 load_dotenv(PROJECT_ROOT / ".env")
@@ -481,7 +481,7 @@ def save_signal(signal: Dict) -> None:
 
 def regenerate_production_pngs() -> None:
     """Run backtest_2026_production.py to regenerate images."""
-    script = PROJECT_ROOT / "scripts" / "backtest_2026_production.py"
+    script = PROJECT_ROOT / "scripts" / "analysis" / "backtest_2026_production.py"
     if not script.exists():
         logger.warning("backtest_2026_production.py not found, skipping PNG regeneration")
         return
@@ -514,7 +514,7 @@ def regenerate_weekly_forecasts() -> None:
     if datetime.now().weekday() != 6:  # 6 = Sunday
         return
 
-    script = PROJECT_ROOT / "scripts" / "generate_weekly_forecasts.py"
+    script = PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_forecasts.py"
     if not script.exists():
         logger.warning("generate_weekly_forecasts.py not found")
         return

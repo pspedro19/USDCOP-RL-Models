@@ -16,8 +16,12 @@
  * 2. Fetch /api/ssot to verify at runtime
  * 3. Display these values in the UI for transparency
  *
- * @version 2.0.0
- * @lastSync 2026-01-18
+ * @version 3.1.0
+ * @lastSync 2026-07-05
+ *
+ * SYNCED to backend `src/core/contracts/feature_contract.py` v3.1.0 (20-feature obs)
+ * — audit A2-03 fixed a stale 15-feature v2.0.0 mirror. `useSSOT.ts` compares
+ * OBSERVATION_DIM against the live `/api/ssot` value; keep this in lock-step with Python.
  */
 
 // ============================================================================
@@ -25,42 +29,47 @@
 // ============================================================================
 
 /**
- * Canonical feature order - IMMUTABLE
- * Index 0-12: Market features
- * Index 13-14: State features (added by environment)
+ * Canonical feature order - IMMUTABLE (mirrors Python FEATURE_ORDER v3.1.0)
+ * Index 0-17: Market features
+ * Index 18-19: State features (added by environment)
  */
 export const FEATURE_ORDER = [
-  // Market Features (0-12)
-  'log_ret_5m',      // 0: 5-minute log return
-  'log_ret_1h',      // 1: 1-hour log return
-  'log_ret_4h',      // 2: 4-hour log return
-  'rsi_9',           // 3: RSI with period 9
-  'atr_pct',         // 4: ATR as percentage of price
-  'adx_14',          // 5: ADX with period 14
-  'dxy_z',           // 6: Dollar Index z-score
-  'dxy_change_1d',   // 7: DXY daily change
-  'vix_z',           // 8: VIX z-score
-  'embi_z',          // 9: EMBI Colombia z-score
-  'brent_change_1d', // 10: Brent oil daily change
-  'rate_spread',     // 11: COL-USA rate differential
-  'usdmxn_change_1d',// 12: USD/MXN daily change (EM proxy)
-  // State Features (13-14) - added by environment
-  'position',        // 13: Current position (-1, 0, 1)
-  'time_normalized', // 14: Time of day normalized (0-1)
+  // Market Features (0-17)
+  'log_ret_5m',        // 0: 5-minute log return
+  'log_ret_1h',        // 1: 1-hour log return
+  'log_ret_4h',        // 2: 4-hour log return
+  'log_ret_1d',        // 3: 1-day log return
+  'rsi_9',             // 4: RSI period 9
+  'rsi_21',            // 5: RSI period 21
+  'volatility_pct',    // 6: volatility as pct of price
+  'trend_z',           // 7: trend z-score
+  'dxy_z',             // 8: Dollar Index z-score
+  'dxy_change_1d',     // 9: DXY daily change
+  'vix_z',             // 10: VIX z-score
+  'embi_z',            // 11: EMBI Colombia z-score
+  'brent_change_1d',   // 12: Brent oil daily change
+  'rate_spread_z',     // 13: COL-USA rate differential z-score
+  'rate_spread_change',// 14: rate differential daily change
+  'usdmxn_change_1d',  // 15: USD/MXN daily change (EM proxy)
+  'yield_curve_z',     // 16: US yield-curve z-score
+  'gold_change_1d',    // 17: gold daily change
+  // State Features (18-19) - added by environment
+  'position',          // 18: Current position (-1, 0, 1)
+  'unrealized_pnl',    // 19: Unrealized PnL of open position
 ] as const;
 
 export type FeatureName = typeof FEATURE_ORDER[number];
 
 /**
- * Observation dimension - MUST BE 15
- * 13 market features + 2 state features
+ * Observation dimension - MUST BE 20
+ * 18 market features + 2 state features
  */
-export const OBSERVATION_DIM = 15 as const;
+export const OBSERVATION_DIM = 20 as const;
 
 /**
  * Market features count (without state)
  */
-export const MARKET_FEATURES_COUNT = 13 as const;
+export const MARKET_FEATURES_COUNT = 18 as const;
 
 /**
  * State features count
@@ -70,7 +79,7 @@ export const STATE_FEATURES_COUNT = 2 as const;
 /**
  * Feature contract version
  */
-export const FEATURE_CONTRACT_VERSION = '2.0.0' as const;
+export const FEATURE_CONTRACT_VERSION = '3.1.0' as const;
 
 // ============================================================================
 // ACTION CONTRACT (from src/core/contracts/action_contract.py)
@@ -146,21 +155,23 @@ export const CLIP_MIN = -5.0 as const;
 export const CLIP_MAX = 5.0 as const;
 
 // ============================================================================
-// ACTION THRESHOLDS (from src/training/config.py)
+// ACTION THRESHOLDS (authoritative: config/pipeline_ssot.yaml, mirrored here)
 // ============================================================================
 
 /**
  * Threshold for LONG signal
  * If action > THRESHOLD_LONG → BUY
+ * Synced to pipeline_ssot.yaml threshold_long = 0.35 (audit A2-04).
  */
-export const THRESHOLD_LONG = 0.33 as const;
+export const THRESHOLD_LONG = 0.35 as const;
 
 /**
  * Threshold for SHORT signal
  * If action < THRESHOLD_SHORT → SELL
  * Otherwise → HOLD
+ * Synced to pipeline_ssot.yaml threshold_short = -0.35 (audit A2-04).
  */
-export const THRESHOLD_SHORT = -0.33 as const;
+export const THRESHOLD_SHORT = -0.35 as const;
 
 // ============================================================================
 // MARKET HOURS (from src/core/constants.py)
@@ -552,21 +563,21 @@ export const TIMESTAMP_TOLERANCE_REPLAY_S = 86400 as const;
 // ============================================================================
 
 /**
- * Compute a simple hash for feature order validation
- * Note: For production, this should match the backend's hash computation
- * Backend uses: hashlib.sha256(json.dumps(feature_order).encode()).hexdigest()[:16]
+ * Non-canonical local fingerprint (display/debug only).
+ * The CANONICAL hash is the backend value below — the backend computes
+ * `hashlib.sha256(",".join(FEATURE_ORDER)).hexdigest()` (see feature_contract.py).
+ * Do NOT use this join('|') string for cross-language validation.
  */
-export function computeFeatureOrderHash(features: readonly string[]): string {
-  // Simple implementation - join features and create a hash-like string
-  // For full compatibility with backend, you would need a proper SHA256 implementation
+export function computeFeatureOrderLocalFingerprint(features: readonly string[]): string {
   return features.join('|');
 }
 
 /**
- * Get the pre-computed feature order hash
- * This should be updated whenever FEATURE_ORDER changes
+ * Canonical feature-order hash — pinned to the backend runtime value (audit A2-03).
+ * MUST equal Python `FEATURE_ORDER_HASH` and what `/api/ssot` reports. Update in
+ * lock-step with FEATURE_ORDER; a CI cross-language assertion should enforce this.
  */
-export const FEATURE_ORDER_HASH = computeFeatureOrderHash(FEATURE_ORDER);
+export const FEATURE_ORDER_HASH = '05c6416226b590e4626fc1a7b0caab4c' as const;
 
 // ============================================================================
 // VALIDATION FUNCTIONS

@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict
 import logging
+import os
 import sys
 
 from airflow import DAG
@@ -384,6 +385,24 @@ def persist_leverage(**context) -> Dict[str, Any]:
             f"HS={leverage['hard_stop_pct']*100:.2f}%, "
             f"TP={leverage['take_profit_pct']*100:.2f}%"
         )
+
+        # S4 multi-tenant fan-out (CTR-RBAC-001 R5): the signal is now FINAL (leverage +
+        # regime gate + stops applied), so publish it once to every eligible tenant as a
+        # PENDING paper execution. Best-effort by contract — never blocks this DAG; each
+        # user row still passes PreTradeGate before any real order. Skipped for skip_trade.
+        if not signal.get("skip_trade"):
+            try:
+                from utils.signalbridge_client import fan_out_signal_to_tenants
+                base_notional = float(os.getenv("FANOUT_BASE_NOTIONAL_USD", "10000"))
+                fan_out_signal_to_tenants(
+                    signal_id=f"h5_{signal['signal_date']}",
+                    symbol="USD/COP",
+                    side="BUY" if signal["direction"] > 0 else "SELL",
+                    notional_usd=base_notional * float(leverage["adjusted_leverage"]),
+                )
+            except Exception as e:  # noqa: BLE001 — best-effort by contract
+                logger.warning(f"[H5-L5c] tenant fan-out skipped (non-blocking): {e}")
+
         return {"persisted": True, "regime_blocked": False}
     finally:
         conn.close()

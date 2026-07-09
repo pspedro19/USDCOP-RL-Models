@@ -1,20 +1,21 @@
 /**
- * GET /api/analysis/week/[year]/[week]
- * Returns the full weekly view data for a specific ISO week.
- * Reads from public/data/analysis/weekly_YYYY_WXX.json (file-based).
+ * GET /api/analysis/week/[year]/[week]?asset=<asset_id>
+ * Returns the full weekly view data for a specific ISO week + asset.
+ * Reads public/data/analysis/<asset>/weekly_YYYY_WXX.json (file-based),
+ * falling back to the legacy root for the default asset.
  */
 
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
 
 import type { WeeklyViewData } from '@/lib/contracts/weekly-analysis.contract';
+import { readAnalysisJson } from '@/lib/analysis-paths';
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ year: string; week: string }> }
 ) {
   const { year, week } = await params;
+  const asset = request.nextUrl.searchParams.get('asset');
 
   const yearNum = parseInt(year, 10);
   const weekNum = parseInt(week, 10);
@@ -28,16 +29,13 @@ export async function GET(
 
   const weekStr = String(weekNum).padStart(2, '0');
   const filename = `weekly_${yearNum}_W${weekStr}.json`;
-  const filepath = path.join(process.cwd(), 'public', 'data', 'analysis', filename);
+  const data = await readAnalysisJson<WeeklyViewData>(asset, filename);
 
-  try {
-    const raw = await fs.readFile(filepath, 'utf-8');
-    const data: WeeklyViewData = JSON.parse(raw);
-    return NextResponse.json(data);
-  } catch {
+  if (!data) {
     return NextResponse.json(
       { error: `No analysis data for ${yearNum}-W${weekStr}` },
       { status: 404 }
     );
   }
+  return NextResponse.json(data);
 }

@@ -11,9 +11,11 @@
  */
 
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
-import { ForecastingDashboard } from '@/components/forecasting';
+import { ForecastingDashboard, WeeklyInferenceView } from '@/components/forecasting';
+import { AssetSelector } from '@/components/analysis/AssetSelector';
+import { ANALYSIS_ASSETS, DEFAULT_ANALYSIS_ASSET } from '@/lib/contracts/analysis-assets';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Calendar, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 function MarketStatusBadge() {
@@ -49,6 +51,8 @@ function MarketStatusBadge() {
 
 export default function ForecastingPage() {
   const [lastUpdate, setLastUpdate] = useState<string>('--:--:--');
+  const [selectedAsset, setSelectedAsset] = useState<string>(DEFAULT_ANALYSIS_ASSET);
+  const isUsdcop = selectedAsset === 'usdcop';
 
   useEffect(() => {
     setLastUpdate(new Date().toLocaleTimeString());
@@ -82,16 +86,18 @@ export default function ForecastingPage() {
               </span>
             </h1>
 
-            {/* Subtitle - Constrained width for readability */}
+            {/* Subtitle - asset-aware */}
             <p className="text-sm sm:text-base lg:text-lg text-slate-400 max-w-2xl mx-auto mb-4 sm:mb-6 leading-relaxed">
-              Predicciones de precio USD/COP utilizando modelos de Machine Learning avanzados
+              {isUsdcop
+                ? 'Predicciones de precio USD/COP con 9 modelos de Machine Learning (walk-forward)'
+                : 'Inferencia semanal basada en reglas: posicionamiento causal (dirección · exposición · régimen) para todo el año'}
             </p>
 
             {/* Badges Row - Centered with flex */}
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-3 py-1">
                 <TrendingUp className="w-3 h-3 mr-1.5" />
-                ML PREDICTIONS
+                {isUsdcop ? 'ML MODEL ZOO' : 'WEEKLY INFERENCE'}
               </Badge>
               <MarketStatusBadge />
               {/* Update Time inline with badges */}
@@ -100,13 +106,20 @@ export default function ForecastingPage() {
                 {lastUpdate}
               </span>
             </div>
+
+            {/* Pair selector — same segmented control as /analysis (DRY) */}
+            <div className="mt-6 flex justify-center">
+              <AssetSelector assets={ANALYSIS_ASSETS} selected={selectedAsset} onSelect={setSelectedAsset} />
+            </div>
           </div>
         </section>
 
-        {/* Main Forecasting Dashboard Section */}
+        {/* Main Forecasting Section — USD/COP: ML model-zoo · Gold/BTC: rule-based weekly inference */}
         <section className="w-full flex flex-col items-center py-8 sm:py-10 lg:py-12">
           <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <ForecastingDashboard />
+            {isUsdcop
+              ? <ForecastingDashboard />
+              : <WeeklyInferenceView key={selectedAsset} assetId={selectedAsset} />}
           </div>
         </section>
 
@@ -114,10 +127,12 @@ export default function ForecastingPage() {
         <footer className="w-full flex flex-col items-center py-8 sm:py-10 border-t border-slate-800/50 bg-slate-950/50">
           <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p className="text-sm sm:text-base text-slate-400 font-medium">
-              USDCOP Weekly Forecasting System
+              Multi-Asset Weekly Forecasting System — USD/COP · Oro · Bitcoin
             </p>
             <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
-              Powered by Bayesian Regression, XGBoost, LightGBM, CatBoost & Hybrid Ensembles
+              {isUsdcop
+                ? 'Powered by Bayesian Regression, XGBoost, CatBoost & Hybrid Ensembles'
+                : 'Rule-based science stack · vol-targeting × regime gating · backtest 2025 / producción 2026'}
             </p>
           </div>
         </footer>

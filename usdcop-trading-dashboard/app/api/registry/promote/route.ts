@@ -22,6 +22,12 @@ import type { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import type {
+  ModelVersionEntry,
+  RegistryIndex,
+  StrategyBundleManifest,
+} from '@/lib/contracts/strategy-manifest.contract';
+
 const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 const REGISTRY_FILE = path.join(DATA_DIR, 'registry.json');
 
@@ -50,8 +56,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Load manifest (404 if the strategy has no bundle yet).
-  let manifest: any;
+  // Load manifest (404 if the strategy has no bundle yet). `promoted` is a
+  // route-local audit stamp layered on top of the shared contract type.
+  let manifest: StrategyBundleManifest & { promoted?: Record<string, unknown> };
   try {
     manifest = JSON.parse(await fs.readFile(manifestPath(strategyId), 'utf-8'));
   } catch {
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const versions: any[] = manifest.model_versions ?? [];
+  const versions: ModelVersionEntry[] = manifest.model_versions ?? [];
   if (!versions.some((m) => m.version === version)) {
     return NextResponse.json(
       { error: `version '${version}' not found for strategy '${strategyId}'` },
@@ -75,7 +82,10 @@ export async function POST(request: NextRequest) {
       m.active = m.version === version;
     }
     // 2. Point the production entry at the promoted version.
-    manifest.production = { ...(manifest.production ?? {}), model_version: version };
+    manifest.production = {
+      ...(manifest.production ?? { year: null, summary: '', trades: '' }),
+      model_version: version,
+    };
     // 3. Optional lifecycle bump (experimental -> production, etc.).
     if (typeof body.status === 'string' && body.status) {
       manifest.status = body.status;
@@ -95,9 +105,9 @@ export async function POST(request: NextRequest) {
 
     // 4. Best-effort registry status sync (targeted field, NOT a rebuild).
     try {
-      const registry = JSON.parse(await fs.readFile(REGISTRY_FILE, 'utf-8'));
+      const registry: RegistryIndex = JSON.parse(await fs.readFile(REGISTRY_FILE, 'utf-8'));
       const entry = (registry.strategies ?? []).find(
-        (s: any) => s.strategy_id === strategyId,
+        (s) => s.strategy_id === strategyId,
       );
       if (entry) {
         entry.status = manifest.status;

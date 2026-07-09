@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, BarChart3, Calendar, Home, LogOut, User,
   ChevronDown, Menu, X, Settings, Zap, Cpu, FileText
 } from 'lucide-react';
+import { roleHasPermission, type Permission, type Role } from '@/lib/contracts/rbac.contract';
 
 interface GlobalNavbarProps {
   currentPage?: 'hub' | 'dashboard' | 'forecasting' | 'signalbridge' | 'production' | 'analysis';
@@ -37,14 +39,44 @@ export function GlobalNavbar({ currentPage = 'hub' }: GlobalNavbarProps) {
     router.push(path);
   };
 
-  const navItems = [
-    { id: 'hub', label: 'Inicio', icon: Home, href: '/hub' },
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
-    { id: 'production', label: 'Produccion', icon: Cpu, href: '/production' },
-    { id: 'forecasting', label: 'Forecasting', icon: Calendar, href: '/forecasting' },
-    { id: 'analysis', label: 'Analisis', icon: FileText, href: '/analysis' },
-    { id: 'signalbridge', label: 'SignalBridge', icon: Zap, href: '/execution/dashboard' },
-  ];
+  // Nav renders from the RBAC contract (CTR-RBAC-001 R4): the role filters entries and
+  // relabels Producción→Señales for subscribers. Reflection only — middleware is the defense.
+  const { data: session, status: sessionStatus } = useSession();
+  // While hydrating, render no role-gated entries (avoids the 'free' flash for admins).
+  const role = (sessionStatus === 'loading'
+    ? '__loading__'
+    : ((session?.user as { role?: string } | undefined)?.role ?? 'free')) as Role;
+  const isSubscriber = role === 'subscriber';
+
+  // Plan-level gate (§B.5 / finding #28): own-account SignalBridge is `auto`-plan only.
+  // The subscriber ROLE has execution:self, but the nav entry only shows when the PLAN's
+  // execution entitlement is enabled (server truth via /api/billing/me; hub uses the same).
+  const [execEnabled, setExecEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (role !== 'subscriber') return;
+    fetch('/api/billing/me').then((r) => (r.ok ? r.json() : null))
+      .then((e) => setExecEnabled(!!e?.execution?.enabled)).catch(() => setExecEnabled(false));
+  }, [role]);
+
+  const navItems = ([
+    { id: 'hub', label: 'Inicio', icon: Home, href: '/hub', permission: null },
+    { id: 'dashboard', label: 'Backtest', icon: BarChart3, href: '/dashboard',
+      permission: 'research:read' as Permission },
+    { id: 'production', label: isSubscriber ? 'Señales' : 'Produccion', icon: Cpu,
+      href: '/production', permission: 'signals:read' as Permission },
+    { id: 'forecasting', label: 'Forecasting', icon: Calendar, href: '/forecasting',
+      permission: 'forecast:read' as Permission },
+    { id: 'analysis', label: 'Analisis', icon: FileText, href: '/analysis',
+      permission: 'analysis:read' as Permission },
+    { id: 'signalbridge', label: 'SignalBridge', icon: Zap, href: '/execution/dashboard',
+      permission: 'execution:self' as Permission },
+    // Admin: user-approval queue + platform management (was reachable only by URL — the
+    // operator could not FIND the registration approvals; contract always had the entry).
+    { id: 'admin', label: 'Admin', icon: Settings, href: '/admin',
+      permission: 'admin:all' as Permission },
+  ]).filter((item) => item.permission === null || roleHasPermission(role, item.permission))
+    // subscriber without execution entitlement (plan ≠ auto) never sees SignalBridge in nav
+    .filter((item) => item.id !== 'signalbridge' || !isSubscriber || execEnabled === true);
 
   return (
     <>
@@ -65,7 +97,7 @@ export function GlobalNavbar({ currentPage = 'hub' }: GlobalNavbarProps) {
                 <Activity className="w-5 h-5 text-white" />
               </motion.div>
               <span className="text-lg font-bold text-white hidden sm:block group-hover:text-cyan-400 transition-colors">
-                USD/COP
+                GlobalMarkets
               </span>
             </button>
 

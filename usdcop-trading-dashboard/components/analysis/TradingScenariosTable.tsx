@@ -35,7 +35,7 @@ export function TradingScenariosTable({ scenarios, noTradeZone }: TradingScenari
           <Target className="w-4 h-4 text-cyan-400" />
           Escenarios de Trading
         </h3>
-        {noTradeZone && noTradeZone[0] !== noTradeZone[1] && (
+        {noTradeZone?.[0] != null && noTradeZone[1] != null && noTradeZone[0] !== noTradeZone[1] && (
           <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded">
             Zona de no-operar: {noTradeZone[0].toFixed(0)}-{noTradeZone[1].toFixed(0)}
           </span>
@@ -78,26 +78,26 @@ export function TradingScenariosTable({ scenarios, noTradeZone }: TradingScenari
                     <div className="truncate" title={scenario.entry_condition}>
                       {scenario.entry_condition}
                     </div>
-                    {scenario.entry_price !== null && (
+                    {scenario.entry_price != null && (
                       <span className="text-gray-500">{scenario.entry_price.toFixed(2)}</span>
                     )}
                   </td>
 
                   {/* Stop */}
                   <td className="py-2.5 px-2 text-right text-red-400/80">
-                    {scenario.stop_loss !== null ? scenario.stop_loss.toFixed(2) : '—'}
+                    {scenario.stop_loss != null ? scenario.stop_loss.toFixed(2) : '—'}
                   </td>
 
                   {/* Targets */}
                   <td className="py-2.5 px-2 text-right text-emerald-400/80">
-                    {scenario.targets.length > 0
-                      ? scenario.targets.map(t => t.toFixed(0)).join(' / ')
+                    {(scenario.targets?.length ?? 0) > 0
+                      ? (scenario.targets ?? []).map(t => t.toFixed(0)).join(' / ')
                       : '—'}
                   </td>
 
                   {/* R:R */}
                   <td className="py-2.5 px-2 text-right text-white font-medium">
-                    {scenario.risk_reward !== null ? `${scenario.risk_reward.toFixed(1)}:1` : '—'}
+                    {scenario.risk_reward != null ? `${scenario.risk_reward.toFixed(1)}:1` : '—'}
                   </td>
 
                   {/* Confidence */}

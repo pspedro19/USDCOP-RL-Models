@@ -129,7 +129,7 @@ echo "=========================================="
 check_file "dvc.yaml" \
     "DVC pipeline configuration"
 
-check_file "scripts/setup_dvc.sh" \
+check_file "scripts/ops/setup_dvc.sh" \
     "DVC setup script"
 
 check_file "docs/DATA_VERSIONING.md" \
@@ -140,7 +140,7 @@ if [ -d ".dvc" ]; then
     echo "✅ DVC initialized (.dvc directory exists)"
     ((PASSED++))
 else
-    echo "⚠️  DVC not initialized (run scripts/setup_dvc.sh)"
+    echo "⚠️  DVC not initialized (run scripts/ops/setup_dvc.sh)"
 fi
 
 # =============================================================================

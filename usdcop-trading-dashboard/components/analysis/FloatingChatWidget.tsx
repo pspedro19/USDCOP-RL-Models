@@ -16,7 +16,7 @@ const QUICK_ACTIONS = [
 
 export function FloatingChatWidget() {
   const {
-    isOpen, toggle, messages, sessionId, contextYear, contextWeek,
+    isOpen, toggle, messages, sessionId, contextAsset, contextYear, contextWeek,
     isTyping, addMessage, setTyping, addTokens, newSession,
   } = useAnalysisChatStore();
 
@@ -56,6 +56,7 @@ export function FloatingChatWidget() {
         body: JSON.stringify({
           message: text.trim(),
           session_id: sessionId,
+          asset: contextAsset,
           year: contextYear,
           week: contextWeek,
         }),

@@ -165,6 +165,39 @@ def check_analysis_freshness(**context):
     return {"status": "missing", "week": current_week, "action": "run_generate_weekly_analysis"}
 
 
+def check_asset_analysis_freshness(**context):
+    """CHECK 4b: Multi-asset (Gold/BTC) analysis has the current week.
+
+    Assets come from the SSOT (config/analysis/analysis_assets.yaml); if any
+    configured asset lacks the current week's per-asset JSON, heal by
+    regenerating all of them.
+    """
+    import yaml
+
+    current_week = _current_iso_week()
+    year, week_num = current_week.split("-W")
+    cfg_path = PROJECT_ROOT / "config" / "analysis" / "analysis_assets.yaml"
+    try:
+        with open(cfg_path, encoding="utf-8") as f:
+            assets = sorted((yaml.safe_load(f).get("assets") or {}).keys())
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Watchdog] Could not read analysis_assets.yaml: {e}")
+        assets = ["xauusd", "btcusdt"]
+
+    missing = []
+    for asset in assets:
+        jp = DASHBOARD_DIR / "data" / "analysis" / asset / f"weekly_{year}_W{week_num}.json"
+        if not jp.exists():
+            missing.append(asset)
+
+    if missing:
+        logger.warning(f"[Watchdog] Asset analysis MISSING for {current_week}: {missing}")
+        return {"status": "missing", "week": current_week, "assets_missing": missing,
+                "action": "run_generate_asset_analysis"}
+    logger.info(f"[Watchdog] Asset analysis OK for {current_week}: {assets}")
+    return {"status": "ok", "week": current_week}
+
+
 def check_h5_signal(**context):
     """CHECK 5: H5 signal exists for this week (Monday only)."""
     now = datetime.now(COT)
@@ -479,6 +512,7 @@ def auto_heal(**context):
         "macro": ti.xcom_pull(task_ids="check_macro"),
         "forecasting": ti.xcom_pull(task_ids="check_forecasting"),
         "analysis": ti.xcom_pull(task_ids="check_analysis"),
+        "asset_analysis": ti.xcom_pull(task_ids="check_asset_analysis"),
         "h5_signal": ti.xcom_pull(task_ids="check_h5_signal"),
         "news": ti.xcom_pull(task_ids="check_news"),
         "backups": ti.xcom_pull(task_ids="check_backups"),
@@ -506,7 +540,7 @@ def auto_heal(**context):
             elif action == "run_generate_weekly_forecasts":
                 # Run as subprocess (heavy computation, don't block DAG)
                 subprocess.Popen(
-                    ["python3", str(PROJECT_ROOT / "scripts" / "generate_weekly_forecasts.py")],
+                    ["python3", str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_forecasts.py")],
                     cwd=str(PROJECT_ROOT),
                     stdout=open("/tmp/watchdog_forecasting.log", "w"),  # noqa: SIM115
                     stderr=subprocess.STDOUT,
@@ -519,7 +553,7 @@ def auto_heal(**context):
                 subprocess.Popen(
                     [
                         "python3",
-                        str(PROJECT_ROOT / "scripts" / "generate_weekly_analysis.py"),
+                        str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_analysis.py"),
                         "--week",
                         current_week,
                     ],
@@ -528,6 +562,22 @@ def auto_heal(**context):
                     stderr=subprocess.STDOUT,
                 )
                 actions_taken.append(f"Started analysis generation for {current_week}")
+
+            elif action == "run_generate_asset_analysis":
+                # Regenerate multi-asset (Gold/BTC) analysis in the background
+                subprocess.Popen(
+                    [
+                        "python3",
+                        str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_asset_analysis.py"),
+                        "--all-assets",
+                        "--year",
+                        str(_current_iso_week().split("-W")[0]),
+                    ],
+                    cwd=str(PROJECT_ROOT),
+                    stdout=open("/tmp/watchdog_asset_analysis.log", "w"),  # noqa: SIM115
+                    stderr=subprocess.STDOUT,
+                )
+                actions_taken.append("Started multi-asset (Gold/BTC) analysis generation")
 
             elif action == "trigger_h5_l5_signal":
                 client.trigger_dag(dag_id="forecast_h5_l5_weekly_signal", conf={})
@@ -629,6 +679,9 @@ with DAG(
         task_id="check_forecasting", python_callable=check_forecasting_freshness
     )
     t_analysis = PythonOperator(task_id="check_analysis", python_callable=check_analysis_freshness)
+    t_asset_analysis = PythonOperator(
+        task_id="check_asset_analysis", python_callable=check_asset_analysis_freshness
+    )
     t_h5 = PythonOperator(task_id="check_h5_signal", python_callable=check_h5_signal)
     t_news = PythonOperator(task_id="check_news", python_callable=check_news_pipeline)
     t_backups = PythonOperator(task_id="check_backups", python_callable=check_backups)
@@ -645,6 +698,7 @@ with DAG(
         t_macro,
         t_forecast,
         t_analysis,
+        t_asset_analysis,
         t_h5,
         t_news,
         t_backups,

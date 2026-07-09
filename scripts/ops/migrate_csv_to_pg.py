@@ -23,7 +23,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
 CSV_PATH = PROJECT_ROOT / "data" / "news" / "gdelt_articles_historical.csv"
 
 # ---------------------------------------------------------------------------

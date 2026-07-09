@@ -1,0 +1,31 @@
+# RBAC merge gate (CTR-RBAC-001 R7): every real route must have a permission entry
+# (coverage) and the contract invariants must hold (matrix tests). Static — no live
+# stack needed; the full qa:gate (functional E2E) runs locally/nightly, not per-PR.
+name: rbac-gate
+
+on:
+  pull_request:
+    paths:
+      - 'usdcop-trading-dashboard/app/**'
+      - 'usdcop-trading-dashboard/lib/contracts/**'
+      - 'usdcop-trading-dashboard/middleware.ts'
+      - 'usdcop-trading-dashboard/scripts/check-rbac-coverage.mjs'
+      - 'usdcop-trading-dashboard/scripts/test-rbac-contract.mjs'
+  push:
+    branches: [main]
+
+jobs:
+  rbac-coverage-and-contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: usdcop-trading-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: RBAC route coverage (deny-by-default matrix is exhaustive)
+        run: node scripts/check-rbac-coverage.mjs
+      - name: RBAC contract invariants
+        run: node --experimental-strip-types scripts/test-rbac-contract.mjs

@@ -157,7 +157,9 @@ export function ForecastingDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const csvUrl = '/forecasting/bi_dashboard_unified.csv';
+        // Fetch through the plan-gated route (R3): server applies the entitlement's
+        // forecast_delay_hours (free ⇒ T-1 week) by stripping too-new inference rows.
+        const csvUrl = '/api/forecasting/bi_dashboard_unified.csv';
         const loadedData = await loadData(csvUrl);
         setData(loadedData);
 

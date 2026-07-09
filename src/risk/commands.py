@@ -2,6 +2,14 @@
 Risk Management Command Pattern - Encapsulated Operations with Undo Support
 ============================================================================
 
+.. deprecated:: 2026-07-07 (audit A7-02)
+    NOT WIRED to any production surface — imported only by its own test. The live
+    risk/kill-switch surfaces are PreTradeGate (SignalBridge), the multi-tenant kill
+    switches in /api/tenant (audited via the append-only ``audit_log``), RiskEnforcer,
+    and the mlops RiskManager wrapping RiskCheckChain. Kept as a dormant library;
+    do NOT build new consumers on this module without an ADR
+    (see .claude/specs/platform/risk-management.md, subsystem landscape).
+
 This module implements the Command Pattern for risk management operations.
 Commands provide:
 - Encapsulation of operations as objects

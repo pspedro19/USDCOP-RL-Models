@@ -242,9 +242,11 @@ class EnvironmentConfig:
     trading_end_hour: int = 17
     trading_end_minute: int = 55  # 12:55 Bogota
 
-    # Action thresholds - PHASE 1 FIX: Wider HOLD zone
-    threshold_long: float = 0.60      # PHASE1: Requires 60% confidence
-    threshold_short: float = -0.60    # PHASE1: Wider HOLD zone
+    # Action thresholds — AUTHORITATIVE source is pipeline_ssot.yaml (loaded by
+    # _load_environment_config below). These defaults are the fallback only if the
+    # SSOT fails to load; keep them equal to the SSOT value to avoid drift (audit A2-04).
+    threshold_long: float = 0.35
+    threshold_short: float = -0.35
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

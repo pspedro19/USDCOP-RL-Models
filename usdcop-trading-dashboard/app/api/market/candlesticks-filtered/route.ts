@@ -13,7 +13,72 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { pool } from '@/lib/db';
+
+// ---------------------------------------------------------------------------
+// Multi-asset chart data (file-driven)
+// ---------------------------------------------------------------------------
+// USD/COP is served from Postgres (intraday, market-hours filtered). Daily
+// science-stack assets (BTC, Gold) have no live DB feed in the file-driven web
+// app, so their daily OHLCV is published as static JSON by
+// `scripts/data/export_chart_ohlcv.py` and read here. Keeping ONE endpoint means
+// the chart hook stays uniform (SSOT for the contract) — it just passes `symbol`.
+const USDCOP_SYMBOLS = new Set(['', 'USDCOP', 'USD/COP', 'COP']);
+
+/** Normalize a chart symbol to the `{SYMBOL}_daily.json` key (e.g. "BTC/USDT" -> "BTCUSDT"). */
+function normalizeSymbol(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/** Serve a daily-OHLCV asset (BTC/Gold) from its published JSON, filtered by date range. */
+async function serveAssetCandles(
+  symbol: string,
+  startDate: string,
+  endDate: string,
+  limit: number,
+  startTime: number
+) {
+  const file = path.join(process.cwd(), 'public', 'data', 'market', `${symbol}_daily.json`);
+  try {
+    const raw = await fs.readFile(file, 'utf-8');
+    const all = JSON.parse(raw) as Array<{
+      time: number; open: number; high: number; low: number; close: number; volume: number;
+    }>;
+    // Inclusive date-range filter on epoch-ms (endDate spans the whole day).
+    const startMs = new Date(`${startDate}T00:00:00Z`).getTime();
+    const endMs = new Date(`${endDate}T23:59:59Z`).getTime();
+    const data = all
+      .filter(c => c.time >= startMs && c.time <= endMs)
+      .slice(0, limit);
+
+    return NextResponse.json({
+      success: true,
+      symbol,
+      timeframe: '1d',
+      start_date: startDate,
+      end_date: endDate,
+      count: data.length,
+      data,
+      metadata: {
+        source: 'file_daily',
+        latency: Date.now() - startTime,
+        note: 'Daily OHLCV published by export_chart_ohlcv.py (file-driven multi-asset).',
+      },
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+  } catch (error: any) {
+    return NextResponse.json({
+      success: false,
+      symbol,
+      timeframe: '1d',
+      count: 0,
+      data: [],
+      error: `No chart data for symbol ${symbol}: ${error.message}`,
+      metadata: { source: 'error', latency: Date.now() - startTime },
+    }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+  }
+}
 
 // Market hours - two formats in database
 // OLD FORMAT (UTC): 13:00-17:55 UTC = 8:00-12:55 COT
@@ -114,6 +179,13 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('start_date') || '2025-01-01';
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
     const limit = Math.min(parseInt(searchParams.get('limit') || '5000'), 100000);
+    const symbol = normalizeSymbol(searchParams.get('symbol') || 'USDCOP');
+
+    // Multi-asset: daily science-stack assets (BTC/Gold) are served from published JSON,
+    // not the USD/COP intraday DB. USD/COP falls through to the market-hours DB query below.
+    if (!USDCOP_SYMBOLS.has(symbol)) {
+      return serveAssetCandles(symbol, startDate, endDate, limit, startTime);
+    }
 
     const client = await pool.connect();
 

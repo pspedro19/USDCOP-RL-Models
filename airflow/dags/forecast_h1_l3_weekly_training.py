@@ -658,6 +658,7 @@ with DAG(
     default_args=default_args,
     description='Weekly forecasting: train 9 models H=1 + persist to bi.fact_forecasts',
     schedule_interval='0 6 * * 0',  # Sunday 06:00 UTC = 01:00 COT
+    is_paused_upon_creation=True,  # H1 track PAUSED (audit A3-01) — no auto-run on DB reset
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS_LIST,

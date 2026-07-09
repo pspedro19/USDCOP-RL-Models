@@ -34,7 +34,7 @@ from pathlib import Path
 
 import requests
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> → repo root (reorg fix)
 sys.path.insert(0, str(ROOT))
 
 logging.basicConfig(

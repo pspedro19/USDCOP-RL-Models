@@ -40,7 +40,7 @@ export function NewsClusterCard({ clusters, maxVisible = 2 }: NewsClusterCardPro
           Clusters de Noticias
         </h3>
         <span className="text-xs text-gray-500">
-          {clusters.reduce((sum, c) => sum + c.article_count, 0)} articulos en {clusters.length} clusters
+          {clusters.reduce((sum, c) => sum + (c.article_count ?? 0), 0)} articulos en {clusters.length} clusters
         </span>
       </div>
 
@@ -101,7 +101,7 @@ function ClusterItem({ cluster }: { cluster: NewsClusterOutput }) {
 
       {/* Representative titles */}
       <div className="space-y-1 mb-2">
-        {cluster.representative_titles.slice(0, 3).map((title, i) => (
+        {(cluster.representative_titles ?? []).slice(0, 3).map((title, i) => (
           <div key={i} className="flex items-start gap-1.5 text-xs">
             <span className="text-gray-600 mt-0.5 shrink-0">•</span>
             <span className="text-gray-400">{title}</span>
@@ -110,7 +110,7 @@ function ClusterItem({ cluster }: { cluster: NewsClusterOutput }) {
       </div>
 
       {/* Source articles (expandable) */}
-      {cluster.articles.length > 0 && (
+      {(cluster.articles?.length ?? 0) > 0 && (
         <>
           <button
             onClick={() => setShowArticles(!showArticles)}
@@ -139,9 +139,9 @@ function ClusterItem({ cluster }: { cluster: NewsClusterOutput }) {
       )}
 
       {/* Bias distribution */}
-      {Object.keys(cluster.bias_distribution).length > 0 && (
+      {Object.keys(cluster.bias_distribution ?? {}).length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {Object.entries(cluster.bias_distribution)
+          {Object.entries(cluster.bias_distribution ?? {})
             .sort(([, a], [, b]) => b - a)
             .slice(0, 3)
             .map(([bias, count]) => (

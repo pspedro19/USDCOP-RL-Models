@@ -30,13 +30,18 @@ from src.validation.backtest_engine import (
 )
 
 # Great Expectations Validation Suite (P2)
+# NOTE: import names reconciled to the module's actual public API — the old block
+# imported FeatureValidationSuite/ValidationReport/get_validation_summary/
+# validate_training_data which no longer exist and broke `import src.validation`
+# (and transitively `import src.services`). Real names: FeatureValidator / ValidationResult.
 from src.validation.great_expectations_suite import (
+    DEFAULT_FEATURE_EXPECTATIONS,
     ExpectationResult,
-    FeatureValidationSuite,
-    ValidationReport,
-    get_validation_summary,
+    FeatureExpectation,
+    FeatureValidator,
+    ValidationResult,
+    create_validator_for_inference,
     validate_features,
-    validate_training_data,
 )
 
 # Smoke Test (Week 1)
@@ -72,10 +77,11 @@ __all__ = [
     "SmokeTest",
     "run_smoke_test",
     # Great Expectations (P2)
+    "DEFAULT_FEATURE_EXPECTATIONS",
     "ExpectationResult",
-    "ValidationReport",
-    "FeatureValidationSuite",
+    "FeatureExpectation",
+    "FeatureValidator",
+    "ValidationResult",
+    "create_validator_for_inference",
     "validate_features",
-    "validate_training_data",
-    "get_validation_summary",
 ]

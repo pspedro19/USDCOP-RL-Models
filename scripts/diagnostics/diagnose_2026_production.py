@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Reuse load_data from the export script
-from scripts.train_and_export_smart_simple import load_data
+from scripts.pipeline.train_and_export_smart_simple import load_data
 
 df, feature_cols = load_data()
 

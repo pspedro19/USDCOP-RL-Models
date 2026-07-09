@@ -126,7 +126,7 @@ def run_ensemble_backtest(
     from src.training.environments.trading_env import TradingEnvironment
 
     # Import shared utilities from pipeline runner
-    from scripts.run_ssot_pipeline import (
+    from scripts.pipeline.run_ssot_pipeline import (
         create_env_config,
         calculate_backtest_metrics,
         validate_gates,

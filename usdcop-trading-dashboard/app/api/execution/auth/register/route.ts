@@ -7,11 +7,22 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { verifyCaptcha } from '@/lib/auth/captcha';
+
 const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const raw = await request.json();
+    // CAPTCHA gate (public endpoint): signed one-time challenge must verify before
+    // anything reaches SignalBridge. Captcha fields are stripped from the forward.
+    const { captcha_token, captcha_answer, ...body } = raw ?? {};
+    if (!verifyCaptcha(captcha_token, captcha_answer)) {
+      return NextResponse.json(
+        { error: 'captcha inválido o vencido', captcha: true },
+        { status: 400 },
+      );
+    }
 
     const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
       method: 'POST',

@@ -31,7 +31,7 @@ from typing import Dict, List, Optional, Set
 import pandas as pd
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 
 # Load environment variables from .env (CRITICAL: required for FRED API key)
 load_dotenv(PROJECT_ROOT / '.env')

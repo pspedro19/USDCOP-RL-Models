@@ -63,6 +63,10 @@ services:
       # Scripts: 00-init-extensions.sql, 01-essential-usdcop-init.sql,
       #          02-macro-indicators-schema.sql, 03-inference-features-views.sql
       - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      # Fresh-boot schema restore (26-restore-features.sh): feature migrations
+      # 043-053 not part of the base init-scripts. News/Analysis DATA is
+      # re-obtained by the real scrapers, not restored from a dump.
+      - ./database/migrations:/feature-migrations:ro
     ports:
       - "5432:5432"
     networks:
@@ -234,6 +238,7 @@ services:
       bash -c "
       airflow db init &&
       airflow users create --username ${AIRFLOW_USER} --firstname Admin --lastname User --role Admin --email admin@admin.com --password ${AIRFLOW_PASSWORD} &&
+      airflow pools set api_requests 8 'TwelveData/API request throttle pool (backfill + realtime OHLCV DAGs)' &&
       pip install -r /opt/airflow/configs/../requirements.txt || true
       "
     networks:
@@ -258,6 +263,11 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      # Durable timescale_conn (env-var connections survive metadata-DB resets; used by
+      # core_l0_03_macro_backfill health_check — found missing on 2026-07-07, ledger #41)
+      AIRFLOW_CONN_TIMESCALE_CONN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # REST API auth: session (UI) + basic (service calls, e.g. dashboard deploy → DAG trigger)
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
       # Python path for src module imports (include parent for package structure)
       PYTHONPATH: /opt/airflow:/opt/airflow/dags
       # TwelveData API Keys for L0 Pipeline
@@ -304,7 +314,6 @@ services:
       MODEL_REGISTRY_ENABLED: ${MODEL_REGISTRY_ENABLED:-true}
       REDIS_STREAMS_ENABLED: ${REDIS_STREAMS_ENABLED:-true}
       MODEL_STORAGE_PATH: /opt/airflow/models
-      FEATURE_CONFIG_PATH: /opt/airflow/config/features/feature_registry_v19.json
       PRODUCTION_MODEL_ID: ${PRODUCTION_MODEL_ID:-ppo_v1}
       # MLflow Configuration for experiment tracking
       MLFLOW_TRACKING_URI: http://mlflow:5000
@@ -314,9 +323,13 @@ services:
       - ./airflow/configs:/opt/airflow/configs
       - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
+      # services/ para DSR (honest-gate) en los pipelines de assets (QA iter-3 #15)
+      - ./services:/opt/airflow/services
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
+      - ./outputs:/opt/airflow/outputs
       - ./data:/opt/airflow/data
+      - ./seeds:/opt/airflow/seeds   # rw: asset-pipeline + l0 backfill DAGs refresh seed parquets to host
       - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
@@ -347,6 +360,11 @@ services:
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      # Durable timescale_conn (env-var connections survive metadata-DB resets; used by
+      # core_l0_03_macro_backfill health_check — found missing on 2026-07-07, ledger #41)
+      AIRFLOW_CONN_TIMESCALE_CONN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # REST API auth: session (UI) + basic (service calls, e.g. dashboard deploy → DAG trigger)
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
       # Python path for src module imports (include parent for package structure)
       PYTHONPATH: /opt/airflow:/opt/airflow/dags
       # TwelveData API Keys for L0 Pipeline
@@ -393,7 +411,6 @@ services:
       MODEL_REGISTRY_ENABLED: ${MODEL_REGISTRY_ENABLED:-true}
       REDIS_STREAMS_ENABLED: ${REDIS_STREAMS_ENABLED:-true}
       MODEL_STORAGE_PATH: /opt/airflow/models
-      FEATURE_CONFIG_PATH: /opt/airflow/config/features/feature_registry_v19.json
       PRODUCTION_MODEL_ID: ${PRODUCTION_MODEL_ID:-ppo_v1}
       # MLflow Configuration for experiment tracking
       MLFLOW_TRACKING_URI: http://mlflow:5000
@@ -403,9 +420,13 @@ services:
       - ./airflow/configs:/opt/airflow/configs
       - ./scripts:/opt/airflow/scripts:ro
       - ./src:/opt/airflow/src
+      # services/ para DSR (honest-gate) en los pipelines de assets (QA iter-3 #15)
+      - ./services:/opt/airflow/services
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
+      - ./outputs:/opt/airflow/outputs
       - ./data:/opt/airflow/data
+      - ./seeds:/opt/airflow/seeds   # rw: asset-pipeline + l0 backfill DAGs refresh seed parquets to host
       - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
       - airflow_logs:/opt/airflow/logs
       - airflow_plugins:/opt/airflow/plugins
@@ -679,6 +700,10 @@ services:
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
       # SignalBridge API (internal Docker network)
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
+      # Airflow REST (container-native deploy: Vote-2 approve → H5-L4b DAG trigger)
+      AIRFLOW_API_URL: http://usdcop-airflow-webserver:8080
+      AIRFLOW_API_USER: ${AIRFLOW_USER}
+      AIRFLOW_API_PASSWORD: ${AIRFLOW_PASSWORD}
       # Consolidated: multi-model-api removed, using backtest-api for all model endpoints
       MULTI_MODEL_API_URL: http://usdcop-backtest-api:8000
       BACKTEST_API_URL: http://usdcop-backtest-api:8000
@@ -694,6 +719,15 @@ services:
       NEXTAUTH_URL: http://localhost:5000
       DEBUG_AUTH: "true"
       AUTH_BYPASS_ENABLED: "true"
+    volumes:
+      # Serve pipeline/DAG-regenerated data LIVE (SSOT = host files) instead of the
+      # copy baked into the image at build time. Without this, scheduled DAG
+      # regenerations (analysis, production, forecasting) never reach the UI until
+      # an image rebuild. public/data is READ-WRITE: the approval (Vote 2), registry
+      # promote and deploy API routes fs.writeFile into it (approval_state.json,
+      # manifest.json). A :ro mount silently 500s those writes (EROFS).
+      - ./usdcop-trading-dashboard/public/data:/app/public/data:rw
+      - ./usdcop-trading-dashboard/public/forecasting:/app/public/forecasting:ro
     ports:
       - "5000:3000"
     networks:
@@ -1122,6 +1156,7 @@ services:
     volumes:
       - ./models:/models:ro
       - ./config:/app/config:ro
+      - ./src:/app/src:ro   # SSOT contracts (src.core.contracts) imported by feature_cache/config
     ports:
       - "8090:8090"
     networks:
@@ -1182,6 +1217,7 @@ services:
       - ./config:/app/config:ro
       - ./data:/app/data:ro
       - ./services/demo_mode:/app/demo_mode
+      - ./src:/app/src:ro   # SSOT contracts (src.core.contracts) imported by config.py
     ports:
       - "8003:8000"
     networks:
@@ -1261,7 +1297,13 @@ services:
       VAULT_LOG_LEVEL: info
     volumes:
       - vault_data:/vault/file
-      - ./config/vault:/vault/config
+      # NOTE: do NOT mount the production HCL at /vault/config here. The Vault
+      # image auto-loads /vault/config/*.hcl when the command is `server`, and
+      # vault-config.hcl declares a `listener tcp 0.0.0.0:8200`. In `-dev` mode
+      # Vault already opens its own 0.0.0.0:8200 listener, so the two collide with
+      # "bind: address already in use" → restart loop. Mount it at a non-scanned
+      # path for reference only; vault-init (below) keeps /vault/config for policies.
+      - ./config/vault:/vault/config-src:ro
       - ./scripts/vault:/vault/scripts:ro
     command: server -dev -dev-root-token-id=${VAULT_DEV_TOKEN:-devtoken}
     healthcheck:
@@ -1444,7 +1486,10 @@ services:
       # Note: Using direct values since env var interpolation has issues on some Windows setups
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       - DATABASE_SYNC_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      - REDIS_URL=redis://redis:6379/0
+      # Redis requires a password (redis started with requirepass ${REDIS_PASSWORD}).
+      # Without it, login_security (lockout + token blacklist) and the Redis Streams
+      # bridge silently degrade — carry the credential in the URL.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - VAULT_ADDR=http://vault:8200
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
       - VAULT_ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-me-32-byte-encryption-key}
@@ -1452,7 +1497,16 @@ services:
       - MEXC_TESTNET=${MEXC_TESTNET:-false}
       - APP_ENV=development
       - DEBUG=true
-      - SIGNALBRIDGE_DEV_MODE=true
+      # SEC (QA iter-2): dev bypass suplantaba TODO token con un admin id=1 —
+      # rompía multi-tenant y dejaba system/kill abierto. Apagado permanente.
+      - SIGNALBRIDGE_DEV_MODE=false
+      # Default login, always ready. bootstrap_admin() runs on every startup and
+      # idempotently ensures this approved+active admin exists (survives `down -v`
+      # and fresh clones — no .env edit required). Override via .env if desired.
+      # Login at http://localhost:5000/login → user "admin" / pass "Admin2026!".
+      - ADMIN_BOOTSTRAP_EMAIL=${ADMIN_BOOTSTRAP_EMAIL:-admin@trading.usdcop.com}
+      - ADMIN_BOOTSTRAP_PASSWORD=${ADMIN_BOOTSTRAP_PASSWORD:-Admin2026!}
+      - ADMIN_BOOTSTRAP_NAME=${ADMIN_BOOTSTRAP_NAME:-Administrator}
     volumes:
       - ./services/signalbridge_api:/app
     ports:

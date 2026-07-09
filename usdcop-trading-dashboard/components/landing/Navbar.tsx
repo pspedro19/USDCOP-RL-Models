@@ -83,9 +83,10 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: '#features', label: t.nav.features },
-    { href: '#how-it-works', label: t.nav.howItWorks },
-    { href: '#pricing', label: t.nav.pricing },
+    // ux-navigation S1: Metodología · Resultados · Precios (real routes, not just anchors)
+    { href: '/metodologia', label: 'Metodología' },
+    { href: '#track-record', label: 'Resultados' },
+    { href: '/pricing', label: t.nav.pricing },
     { href: '#faq', label: t.nav.faq },
   ];
 

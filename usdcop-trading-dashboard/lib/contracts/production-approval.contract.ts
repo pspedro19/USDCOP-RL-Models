@@ -117,6 +117,9 @@ export interface DeployStatus {
   error?: string;
   phase?: DeployPhase;
   pid?: number;
+  /** 'airflow' when the deploy was delegated to the H5-L4b DAG (container-native path). */
+  runner?: 'airflow' | 'local';
+  dag_run_id?: string;
 }
 
 export interface DeployRequest {

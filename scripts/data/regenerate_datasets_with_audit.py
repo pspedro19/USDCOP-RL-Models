@@ -18,7 +18,7 @@ Datasets:
 import pandas as pd
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 OUTPUT_MASTER = PROJECT_ROOT / "data" / "pipeline" / "01_sources" / "consolidated"
 OUTPUT_CLEAN = PROJECT_ROOT / "data" / "pipeline" / "04_cleaning" / "output"
 OUTPUT_FUSION = PROJECT_ROOT / "data" / "pipeline" / "03_fusion" / "output"

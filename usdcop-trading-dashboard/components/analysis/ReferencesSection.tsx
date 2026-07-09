@@ -132,7 +132,7 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
   // From news intelligence clusters
   if (weekData.news_intelligence?.clusters) {
     for (const cluster of weekData.news_intelligence.clusters) {
-      for (const article of cluster.articles) {
+      for (const article of cluster.articles || []) {
         if (article.url && !seenUrls.has(article.url)) {
           seenUrls.add(article.url);
           articleLinks.push({ title: article.title, source: article.source, url: article.url });

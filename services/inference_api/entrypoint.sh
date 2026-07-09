@@ -53,8 +53,8 @@ echo "PostgreSQL is ready!"
 # Run database migrations
 echo ""
 echo "Running database migrations..."
-if [ -f /app/scripts/db_migrate.py ]; then
-    python /app/scripts/db_migrate.py || {
+if [ -f /app/scripts/ops/db_migrate.py ]; then
+    python /app/scripts/ops/db_migrate.py || {
         echo "WARNING: Migration script failed, continuing anyway..."
     }
 else
@@ -64,8 +64,8 @@ fi
 # Validate schema
 echo ""
 echo "Validating database schema..."
-if [ -f /app/scripts/db_migrate.py ]; then
-    python /app/scripts/db_migrate.py --validate || {
+if [ -f /app/scripts/ops/db_migrate.py ]; then
+    python /app/scripts/ops/db_migrate.py --validate || {
         echo "WARNING: Schema validation failed, some features may not work"
     }
 fi

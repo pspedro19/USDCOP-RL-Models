@@ -32,8 +32,25 @@ CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 -- All application logic should convert to local time (America/Bogota) as needed
 SET timezone = 'UTC';
 
--- Make UTC the default for new connections
-ALTER DATABASE CURRENT_DATABASE SET timezone TO 'UTC';
+-- Make UTC the default for new connections. CURRENT_DATABASE is NOT a valid
+-- identifier for ALTER DATABASE (it is read as a literal db name), which aborts a
+-- fresh init under the entrypoint's ON_ERROR_STOP=1. Resolve the real db name at
+-- runtime so this works for any POSTGRES_DB.
+DO $$
+BEGIN
+    EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_database(), 'UTC');
+END $$;
+
+-- Ensure the `airflow` role exists. Later scripts (01, 10, ...) GRANT privileges
+-- TO airflow; on a fresh cold-boot that role does not exist yet (Airflow itself
+-- connects as POSTGRES_USER, not this role), so an unguarded GRANT aborts init.
+-- Create it once here (NOLOGIN grant-target is sufficient) — idempotent.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'airflow') THEN
+        CREATE ROLE airflow;
+    END IF;
+END $$;
 
 -- =============================================================================
 -- 3. BASE SCHEMAS

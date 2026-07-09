@@ -25,6 +25,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 import logging
+import os
 import sys
 
 from airflow import DAG
@@ -334,6 +335,19 @@ def enter_position(**context) -> Dict[str, Any]:
 
         # SignalBridge: forward order to OMS when in testnet/live mode
         if not is_paper_mode():
+            # FAIL-SAFE (audit A6-01): exits/TP/HS/Friday-close are NOT yet
+            # forwarded to the OMS — only entries are. Placing a non-paper entry
+            # would open a real position that can never be closed via the bridge
+            # (orphaned). Refuse to place it unless an operator explicitly opts in
+            # for a supervised testnet validation session.
+            if os.getenv("H5_ALLOW_NONPAPER_UNSAFE", "false").lower() != "true":
+                raise RuntimeError(
+                    f"[H5-L7] Non-paper execution ({get_execution_mode()}) is DISABLED: "
+                    "exit/TP/HS/close events are not forwarded to the OMS yet "
+                    "(audit A6-01), so a live entry would orphan on the exchange. "
+                    "No order placed. Set H5_ALLOW_NONPAPER_UNSAFE=true ONLY for a "
+                    "supervised testnet session where you will close positions manually."
+                )
             bridge_side = "sell" if direction == -1 else "buy"
             bridge_result = place_order_via_bridge(
                 symbol="USD/COP",

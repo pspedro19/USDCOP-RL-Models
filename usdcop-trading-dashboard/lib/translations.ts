@@ -11,13 +11,13 @@ export const translations = {
             faq: "FAQ"
         },
         hero: {
-            badge: "Restricted Access • Institutional Grade",
-            title_start: "Trade USD/COP with",
-            title_highlight: "Institutional Grade AI",
-            subtitle: "3 RL strategies specifically trained on high-frequency Colombian Peso data, competing in real-time to maximize your Alpha.",
-            cta_primary: "Start Trading Now",
-            cta_secondary: "View Live Demo",
-            scarcity: "Access: Private Beta (3/50 spots left)"
+            badge: "Verified in production • Pre-registered statistical gates",
+            title_start: "Quantitative USD/COP signals,",
+            title_highlight: "verified in production",
+            subtitle: "A weekly system with institutional risk management. Every strategy passes pre-registered statistical gates before touching real money — and we publish the results, win or lose.",
+            cta_primary: "See signals for free",
+            cta_secondary: "How we verify it",
+            scarcity: "Most weeks the right answer is NOT to trade — and the system says so"
         },
         credibility: {
             title: "Trusted by Data",
@@ -30,11 +30,11 @@ export const translations = {
         features: {
             title: "Why Choose Our Algorithms?",
             f1_title: "Multi-Model Competition",
-            f1_desc: "Reinforcement Learning, supervised ML, and LLMs compete for every trade signal.",
+            f1_desc: "A supervised ensemble generates the weekly forecast; pre-registered statistical gates decide IF it trades.",
             f2_title: "Macro-Economic Awareness",
             f2_desc: "Real-time ingestion of Brent Oil, DXY, and local political sentiment analysis.",
             f3_title: "Institutional Backtesting",
-            f3_desc: "Validated on 10 years of tick-by-tick data including the 2020 and 2022 volatility spikes."
+            f3_desc: "Out-of-sample backtests deflated by number of attempts (Deflated Sharpe) — never the headline; the LIVE forward record is."
         },
         howItWorks: {
             title: "Deployment Process",
@@ -42,8 +42,8 @@ export const translations = {
             step1_desc: "API integration with supported execution venues.",
             step2_title: "Risk Profile",
             step2_desc: "Define your max drawdown and daily stop-loss limits.",
-            step3_title: "AI Execution",
-            step3_desc: "The RL agent takes over execution with <4ms latency.",
+            step3_title: "Executable Signal",
+            step3_desc: "Direction, entry, stop and target — or auto-execution on YOUR exchange (Auto plan).",
             step4_title: "Live Monitoring",
             step4_desc: "Watch performance in real-time on your institutional dashboard."
         },
@@ -71,17 +71,19 @@ export const translations = {
         },
         faq: {
             title: "Frequently Asked Questions",
-            q1: "Is FX trading legal in Colombia?",
-            a1: "Yes, trading derivatives on foreign currency is legal for Colombian residents through regulated international brokers.",
-            q2: "What is the minimum capital required?",
-            a2: "We recommend a minimum of $5,000 USD for optimal position sizing and risk management.",
-            q3: "How do I withdraw profits?",
-            a3: "Withdrawals are handled directly through your connected broker. We never hold client funds.",
-            q4: "What happens if the system fails?",
-            a4: "Our 'Kill Switch' technology automatically liquidates positions if connection is lost or anomaly is detected."
+            q1: "Can I lose money?",
+            a1: "Yes. Every trade risks capital; our risk management caps the loss per signal (hard stop) but cannot eliminate it. If anyone promises otherwise, run.",
+            q2: "What if the system stops working?",
+            a2: "Every strategy has a pre-signed withdrawal protocol: loss and drawdown thresholds defined BEFORE going live. If it stops working, it is retired — and you will see it published.",
+            q3: "Do you hold my money?",
+            a3: "Never. Auto-execution uses YOUR exchange's API keys WITHOUT withdrawal permission — keys that can withdraw funds are rejected at registration.",
+            q4: "Is this financial advice?",
+            a4: "No. This is informational and educational quantitative content. The decision, the sizing and the risk are yours. See our full risk disclosure.",
+            q5: "How do I cancel?",
+            a5: "Anytime, from your account. Paid access remains until the end of the billing period; your own history is never deleted."
         },
         footer: {
-            tagline: "Advanced algorithmic trading systems for emerging market currencies.",
+            tagline: "Verifiable quantitative signals. Pre-registered gates, published results — win or lose.",
             risk: "Risk Warning: Trading foreign exchange carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results.",
             rights: "© 2026 USDCOP AI Trading Platform. All rights reserved.",
             privacy: "Privacy Policy",
@@ -98,13 +100,13 @@ export const translations = {
             faq: "Preguntas"
         },
         hero: {
-            badge: "Acceso Restringido • Grado Institucional",
-            title_start: "Opera USD/COP con",
-            title_highlight: "Inteligencia Artificial",
-            subtitle: "3 estrategias de RL entrenadas específicamente en datos de alta frecuencia del Peso Colombiano, compitiendo en tiempo real para maximizar tu Alpha.",
-            cta_primary: "Comenzar Ahora",
-            cta_secondary: "Ver Demo en Vivo",
-            scarcity: "Acceso: Beta Privada (3/50 cupos restantes)"
+            badge: "Verificado en producción • Gates estadísticos pre-registrados",
+            title_start: "Señales cuantitativas USD/COP,",
+            title_highlight: "verificadas en producción",
+            subtitle: "Sistema semanal con gestión de riesgo institucional. Cada estrategia pasa gates estadísticos pre-registrados antes de tocar dinero real — y publicamos los resultados, ganen o pierdan.",
+            cta_primary: "Ver señales gratis",
+            cta_secondary: "Cómo lo verificamos",
+            scarcity: "La mayoría de las semanas la respuesta correcta es NO operar — y el sistema lo dice"
         },
         credibility: {
             title: "Respaldado por Datos",
@@ -117,11 +119,11 @@ export const translations = {
         features: {
             title: "¿Por Qué Nuestros Algoritmos?",
             f1_title: "Competencia Multi-Modelo",
-            f1_desc: "Reinforcement Learning, ML supervisado y LLMs compiten por cada señal de trading.",
+            f1_desc: "Un ensemble supervisado genera el forecast semanal; gates estadísticos pre-registrados deciden SI se opera.",
             f2_title: "Conciencia Macroeconómica",
             f2_desc: "Ingesta en tiempo real de Petróleo Brent, DXY y análisis de sentimiento político local.",
             f3_title: "Backtesting Institucional",
-            f3_desc: "Validado en 10 años de datos tick-by-tick incluyendo los picos de volatilidad de 2020 y 2022."
+            f3_desc: "Backtests fuera de muestra deflactados por número de intentos (Deflated Sharpe) — nunca el titular; el registro LIVE forward lo es."
         },
         howItWorks: {
             title: "Proceso de Despliegue",
@@ -158,17 +160,19 @@ export const translations = {
         },
         faq: {
             title: "Preguntas Frecuentes",
-            q1: "¿Es legal operar FX en Colombia?",
-            a1: "Sí, operar derivados de divisas es legal para residentes colombianos a través de brokers internacionales regulados.",
-            q2: "¿Cuál es el capital mínimo requerido?",
-            a2: "Recomendamos un mínimo de $5,000 USD para una gestión de riesgo y tamaño de posición óptimos.",
-            q3: "¿Cómo retiro mis ganancias?",
-            a3: "Los retiros se manejan directamente a través de tu broker conectado. Nosotros nunca custodiamos fondos.",
-            q4: "¿Qué pasa si el sistema falla?",
-            a4: "Nuestra tecnología 'Kill Switch' liquida posiciones automáticamente si se pierde la conexión o se detecta una anomalía."
+            q1: "¿Puedo perder dinero?",
+            a1: "Sí. Toda operación arriesga capital; la gestión de riesgo acota la pérdida por señal (hard stop) pero no la elimina. Si alguien te promete lo contrario, corre.",
+            q2: "¿Qué pasa si el sistema deja de funcionar?",
+            a2: "Cada estrategia tiene un protocolo de retiro pre-firmado: umbrales de pérdida y drawdown definidos ANTES de operar. Si deja de funcionar, se retira — y lo verás publicado.",
+            q3: "¿Custodian mi dinero?",
+            a3: "Jamás. La ejecución automática usa llaves API de TU exchange SIN permiso de retiro — las llaves que pueden retirar fondos se rechazan al registrarlas.",
+            q4: "¿Esto es asesoría financiera?",
+            a4: "No. Es contenido cuantitativo informativo y educativo. La decisión, el tamaño y el riesgo son tuyos. Lee la divulgación de riesgo completa.",
+            q5: "¿Cómo cancelo?",
+            a5: "Cuando quieras, desde tu cuenta. El acceso pago dura hasta el fin del período facturado; tu histórico nunca se borra."
         },
         footer: {
-            tagline: "Sistemas avanzados de trading algoritmico para divisas de mercados emergentes.",
+            tagline: "Señales cuantitativas verificables. Gates pre-registrados, resultados publicados — ganen o pierdan.",
             risk: "Advertencia de Riesgo: Operar divisas conlleva un alto nivel de riesgo y puede no ser adecuado para todos los inversores. El rendimiento pasado no garantiza resultados futuros.",
             rights: "© 2026 USDCOP AI Trading Platform. Todos los derechos reservados.",
             privacy: "Politica de Privacidad",

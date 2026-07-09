@@ -1,25 +1,19 @@
 /**
- * GET /api/analysis/weeks
- * Returns the analysis index (list of available weeks).
- * Reads from public/data/analysis/analysis_index.json (file-based).
+ * GET /api/analysis/weeks?asset=<asset_id>
+ * Returns the analysis index (list of available weeks) for an asset.
+ * Reads public/data/analysis/<asset>/analysis_index.json (file-based),
+ * falling back to the legacy root for the default asset.
  */
 
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
 
 import type { AnalysisIndex } from '@/lib/contracts/weekly-analysis.contract';
-
-const INDEX_FILE = path.join(process.cwd(), 'public', 'data', 'analysis', 'analysis_index.json');
+import { readAnalysisJson } from '@/lib/analysis-paths';
 
 const DEFAULT_INDEX: AnalysisIndex = { weeks: [] };
 
-export async function GET() {
-  try {
-    const raw = await fs.readFile(INDEX_FILE, 'utf-8');
-    const index: AnalysisIndex = JSON.parse(raw);
-    return NextResponse.json(index);
-  } catch {
-    return NextResponse.json(DEFAULT_INDEX);
-  }
+export async function GET(request: NextRequest) {
+  const asset = request.nextUrl.searchParams.get('asset');
+  const index = await readAnalysisJson<AnalysisIndex>(asset, 'analysis_index.json');
+  return NextResponse.json(index ?? DEFAULT_INDEX);
 }

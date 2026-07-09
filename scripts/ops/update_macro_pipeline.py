@@ -17,7 +17,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
 PIPELINE_DIR = PROJECT_ROOT / "data" / "pipeline"
 
 STEPS = [
@@ -39,7 +39,7 @@ STEPS = [
     },
     {
         "name": "Validation Datasets",
-        "script": PROJECT_ROOT / "scripts" / "generate_validation_datasets.py",
+        "script": PROJECT_ROOT / "scripts" / "data" / "generate_validation_datasets.py",
     },
 ]
 

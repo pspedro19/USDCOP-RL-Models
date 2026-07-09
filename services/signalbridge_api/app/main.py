@@ -35,6 +35,54 @@ async def lifespan(app: FastAPI):
     # (init-scripts/20-signalbridge-schema.sql)
     logger.info("Database tables managed via SQL migrations")
 
+    # Idempotently ensure an approved admin exists so the user-approval queue
+    # always has an approver. Controlled by ADMIN_BOOTSTRAP_* env; a no-op if unset.
+    if settings.admin_bootstrap_email and settings.admin_bootstrap_password:
+        try:
+            from app.core.database import get_db_context as _get_db_context
+            from app.services.user import UserService
+
+            async with _get_db_context() as _db:
+                admin = await UserService(_db).bootstrap_admin(
+                    email=settings.admin_bootstrap_email,
+                    password=settings.admin_bootstrap_password,
+                    name=settings.admin_bootstrap_name,
+                )
+                logger.info("Bootstrap admin ensured", email=admin.email)
+
+                # Cold-boot resilience: idempotently ensure the per-role QA users exist
+                # (they are DB rows, wiped by `compose down -v`; the visual/functional QA
+                # harnesses and role-matrix depend on them). Never in production.
+                if not settings.is_production:
+                    from sqlalchemy import text as _text
+
+                    _svc = UserService(_db)
+                    for _email, _role, _ent in (
+                        ("dev@test.com", "developer", None),
+                        ("pro@test.com", "subscriber",
+                         '{"plan":"signals","assets":["usdcop"],"forecast_delay_hours":0,'
+                         '"analysis_delay_days":0,"signals_realtime":true}'),
+                        ("free@test.com", "free", None),
+                    ):
+                        try:
+                            _u = await _svc.get_by_email(_email)
+                            if not _u:
+                                from app.contracts.auth import RegisterRequest as _RR
+
+                                _u = await _svc.create(_RR(
+                                    email=_email, password="Test2026!",
+                                    name=_email.split("@")[0].title()))
+                            await _db.execute(_text(
+                                "UPDATE sb_users SET role=:r, status='approved', is_active=true, "
+                                "entitlements=COALESCE(CAST(:e AS jsonb), entitlements) "
+                                "WHERE email=:m"), {"r": _role, "e": _ent, "m": _email})
+                            await _db.commit()
+                        except Exception as _ue:  # noqa: BLE001 — best-effort per user
+                            logger.warning("QA user bootstrap failed", email=_email, error=str(_ue))
+                    logger.info("QA role users ensured (non-production)")
+        except Exception as e:
+            logger.warning("Bootstrap admin failed", error=str(e))
+
     # Initialize bridges to consume signals from:
     # 1. WebSocket (for backtests and dashboard)
     # 2. Redis Streams (for live trading from L5 DAG)

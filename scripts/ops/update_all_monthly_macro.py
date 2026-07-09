@@ -26,7 +26,7 @@ import numpy as np
 import time
 
 # Add project paths
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
 SCRAPERS_DIR = PROJECT_ROOT / "data" / "pipeline" / "02_scrapers" / "02_custom"
 UTILS_DIR = PROJECT_ROOT / "airflow" / "dags" / "utils"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "pipeline" / "01_sources" / "consolidated"

@@ -27,7 +27,7 @@ export function HowItWorks() {
   const content = {
     es: {
       title: "Proceso de Inferencia y Señales",
-      subtitle: "Tecnología de vanguardia en Machine Learning aplicada al mercado USD/COP",
+      subtitle: "Del dato a la señal publicada — el ciclo semanal completo",
       steps: [
         {
           number: 1,
@@ -44,8 +44,8 @@ export function HowItWorks() {
         {
           number: 3,
           icon: Brain,
-          title: "Inferencia ML",
-          description: "Modelos de Reinforcement Learning (PPO, SAC, A2C) entrenados con datos históricos para reconocimiento de patrones."
+          title: "Forecast + Gates",
+          description: "Ensemble supervisado + variables macro (petróleo, riesgo país, tasas). Los gates de régimen deciden SI se opera — la mayoría de semanas, no."
         },
         {
           number: 4,
@@ -57,7 +57,7 @@ export function HowItWorks() {
     },
     en: {
       title: "Inference & Signals Process",
-      subtitle: "Cutting-edge Machine Learning technology applied to the USD/COP market",
+      subtitle: "From data to published signal — the full weekly cycle",
       steps: [
         {
           number: 1,
@@ -74,8 +74,8 @@ export function HowItWorks() {
         {
           number: 3,
           icon: Brain,
-          title: "ML Inference",
-          description: "Reinforcement Learning models (PPO, SAC, A2C) trained on historical data for pattern recognition."
+          title: "Forecast + Gates",
+          description: "Supervised ensemble + macro variables (oil, country risk, rates). Regime gates decide IF it trades — most weeks, it does not."
         },
         {
           number: 4,

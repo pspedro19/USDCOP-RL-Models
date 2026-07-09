@@ -1,0 +1,88 @@
+# =============================================================================
+# analysis_assets.yaml — SSOT for per-asset weekly/daily analysis generation.
+#
+# Python mirror of the frontend SSOT
+# (usdcop-trading-dashboard/lib/contracts/analysis-assets.ts). The asset_id keys
+# MUST match: registry.json asset_id, the on-disk namespace
+# public/data/analysis/<asset_id>/, and the frontend selector.
+#
+# Adding an analysed asset = ONE entry here (+ its TS mirror). The generator
+# (scripts/pipeline/generate_asset_analysis.py) is fully driven by this file —
+# no per-asset code.
+#
+# NOTE: usdcop is intentionally omitted here — it is produced by the richer,
+# macro-driven LangGraph pipeline (scripts/pipeline/generate_weekly_analysis.py)
+# and served from the legacy root path. This file governs the onboarded science
+# stacks (Gold, BTC) which use price/technical/strategy/news analysis.
+# =============================================================================
+
+assets:
+  xauusd:
+    symbol: "XAU/USD"
+    chart_symbol: "XAUUSD"
+    display_name: "Oro (Gold)"
+    asset_class: "commodity"
+    # Real daily OHLCV seed (instant-based TIMESTAMPTZ, NY-close UTC)
+    ohlcv_seed: "seeds/latest/xauusd_daily_ohlcv.parquet"
+    ohlcv_symbol: null            # single-symbol seed; no filter needed
+    # Published strategy whose weekly position drives the signal card
+    strategy_id: "gold_trend_b2"
+    strategy_display: "Gold · Trend-follower (B2)"
+    # Annualization for any vol/Sharpe context (Gold trades ~252 sessions/yr)
+    annualization_days: 252
+    # Real news sources (asset-specific queries)
+    #  - Google News RSS (primary): reliable, no key, historical via after:/before:
+    #  - GDELT DOC 2.0 (fallback): public, no key
+    google_news_query: 'gold price OR XAUUSD OR bullion OR "gold market"'
+    news_query: '(gold OR XAUUSD OR "gold price" OR bullion) sourcelang:english'
+    news_language: "english"
+    # Currency/price formatting hint for the frontend narrative
+    price_unit: "USD/oz"
+
+  btcusdt:
+    symbol: "BTC/USDT"
+    chart_symbol: "BTCUSDT"
+    display_name: "Bitcoin"
+    asset_class: "crypto"
+    ohlcv_seed: "seeds/latest/btcusdt_daily_ohlcv.parquet"
+    ohlcv_symbol: null
+    strategy_id: "btc_trend_b2"
+    strategy_display: "Bitcoin · Trend-follower (B2)"
+    annualization_days: 365       # BTC is 24/7 → √365
+    google_news_query: 'bitcoin OR BTC price OR cryptocurrency OR "crypto market"'
+    news_query: '(bitcoin OR BTC OR cryptocurrency OR "crypto market") sourcelang:english'
+    news_language: "english"
+    price_unit: "USD"
+
+# Where per-asset analysis JSON is written (namespaced under this root).
+output:
+  root_dir: "usdcop-trading-dashboard/public/data/analysis"
+
+# Published strategy bundle location (for pulling real weekly signals).
+strategies:
+  bundle_root: "usdcop-trading-dashboard/public/data/strategies"
+
+# Real news sources (all public, no API key required).
+# Pluggable via src/analysis/news_sources.py — add a source here + register its
+# adapter in SOURCE_REGISTRY to make it available. `sources` is the priority order.
+news:
+  enabled: true
+  # Order tried by AssetNewsFetcher. strategy=first_nonempty → primary then fallback.
+  sources: ["google_news", "gdelt"]
+  strategy: "first_nonempty"   # or "aggregate" to merge + de-dup across all sources
+  # Primary: Google News RSS (aggregates Investing.com, CNBC, CoinDesk, Reuters…),
+  # historical via after:/before: date operators, no rate limit.
+  google_news:
+    enabled: true
+    base_url: "https://news.google.com/rss/search"
+    hl: "en-US"
+    gl: "US"
+    ceid: "US:en"
+    max_articles: 40      # cap kept per week after date-filtering
+  # Fallback: GDELT DOC 2.0 (used only if Google News yields nothing).
+  gdelt_base_url: "https://api.gdeltproject.org/api/v2/doc/doc"
+  max_records: 60
+  request_timeout_s: 20
+  # GDELT asks for ≤ 1 request / 5s; enforce global pacing + 429 backoff.
+  min_interval_s: 6
+  backoff_seconds: [0, 8, 16, 24]

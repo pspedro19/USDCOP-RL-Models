@@ -94,8 +94,13 @@ export async function protectApiRoute(
   request: NextRequest,
   options: ApiAuthOptions = {}
 ): Promise<AuthResult> {
-  // AUTH BYPASS: Skip authentication when AUTH_BYPASS_ENABLED is set (for testing)
-  if (process.env.AUTH_BYPASS_ENABLED === 'true') {
+  // AUTH BYPASS: Skip authentication when AUTH_BYPASS_ENABLED is set (for testing).
+  // Hard-guarded off in production so a leftover env var cannot disable API-route
+  // auth on a live deployment (audit A8-02; matches middleware.ts guard).
+  if (
+    process.env.AUTH_BYPASS_ENABLED === 'true' &&
+    process.env.NODE_ENV !== 'production'
+  ) {
     return {
       authenticated: true,
       user: {

@@ -27,6 +27,7 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReturnType<typeof import('lightweight-charts').createChart> | null>(null);
   const seriesRef = useRef<Map<string, unknown>>(new Map());
+  const observerRef = useRef<ResizeObserver | null>(null);
 
   const [selected, setSelected] = useState<Set<string>>(new Set(DEFAULT_SELECTED));
   const [normalized, setNormalized] = useState(false);
@@ -142,17 +143,23 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
 
         chart.timeScale().fitContent();
 
-        // Resize observer
+        // Resize observer — tracked in a ref so the effect cleanup can disconnect it.
+        // (Returning a cleanup from this async fn would be a lost Promise, so the
+        // observer would otherwise leak and call applyOptions on a disposed chart →
+        // "Object is disposed" on every asset switch.) Guard the callback too.
+        observerRef.current?.disconnect();
         const observer = new ResizeObserver(entries => {
+          if (chartRef.current !== chart) return; // chart was disposed/replaced
           for (const entry of entries) {
-            chart.applyOptions({ width: entry.contentRect.width });
+            try {
+              chart.applyOptions({ width: entry.contentRect.width });
+            } catch {
+              observer.disconnect();
+            }
           }
         });
         observer.observe(chartContainerRef.current);
-
-        return () => {
-          observer.disconnect();
-        };
+        observerRef.current = observer;
       } catch (err) {
         console.warn('Failed to initialize lightweight-charts:', err);
       }
@@ -162,6 +169,8 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
 
     return () => {
       isMounted = false;
+      observerRef.current?.disconnect();
+      observerRef.current = null;
       if (chartRef.current) {
         chartRef.current.remove();
         chartRef.current = null;

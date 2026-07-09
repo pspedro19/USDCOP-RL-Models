@@ -10,7 +10,10 @@
  * Contract: lib/contracts/strategy.contract.ts
  */
 
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useSession } from 'next-auth/react';
+import { MetricBadge } from '@/components/ui/MetricBadge';
+import { calmarRatio, canShowRatios } from '@/lib/contracts/ui.contract';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,11 +51,14 @@ interface ProdStrategyInfo {
   sharpe: number;
 }
 
-function ProductionStrategyDropdown({ strategyName, strategyId, approval, stats }: {
+function ProductionStrategyDropdown({ strategyName, strategyId, approval, stats, options, onSelect }: {
   strategyName: string;
   strategyId: string;
   approval: { status: string } | null;
   stats: StrategyStats | undefined;
+  options?: Array<{ strategy_id: string; strategy_name: string; status: string;
+    return_pct: number | null; mode: string; is_active_default: boolean }>;
+  onSelect?: (sid: string | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const statusLabel = approval?.status || 'LIVE';
@@ -97,6 +103,34 @@ function ProductionStrategyDropdown({ strategyName, strategyId, approval, stats 
             <div className="text-white font-semibold text-sm">{strategyName}</div>
             <div className="text-[10px] text-slate-400 mt-1">ID: {strategyId}</div>
           </div>
+          {options && options.length > 1 && (
+            <div className="border-b border-slate-700/50">
+              {options.map((o) => (
+                <button
+                  key={o.strategy_id}
+                  onClick={() => { onSelect?.(o.is_active_default ? null : o.strategy_id); setIsOpen(false); }}
+                  className={cn(
+                    'w-full text-left px-4 py-2.5 hover:bg-slate-700/50 transition-colors flex items-center justify-between gap-2',
+                    o.strategy_id === strategyId && 'bg-slate-700/30',
+                  )}
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-white">{o.strategy_name}</div>
+                    <div className="text-[10px] text-slate-400">
+                      {o.return_pct != null ? `${o.return_pct >= 0 ? '+' : ''}${o.return_pct.toFixed(2)}% YTD` : 'sin datos'}
+                      {o.mode === 'paper' ? ' · PAPER' : ''}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={cn('text-[9px] font-bold',
+                    o.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : o.status === 'PENDING_APPROVAL' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30')}>
+                    {o.status === 'PENDING_APPROVAL' ? 'PENDIENTE' : o.status}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="px-4 py-3 space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-slate-400">Retorno</span>
@@ -524,7 +558,8 @@ function DataSourceBadge({ source }: { source: LiveDataSource }) {
 // ============================================================================
 // Read-Only Approval Status Card
 // ============================================================================
-function ApprovalStatusCard({ approval }: { approval: ApprovalState }) {
+function ApprovalStatusCard({ approval }: { approval: ApprovalState | null }) {
+  if (!approval) return null; // defense in depth — never render internals without data
   return (
     <Card className="bg-slate-900/50 border-slate-800">
       <CardHeader variant="minimal">
@@ -1253,6 +1288,30 @@ function NewTradeToast({ count, onDismiss }: { count: number; onDismiss: () => v
 // Main Page
 // ============================================================================
 export default function ProductionPage() {
+  // ux-navigation §3.2: subscribers see the CLIENT view ("Señales") — no approval states,
+  // no internal jargon, no ratios under N<20. Internal roles keep the technical view.
+  const { data: __session } = useSession();
+  const __role = (__session?.user as { role?: string } | undefined)?.role ?? 'free';
+  const isClientView = __role === 'subscriber' || __role === 'free';
+
+  // ── Multi-strategy production (StrategySelector contract) ─────────────────────
+  const [strategyOptions, setStrategyOptions] = useState<Array<{
+    strategy_id: string; strategy_name: string; status: string;
+    return_pct: number | null; mode: string; is_active_default: boolean;
+  }>>([]);
+  const [selectedSid, setSelectedSid] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/production/strategies').then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.strategies) setStrategyOptions(d.strategies); })
+      .catch(() => {});
+  }, []);
+  // Memoized: a fresh object each render would loop the hook's fetch effect.
+  const selectedStrategy = useMemo(() => {
+    if (!selectedSid) return null;
+    const opt = strategyOptions.find((o) => o.strategy_id === selectedSid);
+    return opt ? { sid: opt.strategy_id, isDefault: opt.is_active_default } : null;
+  }, [selectedSid, strategyOptions]);
+
   const {
     currentSignal,
     activePosition,
@@ -1275,7 +1334,7 @@ export default function ProductionPage() {
     newTradeCount,
     newTradeIds,
     dismissNewTrades,
-  } = useLiveProduction();
+  } = useLiveProduction(selectedStrategy);
 
   const [showAllTrades, setShowAllTrades] = useState(false);
   const priceData = useRealtimePrice();
@@ -1298,14 +1357,17 @@ export default function ProductionPage() {
             <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
-                  Produccion
+                  {isClientView ? 'Señales' : 'Produccion'}
                 </h1>
+                <MetricBadge phase="live" provenance={{ strategyId }} />
               </div>
               <ProductionStrategyDropdown
                 strategyName={strategyName}
                 strategyId={strategyId}
-                approval={approval}
+                approval={isClientView ? null : approval}
                 stats={best}
+                options={strategyOptions}
+                onSelect={setSelectedSid}
               />
             </div>
           </div>
@@ -1402,10 +1464,11 @@ export default function ProductionPage() {
           <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
-                Produccion
+                {isClientView ? 'Señales' : 'Produccion'}
               </h1>
+              <MetricBadge phase="live" provenance={{ strategyId }} />
               <div className="hidden sm:flex items-center gap-2">
-                {approval && <StatusBadge status={approval.status} />}
+                {approval && !isClientView && <StatusBadge status={approval.status} />}
               </div>
             </div>
 
@@ -1423,8 +1486,10 @@ export default function ProductionPage() {
               <ProductionStrategyDropdown
                 strategyName={strategyName}
                 strategyId={strategyId}
-                approval={approval}
+                approval={isClientView ? null : approval}
                 stats={best}
+                options={strategyOptions}
+                onSelect={setSelectedSid}
               />
             </div>
           </div>
@@ -1458,6 +1523,9 @@ export default function ProductionPage() {
               subtitle={`Rendimiento ${year} | ${summary?.n_trading_days ?? trades.length} dias de trading${summary?.direction_accuracy_pct != null ? ` | DA ${summary.direction_accuracy_pct}%` : ''}`}
               icon={<BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />}
             />
+            <div className="flex justify-center -mt-4 mb-6">
+              <MetricBadge phase="live" provenance={{ strategyId }} />
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
               <KPICard
                 title="Retorno Total"
@@ -1467,6 +1535,7 @@ export default function ProductionPage() {
                 color={(best?.total_return_pct ?? 0) >= 0 ? '#10b981' : '#ef4444'}
                 trend={(best?.total_return_pct ?? 0) >= 0 ? 'up' : 'down'}
               />
+              {(!isClientView || canShowRatios(trades?.length ?? 0)) ? (
               <KPICard
                 title="Sharpe Ratio"
                 value={best?.sharpe?.toFixed(2) ?? 'N/A'}
@@ -1475,6 +1544,17 @@ export default function ProductionPage() {
                 color={(best?.sharpe ?? 0) >= 1.5 ? '#10b981' : (best?.sharpe ?? 0) >= 1 ? '#f59e0b' : '#ef4444'}
                 trend={(best?.sharpe ?? 0) >= 1.5 ? 'up' : 'neutral'}
               />
+              ) : (
+              <KPICard
+                title="Operaciones"
+                value={String(trades?.length ?? 0)}
+                subtitle="Con pocas operaciones: solo conteo y P&L"
+                icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
+                color="#94a3b8"
+                trend="neutral"
+              />
+              )}
+              {(!isClientView || canShowRatios(trades?.length ?? 0)) && (
               <KPICard
                 title="Profit Factor"
                 value={formatProfitFactor(best?.profit_factor)}
@@ -1483,6 +1563,17 @@ export default function ProductionPage() {
                 color={(best?.profit_factor ?? 0) >= 1.5 ? '#10b981' : (best?.profit_factor ?? 0) >= 1 ? '#f59e0b' : '#ef4444'}
                 trend={(best?.profit_factor ?? 0) >= 1.5 ? 'up' : 'neutral'}
               />
+              )}
+              {(!isClientView || canShowRatios(trades?.length ?? 0)) && (
+              <KPICard
+                title="Calmar Ratio"
+                value={(() => { const c = calmarRatio(best?.total_return_pct, best?.max_dd_pct, best?.trading_days); return c == null ? 'N/A' : c.toFixed(2); })()}
+                subtitle="Retorno anualizado / |DD| (métrica primaria)"
+                icon={<Shield className="w-4 h-4 sm:w-5 sm:h-5" />}
+                color={(calmarRatio(best?.total_return_pct, best?.max_dd_pct, best?.trading_days) ?? 0) >= 1 ? '#10b981' : '#f59e0b'}
+                trend={(calmarRatio(best?.total_return_pct, best?.max_dd_pct, best?.trading_days) ?? 0) >= 1 ? 'up' : 'neutral'}
+              />
+              )}
               <KPICard
                 title="Win Rate"
                 value={`${best?.win_rate_pct?.toFixed(0) ?? 'N/A'}%`}
@@ -1529,6 +1620,21 @@ export default function ProductionPage() {
             - Market open + live DB: enableRealTime=true, refreshes 5m bars every 30s
             - Market closed / file fallback: replay mode with trade entry/exit markers
         ═══════════════════════════════════════════════════════════════ */}
+        {/* Non-default strategies (Gold/BTC paper) render THEIR OWN daily candles via
+            summary.chart_symbol — same data path as the Backtest chart (XAUUSD_daily.json /
+            BTCUSDT_daily.json). The pointer only remains as fallback for summaries without
+            chart_symbol (never show USD/COP candles under another asset's strategy). */}
+        {selectedStrategy && !selectedStrategy.isDefault && !(summary as any)?.chart_symbol ? (
+          <section className="w-full py-10 flex flex-col items-center">
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="rounded-2xl border border-slate-700/50 bg-slate-900/40 p-6 text-center text-slate-300 text-sm">
+                Esta estrategia opera en barras <b>diarias</b> (cierre UTC 00:00). El gráfico de velas
+                con señales está en <b>Backtest</b> — aquí se rastrean KPIs,
+                operaciones y estado de aprobación del forward paper.
+              </div>
+            </div>
+          </section>
+        ) : (
         <section className={cn(
           "w-full py-12 sm:py-16 lg:py-20 flex flex-col items-center",
           !isLive && "bg-slate-900/30"
@@ -1546,14 +1652,17 @@ export default function ProductionPage() {
               <div className="rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
                 <TradingChartWithSignals
                   key={`prod-chart-${strategyId}-${marketIsOpen ? 'live' : 'replay'}`}
-                  symbol="USDCOP"
+                  // Data-driven so a non-COP production strategy renders its own market
+                  // (audit A5-10). Falls back to COP until the summary export emits
+                  // chart_symbol (mirror of ForecastingBacktestSection's manifest.chart_symbol).
+                  symbol={(summary as any)?.chart_symbol ?? 'USDCOP'}
                   timeframe="5m"
                   height={400}
                   showSignals={true}
                   showPositions={false}
                   showStopLossTakeProfit={false}
-                  enableRealTime={marketIsOpen}
-                  isReplayMode={!marketIsOpen}
+                  enableRealTime={marketIsOpen && (!selectedStrategy || selectedStrategy.isDefault)}
+                  isReplayMode={!marketIsOpen || Boolean(selectedStrategy && !selectedStrategy.isDefault)}
                   startDate={`${year}-01-01`}
                   endDate={undefined}
                   replayTrades={!marketIsOpen ? trades.flatMap(t => {
@@ -1583,11 +1692,13 @@ export default function ProductionPage() {
             </Suspense>
           </div>
         </section>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════
-            Section 4: Approval + Gates
+            Section 4: Approval + Gates — INTERNAL ONLY (hidden from client "Señales" view).
+            Subscribers/free see outputs, never approval state or gates (RBAC §8).
         ═══════════════════════════════════════════════════════════════ */}
-        {approval && (
+        {approval && !isClientView && (
           <section className="w-full py-12 sm:py-16 lg:py-20 bg-slate-900/30 flex flex-col items-center">
             <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <SectionHeader

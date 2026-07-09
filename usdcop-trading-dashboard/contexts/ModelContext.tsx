@@ -17,6 +17,8 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
+import { useSession } from 'next-auth/react';
+import { roleHasPermission } from '@/lib/contracts/rbac.contract';
 import type { ModelConfig, ModelStatus } from '@/lib/config/models.config';
 import { modelRefreshIntervals } from '@/lib/config/models.config';
 import {
@@ -71,6 +73,15 @@ interface ModelProviderProps {
 }
 
 export function ModelProvider({ children, initialModelId }: ModelProviderProps) {
+  // /api/models is gated to research:read (admin/developer). Only fetch when the session
+  // actually carries that permission — public pages (/login, /register, /reset-password)
+  // and subscriber/free users skip it, so no 401/403 console noise. Others fall back to
+  // the local defaults below, exactly as before.
+  const { data: session, status: sessionStatus } = useSession();
+  const canReadModels =
+    sessionStatus === 'authenticated' &&
+    roleHasPermission((session?.user as { role?: string } | undefined)?.role, 'research:read');
+
   // Model list state
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,16 +184,21 @@ export function ModelProvider({ children, initialModelId }: ModelProviderProps) 
     }
   }, [selectedModelId]);
 
-  // Initial fetch
+  // Initial fetch — only when the session can read models; otherwise use local defaults.
   useEffect(() => {
+    if (!canReadModels) {
+      if (sessionStatus !== 'loading') { setModels(defaultModels); setIsLoading(false); }
+      return;
+    }
     fetchModels();
-  }, [fetchModels]);
+  }, [fetchModels, canReadModels, sessionStatus]);
 
-  // Periodic refresh
+  // Periodic refresh — gated on a research:read session.
   useEffect(() => {
+    if (!canReadModels) return;
     const interval = setInterval(fetchModels, modelRefreshIntervals.modelList);
     return () => clearInterval(interval);
-  }, [fetchModels]);
+  }, [fetchModels, canReadModels]);
 
   // Set selected model
   const setSelectedModel = useCallback((modelId: string) => {

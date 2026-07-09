@@ -1,0 +1,41 @@
+# Additive overlay for the user-approval + email E2E.
+# Combine with:  docker compose -f docker-compose.yml -f docker-compose.mailhog.yml up -d
+#
+# Adds a MailHog sink (SMTP :1025, web/API :8025) and points SignalBridge at it,
+# with real auth on (SIGNALBRIDGE_DEV_MODE=false) and a bootstrap admin so the
+# approval queue has an approver. Self-contained — does NOT touch the root compose
+# or the user's docker-compose.override.testauth.yml.
+services:
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: usdcop-mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI + JSON API (/api/v2/messages)
+    networks:
+      - usdcop-trading-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget -q -O /dev/null http://localhost:8025/api/v2/messages || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  signalbridge-api:
+    environment:
+      # Real auth (disable the DevUser bypass) so the approval flow is exercised.
+      - SIGNALBRIDGE_DEV_MODE=false
+      # SMTP → MailHog (no auth, no TLS).
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_USE_TLS=false
+      - EMAIL_FROM=no-reply@signalbridge.io
+      - APP_PUBLIC_URL=http://localhost:5000
+      # Bootstrap admin (idempotent at startup) — approver for the queue.
+      # NOTE: must use a non-reserved TLD (EmailStr rejects .local/.localhost/.test).
+      - ADMIN_BOOTSTRAP_EMAIL=admin@signalbridge.io
+      - ADMIN_BOOTSTRAP_PASSWORD=Admin!Bootstrap1
+      - ADMIN_BOOTSTRAP_NAME=Bootstrap Admin
+    depends_on:
+      mailhog:
+        condition: service_started

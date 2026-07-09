@@ -33,6 +33,7 @@ Contract: SMART-EXECUTOR-V1
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 import logging
+import os
 import sys
 
 from airflow import DAG
@@ -322,6 +323,18 @@ def enter_position(**context) -> None:
 
         # SignalBridge: forward order to OMS when in testnet/live mode
         if not is_paper_mode():
+            # FAIL-SAFE (audit A6-01): only entries are forwarded to the OMS —
+            # trailing-stop/exit/close events are not. A non-paper entry would
+            # orphan on the exchange. Refuse unless explicitly opted in for a
+            # supervised testnet session.
+            if os.getenv("H1_ALLOW_NONPAPER_UNSAFE", "false").lower() != "true":
+                raise RuntimeError(
+                    f"[L7] Non-paper execution ({get_execution_mode()}) is DISABLED: "
+                    "exit/trailing/close events are not forwarded to the OMS yet "
+                    "(audit A6-01), so a live entry would orphan on the exchange. "
+                    "No order placed. Set H1_ALLOW_NONPAPER_UNSAFE=true ONLY for a "
+                    "supervised testnet session where you will close positions manually."
+                )
             bridge_side = "sell" if direction == -1 else "buy"
             bridge_result = place_order_via_bridge(
                 symbol="USD/COP",
@@ -556,6 +569,7 @@ with DAG(
     default_args=default_args,
     description='Smart Executor: trailing stop intraday execution for forecasting signals',
     schedule_interval='*/5 18-22 * * 1-5',  # UTC 18:00-22:55 = 13:00-17:55 COT (after L5 inference)
+    is_paused_upon_creation=True,  # H1 track PAUSED (audit A3-01) — no auto-run on DB reset
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS_LIST,

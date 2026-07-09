@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, date
 from pathlib import Path
 from dotenv import load_dotenv
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
 load_dotenv(PROJECT_ROOT / ".env")
 
 SYMBOL_TD = "USD/BRL"

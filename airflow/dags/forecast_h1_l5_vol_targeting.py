@@ -545,6 +545,7 @@ with DAG(
     default_args=default_args,
     description='Daily vol-targeting signal from forecasting pipeline',
     schedule_interval='30 18 * * 1-5',  # 18:30 UTC = 13:30 COT
+    is_paused_upon_creation=True,  # H1 track PAUSED (audit A3-01) — no auto-run on DB reset
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS,

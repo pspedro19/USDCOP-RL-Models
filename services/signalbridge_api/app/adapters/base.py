@@ -104,6 +104,26 @@ class ExchangeAdapter(ABC):
         """Return the exchange identifier."""
         pass
 
+    async def quantize_amount(self, symbol: str, quantity: float) -> float:
+        """Round ``quantity`` DOWN to the exchange's amount precision for ``symbol``.
+
+        One implementation for every CCXT-backed adapter (DRY). CCXT handles both precision
+        modes transparently — DECIMAL_PLACES (Binance) and TICK_SIZE (MEXC, where
+        ``precision.amount`` is a step like 1e-06, and the naive ``10**-int(precision)``
+        rounding yields qty=0 for BTC — the audit OLA-3 S1 sizing bug). Falls back to the
+        raw quantity if markets are unavailable (the exchange will then reject invalid
+        precision explicitly rather than us silently mangling it).
+        """
+        if self._exchange is None or quantity <= 0:
+            return quantity
+        try:
+            if not getattr(self._exchange, "markets", None):
+                await self._exchange.load_markets()
+            normalized = self.normalize_symbol(symbol)
+            return float(self._exchange.amount_to_precision(normalized, quantity))
+        except Exception:
+            return quantity
+
     @property
     @abstractmethod
     def base_url(self) -> str:

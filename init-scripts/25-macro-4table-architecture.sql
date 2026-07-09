@@ -375,7 +375,7 @@ COMMENT ON VIEW macro_combined_for_l2 IS
 -- View: Inference features (simplified names for realtime inference)
 CREATE OR REPLACE VIEW inference_macro_features_v2 AS
 SELECT
-    fecha AS date,
+    d.fecha AS date,
     -- Critical features for RL model
     fxrt_index_dxy_usa_d_dxy AS dxy,
     volt_vix_usa_d_vix AS vix,
@@ -386,11 +386,11 @@ SELECT
     finc_bond_yield2y_usa_d_dgs2 AS ust2y,
     polr_policy_rate_col_d_tpm AS tpm_col,
     polr_fed_funds_usa_m_fedfunds AS fedfunds,
-    is_complete
+    d.is_complete
 FROM macro_indicators_daily d
 LEFT JOIN macro_indicators_monthly m
     ON DATE_TRUNC('month', d.fecha)::DATE = m.fecha
-ORDER BY fecha DESC;
+ORDER BY d.fecha DESC;
 
 COMMENT ON VIEW inference_macro_features_v2 IS
 'Simplified inference features for realtime model. Requires is_complete=TRUE for valid inference.';

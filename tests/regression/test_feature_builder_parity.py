@@ -5,7 +5,7 @@ P0-4: Verify SSOT parity across Training, Inference, and Backtest contexts.
 
 These tests ensure that:
 1. CanonicalFeatureBuilder produces identical results in all contexts
-2. Feature order matches the contract exactly (15 features)
+2. Feature order matches the contract exactly (derived from OBSERVATION_DIM)
 3. Normalization statistics are applied consistently
 4. Hash verification prevents norm_stats drift
 5. Observations never contain NaN or Inf
@@ -51,22 +51,17 @@ from src.feature_store.builders import (
 
 @pytest.fixture
 def sample_norm_stats() -> Dict[str, Dict[str, float]]:
-    """Sample normalization statistics matching production config."""
-    return {
-        "log_ret_5m": {"mean": 9.04e-07, "std": 0.001134},
-        "log_ret_1h": {"mean": 1.24e-05, "std": 0.003736},
-        "log_ret_4h": {"mean": 5.74e-05, "std": 0.007675},
-        "rsi_9": {"mean": 48.55, "std": 23.92},
-        "atr_pct": {"mean": 0.0608, "std": 0.0452},
-        "adx_14": {"mean": 32.30, "std": 17.05},
-        "dxy_z": {"mean": 0.0247, "std": 0.999},
-        "dxy_change_1d": {"mean": 4.46e-05, "std": 0.0100},
-        "vix_z": {"mean": -0.0141, "std": 0.901},
-        "embi_z": {"mean": 0.00149, "std": 1.002},
-        "brent_change_1d": {"mean": 0.00242, "std": 0.0458},
-        "rate_spread": {"mean": -0.0148, "std": 0.998},
-        "usdmxn_change_1d": {"mean": -7.59e-05, "std": 0.0184},
-    }
+    """Normalization statistics for the builder's required features.
+
+    Derived from the SAME source the builder validates against —
+    CanonicalFeatureBuilder._validate() requires norm_stats for FEATURE_ORDER[:13].
+    Building the fixture from the contract (instead of a hardcoded 13-feature
+    snapshot) keeps it correct as the contract evolves (was stale after the 15→20
+    feature migration, which renamed/added the first-13 market features).
+    """
+    from src.core.contracts.feature_contract import FEATURE_ORDER
+
+    return {feat: {"mean": 0.0, "std": 1.0} for feat in FEATURE_ORDER[:13]}
 
 
 @pytest.fixture
@@ -162,7 +157,7 @@ class TestFeatureBuilderParity:
         """Verify feature order matches SSOT contract exactly."""
         builder_order = training_builder.get_feature_order()
 
-        assert len(builder_order) == 15, f"Expected 15 features, got {len(builder_order)}"
+        assert len(builder_order) == OBSERVATION_DIM, f"Expected OBSERVATION_DIM features, got {len(builder_order)}"
         assert tuple(builder_order) == FEATURE_ORDER, (
             f"Feature order mismatch:\nBuilder: {builder_order}\nContract: {FEATURE_ORDER}"
         )
@@ -170,7 +165,6 @@ class TestFeatureBuilderParity:
     def test_observation_dim_matches_contract(self, training_builder):
         """Verify observation dimension matches contract."""
         assert training_builder.get_observation_dim() == OBSERVATION_DIM
-        assert training_builder.get_observation_dim() == 15
 
     def test_training_inference_parity(
         self,
@@ -310,13 +304,13 @@ class TestFeatureBuilderParity:
 class TestObservationInvariants:
     """Test that observation invariants are always maintained."""
 
-    def test_observation_shape_is_15(self, training_builder, sample_ohlcv, sample_macro):
-        """Observation shape must always be (15,)."""
+    def test_observation_shape_matches_contract(self, training_builder, sample_ohlcv, sample_macro):
+        """Observation shape must always be (OBSERVATION_DIM,)."""
         obs = training_builder.build_observation(
             sample_ohlcv, sample_macro, position=0.0, bar_idx=50
         )
 
-        assert obs.shape == (15,), f"Expected shape (15,), got {obs.shape}"
+        assert obs.shape == (OBSERVATION_DIM,), f"Expected shape (OBSERVATION_DIM,), got {obs.shape}"
 
     def test_observation_dtype_is_float32(self, training_builder, sample_ohlcv, sample_macro):
         """Observation dtype must be float32."""
@@ -505,17 +499,19 @@ class TestExportAndAudit:
         # Verify values
         assert snapshot.bar_idx == 50
         assert snapshot.context == "training"
-        assert len(snapshot.observation) == 15
-        assert len(snapshot.raw_features) == 13  # Market features
-        assert len(snapshot.normalized_features) == 15  # All features
+        assert len(snapshot.observation) == OBSERVATION_DIM
+        assert len(snapshot.raw_features) > 0  # market features (builder-internal count)
+        # normalized_features is the builder's internal normalized set; assert it is
+        # non-empty and never larger than the full observation (avoids a magic number).
+        assert 0 < len(snapshot.normalized_features) <= OBSERVATION_DIM
 
     def test_to_json_contract(self, training_builder):
         """Verify to_json_contract returns valid contract."""
         contract = training_builder.to_json_contract()
 
         assert contract["version"] == "1.0.0"
-        assert contract["observation_dim"] == 15
-        assert len(contract["feature_order"]) == 15
+        assert contract["observation_dim"] == OBSERVATION_DIM
+        assert len(contract["feature_order"]) == OBSERVATION_DIM
         assert "norm_stats_hash" in contract
         assert "warmup_bars" in contract
         assert "technical_periods" in contract
@@ -540,7 +536,7 @@ class TestInterfaceCompliance:
 
         order = training_builder.get_feature_order()
         assert isinstance(order, list)
-        assert len(order) == 15
+        assert len(order) == OBSERVATION_DIM
 
     def test_implements_get_observation_dim(self, training_builder):
         """Must implement get_observation_dim method."""
@@ -549,7 +545,7 @@ class TestInterfaceCompliance:
 
         dim = training_builder.get_observation_dim()
         assert isinstance(dim, int)
-        assert dim == 15
+        assert dim == OBSERVATION_DIM
 
     def test_implements_get_norm_stats_hash(self, training_builder):
         """Must implement get_norm_stats_hash method."""

@@ -53,7 +53,7 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 
 # Project root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.forecasting.contracts import (

@@ -11,16 +11,47 @@ import type {
   WeeklyViewData,
   EconomicEvent,
 } from '@/lib/contracts/weekly-analysis.contract';
+import {
+  ANALYSIS_ASSETS,
+  DEFAULT_ANALYSIS_ASSET,
+  resolveAnalysisAsset,
+  type AnalysisAsset,
+} from '@/lib/contracts/analysis-assets';
+
+/** Append ?asset=<id> to a URL (only when non-default, keeping legacy URLs clean). */
+function withAsset(url: string, asset: string): string {
+  const resolved = resolveAnalysisAsset(asset);
+  return `${url}?asset=${encodeURIComponent(resolved)}`;
+}
 
 // ---------------------------------------------------------------------------
-// Week index (list of available weeks)
+// Available analysis assets (drives the selector dynamically from the SSOT)
 // ---------------------------------------------------------------------------
 
-export function useAnalysisIndex() {
-  return useQuery<AnalysisIndex>({
-    queryKey: ['analysis', 'index'],
+export function useAnalysisAssets() {
+  return useQuery<{ assets: AnalysisAsset[]; default_asset: string }>({
+    queryKey: ['analysis', 'assets'],
     queryFn: async () => {
-      const res = await fetch('/api/analysis/weeks');
+      const res = await fetch('/api/analysis/assets');
+      if (!res.ok) throw new Error('Failed to fetch analysis assets');
+      return res.json();
+    },
+    // The SSOT rarely changes; seed with the compiled-in list so the selector
+    // renders instantly and still stays correct if the endpoint updates.
+    initialData: { assets: ANALYSIS_ASSETS, default_asset: DEFAULT_ANALYSIS_ASSET },
+    staleTime: 60 * 60 * 1000, // 1 h
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Week index (list of available weeks) — per asset
+// ---------------------------------------------------------------------------
+
+export function useAnalysisIndex(asset: string = DEFAULT_ANALYSIS_ASSET) {
+  return useQuery<AnalysisIndex>({
+    queryKey: ['analysis', 'index', asset],
+    queryFn: async () => {
+      const res = await fetch(withAsset('/api/analysis/weeks', asset));
       if (!res.ok) throw new Error('Failed to fetch analysis index');
       return res.json();
     },
@@ -29,15 +60,19 @@ export function useAnalysisIndex() {
 }
 
 // ---------------------------------------------------------------------------
-// Full weekly view data
+// Full weekly view data — per asset
 // ---------------------------------------------------------------------------
 
-export function useWeeklyView(year: number | null, week: number | null) {
+export function useWeeklyView(
+  year: number | null,
+  week: number | null,
+  asset: string = DEFAULT_ANALYSIS_ASSET,
+) {
   return useQuery<WeeklyViewData>({
-    queryKey: ['analysis', 'week', year, week],
+    queryKey: ['analysis', 'week', asset, year, week],
     queryFn: async () => {
-      const res = await fetch(`/api/analysis/week/${year}/${week}`);
-      if (!res.ok) throw new Error(`No data for ${year}-W${week}`);
+      const res = await fetch(withAsset(`/api/analysis/week/${year}/${week}`, asset));
+      if (!res.ok) throw new Error(`No data for ${asset} ${year}-W${week}`);
       return res.json();
     },
     enabled: year !== null && week !== null,
@@ -46,14 +81,14 @@ export function useWeeklyView(year: number | null, week: number | null) {
 }
 
 // ---------------------------------------------------------------------------
-// Upcoming economic events
+// Upcoming economic events — per asset
 // ---------------------------------------------------------------------------
 
-export function useUpcomingEvents() {
+export function useUpcomingEvents(asset: string = DEFAULT_ANALYSIS_ASSET) {
   return useQuery<{ events: EconomicEvent[]; generated_at: string | null }>({
-    queryKey: ['analysis', 'calendar'],
+    queryKey: ['analysis', 'calendar', asset],
     queryFn: async () => {
-      const res = await fetch('/api/analysis/calendar');
+      const res = await fetch(withAsset('/api/analysis/calendar', asset));
       if (!res.ok) throw new Error('Failed to fetch calendar');
       return res.json();
     },

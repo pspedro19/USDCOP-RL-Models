@@ -697,11 +697,15 @@ with DAG(
 with DAG(
     dag_id=L4_SCHEDULED_RETRAINING,
     default_args=default_args,
-    description="Scheduled model retraining based on drift detection",
-    schedule_interval="0 2 * * 0",  # Weekly at 2 AM Sunday
+    description="[DEPRECATED] Scheduled model retraining — hidden active DAG inside a deprecated module",
+    # DEPRECATED (audit A2-07): this scheduled-retraining DAG lived (active cron)
+    # inside the deprecated experiment runner. Disabled so it can't auto-run on
+    # reset; fold into l4_backtest_promotion (rl_l4_03) when the RL track resumes.
+    schedule_interval=None,
+    is_paused_upon_creation=True,
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=["training", "scheduled", "ml"],
+    tags=["training", "scheduled", "ml", "deprecated"],
     max_active_runs=1,
 ) as retraining_dag:
 

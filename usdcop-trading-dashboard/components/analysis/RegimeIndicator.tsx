@@ -33,10 +33,12 @@ const REGIME_CONFIG = {
 } as const;
 
 export function RegimeIndicator({ regime }: RegimeIndicatorProps) {
+  // Lean-schema assets (Gold/BTC) may omit confidence and the alert/leader arrays —
+  // default them so this card degrades gracefully instead of crashing on toFixed()/.length.
   const regimeState = regime.regime;
-  const config = REGIME_CONFIG[regimeState.label] || REGIME_CONFIG.transition;
+  const config = REGIME_CONFIG[regimeState?.label] || REGIME_CONFIG.transition;
   const Icon = config.icon;
-  const confidence = regimeState.confidence;
+  const confidence = regimeState?.confidence ?? 0;
 
   return (
     <motion.div
@@ -74,10 +76,10 @@ export function RegimeIndicator({ regime }: RegimeIndicatorProps) {
       )}
 
       {/* Z-Score alerts */}
-      {regime.zscore_alerts.length > 0 && (
+      {(regime.zscore_alerts?.length ?? 0) > 0 && (
         <div className="space-y-1.5 mb-3">
           <p className="text-xs font-medium text-gray-400">Alertas Z-Score</p>
-          {regime.zscore_alerts.slice(0, 3).map((alert, i) => (
+          {(regime.zscore_alerts ?? []).slice(0, 3).map((alert, i) => (
             <div key={i} className="flex items-center gap-2 text-xs">
               <span className={alert.direction === 'extreme_high' ? 'text-red-400' : 'text-blue-400'}>
                 {alert.direction === 'extreme_high' ? '▲' : '▼'}
@@ -90,10 +92,10 @@ export function RegimeIndicator({ regime }: RegimeIndicatorProps) {
       )}
 
       {/* Granger leaders */}
-      {regime.granger_leaders.length > 0 && (
+      {(regime.granger_leaders?.length ?? 0) > 0 && (
         <div className="space-y-1">
           <p className="text-xs font-medium text-gray-400">Variables lideres</p>
-          {regime.granger_leaders.slice(0, 3).map((leader, i) => (
+          {(regime.granger_leaders ?? []).slice(0, 3).map((leader, i) => (
             <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
               <span className="text-cyan-400 font-medium">{leader.variable.toUpperCase()}</span>
               <span className="text-gray-600">lag={leader.optimal_lag}d</span>

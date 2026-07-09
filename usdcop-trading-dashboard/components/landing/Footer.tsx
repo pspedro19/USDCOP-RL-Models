@@ -36,13 +36,13 @@ export default function Footer() {
           {/* Links - Stack on mobile, horizontal on desktop */}
           <nav className="flex flex-col items-center gap-3 text-center sm:flex-row sm:gap-6">
             <Link
-              href="/privacy"
+              href="/legal/privacidad"
               className="text-sm text-slate-400 transition-colors hover:text-white"
             >
               {t.footer.privacy}
             </Link>
             <Link
-              href="/terms"
+              href="/legal/terminos"
               className="text-sm text-slate-400 transition-colors hover:text-white"
             >
               {t.footer.terms}

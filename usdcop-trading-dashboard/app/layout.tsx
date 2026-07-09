@@ -5,24 +5,25 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { NotificationProvider } from "@/components/ui/notification-manager";
 import { ModelProvider } from "@/contexts/ModelContext";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { AuthSessionProvider } from "@/components/providers/AuthSessionProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "USDCOP Pro Trading Dashboard | Advanced Analytics & ML Predictions",
+  title: "GlobalMarkets Terminal | FX · Metales · Cripto — Analytics & ML",
   description: "Professional real-time USDCOP trading dashboard with machine learning predictions, advanced charting, technical indicators, and comprehensive market analysis tools.",
   keywords: "USDCOP, trading, forex, machine learning, predictions, technical analysis, charts, dashboard, real-time, Colombian peso",
   authors: [{ name: "USDCOP Trading Team" }],
   robots: "index, follow",
   openGraph: {
-    title: "USDCOP Pro Trading Dashboard",
+    title: "GlobalMarkets Terminal",
     description: "Advanced trading analytics with ML-powered predictions for USDCOP forex pair",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "USDCOP Pro Trading Dashboard",
+    title: "GlobalMarkets Terminal",
     description: "Professional trading dashboard with machine learning predictions",
   },
   icons: {
@@ -100,13 +101,15 @@ export default function RootLayout({
           maxRetries={1}
           showDetails={true}
         >
-          <QueryProvider>
-            <ModelProvider>
-              <NotificationProvider maxNotifications={5} defaultDuration={6000}>
-                {children}
-              </NotificationProvider>
-            </ModelProvider>
-          </QueryProvider>
+          <AuthSessionProvider>
+            <QueryProvider>
+              <ModelProvider>
+                <NotificationProvider maxNotifications={5} defaultDuration={6000}>
+                  {children}
+                </NotificationProvider>
+              </ModelProvider>
+            </QueryProvider>
+          </AuthSessionProvider>
         </ErrorBoundary>
       </body>
     </html>

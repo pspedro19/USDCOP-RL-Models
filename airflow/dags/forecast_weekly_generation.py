@@ -3,7 +3,7 @@ DAG: forecast_weekly_generation
 =================================
 Weekly generation of forecasting dashboard data (CSV + PNGs).
 
-Runs scripts/generate_weekly_forecasts.py every Monday at 09:00 COT (14:00 UTC)
+Runs scripts/pipeline/generate_weekly_forecasts.py every Monday at 09:00 COT (14:00 UTC)
 after the weekend H1-L3 + H5-L3 training DAGs have completed. Populates
 /forecasting page with the current ISO week's forward forecasts from the
 9-model zoo (Ridge/BR/ARD/XGBoost/LightGBM/CatBoost + hybrids).
@@ -36,15 +36,22 @@ from airflow.utils.dates import days_ago
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path("/opt/airflow")
-SCRIPT_PATH = PROJECT_ROOT / "scripts" / "generate_weekly_forecasts.py"
+SCRIPT_PATH = PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_forecasts.py"
 OUTPUT_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "forecasting"
+
+# Whole-year coverage: regenerate the last N ISO weeks each run so /forecasting shows the
+# year (not just the current week). NOTE: generate_weekly_forecasts.py OVERWRITES the CSV each
+# run, so a single `--week` invocation would collapse the page to ONE week — `--num-weeks` keeps
+# the whole window. Cost scales ~linearly (each week retrains 7 horizons × ~7 models, walk-forward);
+# raise toward 52 for a full calendar year at higher runtime (bump the timeouts below to match).
+NUM_WEEKS = 30
 
 DEFAULT_ARGS = {
     "owner": "forecast-pipeline",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=10),
-    "execution_timeout": timedelta(minutes=30),
+    "execution_timeout": timedelta(minutes=60),
 }
 
 
@@ -68,15 +75,15 @@ def _run_generate_weekly_forecasts(**context):
         raise FileNotFoundError(f"Script not found: {SCRIPT_PATH}")
 
     current_week = _current_iso_week()
-    logger.info(f"Generating forecasting for {current_week}")
+    logger.info(f"Generating whole-year forecasting (last {NUM_WEEKS} weeks, current={current_week})")
     logger.info(f"Script: {SCRIPT_PATH}")
     logger.info(f"Output: {OUTPUT_DIR}")
 
     cmd = [
         sys.executable,
         str(SCRIPT_PATH),
-        "--week",
-        current_week,
+        "--num-weeks",
+        str(NUM_WEEKS),
     ]
 
     result = subprocess.run(
@@ -84,7 +91,7 @@ def _run_generate_weekly_forecasts(**context):
         cwd=str(PROJECT_ROOT),
         capture_output=True,
         text=True,
-        timeout=25 * 60,
+        timeout=55 * 60,
     )
 
     if result.stdout:

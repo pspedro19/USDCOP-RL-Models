@@ -25,7 +25,7 @@ async def ensure_tables():
     """Legacy function - delegates to db_migrate.validate_tables()."""
     logger.warning("ensure_tables() is deprecated. Use db_migrate.validate_tables() instead.")
     try:
-        from scripts.db_migrate import validate_tables
+        from scripts.ops.db_migrate import validate_tables
         return await validate_tables()
     except ImportError:
         # Fallback for when running outside project root
@@ -44,7 +44,7 @@ def main():
     logger.warning("=" * 60)
 
     try:
-        from scripts.db_migrate import main as migrate_main
+        from scripts.ops.db_migrate import main as migrate_main
         migrate_main()
     except ImportError:
         import asyncio

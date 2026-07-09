@@ -65,9 +65,9 @@ export const UNIVERSAL_STRATEGIES: Record<string, {
 }> = {
   smart_simple_v11: {
     file: 'data/production/trades/smart_simple_v11_2025.json',
-    name: 'Smart Simple v1.1',
+    name: 'Smart Simple v2.0',
     color: '#10B981',
-    description: 'H5 weekly: Ridge+BR ensemble, adaptive stops, confidence sizing',
+    description: 'H5 weekly: regime gate (Hurst) + Ridge/BR/XGB ensemble, effective HS, dynamic leverage',
   },
   forecast_vt_trailing: {
     file: 'data/production/trades/forecast_vt_trailing_2025.json',

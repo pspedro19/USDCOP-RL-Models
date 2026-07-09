@@ -47,7 +47,7 @@ logger = logging.getLogger("cron_macro_update")
 # Configuration
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/archive/<this> -> repo root (reorg fix)
 PARQUET_PATH = PROJECT_ROOT / "seeds" / "latest" / "macro_indicators_daily.parquet"
 
 # Yahoo Finance tickers -> DB column names (wide-format macro_indicators_daily)

@@ -37,6 +37,11 @@ RUN pip install --no-cache-dir \
 # Copy seeding scripts (both new and legacy for fallback)
 COPY init-scripts/04-seed-from-minio.py /app/seed_from_minio.py
 COPY init-scripts/04-data-seeding.py /app/seed_data_legacy.py
+# Feature-data restore (news / analysis / H5 / multi-asset daily) — populates the
+# derived tables from data/backups/features/ into EMPTY tables on cold boot, so a
+# clean-slate `down -v` comes back with REAL data (self-contained; stdlib + the
+# libs installed above; no repo package import needed when run as __main__).
+COPY scripts/ops/backup/feature_data_backup.py /app/feature_data_backup.py
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -45,5 +50,5 @@ ENV PYTHONUNBUFFERED=1
 HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=5 \
     CMD test -f /app/.seeding_complete || exit 1
 
-# Run seeding script with fallback to legacy
-CMD ["sh", "-c", "python /app/seed_from_minio.py && touch /app/.seeding_complete && echo 'Data seeding completed' && sleep 5"]
+# Run seeding, then restore feature data (best-effort — never blocks OHLCV/macro seed).
+CMD ["sh", "-c", "python /app/seed_from_minio.py && (python /app/feature_data_backup.py --mode restore --dir /app/data/backups/features || echo 'feature restore skipped/failed (non-critical)') && touch /app/.seeding_complete && echo 'Data seeding completed' && sleep 5"]

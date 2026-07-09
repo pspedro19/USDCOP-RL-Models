@@ -27,7 +27,7 @@ import type {
 } from '@/lib/contracts/production-monitor.contract';
 
 const STRATEGY_ID = 'smart_simple_v11';
-const STRATEGY_NAME = 'Smart Simple v1.1';
+const STRATEGY_NAME = 'Smart Simple v2.0';
 const INITIAL_CAPITAL = 10000;
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ interface DailyTimelineProps {
 }
 
 export function DailyTimeline({ entries }: DailyTimelineProps) {
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     return (
       <div className="bg-gray-900/40 rounded-xl border border-gray-800/40 p-8 text-center">
         <Clock className="w-8 h-8 text-gray-600 mx-auto mb-3" />

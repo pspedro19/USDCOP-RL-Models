@@ -32,6 +32,15 @@ class User(Base):
     name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    # Admin-approval lifecycle (migration 053). Column values mirror the
+    # UserStatus / UserRole enums in app/contracts/user.py (SSOT).
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    role = Column(String(20), default="user", nullable=False)
+    must_reset_password = Column(Boolean, default=False, nullable=False)
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("sb_users.id"), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, nullable=True)
     last_login = Column(DateTime, nullable=True)

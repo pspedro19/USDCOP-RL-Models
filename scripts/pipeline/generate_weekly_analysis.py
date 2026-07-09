@@ -34,7 +34,7 @@ from datetime import date
 from pathlib import Path
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> → repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Load .env for API keys (Azure OpenAI, Anthropic)

@@ -51,6 +51,9 @@ from utils.dag_common import get_db_connection
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
 from src.forecasting.data_contracts import FEATURE_COLUMNS
+# SSOT v2.0 feature enhancement — SAME function the approved backtest/export uses,
+# so live weekly training builds the identical 23-feature model (audit A3-02).
+from src.forecasting.enhance_v2 import enhance_features_v2
 
 DAG_ID = FORECAST_H5_L3_WEEKLY_TRAINING
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -166,7 +169,17 @@ def load_and_build_features(**context) -> Dict[str, Any]:
         db_conn_func=get_db_connection,
     )
 
-    # Drop NaN
+    # v2.0 enhancement: add vol_regime_ratio + trend_slope_60d so the live
+    # weekly model is IDENTICAL to the approved backtest/export model (audit
+    # A3-02). enhance_features_v2 fills the new columns (no NaN introduced),
+    # so the base-feature NaN mask below is unaffected.
+    df, feature_cols = enhance_features_v2(df, feature_cols, project_root=PROJECT_ROOT)
+    logger.info(
+        f"[H5-L5a] v2.0 features: {len(feature_cols)} "
+        f"(added {', '.join(feature_cols[len(list(FEATURE_COLUMNS)):])})"
+    )
+
+    # Drop NaN (base features only — enhanced cols are pre-filled)
     feature_mask = df[list(FEATURE_COLUMNS)].notna().all(axis=1)
     target_mask = df["target_return_5d"].notna()
     df_clean = df[feature_mask & target_mask].reset_index(drop=True)
@@ -189,6 +202,7 @@ def load_and_build_features(**context) -> Dict[str, Any]:
     result = {
         "features_path": temp_path,
         "pred_features_path": pred_path,
+        "feature_cols": list(feature_cols),  # enhanced 23-feature list (audit A3-02)
         "n_rows": len(df_clean),
         "n_pred_rows": len(df_pred),
         "latest_date": str(df_pred["date"].iloc[-1].date()),
@@ -227,7 +241,10 @@ def train_h5_models(**context) -> Dict[str, Any]:
     train_start = pd.Timestamp("2020-01-01")
     df_train = df[df["date"] >= train_start].copy()
 
-    feature_cols = list(FEATURE_COLUMNS)
+    # Use the enhanced 23-feature list from load_and_build_features so the live
+    # model matches the approved backtest; persisted to feature_cols_h5.json below
+    # and read back by L5 signal (audit A3-02). Fall back to base cols defensively.
+    feature_cols = list(data.get("feature_cols") or FEATURE_COLUMNS)
     X = df_train[feature_cols].values.astype(np.float64)
     y = df_train["target_return_5d"].values.astype(np.float64)
 

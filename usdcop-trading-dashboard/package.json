@@ -27,7 +27,15 @@
     "quality:check": "npm run lint && npm run test:coverage && npm run test:e2e",
     "quality:report": "npm run test:coverage && npm run lighthouse && npm run test:accessibility",
     "reports:generate": "node tests/reports/generate-report.js",
-    "reports:serve": "npx http-server tests/reports -p 8080 -o"
+    "reports:serve": "npx http-server tests/reports -p 8080 -o",
+    "rbac:check": "node scripts/check-rbac-coverage.mjs",
+    "rbac:test": "node --experimental-strip-types scripts/test-rbac-contract.mjs",
+    "qa:functional": "node scripts/functional-qa.mjs",
+    "qa:visual": "node scripts/visual-qa.mjs shots/qa-latest --mobile",
+    "qa:registration": "node scripts/registration-qa.mjs",
+    "qa:promotion": "node scripts/promotion-e2e.mjs",
+    "qa:matrix": "node scripts/role-matrix-qa.mjs",
+    "qa:gate": "npm run rbac:check && npm run rbac:test && npm run qa:functional && npm run qa:matrix"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",

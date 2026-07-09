@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 # Root of the repository. The script is expected to live in ``scripts/``.
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
 PRODUCTION_DIR = REPO_ROOT / "usdcop-trading-dashboard" / "public" / "data" / "production"
 TRADES_DIR = PRODUCTION_DIR / "trades"
 

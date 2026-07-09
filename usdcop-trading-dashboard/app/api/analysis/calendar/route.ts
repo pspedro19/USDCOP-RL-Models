@@ -1,16 +1,14 @@
 /**
- * GET /api/analysis/calendar
- * Returns upcoming economic events for the next 7 days.
- * Reads from public/data/analysis/upcoming_events.json (file-based).
+ * GET /api/analysis/calendar?asset=<asset_id>
+ * Returns upcoming economic events for the next 7 days for an asset.
+ * Reads public/data/analysis/<asset>/upcoming_events.json (file-based),
+ * falling back to the legacy root for the default asset.
  */
 
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { NextRequest, NextResponse } from 'next/server';
 
 import type { EconomicEvent } from '@/lib/contracts/weekly-analysis.contract';
-
-const EVENTS_FILE = path.join(process.cwd(), 'public', 'data', 'analysis', 'upcoming_events.json');
+import { readAnalysisJson } from '@/lib/analysis-paths';
 
 interface UpcomingEventsResponse {
   events: EconomicEvent[];
@@ -22,12 +20,8 @@ const DEFAULT_RESPONSE: UpcomingEventsResponse = {
   generated_at: null,
 };
 
-export async function GET() {
-  try {
-    const raw = await fs.readFile(EVENTS_FILE, 'utf-8');
-    const data: UpcomingEventsResponse = JSON.parse(raw);
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json(DEFAULT_RESPONSE);
-  }
+export async function GET(request: NextRequest) {
+  const asset = request.nextUrl.searchParams.get('asset');
+  const data = await readAnalysisJson<UpcomingEventsResponse>(asset, 'upcoming_events.json');
+  return NextResponse.json(data ?? DEFAULT_RESPONSE);
 }

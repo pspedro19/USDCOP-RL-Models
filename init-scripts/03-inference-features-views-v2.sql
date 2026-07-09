@@ -253,7 +253,7 @@ $$ LANGUAGE plpgsql;
 -- Function to get latest complete features (all 15)
 CREATE OR REPLACE FUNCTION get_latest_features()
 RETURNS TABLE (
-    time TIMESTAMPTZ,
+    "time" TIMESTAMPTZ,
     log_ret_5m DOUBLE PRECISION,
     log_ret_1h DOUBLE PRECISION,
     log_ret_4h DOUBLE PRECISION,
@@ -267,7 +267,7 @@ RETURNS TABLE (
     brent_change_1d DOUBLE PRECISION,
     rate_spread DOUBLE PRECISION,
     usdmxn_change_1d DOUBLE PRECISION,
-    position DOUBLE PRECISION,
+    "position" DOUBLE PRECISION,
     time_normalized DOUBLE PRECISION
 ) AS $$
 BEGIN

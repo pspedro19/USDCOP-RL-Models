@@ -17,7 +17,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load .env from project root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 load_dotenv(PROJECT_ROOT / ".env")
 
 # ── Config ──────────────────────────────────────────────────────────────

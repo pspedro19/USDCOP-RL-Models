@@ -3,6 +3,7 @@ Security utilities for authentication and password management.
 Implements JWT token creation/verification and password hashing.
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
@@ -42,6 +43,7 @@ def create_access_token(
         "exp": expire,
         "iat": datetime.now(UTC),
         "type": "access",
+        "jti": uuid.uuid4().hex,
     })
 
     return jwt.encode(
@@ -69,6 +71,7 @@ def create_refresh_token(
         "exp": expire,
         "iat": datetime.now(UTC),
         "type": "refresh",
+        "jti": uuid.uuid4().hex,
     })
 
     return jwt.encode(

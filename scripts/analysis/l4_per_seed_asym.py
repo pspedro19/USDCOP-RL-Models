@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 # Setup paths
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/analysis/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -41,7 +41,7 @@ def run_l4_for_seed(seed: int, model_dir_name: str) -> dict:
     from stable_baselines3 import PPO
 
     # Import helpers from pipeline runner
-    from scripts.run_ssot_pipeline import (
+    from scripts.pipeline.run_ssot_pipeline import (
         create_env_config,
         run_backtest_loop,
         calculate_backtest_metrics,

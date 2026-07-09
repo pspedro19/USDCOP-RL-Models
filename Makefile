@@ -219,16 +219,16 @@ endif
 
 db-migrate: ## Run all pending database migrations (init-scripts)
 	@echo "$(CYAN)Running database migrations...$(RESET)"
-	$(PYTHON) scripts/db_migrate.py
+	$(PYTHON) scripts/ops/db_migrate.py
 	@echo "$(GREEN)Migrations completed!$(RESET)"
 
 db-status: ## Show migration status
 	@echo "$(CYAN)Checking migration status...$(RESET)"
-	$(PYTHON) scripts/db_migrate.py --status
+	$(PYTHON) scripts/ops/db_migrate.py --status
 
 db-validate: ## Validate all required tables exist
 	@echo "$(CYAN)Validating database schema...$(RESET)"
-	$(PYTHON) scripts/db_migrate.py --validate
+	$(PYTHON) scripts/ops/db_migrate.py --validate
 
 db-reset: ## Reset database (DESTRUCTIVE - deletes all data)
 	@echo "$(RED)WARNING: This will delete ALL data!$(RESET)"
@@ -238,7 +238,7 @@ db-reset: ## Reset database (DESTRUCTIVE - deletes all data)
 	$(DOCKER_COMPOSE) up -d postgres
 	@echo "Waiting for PostgreSQL to start..."
 	@sleep 10
-	$(PYTHON) scripts/db_migrate.py
+	$(PYTHON) scripts/ops/db_migrate.py
 
 # Legacy aliases for backwards compatibility
 migrate: db-migrate ## (Legacy) Alias for db-migrate
@@ -294,12 +294,12 @@ pre-commit: ## Run pre-commit hooks on all files
 
 mlflow-log: ## Log existing H5 training artifacts to MLflow (idempotent)
 	@echo "$(CYAN)Logging training artifacts to MLflow...$(RESET)"
-	$(PYTHON) scripts/log_training_to_mlflow.py
+	$(PYTHON) scripts/ops/log_training_to_mlflow.py
 	@echo "$(GREEN)MLflow logging completed!$(RESET)"
 
 mlflow-log-dry: ## Preview what mlflow-log would do (no MLflow calls)
 	@echo "$(CYAN)Dry-run: previewing MLflow logging...$(RESET)"
-	$(PYTHON) scripts/log_training_to_mlflow.py --dry-run
+	$(PYTHON) scripts/ops/log_training_to_mlflow.py --dry-run
 
 # =============================================================================
 # COMPOSITE TARGETS

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 OUTPUT_DIR = PROJECT_ROOT / "data" / "pipeline" / "01_sources" / "consolidated"
 
 # Series to scrape

@@ -215,6 +215,37 @@ class ExecutionService:
                 credential.key_version,
             )
 
+        # ── Pre-trade gate (audit OLA-3 S2/S3): mode gate + kill switch + user limits.
+        # Fail-safe: BLOCK on any gate error. PAPER/SHADOW modes validate + record the
+        # order as a simulated fill and NEVER touch the exchange.
+        from app.services.pretrade import PreTradeGate
+
+        decision = await PreTradeGate(self.db).check(
+            user_id=user_id,
+            symbol=execution.symbol,
+            quantity=float(execution.quantity),
+            price=float(execution.price) if execution.price else None,
+            is_testnet_credential=bool(credential.is_testnet),
+        )
+        if decision.blocked:
+            execution.status = ExecutionStatus.REJECTED.value
+            execution.error_message = f"pre-trade gate: {decision.reason}"
+            await self.db.commit()
+            await self.db.refresh(execution)
+            return execution
+        if decision.simulated:
+            execution.status = ExecutionStatus.FILLED.value
+            execution.filled_quantity = execution.quantity
+            execution.average_price = execution.price or 0.0
+            execution.executed_at = datetime.utcnow()
+            execution.error_message = None
+            execution.raw_response = {"simulated": True, **decision.metadata,
+                                      "reason": decision.reason}
+            credential.last_used = datetime.utcnow()
+            await self.db.commit()
+            await self.db.refresh(execution)
+            return execution
+
         # Create adapter and execute
         adapter = get_exchange_adapter(
             exchange=SupportedExchange(execution.exchange),
@@ -225,17 +256,20 @@ class ExecutionService:
         )
 
         try:
+            # S1: exchange-correct sizing (ccxt amount_to_precision — MEXC reports tick-size
+            # precision, so naive 10**-decimals rounding breaks BTC sizing).
+            quantity = await adapter.quantize_amount(execution.symbol, float(execution.quantity))
             if execution.order_type == OrderType.MARKET.value:
                 result = await adapter.place_market_order(
                     symbol=execution.symbol,
                     side=OrderSide(execution.side),
-                    quantity=execution.quantity,
+                    quantity=quantity,
                 )
             else:
                 result = await adapter.place_limit_order(
                     symbol=execution.symbol,
                     side=OrderSide(execution.side),
-                    quantity=execution.quantity,
+                    quantity=quantity,
                     price=execution.price,
                 )
 

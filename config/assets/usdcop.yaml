@@ -1,0 +1,58 @@
+# AssetProfile — USD/COP   ·   Contract: CTR-ASSET-PROFILE-001
+# COP is NOT a special case: it is an AssetProfile like any other. This mirrors the
+# already-operational COP config (session 08:00-12:55 COT, 60 bars/session, weekly TP/HS).
+# Making COP a profile is what lets the ingestion/DAGs be asset-generic (no "USDCOP" hardcode).
+
+asset_id: usdcop
+symbol: "USD/COP"
+chart_symbol: "USDCOP"
+display_name: "USD/COP"
+asset_class: fx
+quote_ccy: COP
+base_ccy: USD
+
+price_range: [3000.0, 6000.0]
+decimals: 2
+tick_size: 0.01
+
+# --- SESSION (COP: 5h COT window, Mon-Fri) ---
+session:
+  mode: exchange_hours
+  timezone: "America/Bogota"      # golden rule: COP OHLCV timestamps are COT
+  days: [0, 1, 2, 3, 4]
+  open: "08:00"
+  close: "12:55"
+  bars_per_day: 60                # 5h / 5min (bars_per_session in existing config)
+  bars_per_year: 15660            # 60 * 261 trading days (approx; existing = 19656 for full-day)
+  trading_days_per_year: 261
+  weekend_flat: true
+  forced_close: friday
+
+data_source:
+  provider: twelvedata
+  provider_symbol: "USD/COP"
+  interval: "5min"
+  needs_tz_convert: false         # TwelveData returns COT natively for COP
+  seed_file: "seeds/latest/usdcop_m5_ohlcv.parquet"
+  daily_provider: twelvedata
+  daily_seed_file: "seeds/latest/usdcop_daily_ohlcv.parquet"
+
+# --- COP-specific macro drivers (EMBI/IBR/TPM/oil-as-export) — do NOT reuse for other assets ---
+macro_drivers:
+  - {series_id: "dxy",     feature: "dxy_z",       sign: "+", role: usd_strength}
+  - {series_id: "vix",     feature: "vix_z",       sign: "+", role: risk_off}
+  - {series_id: "wti",     feature: "wti_z",       sign: "-", role: export_terms}
+  - {series_id: "embi_col", feature: "embi_z",     sign: "+", role: country_risk}
+cross_asset_leaders: ["USD/MXN", "USD/BRL"]
+
+# --- Regime gate — COP-fitted thresholds (the ones actually in production) ---
+regime_gate:
+  hurst_lookback: 60
+  hurst_trending: 0.52
+  hurst_mean_rev: 0.42
+  hysteresis_dwell_days: 0
+
+strategy_id: "smart_simple_v11"
+base_strategy: null
+pipeline_type: ml_forecasting
+timeframe: weekly

@@ -33,7 +33,7 @@ import pandas as pd
 # Configuration
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 SEEDS_DIR = PROJECT_ROOT / "seeds" / "latest"
 
 PAIR_CONFIG = {

@@ -72,7 +72,7 @@ def check_table_freshness(conn, table: str, date_col: str, max_age_days: int,
     return latest
 
 
-def validate_training_data_freshness(ohlcv_max_age=3, macro_max_age=7):
+def validate_training_data_freshness(ohlcv_max_age=3, macro_max_age=7, symbol="USD/COP"):
     """
     Pre-training gate: verify OHLCV and macro data are fresh enough for training.
 
@@ -82,17 +82,22 @@ def validate_training_data_freshness(ohlcv_max_age=3, macro_max_age=7):
     Args:
         ohlcv_max_age: Max days since last OHLCV row (default 3)
         macro_max_age: Max days since last macro row (default 7)
+        symbol: OHLCV symbol to gate on (default 'USD/COP'). Parameterized so a
+            second asset (e.g. 'XAU/USD') gets its own freshness enforcement
+            instead of silently reusing COP (audit A1-09).
 
     Returns:
         dict with ohlcv_latest and macro_latest timestamps
     """
     from utils.dag_common import get_db_connection
 
+    # Escape single quotes to keep the inlined WHERE clause safe.
+    safe_symbol = str(symbol).replace("'", "''")
     conn = get_db_connection()
     try:
         ohlcv_latest = check_table_freshness(
             conn, "usdcop_m5_ohlcv", "time", ohlcv_max_age,
-            "OHLCV freshness", "WHERE symbol = 'USD/COP'"
+            "OHLCV freshness", f"WHERE symbol = '{safe_symbol}'"
         )
         macro_latest = check_table_freshness(
             conn, "macro_indicators_daily", "fecha", macro_max_age,

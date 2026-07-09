@@ -1,0 +1,71 @@
+# AssetProfile — Gold (XAU/USD)   ·   Contract: CTR-ASSET-PROFILE-001
+# Loaded by src/contracts/asset_profile.py. Parameterizes everything hardcoded to USD/COP.
+# Spec: .claude/SPECSGOLD/specs/SPEC-12 + .claude/rules/sdd-multi-asset-onboarding.md §2.
+# Onboarding tests A1 (loads/validates), A2/A3 (seed in range, bars_per_day == measured).
+
+asset_id: xauusd
+symbol: "XAU/USD"
+chart_symbol: "XAUUSD"            # what the frontend chart consumes (never literal "USDCOP")
+display_name: "Gold"
+asset_class: commodity
+quote_ccy: USD
+base_ccy: XAU
+
+price_range: [250.0, 6000.0]      # deep history: gold was ~$415 in 2004 (macro ssot uses [1000,6000] for the recent macro feature only)
+decimals: 2
+tick_size: 0.01
+
+# --- SESSION (metals, ~23h) — NOT the COP 5h COT session ---
+# Canonical STORAGE tz = UTC (honest for a global asset; the DB TIMESTAMPTZ preserves the instant).
+# NY-close is applied only when resampling DAILY bars (SPEC-02). bars_per_* measured by ingestion.
+session:
+  mode: metals
+  timezone: "UTC"                 # canonical storage tz for 5-min bars
+  daily_close_tz: "America/New_York"   # daily bars close at 17:00 ET (resample convention)
+  days: [0, 1, 2, 3, 4]           # Mon-Fri (metals closed weekends)
+  open: "22:00"                   # ~Sun 22:00 UTC (18:00 ET) metals open
+  close: "21:00"                  # ~Fri 21:00 UTC (17:00 ET) metals close
+  bars_per_day: 288               # MEASURED by ingestion 2026-07-03 (24h*12 weekday metals; test A3)
+  bars_per_year: 72000            # 288 * 250 trading days (Sharpe annualization)
+  trading_days_per_year: 250
+  weekend_flat: true              # flat Friday close — avoids Sunday gap (STRATEGY §4.4)
+  forced_close: friday
+
+# --- DATA SOURCE ---
+# 5-min: TwelveData (only recent window available, ~last weeks — that's the intraday floor).
+# daily: TwelveData deep history (2004+, reliable) with Investing.com as cross-check (pair_id 8830).
+data_source:
+  provider: twelvedata
+  provider_symbol: "XAU/USD"
+  interval: "5min"
+  needs_tz_convert: false         # fetched already in UTC (canonical); no convert needed
+  seed_file: "seeds/latest/xauusd_m5_ohlcv.parquet"
+  daily_provider: twelvedata
+  daily_seed_file: "seeds/latest/xauusd_daily_ohlcv.parquet"
+  investing_pair_id: 8830         # Investing.com cross-check (secondary/validation)
+
+# --- MACRO DRIVERS (Gold's real drivers — NOT COP's EMBI/IBR/TPM/WTI-as-export) ---
+# Enter as ROLLING correlations, never fixed assumptions (ADR-003). FRED series ids.
+macro_drivers:
+  - {series_id: "DTWEXBGS",     feature: "dxy_trend",       sign: "-", role: usd_strength}
+  - {series_id: "DFII10",       feature: "real_yield_10y",  sign: "-", role: real_rates}
+  - {series_id: "T10YIE",       feature: "breakeven_10y",   sign: "+", role: inflation_exp}
+  - {series_id: "VIXCLS",       feature: "vix_level",       sign: "+", role: risk_haven}
+  - {series_id: "DCOILBRENTEU", feature: "brent_trend",     sign: "+", role: inflation_proxy}
+cross_asset_leaders: []
+
+# --- REGIME GATE — logic reused, thresholds RE-FIT (never copy COP 0.52/0.42, test D1) ---
+regime_gate:
+  hurst_lookback: 100
+  # null => classify_regime uses an EXPLICIT logged 0.5 neutral pivot (A10-01/02) —
+  # honest fallback, NOT the COP values (0.52/0.42). Fitting Gold thresholds is a
+  # registered trial (test D1, pending Vote); set both once fitted.
+  hurst_trending: null
+  hurst_mean_rev: null
+  hysteresis_dwell_days: 4
+
+# --- STRATEGY BINDING (RL execution mechanics = new ExecutionStrategy, SPEC-05/06) ---
+strategy_id: "gold_rl_h1_v1"
+base_strategy: null
+pipeline_type: rl
+timeframe: intraday_h1

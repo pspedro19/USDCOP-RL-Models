@@ -1,0 +1,114 @@
+# =============================================================================
+# pipelines.yaml — SSOT for per-asset DS-CYCLE pipeline DAGs.
+#
+# Drives the DAG factory `airflow/dags/asset_pipeline_factory.py`, which emits
+# ONE DAG per enabled asset: `asset_<asset_id>_pipeline_weekly`. Each DAG's tasks
+# map to the data-science lifecycle:
+#
+#     L0 Ingest  ->  L4 Backtest/Evaluate + Publish  ->  L6 Verify/Monitor
+#     (data)         (features -> regime -> backtest -> honest-gate -> registry)   (registry freshness)
+#
+# This makes Gold / BTC / (future indices) fully DAG-driven, not just
+# script-runners. USD/COP keeps its bespoke, richer H5 weekly chain
+# (forecast_h5_l3..l7) — it is intentionally NOT modeled here.
+#
+# SCALABILITY (additive, DRY, SSOT): a new tradeable index = ONE entry below.
+# No factory code changes. Keep this file distinct from:
+#   - config/assets/<id>.yaml     -> the FUTURE RL AssetProfile (pipeline_type: rl)
+#   - config/analysis/analysis_assets.yaml -> per-asset /analysis generation
+#
+# The `strategy_ids` under `verify` must match registry.json bundles so the
+# verify task fails loudly if the science stage did not publish.
+#
+# Contract: CTR-ASSET-PIPELINE-001   ·   Version: 1.0.0   ·   Date: 2026-07-05
+# =============================================================================
+
+# Where the science stage publishes bundles (relative to repo root). The verify
+# task reads <registry_root>/registry.json to confirm the asset + strategies.
+registry_root: "usdcop-trading-dashboard/public/data"
+
+assets:
+  # ---------------------------------------------------------------------------
+  # GOLD (XAU/USD) — rule-based daily science stack (src/gold_rl), 3 strategies.
+  # Ingest daily OHLCV (TwelveData deep history) -> run_gold_pipeline publishes
+  # gold_long_only_b1 / gold_trend_b2 / gold_regime_gated_v1.
+  # ---------------------------------------------------------------------------
+  xauusd:
+    display_name: "Gold (XAU/USD)"
+    enabled: true
+    # Sun 01:45 COT (06:45 UTC) — after macro backfill (06:00), staggered before
+    # the COP H5 training (06:30) finishes-window and well clear of Mon dashboard jobs.
+    schedule: "45 6 * * 0"
+    stages:
+      - id: l0_ingest
+        name: "Data ingestion (daily OHLCV -> seed + asset_daily_ohlcv)"
+        script: "scripts/ingest_asset_ohlcv.py"
+        args: ["--asset", "xauusd", "--skip-intraday", "--daily-start", "2004-01-01"]
+        # Graceful: if the live feed is unavailable, the science stage still runs
+        # on the last good seed (the run is marked failed on this task = visible).
+        graceful: true
+      - id: l0b_export_chart_ohlcv
+        name: "Export daily OHLCV -> dashboard backtest-chart JSON"
+        script: "scripts/data/export_chart_ohlcv.py"
+        args: ["--asset", "xauusd"]
+        # Best-effort: publishes public/data/market/XAUUSD_daily.json for the /dashboard chart.
+        graceful: true
+      - id: l4_backtest_publish
+        name: "Features -> regime -> backtest (honest gate) -> publish bundles"
+        script: "scripts/run_gold_pipeline.py"
+        args: []
+        graceful: false
+      - id: l5_weekly_forecast
+        name: "Weekly inference (rule-based positioning) -> /forecasting JSON"
+        script: "scripts/pipeline/generate_asset_weekly_forecast.py"
+        args: ["--asset", "xauusd", "--year", "all"]
+        # Produces public/forecasting/xauusd/weekly_inference_{2025,2026}.json (backtest/production).
+        graceful: true
+    verify:
+      registry_asset: "xauusd"
+      strategy_ids: ["gold_long_only_b1", "gold_trend_b2", "gold_regime_gated_v1"]
+
+  # ---------------------------------------------------------------------------
+  # BITCOIN (BTC/USDT) — rule-based daily science stack (src/btc_strategy), 3 strategies.
+  # Ingest daily OHLCV (Binance public klines, no key) -> run_btc_pipeline publishes
+  # btc_hodl_b1 / btc_trend_b2 / btc_exposure_s3.
+  # ---------------------------------------------------------------------------
+  btcusdt:
+    display_name: "Bitcoin (BTC/USDT)"
+    enabled: true
+    # Sun 02:00 COT (07:00 UTC) — staggered 15 min after Gold ingest.
+    schedule: "0 7 * * 0"
+    stages:
+      - id: l0_ingest
+        name: "Data ingestion (Binance daily klines -> seed)"
+        script: "scripts/data/ingest_btc_ohlcv.py"
+        args: []
+        graceful: true
+      - id: l0c_ingest_derivatives
+        name: "Derivatives ingestion (Binance perp funding/OI/long-short -> crypto_derivatives_daily + seed)"
+        script: "scripts/data/ingest_btc_derivatives.py"
+        args: []
+        # Public Binance USDT-M endpoints (no key). Funding has deep history (backtesteable);
+        # OI/long-short are forward-only (30d) and accrue weekly. Graceful: the science stage
+        # still runs on price-only features if derivatives are briefly unavailable.
+        graceful: true
+      - id: l0b_export_chart_ohlcv
+        name: "Export daily OHLCV -> dashboard backtest-chart JSON"
+        script: "scripts/data/export_chart_ohlcv.py"
+        args: ["--asset", "btcusdt"]
+        # Best-effort: publishes public/data/market/BTCUSDT_daily.json for the /dashboard chart.
+        graceful: true
+      - id: l4_backtest_publish
+        name: "Features -> regime -> backtest (honest gate) -> publish bundles"
+        script: "scripts/pipeline/run_btc_pipeline.py"
+        args: []
+        graceful: false
+      - id: l5_weekly_forecast
+        name: "Weekly inference (rule-based positioning) -> /forecasting JSON"
+        script: "scripts/pipeline/generate_asset_weekly_forecast.py"
+        args: ["--asset", "btcusdt", "--year", "all"]
+        # Produces public/forecasting/btcusdt/weekly_inference_{2025,2026}.json (backtest/production).
+        graceful: true
+    verify:
+      registry_asset: "btcusdt"
+      strategy_ids: ["btc_hodl_b1", "btc_trend_b2", "btc_exposure_s3"]

@@ -325,7 +325,64 @@ async function handler(request: NextRequest) {
     const client = await pool.connect();
 
     try {
-      // First try to get signals from trades_history (paper trading results)
+      // FIRST: the PRODUCTION strategy's signals (H5 Smart Simple executions — entry/exit
+      // markers from the restored DB). The RL sources below are legacy: after a cold boot
+      // trades_history is empty (regenerable, not backed up) and the chart showed
+      // "Signal source unavailable" for the strategy that IS live (found 2026-07-07).
+      try {
+        const h5 = await client.query(
+          `
+          SELECT id, entry_timestamp AS timestamp, direction, entry_price AS price,
+                 'entry' AS signal_type, confidence_tier, exit_reason
+          FROM forecast_h5_executions
+          WHERE entry_timestamp IS NOT NULL
+          UNION ALL
+          SELECT id, exit_timestamp AS timestamp, -direction AS direction, exit_price AS price,
+                 'exit' AS signal_type, confidence_tier, exit_reason
+          FROM forecast_h5_executions
+          WHERE exit_timestamp IS NOT NULL
+          ORDER BY timestamp DESC
+          LIMIT $1
+          `,
+          [limit],
+        );
+        if (h5.rows.length > 0) {
+          const signals: TradingSignal[] = h5.rows.map((row) => {
+            const isEntry = row.signal_type === 'entry';
+            const dir = Number(row.direction);
+            const type: 'BUY' | 'SELL' | 'HOLD' = dir > 0 ? 'BUY' : dir < 0 ? 'SELL' : 'HOLD';
+            return {
+              id: `h5_${row.id}_${row.signal_type}`,
+              timestamp: row.timestamp,
+              type,
+              confidence: row.confidence_tier === 'HIGH' ? 85 : row.confidence_tier === 'MEDIUM' ? 70 : 60,
+              price: parseFloat(row.price || '0'),
+              reasoning: [
+                'Estrategia: Smart Simple v2.0 (H5 semanal)',
+                `Señal: ${isEntry ? 'Entrada' : 'Salida'}`,
+                ...(isEntry ? [] : [`Motivo: ${row.exit_reason ?? 'n/a'}`]),
+              ],
+              riskScore: 3,
+              expectedReturn: 0,
+              timeHorizon: 'semanal',
+              modelSource: 'smart_simple_v11',
+              latency: 0,
+              dataType: 'out_of_sample',
+              model_id: 'smart_simple_v11',
+            };
+          });
+          return NextResponse.json({
+            success: true,
+            signals,
+            metadata: { source: 'forecast_h5_executions', model_id: modelId,
+                        count: signals.length, latency: measureLatency(startTime) },
+          }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+        }
+      } catch (h5err) {
+        console.warn('[TradingSignals] H5 source unavailable, falling back:', (h5err as Error).message);
+      }
+
+      // Legacy RL sources — try trades_history (paper trading results)
       const tradesResult = await client.query(
         `
         SELECT
@@ -414,24 +471,39 @@ async function handler(request: NextRequest) {
         });
       }
 
-      // Fallback: Query signals from dw.fact_rl_inference
-      const result = await client.query(
-        `
-        SELECT
-          inference_id as id,
-          timestamp_utc as timestamp,
-          action_discretized as action,
-          confidence,
-          price_at_inference as price,
-          action_raw,
-          model_id
-        FROM dw.fact_rl_inference
-        WHERE model_id = $1
-        ORDER BY timestamp_utc DESC
-        LIMIT $2
-        `,
-        [modelId, limit]
-      );
+      // Fallback: dw.fact_rl_inference — schema per init-scripts (cold-boot truth):
+      // (id, timestamp, bar_number, action, observation, model_version, inference_time_ms).
+      // The old query referenced pre-rebuild columns (inference_id/timestamp_utc/…) and
+      // SQL-errored into "Signal source unavailable" after every cold boot (2026-07-07).
+      let result: { rows: Array<Record<string, unknown>> } = { rows: [] };
+      try {
+        result = await client.query(
+          `
+          SELECT
+            id,
+            timestamp,
+            action::text as action,
+            0.5 as confidence,
+            0 as price,
+            0 as action_raw,
+            model_version as model_id
+          FROM dw.fact_rl_inference
+          WHERE model_version = $1
+          ORDER BY timestamp DESC
+          LIMIT $2
+          `,
+          [modelId, limit]
+        );
+      } catch (rlErr) {
+        // No RL data / schema drift → clean empty (never fabricate, never scare the UI).
+        console.warn('[TradingSignals] RL fallback unavailable:', (rlErr as Error).message);
+        return NextResponse.json({
+          success: true,
+          signals: [],
+          metadata: { source: 'empty', model_id: modelId, count: 0,
+                      latency: measureLatency(startTime) },
+        }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+      }
 
       // Transform database rows to TradingSignal format
       const signals: TradingSignal[] = result.rows.map((row, index) => {
@@ -495,91 +567,27 @@ async function handler(request: NextRequest) {
     console.error('[TradingSignals] Database error:', error.message);
     const latency = measureLatency(startTime);
 
-    // Generate fallback demo signals for different models
+    // NEVER fabricate signals on failure — the live chart must not render
+    // simulated data (audit A5-01). Surface an explicit error/empty state so
+    // the UI shows "unavailable" instead of fake trades.
     const modelId = request.nextUrl.searchParams.get('model_id') || 'ppo_v1';
-    const fallbackSignals = generateFallbackSignals(modelId);
-
     return NextResponse.json({
-      success: true,
-      signals: fallbackSignals,
+      success: false,
+      signals: [],
+      error: 'Signal source unavailable',
       metadata: {
-        source: 'fallback-generated',
+        source: 'error',
         model_id: modelId,
-        count: fallbackSignals.length,
+        count: 0,
         latency,
-        message: 'Database unavailable, using generated fallback signals',
       }
     }, {
-      status: 200,
+      status: 503,
       headers: { 'Cache-Control': 'no-store, max-age=0' }
     });
   }
 }
 
-// Generate fallback signals when database is not available
-function generateFallbackSignals(modelId: string): TradingSignal[] {
-  const now = new Date();
-  const signals: TradingSignal[] = [];
-
-  // Model-specific configurations for fallback demo signals
-  // These should match model_registry.model_id values
-  const modelConfigs: Record<string, { bias: number; confidence: number; name: string }> = {
-    'ppo_v20': { bias: 0.38, confidence: 0.68, name: 'PPO V20' }, // V20 has SHORT bias
-    'ppo_v1': { bias: 0.55, confidence: 0.75, name: 'PPO V1' },
-    // Legacy IDs (for backwards compatibility)
-    'ppo_v19_prod': { bias: 0.55, confidence: 0.75, name: 'PPO V19' },
-    'ppo_v20_prod': { bias: 0.38, confidence: 0.68, name: 'PPO V20' },
-    'ppo_v20_macro': { bias: 0.38, confidence: 0.68, name: 'PPO V20' },
-  };
-
-  // Default to PPO V20 config if model not found
-  const config = modelConfigs[modelId] || modelConfigs['ppo_v20'];
-  const basePrice = 4250 + Math.floor(Date.now() / 100000) % 150; // Deterministic price
-
-  // Generate 5 recent signals
-  for (let i = 0; i < 5; i++) {
-    const minutesAgo = i * 5;
-    const timestamp = new Date(now.getTime() - minutesAgo * 60 * 1000);
-
-    // Deterministic signal type based on timestamp and model bias
-    const seed = timestamp.getTime() % 100;
-    let type: 'BUY' | 'SELL' | 'HOLD';
-    if (seed < config.bias * 100) {
-      type = 'BUY';
-    } else if (seed < 85) {
-      type = 'SELL';
-    } else {
-      type = 'HOLD';
-    }
-
-    const price = basePrice + (seed % 20) - 10;
-    const confidence = Math.round((config.confidence + (seed % 20) / 100) * 100);
-
-    signals.push({
-      id: `sig_${modelId}_${timestamp.getTime()}`,
-      timestamp: timestamp.toISOString(),
-      type,
-      confidence,
-      price,
-      stopLoss: type === 'BUY' ? price - 15 : type === 'SELL' ? price + 15 : undefined,
-      takeProfit: type === 'BUY' ? price + 25 : type === 'SELL' ? price - 25 : undefined,
-      reasoning: [
-        `Model: ${config.name}`,
-        type === 'BUY' ? 'Bullish momentum detected' : type === 'SELL' ? 'Bearish momentum detected' : 'Market consolidation',
-        `Confidence: ${confidence}%`,
-      ],
-      riskScore: Math.round((100 - confidence) / 10),
-      expectedReturn: type === 'BUY' ? 0.012 : type === 'SELL' ? -0.012 : 0,
-      timeHorizon: '5-15 min',
-      modelSource: config.name,
-      latency: 0,
-      dataType: 'live',
-      model_id: modelId,
-    });
-  }
-
-  return signals;
-}
 
 // SECURITY: Protect endpoint with authentication
 // Allow admin, trader, and viewer roles to access trading signals

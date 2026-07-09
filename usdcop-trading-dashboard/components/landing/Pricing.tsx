@@ -9,22 +9,22 @@ export function Pricing() {
 
   const content = {
     es: {
-      badge: "Acceso Limitado",
-      title: "Early Access",
-      subtitle: "Sé parte de los primeros en operar con inteligencia artificial en el mercado USD/COP",
-      cta: "Solicitar Acceso",
-      coming: "Apertura al público",
-      comingSoon: "Próximamente",
-      spots: "Cupos limitados disponibles"
+      badge: "Planes",
+      title: "Empieza gratis. Mejora cuando lo veas.",
+      subtitle: "Free: forecast y análisis con retraso. Signals: señales en vivo al día. Auto: el sistema ejecuta en TU exchange — paper primero, siempre.",
+      cta: "Ver planes y precios",
+      coming: "Sin permanencia",
+      comingSoon: "Cancela cuando quieras",
+      spots: "Tu histórico nunca se borra al degradar de plan"
     },
     en: {
-      badge: "Limited Access",
-      title: "Early Access",
-      subtitle: "Be among the first to trade with artificial intelligence in the USD/COP market",
-      cta: "Request Access",
-      coming: "Open to Public",
-      comingSoon: "Coming Soon",
-      spots: "Limited spots available"
+      badge: "Plans",
+      title: "Start free. Upgrade when you see it.",
+      subtitle: "Free: delayed forecast & analysis. Signals: live signals, up to date. Auto: the system executes on YOUR exchange — paper first, always.",
+      cta: "See plans & pricing",
+      coming: "No lock-in",
+      comingSoon: "Cancel anytime",
+      spots: "Your history is never deleted on downgrade"
     }
   };
 

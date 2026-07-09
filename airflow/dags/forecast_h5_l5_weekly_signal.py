@@ -90,7 +90,29 @@ def generate_signal(**context) -> Dict[str, Any]:
         raise FileNotFoundError(f"[H5-L5b] Prediction features not found: {pred_path}")
 
     df_pred = pd.read_parquet(pred_path)
-    feature_cols = list(FEATURE_COLUMNS)
+
+    # Use the EXACT feature list the model was trained on, persisted by L3 to
+    # feature_cols_h5.json (the enhanced 23-feature v2.0 set). This eliminates the
+    # train/infer feature-count drift where L5 hardcoded 21 while the approved
+    # model used 23 (audit A3-02). Fall back to the base tuple only if missing.
+    feature_cols_path = MODELS_DIR / 'feature_cols_h5.json'
+    if feature_cols_path.exists():
+        import json
+        with open(feature_cols_path) as f:
+            feature_cols = list(json.load(f))
+    else:
+        logger.warning(
+            f"[H5-L5b] {feature_cols_path.name} not found — falling back to base "
+            f"{len(FEATURE_COLUMNS)} features (model may be stale/mismatched)"
+        )
+        feature_cols = list(FEATURE_COLUMNS)
+
+    missing = [c for c in feature_cols if c not in df_pred.columns]
+    if missing:
+        raise ValueError(
+            f"[H5-L5b] Feature parquet is missing model features {missing} — "
+            "L3 training and L5 signal are out of sync (audit A3-02)"
+        )
 
     X_latest = df_pred[feature_cols].iloc[-1:].values.astype(np.float64)
     latest_date = str(df_pred["date"].iloc[-1].date())
@@ -472,6 +494,14 @@ def publish_signal_to_kafka(**context) -> Dict[str, Any]:
             "source": "airflow_h5_l5",
         }
 
+        # Kafka/Redpanda is an OPTIONAL secondary fan-out (the signal is already
+        # persisted to `forecast_h5_signals`). Redpanda only exists on the compact
+        # stack, so on the full stack this publish used to burn the connect timeout
+        # every run (audit A9-08). Gate behind an explicit flag; to enable, set
+        # KAFKA_ENABLED=true (+ KAFKA_BROKER) on the airflow workers.
+        if os.environ.get("KAFKA_ENABLED", "false").lower() != "true":
+            logger.info("[H5-L5b][kafka] Kafka disabled (set KAFKA_ENABLED=true to publish); skipping")
+            return {"published": False, "reason": "kafka disabled"}
         broker = os.environ.get("KAFKA_BROKER", "redpanda:9092")
         topic = "signals.h5"
 

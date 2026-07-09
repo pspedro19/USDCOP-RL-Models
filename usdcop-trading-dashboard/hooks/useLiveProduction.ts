@@ -99,7 +99,12 @@ function liveStatsToStrategyStats(stats: LiveStats, equityCurve: LiveEquityCurve
   };
 }
 
-export function useLiveProduction(): UseLiveProductionResult {
+export function useLiveProduction(
+  // Multi-strategy production (StrategySelector contract): pass a non-default strategy id
+  // to load its per-sid files (summary_<sid>/approval_state_<sid>/trades/<sid>) instead of
+  // the COP singleton + live endpoint. Default (null) keeps the original behavior.
+  selected: { sid: string; isDefault: boolean } | null = null,
+): UseLiveProductionResult {
   const [currentSignal, setCurrentSignal] = useState<CurrentSignal | null>(null);
   const [activePosition, setActivePosition] = useState<ActivePosition | null>(null);
   const [equityCurve, setEquityCurve] = useState<LiveEquityCurve | null>(null);
@@ -132,9 +137,18 @@ export function useLiveProduction(): UseLiveProductionResult {
 
   // File-based fallback fetcher
   const fetchFileBased = useCallback(async () => {
+    const nonDefault = selected && !selected.isDefault;
+    // Non-default strategies read through /api/data (fs-backed) so post-build exports
+    // (e.g. a fresh BTC paper publish) are visible without an image rebuild.
+    const summaryUrl = nonDefault
+      ? `/api/data/production/summary_${selected!.sid}.json`
+      : '/data/production/summary.json';
+    const approvalUrl = nonDefault
+      ? `/api/data/production/approval_state_${selected!.sid}.json`
+      : '/api/production/status';
     const [summaryRes, approvalRes] = await Promise.all([
-      fetch('/data/production/summary.json'),
-      fetch('/api/production/status'),
+      fetch(summaryUrl),
+      fetch(approvalUrl),
     ]);
 
     let summaryData: ProductionSummary | null = null;
@@ -143,8 +157,11 @@ export function useLiveProduction(): UseLiveProductionResult {
     if (summaryRes.ok) summaryData = await summaryRes.json();
     if (approvalRes.ok) approvalData = await approvalRes.json();
 
-    const sid = summaryData?.strategy_id || 'smart_simple_v11';
-    const tradesRes = await fetch(`/data/production/trades/${sid}.json`);
+    const sid = summaryData?.strategy_id || selected?.sid || 'smart_simple_v11';
+    const tradesRes = await fetch(
+      selected && !selected.isDefault
+        ? `/api/data/production/trades/${sid}.json`
+        : `/data/production/trades/${sid}.json`);
     let fileTrades: StrategyTrade[] = [];
     if (tradesRes.ok) {
       const data: ProductionTradeFile = await tradesRes.json();
@@ -152,22 +169,25 @@ export function useLiveProduction(): UseLiveProductionResult {
     }
 
     return { summaryData, approvalData, fileTrades, sid };
-  }, []);
+  }, [selected]);
 
   // Main fetch function
   const fetchData = useCallback(async (isPolling = false) => {
     try {
       if (!isPolling) setLoading(true);
 
-      // Always try live endpoint first
+      // Always try live endpoint first — but ONLY for the default (COP) strategy;
+      // non-default strategies (e.g. BTC paper) are file-based by design.
       let liveData: LiveProductionResponse | null = null;
-      try {
-        const res = await fetch('/api/production/live');
-        if (res.ok) {
-          liveData = await res.json();
+      if (!selected || selected.isDefault) {
+        try {
+          const res = await fetch('/api/production/live');
+          if (res.ok) {
+            liveData = await res.json();
+          }
+        } catch {
+          // DB unavailable, will fall back to files
         }
-      } catch {
-        // DB unavailable, will fall back to files
       }
 
       // Also fetch approval state (file-based) and summary (for additional context)
@@ -277,7 +297,7 @@ export function useLiveProduction(): UseLiveProductionResult {
     } finally {
       if (!isPolling) setLoading(false);
     }
-  }, [fetchFileBased]);
+  }, [fetchFileBased, selected]);
 
   // Initial fetch
   useEffect(() => {

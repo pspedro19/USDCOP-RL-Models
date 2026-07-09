@@ -3,8 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, AlertCircle } from 'lucide-react';
-import { useAnalysisIndex, useWeeklyView, useUpcomingEvents, getCurrentISOWeek } from '@/hooks/useWeeklyAnalysis';
+import { useAnalysisIndex, useWeeklyView, useUpcomingEvents, useAnalysisAssets, getCurrentISOWeek } from '@/hooks/useWeeklyAnalysis';
+import { DEFAULT_ANALYSIS_ASSET } from '@/lib/contracts/analysis-assets';
+import { normalizeNewsClusters } from '@/lib/analysis/normalize-news';
+import { useAnalysisChatStore } from '@/stores/useAnalysisChatStore';
 
+import { AssetSelector } from './AssetSelector';
 import { WeekSelector } from './WeekSelector';
 import { WeeklySummaryHeader } from './WeeklySummaryHeader';
 import { MacroSnapshotBar } from './MacroSnapshotBar';
@@ -23,18 +27,21 @@ import { ReferencesSection } from './ReferencesSection';
 import { MethodologySection } from './MethodologySection';
 
 export function AnalysisPage() {
+  const [selectedAsset, setSelectedAsset] = useState<string>(DEFAULT_ANALYSIS_ASSET);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [detailVariable, setDetailVariable] = useState<string | null>(null);
 
-  // Data hooks
-  const { data: indexData, isLoading: indexLoading } = useAnalysisIndex();
-  const { data: weekData, isLoading: weekLoading, error: weekError } = useWeeklyView(selectedYear, selectedWeek);
-  const { data: eventsData } = useUpcomingEvents();
+  // Data hooks (all asset-scoped)
+  const { data: assetsData } = useAnalysisAssets();
+  const { data: indexData, isLoading: indexLoading } = useAnalysisIndex(selectedAsset);
+  const { data: weekData, isLoading: weekLoading, error: weekError } = useWeeklyView(selectedYear, selectedWeek, selectedAsset);
+  const { data: eventsData } = useUpcomingEvents(selectedAsset);
 
-  // Initialize to latest available week once index data loads
+  // Initialize (and re-initialize on asset switch) to the asset's latest week.
+  // selectedYear is reset to null on asset change, which re-arms this effect.
   useEffect(() => {
-    if (selectedYear !== null) return; // Already initialized
+    if (selectedYear !== null) return; // Already initialized for the current asset
     if (indexLoading) return; // Wait for index to finish loading
 
     if (indexData?.weeks?.length) {
@@ -43,12 +50,30 @@ export function AnalysisPage() {
       setSelectedYear(latest.year);
       setSelectedWeek(latest.week);
     } else {
-      // No data available — fallback to current week
+      // No data for this asset — fallback to current week (renders the empty state)
       const current = getCurrentISOWeek();
       setSelectedYear(current.year);
       setSelectedWeek(current.week);
     }
   }, [indexData, indexLoading, selectedYear]);
+
+  // Keep the floating chat's injected context in sync with what's on screen.
+  const setChatContext = useAnalysisChatStore((s) => s.setContext);
+  useEffect(() => {
+    if (selectedYear !== null && selectedWeek !== null) {
+      setChatContext(selectedAsset, selectedYear, selectedWeek);
+    }
+  }, [selectedAsset, selectedYear, selectedWeek, setChatContext]);
+
+  const handleAssetSelect = useCallback((assetId: string) => {
+    setSelectedAsset((prev) => {
+      if (prev === assetId) return prev;
+      // Reset week selection so the init effect picks the new asset's latest week.
+      setSelectedYear(null);
+      setSelectedWeek(null);
+      return assetId;
+    });
+  }, []);
 
   const handleWeekSelect = useCallback((year: number, week: number) => {
     setSelectedYear(year);
@@ -63,8 +88,15 @@ export function AnalysisPage() {
 
   return (
     <div className="space-y-6">
-      {/* Week Selector */}
-      <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-4">
+      {/* Asset + Week Selectors */}
+      <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-4 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-gray-800/50 pb-3">
+          <AssetSelector
+            assets={assetsData?.assets || []}
+            selected={selectedAsset}
+            onSelect={handleAssetSelect}
+          />
+        </div>
         <WeekSelector
           weeks={indexData?.weeks || []}
           currentYear={selectedYear || 2026}
@@ -85,10 +117,12 @@ export function AnalysisPage() {
       {weekError && !isLoading && (
         <div className="bg-gray-900/40 rounded-xl border border-amber-500/20 p-6 text-center">
           <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-3" />
-          <p className="text-gray-400 text-sm mb-1">Sin datos de analisis para esta semana</p>
+          <p className="text-gray-400 text-sm mb-1">
+            Sin datos de analisis para {assetsData?.assets?.find(a => a.asset_id === selectedAsset)?.display_name || selectedAsset} en esta semana
+          </p>
           <p className="text-gray-600 text-xs">
             Ejecuta: <code className="bg-gray-800 rounded px-1.5 py-0.5 text-cyan-400">
-              python scripts/generate_weekly_analysis.py --week {selectedYear}-W{String(selectedWeek).padStart(2, '0')}
+              python scripts/pipeline/generate_weekly_analysis.py --asset {selectedAsset} --week {selectedYear}-W{String(selectedWeek).padStart(2, '0')}
             </code>
           </p>
         </div>
@@ -172,7 +206,7 @@ export function AnalysisPage() {
 
             {/* 6b. News Intelligence Clusters (from LangGraph) */}
             {weekData.news_intelligence?.clusters && weekData.news_intelligence.clusters.length > 0 && (
-              <NewsClusterCard clusters={weekData.news_intelligence.clusters} />
+              <NewsClusterCard clusters={normalizeNewsClusters(weekData.news_intelligence.clusters)} />
             )}
 
             {/* 7. Two-column layout: Timeline + Events */}

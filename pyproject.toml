@@ -289,6 +289,8 @@ markers = [
     "load: Load tests",
     "slow: Slow running tests",
     "feature_parity: Feature parity tests",
+    "e2e: End-to-end tests (require a running stack)",
+    "chaos: Chaos / fault-injection tests",
 ]
 asyncio_mode = "auto"
 filterwarnings = [

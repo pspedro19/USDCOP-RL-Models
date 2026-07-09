@@ -1,0 +1,86 @@
+# AssetProfile — Bitcoin (BTC/USDT)   ·   Contract: CTR-ASSET-PROFILE-001
+# Loaded by src/contracts/asset_profile.py. Parameterizes everything hardcoded to USD/COP.
+# Spec: .claude/specs/assets/btcusdt/specs/SPEC-13-scalable-integration.md + _onboarding-playbook.md.
+# Onboarding tests A1 (loads/validates), A2/A3 (seed in range, bars_per_day == measured — 24/7).
+#
+# The 3rd tradeable asset (USD/COP fx, XAU/USD commodity, BTC/USDT crypto).
+# Strategy: spot-only EXPOSURE-MODULATION overlay (exposure in [0,1]); design in ./design/.
+
+asset_id: btcusdt
+symbol: "BTC/USDT"
+chart_symbol: "BTCUSDT"           # frontend chart consumes this (never literal "USDCOP")
+display_name: "Bitcoin"
+asset_class: crypto
+quote_ccy: USDT
+base_ccy: BTC
+
+# Binance spot BTC/USDT 2017-08+ (~$3.1k low 2018, ~$109k high 2025); deep-history stitch
+# (CryptoCompare/Bitstamp 2013+) widens the floor — the seed range must cover the seed window.
+price_range: [1000.0, 300000.0]
+decimals: 2
+tick_size: 0.01
+
+# --- SESSION (24/7 crypto) — the HARD break vs COP 5h / Gold 23h metals ---
+# BTC never closes: no intraday cut, no weekend drop, no Friday forced-close.
+# Canonical STORAGE tz = UTC; canonical decision bar = daily UTC 00:00 close (SPEC design, ADR-0008).
+session:
+  mode: "24x7"
+  timezone: "UTC"                 # crypto is UTC-native; DB TIMESTAMPTZ preserves the instant
+  days: [0, 1, 2, 3, 4, 5, 6]     # trades every day (weekend mask is a no-op) => is_24x7 = true
+  open: null                      # no session window — _filter_session applies NO intraday cut
+  close: null
+  bars_per_day: 288               # 24h * 12 (5-min); MUST be re-measured by ingestion (test A3)
+  bars_per_year: 105120           # 288 * 365 — Sharpe annualization (NEVER reuse COP 19656 / Gold 72000)
+  trading_days_per_year: 365      # 24/7 => √365 annualization (PRE-REGISTRATION.md)
+  weekend_flat: false             # BTC holds over the weekend
+  forced_close: none              # no weekly close; exposure is continuous (see SPEC-13 §24/7 decision)
+
+# --- DATA SOURCE ---
+# Strategy canonical price = Binance spot BTC/USDT, UTC 00:00 daily close (ADR-0008, costmodel).
+# 5-min + daily via a Binance/CCXT extractor (Stage-B deliverable; ingest_asset_ohlcv currently
+# TwelveData-only — see IMPLEMENTATION_STATUS). TwelveData BTC/USD is an acceptable interim.
+data_source:
+  provider: binance
+  provider_symbol: "BTC/USDT"
+  interval: "5min"
+  needs_tz_convert: false         # crypto served in UTC (canonical); no convert needed
+  seed_file: "seeds/latest/btcusdt_m5_ohlcv.parquet"
+  daily_provider: binance
+  daily_seed_file: "seeds/latest/btcusdt_daily_ohlcv.parquet"
+  interim_provider: twelvedata    # (raw) TwelveData BTC/USD fallback until Binance extractor ships
+  interim_provider_symbol: "BTC/USD"
+
+# --- MACRO DRIVERS (BTC-native — NONE exist in the repo yet; this is real data engineering) ---
+# Enter as ROLLING correlations, never fixed assumptions (ADR-003). Reuse FRED where possible;
+# crypto-native (funding/on-chain/ETF/stablecoin/dominance) need NEW extractors + tables (migration 052).
+# sign = expected direction on BTC exposure. Liquidity weights are frozen priors (SPEC-04).
+macro_drivers:
+  - {series_id: "DFII10",   feature: "real_yield_10y",     sign: "-", role: real_rates}      # FRED (exists)
+  - {series_id: "DTWEXBGS", feature: "dxy_trend",          sign: "-", role: usd_strength}    # FRED (exists)
+  - {series_id: "VIXCLS",   feature: "vix_level",          sign: "-", role: risk_off}        # FRED (exists)
+  - {series_id: "M2SL",     feature: "m2_global_lagged",   sign: "+", role: liquidity}       # FRED (exists)
+  - {series_id: "bgeo.mvrv_zscore",   feature: "mvrv_zscore",   sign: "-", role: onchain_valuation}  # BGeometrics (NEW)
+  - {series_id: "bgeo.nupl",          feature: "nupl",          sign: "-", role: onchain_valuation}  # BGeometrics (NEW)
+  - {series_id: "binance.funding",    feature: "funding_z",     sign: "-", role: positioning}        # Binance perp (NEW)
+  - {series_id: "farside.etf_flows",  feature: "etf_flows",     sign: "+", role: flows}              # Farside (NEW, D+1 lag)
+  - {series_id: "defillama.stables",  feature: "stablecoin_supply", sign: "+", role: flows}          # DefiLlama (NEW)
+  - {series_id: "tv.btc_dominance",   feature: "btc_dominance", sign: "+", role: rotation}           # TradingView (NEW)
+cross_asset_leaders: []            # optional: ["NDX","QQQ"] risk-asset beta (re-fit, not assumed)
+
+# --- REGIME GATE — Hurst logic reused BUT thresholds RE-FIT on BTC (never copy COP 0.52/0.42, test D1) ---
+# NOTE: the full BTC design uses a 4-state Gaussian HMM on the on-chain vector (SPEC design 04),
+# frozen-fit (ADR-0010). The Hurst gate below is the project-standard regime gate; the HMM is the
+# strategy-native regime model. Both re-fit on BTC history — nothing is copied from COP.
+regime_gate:
+  hurst_lookback: 100
+  hurst_trending: null            # << re-fit on BTC history
+  hurst_mean_rev: null            # << re-fit on BTC history
+  hysteresis_dwell_days: 5        # HMM min_dwell 5-10d (SPEC design 04)
+
+# --- STRATEGY BINDING (spot exposure-modulation engine = new ExecutionStrategy, SPEC design 06) ---
+# Ladder: B1 HODL-vol-target -> B2 cycle-rules -> S3 exposure-engine -> S4 meta-label -> S5 RL.
+# Honest gate (Phase 6): a rung ships only if it beats the previous in OOS Calmar AND Sortino + DSR.
+strategy_id: "btc_exposure_s3"
+base_strategy: null
+pipeline_type: rl                 # exposure engine (not ml_forecasting); RL-tactical is optional S5
+timeframe: intraday_h1            # daily decision + 1h execution/breaker

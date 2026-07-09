@@ -6,8 +6,14 @@ Single Source of Truth (SSOT) for all configuration values.
 import json
 from functools import lru_cache
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Placeholder secret values that MUST be overridden before production.
+_INSECURE_DEFAULTS = {
+    "change-me-in-production-min-32-chars",
+    "change-me-32-byte-encryption-key",
+}
 
 
 class Settings(BaseSettings):
@@ -55,6 +61,24 @@ class Settings(BaseSettings):
     supabase_key: str | None = Field(default=None)
     supabase_jwt_secret: str | None = Field(default=None)
 
+    # Email / SMTP (account-approval notifications). When smtp_host is empty the
+    # EmailService falls back to a console sender (logs the email) so the flow
+    # never hard-depends on a mail server. Tests point this at MailHog (:1025).
+    smtp_host: str | None = Field(default=None)
+    smtp_port: int = Field(default=1025)
+    smtp_user: str | None = Field(default=None)
+    smtp_password: str | None = Field(default=None)
+    smtp_use_tls: bool = Field(default=False)
+    email_from: str = Field(default="no-reply@signalbridge.local")
+    # Base URL of the dashboard used to build the password-reset link in emails.
+    app_public_url: str = Field(default="http://localhost:5000")
+
+    # Bootstrap admin — idempotently upserted at startup so an approver always
+    # exists. Leave email empty to disable bootstrapping.
+    admin_bootstrap_email: str | None = Field(default=None)
+    admin_bootstrap_password: str | None = Field(default=None)
+    admin_bootstrap_name: str = Field(default="Administrator")
+
     # Rate Limiting
     rate_limit_per_minute: int = Field(default=60)
 
@@ -89,6 +113,40 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 return [origin.strip() for origin in v.split(",")]
         return v
+
+    @model_validator(mode="after")
+    def _forbid_default_secrets_in_production(self) -> "Settings":
+        """Fail fast if placeholder secrets reach production/staging; warn loudly elsewhere.
+
+        Audit A8-05: the vault key encrypts users' exchange API keys — a placeholder in ANY
+        env that stores real keys is a compromise. Blocked in production AND staging; in dev
+        it logs a prominent warning (blocking dev would break local compose out-of-the-box).
+        NOTE: changing the key invalidates existing ciphertexts — rotate stored exchange
+        keys at the same time (docs/legal/SFC-GATE-CHECKLIST.md §D).
+        """
+        offenders = [
+            name
+            for name, value in (
+                ("secret_key", self.secret_key),
+                ("jwt_secret_key", self.jwt_secret_key),
+                ("vault_encryption_key", self.vault_encryption_key),
+            )
+            if value in _INSECURE_DEFAULTS
+        ]
+        if offenders:
+            if self.app_env.lower() in ("production", "staging"):
+                raise ValueError(
+                    f"Insecure default secret(s) in {self.app_env}: "
+                    f"{', '.join(offenders)}. Set them via environment variables."
+                )
+            import logging
+
+            logging.getLogger("signalbridge.config").warning(
+                "INSECURE placeholder secret(s) in %s env: %s — never store real exchange "
+                "keys until these are set (audit A8-05)",
+                self.app_env, ", ".join(offenders),
+            )
+        return self
 
     @property
     def is_production(self) -> bool:

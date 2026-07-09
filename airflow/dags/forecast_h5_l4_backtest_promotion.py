@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path('/opt/airflow')
 DASHBOARD_DATA_DIR = PROJECT_ROOT / 'usdcop-trading-dashboard' / 'public' / 'data' / 'production'
-BACKTEST_SCRIPT = PROJECT_ROOT / 'scripts' / 'train_and_export_smart_simple.py'
+BACKTEST_SCRIPT = PROJECT_ROOT / 'scripts' / 'pipeline' / 'train_and_export_smart_simple.py'
 CONFIG_PATH = PROJECT_ROOT / 'config' / 'execution' / 'smart_simple_v1.yaml'
 OHLCV_PATH = PROJECT_ROOT / 'seeds' / 'latest' / 'usdcop_daily_ohlcv.parquet'
 MACRO_PATH = PROJECT_ROOT / 'data' / 'pipeline' / '04_cleaning' / 'output' / 'MACRO_DAILY_CLEAN.parquet'
@@ -370,5 +370,22 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    # DAG flow: validate -> backtest -> validate output -> report -> notify
-    t_validate_data >> t_run_backtest >> t_validate_output >> t_report_metrics >> t_notify
+    def _register_bundle(**context):
+        """DAG EXIT gate (CTR-STRAT-REGISTRY-001 §6.2, audit A4-02): validate + (re)build
+        the per-strategy manifest and registry.json from the artifacts this run wrote,
+        so only discoverable, validated bundles reach the frontend registry."""
+        from utils.register_bundle import register_strategy_bundle
+        summary = register_strategy_bundle()
+        context['ti'].xcom_push(key='registry', value=summary)
+        return summary
+
+    t_register_bundle = PythonOperator(
+        task_id='register_bundle',
+        python_callable=_register_bundle,
+        provide_context=True,
+    )
+
+    # DAG flow: validate -> backtest -> validate output -> register bundle (exit gate)
+    #           -> report -> notify
+    t_validate_data >> t_run_backtest >> t_validate_output >> t_register_bundle \
+        >> t_report_metrics >> t_notify

@@ -9,19 +9,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { protectApiRoute } from '@/lib/auth/api-auth';
 import type { ApprovalState, ApproveRequest, ApproveResponse } from '@/lib/contracts/production-approval.contract';
 
-const APPROVAL_FILE = path.join(
-  process.cwd(),
-  'public',
-  'data',
-  'production',
-  'approval_state.json'
-);
+const PROD_DIR = path.join(process.cwd(), 'public', 'data', 'production');
+const APPROVAL_FILE = path.join(PROD_DIR, 'approval_state.json');
+
+/** Per-strategy approval files (multi-strategy production): approval_state_<sid>.json.
+ *  The singleton stays the ACTIVE/default strategy's file (COP). */
+function approvalFileFor(strategyId?: string | null): string {
+  if (!strategyId || !/^[A-Za-z0-9_-]+$/.test(strategyId)) return APPROVAL_FILE;
+  return path.join(PROD_DIR, `approval_state_${strategyId}.json`);
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ApproveRequest = await request.json();
+    // Vote 2/2 is a privileged action that fire-and-forget triggers a production
+    // retrain+deploy. It MUST be authenticated — an unauthenticated caller must
+    // not be able to approve or trigger a deploy (audit A4-13).
+    const auth = await protectApiRoute(request);
+    if (!auth.authenticated) {
+      return NextResponse.json(
+        { success: false, status: 'PENDING_APPROVAL', message: auth.error || 'Unauthorized' } as ApproveResponse,
+        { status: auth.status || 401 }
+      );
+    }
+
+    const body: ApproveRequest & { strategy_id?: string } = await request.json();
+    const approvalFile = approvalFileFor(body.strategy_id);
 
     if (!body.action || !['APPROVE', 'REJECT'].includes(body.action)) {
       return NextResponse.json(
@@ -33,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Read current state
     let state: ApprovalState;
     try {
-      const raw = await fs.readFile(APPROVAL_FILE, 'utf-8');
+      const raw = await fs.readFile(approvalFile, 'utf-8');
       state = JSON.parse(raw);
     } catch {
       return NextResponse.json(
@@ -51,7 +66,8 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const reviewer = body.reviewer || 'dashboard_user';
+    // Record the AUTHENTICATED principal, never a client-supplied name (audit A4-13).
+    const reviewer = auth.user?.email || auth.user?.username || auth.user?.id || 'operator';
 
     if (body.action === 'APPROVE') {
       state.status = 'APPROVED';
@@ -68,7 +84,7 @@ export async function POST(request: NextRequest) {
     state.last_updated = now;
 
     // Write back
-    await fs.writeFile(APPROVAL_FILE, JSON.stringify(state, null, 2), 'utf-8');
+    await fs.writeFile(approvalFile, JSON.stringify(state, null, 2), 'utf-8');
 
     const response: ApproveResponse = {
       success: true,
@@ -82,9 +98,15 @@ export async function POST(request: NextRequest) {
     if (body.action === 'APPROVE') {
       try {
         const baseUrl = request.nextUrl.origin;
+        // Forward the caller's session cookie so the internal deploy call is
+        // authenticated as the same approving principal (deploy is auth-gated).
         fetch(`${baseUrl}/api/production/deploy`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            cookie: request.headers.get('cookie') ?? '',
+          },
+          body: JSON.stringify({ strategy_id: body.strategy_id ?? null }),
         }).catch(() => {
           // Non-blocking: deploy failure doesn't affect approval
         });

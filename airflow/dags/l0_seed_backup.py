@@ -460,6 +460,28 @@ def upload_to_minio(**context):
     return result
 
 
+def export_feature_data_backup(**context):
+    """Dump derived/feature tables (news, analysis, H5, multi-asset daily, macro
+    monthly/quarterly) to data/backups/features/*.parquet so a clean-slate boot
+    restores REAL data — not just OHLCV+macro-daily. Best-effort: never fails the
+    DAG (the OHLCV/macro seed backup above is the critical path)."""
+    logging.info("=" * 60)
+    logging.info("FEATURE DATA BACKUP (news / analysis / H5 / asset_daily)")
+    logging.info("=" * 60)
+    try:
+        from scripts.ops.backup.feature_data_backup import backup
+        out_dir = BACKUP_DIR.parent / 'features'  # /opt/airflow/data/backups/features
+        manifest = backup(out_dir)
+        ok = sum(1 for t in manifest['tables'].values() if t.get('status') == 'ok')
+        total_rows = sum(t.get('rows', 0) for t in manifest['tables'].values()
+                         if t.get('status') == 'ok')
+        logging.info(f"Feature backup: {ok} tables, {total_rows:,} total rows -> {out_dir}")
+        return {'tables': ok, 'rows': total_rows}
+    except Exception as e:  # best-effort — do not fail the seed backup
+        logging.warning(f"Feature data backup failed (non-critical): {e}")
+        return {'status': 'failed', 'error': str(e)}
+
+
 # =============================================================================
 # DAG DEFINITION
 # =============================================================================
@@ -522,4 +544,11 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    t_health >> t_ohlcv >> t_daily_ohlcv >> t_macro >> t_manifest >> t_validate >> t_minio_upload
+    t_features = PythonOperator(
+        task_id='export_feature_data_backup',
+        python_callable=export_feature_data_backup,
+        # Best-effort: derived-data backup never blocks the critical OHLCV/macro path.
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    t_health >> t_ohlcv >> t_daily_ohlcv >> t_macro >> t_features >> t_manifest >> t_validate >> t_minio_upload

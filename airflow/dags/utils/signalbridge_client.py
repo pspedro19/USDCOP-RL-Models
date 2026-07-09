@@ -194,6 +194,60 @@ def place_order_via_bridge(
         )
 
 
+def fan_out_signal_to_tenants(
+    signal_id: str,
+    symbol: str,
+    side: str,  # "BUY" | "SELL"
+    notional_usd: float,
+    price: Optional[float] = None,
+) -> dict:
+    """Publish one finalized signal to every eligible tenant via SignalBridge S4 fan-out
+    (POST /api/tenant/system/fan-out, admin-only). BEST-EFFORT: any failure logs and returns
+    {fanned_out_to: 0} — it must never block the signal pipeline. Each fanned row lands as a
+    PENDING user_execution; PreTradeGate still gates any real order (paper-first).
+
+    Auth: SIGNALBRIDGE_SERVICE_TOKEN if set; else logs in with SIGNALBRIDGE_ADMIN_EMAIL /
+    SIGNALBRIDGE_ADMIN_PASSWORD. With neither configured, fan-out is skipped (logged).
+    """
+    try:
+        import httpx
+    except ImportError:
+        logger.warning("[SignalBridge] httpx not installed — fan-out skipped")
+        return {"signal_id": signal_id, "fanned_out_to": 0, "skipped": "no httpx"}
+
+    token = SIGNALBRIDGE_TOKEN
+    try:
+        with httpx.Client(timeout=SIGNALBRIDGE_TIMEOUT) as client:
+            if not token:
+                email = os.getenv("SIGNALBRIDGE_ADMIN_EMAIL", "")
+                password = os.getenv("SIGNALBRIDGE_ADMIN_PASSWORD", "")
+                if not email or not password:
+                    logger.info("[SignalBridge] fan-out skipped: no service token/admin creds configured")
+                    return {"signal_id": signal_id, "fanned_out_to": 0, "skipped": "no credentials"}
+                r = client.post(f"{SIGNALBRIDGE_URL}/api/auth/login",
+                                json={"email": email, "password": password})
+                if r.status_code != 200:
+                    logger.warning(f"[SignalBridge] fan-out login failed: HTTP {r.status_code}")
+                    return {"signal_id": signal_id, "fanned_out_to": 0, "skipped": "login failed"}
+                token = r.json().get("access_token", "")
+
+            resp = client.post(
+                f"{SIGNALBRIDGE_URL}/api/tenant/system/fan-out",
+                json={"signal_id": signal_id, "symbol": symbol, "side": side.upper(),
+                      "notional_usd": notional_usd, "price": price},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            logger.info(f"[SignalBridge] fan-out {signal_id}: reached {data.get('fanned_out_to', 0)} tenants")
+            return data
+        logger.warning(f"[SignalBridge] fan-out failed: HTTP {resp.status_code} {resp.text[:150]}")
+        return {"signal_id": signal_id, "fanned_out_to": 0, "error": f"HTTP {resp.status_code}"}
+    except Exception as e:  # noqa: BLE001 — best-effort by contract
+        logger.warning(f"[SignalBridge] fan-out error (non-blocking): {e}")
+        return {"signal_id": signal_id, "fanned_out_to": 0, "error": str(e)}
+
+
 def check_bridge_health() -> bool:
     """Check if SignalBridge is reachable and healthy."""
     if is_paper_mode():

@@ -691,8 +691,11 @@ default_args = {
 dag = DAG(
     DAG_ID,
     default_args=default_args,
-    description='V3 L4: Scheduled backtest validation with alerting and MLflow',
-    schedule_interval='0 0 * * 0',  # Every Sunday at midnight
+    description='[DEPRECATED] V3 L4: Scheduled backtest validation — superseded by l4_backtest_promotion',
+    # DEPRECATED (audit A2-01): superseded by l4_backtest_promotion. Disabled so a
+    # DB/scheduler reset cannot silently resurrect it on its old weekly cron.
+    schedule_interval=None,
+    is_paused_upon_creation=True,
     catchup=False,
     max_active_runs=1,
     tags=['v3', 'l4', 'backtest', 'validation', 'mlops'],

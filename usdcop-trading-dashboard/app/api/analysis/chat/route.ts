@@ -10,8 +10,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+
+import { readAnalysisJson } from '@/lib/analysis-paths';
+import { getAnalysisAsset } from '@/lib/contracts/analysis-assets';
 
 const MAX_MESSAGES_PER_SESSION = 50;
 const MAX_RESPONSE_TOKENS = 2000;
@@ -24,6 +25,7 @@ interface ChatRequest {
   session_id: string;
   year: number;
   week: number;
+  asset?: string;
 }
 
 interface ChatResponse {
@@ -50,15 +52,14 @@ export async function POST(request: NextRequest) {
     }
     sessionCounters.set(body.session_id, count + 1);
 
-    // Load week context
+    // Load week context (asset-aware, path-safe via SSOT resolver)
+    const asset = getAnalysisAsset(body.asset);
     const weekStr = String(body.week).padStart(2, '0');
     const filename = `weekly_${body.year}_W${weekStr}.json`;
-    const filepath = path.join(process.cwd(), 'public', 'data', 'analysis', filename);
+    const weekData = await readAnalysisJson<any>(asset.asset_id, filename);
 
     let contextSummary = 'No weekly context available.';
-    try {
-      const raw = await fs.readFile(filepath, 'utf-8');
-      const weekData = JSON.parse(raw);
+    if (weekData) {
       // Build compact context from weekly data
       const parts: string[] = [];
       if (weekData.weekly_summary?.headline) {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
       if (weekData.weekly_summary?.ohlcv) {
         const o = weekData.weekly_summary.ohlcv;
-        parts.push(`USDCOP: Open ${o.open}, High ${o.high}, Low ${o.low}, Close ${o.close}, Change ${o.change_pct}%`);
+        parts.push(`${asset.chart_symbol}: Open ${o.open}, High ${o.high}, Low ${o.low}, Close ${o.close}, Change ${o.change_pct}%`);
       }
       if (weekData.signals?.h5?.direction) {
         parts.push(`H5 Signal: ${weekData.signals.h5.direction} (conf: ${weekData.signals.h5.confidence})`);
@@ -81,8 +82,6 @@ export async function POST(request: NextRequest) {
         parts.push(`News: ${weekData.news_context.article_count} articles, avg sentiment ${weekData.news_context.avg_sentiment}`);
       }
       contextSummary = parts.join('\n');
-    } catch {
-      // Context file not found — proceed without
     }
 
     // Check for LLM API keys
@@ -103,7 +102,7 @@ export async function POST(request: NextRequest) {
     let reply = '';
     let tokensUsed = 0;
 
-    const systemPrompt = `Eres un asistente financiero del sistema de trading USDCOP. Tienes acceso al contexto de la semana actual incluyendo señales de modelos, indicadores macro, y noticias relevantes.\n\nReglas:\n- Responde en español\n- Se conciso (maximo 300 palabras por respuesta)\n- Basa tus respuestas en los datos proporcionados en el contexto\n- Si no tienes informacion suficiente, dilo\n- No des consejos de inversion directos — presenta datos y analisis\n\nContexto semanal:\n${contextSummary}`;
+    const systemPrompt = `Eres un asistente financiero del sistema de trading para ${asset.display_name} (${asset.symbol}). Tienes acceso al contexto de la semana actual incluyendo señales de modelos, indicadores macro, y noticias relevantes.\n\nReglas:\n- Responde en español\n- Se conciso (maximo 300 palabras por respuesta)\n- Basa tus respuestas en los datos proporcionados en el contexto\n- Si no tienes informacion suficiente, dilo\n- No des consejos de inversion directos — presenta datos y analisis\n\nContexto semanal:\n${contextSummary}`;
 
     if (azureKey) {
       try {

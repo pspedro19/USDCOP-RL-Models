@@ -110,7 +110,14 @@ def _ingest_all_sources(**context):
     total_articles = 0
     source_results = {}
 
-    for adapter in registry.enabled_adapters():
+    # Process throttle-prone external APIs (GDELT rate-limits hard) LAST so the fast,
+    # reliable sources (Portafolio/scrapers) commit their articles first — one slow source
+    # can no longer starve the whole task before the others run (each commits per-source below).
+    adapters = sorted(
+        registry.enabled_adapters(),
+        key=lambda a: 1 if "gdelt" in a.source_id.lower() else 0,
+    )
+    for adapter in adapters:
         name = adapter.source_id
         log_id = db.log_ingestion_start(name)
         try:

@@ -98,18 +98,18 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
           )}
 
           {/* Macro publications */}
-          {entry.macro_publications.length > 0 && (
+          {(entry.macro_publications?.length ?? 0) > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {entry.macro_publications.map((pub, i) => (
+              {(entry.macro_publications ?? []).map((pub, i) => (
                 <MacroEventChip key={i} publication={pub} />
               ))}
             </div>
           )}
 
           {/* Economic events */}
-          {entry.economic_events.length > 0 && (
+          {(entry.economic_events?.length ?? 0) > 0 && (
             <div className="mb-3 space-y-1">
-              {entry.economic_events.slice(0, 3).map((evt, i) => (
+              {(entry.economic_events ?? []).slice(0, 3).map((evt, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
                   <span className={
                     evt.impact_level === 'high' ? 'text-red-400' :
@@ -125,9 +125,9 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
           )}
 
           {/* News highlights */}
-          {entry.news_highlights.length > 0 && (
+          {(entry.news_highlights?.length ?? 0) > 0 && (
             <div className="mb-3 space-y-1.5">
-              {entry.news_highlights.slice(0, 5).map((news, i) => (
+              {(entry.news_highlights ?? []).slice(0, 5).map((news, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs">
                   <Newspaper className="w-3 h-3 text-gray-600 mt-0.5 shrink-0" />
                   <div className="flex-1 min-w-0">

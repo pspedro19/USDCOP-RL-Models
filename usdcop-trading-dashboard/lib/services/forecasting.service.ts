@@ -70,8 +70,8 @@ class ForecastingService {
    */
   private async loadLocalData(): Promise<DashboardResponse> {
     try {
-      // Fetch the CSV from public folder
-      const response = await fetch('/forecasting/bi_dashboard_unified.csv');
+      // Fetch through the plan-gated route (R3): server applies forecast_delay_hours.
+      const response = await fetch('/api/forecasting/bi_dashboard_unified.csv');
       if (!response.ok) {
         throw new Error('CSV not found');
       }

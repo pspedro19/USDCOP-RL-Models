@@ -94,8 +94,10 @@ jobs:
               params = yaml.safe_load(f)
           print('params.yaml is valid YAML')
 
-          # Check required sections
-          required = ['prepare', 'train', 'evaluate', 'backtest']
+          # Check required sections. NOTE: RL training hyperparameters live in
+          # config/pipeline_ssot.yaml, NOT params.yaml — so 'train' is not required
+          # here (audit A9-02). Validate the sections params.yaml actually owns.
+          required = ['prepare', 'normalize', 'evaluate', 'backtest']
           for section in required:
               assert section in params, f'Missing required section: {section}'
           print('All required sections present')
@@ -168,19 +170,20 @@ jobs:
 
           errors = []
 
-          # Validate training parameters
+          # Validate training parameters ONLY if a train: block exists (RL
+          # hyperparameters normally live in pipeline_ssot.yaml — audit A9-02).
           train = params.get('train', {})
 
-          if train.get('learning_rate', 0) <= 0:
+          if train and train.get('learning_rate', 0) <= 0:
               errors.append('learning_rate must be positive')
 
-          if train.get('batch_size', 0) <= 0:
+          if train and train.get('batch_size', 0) <= 0:
               errors.append('batch_size must be positive')
 
-          if not 0 < train.get('gamma', 0) <= 1:
+          if train and not 0 < train.get('gamma', 0) <= 1:
               errors.append('gamma must be in (0, 1]')
 
-          if not 0 < train.get('clip_range', 0) <= 1:
+          if train and not 0 < train.get('clip_range', 0) <= 1:
               errors.append('clip_range must be in (0, 1]')
 
           # Validate data split

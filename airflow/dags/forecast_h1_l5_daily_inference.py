@@ -543,6 +543,7 @@ with DAG(
     default_args=default_args,
     description='Daily forecasting inference: load L5a models + fresh features -> predictions',
     schedule_interval='0 18 * * 1-5',  # 18:00 UTC = 13:00 COT (30 min before L5c)
+    is_paused_upon_creation=True,  # H1 track PAUSED (audit A3-01) — no auto-run on DB reset
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS_LIST,

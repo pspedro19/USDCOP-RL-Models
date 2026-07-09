@@ -18,7 +18,7 @@ executor:
   name: "smart_simple_v1"
   description: "Bidirectional, flat SHORT 1.5x, adaptive stops HS 2.0x, sin trailing"
   status: "paper"
-  version: "1.1.0"
+  version: "2.0.0"  # v2.0: regime gate (Hurst) + effective HS + XGBoost + dynamic leverage (features present since 2026-04); version field was stale at 1.1.0
 
 # ============================================================================
 # Direccion: Bidireccional con SHORT agresivo, LONG conservador

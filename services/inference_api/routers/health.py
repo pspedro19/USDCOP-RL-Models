@@ -289,10 +289,10 @@ async def schema_health():
             action = None
         elif missing_count <= 2:
             status = "degraded"
-            action = "Run: python scripts/db_migrate.py"
+            action = "Run: python scripts/ops/db_migrate.py"
         else:
             status = "unhealthy"
-            action = "Run: python scripts/db_migrate.py --validate"
+            action = "Run: python scripts/ops/db_migrate.py --validate"
 
         return {
             "status": status,

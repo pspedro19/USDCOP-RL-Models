@@ -186,10 +186,10 @@ stages:
   # Merges OHLCV and macro data into training-ready datasets.
   # Splits data into train/val/test sets with proper temporal ordering.
   prepare_data:
-    cmd: python scripts/prepare_training_data.py
+    cmd: python scripts/data/prepare_training_data.py
     deps:
       - data/raw/
-      - scripts/prepare_training_data.py
+      - scripts/data/prepare_training_data.py
       - config/feature_config.json
       - src/feature_store/builder.py
       - src/feature_store/calculators/
@@ -313,10 +313,10 @@ stages:
   # ===========================================================================
   # Exports trained model to ONNX format for production inference.
   export_onnx:
-    cmd: python scripts/export_to_onnx.py --model models/ppo_mlflow/ --output models/onnx/
+    cmd: python scripts/pipeline/export_to_onnx.py --model models/ppo_mlflow/ --output models/onnx/
     deps:
       - models/ppo_mlflow/
-      - scripts/export_to_onnx.py
+      - scripts/pipeline/export_to_onnx.py
     params:
       - export.opset_version
       - export.optimize
@@ -331,12 +331,12 @@ stages:
   # ===========================================================================
   # Final backtest on held-out test set. Run sparingly to avoid data leakage.
   backtest:
-    cmd: python scripts/backtest.py --model models/onnx/ --mode test --output reports/backtest/
+    cmd: python scripts/pipeline/backtest.py --model models/onnx/ --mode test --output reports/backtest/
     deps:
       - models/onnx/model.onnx
       - data/processed/
       - config/norm_stats.json
-      - scripts/backtest.py
+      - scripts/pipeline/backtest.py
       - config/trading_config.yaml
     params:
       - backtest.initial_balance
@@ -362,14 +362,14 @@ stages:
   # Checks if model meets promotion criteria and updates model registry.
   promote:
     cmd: >
-      python scripts/promote_model.py
+      python scripts/pipeline/promote_model.py
       --model-name usdcop-ppo-model
       --from-stage Staging
       --to-stage Production
       --reason "Automated promotion after successful backtest"
     deps:
       - reports/backtest/metrics.json
-      - scripts/promote_model.py
+      - scripts/pipeline/promote_model.py
     always_changed: true
 
   # ===========================================================================
@@ -383,9 +383,9 @@ stages:
   # ===========================================================================
   # Fetches USDCOP daily data and builds SSOT-aligned features (19 features)
   forecast_prepare_data:
-    cmd: python scripts/build_forecasting_dataset_aligned.py --start 2020-01-01 --output data/forecasting/aligned
+    cmd: python scripts/data/build_forecasting_dataset_aligned.py --start 2020-01-01 --output data/forecasting/aligned
     deps:
-      - scripts/build_forecasting_dataset_aligned.py
+      - scripts/data/build_forecasting_dataset_aligned.py
       - src/forecasting/data_contracts.py
     params:
       - forecasting.data.train_start

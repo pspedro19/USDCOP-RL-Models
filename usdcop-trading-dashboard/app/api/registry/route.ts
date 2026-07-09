@@ -15,6 +15,8 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import type { RegistryIndex, RegistryStrategyEntry } from '@/lib/contracts/strategy-manifest.contract';
+
 const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 const REGISTRY_FILE = path.join(DATA_DIR, 'registry.json');
 const LEGACY_STRATEGIES_FILE = path.join(DATA_DIR, 'production', 'strategies.json');
@@ -31,11 +33,23 @@ async function readJson<T>(file: string): Promise<T | null> {
   }
 }
 
+interface LegacyStrategyItem {
+  strategy_id: string;
+  asset_id?: string;
+  status?: string;
+  strategy_name?: string;
+  pipeline?: string;
+  pipeline_type?: string;
+  timeframe?: string;
+  backtest_year?: number;
+}
+
 /** Minimal fallback index built from the legacy strategies.json (migration shim). */
-async function synthesizeLegacyIndex() {
-  const legacy = await readJson<any>(LEGACY_STRATEGIES_FILE);
-  const items: any[] = legacy?.strategies ?? [];
-  const strategies = items.map((s) => ({
+async function synthesizeLegacyIndex(): Promise<RegistryIndex> {
+  const legacy = await readJson<{ strategies?: LegacyStrategyItem[]; default_strategy?: string }>(
+    LEGACY_STRATEGIES_FILE);
+  const items = legacy?.strategies ?? [];
+  const strategies: RegistryStrategyEntry[] = items.map((s) => ({
     strategy_id: s.strategy_id,
     asset_id: s.asset_id ?? 'usdcop',
     status: s.status === 'APPROVED' ? 'production' : 'paper',
@@ -57,9 +71,14 @@ async function synthesizeLegacyIndex() {
 }
 
 export async function GET() {
-  const registry = await readJson<any>(REGISTRY_FILE);
+  const registry = await readJson<RegistryIndex>(REGISTRY_FILE);
   if (registry) {
-    return NextResponse.json(registry);
+    // ARCHIVED strategies are hidden from every page (StrategyStatus contract;
+    // operator pruning 2026-07-07: only champions remain selectable).
+    return NextResponse.json({
+      ...registry,
+      strategies: (registry.strategies ?? []).filter((s) => s.status !== 'archived'),
+    });
   }
   return NextResponse.json(await synthesizeLegacyIndex());
 }

@@ -19,6 +19,9 @@
  * Contract: lib/contracts/strategy.contract.ts
  */
 
+import { useSession } from 'next-auth/react';
+import { MetricBadge } from '@/components/ui/MetricBadge';
+import { calmarRatio } from '@/lib/contracts/ui.contract';
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -463,9 +466,12 @@ function ExitReasonsSummary({ reasons }: { reasons: Record<string, number> }) {
 // ============================================================================
 // Equity Curve Chart (built from trades data)
 // ============================================================================
-function EquityCurveChart({ trades, initialCapital }: {
+function EquityCurveChart({ trades, initialCapital, seriesPoints }: {
   trades: StrategyTrade[];
   initialCapital: number;
+  /** Daily equity series (window-sliced) — the SSOT for continuous strategies; when
+   *  present it replaces the trade-step curve (trades can't represent partial windows). */
+  seriesPoints?: Array<{ d: string; eq: number }>;
 }) {
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const formatTradeDate = (iso: string | undefined): string => {
@@ -475,14 +481,16 @@ function EquityCurveChart({ trades, initialCapital }: {
     return `${d.getDate()} ${months[d.getMonth()]}`;
   };
 
-  const dataPoints = [
-    { label: trades.length > 0 ? formatTradeDate(trades[0].timestamp as string) : 'Inicio', equity: initialCapital, idx: 0 },
-    ...trades.map((t, i) => ({
-      label: formatTradeDate((t.exit_timestamp || t.timestamp) as string),
-      equity: Number(t.equity_at_exit),
-      idx: i + 1,
-    }))
-  ];
+  const dataPoints = seriesPoints && seriesPoints.length > 1
+    ? seriesPoints.map((r, i) => ({ label: formatTradeDate(r.d), equity: r.eq, idx: i }))
+    : [
+      { label: trades.length > 0 ? formatTradeDate(trades[0].timestamp as string) : 'Inicio', equity: initialCapital, idx: 0 },
+      ...trades.map((t, i) => ({
+        label: formatTradeDate((t.exit_timestamp || t.timestamp) as string),
+        equity: Number(t.equity_at_exit),
+        idx: i + 1,
+      }))
+    ];
 
   const equities = dataPoints.map(d => d.equity);
   const minEq = Math.min(...equities);
@@ -782,10 +790,10 @@ function TradeTable({ trades, showAll, onToggle }: {
                       {formatTsCOT(t.exit_timestamp as string | undefined)}
                     </td>
                     <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
-                      ${Number(t.entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                      {t.entry_price != null ? `$${Number(t.entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
                     </td>
                     <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
-                      ${Number(t.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                      {t.exit_price != null ? `$${Number(t.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
                     </td>
                     <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">{Number(t.leverage).toFixed(2)}x</td>
                     <td className="px-3 py-2.5 text-center">
@@ -805,10 +813,10 @@ function TradeTable({ trades, showAll, onToggle }: {
                       {(t as Record<string, unknown>).take_profit_pct != null ? `${Number((t as Record<string, unknown>).take_profit_pct).toFixed(1)}%` : '-'}
                     </td>
                     <td className={cn('px-3 py-2.5 text-xs font-mono font-semibold text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {pnlPositive ? '+' : ''}{Number(t.pnl_usd).toFixed(2)}
+                      {t.pnl_usd != null ? `${pnlPositive ? '+' : ''}${Number(t.pnl_usd).toFixed(2)}` : '—'}
                     </td>
                     <td className={cn('px-3 py-2.5 text-xs font-mono text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {pnlPositive ? '+' : ''}{Number(t.pnl_pct).toFixed(2)}%
+                      {t.pnl_pct != null ? `${pnlPositive ? '+' : ''}${Number(t.pnl_pct).toFixed(2)}%` : '—'}
                     </td>
                     <td className="px-3 py-2.5">
                       <span className={cn('px-2 py-0.5 rounded text-[10px] font-medium', exitColor.bg, exitColor.text)}>
@@ -1199,7 +1207,17 @@ interface StrategyManifestLite {
   model_versions: ManifestModelVersion[];
 }
 
-export function ForecastingBacktestSection() {
+export function ForecastingBacktestSection({
+  controlledStrategyId,
+  onStrategyChange,
+}: {
+  /** Controlled selection from a parent (e.g. the header Backtest selector). Optional —
+   *  when omitted the section manages selection entirely on its own (backward compatible).
+   *  Named `controlledStrategyId` to avoid colliding with the local `strategyId` below. */
+  controlledStrategyId?: string;
+  /** Notifies the parent when the in-card selector changes, keeping both in sync. */
+  onStrategyChange?: (id: string) => void;
+} = {}) {
   const [registry, setRegistry] = useState<StrategyRegistry | null>(null);
   const [selectedStrategyId, setSelectedStrategyId] = useState<string>('');
   const [summary, setSummary] = useState<ProductionSummary | null>(null);
@@ -1211,12 +1229,20 @@ export function ForecastingBacktestSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Replay state
+  // Daily equity series from the bundle (signals_<year>.json) — SSOT for window-dynamic
+  // metrics/equity AND the replay clock for continuous strategies (Gold B1 = 1 trade).
+  const [dailySeries, setDailySeries] = useState<Array<{ d: string; eq: number }> | null>(null);
   const [replayIndex, setReplayIndex] = useState<number>(-1); // -1 = show all
   const [isPlaying, setIsPlaying] = useState(false);
   const [playSpeed, setPlaySpeed] = useState(1);
   const replayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [replayStartDate, setReplayStartDate] = useState('2025-01-01');
   const [replayEndDate, setReplayEndDate] = useState('2025-12-31');
+  // The auto-initialized window for the loaded trades (set by the effect below). Comparing the
+  // current range against THIS (not against summary.year) tells us whether the USER filtered.
+  // Audit I-4 fix: for gold/btc (full-history bundles, year=2026) the old summary.year comparison
+  // was spuriously true forever, silently replacing bundle metrics with recomputed ones.
+  const autoRangeRef = useRef<{ start: string; end: string }>({ start: '2025-01-01', end: '2025-12-31' });
 
   // Version registry state (additive; graceful no-op if manifest/route absent)
   const [manifest, setManifest] = useState<StrategyManifestLite | null>(null);
@@ -1225,11 +1251,94 @@ export function ForecastingBacktestSection() {
   const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
 
   // Filter trades by replay date range, then apply replay index
-  const filteredTrades = trades.filter(t => {
-    const ts = String(t.timestamp).slice(0, 10);
-    return ts >= replayStartDate && ts <= replayEndDate;
-  });
-  const visibleTrades = replayIndex < 0 ? filteredTrades : filteredTrades.slice(0, replayIndex);
+  // A trade belongs to the window when its SPAN overlaps it (entry ≤ end AND exit ≥ start).
+  // Entry-only filtering broke always-in strategies: Gold B1's single 2004→ position never
+  // "entered" in 2025, so the 2025 replay had zero trades and looked dead (operator report).
+  // AND the trade must be CLIPPED to the window for display/replay/chart: raw out-of-window
+  // timestamps dragged the chart axis to the trade's 2026 exit (view jumped to Dec-2025→Jul-2026,
+  // ignoring the selected 2025 range) and the table showed nonsense dates (operator report #2).
+  const filteredTrades = trades
+    .filter(t => {
+      const entry = String(t.timestamp).slice(0, 10);
+      const exit = t.exit_timestamp ? String(t.exit_timestamp).slice(0, 10) : entry;
+      return entry <= replayEndDate && exit >= replayStartDate;
+    })
+    .map(t => {
+      const entry = String(t.timestamp).slice(0, 10);
+      const exit = t.exit_timestamp ? String(t.exit_timestamp).slice(0, 10) : entry;
+      const clipStart = entry < replayStartDate;
+      const clipEnd = exit > replayEndDate;
+      if (!clipStart && !clipEnd) return t;
+      // Continuous position crossing the window: clamp the DISPLAY span to the window and
+      // tag it — the row's PnL is the full trade's (metrics cards carry the OOS-2025 truth).
+      return {
+        ...t,
+        timestamp: clipStart ? `${replayStartDate}T00:00:00Z` : t.timestamp,
+        exit_timestamp: clipEnd ? `${replayEndDate}T23:59:59Z` : t.exit_timestamp,
+        exit_reason: 'posicion_continua',
+        // Full-trade prices/P&L must NOT masquerade as the window's — blank them; the
+        // window truth is the bundle's OOS-2025 slice shown in the metric cards.
+        entry_price: clipStart ? (null as unknown as number) : t.entry_price,
+        exit_price: clipEnd ? (null as unknown as number) : t.exit_price,
+        pnl_usd: (null as unknown as number),
+        pnl_pct: (null as unknown as number),
+      } as typeof t;
+    });
+  // Series replay domain: when the bundle carries the daily series, the REPLAY CLOCK is
+  // TIME (series days, strided to ~60 steps), not trade count — an always-in strategy has
+  // 1 trade and a trade-clock replay is a single dead step (operator: "gold sigue sin
+  // funcionar"). Trades become visible as the clock passes their exit.
+  const seriesInWindow = useMemo(() => {
+    if (!dailySeries) return null;
+    const rows = dailySeries.filter(r => r.d >= replayStartDate && r.d <= replayEndDate);
+    return rows.length >= 3 ? rows : null;
+  }, [dailySeries, replayStartDate, replayEndDate]);
+  const seriesStride = seriesInWindow ? Math.max(1, Math.ceil(seriesInWindow.length / 60)) : 1;
+  const replaySteps = seriesInWindow
+    ? Math.ceil(seriesInWindow.length / seriesStride)
+    : filteredTrades.length;
+  const seriesClockDate = seriesInWindow && replayIndex >= 0
+    ? seriesInWindow[Math.min(replayIndex * seriesStride, seriesInWindow.length - 1)].d
+    : null;
+  const visibleTrades = replayIndex < 0
+    ? filteredTrades
+    : seriesClockDate
+      ? filteredTrades.filter(tr =>
+          String(tr.exit_timestamp ?? tr.timestamp).slice(0, 10) <= seriesClockDate)
+      : filteredTrades.slice(0, replayIndex);
+
+  // Default the replay window to the 2025 BACKTEST year for every pair (methodology: trained
+  // ≤ Dec-2024, backtest = 2025, production = 2026). COP trades are all 2025 already; a multi-year
+  // backtest (Gold/BTC 2018-2026) is CLAMPED to its 2025 slice by default so the operator lands on
+  // the OOS backtest year — they can widen the date inputs to see full history. Falls back to the
+  // full span only when the data doesn't cover 2025. Uses BOTH entry+exit timestamps so buy-and-hold
+  // strategies (a single trade held for years) don't collapse to one candle.
+  useEffect(() => {
+    if (!trades.length) return;
+    const dates = trades
+      .flatMap(t => [String(t.timestamp), t.exit_timestamp ? String(t.exit_timestamp) : ''])
+      .map(d => d.slice(0, 10))
+      .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort();
+    if (!dates.length) return;
+    const minD = dates[0];
+    const maxD = dates[dates.length - 1];
+    const BT_START = '2025-01-01';
+    const BT_END = '2025-12-31';
+    const covers2025 = minD <= BT_END && maxD >= BT_START;
+    if (covers2025) {
+      const s = minD > BT_START ? minD : BT_START;
+      const e = maxD < BT_END ? maxD : BT_END;
+      setReplayStartDate(s);
+      setReplayEndDate(e);
+      autoRangeRef.current = { start: s, end: e };
+    } else {
+      setReplayStartDate(minD);
+      setReplayEndDate(maxD);
+      autoRangeRef.current = { start: minD, end: maxD };
+    }
+    setReplayIndex(-1);
+  }, [trades]);
 
   // During replay, chart endDate follows the latest visible trade (progressive reveal)
   const chartEndDate = (() => {
@@ -1251,11 +1360,25 @@ export function ForecastingBacktestSection() {
     return d > maxDate ? maxDate : d;
   })();
 
+  // Load-race guard (audit A5-07): loadStrategyData and loadVersionData both write
+  // summary/trades with no cancellation — a slow older fetch could render version-A
+  // trades over version-B metrics. Each load takes a monotonically-increasing token;
+  // state writes only apply while the token is still current.
+  const loadSeqRef = useRef(0);
+  // Approval is STRATEGY-level, only loadStrategyData writes it — it gets its own
+  // sequence. Guarding it with the shared seq made the on-mount loadVersionData
+  // (manifest default) invalidate the approval write → ApprovalPanel never rendered
+  // (admin could not promote; found by promotion-e2e regression).
+  const stratSeqRef = useRef(0);
+
   // Load strategy data for a given strategy_id
   const loadStrategyData = useCallback(async (sid: string) => {
+    const seq = ++loadSeqRef.current;
+    const sseq = ++stratSeqRef.current;
     try {
       setLoading(true);
       setError(null);
+      setDailySeries(null); // registry bundles repopulate it via loadVersionData
 
       // Try per-strategy summary first, fall back to generic
       let summaryData: ProductionSummary | null = null;
@@ -1266,19 +1389,25 @@ export function ForecastingBacktestSection() {
         const res = await fetch(path);
         if (res.ok) {
           const data = await res.json();
-          // Make sure this is the right strategy (or the fallback)
-          if (data.strategy_id === sid || path === summaryPaths[summaryPaths.length - 1]) {
+          // Only accept the legacy summary if it is THIS strategy. Registry-backed strategies
+          // (e.g. Gold, whose legacy file doesn't exist) defer to loadVersionData — don't clobber.
+          if (data.strategy_id === sid) {
             summaryData = data;
             break;
           }
         }
       }
-      setSummary(summaryData);
+      // A5-07: guard the WRITE only — never early-return before the approval fetch below
+      // (an on-mount version load would otherwise skip approval → no ApprovalPanel).
+      if (summaryData && seq === loadSeqRef.current) setSummary(summaryData);
 
       // Try per-strategy approval first, fall back to generic
       let approvalData: ApprovalState | null = null;
       const approvalPaths = [
+        // singleton (ACTIVE strategy) first — its `strategy` field must match this sid;
+        // else fall through to the per-strategy file (multi-strategy production, fs-backed).
         '/api/production/status',
+        `/api/data/production/approval_state_${sid}.json`,
       ];
       for (const path of approvalPaths) {
         const res = await fetch(path);
@@ -1290,16 +1419,18 @@ export function ForecastingBacktestSection() {
           }
         }
       }
-      setApproval(approvalData);
+      // Approval uses its own strategy-level sequence (version loads must not void it).
+      if (sseq === stratSeqRef.current) setApproval(approvalData);
+      if (seq !== loadSeqRef.current) return; // superseded (A5-07) — summary/trades only
 
       // Load trades
       const tradesRes = await fetch(`/data/production/trades/${sid}_2025.json`);
-      if (tradesRes.ok) {
+      if (tradesRes.ok && seq === loadSeqRef.current) {
         const tradeData: ProductionTradeFile = await tradesRes.json();
-        setTrades(tradeData.trades || []);
-      } else {
-        setTrades([]);
+        if (seq === loadSeqRef.current) setTrades(tradeData.trades || []);
       }
+      // If the legacy trades file is absent (registry-backed strategy like Gold), do NOT clear —
+      // loadVersionData is authoritative and provides the versioned trades.
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error loading backtest data');
     } finally {
@@ -1362,23 +1493,52 @@ export function ForecastingBacktestSection() {
     setIsPlaying(false);
     setShowAllTrades(false);
     loadStrategyData(sid);
-  }, [loadStrategyData]);
+    onStrategyChange?.(sid);
+  }, [loadStrategyData, onStrategyChange]);
+
+  // Sync a controlled selection coming from a parent selector (additive; no-op when
+  // uncontrolled or already in sync). Keeps the header Backtest selector and the in-card
+  // selector pointing at the same strategy.
+  useEffect(() => {
+    if (controlledStrategyId && controlledStrategyId !== selectedStrategyId) {
+      handleStrategyChange(controlledStrategyId);
+    }
+  }, [controlledStrategyId, selectedStrategyId, handleStrategyChange]);
 
   // ── Version registry: load a per-version immutable bundle (CTR-STRAT-REGISTRY-001) ──
   // Overrides summary + trades from the versioned artifacts; all downstream derived
   // state (KPIs, chart replay, trade table) reacts automatically. Approval is left
   // untouched — it is strategy-level, not version-level.
   const loadVersionData = useCallback(async (bt: ManifestBacktest) => {
+    const seq = ++loadSeqRef.current; // A5-07: this load supersedes any in-flight one
     try {
       setLoading(true);
       setError(null);
+      // Fetch via the fs-backed API route (not the static /data/ path): Next standalone only serves
+      // public/ files that existed at image-build time, so a freshly published version's bundle 404s
+      // through static serving even though it's on the mount. /api/data reads from disk at request time.
       const [sRes, tRes] = await Promise.all([
-        fetch(`/data/${bt.summary}`),
-        fetch(`/data/${bt.trades}`),
+        fetch(`/api/data/${bt.summary}`),
+        fetch(`/api/data/${bt.trades}`),
       ]);
+      if (seq !== loadSeqRef.current) return; // superseded (A5-07)
       if (sRes.ok) setSummary(await sRes.json());
-      const td = tRes.ok ? await tRes.json() : null;
-      setTrades(td?.trades ?? []);
+      // Defensive: only replace trades when the fetch succeeds — never wipe to [] on a transient
+      // failure/404 (that is what silently emptied the replay for newly-published versions).
+      if (tRes.ok && seq === loadSeqRef.current) {
+        const td = await tRes.json();
+        if (seq === loadSeqRef.current) setTrades(td?.trades ?? []);
+      }
+      // Daily equity series (window-dynamic metrics SSOT) — best-effort, additive.
+      if (bt.signals) {
+        try {
+          const sr = await fetch(`/api/data/${bt.signals}`);
+          if (sr.ok && seq === loadSeqRef.current) {
+            const sd = await sr.json();
+            if (seq === loadSeqRef.current && Array.isArray(sd?.rows)) setDailySeries(sd.rows);
+          }
+        } catch { /* series optional */ }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error loading version bundle');
     } finally {
@@ -1458,15 +1618,15 @@ export function ForecastingBacktestSection() {
     replayRef.current = setInterval(() => {
       setReplayIndex(prev => {
         const next = prev + 1;
-        if (next >= filteredTrades.length) {
+        if (next >= replaySteps) {
           setIsPlaying(false);
-          return filteredTrades.length;
+          return replaySteps;
         }
         return next;
       });
     }, 500 / playSpeed);
     return () => { if (replayRef.current) clearInterval(replayRef.current); };
-  }, [isPlaying, playSpeed, filteredTrades.length]);
+  }, [isPlaying, playSpeed, replaySteps]);
 
   const handleApprove = async (notes: string) => {
     setIsSubmitting(true);
@@ -1474,7 +1634,7 @@ export function ForecastingBacktestSection() {
       const res = await fetch('/api/production/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'APPROVE', notes, reviewer: 'dashboard_user' }),
+        body: JSON.stringify({ action: 'APPROVE', notes, reviewer: 'dashboard_user', strategy_id: strategyId }),
       });
       if (res.ok) {
         const approvalRes = await fetch('/api/production/status');
@@ -1491,7 +1651,7 @@ export function ForecastingBacktestSection() {
       const res = await fetch('/api/production/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'REJECT', notes: reason, reviewer: 'dashboard_user' }),
+        body: JSON.stringify({ action: 'REJECT', notes: reason, reviewer: 'dashboard_user', strategy_id: strategyId }),
       });
       if (res.ok) {
         const approvalRes = await fetch('/api/production/status');
@@ -1502,16 +1662,40 @@ export function ForecastingBacktestSection() {
     }
   };
 
+  // Role gating (ux-navigation §3.4): developer sees everything EXCEPT promote (admin-only).
+  const { data: session } = useSession();
+  const userRole = (session?.user as { role?: string } | undefined)?.role ?? 'free';
+  const canPromote = userRole === 'admin';
+
   // Dynamic strategy lookup
   const strategyId = summary?.strategy_id || 'smart_simple_v11';
-  const best: StrategyStats | undefined = summary?.strategies[strategyId];
+  // METHODOLOGY DEFAULT (operator convention): trained ≤ Dec-2024, BACKTEST = full 2025.
+  // Registry bundles (Gold/BTC) are labeled with the FULL-history year but carry a true
+  // `oos` (2025) slice — the DEFAULT display metrics are that OOS-2025 slice, so what the
+  // operator sees matches "Backtest 2025" (full-history stays in the bundle for auditing).
+  const oosSlice = (summary as unknown as {
+    oos?: { year?: number; n_trading_days?: number;
+      metrics?: { total_return_pct?: number; sharpe?: number; max_dd?: number; calmar?: number };
+      statistical_tests?: { p_value?: number; significant?: boolean } };
+  } | null)?.oos;
+  const fullStats: StrategyStats | undefined = summary?.strategies[strategyId];
+  const best: StrategyStats | undefined = oosSlice?.metrics
+    ? ({
+        ...fullStats,
+        total_return_pct: oosSlice.metrics.total_return_pct ?? fullStats?.total_return_pct,
+        sharpe: oosSlice.metrics.sharpe ?? fullStats?.sharpe,
+        max_dd_pct: oosSlice.metrics.max_dd != null ? Math.abs(oosSlice.metrics.max_dd) : fullStats?.max_dd_pct,
+        trading_days: oosSlice.n_trading_days ?? fullStats?.trading_days,
+      } as StrategyStats)
+    : fullStats;
   const initialCap = summary?.initial_capital ?? 10000;
 
-  // Compute dynamic metrics from currently visible trades
-  // Active during replay (replayIndex >= 0) AND when date range filters trades
-  const defaultStart = `${summary?.year ?? 2025}-01-01`;
-  const defaultEnd = `${summary?.year ?? 2025}-12-31`;
-  const isDateFiltered = replayStartDate !== defaultStart || replayEndDate !== defaultEnd;
+  // Compute dynamic metrics from currently visible trades — REPLAY PREVIEW ONLY (audit I-4).
+  // Active during replay (replayIndex >= 0) or when the USER narrowed the date range (compared
+  // against the auto-initialized window, not summary.year — see autoRangeRef). These numbers are
+  // labeled as preview and NEVER feed the approval decision (gates/Vote 2 read the bundle).
+  const isDateFiltered =
+    replayStartDate !== autoRangeRef.current.start || replayEndDate !== autoRangeRef.current.end;
   const dynamicMetrics = useMemo(() => {
     const tradesForMetrics = replayIndex < 0 ? filteredTrades : visibleTrades;
     if (tradesForMetrics.length === 0) return null;
@@ -1520,8 +1704,59 @@ export function ForecastingBacktestSection() {
     return computeTradeMetrics(tradesForMetrics, initialCap);
   }, [replayIndex, filteredTrades, visibleTrades, initialCap, isDateFiltered]);
 
+  // WINDOW metrics from the DAILY SERIES (SSOT for continuous strategies): computed over
+  // exactly [replayStartDate, effEnd] — during replay effEnd tracks the last visible trade,
+  // so the cards animate with the replay AND respond to any custom date range.
+  const effEnd = (replayIndex >= 0 && seriesClockDate)
+    ? seriesClockDate
+    : (replayIndex >= 0 && visibleTrades.length > 0)
+      ? String(visibleTrades[visibleTrades.length - 1].exit_timestamp
+          ?? visibleTrades[visibleTrades.length - 1].timestamp).slice(0, 10)
+      : replayEndDate;
+  const windowMetrics = useMemo(() => {
+    if (!dailySeries || dailySeries.length < 3) return null;
+    const inWin = dailySeries.filter(r => r.d >= replayStartDate && r.d <= effEnd);
+    if (inWin.length < 2) return null;
+    // Base = the row BEFORE the window (position carried in), else the first in-window row.
+    const firstIdx = dailySeries.findIndex(r => r.d === inWin[0].d);
+    const baseEq = firstIdx > 0 ? dailySeries[firstIdx - 1].eq : inWin[0].eq;
+    const rets: number[] = [];
+    let prev = baseEq;
+    for (const r of inWin) { if (prev > 0) rets.push(r.eq / prev - 1); prev = r.eq; }
+    const totalRet = (inWin[inWin.length - 1].eq / baseEq - 1) * 100;
+    const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const sd = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(rets.length - 1, 1));
+    // Periods/year inferred from calendar density (BTC ~365, Gold/COP ~252)
+    const spanDays = (new Date(inWin[inWin.length - 1].d).getTime() - new Date(inWin[0].d).getTime()) / 86_400_000;
+    const ann = spanDays > 0 && inWin.length / spanDays > 0.9 ? 365 : 252;
+    const sharpe = sd > 0 ? (mean / sd) * Math.sqrt(ann) : null;
+    let peak = baseEq, maxDd = 0;
+    for (const r of inWin) { peak = Math.max(peak, r.eq); maxDd = Math.min(maxDd, r.eq / peak - 1); }
+    const maxDdPct = Math.abs(maxDd) * 100;
+    const annRet = (Math.pow(1 + totalRet / 100, ann / Math.max(inWin.length, 1)) - 1) * 100;
+    return {
+      total_return_pct: Math.round(totalRet * 100) / 100,
+      sharpe: sharpe == null ? null : Math.round(sharpe * 100) / 100,
+      max_dd_pct: Math.round(maxDdPct * 100) / 100,
+      trading_days: inWin.length,
+      calmar: maxDdPct > 1e-9 ? Math.round((annRet / maxDdPct) * 100) / 100 : null,
+      final_equity: Math.round((10000 * (1 + totalRet / 100)) * 100) / 100,
+      series: inWin,
+    };
+  }, [dailySeries, replayStartDate, effEnd]);
+
   // Display stats: dynamic during replay, static otherwise
-  const displayStats: StrategyStats | undefined = dynamicMetrics ? {
+  const displayStats: StrategyStats | undefined = windowMetrics ? ({
+    ...(best ?? {}),
+    final_equity: windowMetrics.final_equity,
+    total_return_pct: windowMetrics.total_return_pct,
+    sharpe: windowMetrics.sharpe,
+    max_dd_pct: windowMetrics.max_dd_pct,
+    trading_days: windowMetrics.trading_days,
+    // trade-derived counters still come from the visible window trades
+    win_rate_pct: dynamicMetrics?.win_rate_pct ?? best?.win_rate_pct,
+    profit_factor: dynamicMetrics?.profit_factor ?? best?.profit_factor,
+  } as StrategyStats) : dynamicMetrics ? {
     final_equity: dynamicMetrics.final_equity,
     total_return_pct: dynamicMetrics.total_return_pct,
     sharpe: dynamicMetrics.sharpe,
@@ -1535,27 +1770,17 @@ export function ForecastingBacktestSection() {
   } as StrategyStats : best;
 
   // Dynamic p-value and significance
-  const displayPValue = dynamicMetrics ? dynamicMetrics.p_value : summary?.statistical_tests?.p_value;
-  const displayIsSignificant = dynamicMetrics ? dynamicMetrics.significant : summary?.statistical_tests?.significant;
+  const displayPValue = dynamicMetrics ? dynamicMetrics.p_value
+    : (oosSlice?.statistical_tests?.p_value ?? summary?.statistical_tests?.p_value);
+  const displayIsSignificant = dynamicMetrics ? dynamicMetrics.significant
+    : (oosSlice?.statistical_tests?.significant ?? summary?.statistical_tests?.significant);
   const displayDA = dynamicMetrics ? dynamicMetrics.direction_accuracy_pct : summary?.direction_accuracy_pct;
 
-  // Dynamic gates during replay
-  const displayGates = useMemo(() => {
-    if (!dynamicMetrics || !approval?.gates) return approval?.gates ?? [];
-    return approval.gates.map(g => {
-      let value: number;
-      let passed: boolean;
-      switch (g.gate) {
-        case 'min_return_pct': value = dynamicMetrics.total_return_pct; passed = value > g.threshold; break;
-        case 'min_sharpe_ratio': value = dynamicMetrics.sharpe; passed = value > g.threshold; break;
-        case 'max_drawdown_pct': value = dynamicMetrics.max_dd_pct; passed = value < g.threshold; break;
-        case 'min_trades': value = visibleTrades.length; passed = value >= g.threshold; break;
-        case 'statistical_significance': value = dynamicMetrics.p_value; passed = value < g.threshold; break;
-        default: return g;
-      }
-      return { ...g, value, passed };
-    });
-  }, [dynamicMetrics, approval?.gates, visibleTrades.length]);
+  // Decision gates — ALWAYS the published bundle's Vote-1 results (audit I-4 / CTR-QUANT-
+  // CONSTITUTION-001 §7). The human Vote 2 must be cast on the bundle's numbers; gates are
+  // never recomputed from replay/filtered trades (that was silently re-evaluating gates on
+  // an unofficial slice right next to the Approve button).
+  const displayGates = approval?.gates ?? [];
 
   // Loading state
   if (loading) {
@@ -1622,18 +1847,14 @@ export function ForecastingBacktestSection() {
                     );
                   })}
                 </select>
-                <button
-                  onClick={handlePromote}
-                  disabled={isPromoting || !!manifest.model_versions?.find((v) => v.version === selectedVersion)?.active}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  title="Marcar esta versión como activa para la estrategia"
-                >
-                  {isPromoting ? 'Promoviendo…' : 'Promover a activa'}
-                </button>
-                {promoteMsg && <span className="text-xs text-slate-400">{promoteMsg}</span>}
+                {/* "Promover a activa" button REMOVED (operator request 2026-07-07 + audit A4-04:
+                    promote-from-TS races the Python registry rebuild). The version dropdown stays
+                    for REVIEW/replay; the single promotion path is the two-vote flow
+                    (Aprobar y Promover → Airflow L4b deploy). API endpoint kept for tooling. */}
               </div>
             )}
             <p className="text-sm sm:text-base text-slate-400 max-w-2xl">
+              <MetricBadge phase="backtest" provenance={{ strategyId, version: selectedVersion || undefined }} className="mr-2 align-middle" />
               {summary.strategy_name || strategyId} | {dynamicMetrics ? visibleTrades.length : (best ? (best.n_long ?? 0) + (best.n_short ?? 0) : trades.length)} trades | DA {displayDA?.toFixed(1) ?? '-'}%
             </p>
             {/* p-value badge */}
@@ -1658,6 +1879,20 @@ export function ForecastingBacktestSection() {
               <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-blue-500/50 to-transparent" />
             </div>
           </div>
+
+          {/* Replay-preview disclaimer (audit I-4): when metrics are recomputed from visible/
+              filtered trades they are a PREVIEW — the official decision numbers are the bundle's. */}
+          {dynamicMetrics && (
+            <div className="mb-4 flex justify-center">
+              <Badge
+                variant="outline"
+                className="text-[11px] font-semibold bg-amber-500/10 text-amber-300 border-amber-500/40"
+              >
+                PREVIEW DEL REPLAY — cifras recomputadas de los trades visibles; NO son las métricas
+                oficiales del bundle (el Vote 2 y los gates usan el bundle publicado)
+              </Badge>
+            </div>
+          )}
 
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
@@ -1684,6 +1919,14 @@ export function ForecastingBacktestSection() {
               icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
               color={(displayStats?.profit_factor ?? 0) >= 1.5 ? '#10b981' : (displayStats?.profit_factor ?? 0) >= 1 ? '#f59e0b' : '#ef4444'}
               trend={(displayStats?.profit_factor ?? 0) >= 1.5 ? 'up' : 'neutral'}
+            />
+            <KPICard
+              title="Calmar Ratio"
+              value={(() => { const c = calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days); return c == null ? 'N/A' : c.toFixed(2); })()}
+              subtitle="Retorno anualizado / |DD| (métrica primaria)"
+              icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
+              color={(calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days) ?? 0) >= 1 ? '#10b981' : '#f59e0b'}
+              trend={(calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days) ?? 0) >= 1 ? 'up' : 'neutral'}
             />
             <KPICard
               title="Win Rate"
@@ -1796,7 +2039,7 @@ export function ForecastingBacktestSection() {
                       if (isPlaying) {
                         setIsPlaying(false);
                       } else {
-                        if (replayIndex >= filteredTrades.length || replayIndex < 0) {
+                        if (replayIndex >= replaySteps || replayIndex < 0) {
                           setReplayIndex(0);
                         }
                         setIsPlaying(true);
@@ -1848,11 +2091,13 @@ export function ForecastingBacktestSection() {
                   <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-200"
-                      style={{ width: `${filteredTrades.length > 0 ? (replayIndex / filteredTrades.length) * 100 : 0}%` }}
+                      style={{ width: `${replaySteps > 0 ? (Math.min(replayIndex, replaySteps) / replaySteps) * 100 : 0}%` }}
                     />
                   </div>
                   <span className="text-xs font-mono text-slate-400">
-                    {replayIndex}/{filteredTrades.length} trades
+                    {seriesClockDate
+                      ? `${seriesClockDate} · ${visibleTrades.length}/${filteredTrades.length} trades`
+                      : `${replayIndex}/${filteredTrades.length} trades`}
                   </span>
                 </div>
               )}
@@ -1875,6 +2120,7 @@ export function ForecastingBacktestSection() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               <div className="lg:col-span-2">
                 <EquityCurveChart
+                  seriesPoints={windowMetrics?.series}
                   trades={visibleTrades}
                   initialCapital={summary.initial_capital ?? 10000}
                 />
@@ -1945,18 +2191,21 @@ export function ForecastingBacktestSection() {
                 </Card>
               )}
 
-              {/* Interactive approval panel (only when PENDING) */}
-              <ApprovalPanel
-                approval={approval}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                isSubmitting={isSubmitting}
-              />
+              {/* Interactive approval + deploy — ADMIN ONLY (Vote 2 / promote / deploy).
+                  Developers propose and review but never approve or promote (RBAC §4). */}
+              {canPromote && (
+                <>
+                  <ApprovalPanel
+                    approval={approval}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    isSubmitting={isSubmitting}
+                  />
+                  <DeployPanel approval={approval} />
+                </>
+              )}
 
-              {/* Deploy panel (only when APPROVED) */}
-              <DeployPanel approval={approval} />
-
-              {/* Gates (always visible, dynamic during replay) */}
+              {/* Gates — always the published bundle's Vote-1 results (never replay-recomputed) */}
               {displayGates.length > 0 && (
                 <GatesPanel gates={displayGates} />
               )}
@@ -1976,7 +2225,7 @@ export function ForecastingBacktestSection() {
             </div>
           )}
           <TradeTable
-            trades={replayIndex < 0 ? trades : visibleTrades}
+            trades={replayIndex < 0 ? filteredTrades : visibleTrades}
             showAll={showAllTrades}
             onToggle={() => setShowAllTrades(!showAllTrades)}
           />

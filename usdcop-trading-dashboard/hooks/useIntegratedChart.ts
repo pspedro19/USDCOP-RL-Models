@@ -108,8 +108,10 @@ export function useIntegratedChart({
       const start = startDate || PIPELINE_DATE_RANGES.VALIDATION_START
       const end = endDate || getTestEndDate()
 
+      // Pass symbol so the endpoint serves the right asset (USD/COP intraday from DB,
+      // BTC/Gold daily from published JSON). Default USDCOP preserves prior behavior.
       const response = await fetch(
-        `/api/market/candlesticks-filtered?start_date=${start}&end_date=${end}&limit=${limit}`
+        `/api/market/candlesticks-filtered?start_date=${start}&end_date=${end}&limit=${limit}&symbol=${encodeURIComponent(symbol || 'USDCOP')}`
       )
 
       if (!response.ok) {
@@ -131,7 +133,7 @@ export function useIntegratedChart({
     } finally {
       setDataLoading(false)
     }
-  }, [startDate, endDate, limit])
+  }, [startDate, endDate, limit, symbol])
 
   /**
    * Fetch trading signals for selected model

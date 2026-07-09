@@ -44,14 +44,25 @@ logger = logging.getLogger(__name__)
 # PATH SETUP
 # =============================================================================
 
-# Add required paths for imports
+# Add required paths for imports.
+# Layout-aware root: the container mounts dags at /opt/airflow/dags (data at
+# /opt/airflow/data → root = parent), while the host repo is <repo>/airflow/dags
+# (data at <repo>/data → root = parent.parent). Picking the parent that actually
+# holds data/ fixes the export task writing to the nonexistent /opt/data (2026-07-07).
 DAGS_DIR = Path(__file__).parent
-PROJECT_ROOT = DAGS_DIR.parent.parent
+PROJECT_ROOT = next(
+    (p for p in (DAGS_DIR.parent, DAGS_DIR.parent.parent) if (p / 'data').exists()),
+    DAGS_DIR.parent.parent,
+)
 SRC_PATH = PROJECT_ROOT / 'src'
 
+# APPEND (never insert-front): Airflow already has the dags folder early on
+# sys.path, so dags-local packages (`services`, `utils`, `validators`) keep
+# priority. Front-inserting SRC_PATH/PROJECT_ROOT made `src/services` and
+# `src/utils` shadow the dags packages (ModuleNotFoundError storm, 2026-07-07).
 for path in [str(DAGS_DIR), str(SRC_PATH), str(PROJECT_ROOT)]:
     if path not in sys.path:
-        sys.path.insert(0, path)
+        sys.path.append(path)
 
 
 # =============================================================================
@@ -1154,15 +1165,14 @@ def regenerate_macro_clean_parquet(**context) -> Dict[str, Any]:
     logger.info("REGENERATING MACRO_DAILY_CLEAN.PARQUET")
     logger.info("=" * 60)
 
+    # Contract (matches the historical CLEAN file consumed by weekly_generator /
+    # macro_analyzer._find_column): DatetimeIndex on fecha + UPPERCASE SSOT long
+    # column names. The DB stores lowercase SSOT names; TPM is the one legacy
+    # rename (D→M) kept for backward compatibility with existing consumers.
     conn = get_db_connection()
     try:
-        df = pd.read_sql("""
-            SELECT fecha, dxy, vix, wti, brent, gold, ust10y, ust2y,
-                   ibr, tpm, embi_col, fedfunds, cpi_us, cpi_col,
-                   unemployment_us, cci_col, ppi_us
-            FROM macro_indicators_daily
-            ORDER BY fecha ASC
-        """, conn)
+        df = pd.read_sql(
+            "SELECT * FROM macro_indicators_daily ORDER BY fecha ASC", conn)
     finally:
         conn.close()
 
@@ -1170,19 +1180,27 @@ def regenerate_macro_clean_parquet(**context) -> Dict[str, Any]:
         logger.warning("No macro data in DB — skipping MACRO_DAILY_CLEAN regeneration")
         return {"rows": 0, "skipped": True}
 
+    meta_cols = {"created_at", "updated_at", "is_complete", "ffill_count", "source_date"}
+    df = df.drop(columns=[c for c in df.columns if c in meta_cols])
+    df["fecha"] = pd.to_datetime(df["fecha"])
+    df = df.set_index("fecha").sort_index()
+    df.columns = [c.upper() for c in df.columns]
+    if "POLR_POLICY_RATE_COL_D_TPM" in df.columns:
+        df = df.rename(columns={"POLR_POLICY_RATE_COL_D_TPM": "POLR_POLICY_RATE_COL_M_TPM"})
+
     output_path = Path('/opt/airflow/data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet')
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Atomic write
+    # Atomic write (index preserved — downstream slices by DatetimeIndex)
     tmp_path = output_path.with_suffix('.parquet.tmp')
-    df.to_parquet(tmp_path, index=False)
+    df.to_parquet(tmp_path, index=True)
     tmp_path.rename(output_path)
 
     logger.info(
-        f"Regenerated MACRO_DAILY_CLEAN.parquet: {len(df)} rows, "
-        f"{df['fecha'].iloc[0]} to {df['fecha'].iloc[-1]}"
+        f"Regenerated MACRO_DAILY_CLEAN.parquet: {len(df)} rows x {len(df.columns)} cols, "
+        f"{df.index[0].date()} to {df.index[-1].date()}"
     )
-    return {"rows": len(df), "date_range": [str(df['fecha'].iloc[0]), str(df['fecha'].iloc[-1])]}
+    return {"rows": len(df), "date_range": [str(df.index[0].date()), str(df.index[-1].date())]}
 
 
 # =============================================================================

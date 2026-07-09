@@ -83,7 +83,7 @@ export default function Features() {
             {t.features.title}
           </h2>
           <p className="mt-6 text-slate-400 max-w-2xl mx-auto text-base sm:text-lg">
-            Tecnología de punta para maximizar tu rendimiento en el mercado de divisas.
+            Rigor verificable, no promesas: así se construye cada señal.
           </p>
         </motion.div>
 

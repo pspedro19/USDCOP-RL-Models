@@ -3,11 +3,29 @@ User contracts.
 """
 
 from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, SecretStr
 
 from .common import BaseContract
+
+
+class UserStatus(str, Enum):
+    """Account approval lifecycle (SSOT — mirrored by the DB CHECK constraint in
+    migration 053 and the TypeScript client). A new registration starts PENDING;
+    an admin moves it to APPROVED or REJECTED."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class UserRole(str, Enum):
+    """Authorization role (SSOT). Only ADMIN may reach the /api/admin/* routes."""
+
+    USER = "user"
+    ADMIN = "admin"
 
 
 class UserBase(BaseModel):
@@ -33,6 +51,9 @@ class UserProfile(BaseContract):
     last_login: datetime | None = None
     is_active: bool = True
     is_verified: bool = False
+    status: UserStatus = UserStatus.APPROVED
+    role: UserRole = UserRole.USER
+    must_reset_password: bool = False
 
 
 class UserProfileUpdate(BaseModel):

@@ -57,6 +57,7 @@ _DEFAULT_ASSETS: dict[str, dict[str, str]] = {
     "usdcop": {"symbol": "USD/COP", "chart_symbol": "USDCOP", "display_name": "USD/COP", "asset_class": "fx"},
     "xauusd": {"symbol": "XAU/USD", "chart_symbol": "XAUUSD", "display_name": "Gold", "asset_class": "commodity"},
     "btcusd": {"symbol": "BTC/USD", "chart_symbol": "BTCUSD", "display_name": "Bitcoin", "asset_class": "crypto"},
+    "btcusdt": {"symbol": "BTC/USDT", "chart_symbol": "BTCUSDT", "display_name": "Bitcoin", "asset_class": "crypto"},
 }
 
 
@@ -462,10 +463,29 @@ class BundlePublisher:
         status: str = "experimental",
         trained_at: str | None = None,
         refresh_registry: bool = True,
+        phase: str = "backtest",
     ) -> dict[str, Any]:
-        """Publish (strategy_id, version, year). Idempotent + immutable. Returns a summary dict."""
+        """Publish (strategy_id, version, year). Returns a summary dict.
+
+        phase="backtest" (default): immutable, content-addressed write under
+        backtests/<version>/ — a frozen OOS result never changes.
+        phase="production" (audit A4-01): the LIVE year is MUTABLE by nature (it
+        grows weekly) — write/overwrite strategies/<sid>/production/*.json and set
+        the manifest's `production` pointer; never route the live year through the
+        immutable path (the first weekly write would freeze it forever).
+        """
         sid = strategy_id
         chart = (_DEFAULT_ASSETS.get(asset_id) or {}).get("chart_symbol") or chart_symbol_for(symbol)
+
+        if phase == "production":
+            return self._publish_production(
+                sid=sid, asset_id=asset_id, symbol=symbol, chart=chart,
+                display_name=display_name, pipeline_type=pipeline_type,
+                timeframe=timeframe, version=version, year=year,
+                summary=summary, trades=trades, signals=signals,
+                status=status, trained_at=trained_at, refresh_registry=refresh_registry,
+            )
+
         vdir = self._bundle_dir(sid) / "backtests" / version
 
         summary_rel = f"strategies/{sid}/backtests/{version}/summary_{year}.json"
@@ -527,6 +547,89 @@ class BundlePublisher:
             "year": year,
             "wrote_new_files": bool(wrote_summary and wrote_trades),
             "immutable_hit": not (wrote_summary and wrote_trades),
+            "versions": m.versions,
+            "manifest": str(self._manifest_path(sid)),
+        }
+
+    def _publish_production(
+        self,
+        *,
+        sid: str,
+        asset_id: str,
+        symbol: str,
+        chart: str,
+        display_name: str,
+        pipeline_type: str,
+        timeframe: str,
+        version: str,
+        year: int,
+        summary: dict[str, Any],
+        trades: dict[str, Any],
+        signals: Any | None,
+        status: str,
+        trained_at: str | None,
+        refresh_registry: bool,
+    ) -> dict[str, Any]:
+        """MUTABLE production publish (audit A4-01): overwrite the live-year files under
+        strategies/<sid>/production/ and set the manifest `production` pointer. The live
+        year grows weekly — freezing it in the immutable backtests/ path silently dropped
+        every weekly update after the first."""
+        pdir = self._bundle_dir(sid) / "production"
+        pdir.mkdir(parents=True, exist_ok=True)
+
+        summary_rel = f"strategies/{sid}/production/summary.json"
+        trades_rel = f"strategies/{sid}/production/trades.json"
+        with (pdir / "summary.json").open("w", encoding="utf-8") as f:
+            safe_json_dump(summary, f, indent=2)
+        with (pdir / "trades.json").open("w", encoding="utf-8") as f:
+            safe_json_dump(trades, f, indent=2)
+        signals_rel: str | None = None
+        if signals is not None:
+            signals_rel = f"strategies/{sid}/production/signals.json"
+            with (pdir / "signals.json").open("w", encoding="utf-8") as f:
+                safe_json_dump(signals, f, indent=2)
+
+        m = self._load_manifest(sid) or StrategyBundleManifest(
+            strategy_id=sid,
+            asset_id=asset_id,
+            symbol=symbol,
+            chart_symbol=chart,
+            display_name=display_name,
+            pipeline_type=pipeline_type,
+            timeframe=timeframe,
+            status=status,
+        )
+        m.production = {
+            "model_version": version,
+            "year": year,
+            "summary": summary_rel,
+            "trades": trades_rel,
+            **({"signals": signals_rel} if signals_rel else {}),
+            "updated_at": self.generated_at,
+        }
+        # Upsert the model version; the deployed one becomes the active version.
+        m.model_versions = [mv for mv in m.model_versions if mv.version != version]
+        for mv in m.model_versions:
+            mv.active = False
+        m.model_versions.append(ModelVersionEntry(version=version, active=True, trained_at=trained_at))
+        m.produced_by = {"source": "BundlePublisher", "version": version, "year": year,
+                         "phase": "production", "generated_at": self.generated_at}
+
+        with self._manifest_path(sid).open("w", encoding="utf-8") as f:
+            safe_json_dump(m.to_dict(), f, indent=2)
+
+        if refresh_registry:
+            RegistryBuilder(self.data_dir, generated_at=self.generated_at).write(
+                RegistryBuilder(self.data_dir, generated_at=self.generated_at).build(write_manifests=False)
+            )
+
+        return {
+            "strategy_id": sid,
+            "version": version,
+            "year": year,
+            "phase": "production",
+            "wrote_new_files": True,
+            "immutable_hit": False,
             "versions": m.versions,
             "manifest": str(self._manifest_path(sid)),
         }

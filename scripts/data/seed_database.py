@@ -22,7 +22,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import pandas as pd

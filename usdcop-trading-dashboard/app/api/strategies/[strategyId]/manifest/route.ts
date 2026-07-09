@@ -14,6 +14,8 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import type { StrategyBundleManifest } from '@/lib/contracts/strategy-manifest.contract';
+
 const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 
 // Guard against path traversal: strategy ids are slugs.
@@ -31,7 +33,7 @@ export async function GET(
   }
   const file = path.join(DATA_DIR, 'strategies', strategyId, 'manifest.json');
   try {
-    const manifest = JSON.parse(await fs.readFile(file, 'utf-8'));
+    const manifest: StrategyBundleManifest = JSON.parse(await fs.readFile(file, 'utf-8'));
     return NextResponse.json(manifest);
   } catch {
     return NextResponse.json(

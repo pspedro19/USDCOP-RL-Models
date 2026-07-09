@@ -1,0 +1,17 @@
+# Temporary override to exercise the real auth path for load/security testing.
+# Turns OFF the DevUser bypass so get_current_user + token revocation enforce,
+# while keeping APP_ENV=development so the coarse global 60/min IP rate-limit
+# middleware stays disabled (route-level login lockout remains active).
+#
+# Usage:
+#   docker compose -f docker-compose.compact.yml -f docker-compose.override.testauth.yml \
+#     up -d --no-deps --force-recreate signalbridge-api
+#
+# Revert to normal:
+#   docker compose -f docker-compose.compact.yml up -d --no-deps --force-recreate signalbridge-api
+services:
+  signalbridge-api:
+    environment:
+      # Only override needed for full-auth testing — the REDIS_URL password fix
+      # is now permanent in docker-compose.compact.yml.
+      SIGNALBRIDGE_DEV_MODE: "false"

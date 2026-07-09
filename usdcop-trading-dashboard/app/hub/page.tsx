@@ -1,38 +1,59 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   BarChart3, TrendingUp, Activity, ChevronRight,
   Calendar, LineChart, Zap, Target, ArrowRight, Cpu, FlaskConical, FileText
 } from 'lucide-react';
 import { GlobalNavbar } from '@/components/navigation/GlobalNavbar';
+import { roleHasPermission, type Permission, type Role } from '@/lib/contracts/rbac.contract';
+import { MetricBadge } from '@/components/ui/MetricBadge';
+import { canShowRatios } from '@/lib/contracts/ui.contract';
 
 export default function HubPage() {
   const router = useRouter();
+  // Cards render from the RBAC contract (CTR-RBAC-001): the matrix decides what each role
+  // sees; the middleware is the real defense — this is reflection only.
+  const { data: session, status } = useSession();
+  const sessionLoading = status === 'loading';
+  const role = ((session?.user as { role?: string } | undefined)?.role ?? 'free') as Role;
+  const isSubscriber = role === 'subscriber';
 
-  const menuOptions = [
+  const menuOptionsAll: Array<{
+    id: string; title: string; subtitle: string; description: string;
+    icon: typeof BarChart3; gradient: string; glowColor: string; href: string;
+    features: string[]; permission: Permission;
+  }> = [
     {
       id: 'dashboard',
       title: 'Trading Dashboard',
       subtitle: 'Backtest y analisis',
-      description: 'Visualiza precios, senales de trading, metricas de rendimiento y el historial de operaciones del modelo RL.',
+      description: 'Visualiza precios, senales, metricas de rendimiento y el historial de operaciones de la estrategia Smart Simple (regime gate + TP/HS).',
       icon: BarChart3,
       gradient: 'from-cyan-500 to-blue-600',
       glowColor: 'cyan',
       href: '/dashboard',
-      features: ['Backtest Interactivo', 'Senales RL', 'Equity Curve', 'Historial de Trades']
+      features: ['Backtest Interactivo', 'Replay por Version', 'Equity Curve', 'Historial de Trades'],
+      permission: 'research:read',
     },
     {
       id: 'production',
-      title: 'Monitor de Produccion',
-      subtitle: 'Modelo en tiempo real',
-      description: 'Visualiza el modelo activo en produccion durante horario de mercado. Equity curve, posicion actual y P&L en vivo.',
+      title: isSubscriber ? 'Señales' : 'Monitor de Produccion',
+      subtitle: isSubscriber ? 'Señales de la estrategia activa' : 'Estrategia en tiempo real',
+      description: isSubscriber
+        ? 'Señales y desempeño de la estrategia activa en horario de mercado, con equity y P&L al dia.'
+        : 'Visualiza la estrategia activa en produccion durante horario de mercado. Equity curve, posicion actual y P&L en vivo.',
       icon: Cpu,
       gradient: 'from-green-500 to-teal-600',
       glowColor: 'green',
       href: '/production',
-      features: ['Modelo Activo', 'Equity NRT', 'Posicion Actual', 'P&L en Vivo']
+      features: isSubscriber
+        ? ['Señal Semanal', 'Equity al Dia', 'Posicion Actual', 'P&L en Vivo']
+        : ['Estrategia Activa', 'Equity NRT', 'Posicion Actual', 'P&L en Vivo'],
+      permission: 'signals:read',
     },
     {
       id: 'experiments',
@@ -43,42 +64,66 @@ export default function HubPage() {
       gradient: 'from-purple-500 to-pink-600',
       glowColor: 'purple',
       href: '/dashboard', // Experiments approval is integrated in Dashboard via FloatingExperimentPanel
-      features: ['Propuestas L4', 'Metricas Backtest', 'Comparacion Baseline', 'Segundo Voto']
+      features: ['Propuestas L4', 'Metricas Backtest', 'Comparacion Baseline', 'Segundo Voto'],
+      permission: 'research:read',
     },
     {
       id: 'forecasting',
       title: 'Forecasting Semanal',
       subtitle: 'Predicciones a mediano plazo',
-      description: 'Analiza proyecciones semanales del USD/COP basadas en modelos de series de tiempo y machine learning.',
+      description: 'Analiza proyecciones semanales multi-activo (USD/COP, Oro, BTC) basadas en modelos de series de tiempo y reglas cuantitativas.',
       icon: Calendar,
       gradient: 'from-amber-500 to-orange-600',
       glowColor: 'amber',
       href: '/forecasting',
-      features: ['Proyeccion 7 dias', 'Intervalos de confianza', 'Tendencias macro', 'Analisis tecnico']
+      features: ['Proyeccion Semanal', 'Intervalos de confianza', 'Tendencias macro', 'Multi-activo'],
+      permission: 'forecast:read',
     },
     {
       id: 'analysis',
       title: 'Analisis Semanal',
       subtitle: 'Inteligencia de mercado',
-      description: 'Analisis AI del USD/COP con indicadores macro, señales de modelos, noticias y calendario economico.',
+      description: 'Analisis AI multi-activo con indicadores macro, señales de estrategias, noticias y calendario economico.',
       icon: FileText,
       gradient: 'from-indigo-500 to-violet-600',
       glowColor: 'indigo',
       href: '/analysis',
-      features: ['Analisis AI Diario', 'Graficos Macro', 'Timeline Semanal', 'Chat Asistente']
+      features: ['Analisis AI Diario', 'Graficos Macro', 'Timeline Semanal', 'Chat Asistente'],
+      permission: 'analysis:read',
     },
     {
       id: 'execution',
       title: 'SignalBridge',
       subtitle: 'Ejecucion automatizada',
-      description: 'Conecta tus exchanges y ejecuta trades automaticamente basados en las senales del modelo RL.',
+      description: 'Conecta tus exchanges y ejecuta trades automaticamente basados en las senales de la estrategia activa.',
       icon: Zap,
       gradient: 'from-rose-500 to-red-600',
       glowColor: 'rose',
       href: '/execution/dashboard',
-      features: ['Conexion Exchanges', 'Ejecucion Real', 'Gestion de Riesgo', 'Kill Switch']
+      features: ['Conexion Exchanges', 'Paper-first', 'Gestion de Riesgo', 'Kill Switch'],
+      permission: 'execution:self',
     }
   ];
+  // §3.1 ux-navigation: client roles see DENIED modules as locked teasers (conversion),
+  // never as absence. Internal roles simply don't see what isn't theirs.
+  const isClientRole = role === 'free' || role === 'subscriber';
+  // Plan-level lock (#6): a subscriber whose PLAN lacks execution sees SignalBridge as a
+  // locked teaser (upsell to Auto), even though the ROLE has execution:self.
+  const [execEnabled, setExecEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (role !== 'subscriber') return;
+    fetch('/api/billing/me').then((r) => (r.ok ? r.json() : null))
+      .then((e) => setExecEnabled(!!e?.execution?.enabled)).catch(() => setExecEnabled(false));
+  }, [role]);
+  const planLockedIds = role === 'subscriber' && execEnabled === false ? ['execution'] : [];
+  const allowed = menuOptionsAll.filter((c) => roleHasPermission(role, c.permission)
+    && !planLockedIds.includes(c.id));
+  const locked = isClientRole
+    ? menuOptionsAll.filter((c) => ((!roleHasPermission(role, c.permission)
+        && (c.id === 'production' || c.id === 'execution'))
+        || planLockedIds.includes(c.id)))
+    : [];
+  const menuOptions = allowed;
 
   const handleNavigate = (href: string) => {
     console.log('[HUB] handleNavigate called with:', href);
@@ -125,9 +170,17 @@ export default function HubPage() {
             </p>
           </motion.div>
 
-          {/* Menu Cards */}
+          {/* Menu Cards — skeleton while the session hydrates (no 'free-flash' for admins) */}
+          {sessionLoading && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1,2,3,4,5,6].map((i) => (
+                <div key={i} className="h-56 rounded-2xl border border-slate-800/60 bg-slate-900/40 animate-pulse" />
+              ))}
+            </div>
+          )}
+          {!sessionLoading && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuOptions.map((option, index) => {
+            {[...menuOptions].map((option, index) => {
               const Icon = option.icon;
               return (
                 <motion.div
@@ -212,38 +265,78 @@ export default function HubPage() {
                 </motion.div>
               );
             })}
-          </div>
-
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4"
-          >
-            {[
-              { label: 'Modelo Activo', value: 'PPO v2.4', icon: Zap, color: 'text-cyan-400' },
-              { label: 'Precision', value: '67.3%', icon: Target, color: 'text-green-400' },
-              { label: 'Sharpe Ratio', value: '1.84', icon: TrendingUp, color: 'text-purple-400' },
-              { label: 'Trades Hoy', value: '12', icon: LineChart, color: 'text-amber-400' },
-            ].map((stat, i) => {
-              const Icon = stat.icon;
+            {locked.map((option) => {
+              const Icon = option.icon;
               return (
-                <div
-                  key={i}
-                  className="bg-gray-900/50 backdrop-blur rounded-xl p-4 border border-gray-800/30"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon className={`w-4 h-4 ${stat.color}`} />
-                    <span className="text-xs text-gray-500">{stat.label}</span>
+                <div key={`locked-${option.id}`} className="relative rounded-2xl border border-slate-700/60 bg-slate-900/40 p-6 overflow-hidden">
+                  {/* real content behind the lock (blurred) — candado con propósito */}
+                  <div className="blur-[6px] select-none pointer-events-none" aria-hidden>
+                    <Icon className="w-8 h-8 text-slate-400 mb-3" />
+                    <h3 className="text-lg font-semibold text-white">{option.title}</h3>
+                    <p className="text-sm text-slate-400 mt-1">{option.description}</p>
                   </div>
-                  <span className="text-lg font-bold text-white">{stat.value}</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/40">
+                    <span className="text-2xl" aria-hidden>🔒</span>
+                    <p className="text-xs text-slate-300 text-center px-6">
+                      {option.id === 'production'
+                        ? 'La señal de esta semana ya fue publicada — actívala con el plan Signals.'
+                        : 'Esta señal se habría ejecutado sola en tu exchange — plan Auto.'}
+                    </p>
+                    <a href="/pricing" className="mt-1 text-xs font-semibold text-cyan-400 hover:underline">
+                      Ver planes →
+                    </a>
+                  </div>
                 </div>
               );
             })}
-          </motion.div>
+          </div>
+          )}
+
+          {/* Quick Stats — REAL figures from the published bundle (ux-navigation §6: no
+              fabricated numbers, ever; ratios hidden under N<20). Replaces the stale
+              "PPO v2.4 / 67.3%" hardcodes flagged by the audit. */}
+          <LiveQuickStats />
         </div>
       </main>
     </div>
+  );
+}
+
+
+/** Live quick-stats strip — bundle truth via /api/public/live-stats (fail-soft: hides). */
+function LiveQuickStats() {
+  const [s, setS] = useState<{ strategy_name?: string; year?: number; unavailable?: boolean;
+    return_ytd_pct?: number | null; max_dd_pct?: number | null; n_trades?: number | null;
+    sharpe?: number | null; bundle_date?: string | null } | null>(null);
+  useEffect(() => {
+    fetch('/api/public/live-stats').then(r => r.ok ? r.json() : null).then(setS).catch(() => null);
+  }, []);
+  if (!s || s.unavailable || s.return_ytd_pct == null) return null;
+  const items: Array<[string, string]> = [
+    ['Estrategia activa', s.strategy_name ?? '—'],
+    [`Retorno ${s.year} YTD`, `${s.return_ytd_pct >= 0 ? '+' : ''}${s.return_ytd_pct.toFixed(2)}%`],
+    ['Max Drawdown', s.max_dd_pct != null ? `−${Math.abs(s.max_dd_pct).toFixed(1)}%` : '—'],
+    canShowRatios(s.n_trades) && s.sharpe != null
+      ? ['Sharpe', s.sharpe.toFixed(2)]
+      : ['Operaciones', String(s.n_trades ?? '—')],
+  ];
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.5 }}
+      className="mt-12">
+      <div className="flex items-center gap-2 mb-3">
+        <MetricBadge phase="live" provenance={{ strategyId: s.strategy_name ?? '',
+          bundleDate: s.bundle_date ?? undefined }} />
+        <span className="text-[11px] text-gray-500">cifras del bundle publicado — no recomputadas</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {items.map(([label, value]) => (
+          <div key={label} className="bg-gray-900/50 backdrop-blur rounded-xl p-4 border border-gray-800/30">
+            <div className="text-xs text-gray-500 mb-1">{label}</div>
+            <span className="text-lg font-bold text-white tabular-nums">{value}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 }

@@ -3,6 +3,7 @@ MEXC Exchange adapter implementation.
 Uses CCXT for unified exchange access.
 """
 
+import math
 from datetime import datetime
 from typing import Any
 
@@ -144,16 +145,28 @@ class MEXCAdapter(ExchangeAdapter):
             limits = market.get("limits", {})
             precision = market.get("precision", {})
 
+            # MEXC uses CCXT TICK_SIZE precision mode: precision.amount is the STEP itself
+            # (e.g. 1e-06 for BTC/USDT), not a decimal count. The old `10**-precision`
+            # produced step_size=1.0 for BTC and would zero-out any sub-unit order (audit
+            # OLA-3 S1). Handle both modes explicitly.
+            amt_prec = precision.get("amount")
+            if isinstance(amt_prec, (int, float)) and 0 < amt_prec < 1:
+                step_size = float(amt_prec)                    # TICK_SIZE mode
+            elif isinstance(amt_prec, (int, float)) and amt_prec >= 1:
+                step_size = float(10 ** -int(amt_prec))        # DECIMAL_PLACES mode
+            else:
+                step_size = 10 ** -8
+
             return SymbolInfo(
                 symbol=normalized,
                 base_asset=market.get("base", ""),
                 quote_asset=market.get("quote", ""),
                 min_quantity=float(limits.get("amount", {}).get("min", 0) or 0),
                 max_quantity=float(limits.get("amount", {}).get("max", 0) or float("inf")),
-                step_size=float(10 ** -precision.get("amount", 8)),
+                step_size=step_size,
                 min_notional=float(limits.get("cost", {}).get("min", 0) or 0),
-                price_precision=int(precision.get("price", 8)),
-                quantity_precision=int(precision.get("amount", 8)),
+                price_precision=int(precision.get("price", 8) or 8),
+                quantity_precision=max(0, round(-math.log10(step_size))) if step_size < 1 else 0,
                 is_active=market.get("active", True),
             )
 

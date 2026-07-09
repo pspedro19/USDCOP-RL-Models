@@ -585,7 +585,12 @@ def export_seeds(**context):
     logging.info("EXPORTING UPDATED SEED FILES")
     logging.info("=" * 60)
 
-    seeds_dir = PROJECT_ROOT / 'seeds' / 'latest'
+    # In the container the dags mount at /opt/airflow/dags, so PROJECT_ROOT
+    # (3 parents up) resolves to /opt (read-only), not the repo root. The seed
+    # volume is mounted at /opt/airflow/seeds (rw). Anchor on AIRFLOW_HOME so the
+    # export lands on the mounted, writable seeds dir (matches l0_seed_backup.py).
+    import os
+    seeds_dir = Path(os.environ.get('AIRFLOW_HOME', '/opt/airflow')) / 'seeds' / 'latest'
     seeds_dir.mkdir(parents=True, exist_ok=True)
 
     conn = get_db_connection()

@@ -44,22 +44,23 @@ const terminalVariants = {
 };
 
 // Trading log entries for terminal animation
+// Honest system-event feed: the real weekly lifecycle (signal → gates → publish → settle).
+// No fabricated fills, no model jargon (ux-navigation §6.5).
 const tradingLogs = [
-  { time: '09:32:15.847', type: 'SIGNAL', message: 'PPO_v3 BUY signal confidence: 0.847', color: 'text-emerald-400' },
-  { time: '09:32:15.849', type: 'EXEC', message: 'Order submitted: BUY 0.5 lots @ 4,215.32', color: 'text-cyan-400' },
-  { time: '09:32:15.851', type: 'FILL', message: 'Order filled: 0.5 lots @ 4,215.30 (slip: -0.02)', color: 'text-green-400' },
-  { time: '09:32:16.102', type: 'RISK', message: 'Position exposure: 2.3% | Max DD: 0.8%', color: 'text-yellow-400' },
-  { time: '09:32:17.445', type: 'MODEL', message: 'A2C_macro updating on DXY shift +0.12%', color: 'text-purple-400' },
-  { time: '09:32:18.223', type: 'SIGNAL', message: 'SAC_HF HOLD signal confidence: 0.923', color: 'text-blue-400' },
-  { time: '09:32:19.567', type: 'P&L', message: 'Unrealized P&L: +$127.45 (+0.25%)', color: 'text-emerald-400' },
-  { time: '09:32:20.891', type: 'MACRO', message: 'Brent crude +1.2% | Sentiment: Bullish COP', color: 'text-orange-400' },
+  { time: 'LUN 08:15', type: 'SEÑAL', message: 'Forecast semanal generado (ensemble + macro T−1)', color: 'text-cyan-400' },
+  { time: 'LUN 08:15', type: 'GATE', message: 'Gate de régimen: condiciones OK — se opera esta semana', color: 'text-emerald-400' },
+  { time: 'LUN 08:45', type: 'RIESGO', message: 'Vol-targeting aplicado · stop y objetivo definidos', color: 'text-yellow-400' },
+  { time: 'LUN 09:00', type: 'PUBLICADA', message: 'Señal publicada ANTES del hecho — sin edición posterior', color: 'text-emerald-400' },
+  { time: 'MIE 11:30', type: 'ESTADO', message: 'En posición · riesgo acotado por hard stop', color: 'text-blue-400' },
+  { time: 'VIE 12:50', type: 'CIERRE', message: 'Semana liquidada · resultado publicado (gane o pierda)', color: 'text-emerald-400' },
+  { time: 'LUN 08:15', type: 'GATE', message: 'Semana siguiente: sin condiciones — NO se opera', color: 'text-orange-400' },
 ];
 
 // Trust badges configuration
 const trustBadges = [
-  { icon: Shield, labelKey: 'security' as const, labelEs: 'Seguridad Bancaria', labelEn: 'Bank-grade Security' },
+  { icon: Shield, labelKey: 'security' as const, labelEs: 'Sin custodia de fondos', labelEn: 'Non-custodial' },
   { icon: Zap, labelKey: 'realtime' as const, labelEs: 'Tiempo Real', labelEn: 'Real-time' },
-  { icon: TrendingUp, labelKey: 'ai' as const, labelEs: 'Impulsado por IA', labelEn: 'AI-Powered' },
+  { icon: TrendingUp, labelKey: 'ai' as const, labelEs: 'Gates pre-registrados', labelEn: 'Pre-registered gates' },
 ];
 
 function TerminalAnimation() {
@@ -122,7 +123,7 @@ function TerminalAnimation() {
                 className="flex items-start gap-2"
               >
                 <span className="text-gray-600 shrink-0">[{log.time}]</span>
-                <span className="text-gray-500 shrink-0 w-14">[{log.type}]</span>
+                <span className="text-gray-500 shrink-0 w-24">[{log.type}]</span>
                 <span className={log.color}>{log.message}</span>
               </motion.div>
             ))}
@@ -208,12 +209,13 @@ export default function Hero() {
               variants={itemVariants}
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-5 mb-12 sm:mb-14"
             >
-              <button className="w-full sm:w-auto px-8 py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10">
+              {/* ux-navigation S2: primary -> free signup, secondary -> /metodologia (the sales weapon) */}
+              <a href="/login" className="w-full sm:w-auto px-8 py-4 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10 text-center">
                 {t.hero.cta_primary}
-              </button>
-              <button className="w-full sm:w-auto px-8 py-4 border border-gray-700 text-white font-semibold rounded-lg hover:border-gray-500 hover:bg-white/5 transition-all duration-200">
-                {t.hero.cta_secondary}
-              </button>
+              </a>
+              <a href="/metodologia" className="w-full sm:w-auto px-8 py-4 border border-gray-700 text-white font-semibold rounded-lg hover:border-gray-500 hover:bg-white/5 transition-all duration-200 text-center">
+                {t.hero.cta_secondary} →
+              </a>
             </motion.div>
 
             {/* Trust badges */}

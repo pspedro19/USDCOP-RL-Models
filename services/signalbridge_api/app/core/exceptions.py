@@ -17,6 +17,8 @@ class ErrorCode(str, Enum):
     TOKEN_EXPIRED = "AUTH_1002"
     TOKEN_INVALID = "AUTH_1003"
     INSUFFICIENT_PERMISSIONS = "AUTH_1004"
+    ACCOUNT_PENDING_APPROVAL = "AUTH_1005"
+    ACCOUNT_REJECTED = "AUTH_1006"
 
     # Validation Errors (2xxx)
     VALIDATION_ERROR = "VAL_2001"
@@ -94,6 +96,29 @@ class AuthenticationError(SignalBridgeException):
             message=message,
             error_code=error_code,
             status_code=status.HTTP_401_UNAUTHORIZED,
+            details=details,
+        )
+
+
+class AccountNotApprovedError(SignalBridgeException):
+    """Login attempt against an account that is not in the `approved` state.
+
+    Distinct from AuthenticationError on purpose: the credentials were CORRECT,
+    so the login route must NOT record this as a brute-force failure. Carries 403
+    (authenticated identity, action forbidden) with a machine-readable code the
+    client uses to route the user to the right screen (pending vs rejected).
+    """
+
+    def __init__(
+        self,
+        message: str = "Account is not approved",
+        error_code: ErrorCode = ErrorCode.ACCOUNT_PENDING_APPROVAL,
+        details: dict[str, Any] | None = None,
+    ):
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            status_code=status.HTTP_403_FORBIDDEN,
             details=details,
         )
 

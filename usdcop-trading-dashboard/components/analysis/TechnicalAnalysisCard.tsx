@@ -21,6 +21,11 @@ const VOLATILITY_CONFIG = {
 } as const;
 
 export function TechnicalAnalysisCard({ ta }: TechnicalAnalysisCardProps) {
+  // This card renders the rich USD/COP technical schema (bias/RSI/ATR/current_price).
+  // Assets with a leaner analysis (Gold/BTC) omit these fields — skip the card rather
+  // than crash on `undefined.toFixed()`. Graceful degradation over a broken page.
+  if (ta == null || ta.current_price == null || ta.bias_confidence == null) return null;
+
   const bias = BIAS_CONFIG[ta.dominant_bias] || BIAS_CONFIG.neutral;
   const vol = VOLATILITY_CONFIG[ta.volatility_regime] || VOLATILITY_CONFIG.normal;
   const BiasIcon = bias.icon;

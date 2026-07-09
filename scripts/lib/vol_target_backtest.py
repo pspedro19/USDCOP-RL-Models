@@ -32,7 +32,7 @@ import pandas as pd
 from scipy import stats
 
 # Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/lib/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.forecasting.data_contracts import FEATURE_COLUMNS, TARGET_HORIZONS

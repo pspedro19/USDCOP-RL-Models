@@ -36,8 +36,22 @@ jobs:
         id: deprecated-check
         run: |
           echo "Checking for deprecated imports..."
-          python scripts/migrate_imports.py --check
+          python scripts/ops/migrate_imports.py --check
         continue-on-error: true
+
+      - name: Set up Node (RBAC contract gates)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # CTR-RBAC-001: deny-by-default is only real if the matrix is exhaustive.
+      # Coverage: every real route in app/** must have a permission entry.
+      # Semantics: role→permission matrix + route resolution + expiry degradation.
+      - name: RBAC coverage + contract semantics
+        working-directory: usdcop-trading-dashboard
+        run: |
+          node scripts/check-rbac-coverage.mjs
+          node --experimental-strip-types scripts/test-rbac-contract.mjs
 
       - name: Verify SSOT contracts are importable
         run: |
@@ -123,7 +137,7 @@ jobs:
           echo "=================================="
           if [ "${{ steps.deprecated-check.outcome }}" == "failure" ]; then
             echo "WARNING: Deprecated imports detected."
-            echo "Run 'python scripts/migrate_imports.py --check' for details."
+            echo "Run 'python scripts/ops/migrate_imports.py --check' for details."
           else
             echo "All checks passed."
           fi

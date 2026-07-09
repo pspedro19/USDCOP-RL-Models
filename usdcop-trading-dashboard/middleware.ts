@@ -1,182 +1,194 @@
 /**
- * Next.js Middleware
- * ==================
+ * Next.js Middleware — RBAC edge gate (CTR-RBAC-001).
+ * ====================================================
  *
- * Handles authentication and route protection at the edge.
- * Runs before every request to protected routes.
+ * DENY-BY-DEFAULT, driven entirely by `lib/contracts/rbac.contract.ts` (the SSOT):
+ *   - PAGE_ROUTES / API_ROUTES map every route to a required permission.
+ *   - A route with no matrix entry ⇒ authenticated minimum (pages) / 401 (APIs).
+ *   - Role→permission resolution is `roleHasPermission()`; unknown/legacy roles get NO
+ *     permissions (they can still see public pages).
+ *
+ * Monetization edge-gate (audit finding R3): `/data/**` and `/forecasting/**` static
+ * artifacts (bundles, weekly inference, analysis charts) were served ANONYMOUSLY —
+ * 716+ monetizable files. They now require a session at the edge. Entitlement DELAY
+ * tiering (free ⇒ T−1/T+7) is applied by the `/api/data` handler, not here.
+ *
+ * The UI hides what a role can't use; THIS file is the actual defense.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-// ============================================================================
-// Route Configuration
-// ============================================================================
+import {
+  API_ROUTES,
+  PAGE_ROUTES,
+  requiredPermissionFor,
+  roleHasPermission,
+  type Permission,
+} from '@/lib/contracts/rbac.contract';
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = [
-  '/',           // Landing page is public
-  '/login',
-  '/execution', // Execution module has its own auth system (localStorage-based)
-  '/api/auth',
-  '/api/health',
-  '/api/proxy/trading/health',  // Health checks don't need auth
-  '/_next',
-  '/favicon.ico',
-  '/images',
-  '/fonts',
-  '/data',        // Static JSON data files (production summaries, trades)
-  '/forecasting', // Static CSV + PNG files (model metrics, backtest charts)
+// Truly public assets (branding for landing/login) — everything else is matrix-gated.
+const PUBLIC_PREFIXES = [
+  '/login', '/register', '/reset-password', '/pricing', '/metodologia', '/legal', '/api/public', '/api/auth', '/api/health',
+  '/api/proxy/trading/health', '/_next', '/favicon.ico', '/images', '/fonts',
 ];
 
-// Routes that require admin role
-const ADMIN_ROUTES = [
-  '/admin',
-  '/api/admin',
-  '/api/users',
-];
+// Monetized static artifact roots: session required at the edge (R3 edge-gate).
+const GATED_STATIC_PREFIXES = ['/data/', '/forecasting/'];
 
-// API routes that require authentication
-const PROTECTED_API_ROUTES = [
-  '/api/trading',
-  '/api/signals',
-  '/api/backtest',
-  '/api/pipeline',
-  '/api/agent',
-];
+// ── R7: per-user rate limit (fixed window, in-memory per edge instance — adequate
+// single-node; move to Redis when horizontally scaled). Applies to data-heavy APIs.
+const RATE_LIMITED_PREFIXES = ['/api/market', '/api/data', '/api/analysis', '/api/forecasting',
+  // NextAuth credentials callback: captcha-free secondary login path — throttle it so it
+  // cannot be used to sidestep the captcha-gated primary proxy (SB lockout still applies).
+  '/api/auth/callback'];
+const RATE_LIMIT_MAX = 120;          // requests per window per user
+const RATE_WINDOW_MS = 60_000;
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
-// ============================================================================
-// Middleware
-// ============================================================================
+function rateLimited(userKey: string): boolean {
+  const now = Date.now();
+  const b = rateBuckets.get(userKey);
+  if (!b || now > b.resetAt) {
+    rateBuckets.set(userKey, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    if (rateBuckets.size > 5000) rateBuckets.clear(); // memory guard
+    return false;
+  }
+  b.count += 1;
+  return b.count > RATE_LIMIT_MAX;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for public routes
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next();
+  if (pathname === '/' || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    return withSecurityHeaders(NextResponse.next());
   }
 
-  // DEV MODE: Skip auth entirely in development or when AUTH_BYPASS is set
-  // NODE_ENV is compile-time, AUTH_BYPASS_ENABLED is runtime
-  if (process.env.NODE_ENV === 'development' || process.env.AUTH_BYPASS_ENABLED === 'true') {
-    const response = NextResponse.next();
-    addSecurityHeaders(response);
-    return response;
+  // Explicit opt-in bypass, never in production (kept from previous middleware).
+  if (process.env.AUTH_BYPASS_ENABLED === 'true' && process.env.NODE_ENV !== 'production') {
+    return withSecurityHeaders(NextResponse.next());
   }
 
-  // Get JWT token - explicitly specify cookie name for HTTP mode
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
     cookieName: 'next-auth.session-token',
   });
+  const role = (token?.role as string | undefined) ?? null;
 
-  // Check if route requires authentication
-  const isProtectedPage = !isPublicRoute(pathname) && !pathname.startsWith('/api');
-  const isProtectedApi = PROTECTED_API_ROUTES.some(route => pathname.startsWith(route));
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
+  // ---- monetized static artifacts: any session required (delay tiering lives in /api/data)
+  if (GATED_STATIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    if (!token) return deny(request, pathname);
+    // Forecasting PNGs get per-file week-delay enforcement (R3): rewrite the static
+    // path to the fs-backed gated route, which applies the plan's forecast_delay_hours
+    // by the `_YYYY_WNN` in the filename. Other static artifacts stay session-only.
+    if (pathname.startsWith('/forecasting/') && pathname.endsWith('.png')) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/api${pathname}`;
+      // Stamp identity on the rewritten REQUEST — the gated route resolves the plan
+      // from x-user-id; without it getEntitlements fails closed to free for everyone.
+      const headers = new Headers(request.headers);
+      headers.delete('x-user-id');
+      headers.delete('x-user-role');
+      if (token.id) headers.set('x-user-id', String(token.id));
+      if (role) headers.set('x-user-role', role);
+      return withSecurityHeaders(NextResponse.rewrite(url, { request: { headers } }));
+    }
+    return withSecurityHeaders(NextResponse.next());
+  }
 
-  // Redirect to login if not authenticated
-  if ((isProtectedPage || isProtectedApi) && !token) {
-    // For API routes, return 401
-    if (pathname.startsWith('/api')) {
+  // ---- matrix resolution (deny-by-default)
+  const isApi = pathname.startsWith('/api');
+  const required = requiredPermissionFor(pathname, isApi ? API_ROUTES : PAGE_ROUTES);
+
+  if (required === 'public') return withSecurityHeaders(NextResponse.next());
+
+  if (!token) return deny(request, pathname);
+
+  // R7 rate limit on data-heavy APIs (per user id, fallback IP). MUST run before the
+  // `authenticated`-permission early return below — /api/data & friends resolve to
+  // 'authenticated', which used to bypass the limiter entirely (found by burst smoke test).
+  if (RATE_LIMITED_PREFIXES.some((p) => pathname.startsWith(p))) {
+    const key = String(token.id ?? request.headers.get('x-forwarded-for') ?? 'anon');
+    if (rateLimited(key)) {
+      return NextResponse.json({ error: 'rate limit exceeded', retry_in_s: 60 }, { status: 429 });
+    }
+  }
+
+  if (required === 'authenticated' || required === null) {
+    // Unmatched routes still require a session (deny-by-default floor). Unmatched APIs
+    // are additionally flagged by the CI coverage test so the matrix stays exhaustive.
+    return withUserHeaders(request, token, role);
+  }
+
+  if (!roleHasPermission(role ?? undefined, required as Permission)) {
+    if (isApi) {
       return NextResponse.json(
-        {
-          error: 'Authentication required',
-          message: 'Please log in to access this resource',
-          timestamp: new Date().toISOString(),
-        },
-        { status: 401 }
+        { error: 'Forbidden', required, timestamp: new Date().toISOString() },
+        { status: 403 },
       );
     }
-
-    // For pages, redirect to login
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/hub', request.url)); // page: bounce to hub
   }
 
-  // Check admin authorization
-  if (isAdminRoute && token) {
-    const role = token.role as string;
-    if (role !== 'admin') {
-      if (pathname.startsWith('/api')) {
-        return NextResponse.json(
-          {
-            error: 'Forbidden',
-            message: 'Admin access required',
-            timestamp: new Date().toISOString(),
-          },
-          { status: 403 }
-        );
-      }
+  return withUserHeaders(request, token, role);
+}
 
-      // Redirect non-admin to hub
-      return NextResponse.redirect(new URL('/hub', request.url));
-    }
+// ─────────────────────────────────────────────────────────────── helpers
+
+function deny(request: NextRequest, pathname: string) {
+  if (pathname.startsWith('/api') || GATED_STATIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    return NextResponse.json(
+      { error: 'Authentication required', timestamp: new Date().toISOString() },
+      { status: 401 },
+    );
   }
+  const loginUrl = new URL('/login', request.url);
+  loginUrl.searchParams.set('callbackUrl', pathname);
+  return NextResponse.redirect(loginUrl);
+}
 
-  // Add security headers
-  const response = NextResponse.next();
+function withUserHeaders(
+  request: NextRequest,
+  token: Record<string, unknown>,
+  role: string | null,
+) {
+  // Identity must travel on the REQUEST headers so downstream route handlers can read it
+  // (the legacy middleware set these on the response — the client saw them, handlers never
+  // did). Strip any spoofed inbound values first: only the middleware may assert identity.
+  const headers = new Headers(request.headers);
+  headers.delete('x-user-id');
+  headers.delete('x-user-role');
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    if (token.id) headers.set('x-user-id', String(token.id));
+    if (role) headers.set('x-user-role', role);
+  }
+  const response = NextResponse.next({ request: { headers } });
   addSecurityHeaders(response);
-
-  // Add user info to request headers for API routes
-  if (token && pathname.startsWith('/api')) {
-    response.headers.set('x-user-id', token.id as string);
-    response.headers.set('x-user-role', token.role as string);
-  }
-
   return response;
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function isPublicRoute(pathname: string): boolean {
-  // Check for exact match first (for '/')
-  if (PUBLIC_ROUTES.includes(pathname)) {
-    return true;
-  }
-  // Then check for prefix match (excluding '/')
-  return PUBLIC_ROUTES.filter(r => r !== '/').some(route => pathname.startsWith(route));
+function withSecurityHeaders(response: NextResponse) {
+  addSecurityHeaders(response);
+  return response;
 }
 
 function addSecurityHeaders(response: NextResponse): void {
-  // Prevent clickjacking
   response.headers.set('X-Frame-Options', 'DENY');
-
-  // Prevent MIME type sniffing
   response.headers.set('X-Content-Type-Options', 'nosniff');
-
-  // XSS protection
   response.headers.set('X-XSS-Protection', '1; mode=block');
-
-  // Referrer policy
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // Permissions policy
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   );
 }
 
-// ============================================================================
-// Middleware Config
-// ============================================================================
-
+// Run on everything except Next internals + public branding assets. NOTE: unlike the
+// previous matcher, .json/.csv/.png are NOT excluded — that exclusion is what left the
+// monetized /data + /forecasting artifacts publicly readable (audit R3).
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|csv)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|images|fonts).*)'],
 };

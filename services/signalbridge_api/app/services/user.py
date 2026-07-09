@@ -2,6 +2,8 @@
 User service for user management operations.
 """
 
+import secrets
+import string
 from datetime import datetime
 from uuid import UUID
 
@@ -9,8 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.contracts.auth import RegisterRequest
-from app.contracts.user import UserProfile, UserProfileUpdate
+from app.contracts.user import UserProfile, UserProfileUpdate, UserRole, UserStatus
 from app.core.exceptions import (
+    AccountNotApprovedError,
     AuthenticationError,
     ConflictError,
     ErrorCode,
@@ -61,13 +64,17 @@ class UserService:
                 details={"email": data.email},
             )
 
-        # Create user
+        # Create user in the PENDING state — no access until an admin approves.
+        # is_active stays False so even a status bug cannot yield a usable login.
         user = User(
             email=data.email.lower(),
             hashed_password=get_password_hash(data.password.get_secret_value()),
             name=data.name,
-            is_active=True,
+            is_active=False,
             is_verified=False,
+            status=UserStatus.PENDING.value,
+            role=UserRole.USER.value,
+            must_reset_password=False,
         )
 
         self.db.add(user)
@@ -113,6 +120,20 @@ class UserService:
                 error_code=ErrorCode.INVALID_CREDENTIALS,
             )
 
+        # Credentials are correct past this point — approval/enablement failures
+        # are NOT brute-force failures, so they raise a distinct (403) exception
+        # that the login route does not count toward the lockout.
+        if user.status == UserStatus.PENDING.value:
+            raise AccountNotApprovedError(
+                message="Your account is pending administrator approval",
+                error_code=ErrorCode.ACCOUNT_PENDING_APPROVAL,
+            )
+        if user.status == UserStatus.REJECTED.value:
+            raise AccountNotApprovedError(
+                message="Your registration was not approved",
+                error_code=ErrorCode.ACCOUNT_REJECTED,
+            )
+
         if not user.is_active:
             raise AuthenticationError(
                 message="Account is disabled",
@@ -124,6 +145,143 @@ class UserService:
         await self.db.commit()
 
         return user
+
+    # ------------------------------------------------------------------ #
+    # Admin-approval lifecycle
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def generate_temp_password(length: int = 16) -> str:
+        """Cryptographically-random temporary password that satisfies the
+        password policy (upper + lower + digit)."""
+        alphabet = string.ascii_letters + string.digits
+        while True:
+            pw = "".join(secrets.choice(alphabet) for _ in range(length))
+            if (
+                any(c.islower() for c in pw)
+                and any(c.isupper() for c in pw)
+                and any(c.isdigit() for c in pw)
+            ):
+                return pw
+
+    async def list_by_status(self, status: UserStatus) -> list[User]:
+        """List users in a given approval state (newest first)."""
+        result = await self.db.execute(
+            select(User)
+            .where(User.status == status.value)
+            .order_by(User.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def _require_pending(self, user_id: UUID) -> User:
+        user = await self.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(
+                message="User not found", resource_type="User", resource_id=str(user_id)
+            )
+        if user.status != UserStatus.PENDING.value:
+            raise ConflictError(
+                message=f"User is already {user.status}",
+                details={"status": user.status},
+            )
+        return user
+
+    async def approve(self, user_id: UUID, admin_id: UUID) -> tuple[User, str]:
+        """Approve a pending user: activate, issue a temporary password, and force
+        a reset on first login. Returns (user, temp_password) — the caller emails
+        the temp password; it is never persisted in clear text."""
+        user = await self._require_pending(user_id)
+        temp_password = self.generate_temp_password()
+
+        user.status = UserStatus.APPROVED.value
+        user.is_active = True
+        user.hashed_password = get_password_hash(temp_password)
+        user.must_reset_password = True
+        user.approved_by = admin_id
+        user.approved_at = datetime.utcnow()
+        user.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user, temp_password
+
+    async def reject(
+        self, user_id: UUID, admin_id: UUID, reason: str | None = None
+    ) -> User:
+        """Reject a pending user."""
+        user = await self._require_pending(user_id)
+        user.status = UserStatus.REJECTED.value
+        user.is_active = False
+        user.rejected_at = datetime.utcnow()
+        user.rejection_reason = reason
+        user.approved_by = admin_id
+        user.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def reset_password(
+        self, user_id: UUID, current_password: str, new_password: str
+    ) -> User:
+        """Consume a temporary (or current) password and set a new one, clearing
+        the must_reset_password flag."""
+        user = await self.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(
+                message="User not found", resource_type="User", resource_id=str(user_id)
+            )
+        if not verify_password(current_password, user.hashed_password):
+            raise AuthenticationError(
+                message="Current password is incorrect",
+                error_code=ErrorCode.INVALID_CREDENTIALS,
+            )
+        user.hashed_password = get_password_hash(new_password)
+        user.must_reset_password = False
+        user.updated_at = datetime.utcnow()
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def bootstrap_admin(
+        self, email: str, password: str, name: str = "Administrator"
+    ) -> User:
+        """Idempotently ensure an approved admin exists. If the email is present
+        it is promoted to an active, approved admin (password left untouched);
+        otherwise it is created. Safe to call on every startup."""
+        existing = await self.get_by_email(email)
+        if existing:
+            changed = False
+            if existing.role != UserRole.ADMIN.value:
+                existing.role = UserRole.ADMIN.value
+                changed = True
+            if existing.status != UserStatus.APPROVED.value:
+                existing.status = UserStatus.APPROVED.value
+                changed = True
+            if not existing.is_active:
+                existing.is_active = True
+                changed = True
+            if changed:
+                existing.updated_at = datetime.utcnow()
+                await self.db.commit()
+                await self.db.refresh(existing)
+            return existing
+
+        admin = User(
+            email=email.lower(),
+            hashed_password=get_password_hash(password),
+            name=name,
+            is_active=True,
+            is_verified=True,
+            status=UserStatus.APPROVED.value,
+            role=UserRole.ADMIN.value,
+            must_reset_password=False,
+        )
+        self.db.add(admin)
+        await self.db.flush()
+        self.db.add(TradingConfig(user_id=admin.id, trading_enabled=False))
+        await self.db.commit()
+        await self.db.refresh(admin)
+        return admin
 
     async def update_profile(
         self,
@@ -223,4 +381,7 @@ class UserService:
             last_login=user.last_login,
             is_active=user.is_active,
             is_verified=user.is_verified,
+            status=getattr(user, "status", UserStatus.APPROVED.value),
+            role=getattr(user, "role", UserRole.USER.value),
+            must_reset_password=getattr(user, "must_reset_password", False),
         )

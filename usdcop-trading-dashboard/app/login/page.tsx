@@ -27,60 +27,28 @@ const useMarketData = () => {
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        // Try getting symbol stats first (includes 24h change)
-        const statsResponse = await fetch('/api/proxy/trading/stats/USDCOP');
-        if (statsResponse.ok) {
-          const stats = await statsResponse.json();
-
+        // Public spot quote — no session needed (the login hero is anonymous). Avoids the
+        // 401 console noise from the gated /api/market + /api/proxy/trading endpoints.
+        const res = await fetch('/api/public/market-price?symbol=USD/COP');
+        const stats = res.ok ? await res.json() : null;
+        if (stats && !stats.unavailable && typeof stats.price === 'number') {
           setData(prev => {
-            // Build trend data from recent price if available
             const trendArray = prev.trend.length > 0 && prev.price
               ? [...prev.trend.slice(1), stats.price]
               : [stats.price];
-
             return {
               price: stats.price,
-              change: stats.change_24h,
-              changePercent: stats.change_percent_24h,
-              volume: stats.volume_24h,
+              change: stats.change ?? null,
+              changePercent: stats.changePercent ?? null,
+              volume: null,
               timestamp: new Date(),
-              trend: trendArray.slice(-8), // Keep last 8 points
+              trend: trendArray.slice(-8),
               loading: false,
               error: null
             };
           });
         } else {
-          // Fallback to realtime data
-          const realtimeResponse = await fetch('/api/market/realtime?action=fetch');
-          if (realtimeResponse.ok) {
-            const result = await realtimeResponse.json();
-            const items = result.data?.items || [];
-
-            if (items.length > 0) {
-              const latestPrice = items[0].price;
-
-              setData(prev => {
-                const trendArray = prev.trend.length > 0 && prev.price
-                  ? [...prev.trend.slice(1), latestPrice]
-                  : [latestPrice];
-
-                return {
-                  price: latestPrice,
-                  change: null,
-                  changePercent: null,
-                  volume: items[0].volume || null,
-                  timestamp: new Date(),
-                  trend: trendArray.slice(-8), // Keep last 8 points
-                  loading: false,
-                  error: null
-                };
-              });
-            } else {
-              throw new Error('No market data available');
-            }
-          } else {
-            throw new Error('API error');
-          }
+          throw new Error('No market data available');
         }
       } catch (err) {
         // Network or API error - show placeholder
@@ -161,6 +129,15 @@ export default function LoginPage() {
   const [secureSession, setSecureSession] = useState(true);
   const marketData = useMarketData();
 
+  // Anti-bot verification: server-issued signed challenge (lib/auth/captcha.ts).
+  const [captcha, setCaptcha] = useState<{ question: string; token: string } | null>(null);
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const loadCaptcha = async () => {
+    setCaptchaAnswer('');
+    try { setCaptcha(await (await fetch('/api/captcha')).json()); } catch { setCaptcha(null); }
+  };
+  useEffect(() => { loadCaptcha(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Prevent Web3 wallet injections on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -213,83 +190,71 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    console.log('[LOGIN] handleLogin called');
-    console.log('[LOGIN] username:', username);
-    console.log('[LOGIN] password length:', password?.length);
-
-    // Local authentication fallback (when backend unavailable)
-    const localUsers: Record<string, string> = {
-      'admin': 'admin123',
-      'trader': 'trader123',
-      'demo': 'demo123'
-    };
-
-    console.log('[LOGIN] Expected password for admin:', localUsers['admin']);
-    console.log('[LOGIN] Password match:', localUsers[username] === password);
-
-    // Check local credentials first
-    if (localUsers[username] === password) {
-      localStorage.setItem('isAuthenticated', 'true');
-      sessionStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('username', username);
-      sessionStorage.setItem('username', username);
-
-      // Also authenticate with SignalBridge (for execution module)
-      // Use email format: username@trading.usdcop.com
-      // Password must meet SignalBridge requirements: uppercase, lowercase, digit (min 8 chars)
-      const signalBridgeEmail = `${username}@trading.usdcop.com`;
-      // Transform password to meet SignalBridge requirements: capitalize first letter + ensure complexity
-      const signalBridgePassword = password.charAt(0).toUpperCase() + password.slice(1) + '!A';
-      try {
-        // Try to login to SignalBridge
-        const sbLoginResponse = await fetch('/api/execution/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: signalBridgeEmail, password: signalBridgePassword }),
-        });
-
-        if (sbLoginResponse.ok) {
-          const sbData = await sbLoginResponse.json();
-          if (sbData.access_token) {
-            localStorage.setItem('auth-token', sbData.access_token);
-            console.log('[LOGIN] SignalBridge auth success');
-          }
-        } else if (sbLoginResponse.status === 401 || sbLoginResponse.status === 404) {
-          // User not found in SignalBridge - try to register
-          console.log('[LOGIN] SignalBridge user not found, attempting registration');
-          const sbRegisterResponse = await fetch('/api/execution/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: signalBridgeEmail, password: signalBridgePassword, name: username }),
-          });
-
-          if (sbRegisterResponse.ok) {
-            const sbData = await sbRegisterResponse.json();
-            if (sbData.access_token) {
-              localStorage.setItem('auth-token', sbData.access_token);
-              console.log('[LOGIN] SignalBridge registration success');
-            }
-          }
-        }
-      } catch (sbError) {
-        // SignalBridge auth failed - continue without it
-        console.log('[LOGIN] SignalBridge auth failed, continuing without:', sbError);
-      }
-
-      const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
-      console.log('[LOGIN] Local auth success, redirecting to:', callbackUrl);
-      // Use setTimeout to allow React state to settle before navigation
-      setTimeout(() => {
-        window.location.href = callbackUrl;
-      }, 100);
-      return;
-    }
+    // Identity is an email; accept a bare username by mapping it to the
+    // SignalBridge tenant domain. No hardcoded credentials, no password logging.
+    const email = username.includes('@')
+      ? username.trim()
+      : `${username.trim()}@trading.usdcop.com`;
 
     try {
-      // Try NextAuth for backend authentication
+      // Primary auth: SignalBridge backend (SSOT) via the dashboard proxy.
+      const sbLoginResponse = await fetch('/api/execution/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email, password,
+          captcha_token: captcha?.token, captcha_answer: captchaAnswer.trim(),
+        }),
+      });
+
+      if (sbLoginResponse.status === 400) {
+        const b = await sbLoginResponse.clone().json().catch(() => ({} as { captcha?: boolean }));
+        if (b?.captcha) {
+          setError('Verificación incorrecta o vencida. Resuelve la nueva operación.');
+          await loadCaptcha();
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      if (sbLoginResponse.ok) {
+        const sbData = await sbLoginResponse.json();
+        // Forced first-login reset: account still holds the admin-issued temp password.
+        // Route to /reset-password with the temp bearer; never grant app access yet.
+        if (sbData.must_reset_password) {
+          if (sbData.access_token) sessionStorage.setItem('reset-token', sbData.access_token);
+          sessionStorage.setItem('reset-temp-pw', password);
+          window.location.href = '/reset-password';
+          return;
+        }
+        if (sbData.access_token) {
+          localStorage.setItem('auth-token', sbData.access_token);
+          if (sbData.refresh_token) {
+            localStorage.setItem('refresh-token', sbData.refresh_token);
+          }
+        }
+        localStorage.setItem('isAuthenticated', 'true');
+        sessionStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('username', username);
+        sessionStorage.setItem('username', username);
+
+        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
+        setTimeout(() => {
+          window.location.href = callbackUrl;
+        }, 100);
+        return;
+      }
+
+      if (sbLoginResponse.status === 429) {
+        setError('Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Secondary path: NextAuth credentials provider (if configured).
       const result = await signIn('credentials', {
-        identifier: username,
-        password: password,
+        identifier: email,
+        password,
         redirect: false,
       });
 
@@ -302,13 +267,12 @@ export default function LoginPage() {
         const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
         router.push(callbackUrl);
         return;
-      } else {
-        setError('Credenciales inválidas. Use: admin/admin123');
-        setIsLoading(false);
       }
+
+      setError('Credenciales inválidas.');
+      setIsLoading(false);
     } catch {
-      // Backend unavailable - already checked local auth above
-      setError('Credenciales inválidas. Use: admin/admin123');
+      setError('No se pudo conectar con el servicio de autenticación. Inténtalo más tarde.');
       setIsLoading(false);
     }
   };
@@ -353,10 +317,10 @@ export default function LoginPage() {
             </motion.div>
             <div>
               <h1 className="text-2xl font-bold text-white mb-1">
-                Terminal Profesional USD/COP
+                GlobalMarkets Terminal
               </h1>
               <p className="text-fintech-dark-300 text-sm">
-                Algorithmic Trading • Reinforcement Learning v2.4
+                Trading Cuantitativo • Smart Simple v2.0
               </p>
             </div>
           </motion.div>
@@ -364,8 +328,8 @@ export default function LoginPage() {
           {/* Build Info */}
           <div className="text-xs text-fintech-dark-400 font-mono bg-fintech-dark-800/50 rounded-lg p-3 border border-fintech-dark-700/30">
             <div className="flex justify-between items-center">
-              <span>Build: a3f4b2</span>
-              <span>Environment: PROD</span>
+              <span>Smart Simple v2.0</span>
+              <span>USD/COP · Oro · BTC</span>
               <span className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 Operational
@@ -503,10 +467,10 @@ export default function LoginPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-fintech-dark-300">RL Model</span>
+                <span className="text-fintech-dark-300">Estrategia</span>
                 <span className="text-cyan-400 font-medium flex items-center gap-1">
                   <Zap className="w-4 h-4" />
-                  v2.4 Active
+                  Smart Simple v2.0
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -531,11 +495,11 @@ export default function LoginPage() {
             </div>
             <div className="flex items-center gap-1">
               <Shield className="w-3 h-3" />
-              ISO 27001
+              Cifrado AES-256
             </div>
             <div className="flex items-center gap-1">
               <Globe className="w-3 h-3" />
-              SOC 2 Type II
+              Llaves en Vault
             </div>
           </motion.div>
         </div>
@@ -565,15 +529,15 @@ export default function LoginPage() {
               </motion.div>
               <div className="text-left">
                 <h1 className="text-lg sm:text-xl font-bold text-white">
-                  Terminal USD/COP
+                  GlobalMarkets
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-400">
-                  Algorithmic Trading • RL v2.4
+                  Trading Cuantitativo • Smart Simple v2.0
                 </p>
               </div>
             </motion.div>
             <div className="text-[10px] sm:text-xs text-gray-500 font-mono bg-gray-900/50 rounded-lg py-1.5 px-3 inline-flex items-center gap-2">
-              <span>Build: a3f4b2</span>
+              <span>Smart Simple v2.0</span>
               <span className="text-gray-600">•</span>
               <span className="flex items-center gap-1">
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
@@ -617,7 +581,7 @@ export default function LoginPage() {
                     onChange={(e) => handleUsernameChange(e.target.value)}
                     className={`w-full px-4 py-3 bg-fintech-dark-800/50 border rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none transition-all duration-200 font-mono min-h-[48px] ${username ? (usernameValidation.valid ? 'border-green-500/50 focus:border-green-500 focus:ring-2 focus:ring-green-500/20' : 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20') : 'border-fintech-dark-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20'
                       }`}
-                    placeholder="ej: TRD-20240915-001 o admin"
+                    placeholder="usuario o email"
                     required
                     autoFocus
                     autoComplete="username"
@@ -655,7 +619,7 @@ export default function LoginPage() {
                     onChange={(e) => handlePasswordChange(e.target.value)}
                     className={`w-full px-4 py-3 pr-12 bg-fintech-dark-800/50 border rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none transition-all duration-200 font-mono min-h-[48px] ${password ? (passwordStrength.score >= 3 ? 'border-green-500/50 focus:border-green-500 focus:ring-2 focus:ring-green-500/20' : passwordStrength.score >= 2 ? 'border-yellow-500/50 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20' : 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20') : 'border-fintech-dark-700/50 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20'
                       }`}
-                    placeholder="ej: admin (8+ caracteres)"
+                    placeholder="contraseña (8+ caracteres)"
                     required
                     minLength={8}
                     aria-describedby="password-strength"
@@ -714,6 +678,33 @@ export default function LoginPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Anti-bot verification (server-signed challenge) */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-fintech-dark-200">
+                  <Shield className="w-4 h-4 text-cyan-400" />
+                  Verificación <span className="text-red-400">*</span>
+                  <span className="text-fintech-dark-300 font-normal">{captcha?.question ?? 'cargando…'}</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={captchaAnswer}
+                    onChange={(e) => setCaptchaAnswer(e.target.value)}
+                    className="w-full px-4 py-3 bg-fintech-dark-800/50 border border-fintech-dark-700/50 rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 font-mono min-h-[48px]"
+                    placeholder="respuesta"
+                    required
+                    aria-label="Respuesta de verificación"
+                  />
+                  <button
+                    type="button"
+                    onClick={loadCaptcha}
+                    title="Nueva operación"
+                    className="shrink-0 rounded-xl border border-fintech-dark-700/50 px-4 text-fintech-dark-300 hover:text-white hover:bg-fintech-dark-800 transition-colors"
+                  >↻</button>
+                </div>
               </div>
 
               {/* Session Options */}
@@ -798,11 +789,13 @@ export default function LoginPage() {
                 )}
               </motion.button>
 
-              {/* Contact Support */}
+              {/* Create account */}
               <div className="border-t border-fintech-dark-700/30 pt-4">
                 <p className="text-xs text-fintech-dark-500 text-center">
-                  <span className="text-fintech-dark-400">¿Necesitas acceso?</span> •
-                  <span className="text-fintech-dark-400 ml-1">Contacta al administrador del sistema</span>
+                  <span className="text-fintech-dark-400">¿No tienes cuenta?</span>
+                  <a href="/register" data-testid="login-to-register" className="ml-1 text-cyan-400 hover:text-cyan-300 font-medium underline underline-offset-2">
+                    Solicitar acceso
+                  </a>
                 </p>
               </div>
             </form>
@@ -819,21 +812,19 @@ export default function LoginPage() {
             <div className="bg-fintech-dark-800/20 border border-fintech-dark-700/30 rounded-lg p-3">
               <div className="flex items-center justify-center gap-2 text-xs text-fintech-dark-400">
                 <Shield className="w-3 h-3 text-cyan-400" />
-                <span>Acceso exclusivo para cuentas verificadas</span>
+                <span>Acceso exclusivo para cuentas aprobadas</span>
                 <span className="text-fintech-dark-600">•</span>
-                <span>Actividad auditada ISO 27001</span>
+                <span>Actividad registrada en audit log</span>
                 <Lock className="w-3 h-3 text-purple-400" />
               </div>
             </div>
 
             {/* Legal Footer */}
             <div className="text-center text-xs text-fintech-dark-500 space-y-1">
-              <p>© 2024 Terminal Profesional USD/COP • Plataforma Algorítmica RL v2.4</p>
-              <p className="flex items-center justify-center gap-2">
-                <span>Regulado por</span>
-                <span className="text-fintech-dark-400 font-semibold">SFC Colombia</span>
-                <span className="text-fintech-dark-600">•</span>
-                <span className="text-fintech-dark-400">Compliance SOC 2 Type II</span>
+              <p>© 2026 GlobalMarkets Terminal • Plataforma de Trading Cuantitativo</p>
+              <p className="max-w-md mx-auto leading-relaxed">
+                Contenido informativo y educativo. No es asesoría financiera.
+                Rendimientos pasados no garantizan resultados. Riesgo de pérdida total.
               </p>
             </div>
           </motion.div>

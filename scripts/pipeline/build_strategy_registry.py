@@ -18,7 +18,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> → repo root (reorg fix)
 
 # Load the manifest contract as a standalone leaf module by file path. This deliberately bypasses
 # the `src` package __init__ chain (which eager-imports the ML/forecasting stack and is currently

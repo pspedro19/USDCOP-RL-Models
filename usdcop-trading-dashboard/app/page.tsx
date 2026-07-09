@@ -3,7 +3,8 @@
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import Metrics from "@/components/landing/Metrics";
+import TrustBar from "@/components/landing/TrustBar";
+import TrackRecord from "@/components/landing/TrackRecord";
 import Features from "@/components/landing/Features";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Pricing from "@/components/landing/Pricing";
@@ -23,8 +24,11 @@ export default function LandingPage() {
           {/* Hero Section */}
           <Hero />
 
-          {/* Metrics/Stats */}
-          <Metrics />
+          {/* S3: Trust bar — only LIVE numbers from the published bundle */}
+          <TrustBar />
+
+          {/* S5+S7: Track record tabs (LIVE headline / BACKTEST secondary) + methodology */}
+          <TrackRecord />
 
           {/* Features */}
           <Features />

@@ -111,3 +111,14 @@ LICENSE
 Dockerfile*
 docker-compose*
 .dockerignore
+# QA/session artifacts (never needed in the image; screenshots + tmp harnesses)
+shots/
+playwright-report/
+.tmp_*
+*.png
+!public/**/*.png
+
+# Runtime state written BY the running container through the :rw bind mount — container-written
+# NTFS files can carry modes archive/tar cannot map (breaks `docker build` on Windows), and
+# deploy state must never be baked into an image anyway.
+public/data/production/deploy_status.json

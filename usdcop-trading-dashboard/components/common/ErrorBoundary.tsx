@@ -246,57 +246,59 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     
     // Page-level error (full screen)
     return (
-      <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <AlertTriangle className="w-16 h-16 text-warning mx-auto mb-6" />
-          <h1 className="text-2xl font-bold text-terminal-text mb-4">
-            Something went wrong
+      // High-contrast, theme-independent fallback: explicit dark surface + light text so it is
+      // ALWAYS legible (the terminal-* theme vars resolved near-white on light pages — #17).
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl">
+          <AlertTriangle className="w-16 h-16 text-amber-400 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-white mb-4">
+            Algo salió mal
           </h1>
-          <p className="text-terminal-text-dim mb-6">
-            The application encountered an unexpected error. This has been reported automatically.
+          <p className="text-slate-300 mb-6">
+            La aplicación encontró un error inesperado. Ya quedó registrado automáticamente.
           </p>
-          
+
           {showDetails && error && (
             <details className="mb-6 text-left">
-              <summary className="cursor-pointer text-terminal-accent text-sm mb-2">
-                Technical Details
+              <summary className="cursor-pointer text-cyan-400 text-sm mb-2">
+                Detalles técnicos
               </summary>
-              <div className="bg-terminal-surface p-4 rounded font-mono text-xs text-terminal-text-dim">
-                <div className="mb-2"><strong>Error ID:</strong> {errorId}</div>
-                <div className="mb-2"><strong>Message:</strong> {error.message}</div>
-                <div><strong>Stack:</strong></div>
+              <div className="bg-slate-950 border border-slate-800 p-4 rounded font-mono text-xs text-slate-300">
+                <div className="mb-2"><strong className="text-slate-100">Error ID:</strong> {errorId}</div>
+                <div className="mb-2"><strong className="text-slate-100">Message:</strong> {error.message}</div>
+                <div><strong className="text-slate-100">Stack:</strong></div>
                 <pre className="whitespace-pre-wrap text-xs mt-1 max-h-32 overflow-y-auto">
                   {error.stack}
                 </pre>
               </div>
             </details>
           )}
-          
+
           <div className="space-y-3">
             {!hasExhaustedRetries && (
               <button
                 onClick={this.handleManualRetry}
-                className="w-full terminal-button py-3 rounded flex items-center justify-center space-x-2"
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-3 rounded flex items-center justify-center space-x-2 disabled:opacity-50"
                 disabled={isRetrying}
               >
                 <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
-                <span>{isRetrying ? `Retrying (${retryCount}/${maxRetries})...` : 'Try Again'}</span>
+                <span>{isRetrying ? `Reintentando (${retryCount}/${maxRetries})...` : 'Reintentar'}</span>
               </button>
             )}
-            
+
             <button
               onClick={this.handleRefreshPage}
-              className="w-full border border-terminal-border py-3 rounded text-terminal-text hover:bg-terminal-surface-variant"
+              className="w-full border border-slate-600 text-slate-100 py-3 rounded hover:bg-slate-800"
             >
-              Refresh Page
+              Recargar página
             </button>
-            
+
             <button
               onClick={this.handleGoHome}
-              className="w-full text-terminal-text-dim hover:text-terminal-text flex items-center justify-center space-x-2"
+              className="w-full text-slate-400 hover:text-white flex items-center justify-center space-x-2"
             >
               <Home className="w-4 h-4" />
-              <span>Go Home</span>
+              <span>Ir al inicio</span>
             </button>
           </div>
         </div>

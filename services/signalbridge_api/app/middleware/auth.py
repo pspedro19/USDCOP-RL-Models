@@ -11,8 +11,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import ErrorCode
+from app.core.login_security import TokenBlacklist
 from app.core.security import verify_token
 from app.models import User
 from app.services.user import UserService
@@ -20,21 +22,32 @@ from app.services.user import UserService
 # HTTP Bearer security scheme
 security = HTTPBearer(auto_error=False)
 
-# Dev mode flag - skip authentication when enabled
-DEV_MODE = os.getenv("SIGNALBRIDGE_DEV_MODE", "false").lower() == "true"
+# Dev mode flag - skip authentication when enabled.
+# Hard guard: NEVER active in production, even if the env var is set. This
+# prevents an accidental/leftover SIGNALBRIDGE_DEV_MODE=true from disabling auth
+# on a live deployment (and makes load/security tests meaningful).
+DEV_MODE = (
+    os.getenv("SIGNALBRIDGE_DEV_MODE", "false").lower() == "true"
+    and not settings.is_production
+)
 
-# Default dev user ID - use integer to match existing users table schema
-DEV_USER_ID = 1  # Integer ID to match existing database schema
+# Dev user id: fixed UUID so dev/prod identity types match (sb_users PKs are UUID —
+# audit A8-11; the old int 1 diverged and broke FK-typed queries in dev).
+DEV_USER_ID = "00000000-0000-4000-8000-0000000000de"  # fixed, valid UUID4-shaped
 
 
 class DevUser:
     """Dummy user object for dev mode."""
     def __init__(self):
-        self.id = DEV_USER_ID  # Integer ID
+        self.id = DEV_USER_ID  # fixed UUID (A8-11)
         self.email = "admin@trading.usdcop.com"
         self.name = "Dev User"
         self.is_active = True
         self.is_verified = True
+        # Dev bypass is a full admin so every gated route is reachable locally.
+        self.status = "approved"
+        self.role = "admin"
+        self.must_reset_password = False
         self.last_login = datetime.utcnow()
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
@@ -82,6 +95,18 @@ async def get_current_user(
                 "error": True,
                 "code": ErrorCode.TOKEN_INVALID.value,
                 "message": "Invalid or expired token",
+            },
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Reject revoked (logged-out) tokens.
+    if await TokenBlacklist.is_blacklisted(payload.get("jti", "")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": True,
+                "code": ErrorCode.TOKEN_INVALID.value,
+                "message": "Token has been revoked",
             },
             headers={"WWW-Authenticate": "Bearer"},
         )

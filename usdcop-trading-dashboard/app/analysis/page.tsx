@@ -24,12 +24,15 @@ export default function AnalysisRoute() {
     <div className="min-h-screen bg-[#030712]">
       <GlobalNavbar currentPage="analysis" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+      {/* Inline paddingTop clears the fixed navbar (Tailwind pt-24 is not emitted in this build —
+          same reason the /forecasting page hard-codes it). Without it the navbar overlaps the
+          header + asset selector, clipping the pair pills. */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12" style={{ paddingTop: '96px' }}>
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white">Analisis Semanal</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Analisis AI del USD/COP con indicadores macro, señales y timeline diario
+            Analisis AI multi-activo (USD/COP, Oro, Bitcoin) con indicadores macro, señales y timeline diario
           </p>
         </div>
 

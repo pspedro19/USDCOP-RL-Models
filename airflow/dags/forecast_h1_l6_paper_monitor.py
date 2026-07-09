@@ -590,6 +590,7 @@ with DAG(
     default_args=default_args,
     description='Daily paper trading monitor for vol-targeting signals',
     schedule_interval='0 0 * * 2-6',  # 00:00 UTC Tue-Sat = 19:00 COT Mon-Fri
+    is_paused_upon_creation=True,  # H1 track PAUSED (audit A3-01) — no auto-run on DB reset
     catchup=False,
     max_active_runs=1,
     tags=DAG_TAGS,

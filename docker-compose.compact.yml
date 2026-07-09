@@ -519,8 +519,14 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
       - DATABASE_SYNC_URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-usdcop_trading}
-      - REDIS_URL=redis://redis:6379/0
-      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      # Redis requires auth; without the password the login lockout + token
+      # blacklist (both live in Redis) silently fail open.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      # App reads JWT_SECRET_KEY (pydantic field jwt_secret_key). The container var
+      # MUST be named JWT_SECRET_KEY or the app silently falls back to the insecure
+      # code default and all JWTs become forgeable (audit A8-01). No weak default:
+      # fail startup if the secret is unset in .env.
+      - JWT_SECRET_KEY=${JWT_SECRET:?JWT_SECRET must be set in .env (min 32 chars)}
       - VAULT_ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-me-32-byte-encryption-key}
       - APP_ENV=development
       - DEBUG=true
@@ -577,7 +583,9 @@ services:
       DEBUG_AUTH: "true"
       AUTH_BYPASS_ENABLED: "true"
     volumes:
-      - ./usdcop-trading-dashboard/public/data:/app/public/data:ro
+      # public/data is READ-WRITE: approval (Vote 2), registry promote and deploy API routes
+      # fs.writeFile into it (approval_state.json, manifest.json). :ro silently 500s those (EROFS).
+      - ./usdcop-trading-dashboard/public/data:/app/public/data:rw
       - ./usdcop-trading-dashboard/public/forecasting:/app/public/forecasting:ro
     ports:
       - "5000:3000"

@@ -50,7 +50,7 @@ from scipy import stats
 from sklearn.preprocessing import StandardScaler
 
 # Project root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/analysis/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.forecasting.contracts import MODEL_IDS, get_horizon_config, MODEL_DEFINITIONS

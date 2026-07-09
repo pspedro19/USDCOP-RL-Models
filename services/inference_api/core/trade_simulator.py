@@ -5,7 +5,7 @@ Simulates trades based on model signals and calculates P&L
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -112,8 +112,8 @@ class TradeSimulator:
         inference_engine: InferenceEngine,
         observation_builder: ObservationBuilder,
         model_id: str = "ppo_primary",
-        progress_callback: callable | None = None,
-        trade_callback: callable | None = None
+        progress_callback: Callable | None = None,
+        trade_callback: Callable | None = None
     ) -> list[Trade]:
         """
         Run full simulation on historical data.

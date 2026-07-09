@@ -101,7 +101,15 @@ RL_L3_MODEL_TRAINING = "rl_l3_01_model_training"
 # L4 - Validation (RL model validation)
 RL_L4_EXPERIMENT_RUNNER = "rl_l4_01_experiment_runner"  # DEPRECATED: Use RL_L4_BACKTEST_PROMOTION
 RL_L4_BACKTEST_VALIDATION = "rl_l4_02_backtest_validation"  # DEPRECATED: Merged into RL_L4_BACKTEST_PROMOTION
-RL_L4_SCHEDULED_RETRAINING = "rl_l4_03_scheduled_retraining"
+RL_L4_SCHEDULED_RETRAINING = "rl_l4_03_scheduled_retraining"  # DEPRECATED: fold into RL_L4_BACKTEST_PROMOTION
+
+# DEPRECATED DAG ids — kept as constants for back-references but excluded from
+# get_all_dag_ids() so nothing schedules/treats them as active (audit A2-01/07/09).
+DEPRECATED_DAGS = frozenset({
+    RL_L4_EXPERIMENT_RUNNER,
+    RL_L4_BACKTEST_VALIDATION,
+    RL_L4_SCHEDULED_RETRAINING,
+})
 RL_L4_BACKTEST_PROMOTION = "rl_l4_04_backtest_promotion"  # NEW: Unified backtest + promotion (primer voto)
 
 # L5 - Inference (RL production inference every 5 minutes)
@@ -151,6 +159,9 @@ FORECAST_H1_L7_SMART_EXECUTOR = "forecast_h1_l7_smart_executor"
 FORECAST_H5_L3_WEEKLY_TRAINING = "forecast_h5_l3_weekly_training"
 # L4 - Backtest Promotion (OOS backtest + dashboard export + approval gates)
 FORECAST_H5_L4_BACKTEST_PROMOTION = "forecast_h5_l4_backtest_promotion"
+# L4b - Production Deploy (post-Vote-2: retrain full window + export production + seed DB;
+#        triggered by the dashboard deploy API via Airflow REST, or manually)
+FORECAST_H5_L4B_PRODUCTION_DEPLOY = "forecast_h5_l4b_production_deploy"
 # L5 - Inference (weekly signal + vol-targeting)
 FORECAST_H5_L5_WEEKLY_SIGNAL = "forecast_h5_l5_weekly_signal"
 FORECAST_H5_L5_VOL_TARGETING = "forecast_h5_l5_vol_targeting"
@@ -291,6 +302,7 @@ DAG_DEPENDENCIES: Dict[str, List[str]] = {
     # H5 Weekly Pipeline
     FORECAST_H5_L3_WEEKLY_TRAINING: [FORECAST_H5_L5_WEEKLY_SIGNAL],  # L3 trains models for L5
     FORECAST_H5_L4_BACKTEST_PROMOTION: [],  # Manual trigger, exports to dashboard
+    FORECAST_H5_L4B_PRODUCTION_DEPLOY: [],  # Triggered by dashboard deploy API (post-Vote-2)
     FORECAST_H5_L5_WEEKLY_SIGNAL: [FORECAST_H5_L5_VOL_TARGETING],
     FORECAST_H5_L5_VOL_TARGETING: [FORECAST_H5_L7_MULTIDAY_EXECUTOR],
     FORECAST_H5_L7_MULTIDAY_EXECUTOR: [],
@@ -352,6 +364,7 @@ DAG_TAGS: Dict[str, List[str]] = {
     # H5 Weekly Pipeline
     FORECAST_H5_L3_WEEKLY_TRAINING: ["forecast", "h5", "l3", "training", "weekly", "linear"],
     FORECAST_H5_L4_BACKTEST_PROMOTION: ["forecast", "h5", "l4", "backtest", "promotion", "two-vote"],
+    FORECAST_H5_L4B_PRODUCTION_DEPLOY: ["forecast", "h5", "l4b", "deploy", "production", "two-vote"],
     FORECAST_H5_L5_WEEKLY_SIGNAL: ["forecast", "h5", "l5", "signal", "weekly"],
     FORECAST_H5_L5_VOL_TARGETING: ["forecast", "h5", "l5", "vol-targeting", "weekly"],
     FORECAST_H5_L7_MULTIDAY_EXECUTOR: ["forecast", "h5", "l7", "execution", "multiday"],
@@ -442,9 +455,9 @@ def get_all_dag_ids() -> List[str]:
         RL_L2_DATASET_BUILD,
         RL_L2_DRIFT_RETRAIN,
         RL_L3_MODEL_TRAINING,
-        RL_L4_EXPERIMENT_RUNNER,
-        RL_L4_BACKTEST_VALIDATION,
-        RL_L4_SCHEDULED_RETRAINING,
+        # RL_L4_EXPERIMENT_RUNNER / RL_L4_BACKTEST_VALIDATION / RL_L4_SCHEDULED_RETRAINING
+        # are DEPRECATED (see DEPRECATED_DAGS) — excluded from the active order so
+        # consumers don't treat them as live (audit A2-09).
         RL_L4_BACKTEST_PROMOTION,
         RL_L5_PRODUCTION_INFERENCE,
         RL_L6_PRODUCTION_MONITOR,
