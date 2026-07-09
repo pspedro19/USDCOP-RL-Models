@@ -1,0 +1,139 @@
+{
+  "strategy_id": "btc_trend_b2",
+  "strategy_name": "Bitcoin \u00b7 Trend-follower Daily (B2)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "BTC/USDT",
+  "n_trading_days": 2995,
+  "strategies": {
+    "btc_trend_b2": {
+      "final_equity": 45116.48,
+      "total_return_pct": 351.16,
+      "sharpe": 1.4,
+      "sortino": 1.264,
+      "calmar": 1.833,
+      "max_dd_pct": -11.0,
+      "win_rate_pct": 42.6,
+      "profit_factor": 6.502,
+      "n_long": 47,
+      "n_short": 0,
+      "trading_days": 2995,
+      "exit_reasons": {
+        "regime_flip": 47
+      },
+      "regime_attribution": {
+        "accumulation": {
+          "days": 1493,
+          "pnl_pct": 96.92,
+          "sharpe": 1.345,
+          "share_pct": 49.8
+        },
+        "distribution": {
+          "days": 212,
+          "pnl_pct": 51.78,
+          "sharpe": 3.541,
+          "share_pct": 7.1
+        },
+        "markdown": {
+          "days": 1055,
+          "pnl_pct": -0.49,
+          "sharpe": -0.027,
+          "share_pct": 35.2
+        },
+        "markup": {
+          "days": 235,
+          "pnl_pct": 51.69,
+          "sharpe": 2.316,
+          "share_pct": 7.8
+        }
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 66091.53,
+      "total_return_pct": 560.92
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      9.06,
+      30.92
+    ],
+    "sharpe_per_period": 0.073269,
+    "skew": 2.1121,
+    "kurtosis": 28.7344,
+    "n_obs": 2995,
+    "psr": 1.0,
+    "deflated_sharpe": {
+      "sr0": 0.0183,
+      "dsr": 0.9993,
+      "significant": true
+    }
+  },
+  "backtest_recommendation": "PROMOTE",
+  "backtest_confidence": 1.0,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 351.16,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 1.4,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 11.0,
+      "threshold": 40.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 47,
+      "threshold": 10,
+      "passed": true
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ],
+  "oos": {
+    "year": 2025,
+    "n_trading_days": 365,
+    "metrics": {
+      "cagr": -1.37,
+      "sharpe": -0.047,
+      "sortino": -0.031,
+      "max_dd": -8.6,
+      "calmar": -0.16,
+      "total_return_pct": -1.37,
+      "vol_ann": 8.71
+    },
+    "statistical_tests": {
+      "p_value": 0.6188,
+      "significant": false,
+      "bootstrap_95ci_ann": [
+        -19.94,
+        18.75
+      ],
+      "sharpe_per_period": -0.002442,
+      "skew": 1.4689,
+      "kurtosis": 39.1344,
+      "n_obs": 365,
+      "psr": 0.4815
+    }
+  }
+}

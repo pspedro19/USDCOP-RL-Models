@@ -23,7 +23,7 @@ This runbook provides procedures for recovering from synchronization failures be
 | Sync Type | Source of Truth | Recovery Script |
 |-----------|-----------------|-----------------|
 | Features | PostgreSQL | `feast materialize-incremental` |
-| Datasets | DVC/Git | `scripts/rollback_dataset.sh` |
+| Datasets | DVC/Git | `scripts/ops/rollback_dataset.sh` |
 | Models | MLflow Registry | See MLflow recovery |
 | Artifacts | MinIO | `dvc push` / `dvc pull` |
 

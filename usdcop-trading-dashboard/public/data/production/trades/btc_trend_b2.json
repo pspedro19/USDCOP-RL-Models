@@ -1,0 +1,58 @@
+{
+  "strategy_id": "btc_trend_b2",
+  "strategy_name": "Bitcoin · Trend-follower Daily (B2)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "trades": [
+    {
+      "trade_id": 45,
+      "timestamp": "2026-04-28T00:00:00+00:00",
+      "exit_timestamp": "2026-04-29T00:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 76342.77,
+      "exit_price": 75780.0,
+      "pnl_pct": -0.6073,
+      "pnl_usd": -288.57,
+      "equity_at_entry": 47512.53,
+      "equity_at_exit": 47223.97,
+      "leverage": 0.277,
+      "exit_reason": "regime_flip",
+      "regime": "markdown"
+    },
+    {
+      "trade_id": 46,
+      "timestamp": "2026-05-04T00:00:00+00:00",
+      "exit_timestamp": "2026-05-19T00:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 79861.01,
+      "exit_price": 76834.36,
+      "pnl_pct": -0.7886,
+      "pnl_usd": -372.42,
+      "equity_at_entry": 47223.97,
+      "equity_at_exit": 46851.55,
+      "leverage": 0.35,
+      "exit_reason": "regime_flip",
+      "regime": "markdown"
+    },
+    {
+      "trade_id": 47,
+      "timestamp": "2026-06-01T00:00:00+00:00",
+      "exit_timestamp": "2026-06-01T00:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 71408.9,
+      "exit_price": 71408.9,
+      "pnl_pct": -1.1218,
+      "pnl_usd": -525.56,
+      "equity_at_entry": 46851.55,
+      "equity_at_exit": 46325.99,
+      "leverage": 0.35,
+      "exit_reason": "regime_flip",
+      "regime": "markdown"
+    }
+  ],
+  "summary": {
+    "total_trades": 3,
+    "win_rate": 0.0,
+    "profit_factor": 0.0
+  }
+}

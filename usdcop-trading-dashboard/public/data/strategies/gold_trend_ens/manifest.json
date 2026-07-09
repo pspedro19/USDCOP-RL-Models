@@ -1,0 +1,84 @@
+{
+  "strategy_id": "gold_trend_ens",
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Gold \u00b7 Trend ensemble 3/6/12m (ENS)",
+  "pipeline_type": "rule_based",
+  "timeframe": "daily",
+  "status": "archived",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.3.0",
+    "year": 2026,
+    "generated_at": "2026-07-07T19:21:36.658175+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_ens__1.0.0__2026",
+      "summary": "strategies/gold_trend_ens/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/gold_trend_ens/backtests/1.0.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REJECT"
+      },
+      "headline": {
+        "return_pct": 160.94,
+        "sharpe": 0.587,
+        "p_value": 0.0054
+      }
+    },
+    {
+      "model_version": "1.3.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_ens__1.3.0__2026",
+      "summary": "strategies/gold_trend_ens/backtests/1.3.0/summary_2026.json",
+      "trades": "strategies/gold_trend_ens/backtests/1.3.0/trades_2026.json",
+      "signals": "strategies/gold_trend_ens/backtests/1.3.0/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REJECT"
+      },
+      "headline": {
+        "return_pct": 160.94,
+        "sharpe": 0.587,
+        "p_value": 0.0054
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.3.0",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

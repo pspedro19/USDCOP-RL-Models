@@ -1,0 +1,31 @@
+{
+  "strategy_id": "gold_dynamic_exit",
+  "strategy_name": "Gold · Dynamic exit (señal + Chandelier 3×ATR)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "mode": "paper",
+  "n_trading_days": 134,
+  "strategies": {
+    "gold_dynamic_exit": {
+      "final_equity": 10271.29,
+      "total_return_pct": 2.67,
+      "sharpe": 0.618,
+      "calmar": 0.647,
+      "max_dd_pct": -7.85,
+      "win_rate_pct": 42.9,
+      "profit_factor": null,
+      "n_long": 7,
+      "n_short": 0,
+      "trading_days": 134,
+      "exit_reasons": {
+        "signal_off": 4,
+        "trailing_stop": 3
+      }
+    },
+    "buy_and_hold": {
+      "total_return_pct": -3.86
+    }
+  },
+  "chart_symbol": "XAUUSD"
+}

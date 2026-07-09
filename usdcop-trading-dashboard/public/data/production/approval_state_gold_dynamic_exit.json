@@ -1,0 +1,75 @@
+{
+  "status": "APPROVED",
+  "strategy": "gold_dynamic_exit",
+  "strategy_name": "Gold · Dynamic exit (señal + Chandelier 3×ATR)",
+  "backtest_year": 2025,
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": 0.8,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 37.98,
+      "threshold": -15,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 2.746,
+      "threshold": 0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 6.52,
+      "threshold": 20,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 8,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0002,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ],
+  "backtest_metrics": {
+    "return_pct": 37.98,
+    "sharpe": 2.746,
+    "calmar": 5.619,
+    "max_dd_pct": 6.52,
+    "p_value": 0.0002,
+    "trades_2025": 8,
+    "full_calmar": 0.259,
+    "dsr": 0.0077,
+    "beats_b1_prime": true
+  },
+  "verdict_notes": [
+    "DSR 0.0077 < 0.95 (trial-aware, N=74) — sin claim de alfa"
+  ],
+  "deploy_manifest": {
+    "pipeline_type": "rule_based",
+    "script": "scripts/pipeline/publish_gold_dynexit.py",
+    "args": [
+      "--version",
+      "1.0.0"
+    ],
+    "config_path": "config/assets/xauusd.yaml",
+    "db_tables": [],
+    "mode": "paper"
+  },
+  "approved_by": "admin@trading.usdcop.com",
+  "approved_at": "2026-07-07T22:17:23.125Z",
+  "reviewer_notes": "",
+  "created_at": "2026-07-07T22:09:42.765262+00:00",
+  "last_updated": "2026-07-07T22:17:23.125Z"
+}

@@ -1,0 +1,124 @@
+{
+  "strategy_id": "gold_dynamic_exit",
+  "strategy_name": "Gold \u00b7 Dynamic exit (se\u00f1al + Chandelier 3\u00d7ATR)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "n_trading_days": 5611,
+  "strategies": {
+    "gold_dynamic_exit": {
+      "final_equity": 35324.06,
+      "total_return_pct": 253.93,
+      "sharpe": 0.694,
+      "sortino": 0.804,
+      "calmar": 0.259,
+      "max_dd_pct": -22.55,
+      "win_rate_pct": 30.4,
+      "profit_factor": 1.947,
+      "n_long": 227,
+      "n_short": 0,
+      "trading_days": 5611,
+      "exit_reasons": {
+        "signal_off": 106,
+        "trailing_stop": 121
+      },
+      "median_hold_days": 10
+    },
+    "buy_and_hold": {
+      "final_equity": 93883.91,
+      "total_return_pct": 838.84
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0008,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      2.37,
+      9.99
+    ],
+    "deflated_sharpe": {
+      "sr0": 0.0763,
+      "dsr": 0.0077,
+      "significant": false
+    }
+  },
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": 0.8,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 37.98,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 2.746,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 6.52,
+      "threshold": 20.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 8,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0002,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ],
+  "verdict_notes": [
+    "DSR 0.0077 < 0.95 (trial-aware, N=74) \u2014 sin claim de alfa"
+  ],
+  "honest_gate": {
+    "b1_prime": {
+      "mean_exposure": 0.4659,
+      "ann_return_pct": 5.19,
+      "max_dd_pct": -22.85,
+      "calmar": 0.227,
+      "sharpe": 0.662
+    },
+    "beats_b1_prime_calmar": true,
+    "cost_stress": {
+      "calmar_x2": 0.151,
+      "calmar_x3": 0.082,
+      "survives_2x": true
+    }
+  },
+  "oos": {
+    "year": 2025,
+    "n_trading_days": 260,
+    "metrics": {
+      "cagr": 36.62,
+      "sharpe": 2.746,
+      "sortino": 3.369,
+      "max_dd": -6.52,
+      "calmar": 5.619,
+      "total_return_pct": 37.98,
+      "vol_ann": 11.62
+    },
+    "statistical_tests": {
+      "p_value": 0.0002,
+      "significant": true,
+      "bootstrap_95ci_ann": [
+        11.97,
+        56.46
+      ]
+    }
+  },
+  "methodology": "Entrada: votos SMA{63,126,252} \u2265 2/3 (causal t-1). Salida din\u00e1mica: se\u00f1al muere \u2228 Chandelier trailing 3.0\u00d7ATR14 (prior ex-ante \u00a78.7, hold variable 9d-97d). Vol-target 10%, cap 1.5. Dise\u00f1o \u22642024, OOS=2025. Ingenier\u00eda de riesgo sobre beta \u2014 sin claim de alfa (DSR<0.95)."
+}

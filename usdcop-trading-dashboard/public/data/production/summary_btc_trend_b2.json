@@ -1,0 +1,40 @@
+{
+  "strategy_id": "btc_trend_b2",
+  "strategy_name": "Bitcoin · Trend-follower Daily (B2)",
+  "year": 2026,
+  "mode": "paper",
+  "frozen_version": "1.2.1",
+  "generated_at": "2026-07-07T17:01:20.047104+00:00",
+  "strategies": {
+    "btc_trend_b2": {
+      "final_equity": 9738.0,
+      "total_return_pct": -2.62,
+      "sharpe": -1.617,
+      "max_dd_pct": 3.5,
+      "win_rate_pct": 0.0,
+      "profit_factor": 0.0,
+      "trading_days": 188,
+      "exit_reasons": {
+        "regime_flip": 3
+      },
+      "n_long": 3,
+      "n_short": 0,
+      "calmar": -1.435
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.9562,
+    "significant": false,
+    "bootstrap_95ci_ann": [
+      -14.8,
+      0.67
+    ],
+    "sharpe_per_period": -0.084613,
+    "skew": -1.7652,
+    "kurtosis": 22.0398,
+    "n_obs": 188,
+    "psr": 0.1098
+  },
+  "withdrawal_protocol": ".claude/specs/assets/btcusdt/WITHDRAWAL-PROTOCOL-BTC.md",
+  "chart_symbol": "BTCUSDT"
+}

@@ -15,7 +15,7 @@
 /test-results/
 /playwright-report/
 /playwright/.cache/
-tests/e2e/screenshots/*.png
+tests/e2e/screenshots/*
 !tests/e2e/screenshots/.gitkeep
 *.webm
 
@@ -56,3 +56,12 @@ debug/
 # IDE
 .vscode/
 .idea/
+
+# --- Dashboard data policy (operator directive 2026-07-09) ---
+# EVERYTHING the dashboard serves is tracked: production approval-flow state,
+# strategy bundles (public/data/strategies/), market daily JSONs, and the
+# forecasting/analysis images+JSONs. A fresh clone must render every page —
+# the DAGs/watchdog are the REFRESH path, not the bootstrap path.
+# (Reverts the 2026-07 "regenerable ⇒ untracked" rule for public/forecasting/
+# and public/data/analysis/ by operator order. Runtime-only state stays out:)
+public/data/production/deploy_status.json

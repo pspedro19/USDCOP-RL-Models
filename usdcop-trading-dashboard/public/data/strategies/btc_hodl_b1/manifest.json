@@ -1,0 +1,140 @@
+{
+  "strategy_id": "btc_hodl_b1",
+  "asset_id": "btcusdt",
+  "symbol": "BTC/USDT",
+  "chart_symbol": "BTCUSDT",
+  "display_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
+  "pipeline_type": "rule_based",
+  "timeframe": "daily",
+  "status": "archived",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.2.1",
+    "year": 2026,
+    "generated_at": "2026-07-07T19:21:11.002452+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.1.0",
+      "year": 2026,
+      "immutable_id": "btc_hodl_b1__1.1.0__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.1.0/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.1.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 273.09,
+        "sharpe": 0.791,
+        "p_value": 0.0268
+      }
+    },
+    {
+      "model_version": "1.2.0",
+      "year": 2026,
+      "immutable_id": "btc_hodl_b1__1.2.0__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.2.0/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.2.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 273.09,
+        "sharpe": 0.791,
+        "p_value": 0.0268
+      }
+    },
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "btc_hodl_b1__1.0.0__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.0.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 274.18,
+        "sharpe": 0.793,
+        "p_value": 0.0274
+      }
+    },
+    {
+      "model_version": "1.2.1",
+      "year": 2026,
+      "immutable_id": "btc_hodl_b1__1.2.1__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.2.1/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.2.1/trades_2026.json",
+      "signals": "strategies/btc_hodl_b1/backtests/1.2.1/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 274.18,
+        "sharpe": 0.793,
+        "p_value": 0.0274
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.1.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.2.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.0.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.2.1",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

@@ -1,31 +1,31 @@
 {
   "status": "APPROVED",
   "strategy": "smart_simple_v11",
-  "strategy_name": "Smart Simple v1.1.0",
+  "strategy_name": "Smart Simple v2.0.0",
   "backtest_year": 2025,
   "backtest_recommendation": "PROMOTE",
-  "backtest_confidence": 1.0,
+  "backtest_confidence": 1,
   "gates": [
     {
       "gate": "min_return_pct",
       "label": "Retorno Minimo",
       "passed": true,
       "value": 25.63,
-      "threshold": -15.0
+      "threshold": -15
     },
     {
       "gate": "min_sharpe_ratio",
       "label": "Sharpe Minimo",
       "passed": true,
       "value": 3.347,
-      "threshold": 0.0
+      "threshold": 0
     },
     {
       "gate": "max_drawdown_pct",
       "label": "Max Drawdown",
       "passed": true,
       "value": 6.12,
-      "threshold": 20.0
+      "threshold": 20
     },
     {
       "gate": "min_trades",
@@ -52,7 +52,7 @@
   },
   "deploy_manifest": {
     "pipeline_type": "ml_forecasting",
-    "script": "scripts/train_and_export_smart_simple.py",
+    "script": "scripts/pipeline/train_and_export_smart_simple.py",
     "args": [
       "--phase",
       "production",
@@ -68,9 +68,12 @@
       "forecast_h5_paper_trading"
     ]
   },
-  "created_at": "2026-04-06T08:43:08.127895",
-  "last_updated": "2026-04-06T08:43:08.127977",
-  "approved_by": "operator",
-  "approved_at": "2026-04-06T09:00:00-05:00",
-  "reviewer_notes": "v2.0 production: Ridge+Gate+EffectiveHS. 2025: +25.63% Sharpe 3.35 p=0.006. Gate correctly blocked 11/12 mean-reverting weeks in 2026."
+  "created_at": "2026-07-05T10:52:28.148778",
+  "last_updated": "2026-07-07T16:21:52.714Z",
+  "approved_by": "admin@trading.usdcop.com",
+  "approved_at": "2026-07-07T16:21:52.714Z",
+  "reviewer_notes": "",
+  "rejected_by": null,
+  "rejected_at": null,
+  "rejection_reason": null
 }

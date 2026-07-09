@@ -1,0 +1,78 @@
+{
+  "status": "PENDING_APPROVAL",
+  "strategy": "btc_trend_b2",
+  "strategy_name": "Bitcoin · Trend-follower Daily (B2)",
+  "backtest_year": 2026,
+  "backtest_recommendation": "PROMOTE",
+  "backtest_confidence": 1.0,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 351.16,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 1.399,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 11.0,
+      "threshold": 40.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 47,
+      "threshold": 10,
+      "passed": true
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0,
+      "threshold": 0.05,
+      "passed": true
+    },
+    {
+      "gate": "deflated_sharpe",
+      "label": "DSR trial-aware (>0.95)",
+      "passed": true,
+      "value": 0.9987,
+      "threshold": 0.95
+    }
+  ],
+  "backtest_metrics": {
+    "return_pct": 351.16,
+    "sharpe": 1.399,
+    "calmar": 1.832,
+    "max_dd_pct": 11.0,
+    "p_value": 0.0,
+    "oos_2025_return_pct": -1.37
+  },
+  "deploy_manifest": {
+    "pipeline_type": "rule_based",
+    "script": "scripts/pipeline/run_btc_pipeline.py",
+    "args": [
+      "--phase",
+      "production",
+      "--version",
+      "1.2.1"
+    ],
+    "config_path": "config/assets/btcusdt.yaml",
+    "db_tables": [],
+    "mode": "paper"
+  },
+  "approved_by": null,
+  "approved_at": null,
+  "reviewer_notes": null,
+  "created_at": "2026-07-07T17:01:20.047104+00:00",
+  "last_updated": "2026-07-07T17:01:20.047104+00:00"
+}

@@ -1,0 +1,37 @@
+# walkforward.yaml — SPEC-11 / §12. Maquinaria de validacion. Sin split ingenuo jamas.
+
+walk_forward:
+  scheme: rolling
+  purge: true                       # elimina observaciones con etiquetas solapadas
+  embargo_bars: null                # >= H para meta-labeling (SPEC-08)
+  use_replay_labels: true           # labels como-en-vivo (SPEC-01), NO el modelo final
+
+deflated_sharpe:                    # H-SYS-01
+  n_trials_source: HYPOTHESIS-REGISTRY.md   # cuenta TODOS los trials, incl. descartados
+  confidence: 0.95
+  inputs: [sr_observed, n_trials, skew, kurtosis, n_obs]
+
+bootstrap:
+  method: block                     # preserva autocorrelacion
+  n_boot: 10000
+  ci: [2.5, 97.5]
+
+multiple_testing:
+  family_correction: benjamini_hochberg
+  alpha: 0.05
+
+attribution:                        # §12 / SPEC-11 §5.4
+  components: [z_ciclo, z_funding, M_liquidez, G_eventos]
+  drop_if_delta_calmar_not_positive: true
+
+subera_report:
+  boundaries: ["2020-01-01", "2024-01-01"]   # pre-2020 / 2020-2023 / 2024+
+  flag_if_single_era_only: true
+
+sensitivities:                      # se reportan TODAS; no se elige la mejor celda
+  sigma_target: [0.25, 0.30, 0.35]
+  rebalance_band: [0.10, 0.125, 0.15]
+  risk_weights: [[0.6,0.4], [0.7,0.3], [0.8,0.2]]
+
+live_haircut: [0.30, 0.50]
+primary_metric: calmar              # y sortino; sharpe secundario

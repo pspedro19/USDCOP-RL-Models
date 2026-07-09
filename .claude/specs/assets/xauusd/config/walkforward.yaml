@@ -1,0 +1,12 @@
+# Config de validación (SPEC-09)
+train_span_days: 1095      # ~3 años IS
+test_span_days: 180        # ~6 meses OOS
+step_days: 180             # avance de la ventana
+embargo_days: 180          # >= horizonte_recompensa + lookback; congelar features lentas
+window_mode: rolling       # rolling | expanding
+bootstrap:
+  block_days: 10
+  n_resamples: 10000
+red_flags:
+  sharpe_warn: 4.0         # Sharpe OOS por encima => sospechar bug
+metrics: [cagr, sharpe, sortino, max_drawdown, calmar, win_rate, turnover, exposure]

@@ -4,7 +4,30 @@
 > Each experiment = a frozen SSOT config in `config/experiments/`.
 > Pick the TOP experiment, run it, log results, then re-evaluate queue.
 > **Full integration plan**: `.claude/experiments/PLAN_FORECASTING_RL_INTEGRATION.md`
-> Last updated: 2026-02-15
+> Last updated: **2026-07-06** (reconciliada — G4 del plan maestro; estuvo congelada desde 2026-02-15)
+
+---
+
+## ACTIVE QUEUE (2026-07-06 — orden del plan maestro §5, `.claude/specs/audit/PLAN-completar-sistema-2026-07.md`)
+
+> Gobernada por `.claude/rules/quant-constitution.md`: cada fila = ≥1 trial en el registro
+> del activo ANTES de correr; priors ex-ante; sin grid sobre el test.
+
+| # | ID | Qué | Costo | Registro |
+|---|----|-----|-------|----------|
+| 1 | H-COP-CARRY-00 | Medir swap real del broker (short USDCOP) vs IBR−FFR, 60 días | 0 compute | `specs/assets/usdcop/HYPOTHESIS-REGISTRY.md` |
+| 2 | COP-NULL + H-COP-V11-01 | NULL-A/NULL-B/DECOMP/STRESS-2122 — auditoría estadística de v11 | Medio | idem |
+| 3 | BTC extractores 052 | on-chain (MVRV-Z/NUPL) + flows (Farside/DefiLlama); **funding YA hecho** | Bajo | `specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md` |
+| 4 | H-XAU-TREND-01/02 | XAU-TREND-ENS (SMA 63/126/252) vs B2 | Bajo | XAU (crear al comprometer) |
+| 5 | H-LATAM-01/02 | Carry/TSMOM cross-sectional {COP,MXN,BRL,CLP} | Medio | — |
+| 6 | H-COP-CARRY-01/02 | COP-CORE (carry condicionado, mecánica v11 congelada) | Medio | COP registry |
+| 7 | H-POS-01 (BTC) | z_funding como freno (btc_trend_funding_s4) — data lista | Bajo | BTC registry |
+
+### Nota de estatus de los p-values históricos (auditoría 2026-07)
+Los p=0.0097 (v1.1) y p=0.006 (v2.0) provienen de iterar sobre el mismo OOS 2025 (grid 42
+celdas, "#8 of 42"). **DSR trial-aware de v11 < 0.95 en todos los escenarios** (0.50–0.92,
+`scripts/analysis/cop_trials_dsr.py`). v11 está **CONGELADA** y su juez es el forward 2026
+(`specs/assets/usdcop/WITHDRAWAL-PROTOCOL.md`).
 
 ---
 
@@ -25,7 +48,22 @@
 
 ---
 
-## STATUS SUMMARY (as of 2026-02-16)
+## STATUS SUMMARY (as of 2026-07-06 — reconciliado; el snapshot 2026-02-16 quedó abajo como histórico)
+
+### Track 1: H1 Daily Pipeline (**PAUSED** — audit A3-01)
+- Los 5 DAGs `forecast_h1_*` están pausados (`is_paused_upon_creation=True`); pendiente validación v2.0.
+
+### Track 2: H5 Weekly Pipeline (**PRODUCTION** — Smart Simple v2.0, CONGELADA)
+- **Estrategia**: Ridge+BR+XGB + Regime Gate (Hurst) + Effective HS + DL + CB.
+- Backtest 2025: +25.63%, Sharpe 3.35 (⚠️ ver nota DSR arriba). 2026 YTD: gate bloquea la mayoría de semanas.
+- **Congelada 2026-03-18**; juez = forward 2026 (`WITHDRAWAL-PROTOCOL.md`).
+
+### Track 3: RL (DEPRIORITIZED) — sin cambios. Track 4: **Gold/BTC** rule-based en registry
+(`gold_trend_b2` PROMOTE↔DSR 0.921 en resolución vía verdict DSR-aware, OLA 2; `btc_trend_b2` único DSR>0.95).
+
+---
+
+## STATUS SUMMARY HISTÓRICO (as of 2026-02-16 — superseded)
 
 ### Track 1: H1 Daily Pipeline (PRODUCTION)
 - **Strategy**: 9 models, H=1, trailing stop + vol-targeting, SHORT-only

@@ -6,7 +6,7 @@
   "display_name": "Smart Simple v1.0.0",
   "pipeline_type": "ml_forecasting",
   "timeframe": "weekly",
-  "status": "experimental",
+  "status": "archived",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,
@@ -55,5 +55,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "archived_reason": "poda operador 2026-07-07: solo campeonas en Backtest"
 }

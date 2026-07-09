@@ -17,13 +17,13 @@
    - **+25.63%, Sharpe 3.35, p=0.006** (2025 backtest, 34 trades)
    - **+0.61%** (2026 YTD, 1/1 wins — regime gate blocked 11 of 12 mean-reverting weeks)
    - Architecture: Regime Gate (Hurst) → Ridge/BR/XGB ensemble → Effective HS → DL → CB
-   - DAGs: H5-L3/L4/L5/L6/L7 (see `.claude/rules/h5-smart-simple-pipeline.md`)
+   - DAGs: H5-L3/L4/L5/L6/L7 (see `.claude/specs/tracks/h5-smart-simple.md`)
 
 2. **News Engine & Analysis Module (OPERATIONAL)**: AI-generated market analysis + news intelligence
    - Active sources: Investing.com (78 articles), Portafolio (276 articles) in DB
    - LLM weekly analysis: W01-W15 generated (Azure OpenAI GPT-4o-mini)
    - Dashboard: `/analysis` page (14 components, 4 API routes)
-   - See `.claude/rules/news-and-analysis-sdd.md`
+   - See `.claude/specs/tracks/news-analysis/_summary.md`
 
 3. **H1 Daily Pipeline (PAUSED)**: 9 models, H=1 horizon — DAGs paused pending v2.0 validation
 
@@ -32,6 +32,13 @@
 **Strategic Pivot (2026-03-18)**: 10-agent audit revealed Ridge/BR model has R² < 0 in both years.
 Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not from model predictions.
 **2026 Regime**: Hurst = 0.28-0.49 (mean-reverting → transitioning). Gate correctly blocks most weeks.
+
+**Methodology audit (2026-07-06)**: the p=0.006/p=0.0097 backtest p-values came from iterating on the
+same OOS-2025 (42-cell grid, "#8 of 42"). **Trial-aware DSR of v11 = 0.50-0.92 < 0.95 in all scenarios**
+— the 2025 backtest cannot prove edge after selection; **v11 is FROZEN and the 2026 forward is the only
+clean judge** (`.claude/specs/assets/usdcop/{HYPOTHESIS-REGISTRY,WITHDRAWAL-PROTOCOL}.md`).
+Anti-selection discipline is now transversal (`.claude/rules/quant-constitution.md`). Master plan:
+`.claude/specs/audit/PLAN-completar-sistema-2026-07.md`.
 
 **Current Best**:
 - H5 Weekly v2.0: Ridge+Gate+EffectiveHS → $10K → $12,563 (2025), $10K → $10,061 (2026 YTD)
@@ -42,7 +49,7 @@ Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not fr
 
 ## QUICK START (First-Time Setup)
 
-> See `.claude/rules/sdd-mlops-lifecycle.md` for the full operator guide with checklists.
+> See `.claude/specs/platform/mlops-lifecycle.md` for the full operator guide with checklists.
 
 ### Two Deployment Modes
 
@@ -62,10 +69,10 @@ Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not fr
 # Then (same for both modes):
 2. airflow dags trigger core_l0_01_ohlcv_backfill  → OHLCV current (Stage 1)
 3. airflow dags trigger core_l0_03_macro_backfill  → Macro current (Stage 1)
-4. python scripts/generate_weekly_forecasts.py     → /forecasting page activates (Stage 2)
-5. python scripts/train_and_export_smart_simple.py --phase backtest  → /dashboard shows 2025 (Stage 2)
+4. python scripts/pipeline/generate_weekly_forecasts.py     → /forecasting page activates (Stage 2)
+5. python scripts/pipeline/train_and_export_smart_simple.py --phase backtest  → /dashboard shows 2025 (Stage 2)
 6. Review & approve on /dashboard                  → Vote 2/2 (Stage 5)
-7. python scripts/train_and_export_smart_simple.py --phase production → /production shows 2026 (Stage 6)
+7. python scripts/pipeline/train_and_export_smart_simple.py --phase production → /production shows 2026 (Stage 6)
 8. Airflow DAGs take over weekly cycle (Stage 7)   → L3→L5→L7→L6
 ```
 
@@ -76,7 +83,7 @@ Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not fr
 | Pattern | Where Applied | Rule |
 |---------|---------------|------|
 | **SSOT** (Single Source of Truth) | Config YAMLs, feature contracts | ONE authoritative source per concern; never duplicate config |
-| **SDD** (Spec-Driven Development) | Dashboard integration, approval flow | Specs (`.claude/rules/sdd-*.md`) -> Contracts (TS/Python types) -> Implementation |
+| **SDD** (Spec-Driven Development) | Dashboard integration, approval flow | Specs (`.claude/rules/` + `.claude/specs/`) -> Contracts (TS/Python types) -> Implementation |
 | **Contract-First** | All layer boundaries (L0-L7) | Define types BEFORE writing implementation; contracts are the API |
 | **DRY** | Feature engineering (21 features shared H1/H5) | Same feature code for training and inference; never duplicate |
 | **Expanding Window** | Weekly retraining (H1/H5) | Train on ALL history from 2020-01-01 to last Friday; no fixed splits |
@@ -92,28 +99,51 @@ Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not fr
 ### 3-Layer Stack
 
 ```
-Layer 1: SPEC (defines what)      -> .claude/rules/sdd-*.md           (10 specs)
+Layer 1: SPEC (defines what)      -> .claude/rules/ (auto-loaded) + .claude/specs/ (on-demand)
 Layer 2: CONTRACT (enforces how)  -> lib/contracts/ + src/contracts/   (10 TS + 6 Python contracts)
 Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform to contracts)
 ```
 
-### SDD Specs (`.claude/rules/`)
+> **Spec layout** (see `.claude/README.md`): `rules/*.md` is auto-loaded every session (thin,
+> always-true rules); `specs/**` is on-demand reference. Rule index: `.claude/rules/00-INDEX.md`.
 
-| Spec | Purpose | Key Rules |
-|------|---------|-----------|
-| `sdd-mlops-lifecycle.md` | **Master lifecycle (bootstrap→production)** | 8 stages, operator guide, strategy execution details |
-| `sdd-strategy-spec.md` | Universal strategy interface | `strategy_id` lookup; TradeRecord, MetricsSummary, StrategyRegistry |
-| `sdd-approval-spec.md` | Approval lifecycle + gates | 2-vote system; Vote 1=auto, Vote 2=human on `/dashboard`; 5 gates |
-| `sdd-dashboard-integration.md` | Python->Dashboard data contract | JSON schemas, CSV contract, PNG conventions, strategy selector |
-| `sdd-pipeline-lifecycle.md` | 8-stage pipeline lifecycle | BOOTSTRAP -> DATA -> TRAIN -> FORECAST -> BACKTEST -> APPROVE -> DEPLOY -> MONITOR |
-| `news-and-analysis-sdd.md` | **News Engine + Analysis Module** | 5 adapters, enrichment, LLM analysis, `/analysis` page, 6 Airflow DAGs |
-| `sdd-execution-bridge.md` | **SignalBridge OMS + Execution** | MEXC/Binance via CCXT, paper/testnet/live toggle, kill switch, reconciliation |
-| `sdd-risk-management.md` | **Risk Checks & Circuit Breakers** | 9-check chain, command pattern, RiskEnforcer 7 rules, kill switch audit |
-| `sdd-observability.md` | **Monitoring & Alerting** | Prometheus 37+ rules, Grafana 4 dashboards, AlertManager Slack/PagerDuty |
-| `sdd-cicd-testing.md` | **CI/CD & Quality Gates** | 9 GitHub Actions, Makefile 268 lines, 70% coverage gate, contract validation |
-| `sdd-architecture-overview.md` | **As-built architecture map** | Infra (docker full/compact), 38 DAGs, contracts + drift findings, 13-page visual inventory, USD/COP coupling map |
-| `sdd-multi-asset-onboarding.md` | **Add a new tradeable asset (BTC, Gold)** | `AssetProfile` contract, file-touch map, 24/7 problem, SDD stages + TDD test-contract (A1–F1) |
-| `sdd-strategy-lifecycle-registry.md` | **Dynamic multi-strategy registry + replay** | StrategyBundleManifest, registry.json, DAG entry/exit I/O contract, immutable versioned backtests, replay API, DAG factory, TDD (R1–R9) |
+### Always-loaded rules (`.claude/rules/`)
+
+| Rule | Governs |
+|------|---------|
+| `data-governance.md` | L0 OHLCV + macro governance, timezone golden rule (America/Bogota) |
+| `data-freshness.md` | Freshness thresholds (OHLCV 3d/macro 7d/models 10d) + recovery **(SSOT)** |
+| `strategy-contract.md` | Universal strategy/trade/gate schemas, StrategyRegistry, exit reasons, signal contract |
+| `approval-gates.md` | 2-vote approval (Vote 1 auto, Vote 2 human on `/dashboard`) + 5 gates |
+| `experiment-protocol.md` | Experiment discipline: 1 variable, 5 seeds, statistical validation |
+| `ssot-versioning.md` | Frozen experiment SSOT configs + versioning lifecycle |
+
+### Reference specs (`.claude/specs/`, on-demand)
+
+| Spec | Purpose |
+|------|---------|
+| `architecture-overview.md` | As-built architecture map (infra, 38 DAGs, contracts + drift, COP/Gold coupling) |
+| `platform/mlops-lifecycle.md` | **Master lifecycle** (bootstrap→production): 8 stages, CLI `--phase`, operator guide |
+| `platform/frontend-architecture.md` | **Dashboard as-built** (Next.js app: routing, BFF API layer, data-flow/dynamism, contracts boundary, scalability + roadmap) |
+| `platform/dashboard-integration.md` | Python→Dashboard **data contract** (JSON/CSV/PNG conventions, strategy selector) |
+| `platform/registry-lifecycle.md` | Dynamic multi-strategy registry + replay (manifest, immutable bundles, TDD R1–R9) |
+| `platform/execution-bridge.md` | SignalBridge OMS + Execution (MEXC/Binance CCXT, kill switch) |
+| `platform/risk-management.md` | Risk checks & circuit breakers (9-check chain, RiskEnforcer, kill-switch audit) |
+| `platform/observability.md` | Monitoring & alerting (Prometheus/Grafana/AlertManager/Loki) |
+| `platform/cicd-testing.md` | CI/CD & quality gates (9 GitHub Actions, Makefile, 70% coverage gate) |
+| `platform/authentication.md` | Authentication & user creation as-built (SignalBridge JWT/bcrypt/lockout, dashboard NextAuth, `sb_users`) |
+| `pipelines/{training-l2-l3-l4,inference-l1-l5}.md` | RL training + inference pipeline internals |
+| `operations/elite-operations.md` | **DAG schedule / collision-free timeline (SSOT)** + recovery playbooks |
+| `tracks/h5-smart-simple.md` | H5 weekly production track (COP) |
+| `tracks/news-analysis/` | News Engine + Analysis package (`_summary.md` + `NN_*.md` detail) |
+| `assets/_onboarding-playbook.md` | Add a tradeable asset (AssetProfile, file-touch map, TDD A1–F1) |
+| `assets/_asbuilt-implementation.md` | Multi-asset AS-BUILT (per-asset **session/timezone/annualization**; COP prod + Gold & BTC onboarded to web) |
+| `assets/_strategy-science.md` | **How the rule-based strategies work** (intent×vol-target×regime, variables, anti-leakage, evaluation, **results per pair**, what's created per new strategy) |
+| `assets/_ds-cycle-asbuilt.md` | **DS-cycle AS-BUILT per asset × strategy**: data lineage + descriptive stats, transformations, what entered training, **2025 backtest-replay + forecasting/inference results**, news per asset, **conclusions**, results→UI mapping |
+| `assets/xauusd/` | Gold spec package (SPEC-00..12, ADR, roadmap, status) |
+| `assets/btcusdt/` | **BTC/USDT crypto** spec package (24/7, exposure engine; `SPEC-13` integration + `design/`, roadmap, status) |
+| `audit/AUDIT-2026-07-remediation.md` | 10-agent code↔spec audit → tasks-to-fix (~114 findings, P0/P1/P2 backlog) |
+| `audit/STRATEGIC-ASSESSMENT-2026-07.md` | **Honest state-of-system + forward plan**: infra>signal meta-problem, edge=risk-control (not prediction), data/model/orchestration/FE-BE gaps, **BTC deep-dive** (price-only ceiling → crypto-native data is the unblock), P1-P6 priorities |
 
 ### SDD Contracts
 
@@ -143,15 +173,15 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 | `model.contract.ts` | Model registry types |
 | `ssot.contract.ts` | SSOT configuration types |
 
-> **Approval workflow**: 2-vote system (Vote 1 auto via Python gates, Vote 2 human on `/dashboard`). See `sdd-approval-spec.md`.
-> **Dashboard file layout**: `public/data/production/{summary,approval_state,trades/}.json`. See `sdd-dashboard-integration.md`.
-> **Pipeline CLI**: `--phase backtest|production|both`, `--reset-approval`, `--no-png`. See `sdd-pipeline-lifecycle.md`.
+> **Approval workflow**: 2-vote system (Vote 1 auto via Python gates, Vote 2 human on `/dashboard`). See `approval-gates.md`.
+> **Dashboard file layout**: `public/data/production/{summary,approval_state,trades/}.json`. See `dashboard-integration.md`.
+> **Pipeline CLI**: `--phase backtest|production|both`, `--reset-approval`, `--no-png`. See `mlops-lifecycle.md`.
 
 ---
 
 ## ARCHITECTURE (Do NOT deviate)
 
-> Detailed file listings, schemas, and migration details are in the referenced `.claude/rules/*.md` specs.
+> Detailed file listings, schemas, and migration details are in the referenced `.claude/specs/**` reference specs.
 > This section provides a navigation map — read the linked spec for full details.
 
 ### Configuration (SSOT)
@@ -163,57 +193,78 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 
 ### Forecasting Pipeline
 `src/forecasting/` — ForecastingEngine, 9 models, 21 features, walk-forward validation, experiment tracking.
-Scripts: `generate_weekly_forecasts.py`, `run_forecast_experiment.py`, `build_forecasting_dataset_aligned.py`.
+Scripts: `scripts/pipeline/generate_weekly_forecasts.py`, `scripts/pipeline/run_forecast_experiment.py`, `scripts/data/build_forecasting_dataset_aligned.py`.
+**`/forecasting` is multi-asset** (pair selector): USD/COP = 9-model ML zoo (CSV+PNG, whole-year via `--num-weeks 30`); **Gold/BTC = rule-based whole-year weekly inference** (`scripts/pipeline/generate_asset_weekly_forecast.py` → `public/forecasting/<asset>/weekly_inference_<year>.json`, `WeeklyInferenceView.tsx`). **Methodology (all pairs): trained ≤ Dec-2024, 2025 = backtest (OOS, default), 2026 = production.** See `dashboard-integration.md`.
 
 ### H5 Weekly Pipeline (Smart Simple v1.1)
 `src/forecasting/{confidence_scorer,adaptive_stops,vol_targeting}.py` — 3-tier confidence, vol-adaptive TP/HS.
-Script: `train_and_export_smart_simple.py`. Migrations: 043-044. See `h5-smart-simple-pipeline.md`.
+Script: `scripts/pipeline/train_and_export_smart_simple.py`. Migrations: 043-044. See `h5-smart-simple.md`.
 
 ### H1 Daily Pipeline
 `airflow/dags/forecast_h1_l3..l7*.py` — 5 DAGs (Sun train, Mon-Fri signal+execute+monitor).
 Config: `config/execution/smart_executor_v1.yaml`.
 
 ### RL Pipeline (deprioritized)
-Training: `src/{data,training}/` + `scripts/run_ssot_pipeline.py` (L2→L3→L4). See `l2-l3-l4-training-pipeline.md`.
-Inference: `airflow/dags/{l1,l5}_*.py` + `src/core/contracts/feature_contract.py`. See `l1-l5-inference-pipeline.md`.
+Training: `src/{data,training}/` + `scripts/pipeline/run_ssot_pipeline.py` (L2→L3→L4). See `training-l2-l3-l4.md`.
+Inference: `airflow/dags/{l1,l5}_*.py` + `src/core/contracts/feature_contract.py`. See `inference-l1-l5.md`.
 
 ### News Engine
 `src/news_engine/` — 5 adapters, enrichment pipeline, cross-reference, feature export (~60 features/day).
-Migration: 045. See `news-and-analysis-sdd.md`.
+Migration: 045. See `news-analysis/_summary.md`.
 
 ### Analysis Module
 `src/analysis/` — MacroAnalyzer (13 vars), LLMClient (Azure+Anthropic), WeeklyGenerator.
-Script: `generate_weekly_analysis.py`. Migration: 046. See `news-and-analysis-sdd.md`.
+Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `news-analysis/_summary.md`.
 
-### Dashboard (Next.js, 8 pages, 47 API routes)
-Pages: `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution`, `/login`.
-API groups: production (6), analysis (4), execution (10+), experiments (6), backtest (4), models (3), trading (3), market (2), health, replay.
-Components: `components/{forecasting,analysis,production}/`. Hooks: `useWeeklyAnalysis.ts`, `useLiveProduction.ts`.
+### Scripts (`scripts/`, purpose-based layout — reorganized 2026-07)
+`scripts/` is an importable package (`from scripts.<subdir>.<mod> import …`); every script lives in a purpose subdir, root holds only `__init__.py`.
+
+| Subdir | Holds |
+|--------|-------|
+| `pipeline/` | production/RL/forecasting/gold entrypoints, promote, registry (`train_and_export_smart_simple`, `generate_weekly_forecasts`, `run_ssot_pipeline`, `export_to_onnx`…) |
+| `data/` | seeds, features, datasets, resampling, scrapers, DB seeding |
+| `ops/` | `db_migrate`, backfill, `backup/`, rotate, one-off migrations, DVC/maintenance shells |
+| `analysis/` | research backtests, sharpe decomp, sensitivity, ablation |
+| `diagnostics/` | `diagnose_`/`verify_`/`trace_`/`preflight_` |
+| `validation/` | reusable health/smoke/gate validators |
+| `presentation/` | pptx/pitch/screenshots/diagrams |
+| `tools/` | misc CLI utilities + test/experiment runners |
+| `lib/` | shared importable modules (`vol_target_backtest`) |
+| `sql/` · `migrations/` · `deployment/` · `demo/` · `vault/` | SQL queries · schema migrations · deploy · demo · vault |
+| `archive/` | legacy/superseded/dups + completed-milestone gates (see `scripts/archive/README.md`) |
+
+**Add a script**: place it in the subdir matching its purpose — NEVER at `scripts/` root (a regression test enforces this: `tests/regression/test_scripts_layout.py`). If it's wired into a DAG / Makefile / `dvc.yaml` / deploy-manifest, that path is **load-bearing** — update the reference when moving.
+
+### Dashboard (Next.js 15 App Router, 13 route files, 49 API routes)
+Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
+API groups: execution (13), experiments (7), production (6), backtest (5), analysis (4), trading (3), registry (2), models (2), market (2), strategies, replay, pipeline, health, auth.
+Data flow: file-based BFF (`public/data/**`) + DB-live (`production/live`) + proxy (`INFERENCE_API_URL`) + SSE + WS; adaptive polling + graceful degradation. Contracts: `lib/contracts/*.ts` mirror `src/contracts/`.
+**Full as-built: `.claude/specs/platform/frontend-architecture.md`.** Data contract: `dashboard-integration.md`.
 
 ### Execution Layer (OMS + Risk)
 SignalBridge: `services/signalbridge_api/` — FastAPI + CCXT, MEXC/Binance adapters, WebSocket + Redis bridges.
 Executors: `src/execution/{smart_executor,multiday_executor,trailing_stop,broker_adapter}.py`.
 Risk: `src/risk/` (9-check chain + commands) + `src/trading/risk_enforcer.py` (7 rules).
-See `sdd-execution-bridge.md` + `sdd-risk-management.md`.
+See `execution-bridge.md` + `risk-management.md`.
 
 ### Infrastructure (25+ Docker services)
 PostgreSQL+TimescaleDB (5432), Redis (6379), MinIO (9001), Airflow (8080), SignalBridge (8085),
 Vault (8200), Prometheus (9090), Grafana (3002), AlertManager (9093), Loki (3100), Promtail, pgAdmin (5050), MLflow (5001).
-See `sdd-observability.md`.
+See `observability.md`.
 
 **Infra lista, activación en próximos pasos (status realista 2026-04-16):**
 - **MinIO** — 11 buckets operativos pero actualmente solo usado por init-scripts (seed fallback).
   Bucket storage disponible para artefactos; los modelos se persisten en filesystem. **Roadmap**: migración modelos → MinIO.
-- **MLflow** — Tracking server + SQLite + artifact store desplegados. Scripts ad-hoc loguean runs,
-  DAGs L3 (H1/H5) no lo invocan. **Roadmap**: integración automatizada en `forecast_h1_l3_weekly_training` y `forecast_h5_l3_weekly_training`.
+- **MLflow** — Tracking server + SQLite + artifact store desplegados. El DAG **H5-L3 SÍ invoca MLflow**
+  (`_mlflow_safe_start_run`, no-bloqueante); scripts ad-hoc también loguean. **Roadmap**: extender el logging automatizado a H1-L3 (audit A9).
 - **AlertManager** — Rules cargadas (53 alertas), Slack webhook vacío por defecto. Usar la UI estática
   para reglas; alertas activas requieren `SLACK_WEBHOOK_URL` en `.env`. **No crítico** si se opera en local.
-- **Jaeger** — Deployado pero 0 servicios instrumentados (OpenTelemetry no implementado). Omitir del
-  spec operacional hasta que se instrumenten servicios. **Roadmap**: bajo demanda.
+- **Jaeger / OpenTelemetry** — **Instrumentado** (`services/common/tracing.py`, `src/shared/tracing/otel_setup.py`,
+  wired en `inference_api` + `signalbridge_api` `main.py`). Ya NO es "0 servicios instrumentados" (audit A9).
 
 ### CI/CD & Testing
 9 GitHub Actions: ci, deploy, security (x2), contracts-check, drift-check, dvc-validate, experiment, canary-promote.
-Makefile: 268 lines (test, lint, docker, db, validate). 70% coverage gate. See `sdd-cicd-testing.md`.
+Makefile: 268 lines (test, lint, docker, db, validate). 70% coverage gate. See `cicd-testing.md`.
 
 ### Data Sources (for local training without DB)
 ```
@@ -229,27 +280,40 @@ data/pipeline/04_cleaning/output/
 └── MACRO_DAILY_CLEAN.parquet      <- Macro CLEAN 17 cols (H1/H5 reads THIS for 4 macro features)
 ```
 > All OHLCV seeds are in **America/Bogota timezone**, session 8:00-12:55 COT, Mon-Fri.
-> Regenerate with: `python scripts/build_unified_fx_seed.py`
-> See `.claude/rules/l0-data-governance.md` for timezone rules and BRL API quirk.
+> Regenerate with: `python scripts/data/build_unified_fx_seed.py`
+> See `.claude/rules/data-governance.md` for timezone rules and BRL API quirk.
+
+**Git-tracking policy (updated 2026-07-09, operator directive)**: restore-critical data AND everything
+the dashboard serves are tracked — `seeds/latest/*`, `data/backups/seeds/*` + `data/backups/*.csv.gz`
+(startup DB restore), `data/backups/features/*` (news/analysis/H5/asset table dumps — news history is
+NOT regenerable), `data/pipeline/04_cleaning/output/*` (MACRO_DAILY_CLEAN + 9 MASTER files), and the
+dashboard's `public/data/**` (strategy bundles, production approval state, market daily JSONs, analysis)
++ `public/forecasting/**` (weekly inference JSONs + forward PNGs + CSV). **A fresh clone must render
+every dashboard page; DAGs/watchdog are the refresh path, not the bootstrap path.** Still gitignored
+(truly regenerable/runtime): `data/{cache,news,forecasting}/`, `data/pipeline/{00,01,02,03,05,06,07}/`,
+`data/backups/{full_backup_*,pre_v20_*}/`, `models/**` binaries, `results/`, `outputs/`,
+`video-pitch/{out,public}/`, and `public/data/production/deploy_status.json` (container-written runtime
+state — must also stay OUT of the docker build context: its NTFS mode breaks `docker build` tar).
 
 ---
 
-## DAG SCHEDULE (27 DAGs + watchdog)
+## DAG SCHEDULE (29 DAGs + watchdog)
 
 | Pipeline | DAGs | Key Timing (COT) | Spec |
 |----------|------|-------------------|------|
-| **H1 Daily** | 5 | Sun 01:00 train; Mon-Fri 13:00 signal, 13:30 vol-target, 13:35 executor, 19:00 monitor | `h5-smart-simple-pipeline.md` |
-| **H5 Weekly** | 5 | Sun 01:30 train; Mon 08:15 signal, 08:45 vol-target; Mon-Fri */30 9-13 executor; Fri 14:30 monitor | `h5-smart-simple-pipeline.md` |
-| **Forecasting Weekly** | 1 | **Mon 09:00 COT** (14:00 UTC) — `forecast_weekly_generation` regenerates dashboard CSV + 76 PNGs | `sdd-dashboard-integration.md` |
-| **L0 Data** | 5 | OHLCV: */5 8-12 Mon-Fri; Macro: hourly 8-12 Mon-Fri; Backfill: Sun/Manual; Seed backup: daily 15:00 | `l0-data-governance.md` |
-| **RL** | 6 | All manual/event-triggered except L1 (*/5 8-12 Mon-Fri) | `l1-l5-inference-pipeline.md` |
-| **News+Analysis** | 5 | News: 3x/day (02,07,13 COT); Alert: */30; Weekly digest: Mon; Analysis L8: 14:00 Mon-Fri | `news-and-analysis-sdd.md` |
+| **H1 Daily** | 5 | Sun 01:00 train; Mon-Fri 13:00 signal, 13:30 vol-target, 13:35 executor, 19:00 monitor | `h5-smart-simple.md` |
+| **H5 Weekly** | 7 | Sun 01:30 train; Mon 08:15 signal, 08:45 vol-target (+tenant fan-out); Mon-Fri */30 08:00-12:55 executor (`*/30 13-17` UTC); Fri 14:30 monitor; event-driven: L4 backtest-promotion (Vote 1) + **L4b production-deploy** (post-Vote-2, dashboard→Airflow REST, 2026-07-07) | `h5-smart-simple.md` |
+| **Asset DS-cycle** | 2 | Sun 01:45 Gold (`asset_xauusd_pipeline_weekly`), 02:00 BTC (`asset_btcusdt_pipeline_weekly`): l0_ingest→l0b_export_chart_ohlcv→l4_backtest_publish→l5_weekly_forecast→l6_verify_registry. Factory from `config/assets/pipelines.yaml` (CTR-ASSET-PIPELINE-001); Gold/BTC DAG-driven (incl. `/forecasting` weekly inference), COP keeps bespoke H5 chain | `architecture-overview.md` |
+| **Forecasting Weekly** | 1 | **Mon 09:00 COT** (14:00 UTC) — `forecast_weekly_generation` regenerates USD/COP dashboard CSV + PNGs, whole-year `--num-weeks 30` (~30-45 min) | `dashboard-integration.md` |
+| **L0 Data** | 5 | OHLCV: */5 8-12 Mon-Fri; Macro: hourly 8-12 Mon-Fri; Backfill: Sun/Manual; Seed backup: Mon-Fri 15:00 (`0 20 * * 1-5`, no weekend) | `data-governance.md` |
+| **RL** | 6 | All manual/event-triggered except L1 (*/5 8-12 Mon-Fri) | `inference-l1-l5.md` |
+| **News+Analysis** | 5 | News: 3x/day (02,07,13 COT); Alert: */30; Weekly digest: Mon; Analysis L8: 14:00 Mon-Fri | `news-analysis/_summary.md` |
 | **Watchdog** | 1 | `core_watchdog`: hourly 8-13 COT Mon-Fri; auto-heals stale data, forecasting, analysis | `elite-operations.md` |
 
 > H1 and H5 retrain **WEEKLY** (every Sunday). Expanding window grows ~5 rows/week.
 > Analysis DAG runs 2h after last news ingestion to ensure fresh articles.
 > `forecast_weekly_generation` runs Mon 09:00 COT post-training; also triggered by watchdog auto-heal if stale.
-> See `elite-operations.md` for collision-free timeline and `data-freshness-enforcement.md` for thresholds.
+> See `elite-operations.md` for collision-free timeline and `data-freshness.md` for thresholds.
 
 ---
 
@@ -310,6 +374,32 @@ Weekly retraining restored (was monthly in v1.1.0 — methodology bug).
 Gate is the MVP: blocked 11/12 mean-reverting weeks in Q1 2026, converting -5.17% into +0.61%.
 **RL baselines**: Buy-and-hold -14.66%, Random -4.12%, Bootstrap CI [-0.69%, +6.15%].
 **RL history**: V20 failed, V21 failed, V21.5 superseded, V22 mixed (1/5), V21.5b best (4/5), EXP-ASYM-001 failed, EXP-HOURLY/DAILY failed.
+
+### Multi-asset (rule-based daily science stacks — onboarded to web, NOT COP-comparable)
+
+> The table above is COP-only. Gold/BTC are separate assets on their own clocks/units — **never
+> compare across assets** (each annualized per-asset, see `assets/_strategy-science.md §6`). These are
+> rule-based baselines (intent × vol-targeting × regime), published to the dynamic registry and
+> visible on `/dashboard`; backtest+web only (no live execution). Honest gate: a candidate must beat
+> **both** baselines OOS on Sharpe *and* Calmar.
+
+| Asset | Best strategy | Return (OOS) | Sharpe | p-value | Rec | Runner |
+|-------|---------------|--------------|--------|---------|-----|--------|
+| **XAU/USD** (Gold) | `gold_trend_b2` (2004→2026) | +55.3% | 0.362 | 0.041 | PROMOTE | `scripts/run_gold_pipeline.py` |
+| **BTC/USDT** (Bitcoin) | `btc_trend_b2` (2018→2026) | **+351%** | **1.40** | 0.0 | PROMOTE | `scripts/pipeline/run_btc_pipeline.py` |
+
+> **Gold seed calendar bug fixed (2026-07)**: `ingest_asset_ohlcv.py::_daily_to_nyclose` shifted daily
+> bars one day onto Sunday (`tz_convert(ET).normalize()` on a 00:00-UTC stamp). Fixed to anchor the date
+> in UTC; Gold metrics recomputed (`gold_trend_b2` 61.1%→55.3%, verdicts unchanged) and republished at
+> bundle **v1.1.0**. A new OHLCV weekday/gap/tz validator (`src/data_quality/ohlcv_validators.py`) now
+> gates every ingest. Bundles also carry **Deflated Sharpe** (trial-aware) + a **true OOS-2025** slice.
+> Cross-asset comparison caveat still applies (each annualized per-asset).
+
+**BTC data note**: canonical price is **Binance spot BTC/USDT, UTC 00:00 close** — ingested from
+Binance's **public** klines API (no API key), 3,245 daily bars 2017→2026 via `scripts/data/ingest_btc_ohlcv.py`.
+BTC is **24/7** → √365 annualization, spot-only `exposure∈[0,1]`, no forced-close. The regime-gated
+engine (S3) does **not** yet beat B2 — it needs the on-chain HMM fed by the still-pending crypto-native
+extractors (→ migration 052 tables). See `assets/btcusdt/` + `assets/_strategy-science.md`.
 
 ---
 

@@ -1,0 +1,36 @@
+# events-taxonomy.yaml — SPEC-05 / §8.2. Taxonomia CERRADA. El LLM solo clasifica;
+# la accion es una tabla determinista. Version del LLM = trial en el DSR (ADR-0011).
+
+classifier:
+  temperature: 0.0
+  output: strict_json_schema
+  closed_taxonomy: true             # el LLM SOLO puede emitir estas clases
+  input_text: headline_at_time      # nunca resumenes retrospectivos (contaminacion §7.8)
+  llm_model_version: "PENDIENTE"    # proveedor+version+cutoff, fijado en la spec
+
+recall_target_catastrophic: 1.0     # ~100% recall aceptando baja precision (§7.5)
+historical_recall_is: upper_bound   # §7.8: insesgado solo post-cutoff en shadow
+
+confirmation:                       # accion en dos tiempos (§7.5)
+  sources_required_for_flat: 2
+  window_minutes: 15
+  or_vol_spike_confirms: true
+
+taxonomy:                           # clase -> accion determinista
+  EXCHANGE_FAILURE:   { first_signal_G: 0.5, confirmed_G: 0.0, reentry: manual }
+  STABLECOIN_STRESS:  { first_signal_G: 0.5, confirmed_G: 0.0, reentry: manual }
+  REGULATORY_SHOCK:   { G: 0.25, timer_hours: 48, reentry: timer_plus_review }
+  MACRO_SURPRISE:     { G: 0.5,  timer_hours: 24, reentry: timer }
+  ETF_STRUCTURAL:     { G: 0.5,  timer_hours: 12, reentry: timer }
+  WHALE_MOVEMENT:     { G: 0.75, timer_hours: 12, reentry: timer }
+  NOISE:              { G: 1.0 }    # ~99% del feed
+
+vol_spike_breaker:                  # independiente del LLM, sin corpus (§8.3, §7.8.5)
+  atr_multiple: 3.0                 # ATR(H1) > 3 x EWMA(ATR) => G = min(G, 0.5)
+  independent_of_llm: true
+
+fail_safe:                          # asimetrico
+  feed_down: hold_last_value_and_alert
+  unparseable_output: treat_as_noise_and_alert
+
+llm_execution_permissions: none     # ADR-0011: ningun LLM toca la cuenta

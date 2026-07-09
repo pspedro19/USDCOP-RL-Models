@@ -1,0 +1,391 @@
+{
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Oro (Gold)",
+  "iso_year": 2026,
+  "iso_week": 7,
+  "week_start": "2026-02-09",
+  "week_end": "2026-02-15",
+  "weekly_summary": {
+    "headline": "Oro (Gold) · Semana 07 de 2026",
+    "markdown": "### Oro (Gold) — Semana 07 (2026-02-09 → 2026-02-15)\n\nEl cierre semanal de XAU/USD fue **4992.46 USD/oz**, un cambio de **-1.62%** en la semana (rango 4891.22–5115.81). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista debil** con precio en 4992.46. RSI(14)=54 (neutral). Soporte 4410.85, resistencia 5597.23.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 1.22x). Régimen: compression.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: J.P. Morgan Private Bank, NerdWallet, Yahoo Finance.",
+    "sentiment": "bearish",
+    "ohlcv": {
+      "open": 5074.6068,
+      "high": 5115.8096,
+      "low": 4891.2248,
+      "close": 4992.462,
+      "change_pct": -1.619
+    },
+    "themes": [
+      "bajista_debil",
+      "RSI 53.57"
+    ]
+  },
+  "daily_entries": [
+    {
+      "analysis_date": "2026-02-09",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 0,
+      "headline": "Oro (Gold) 2026-02-09: cierre 5028.85 (-0.90%)",
+      "summary_markdown": "## XAU/USD — 2026-02-09\n\nCierre **5028.85 USD/oz** (-0.90%). Rango 5002.86–5084.15.",
+      "usdcop_close": 5028.8494,
+      "usdcop_change_pct": -0.902,
+      "usdcop_high": 5084.1526,
+      "usdcop_low": 5002.8603,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-10",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 1,
+      "headline": "Oro (Gold) 2026-02-10: cierre 5080.66 (+1.03%)",
+      "summary_markdown": "## XAU/USD — 2026-02-10\n\nCierre **5080.66 USD/oz** (+1.03%). Rango 5021.08–5115.81.",
+      "usdcop_close": 5080.6557,
+      "usdcop_change_pct": 1.0302,
+      "usdcop_high": 5115.8096,
+      "usdcop_low": 5021.0815,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-11",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 2,
+      "headline": "Oro (Gold) 2026-02-11: cierre 4945.18 (-2.67%)",
+      "summary_markdown": "## XAU/USD — 2026-02-11\n\nCierre **4945.18 USD/oz** (-2.67%). Rango 4891.22–5101.36.",
+      "usdcop_close": 4945.1794,
+      "usdcop_change_pct": -2.6665,
+      "usdcop_high": 5101.3626,
+      "usdcop_low": 4891.2248,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-12",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 3,
+      "headline": "Oro (Gold) 2026-02-12: cierre 5029.90 (+1.71%)",
+      "summary_markdown": "## XAU/USD — 2026-02-12\n\nCierre **5029.90 USD/oz** (+1.71%). Rango 4892.56–5045.31.",
+      "usdcop_close": 5029.8952,
+      "usdcop_change_pct": 1.7131,
+      "usdcop_high": 5045.3129,
+      "usdcop_low": 4892.5638,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-13",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 4,
+      "headline": "Oro (Gold) 2026-02-13: cierre 5043.16 (+0.26%)",
+      "summary_markdown": "## XAU/USD — 2026-02-13\n\nCierre **5043.16 USD/oz** (+0.26%). Rango 5023.95–5044.24.",
+      "usdcop_close": 5043.1648,
+      "usdcop_change_pct": 0.2638,
+      "usdcop_high": 5044.2429,
+      "usdcop_low": 5023.9541,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-14",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 5,
+      "headline": "Oro (Gold) 2026-02-14: cierre 5043.21 (+0.00%)",
+      "summary_markdown": "## XAU/USD — 2026-02-14\n\nCierre **5043.21 USD/oz** (+0.00%). Rango 5043.01–5043.34.",
+      "usdcop_close": 5043.2085,
+      "usdcop_change_pct": 0.0009,
+      "usdcop_high": 5043.3438,
+      "usdcop_low": 5043.0067,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-02-15",
+      "iso_year": 2026,
+      "iso_week": 7,
+      "day_of_week": 6,
+      "headline": "Oro (Gold) 2026-02-15: cierre 4992.46 (-1.01%)",
+      "summary_markdown": "## XAU/USD — 2026-02-15\n\nCierre **4992.46 USD/oz** (-1.01%). Rango 4968.77–5044.13.",
+      "usdcop_close": 4992.462,
+      "usdcop_change_pct": -1.0062,
+      "usdcop_high": 5044.1325,
+      "usdcop_low": 4968.769,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 1.224,
+        "predicted_return": 13.6223,
+        "note": "Gold · Trend-follower (B2) · régimen: compression",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    }
+  ],
+  "macro_snapshots": {},
+  "macro_charts": {},
+  "signals": {
+    "h5": {
+      "direction": "LONG",
+      "confidence": "media",
+      "leverage": 1.224,
+      "predicted_return": 13.6223,
+      "note": "Gold · Trend-follower (B2) · régimen: compression",
+      "exit_reason": "regime_flip"
+    },
+    "h1": {
+      "direction": "N/A",
+      "note": "N/A para este activo"
+    }
+  },
+  "technical_analysis": {
+    "as_of": "2026-02-15",
+    "last_price": 4992.462,
+    "trend": "bajista_debil",
+    "signal": "neutral",
+    "indicators": {
+      "rsi_14": 53.57,
+      "sma_20": 4993.1248,
+      "sma_50": 4759.0064,
+      "macd_line": 65.8698,
+      "macd_signal": 77.9187,
+      "macd_histogram": -12.049,
+      "atr_14": 136.4916
+    },
+    "support_resistance": {
+      "support": 4410.8453,
+      "resistance": 5597.2299,
+      "no_trade_zone": {
+        "low": 4924.2162,
+        "high": 5060.7078
+      }
+    },
+    "scenarios": [
+      {
+        "name": "Continuación de tendencia",
+        "direction": "short",
+        "trigger": 4410.8453,
+        "target": 4274.3537,
+        "invalidation": 5597.2299,
+        "rationale": "Ruptura bajista con RSI=54"
+      },
+      {
+        "name": "Reversión a la media",
+        "direction": "long",
+        "trigger": 4410.8453,
+        "target": 4993.1248,
+        "invalidation": 4274.3537,
+        "rationale": "Precio bajo SMA20"
+      }
+    ]
+  },
+  "news_context": {
+    "article_count": 40,
+    "avg_sentiment": null,
+    "source_breakdown": {
+      "J.P. Morgan Private Bank": 2,
+      "NerdWallet": 1,
+      "Yahoo Finance": 5,
+      "T. Rowe Price": 1,
+      "S&P Global": 1,
+      "CBS News": 2,
+      "World Gold Council": 1,
+      "CNBC": 1,
+      "FOREX.com": 1,
+      "Reuters": 1,
+      "Bloomberg.com": 1,
+      "BullionVault": 1,
+      "Gold Price": 1,
+      "Yahoo Finance UK": 3,
+      "Finance Magnates": 1,
+      "Fortune": 1,
+      "WAAY 31 News": 1,
+      "Business Insider": 1,
+      "FXStreet": 5,
+      "KITCO": 2,
+      "Mining.com": 2,
+      "Japan Today": 1,
+      "Financial Times": 1,
+      "Robb Report": 1,
+      "Investing.com": 1,
+      "FXEmpire": 1
+    }
+  },
+  "news_intelligence": {
+    "total_articles": 40,
+    "clusters": [
+      {
+        "theme": "Yahoo Finance",
+        "count": 5,
+        "articles": [
+          {
+            "title": "Gold price today, Friday, February 13: Gold opens below $5,000 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPVnQ4YTdfdi1UYkpBSEc1NlpzVVZnQ0c0Q2ItanpqX2RHSS1LR2x0bTFKSC1mQkRFekFOdzN2X1dfb25rNlVRay1vRnI2SWJDQ3NZS2lwUW1IWHNNU1B5SWNkSllGUzFTendSWnQ3MUFzRDJKS3JyNlFMcU9ZYnMyci1PZ1V2UV9JdlJZb1V6RkdrRzRacDd2bHZHOXBKSHlKSVpsMnhiNWFhVzFsc0xydkVhQXNUSE1lZHVOemFLdE9NWVdnN0t6UXhtbzdldw?oc=5"
+          },
+          {
+            "title": "Why Smart Seniors Are Buying Gold at Costco (and Ignoring the Jewelry Counter) - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQai1PdzlZSzNQNndPNXk5cENrRE5zdW44dzRGZ2l5aG5CcEFNV05ySG1hVWlGb0tJT0wwS205X19Gd2Nfa0YzUWl4akliZ19fYmgxejRvYm9wb0VnYzhhVzBodXF4cGFSOUowTTc1NVZ5LWJhdFdqOVBfemJGazlIdA?oc=5"
+          },
+          {
+            "title": "Gold prices: Strategist sees scenario where it hits $6K in 2026 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQY0YyM0lCOXo1WExXMnZ2YldraFlOajNIb3BLTWZZZUpqSk5aSG9pTVVIY0JtZmJOX29SY1RFVHFudTVIT0lfbTR6S0o3dUc4R3NEcEVwQ215OEE3RTg5MGFIZ1FqSmZQdTJ5YlZaRjI2VVRsQTB1ZG1rc0JVWUhHUjdnR1RjNTdjUG5R?oc=5"
+          },
+          {
+            "title": "Gold Price Outlook 2026: What Rising Gold Prices Mean for Gold Loan Borrowers - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPS3E3WjNreW0zUGtIOEhLV1JVc3V4cGdmejg2SksxenA1STJ3a3c4QVlZbTNWMkh0cU5ld29BbHhRVDNJMmVDZXUtMjV2VVA4TTk1MHlLSmJoa3JUR1ZkZy1wV2ZtWXd1UEhVYkdUQzM5NkRaTnVxYWdvQ3VrSGt2SXdB?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "FXStreet",
+        "count": 5,
+        "articles": [
+          {
+            "title": "Gold Price Forecast: Spot Gold pushes back above $5,000 - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxQRGViS2xHSGR1N2tYQUJDMVVxWl82YUltLWRlVzNSMWkyYnJ0eTlFVWxDOXJiTS1iUGhfRU0xTDJSc2xjRWs3UzU4cVNLUUd0RkVBT3ljNFJnbTBSampiaDJ1d0ZWckNrTGVZZGJEdFZPSlM2bHlFNkoydkVMaEhraDFCYkVkT0NvZkZCdTlvRUN0NmtfdkJET0oxd0vSAaIBQVVfeXFMT3NDR3VWN1dMRTlTZXpLeFA4NkVIaUJtZUJ5VU9yN216Wk50cEtuY3dRR1VQQUQ2R2NUcnRxOEhueDdJT2ZIdkxmTEdxV1h0LXZzLUItTUlVdmxXM1ppZ0pTNGV2Q1FsOW9FYkZjNHhyU0MxdXRBNnVIVWFFR29DUl9mcl9tYlVJYmRqU2VQNWFIVjVsbGVHT0lFZmNJTkQzTVN3?oc=5"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD consolidates with $5,100 on the bull’s focus - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPM2IwMjE4VU0tcnZqdzJjZHlQdEczOXFFMGZBUGdZaXBSajU0cVBpR1BWOGgyVzdZR1QtblZrRDhrVXJySmd4SGZGNmp5TEdGUkFtTXd2X2lTYnVlYTByaUlHVlA4djFhMEVoMFc2MXpEVk9TMlp1RVNZVEpiTVJ1bDZoN3VxQlctTTdPUlByMy1jZ1RQamRwMXVnaVBtWE9nZ1ZFS0FFY3NHRkl3WllSbHgzWdIBuAFBVV95cUxNcWN3U2pvc0w5Qk5Cc0ZjN3N3QzNacWRoRlFOQkRycnJWdkd4enEzS3pXcTRJTDZVT0MxajNCNTlLMGY3S2FtZVdyYUN4OGRiTjJKZEZ0SXllMkxKdnNvVWJ3VzNGN0t4NjI1bVZvTWUyaWU0R3BNdmN3dWtpbXNrRHVjc19TZFhhTjgyWWhYdTZBeXp4OVZkOHZjNjgwYmQ3ZjlXY3NCYUg5QnA1dE9SNERTUnlXb2lY?oc=5"
+          },
+          {
+            "title": "Gold tumbles below $5,050, China’s buying interest seen limiting downside - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNNTZyRV8tYV9BX0ZZUU1ZN3l2MFpVMExHNUY3RGJManR4dHVCTDB4ek9lYm1GUkVJOGZsLUNYSUN3ZlBGcGpYSi1WWW84elVOb0VmeEZ3c3MyQnQ1U0h0bFExOW9SemwtOTIzOTdkQWtybFZCTTJRS0xTQjNaY2dITldxTnlGV3VXVzVwWHNLTUNOaXpVaWdXd3ZadU9WRi12clF4YkMzQ2cwaFpCQkhzRS1GNWZYamRucVpOdzlmcVFMQdIBxwFBVV95cUxQYmJQYXRVaDYwQzFTMk5HRzdSQU82UTBGOGpBcjZGOVlIVlAtdWJnNTVvZkJFeHZsbzVWNUdsZ0YxSDNoUi1laGxTVmY3aUQ5WkQ4dWs4R3o1Z1gzb0x2ZE1FLVlyT005WXFiYzNGWFRTV2diSUxjRE9iYW5iaTRNT0dJdXNRM204c3ZYMXNnOWk1Zm92VG1fa28wSDJ6RVlWZTNvVmRheC1jR3JCcGZpVEF6ZXVUNVJweXVFTUdEd0xKeFdIR1Z3?oc=5"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD resumes its uptrend to test the $5,100 level - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNbzNKaHoxT1NYQWFDelIyYVFSLWtYbjQ0WV9ybUdoWnBxSDEyRHdoRzBtZy15MlhfRU5aR29xdWY2eW1EMzd2b01XYUg0al9PX2VINS1qNmh0VU9BTktJV0w0cEo2dnU3QVlPVUVtaFRST2JfbjJXLWVOTGJpenZMazgydHJCNm1JUjhsV05KekE1UmdKYld0bVduRGxuQXdLNmZoSGgxS1dONnRFcnh6bWpwbHrSAboBQVVfeXFMUDVuQTJPRm5ONmxNRFh3REdyamtRMnlHdHVjaG5kSkIweEs1bXBRZmd6OWViRUJwZWtaY3dzNUx4VE5YZDRsV2VGVUhTWHFGZ3hQOWR4eFNSRVM3WXhPT2lHMEQ4cm9KTFozQ2tGTHNwbjd4OWpOb2lrSDEteDVqbVYyNVhiTUdQa2g4X2ppc0tYbmtIRW9uYS1UUGNJTUhobkhyRExsQ1BsUDJvb0I4Y01mZzZ5Z3JxQ1Vn?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Yahoo Finance UK",
+        "count": 3,
+        "articles": [
+          {
+            "title": "Gold price pushes higher as US data boosts case for interest rate cuts - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxPOTFoa3BxZ25YVkRmRnZCeWhROTFDdVpZZ0JEWmhaaUs5eEtJOG1lR0tiYWQzVEEwRHRRdDl6MEpjWlFlMnVhWk56MzBEUElWNERQMUFPSGI5N1RQSDVTdXc3VFYxNFBDV1h3U19pT2VUeHpCdGFiTHZZWklUVkVveVRtWDBmZ3VraUp2VmVZM0lXRFUtbVE5Um44VjBjZWZIa3E2aXJWM2pBcFRmMTNJ?oc=5"
+          },
+          {
+            "title": "Gold prices surge back above $5,000 as investors look ahead to US jobs and inflation data - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOam9qVDd2eW5tRDdfZVlyMVVoOWhJVmM4dno5Qk5sNUZoRjlQMnF4SjRUVlFZcE01YklFTHhfMlF2bVNpS0JCaHNWWHVfZmhGcGdfTXBEd2l6dDlaVnlsSlp5amlWQkI4d2RUaTFtTFVFaE9ObVlqdUh5eE5vLVVKVm1tNWFaRURLU2RyRHRfdW1MZGtPM2VKTzNoZw?oc=5"
+          },
+          {
+            "title": "Gold prices jump as US inflation falls by more than expected - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQYk01d2pEYmFmS2tCWFNpc2ZieDlkVjl3c2NiUG5Del9WbG5UaTg3dXVlWi1UUkFQXzJjTTl4ZnZsVnY5MERaNl9EVVRvaTFKS3JIY0E4Ni1rRUwyZXpUdmI2MEFZdEtsdE5Nc1kwRU1FanU4b1RiN2p5MF9mZFJSVnZSblJzUUtVdm1PZzlDMEE1YndN?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "J.P. Morgan Private Bank",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Is it a golden era for gold? - J.P. Morgan Private Bank",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNc2hyeU45Z01RUzZQaXJrbU56S1cyYldoSXNEOUQyMmU3ZnlZbmNyZWRyRGxycUpfZDA2X29jWWxXQlFKNkEza2lfbDZ3R2oxRkhwQkU4M19ZZnRmRzFiTklsanV0bWZDZWwya3NpWFJiZHgyMGo0dHA4Wmc3dGhMOW1mMjExMWs2N1B4ZFg0di1rM3RtSzFUUkNGOHYtYk0?oc=5"
+          },
+          {
+            "title": "The case against gold and why it’s wrong - J.P. Morgan Private Bank",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOU0dCaWVldDI1VjFwejQzamk3OFNZci1icHhlaHNRSlExcVI4cDVJWDVjZU1pYW5iNVZQQjFHcHZUSVlCTWdNT25iWjR2dGdXTmhoZE5PTGI2MDVFSElYaEdkZGowOHg2bVdTNVpvRzlGQ0E5MG1BYm9EeUxVeWRDMDBIaE51SmhFYXRseEY5SzloUTlOLVN4VTJwNllPOUlvWFJ2M2VSUHRwZzI5RXpsanRqcjM?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CBS News",
+        "count": 2,
+        "articles": [
+          {
+            "title": "How much does 1 gram of gold cost right now? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPazh6M2dIdlpfMXpLWVlQN1ptcTJaSndOV2VndURNZDhKT1p1MnpMZmZwQmptU3RlOWMzeklhZ2hZLThhaG93RGlHSHFPMEpKeW93X0E3bVg1aUJ3NVV0U0xZNFhaTUFiZVlXY2RRMDNVRThTcVpGU0tSSldYRXJCYkozQQ?oc=5"
+          },
+          {
+            "title": "How much is a 400-ounce gold bar worth in today's market? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPRzB0NVVXLWZtdXA2ZmtaLVVXeDZYSWtKdDRpT2JlODBHYTRJNlZ2MUllMVVYRjA2ajRKbHJRVFFCd2xaS29zeWxFZ3Z2WEZiWG52a2tRN0c1bmxreEVkOFhXbjF2NVExTjZLaU5tVFFRRFNyS3llSWhLTUJyMTZSRmRsUDdSM0dYNDBlb0tKT2RERWxPRkg0bVNZTUhodw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "KITCO",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Why gold prices pause near record highs as risk appetite and data uncertainty collide - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxPc2RGMDN2NHV3TTRLRWpvVl9TdEZROG4zQXBMcS1iOGhQT1QxRGZKbmlGalZyTml3aUJ1OU8ySDhfQ0hzcWE2dldQalZpR1Y4azM4RF9TMnNKejNlNW9QZkplWVVYcjYySkhXV19ZSnhSRU1rd3VtSXB2eUt2Zkh0Q0lyVVRHMEJvcllqNk1GTmlHMmpxYk5taHBwRkVxQzBaV3hQa2ZIeWJJZEdtWm1UdGt6SnYyQQ?oc=5"
+          },
+          {
+            "title": "Gold prices testing resistance just below $5,000 as US inflation cools in January - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQNFpWZzJ5RHhzeHhURlRTbUJUSkh2WXYzNWtqeXZuTzFHcjJCTEpRQjdKNUxfNzl2OWlVT2FBNzBWQzNjTlRvSVNBNy1qWElrb1VUQ05Sa05QbUJXcmYxRkNyV0hKOEtURURKRUNhSXY0aGpOUFNXakk3SU85bjM5NWRQSmtEM0JicUd0ajh6ZUJOZXA2dVhzQkVpRmEzNFRpcDdJa09yZzlXN1dlNkU5dzJvT1NyYXd1endv?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "macro_regime": {
+    "regime": {
+      "label": "trend",
+      "confidence": 0.6,
+      "transition_probabilities": {}
+    },
+    "note": "Gold · Trend-follower (B2) · régimen: compression"
+  },
+  "upcoming_events": [],
+  "quality_score": 1.0,
+  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+}

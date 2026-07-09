@@ -1,29 +1,31 @@
 {
-  "backup_timestamp": "2026-07-02T20:00:23Z",
+  "backup_timestamp": "2026-07-07T14:35:40Z",
   "ohlcv": {
     "file": "usdcop_m5_ohlcv_backup.parquet",
-    "rows": 295589,
+    "rows": 130850,
     "symbols": [
+      "BTC/USDT",
       "USD/BRL",
       "USD/COP",
-      "USD/MXN"
+      "USD/MXN",
+      "XAU/USD"
     ],
     "date_range": [
-      "2020-01-01",
-      "2026-07-02"
+      "2020-01-02",
+      "2026-07-06"
     ],
-    "size_bytes": 7705829,
-    "sha256": "e0f605b99fd1e2a520d4c6fda1f699653170f735ce15ec9f7f3e6c03651ad27f"
+    "size_bytes": 4194953,
+    "sha256": "26410b3b2716286b2fb3dd5237a82bd7ace0a49a16192b3b04502fc53cdf3a22"
   },
   "macro": {
     "file": "macro_indicators_daily_backup.parquet",
-    "rows": 10858,
+    "rows": 10882,
     "date_range": [
       "1954-07-31",
-      "2026-06-12"
+      "2026-07-07"
     ],
-    "size_bytes": 270585,
-    "sha256": "f18ad7f6887086362dc1d10c08f666653961d69cf3fabe804b1837baab375091",
+    "size_bytes": 215641,
+    "sha256": "3e503b284d4add4f7ee716aa669859a183dd928d6fcd04bcb4d9797ac8c748b5",
     "skipped": false
   }
 }

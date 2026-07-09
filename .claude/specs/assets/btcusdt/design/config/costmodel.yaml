@@ -1,0 +1,28 @@
+# costmodel.yaml — SPEC-07 / §5.7. El funding NO entra (spot-only, ADR-0008).
+# Priors conservadores para tamano retail/boutique. Se aplica en TODOS los backtests.
+
+fees:
+  taker_bps_per_side: 10.0          # tier base, parametrizable
+half_spread:
+  bps: 1.0                          # BTC/USDT, estimado de datos H1
+slippage:
+  fixed_bps: 2.0
+  impact_threshold_frac_bar_vol: 0.001   # aplica impacto si orden > 0.1% del vol de barra
+  impact_k: null                    # calibrar de datos H1 (no optimizar sobre test)
+total_prior_bps_per_rebalance: [13.0, 15.0]
+
+bar:
+  canonical: "UTC-00:00"
+  never_mix_with: "US-session-close"
+
+price_stitching:                    # §3.2
+  hierarchy: ["CryptoCompare", "Bitstamp(2013-2017)", "Binance-spot(2017-08+)"]
+  splice_max_discrepancy: 0.005     # <0.5% en solape, si no => QUALITY_FLAG (test I9)
+  gap_fill: secondary_same_timestamp # JAMAS ffill del precio
+  mtgox_pre_2013_07: context_only
+
+orders:
+  type: passive_limit_then_market_residual
+  min_size_pct_nav: 0.02
+
+shadow_divergence_suspend_threshold: 0.02   # >2% NAV/30d => suspension (SPEC-12 §14.1.2)

@@ -108,6 +108,7 @@ airflow/*.cfg
 *.csv
 !sample_data.csv
 !usdcop-trading-dashboard/public/forecasting/*.csv
+!usdcop-trading-dashboard/public/**/*.csv
 # Allow news historical CSV files (tracked with Git LFS)
 !data/news/*.csv
 
@@ -296,9 +297,51 @@ data/backups/**/env/
 !src/forecasting/models/**
 !src/models/
 !src/models/**
+!services/inference_api/models/
+!services/inference_api/models/**
 !src/core/state/
 !src/core/state/**
 # ...but never track compiled artifacts inside those re-included source packages.
 src/forecasting/models/**/__pycache__/
 src/models/**/__pycache__/
 src/core/state/**/__pycache__/
+
+# ============================================================================
+# Regenerable artifacts — kept locally, out of git.
+# Curated analyses now live tracked under docs/analysis/.
+# SACRED (stay tracked, used to restore DB tables on service startup):
+#   - seeds/latest/*, data/backups/seeds/*, data/backups/*.csv.gz|*.sql.gz
+#   - data/backups/features/* (news/analysis/H5/asset tables — news history is NOT regenerable)
+#   - data/pipeline/04_cleaning/output/* (MACRO_DAILY_CLEAN + 9 MASTER files)
+#   - usdcop-trading-dashboard/public/data/** + public/forecasting/** (operator 2026-07-09:
+#     todo lo que sirve el dashboard viaja en git; los DAGs son refresh, no bootstrap)
+# ============================================================================
+
+# Runtime output dirs (pipelines recreate these on each run)
+results/
+outputs/
+
+# data/ regenerable pipeline intermediates
+data/cache/
+data/news/
+data/forecasting/
+data/pipeline/00_config/
+data/pipeline/01_sources/
+data/pipeline/02_scrapers/
+data/pipeline/03_fusion/
+data/pipeline/05_resampling/
+data/pipeline/06_rl_dataset_builder/
+data/pipeline/07_output/
+# stale historical snapshots (NOT the startup-restore backups)
+data/backups/full_backup_*/
+data/backups/pre_v20_migration_*/
+
+# model binaries (roadmap: migrate to MinIO) — JSON metadata stays tracked
+models/**/*.zip
+models/**/*.onnx
+models/**/*.npz
+models/**/tensorboard/
+
+# video-pitch rendered media (Remotion code/scripts stay tracked)
+video-pitch/out/
+video-pitch/public/

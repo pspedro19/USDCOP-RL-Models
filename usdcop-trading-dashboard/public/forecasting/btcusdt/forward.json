@@ -1,0 +1,85 @@
+{
+  "asset": "btcusdt",
+  "display": "Bitcoin (BTC/USDT)",
+  "champion": "btc_trend_b2",
+  "generated_at": "2026-07-07T18:42:24.494914+00:00",
+  "last_close": 64166.48,
+  "last_bar": "2026-07-07 00:00:00+00:00",
+  "direction": "FLAT",
+  "exposure": 0.0,
+  "vol_daily_pct": 1.94,
+  "image": "forecasting/btcusdt/forward_btcusdt_2026_W28.png",
+  "horizons": [
+    {
+      "h_days": 1,
+      "exp_move_pct": 1.94,
+      "ci68_pct": [
+        -1.94,
+        1.94
+      ],
+      "ci95_pct": [
+        -3.81,
+        3.81
+      ],
+      "da_2025_pct": 47.5,
+      "n_2025": 61
+    },
+    {
+      "h_days": 5,
+      "exp_move_pct": 4.34,
+      "ci68_pct": [
+        -4.34,
+        4.34
+      ],
+      "ci95_pct": [
+        -8.51,
+        8.51
+      ],
+      "da_2025_pct": 55.7,
+      "n_2025": 61
+    },
+    {
+      "h_days": 10,
+      "exp_move_pct": 6.14,
+      "ci68_pct": [
+        -6.14,
+        6.14
+      ],
+      "ci95_pct": [
+        -12.04,
+        12.04
+      ],
+      "da_2025_pct": 54.1,
+      "n_2025": 61
+    },
+    {
+      "h_days": 20,
+      "exp_move_pct": 8.68,
+      "ci68_pct": [
+        -8.68,
+        8.68
+      ],
+      "ci95_pct": [
+        -17.02,
+        17.02
+      ],
+      "da_2025_pct": 45.9,
+      "n_2025": 61
+    },
+    {
+      "h_days": 30,
+      "exp_move_pct": 10.64,
+      "ci68_pct": [
+        -10.64,
+        10.64
+      ],
+      "ci95_pct": [
+        -20.85,
+        20.85
+      ],
+      "da_2025_pct": 41.0,
+      "n_2025": 61
+    }
+  ],
+  "methodology": "Bandas de volatilidad realizada 60d (random-walk, drift 0) + posicionamiento actual de la estrategia campeona. DA por horizonte = walk-forward 2025 medido. NO es una predicción ML."
+}

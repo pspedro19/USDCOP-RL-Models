@@ -1,0 +1,140 @@
+{
+  "strategy_id": "gold_trend_b2",
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Gold \u00b7 Trend-follower Daily (B2)",
+  "pipeline_type": "rule_based",
+  "timeframe": "daily",
+  "status": "archived",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.3.0",
+    "year": 2026,
+    "generated_at": "2026-07-07T19:21:36.658175+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.1.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_b2__1.1.0__2026",
+      "summary": "strategies/gold_trend_b2/backtests/1.1.0/summary_2026.json",
+      "trades": "strategies/gold_trend_b2/backtests/1.1.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 55.31,
+        "sharpe": 0.362,
+        "p_value": 0.0412
+      }
+    },
+    {
+      "model_version": "1.2.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_b2__1.2.0__2026",
+      "summary": "strategies/gold_trend_b2/backtests/1.2.0/summary_2026.json",
+      "trades": "strategies/gold_trend_b2/backtests/1.2.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 55.31,
+        "sharpe": 0.362,
+        "p_value": 0.0412
+      }
+    },
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_b2__1.0.0__2026",
+      "summary": "strategies/gold_trend_b2/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/gold_trend_b2/backtests/1.0.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 55.31,
+        "sharpe": 0.362,
+        "p_value": 0.0398
+      }
+    },
+    {
+      "model_version": "1.3.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_b2__1.3.0__2026",
+      "summary": "strategies/gold_trend_b2/backtests/1.3.0/summary_2026.json",
+      "trades": "strategies/gold_trend_b2/backtests/1.3.0/trades_2026.json",
+      "signals": "strategies/gold_trend_b2/backtests/1.3.0/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 55.31,
+        "sharpe": 0.362,
+        "p_value": 0.0398
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.1.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.2.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.0.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "1.3.0",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

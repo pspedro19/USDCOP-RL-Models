@@ -1,0 +1,93 @@
+# strategy.yaml — Parámetros congelados del sistema (SSOT de máquina)
+# Debe coincidir con .claude/PRE-REGISTRATION.md (test de consistencia en SPEC-11).
+# NADA aquí se re-optimiza mirando resultados OOS. Cambiar un valor = trial en el DSR.
+
+meta:
+  version: "v3"
+  frozen: true                      # congelado antes del primer backtest OOS
+  source_doc: "Guia Maestra v3 (Definitiva)"
+
+instrument:                         # ADR-0008
+  mode: spot_only
+  pair: ["BTC/USDT", "BTC/USDC"]
+  exposure_range: [0.0, 1.0]        # sin apalancamiento, sin cortos
+  bar: "UTC-00:00"
+  perps_role: data_only             # funding/OI/basis solo como señal
+
+vol_targeting:                      # SPEC-06 / §5.1
+  sigma_target_annualized: 0.30     # prior, NO optimizado
+  estimator: downside_semideviation
+  ewma_span_days: 30
+  annualization_sqrt: 365
+  scalar_range: [0.1, 1.0]
+
+risk_combination:                   # SPEC-03 / §6.2 / ADR-0009
+  formula: "R = w_ciclo*z_ciclo + w_funding*z_funding"
+  w_ciclo: 0.7
+  w_funding: 0.3
+  mapping: "M_interno = 0.25 + 0.75 / (1 + exp(a*(R - b)))"
+  sigmoid_a: 1.5
+  sigmoid_b: 0.5
+  m_interno_range: [0.25, 1.0]
+  z_ciclo:
+    source: ["MVRV_ZScore", "NUPL", "Puell_Multiple"]
+    method: mean_of_rolling_zscores
+    rolling_window_years: 4
+  z_funding:
+    source: "funding"
+    method: signed_zscore_of_rolling_percentile
+    rolling_window_years: 1
+
+orthogonality_rule:                 # SPEC-03 / §2.4 / ADR-0009
+  corr_window_days: 90
+  threshold_abs_rho: 0.4            # |rho| > 0.4 sostenido (>50% dias) => combinar, no multiplicar
+  review_cadence: quarterly
+  change_counts_as_dsr_trial: true
+
+liquidity_gate:                     # SPEC-04 / §5.3
+  m_liquidez_range: [0.5, 1.25]
+  weights:                          # fijos, NO optimizados
+    real_rates_tips10y: 0.25
+    dxy: 0.20
+    vix: 0.15
+    etf_flows: 0.20
+    stablecoin_supply: 0.10
+    m2_lagged: 0.05
+    btc_dominance: 0.05
+  etf_stablecoin_joint_cap: 0.30    # endogeneidad
+  etf_flows_lag: "D+1"              # publican al cierre US
+  corr_window_days: [90, 180]
+  endogeneity_control: momentum     # H-LIQ-02
+
+positioning:                        # SPEC-02 / §5.4
+  crowded_percentile: 0.95
+  crowded_sustained_readings: 3
+  neutral_before: "2019-09"         # z_funding = 0 antes de esta fecha (documentado)
+
+rebalancing:                        # SPEC-06/07 / §5.7 / §7.3
+  band_pct_nav: 0.125               # +-12.5%
+  min_hours_between: 24             # eventos/breaker saltan la banda y el minimo
+  min_size_pct_nav: 0.02
+  turnover_budget_max_frac_excess_calmar: 0.25
+
+portfolio_cap:                      # SPEC-06 / §7.6
+  method: fractional_kelly
+  kelly_fraction_max: 0.25          # <= 1/4 Kelly
+  edge_assumption: "0.5 * excess_calmar_post_haircut"
+  include_total_loss_scenario: true
+  immutable_to_gates: true          # ningun estado de los gates lo modifica
+
+meta_labeling:                      # SPEC-08 / §4.4
+  event_definition: rebalance_band_cross
+  horizon_days: 20
+  postpone_threshold_p: 0.45        # p < 0.45 => posponer (solo frena)
+  only_brakes: true
+  embargo_ge_horizon: true
+
+rl_tactical:                        # SPEC-09 / §4.5 (opcional)
+  enabled: false                    # se activa solo si gana a S4 OOS
+  max_deviation_pct_nav: 0.10
+  action_space: [-1, 0, 1]
+  reward: differential_sortino_post_costs
+  min_seeds: 5
+  report: median_and_iqr

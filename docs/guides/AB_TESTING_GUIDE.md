@@ -296,14 +296,14 @@ feature_columns:
 
 ```bash
 # Ejecutar pipeline completo
-chmod +x scripts/run_ab_experiment.sh
-./scripts/run_ab_experiment.sh all
+chmod +x scripts/tools/run_ab_experiment.sh
+./scripts/tools/run_ab_experiment.sh all
 
 # O paso a paso:
-./scripts/run_ab_experiment.sh verify   # Verificar setup
-./scripts/run_ab_experiment.sh data     # Cargar datos
-./scripts/run_ab_experiment.sh train    # Entrenar modelos
-./scripts/run_ab_experiment.sh compare  # Comparar resultados
+./scripts/tools/run_ab_experiment.sh verify   # Verificar setup
+./scripts/tools/run_ab_experiment.sh data     # Cargar datos
+./scripts/tools/run_ab_experiment.sh train    # Entrenar modelos
+./scripts/tools/run_ab_experiment.sh compare  # Comparar resultados
 ```
 
 ---

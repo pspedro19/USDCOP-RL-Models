@@ -202,7 +202,7 @@ mlflow.set_tag("git_commit_sha", git_commit)
 
 ```bash
 # Use the publish script
-./scripts/publish_dataset.sh -t v1.0.0 -m "Release training dataset"
+./scripts/ops/publish_dataset.sh -t v1.0.0 -m "Release training dataset"
 ```
 
 ### Manual Publishing
@@ -231,7 +231,7 @@ dvc push -r minio
 
 ```bash
 # Use the rollback script
-./scripts/rollback_dataset.sh -t v0.9.0
+./scripts/ops/rollback_dataset.sh -t v0.9.0
 
 # Or manually
 git checkout v0.9.0 -- dvc.lock *.dvc
@@ -313,8 +313,8 @@ dvc repro --force
 ## Related Documentation
 
 - [DVC Official Docs](https://dvc.org/doc)
-- [Dataset Publishing Script](../scripts/publish_dataset.sh)
-- [Dataset Rollback Script](../scripts/rollback_dataset.sh)
+- [Dataset Publishing Script](../scripts/ops/publish_dataset.sh)
+- [Dataset Rollback Script](../scripts/ops/rollback_dataset.sh)
 - [MLflow Integration Guide](./MLFLOW_INTEGRATION_GUIDE.md)
 
 ---

@@ -1,0 +1,26 @@
+# Config de la capa de riesgo (SPEC-06) — AQUÍ VIVE EL ALPHA
+# status: SUPERSEDED (2026-07-06, G5/I-5) — YAML de DISEÑO, no operativo. El as-built difiere
+# y manda: target_vol=0.10, vol_floor=0.06, max_leverage=1.5 (src/gold_rl/strategies.py:16,24).
+# Guardado como registro histórico del diseño; sincronizar requiere ADR.
+# Test: tests/regression/test_prereg_yaml_consistency.py
+target_vol: 0.12           # 12% anualizado
+base_size: 1.0
+vol_floor: 0.02            # evita sizing absurdo en calma extrema
+vol_ewma_halflife_bars: 30
+max_leverage: 3.0
+regime_mult:
+  COMPRESSION: 1.0
+  TREND: 1.0
+  STRETCHED: 0.6
+  EVENT: 0.35
+breakers:
+  max_risk_per_trade: 0.02
+  max_daily_loss: 0.05
+  max_drawdown: 0.20
+  vol_spike_k: 3.0         # ATR_h1 > k*EWMA(ATR) => flat + pausa
+  vol_spike_pause_bars: 6
+blackout:
+  window_min: 45           # +/- min alrededor del evento
+  reentry_atr_mult: 1.5    # re-entrar solo si ATR < mult*EWMA(ATR)
+weekend_flat:
+  friday_close_hour_ny: 16

@@ -1,0 +1,37 @@
+{
+  "strategy_id": "btc_hodl_b1",
+  "strategy_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2018-04-24",
+    "end": "2026-07-05"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2018-04-25T00:00:00+00:00",
+      "exit_timestamp": "2026-07-05T00:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 8869.99,
+      "exit_price": 63579.99,
+      "pnl_pct": 273.0913,
+      "pnl_usd": 27309.13,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 37309.13,
+      "leverage": 0.135,
+      "exit_reason": "week_end",
+      "regime": "markdown"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "win_rate": 100.0,
+    "total_return_pct": 273.09,
+    "sharpe_ratio": 0.791,
+    "max_drawdown_pct": -34.3,
+    "profit_factor": null,
+    "p_value": 0.0268,
+    "n_long": 1,
+    "n_short": 0
+  }
+}

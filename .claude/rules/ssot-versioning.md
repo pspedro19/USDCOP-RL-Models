@@ -78,7 +78,7 @@ cp config/experiments/v215b_baseline.yaml config/experiments/exp_new_001.yaml
 
 # 2. Edit ONLY the variable under test + _meta section
 # 3. Register in EXPERIMENT_QUEUE.md with config path
-# 4. Run: python scripts/run_ssot_pipeline.py --config config/experiments/exp_new_001.yaml
+# 4. Run: python scripts/pipeline/run_ssot_pipeline.py --config config/experiments/exp_new_001.yaml
 ```
 
 ### 6. Config lifecycle
@@ -114,7 +114,7 @@ for cross-pair feature experiments. Key rules:
 - Each pair specifies its seed file path and symbol name
 - Session window (timezone, start, end) is shared across all pairs
 - When creating experiment configs, COPY the entire `aux_pairs` section from baseline
-- See `.claude/rules/l0-data-governance.md` for data ingestion rules and timezone handling
+- See `.claude/rules/data-governance.md` for data ingestion rules and timezone handling
 
 ### 8. Active config (`pipeline_ssot.yaml`)
 - The root `config/pipeline_ssot.yaml` is a COPY of the currently running experiment
@@ -126,7 +126,7 @@ for cross-pair feature experiments. Key rules:
 
 ## Integration with pipeline runner
 
-The pipeline runner (`scripts/run_ssot_pipeline.py`) should:
+The pipeline runner (`scripts/pipeline/run_ssot_pipeline.py`) should:
 1. Accept `--config` argument (default: `config/pipeline_ssot.yaml`)
 2. Load the specified SSOT config
 3. Log the experiment ID from `_meta.experiment_id` at startup

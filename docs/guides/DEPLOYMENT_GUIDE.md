@@ -25,7 +25,7 @@ docker-compose up -d
 docker-compose ps
 
 # 5. Restore platform data
-./scripts/restore_platform.sh
+./scripts/ops/restore_platform.sh
 ```
 
 ### Access Points
@@ -112,7 +112,7 @@ docker exec -it usdcop-timescaledb psql -U trading_user -d trading_db -c "SELECT
 docker exec usdcop-airflow ls -la /opt/airflow/ml_models/
 
 # Re-run restore script
-./scripts/restore_platform.sh
+./scripts/ops/restore_platform.sh
 ```
 
 ### Chart showing wrong timezone

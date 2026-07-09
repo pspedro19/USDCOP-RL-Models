@@ -1,0 +1,71 @@
+# AssetProfile del Oro — PLANTILLA de spec (SPEC-12 Contrato A)
+# Contrato: CTR-ASSET-PROFILE-001 (ver .claude/specs/assets/_onboarding-playbook.md §2)
+#
+# Esta es la PLANTILLA que documenta el AssetProfile del Oro. La copia REAL vive en
+# el repo raíz como `config/assets/xauusd.yaml` (aún NO existe — bloque 0 del onboarding, test A1).
+# USD/COP debe migrar en paralelo a `config/assets/usdcop.yaml` para que nada sea caso especial.
+#
+# Regla de oro: TODO lo que hoy está hardcodeado a COP se parametriza aquí. `XAUUSD` nunca
+# se hardcodea en código ni en el frontend — se resuelve desde este perfil vía el manifest.
+
+asset_id: xauusd                 # slug; usado en paths, particiones y sufijo de strategy_id
+symbol: "XAU/USD"                # símbolo de proveedor/exchange
+chart_symbol: "XAUUSD"           # lo que consume TradingChartWithSignals (NO literal "USDCOP")
+display_name: "Gold"
+asset_class: commodity           # fx | crypto | commodity | equity_index
+quote_ccy: USD
+base_ccy: XAU
+
+# --- sanidad de precio (reemplaza SYMBOL_PRICE_RANGES) ---
+price_range: [1000.0, 6000.0]
+decimals: 2
+tick_size: 0.01
+
+# --- SESIÓN (reemplaza los supuestos COT 08:00-12:55 de COP) ---
+# El Oro es casi-24h (metales), NO la sesión de 5h de COP. bars_per_day y la anualización
+# del Sharpe DEBEN derivarse de la sesión observada, no copiarse de COP (test A3).
+session:
+  mode: metals                   # exchange_hours | metals | 24x7
+  timezone: "America/New_York"   # convención NY-close (alinear con SPEC-02 TZ/DST)
+  days: [0, 1, 2, 3, 4]          # 0=Lun; oro no opera fin de semana
+  open: "18:00"                  # apertura metales domingo 18:00 ET
+  close: "17:00"                 # cierre viernes 17:00 ET
+  bars_per_day: null             # << medir de los datos (test A3); NO adivinar
+  bars_per_year: null            # << = bars_per_day * trading_days (para anualizar Sharpe)
+  trading_days_per_year: 250
+  weekend_flat: true             # aplanar viernes (STRATEGY §4.4) — evita gap de domingo
+  forced_close: friday           # metales: cierre semanal
+
+# --- FUENTE DE DATOS (reemplaza los dicts SYMBOL_CONFIG por símbolo) ---
+data_source:
+  provider: dukascopy            # oro H1/tick (SPEC-01); TwelveData verificado como alterno (8/8)
+  provider_symbol: "XAU/USD"
+  interval: "1h"
+  needs_tz_convert: true         # GMT+DST del proveedor -> timezone del perfil (SPEC-02 §1)
+  seed_file: "data/features/h1/"  # destino del pipeline de datos (SPEC-03)
+
+# --- DRIVERS MACRO (reemplazan el set COP; ver SPEC-03 + onboarding §3) ---
+# Reusar el catálogo pair-agnóstico (DXY, tasas reales, VIX, Brent). NUNCA EMBI/IBR/TPM/
+# WTI-como-export de COP. Entran como CORRELACIONES RODANTES, no supuestos fijos (ADR-003).
+macro_drivers:
+  - {series_id: "DTWEXBGS", feature: "dxy_trend",          sign: "-", role: usd_strength}
+  - {series_id: "DFII10",   feature: "real_yield_10y",      sign: "-", role: real_rates}   # TIPS 10Y (primario)
+  - {series_id: "T10YIE",   feature: "breakeven_10y",       sign: "+", role: inflation_exp}
+  - {series_id: "VIXCLS",   feature: "vix_level",           sign: "+", role: risk_haven}
+  - {series_id: "DCOILBRENTEU", feature: "brent_trend",     sign: "+", role: inflation_proxy}
+cross_asset_leaders: []          # el oro no tiene un líder intradía LATAM-style limpio; vacío
+
+# --- GATE DE RÉGIMEN (la lógica se REUSA; los umbrales se RE-AJUSTAN, NO se copian) ---
+# CRÍTICO (test D1): NO copiar 0.52/0.42 de COP. Re-fitear Hurst sobre la historia del Oro.
+# 4 regímenes en Daily con histéresis (STRATEGY §2.1 / SPEC-04).
+regime_gate:
+  hurst_lookback: 100            # ventana rodante (100-250d); feature lenta suavizada
+  hurst_trending: null           # << re-fit sobre historia del Oro (NO 0.52 de COP)
+  hurst_mean_rev: null           # << re-fit sobre historia del Oro (NO 0.42 de COP)
+  hysteresis_dwell_days: 4       # dwell mínimo 3-5d antes de cambiar label (labels estables)
+
+# --- BINDING DE ESTRATEGIA (una versión = una config congelada; ssot-versioning.md) ---
+strategy_id: "gold_rl_h1_v1"     # entrada en el registro; publica bundle inmutable por (id, version, year)
+base_strategy: null              # mecánica de ejecución NUEVA (RL) -> ExecutionStrategy propio (SPEC-05/06)
+pipeline_type: rl                # ml_forecasting | rl | rule_based | hybrid
+timeframe: intraday_h1

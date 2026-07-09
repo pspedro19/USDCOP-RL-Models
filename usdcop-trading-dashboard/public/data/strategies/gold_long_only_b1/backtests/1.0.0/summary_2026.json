@@ -1,0 +1,97 @@
+{
+  "strategy_id": "gold_long_only_b1",
+  "strategy_name": "Gold \u00b7 Long-only vol-targeted (B1)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "n_trading_days": 5805,
+  "strategies": {
+    "gold_long_only_b1": {
+      "final_equity": 30954.6,
+      "total_return_pct": 209.55,
+      "sharpe": 0.518,
+      "sortino": 0.712,
+      "calmar": 0.111,
+      "max_dd_pct": -45.49,
+      "win_rate_pct": 100.0,
+      "profit_factor": null,
+      "n_long": 1,
+      "n_short": 0,
+      "trading_days": 5805,
+      "exit_reasons": {
+        "week_end": 1
+      },
+      "regime_attribution": {
+        "compression": {
+          "days": 4466,
+          "pnl_pct": 112.12,
+          "sharpe": 0.454,
+          "share_pct": 76.9
+        },
+        "stretched": {
+          "days": 600,
+          "pnl_pct": 46.0,
+          "sharpe": 1.99,
+          "share_pct": 10.3
+        },
+        "trend": {
+          "days": 739,
+          "pnl_pct": -0.05,
+          "sharpe": 0.058,
+          "share_pct": 12.7
+        }
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 94752.2,
+      "total_return_pct": 847.52
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0094,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      0.86,
+      10.08
+    ]
+  },
+  "backtest_recommendation": "REJECT",
+  "backtest_confidence": 0.6,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 209.55,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 0.518,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 45.49,
+      "threshold": 20.0,
+      "passed": false
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 1,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0094,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ]
+}

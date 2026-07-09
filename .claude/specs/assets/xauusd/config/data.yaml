@@ -1,0 +1,25 @@
+# Config de datos (SPEC-01/02/03)
+# status: SUPERSEDED (2026-07-06, G5/I-5) — diseño original Dukascopy M1; el as-built usa
+# TwelveData 5-min + Investing cross-check (scripts/ingest_asset_ohlcv.py, _asbuilt-implementation.md).
+gold:
+  symbol: xauusd
+  source: dukascopy
+  base_interval: m1        # bajar M1, agregar a H1/Daily
+  start: 2004-01-01
+timezone:
+  internal: UTC
+  daily_session_close: "17:00 America/New_York"
+fred_series: [DFII10, DGS10, T10YIE, DTWEXBGS]
+calendar:
+  currencies: [USD]
+  impact: [high]
+quality:
+  gap_alert_bars: 3
+  gap_fail_bars: 12
+  low_quality_before: 2010-01-01
+features:
+  h1: [log_ret_1, rsi_14, z_sma, bb_pctb, macd, macd_sig, atr_14]
+  daily_regime: [rvol_20, atr_norm, adx_14, hurst, z_sma50, macro_event_flag]
+  macro_context: [corr_gold_dxy_90, corr_gold_real_90, dxy_trend, real_rate_level, real_rate_chg, gold_trend]
+  hurst_window: 150
+  corr_window: 90

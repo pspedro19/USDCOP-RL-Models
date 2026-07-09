@@ -1,0 +1,353 @@
+{
+  "asset_id": "btcusdt",
+  "symbol": "BTC/USDT",
+  "chart_symbol": "BTCUSDT",
+  "display_name": "Bitcoin",
+  "iso_year": 2026,
+  "iso_week": 15,
+  "week_start": "2026-04-06",
+  "week_end": "2026-04-12",
+  "weekly_summary": {
+    "headline": "Bitcoin · Semana 15 de 2026",
+    "markdown": "### Bitcoin — Semana 15 (2026-04-06 → 2026-04-12)\n\nEl cierre semanal de BTC/USDT fue **70740.98 USD**, un cambio de **+2.47%** en la semana (rango 67732.01–73790.00). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 70740.98. RSI(14)=53 (neutral). Soporte 65000.00, resistencia 73790.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Yahoo Finance, Fortune, Bloomberg.com.",
+    "sentiment": "bullish",
+    "ohlcv": {
+      "open": 69034.18,
+      "high": 73790.0,
+      "low": 67732.01,
+      "close": 70740.98,
+      "change_pct": 2.4724
+    },
+    "themes": [
+      "alcista",
+      "RSI 52.77"
+    ]
+  },
+  "daily_entries": [
+    {
+      "analysis_date": "2026-04-06",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 0,
+      "headline": "Bitcoin 2026-04-06: cierre 68853.66 (-0.26%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-06\n\nCierre **68853.66 USD** (-0.26%). Rango 68300.00–70351.46.",
+      "usdcop_close": 68853.66,
+      "usdcop_change_pct": -0.2615,
+      "usdcop_high": 70351.46,
+      "usdcop_low": 68300.0,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-07",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 1,
+      "headline": "Bitcoin 2026-04-07: cierre 71924.22 (+4.46%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-07\n\nCierre **71924.22 USD** (+4.46%). Rango 67732.01–72761.00.",
+      "usdcop_close": 71924.22,
+      "usdcop_change_pct": 4.4595,
+      "usdcop_high": 72761.0,
+      "usdcop_low": 67732.01,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-08",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 2,
+      "headline": "Bitcoin 2026-04-08: cierre 71069.93 (-1.19%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-08\n\nCierre **71069.93 USD** (-1.19%). Rango 70707.23–72857.00.",
+      "usdcop_close": 71069.93,
+      "usdcop_change_pct": -1.1878,
+      "usdcop_high": 72857.0,
+      "usdcop_low": 70707.23,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-09",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 3,
+      "headline": "Bitcoin 2026-04-09: cierre 71787.97 (+1.01%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-09\n\nCierre **71787.97 USD** (+1.01%). Rango 70466.00–73145.00.",
+      "usdcop_close": 71787.97,
+      "usdcop_change_pct": 1.0103,
+      "usdcop_high": 73145.0,
+      "usdcop_low": 70466.0,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-10",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 4,
+      "headline": "Bitcoin 2026-04-10: cierre 72962.70 (+1.64%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-10\n\nCierre **72962.70 USD** (+1.64%). Rango 71426.15–73434.00.",
+      "usdcop_close": 72962.7,
+      "usdcop_change_pct": 1.6364,
+      "usdcop_high": 73434.0,
+      "usdcop_low": 71426.15,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-11",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 5,
+      "headline": "Bitcoin 2026-04-11: cierre 73043.16 (+0.11%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-11\n\nCierre **73043.16 USD** (+0.11%). Rango 72513.09–73790.00.",
+      "usdcop_close": 73043.16,
+      "usdcop_change_pct": 0.1103,
+      "usdcop_high": 73790.0,
+      "usdcop_low": 72513.09,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-12",
+      "iso_year": 2026,
+      "iso_week": 15,
+      "day_of_week": 6,
+      "headline": "Bitcoin 2026-04-12: cierre 70740.98 (-3.15%)",
+      "summary_markdown": "## BTC/USDT — 2026-04-12\n\nCierre **70740.98 USD** (-3.15%). Rango 70505.88–73137.24.",
+      "usdcop_close": 70740.98,
+      "usdcop_change_pct": -3.1518,
+      "usdcop_high": 73137.24,
+      "usdcop_low": 70505.88,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    }
+  ],
+  "macro_snapshots": {},
+  "macro_charts": {},
+  "signals": {
+    "h5": {
+      "direction": "HOLD",
+      "note": "Estrategia en efectivo (sin posición)"
+    },
+    "h1": {
+      "direction": "N/A",
+      "note": "N/A para este activo"
+    }
+  },
+  "technical_analysis": {
+    "as_of": "2026-04-12",
+    "last_price": 70740.98,
+    "trend": "alcista",
+    "signal": "neutral",
+    "indicators": {
+      "rsi_14": 52.77,
+      "sma_20": 69164.405,
+      "sma_50": 69161.009,
+      "macd_line": 632.3976,
+      "macd_signal": 121.6118,
+      "macd_histogram": 510.7858,
+      "atr_14": 2463.9815
+    },
+    "support_resistance": {
+      "support": 65000.0,
+      "resistance": 73790.0,
+      "no_trade_zone": {
+        "low": 69508.9892,
+        "high": 71972.9708
+      }
+    },
+    "scenarios": [
+      {
+        "name": "Continuación de tendencia",
+        "direction": "long",
+        "trigger": 73790.0,
+        "target": 76253.9815,
+        "invalidation": 65000.0,
+        "rationale": "Ruptura alcista con RSI=53"
+      },
+      {
+        "name": "Reversión a la media",
+        "direction": "short",
+        "trigger": 73790.0,
+        "target": 69164.405,
+        "invalidation": 76253.9815,
+        "rationale": "Precio extendido sobre SMA20"
+      }
+    ]
+  },
+  "news_context": {
+    "article_count": 40,
+    "avg_sentiment": null,
+    "source_breakdown": {
+      "Yahoo Finance": 15,
+      "Fortune": 4,
+      "Bloomberg.com": 2,
+      "Crypto News": 1,
+      "Bitcoin Foundation": 3,
+      "CoinDesk": 6,
+      "Forbes": 2,
+      "TradingView": 2,
+      "The Record from Recorded Future News": 1,
+      "Barron's": 2,
+      "The Asheville Citizen Times": 1,
+      "Investor's Business Daily": 1
+    }
+  },
+  "news_intelligence": {
+    "total_articles": 40,
+    "clusters": [
+      {
+        "theme": "Yahoo Finance",
+        "count": 15,
+        "articles": [
+          {
+            "title": "Standard Chartered Bank Predicts $500K Bitcoin as Price Climbs - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOSUIxOXpZS19ldk1FS2tHSEU0bFFnTERJQnQyMlRBczFBY0xvT1J1QkFiUHM3REEyZ19yb0ZoRmxCaTh2dHBZSDRMVGhXcV9ja1QzQjUyenBFUDVERFlXSlZUdmF5STlEeDRHb0d3amUycUR1QWI5X1hKcktRSnBWWTkzWC1UaEVnVS1ENjNxVHExNHRCQ2VrYmh3UnB6djlsa0J0YQ?oc=5"
+          },
+          {
+            "title": "Bitcoin Price Flashed 3 Bullish Hints in a Week and None Delivered a Breakout - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxQLUxIQzVLa2t6aDk3WDJObkMyWE8yOGVycWVXZG81aEpXb183SXRoMEN5aHF2ZU9hV3BidFlyMkVlRTdPdTEyRkZQRVptdDB4MExscEZrN0hfT3VPVXh6aXA0MENLOE81MkpPa3pWSk5Wb0pGOEpod3dmRGFEcld4SVg2Y3U3dUIteHU5cDlkT2VDRUwtdzhkbjVOUjU?oc=5"
+          },
+          {
+            "title": "Bitcoin Price Prediction as Companies Dump Their Bitcoin - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxOb3lCNnNablduUThSV2I5WnU0T3RlcFg0VXRCcWl6cGVxcEg2TWFva3ZxY2xHMHRyeGpUbk5pTm40emp0cHFwQ3QwTnUyV0lVUmJ4eUdEcWtXRkNzR1gwRzVyb09BbkRSTEh4Wmt2NUxKWXYwUUh6MzE1VkpXZ3lRV05SMFRxY1ZTWEUzZ2JQR192T2x5Q0pSSnVxMjk2M2R3Q1RMWTBZcw?oc=5"
+          },
+          {
+            "title": "Bitcoin Price Prediction for April: Can BTC Match Its 69% April Win Rate in 2026? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQdGdwbUFic2t5OXRLNk43TVViZVFWRmhqTmRaelhFc3AxT3dpMk5aMlkwWHRWMURucVZTOXQxVkJLWWdXRkdOUnNIendNNzJLTGpDeVBUYXpweENIZ3NsM0pWMW40V3JJTG9mSW5zcHJzMC03VW9WSmpyTVVvTlJYaHpzQ2lkT2ZMSFRBeEJFdXZCN1l1MVF3VjBOa1ZEZnBk?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CoinDesk",
+        "count": 6,
+        "articles": [
+          {
+            "title": "Analysts eye potential breakdown as BTC price repeats familiar pattern: Crypto Markets Today - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNb3Y5TzAzMjhmVF90czhqeW1PQ2ZRR2UzVmNCcjNEODF3aTZPUXZGU3VyU1hSVThoT2c0TzBTYVdtQ3AzdmtMVkczTy0wcGQ5WnFaVHZyTzI1OUY1X3F1VGV0LU1vaHB3cjRXVlRiRDZTLXV4RWtvMTFUNEpkaHcwY3p2R1lPOHVMRk5jNmEweHN3NU0tMElhaXk3Ml9kelV4Y2wycGp0ZEtIN3ZR?oc=5"
+          },
+          {
+            "title": "Bitcoin price analysis: $80,000 call is now most popular - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxPZ1dRQXNDcm9kRHpsYV80ejVNWFpuUFA0N24zSEVtWVA0ckRKRjRyZkFrbHhtMnY4V2JzY3kxQkVRS2x5TTdRWVBpS2psLUxQWDM0TVN5RWdSaFhCS0dTdGdqaHB4MzZ0YlBVWFBDWHV0Sm4yQldyRnotMnhLaExxOVdEZDZ1UC1BUDM3cDg4d0JZSXdKQ3l1OUtlTGJ5U0k?oc=5"
+          },
+          {
+            "title": "The bitcoin market is splitting in two. Here's who is buying and selling amid the war - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPMjh1SnhUUHZTcklfSmVmZXd1OWFrYUJraEFGSURmdm1BaGdkTzNidUtUamVpZTVWOXNiejFpOGItZkU2R19SNGxmbnlOakE0dHo4cWxUN1ZlMDVoZ1Q1Q2VLUmtqeUhreHp1M1JjMHBmMnBLVkZEcExzZ295LXFpUHQyOG5hTDhkU2RwQ0EwOVNBVjkycGdOb3F3bzRzR0xqdHRGTm95c3ptTExSNzNNOWloZ2w2MF9wZmhtYk1MLUVyc0s2Ym9j?oc=5"
+          },
+          {
+            "title": "Bitcoin price news: BTC's next big move hinges on oil, and right now it's a total coin flip - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOUVpsa0dZU0czLXJzcm9WYkRHUkQ4T2kzQXhmaU5fRkwzMUpFbWhYR0lnTlpISjc5bC1uYk53T25NSTdUdG9kR1BNZHQ5b3E2dTdZSVlGSG42UkFHQVRyeXdwbjhONlRTUnRYazBfUHVzSlNhcWh2cHQ4YVZ1aHZ1dmJMQTJ2LXVxMVlxYzBPRHFmWTZmZDFwM1ZZMVFsbDdPOUVheGNpN1JpNF9iQ25aNU1vWFRrMGxtWmc?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Fortune",
+        "count": 4,
+        "articles": [
+          {
+            "title": "Current price of Bitcoin for April 6, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9oazY0d2RwYmJBOFRLYzMtTWdwb05LSzlFUzJEZVRiRHF6N1E3RXlBVEJOSmFyYTZGSnlsZlZRWXY1ajdqQVRyemJvN3drR3FPMzMwaTBtLWYwNWUxbGJiSUxnYVpOWUk?oc=5"
+          },
+          {
+            "title": "Current price of Bitcoin for April 10, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBtd3ZzZXJlVFYwN1F6R1dpb19kanRPeEE4RGlpUlZyZEZjeWl0U2dMd2s1Nm9oN21ZVHNiLWt1Tm9EVnNBeWtLMHhpR1pha0psNTlrMlVhRnBfaUliaUk0ZWFCVWU3aTg?oc=5"
+          },
+          {
+            "title": "Current price of Bitcoin for April 9, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFAzWFVBREVsUGlJYmVSTjF0V2NNOUZBMWs2amdCbjdOaXR1U0lLOHpnemJwMFFIOGJjRFBHbm9YZE1MOUFmN3djb1lrSVBJNlFDa3dILWV5eUdLNTM5cTh5N1ZvZkthZm8?oc=5"
+          },
+          {
+            "title": "Current price of Bitcoin for April 7, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBoazUwUWE3Vmg1blEzaF93WWo0SXBobkxKRGpBYWdLNFlJY01DamhSSGNNTGd2eXVTS2tYaS1kNjRWQlBia0VnSHRTb1dHYzZMNE5rYUZ5LXF1Q2lnU09rU1d3TG4wNGM?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Bitcoin Foundation",
+        "count": 3,
+        "articles": [
+          {
+            "title": "Bitcoin April 10: BTC Seeks to Break $73K Ceiling - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFA5dkhpc0QzaG9BejZzN29tSG1jb3A1VlNBVldHMFpmc0huQjJ5NS1iOEhQZlh6LUJONWVDY2dReEFFdmlxTmJST0JKb0U5bmpPSE1nOHVQdlMxTHE2dFgzMHQ5QnRlWEE?oc=5"
+          },
+          {
+            "title": "How Many BTC Exist Today: Why Is Bitcoin Limited to 21 Million Coins? - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQelk4TFdoMnZvSUI4aVllWG1QblQ5Y1dLX3AtSUQ3ZEpqcHF5TFRxbEliTmNGTVUwWk9QbmNfVGwwcUNVU3VqY2lheVBXN1lLOHVlT01KcFhJWEV6VnhtRWVwWHU0RmhnMS1XbmlOOEJ4RUVrbUY4LTdQOVp0NW5qUTdrNDc4R3RmVlA0RlFjMURTWXdXamJLTElQOWFCT1hBY1B5dW1JSDVuRU4tUzR4Sg?oc=5"
+          },
+          {
+            "title": "Bhutan Sells 70% of Bitcoin Reserves, Holdings Drop to 3,954 BTC - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBYYmdmN0FWT25keXJvOWg3STFDdk5vb0kyZ1BZR3ZnekFWUmJlLWpGc29LSS1DVUpQNUs1QjBzUXA4UUF4NW9paGM3QURPNXp0WXR2WXd3cldNS2JrQ1RxM2lGc2stZE5iVllHTDIxM2RXdw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Bloomberg.com",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Bitcoin Slides With Risk Assets as Trump’s Iran Ultimatum Looms - Bloomberg.com",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOb1hQYkNGekp5ZnNCWVdTTk9KVHIwc1B0Mk5pdDU2cTA4YTRiMGtQbmJPTTVKYkU2Zy1pNGZraWpLUzJ5X1I2V0luRVplM3oyT0xDRHBCdEFJRy0yWlpJMkRuUlZzRVdrR2hlemNTRGlUbXlfSnpIekJ4TnRhdC1SeTREejNmVUI5YlV3NFdLbEpOeTJTQmRwWVg1cHlvRW4tSXZTeVVsek05YU15NnpMbnlsRTA?oc=5"
+          },
+          {
+            "title": "Bitcoin Climbs to Three-Week High on US-Iran Ceasefire Plan - Bloomberg.com",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQN1lLb0s0Y0NpQ3dLTmhLZW16OUFKb1ZGdzB3WWwxcFJlS2xtM3ZjYzhnREE4cGRVUW9EVXlaaVJud3R5SGl5c0xtdUtXMzhtNkItMU5ZWWdkV1N5TU5tZmlaMXlielpmUUg3Q3RNMTV4YzRlcWNaWEtrMVVHTDllUDZqaDJCZDlMc2VMYkp2akZhLU9IVHRxXzFTMGZEbmdRNWhZdGFkMnVTaG9FTEE?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Forbes",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Bitcoin Price Suddenly Braced For Critical Week As U.S. Treasury Secretary Fuels Huge $1.5 Quadrillion Crypto Prediction - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxOd2QwZS1MMkttQWpwQS1naGkzTnEyWTR6eUR2Q18wRlBOajNYSWdZcmNMb0JMc29kcmdMemQ1TVFuSEcwUzZBYUkyMHdPMS1acW8yZ0dWclBxOXdIaWVHcUptMngyWWUwS0RxQTBWVFM1QlY3TW1iUFJoQ3FHQnVXNFhObW1BeE1aU190cjBvM1ktNTJ1MmRrbDhlcng1WURJTWFvWWRucExwU1FVXzZFeXVrb0lFUldETDl4ejRxSlpHcU42N2Zudy1MajNGcXBNMWFYa09GSlc0MC1vLW9kNGU0UUR6VlZsNUFWZXBR?oc=5"
+          },
+          {
+            "title": "'First Crypto Bank'—Kraken's Fed Approval Sparks $100K Bitcoin Warning - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxOX09NRlhoR0EyTFZqSjBDcVJ0SVdOWjg1bmRJemJiQnppZDNZWi04SHVkSjU2bl9DNnFoRkl1MjZNbFpqbjZBUUhfRWcxcnJXMzJ2QVV4NE5HWVc1VkZZQlhPRHFLTm5VTlY2S2o2Q2Y3UUdDRU0xd2x5cUw3aFJjMmxKSG9zRFhGUkZxU21zbXo2V2lvdWxDX2VCcHZiR0Zod1VVdGlsbW9VMGEtQ0pvMjQ2bk9tbWpvcVNoVTF6OA?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "macro_regime": {
+    "regime": {
+      "label": "flat",
+      "confidence": 0.4,
+      "transition_probabilities": {}
+    },
+    "note": "Estrategia en efectivo (sin posición)"
+  },
+  "upcoming_events": [],
+  "quality_score": 1.0,
+  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+}

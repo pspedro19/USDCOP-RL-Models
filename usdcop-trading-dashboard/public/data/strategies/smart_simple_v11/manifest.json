@@ -15,9 +15,10 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "3.0.0-B",
-    "year": 2025,
-    "generated_at": "2026-07-03T18:41:14.350864+00:00"
+    "version": "2.0.0",
+    "year": 2026,
+    "phase": "production",
+    "generated_at": "2026-07-07T16:34:42.166442+00:00"
   },
   "backtests": [
     {
@@ -96,13 +97,72 @@
         "p_value": 0.0155,
         "trades": 155
       }
+    },
+    {
+      "model_version": "1.1.0",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__1.1.0__2025",
+      "summary": "strategies/smart_simple_v11/backtests/1.1.0/summary_2025.json",
+      "trades": "strategies/smart_simple_v11/backtests/1.1.0/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 25.63,
+        "sharpe": 3.347,
+        "max_dd_pct": 6.12,
+        "win_rate_pct": 82.4,
+        "p_value": 0.0063,
+        "trades": 170
+      }
+    },
+    {
+      "model_version": "1.1.0",
+      "year": 2026,
+      "immutable_id": "smart_simple_v11__1.1.0__2026",
+      "summary": "strategies/smart_simple_v11/backtests/1.1.0/summary_2026.json",
+      "trades": "strategies/smart_simple_v11/backtests/1.1.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {},
+      "headline": {
+        "return_pct": 1.77,
+        "sharpe": 3.792,
+        "max_dd_pct": 0.82,
+        "win_rate_pct": 62.5,
+        "p_value": 0.0722,
+        "trades": 40
+      }
+    },
+    {
+      "model_version": "2.0.0",
+      "year": 2026,
+      "immutable_id": "smart_simple_v11__2.0.0__2026",
+      "summary": "strategies/smart_simple_v11/backtests/2.0.0/summary_2026.json",
+      "trades": "strategies/smart_simple_v11/backtests/2.0.0/trades_2026.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {},
+      "headline": {
+        "return_pct": 1.77,
+        "sharpe": 3.792,
+        "max_dd_pct": 0.82,
+        "win_rate_pct": 62.5,
+        "p_value": 0.0722,
+        "trades": 40
+      }
     }
   ],
   "production": {
     "model_version": "2.0.0",
     "year": 2026,
-    "summary": "production/summary.json",
-    "trades": "production/trades/smart_simple_v11.json"
+    "summary": "strategies/smart_simple_v11/production/summary.json",
+    "trades": "strategies/smart_simple_v11/production/trades.json",
+    "updated_at": "2026-07-07T16:34:42.166442+00:00"
   },
   "approval": {
     "file": "production/approval_state.json",
@@ -113,15 +173,6 @@
       "version": "1.0.0",
       "active": false,
       "trained_at": null,
-      "train_window": null,
-      "feature_hash": null,
-      "norm_stats_hash": null,
-      "artifact_uri": null
-    },
-    {
-      "version": "2.0.0",
-      "active": true,
-      "trained_at": "2026-04-06T01:30:00Z",
       "train_window": null,
       "feature_hash": null,
       "norm_stats_hash": null,
@@ -144,12 +195,30 @@
       "feature_hash": null,
       "norm_stats_hash": null,
       "artifact_uri": null
+    },
+    {
+      "version": "1.1.0",
+      "active": false,
+      "trained_at": "2026-07-05T22:54:54.445771+00:00",
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "2.0.0",
+      "active": true,
+      "trained_at": "2026-07-07T16:34:42.166513+00:00",
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
     }
   ],
   "promoted": {
     "version": "2.0.0",
     "status": "production",
-    "promoted_at": "2026-07-03T18:46:12.792Z",
+    "promoted_at": "2026-07-07T20:06:09.825Z",
     "promoted_by": "dashboard_user"
   }
 }

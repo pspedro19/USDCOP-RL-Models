@@ -166,7 +166,7 @@ reward:
 
 ```bash
 # Ejecutar A/B test completo
-./scripts/run_ab_experiment.sh all \
+./scripts/tools/run_ab_experiment.sh all \
   --experiment-a baseline_v1 \
   --experiment-b new_reward_v1
 ```
@@ -661,7 +661,7 @@ print(f"Shadow Win Rate: {shadow_tracker.win_rate:.1%}")
 | `src/ml_workflow/promotion_gate.py` | Validación pre-promoción |
 | `src/ml_workflow/promotion_service.py` | Flujo de promoción |
 | `scripts/compare_experiments.py` | CLI de comparación |
-| `scripts/run_ab_experiment.sh` | Script automatizado |
+| `scripts/tools/run_ab_experiment.sh` | Script automatizado |
 
 ---
 

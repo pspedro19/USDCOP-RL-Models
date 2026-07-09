@@ -1,0 +1,20 @@
+# Config de entrenamiento (SPEC-08)
+# status: SUPERSEDED (2026-07-06, G5/I-5) — el RL de Gold no se implementó (rule-based ganó el
+# honest gate). seeds [0-4] + "ADR-005" divergen del protocolo transversal [42,123,456,789,1337]
+# (.claude/rules/experiment-protocol.md); si algún día se implementa, usar el protocolo.
+algo: recurrent_ppo        # sb3-contrib RecurrentPPO
+policy: MlpLstmPolicy
+learning_rate: 3.0e-4
+gamma: 0.99
+gae_lambda: 0.95
+ent_coef: 0.01
+clip_range: 0.2
+n_envs: 8
+n_steps: 2048
+batch_size: 64
+total_timesteps: 1000000
+lstm_hidden_size: 128
+seeds: [0, 1, 2, 3, 4]     # >=5, no negociable (ADR-005)
+vecnormalize:
+  norm_obs: true
+  norm_reward: false       # el reward ya es Differential Sharpe

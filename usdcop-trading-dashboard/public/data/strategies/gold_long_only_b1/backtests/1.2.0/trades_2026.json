@@ -1,0 +1,37 @@
+{
+  "strategy_id": "gold_long_only_b1",
+  "strategy_name": "Gold \u00b7 Long-only vol-targeted (B1)",
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2004-12-21",
+    "end": "2026-07-06"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2004-12-22T22:00:00+00:00",
+      "exit_timestamp": "2026-07-06T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 439.68,
+      "exit_price": 4164.16,
+      "pnl_pct": 187.4724,
+      "pnl_usd": 18747.24,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 28747.24,
+      "leverage": 0.685,
+      "exit_reason": "week_end",
+      "regime": "compression"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "win_rate": 100.0,
+    "total_return_pct": 187.47,
+    "sharpe_ratio": 0.504,
+    "max_drawdown_pct": -45.49,
+    "profit_factor": null,
+    "p_value": 0.0106,
+    "n_long": 1,
+    "n_short": 0
+  }
+}

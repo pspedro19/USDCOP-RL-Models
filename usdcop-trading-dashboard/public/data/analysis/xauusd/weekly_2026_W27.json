@@ -1,0 +1,319 @@
+{
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Oro (Gold)",
+  "iso_year": 2026,
+  "iso_week": 27,
+  "week_start": "2026-06-29",
+  "week_end": "2026-07-05",
+  "weekly_summary": {
+    "headline": "Oro (Gold) · Semana 27 de 2026",
+    "markdown": "### Oro (Gold) — Semana 27 (2026-06-29 → 2026-07-05)\n\nEl cierre semanal de XAU/USD fue **4186.91 USD/oz**, un cambio de **+4.24%** en la semana (rango 3949.45–4207.90). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista debil** con precio en 4186.91. RSI(14)=51 (neutral). Soporte 3949.45, resistencia 4383.62.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CNBC, Yahoo Finance, Fortune.",
+    "sentiment": "bullish",
+    "ohlcv": {
+      "open": 4016.3401,
+      "high": 4207.8999,
+      "low": 3949.4471,
+      "close": 4186.9102,
+      "change_pct": 4.2421
+    },
+    "themes": [
+      "alcista_debil",
+      "RSI 50.89"
+    ]
+  },
+  "daily_entries": [
+    {
+      "analysis_date": "2026-06-29",
+      "iso_year": 2026,
+      "iso_week": 27,
+      "day_of_week": 0,
+      "headline": "Oro (Gold) 2026-06-29: cierre 4007.70 (-0.22%)",
+      "summary_markdown": "## XAU/USD — 2026-06-29\n\nCierre **4007.70 USD/oz** (-0.22%). Rango 3949.45–4063.06.",
+      "usdcop_close": 4007.7042,
+      "usdcop_change_pct": -0.2197,
+      "usdcop_high": 4063.0587,
+      "usdcop_low": 3949.4471,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-30",
+      "iso_year": 2026,
+      "iso_week": 27,
+      "day_of_week": 1,
+      "headline": "Oro (Gold) 2026-06-30: cierre 4031.57 (+0.60%)",
+      "summary_markdown": "## XAU/USD — 2026-06-30\n\nCierre **4031.57 USD/oz** (+0.60%). Rango 3959.59–4115.77.",
+      "usdcop_close": 4031.568,
+      "usdcop_change_pct": 0.5954,
+      "usdcop_high": 4115.7729,
+      "usdcop_low": 3959.5937,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-07-01",
+      "iso_year": 2026,
+      "iso_week": 27,
+      "day_of_week": 2,
+      "headline": "Oro (Gold) 2026-07-01: cierre 4123.88 (+2.29%)",
+      "summary_markdown": "## XAU/USD — 2026-07-01\n\nCierre **4123.88 USD/oz** (+2.29%). Rango 4028.95–4142.40.",
+      "usdcop_close": 4123.879,
+      "usdcop_change_pct": 2.2897,
+      "usdcop_high": 4142.3985,
+      "usdcop_low": 4028.9488,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-07-02",
+      "iso_year": 2026,
+      "iso_week": 27,
+      "day_of_week": 3,
+      "headline": "Oro (Gold) 2026-07-02: cierre 4174.96 (+1.24%)",
+      "summary_markdown": "## XAU/USD — 2026-07-02\n\nCierre **4174.96 USD/oz** (+1.24%). Rango 4120.91–4195.33.",
+      "usdcop_close": 4174.9619,
+      "usdcop_change_pct": 1.2387,
+      "usdcop_high": 4195.3348,
+      "usdcop_low": 4120.9082,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-07-03",
+      "iso_year": 2026,
+      "iso_week": 27,
+      "day_of_week": 4,
+      "headline": "Oro (Gold) 2026-07-03: cierre 4186.91 (+0.29%)",
+      "summary_markdown": "## XAU/USD — 2026-07-03\n\nCierre **4186.91 USD/oz** (+0.29%). Rango 4136.20–4207.90.",
+      "usdcop_close": 4186.9102,
+      "usdcop_change_pct": 0.2862,
+      "usdcop_high": 4207.8999,
+      "usdcop_low": 4136.2002,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    }
+  ],
+  "macro_snapshots": {},
+  "macro_charts": {},
+  "signals": {
+    "h5": {
+      "direction": "HOLD",
+      "note": "Estrategia en efectivo (sin posición)"
+    },
+    "h1": {
+      "direction": "N/A",
+      "note": "N/A para este activo"
+    }
+  },
+  "technical_analysis": {
+    "as_of": "2026-07-03",
+    "last_price": 4186.9102,
+    "trend": "alcista_debil",
+    "signal": "neutral",
+    "indicators": {
+      "rsi_14": 50.89,
+      "sma_20": 4134.9758,
+      "sma_50": 4309.6346,
+      "macd_line": -56.8092,
+      "macd_signal": -79.3674,
+      "macd_histogram": 22.5582,
+      "atr_14": 84.7356
+    },
+    "support_resistance": {
+      "support": 3949.4471,
+      "resistance": 4383.618,
+      "no_trade_zone": {
+        "low": 4144.5424,
+        "high": 4229.278
+      }
+    },
+    "scenarios": [
+      {
+        "name": "Continuación de tendencia",
+        "direction": "long",
+        "trigger": 4383.618,
+        "target": 4468.3536,
+        "invalidation": 3949.4471,
+        "rationale": "Ruptura alcista con RSI=51"
+      },
+      {
+        "name": "Reversión a la media",
+        "direction": "short",
+        "trigger": 4383.618,
+        "target": 4134.9758,
+        "invalidation": 4468.3536,
+        "rationale": "Precio extendido sobre SMA20"
+      }
+    ]
+  },
+  "news_context": {
+    "article_count": 40,
+    "avg_sentiment": null,
+    "source_breakdown": {
+      "CNBC": 3,
+      "Yahoo Finance": 9,
+      "Fortune": 2,
+      "Reuters": 1,
+      "World Gold Council": 1,
+      "KITCO": 4,
+      "Business Insider": 2,
+      "BullionVault": 2,
+      "Mining.com": 1,
+      "Yahoo Finance Australia": 1,
+      "thestreet.com": 2,
+      "Gold Price": 1,
+      "Anadolu Ajansı": 2,
+      "Crux Investor": 1,
+      "36Kr": 1,
+      "LiteFinance": 1,
+      "FXEmpire": 1,
+      "Brave New Coin": 1,
+      "NerdWallet": 1,
+      "FXStreet": 1,
+      "The Guardian": 1,
+      "The Business Times": 1
+    }
+  },
+  "news_intelligence": {
+    "total_articles": 40,
+    "clusters": [
+      {
+        "theme": "Yahoo Finance",
+        "count": 9,
+        "articles": [
+          {
+            "title": "Gold prices today, Tuesday, June 30: Hanging just above $4,000, but ready to rise? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxQT1hibU13YnZuRXhBbWpoYzdhRFA5RXF2Q09vRkxLYzZxeUlmR29aRDF2MWRIbFN2bTZUbUxmY3dtOHZOakplZGdyN2VVbXEwWS10ZWJWdEFuUTNCVDhOS0lZODVWNnN6c3hPekZXcDN0TU5hZG5rZ25VT0trUko1TnV0a2VxaXY5cFVXSm1kRExEUHhjLWVZSjNJM1NzckpKMmhlZkxvNmx1dEJMRUVsWE5NTjM0aXdXb2FXdnBXM3dWallHcVR4ZFhwd0ZpcUdqdFBlNXl1UlpCU3h0SEtnZVBPZm5IZw?oc=5"
+          },
+          {
+            "title": "Gold prices today, Thursday, July 2, 2026: Prices break above $4,100 following a disappointing June jobs report - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMijgJBVV95cUxPaW9RM3hDTjNPSmRUNXVoRGJxR1FlX3JOdXVzVGdCeGtEaXdIcHkyMTZPdDZTN1c5OXpBek5lMEt2WXpDdm1KQ3VTbUdGTmkxX0gyVXdxMFd4WEpUdTZ4TXc0UXN3aHY3RUZ3M0tPZjJkcTRqLTgwRUE1VkF1ZEl2NUtEM3BldDIyR0NfTDBLVlVtNThBMnF5blk0T2prdmFoRU94TGxZUkVnTGktdUM5V3FxLUVXUXRpZkdwNVdCVkZxdVFQTWMzWUNtTnhDZ3VCelpOZHB4Y0lFN0dCVGlhZjVUSzFJRk55cjNpOGxkMGlWdi1DOXppTmZyd1JfSjlGRHVXMnQ3UXZDX3E4M1E?oc=5"
+          },
+          {
+            "title": "Gold prices today, Wednesday, July 1: Prices remain below $4,100, but could have plenty of room to rise - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigwJBVV95cUxOejJwVEtMd0pLSnZYVk5lOWVqN0VlNnVKX3RyMFljajRuNkh5N2czbUhHV1Q0RzBQblBNSTh3ai1UZTJaYms0dW9HUHRKZElaZlpCWVZOa294QXRRdE5QNXl3MVBPTnNwZU5YQ01Edms2Y0htUmQzX2ZZNGJFVG5TV1lMSGhtOTBpVE41VlRwSGpRd2lVNjY0d21Oc3BUMGcySzhGQkdqQ3kycHVGSlJsYmZPRGZ5UGk4YlRxdTlRMllWQlhuSFFBWW1CMFl1UXJoN0w5ZU55Rm9YMlBMTnNWbnJpajluVWgxUGlxNDV1R1ZkcjdTS2c2aGMxVlBNMWQ3SFVz?oc=5"
+          },
+          {
+            "title": "JPMorgan Reduces Its Gold Price Target for Q4 by 25% - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPdVNxeWFta0pzX3NTYjRwMXRtWEhmWVotelFaWnJHOG5LOXAwczd5MDAzTVZ2ZmNjLUJ4bUJEczhFZXlpaDRMc2RMMFNvNTZKbXRWd3Bqb19ZM2JGVVRMbFFXQ1p6dG1mTW9IdUdQOVdQTkp5OGQyZVdLb2hpS0FWYW5qdU9sb3RtTHVrMDNCUzRPQlBodGFiNnNNY08wNmhjd05MUXFnYw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "KITCO",
+        "count": 4,
+        "articles": [
+          {
+            "title": "Gold price jumps above $4,100 as U.S. economy created 57k jobs in June - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPdlZPekJtQVNybFBsUFFoWkMyMGY2M00ta2tPaWdlV0dHbU1aaVNBQUM3Z1VhSklQQ3pTcVB3RkxvazhHMkFkZzBPeG5wZm5DdUxTOHNvQldDU3pBVng4OWg0T3k5RmtnYkdZZWkzSzJmaUNfNjdrX1U0X01WWW1tcjBhdWFNeHhmWjllTEk0UVBDZ2xjNURZS181NkV1MnlMamZSN1YtSG9Cdw?oc=5"
+          },
+          {
+            "title": "These are the key factors that could restart the gold rally this year, or drive prices even lower – World Gold Council H2 Outlook - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxNelN4R0dpenR2RUp5MGltMy1iT3BDWGJ5TnA3TDM3RkJWTkF5bmRTdFE0MmxfOE44NUJsZ0xHMXVUelBsVkxKeGlmellZZzNKa1VrSzhGUzd1M0NZbHdKMzN0Q0VWTGp0ZFpsWEdtYUM3S2EtOXpzZTV4dHkxODZvY2NScFhmSHJhSXZLLVdIN01CQktUNkdrTUVZVVYwcW8weHJrbG94djJJSUoyS0pDZ08tYWhBRmkyTHc?oc=5"
+          },
+          {
+            "title": "State Street’s baseline scenario sees gold price as high as $5,500/oz by Q1 2027 - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxOVGJQT1VCdklKWXR1ZkpSTlJOSzVIVUgxNFdpR3NpZ3d2MkVCSFZ4enFCclZBWWUybXE0bXVXTGJ5RkFEX2lRakROZnNZQUZseUN1OGYtbVAxOWVlT2J2TDMwVzljYnhMeEIxYW9lOFU4UVRMRGNmdmh0QVhJNV9rdzVZNjY2b2VmZEFlU2Vsb3kyT05JME54RWxWenlDVW50bVZDbUVpMTg2LWc3bnliWEc3TQ?oc=5"
+          },
+          {
+            "title": "‘We anticipate further upside for gold by year-end’ – HSBC’s Sels and Ku - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQS21qZVJlT09LdHhFNU44MW1sN2RLckVmeW13QjdjS3NrT3hHcXl0SHNSNU9URVhnWmR0RzA5a2Q0NTVkTGhGeUFGbmdhUFFCWkY2WGlaYm5QUUtSZGQzOHI4aC0wamkySEpIXzJSZnliRzdvMWtZXzJjZnZueUNES0w1N3pYQUJ0djFxRmh6OEVfaDkyX3hGM0xrMDNlZWJCYzhHdDFsUGVrUQ?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CNBC",
+        "count": 3,
+        "articles": [
+          {
+            "title": "Gold prices set for first weekly rise in a month as investors scale back Fed rate hike bets - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNbWVmbHRNYi1WMk5Yb2pzT2h5RmVuWmVhMHg2SXRQVGxiem9zQ1owQzBCZjZLYkJQRnRmYWdsM3ZmNzlmX2RnVWlCblRKZUIyeGdGRlctaldzN25FRllsQjJxazduSVpaQ010czM2VWtGZFktaFRGWThJSks1cUlGR01wRUbSAYoBQVVfeXFMUEFaT0ZKa09lbC1xVzREMjhDSm5CVnp0OW11SDhKaHhHYXBKOVFmZ2ZwTjVmY2h1cWhyLUtydm9tM2cwbV9SUzVZQTFzeTh3Yk5xZ1REODNUMWRva2tkb1FlaUEzbkFVR2VXQlN1R3ZzdTdMMWtWUC1NbkRaVnlGNW1CYk1CM3I2aVNR?oc=5"
+          },
+          {
+            "title": "Gold losses ease after worst quarter in 13 years as interest rate fears hit bullion - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxONWRkeU56Skg4NHRGb1Q3NzNxbUdDMmRtanVONnhYa2dYbEZDM2Z4bFlXdS01OG5Ib1BjLUpmbno3TVl3ZFNMSUVKNXJJRW12X2M4aDhMUHZWWVVLZGYyWVlONjlsc0VHTGgxTFhLQmlNelNyWDh1YzBVN0NsaGZIaHhGYkJ2MzVnbWZ3akxtUTNLSFNycE42ZTMtdFN2NDlRQktjdnBwOUpaZ9IBrwFBVV95cUxQME1YaTRsSTZmUmMwanRXb0d0cEl1aXlWYVZnUTM3bGZ4UkZpc21GSWZwYVJVcGhuN3FMQ0JZaV9wQWFnVURPWGtfeWFFcmVkdGpycFp4bUxCREJCTVpmcjYtUm9IdGFDMDVLbkJhdlQ1aWNzRmpZWG9IQ29lMzlBaFN3WFM2a0xGUnZ3YWo5NTBiOTNic0QxMmZFQ2lkYmVlV3pzcURBMWVQQmNGVmhr?oc=5"
+          },
+          {
+            "title": "The price of gold today, July 2, 2026 — and the best places to buy - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE56Z3dJTEtSWFcyZkphY0g2ZVJlNG1Sdm5mRExxbTVGVWJqbG1FNEc3SGc1RHUwWkltc20wbzluemMwaTRqb3M3bzZwNkVtOTlNdkxfb2laTEtIMUlhRUlTNlVJTEU3SUwzTEpqZ2FWbWFOQdIBd0FVX3lxTE5QUEt3Y0tsa2tfZjRBQS1UV3IxV1p5azlocmJOeVZxalZjODhJVDZWZ2l5NFotTF93X3hZRU1nRHlxWGpzb3d2bjdsZWx0bUdjV2NrYUVodFRUTXRSa05hLUZfQ3VBMmd3cmFMU2daWm9lYXJFeWhr?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Fortune",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Current price of gold as of June 30, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE1KZTMwV1F0QWZ6YzRpcnBNRG0wVTYtMEw5UjRhdExGb1ZFRDJDNlZCeG5KSVBkelRXWXRUekNsQkJxeldJdnZQVENXOXlkczgxdVd2WVpyQVhHYjhRbVNSU0g1RDFTalljQkhpdGdn?oc=5"
+          },
+          {
+            "title": "Current price of gold as of July 1, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTFA3ZHpqU1pmYVdNRTcyNGtjVVhuWjdjWE9GN0xYOXlmZzZUTURrbWZYcHhqRnE1RWRvWWNqWHRzRU5GSlBHS2NBVklqZWpVZnJZc1JSaGlfdTBFM1NMYnQ2Mjd5cHEteTBmaC1WUkp3?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Business Insider",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Gold flashed a death cross at the end of its worst quarter in 13 years. Here's what's weighing it down. - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQNHZHRU9OcUphRnhIbWZtVXR2QW9mWFZrcVpDXzBVYUxJZzU5aDREVHNOT01TRG5SNFRRZ2lvVnkzMU9Xa2pWZjhJNkZKTTlwb01aakkwRUdXVURPOFc5dWJrTG14a2FRbGZSU2pGLXBGN1E2d0ctWXhSemsxd1VaSnRDRTNmNldlMUhKdDd3X2R6TklzUFhwNTMxUFpSbHVBeUxZVHpJVQ?oc=5"
+          },
+          {
+            "title": "3 reasons UBS sees gold surging 30% in the next year - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQZnJwUjU5N0VIX2ZEblpQbTJ2SE1HWlEtcDVPRXduRUhaQVoyMUFwWDBPbXFMUl9JV1VmdC1ZT0FINFREdW4zdWFDUVFaZi1ab2JiOVd6UzJXaDN3ZXVrUG5GcHlncm1lbi0wMHVBV3ltTWJRd09lYjI3c0ZFOXFKUnNoZVgyR3ZEUzFzeUU2T2hhbTNadmlVaWc0T3RfOUNmSUR0VA?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "BullionVault",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Gold and Silver Jump as Weak Jobs Data Crushes Fed Rate-Rise Bets - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNam00d25SV20wNktEVFZpTVZlVjQ1SUtkVlI5dXFsWmpJRURqeGJDMHhldmE3RjVmaW9OU0l3WVBSeXJteXRGZHhRTUVGOWFwN2R5ZmN5ZFJjcVEwZThKbFNRNnIwTDduVWtqeVh2MHQyRk15Ym5uaEtmMkYzVkViTFZfUXFmS0FibDdkNVVCTDJwa1U?oc=5"
+          },
+          {
+            "title": "Gold Prices Rise 1st Week in 5 as Markets Re-Think Fed Rate Rise - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQUHVVYXk1bWFUTGFMQWpIdGJTQVVsZW1LZ1ltT3BscXZDTS1tMXY4QTRpaFQtTHNaUGU5Y2wzTG5NWHlyWFYtTUdWRTl4aVlWcDNtWGhIaDgwam9KWS1ZeFlFbHpSSU5jR3RpMkdQcmo5RUEzSzdhOWcxbHo2TFU5LTA3eU9jbV93cGVjaHltTQ?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "macro_regime": {
+    "regime": {
+      "label": "flat",
+      "confidence": 0.4,
+      "transition_probabilities": {}
+    },
+    "note": "Estrategia en efectivo (sin posición)"
+  },
+  "upcoming_events": [],
+  "quality_score": 1.0,
+  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+}

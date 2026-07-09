@@ -1,0 +1,103 @@
+{
+  "strategy_id": "btc_hodl_b1",
+  "strategy_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "BTC/USDT",
+  "n_trading_days": 2995,
+  "strategies": {
+    "btc_hodl_b1": {
+      "final_equity": 37146.25,
+      "total_return_pct": 271.46,
+      "sharpe": 0.789,
+      "sortino": 1.028,
+      "calmar": 0.506,
+      "max_dd_pct": -34.3,
+      "win_rate_pct": 100.0,
+      "profit_factor": null,
+      "n_long": 1,
+      "n_short": 0,
+      "trading_days": 2995,
+      "exit_reasons": {
+        "week_end": 1
+      },
+      "regime_attribution": {
+        "accumulation": {
+          "days": 1493,
+          "pnl_pct": 180.36,
+          "sharpe": 1.055,
+          "share_pct": 49.8
+        },
+        "distribution": {
+          "days": 212,
+          "pnl_pct": 59.39,
+          "sharpe": 3.766,
+          "share_pct": 7.1
+        },
+        "markdown": {
+          "days": 1055,
+          "pnl_pct": -37.79,
+          "sharpe": -1.016,
+          "share_pct": 35.2
+        },
+        "markup": {
+          "days": 235,
+          "pnl_pct": 33.62,
+          "sharpe": 1.571,
+          "share_pct": 7.8
+        }
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 65187.16,
+      "total_return_pct": 551.87
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0268,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      -0.24,
+      38.22
+    ]
+  },
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": 0.8,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 271.46,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 0.789,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 34.3,
+      "threshold": 40.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 1,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0268,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ]
+}

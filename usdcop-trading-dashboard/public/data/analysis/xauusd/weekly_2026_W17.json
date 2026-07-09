@@ -1,0 +1,359 @@
+{
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Oro (Gold)",
+  "iso_year": 2026,
+  "iso_week": 17,
+  "week_start": "2026-04-20",
+  "week_end": "2026-04-26",
+  "weekly_summary": {
+    "headline": "Oro (Gold) · Semana 17 de 2026",
+    "markdown": "### Oro (Gold) — Semana 17 (2026-04-20 → 2026-04-26)\n\nEl cierre semanal de XAU/USD fue **4681.67 USD/oz**, un cambio de **-2.88%** en la semana (rango 4658.86–4832.95). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista debil** con precio en 4681.67. RSI(14)=43 (neutral). Soporte 4643.56, resistencia 4887.93.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CBS News, FOREX.com, GoldSilver.",
+    "sentiment": "bearish",
+    "ohlcv": {
+      "open": 4820.3691,
+      "high": 4832.9451,
+      "low": 4658.8598,
+      "close": 4681.6703,
+      "change_pct": -2.8795
+    },
+    "themes": [
+      "bajista_debil",
+      "RSI 42.94"
+    ]
+  },
+  "daily_entries": [
+    {
+      "analysis_date": "2026-04-20",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 0,
+      "headline": "Oro (Gold) 2026-04-20: cierre 4719.57 (-2.09%)",
+      "summary_markdown": "## XAU/USD — 2026-04-20\n\nCierre **4719.57 USD/oz** (-2.09%). Rango 4668.29–4832.95.",
+      "usdcop_close": 4719.566,
+      "usdcop_change_pct": -2.0934,
+      "usdcop_high": 4832.9451,
+      "usdcop_low": 4668.2852,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-21",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 1,
+      "headline": "Oro (Gold) 2026-04-21: cierre 4739.78 (+0.43%)",
+      "summary_markdown": "## XAU/USD — 2026-04-21\n\nCierre **4739.78 USD/oz** (+0.43%). Rango 4712.06–4771.44.",
+      "usdcop_close": 4739.7806,
+      "usdcop_change_pct": 0.4283,
+      "usdcop_high": 4771.4423,
+      "usdcop_low": 4712.0572,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-22",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 2,
+      "headline": "Oro (Gold) 2026-04-22: cierre 4693.67 (-0.97%)",
+      "summary_markdown": "## XAU/USD — 2026-04-22\n\nCierre **4693.67 USD/oz** (-0.97%). Rango 4668.51–4752.78.",
+      "usdcop_close": 4693.6716,
+      "usdcop_change_pct": -0.9728,
+      "usdcop_high": 4752.7781,
+      "usdcop_low": 4668.5063,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-23",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 3,
+      "headline": "Oro (Gold) 2026-04-23: cierre 4709.66 (+0.34%)",
+      "summary_markdown": "## XAU/USD — 2026-04-23\n\nCierre **4709.66 USD/oz** (+0.34%). Rango 4658.86–4742.66.",
+      "usdcop_close": 4709.658,
+      "usdcop_change_pct": 0.3406,
+      "usdcop_high": 4742.6597,
+      "usdcop_low": 4658.8598,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-24",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 4,
+      "headline": "Oro (Gold) 2026-04-24: cierre 4708.60 (-0.02%)",
+      "summary_markdown": "## XAU/USD — 2026-04-24\n\nCierre **4708.60 USD/oz** (-0.02%). Rango 4708.43–4709.77.",
+      "usdcop_close": 4708.595,
+      "usdcop_change_pct": -0.0226,
+      "usdcop_high": 4709.7732,
+      "usdcop_low": 4708.4264,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-25",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 5,
+      "headline": "Oro (Gold) 2026-04-25: cierre 4707.28 (-0.03%)",
+      "summary_markdown": "## XAU/USD — 2026-04-25\n\nCierre **4707.28 USD/oz** (-0.03%). Rango 4704.90–4709.15.",
+      "usdcop_close": 4707.2844,
+      "usdcop_change_pct": -0.0278,
+      "usdcop_high": 4709.1495,
+      "usdcop_low": 4704.9008,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-04-26",
+      "iso_year": 2026,
+      "iso_week": 17,
+      "day_of_week": 6,
+      "headline": "Oro (Gold) 2026-04-26: cierre 4681.67 (-0.54%)",
+      "summary_markdown": "## XAU/USD — 2026-04-26\n\nCierre **4681.67 USD/oz** (-0.54%). Rango 4667.94–4728.47.",
+      "usdcop_close": 4681.6703,
+      "usdcop_change_pct": -0.5441,
+      "usdcop_high": 4728.4679,
+      "usdcop_low": 4667.9394,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    }
+  ],
+  "macro_snapshots": {},
+  "macro_charts": {},
+  "signals": {
+    "h5": {
+      "direction": "HOLD",
+      "note": "Estrategia en efectivo (sin posición)"
+    },
+    "h1": {
+      "direction": "N/A",
+      "note": "N/A para este activo"
+    }
+  },
+  "technical_analysis": {
+    "as_of": "2026-04-26",
+    "last_price": 4681.6703,
+    "trend": "bajista_debil",
+    "signal": "neutral",
+    "indicators": {
+      "rsi_14": 42.94,
+      "sma_20": 4758.9648,
+      "sma_50": 4741.6582,
+      "macd_line": -8.4292,
+      "macd_signal": 1.8637,
+      "macd_histogram": -10.2929,
+      "atr_14": 74.9438
+    },
+    "support_resistance": {
+      "support": 4643.5579,
+      "resistance": 4887.9259,
+      "no_trade_zone": {
+        "low": 4644.1984,
+        "high": 4719.1422
+      }
+    },
+    "scenarios": [
+      {
+        "name": "Continuación de tendencia",
+        "direction": "short",
+        "trigger": 4643.5579,
+        "target": 4568.6141,
+        "invalidation": 4887.9259,
+        "rationale": "Ruptura bajista con RSI=43"
+      },
+      {
+        "name": "Reversión a la media",
+        "direction": "long",
+        "trigger": 4643.5579,
+        "target": 4758.9648,
+        "invalidation": 4568.6141,
+        "rationale": "Precio bajo SMA20"
+      }
+    ]
+  },
+  "news_context": {
+    "article_count": 40,
+    "avg_sentiment": null,
+    "source_breakdown": {
+      "CBS News": 3,
+      "FOREX.com": 2,
+      "GoldSilver": 7,
+      "BullionVault": 2,
+      "KITCO": 9,
+      "Gold Price": 1,
+      "Yahoo Finance": 6,
+      "Reuters": 2,
+      "CNBC": 3,
+      "DailyForex": 1,
+      "The Northern Miner": 1,
+      "Finance Magnates": 1,
+      "FXStreet": 1,
+      "ig.com": 1
+    }
+  },
+  "news_intelligence": {
+    "total_articles": 40,
+    "clusters": [
+      {
+        "theme": "KITCO",
+        "count": 9,
+        "articles": [
+          {
+            "title": "Gold price modestly down, silver solidly lower on bearish outside-market forces - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQSlhBS3ZwTG96dFZfQWIxYXZfR2hfU19icTh0MGxuLUdfTlhyMWtueGZXaDZscFJpNjNnSzBpSEdmVnRqOFRuOTR5TWNfRkVXVmNHWE5NNnpzYlIzZFN6bjh2dTgzUGw0VjhPb3hJRV9Pa0lEcUJHUVRJSHE2TEZCcWhMbWx4ZGRMVUFNM2JDTVVrZThxN29SNDFmQ3dhVG1TeGxUZWR6bTd6Ym1RWlBFcFJlNlpJdUVzUnVhYS1R?oc=5"
+          },
+          {
+            "title": "Gold price holds near $4,800 as Standard Chartered sees near-term risks, longer-term upside - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPZUNReUtSQTE2Rk1nX0M5VjBwMUJ4c0l6VzdWUG55dWNDX3NsampzOHo2NW03U1BORDJYQlZ4ektBOFJrclVBSDVQcll0NGMyVnN6RFFTQW5yRDV1MVUxaVRkMms3SU05NVZwWFJocXJNclFENUFCcUpSbHBPRzBzeV81ZmNsQUJhRk9Vc0k1Zzg0dEJKOU1MaFFjYjljU1hLMlRVUGxiUW9aSVNhSXU3ZEc3cmowNzVJTDRn?oc=5"
+          },
+          {
+            "title": "Gold price near steady as traders assess geopolitics - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOU2IwbXppR3luWUlIOVd4OHo4Qk5LRDJmOFdJZmdCT2JneTF3aTZaT196S2FRNVA0bXVzVjExVS12TDBycnhlVzJPSGY3aWRnUFNUcGZLZzJfTGhzYUFtSkhBUHVJbFp6dXgzZTFERVp1dDlCOHVvRjJ2MFBuLXI5WGl2YkctSkdmUW5hMUh6YVVieGxrUmNiNUYwWQ?oc=5"
+          },
+          {
+            "title": "Gold’s safe haven status is intact, high gold and silver prices are boosting exploration budgets – Heraeus - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQeGVSc3FrQ01Ba0YtRlYwRGJ3VkFwQUt3TnlfMW9HVlVRSmxLZnlRTzJTcWdUSEx6Y3FBZ2ZiN3NmdjlEbjNQVTZjU1FhOG1XVGlPN2NmdkQ4THJTWkZSQ1ByWHktNmlGeV9OM3dCaWwxUlU2U3ZqZWttOVlxbGlzUHZ3M21aNDdYdm5PeW93akMwbXcxT2ZrZnNmOFQ2aW5EYlFZbkI3UXBPYTFBMzJ3OEVVNWZ2OWly?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "GoldSilver",
+        "count": 7,
+        "articles": [
+          {
+            "title": "What Warsh as Fed Chair Means for the Gold Price - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQRU13NXhjUGcxNm81U0hpTl9XcVlKVHMtbmtScDNoSjhFNkJOdkJ0aFRVQTdpakUwUEJiNHh4M2dpQ3ZfWk14dEROdUd5UDB0ZEJfc0NGOGZRQkttWVVZMXRKZTFZcHpfMHZKQXhfMG1Pc1lvSnlfa0dLZGRockVrUkJVd0VUcThtM2g0d1kxeEl3d0d2WWI3S25Bd2NnZmhRRTJBdw?oc=5"
+          },
+          {
+            "title": "What Drives Gold Prices? 5 Forces Investors Are Watching Now - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOVXBsaFZxSzdRcDJQbXh6ZXJTUEV2ak44VFFhemlhWkktWXk5elU0VDJpQ3EybXBHbUhZR2M4Rm84RVh6djNEUXBjaktiaTVJRHVaTUxfcTVuV3diM0NUcVp6U2ZMdjI2emNTZjlLSGFuZklDZVRCRVR1WGxsU3g2M3dBTQ?oc=5"
+          },
+          {
+            "title": "Gold Price After Ceasefire Violation: The Floor Has Moved - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQUnhYSC1wZWRYQWh2d25pWGQ4T3p0eDNmQlVWVEIzSUlkMUxNUlNIdVNwTnhRcTJsZndjMWRwaTdkQnpJLS1Xb0FQdzlDOGY3RFBQMHMyTGRzQ045dVF1NF9jTGRzbUtkX1pDUXZad2ZIMUFxTVVYaGdkZXFoS2dPV1hBS3M4WlNjR0VKZkhGbXlVOHNqSXdKSEdCWFp3amN3dXFidklNNmJYeHI5MW84?oc=5"
+          },
+          {
+            "title": "What the Warsh Hearing Means for Gold Prices - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxPUzFKMHJJQ2NpMXlTdXl2WVpuTVFOOE8xNGRXeUdpMUtWSDZRT19ZMzBVN0NfZ243TFRHeHhTNlBkNGFoNXhJV0xTUDJteXhSSUVycldJN29BVGNGdGNZazJRVWdWcUg2RHBNOVJvN1pjeDI0Uml1TVg5ZFRPdjVzbGZnaUVRdw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Yahoo Finance",
+        "count": 6,
+        "articles": [
+          {
+            "title": "Gold and silver prices today, Monday, April 20: Gold rebounds early, silver stays flat, as U.S.-Iranian tensions flare yet again - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiowJBVV95cUxPcE5hSHJGMFI0R19xcjRuZ1o2eldFLTl0OWFvdmtaLWdBVW0xSlVTYkZZMFAxVThELTNzUGZGbGpUdWZjMWRLNXpvQTY0MW5yNTdJaU5VTWk3VzVZaFk2NTkwV1pUcTJMWk5RVzhoeXJpMGkteVU5a0E4Q1VtZVlRLXZMdHJtSlpsTEhadldfVnhEWF96S2pHT3gxd0ZfUDZzZUFtcURQWE5SVUo1eWkySV9neFE1MUo3ZVdoWUlWa2hFNFBZS0V3ZldCUC1XaWdWSmVQQlZIb1VWZThkajZscGpDWFJ2Q1FldFhOX3MxeHZLRE5VRWdLU0tGdDRUSGtXaTliVWNtbFJ3Nms5YThKR2gzMHpLYk9fNC1XMVlWSzdkbUU?oc=5"
+          },
+          {
+            "title": "Gold and silver prices today: Prices drop Tuesday, April 21 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxNTmI1cGtoQ0ZjeDllR2xhMEpoeHZfNXNNdEs1eWllaVZQM0FVNkNuRjNZek1XYUQ5LWdoSHBVYS1Ic3lfT2JUb0diMVBfSnZ1d2Z0bkg0Y3Y0aV93QTRZRWRCZzVKUzduLXItTnNEVmVvcVlSSzZQdGNPT2VZS1l5NlFheF9KdERPd19OTzU2Qm9FeDRWT1lqeU8zRDRHQk44aWZoQ1ZqSEVfazhtLU1tZXRCMU5jUko1SFJad0pNa2JxNDl1NE9JaV9iMjRmUQ?oc=5"
+          },
+          {
+            "title": "Gold and silver prices today, Wednesday, April 22: Prices open at their lowest levels in a week - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi_AFBVV95cUxORXVlalhlRGdHSDFWWmVkdW9vQlpGbGxSZ1lBQ0gzVVNQcEFXdTJhdnBMTlVEV2lYd05EV3lWbTZhODkyRjY2eEVlX3N1aWcxWGFaSXZqWnFvQ2ZkZzhRcnRoRmNPX3NZNWJ6NmRTbnZoSm5nLXlTd3VSRUFvV0lnalNfaEtGTXRZMkFremhBNnhRRzBVZ2o5Q08wN2lJMXBLU1gwdG9BZmZJbzN4aEVra2ktc0x3MHktSmRkOTZPNVVHWEQ3QVFrWUdLenB1NTl1aUdsUk9uanc0clYwOUlOQm4wa0FXbVdNaTJqbDFsY1gyaEk5azFHTXhwdFo?oc=5"
+          },
+          {
+            "title": "Gold and silver prices today, Friday, April 24: Gold and silver slipping as oil prices and dollar gain strength - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMikgJBVV95cUxNZ0lfaGc5UC02QjVFZk5jYlpBMTNGelloU191MTd5S0tHWkVadXRRVFZWMnpWZmZmdWdGRW1LM1E2Q003R2FvZUY1eVBSeHgzZ2Z1dGhhWUR2V1J4MHpOclNnUjJiUDExNkZJUVBxOG5HTzN3THdZOFl2VFV3WXhEVFNXNUE0aU1WbGZXTm5XcTlxM21rZFE1Vi1ER0l2dFNaYUZ3cG5ONE5nN21nVW80VHhMR0EzTFdGa2M3VlpodXhJTGJsQ1F6Y1BUVUthY1Ayb0VDQWdVYjFUYnZ5OXhzWnduNDNMS2dfcTlFa1FSODlkNmhRWWloWUhpNl83UFp3UWFJQVhMdDdpYlpCNksyNlp3?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CBS News",
+        "count": 3,
+        "articles": [
+          {
+            "title": "How much lower will the price of gold fall? Here's what some experts anticipate. - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOUmF2N0Qybm9OTWRsUjVsV1lVbWtvTzBqT1k0OXdTZUpacHZLclB1OW9YN3VlX1dYeDVvQlk5UFJjZUphTWlCTGVaazJRZDh6YmxlS3FaSmZVaFdMR0lidnJReERKZEptaXoxZmtzU1M3UUFwczY0cFdMYTZHcHd5aU53?oc=5"
+          },
+          {
+            "title": "Gold is priced at $4,700 an ounce. Here's how to invest for under $100 now. - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPdUpUZDNUdlE2UTh1QkFCa0xtdlhaeXY0cFdWb25yMWlETVFRS3V5U1J1ZVhRR2RkV2YzbzVQeFRNWGhQOHdZU2VpSThCS3Y1aTJzY1hKcHZVdnhkbjBQME8tSzJqOUswNUh3bV91TVRwMUx5SDFhbVRScjRCOHNJTjJ3?oc=5"
+          },
+          {
+            "title": "Is gold still a safe haven now that inflation is rising again? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQa1Nod1dJVXpVbTNxZGw2bUdVUzEtQnZZY0c5dFdrdE1ULWR5cXNaQ0VGeUxncEVGTjVSaW13TnZ0eWdKU3ZsenNtVzNhV1Q0NTdMM29hZDkzRk41SkVEZWFSS2FWeFRtbWY0VjdIU0R1cm9Eak5wZ2RPajJFVmNVMmI0RjY?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CNBC",
+        "count": 3,
+        "articles": [
+          {
+            "title": "Gold slips on inflation concerns as high oil prices and stronger dollar weigh - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPdExNa0xYSE41dVFMcFNrWlVpTGxsaUh6WmEtOFM2MkNPTXB0Q2hmczZqVklTa2piSFpLbE8zNEllc1RyOWR2SzFPeUFSYWxteGFBcGt6cXpMa0NJVGM5Q0hDeE1hM0ttRURkSmdlV1B3SUZ6VjRuSC1hWDZSSHBVdnN1S2doUXRmT0kxcVVQWFFUSzlPTjRKbzRkOC1rMEFmWXRLdUpPSmhia2_SAbABQVVfeXFMUEo2MWJfZ00xZFNsX2RaREVibkZWeFRzd0NwRUVpb1lBeE13bTFLV011NnJkYm5JOGphZVQxMGptcXljYzNleUlaQWROTkZ0TWwyOGZwa29wVWljUkxRb2w1eU54NGtXSFV4bVYxRW9oVnpGS1ZUc3diVDNHdVNuQmJKRU8yZGlzRUlraWE2VFAzd3FoMjlNZVplMTNDd3hwU29yWmZXOVRpNGRXaVl0ZVk?oc=5"
+          },
+          {
+            "title": "Gold slips on firm dollar ahead of tentative U.S.-Iran talks - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQV3hsdHlQWFlmXzltWl9XUjJBV3AybzVCTVdHWHFhRGpqbTl1U1FGTnFpWW1OdXpSeXhNSzdkQWs4bE9Pdnhidm94anlwV1ozVnNWQmxiVmVQYU9kVnhHb0VUM0tGUDZjOUZnTndrY01ueDJIYnJKbGtlNXJPWVZ4bU9zSVJ1MnRTYmpuRFR1NTMzcFJjUE93QVYyWkU2eFBnR1MtZlBZRXlkR3Rn0gGyAUFVX3lxTE1KVmNyT2ZHam1JdXdvT3pDSkZrb1hFY0Y1WVpuZjBfal9ELUgzNm5CUnlRQkRyT2Q0Z3U4a2VvZGN2NngybDVYb2NidHJselNNcDNFRTJnS3lGOVBBdFZuaUd0REw1RHhLbG0xNE90Z0I3b0ZTc0NmVlNsczFlZzFfeC1ndmpLb3htYXpEMnJsdWJEUEVIczBlWmZiLTNqcDlQZWF1U3FWT1BQZzYxaEY4ZHc?oc=5"
+          },
+          {
+            "title": "Gold rises on bargain-hunting after one-week low, U.S.-Iran talks in focus - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNazRoWGFtaG0wS1haYTgtSXJfVHJYUHBraGIydWxjS2dKdnZHUVdaR1ZWU0Y3MmJTVHFDUkVkSnREbXZSaVdxbXoyUjd4Yng1cWw3Y2xhVjc4d0xWcl9aQWdZbjlNYXdta3pzY3FtRzVGOU5lVnVxY3dDaEdXWWFuWlU3Yl9uWlpWajNIRGdGVFVCT0Q1OHBIbnFuZ3RVck5F0gGmAUFVX3lxTE5yNWQ4MjJyR1NNTUo0Nlk1WmsxS3BBSUxrb0FEUFhPR3Jlc3gteS1SUTFBSGJSRjM2WUNPSC1SNlllOFdVWVEyUkh3VTY0TmZ4aGxkVW9zZkI0Q2NuSTFTMTc5bEpaVWlhazJCSk5EZ3BlUGQwcm92MTlUVEhRUTFpUEFLT1RhQU0xc0M4TW84dXRZblhJaXFsX3A0bnd3dGtsTkNDa2c?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "FOREX.com",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Gold Price Forecast: XAU/USD Surges 19%—Bulls Face Major Resistance Test - FOREX.com",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxONldDRWw0aWFVeUNFUmFWdGNicThvLTdhLVFNdFBlX2ladU92MG1iVUVqN080YXNfN1FwRXJNZ2NhUTZKdjY3cVVDc2VhRGstLXRWV1pSQmlqM2xPTlNFQ25HM0hhY1RrX0ZraU9mbVVvOTE4V1hLV21RQjBJdlI1bGhMRmcycXdRRE12aHR6Z0liV050Tk1VWkwyZWFUUU45bW0wTlUxcTdFaXJCZ3N3YzlPSmFxWFNQbEpIMURnNTd4SXpMREZDcG5R0gHWAUFVX3lxTE5vaEVEa0JobXJMa2JhVVVtTERlNEtob1QyNnBDMzE4b2g2Y1h4NnE5R3lvSlJoWU1uT21DS1ZFSk5WdDhhdjNEa2ExZ1p6LUUxNXM0bVRWQXdSZHhUa2Vsc2pvWXQtZU9EYVNoX2U5Wnh0RGEyQzlzSXJRTE9TVTY1TFhoR1BtYWpHNVpLeGttNG1waXphSmRVeHBvZ29PN3F2d0FLZlp0ck5NbWNqcGlNZTFLaWpVQm52Nko3ZkJkd1F6TUVsd0Y2VkJPbzFjNWRMRXJnX3c?oc=5"
+          },
+          {
+            "title": "Gold Analysis: XAU/USD Fails to Approach the $5,000 per Ounce Level - FOREX.com",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQT0c2UVlPN1BVOG1ZcENzbnlIU2pFdmFyRG1hYnlNbnVqRHJqYlY4SENaS3FNRXRVdE8xcEM1TmN6UUExdmUtZnJoSng4TWc0UlpSTWdkVTdBMDhzbE9XVXFHSHlNdU51U3ZNdlJlNEd3QW1HOWFtYzk5aERQd3hzeXNjcFBQSHY3dEY0V0FvSWhJQ21ZLTFhY05pR0hzQjVuWVU4S3poNV9kVlp3MDdV0gG7AUFVX3lxTFBKQmF1ZUhQN244cHhGUDBEeGtrS3I3NDdDb2VYaVRkNW9PSjZlV3ZZNFhxdlY2ZmFKREVONUdYbVNFbTczUXJqUVNDM0gwTGJEZURMaGdIQ19Odk5seS1fS1Jvem1KWE5jdlpGMDNSeG5vMHBWR1dkMUl4X3loajZ5YV9NWjJ2a01mMklmdjJVbFFkNHNUdmEzUUFQTGFJTjZQMm9VMHkwQkhNVXJocm5zT3FBWjdrdEVoaVk?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "macro_regime": {
+    "regime": {
+      "label": "flat",
+      "confidence": 0.4,
+      "transition_probabilities": {}
+    },
+    "note": "Estrategia en efectivo (sin posición)"
+  },
+  "upcoming_events": [],
+  "quality_score": 1.0,
+  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+}

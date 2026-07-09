@@ -1,0 +1,133 @@
+{
+  "strategy_id": "gold_regime_gated_v1",
+  "strategy_name": "Gold \u00b7 Regime-gated vol-targeted",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "n_trading_days": 5610,
+  "strategies": {
+    "gold_regime_gated_v1": {
+      "final_equity": 21668.62,
+      "total_return_pct": 116.69,
+      "sharpe": 0.455,
+      "sortino": 0.509,
+      "calmar": 0.116,
+      "max_dd_pct": -30.46,
+      "win_rate_pct": 37.1,
+      "profit_factor": 1.759,
+      "n_long": 116,
+      "n_short": 0,
+      "trading_days": 5610,
+      "exit_reasons": {
+        "regime_flip": 116
+      },
+      "regime_attribution": {
+        "compression": {
+          "days": 4310,
+          "pnl_pct": 95.09,
+          "sharpe": 0.494,
+          "share_pct": 76.8
+        },
+        "stretched": {
+          "days": 590,
+          "pnl_pct": 14.39,
+          "sharpe": 2.132,
+          "share_pct": 10.5
+        },
+        "trend": {
+          "days": 710,
+          "pnl_pct": -2.9,
+          "sharpe": -0.058,
+          "share_pct": 12.7
+        }
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 94237.42,
+      "total_return_pct": 842.37
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0196,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      0.25,
+      7.4
+    ],
+    "sharpe_per_period": 0.028682,
+    "skew": -0.2161,
+    "kurtosis": 7.7356,
+    "n_obs": 5610,
+    "psr": 0.9838,
+    "deflated_sharpe": {
+      "sr0": 0.0039,
+      "dsr": 0.9679,
+      "significant": true
+    }
+  },
+  "backtest_recommendation": "REJECT",
+  "backtest_confidence": 0.8,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 116.69,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 0.455,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 30.46,
+      "threshold": 20.0,
+      "passed": false
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 116,
+      "threshold": 10,
+      "passed": true
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0196,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ],
+  "oos": {
+    "year": 2025,
+    "n_trading_days": 261,
+    "metrics": {
+      "cagr": 26.93,
+      "sharpe": 2.526,
+      "sortino": 3.424,
+      "max_dd": -4.11,
+      "calmar": 6.558,
+      "total_return_pct": 28.01,
+      "vol_ann": 9.63
+    },
+    "statistical_tests": {
+      "p_value": 0.002,
+      "significant": true,
+      "bootstrap_95ci_ann": [
+        6.55,
+        37.34
+      ],
+      "sharpe_per_period": 0.159101,
+      "skew": 0.0239,
+      "kurtosis": 5.9135,
+      "n_obs": 261,
+      "psr": 0.9943
+    }
+  }
+}

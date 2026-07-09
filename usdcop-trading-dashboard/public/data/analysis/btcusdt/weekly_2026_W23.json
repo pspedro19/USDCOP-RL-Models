@@ -1,0 +1,392 @@
+{
+  "asset_id": "btcusdt",
+  "symbol": "BTC/USDT",
+  "chart_symbol": "BTCUSDT",
+  "display_name": "Bitcoin",
+  "iso_year": 2026,
+  "iso_week": 23,
+  "week_start": "2026-06-01",
+  "week_end": "2026-06-07",
+  "weekly_summary": {
+    "headline": "Bitcoin · Semana 23 de 2026",
+    "markdown": "### Bitcoin — Semana 23 (2026-06-01 → 2026-06-07)\n\nEl cierre semanal de BTC/USDT fue **63332.01 USD**, un cambio de **-14.04%** en la semana (rango 59130.91–74092.00). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 63332.01. RSI(14)=27 (sobreventa). Soporte 59130.91, resistencia 78200.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.35x). Régimen: markdown.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Morningstar, BBC, CNBC.",
+    "sentiment": "bearish",
+    "ohlcv": {
+      "open": 73674.39,
+      "high": 74092.0,
+      "low": 59130.91,
+      "close": 63332.01,
+      "change_pct": -14.038
+    },
+    "themes": [
+      "bajista",
+      "RSI 26.57"
+    ]
+  },
+  "daily_entries": [
+    {
+      "analysis_date": "2026-06-01",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 0,
+      "headline": "Bitcoin 2026-06-01: cierre 71408.90 (-3.08%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-01\n\nCierre **71408.90 USD** (-3.08%). Rango 70686.68–74092.00.",
+      "usdcop_close": 71408.9,
+      "usdcop_change_pct": -3.075,
+      "usdcop_high": 74092.0,
+      "usdcop_low": 70686.68,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-02",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 1,
+      "headline": "Bitcoin 2026-06-02: cierre 66760.83 (-6.51%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-02\n\nCierre **66760.83 USD** (-6.51%). Rango 66193.00–71408.90.",
+      "usdcop_close": 66760.83,
+      "usdcop_change_pct": -6.5091,
+      "usdcop_high": 71408.9,
+      "usdcop_low": 66193.0,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-03",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 2,
+      "headline": "Bitcoin 2026-06-03: cierre 64142.75 (-3.92%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-03\n\nCierre **64142.75 USD** (-3.92%). Rango 64092.49–67516.00.",
+      "usdcop_close": 64142.75,
+      "usdcop_change_pct": -3.9216,
+      "usdcop_high": 67516.0,
+      "usdcop_low": 64092.49,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-04",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 3,
+      "headline": "Bitcoin 2026-06-04: cierre 63885.99 (-0.40%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-04\n\nCierre **63885.99 USD** (-0.40%). Rango 61383.56–64764.32.",
+      "usdcop_close": 63885.99,
+      "usdcop_change_pct": -0.4003,
+      "usdcop_high": 64764.32,
+      "usdcop_low": 61383.56,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-05",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 4,
+      "headline": "Bitcoin 2026-06-05: cierre 61056.47 (-4.43%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-05\n\nCierre **61056.47 USD** (-4.43%). Rango 59130.91–63978.00.",
+      "usdcop_close": 61056.47,
+      "usdcop_change_pct": -4.429,
+      "usdcop_high": 63978.0,
+      "usdcop_low": 59130.91,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-06",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 5,
+      "headline": "Bitcoin 2026-06-06: cierre 60884.62 (-0.28%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-06\n\nCierre **60884.62 USD** (-0.28%). Rango 59500.00–61530.05.",
+      "usdcop_close": 60884.62,
+      "usdcop_change_pct": -0.2815,
+      "usdcop_high": 61530.05,
+      "usdcop_low": 59500.0,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    },
+    {
+      "analysis_date": "2026-06-07",
+      "iso_year": 2026,
+      "iso_week": 23,
+      "day_of_week": 6,
+      "headline": "Bitcoin 2026-06-07: cierre 63332.01 (+4.02%)",
+      "summary_markdown": "## BTC/USDT — 2026-06-07\n\nCierre **63332.01 USD** (+4.02%). Rango 60746.00–64234.68.",
+      "usdcop_close": 63332.01,
+      "usdcop_change_pct": 4.0197,
+      "usdcop_high": 64234.68,
+      "usdcop_low": 60746.0,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "LONG",
+        "confidence": "media",
+        "leverage": 0.35,
+        "predicted_return": -1.1218,
+        "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+        "exit_reason": "regime_flip"
+      },
+      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+    }
+  ],
+  "macro_snapshots": {},
+  "macro_charts": {},
+  "signals": {
+    "h5": {
+      "direction": "LONG",
+      "confidence": "media",
+      "leverage": 0.35,
+      "predicted_return": -1.1218,
+      "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
+      "exit_reason": "regime_flip"
+    },
+    "h1": {
+      "direction": "N/A",
+      "note": "N/A para este activo"
+    }
+  },
+  "technical_analysis": {
+    "as_of": "2026-06-07",
+    "last_price": 63332.01,
+    "trend": "bajista",
+    "signal": "sobreventa",
+    "indicators": {
+      "rsi_14": 26.57,
+      "sma_20": 71758.4265,
+      "sma_50": 75846.1148,
+      "macd_line": -3992.3647,
+      "macd_signal": -2684.8908,
+      "macd_histogram": -1307.4739,
+      "atr_14": 2565.5305
+    },
+    "support_resistance": {
+      "support": 59130.91,
+      "resistance": 78200.0,
+      "no_trade_zone": {
+        "low": 62049.2447,
+        "high": 64614.7753
+      }
+    },
+    "scenarios": [
+      {
+        "name": "Continuación de tendencia",
+        "direction": "short",
+        "trigger": 59130.91,
+        "target": 56565.3795,
+        "invalidation": 78200.0,
+        "rationale": "Ruptura bajista con RSI=27"
+      },
+      {
+        "name": "Reversión a la media",
+        "direction": "long",
+        "trigger": 59130.91,
+        "target": 71758.4265,
+        "invalidation": 56565.3795,
+        "rationale": "Precio bajo SMA20"
+      }
+    ]
+  },
+  "news_context": {
+    "article_count": 40,
+    "avg_sentiment": null,
+    "source_breakdown": {
+      "Morningstar": 1,
+      "BBC": 1,
+      "CNBC": 4,
+      "Yahoo Finance": 11,
+      "Reuters": 1,
+      "CoinDesk": 8,
+      "Bitcoin Foundation": 1,
+      "Investopedia": 2,
+      "Fortune": 1,
+      "Bitcoin Magazine": 4,
+      "Forbes": 2,
+      "Fast Company": 1,
+      "Seeking Alpha": 1,
+      "eciks.org": 1,
+      "galaxy.com": 1
+    }
+  },
+  "news_intelligence": {
+    "total_articles": 40,
+    "clusters": [
+      {
+        "theme": "Yahoo Finance",
+        "count": 11,
+        "articles": [
+          {
+            "title": "Bitcoin price crash reveals a surprisingly positive future outcome - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOY1JJeks4a29UbHQyLWNXck5ESTZPbG5UOS1qVHRzeWZtSlc5eUFLRGVUYjNydkhMaGxZUWlpY25jYXZSTWZ1VGhPakdtLTZobVFZX3ZSVEF0ckVSOVR3NDRVWGdNNG45RHh0X3VudjJHeWVUazZKQzFaNWlQMVp0S2szcHZ4R290YlNtM0ZmdGFXR2VYNWZRaDRMLWpnVEJJVEpzcXN2WFNPa2RzVU1BRVJybzQ4cjJhTmRXT3NaakRVUWJ3akxYdW1B?oc=5"
+          },
+          {
+            "title": "Bitcoin rebounds above $60,000 after $1.6 billion liquidation-driven selloff - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNTlZ2QTB3M0F2aTN1U1RXb0ZDZ3VwZHFhYUZkQWVsdXZwamsyVEFoT0lyeVZpNVgtVU9jVmZYbnMxYkU2eDd4Ul81ZVlqTnJON2s0XzRjY1VEdkNCNlEwYS1tR0xWQkg3XzFQODZ2SWVkS1U3S2ZDWVl2Q0tfNXZ5WFJIRXlNTjc3czVMdjZMTjcwUUFJMkNVeUtn?oc=5"
+          },
+          {
+            "title": "Bitcoin Has Dumped All of Its Gains Since Trump Was Reelected—And Then Some - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPZ0RNN05FbFhucjJrVlJfSGRPT3FIYlQ1bnBJQzJSV3kzcDh0QWxIYWFpM2VxMUZuaUtVWGREMldIX2tScnI4dkFZaTZ3WHI3cnpnMzhuQlZvakItSWRVbUt3UUZZYnYyTGlVSjhKeTdvMXItU2V2dXpvY2ZiazBlMFgzZU4zUW15VkFNc1A1WDRiejBYdFdweXU0bUF5Zw?oc=5"
+          },
+          {
+            "title": "MicroStrategy and BitMine Could Trigger the Largest Bitcoin Crash Ever: DWF Labs Co-founder Warns - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPZDJienZrMzdkMHBzUUo4bkNTd3ZZTDJWNUU1ek5mdDhtR0ZRdUVnLW4zUjh6WWg1ZV9KSzM2cXM5M3JaU1hRVVJiUzJuWEtJOGxpTncxSTVuXzgxaUppZ2Z1UWRhcWstaTNhb2tUa0VrdzlyQUl6c29mcmQ4cktPTkRGNXhuSVZmMGowNklDUVJCUG5OZVlDMWtwR0JUcVZSZjhWOWJQLWJxQTZf?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CoinDesk",
+        "count": 8,
+        "articles": [
+          {
+            "title": "BTC price update: Bitcoin reclaims $61,000 after dipping below $60,000 in an AI-led rout - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNMWJvdUgtS0xOTTRZaVNkc2Q4RlR6a2hPc2RNTDZGeFlYNGdXM0hYWnBzcUpKVDN3cEtEX3JuVVhXN3dsYkJJZ1NqTEFSQTFnZGdtYW5ENkptTzhFRENBYUtjZXdiRDhZTGJxSW8wb2ZoMFMzODNqVWZjaENjZEpUQUxMVG1xQk0tQ2h5MmR3a2gzaUNPLTFmbGtYdnVjcGNWUjRCOGNKV25QbVhIeVRDaE9wUXUtM2VPWmo0Ng?oc=5"
+          },
+          {
+            "title": "Bitcoin price news: BTC falls below $60,000 to weakest price since October 2024 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNS3BmVGFTTlJjV2plTXRvZnlUNWNNNlA5M0NjdGhnUFNqNHFCd0dtcnlNaDI4a2x6TE5fbVJJRi1OUENNRkliQUpxLWJybVd2X2pnQnlhVlFLVlZMYzJYdnBXODliTUE4UnZMRGx6a1J6dlBoTXVKM0dqeVdLNXQxNkdUTzctc2hZdWt2ejAyalBJNmVaeFhoZnIyX1ZGMndUdmk1UUJhV1N1b0dYSkE?oc=5"
+          },
+          {
+            "title": "Bitcoin price analysis: BTC could have further room to fall, based on derivatives positioning - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQemZZVHdId0I4TFpRVFJtREh6RUxTZlh1ZndZRHRnUkdhVTgxZ3F3ck5oSmpaWWwxVWhQYXVSaTRRWmd1MnNOanh4LWdabFdjMUpoWjVZNWU5VVFRaDZVck5lVVNNbmRyay1oVS1DRkhtRWhadGVOaTVwM0xxTFdDV1VUZzQ0dlhCVk84S00tSi1WSU94N3lqMlNjdGZodEVNUmgwNUtVUUE3VXpRSFFLRHBtNVZ2M2N3d2h1VXRsNnkxb0kxd2c?oc=5"
+          },
+          {
+            "title": "Crypto's worst week since July 2024 deepens as BTC, ETH prices near critical support levels - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxOY3RKSXZIY3ZPaGtMTFdrOTFia0haVklsYzYxZTZjaVozRl8ySmpxdEg3b2tXb3Z6RmpjY3pXVi1DWWFfSkg0UmNGUk1UOGpjYWRfVnBzTVE3cnFVQ1RRcTVaeWJPakplcVZMOEdlNnluOC1QRUtsbmxISGU2eV8wMEhvd3J3dE9SdUlOMGtnaS1FM3BWMWEtWUlJV0xYMVh6N1RJYndUdEQ5VU94MnJUTDZoVjlBOTNUWmVxNE00cWdGTEEtbGcwMTJrbw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "CNBC",
+        "count": 4,
+        "articles": [
+          {
+            "title": "Bitcoin's high-conviction holders are turning into sellers as the crypto's price hits new lows - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQWGV1Z1FUbE9wYlFwZTFodmQ5aDFfQ1VfZWJfazBrbjBNdGVDU0lYc0lycnFMVDVXWlR6UjhxbTU0UWViUi1fVk9HUURjZHZySGlCSjBUb2pRMm5sUjVZQUdmcnNlWmhJQTV1Y2RVNURiZ2Rtc0pERzJOSWR1aWc5dDFYY1V3RUM3QkFOdW1hTlBnVHFjN0EwQ0NYc0pOd2RrbWlOWTRGc9IBrAFBVV95cUxOcjBxNkdsWFM1eW82c2F0dHFHR2NaeEttUWtxV2Jrckd0aEJZY2NsdEhoM3Y1VU55Y01kSnBEamhJZXFNa2tXZGJ5NGVsYTFhUFlmU0UtbGgza1pWMllPVXd0SnJJWjZsR1FSc1pOeUlfV053Mnp6bkdTMFZvRm55bmFud2FuQk9jbDJ3TGx5RW9FS2gxX3VDY3lMQk9pamRueGlKNzV0VVJxVURE?oc=5"
+          },
+          {
+            "title": "Strategy shares fall after selling $2.5 million in bitcoin, its first sale since 2022 - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOTV9zTmpVSmtScHU2aV9VbmdsVU8zYzRBOWJReEVGQkg0Mkw0LTVPN3VpZDV1UUw2Vk1kdXNndGtpRFdJbGVtZnhpMHF4aXl5Zm1Xa0x2a1lmZmVDQWpzUGNNeXhlZ2JzV2VBNTdXUl9Ed1g2STBodTR5Sm0wVDlGQ1l6MHNMbHV2MzlJUmdNRDBSczdrQzVoRXBObC0wRmxRMkVoMm13UnV4SENueE9vZkVORVFUbjJZUU0xbWFjTjYxUdIBxwFBVV95cUxPb3pUZk5RSWNsNXpHcnh0YTN0SDlfVTQ1YkV2cnlFWEFCR2w2R0JXQUtpREV0MFl5SlgwZzFTaktvN3BneldTWWF1Q3dKZEFQMGNTb05ncE05NDYwTk9HWW5lcmtXQzBrVzJldmV3NmkxU2swRy1wNEp1WVkwZzl0aEszdllvUlh5Y3FPbG5hUlRPOVNMTm9JLWVqTXB3YUxFVEg4YWx1LXduR04tZHFZY0R4dV90UXlwS0hJQnZfMmVnX0gxMlVR?oc=5"
+          },
+          {
+            "title": "Bitcoin set to slump to new lows for 2026 after recent sell-off, traders forecast - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxPTlpsSm9uR1k1RmJ5MFpIWlN1ZUVaODBuUzFPWWdQNFBQSzVBVlcxT3FGV0lvNDVfRkpUYy1WdHdtU0FZY3NIWVg3bnNLMzlRa1VtTlJqX2pYRzlJMndlQnJJdVpPanFDak1obFBvcDc1ODRuZlp3VS1VRm5Lak5nbWlZSE1TT1ktNnBoakVwUjBNcjJha2cyQjJlS3IxVC14dTFXbmtn0gGrAUFVX3lxTE9jT0UtU3lvMzdkQndlSTI2NmxURUlraTk3a016eEVsSXBuT3EtMml0V2x6OExZMUxaU3R3WFdfUVRjTXpJRTNOV3pWaS1TamdndllwbHJwakl3Wk1va0RvSHMtcHFFLVY4SEdzWkFKR1ZrQlVZRDV0bXEzQXI4VE5xaEJjVGdUbDJUNng5WnFhQ1FnRzJMeFJET0Nib3JmOTR4b2ZTajhieUlhTQ?oc=5"
+          },
+          {
+            "title": "Bullish CEO Tom Farley on bitcoin's price action and tokenized equities - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPdm5oQUFrMFpSZ2hrZXpPSF96LXdHblFiLVJySm5FTU8zaG8xaXhQY1R4blhVTGtYOGNSSGpGbVNOZzRIRGYyZmNIa2Q1UEJGdkRTZTlLU09XQkNZX3IzNWRkelpPQm1QbnE4ZzBCdnhMQkR3UXNRT0FuU3dldHpzWW9IWlhEbEhpVVlrZXJOX29ZMllrTTBEb0FmN2RkV0RSckNMNXp3Z2R4dFNwUUdESDJyWQ?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Bitcoin Magazine",
+        "count": 4,
+        "articles": [
+          {
+            "title": "Bitcoin Stocks, Led By Strategy (MSTR), Take A Beating As BTC Price Sells Off - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTFBxWUpsa3UwV1BEZjMwbDBuVnBzaG1RUzNqVkpjX19tbVRLYjQ1OTR0SzVrSEhrVEh0WkJVT0o1c0pRU05OR3Nsc2VBZldoWWY2Tm9UMUNEUHk5cm44Wll5R190NVUwdVVmTkhVeTB4UQ?oc=5"
+          },
+          {
+            "title": "5th Worst Bitcoin Price Action Ever — I’m Buying At 99.8% Probability - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxPMUIteGk0WVJmQ3JnU2NNa2xCdzVqTXlvZ3hJM05yVnkybHFvOFFQYm9PU1NhRjRRTEpqZUJFN0FaWV9lNjZSQmp3SmpUTUhBR3l1VnNtdTJvcHRLZF9QTWZwYThsdkdwUlZ2bzBEVFZJZFZWRUlfam1DZERpT3BHMl91VVpGQWcxQnFnMEVwZnJGZU96WWV2djNTUWVtRWxscFgw?oc=5"
+          },
+          {
+            "title": "Bitcoin Price Crashes to $67,000 Range, Down 13% in a Week Amid ETF Outflows and Market Fears - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1iY2djZmFFYzVZSU01Uk0wWmxzaDJIdWpaQlZjemZCbWFwcUNDaDFzQ0c3Rkw1RjN3TVhSWVZ4T2hUQ1pSdmRCRHV2M08yRGdGeDZPaU9Rc1J6NW5qek9mSVpOa1ZhVzhDa0VaMkdGXy00M0h6M0EzTEZGNUc?oc=5"
+          },
+          {
+            "title": "Mt. Gox Moves 10,422 Bitcoin While Bitcoin Price Craters Below $69,000 - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE85YTMyc1g5WmxBd1lyc3ZKUV9ZYWJCX0hYbVh1N1hydWFCWXdrc1NpOW84cHFLNzNqUlNWelpWUGpYYmJUUG1aT3RtTXRRd3JndGpDN1U4MEJOTmNlZjc4WHJrZV9LUExwRjhDME9VNGVsQ1I2aVlSbzRINlpydw?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Investopedia",
+        "count": 2,
+        "articles": [
+          {
+            "title": "Bitcoin's Price Is Back Near Its 2026 Low. Here's How Rough This Week Has Been for Crypto. - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMi0AFBVV95cUxPdmh4aUFXYWJwUG1pMHpuMEZzZFFvM2o5X3lhN3NRZ2pLSGhOOGdyNTVBSm9GeUkyZ0oyWUd0Yzh1c1U0dEJWN3BOa3h0V2pRVllqanF0eEQ5RG9mczlZSGZTc3RGYVNDcjZvVnBZVTA4T29hVFg1VEFsWTBteVo5eUotS1J2czBRci1aTHZmak84ODV4SWNhLXRwS2U4RVNGaVlSNjE2NzI2bHFhRTZVLXd5ZlBweDlTNV9zVUxfUENYdEZqdWw3R050SnhDUDFU?oc=5"
+          },
+          {
+            "title": "The Price of Bitcoin Fell Below $60,000—Or Less Than Half Last Year's Record Highs - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQM3hKZURFVmJsanF6amV0bloxTFlsVXVpYzhXSVd5cGVVT0t1bzRtZHZVNjJyOG5YYjlSbGpFZmtzMEpsc1cxZUpDRll1S2xUM2ItdWVvWjQ4cjNwNWpTUUx1OG8wT2djMFZkcTVSQWhZU0hyZ2NVdGVabmFHTFNCcHNrUjBwT3czQ1V2UzBTXzRzdnlZRGV4T0JES05xVEhVUmp2eVlEYldsbHpr?oc=5"
+          }
+        ]
+      },
+      {
+        "theme": "Forbes",
+        "count": 2,
+        "articles": [
+          {
+            "title": "‘Only One Scenario Saves Bitcoin’—Crypto Is Suddenly Braced For A Massive $52 Billion Price Earthquake - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxPa05yYkdoVlBaRl9ib2M1djJLblZNNlA2NDNGM3hZWjNJOWtzemVoLXZleGlUQTIyQXNVeWx6aWZ2NXlsVnd3eUtraTNVcGYzc09MLXdyZU5ULXRKVGQxb05OaHJySUNIMmdZYm9TUTQ0bUwtQl9UakZEWC1TOGxNejdnMnRFdGI5UnVzM3B3R2l3STMwazNfaW4wOXFSYkI3NmpaTWdRVjNrLTFxVmU3RVNGQVRvWjlCb3dFLTJ1bjYtOHlycllKU0paUzFwV2hRZjF6YjlESlhGVE1LSlBQVmxVRUdfeWZ3eF84?oc=5"
+          },
+          {
+            "title": "A ‘Big Move’ Is Coming—Wall Street Quietly Reveals A ‘Radical’ Crypto Bombshell As Bitcoin Price Crash Suddenly Accelerates - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMihgJBVV95cUxPX0NnVWhCVjhidmllcTJEMU5YYTZ5ZlhEam1NS0p3ZUtOVTFtZ3RkMEZ3U3VRZEZzcHJLa3VHTjk1eGFFNERrQUFlRGtzVXQwOWhFMVdjSXplM1BhYVUwbGhESUZWQTgybkdpN1l3a0pEVXNpcFhISUJCWlFZeWxOU09aNWIyR09yZEFFX1FhT2R6SURqaW5MZ05oZlh2RThpbHZHX0htY1hxV0I1Q0tkYmtCSklGZlpEd0RYX1Rld2M3RzhHeTVtVW1pZ1RqanhfRTVPMXJtdUlrSU1Ka05jcUNNZmlrN2FOZFdfZ0pONXowMlZaR1E2cWFyU3VUMExjU0VvR3dn?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "macro_regime": {
+    "regime": {
+      "label": "trend",
+      "confidence": 0.6,
+      "transition_probabilities": {}
+    },
+    "note": "Bitcoin · Trend-follower (B2) · régimen: markdown"
+  },
+  "upcoming_events": [],
+  "quality_score": 1.0,
+  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+}
