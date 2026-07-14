@@ -125,6 +125,25 @@ export const signalBridgeService = {
     return validateData(BridgeStatisticsSchema, data, 'bridge statistics');
   },
 
+  /**
+   * Get bridge statistics along with the backend health flag.
+   *
+   * The BFF returns `degraded: true` (with zero-filled metrics) when the
+   * SignalBridge backend is unreachable. This lets the dashboard distinguish a
+   * genuine "all zeros" period from an outage instead of showing fake $0/0.
+   */
+  async getStatisticsWithHealth(
+    days: number = 7,
+  ): Promise<{ statistics: BridgeStatistics; degraded: boolean }> {
+    const { data } = await api.get<BridgeStatistics & { degraded?: boolean }>(
+      `${API_BASE}/statistics?days=${days}`,
+    );
+    const degraded = (data as { degraded?: boolean })?.degraded === true;
+    // Schema strips the transport-only `degraded` flag.
+    const statistics = validateData(BridgeStatisticsSchema, data, 'bridge statistics');
+    return { statistics, degraded };
+  },
+
   // ==========================================================================
   // SIGNAL PROCESSING
   // ==========================================================================
@@ -221,27 +240,31 @@ export const signalBridgeService = {
   // USER RISK LIMITS
   // ==========================================================================
 
+  // NOTE: the user id is resolved SERVER-SIDE by the BFF from the session — the
+  // `me` segment is a placeholder the relay route ignores. The client never
+  // passes (nor can spoof) a user id.
+
   /**
-   * Get current user's risk limits
+   * Get the current user's risk limits
    */
-  async getUserLimits(userId: string): Promise<UserRiskLimits> {
-    const { data } = await api.get<UserRiskLimits>(`${API_BASE}/user/${userId}/limits`);
+  async getUserLimits(): Promise<UserRiskLimits> {
+    const { data } = await api.get<UserRiskLimits>(`${API_BASE}/user/me/limits`);
     return validateData(UserRiskLimitsSchema, data, 'user risk limits');
   },
 
   /**
-   * Update user's risk limits
+   * Update the current user's risk limits
    */
-  async updateUserLimits(userId: string, limits: UserRiskLimitsUpdate): Promise<UserRiskLimits> {
+  async updateUserLimits(limits: UserRiskLimitsUpdate): Promise<UserRiskLimits> {
     const validatedUpdate = validateData(UserRiskLimitsUpdateSchema, limits, 'limits update');
-    const { data } = await api.put<UserRiskLimits>(`${API_BASE}/user/${userId}/limits`, validatedUpdate);
+    const { data } = await api.put<UserRiskLimits>(`${API_BASE}/user/me/limits`, validatedUpdate);
     return validateData(UserRiskLimitsSchema, data, 'updated limits');
   },
 
   /**
-   * Get user trading state
+   * Get the current user's trading state (real per-user risk counters)
    */
-  async getUserState(userId: string): Promise<{
+  async getUserState(): Promise<{
     user_id: string;
     is_trading_allowed: boolean;
     kill_switch_active: boolean;
@@ -256,15 +279,15 @@ export const signalBridgeService = {
       daily_blocked: boolean;
       trade_count_today: number;
       daily_pnl_pct: number;
-    }>(`${API_BASE}/user/${userId}/state`);
+    }>(`${API_BASE}/user/me/state`);
     return data;
   },
 
   /**
-   * Reset user's risk state
+   * Reset the current user's risk state
    */
-  async resetUserState(userId: string): Promise<{ success: boolean; message: string }> {
-    const { data } = await api.post<{ success: boolean; message: string }>(`${API_BASE}/user/${userId}/reset`);
+  async resetUserState(): Promise<{ success: boolean; message: string }> {
+    const { data } = await api.post<{ success: boolean; message: string }>(`${API_BASE}/user/me/reset`);
     return data;
   },
 

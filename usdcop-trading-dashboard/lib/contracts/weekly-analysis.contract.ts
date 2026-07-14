@@ -133,6 +133,49 @@ export interface TechnicalAnalysisOutput {
   };
 }
 
+// Lean per-asset technical schema (Gold/BTC rule-based science stacks). Differs
+// from the rich USD/COP TechnicalAnalysisOutput above: no bias gauge/watch-list;
+// price-anchored trend/signal + concrete scenarios. See asset_analysis_generator.py.
+export interface AssetTechnicalScenario {
+  name: string;
+  direction: 'long' | 'short';
+  trigger: number | null;
+  target: number | null;
+  invalidation: number | null;
+  rationale: string;
+}
+
+export interface AssetTechnicalAnalysis {
+  as_of: string;
+  last_price: number;
+  trend: string;
+  signal: string;
+  indicators: {
+    rsi_14: number | null;
+    sma_20: number | null;
+    sma_50: number | null;
+    macd_line: number | null;
+    macd_signal: number | null;
+    macd_histogram: number | null;
+    atr_14: number | null;
+  };
+  support_resistance: {
+    support: number | null;
+    resistance: number | null;
+    no_trade_zone: { low: number; high: number };
+  };
+  scenarios: AssetTechnicalScenario[];
+}
+
+/** True for the lean Gold/BTC schema (has last_price, lacks the USD/COP current_price). */
+export function isAssetTechnicalAnalysis(
+  ta: TechnicalAnalysisOutput | AssetTechnicalAnalysis | undefined | null,
+): ta is AssetTechnicalAnalysis {
+  return !!ta
+    && (ta as AssetTechnicalAnalysis).last_price != null
+    && (ta as TechnicalAnalysisOutput).current_price == null;
+}
+
 export interface MultiTimeframeAnalysis {
   reports: Record<string, TechnicalAnalysisOutput>;
   alignment_score: number;
@@ -360,8 +403,15 @@ export interface WeeklyViewData {
   macro_charts: Record<string, MacroChartData>;
   news_context: NewsContext;
 
+  // Per-asset identity (multi-asset generator; USD/COP omits these)
+  asset_id?: string;
+  symbol?: string;
+  chart_symbol?: string;
+  display_name?: string;
+
   // Multi-Agent Analysis outputs (Phase 4 — optional, added by LangGraph pipeline)
-  technical_analysis?: TechnicalAnalysisOutput;
+  // Gold/BTC emit the lean AssetTechnicalAnalysis shape instead.
+  technical_analysis?: TechnicalAnalysisOutput | AssetTechnicalAnalysis;
   mtf_analysis?: MultiTimeframeAnalysis;
   news_intelligence?: NewsIntelligenceOutput;
   macro_regime?: MacroRegimeOutput;

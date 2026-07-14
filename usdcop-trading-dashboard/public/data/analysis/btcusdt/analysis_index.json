@@ -3,6 +3,16 @@
   "weeks": [
     {
       "year": 2026,
+      "week": 28,
+      "start": "2026-07-06",
+      "end": "2026-07-12",
+      "sentiment": "bullish",
+      "headline": "Bitcoin · Semana 28 de 2026",
+      "has_weekly": true,
+      "daily_count": 2
+    },
+    {
+      "year": 2026,
       "week": 27,
       "start": "2026-06-29",
       "end": "2026-07-05",

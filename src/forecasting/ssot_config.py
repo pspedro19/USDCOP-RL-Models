@@ -170,6 +170,25 @@ class ForecastingSSOTConfig:
         return self._raw["data_sources"]["macro"].get("lag_days", 1)
 
     # ---------------------------------------------------------------
+    # Asset metadata accessors (per-asset forecasting profiles)
+    # ---------------------------------------------------------------
+
+    def get_asset_meta(self) -> dict[str, Any]:
+        """Return the optional `asset:` metadata block.
+
+        Falls back to USD/COP defaults so configs without an `asset:` block
+        (the legacy usdcop SSOT) keep their exact original behavior.
+        """
+        meta = dict(self._raw.get("asset", {}))
+        meta.setdefault("id", "usdcop")
+        meta.setdefault("display_label", "USD/COP")
+        meta.setdefault("price_label", "Precio USD/COP")
+        meta.setdefault("output_subdir", "")
+        meta.setdefault("price_range", [3000, 6000])
+        meta.setdefault("annualization_days", 252)
+        return meta
+
+    # ---------------------------------------------------------------
     # Walk-forward accessors
     # ---------------------------------------------------------------
 

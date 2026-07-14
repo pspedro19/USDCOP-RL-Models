@@ -7,10 +7,17 @@ import { useAnalysisIndex, useWeeklyView, useUpcomingEvents, useAnalysisAssets, 
 import { DEFAULT_ANALYSIS_ASSET } from '@/lib/contracts/analysis-assets';
 import { normalizeNewsClusters } from '@/lib/analysis/normalize-news';
 import { useAnalysisChatStore } from '@/stores/useAnalysisChatStore';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 import { AssetSelector } from './AssetSelector';
 import { WeekSelector } from './WeekSelector';
 import { WeeklySummaryHeader } from './WeeklySummaryHeader';
+import { SynthesisCard } from './SynthesisCard';
+import { MtfAlignmentCard } from './MtfAlignmentCard';
+import { FxContextCard } from './FxContextCard';
 import { MacroSnapshotBar } from './MacroSnapshotBar';
 import { MacroChartGrid } from './MacroChartGrid';
 import { MacroDetailModal } from './MacroDetailModal';
@@ -19,6 +26,8 @@ import { DailyTimeline } from './DailyTimeline';
 import { UpcomingEventsPanel } from './UpcomingEventsPanel';
 import { TechnicalAnalysisCard } from './TechnicalAnalysisCard';
 import { TradingScenariosTable } from './TradingScenariosTable';
+import { AssetTechnicalCard } from './AssetTechnicalCard';
+import { isAssetTechnicalAnalysis, type TechnicalAnalysisOutput } from '@/lib/contracts/weekly-analysis.contract';
 import { RegimeIndicator } from './RegimeIndicator';
 import { NewsClusterCard } from './NewsClusterCard';
 import { UnifiedMacroChart } from './UnifiedMacroChart';
@@ -27,6 +36,7 @@ import { ReferencesSection } from './ReferencesSection';
 import { MethodologySection } from './MethodologySection';
 
 export function AnalysisPage() {
+  const t = useGmT(ANALYSIS_DICT);
   const [selectedAsset, setSelectedAsset] = useState<string>(DEFAULT_ANALYSIS_ASSET);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
@@ -89,8 +99,8 @@ export function AnalysisPage() {
   return (
     <div className="space-y-6">
       {/* Asset + Week Selectors */}
-      <div className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-4 space-y-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-gray-800/50 pb-3">
+      <div className={`${GM.panel} gm-contain p-4 space-y-4`}>
+        <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[var(--gm-border)] pb-3">
           <AssetSelector
             assets={assetsData?.assets || []}
             selected={selectedAsset}
@@ -107,21 +117,21 @@ export function AnalysisPage() {
 
       {/* Loading state */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
-          <span className="ml-3 text-gray-400">Cargando analisis...</span>
+        <div className="flex items-center justify-center py-12" aria-busy>
+          <RefreshCw className={`w-6 h-6 ${GM.accent} motion-safe:animate-spin`} />
+          <span className={`ml-3 ${GMT.body} ${GM.textSec}`}>{t('loading')}</span>
         </div>
       )}
 
       {/* Error state */}
       {weekError && !isLoading && (
-        <div className="bg-gray-900/40 rounded-xl border border-amber-500/20 p-6 text-center">
-          <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-3" />
-          <p className="text-gray-400 text-sm mb-1">
-            Sin datos de analisis para {assetsData?.assets?.find(a => a.asset_id === selectedAsset)?.display_name || selectedAsset} en esta semana
+        <div className={`${GM.panel} gm-contain border-[rgba(245,158,11,.25)] p-6 text-center`}>
+          <AlertCircle className={`w-8 h-8 ${GM.warn} mx-auto mb-3`} />
+          <p className={`${GMT.body} ${GM.textSec} mb-1`}>
+            {t('noDataFor')} {assetsData?.assets?.find(a => a.asset_id === selectedAsset)?.display_name || selectedAsset} {t('inThisWeek')}
           </p>
-          <p className="text-gray-600 text-xs">
-            Ejecuta: <code className="bg-gray-800 rounded px-1.5 py-0.5 text-cyan-400">
+          <p className={`${GMT.meta} ${GM.textMuted}`}>
+            {t('runCmd')} <code className={`${GM.panelInner} ${GMT.mono} ${GM.accent} rounded px-1.5 py-0.5`}>
               python scripts/pipeline/generate_weekly_analysis.py --asset {selectedAsset} --week {selectedYear}-W{String(selectedWeek).padStart(2, '0')}
             </code>
           </p>
@@ -138,29 +148,55 @@ export function AnalysisPage() {
             exit={{ opacity: 0 }}
             className="space-y-6"
           >
-            {/* 1. Weekly Summary (with quality score) */}
-            {weekData.weekly_summary && (
-              <WeeklySummaryHeader
-                summary={weekData.weekly_summary}
-                qualityScore={weekData.quality_score}
-                newsArticleCount={weekData.news_intelligence?.total_articles || weekData.news_context?.article_count}
-                clusterCount={weekData.news_intelligence?.clusters?.length}
-                sourceBreakdown={weekData.news_context?.source_breakdown}
-              />
+            {/* 1. Weekly Summary (with quality score). When a richer LangGraph
+                 synthesis exists (USD/COP rich weeks), suppress the header's older
+                 markdown body and render SynthesisCard below instead. */}
+            {(() => {
+              const hasSynthesis =
+                typeof weekData.synthesis_markdown === 'string' && weekData.synthesis_markdown.trim().length > 0;
+              return (
+                <>
+                  {weekData.weekly_summary && (
+                    <WeeklySummaryHeader
+                      summary={weekData.weekly_summary}
+                      qualityScore={weekData.quality_score}
+                      newsArticleCount={weekData.news_intelligence?.total_articles || weekData.news_context?.article_count}
+                      clusterCount={weekData.news_intelligence?.clusters?.length}
+                      sourceBreakdown={weekData.news_context?.source_breakdown}
+                      hideMarkdown={hasSynthesis}
+                    />
+                  )}
+                  {hasSynthesis && <SynthesisCard markdown={weekData.synthesis_markdown} />}
+                </>
+              );
+            })()}
+
+            {/* 2. Technical Analysis + Trading Scenarios.
+                 USD/COP → rich LangGraph schema; Gold/BTC → lean asset schema. */}
+            {weekData.technical_analysis && (
+              isAssetTechnicalAnalysis(weekData.technical_analysis) ? (
+                <AssetTechnicalCard
+                  ta={weekData.technical_analysis}
+                  symbol={weekData.chart_symbol ?? weekData.symbol}
+                />
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <TechnicalAnalysisCard ta={weekData.technical_analysis as TechnicalAnalysisOutput} />
+                  {(weekData.technical_analysis as TechnicalAnalysisOutput).scenarios?.length > 0 && (
+                    <TradingScenariosTable
+                      scenarios={(weekData.technical_analysis as TechnicalAnalysisOutput).scenarios}
+                      noTradeZone={(weekData.technical_analysis as TechnicalAnalysisOutput).support_resistance?.no_trade_zone}
+                    />
+                  )}
+                </div>
+              )
             )}
 
-            {/* 2. Technical Analysis + Trading Scenarios (from LangGraph) */}
-            {weekData.technical_analysis && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TechnicalAnalysisCard ta={weekData.technical_analysis} />
-                {weekData.technical_analysis.scenarios?.length > 0 && (
-                  <TradingScenariosTable
-                    scenarios={weekData.technical_analysis.scenarios}
-                    noTradeZone={weekData.technical_analysis.support_resistance?.no_trade_zone}
-                  />
-                )}
-              </div>
-            )}
+            {/* 2b. Multi-timeframe alignment + FX context (rich USD/COP-week
+                 LangGraph fields; Gold/BTC and stale weeks omit them → each card
+                 self-guards and renders nothing). */}
+            {weekData.mtf_analysis && <MtfAlignmentCard mtf={weekData.mtf_analysis} />}
+            {weekData.fx_context && <FxContextCard fx={weekData.fx_context} />}
 
             {/* 3. Regime + Signal Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -177,9 +213,10 @@ export function AnalysisPage() {
             {/* 4. Macro Snapshot Bar */}
             {weekData.macro_snapshots && Object.keys(weekData.macro_snapshots).length > 0 && (
               <div>
-                <h2 className="text-base font-semibold text-white mb-3">Indicadores Macro</h2>
+                <h2 className={`${GMT.h2} ${GM.textStrong} mb-3`}>{t('macroTitle')}</h2>
                 <MacroSnapshotBar
                   snapshots={weekData.macro_snapshots}
+                  charts={weekData.macro_charts}
                   onVariableClick={handleChartClick}
                 />
               </div>

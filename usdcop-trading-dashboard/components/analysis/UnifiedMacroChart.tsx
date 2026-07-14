@@ -4,26 +4,32 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { MacroChartData, MacroChartPoint } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT, CHART } from './gm-analysis';
 
 interface UnifiedMacroChartProps {
   charts: Record<string, MacroChartData>;
   onVariableClick?: (key: string) => void;
 }
 
+/** Per-series colors are chart-library props (lightweight-charts) — CHART palette, not Tailwind. */
 const VARIABLE_CONFIG: Record<string, { label: string; color: string }> = {
-  dxy:      { label: 'DXY',   color: '#3B82F6' },
-  vix:      { label: 'VIX',   color: '#EF4444' },
-  wti:      { label: 'WTI',   color: '#F59E0B' },
-  embi_col: { label: 'EMBI',  color: '#8B5CF6' },
-  ust10y:   { label: '10Y',   color: '#10B981' },
-  ibr:      { label: 'IBR',   color: '#EC4899' },
-  gold:     { label: 'Oro',   color: '#D4AF37' },
-  brent:    { label: 'Brent', color: '#6366F1' },
+  dxy:      { label: 'DXY',   color: CHART.info },
+  vix:      { label: 'VIX',   color: CHART.neg },
+  wti:      { label: 'WTI',   color: CHART.warn },
+  embi_col: { label: 'EMBI',  color: CHART.violet },
+  ust10y:   { label: '10Y',   color: CHART.pos },
+  ibr:      { label: 'IBR',   color: CHART.pink },
+  gold:     { label: 'Oro',   color: CHART.gold },
+  brent:    { label: 'Brent', color: CHART.indigo },
 };
 
 const DEFAULT_SELECTED = ['dxy', 'vix', 'wti'];
 
 export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChartProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReturnType<typeof import('lightweight-charts').createChart> | null>(null);
   const seriesRef = useRef<Map<string, unknown>>(new Map());
@@ -94,21 +100,21 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
         const chart = createChart(chartContainerRef.current, {
           layout: {
             background: { type: ColorType.Solid, color: 'transparent' },
-            textColor: '#9CA3AF',
+            textColor: CHART.text,
             fontSize: 11,
           },
           grid: {
-            vertLines: { color: 'rgba(75, 85, 99, 0.15)' },
-            horzLines: { color: 'rgba(75, 85, 99, 0.15)' },
+            vertLines: { color: CHART.grid },
+            horzLines: { color: CHART.grid },
           },
           crosshair: {
             mode: 0, // Normal
           },
           rightPriceScale: {
-            borderColor: 'rgba(75, 85, 99, 0.3)',
+            borderColor: CHART.border,
           },
           timeScale: {
-            borderColor: 'rgba(75, 85, 99, 0.3)',
+            borderColor: CHART.border,
             timeVisible: false,
           },
           width: chartContainerRef.current.clientWidth,
@@ -183,26 +189,26 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-5"
+      className={`${GM.panel} gm-contain p-5`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <LineChart className="w-4 h-4 text-cyan-400" />
-          Indicadores Macro
+        <h3 className={`${GMT.panelTitle} ${GM.textStrong} flex items-center gap-2`}>
+          <LineChart className={`w-4 h-4 ${GM.accent}`} />
+          {t('macroTitle')}
         </h3>
 
         {/* Normalize toggle */}
         <button
           onClick={() => setNormalized(!normalized)}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-300 transition-colors"
+          className={`flex items-center gap-1.5 ${GMT.meta} ${GM.textSec} hover:text-[var(--gm-text)] transition-colors duration-[var(--gm-dur-fast)] ${GM.focus} rounded`}
         >
           {normalized ? (
-            <ToggleRight className="w-4 h-4 text-cyan-400" />
+            <ToggleRight className={`w-4 h-4 ${GM.accent}`} />
           ) : (
             <ToggleLeft className="w-4 h-4" />
           )}
-          {normalized ? 'Normalizado' : 'Absoluto'}
+          {normalized ? t('normalized') : t('absolute')}
         </button>
       </div>
 
@@ -217,11 +223,12 @@ export function UnifiedMacroChart({ charts, onVariableClick }: UnifiedMacroChart
             <button
               key={varKey}
               onClick={() => toggleVariable(varKey)}
+              aria-pressed={isSelected}
               className={`
-                px-2.5 py-1 rounded-full text-xs font-medium transition-all
+                px-2.5 py-1 rounded-full ${GMT.meta} font-semibold transition-colors duration-[var(--gm-dur-fast)] ${GM.focus}
                 ${isSelected
-                  ? 'border-2 text-white'
-                  : 'border border-gray-700 text-gray-500 hover:text-gray-400 hover:border-gray-600'
+                  ? 'border-2'
+                  : `border border-[rgba(148,163,184,.16)] ${GM.textMuted} hover:text-[var(--gm-text-sec)] hover:border-[rgba(148,163,184,.3)]`
                 }
               `}
               style={isSelected ? {

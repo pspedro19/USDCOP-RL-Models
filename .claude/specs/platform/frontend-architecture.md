@@ -8,8 +8,18 @@
 > page data flows) lives in `dashboard-integration.md` — do not duplicate schemas here.
 >
 > Contract: CTR-FE-ARCH-001
-> Version: 1.0.0
-> Date: 2026-07-05
+> Version: 1.1.0
+> Date: 2026-07-05 (rev. 2026-07-10)
+>
+> **⚠️ Rediseño GlobalMarkets Terminal (2026-07-10, CTR-GM-UI-001 + CTR-FE-BE-001):** el
+> chrome (`GlobalNavbar`) y las páginas descritas aquí fueron migrados al terminal GM —
+> shell `components/gm/TerminalShell`, design system `components/gm/*` + `lib/ui/gm-tokens.ts`,
+> cliente `lib/api/gm-client.ts` y BFF envelope `lib/api/{envelope,relay}.ts`. Las versiones
+> pre-GM viven archivadas en `/legacy/*` (admin-only). El as-built de la migración, estado
+> por vista y gaps: **`gm-terminal-migration.md`**; el contrato FE↔BE:
+> **`frontend-backend-contract.md`** + `usdcop-trading-dashboard/docs/api/openapi.yaml`.
+> Las secciones de BFF/data-flow/contratos de este documento siguen vigentes; las de
+> chrome/routing visual léelas como legacy.
 > Status: IMPLEMENTED (execution/live-trading surfaces PARTIALLY REALIZED — see §11)
 > Cross-refs: `dashboard-integration.md` (data contract), `registry-lifecycle.md` (dynamic strategy
 > registry + replay), `strategy-contract.md` (StrategySelector, EXIT_REASONS), `authentication.md`
@@ -252,7 +262,7 @@ deliberate simplicity choice consistent with the "thin read layer" model.
 | `forecasting/` | Model-zoo panels, rankings, forward/consensus views |
 | `analysis/` | Weekly analysis, macro overlays, chat widget, asset selector (`AssetSelector.tsx`) |
 | `execution/` | SignalBridge OMS, exchange, kill-switch UIs |
-| `charts/` | Candlestick + metric chart wrappers (lightweight-charts/recharts) |
+| `charts/` | Candlestick + metric chart wrappers (lightweight-charts/recharts). **`TradingChartWithSignals` observes its container via `ResizeObserver`** (not just `window` resize) so the canvas re-fits when the hamburger collapses/expands the sidebar — a CSS-driven container width change that never fires a window resize (fix 2026-07-11; mirrors `UnifiedMacroChart`). |
 | `trading/`, `mlops/`, `monitoring/`, `operations/`, `alerts/` | Domain panels |
 | `navigation/`, `landing/`, `common/`, `providers/`, `ui/` | Shell, layout, shared primitives, context providers, design-system components |
 

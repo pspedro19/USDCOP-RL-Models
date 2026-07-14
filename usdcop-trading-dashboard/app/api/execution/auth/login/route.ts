@@ -18,8 +18,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { encode } from 'next-auth/jwt';
 
 import { verifyCaptcha } from '@/lib/auth/captcha';
-
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
+import { effectivePermissions } from '@/lib/auth/rbac-resolver';
+import { SIGNALBRIDGE_BACKEND_URL as BACKEND_URL } from '@/lib/services/execution/bff';
 const SESSION_MAX_AGE = 24 * 60 * 60; // 24h — matches next-auth-options session.maxAge
 
 // NextAuth v4 (HTTP) session cookie name. Must match middleware's `cookieName`.
@@ -101,6 +101,10 @@ export async function POST(request: NextRequest) {
       const role = (claims.role as string) || (await fetchRole(accessToken));
 
       // Shape mirrors next-auth-options jwt() callback (id/role are read by middleware).
+      // Bake the effective RBAC permission set so the edge middleware authorizes
+      // without a DB hit (CTR-RBAC-001 / migration 056); failure ⇒ static fallback.
+      let permissions: string[] | undefined;
+      try { permissions = await effectivePermissions(sub, role); } catch { /* static fallback */ }
       const sessionToken = await encode({
         secret,
         maxAge: SESSION_MAX_AGE,
@@ -111,6 +115,7 @@ export async function POST(request: NextRequest) {
           username: email,
           name: email,
           role,
+          permissions,
         },
       });
 

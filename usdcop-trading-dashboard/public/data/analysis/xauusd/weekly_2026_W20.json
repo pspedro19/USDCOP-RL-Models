@@ -9,18 +9,18 @@
   "week_end": "2026-05-17",
   "weekly_summary": {
     "headline": "Oro (Gold) · Semana 20 de 2026",
-    "markdown": "### Oro (Gold) — Semana 20 (2026-05-11 → 2026-05-17)\n\nEl cierre semanal de XAU/USD fue **4566.17 USD/oz**, un cambio de **-3.57%** en la semana (rango 4476.90–4773.50). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 4566.17. RSI(14)=40 (neutral). Soporte 4476.90, resistencia 4773.50.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CNBC, GoldSilver, BullionVault.",
+    "markdown": "### Oro (Gold) — Semana 20 (2026-05-11 → 2026-05-17)\n\nEl cierre semanal de XAU/USD fue **4540.15 USD/oz**, un cambio de **-3.73%** en la semana (rango 4512.33–4773.50). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 4540.15. RSI(14)=39 (neutral). Soporte 4503.72, resistencia 4834.32.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CNBC, GoldSilver, BullionVault.",
     "sentiment": "bearish",
     "ohlcv": {
-      "open": 4735.0406,
+      "open": 4715.3775,
       "high": 4773.4977,
-      "low": 4476.8992,
-      "close": 4566.1737,
-      "change_pct": -3.5749
+      "low": 4512.3292,
+      "close": 4540.1468,
+      "change_pct": -3.7344
     },
     "themes": [
       "bajista",
-      "RSI 40.11"
+      "RSI 39.35"
     ]
   },
   "daily_entries": [
@@ -29,8 +29,26 @@
       "iso_year": 2026,
       "iso_week": 20,
       "day_of_week": 0,
-      "headline": "Oro (Gold) 2026-05-11: cierre 4715.31 (-0.43%)",
-      "summary_markdown": "## XAU/USD — 2026-05-11\n\nCierre **4715.31 USD/oz** (-0.43%). Rango 4641.66–4773.50.",
+      "headline": "Oro (Gold) 2026-05-11: cierre 4735.46 (+0.41%)",
+      "summary_markdown": "## XAU/USD — 2026-05-11\n\nCierre **4735.46 USD/oz** (+0.41%). Rango 4649.22–4746.76.",
+      "usdcop_close": 4735.4606,
+      "usdcop_change_pct": 0.4069,
+      "usdcop_high": 4746.7603,
+      "usdcop_low": 4649.2166,
+      "h1_signal": {},
+      "h5_status": {
+        "direction": "HOLD",
+        "note": "Estrategia en efectivo (sin posición)"
+      },
+      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+    },
+    {
+      "analysis_date": "2026-05-12",
+      "iso_year": 2026,
+      "iso_week": 20,
+      "day_of_week": 1,
+      "headline": "Oro (Gold) 2026-05-12: cierre 4715.31 (-0.43%)",
+      "summary_markdown": "## XAU/USD — 2026-05-12\n\nCierre **4715.31 USD/oz** (-0.43%). Rango 4641.66–4773.50.",
       "usdcop_close": 4715.309,
       "usdcop_change_pct": -0.4255,
       "usdcop_high": 4773.4977,
@@ -40,15 +58,15 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+      "generated_at": "2026-07-12T01:11:11.942294+00:00"
     },
     {
-      "analysis_date": "2026-05-12",
+      "analysis_date": "2026-05-13",
       "iso_year": 2026,
       "iso_week": 20,
-      "day_of_week": 1,
-      "headline": "Oro (Gold) 2026-05-12: cierre 4688.61 (-0.57%)",
-      "summary_markdown": "## XAU/USD — 2026-05-12\n\nCierre **4688.61 USD/oz** (-0.57%). Rango 4669.47–4726.44.",
+      "day_of_week": 2,
+      "headline": "Oro (Gold) 2026-05-13: cierre 4688.61 (-0.57%)",
+      "summary_markdown": "## XAU/USD — 2026-05-13\n\nCierre **4688.61 USD/oz** (-0.57%). Rango 4669.47–4726.44.",
       "usdcop_close": 4688.6101,
       "usdcop_change_pct": -0.5662,
       "usdcop_high": 4726.4375,
@@ -58,15 +76,15 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+      "generated_at": "2026-07-12T01:11:11.942294+00:00"
     },
     {
-      "analysis_date": "2026-05-13",
+      "analysis_date": "2026-05-14",
       "iso_year": 2026,
       "iso_week": 20,
-      "day_of_week": 2,
-      "headline": "Oro (Gold) 2026-05-13: cierre 4651.91 (-0.78%)",
-      "summary_markdown": "## XAU/USD — 2026-05-13\n\nCierre **4651.91 USD/oz** (-0.78%). Rango 4645.00–4717.48.",
+      "day_of_week": 3,
+      "headline": "Oro (Gold) 2026-05-14: cierre 4651.91 (-0.78%)",
+      "summary_markdown": "## XAU/USD — 2026-05-14\n\nCierre **4651.91 USD/oz** (-0.78%). Rango 4645.00–4717.48.",
       "usdcop_close": 4651.9124,
       "usdcop_change_pct": -0.7827,
       "usdcop_high": 4717.4781,
@@ -76,15 +94,15 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+      "generated_at": "2026-07-12T01:11:11.942294+00:00"
     },
     {
-      "analysis_date": "2026-05-14",
+      "analysis_date": "2026-05-15",
       "iso_year": 2026,
       "iso_week": 20,
-      "day_of_week": 3,
-      "headline": "Oro (Gold) 2026-05-14: cierre 4540.15 (-2.40%)",
-      "summary_markdown": "## XAU/USD — 2026-05-14\n\nCierre **4540.15 USD/oz** (-2.40%). Rango 4512.33–4664.83.",
+      "day_of_week": 4,
+      "headline": "Oro (Gold) 2026-05-15: cierre 4540.15 (-2.40%)",
+      "summary_markdown": "## XAU/USD — 2026-05-15\n\nCierre **4540.15 USD/oz** (-2.40%). Rango 4512.33–4664.83.",
       "usdcop_close": 4540.1468,
       "usdcop_change_pct": -2.4026,
       "usdcop_high": 4664.8318,
@@ -94,65 +112,5959 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
-    },
-    {
-      "analysis_date": "2026-05-15",
-      "iso_year": 2026,
-      "iso_week": 20,
-      "day_of_week": 4,
-      "headline": "Oro (Gold) 2026-05-15: cierre 4537.73 (-0.05%)",
-      "summary_markdown": "## XAU/USD — 2026-05-15\n\nCierre **4537.73 USD/oz** (-0.05%). Rango 4537.58–4540.30.",
-      "usdcop_close": 4537.7255,
-      "usdcop_change_pct": -0.0533,
-      "usdcop_high": 4540.2951,
-      "usdcop_low": 4537.585,
-      "h1_signal": {},
-      "h5_status": {
-        "direction": "HOLD",
-        "note": "Estrategia en efectivo (sin posición)"
-      },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
-    },
-    {
-      "analysis_date": "2026-05-16",
-      "iso_year": 2026,
-      "iso_week": 20,
-      "day_of_week": 5,
-      "headline": "Oro (Gold) 2026-05-16: cierre 4537.72 (-0.00%)",
-      "summary_markdown": "## XAU/USD — 2026-05-16\n\nCierre **4537.72 USD/oz** (-0.00%). Rango 4537.41–4537.96.",
-      "usdcop_close": 4537.7153,
-      "usdcop_change_pct": -0.0002,
-      "usdcop_high": 4537.964,
-      "usdcop_low": 4537.411,
-      "h1_signal": {},
-      "h5_status": {
-        "direction": "HOLD",
-        "note": "Estrategia en efectivo (sin posición)"
-      },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
-    },
-    {
-      "analysis_date": "2026-05-17",
-      "iso_year": 2026,
-      "iso_week": 20,
-      "day_of_week": 6,
-      "headline": "Oro (Gold) 2026-05-17: cierre 4566.17 (+0.63%)",
-      "summary_markdown": "## XAU/USD — 2026-05-17\n\nCierre **4566.17 USD/oz** (+0.63%). Rango 4476.90–4584.42.",
-      "usdcop_close": 4566.1737,
-      "usdcop_change_pct": 0.6272,
-      "usdcop_high": 4584.4221,
-      "usdcop_low": 4476.8992,
-      "h1_signal": {},
-      "h5_status": {
-        "direction": "HOLD",
-        "note": "Estrategia en efectivo (sin posición)"
-      },
-      "generated_at": "2026-07-05T20:50:47.028033+00:00"
+      "generated_at": "2026-07-12T01:11:11.942294+00:00"
     }
   ],
-  "macro_snapshots": {},
-  "macro_charts": {},
+  "macro_snapshots": {
+    "gold": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "gold",
+      "variable_name": "Oro",
+      "value": 5088.54,
+      "sma_5": 5154.428,
+      "sma_10": 5166.874,
+      "sma_20": 5123.9555,
+      "sma_50": 4936.304,
+      "bollinger_upper_20": 5319.616588,
+      "bollinger_lower_20": 4928.294412,
+      "bollinger_width_20": 0.076371,
+      "rsi_14": 50.628659,
+      "macd_line": 61.970696,
+      "macd_signal": 80.38633,
+      "macd_histogram": -18.415635,
+      "roc_5": 0.19375,
+      "roc_20": 0.837049,
+      "z_score_20": -0.362,
+      "z_score_60": 0.7871,
+      "z_score_252": null,
+      "trend": "below_sma20",
+      "signal": "neutral",
+      "chart_data": null,
+      "png_url": null
+    },
+    "dxy": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "dxy",
+      "variable_name": "DXY (Dollar Index)",
+      "value": 99.74,
+      "sma_5": 99.194,
+      "sma_10": 98.91,
+      "sma_20": 98.228,
+      "sma_50": 98.02144,
+      "bollinger_upper_20": 99.885137,
+      "bollinger_lower_20": 96.570863,
+      "bollinger_width_20": 0.033741,
+      "rsi_14": 66.713281,
+      "macd_line": 0.46034,
+      "macd_signal": 0.294105,
+      "macd_histogram": 0.166235,
+      "roc_5": 0.422876,
+      "roc_20": 2.898999,
+      "z_score_20": 1.8248,
+      "z_score_60": 2.1447,
+      "z_score_252": null,
+      "trend": "above_sma20",
+      "signal": "neutral",
+      "chart_data": null,
+      "png_url": null
+    },
+    "ust10y": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "ust10y",
+      "variable_name": "US Treasury 10Y",
+      "value": 4.265,
+      "sma_5": 4.1746,
+      "sma_10": 4.1172,
+      "sma_20": 4.0844,
+      "sma_50": 4.15594,
+      "bollinger_upper_20": 4.219252,
+      "bollinger_lower_20": 3.949548,
+      "bollinger_width_20": 0.066033,
+      "rsi_14": 67.179138,
+      "macd_line": 0.01183,
+      "macd_signal": -0.014261,
+      "macd_histogram": 0.026091,
+      "roc_5": 2.870236,
+      "roc_20": 5.15286,
+      "z_score_20": 2.6785,
+      "z_score_60": 1.4242,
+      "z_score_252": null,
+      "trend": "above_sma20",
+      "signal": "neutral",
+      "chart_data": null,
+      "png_url": null
+    },
+    "vix": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "vix",
+      "variable_name": "VIX (Volatilidad)",
+      "value": 27.27,
+      "sma_5": 26.284,
+      "sma_10": 24.119,
+      "sma_20": 21.967,
+      "sma_50": 18.8806,
+      "bollinger_upper_20": 27.941881,
+      "bollinger_lower_20": 15.992119,
+      "bollinger_width_20": 0.543987,
+      "rsi_14": 61.879959,
+      "macd_line": 2.069756,
+      "macd_signal": 1.603262,
+      "macd_histogram": 0.466495,
+      "roc_5": 14.821053,
+      "roc_20": 30.979827,
+      "z_score_20": 1.7751,
+      "z_score_60": 2.5664,
+      "z_score_252": null,
+      "trend": "above_sma20",
+      "signal": "neutral",
+      "chart_data": null,
+      "png_url": null
+    },
+    "wti": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "wti",
+      "variable_name": "WTI Petroleo",
+      "value": 97.57,
+      "sma_5": 90.788,
+      "sma_10": 82.242,
+      "sma_20": 73.583,
+      "sma_50": 66.2642,
+      "bollinger_upper_20": 95.873965,
+      "bollinger_lower_20": 51.292035,
+      "bollinger_width_20": 0.605873,
+      "rsi_14": 75.394517,
+      "macd_line": 7.454304,
+      "macd_signal": 5.003721,
+      "macd_histogram": 2.450583,
+      "roc_5": 20.441921,
+      "roc_20": 55.49004,
+      "z_score_20": 2.1522,
+      "z_score_60": 3.5565,
+      "z_score_252": null,
+      "trend": "above_sma20",
+      "signal": "overbought",
+      "chart_data": null,
+      "png_url": null
+    },
+    "brent": {
+      "snapshot_date": "2026-03-12",
+      "variable_key": "brent",
+      "variable_name": "Brent",
+      "value": 101.75,
+      "sma_5": 94.636,
+      "sma_10": 87.161,
+      "sma_20": 78.52,
+      "sma_50": 70.7726,
+      "bollinger_upper_20": 99.965805,
+      "bollinger_lower_20": 57.074195,
+      "bollinger_width_20": 0.546251,
+      "rsi_14": 75.5348,
+      "macd_line": 7.897883,
+      "macd_signal": 5.870781,
+      "macd_histogram": 2.027102,
+      "roc_5": 19.131249,
+      "roc_20": 50.69609,
+      "z_score_20": 2.1664,
+      "z_score_60": 2.3033,
+      "z_score_252": null,
+      "trend": "above_sma20",
+      "signal": "overbought",
+      "chart_data": null,
+      "png_url": null
+    }
+  },
+  "macro_charts": {
+    "gold": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-09-22",
+          "value": 3761.6,
+          "sma20": 3622.4,
+          "bb_upper": 3838.693477,
+          "bb_lower": 3406.106523,
+          "rsi": 73.579279
+        },
+        {
+          "date": "2025-09-23",
+          "value": 3801.8,
+          "sma20": 3642.245,
+          "bb_upper": 3847.630476,
+          "bb_lower": 3436.859524,
+          "rsi": 76.339717
+        },
+        {
+          "date": "2025-09-24",
+          "value": 3753.4,
+          "sma20": 3658.91,
+          "bb_upper": 3842.413983,
+          "bb_lower": 3475.406017,
+          "rsi": 67.231929
+        },
+        {
+          "date": "2025-09-25",
+          "value": 3756.5,
+          "sma20": 3674.95,
+          "bb_upper": 3831.745427,
+          "bb_lower": 3518.154573,
+          "rsi": 67.499386
+        },
+        {
+          "date": "2025-09-26",
+          "value": 3793.9,
+          "sma20": 3690.93,
+          "bb_upper": 3826.359319,
+          "bb_lower": 3555.500681,
+          "rsi": 70.615524
+        },
+        {
+          "date": "2025-09-29",
+          "value": 3855.2,
+          "sma20": 3707.885,
+          "bb_upper": 3836.240105,
+          "bb_lower": 3579.529895,
+          "rsi": 74.868702
+        },
+        {
+          "date": "2025-09-30",
+          "value": 3873.2,
+          "sma20": 3721.935,
+          "bb_upper": 3857.856408,
+          "bb_lower": 3586.013592,
+          "rsi": 75.968646
+        },
+        {
+          "date": "2025-10-01",
+          "value": 3897.5,
+          "sma20": 3735.035,
+          "bb_upper": 3884.89694,
+          "bb_lower": 3585.17306,
+          "rsi": 77.406322
+        },
+        {
+          "date": "2025-10-02",
+          "value": 3868.1,
+          "sma20": 3748.105,
+          "bb_upper": 3896.505087,
+          "bb_lower": 3599.704913,
+          "rsi": 71.808915
+        },
+        {
+          "date": "2025-10-03",
+          "value": 3908.9,
+          "sma20": 3760.885,
+          "bb_upper": 3918.183065,
+          "bb_lower": 3603.586935,
+          "rsi": 74.558406
+        },
+        {
+          "date": "2025-10-06",
+          "value": 3976.3,
+          "sma20": 3775.83,
+          "bb_upper": 3953.976132,
+          "bb_lower": 3597.683868,
+          "rsi": 78.32009
+        },
+        {
+          "date": "2025-10-07",
+          "value": 4004.4,
+          "sma20": 3791.94,
+          "bb_upper": 3990.417832,
+          "bb_lower": 3593.462168,
+          "rsi": 79.669714
+        },
+        {
+          "date": "2025-10-08",
+          "value": 4070.5,
+          "sma20": 3811.365,
+          "bb_upper": 4037.165578,
+          "bb_lower": 3585.564422,
+          "rsi": 82.43909
+        },
+        {
+          "date": "2025-10-09",
+          "value": 3972.6,
+          "sma20": 3826.315,
+          "bb_upper": 4053.240973,
+          "bb_lower": 3599.389027,
+          "rsi": 67.724443
+        },
+        {
+          "date": "2025-10-10",
+          "value": 4000.4,
+          "sma20": 3842.015,
+          "bb_upper": 4071.482455,
+          "bb_lower": 3612.547545,
+          "rsi": 69.39498
+        },
+        {
+          "date": "2025-10-14",
+          "value": 4163.4,
+          "sma20": 3864.235,
+          "bb_upper": 4125.599736,
+          "bb_lower": 3602.870264,
+          "rsi": 76.933572
+        },
+        {
+          "date": "2025-10-15",
+          "value": 4201.6,
+          "sma20": 3888.06,
+          "bb_upper": 4179.491504,
+          "bb_lower": 3596.628496,
+          "rsi": 78.283609
+        },
+        {
+          "date": "2025-10-16",
+          "value": 4304.6,
+          "sma20": 3917.4,
+          "bb_upper": 4249.653518,
+          "bb_lower": 3585.146482,
+          "rsi": 81.438205
+        },
+        {
+          "date": "2025-10-17",
+          "value": 4213.3,
+          "sma20": 3944.15,
+          "bb_upper": 4281.207488,
+          "bb_lower": 3607.092512,
+          "rsi": 71.520625
+        },
+        {
+          "date": "2025-10-20",
+          "value": 4359.4,
+          "sma20": 3976.83,
+          "bb_upper": 4340.780805,
+          "bb_lower": 3612.879195,
+          "rsi": 76.460716
+        },
+        {
+          "date": "2025-10-21",
+          "value": 4109.1,
+          "sma20": 3994.205,
+          "bb_upper": 4348.44631,
+          "bb_lower": 3639.96369,
+          "rsi": 57.923175
+        },
+        {
+          "date": "2025-10-22",
+          "value": 4065.4,
+          "sma20": 4007.385,
+          "bb_upper": 4351.480721,
+          "bb_lower": 3663.289279,
+          "rsi": 55.39788
+        },
+        {
+          "date": "2025-10-23",
+          "value": 4145.6,
+          "sma20": 4026.995,
+          "bb_upper": 4355.297692,
+          "bb_lower": 3698.692308,
+          "rsi": 58.936196
+        },
+        {
+          "date": "2025-10-24",
+          "value": 4137.8,
+          "sma20": 4046.06,
+          "bb_upper": 4352.900026,
+          "bb_lower": 3739.219974,
+          "rsi": 58.450533
+        },
+        {
+          "date": "2025-10-27",
+          "value": 4005.5,
+          "sma20": 4056.64,
+          "bb_upper": 4341.798106,
+          "bb_lower": 3771.481894,
+          "rsi": 50.803454
+        },
+        {
+          "date": "2025-10-28",
+          "value": 3968.7,
+          "sma20": 4062.315,
+          "bb_upper": 4335.476851,
+          "bb_lower": 3789.153149,
+          "rsi": 48.887532
+        },
+        {
+          "date": "2025-10-29",
+          "value": 3986.2,
+          "sma20": 4067.965,
+          "bb_upper": 4329.681467,
+          "bb_lower": 3806.248533,
+          "rsi": 49.855985
+        },
+        {
+          "date": "2025-10-30",
+          "value": 4015.9,
+          "sma20": 4073.885,
+          "bb_upper": 4325.053894,
+          "bb_lower": 3822.716106,
+          "rsi": 51.53436
+        },
+        {
+          "date": "2025-10-31",
+          "value": 3996.5,
+          "sma20": 4080.305,
+          "bb_upper": 4316.205703,
+          "bb_lower": 3844.404297,
+          "rsi": 50.348892
+        },
+        {
+          "date": "2025-11-04",
+          "value": 3960.5,
+          "sma20": 4082.885,
+          "bb_upper": 4312.269457,
+          "bb_lower": 3853.500543,
+          "rsi": 48.136059
+        },
+        {
+          "date": "2025-11-05",
+          "value": 3992.9,
+          "sma20": 4083.715,
+          "bb_upper": 4311.666445,
+          "bb_lower": 3855.763555,
+          "rsi": 50.255077
+        },
+        {
+          "date": "2025-11-06",
+          "value": 3991.0,
+          "sma20": 4083.045,
+          "bb_upper": 4312.001559,
+          "bb_lower": 3854.088441,
+          "rsi": 50.12574
+        },
+        {
+          "date": "2025-11-07",
+          "value": 4009.8,
+          "sma20": 4080.01,
+          "bb_upper": 4311.150112,
+          "bb_lower": 3848.869888,
+          "rsi": 51.456988
+        },
+        {
+          "date": "2025-11-10",
+          "value": 4122.0,
+          "sma20": 4087.48,
+          "bb_upper": 4313.859766,
+          "bb_lower": 3861.100234,
+          "rsi": 58.5653
+        },
+        {
+          "date": "2025-11-12",
+          "value": 4213.6,
+          "sma20": 4098.14,
+          "bb_upper": 4327.176944,
+          "bb_lower": 3869.103056,
+          "rsi": 63.291322
+        },
+        {
+          "date": "2025-11-13",
+          "value": 4194.5,
+          "sma20": 4099.695,
+          "bb_upper": 4330.895186,
+          "bb_lower": 3868.494814,
+          "rsi": 61.710747
+        },
+        {
+          "date": "2025-11-14",
+          "value": 4094.2,
+          "sma20": 4094.325,
+          "bb_upper": 4320.747816,
+          "bb_lower": 3867.902184,
+          "rsi": 54.073952
+        },
+        {
+          "date": "2025-11-18",
+          "value": 4101.7,
+          "sma20": 4084.18,
+          "bb_upper": 4289.176025,
+          "bb_lower": 3879.183975,
+          "rsi": 54.527109
+        },
+        {
+          "date": "2025-11-19",
+          "value": 4118.2,
+          "sma20": 4079.425,
+          "bb_upper": 4276.478311,
+          "bb_lower": 3882.371689,
+          "rsi": 55.565863
+        },
+        {
+          "date": "2025-11-20",
+          "value": 4095.7,
+          "sma20": 4066.24,
+          "bb_upper": 4216.274681,
+          "bb_lower": 3916.205319,
+          "rsi": 53.76234
+        },
+        {
+          "date": "2025-11-21",
+          "value": 4116.0,
+          "sma20": 4066.585,
+          "bb_upper": 4217.04345,
+          "bb_lower": 3916.12655,
+          "rsi": 55.175929
+        },
+        {
+          "date": "2025-11-24",
+          "value": 4113.1,
+          "sma20": 4068.97,
+          "bb_upper": 4220.783835,
+          "bb_lower": 3917.156165,
+          "rsi": 54.917628
+        },
+        {
+          "date": "2025-11-25",
+          "value": 4159.8,
+          "sma20": 4069.68,
+          "bb_upper": 4223.04561,
+          "bb_lower": 3916.31439,
+          "rsi": 58.302842
+        },
+        {
+          "date": "2025-11-26",
+          "value": 4202.3,
+          "sma20": 4072.905,
+          "bb_upper": 4234.36383,
+          "bb_lower": 3911.44617,
+          "rsi": 61.16111
+        },
+        {
+          "date": "2025-11-28",
+          "value": 4254.9,
+          "sma20": 4085.375,
+          "bb_upper": 4261.9046,
+          "bb_lower": 3908.8454,
+          "rsi": 64.412544
+        },
+        {
+          "date": "2025-12-01",
+          "value": 4274.8,
+          "sma20": 4100.68,
+          "bb_upper": 4286.90428,
+          "bb_lower": 3914.45572,
+          "rsi": 65.586336
+        },
+        {
+          "date": "2025-12-02",
+          "value": 4220.8,
+          "sma20": 4112.41,
+          "bb_upper": 4297.865492,
+          "bb_lower": 3926.954508,
+          "rsi": 59.820412
+        },
+        {
+          "date": "2025-12-03",
+          "value": 4232.5,
+          "sma20": 4123.24,
+          "bb_upper": 4310.178679,
+          "bb_lower": 3936.301321,
+          "rsi": 60.628055
+        },
+        {
+          "date": "2025-12-04",
+          "value": 4243.0,
+          "sma20": 4135.565,
+          "bb_upper": 4319.940522,
+          "bb_lower": 3951.189478,
+          "rsi": 61.378351
+        },
+        {
+          "date": "2025-12-05",
+          "value": 4243.0,
+          "sma20": 4149.69,
+          "bb_upper": 4321.081877,
+          "bb_lower": 3978.298123,
+          "rsi": 61.378351
+        },
+        {
+          "date": "2025-12-08",
+          "value": 4217.7,
+          "sma20": 4160.93,
+          "bb_upper": 4318.65849,
+          "bb_lower": 4003.20151,
+          "rsi": 58.275015
+        },
+        {
+          "date": "2025-12-09",
+          "value": 4236.2,
+          "sma20": 4173.19,
+          "bb_upper": 4313.314657,
+          "bb_lower": 4033.065343,
+          "rsi": 59.872694
+        },
+        {
+          "date": "2025-12-10",
+          "value": 4224.7,
+          "sma20": 4183.935,
+          "bb_upper": 4303.78698,
+          "bb_lower": 4064.08302,
+          "rsi": 58.376318
+        },
+        {
+          "date": "2025-12-11",
+          "value": 4313.0,
+          "sma20": 4193.485,
+          "bb_upper": 4322.186411,
+          "bb_lower": 4064.783589,
+          "rsi": 65.505087
+        },
+        {
+          "date": "2025-12-12",
+          "value": 4328.3,
+          "sma20": 4199.22,
+          "bb_upper": 4340.593924,
+          "bb_lower": 4057.846076,
+          "rsi": 66.57336
+        },
+        {
+          "date": "2025-12-15",
+          "value": 4335.2,
+          "sma20": 4206.255,
+          "bb_upper": 4359.494283,
+          "bb_lower": 4053.015717,
+          "rsi": 67.068672
+        },
+        {
+          "date": "2025-12-16",
+          "value": 4332.3,
+          "sma20": 4218.16,
+          "bb_upper": 4371.722904,
+          "bb_lower": 4064.597096,
+          "rsi": 66.621848
+        },
+        {
+          "date": "2025-12-17",
+          "value": 4373.9,
+          "sma20": 4231.77,
+          "bb_upper": 4389.817589,
+          "bb_lower": 4073.722411,
+          "rsi": 69.73654
+        },
+        {
+          "date": "2025-12-18",
+          "value": 4364.5,
+          "sma20": 4244.085,
+          "bb_upper": 4403.195732,
+          "bb_lower": 4084.974268,
+          "rsi": 68.188148
+        },
+        {
+          "date": "2025-12-19",
+          "value": 4387.3,
+          "sma20": 4258.665,
+          "bb_upper": 4414.114043,
+          "bb_lower": 4103.215957,
+          "rsi": 69.932027
+        },
+        {
+          "date": "2025-12-22",
+          "value": 4469.4,
+          "sma20": 4276.335,
+          "bb_upper": 4442.848294,
+          "bb_lower": 4109.821706,
+          "rsi": 75.203288
+        },
+        {
+          "date": "2025-12-23",
+          "value": 4505.7,
+          "sma20": 4295.965,
+          "bb_upper": 4473.102961,
+          "bb_lower": 4118.827039,
+          "rsi": 77.113729
+        },
+        {
+          "date": "2025-12-24",
+          "value": 4502.8,
+          "sma20": 4313.115,
+          "bb_upper": 4500.32966,
+          "bb_lower": 4125.90034,
+          "rsi": 76.605946
+        },
+        {
+          "date": "2025-12-25",
+          "value": 4527.5,
+          "sma20": 4329.375,
+          "bb_upper": 4531.186723,
+          "bb_lower": 4127.563277,
+          "rsi": 77.938443
+        },
+        {
+          "date": "2025-12-26",
+          "value": 4552.7,
+          "sma20": 4344.265,
+          "bb_upper": 4564.960784,
+          "bb_lower": 4123.569216,
+          "rsi": 79.237782
+        },
+        {
+          "date": "2025-12-29",
+          "value": 4327.0,
+          "sma20": 4346.875,
+          "bb_upper": 4565.447458,
+          "bb_lower": 4128.302542,
+          "rsi": 50.532031
+        },
+        {
+          "date": "2025-12-30",
+          "value": 4386.3,
+          "sma20": 4355.15,
+          "bb_upper": 4566.412637,
+          "bb_lower": 4143.887363,
+          "rsi": 55.131291
+        },
+        {
+          "date": "2025-12-31",
+          "value": 4341.1,
+          "sma20": 4360.58,
+          "bb_upper": 4564.40551,
+          "bb_lower": 4156.75449,
+          "rsi": 51.222076
+        },
+        {
+          "date": "2026-01-01",
+          "value": 4361.55,
+          "sma20": 4366.5075,
+          "bb_upper": 4563.076761,
+          "bb_lower": 4169.938239,
+          "rsi": 52.85101
+        },
+        {
+          "date": "2026-01-02",
+          "value": 4329.6,
+          "sma20": 4370.8375,
+          "bb_upper": 4560.00962,
+          "bb_lower": 4181.66538,
+          "rsi": 50.039404
+        },
+        {
+          "date": "2026-01-05",
+          "value": 4451.5,
+          "sma20": 4382.5275,
+          "bb_upper": 4560.994683,
+          "bb_lower": 4204.060317,
+          "rsi": 59.001111
+        },
+        {
+          "date": "2026-01-06",
+          "value": 4496.1,
+          "sma20": 4395.5225,
+          "bb_upper": 4567.197922,
+          "bb_lower": 4223.847078,
+          "rsi": 61.707514
+        },
+        {
+          "date": "2026-01-07",
+          "value": 4462.5,
+          "sma20": 4407.4125,
+          "bb_upper": 4562.228823,
+          "bb_lower": 4252.596177,
+          "rsi": 58.570692
+        },
+        {
+          "date": "2026-01-08",
+          "value": 4460.7,
+          "sma20": 4414.7975,
+          "bb_upper": 4564.914483,
+          "bb_lower": 4264.680517,
+          "rsi": 58.399423
+        },
+        {
+          "date": "2026-01-09",
+          "value": 4500.9,
+          "sma20": 4423.4275,
+          "bb_upper": 4572.503204,
+          "bb_lower": 4274.351796,
+          "rsi": 61.132917
+        },
+        {
+          "date": "2026-01-12",
+          "value": 4614.7,
+          "sma20": 4437.4025,
+          "bb_upper": 4602.334542,
+          "bb_lower": 4272.470458,
+          "rsi": 67.619341
+        },
+        {
+          "date": "2026-01-13",
+          "value": 4599.1,
+          "sma20": 4450.7425,
+          "bb_upper": 4622.529185,
+          "bb_lower": 4278.955815,
+          "rsi": 65.993451
+        },
+        {
+          "date": "2026-01-14",
+          "value": 4635.7,
+          "sma20": 4463.8325,
+          "bb_upper": 4649.537035,
+          "bb_lower": 4278.127965,
+          "rsi": 67.941097
+        },
+        {
+          "date": "2026-01-15",
+          "value": 4623.7,
+          "sma20": 4476.7925,
+          "bb_upper": 4669.022732,
+          "bb_lower": 4284.562268,
+          "rsi": 66.594399
+        },
+        {
+          "date": "2026-01-16",
+          "value": 4595.4,
+          "sma20": 4487.1975,
+          "bb_upper": 4681.442635,
+          "bb_lower": 4292.952365,
+          "rsi": 63.402608
+        },
+        {
+          "date": "2026-01-18",
+          "value": 4680.64,
+          "sma20": 4497.7595,
+          "bb_upper": 4709.196486,
+          "bb_lower": 4286.322514,
+          "rsi": 68.326755
+        },
+        {
+          "date": "2026-01-19",
+          "value": 4671.15,
+          "sma20": 4506.032,
+          "bb_upper": 4730.602935,
+          "bb_lower": 4281.461065,
+          "rsi": 67.242007
+        },
+        {
+          "date": "2026-01-20",
+          "value": 4765.8,
+          "sma20": 4519.182,
+          "bb_upper": 4770.646129,
+          "bb_lower": 4267.717871,
+          "rsi": 72.014173
+        },
+        {
+          "date": "2026-01-21",
+          "value": 4837.5,
+          "sma20": 4534.682,
+          "bb_upper": 4821.953023,
+          "bb_lower": 4247.410977,
+          "rsi": 74.986862
+        },
+        {
+          "date": "2026-01-22",
+          "value": 4827.4,
+          "sma20": 4548.417,
+          "bb_upper": 4862.808277,
+          "bb_lower": 4234.025723,
+          "rsi": 73.7977
+        },
+        {
+          "date": "2026-01-23",
+          "value": 4979.7,
+          "sma20": 4581.052,
+          "bb_upper": 4930.304931,
+          "bb_lower": 4231.799069,
+          "rsi": 79.163593
+        },
+        {
+          "date": "2026-01-27",
+          "value": 5101.4,
+          "sma20": 4616.807,
+          "bb_upper": 5021.072593,
+          "bb_lower": 4212.541407,
+          "rsi": 82.28542
+        },
+        {
+          "date": "2026-01-28",
+          "value": 5321.0,
+          "sma20": 4665.802,
+          "bb_upper": 5153.452814,
+          "bb_lower": 4178.151186,
+          "rsi": 86.279968
+        },
+        {
+          "date": "2026-01-29",
+          "value": 5354.8,
+          "sma20": 4715.4645,
+          "bb_upper": 5267.159754,
+          "bb_lower": 4163.769246,
+          "rsi": 86.774306
+        },
+        {
+          "date": "2026-01-30",
+          "value": 4745.1,
+          "sma20": 4736.2395,
+          "bb_upper": 5258.770476,
+          "bb_lower": 4213.708524,
+          "rsi": 51.045875
+        },
+        {
+          "date": "2026-02-02",
+          "value": 4652.6,
+          "sma20": 4746.2945,
+          "bb_upper": 5254.052322,
+          "bb_lower": 4238.536678,
+          "rsi": 47.828374
+        },
+        {
+          "date": "2026-02-03",
+          "value": 4935.0,
+          "sma20": 4768.2395,
+          "bb_upper": 5268.733425,
+          "bb_lower": 4267.745575,
+          "rsi": 56.784244
+        },
+        {
+          "date": "2026-02-04",
+          "value": 4950.8,
+          "sma20": 4792.6545,
+          "bb_upper": 5278.535287,
+          "bb_lower": 4306.773713,
+          "rsi": 57.226652
+        },
+        {
+          "date": "2026-02-05",
+          "value": 4889.5,
+          "sma20": 4814.0945,
+          "bb_upper": 5276.780675,
+          "bb_lower": 4351.408325,
+          "rsi": 54.8793
+        },
+        {
+          "date": "2026-02-06",
+          "value": 4979.8,
+          "sma20": 4838.0395,
+          "bb_upper": 5282.627566,
+          "bb_lower": 4393.451434,
+          "rsi": 57.635996
+        },
+        {
+          "date": "2026-02-09",
+          "value": 5079.4,
+          "sma20": 4861.2745,
+          "bb_upper": 5305.317245,
+          "bb_lower": 4417.231755,
+          "rsi": 60.502416
+        },
+        {
+          "date": "2026-02-10",
+          "value": 5031.0,
+          "sma20": 4882.8695,
+          "bb_upper": 5315.677585,
+          "bb_lower": 4450.061415,
+          "rsi": 58.43335
+        },
+        {
+          "date": "2026-02-11",
+          "value": 5098.5,
+          "sma20": 4906.0095,
+          "bb_upper": 5332.930746,
+          "bb_lower": 4479.088254,
+          "rsi": 60.464011
+        },
+        {
+          "date": "2026-02-12",
+          "value": 4948.4,
+          "sma20": 4922.2445,
+          "bb_upper": 5329.217606,
+          "bb_lower": 4515.271394,
+          "rsi": 54.131134
+        },
+        {
+          "date": "2026-02-13",
+          "value": 5046.3,
+          "sma20": 4944.7895,
+          "bb_upper": 5325.980383,
+          "bb_lower": 4563.598617,
+          "rsi": 57.274385
+        },
+        {
+          "date": "2026-02-15",
+          "value": 5039.06,
+          "sma20": 4962.7105,
+          "bb_upper": 5325.814113,
+          "bb_lower": 4599.606887,
+          "rsi": 56.963501
+        },
+        {
+          "date": "2026-02-16",
+          "value": 5010.11,
+          "sma20": 4979.6585,
+          "bb_upper": 5317.509255,
+          "bb_lower": 4641.807745,
+          "rsi": 55.662449
+        },
+        {
+          "date": "2026-02-17",
+          "value": 4905.9,
+          "sma20": 4986.6635,
+          "bb_upper": 5312.067594,
+          "bb_lower": 4661.259406,
+          "rsi": 51.13492
+        },
+        {
+          "date": "2026-02-18",
+          "value": 5009.5,
+          "sma20": 4995.2635,
+          "bb_upper": 5313.455793,
+          "bb_lower": 4677.071207,
+          "rsi": 55.049362
+        },
+        {
+          "date": "2026-02-19",
+          "value": 4997.4,
+          "sma20": 5003.7635,
+          "bb_upper": 5312.507111,
+          "bb_lower": 4695.019889,
+          "rsi": 54.500226
+        },
+        {
+          "date": "2026-02-20",
+          "value": 5080.9,
+          "sma20": 5008.8235,
+          "bb_upper": 5319.136891,
+          "bb_lower": 4698.510109,
+          "rsi": 57.640477
+        },
+        {
+          "date": "2026-02-23",
+          "value": 5207.5,
+          "sma20": 5014.1285,
+          "bb_upper": 5334.069459,
+          "bb_lower": 4694.187541,
+          "rsi": 61.930541
+        },
+        {
+          "date": "2026-02-24",
+          "value": 5157.8,
+          "sma20": 5005.9685,
+          "bb_upper": 5301.586752,
+          "bb_lower": 4710.350248,
+          "rsi": 59.387715
+        },
+        {
+          "date": "2026-02-25",
+          "value": 5208.0,
+          "sma20": 4998.6285,
+          "bb_upper": 5265.089212,
+          "bb_lower": 4732.167788,
+          "rsi": 61.124017
+        },
+        {
+          "date": "2026-02-26",
+          "value": 5194.2,
+          "sma20": 5021.0835,
+          "bb_upper": 5273.627962,
+          "bb_lower": 4768.539038,
+          "rsi": 60.360045
+        },
+        {
+          "date": "2026-02-27",
+          "value": 5247.9,
+          "sma20": 5050.8485,
+          "bb_upper": 5259.098377,
+          "bb_lower": 4842.598623,
+          "rsi": 62.332953
+        },
+        {
+          "date": "2026-03-02",
+          "value": 5311.6,
+          "sma20": 5069.6785,
+          "bb_upper": 5299.599855,
+          "bb_lower": 4839.757145,
+          "rsi": 64.584676
+        },
+        {
+          "date": "2026-03-03",
+          "value": 5123.7,
+          "sma20": 5078.3235,
+          "bb_upper": 5302.649447,
+          "bb_lower": 4853.997553,
+          "rsi": 54.277391
+        },
+        {
+          "date": "2026-03-04",
+          "value": 5134.7,
+          "sma20": 5090.5835,
+          "bb_upper": 5298.491411,
+          "bb_lower": 4882.675589,
+          "rsi": 54.732849
+        },
+        {
+          "date": "2026-03-05",
+          "value": 5078.7,
+          "sma20": 5095.5285,
+          "bb_upper": 5297.274712,
+          "bb_lower": 4893.782288,
+          "rsi": 51.898506
+        },
+        {
+          "date": "2026-03-06",
+          "value": 5158.7,
+          "sma20": 5099.4935,
+          "bb_upper": 5302.925924,
+          "bb_lower": 4896.061076,
+          "rsi": 55.447938
+        },
+        {
+          "date": "2026-03-09",
+          "value": 5103.7,
+          "sma20": 5103.1285,
+          "bb_upper": 5304.11896,
+          "bb_lower": 4902.13804,
+          "rsi": 52.57556
+        },
+        {
+          "date": "2026-03-10",
+          "value": 5242.1,
+          "sma20": 5110.3085,
+          "bb_upper": 5320.187719,
+          "bb_lower": 4900.429281,
+          "rsi": 58.413582
+        },
+        {
+          "date": "2026-03-11",
+          "value": 5179.1,
+          "sma20": 5121.8435,
+          "bb_upper": 5319.885524,
+          "bb_lower": 4923.801476,
+          "rsi": 55.089141
+        },
+        {
+          "date": "2026-03-12",
+          "value": 5088.54,
+          "sma20": 5123.9555,
+          "bb_upper": 5319.616588,
+          "bb_lower": 4928.294412,
+          "rsi": 50.628659
+        }
+      ]
+    },
+    "dxy": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-09-23",
+          "value": 96.893,
+          "sma20": 97.44285,
+          "bb_upper": 98.535952,
+          "bb_lower": 96.349748,
+          "rsi": 43.342667
+        },
+        {
+          "date": "2025-09-24",
+          "value": 97.518,
+          "sma20": 97.4124,
+          "bb_upper": 98.460579,
+          "bb_lower": 96.364221,
+          "rsi": 50.58229
+        },
+        {
+          "date": "2025-09-25",
+          "value": 98.215,
+          "sma20": 97.43625,
+          "bb_upper": 98.533535,
+          "bb_lower": 96.338965,
+          "rsi": 57.157007
+        },
+        {
+          "date": "2025-09-26",
+          "value": 97.824,
+          "sma20": 97.44295,
+          "bb_upper": 98.54796,
+          "bb_lower": 96.33794,
+          "rsi": 52.904766
+        },
+        {
+          "date": "2025-09-29",
+          "value": 97.584,
+          "sma20": 97.43765,
+          "bb_upper": 98.53888,
+          "bb_lower": 96.33642,
+          "rsi": 50.424985
+        },
+        {
+          "date": "2025-09-30",
+          "value": 97.451,
+          "sma20": 97.39285,
+          "bb_upper": 98.412326,
+          "bb_lower": 96.373374,
+          "rsi": 49.052816
+        },
+        {
+          "date": "2025-10-01",
+          "value": 97.381,
+          "sma20": 97.35775,
+          "bb_upper": 98.326858,
+          "bb_lower": 96.388642,
+          "rsi": 48.307724
+        },
+        {
+          "date": "2025-10-02",
+          "value": 97.54,
+          "sma20": 97.31955,
+          "bb_upper": 98.191845,
+          "bb_lower": 96.447255,
+          "rsi": 50.159596
+        },
+        {
+          "date": "2025-10-03",
+          "value": 97.415,
+          "sma20": 97.3039,
+          "bb_upper": 98.157349,
+          "bb_lower": 96.450451,
+          "rsi": 48.683005
+        },
+        {
+          "date": "2025-10-06",
+          "value": 97.807,
+          "sma20": 97.3424,
+          "bb_upper": 98.213503,
+          "bb_lower": 96.471297,
+          "rsi": 53.323508
+        },
+        {
+          "date": "2025-10-07",
+          "value": 98.284,
+          "sma20": 97.38825,
+          "bb_upper": 98.351377,
+          "bb_lower": 96.425123,
+          "rsi": 58.268696
+        },
+        {
+          "date": "2025-10-08",
+          "value": 98.64,
+          "sma20": 97.4524,
+          "bb_upper": 98.558895,
+          "bb_lower": 96.345905,
+          "rsi": 61.543399
+        },
+        {
+          "date": "2025-10-09",
+          "value": 99.285,
+          "sma20": 97.54025,
+          "bb_upper": 98.905535,
+          "bb_lower": 96.174965,
+          "rsi": 66.649675
+        },
+        {
+          "date": "2025-10-10",
+          "value": 98.732,
+          "sma20": 97.60005,
+          "bb_upper": 99.060786,
+          "bb_lower": 96.139314,
+          "rsi": 59.370917
+        },
+        {
+          "date": "2025-10-13",
+          "value": 99.03,
+          "sma20": 97.67915,
+          "bb_upper": 99.26441,
+          "bb_lower": 96.09389,
+          "rsi": 61.792418
+        },
+        {
+          "date": "2025-10-14",
+          "value": 98.81,
+          "sma20": 97.80725,
+          "bb_upper": 99.321693,
+          "bb_lower": 96.292807,
+          "rsi": 58.996865
+        },
+        {
+          "date": "2025-10-15",
+          "value": 98.541,
+          "sma20": 97.9083,
+          "bb_upper": 99.332718,
+          "bb_lower": 96.483882,
+          "rsi": 55.679869
+        },
+        {
+          "date": "2025-10-16",
+          "value": 98.092,
+          "sma20": 97.96435,
+          "bb_upper": 99.323557,
+          "bb_lower": 96.605143,
+          "rsi": 50.569168
+        },
+        {
+          "date": "2025-10-17",
+          "value": 98.192,
+          "sma20": 98.01045,
+          "bb_upper": 99.334415,
+          "bb_lower": 96.686485,
+          "rsi": 51.633951
+        },
+        {
+          "date": "2025-10-20",
+          "value": 98.355,
+          "sma20": 98.07945,
+          "bb_upper": 99.321687,
+          "bb_lower": 96.837213,
+          "rsi": 53.39616
+        },
+        {
+          "date": "2025-10-21",
+          "value": 98.711,
+          "sma20": 98.17035,
+          "bb_upper": 99.314176,
+          "bb_lower": 97.026524,
+          "rsi": 57.074713
+        },
+        {
+          "date": "2025-10-22",
+          "value": 98.673,
+          "sma20": 98.2281,
+          "bb_upper": 99.350783,
+          "bb_lower": 97.105417,
+          "rsi": 56.561504
+        },
+        {
+          "date": "2025-10-23",
+          "value": 98.729,
+          "sma20": 98.2538,
+          "bb_upper": 99.397444,
+          "bb_lower": 97.110156,
+          "rsi": 57.172672
+        },
+        {
+          "date": "2025-10-24",
+          "value": 98.747,
+          "sma20": 98.29995,
+          "bb_upper": 99.444985,
+          "bb_lower": 97.154915,
+          "rsi": 57.380243
+        },
+        {
+          "date": "2025-10-27",
+          "value": 98.563,
+          "sma20": 98.3489,
+          "bb_upper": 99.450192,
+          "bb_lower": 97.247608,
+          "rsi": 54.473793
+        },
+        {
+          "date": "2025-10-28",
+          "value": 98.453,
+          "sma20": 98.399,
+          "bb_upper": 99.420629,
+          "bb_lower": 97.377371,
+          "rsi": 52.753465
+        },
+        {
+          "date": "2025-10-29",
+          "value": 99.022,
+          "sma20": 98.48105,
+          "bb_upper": 99.422941,
+          "bb_lower": 97.539159,
+          "rsi": 59.821815
+        },
+        {
+          "date": "2025-10-30",
+          "value": 99.348,
+          "sma20": 98.57145,
+          "bb_upper": 99.481217,
+          "bb_lower": 97.661683,
+          "rsi": 63.217156
+        },
+        {
+          "date": "2025-10-31",
+          "value": 99.63,
+          "sma20": 98.6822,
+          "bb_upper": 99.539663,
+          "bb_lower": 97.824737,
+          "rsi": 65.901536
+        },
+        {
+          "date": "2025-11-03",
+          "value": 99.707,
+          "sma20": 98.7772,
+          "bb_upper": 99.646678,
+          "bb_lower": 97.907722,
+          "rsi": 66.617908
+        },
+        {
+          "date": "2025-11-04",
+          "value": 100.07,
+          "sma20": 98.8665,
+          "bb_upper": 99.871344,
+          "bb_lower": 97.861656,
+          "rsi": 69.835297
+        },
+        {
+          "date": "2025-11-05",
+          "value": 100.059,
+          "sma20": 98.93745,
+          "bb_upper": 100.061606,
+          "bb_lower": 97.813294,
+          "rsi": 69.616333
+        },
+        {
+          "date": "2025-11-06",
+          "value": 99.585,
+          "sma20": 98.95245,
+          "bb_upper": 100.102464,
+          "bb_lower": 97.802436,
+          "rsi": 60.773678
+        },
+        {
+          "date": "2025-11-07",
+          "value": 99.471,
+          "sma20": 98.9894,
+          "bb_upper": 100.156075,
+          "bb_lower": 97.822725,
+          "rsi": 58.837968
+        },
+        {
+          "date": "2025-11-10",
+          "value": 99.462,
+          "sma20": 99.011,
+          "bb_upper": 100.195738,
+          "bb_lower": 97.826262,
+          "rsi": 58.679065
+        },
+        {
+          "date": "2025-11-11",
+          "value": 99.316,
+          "sma20": 99.0363,
+          "bb_upper": 100.224394,
+          "bb_lower": 97.848206,
+          "rsi": 56.035262
+        },
+        {
+          "date": "2025-11-12",
+          "value": 99.374,
+          "sma20": 99.07795,
+          "bb_upper": 100.251991,
+          "bb_lower": 97.903909,
+          "rsi": 56.866679
+        },
+        {
+          "date": "2025-11-13",
+          "value": 99.05,
+          "sma20": 99.12585,
+          "bb_upper": 100.209793,
+          "bb_lower": 98.041907,
+          "rsi": 51.057972
+        },
+        {
+          "date": "2025-11-14",
+          "value": 99.199,
+          "sma20": 99.1762,
+          "bb_upper": 100.171914,
+          "bb_lower": 98.180486,
+          "rsi": 53.414632
+        },
+        {
+          "date": "2025-11-17",
+          "value": 99.488,
+          "sma20": 99.23285,
+          "bb_upper": 100.161925,
+          "bb_lower": 98.303775,
+          "rsi": 57.671982
+        },
+        {
+          "date": "2025-11-18",
+          "value": 99.449,
+          "sma20": 99.26975,
+          "bb_upper": 100.1712,
+          "bb_lower": 98.3683,
+          "rsi": 56.916061
+        },
+        {
+          "date": "2025-11-19",
+          "value": 100.151,
+          "sma20": 99.34365,
+          "bb_upper": 100.278993,
+          "bb_lower": 98.408307,
+          "rsi": 65.64495
+        },
+        {
+          "date": "2025-11-20",
+          "value": 100.09,
+          "sma20": 99.4117,
+          "bb_upper": 100.356259,
+          "bb_lower": 98.467141,
+          "rsi": 64.423529
+        },
+        {
+          "date": "2025-11-21",
+          "value": 100.113,
+          "sma20": 99.48,
+          "bb_upper": 100.419963,
+          "bb_lower": 98.540037,
+          "rsi": 64.690301
+        },
+        {
+          "date": "2025-11-24",
+          "value": 100.072,
+          "sma20": 99.55545,
+          "bb_upper": 100.428763,
+          "bb_lower": 98.682137,
+          "rsi": 63.772284
+        },
+        {
+          "date": "2025-11-25",
+          "value": 99.589,
+          "sma20": 99.61225,
+          "bb_upper": 100.32423,
+          "bb_lower": 98.90027,
+          "rsi": 54.042658
+        },
+        {
+          "date": "2025-11-26",
+          "value": 99.522,
+          "sma20": 99.63725,
+          "bb_upper": 100.29783,
+          "bb_lower": 98.97667,
+          "rsi": 52.838382
+        },
+        {
+          "date": "2025-11-27",
+          "value": 99.522,
+          "sma20": 99.64595,
+          "bb_upper": 100.295555,
+          "bb_lower": 98.996345,
+          "rsi": 52.838382
+        },
+        {
+          "date": "2025-11-28",
+          "value": 99.408,
+          "sma20": 99.63485,
+          "bb_upper": 100.2927,
+          "bb_lower": 98.977,
+          "rsi": 50.612773
+        },
+        {
+          "date": "2025-12-01",
+          "value": 99.362,
+          "sma20": 99.6176,
+          "bb_upper": 100.285002,
+          "bb_lower": 98.950198,
+          "rsi": 49.703028
+        },
+        {
+          "date": "2025-12-02",
+          "value": 99.296,
+          "sma20": 99.5789,
+          "bb_upper": 100.226346,
+          "bb_lower": 98.931454,
+          "rsi": 48.359904
+        },
+        {
+          "date": "2025-12-03",
+          "value": 98.796,
+          "sma20": 99.51575,
+          "bb_upper": 100.20837,
+          "bb_lower": 98.82313,
+          "rsi": 39.624094
+        },
+        {
+          "date": "2025-12-04",
+          "value": 98.953,
+          "sma20": 99.48415,
+          "bb_upper": 100.217707,
+          "bb_lower": 98.750593,
+          "rsi": 43.099821
+        },
+        {
+          "date": "2025-12-05",
+          "value": 98.648,
+          "sma20": 99.443,
+          "bb_upper": 100.262224,
+          "bb_lower": 98.623776,
+          "rsi": 38.466907
+        },
+        {
+          "date": "2025-12-08",
+          "value": 98.745,
+          "sma20": 99.40715,
+          "bb_upper": 100.280852,
+          "bb_lower": 98.533448,
+          "rsi": 40.651862
+        },
+        {
+          "date": "2025-12-09",
+          "value": 98.848,
+          "sma20": 99.38375,
+          "bb_upper": 100.29041,
+          "bb_lower": 98.47709,
+          "rsi": 42.967683
+        },
+        {
+          "date": "2025-12-10",
+          "value": 98.426,
+          "sma20": 99.33635,
+          "bb_upper": 100.334591,
+          "bb_lower": 98.338109,
+          "rsi": 36.656525
+        },
+        {
+          "date": "2025-12-11",
+          "value": 98.344,
+          "sma20": 99.30105,
+          "bb_upper": 100.383664,
+          "bb_lower": 98.218436,
+          "rsi": 35.563433
+        },
+        {
+          "date": "2025-12-12",
+          "value": 98.394,
+          "sma20": 99.2608,
+          "bb_upper": 100.413205,
+          "bb_lower": 98.108395,
+          "rsi": 36.800966
+        },
+        {
+          "date": "2025-12-15",
+          "value": 98.168,
+          "sma20": 99.1948,
+          "bb_upper": 100.435417,
+          "bb_lower": 97.954183,
+          "rsi": 33.654715
+        },
+        {
+          "date": "2025-12-16",
+          "value": 97.794,
+          "sma20": 99.11205,
+          "bb_upper": 100.487283,
+          "bb_lower": 97.736817,
+          "rsi": 29.204937
+        },
+        {
+          "date": "2025-12-17",
+          "value": 98.002,
+          "sma20": 99.0046,
+          "bb_upper": 100.374141,
+          "bb_lower": 97.635059,
+          "rsi": 34.399799
+        },
+        {
+          "date": "2025-12-18",
+          "value": 98.088,
+          "sma20": 98.9045,
+          "bb_upper": 100.234152,
+          "bb_lower": 97.574848,
+          "rsi": 36.475348
+        },
+        {
+          "date": "2025-12-19",
+          "value": 98.252,
+          "sma20": 98.81145,
+          "bb_upper": 100.046925,
+          "bb_lower": 97.575975,
+          "rsi": 40.351138
+        },
+        {
+          "date": "2025-12-22",
+          "value": 97.954,
+          "sma20": 98.70555,
+          "bb_upper": 99.850446,
+          "bb_lower": 97.560654,
+          "rsi": 36.047372
+        },
+        {
+          "date": "2025-12-23",
+          "value": 97.613,
+          "sma20": 98.60675,
+          "bb_upper": 99.770527,
+          "bb_lower": 97.442973,
+          "rsi": 31.859831
+        },
+        {
+          "date": "2025-12-24",
+          "value": 97.681,
+          "sma20": 98.5147,
+          "bb_upper": 99.665504,
+          "bb_lower": 97.363896,
+          "rsi": 33.518373
+        },
+        {
+          "date": "2025-12-26",
+          "value": 97.698,
+          "sma20": 98.4235,
+          "bb_upper": 99.528737,
+          "bb_lower": 97.318263,
+          "rsi": 33.951198
+        },
+        {
+          "date": "2025-12-29",
+          "value": 97.732,
+          "sma20": 98.3397,
+          "bb_upper": 99.38624,
+          "bb_lower": 97.29316,
+          "rsi": 34.86456
+        },
+        {
+          "date": "2025-12-30",
+          "value": 97.955,
+          "sma20": 98.26935,
+          "bb_upper": 99.215938,
+          "bb_lower": 97.322762,
+          "rsi": 40.660608
+        },
+        {
+          "date": "2025-12-31",
+          "value": 98.047,
+          "sma20": 98.2069,
+          "bb_upper": 99.031227,
+          "bb_lower": 97.382573,
+          "rsi": 42.917372
+        },
+        {
+          "date": "2026-01-02",
+          "value": 98.158,
+          "sma20": 98.175,
+          "bb_upper": 98.953791,
+          "bb_lower": 97.396209,
+          "rsi": 45.605311
+        },
+        {
+          "date": "2026-01-05",
+          "value": 97.982,
+          "sma20": 98.12645,
+          "bb_upper": 98.821777,
+          "bb_lower": 97.431123,
+          "rsi": 42.211262
+        },
+        {
+          "date": "2026-01-06",
+          "value": 98.317,
+          "sma20": 98.1099,
+          "bb_upper": 98.769629,
+          "bb_lower": 97.450171,
+          "rsi": 49.860216
+        },
+        {
+          "date": "2026-01-07",
+          "value": 98.422,
+          "sma20": 98.09375,
+          "bb_upper": 98.704496,
+          "bb_lower": 97.483004,
+          "rsi": 52.004529
+        },
+        {
+          "date": "2026-01-08",
+          "value": 98.688,
+          "sma20": 98.08575,
+          "bb_upper": 98.65986,
+          "bb_lower": 97.51164,
+          "rsi": 57.019354
+        },
+        {
+          "date": "2026-01-09",
+          "value": 98.89,
+          "sma20": 98.10895,
+          "bb_upper": 98.767478,
+          "bb_lower": 97.450422,
+          "rsi": 60.402909
+        },
+        {
+          "date": "2026-01-12",
+          "value": 98.626,
+          "sma20": 98.12305,
+          "bb_upper": 98.812457,
+          "bb_lower": 97.433643,
+          "rsi": 54.377872
+        },
+        {
+          "date": "2026-01-13",
+          "value": 98.909,
+          "sma20": 98.1488,
+          "bb_upper": 98.911355,
+          "bb_lower": 97.386245,
+          "rsi": 59.088846
+        },
+        {
+          "date": "2026-01-14",
+          "value": 98.907,
+          "sma20": 98.18575,
+          "bb_upper": 99.016971,
+          "bb_lower": 97.354529,
+          "rsi": 59.042445
+        },
+        {
+          "date": "2026-01-15",
+          "value": 99.122,
+          "sma20": 98.25215,
+          "bb_upper": 99.156535,
+          "bb_lower": 97.347765,
+          "rsi": 62.455634
+        },
+        {
+          "date": "2026-01-16",
+          "value": 99.201,
+          "sma20": 98.3121,
+          "bb_upper": 99.297536,
+          "bb_lower": 97.326664,
+          "rsi": 63.654178
+        },
+        {
+          "date": "2026-01-19",
+          "value": 99.201,
+          "sma20": 98.36775,
+          "bb_upper": 99.419739,
+          "bb_lower": 97.315761,
+          "rsi": 63.654178
+        },
+        {
+          "date": "2026-01-20",
+          "value": 98.439,
+          "sma20": 98.3771,
+          "bb_upper": 99.428132,
+          "bb_lower": 97.326068,
+          "rsi": 46.904086
+        },
+        {
+          "date": "2026-01-21",
+          "value": 98.563,
+          "sma20": 98.40755,
+          "bb_upper": 99.442957,
+          "bb_lower": 97.372143,
+          "rsi": 49.244666
+        },
+        {
+          "date": "2026-01-22",
+          "value": 98.176,
+          "sma20": 98.4357,
+          "bb_upper": 99.412101,
+          "bb_lower": 97.459299,
+          "rsi": 42.890006
+        },
+        {
+          "date": "2026-01-23",
+          "value": 97.404,
+          "sma20": 98.42185,
+          "bb_upper": 99.447305,
+          "bb_lower": 97.396395,
+          "rsi": 33.580757
+        },
+        {
+          "date": "2026-01-27",
+          "value": 96.22,
+          "sma20": 98.34795,
+          "bb_upper": 99.724377,
+          "bb_lower": 96.971523,
+          "rsi": 24.71917
+        },
+        {
+          "date": "2026-01-28",
+          "value": 96.45,
+          "sma20": 98.28385,
+          "bb_upper": 99.872144,
+          "bb_lower": 96.695556,
+          "rsi": 28.657655
+        },
+        {
+          "date": "2026-01-29",
+          "value": 96.28,
+          "sma20": 98.2001,
+          "bb_upper": 100.010094,
+          "bb_lower": 96.390106,
+          "rsi": 27.511952
+        },
+        {
+          "date": "2026-01-30",
+          "value": 96.99,
+          "sma20": 98.14725,
+          "bb_upper": 100.032213,
+          "bb_lower": 96.262287,
+          "rsi": 38.559809
+        },
+        {
+          "date": "2026-02-02",
+          "value": 97.63,
+          "sma20": 98.12085,
+          "bb_upper": 100.019214,
+          "bb_lower": 96.222486,
+          "rsi": 46.478385
+        },
+        {
+          "date": "2026-02-03",
+          "value": 97.44,
+          "sma20": 98.09375,
+          "bb_upper": 100.01461,
+          "bb_lower": 96.17289,
+          "rsi": 44.639022
+        },
+        {
+          "date": "2026-02-04",
+          "value": 97.62,
+          "sma20": 98.0589,
+          "bb_upper": 99.987569,
+          "bb_lower": 96.130231,
+          "rsi": 46.787513
+        },
+        {
+          "date": "2026-02-05",
+          "value": 97.82,
+          "sma20": 98.0288,
+          "bb_upper": 99.952647,
+          "bb_lower": 96.104953,
+          "rsi": 49.148928
+        },
+        {
+          "date": "2026-02-06",
+          "value": 97.63,
+          "sma20": 97.9759,
+          "bb_upper": 99.882439,
+          "bb_lower": 96.069361,
+          "rsi": 47.014419
+        },
+        {
+          "date": "2026-02-09",
+          "value": 96.82,
+          "sma20": 97.8724,
+          "bb_upper": 99.793896,
+          "bb_lower": 95.950904,
+          "rsi": 39.198658
+        },
+        {
+          "date": "2026-02-10",
+          "value": 96.8,
+          "sma20": 97.7811,
+          "bb_upper": 99.724095,
+          "bb_lower": 95.838105,
+          "rsi": 39.026144
+        },
+        {
+          "date": "2026-02-11",
+          "value": 96.83,
+          "sma20": 97.67715,
+          "bb_upper": 99.589869,
+          "bb_lower": 95.764431,
+          "rsi": 39.456568
+        },
+        {
+          "date": "2026-02-12",
+          "value": 96.93,
+          "sma20": 97.5783,
+          "bb_upper": 99.429934,
+          "bb_lower": 95.726666,
+          "rsi": 40.952859
+        },
+        {
+          "date": "2026-02-13",
+          "value": 96.92,
+          "sma20": 97.4682,
+          "bb_upper": 99.1974,
+          "bb_lower": 95.739,
+          "rsi": 40.84415
+        },
+        {
+          "date": "2026-02-16",
+          "value": 96.92,
+          "sma20": 97.35415,
+          "bb_upper": 98.902597,
+          "bb_lower": 95.805703,
+          "rsi": 40.84415
+        },
+        {
+          "date": "2026-02-17",
+          "value": 97.15,
+          "sma20": 97.2516,
+          "bb_upper": 98.548437,
+          "bb_lower": 95.954763,
+          "rsi": 44.755826
+        },
+        {
+          "date": "2026-02-18",
+          "value": 97.7,
+          "sma20": 97.21465,
+          "bb_upper": 98.412379,
+          "bb_lower": 96.016921,
+          "rsi": 52.794388
+        },
+        {
+          "date": "2026-02-19",
+          "value": 97.93,
+          "sma20": 97.183,
+          "bb_upper": 98.264334,
+          "bb_lower": 96.101666,
+          "rsi": 55.697538
+        },
+        {
+          "date": "2026-02-20",
+          "value": 97.8,
+          "sma20": 97.1642,
+          "bb_upper": 98.187331,
+          "bb_lower": 96.141069,
+          "rsi": 53.687746
+        },
+        {
+          "date": "2026-02-23",
+          "value": 97.71,
+          "sma20": 97.1795,
+          "bb_upper": 98.225415,
+          "bb_lower": 96.133585,
+          "rsi": 52.281229
+        },
+        {
+          "date": "2026-02-24",
+          "value": 97.84,
+          "sma20": 97.2605,
+          "bb_upper": 98.245801,
+          "bb_lower": 96.275199,
+          "rsi": 54.149746
+        },
+        {
+          "date": "2026-02-25",
+          "value": 97.7,
+          "sma20": 97.323,
+          "bb_upper": 98.251679,
+          "bb_lower": 96.394321,
+          "rsi": 51.797483
+        },
+        {
+          "date": "2026-02-26",
+          "value": 97.79,
+          "sma20": 97.3985,
+          "bb_upper": 98.214399,
+          "bb_lower": 96.582601,
+          "rsi": 53.204794
+        },
+        {
+          "date": "2026-02-27",
+          "value": 97.61,
+          "sma20": 97.4295,
+          "bb_upper": 98.227885,
+          "bb_lower": 96.631115,
+          "rsi": 50.057045
+        },
+        {
+          "date": "2026-03-02",
+          "value": 98.38,
+          "sma20": 97.467,
+          "bb_upper": 98.363908,
+          "bb_lower": 96.570092,
+          "rsi": 60.753757
+        },
+        {
+          "date": "2026-03-03",
+          "value": 99.05,
+          "sma20": 97.5475,
+          "bb_upper": 98.678674,
+          "bb_lower": 96.416326,
+          "rsi": 67.313832
+        },
+        {
+          "date": "2026-03-04",
+          "value": 98.77,
+          "sma20": 97.605,
+          "bb_upper": 98.855672,
+          "bb_lower": 96.354328,
+          "rsi": 62.604249
+        },
+        {
+          "date": "2026-03-05",
+          "value": 99.32,
+          "sma20": 97.68,
+          "bb_upper": 99.136255,
+          "bb_lower": 96.223745,
+          "rsi": 67.42536
+        },
+        {
+          "date": "2026-03-06",
+          "value": 98.99,
+          "sma20": 97.748,
+          "bb_upper": 99.311619,
+          "bb_lower": 96.184381,
+          "rsi": 62.240535
+        },
+        {
+          "date": "2026-03-09",
+          "value": 99.18,
+          "sma20": 97.866,
+          "bb_upper": 99.486832,
+          "bb_lower": 96.245168,
+          "rsi": 63.958967
+        },
+        {
+          "date": "2026-03-10",
+          "value": 98.83,
+          "sma20": 97.9675,
+          "bb_upper": 99.562641,
+          "bb_lower": 96.372359,
+          "rsi": 58.662724
+        },
+        {
+          "date": "2026-03-11",
+          "value": 99.23,
+          "sma20": 98.0875,
+          "bb_upper": 99.683393,
+          "bb_lower": 96.491607,
+          "rsi": 62.486006
+        },
+        {
+          "date": "2026-03-12",
+          "value": 99.74,
+          "sma20": 98.228,
+          "bb_upper": 99.885137,
+          "bb_lower": 96.570863,
+          "rsi": 66.713281
+        }
+      ]
+    },
+    "ust10y": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-09-30",
+          "value": 4.15,
+          "sma20": 4.10685,
+          "bb_upper": 4.224171,
+          "bb_lower": 3.989529,
+          "rsi": 49.346437
+        },
+        {
+          "date": "2025-10-01",
+          "value": 4.106,
+          "sma20": 4.1016,
+          "bb_upper": 4.208766,
+          "bb_lower": 3.994434,
+          "rsi": 44.278378
+        },
+        {
+          "date": "2025-10-02",
+          "value": 4.09,
+          "sma20": 4.0973,
+          "bb_upper": 4.198939,
+          "bb_lower": 3.995661,
+          "rsi": 42.566375
+        },
+        {
+          "date": "2025-10-03",
+          "value": 4.119,
+          "sma20": 4.09895,
+          "bb_upper": 4.200872,
+          "bb_lower": 3.997028,
+          "rsi": 46.59673
+        },
+        {
+          "date": "2025-10-06",
+          "value": 4.162,
+          "sma20": 4.10475,
+          "bb_upper": 4.207161,
+          "bb_lower": 4.002339,
+          "rsi": 51.977864
+        },
+        {
+          "date": "2025-10-07",
+          "value": 4.127,
+          "sma20": 4.1074,
+          "bb_upper": 4.209232,
+          "bb_lower": 4.005568,
+          "rsi": 47.759447
+        },
+        {
+          "date": "2025-10-08",
+          "value": 4.131,
+          "sma20": 4.11235,
+          "bb_upper": 4.208507,
+          "bb_lower": 4.016193,
+          "rsi": 48.2761
+        },
+        {
+          "date": "2025-10-09",
+          "value": 4.148,
+          "sma20": 4.1192,
+          "bb_upper": 4.204395,
+          "bb_lower": 4.034005,
+          "rsi": 50.516005
+        },
+        {
+          "date": "2025-10-10",
+          "value": 4.051,
+          "sma20": 4.11875,
+          "bb_upper": 4.205276,
+          "bb_lower": 4.032224,
+          "rsi": 39.898889
+        },
+        {
+          "date": "2025-10-12",
+          "value": 4.076,
+          "sma20": 4.12085,
+          "bb_upper": 4.200838,
+          "bb_lower": 4.040862,
+          "rsi": 43.211647
+        },
+        {
+          "date": "2025-10-13",
+          "value": 4.055,
+          "sma20": 4.1223,
+          "bb_upper": 4.196176,
+          "bb_lower": 4.048424,
+          "rsi": 41.159352
+        },
+        {
+          "date": "2025-10-14",
+          "value": 4.022,
+          "sma20": 4.1196,
+          "bb_upper": 4.203336,
+          "bb_lower": 4.035864,
+          "rsi": 38.097301
+        },
+        {
+          "date": "2025-10-15",
+          "value": 4.045,
+          "sma20": 4.11665,
+          "bb_upper": 4.206323,
+          "bb_lower": 4.026977,
+          "rsi": 41.371116
+        },
+        {
+          "date": "2025-10-16",
+          "value": 3.976,
+          "sma20": 4.1085,
+          "bb_upper": 4.216353,
+          "bb_lower": 4.000647,
+          "rsi": 35.333836
+        },
+        {
+          "date": "2025-10-17",
+          "value": 4.009,
+          "sma20": 4.1017,
+          "bb_upper": 4.216421,
+          "bb_lower": 3.986979,
+          "rsi": 39.854447
+        },
+        {
+          "date": "2025-10-20",
+          "value": 3.988,
+          "sma20": 4.0952,
+          "bb_upper": 4.219796,
+          "bb_lower": 3.970604,
+          "rsi": 38.032383
+        },
+        {
+          "date": "2025-10-21",
+          "value": 3.963,
+          "sma20": 4.086,
+          "bb_upper": 4.220701,
+          "bb_lower": 3.951299,
+          "rsi": 35.926624
+        },
+        {
+          "date": "2025-10-22",
+          "value": 3.953,
+          "sma20": 4.07495,
+          "bb_upper": 4.215111,
+          "bb_lower": 3.934789,
+          "rsi": 35.089712
+        },
+        {
+          "date": "2025-10-23",
+          "value": 3.989,
+          "sma20": 4.06505,
+          "bb_upper": 4.200029,
+          "bb_lower": 3.930071,
+          "rsi": 40.466374
+        },
+        {
+          "date": "2025-10-24",
+          "value": 3.997,
+          "sma20": 4.05785,
+          "bb_upper": 4.191209,
+          "bb_lower": 3.924491,
+          "rsi": 41.623575
+        },
+        {
+          "date": "2025-10-27",
+          "value": 3.997,
+          "sma20": 4.0502,
+          "bb_upper": 4.179012,
+          "bb_lower": 3.921388,
+          "rsi": 41.623575
+        },
+        {
+          "date": "2025-10-28",
+          "value": 3.983,
+          "sma20": 4.04405,
+          "bb_upper": 4.173363,
+          "bb_lower": 3.914737,
+          "rsi": 40.043821
+        },
+        {
+          "date": "2025-10-29",
+          "value": 4.058,
+          "sma20": 4.04245,
+          "bb_upper": 4.170232,
+          "bb_lower": 3.914668,
+          "rsi": 50.813726
+        },
+        {
+          "date": "2025-10-30",
+          "value": 4.093,
+          "sma20": 4.04115,
+          "bb_upper": 4.166292,
+          "bb_lower": 3.916008,
+          "rsi": 54.886377
+        },
+        {
+          "date": "2025-10-31",
+          "value": 4.101,
+          "sma20": 4.0381,
+          "bb_upper": 4.153939,
+          "bb_lower": 3.922261,
+          "rsi": 55.787501
+        },
+        {
+          "date": "2025-11-03",
+          "value": 4.107,
+          "sma20": 4.0371,
+          "bb_upper": 4.150164,
+          "bb_lower": 3.924036,
+          "rsi": 56.489469
+        },
+        {
+          "date": "2025-11-04",
+          "value": 4.091,
+          "sma20": 4.0351,
+          "bb_upper": 4.142734,
+          "bb_lower": 3.927466,
+          "rsi": 54.026101
+        },
+        {
+          "date": "2025-11-05",
+          "value": 4.157,
+          "sma20": 4.03555,
+          "bb_upper": 4.145126,
+          "bb_lower": 3.925974,
+          "rsi": 61.48681
+        },
+        {
+          "date": "2025-11-06",
+          "value": 4.093,
+          "sma20": 4.03765,
+          "bb_upper": 4.149907,
+          "bb_lower": 3.925393,
+          "rsi": 52.576704
+        },
+        {
+          "date": "2025-11-07",
+          "value": 4.093,
+          "sma20": 4.0385,
+          "bb_upper": 4.152155,
+          "bb_lower": 3.924845,
+          "rsi": 52.576704
+        },
+        {
+          "date": "2025-11-10",
+          "value": 4.11,
+          "sma20": 4.04125,
+          "bb_upper": 4.158958,
+          "bb_lower": 3.923542,
+          "rsi": 54.603284
+        },
+        {
+          "date": "2025-11-11",
+          "value": 4.069,
+          "sma20": 4.0436,
+          "bb_upper": 4.161553,
+          "bb_lower": 3.925647,
+          "rsi": 49.148226
+        },
+        {
+          "date": "2025-11-12",
+          "value": 4.067,
+          "sma20": 4.0447,
+          "bb_upper": 4.163094,
+          "bb_lower": 3.926306,
+          "rsi": 48.891632
+        },
+        {
+          "date": "2025-11-13",
+          "value": 4.111,
+          "sma20": 4.05145,
+          "bb_upper": 4.168796,
+          "bb_lower": 3.934104,
+          "rsi": 54.517503
+        },
+        {
+          "date": "2025-11-14",
+          "value": 4.148,
+          "sma20": 4.0584,
+          "bb_upper": 4.181205,
+          "bb_lower": 3.935595,
+          "rsi": 58.640446
+        },
+        {
+          "date": "2025-11-17",
+          "value": 4.133,
+          "sma20": 4.06565,
+          "bb_upper": 4.188094,
+          "bb_lower": 3.943206,
+          "rsi": 56.408015
+        },
+        {
+          "date": "2025-11-18",
+          "value": 4.121,
+          "sma20": 4.07355,
+          "bb_upper": 4.188651,
+          "bb_lower": 3.958449,
+          "rsi": 54.616664
+        },
+        {
+          "date": "2025-11-19",
+          "value": 4.131,
+          "sma20": 4.08245,
+          "bb_upper": 4.185818,
+          "bb_lower": 3.979082,
+          "rsi": 55.874244
+        },
+        {
+          "date": "2025-11-20",
+          "value": 4.104,
+          "sma20": 4.0882,
+          "bb_upper": 4.182535,
+          "bb_lower": 3.993865,
+          "rsi": 51.707995
+        },
+        {
+          "date": "2025-11-21",
+          "value": 4.063,
+          "sma20": 4.0915,
+          "bb_upper": 4.177051,
+          "bb_lower": 4.005949,
+          "rsi": 46.088113
+        },
+        {
+          "date": "2025-11-24",
+          "value": 4.036,
+          "sma20": 4.09345,
+          "bb_upper": 4.171769,
+          "bb_lower": 4.015131,
+          "rsi": 42.789923
+        },
+        {
+          "date": "2025-11-25",
+          "value": 4.002,
+          "sma20": 4.0944,
+          "bb_upper": 4.167632,
+          "bb_lower": 4.021168,
+          "rsi": 39.004605
+        },
+        {
+          "date": "2025-11-26",
+          "value": 3.998,
+          "sma20": 4.0914,
+          "bb_upper": 4.17459,
+          "bb_lower": 4.00821,
+          "rsi": 38.572288
+        },
+        {
+          "date": "2025-11-27",
+          "value": 4.005,
+          "sma20": 4.087,
+          "bb_upper": 4.1783,
+          "bb_lower": 3.9957,
+          "rsi": 39.829171
+        },
+        {
+          "date": "2025-11-28",
+          "value": 4.019,
+          "sma20": 4.0829,
+          "bb_upper": 4.178576,
+          "bb_lower": 3.987224,
+          "rsi": 42.368983
+        },
+        {
+          "date": "2025-12-01",
+          "value": 4.096,
+          "sma20": 4.08235,
+          "bb_upper": 4.177591,
+          "bb_lower": 3.987109,
+          "rsi": 53.895673
+        },
+        {
+          "date": "2025-12-02",
+          "value": 4.088,
+          "sma20": 4.0822,
+          "bb_upper": 4.177396,
+          "bb_lower": 3.987004,
+          "rsi": 52.715965
+        },
+        {
+          "date": "2025-12-03",
+          "value": 4.058,
+          "sma20": 4.07725,
+          "bb_upper": 4.166482,
+          "bb_lower": 3.988018,
+          "rsi": 48.43451
+        },
+        {
+          "date": "2025-12-04",
+          "value": 4.108,
+          "sma20": 4.078,
+          "bb_upper": 4.167998,
+          "bb_lower": 3.988002,
+          "rsi": 54.995094
+        },
+        {
+          "date": "2025-12-05",
+          "value": 4.139,
+          "sma20": 4.0803,
+          "bb_upper": 4.173989,
+          "bb_lower": 3.986611,
+          "rsi": 58.518885
+        },
+        {
+          "date": "2025-12-08",
+          "value": 4.172,
+          "sma20": 4.0834,
+          "bb_upper": 4.184615,
+          "bb_lower": 3.982185,
+          "rsi": 61.935582
+        },
+        {
+          "date": "2025-12-09",
+          "value": 4.186,
+          "sma20": 4.08925,
+          "bb_upper": 4.199575,
+          "bb_lower": 3.978925,
+          "rsi": 63.316064
+        },
+        {
+          "date": "2025-12-10",
+          "value": 4.164,
+          "sma20": 4.0941,
+          "bb_upper": 4.208538,
+          "bb_lower": 3.979662,
+          "rsi": 59.654759
+        },
+        {
+          "date": "2025-12-11",
+          "value": 4.141,
+          "sma20": 4.0956,
+          "bb_upper": 4.211659,
+          "bb_lower": 3.979541,
+          "rsi": 56.008355
+        },
+        {
+          "date": "2025-12-12",
+          "value": 4.196,
+          "sma20": 4.098,
+          "bb_upper": 4.220121,
+          "bb_lower": 3.975879,
+          "rsi": 61.991385
+        },
+        {
+          "date": "2025-12-15",
+          "value": 4.182,
+          "sma20": 4.10045,
+          "bb_upper": 4.227161,
+          "bb_lower": 3.973739,
+          "rsi": 59.763281
+        },
+        {
+          "date": "2025-12-16",
+          "value": 4.149,
+          "sma20": 4.10185,
+          "bb_upper": 4.230049,
+          "bb_lower": 3.973651,
+          "rsi": 54.766507
+        },
+        {
+          "date": "2025-12-17",
+          "value": 4.151,
+          "sma20": 4.10285,
+          "bb_upper": 4.232249,
+          "bb_lower": 3.973451,
+          "rsi": 55.012008
+        },
+        {
+          "date": "2025-12-18",
+          "value": 4.116,
+          "sma20": 4.10345,
+          "bb_upper": 4.232976,
+          "bb_lower": 3.973924,
+          "rsi": 49.90721
+        },
+        {
+          "date": "2025-12-19",
+          "value": 4.151,
+          "sma20": 4.10785,
+          "bb_upper": 4.237559,
+          "bb_lower": 3.978141,
+          "rsi": 54.458296
+        },
+        {
+          "date": "2025-12-22",
+          "value": 4.171,
+          "sma20": 4.1146,
+          "bb_upper": 4.242691,
+          "bb_lower": 3.986509,
+          "rsi": 56.869694
+        },
+        {
+          "date": "2025-12-23",
+          "value": 4.169,
+          "sma20": 4.12295,
+          "bb_upper": 4.242049,
+          "bb_lower": 4.003851,
+          "rsi": 56.547249
+        },
+        {
+          "date": "2025-12-24",
+          "value": 4.134,
+          "sma20": 4.12975,
+          "bb_upper": 4.23416,
+          "bb_lower": 4.02534,
+          "rsi": 51.088185
+        },
+        {
+          "date": "2025-12-25",
+          "value": 4.133,
+          "sma20": 4.13615,
+          "bb_upper": 4.223484,
+          "bb_lower": 4.048816,
+          "rsi": 50.936879
+        },
+        {
+          "date": "2025-12-26",
+          "value": 4.134,
+          "sma20": 4.1419,
+          "bb_upper": 4.210829,
+          "bb_lower": 4.072971,
+          "rsi": 51.092868
+        },
+        {
+          "date": "2025-12-29",
+          "value": 4.116,
+          "sma20": 4.1429,
+          "bb_upper": 4.209683,
+          "bb_lower": 4.076117,
+          "rsi": 48.1268
+        },
+        {
+          "date": "2025-12-30",
+          "value": 4.128,
+          "sma20": 4.1449,
+          "bb_upper": 4.207234,
+          "bb_lower": 4.082566,
+          "rsi": 50.202303
+        },
+        {
+          "date": "2025-12-31",
+          "value": 4.153,
+          "sma20": 4.14965,
+          "bb_upper": 4.197589,
+          "bb_lower": 4.101711,
+          "rsi": 54.304334
+        },
+        {
+          "date": "2026-01-01",
+          "value": 4.175,
+          "sma20": 4.153,
+          "bb_upper": 4.198109,
+          "bb_lower": 4.107891,
+          "rsi": 57.61326
+        },
+        {
+          "date": "2026-01-02",
+          "value": 4.189,
+          "sma20": 4.1555,
+          "bb_upper": 4.202721,
+          "bb_lower": 4.108279,
+          "rsi": 59.61726
+        },
+        {
+          "date": "2026-01-05",
+          "value": 4.163,
+          "sma20": 4.15505,
+          "bb_upper": 4.201802,
+          "bb_lower": 4.108298,
+          "rsi": 54.466977
+        },
+        {
+          "date": "2026-01-06",
+          "value": 4.179,
+          "sma20": 4.1547,
+          "bb_upper": 4.200618,
+          "bb_lower": 4.108782,
+          "rsi": 56.932667
+        },
+        {
+          "date": "2026-01-07",
+          "value": 4.138,
+          "sma20": 4.1534,
+          "bb_upper": 4.199662,
+          "bb_lower": 4.107138,
+          "rsi": 49.530881
+        },
+        {
+          "date": "2026-01-08",
+          "value": 4.183,
+          "sma20": 4.1555,
+          "bb_upper": 4.203113,
+          "bb_lower": 4.107887,
+          "rsi": 56.253408
+        },
+        {
+          "date": "2026-01-09",
+          "value": 4.171,
+          "sma20": 4.15425,
+          "bb_upper": 4.198756,
+          "bb_lower": 4.109744,
+          "rsi": 54.180853
+        },
+        {
+          "date": "2026-01-12",
+          "value": 4.187,
+          "sma20": 4.1545,
+          "bb_upper": 4.199677,
+          "bb_lower": 4.109323,
+          "rsi": 56.483033
+        },
+        {
+          "date": "2026-01-13",
+          "value": 4.171,
+          "sma20": 4.1556,
+          "bb_upper": 4.201257,
+          "bb_lower": 4.109943,
+          "rsi": 53.583627
+        },
+        {
+          "date": "2026-01-14",
+          "value": 4.14,
+          "sma20": 4.15505,
+          "bb_upper": 4.201178,
+          "bb_lower": 4.108922,
+          "rsi": 48.399686
+        },
+        {
+          "date": "2026-01-15",
+          "value": 4.16,
+          "sma20": 4.15725,
+          "bb_upper": 4.199775,
+          "bb_lower": 4.114725,
+          "rsi": 51.649664
+        },
+        {
+          "date": "2026-01-16",
+          "value": 4.231,
+          "sma20": 4.16125,
+          "bb_upper": 4.214395,
+          "bb_lower": 4.108105,
+          "rsi": 61.032665
+        },
+        {
+          "date": "2026-01-18",
+          "value": 4.224,
+          "sma20": 4.1639,
+          "bb_upper": 4.223606,
+          "bb_lower": 4.104194,
+          "rsi": 59.800493
+        },
+        {
+          "date": "2026-01-19",
+          "value": 4.263,
+          "sma20": 4.1686,
+          "bb_upper": 4.242325,
+          "bb_lower": 4.094875,
+          "rsi": 64.143836
+        },
+        {
+          "date": "2026-01-20",
+          "value": 4.295,
+          "sma20": 4.17665,
+          "bb_upper": 4.266828,
+          "bb_lower": 4.086472,
+          "rsi": 67.268737
+        },
+        {
+          "date": "2026-01-21",
+          "value": 4.253,
+          "sma20": 4.18265,
+          "bb_upper": 4.276314,
+          "bb_lower": 4.088986,
+          "rsi": 59.891078
+        },
+        {
+          "date": "2026-01-22",
+          "value": 4.251,
+          "sma20": 4.1885,
+          "bb_upper": 4.283878,
+          "bb_lower": 4.093122,
+          "rsi": 59.556115
+        },
+        {
+          "date": "2026-01-23",
+          "value": 4.239,
+          "sma20": 4.19465,
+          "bb_upper": 4.286326,
+          "bb_lower": 4.102974,
+          "rsi": 57.47891
+        },
+        {
+          "date": "2026-01-27",
+          "value": 4.223,
+          "sma20": 4.1994,
+          "bb_upper": 4.286501,
+          "bb_lower": 4.112299,
+          "rsi": 54.737576
+        },
+        {
+          "date": "2026-01-28",
+          "value": 4.251,
+          "sma20": 4.2043,
+          "bb_upper": 4.291435,
+          "bb_lower": 4.117165,
+          "rsi": 58.470372
+        },
+        {
+          "date": "2026-01-29",
+          "value": 4.227,
+          "sma20": 4.2069,
+          "bb_upper": 4.293484,
+          "bb_lower": 4.120316,
+          "rsi": 54.33412
+        },
+        {
+          "date": "2026-01-30",
+          "value": 4.241,
+          "sma20": 4.2095,
+          "bb_upper": 4.296897,
+          "bb_lower": 4.122103,
+          "rsi": 56.277157
+        },
+        {
+          "date": "2026-02-02",
+          "value": 4.277,
+          "sma20": 4.2152,
+          "bb_upper": 4.30457,
+          "bb_lower": 4.12583,
+          "rsi": 60.885892
+        },
+        {
+          "date": "2026-02-03",
+          "value": 4.273,
+          "sma20": 4.2199,
+          "bb_upper": 4.31103,
+          "bb_lower": 4.12877,
+          "rsi": 60.127508
+        },
+        {
+          "date": "2026-02-04",
+          "value": 4.278,
+          "sma20": 4.2269,
+          "bb_upper": 4.313169,
+          "bb_lower": 4.140631,
+          "rsi": 60.785043
+        },
+        {
+          "date": "2026-02-05",
+          "value": 4.21,
+          "sma20": 4.22825,
+          "bb_upper": 4.312552,
+          "bb_lower": 4.143948,
+          "rsi": 48.959838
+        },
+        {
+          "date": "2026-02-06",
+          "value": 4.206,
+          "sma20": 4.23,
+          "bb_upper": 4.310858,
+          "bb_lower": 4.149142,
+          "rsi": 48.363808
+        },
+        {
+          "date": "2026-02-09",
+          "value": 4.198,
+          "sma20": 4.23055,
+          "bb_upper": 4.310373,
+          "bb_lower": 4.150727,
+          "rsi": 47.128081
+        },
+        {
+          "date": "2026-02-10",
+          "value": 4.145,
+          "sma20": 4.22925,
+          "bb_upper": 4.313627,
+          "bb_lower": 4.144873,
+          "rsi": 39.861553
+        },
+        {
+          "date": "2026-02-11",
+          "value": 4.172,
+          "sma20": 4.23085,
+          "bb_upper": 4.30941,
+          "bb_lower": 4.15229,
+          "rsi": 44.551915
+        },
+        {
+          "date": "2026-02-12",
+          "value": 4.104,
+          "sma20": 4.22805,
+          "bb_upper": 4.319453,
+          "bb_lower": 4.136647,
+          "rsi": 36.773089
+        },
+        {
+          "date": "2026-02-13",
+          "value": 4.056,
+          "sma20": 4.2193,
+          "bb_upper": 4.337481,
+          "bb_lower": 4.101119,
+          "rsi": 32.464164
+        },
+        {
+          "date": "2026-02-15",
+          "value": 4.054,
+          "sma20": 4.2108,
+          "bb_upper": 4.349141,
+          "bb_lower": 4.072459,
+          "rsi": 32.294363
+        },
+        {
+          "date": "2026-02-16",
+          "value": 4.042,
+          "sma20": 4.19975,
+          "bb_upper": 4.354034,
+          "bb_lower": 4.045466,
+          "rsi": 31.23861
+        },
+        {
+          "date": "2026-02-17",
+          "value": 4.054,
+          "sma20": 4.1877,
+          "bb_upper": 4.347878,
+          "bb_lower": 4.027522,
+          "rsi": 33.577114
+        },
+        {
+          "date": "2026-02-18",
+          "value": 4.081,
+          "sma20": 4.1791,
+          "bb_upper": 4.342762,
+          "bb_lower": 4.015438,
+          "rsi": 38.634057
+        },
+        {
+          "date": "2026-02-19",
+          "value": 4.075,
+          "sma20": 4.1703,
+          "bb_upper": 4.336459,
+          "bb_lower": 4.004141,
+          "rsi": 37.942749
+        },
+        {
+          "date": "2026-02-20",
+          "value": 4.085,
+          "sma20": 4.1626,
+          "bb_upper": 4.329582,
+          "bb_lower": 3.995618,
+          "rsi": 39.873819
+        },
+        {
+          "date": "2026-02-23",
+          "value": 4.027,
+          "sma20": 4.1528,
+          "bb_upper": 4.32729,
+          "bb_lower": 3.97831,
+          "rsi": 33.384952
+        },
+        {
+          "date": "2026-02-24",
+          "value": 4.033,
+          "sma20": 4.1419,
+          "bb_upper": 4.317721,
+          "bb_lower": 3.966079,
+          "rsi": 34.571153
+        },
+        {
+          "date": "2026-02-25",
+          "value": 4.048,
+          "sma20": 4.13295,
+          "bb_upper": 4.308756,
+          "bb_lower": 3.957144,
+          "rsi": 37.564402
+        },
+        {
+          "date": "2026-02-26",
+          "value": 4.017,
+          "sma20": 4.12175,
+          "bb_upper": 4.297135,
+          "bb_lower": 3.946365,
+          "rsi": 34.09308
+        },
+        {
+          "date": "2026-02-27",
+          "value": 3.962,
+          "sma20": 4.106,
+          "bb_upper": 4.279353,
+          "bb_lower": 3.932647,
+          "rsi": 28.976797
+        },
+        {
+          "date": "2026-03-02",
+          "value": 4.052,
+          "sma20": 4.09495,
+          "bb_upper": 4.251692,
+          "bb_lower": 3.938208,
+          "rsi": 43.831004
+        },
+        {
+          "date": "2026-03-03",
+          "value": 4.057,
+          "sma20": 4.0839,
+          "bb_upper": 4.216815,
+          "bb_lower": 3.950985,
+          "rsi": 44.525161
+        },
+        {
+          "date": "2026-03-04",
+          "value": 4.082,
+          "sma20": 4.0775,
+          "bb_upper": 4.197179,
+          "bb_lower": 3.957821,
+          "rsi": 47.986406
+        },
+        {
+          "date": "2026-03-05",
+          "value": 4.146,
+          "sma20": 4.0745,
+          "bb_upper": 4.183692,
+          "bb_lower": 3.965308,
+          "rsi": 55.620288
+        },
+        {
+          "date": "2026-03-06",
+          "value": 4.132,
+          "sma20": 4.0712,
+          "bb_upper": 4.168618,
+          "bb_lower": 3.973782,
+          "rsi": 53.761488
+        },
+        {
+          "date": "2026-03-09",
+          "value": 4.134,
+          "sma20": 4.07065,
+          "bb_upper": 4.166507,
+          "bb_lower": 3.974793,
+          "rsi": 53.998005
+        },
+        {
+          "date": "2026-03-10",
+          "value": 4.136,
+          "sma20": 4.06885,
+          "bb_upper": 4.158155,
+          "bb_lower": 3.979545,
+          "rsi": 54.250025
+        },
+        {
+          "date": "2026-03-11",
+          "value": 4.206,
+          "sma20": 4.07395,
+          "bb_upper": 4.180656,
+          "bb_lower": 3.967244,
+          "rsi": 62.080274
+        },
+        {
+          "date": "2026-03-12",
+          "value": 4.265,
+          "sma20": 4.0844,
+          "bb_upper": 4.219252,
+          "bb_lower": 3.949548,
+          "rsi": 67.179138
+        }
+      ]
+    },
+    "vix": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-09-24",
+          "value": 16.18,
+          "sma20": 15.636,
+          "bb_upper": 17.005619,
+          "bb_lower": 14.266381,
+          "rsi": 53.124517
+        },
+        {
+          "date": "2025-09-25",
+          "value": 16.74,
+          "sma20": 15.7515,
+          "bb_upper": 17.08393,
+          "bb_lower": 14.41907,
+          "rsi": 56.531607
+        },
+        {
+          "date": "2025-09-26",
+          "value": 15.29,
+          "sma20": 15.748,
+          "bb_upper": 17.084886,
+          "bb_lower": 14.411114,
+          "rsi": 47.004849
+        },
+        {
+          "date": "2025-09-29",
+          "value": 16.12,
+          "sma20": 15.748,
+          "bb_upper": 17.084886,
+          "bb_lower": 14.411114,
+          "rsi": 51.992101
+        },
+        {
+          "date": "2025-09-30",
+          "value": 16.28,
+          "sma20": 15.7035,
+          "bb_upper": 16.899966,
+          "bb_lower": 14.507034,
+          "rsi": 52.912045
+        },
+        {
+          "date": "2025-10-01",
+          "value": 16.29,
+          "sma20": 15.7005,
+          "bb_upper": 16.890752,
+          "bb_lower": 14.510248,
+          "rsi": 52.972699
+        },
+        {
+          "date": "2025-10-02",
+          "value": 16.63,
+          "sma20": 15.767,
+          "bb_upper": 17.007856,
+          "bb_lower": 14.526144,
+          "rsi": 55.090829
+        },
+        {
+          "date": "2025-10-03",
+          "value": 16.65,
+          "sma20": 15.8405,
+          "bb_upper": 17.107441,
+          "bb_lower": 14.573559,
+          "rsi": 55.218601
+        },
+        {
+          "date": "2025-10-06",
+          "value": 16.37,
+          "sma20": 15.9035,
+          "bb_upper": 17.143908,
+          "bb_lower": 14.663092,
+          "rsi": 52.947387
+        },
+        {
+          "date": "2025-10-07",
+          "value": 17.24,
+          "sma20": 16.0135,
+          "bb_upper": 17.3167,
+          "bb_lower": 14.7103,
+          "rsi": 58.639854
+        },
+        {
+          "date": "2025-10-08",
+          "value": 16.3,
+          "sma20": 16.061,
+          "bb_upper": 17.332879,
+          "bb_lower": 14.789121,
+          "rsi": 51.403749
+        },
+        {
+          "date": "2025-10-09",
+          "value": 16.43,
+          "sma20": 16.147,
+          "bb_upper": 17.265161,
+          "bb_lower": 15.028839,
+          "rsi": 52.280761
+        },
+        {
+          "date": "2025-10-10",
+          "value": 21.66,
+          "sma20": 16.492,
+          "bb_upper": 19.035239,
+          "bb_lower": 13.948761,
+          "rsi": 73.219882
+        },
+        {
+          "date": "2025-10-13",
+          "value": 19.03,
+          "sma20": 16.659,
+          "bb_upper": 19.400561,
+          "bb_lower": 13.917439,
+          "rsi": 59.161303
+        },
+        {
+          "date": "2025-10-14",
+          "value": 20.81,
+          "sma20": 16.8815,
+          "bb_upper": 20.159672,
+          "bb_lower": 13.603328,
+          "rsi": 64.174893
+        },
+        {
+          "date": "2025-10-15",
+          "value": 20.64,
+          "sma20": 17.1275,
+          "bb_upper": 20.741334,
+          "bb_lower": 13.513666,
+          "rsi": 63.374679
+        },
+        {
+          "date": "2025-10-16",
+          "value": 25.31,
+          "sma20": 17.608,
+          "bb_upper": 22.619924,
+          "bb_lower": 12.596076,
+          "rsi": 73.24446
+        },
+        {
+          "date": "2025-10-17",
+          "value": 20.78,
+          "sma20": 17.8745,
+          "bb_upper": 22.965297,
+          "bb_lower": 12.783703,
+          "rsi": 57.15486
+        },
+        {
+          "date": "2025-10-20",
+          "value": 18.23,
+          "sma20": 17.981,
+          "bb_upper": 23.007565,
+          "bb_lower": 12.954435,
+          "rsi": 50.438154
+        },
+        {
+          "date": "2025-10-21",
+          "value": 17.87,
+          "sma20": 18.0425,
+          "bb_upper": 23.031892,
+          "bb_lower": 13.053108,
+          "rsi": 49.552798
+        },
+        {
+          "date": "2025-10-22",
+          "value": 18.6,
+          "sma20": 18.1635,
+          "bb_upper": 23.083241,
+          "bb_lower": 13.243759,
+          "rsi": 51.415163
+        },
+        {
+          "date": "2025-10-23",
+          "value": 17.3,
+          "sma20": 18.1915,
+          "bb_upper": 23.084819,
+          "bb_lower": 13.298181,
+          "rsi": 48.015656
+        },
+        {
+          "date": "2025-10-24",
+          "value": 16.37,
+          "sma20": 18.2455,
+          "bb_upper": 23.032225,
+          "bb_lower": 13.458775,
+          "rsi": 45.688346
+        },
+        {
+          "date": "2025-10-27",
+          "value": 15.79,
+          "sma20": 18.229,
+          "bb_upper": 23.04709,
+          "bb_lower": 13.41091,
+          "rsi": 44.247909
+        },
+        {
+          "date": "2025-10-28",
+          "value": 16.42,
+          "sma20": 18.236,
+          "bb_upper": 23.043138,
+          "bb_lower": 13.428862,
+          "rsi": 46.230891
+        },
+        {
+          "date": "2025-10-29",
+          "value": 16.92,
+          "sma20": 18.2675,
+          "bb_upper": 23.031279,
+          "bb_lower": 13.503721,
+          "rsi": 47.81724
+        },
+        {
+          "date": "2025-10-30",
+          "value": 16.91,
+          "sma20": 18.2815,
+          "bb_upper": 23.027561,
+          "bb_lower": 13.535439,
+          "rsi": 47.786874
+        },
+        {
+          "date": "2025-10-31",
+          "value": 17.44,
+          "sma20": 18.321,
+          "bb_upper": 23.025053,
+          "bb_lower": 13.616947,
+          "rsi": 49.613215
+        },
+        {
+          "date": "2025-11-03",
+          "value": 17.17,
+          "sma20": 18.361,
+          "bb_upper": 23.011311,
+          "bb_lower": 13.710689,
+          "rsi": 48.679064
+        },
+        {
+          "date": "2025-11-04",
+          "value": 19.0,
+          "sma20": 18.449,
+          "bb_upper": 23.077688,
+          "bb_lower": 13.820312,
+          "rsi": 54.880043
+        },
+        {
+          "date": "2025-11-05",
+          "value": 18.01,
+          "sma20": 18.5345,
+          "bb_upper": 23.063343,
+          "bb_lower": 14.005657,
+          "rsi": 51.27089
+        },
+        {
+          "date": "2025-11-06",
+          "value": 19.5,
+          "sma20": 18.688,
+          "bb_upper": 23.128363,
+          "bb_lower": 14.247637,
+          "rsi": 55.96472
+        },
+        {
+          "date": "2025-11-07",
+          "value": 19.08,
+          "sma20": 18.559,
+          "bb_upper": 22.791545,
+          "bb_lower": 14.326455,
+          "rsi": 54.374768
+        },
+        {
+          "date": "2025-11-10",
+          "value": 17.6,
+          "sma20": 18.4875,
+          "bb_upper": 22.734093,
+          "bb_lower": 14.240907,
+          "rsi": 49.083032
+        },
+        {
+          "date": "2025-11-11",
+          "value": 17.28,
+          "sma20": 18.311,
+          "bb_upper": 22.448844,
+          "bb_lower": 14.173156,
+          "rsi": 47.995421
+        },
+        {
+          "date": "2025-11-12",
+          "value": 17.51,
+          "sma20": 18.1545,
+          "bb_upper": 22.162899,
+          "bb_lower": 14.146101,
+          "rsi": 48.872342
+        },
+        {
+          "date": "2025-11-13",
+          "value": 20.0,
+          "sma20": 17.889,
+          "bb_upper": 20.384243,
+          "bb_lower": 15.393757,
+          "rsi": 57.272423
+        },
+        {
+          "date": "2025-11-14",
+          "value": 19.83,
+          "sma20": 17.8415,
+          "bb_upper": 20.143484,
+          "bb_lower": 15.539516,
+          "rsi": 56.588838
+        },
+        {
+          "date": "2025-11-17",
+          "value": 22.38,
+          "sma20": 18.049,
+          "bb_upper": 21.084839,
+          "bb_lower": 15.013161,
+          "rsi": 63.605882
+        },
+        {
+          "date": "2025-11-18",
+          "value": 24.69,
+          "sma20": 18.39,
+          "bb_upper": 22.581105,
+          "bb_lower": 14.198895,
+          "rsi": 68.563208
+        },
+        {
+          "date": "2025-11-19",
+          "value": 23.66,
+          "sma20": 18.643,
+          "bb_upper": 23.423699,
+          "bb_lower": 13.862301,
+          "rsi": 64.353987
+        },
+        {
+          "date": "2025-11-20",
+          "value": 26.42,
+          "sma20": 19.099,
+          "bb_upper": 24.909246,
+          "bb_lower": 13.288754,
+          "rsi": 69.718649
+        },
+        {
+          "date": "2025-11-21",
+          "value": 23.43,
+          "sma20": 19.452,
+          "bb_upper": 25.412079,
+          "bb_lower": 13.491921,
+          "rsi": 59.305682
+        },
+        {
+          "date": "2025-11-24",
+          "value": 20.52,
+          "sma20": 19.6885,
+          "bb_upper": 25.419546,
+          "bb_lower": 13.957454,
+          "rsi": 51.278433
+        },
+        {
+          "date": "2025-11-25",
+          "value": 18.56,
+          "sma20": 19.7955,
+          "bb_upper": 25.355822,
+          "bb_lower": 14.235178,
+          "rsi": 46.694061
+        },
+        {
+          "date": "2025-11-26",
+          "value": 17.19,
+          "sma20": 19.809,
+          "bb_upper": 25.342577,
+          "bb_lower": 14.275423,
+          "rsi": 43.749838
+        },
+        {
+          "date": "2025-11-27",
+          "value": 17.21,
+          "sma20": 19.824,
+          "bb_upper": 25.327608,
+          "bb_lower": 14.320392,
+          "rsi": 43.805543
+        },
+        {
+          "date": "2025-11-28",
+          "value": 16.35,
+          "sma20": 19.7695,
+          "bb_upper": 25.386871,
+          "bb_lower": 14.152129,
+          "rsi": 41.884744
+        },
+        {
+          "date": "2025-12-01",
+          "value": 17.24,
+          "sma20": 19.773,
+          "bb_upper": 25.383972,
+          "bb_lower": 14.162028,
+          "rsi": 44.59243
+        },
+        {
+          "date": "2025-12-02",
+          "value": 16.59,
+          "sma20": 19.6525,
+          "bb_upper": 25.425863,
+          "bb_lower": 13.879137,
+          "rsi": 43.0161
+        },
+        {
+          "date": "2025-12-03",
+          "value": 16.08,
+          "sma20": 19.556,
+          "bb_upper": 25.498008,
+          "bb_lower": 13.613992,
+          "rsi": 41.768497
+        },
+        {
+          "date": "2025-12-04",
+          "value": 15.78,
+          "sma20": 19.37,
+          "bb_upper": 25.536042,
+          "bb_lower": 13.203958,
+          "rsi": 41.014928
+        },
+        {
+          "date": "2025-12-05",
+          "value": 15.41,
+          "sma20": 19.1865,
+          "bb_upper": 25.590006,
+          "bb_lower": 12.782994,
+          "rsi": 40.055092
+        },
+        {
+          "date": "2025-12-08",
+          "value": 16.66,
+          "sma20": 19.1395,
+          "bb_upper": 25.602417,
+          "bb_lower": 12.676583,
+          "rsi": 44.758509
+        },
+        {
+          "date": "2025-12-09",
+          "value": 16.93,
+          "sma20": 19.122,
+          "bb_upper": 25.606821,
+          "bb_lower": 12.637179,
+          "rsi": 45.748679
+        },
+        {
+          "date": "2025-12-10",
+          "value": 15.77,
+          "sma20": 19.035,
+          "bb_upper": 25.649386,
+          "bb_lower": 12.420614,
+          "rsi": 42.245191
+        },
+        {
+          "date": "2025-12-11",
+          "value": 14.85,
+          "sma20": 18.7775,
+          "bb_upper": 25.61866,
+          "bb_lower": 11.93634,
+          "rsi": 39.651623
+        },
+        {
+          "date": "2025-12-12",
+          "value": 15.74,
+          "sma20": 18.573,
+          "bb_upper": 25.519792,
+          "bb_lower": 11.626208,
+          "rsi": 43.279458
+        },
+        {
+          "date": "2025-12-15",
+          "value": 16.5,
+          "sma20": 18.279,
+          "bb_upper": 25.051961,
+          "bb_lower": 11.506039,
+          "rsi": 46.250862
+        },
+        {
+          "date": "2025-12-16",
+          "value": 16.48,
+          "sma20": 17.8685,
+          "bb_upper": 24.002508,
+          "bb_lower": 11.734492,
+          "rsi": 46.182298
+        },
+        {
+          "date": "2025-12-17",
+          "value": 17.62,
+          "sma20": 17.5665,
+          "bb_upper": 23.095089,
+          "bb_lower": 12.037911,
+          "rsi": 50.671182
+        },
+        {
+          "date": "2025-12-18",
+          "value": 16.87,
+          "sma20": 17.089,
+          "bb_upper": 20.840453,
+          "bb_lower": 13.337547,
+          "rsi": 47.843828
+        },
+        {
+          "date": "2025-12-19",
+          "value": 14.91,
+          "sma20": 16.663,
+          "bb_upper": 19.164089,
+          "bb_lower": 14.161911,
+          "rsi": 41.350343
+        },
+        {
+          "date": "2025-12-22",
+          "value": 14.08,
+          "sma20": 16.341,
+          "bb_upper": 18.39034,
+          "bb_lower": 14.29166,
+          "rsi": 38.940127
+        },
+        {
+          "date": "2025-12-23",
+          "value": 14.0,
+          "sma20": 16.113,
+          "bb_upper": 18.138617,
+          "bb_lower": 14.087383,
+          "rsi": 38.705946
+        },
+        {
+          "date": "2025-12-24",
+          "value": 13.47,
+          "sma20": 15.927,
+          "bb_upper": 18.191916,
+          "bb_lower": 13.662084,
+          "rsi": 37.11353
+        },
+        {
+          "date": "2025-12-26",
+          "value": 13.6,
+          "sma20": 15.7465,
+          "bb_upper": 18.145102,
+          "bb_lower": 13.347898,
+          "rsi": 37.789603
+        },
+        {
+          "date": "2025-12-29",
+          "value": 14.2,
+          "sma20": 15.639,
+          "bb_upper": 18.111358,
+          "bb_lower": 13.166642,
+          "rsi": 40.945222
+        },
+        {
+          "date": "2025-12-30",
+          "value": 14.33,
+          "sma20": 15.4935,
+          "bb_upper": 17.913816,
+          "bb_lower": 13.073184,
+          "rsi": 41.636007
+        },
+        {
+          "date": "2025-12-31",
+          "value": 14.95,
+          "sma20": 15.4115,
+          "bb_upper": 17.788399,
+          "bb_lower": 13.034601,
+          "rsi": 44.943722
+        },
+        {
+          "date": "2026-01-01",
+          "value": 14.95,
+          "sma20": 15.355,
+          "bb_upper": 17.719339,
+          "bb_lower": 12.990661,
+          "rsi": 44.943722
+        },
+        {
+          "date": "2026-01-02",
+          "value": 14.51,
+          "sma20": 15.2915,
+          "bb_upper": 17.674912,
+          "bb_lower": 12.908088,
+          "rsi": 42.940714
+        },
+        {
+          "date": "2026-01-05",
+          "value": 14.9,
+          "sma20": 15.266,
+          "bb_upper": 17.654702,
+          "bb_lower": 12.877298,
+          "rsi": 45.269038
+        },
+        {
+          "date": "2026-01-06",
+          "value": 14.75,
+          "sma20": 15.1705,
+          "bb_upper": 17.48005,
+          "bb_lower": 12.86095,
+          "rsi": 44.516635
+        },
+        {
+          "date": "2026-01-07",
+          "value": 15.38,
+          "sma20": 15.093,
+          "bb_upper": 17.260857,
+          "bb_lower": 12.925143,
+          "rsi": 48.396051
+        },
+        {
+          "date": "2026-01-08",
+          "value": 15.45,
+          "sma20": 15.077,
+          "bb_upper": 17.229302,
+          "bb_lower": 12.924698,
+          "rsi": 48.824215
+        },
+        {
+          "date": "2026-01-09",
+          "value": 14.49,
+          "sma20": 15.059,
+          "bb_upper": 17.224575,
+          "bb_lower": 12.893425,
+          "rsi": 43.49433
+        },
+        {
+          "date": "2026-01-12",
+          "value": 15.12,
+          "sma20": 15.028,
+          "bb_upper": 17.17133,
+          "bb_lower": 12.88467,
+          "rsi": 47.541508
+        },
+        {
+          "date": "2026-01-13",
+          "value": 15.98,
+          "sma20": 15.002,
+          "bb_upper": 17.085042,
+          "bb_lower": 12.918958,
+          "rsi": 52.538872
+        },
+        {
+          "date": "2026-01-14",
+          "value": 16.75,
+          "sma20": 15.0155,
+          "bb_upper": 17.139774,
+          "bb_lower": 12.891226,
+          "rsi": 56.531651
+        },
+        {
+          "date": "2026-01-15",
+          "value": 15.84,
+          "sma20": 14.9265,
+          "bb_upper": 16.732083,
+          "bb_lower": 13.120917,
+          "rsi": 51.064152
+        },
+        {
+          "date": "2026-01-16",
+          "value": 15.86,
+          "sma20": 14.876,
+          "bb_upper": 16.509639,
+          "bb_lower": 13.242361,
+          "rsi": 51.175917
+        },
+        {
+          "date": "2026-01-19",
+          "value": 18.84,
+          "sma20": 15.0725,
+          "bb_upper": 17.450893,
+          "bb_lower": 12.694107,
+          "rsi": 64.270136
+        },
+        {
+          "date": "2026-01-20",
+          "value": 20.09,
+          "sma20": 15.373,
+          "bb_upper": 18.556332,
+          "bb_lower": 12.189668,
+          "rsi": 68.131063
+        },
+        {
+          "date": "2026-01-21",
+          "value": 16.9,
+          "sma20": 15.518,
+          "bb_upper": 18.702152,
+          "bb_lower": 12.333848,
+          "rsi": 52.530589
+        },
+        {
+          "date": "2026-01-22",
+          "value": 15.64,
+          "sma20": 15.6265,
+          "bb_upper": 18.668843,
+          "bb_lower": 12.584157,
+          "rsi": 47.868241
+        },
+        {
+          "date": "2026-01-23",
+          "value": 16.09,
+          "sma20": 15.751,
+          "bb_upper": 18.651944,
+          "bb_lower": 12.850056,
+          "rsi": 49.589093
+        },
+        {
+          "date": "2026-01-27",
+          "value": 16.35,
+          "sma20": 15.8585,
+          "bb_upper": 18.679828,
+          "bb_lower": 13.037172,
+          "rsi": 50.603662
+        },
+        {
+          "date": "2026-01-28",
+          "value": 16.35,
+          "sma20": 15.9595,
+          "bb_upper": 18.698138,
+          "bb_lower": 13.220862,
+          "rsi": 50.603662
+        },
+        {
+          "date": "2026-01-29",
+          "value": 16.88,
+          "sma20": 16.056,
+          "bb_upper": 18.781534,
+          "bb_lower": 13.330466,
+          "rsi": 52.847214
+        },
+        {
+          "date": "2026-01-30",
+          "value": 17.44,
+          "sma20": 16.1805,
+          "bb_upper": 18.920022,
+          "bb_lower": 13.440978,
+          "rsi": 55.164402
+        },
+        {
+          "date": "2026-02-02",
+          "value": 16.34,
+          "sma20": 16.272,
+          "bb_upper": 18.902297,
+          "bb_lower": 13.641703,
+          "rsi": 49.969816
+        },
+        {
+          "date": "2026-02-03",
+          "value": 18.0,
+          "sma20": 16.427,
+          "bb_upper": 19.080881,
+          "bb_lower": 13.773119,
+          "rsi": 56.610022
+        },
+        {
+          "date": "2026-02-04",
+          "value": 18.64,
+          "sma20": 16.6215,
+          "bb_upper": 19.324974,
+          "bb_lower": 13.918026,
+          "rsi": 58.876226
+        },
+        {
+          "date": "2026-02-05",
+          "value": 21.77,
+          "sma20": 16.941,
+          "bb_upper": 20.389709,
+          "bb_lower": 13.492291,
+          "rsi": 67.748076
+        },
+        {
+          "date": "2026-02-06",
+          "value": 17.76,
+          "sma20": 17.0565,
+          "bb_upper": 20.452052,
+          "bb_lower": 13.660948,
+          "rsi": 52.208279
+        },
+        {
+          "date": "2026-02-09",
+          "value": 17.36,
+          "sma20": 17.2,
+          "bb_upper": 20.385662,
+          "bb_lower": 14.014338,
+          "rsi": 50.952779
+        },
+        {
+          "date": "2026-02-10",
+          "value": 17.79,
+          "sma20": 17.3335,
+          "bb_upper": 20.380054,
+          "bb_lower": 14.286946,
+          "rsi": 52.281272
+        },
+        {
+          "date": "2026-02-11",
+          "value": 17.65,
+          "sma20": 17.417,
+          "bb_upper": 20.401501,
+          "bb_lower": 14.432499,
+          "rsi": 51.789425
+        },
+        {
+          "date": "2026-02-12",
+          "value": 20.82,
+          "sma20": 17.6205,
+          "bb_upper": 20.932403,
+          "bb_lower": 14.308597,
+          "rsi": 60.785391
+        },
+        {
+          "date": "2026-02-13",
+          "value": 20.6,
+          "sma20": 17.8585,
+          "bb_upper": 21.305756,
+          "bb_lower": 14.411244,
+          "rsi": 59.94933
+        },
+        {
+          "date": "2026-02-16",
+          "value": 21.2,
+          "sma20": 18.1255,
+          "bb_upper": 21.735589,
+          "bb_lower": 14.515411,
+          "rsi": 61.504445
+        },
+        {
+          "date": "2026-02-17",
+          "value": 20.29,
+          "sma20": 18.198,
+          "bb_upper": 21.919105,
+          "bb_lower": 14.476895,
+          "rsi": 57.836446
+        },
+        {
+          "date": "2026-02-18",
+          "value": 19.62,
+          "sma20": 18.1745,
+          "bb_upper": 21.853209,
+          "bb_lower": 14.495791,
+          "rsi": 55.225026
+        },
+        {
+          "date": "2026-02-19",
+          "value": 20.23,
+          "sma20": 18.341,
+          "bb_upper": 22.07492,
+          "bb_lower": 14.60708,
+          "rsi": 57.123205
+        },
+        {
+          "date": "2026-02-20",
+          "value": 19.09,
+          "sma20": 18.5135,
+          "bb_upper": 22.045674,
+          "bb_lower": 14.981326,
+          "rsi": 52.632491
+        },
+        {
+          "date": "2026-02-23",
+          "value": 21.01,
+          "sma20": 18.7595,
+          "bb_upper": 22.267494,
+          "bb_lower": 15.251506,
+          "rsi": 58.543678
+        },
+        {
+          "date": "2026-02-24",
+          "value": 19.55,
+          "sma20": 18.9195,
+          "bb_upper": 22.261275,
+          "bb_lower": 15.577725,
+          "rsi": 53.115527
+        },
+        {
+          "date": "2026-02-25",
+          "value": 17.93,
+          "sma20": 18.9985,
+          "bb_upper": 22.163599,
+          "bb_lower": 15.833401,
+          "rsi": 47.817593
+        },
+        {
+          "date": "2026-02-26",
+          "value": 18.63,
+          "sma20": 19.086,
+          "bb_upper": 22.1054,
+          "bb_lower": 16.0666,
+          "rsi": 50.132178
+        },
+        {
+          "date": "2026-02-27",
+          "value": 19.86,
+          "sma20": 19.207,
+          "bb_upper": 22.145735,
+          "bb_lower": 16.268265,
+          "rsi": 53.993696
+        },
+        {
+          "date": "2026-03-02",
+          "value": 21.44,
+          "sma20": 19.462,
+          "bb_upper": 22.242177,
+          "bb_lower": 16.681823,
+          "rsi": 58.445097
+        },
+        {
+          "date": "2026-03-03",
+          "value": 23.57,
+          "sma20": 19.7405,
+          "bb_upper": 22.960248,
+          "bb_lower": 16.520752,
+          "rsi": 63.563383
+        },
+        {
+          "date": "2026-03-04",
+          "value": 21.15,
+          "sma20": 19.866,
+          "bb_upper": 23.100022,
+          "bb_lower": 16.631978,
+          "rsi": 55.238725
+        },
+        {
+          "date": "2026-03-05",
+          "value": 23.75,
+          "sma20": 19.965,
+          "bb_upper": 23.530353,
+          "bb_lower": 16.399647,
+          "rsi": 61.128908
+        },
+        {
+          "date": "2026-03-06",
+          "value": 29.49,
+          "sma20": 20.5515,
+          "bb_upper": 25.890838,
+          "bb_lower": 15.212162,
+          "rsi": 70.392043
+        },
+        {
+          "date": "2026-03-09",
+          "value": 25.5,
+          "sma20": 20.9585,
+          "bb_upper": 26.499829,
+          "bb_lower": 15.417171,
+          "rsi": 59.735644
+        },
+        {
+          "date": "2026-03-10",
+          "value": 24.93,
+          "sma20": 21.3155,
+          "bb_upper": 26.914001,
+          "bb_lower": 15.716999,
+          "rsi": 58.376053
+        },
+        {
+          "date": "2026-03-11",
+          "value": 24.23,
+          "sma20": 21.6445,
+          "bb_upper": 27.114595,
+          "bb_lower": 16.174405,
+          "rsi": 56.670216
+        },
+        {
+          "date": "2026-03-12",
+          "value": 27.27,
+          "sma20": 21.967,
+          "bb_upper": 27.941881,
+          "bb_lower": 15.992119,
+          "rsi": 61.879959
+        }
+      ]
+    },
+    "wti": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-10-02",
+          "value": 60.48,
+          "sma20": 63.1575,
+          "bb_upper": 65.617686,
+          "bb_lower": 60.697314,
+          "rsi": 37.275674
+        },
+        {
+          "date": "2025-10-03",
+          "value": 60.88,
+          "sma20": 63.108,
+          "bb_upper": 65.705804,
+          "bb_lower": 60.510196,
+          "rsi": 39.370518
+        },
+        {
+          "date": "2025-10-06",
+          "value": 61.69,
+          "sma20": 63.0795,
+          "bb_upper": 65.725943,
+          "bb_lower": 60.433057,
+          "rsi": 43.486535
+        },
+        {
+          "date": "2025-10-07",
+          "value": 61.73,
+          "sma20": 63.0345,
+          "bb_upper": 65.739935,
+          "bb_lower": 60.329065,
+          "rsi": 43.689836
+        },
+        {
+          "date": "2025-10-08",
+          "value": 62.55,
+          "sma20": 62.9785,
+          "bb_upper": 65.675352,
+          "bb_lower": 60.281648,
+          "rsi": 47.832913
+        },
+        {
+          "date": "2025-10-09",
+          "value": 61.51,
+          "sma20": 62.9355,
+          "bb_upper": 65.696453,
+          "bb_lower": 60.174547,
+          "rsi": 43.464945
+        },
+        {
+          "date": "2025-10-10",
+          "value": 58.9,
+          "sma20": 62.746,
+          "bb_upper": 66.020785,
+          "bb_lower": 59.471215,
+          "rsi": 34.86121
+        },
+        {
+          "date": "2025-10-13",
+          "value": 59.07,
+          "sma20": 62.5485,
+          "bb_upper": 66.189348,
+          "bb_lower": 58.907652,
+          "rsi": 35.753266
+        },
+        {
+          "date": "2025-10-14",
+          "value": 58.27,
+          "sma20": 62.236,
+          "bb_upper": 66.204488,
+          "bb_lower": 58.267512,
+          "rsi": 33.432922
+        },
+        {
+          "date": "2025-10-15",
+          "value": 58.27,
+          "sma20": 61.947,
+          "bb_upper": 66.178137,
+          "bb_lower": 57.715863,
+          "rsi": 33.432922
+        },
+        {
+          "date": "2025-10-16",
+          "value": 57.46,
+          "sma20": 61.6415,
+          "bb_upper": 66.22724,
+          "bb_lower": 57.05576,
+          "rsi": 31.065481
+        },
+        {
+          "date": "2025-10-17",
+          "value": 57.54,
+          "sma20": 61.3845,
+          "bb_upper": 66.274651,
+          "bb_lower": 56.494349,
+          "rsi": 31.580796
+        },
+        {
+          "date": "2025-10-20",
+          "value": 57.52,
+          "sma20": 61.1285,
+          "bb_upper": 66.259099,
+          "bb_lower": 55.997901,
+          "rsi": 31.517363
+        },
+        {
+          "date": "2025-10-21",
+          "value": 57.82,
+          "sma20": 60.849,
+          "bb_upper": 66.060406,
+          "bb_lower": 55.637594,
+          "rsi": 33.669532
+        },
+        {
+          "date": "2025-10-22",
+          "value": 58.5,
+          "sma20": 60.5245,
+          "bb_upper": 65.465303,
+          "bb_lower": 55.583697,
+          "rsi": 38.395397
+        },
+        {
+          "date": "2025-10-23",
+          "value": 61.79,
+          "sma20": 60.365,
+          "bb_upper": 64.910303,
+          "bb_lower": 55.819697,
+          "rsi": 55.073383
+        },
+        {
+          "date": "2025-10-24",
+          "value": 61.5,
+          "sma20": 60.154,
+          "bb_upper": 64.027517,
+          "bb_lower": 56.280483,
+          "rsi": 53.69351
+        },
+        {
+          "date": "2025-10-27",
+          "value": 61.31,
+          "sma20": 60.047,
+          "bb_upper": 63.659878,
+          "bb_lower": 56.434122,
+          "rsi": 52.760796
+        },
+        {
+          "date": "2025-10-28",
+          "value": 60.15,
+          "sma20": 59.936,
+          "bb_upper": 63.38947,
+          "bb_lower": 56.48253,
+          "rsi": 47.352515
+        },
+        {
+          "date": "2025-10-29",
+          "value": 60.48,
+          "sma20": 59.871,
+          "bb_upper": 63.230862,
+          "bb_lower": 56.511138,
+          "rsi": 48.955529
+        },
+        {
+          "date": "2025-10-30",
+          "value": 60.57,
+          "sma20": 59.8755,
+          "bb_upper": 63.238852,
+          "bb_lower": 56.512148,
+          "rsi": 49.407962
+        },
+        {
+          "date": "2025-10-31",
+          "value": 60.98,
+          "sma20": 59.8805,
+          "bb_upper": 63.250102,
+          "bb_lower": 56.510898,
+          "rsi": 51.516244
+        },
+        {
+          "date": "2025-11-03",
+          "value": 61.05,
+          "sma20": 59.8485,
+          "bb_upper": 63.16042,
+          "bb_lower": 56.53658,
+          "rsi": 51.884904
+        },
+        {
+          "date": "2025-11-04",
+          "value": 60.56,
+          "sma20": 59.79,
+          "bb_upper": 63.006887,
+          "bb_lower": 56.573113,
+          "rsi": 49.07205
+        },
+        {
+          "date": "2025-11-05",
+          "value": 59.6,
+          "sma20": 59.6425,
+          "bb_upper": 62.599701,
+          "bb_lower": 56.685299,
+          "rsi": 44.035126
+        },
+        {
+          "date": "2025-11-06",
+          "value": 59.43,
+          "sma20": 59.5385,
+          "bb_upper": 62.369276,
+          "bb_lower": 56.707724,
+          "rsi": 43.189703
+        },
+        {
+          "date": "2025-11-07",
+          "value": 59.75,
+          "sma20": 59.581,
+          "bb_upper": 62.397643,
+          "bb_lower": 56.764357,
+          "rsi": 45.31787
+        },
+        {
+          "date": "2025-11-10",
+          "value": 60.03,
+          "sma20": 59.629,
+          "bb_upper": 62.441891,
+          "bb_lower": 56.816109,
+          "rsi": 47.18232
+        },
+        {
+          "date": "2025-11-11",
+          "value": 60.99,
+          "sma20": 59.765,
+          "bb_upper": 62.564904,
+          "bb_lower": 56.965096,
+          "rsi": 53.088208
+        },
+        {
+          "date": "2025-11-12",
+          "value": 58.49,
+          "sma20": 59.776,
+          "bb_upper": 62.553966,
+          "bb_lower": 56.998034,
+          "rsi": 40.414659
+        },
+        {
+          "date": "2025-11-13",
+          "value": 58.64,
+          "sma20": 59.835,
+          "bb_upper": 62.459595,
+          "bb_lower": 57.210405,
+          "rsi": 41.319824
+        },
+        {
+          "date": "2025-11-14",
+          "value": 59.95,
+          "sma20": 59.9555,
+          "bb_upper": 62.359592,
+          "bb_lower": 57.551408,
+          "rsi": 48.655597
+        },
+        {
+          "date": "2025-11-17",
+          "value": 59.91,
+          "sma20": 60.075,
+          "bb_upper": 62.204934,
+          "bb_lower": 57.945066,
+          "rsi": 48.456402
+        },
+        {
+          "date": "2025-11-18",
+          "value": 60.74,
+          "sma20": 60.221,
+          "bb_upper": 62.097911,
+          "bb_lower": 58.344089,
+          "rsi": 52.776624
+        },
+        {
+          "date": "2025-11-19",
+          "value": 59.44,
+          "sma20": 60.268,
+          "bb_upper": 62.012587,
+          "bb_lower": 58.523413,
+          "rsi": 46.239399
+        },
+        {
+          "date": "2025-11-20",
+          "value": 59.14,
+          "sma20": 60.1355,
+          "bb_upper": 61.79819,
+          "bb_lower": 58.47281,
+          "rsi": 44.858508
+        },
+        {
+          "date": "2025-11-21",
+          "value": 58.06,
+          "sma20": 59.9635,
+          "bb_upper": 61.734198,
+          "bb_lower": 58.192802,
+          "rsi": 40.203714
+        },
+        {
+          "date": "2025-11-24",
+          "value": 58.84,
+          "sma20": 59.84,
+          "bb_upper": 61.561685,
+          "bb_lower": 58.118315,
+          "rsi": 44.669289
+        },
+        {
+          "date": "2025-11-25",
+          "value": 57.95,
+          "sma20": 59.73,
+          "bb_upper": 61.630263,
+          "bb_lower": 57.829737,
+          "rsi": 40.914698
+        },
+        {
+          "date": "2025-11-26",
+          "value": 58.65,
+          "sma20": 59.6385,
+          "bb_upper": 61.561594,
+          "bb_lower": 57.715406,
+          "rsi": 44.841667
+        },
+        {
+          "date": "2025-11-27",
+          "value": 59.0,
+          "sma20": 59.56,
+          "bb_upper": 61.452522,
+          "bb_lower": 57.667478,
+          "rsi": 46.747448
+        },
+        {
+          "date": "2025-11-28",
+          "value": 58.55,
+          "sma20": 59.4385,
+          "bb_upper": 61.261501,
+          "bb_lower": 57.615499,
+          "rsi": 44.613155
+        },
+        {
+          "date": "2025-12-01",
+          "value": 59.32,
+          "sma20": 59.352,
+          "bb_upper": 61.018381,
+          "bb_lower": 57.685619,
+          "rsi": 48.911326
+        },
+        {
+          "date": "2025-12-02",
+          "value": 58.64,
+          "sma20": 59.256,
+          "bb_upper": 60.852714,
+          "bb_lower": 57.659286,
+          "rsi": 45.549585
+        },
+        {
+          "date": "2025-12-03",
+          "value": 58.95,
+          "sma20": 59.2235,
+          "bb_upper": 60.817342,
+          "bb_lower": 57.629658,
+          "rsi": 47.326966
+        },
+        {
+          "date": "2025-12-04",
+          "value": 59.67,
+          "sma20": 59.2355,
+          "bb_upper": 60.838965,
+          "bb_lower": 57.632035,
+          "rsi": 51.302891
+        },
+        {
+          "date": "2025-12-05",
+          "value": 60.08,
+          "sma20": 59.252,
+          "bb_upper": 60.88286,
+          "bb_lower": 57.62114,
+          "rsi": 53.457344
+        },
+        {
+          "date": "2025-12-08",
+          "value": 58.63,
+          "sma20": 59.182,
+          "bb_upper": 60.793342,
+          "bb_lower": 57.570658,
+          "rsi": 45.748648
+        },
+        {
+          "date": "2025-12-09",
+          "value": 58.08,
+          "sma20": 59.0365,
+          "bb_upper": 60.485931,
+          "bb_lower": 57.587069,
+          "rsi": 43.203728
+        },
+        {
+          "date": "2025-12-10",
+          "value": 58.3,
+          "sma20": 59.027,
+          "bb_upper": 60.49303,
+          "bb_lower": 57.56097,
+          "rsi": 44.532884
+        },
+        {
+          "date": "2025-12-11",
+          "value": 57.45,
+          "sma20": 58.9675,
+          "bb_upper": 60.580731,
+          "bb_lower": 57.354269,
+          "rsi": 40.581367
+        },
+        {
+          "date": "2025-12-12",
+          "value": 57.24,
+          "sma20": 58.832,
+          "bb_upper": 60.544561,
+          "bb_lower": 57.119439,
+          "rsi": 39.645399
+        },
+        {
+          "date": "2025-12-15",
+          "value": 56.82,
+          "sma20": 58.6775,
+          "bb_upper": 60.525362,
+          "bb_lower": 56.829638,
+          "rsi": 37.769168
+        },
+        {
+          "date": "2025-12-16",
+          "value": 55.27,
+          "sma20": 58.404,
+          "bb_upper": 60.545685,
+          "bb_lower": 56.262315,
+          "rsi": 31.789879
+        },
+        {
+          "date": "2025-12-17",
+          "value": 55.94,
+          "sma20": 58.229,
+          "bb_upper": 60.566502,
+          "bb_lower": 55.891498,
+          "rsi": 36.471623
+        },
+        {
+          "date": "2025-12-18",
+          "value": 56.15,
+          "sma20": 58.0795,
+          "bb_upper": 60.543841,
+          "bb_lower": 55.615159,
+          "rsi": 37.910119
+        },
+        {
+          "date": "2025-12-19",
+          "value": 56.66,
+          "sma20": 58.0095,
+          "bb_upper": 60.550425,
+          "bb_lower": 55.468575,
+          "rsi": 41.381569
+        },
+        {
+          "date": "2025-12-22",
+          "value": 58.01,
+          "sma20": 57.968,
+          "bb_upper": 60.480263,
+          "bb_lower": 55.455737,
+          "rsi": 49.439918
+        },
+        {
+          "date": "2025-12-23",
+          "value": 58.38,
+          "sma20": 57.9895,
+          "bb_upper": 60.50813,
+          "bb_lower": 55.47087,
+          "rsi": 51.411426
+        },
+        {
+          "date": "2025-12-24",
+          "value": 58.35,
+          "sma20": 57.9745,
+          "bb_upper": 60.48076,
+          "bb_lower": 55.46824,
+          "rsi": 51.236973
+        },
+        {
+          "date": "2025-12-25",
+          "value": 58.44,
+          "sma20": 57.9465,
+          "bb_upper": 60.418586,
+          "bb_lower": 55.474414,
+          "rsi": 51.76576
+        },
+        {
+          "date": "2025-12-26",
+          "value": 56.74,
+          "sma20": 57.856,
+          "bb_upper": 60.36533,
+          "bb_lower": 55.34667,
+          "rsi": 42.41053
+        },
+        {
+          "date": "2025-12-28",
+          "value": 57.14,
+          "sma20": 57.747,
+          "bb_upper": 60.180739,
+          "bb_lower": 55.313261,
+          "rsi": 44.932295
+        },
+        {
+          "date": "2025-12-29",
+          "value": 58.08,
+          "sma20": 57.719,
+          "bb_upper": 60.123711,
+          "bb_lower": 55.314289,
+          "rsi": 50.42603
+        },
+        {
+          "date": "2025-12-30",
+          "value": 57.95,
+          "sma20": 57.669,
+          "bb_upper": 60.00999,
+          "bb_lower": 55.32801,
+          "rsi": 49.687752
+        },
+        {
+          "date": "2025-12-31",
+          "value": 57.42,
+          "sma20": 57.5565,
+          "bb_upper": 59.710847,
+          "bb_lower": 55.402153,
+          "rsi": 46.686684
+        },
+        {
+          "date": "2026-01-01",
+          "value": 57.38,
+          "sma20": 57.4215,
+          "bb_upper": 59.238346,
+          "bb_lower": 55.604654,
+          "rsi": 46.458618
+        },
+        {
+          "date": "2026-01-02",
+          "value": 57.32,
+          "sma20": 57.356,
+          "bb_upper": 59.086242,
+          "bb_lower": 55.625758,
+          "rsi": 46.094873
+        },
+        {
+          "date": "2026-01-04",
+          "value": 57.2,
+          "sma20": 57.312,
+          "bb_upper": 59.01083,
+          "bb_lower": 55.61317,
+          "rsi": 45.330447
+        },
+        {
+          "date": "2026-01-05",
+          "value": 58.08,
+          "sma20": 57.301,
+          "bb_upper": 58.976791,
+          "bb_lower": 55.625209,
+          "rsi": 51.661321
+        },
+        {
+          "date": "2026-01-06",
+          "value": 56.94,
+          "sma20": 57.2755,
+          "bb_upper": 58.956957,
+          "bb_lower": 55.594043,
+          "rsi": 44.475935
+        },
+        {
+          "date": "2026-01-07",
+          "value": 55.99,
+          "sma20": 57.213,
+          "bb_upper": 58.985547,
+          "bb_lower": 55.440453,
+          "rsi": 39.540452
+        },
+        {
+          "date": "2026-01-08",
+          "value": 57.76,
+          "sma20": 57.26,
+          "bb_upper": 59.038213,
+          "bb_lower": 55.481787,
+          "rsi": 50.550741
+        },
+        {
+          "date": "2026-01-09",
+          "value": 59.12,
+          "sma20": 57.4525,
+          "bb_upper": 59.159461,
+          "bb_lower": 55.745539,
+          "rsi": 57.026425
+        },
+        {
+          "date": "2026-01-11",
+          "value": 59.44,
+          "sma20": 57.6275,
+          "bb_upper": 59.394903,
+          "bb_lower": 55.860097,
+          "rsi": 58.406636
+        },
+        {
+          "date": "2026-01-12",
+          "value": 59.32,
+          "sma20": 57.786,
+          "bb_upper": 59.563508,
+          "bb_lower": 56.008492,
+          "rsi": 57.658767
+        },
+        {
+          "date": "2026-01-13",
+          "value": 60.93,
+          "sma20": 57.9995,
+          "bb_upper": 60.167582,
+          "bb_lower": 55.831418,
+          "rsi": 64.26927
+        },
+        {
+          "date": "2026-01-14",
+          "value": 62.02,
+          "sma20": 58.2,
+          "bb_upper": 60.987945,
+          "bb_lower": 55.412055,
+          "rsi": 67.920837
+        },
+        {
+          "date": "2026-01-15",
+          "value": 59.19,
+          "sma20": 58.2405,
+          "bb_upper": 61.061071,
+          "bb_lower": 55.419929,
+          "rsi": 52.825964
+        },
+        {
+          "date": "2026-01-16",
+          "value": 59.44,
+          "sma20": 58.295,
+          "bb_upper": 61.163641,
+          "bb_lower": 55.426359,
+          "rsi": 53.802709
+        },
+        {
+          "date": "2026-01-18",
+          "value": 58.97,
+          "sma20": 58.3215,
+          "bb_upper": 61.204764,
+          "bb_lower": 55.438236,
+          "rsi": 51.638045
+        },
+        {
+          "date": "2026-01-19",
+          "value": 59.39,
+          "sma20": 58.454,
+          "bb_upper": 61.277313,
+          "bb_lower": 55.630687,
+          "rsi": 53.440765
+        },
+        {
+          "date": "2026-01-20",
+          "value": 60.34,
+          "sma20": 58.614,
+          "bb_upper": 61.48363,
+          "bb_lower": 55.74437,
+          "rsi": 57.316413
+        },
+        {
+          "date": "2026-01-21",
+          "value": 60.62,
+          "sma20": 58.741,
+          "bb_upper": 61.727308,
+          "bb_lower": 55.754692,
+          "rsi": 58.415148
+        },
+        {
+          "date": "2026-01-22",
+          "value": 59.6,
+          "sma20": 58.8235,
+          "bb_upper": 61.809007,
+          "bb_lower": 55.837993,
+          "rsi": 53.057149
+        },
+        {
+          "date": "2026-01-23",
+          "value": 61.07,
+          "sma20": 59.006,
+          "bb_upper": 62.071194,
+          "bb_lower": 55.940806,
+          "rsi": 58.907024
+        },
+        {
+          "date": "2026-01-27",
+          "value": 62.39,
+          "sma20": 59.2565,
+          "bb_upper": 62.558913,
+          "bb_lower": 55.954087,
+          "rsi": 63.3265
+        },
+        {
+          "date": "2026-01-28",
+          "value": 63.21,
+          "sma20": 59.551,
+          "bb_upper": 63.147531,
+          "bb_lower": 55.954469,
+          "rsi": 65.788033
+        },
+        {
+          "date": "2026-01-29",
+          "value": 65.42,
+          "sma20": 59.962,
+          "bb_upper": 64.209699,
+          "bb_lower": 55.714301,
+          "rsi": 71.366244
+        },
+        {
+          "date": "2026-01-30",
+          "value": 65.21,
+          "sma20": 60.3185,
+          "bb_upper": 65.044438,
+          "bb_lower": 55.592562,
+          "rsi": 70.195033
+        },
+        {
+          "date": "2026-02-02",
+          "value": 62.14,
+          "sma20": 60.5785,
+          "bb_upper": 65.100094,
+          "bb_lower": 56.056906,
+          "rsi": 55.782408
+        },
+        {
+          "date": "2026-02-03",
+          "value": 63.21,
+          "sma20": 60.9395,
+          "bb_upper": 65.074427,
+          "bb_lower": 56.804573,
+          "rsi": 58.946283
+        },
+        {
+          "date": "2026-02-04",
+          "value": 65.14,
+          "sma20": 61.3085,
+          "bb_upper": 65.558202,
+          "bb_lower": 57.058798,
+          "rsi": 63.956022
+        },
+        {
+          "date": "2026-02-05",
+          "value": 63.29,
+          "sma20": 61.517,
+          "bb_upper": 65.725734,
+          "bb_lower": 57.308266,
+          "rsi": 56.800901
+        },
+        {
+          "date": "2026-02-06",
+          "value": 63.55,
+          "sma20": 61.7225,
+          "bb_upper": 65.906799,
+          "bb_lower": 57.538201,
+          "rsi": 57.520192
+        },
+        {
+          "date": "2026-02-09",
+          "value": 64.2,
+          "sma20": 61.9665,
+          "bb_upper": 66.131042,
+          "bb_lower": 57.801958,
+          "rsi": 59.342794
+        },
+        {
+          "date": "2026-02-10",
+          "value": 63.79,
+          "sma20": 62.1095,
+          "bb_upper": 66.318036,
+          "bb_lower": 57.900964,
+          "rsi": 57.662226
+        },
+        {
+          "date": "2026-02-11",
+          "value": 64.46,
+          "sma20": 62.2315,
+          "bb_upper": 66.562275,
+          "bb_lower": 57.900725,
+          "rsi": 59.672102
+        },
+        {
+          "date": "2026-02-12",
+          "value": 62.65,
+          "sma20": 62.4045,
+          "bb_upper": 66.505814,
+          "bb_lower": 58.303186,
+          "rsi": 52.430808
+        },
+        {
+          "date": "2026-02-13",
+          "value": 62.75,
+          "sma20": 62.57,
+          "bb_upper": 66.44007,
+          "bb_lower": 58.69993,
+          "rsi": 52.771807
+        },
+        {
+          "date": "2026-02-15",
+          "value": 62.76,
+          "sma20": 62.7595,
+          "bb_upper": 66.25936,
+          "bb_lower": 59.25964,
+          "rsi": 52.808238
+        },
+        {
+          "date": "2026-02-16",
+          "value": 63.57,
+          "sma20": 62.9685,
+          "bb_upper": 66.120479,
+          "bb_lower": 59.816521,
+          "rsi": 55.783532
+        },
+        {
+          "date": "2026-02-17",
+          "value": 62.33,
+          "sma20": 63.068,
+          "bb_upper": 65.999741,
+          "bb_lower": 60.136259,
+          "rsi": 50.531283
+        },
+        {
+          "date": "2026-02-18",
+          "value": 65.19,
+          "sma20": 63.2965,
+          "bb_upper": 66.140492,
+          "bb_lower": 60.452508,
+          "rsi": 59.907566
+        },
+        {
+          "date": "2026-02-19",
+          "value": 66.43,
+          "sma20": 63.638,
+          "bb_upper": 66.255775,
+          "bb_lower": 61.020225,
+          "rsi": 63.167244
+        },
+        {
+          "date": "2026-02-20",
+          "value": 66.39,
+          "sma20": 63.904,
+          "bb_upper": 66.505057,
+          "bb_lower": 61.302943,
+          "rsi": 62.989333
+        },
+        {
+          "date": "2026-02-23",
+          "value": 66.31,
+          "sma20": 64.1,
+          "bb_upper": 66.803916,
+          "bb_lower": 61.396084,
+          "rsi": 62.609524
+        },
+        {
+          "date": "2026-02-24",
+          "value": 65.63,
+          "sma20": 64.221,
+          "bb_upper": 66.970974,
+          "bb_lower": 61.471026,
+          "rsi": 59.334537
+        },
+        {
+          "date": "2026-02-25",
+          "value": 65.42,
+          "sma20": 64.221,
+          "bb_upper": 66.970974,
+          "bb_lower": 61.471026,
+          "rsi": 58.319969
+        },
+        {
+          "date": "2026-02-26",
+          "value": 65.21,
+          "sma20": 64.221,
+          "bb_upper": 66.970974,
+          "bb_lower": 61.471026,
+          "rsi": 57.265457
+        },
+        {
+          "date": "2026-02-27",
+          "value": 67.02,
+          "sma20": 64.465,
+          "bb_upper": 67.29784,
+          "bb_lower": 61.63216,
+          "rsi": 63.406982
+        },
+        {
+          "date": "2026-03-02",
+          "value": 71.23,
+          "sma20": 64.866,
+          "bb_upper": 68.893383,
+          "bb_lower": 60.838617,
+          "rsi": 73.093089
+        },
+        {
+          "date": "2026-03-03",
+          "value": 74.56,
+          "sma20": 65.337,
+          "bb_upper": 71.177562,
+          "bb_lower": 59.496438,
+          "rsi": 78.043683
+        },
+        {
+          "date": "2026-03-04",
+          "value": 74.66,
+          "sma20": 65.9055,
+          "bb_upper": 72.931524,
+          "bb_lower": 58.879476,
+          "rsi": 78.173555
+        },
+        {
+          "date": "2026-03-05",
+          "value": 81.01,
+          "sma20": 66.7785,
+          "bb_upper": 76.309293,
+          "bb_lower": 57.247707,
+          "rsi": 84.459606
+        },
+        {
+          "date": "2026-03-06",
+          "value": 90.9,
+          "sma20": 68.1135,
+          "bb_upper": 82.211256,
+          "bb_lower": 54.015744,
+          "rsi": 89.521407
+        },
+        {
+          "date": "2026-03-09",
+          "value": 94.77,
+          "sma20": 69.6625,
+          "bb_upper": 87.760135,
+          "bb_lower": 51.564865,
+          "rsi": 90.786102
+        },
+        {
+          "date": "2026-03-10",
+          "value": 83.45,
+          "sma20": 70.612,
+          "bb_upper": 89.493844,
+          "bb_lower": 51.730156,
+          "rsi": 65.777878
+        },
+        {
+          "date": "2026-03-11",
+          "value": 87.25,
+          "sma20": 71.842,
+          "bb_upper": 91.670221,
+          "bb_lower": 52.013779,
+          "rsi": 68.877183
+        },
+        {
+          "date": "2026-03-12",
+          "value": 97.57,
+          "sma20": 73.583,
+          "bb_upper": 95.873965,
+          "bb_lower": 51.292035,
+          "rsi": 75.394517
+        }
+      ]
+    },
+    "brent": {
+      "png_url": null,
+      "data": [
+        {
+          "date": "2025-09-18",
+          "value": 67.44,
+          "sma20": 67.447,
+          "bb_upper": 69.28799,
+          "bb_lower": 65.60601,
+          "rsi": 49.719504
+        },
+        {
+          "date": "2025-09-19",
+          "value": 66.68,
+          "sma20": 67.425,
+          "bb_upper": 69.291435,
+          "bb_lower": 65.558565,
+          "rsi": 46.425451
+        },
+        {
+          "date": "2025-09-22",
+          "value": 65.97,
+          "sma20": 67.3625,
+          "bb_upper": 69.333022,
+          "bb_lower": 65.391978,
+          "rsi": 43.524334
+        },
+        {
+          "date": "2025-09-23",
+          "value": 66.97,
+          "sma20": 67.271,
+          "bb_upper": 69.132987,
+          "bb_lower": 65.409013,
+          "rsi": 48.413878
+        },
+        {
+          "date": "2025-09-24",
+          "value": 69.31,
+          "sma20": 67.3755,
+          "bb_upper": 69.438095,
+          "bb_lower": 65.312905,
+          "rsi": 57.652992
+        },
+        {
+          "date": "2025-09-25",
+          "value": 23.5,
+          "sma20": 65.148,
+          "bb_upper": 84.365913,
+          "bb_lower": 45.930087,
+          "rsi": 12.071516
+        },
+        {
+          "date": "2025-09-26",
+          "value": 23.0,
+          "sma20": 62.867,
+          "bb_upper": 89.350885,
+          "bb_lower": 36.383115,
+          "rsi": 11.960367
+        },
+        {
+          "date": "2025-09-29",
+          "value": 23.44,
+          "sma20": 60.633,
+          "bb_upper": 92.046564,
+          "bb_lower": 29.219436,
+          "rsi": 12.721948
+        },
+        {
+          "date": "2025-09-30",
+          "value": 23.36,
+          "sma20": 58.344,
+          "bb_upper": 93.404454,
+          "bb_lower": 23.283546,
+          "rsi": 12.700436
+        },
+        {
+          "date": "2025-10-01",
+          "value": 22.89,
+          "sma20": 56.1085,
+          "bb_upper": 94.102027,
+          "bb_lower": 18.114973,
+          "rsi": 12.566001
+        },
+        {
+          "date": "2025-10-02",
+          "value": 23.4,
+          "sma20": 53.929,
+          "bb_upper": 94.113512,
+          "bb_lower": 13.744488,
+          "rsi": 13.634303
+        },
+        {
+          "date": "2025-10-03",
+          "value": 23.47,
+          "sma20": 51.8275,
+          "bb_upper": 93.730988,
+          "bb_lower": 9.924012,
+          "rsi": 13.790001
+        },
+        {
+          "date": "2025-10-06",
+          "value": 24.33,
+          "sma20": 49.743,
+          "bb_upper": 92.748335,
+          "bb_lower": 6.737665,
+          "rsi": 15.798391
+        },
+        {
+          "date": "2025-10-07",
+          "value": 24.05,
+          "sma20": 47.626,
+          "bb_upper": 91.308189,
+          "bb_lower": 3.943811,
+          "rsi": 15.67039
+        },
+        {
+          "date": "2025-10-08",
+          "value": 24.38,
+          "sma20": 45.4705,
+          "bb_upper": 89.273565,
+          "bb_lower": 1.667435,
+          "rsi": 16.528769
+        },
+        {
+          "date": "2025-10-09",
+          "value": 23.41,
+          "sma20": 43.3225,
+          "bb_upper": 87.028657,
+          "bb_lower": -0.383657,
+          "rsi": 16.012817
+        },
+        {
+          "date": "2025-10-10",
+          "value": 21.68,
+          "sma20": 41.057,
+          "bb_upper": 84.316076,
+          "bb_lower": -2.202076,
+          "rsi": 15.107068
+        },
+        {
+          "date": "2025-10-14",
+          "value": 21.93,
+          "sma20": 38.7815,
+          "bb_upper": 81.025931,
+          "bb_lower": -3.462931,
+          "rsi": 15.847839
+        },
+        {
+          "date": "2025-10-15",
+          "value": 22.0,
+          "sma20": 36.458,
+          "bb_upper": 76.992426,
+          "bb_lower": -4.076426,
+          "rsi": 16.06868
+        },
+        {
+          "date": "2025-10-16",
+          "value": 21.5,
+          "sma20": 34.1355,
+          "bb_upper": 72.448198,
+          "bb_lower": -4.177198,
+          "rsi": 15.750721
+        },
+        {
+          "date": "2025-10-17",
+          "value": 21.68,
+          "sma20": 31.8475,
+          "bb_upper": 67.289184,
+          "bb_lower": -3.594184,
+          "rsi": 16.392116
+        },
+        {
+          "date": "2025-10-20",
+          "value": 22.21,
+          "sma20": 29.624,
+          "bb_upper": 61.439921,
+          "bb_lower": -2.191921,
+          "rsi": 18.362881
+        },
+        {
+          "date": "2025-10-21",
+          "value": 21.99,
+          "sma20": 27.425,
+          "bb_upper": 54.634552,
+          "bb_lower": 0.215448,
+          "rsi": 18.171408
+        },
+        {
+          "date": "2025-10-22",
+          "value": 21.81,
+          "sma20": 25.167,
+          "bb_upper": 45.501938,
+          "bb_lower": 4.832062,
+          "rsi": 18.005976
+        },
+        {
+          "date": "2025-10-23",
+          "value": 22.17,
+          "sma20": 22.81,
+          "bb_upper": 24.643957,
+          "bb_lower": 20.976043,
+          "rsi": 19.582835
+        },
+        {
+          "date": "2025-10-24",
+          "value": 22.14,
+          "sma20": 22.742,
+          "bb_upper": 24.56942,
+          "bb_lower": 20.91458,
+          "rsi": 19.549096
+        },
+        {
+          "date": "2025-10-27",
+          "value": 22.38,
+          "sma20": 22.711,
+          "bb_upper": 24.540895,
+          "bb_lower": 20.881105,
+          "rsi": 20.725812
+        },
+        {
+          "date": "2025-10-28",
+          "value": 22.23,
+          "sma20": 22.6505,
+          "bb_upper": 24.459881,
+          "bb_lower": 20.841119,
+          "rsi": 20.52376
+        },
+        {
+          "date": "2025-10-29",
+          "value": 22.49,
+          "sma20": 22.607,
+          "bb_upper": 24.387664,
+          "bb_lower": 20.826336,
+          "rsi": 21.9442
+        },
+        {
+          "date": "2025-10-30",
+          "value": 22.34,
+          "sma20": 22.5795,
+          "bb_upper": 24.35882,
+          "bb_lower": 20.80018,
+          "rsi": 21.703203
+        },
+        {
+          "date": "2025-10-31",
+          "value": 22.16,
+          "sma20": 22.5175,
+          "bb_upper": 24.264256,
+          "bb_lower": 20.770744,
+          "rsi": 21.399491
+        },
+        {
+          "date": "2025-11-03",
+          "value": 22.6,
+          "sma20": 22.474,
+          "bb_upper": 24.166187,
+          "bb_lower": 20.781813,
+          "rsi": 24.192143
+        },
+        {
+          "date": "2025-11-04",
+          "value": 21.55,
+          "sma20": 22.335,
+          "bb_upper": 23.840995,
+          "bb_lower": 20.829005,
+          "rsi": 22.168008
+        },
+        {
+          "date": "2025-11-05",
+          "value": 20.97,
+          "sma20": 22.181,
+          "bb_upper": 23.580127,
+          "bb_lower": 20.781873,
+          "rsi": 21.116966
+        },
+        {
+          "date": "2025-11-06",
+          "value": 21.09,
+          "sma20": 22.0165,
+          "bb_upper": 23.074919,
+          "bb_lower": 20.958081,
+          "rsi": 21.941581
+        },
+        {
+          "date": "2025-11-07",
+          "value": 21.08,
+          "sma20": 21.9,
+          "bb_upper": 22.82358,
+          "bb_lower": 20.97642,
+          "rsi": 21.921016
+        },
+        {
+          "date": "2025-11-10",
+          "value": 21.14,
+          "sma20": 21.873,
+          "bb_upper": 22.850714,
+          "bb_lower": 20.895286,
+          "rsi": 22.391031
+        },
+        {
+          "date": "2025-11-12",
+          "value": 21.34,
+          "sma20": 21.8435,
+          "bb_upper": 22.847796,
+          "bb_lower": 20.839204,
+          "rsi": 24.032632
+        },
+        {
+          "date": "2025-11-13",
+          "value": 20.88,
+          "sma20": 21.7875,
+          "bb_upper": 22.87232,
+          "bb_lower": 20.70268,
+          "rsi": 22.836189
+        },
+        {
+          "date": "2025-11-14",
+          "value": 20.56,
+          "sma20": 21.7405,
+          "bb_upper": 22.945829,
+          "bb_lower": 20.535171,
+          "rsi": 22.015104
+        },
+        {
+          "date": "2025-11-17",
+          "value": 20.52,
+          "sma20": 21.6825,
+          "bb_upper": 23.000284,
+          "bb_lower": 20.364716,
+          "rsi": 21.909061
+        },
+        {
+          "date": "2025-11-18",
+          "value": 20.79,
+          "sma20": 21.6115,
+          "bb_upper": 22.960593,
+          "bb_lower": 20.262407,
+          "rsi": 24.550891
+        },
+        {
+          "date": "2025-11-19",
+          "value": 21.0,
+          "sma20": 21.562,
+          "bb_upper": 22.924492,
+          "bb_lower": 20.199508,
+          "rsi": 26.629934
+        },
+        {
+          "date": "2025-11-20",
+          "value": 20.38,
+          "sma20": 21.4905,
+          "bb_upper": 22.940693,
+          "bb_lower": 20.040307,
+          "rsi": 24.484761
+        },
+        {
+          "date": "2025-11-21",
+          "value": 20.44,
+          "sma20": 21.404,
+          "bb_upper": 22.887744,
+          "bb_lower": 19.920256,
+          "rsi": 25.113456
+        },
+        {
+          "date": "2025-11-24",
+          "value": 21.0,
+          "sma20": 21.347,
+          "bb_upper": 22.800549,
+          "bb_lower": 19.893451,
+          "rsi": 30.896139
+        },
+        {
+          "date": "2025-11-25",
+          "value": 21.75,
+          "sma20": 21.3155,
+          "bb_upper": 22.703988,
+          "bb_lower": 19.927012,
+          "rsi": 37.821232
+        },
+        {
+          "date": "2025-11-26",
+          "value": 21.92,
+          "sma20": 21.3,
+          "bb_upper": 22.653795,
+          "bb_lower": 19.946205,
+          "rsi": 39.305943
+        },
+        {
+          "date": "2025-11-28",
+          "value": 22.1,
+          "sma20": 21.2805,
+          "bb_upper": 22.575112,
+          "bb_lower": 19.985888,
+          "rsi": 40.914689
+        },
+        {
+          "date": "2025-12-01",
+          "value": 22.3,
+          "sma20": 21.2785,
+          "bb_upper": 22.566666,
+          "bb_lower": 19.990334,
+          "rsi": 42.731052
+        },
+        {
+          "date": "2025-12-02",
+          "value": 22.02,
+          "sma20": 21.2715,
+          "bb_upper": 22.541827,
+          "bb_lower": 20.001173,
+          "rsi": 40.838259
+        },
+        {
+          "date": "2025-12-03",
+          "value": 21.63,
+          "sma20": 21.223,
+          "bb_upper": 22.353064,
+          "bb_lower": 20.092936,
+          "rsi": 38.293889
+        },
+        {
+          "date": "2025-12-04",
+          "value": 21.07,
+          "sma20": 21.199,
+          "bb_upper": 22.320622,
+          "bb_lower": 20.077378,
+          "rsi": 34.928742
+        },
+        {
+          "date": "2025-12-05",
+          "value": 21.77,
+          "sma20": 21.239,
+          "bb_upper": 22.381959,
+          "bb_lower": 20.096041,
+          "rsi": 41.812123
+        },
+        {
+          "date": "2025-12-08",
+          "value": 21.41,
+          "sma20": 21.255,
+          "bb_upper": 22.398127,
+          "bb_lower": 20.111873,
+          "rsi": 39.498048
+        },
+        {
+          "date": "2025-12-09",
+          "value": 21.29,
+          "sma20": 21.2655,
+          "bb_upper": 22.405859,
+          "bb_lower": 20.125141,
+          "rsi": 38.728615
+        },
+        {
+          "date": "2025-12-10",
+          "value": 20.96,
+          "sma20": 21.2565,
+          "bb_upper": 22.403501,
+          "bb_lower": 20.109499,
+          "rsi": 36.616171
+        },
+        {
+          "date": "2025-12-11",
+          "value": 20.26,
+          "sma20": 21.2025,
+          "bb_upper": 22.427716,
+          "bb_lower": 19.977284,
+          "rsi": 32.559251
+        },
+        {
+          "date": "2025-12-12",
+          "value": 19.96,
+          "sma20": 21.1565,
+          "bb_upper": 22.49091,
+          "bb_lower": 19.82209,
+          "rsi": 30.975282
+        },
+        {
+          "date": "2025-12-15",
+          "value": 20.03,
+          "sma20": 21.13,
+          "bb_upper": 22.530171,
+          "bb_lower": 19.729829,
+          "rsi": 31.808889
+        },
+        {
+          "date": "2025-12-16",
+          "value": 20.2,
+          "sma20": 21.114,
+          "bb_upper": 22.548579,
+          "bb_lower": 19.679421,
+          "rsi": 33.896814
+        },
+        {
+          "date": "2025-12-17",
+          "value": 20.31,
+          "sma20": 21.09,
+          "bb_upper": 22.561054,
+          "bb_lower": 19.618946,
+          "rsi": 35.277736
+        },
+        {
+          "date": "2025-12-18",
+          "value": 21.37,
+          "sma20": 21.1085,
+          "bb_upper": 22.583861,
+          "bb_lower": 19.633139,
+          "rsi": 46.80913
+        },
+        {
+          "date": "2025-12-19",
+          "value": 20.82,
+          "sma20": 21.1305,
+          "bb_upper": 22.574543,
+          "bb_lower": 19.686457,
+          "rsi": 42.570918
+        },
+        {
+          "date": "2025-12-22",
+          "value": 61.58,
+          "sma20": 23.1875,
+          "bb_upper": 40.859436,
+          "bb_lower": 5.515564,
+          "rsi": 93.018735
+        },
+        {
+          "date": "2025-12-23",
+          "value": 61.87,
+          "sma20": 25.231,
+          "bb_upper": 49.601143,
+          "bb_lower": 0.860857,
+          "rsi": 93.065409
+        },
+        {
+          "date": "2025-12-24",
+          "value": 61.8,
+          "sma20": 27.2335,
+          "bb_upper": 56.266218,
+          "bb_lower": -1.799218,
+          "rsi": 92.903949
+        },
+        {
+          "date": "2025-12-26",
+          "value": 60.64,
+          "sma20": 29.1695,
+          "bb_upper": 61.503051,
+          "bb_lower": -3.164051,
+          "rsi": 90.113895
+        },
+        {
+          "date": "2025-12-29",
+          "value": 61.94,
+          "sma20": 31.1615,
+          "bb_upper": 66.295128,
+          "bb_lower": -3.972128,
+          "rsi": 90.459684
+        },
+        {
+          "date": "2025-12-30",
+          "value": 61.92,
+          "sma20": 33.1425,
+          "bb_upper": 70.454512,
+          "bb_lower": -4.169512,
+          "rsi": 90.407292
+        },
+        {
+          "date": "2025-12-31",
+          "value": 60.85,
+          "sma20": 35.084,
+          "bb_upper": 73.890026,
+          "bb_lower": -3.722026,
+          "rsi": 87.487901
+        },
+        {
+          "date": "2026-01-02",
+          "value": 60.75,
+          "sma20": 37.04,
+          "bb_upper": 76.866506,
+          "bb_lower": -2.786506,
+          "rsi": 87.204482
+        },
+        {
+          "date": "2026-01-05",
+          "value": 61.76,
+          "sma20": 39.0745,
+          "bb_upper": 79.581306,
+          "bb_lower": -1.432306,
+          "rsi": 87.639999
+        },
+        {
+          "date": "2026-01-06",
+          "value": 60.7,
+          "sma20": 41.021,
+          "bb_upper": 81.755374,
+          "bb_lower": 0.286626,
+          "rsi": 84.393427
+        },
+        {
+          "date": "2026-01-07",
+          "value": 59.96,
+          "sma20": 42.9485,
+          "bb_upper": 83.436116,
+          "bb_lower": 2.460884,
+          "rsi": 82.106713
+        },
+        {
+          "date": "2026-01-08",
+          "value": 61.99,
+          "sma20": 44.9835,
+          "bb_upper": 85.000743,
+          "bb_lower": 4.966257,
+          "rsi": 83.432883
+        },
+        {
+          "date": "2026-01-09",
+          "value": 63.34,
+          "sma20": 47.1025,
+          "bb_upper": 86.286497,
+          "bb_lower": 7.918503,
+          "rsi": 84.267942
+        },
+        {
+          "date": "2026-01-12",
+          "value": 63.87,
+          "sma20": 49.283,
+          "bb_upper": 87.078412,
+          "bb_lower": 11.487588,
+          "rsi": 84.596207
+        },
+        {
+          "date": "2026-01-13",
+          "value": 65.47,
+          "sma20": 51.5585,
+          "bb_upper": 87.45025,
+          "bb_lower": 15.66675,
+          "rsi": 85.574774
+        },
+        {
+          "date": "2026-01-14",
+          "value": 66.52,
+          "sma20": 53.883,
+          "bb_upper": 87.238127,
+          "bb_lower": 20.527873,
+          "rsi": 86.194594
+        },
+        {
+          "date": "2026-01-15",
+          "value": 63.76,
+          "sma20": 56.061,
+          "bb_upper": 85.829976,
+          "bb_lower": 26.292024,
+          "rsi": 76.847483
+        },
+        {
+          "date": "2026-01-16",
+          "value": 64.13,
+          "sma20": 58.252,
+          "bb_upper": 83.239696,
+          "bb_lower": 33.264304,
+          "rsi": 77.204366
+        },
+        {
+          "date": "2026-01-19",
+          "value": 63.94,
+          "sma20": 60.3805,
+          "bb_upper": 78.837942,
+          "bb_lower": 41.923058,
+          "rsi": 76.551806
+        },
+        {
+          "date": "2026-01-20",
+          "value": 64.92,
+          "sma20": 62.5855,
+          "bb_upper": 66.098883,
+          "bb_lower": 59.072117,
+          "rsi": 77.60333
+        },
+        {
+          "date": "2026-01-21",
+          "value": 65.24,
+          "sma20": 62.7685,
+          "bb_upper": 66.431418,
+          "bb_lower": 59.105582,
+          "rsi": 77.951031
+        },
+        {
+          "date": "2026-01-22",
+          "value": 64.33,
+          "sma20": 62.8915,
+          "bb_upper": 66.590507,
+          "bb_lower": 59.192493,
+          "rsi": 74.413107
+        },
+        {
+          "date": "2026-01-23",
+          "value": 65.88,
+          "sma20": 63.0955,
+          "bb_upper": 66.976755,
+          "bb_lower": 59.214245,
+          "rsi": 76.379585
+        },
+        {
+          "date": "2026-01-27",
+          "value": 67.57,
+          "sma20": 63.442,
+          "bb_upper": 67.611199,
+          "bb_lower": 59.272801,
+          "rsi": 78.334716
+        },
+        {
+          "date": "2026-01-28",
+          "value": 68.4,
+          "sma20": 63.765,
+          "bb_upper": 68.394261,
+          "bb_lower": 59.135739,
+          "rsi": 79.243415
+        },
+        {
+          "date": "2026-01-29",
+          "value": 70.71,
+          "sma20": 64.2045,
+          "bb_upper": 69.647222,
+          "bb_lower": 58.761778,
+          "rsi": 81.56136
+        },
+        {
+          "date": "2026-01-30",
+          "value": 70.69,
+          "sma20": 64.6965,
+          "bb_upper": 70.597074,
+          "bb_lower": 58.795926,
+          "rsi": 81.476524
+        },
+        {
+          "date": "2026-02-02",
+          "value": 66.3,
+          "sma20": 64.974,
+          "bb_upper": 70.622718,
+          "bb_lower": 59.325282,
+          "rsi": 65.396945
+        },
+        {
+          "date": "2026-02-03",
+          "value": 67.33,
+          "sma20": 65.2525,
+          "bb_upper": 70.788018,
+          "bb_lower": 59.716982,
+          "rsi": 67.040485
+        },
+        {
+          "date": "2026-02-04",
+          "value": 69.46,
+          "sma20": 65.6905,
+          "bb_upper": 71.100688,
+          "bb_lower": 60.280312,
+          "rsi": 70.193355
+        },
+        {
+          "date": "2026-02-05",
+          "value": 67.55,
+          "sma20": 66.07,
+          "bb_upper": 70.846806,
+          "bb_lower": 61.293194,
+          "rsi": 64.257447
+        },
+        {
+          "date": "2026-02-06",
+          "value": 68.05,
+          "sma20": 66.373,
+          "bb_upper": 70.834552,
+          "bb_lower": 61.911448,
+          "rsi": 65.08972
+        },
+        {
+          "date": "2026-02-09",
+          "value": 69.04,
+          "sma20": 66.658,
+          "bb_upper": 71.035591,
+          "bb_lower": 62.280409,
+          "rsi": 66.741067
+        },
+        {
+          "date": "2026-02-10",
+          "value": 68.8,
+          "sma20": 66.9045,
+          "bb_upper": 71.180397,
+          "bb_lower": 62.628603,
+          "rsi": 65.926909
+        },
+        {
+          "date": "2026-02-11",
+          "value": 69.4,
+          "sma20": 67.101,
+          "bb_upper": 71.455629,
+          "bb_lower": 62.746371,
+          "rsi": 67.010381
+        },
+        {
+          "date": "2026-02-12",
+          "value": 67.52,
+          "sma20": 67.151,
+          "bb_upper": 71.500758,
+          "bb_lower": 62.801242,
+          "rsi": 60.51695
+        },
+        {
+          "date": "2026-02-13",
+          "value": 67.75,
+          "sma20": 67.3505,
+          "bb_upper": 71.416601,
+          "bb_lower": 63.284399,
+          "rsi": 61.014673
+        },
+        {
+          "date": "2026-02-16",
+          "value": 67.97,
+          "sma20": 67.5425,
+          "bb_upper": 71.335672,
+          "bb_lower": 63.749328,
+          "rsi": 61.514426
+        },
+        {
+          "date": "2026-02-17",
+          "value": 66.87,
+          "sma20": 67.689,
+          "bb_upper": 71.123699,
+          "bb_lower": 64.254301,
+          "rsi": 57.542535
+        },
+        {
+          "date": "2026-02-18",
+          "value": 69.77,
+          "sma20": 67.9315,
+          "bb_upper": 71.232193,
+          "bb_lower": 64.630807,
+          "rsi": 64.120054
+        },
+        {
+          "date": "2026-02-19",
+          "value": 71.27,
+          "sma20": 68.233,
+          "bb_upper": 71.596219,
+          "bb_lower": 64.869781,
+          "rsi": 66.97035
+        },
+        {
+          "date": "2026-02-20",
+          "value": 71.3,
+          "sma20": 68.5815,
+          "bb_upper": 71.689562,
+          "bb_lower": 65.473438,
+          "rsi": 67.026767
+        },
+        {
+          "date": "2026-02-23",
+          "value": 71.49,
+          "sma20": 68.862,
+          "bb_upper": 71.956767,
+          "bb_lower": 65.767233,
+          "rsi": 67.406483
+        },
+        {
+          "date": "2026-02-24",
+          "value": 70.77,
+          "sma20": 69.022,
+          "bb_upper": 72.163564,
+          "bb_lower": 65.880436,
+          "rsi": 64.380842
+        },
+        {
+          "date": "2026-02-25",
+          "value": 70.85,
+          "sma20": 69.1445,
+          "bb_upper": 72.369456,
+          "bb_lower": 65.919544,
+          "rsi": 64.571132
+        },
+        {
+          "date": "2026-02-26",
+          "value": 70.75,
+          "sma20": 69.1465,
+          "bb_upper": 72.375384,
+          "bb_lower": 65.917616,
+          "rsi": 64.110077
+        },
+        {
+          "date": "2026-02-27",
+          "value": 72.48,
+          "sma20": 69.236,
+          "bb_upper": 72.720195,
+          "bb_lower": 65.751805,
+          "rsi": 68.323903
+        },
+        {
+          "date": "2026-03-02",
+          "value": 77.74,
+          "sma20": 69.808,
+          "bb_upper": 74.662942,
+          "bb_lower": 64.953058,
+          "rsi": 77.119917
+        },
+        {
+          "date": "2026-03-03",
+          "value": 81.4,
+          "sma20": 70.5115,
+          "bb_upper": 77.384462,
+          "bb_lower": 63.638538,
+          "rsi": 81.060818
+        },
+        {
+          "date": "2026-03-04",
+          "value": 81.4,
+          "sma20": 71.1085,
+          "bb_upper": 79.433326,
+          "bb_lower": 62.783674,
+          "rsi": 81.060818
+        },
+        {
+          "date": "2026-03-05",
+          "value": 85.41,
+          "sma20": 72.0015,
+          "bb_upper": 82.223385,
+          "bb_lower": 61.779615,
+          "rsi": 84.461588
+        },
+        {
+          "date": "2026-03-06",
+          "value": 92.69,
+          "sma20": 73.2335,
+          "bb_upper": 86.683242,
+          "bb_lower": 59.783758,
+          "rsi": 88.499139
+        },
+        {
+          "date": "2026-03-09",
+          "value": 98.96,
+          "sma20": 74.7295,
+          "bb_upper": 92.073,
+          "bb_lower": 57.386,
+          "rsi": 90.732649
+        },
+        {
+          "date": "2026-03-10",
+          "value": 87.8,
+          "sma20": 75.6795,
+          "bb_upper": 93.688464,
+          "bb_lower": 57.670536,
+          "rsi": 66.119449
+        },
+        {
+          "date": "2026-03-11",
+          "value": 91.98,
+          "sma20": 76.8085,
+          "bb_upper": 95.899834,
+          "bb_lower": 57.717166,
+          "rsi": 69.461055
+        },
+        {
+          "date": "2026-03-12",
+          "value": 101.75,
+          "sma20": 78.52,
+          "bb_upper": 99.965805,
+          "bb_lower": 57.074195,
+          "rsi": 75.5348
+        }
+      ]
+    }
+  },
   "signals": {
     "h5": {
       "direction": "HOLD",
@@ -164,194 +6076,588 @@
     }
   },
   "technical_analysis": {
-    "as_of": "2026-05-17",
-    "last_price": 4566.1737,
+    "as_of": "2026-05-15",
+    "last_price": 4540.1468,
     "trend": "bajista",
     "signal": "neutral",
     "indicators": {
-      "rsi_14": 40.11,
-      "sma_20": 4629.3898,
-      "sma_50": 4687.7947,
-      "macd_line": -31.9182,
-      "macd_signal": -20.1704,
-      "macd_histogram": -11.7478,
-      "atr_14": 73.1391
+      "rsi_14": 39.35,
+      "sma_20": 4662.4974,
+      "sma_50": 4719.5983,
+      "macd_line": -24.8525,
+      "macd_signal": -25.0095,
+      "macd_histogram": 0.157,
+      "atr_14": 109.7185
     },
     "support_resistance": {
-      "support": 4476.8992,
-      "resistance": 4773.4977,
+      "support": 4503.7246,
+      "resistance": 4834.3234,
       "no_trade_zone": {
-        "low": 4529.6042,
-        "high": 4602.7433
+        "low": 4485.2875,
+        "high": 4595.006
       }
     },
     "scenarios": [
       {
         "name": "Continuación de tendencia",
         "direction": "short",
-        "trigger": 4476.8992,
-        "target": 4403.76,
-        "invalidation": 4773.4977,
-        "rationale": "Ruptura bajista con RSI=40"
+        "trigger": 4503.7246,
+        "target": 4394.0061,
+        "invalidation": 4834.3234,
+        "rationale": "Ruptura bajista con RSI=39"
       },
       {
         "name": "Reversión a la media",
         "direction": "long",
-        "trigger": 4476.8992,
-        "target": 4629.3898,
-        "invalidation": 4403.76,
+        "trigger": 4503.7246,
+        "target": 4662.4974,
+        "invalidation": 4394.0061,
         "rationale": "Precio bajo SMA20"
       }
     ]
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": null,
+    "avg_sentiment": -0.133,
     "source_breakdown": {
       "CNBC": 1,
-      "GoldSilver": 3,
+      "GoldSilver": 2,
       "BullionVault": 1,
       "Robin J Brooks | Substack": 1,
       "Reuters": 2,
-      "Gold Price": 1,
-      "NewsNation": 1,
+      "Gold Price": 2,
+      "World Gold Council": 1,
       "Forbes": 1,
-      "Yahoo Finance": 4,
+      "NewsNation": 1,
+      "VanEck": 1,
+      "Yahoo Finance": 3,
+      "Investing.com": 2,
       "KITCO": 4,
-      "Investing.com": 1,
-      "TD Economics": 1,
-      "Українські Національні Новини (УНН)": 1,
       "TradingView": 1,
-      "FXStreet": 2,
+      "TD Economics": 1,
+      "FXStreet": 1,
+      "Українські Національні Новини (УНН)": 1,
       "FXEmpire": 5,
       "Quiver Quantitative": 1,
       "Mining.com": 1,
+      "Investing News Network": 2,
       "investingLive": 1,
-      "VanEck": 1,
-      "Investing News Network": 1,
-      "Benzinga": 1,
-      "PR Newswire": 1,
       "OregonLive.com": 1,
       "Moomoo": 1,
-      "S&P Global": 1
+      "PR Newswire": 1,
+      "BeInCrypto": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
+    "relevant_articles": 40,
+    "avg_sentiment": -0.133,
+    "sentiment_distribution": {
+      "positive": 8,
+      "negative": 20,
+      "neutral": 12
+    },
     "clusters": [
       {
-        "theme": "FXEmpire",
-        "count": 5,
+        "cluster_id": 1,
+        "label": "Commodities",
+        "article_count": 7,
+        "avg_sentiment": -0.114,
+        "dominant_category": "commodities",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Gold Price on 15 May 2026 - Gold Price",
+          "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
+          "Gold (XAUUSD) Price Forecast: Will Rising Yields Push Gold Toward 52-Week MA - FXEmpire",
+          "Gold Price Forecast – Metals and Miners Heading Toward Projected Mid-Year Lows - FXEmpire",
+          "Gold (XAUUSD), Silver, Platinum Forecasts – Silver Dives 7.5% Amid Sell-Off In Precious Metals Markets - FXEmpire"
+        ],
+        "narrative_summary": "",
         "articles": [
           {
+            "title": "Gold Price on 15 May 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBHdWdHdTJvUzV5NE5oXzloZXdhRUpqdFJFazF6ZV9nSzd6OW16amtQMVRqSWpOSEswTHh5S2lZZG9ncnVlVTN4bm50aHBWNkVaaFJHeTBQdVc1Wmx0WXc?oc=5",
+            "source": "Gold Price",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.008,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOcEdnU0lUa1hhQWdPd2FWbGxMZmFfbXF0QjF0Qk9GLWtVamxjdEpWbDZ3dkMwczJpbzJxVV9jdGpiSFBWQW9sNENpZTFKUDVnVXBlNzl3SUFGSU9ZaTNkMkpZMy02eUJKWHNaeHBHOEk1bHVrSnpZSW9mNVFIaTRTUFd3aWg1SlVBT2s2SDRKeXN4NHozNnpDRXZra0ZZS2J2QjVfc1pUcnRYV2NHYXlLakZn?oc=5",
+            "source": "FXStreet",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.422,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold (XAUUSD) Price Forecast: Will Rising Yields Push Gold Toward 52-Week MA - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPZi1pOXhScEV2bVBMZjlZdnJRaDF0WUJDVnJBYUVTUHA4b3VoVUwwelRyMG8xcnM4VTk4X0NQV3c1WERPaUZKeGlid3g4WGtwSnNGR3pkbTVYbHRlS21xY0doMWpiSDc5eFRfMnR3WWZFTDZ0MXQ3WVQ0ejQ0dGtmMzBtbVd6OVpUTzg4VzdTdnE3VzBOV1lMVlZWODBHdTJmcVJCMlNrSGNJWDZMM3BidEltdVBkMGVrNm5fdjBrZGhHQQ?oc=5"
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPZi1pOXhScEV2bVBMZjlZdnJRaDF0WUJDVnJBYUVTUHA4b3VoVUwwelRyMG8xcnM4VTk4X0NQV3c1WERPaUZKeGlid3g4WGtwSnNGR3pkbTVYbHRlS21xY0doMWpiSDc5eFRfMnR3WWZFTDZ0MXQ3WVQ0ejQ0dGtmMzBtbVd6OVpUTzg4VzdTdnE3VzBOV1lMVlZWODBHdTJmcVJCMlNrSGNJWDZMM3BidEltdVBkMGVrNm5fdjBrZGhHQQ?oc=5",
+            "source": "FXEmpire",
+            "date": "Sun, 17 Ma",
+            "language": "en",
+            "tone": 0.49,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Will",
+              "Rising"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Gold Price Forecast – Metals and Miners Heading Toward Projected Mid-Year Lows - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQNHhFa3M1a1llNF9aUW1rM1NYZUJXYXJLcGIzT05BdThBWXBWRjQ0YlBzYTQ3MmplOHpNN1RiNTZIOFM0M2I1Y05MVW1WTFFiNDJNX193aWNnX3hnTnYxWVNiRGVhaWZWYWMxS0dqdm1iVkhuWm5kbzA3RDZpM3ptVWhFT0JNZlBTVXp1cGpzeDVWNkpmSS1CbjkwVFZmNEJCMW11UFVMMGRNWG9hRlBmLUZFcUtlYnNCa2U5TTBxZ21pR2d0MWc?oc=5"
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQNHhFa3M1a1llNF9aUW1rM1NYZUJXYXJLcGIzT05BdThBWXBWRjQ0YlBzYTQ3MmplOHpNN1RiNTZIOFM0M2I1Y05MVW1WTFFiNDJNX193aWNnX3hnTnYxWVNiRGVhaWZWYWMxS0dqdm1iVkhuWm5kbzA3RDZpM3ptVWhFT0JNZlBTVXp1cGpzeDVWNkpmSS1CbjkwVFZmNEJCMW11UFVMMGRNWG9hRlBmLUZFcUtlYnNCa2U5TTBxZ21pR2d0MWc?oc=5",
+            "source": "FXEmpire",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.407,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Metals",
+              "Miners"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Gold (XAUUSD), Silver, Platinum Forecasts – Silver Dives 7.5% Amid Sell-Off In Precious Metals Markets - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQaHYxTDVvNTkwSXcwdmVOd2lSaWpteV9IOUQ0VzBTRVowb1puVmNHdDlxSEhHUEJrZ3RYNDRrX1FZV2p3dnVTRHBaUllvaXp5OHExUHQtVF9ON1NLQVV6aW1nX3lWQTdUUnlWdHZtSm15TEI4QTc1RklQWl9KdkF0RDBJX2V2ZE9oTHV3UjJpckc2SFY1NmpXdDZwS0xPaUF5NnNRNUV1UWdVcUdrV0FSclVneFdlNTFUQWFwNUQzV2ZjUkxLY3FUb01NRWMtN19RTDRGbzdfOXl3bDZEbE80?oc=5"
+            "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQaHYxTDVvNTkwSXcwdmVOd2lSaWpteV9IOUQ0VzBTRVowb1puVmNHdDlxSEhHUEJrZ3RYNDRrX1FZV2p3dnVTRHBaUllvaXp5OHExUHQtVF9ON1NLQVV6aW1nX3lWQTdUUnlWdHZtSm15TEI4QTc1RklQWl9KdkF0RDBJX2V2ZE9oTHV3UjJpckc2SFY1NmpXdDZwS0xPaUF5NnNRNUV1UWdVcUdrV0FSclVneFdlNTFUQWFwNUQzV2ZjUkxLY3FUb01NRWMtN19RTDRGbzdfOXl3bDZEbE80?oc=5",
+            "source": "FXEmpire",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.458,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver",
+              "Gold",
+              "Platinum",
+              "Forecasts",
+              "Dives"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Gold (XAU/USD) Price Forecast: Bearish Breakdown Targets Major Support - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxObmlCTkZjSE9jWEFGelZXTW5wc1dhT2duNVZ6NWN3U0FFNjVJZjFzZG5xN2Rud3FOcGtmbTJRTXl4TE5xbWNNWkh1LWV2WUQ3SDFPbEVsOG1ZTE41ZmlhQVcwMnIwWHZVNWhTRU9pWWprM2hRV1pnS1VwUi1obzJOVnZ3c2tFdUEtOEw1LVdhbUM2MHExTlJWLXBsVGFTajV1RmdfelMtdGpQRkZ5TDQxWVkwOGRJbGVqSXc?oc=5"
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxObmlCTkZjSE9jWEFGelZXTW5wc1dhT2duNVZ6NWN3U0FFNjVJZjFzZG5xN2Rud3FOcGtmbTJRTXl4TE5xbWNNWkh1LWV2WUQ3SDFPbEVsOG1ZTE41ZmlhQVcwMnIwWHZVNWhTRU9pWWprM2hRV1pnS1VwUi1obzJOVnZ3c2tFdUEtOEw1LVdhbUM2MHExTlJWLXBsVGFTajV1RmdfelMtdGpQRkZ5TDQxWVkwOGRJbGVqSXc?oc=5",
+            "source": "FXEmpire",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.014,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Bearish",
+              "Breakdown"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price on 17 May 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5NN0tEUFFnUEVpQVBZTFFoVkl6ZDlGYlBTWXV4UUhqMkxhOTUtYnB1VGhxdUpwMXhsbmpGa0lTa0JMVzI4MTJMakVlUmFzS3I2WkV2WHVPOWZRZjRNX1E?oc=5",
+            "source": "Gold Price",
+            "date": "Sun, 17 Ma",
+            "language": "en",
+            "tone": -0.009,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           }
         ]
       },
       {
-        "theme": "Yahoo Finance",
-        "count": 4,
+        "cluster_id": 0,
+        "label": "Commodities",
+        "article_count": 6,
+        "avg_sentiment": -0.414,
+        "dominant_category": "commodities",
+        "bias_distribution": {
+          "center-right": 1
+        },
+        "representative_titles": [
+          "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
+          "Gold prices fall amid inflation fears fueled by a protracted war with Iran and the crisis in the Strait of Hormuz - Українські Національні Новини (УНН)",
+          "Gold price falls back to $4,500 on heightened inflation fears - Mining.com",
+          "Gold News: Gold Price Breaks Lower as Dollar Hits 99 and Yields Surge - FXEmpire",
+          "Gold prices plummeted over 2% in a single day, analysis of multiple pressure factors - Moomoo"
+        ],
+        "narrative_summary": "",
         "articles": [
           {
-            "title": "Wall Street’s Boldest Gold Prediction Has Russians Rushing to Buy - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOTGV3dzIxTW5Nam5nNGJrRjVCY0pzY3Y1UVJBdFVPbFpSQVYwTWxoRGJtZjJJWjFEUFlZWTFVcHBndUplVEpJNklJVDJnMTB0ZlR5WDZkdlNOZldIRVhaZFpiWjVJNzE5UjJTalFXQnZnQTZaQnZsYXRjd1drTjBsNnRrWUpMV0JWbTV4RlZTWEpVUmNSUlVWb3R6d2ctS25XVjJCZkl2aDE?oc=5"
+            "title": "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPTmFTdThURWJGRThCY2hodkNFVkdBZEx3T2dyREdTTXZNVVdLNmZzeHpNdjZrQlV4bmhiSXlhNndCNXpjdTVCaXRzcnE0LVI1RVo0anR1TXdYY0wxNnkwSmdaa0lRUWhHUUNtd2V5U21VTGdxU2ZoY3lHVFBwVWp2LTBZMndxVEl2VDBhUzc0ZDRidU5LUDJ6THBwdXB4ZXFGOEVDVVJUUdIBrAFBVV95cUxOd1dOMVZGa1IxbXJ1SHA4NjBTRDc3TzE4S0k1aVBuUjd3Y1BNeG9DUF9YNmU0WmtDVXE0eVVjN2tDQkxQeHRQd0RGSlRFTE1DRHg3dWZlblVHM3BvaG0wVjYzeE9IV1k5NkRxQ0xQRTRfNENIN1lobE1mcVVIbWp3WXFEUzhGVnZWUk93YjgybmNNX2tIVVBiZ3FraFcwZ0ZwQV9fQmM5T0puWU0w?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.33,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Middle",
+              "East"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
           },
           {
-            "title": "Gold and silver prices today, Friday, May 15: Prices headed for weekly losses with Iran negotiations at a standstill - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMimAJBVV95cUxNb1FZeWRCY3k4cERzdU9IbGgwcEE3dDZYLWF1X3pGQzVpR0phTHBtaVozdmpibm5Nazc1NGJqUmh4SzZYQjZzdzdYMVFrZ3JpeGlsUm5MdHU4S3JzM3Y1R29wYTVXOEdDalR6ekRaQi1zRkdYUlpEc3N0MHp1ZHZsZV9lRW1wdGlXS3p6Nkk1RWVWNEl2Tm8zQzlKUHNDbnRFc21YU2daNHZyWDBpVkJLcV82NU9JM1JvdGRaRVhyWlV2V1ZmV25zc05lTXpRci1oLUxaNV9LR05weEgyLWRNckkwbUZ6RVlkV09pZE5QZjhCX1U1by05Ri1CWk1ZVF9USnJuUmNhYmtwd0d2VnVBN0RPSXJpNnp6?oc=5"
+            "title": "Gold prices fall amid inflation fears fueled by a protracted war with Iran and the crisis in the Strait of Hormuz - Українські Національні Новини (УНН)",
+            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxOX0EzTHJKQXVHeFdTY0xjWjN0by0zX1BvbHA2M0RmOHFHRC1Xd0Fyb295MkNlVW9kVXpjSjNzSWR1NnkwQnZrcU5ibU5JdmNZTkFEeF9TNkpSSXZVOXI1cUg0TU5UOEdoX3lRUGJ0QWUwcG0xUU56eERXU2R5anNEeXI3YWtLRGs5T2lHMlhvWkptZkxBWXExYVRDQnF4TkRrTEptQ3pkSklia2FXMmdPR0kybmxRT005LVZTVTBNcE01NlQ1UEFRSm84MDZsdnViekHSAdABQVVfeXFMT0RsWEpaYl9iS2wyLUY0OHVzd3oyMnZ5a29fNmYtOVV4dU9DV2R4UVpYRjVfdGFaekVQNUpkVklRTS05SEJHS2VmRUVUTXdqVkdYU2ota1RJdVltVWpqN1NVekFQemxSMDU3ZElHQlZNQVBfR3dfS2tKZ0NkelUwSEItdHBETFFuVTFudFd0NlA0QXg0VHBSYTZBazMzZm96VUV4Z3FZUzJXb0x5dTVDaFZkeHZnX3RVTW1TMG43TzgzU180QVNzNDFMOWlaeUNHQQ?oc=5",
+            "source": "Українські Національні Новини (УНН)",
+            "date": "Sun, 17 Ma",
+            "language": "en",
+            "tone": -0.848,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Iran",
+              "Strait",
+              "Hormuz"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
-            "title": "AngloGold Ashanti Q1 Earnings Beat Estimates on Higher Gold Prices - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQbTZRbUFrV1Z2TktXc2FpRXRqLWhEeV9ZaE1xUjl0aXNaTDNKRm14ckNfbEhsRzBVU0d6djliSDhqOC00T3BqWnA0YU1kSDZNUUFhT0hfTG5CRzFtVGhTMDRmeTVWdmdDZkJvR0RDbUtZUzFOcDdfaWdoZU91NU5TYVdpel9sUFh3RGFaa0NicVpONUJOOG96b3NBbTFqUlA1YkxJdnZxZw?oc=5"
+            "title": "Gold price falls back to $4,500 on heightened inflation fears - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQWGUySTZZaDk1ZW9hU3BoUFBBbFpGaTFJR3ktaUxKVUtNYVZjRW9vR05nbUxtOFFqbWxPMjFPSVROTkJmbUJEbXd3Nlg1b2Rnak16Q0FpQlBjdmlWLS0ySlE5X1ZYZ3QyeHU2MHZyRWdZaFM5QTJXRkYySkk3d3E3N3lpTkxLbWZjSzRF?oc=5",
+            "source": "Mining.com",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.568,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
-            "title": "TRX Gold Corporation (TRX): 10 Best Gold Mining Stocks to Buy as Central Banks Buy Bullion - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxNNDY3TW83cC1SQWhORjdua3p3OGRnNldWX0lYYllWdnFDTXRJVGdzREtkVGhkbVdrdy1USnkwY1lJX1dkWWx1YlQ5clBxRXUwRHdWVUtXSXliUmwwcE5yNjRkVVIyUlJUWDdHeDhfcFFMSFFXTl9haV82NlR4QTd6ZDY1TFBmV1ptYjJJeXpzNm04OW1DTjNza1RWX0NIZw?oc=5"
-          }
-        ]
-      },
-      {
-        "theme": "KITCO",
-        "count": 4,
-        "articles": [
-          {
-            "title": "Wall Street sees gold dropping further as yields and the dollar strengthen, Main Street maintains bullish bias as $4,500 emerges as critical support - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOMU1UVmVMX3FVS2ZLWHUyandIaGRNMnpFVE80djAxWEI1X09NLXJNT1VzTFRDbVJrandub2J1aU9FSlk0cjlqNC1Kb0RJS0JsTkJUS3plME1LLXBpaXNxdU1zTGxmUGp5V2NkZkREMF9mMHNjVW1sQzg2YlBWaF9kWkNOemdRVUMtUlNHOTJDckwtNWF4UENjMW5vd1lKazBoZVhSNlJyUEhEejFud09MNGhnWXl0QXdvN0E?oc=5"
+            "title": "Gold News: Gold Price Breaks Lower as Dollar Hits 99 and Yields Surge - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNNzRHRzFqNGRZVXdhTURrUFpzSV9ZQTJXTnBNU3dHWkRMeks4WGEwYU1kMjhvV1c3ekZqSTNKRGtwOHA4cExvVFE1S2FhdjdPanFLbEdqQUt6WWhQZkw2d2s1WXRoYWgxejVQZnFiVktsbmtPM3AyQmZVY09sR0dEbm9PM1BvbjdIaGlHWHhtTmNpaWJRQnE1bFhoSnJ2R0s4R3J3eXlGRjVrUXY3RVp0VG05d292WWFRaTYw?oc=5",
+            "source": "FXEmpire",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.475,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "News",
+              "Price",
+              "Breaks",
+              "Lower"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
-            "title": "Gold and silver slammed as Iran war fuels inflation and rate hike fears - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOR3hHSHh0VFFYaTNoV2FpQnlLeVJLVkk1Sl9qWmhyNmtBclNsUUU1T2hoWEVUUnNaVmxRWHZkcXZQanFkU2FNLUswMkYyQ1JtU19RTm5EaFlHQnN6SnMxS0I0TnB1Y3kycHNYeDBFNTBwclJCQzlodmFjMWdEeGU3bXU5WDhCdnpac0dyMlR5QlItNHBHakkxQWg2X09KWXY4LW5FLWVBUXhzMjlRUUlQVkVoM04?oc=5"
-          },
-          {
-            "title": "China sees solid ETF inflows and massive PBoC purchases in April amid flat price performance – WGC’s Jia - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPQU9nc0Q4RVZKclhmeHZVMHJlck0zSnFzbktjdTkyaTd6cDlGdkNrSmZlZTR4SkIydGRGbkI3Yk5pd211S0RFYks3b0VlSTBjbm5oSTRKclpiNUtiR3Uyc1dObnZmbGVYczBOb0h5Zkd5VVREZjMyZ2l6UWpEOW1DSUFXdkc2M2k0aFVaUzRrLUtKWVdWMEgwYmVkNU9JRzl5dDRmWDZkNjRsTUt1QTVHMFY3UXVRZVUx?oc=5"
+            "title": "Gold prices plummeted over 2% in a single day, analysis of multiple pressure factors - Moomoo",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOQ3dsRnZfMEF3RzFyQl9Ua0FfTlJNOFd2enZiQmdPSUtOZTNEMkE5U0ltRTZPeTNVaHViMlY4Q0RqNklpeE9NY2d3Ri02M3plcTVzODd6ZGxRT2NTVjYwdHJyZnVEVjFha3VkV1M1dEZia3MzNGhCNlVjbXF0cGpPOUxHelFPNFA4aDVRSlYyU1VGUkJkSWNsVFM1bw?oc=5",
+            "source": "Moomoo",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": -0.374,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Moomoo"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Gold breaks below $4,600 as dollar, yields overpower haven demand - Kitco AM Report - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNYzdZYmlLSExQcUNqQ1JGVm9HLXpmQ0VkbkZTWDJzeXVvM2p0UmtFWi1YS25UaUFpX29uZUVVcFpsQlZQUnZiVEI0dEc3N3ZSeVpXNENvY19kQ2FydlE2dndlSlVsdEhSV1dLa3NYbWZrU3V1UWtxZ09Wa3J1Q1BWSmgyanJidFgtcjdmeUF4cWx4czk2LVcyVWNQQzdDQi1ETGszRGNlN2FEcG1VUmE5NzR5R3lSVlhnczNycHl3?oc=5"
-          }
-        ]
-      },
-      {
-        "theme": "GoldSilver",
-        "count": 3,
-        "articles": [
-          {
-            "title": "What Moves Gold Prices? 6 Key Gold Price Factors Explained - GoldSilver",
-            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQTmgzaEktTUVYMGNzRTIzVHpmZUhZZnNpRnZiOERyVGNuMGc4dzVDUXFyRm1XSWxQMWRWRzM3WXljUW1McHhZSEZxS1B0U0tKOV9ZM1c1Ujkwek1VeTdpbDc5MVlKMU1leU9IM1d4d2NiRnhYWm50NmJJRkpDSEU2WW82NFQ3djM5WEtKYUtKUC1yc1IyYk1QdmcyLXVHc1hSaDhIZzNB?oc=5"
-          },
-          {
-            "title": "Gold Price Outlook May 2026: Why Institutional Forecasters Still See $5,000 - GoldSilver",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPN2kzMUYwRmNTZU93NGtwTE1IRjRLTVBKeXVCU21BV0pLWlQ1SGlXUTdSVUNLX1Z0UU9Bbkg1V21DM3RuUDVMNmhPZGZKM0lPUUdSYjJSUDdDZmJGZ29QeUMxVzY4czRnQUtlNTVIOWV0U1NoWG1vSzQxSVkwU2pRUGhIamhjWkhCb2JOcGtsZk8wQnlrWWFDbF82SzcwREdOZVVmaWxNM3NJcE55N1M4ZFVNQmRYNHBheXc?oc=5"
-          },
-          {
-            "title": "Gold Fell. China Bought Its Most in 17 Months. Here’s Why. - GoldSilver",
-            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQSmZyWGJRZ04tWXR1M2EzV3ZybWZuYkgzek5Wa3Y4eERXM1Z5OXJicmg1WnA3TFpjSk1OaU9OR0t1NFc0blVzSHRWM0ozVEhmc1drZ293NTRJZ29CWV9yUTZVWFhpRVAyVzk2Mm05M0FXQ2JxTW9HYTVRTldHZnJEX053WjdTNHVlVXgxUFFEODBmeDZfSWh6Z0w4T01pOXhDejVQY0c3X2d2TmF2?oc=5"
-          }
-        ]
-      },
-      {
-        "theme": "Reuters",
-        "count": 2,
-        "articles": [
-          {
-            "title": "Brokerages stay bullish on gold despite near-term pressure - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPbVFMR0g0OXZDWkRaT0UxZS1SNjB1X29CaWx5bWNpSDdXTmFobllPeTNaeVd0eHBUb0xsYVU0UEFIcldrbGJOMEJvX0JyOXo1dkVIb1FkQ0VSemFaeUNfcmdIN1IwUFlPWUUwNzdUN1hqVlgwUExkbExZQWxiclRRY0NIWWpZNTRDbjMwaDFUNlExUlVCX2hnaXdHNHA5Z0FhN3pmRXhXYVBfQUk?oc=5"
-          },
-          {
-            "title": "Asia Gold: India discounts soar to record high on import duty hike; China premiums firm - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQbmpLMzJNSXZyejVLTHFfdHBrX0R1NnhZdEhiNmNfWlFzUHlQakZvejhHQnpPdzUzVUZ5R1ptZnNLbVYwb20zMXJMWkt1dHNDMXgtaEpxcXUyOGtLZ1JEd0Zac2QwNzhBd0s5Unl3T29EWW9WMnpyVTVvNEhLbV9TY3kweHE0ejQ1UFBZMVNjd0c1R25MaHJtSU93RVM2cnEzM3l4bVhrQm9KYVE2M3dnNzdGaTFwaC00T0VnWlFVdVVoOVp4N0E?oc=5"
-          }
-        ]
-      },
-      {
-        "theme": "FXStreet",
-        "count": 2,
-        "articles": [
-          {
-            "title": "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
-            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOcEdnU0lUa1hhQWdPd2FWbGxMZmFfbXF0QjF0Qk9GLWtVamxjdEpWbDZ3dkMwczJpbzJxVV9jdGpiSFBWQW9sNENpZTFKUDVnVXBlNzl3SUFGSU9ZaTNkMkpZMy02eUJKWHNaeHBHOEk1bHVrSnpZSW9mNVFIaTRTUFd3aWg1SlVBT2s2SDRKeXN4NHozNnpDRXZra0ZZS2J2QjVfc1pUcnRYV2NHYXlLakZn?oc=5"
-          },
-          {
-            "title": "Gold drops to over one-week lows as hawkish Fed bets boost US Dollar, Treasury yields - FXStreet",
-            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxNUm94RDZvbWdmdkdoZ1psSEJlOVR2MWJWVTgxMzRkQkkzSTBpUzBFQmQ0VkhjMnBkMTQzUU82VE5DeTZLRzVUSGRsNm1aNE13ZVhnMktuWDBFandaMlJyZVZxM2NQMkNKLTIwZFZsRDNCZGd2TWRFNGNnbnY4OGhRdlJuTzlTdDRieTFlcml1dEZOYV9pMGFUOFRZazF3b0xQNFFXcjNSRE8yUVNhMEJSYnVKenQwdE9M?oc=5"
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNYzdZYmlLSExQcUNqQ1JGVm9HLXpmQ0VkbkZTWDJzeXVvM2p0UmtFWi1YS25UaUFpX29uZUVVcFpsQlZQUnZiVEI0dEc3N3ZSeVpXNENvY19kQ2FydlE2dndlSlVsdEhSV1dLa3NYbWZrU3V1UWtxZ09Wa3J1Q1BWSmgyanJidFgtcjdmeUF4cWx4czk2LVcyVWNQQzdDQi1ETGszRGNlN2FEcG1VUmE5NzR5R3lSVlhnczNycHl3?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.11,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Kitco",
+              "Report"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           }
         ]
       }
-    ]
+    ],
+    "top_stories": [
+      {
+        "title": "Gold Down $200 This Week, Silver Spike Gone on Rates, India, Bitcoin Reserve | Gold News - BullionVault",
+        "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxQeW5uRGMxVUdiV0lSdzJlcHdjWl9SRUFTdUlPVkNOckxCcEYzWkxPclk5WE1WRnN4aE1sUDdSMGtyaDZIdU1Qc3FuVzR1dU1tMFJHV1lNWFFVRjQzdUZTbTJLWE9SX2xUUFBwSS1IbnlHa3F6SjhRak1qMGEzcGlNT09mZE56bHRGbWplbDhJX0RIc0pOTDVMck9ZUng?oc=5",
+        "source": "BullionVault",
+        "date": "Fri, 15 Ma",
+        "language": "en",
+        "tone": -0.418,
+        "category": "commodities",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Gold",
+          "Down",
+          "This",
+          "Week",
+          "Silver"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "AngloGold Ashanti Q1 Earnings Beat Estimates on Higher Gold Prices - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQbTZRbUFrV1Z2TktXc2FpRXRqLWhEeV9ZaE1xUjl0aXNaTDNKRm14ckNfbEhsRzBVU0d6djliSDhqOC00T3BqWnA0YU1kSDZNUUFhT0hfTG5CRzFtVGhTMDRmeTVWdmdDZkJvR0RDbUtZUzFOcDdfaWdoZU91NU5TYVdpel9sUFh3RGFaa0NicVpONUJOOG96b3NBbTFqUlA1YkxJdnZxZw?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Tue, 12 Ma",
+        "language": "en",
+        "tone": 0.45,
+        "category": "commodities",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Ashanti",
+          "Earnings",
+          "Beat",
+          "Estimates",
+          "Higher"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
+        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPTmFTdThURWJGRThCY2hodkNFVkdBZEx3T2dyREdTTXZNVVdLNmZzeHpNdjZrQlV4bmhiSXlhNndCNXpjdTVCaXRzcnE0LVI1RVo0anR1TXdYY0wxNnkwSmdaa0lRUWhHUUNtd2V5U21VTGdxU2ZoY3lHVFBwVWp2LTBZMndxVEl2VDBhUzc0ZDRidU5LUDJ6THBwdXB4ZXFGOEVDVVJUUdIBrAFBVV95cUxOd1dOMVZGa1IxbXJ1SHA4NjBTRDc3TzE4S0k1aVBuUjd3Y1BNeG9DUF9YNmU0WmtDVXE0eVVjN2tDQkxQeHRQd0RGSlRFTE1DRHg3dWZlblVHM3BvaG0wVjYzeE9IV1k5NkRxQ0xQRTRfNENIN1lobE1mcVVIbWp3WXFEUzhGVnZWUk93YjgybmNNX2tIVVBiZ3FraFcwZ0ZwQV9fQmM5T0puWU0w?oc=5",
+        "source": "CNBC",
+        "date": "Fri, 15 Ma",
+        "language": "en",
+        "tone": -0.33,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Middle",
+          "East"
+        ],
+        "bias_label": "center-right",
+        "factuality": "high"
+      },
+      {
+        "title": "What Moves Gold Prices? 6 Key Gold Price Factors Explained - GoldSilver",
+        "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQTmgzaEktTUVYMGNzRTIzVHpmZUhZZnNpRnZiOERyVGNuMGc4dzVDUXFyRm1XSWxQMWRWRzM3WXljUW1McHhZSEZxS1B0U0tKOV9ZM1c1Ujkwek1VeTdpbDc5MVlKMU1leU9IM1d4d2NiRnhYWm50NmJJRkpDSEU2WW82NFQ3djM5WEtKYUtKUC1yc1IyYk1QdmcyLXVHc1hSaDhIZzNB?oc=5",
+        "source": "GoldSilver",
+        "date": "Fri, 15 Ma",
+        "language": "en",
+        "tone": 0.046,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "What",
+          "Moves",
+          "Prices",
+          "Price"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "A Moment of Truth for Gold - Robin J Brooks | Substack",
+        "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBLWlF1YUdwWFJHN2ctRklBNjFFY185aWphU3hCazhnNGRlei1VU1lrbXU1MU55QlFBMDJNMXZkZVhMdVgwTWRkUmVpdkpGc0JYcjBLMHZ0T1NiaDl3MFlJbnhHTWZJVTF3eVZoLTZOUG9ydw?oc=5",
+        "source": "Robin J Brooks | Substack",
+        "date": "Sat, 16 Ma",
+        "language": "en",
+        "tone": 0.106,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Moment",
+          "Truth",
+          "Gold",
+          "Robin",
+          "Brooks"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Brokerages stay bullish on gold despite near-term pressure - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPbVFMR0g0OXZDWkRaT0UxZS1SNjB1X29CaWx5bWNpSDdXTmFobllPeTNaeVd0eHBUb0xsYVU0UEFIcldrbGJOMEJvX0JyOXo1dkVIb1FkQ0VSemFaeUNfcmdIN1IwUFlPWUUwNzdUN1hqVlgwUExkbExZQWxiclRRY0NIWWpZNTRDbjMwaDFUNlExUlVCX2hnaXdHNHA5Z0FhN3pmRXhXYVBfQUk?oc=5",
+        "source": "Reuters",
+        "date": "Sun, 17 Ma",
+        "language": "en",
+        "tone": -0.078,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Brokerages",
+          "Reuters"
+        ],
+        "bias_label": "center",
+        "factuality": "high"
+      },
+      {
+        "title": "Gold Price on 15 May 2026 - Gold Price",
+        "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBHdWdHdTJvUzV5NE5oXzloZXdhRUpqdFJFazF6ZV9nSzd6OW16amtQMVRqSWpOSEswTHh5S2lZZG9ncnVlVTN4bm50aHBWNkVaaFJHeTBQdVc1Wmx0WXc?oc=5",
+        "source": "Gold Price",
+        "date": "Fri, 15 Ma",
+        "language": "en",
+        "tone": -0.008,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Price"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "China gold market update: A notable rise in gold reserves | Post by Ray Jia | Insights - World Gold Council",
+        "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQdUExajAwZWY2SkxlbThXWE9xOVdMaE0ySDM5bXJBbzQzUXRQeUpPb09YSFpUcnVyOWUweWtDelBlLUJEUi1hOEw5WGxQTkRjV3VlcG9HaGtRODQ0UnZjV2d1ZjdrWEc5Z3k4NkxxeHI4VnMyWGkxcTg5MVc4QUlvbWU5N2ZERzB1YV94VWFMeUZqRVNKOUFhVmNPeUhqQkNP?oc=5",
+        "source": "World Gold Council",
+        "date": "Thu, 14 Ma",
+        "language": "en",
+        "tone": 0.357,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "China",
+          "Post",
+          "Insights",
+          "World",
+          "Gold"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Silver Price Plunges 10% From Two-Month High—Here’s Why - Forbes",
+        "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQNFBVRFJEVDJqejljU1pWbTJWYmljYWdUUzdabDZ2RU9LNmZzdGhGRUhYRUIxaDhUcDd1MUFrdk5UTGtfLUI0SE9HXzQ5allpdFZaU3VfUDl5RzlNX0FwQTBZZ2E5R3JRbndxR0lzZXZiNmtkM1BXM3M0NlF3OFZGcno5MHBsZ05SX3Q3MnVfX3ctcmM5NUdacjR2aElkc2lEWUFrR0hBdldwSGpfeGpzckQ1LTg2LURXRGFFZ0RvTnRxak1PYVV6a2tobXAzUQ?oc=5",
+        "source": "Forbes",
+        "date": "Fri, 15 Ma",
+        "language": "en",
+        "tone": -0.476,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Silver",
+          "Price",
+          "Plunges",
+          "From",
+          "Month"
+        ],
+        "bias_label": "center-right",
+        "factuality": "high"
+      },
+      {
+        "title": "Gold prices drop resulting from Strait of Hormuz closure, dealer says - NewsNation",
+        "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPS09fUnBCUERNR2cyZTliU29vSGpHdjc4ZktydVZzZlJpMXNLaVlFVVhNVzJUR01lRFJGbHJOQ19INUtRc2pUYnJIVno2OUk3Z0lBSFRpcUJOc21wUjlmSzNNaVNFMGlCSG9QUXJvU1pDNExhU0s4eE0wNldaakNCaHJzN09SblhrcnZ3VjRKeU53S2ZoV1BQaWdHYVbSAaIBQVVfeXFMTkNQNmhwSmdGT0F5RmdIV1A3OXpSTkdOV2FiSmw0WXhvcTlkRWFyakI4T2lUWVBhLU5LOGRVSUFTVmk0WjZaZVNWVlFZak9vaHBadjNaMWRFRW9oejExaVk4VFFXa3lxczV0bjh3RTN4cGdRc1NsU1RWR01KcWZmN2QyZFVjeXdIMTFMeUl4UllLWElRRGdObmdDSmZ3ZDBxYmN3?oc=5",
+        "source": "NewsNation",
+        "date": "Sun, 17 Ma",
+        "language": "en",
+        "tone": -0.565,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Strait",
+          "Hormuz"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      }
+    ],
+    "source_diversity": {
+      "BullionVault": 1,
+      "Yahoo Finance": 3,
+      "CNBC": 1,
+      "GoldSilver": 2,
+      "Robin J Brooks | Substack": 1,
+      "Reuters": 2,
+      "Gold Price": 2,
+      "World Gold Council": 1,
+      "Forbes": 1,
+      "NewsNation": 1,
+      "VanEck": 1,
+      "Investing.com": 2,
+      "KITCO": 4,
+      "TradingView": 1,
+      "TD Economics": 1,
+      "FXStreet": 1,
+      "Українські Національні Новини (УНН)": 1,
+      "FXEmpire": 5,
+      "Quiver Quantitative": 1,
+      "Mining.com": 1,
+      "Investing News Network": 2,
+      "investingLive": 1,
+      "OregonLive.com": 1,
+      "Moomoo": 1,
+      "PR Newswire": 1,
+      "BeInCrypto": 1
+    }
+  },
+  "political_bias_analysis": {
+    "source_bias_distribution": {
+      "left": 0,
+      "center-left": 0,
+      "center": 4,
+      "center-right": 2,
+      "right": 0,
+      "unknown": 34
+    },
+    "bias_diversity_score": 0.395,
+    "factuality_distribution": {
+      "high": 6,
+      "mixed": 0,
+      "low": 0,
+      "unknown": 34
+    },
+    "cluster_bias_assessments": [],
+    "flagged_articles": 2,
+    "bias_narrative": "",
+    "total_analyzed": 40
   },
   "macro_regime": {
     "regime": {
@@ -363,5 +6669,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-05T20:50:47.028033+00:00"
+  "generated_at": "2026-07-12T01:11:11.942294+00:00"
 }

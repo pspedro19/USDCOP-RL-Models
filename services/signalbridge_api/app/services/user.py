@@ -283,6 +283,51 @@ class UserService:
         await self.db.refresh(admin)
         return admin
 
+    async def bootstrap_guest(
+        self, email: str, password: str, name: str = "Invitado"
+    ) -> User:
+        """Idempotently ensure the shared demo/guest account exists: role 'free',
+        approved, active, is_test=True. Unlike bootstrap_admin, the password IS
+        reset to the env value on every startup — the dashboard's guest endpoint
+        logs in with these exact credentials server-side, so env must stay the
+        truth. Safe to call on every startup."""
+        from sqlalchemy import text
+
+        existing = await self.get_by_email(email)
+        if existing:
+            existing.hashed_password = get_password_hash(password)
+            existing.is_active = True
+            existing.status = UserStatus.APPROVED.value
+            existing.must_reset_password = False
+            existing.updated_at = datetime.utcnow()
+            guest = existing
+        else:
+            guest = User(
+                email=email.lower(),
+                hashed_password=get_password_hash(password),
+                name=name,
+                is_active=True,
+                is_verified=True,
+                status=UserStatus.APPROVED.value,
+                role=UserRole.USER.value,  # overwritten to 'free' below (raw SQL)
+                must_reset_password=False,
+            )
+            self.db.add(guest)
+            await self.db.flush()
+            self.db.add(TradingConfig(user_id=guest.id, trading_enabled=False))
+
+        # role 'free' is outside the UserRole enum and is_test is not mapped on the
+        # model — set both via SQL (the 056 trigger also flags *.local, belt+braces).
+        await self.db.execute(
+            text(
+                "UPDATE sb_users SET role='free', is_test=TRUE WHERE email=:email"
+            ),
+            {"email": email.lower()},
+        )
+        await self.db.commit()
+        await self.db.refresh(guest)
+        return guest
+
     async def update_profile(
         self,
         user_id: UUID,

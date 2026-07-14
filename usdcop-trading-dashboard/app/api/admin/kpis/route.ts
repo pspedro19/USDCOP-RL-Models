@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server';
 
 import { requireAdminRole } from '@/lib/admin/guard';
 import { PENDING_QUEUE_WHERE } from '@/lib/admin/queue-sql';
+import { computeRevenue } from '@/lib/admin/revenue';
 import { STAFF_ROLES, type BusinessKpis } from '@/lib/contracts/admin-console.contract';
 import { query } from '@/lib/db/postgres-client';
 
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   if (denied) return denied;
   try {
     const staffList = STAFF_ROLES.map((r) => `'${r}'`).join(',');
-    const [counts, planMix] = await Promise.all([
+    const [counts, planMix, revenue] = await Promise.all([
       query(`
         SELECT
           COUNT(*) FILTER (WHERE status = 'approved' AND NOT COALESCE(is_test, FALSE))            AS total_users,
@@ -38,6 +39,9 @@ export async function GET(req: Request) {
         WHERE status = 'approved' AND NOT COALESCE(is_test, FALSE)
           AND role NOT IN (${staffList})
         GROUP BY 1`),
+      // Real revenue KPIs (MRR/conversion/churn) from entitlements + audit_log —
+      // same aggregator the Ingresos tab uses, so both surfaces always agree.
+      computeRevenue(),
     ]);
 
     const c = counts.rows[0];
@@ -52,9 +56,9 @@ export async function GET(req: Request) {
       pending_queue: Number(c.pending_queue),
       pending_test_hidden: Number(c.pending_test_hidden),
       plan_mix: mix,
-      mrr_cop: null,
-      conversion_30d_pct: null,
-      churn_monthly_pct: null,
+      mrr_cop: revenue.mrr_cop,
+      conversion_30d_pct: revenue.conversion_30d_pct,
+      churn_monthly_pct: revenue.churn_monthly_pct,
     };
     return NextResponse.json(body);
   } catch (e) {

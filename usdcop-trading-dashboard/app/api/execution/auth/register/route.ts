@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { verifyCaptcha } from '@/lib/auth/captcha';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
+import { SIGNALBRIDGE_BACKEND_URL as BACKEND_URL } from '@/lib/services/execution/bff';
 
 export async function POST(request: NextRequest) {
   try {

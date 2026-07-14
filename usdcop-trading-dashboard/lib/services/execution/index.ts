@@ -28,3 +28,6 @@ export { signalService } from './signal.service';
 
 // Trading Config Service
 export { tradingService } from './trading-config.service';
+
+// User Profile Service
+export { userProfileService } from './user.service';

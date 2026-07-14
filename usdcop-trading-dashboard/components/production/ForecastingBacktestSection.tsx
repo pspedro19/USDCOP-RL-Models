@@ -3,41 +3,41 @@
 /**
  * ForecastingBacktestSection — Self-contained 2025 Backtest Viewer + Approval
  * ============================================================================
- * Renders inside /dashboard BEFORE the RL sections.
- * Fetches file-based JSON on mount (no ModelContext dependency).
+ * GM re-skin (CTR-GM-UI-001, prototipo Var B líneas 363-484 + view-model
+ * 2304-2398). SOLO presentación: todos los fetches, endpoints, estados y
+ * handlers de aprobación (Vote 2/2, approval-gates.md) están INTACTOS.
+ * Los números SIEMPRE vienen del bundle publicado (audit I-4 / CTR-QUANT-
+ * CONSTITUTION-001 §7); el replay solo produce PREVIEWS etiquetados.
  *
  * Sections:
- * 1. Header + StatusBadge
- * 2. KPI cards (5)
- * 3. Statistical significance badge
- * 4. Candlestick chart with trade markers
- * 5. Interactive Approval Panel (Vote 2)
- * 6. Gates Panel
- * 7. Exit reasons + Trade table
+ * 1. Meta (MetricBadge + status + p-value) + version selector
+ * 2. KPI row (builder SSOT strategy-kpis, mismo que Producción)
+ * 3. Candle panel + replay bar (gradiente + Desde/Hasta + progreso accent)
+ * 4. Equity panel
+ * 5. Grid 1.5fr/1fr: Resumen del periodo · Razones de salida · Tabla de trades
+ *    | Gates (Voto 1) · Aprobación humana (Voto 2/2, SOLO admin) · Deploy
  *
- * Spec: .claude/rules/sdd-dashboard-integration.md
+ * Spec: .claude/rules/approval-gates.md · .claude/specs/platform/dashboard-integration.md
  * Contract: lib/contracts/strategy.contract.ts
  */
 
 import { useSession } from 'next-auth/react';
 import { MetricBadge } from '@/components/ui/MetricBadge';
-import { calmarRatio } from '@/lib/contracts/ui.contract';
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
-  TrendingUp, TrendingDown, Activity, Target, BarChart3,
-  Shield, CheckCircle2, XCircle, AlertTriangle, ChevronDown,
-  ChevronUp, Loader2, ArrowUpDown, DollarSign,
-  Percent, Zap, RefreshCw, LineChart, Play, Pause,
-  RotateCcw, CalendarDays, Calendar, Gauge, Rocket,
-  ExternalLink,
+  CheckCircle2, XCircle, AlertTriangle, Activity, ChevronDown,
+  ChevronUp, Loader2, RefreshCw, Play, Pause,
+  RotateCcw, Calendar, Gauge, Rocket, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AreaChart, Area, XAxis, YAxis,
   Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
+import { GmBadge, GmKpi, GmPanel, GmSkeleton } from '@/components/gm';
+import { buildStrategyKpis } from '@/components/gm/views/strategy-kpis';
+import { defineGmDict, useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT, GM_HEX, type GmTone } from '@/lib/ui/gm-tokens';
 import { getExitReasonColor } from '@/lib/contracts/strategy.contract';
 import type { StrategyStats, StrategyTrade } from '@/lib/contracts/strategy.contract';
 import type {
@@ -49,6 +49,180 @@ import type {
   DeployStatus,
   DeployResponse,
 } from '@/lib/contracts/production-approval.contract';
+
+// ── Colores de recharts (props SVG no aceptan clases Tailwind) desde GM_HEX —
+//    único lugar con hex (CTR-GM-UI-001). Mismo patrón que ProductionView.tsx.
+const HEX = {
+  accent: GM_HEX.accent,
+  tick: GM_HEX.tick,
+  ref: GM_HEX.ref,
+} as const;
+
+// ── Diccionario local ES/EN (gm-core) — cero strings hardcodeados en la vista.
+const DICT = defineGmDict({
+  es: {
+    loading: 'Cargando backtest…',
+    trades: 'trades',
+    significant: 'Significativo',
+    notSignificant: 'No significativo',
+    previewBanner: 'PREVIEW DEL REPLAY — cifras recomputadas de los trades visibles; NO son las métricas oficiales del bundle (el Vote 2 y los gates usan el bundle publicado)',
+    ratiosNote: 'N<20 trades — solo conteo y P&L (quant-constitution §6)',
+    versionLabel: 'Versión',
+    noReplay: '(sin replay)',
+    chartTitle: 'Precio y operaciones',
+    lwNote: 'Lightweight Charts',
+    replayTitle: 'Replay del backtest',
+    inRange: 'trades en rango',
+    from: 'Desde',
+    to: 'Hasta',
+    play: 'Reproducir replay',
+    pause: 'Pausar',
+    showAll: 'Todos',
+    showAllTitle: 'Mostrar todos los trades',
+    equityTitle: 'Curva de equity',
+    equityLabel: 'Equity',
+    summaryTitle: 'Resumen del periodo',
+    sCapIni: 'Capital inicial',
+    sEqFin: 'Equity final',
+    sEntryStart: 'Precio entrada (inicio)',
+    sExitEnd: 'Precio salida (fin)',
+    sOps: 'Operaciones',
+    sWr: 'Win rate',
+    sDays: 'Días de trading',
+    sRet: 'Retorno del periodo',
+    sPnl: 'Profit / Loss',
+    backtestNote: 'Backtest',
+    tradesOos: 'trades OOS',
+    exitTitle: 'Razones de salida',
+    tradesTitle: 'Historial de operaciones',
+    ops: 'operaciones',
+    less: 'Menos',
+    thDate: 'Fecha',
+    thSide: 'Lado',
+    thEntry: 'Entrada',
+    thExit: 'Salida',
+    thPnl: 'P&L',
+    thReason: 'Motivo',
+    gatesTitle: 'Gates automáticos (Voto 1/2)',
+    passed: 'pasaron',
+    threshold: 'umbral',
+    approvalTitle: 'Aprobación humana',
+    approvalSub: 'Revisión humana requerida (Voto 2/2)',
+    approvalDesc: 'Los gates automáticos ya emitieron el Voto 1. Tu voto (2/2) decide sobre los números del bundle publicado y promueve la estrategia a producción.',
+    notesPh: 'Notas del revisor (opcional)…',
+    approve: 'Aprobar (Voto 2/2)',
+    reject: 'Rechazar',
+    confirm: 'Confirmar',
+    confirmReject: 'Confirmar rechazo',
+    cancel: 'Cancelar',
+    approvedMsg: 'Estrategia aprobada',
+    rejectedMsg: 'Estrategia rechazada',
+    by: 'por',
+    statusPending: 'Pendiente',
+    statusApproved: 'Aprobado',
+    statusRejected: 'Rechazado',
+    statusLive: 'En vivo',
+    deployTitle: 'Desplegar a producción',
+    deployDesc: 'Reentrenar con datos completos (2020-2025) y generar trades 2026',
+    deploying: 'Desplegando…',
+    deployDone: '¡Deploy completado!',
+    deployDoneDesc: 'Estrategia desplegada exitosamente. Los datos de producción 2026 están listos.',
+    seeProd: 'Ver producción',
+    deployErr: 'Error en deploy',
+    unknownErr: 'Error desconocido durante el despliegue.',
+    retry: 'Reintentar',
+    phInit: 'Inicializando…',
+    phRetrain: 'Reentrenando modelos (2020-2025)…',
+    phExport: 'Exportando datos de producción…',
+    phDone: 'Completado',
+    phGeneric: 'Procesando…',
+    stepInit: 'Inicializar',
+    stepRetrain: 'Reentrenar',
+    stepExport: 'Exportar',
+    stepReady: 'Listo',
+  },
+  en: {
+    loading: 'Loading backtest…',
+    trades: 'trades',
+    significant: 'Significant',
+    notSignificant: 'Not significant',
+    previewBanner: 'REPLAY PREVIEW — figures recomputed from visible trades; NOT the official bundle metrics (Vote 2 and the gates use the published bundle)',
+    ratiosNote: 'N<20 trades — count and P&L only (quant-constitution §6)',
+    versionLabel: 'Version',
+    noReplay: '(no replay)',
+    chartTitle: 'Price & trades',
+    lwNote: 'Lightweight Charts',
+    replayTitle: 'Backtest replay',
+    inRange: 'trades in range',
+    from: 'From',
+    to: 'To',
+    play: 'Play replay',
+    pause: 'Pause',
+    showAll: 'All',
+    showAllTitle: 'Show all trades',
+    equityTitle: 'Equity curve',
+    equityLabel: 'Equity',
+    summaryTitle: 'Period summary',
+    sCapIni: 'Initial capital',
+    sEqFin: 'Final equity',
+    sEntryStart: 'Entry price (start)',
+    sExitEnd: 'Exit price (end)',
+    sOps: 'Trades',
+    sWr: 'Win rate',
+    sDays: 'Trading days',
+    sRet: 'Period return',
+    sPnl: 'Profit / Loss',
+    backtestNote: 'Backtest',
+    tradesOos: 'OOS trades',
+    exitTitle: 'Exit reasons',
+    tradesTitle: 'Trade history',
+    ops: 'trades',
+    less: 'Less',
+    thDate: 'Date',
+    thSide: 'Side',
+    thEntry: 'Entry',
+    thExit: 'Exit',
+    thPnl: 'P&L',
+    thReason: 'Reason',
+    gatesTitle: 'Automatic gates (Vote 1/2)',
+    passed: 'passed',
+    threshold: 'threshold',
+    approvalTitle: 'Human approval',
+    approvalSub: 'Human review required (Vote 2/2)',
+    approvalDesc: 'The automatic gates already cast Vote 1. Your vote (2/2) decides on the published bundle numbers and promotes the strategy to production.',
+    notesPh: 'Reviewer notes (optional)…',
+    approve: 'Approve (Vote 2/2)',
+    reject: 'Reject',
+    confirm: 'Confirm',
+    confirmReject: 'Confirm rejection',
+    cancel: 'Cancel',
+    approvedMsg: 'Strategy approved',
+    rejectedMsg: 'Strategy rejected',
+    by: 'by',
+    statusPending: 'Pending',
+    statusApproved: 'Approved',
+    statusRejected: 'Rejected',
+    statusLive: 'Live',
+    deployTitle: 'Deploy to production',
+    deployDesc: 'Retrain on full data (2020-2025) and generate 2026 trades',
+    deploying: 'Deploying…',
+    deployDone: 'Deploy completed!',
+    deployDoneDesc: 'Strategy deployed successfully. 2026 production data is ready.',
+    seeProd: 'View production',
+    deployErr: 'Deploy error',
+    unknownErr: 'Unknown error during deployment.',
+    retry: 'Retry',
+    phInit: 'Initializing…',
+    phRetrain: 'Retraining models (2020-2025)…',
+    phExport: 'Exporting production data…',
+    phDone: 'Done',
+    phGeneric: 'Processing…',
+    stepInit: 'Initialize',
+    stepRetrain: 'Retrain',
+    stepExport: 'Export',
+    stepReady: 'Ready',
+  },
+});
 
 // ============================================================================
 // Strategy Registry Types
@@ -72,57 +246,7 @@ interface StrategyRegistry {
 const TradingChartWithSignals = lazy(() => import('@/components/charts/TradingChartWithSignals'));
 
 // ============================================================================
-// KPI Card (matches production/page.tsx KPICard exactly)
-// ============================================================================
-function KPICard({ title, value, subtitle, icon, trend, color = '#10B981', isLoading }: {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  trend?: 'up' | 'down' | 'neutral';
-  color?: string;
-  isLoading?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <Card className="bg-slate-900/50 border-slate-800">
-        <CardContent className="p-4 sm:p-6">
-          <div className="animate-pulse space-y-2">
-            <div className="h-3 w-16 bg-slate-700 rounded mx-auto" />
-            <div className="h-8 w-24 bg-slate-700 rounded mx-auto" />
-            <div className="h-2 w-20 bg-slate-700 rounded mx-auto" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="bg-slate-900/50 border-slate-800 hover:border-slate-600 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/5">
-      <CardContent className="p-5 sm:p-6 flex flex-col items-center text-center">
-        <div className="p-2.5 sm:p-3 rounded-xl mb-4" style={{ backgroundColor: `${color}15` }}>
-          <div style={{ color }}>{icon}</div>
-        </div>
-        <span className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">
-          {title}
-        </span>
-        <div className="text-2xl sm:text-3xl font-bold tracking-tight mb-1" style={{ color }}>
-          {value}
-        </div>
-        {subtitle && (
-          <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm text-slate-400">
-            {trend === 'up' && <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" />}
-            {trend === 'down' && <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />}
-            <span>{subtitle}</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================================
-// Strategy Selector Dropdown
+// Strategy Selector Dropdown (GM re-skin — misma lógica de selección)
 // ============================================================================
 function StrategySelector({
   strategies,
@@ -140,77 +264,49 @@ function StrategySelector({
     <div className="relative">
       <button
         onClick={() => strategies.length > 1 ? setIsOpen(!isOpen) : undefined}
-        className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-xl",
-          "bg-slate-800/80 border border-slate-700",
-          strategies.length > 1 && "hover:border-cyan-500/50 cursor-pointer",
-          "transition-all duration-200 text-sm"
-        )}
+        className={`${GM.ctaGhost} ${GM.focus} flex items-center gap-2.5 min-h-[44px] px-3.5 py-1.5`}
+        aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <div className="text-left">
-            <div className="font-semibold text-white text-xs">
-              {selected?.strategy_name || 'Select Strategy'}
-            </div>
-            <div className="text-[10px] text-slate-400">
-              {selected?.pipeline} | +{selected?.return_pct.toFixed(1)}% | Sharpe {selected?.sharpe.toFixed(2)}
-            </div>
-          </div>
-        </div>
+        <span className="w-2 h-2 rounded-full bg-[var(--gm-pos)] motion-safe:animate-pulse shrink-0" aria-hidden />
+        <span className="text-left">
+          <span className={`block text-[0.8125rem] font-bold leading-tight ${GM.text}`}>
+            {selected?.strategy_name || '—'}
+          </span>
+          <span className={`block ${GMT.micro} ${GM.textMuted} font-mono leading-tight mt-0.5`}>
+            {selected?.pipeline} · +{selected?.return_pct.toFixed(1)}% · Sharpe {selected?.sharpe.toFixed(2)}
+          </span>
+        </span>
         {selected?.status && (
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-[9px] font-bold ml-2 shrink-0",
-              selected.status === 'APPROVED'
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-            )}
-          >
-            {selected.status}
-          </Badge>
+          <GmBadge tone={selected.status === 'APPROVED' ? 'pos' : 'warn'}>{selected.status}</GmBadge>
         )}
         {strategies.length > 1 && (
-          <ChevronDown className={cn(
-            "w-3.5 h-3.5 text-slate-400 transition-transform",
-            isOpen && "rotate-180"
-          )} />
+          <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} aria-hidden />
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl min-w-[260px]">
+        <div className={`absolute top-full left-0 mt-1.5 z-40 min-w-[300px] ${GM.popover} p-1.5 flex flex-col gap-0.5`}>
           {strategies.map((s) => (
             <button
               key={s.strategy_id}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-3",
-                "hover:bg-slate-700/50 transition-colors text-left",
-                s.strategy_id === selectedId && "bg-slate-700/30"
+                `${GM.rowHover} ${GM.focus} w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-[9px] text-left`,
+                s.strategy_id === selectedId && 'bg-[rgba(34,211,238,.07)]'
               )}
               onClick={() => {
                 onSelect(s.strategy_id);
                 setIsOpen(false);
               }}
             >
-              <div>
-                <div className="text-white font-medium text-sm">{s.strategy_name}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">
-                  {s.pipeline} | +{s.return_pct.toFixed(1)}% | Sharpe {s.sharpe.toFixed(2)} | p={s.p_value.toFixed(4)}
-                </div>
-              </div>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-[9px] font-bold ml-3 shrink-0",
-                  s.status === 'APPROVED'
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                )}
-              >
+              <span className="min-w-0">
+                <span className={`block text-[0.8125rem] font-bold ${GM.text}`}>{s.strategy_name}</span>
+                <span className={`block ${GMT.micro} ${GM.textMuted} font-mono mt-0.5`}>
+                  {s.pipeline} · +{s.return_pct.toFixed(1)}% · Sharpe {s.sharpe.toFixed(2)} · p={s.p_value.toFixed(4)}
+                </span>
+              </span>
+              <GmBadge tone={s.status === 'APPROVED' ? 'pos' : 'warn'} className="shrink-0">
                 {s.status}
-              </Badge>
+              </GmBadge>
             </button>
           ))}
         </div>
@@ -223,27 +319,28 @@ function StrategySelector({
 // Status Badge
 // ============================================================================
 function StatusBadge({ status }: { status: ProductionStatus }) {
-  const config: Record<ProductionStatus, { bg: string; text: string; border: string; label: string }> = {
-    PENDING_APPROVAL: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', label: 'Pendiente' },
-    APPROVED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', label: 'Aprobado' },
-    REJECTED: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30', label: 'Rechazado' },
-    LIVE: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', label: 'En Vivo' },
+  const t = useGmT(DICT);
+  const config: Record<ProductionStatus, { tone: GmTone; label: string }> = {
+    PENDING_APPROVAL: { tone: 'warn', label: t('statusPending') },
+    APPROVED: { tone: 'pos', label: t('statusApproved') },
+    REJECTED: { tone: 'neg', label: t('statusRejected') },
+    LIVE: { tone: 'accent', label: t('statusLive') },
   };
   const c = config[status];
 
   return (
-    <Badge variant="outline" className={cn(c.bg, c.text, c.border, 'text-[10px] font-bold')}>
-      {status === 'PENDING_APPROVAL' && <AlertTriangle className="w-3 h-3 mr-1" />}
-      {status === 'APPROVED' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-      {status === 'REJECTED' && <XCircle className="w-3 h-3 mr-1" />}
-      {status === 'LIVE' && <Activity className="w-3 h-3 mr-1 animate-pulse" />}
+    <GmBadge tone={c.tone}>
+      {status === 'PENDING_APPROVAL' && <AlertTriangle className="w-3 h-3" aria-hidden />}
+      {status === 'APPROVED' && <CheckCircle2 className="w-3 h-3" aria-hidden />}
+      {status === 'REJECTED' && <XCircle className="w-3 h-3" aria-hidden />}
+      {status === 'LIVE' && <Activity className="w-3 h-3 motion-safe:animate-pulse" aria-hidden />}
       {c.label}
-    </Badge>
+    </GmBadge>
   );
 }
 
 // ============================================================================
-// Interactive Approval Panel (Vote 2/2)
+// Interactive Approval Panel (Vote 2/2 — SOLO admin; lógica intacta)
 // ============================================================================
 function ApprovalPanel({
   approval,
@@ -256,210 +353,165 @@ function ApprovalPanel({
   onReject: (reason: string) => void;
   isSubmitting: boolean;
 }) {
+  const t = useGmT(DICT);
   const [notes, setNotes] = useState('');
   const [showConfirm, setShowConfirm] = useState<'approve' | 'reject' | null>(null);
 
   if (approval.status !== 'PENDING_APPROVAL') return null;
 
-  const recColor = approval.backtest_recommendation === 'PROMOTE'
-    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+  const recTone: GmTone = approval.backtest_recommendation === 'PROMOTE'
+    ? 'pos'
     : approval.backtest_recommendation === 'REJECT'
-    ? 'bg-red-500/10 text-red-400 border-red-500/30'
-    : 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+    ? 'neg'
+    : 'warn';
 
   return (
-    <Card variant="glow" className="border-purple-500/30">
-      <CardHeader variant="minimal">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Shield className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <CardTitle variant="default" gradient={false} className="text-base text-white">
-                Aprobacion de Estrategia
-              </CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Revision humana requerida (Vote 2/2)</p>
-            </div>
-          </div>
-          <Badge variant="outline" className={cn('text-[10px] font-bold', recColor)}>
-            L4: {approval.backtest_recommendation} ({Math.round(approval.backtest_confidence * 100)}%)
-          </Badge>
-        </div>
-      </CardHeader>
+    <section className="gm-contain rounded-2xl border border-[rgba(34,211,238,.28)] bg-[rgba(34,211,238,.05)] p-[18px]">
+      <div className="flex items-start justify-between gap-3 mb-1.5">
+        <div className={`${GMT.panelTitle} ${GM.accent}`}>{t('approvalTitle')}</div>
+        <GmBadge tone={recTone}>
+          L4: {approval.backtest_recommendation} ({Math.round(approval.backtest_confidence * 100)}%)
+        </GmBadge>
+      </div>
+      <p className={`${GMT.meta} ${GM.textSec} leading-relaxed m-0 mb-4`}>
+        {t('approvalSub')}. {t('approvalDesc')}
+      </p>
 
-      <CardContent className="pt-0 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            placeholder="Notas del revisor (opcional)..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            className="flex-1 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
-          />
+      <input
+        type="text"
+        placeholder={t('notesPh')}
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        className={`${GM.input} ${GM.focus} w-full min-h-[44px] mb-2.5`}
+      />
 
-          {showConfirm === 'approve' ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => { onApprove(notes); setShowConfirm(null); }}
-                disabled={isSubmitting}
-                className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                Confirmar
-              </button>
-              <button onClick={() => setShowConfirm(null)} className="px-3 py-2.5 text-slate-400 hover:text-white text-sm transition-colors">
-                Cancelar
-              </button>
-            </div>
-          ) : showConfirm === 'reject' ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => { onReject(notes); setShowConfirm(null); }}
-                disabled={isSubmitting}
-                className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-red-500/20 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                Confirmar Rechazo
-              </button>
-              <button onClick={() => setShowConfirm(null)} className="px-3 py-2.5 text-slate-400 hover:text-white text-sm transition-colors">
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowConfirm('approve')}
-                className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Aprobar y Promover
-              </button>
-              <button
-                onClick={() => setShowConfirm('reject')}
-                className="px-4 py-2.5 bg-slate-800 border border-slate-700 hover:bg-red-600/20 hover:border-red-500/50 text-slate-300 hover:text-red-400 text-sm font-semibold rounded-lg transition-all flex items-center gap-1.5"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                Rechazar
-              </button>
-            </div>
-          )}
+      {showConfirm === 'approve' ? (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => { onApprove(notes); setShowConfirm(null); }}
+            disabled={isSubmitting}
+            className={`${GM.ctaPrimary} ${GM.focus} w-full h-11 text-[0.8125rem] disabled:opacity-50 inline-flex items-center justify-center gap-1.5`}
+          >
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin" aria-hidden /> : <CheckCircle2 className="w-3.5 h-3.5" aria-hidden />}
+            {t('confirm')}
+          </button>
+          <button
+            onClick={() => setShowConfirm(null)}
+            className={`${GM.ctaGhost} ${GM.focus} w-full h-11 text-[0.8125rem] font-semibold`}
+          >
+            {t('cancel')}
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      ) : showConfirm === 'reject' ? (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => { onReject(notes); setShowConfirm(null); }}
+            disabled={isSubmitting}
+            className={`${GM.ctaDanger} ${GM.focus} w-full h-11 text-[0.8125rem] font-bold disabled:opacity-50 inline-flex items-center justify-center gap-1.5`}
+          >
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 motion-safe:animate-spin" aria-hidden /> : <XCircle className="w-3.5 h-3.5" aria-hidden />}
+            {t('confirmReject')}
+          </button>
+          <button
+            onClick={() => setShowConfirm(null)}
+            className={`${GM.ctaGhost} ${GM.focus} w-full h-11 text-[0.8125rem] font-semibold`}
+          >
+            {t('cancel')}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowConfirm('approve')}
+            className={`${GM.ctaPrimary} ${GM.focus} w-full h-11 text-[0.8125rem] inline-flex items-center justify-center gap-1.5`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden />
+            {t('approve')}
+          </button>
+          <button
+            onClick={() => setShowConfirm('reject')}
+            className={`${GM.ctaDanger} ${GM.focus} w-full h-11 text-[0.8125rem] font-bold inline-flex items-center justify-center gap-1.5`}
+          >
+            <XCircle className="w-3.5 h-3.5" aria-hidden />
+            {t('reject')}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
 // ============================================================================
-// Gates Panel
+// Gates Panel — SIEMPRE los resultados Vote-1 del bundle publicado
 // ============================================================================
 function GatesPanel({ gates }: { gates: GateResult[] }) {
+  const t = useGmT(DICT);
   const passed = gates.filter(g => g.passed).length;
   const total = gates.length;
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader variant="minimal" className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Shield className="w-4 h-4 text-purple-400" />
-            </div>
-            <CardTitle variant="default" gradient={false} className="text-sm text-white uppercase tracking-wider">
-              Gates de Validacion
-            </CardTitle>
+    <GmPanel
+      title={t('gatesTitle')}
+      actions={
+        <GmBadge tone={passed === total ? 'pos' : 'warn'}>
+          {passed}/{total} {t('passed')}
+        </GmBadge>
+      }
+    >
+      <div className="flex flex-col gap-2.5">
+        {gates.map((g) => (
+          <div key={g.gate} className="flex items-center gap-2.5">
+            {g.passed
+              ? <CheckCircle2 className={`w-[17px] h-[17px] shrink-0 ${GM.pos}`} aria-hidden />
+              : <XCircle className={`w-[17px] h-[17px] shrink-0 ${GM.neg}`} aria-hidden />}
+            <span className={`${GMT.meta} ${GM.textStrong} font-mono min-w-0 flex-1`}>{g.label}</span>
+            <span className={`${GMT.micro} ${GMT.mono} ${g.passed ? GM.pos : GM.neg} text-right shrink-0`}>
+              {typeof g.value === 'number'
+                ? g.gate === 'min_trades'
+                  ? g.value
+                  : `${g.value.toFixed(g.gate === 'statistical_significance' ? 4 : 1)}${g.gate !== 'min_trades' ? (g.gate === 'statistical_significance' ? '' : '%') : ''}`
+                : g.value}
+              <span className={`block ${GM.textMuted} font-normal`}>
+                {t('threshold')}: {g.gate === 'min_trades' ? g.threshold : g.gate === 'statistical_significance' ? g.threshold : `${g.threshold}%`}
+              </span>
+            </span>
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              'text-[10px] font-bold',
-              passed === total
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-            )}
-          >
-            {passed}/{total} pasaron
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {gates.map((g) => (
-            <div
-              key={g.gate}
-              className={cn(
-                'rounded-xl p-3 border text-center transition-all duration-200',
-                g.passed
-                  ? 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40'
-                  : 'bg-red-500/5 border-red-500/20 hover:border-red-500/40'
-              )}
-            >
-              <div className="flex items-center justify-center gap-1 mb-1">
-                {g.passed
-                  ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  : <XCircle className="w-4 h-4 text-red-400" />}
-                <span className="text-[10px] font-medium text-slate-400 uppercase">{g.label}</span>
-              </div>
-              <div className={cn(
-                'text-base font-bold font-mono',
-                g.passed ? 'text-emerald-400' : 'text-red-400'
-              )}>
-                {typeof g.value === 'number'
-                  ? g.gate === 'min_trades'
-                    ? g.value
-                    : `${g.value.toFixed(g.gate === 'statistical_significance' ? 4 : 1)}${g.gate !== 'min_trades' ? (g.gate === 'statistical_significance' ? '' : '%') : ''}`
-                  : g.value}
-              </div>
-              <div className="text-[9px] text-slate-500 mt-0.5">
-                umbral: {g.gate === 'min_trades' ? g.threshold : g.gate === 'statistical_significance' ? g.threshold : `${g.threshold}%`}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </GmPanel>
   );
 }
 
 // ============================================================================
-// Exit Reasons Summary
+// Exit Reasons Summary — barras con colores del EXIT_REASON_COLORS (contrato)
 // ============================================================================
 function ExitReasonsSummary({ reasons }: { reasons: Record<string, number> }) {
+  const t = useGmT(DICT);
   const total = Object.values(reasons).reduce((s, v) => s + v, 0);
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader variant="minimal" className="pb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-purple-500/10">
-            <Zap className="w-4 h-4 text-purple-400" />
-          </div>
-          <CardTitle variant="default" gradient={false} className="text-sm text-white uppercase tracking-wider">
-            Razones de Salida
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="space-y-3">
-          {Object.entries(reasons).map(([reason, count]) => {
-            const color = getExitReasonColor(reason);
-            const pct = total > 0 ? (count / total) * 100 : 0;
-            return (
-              <div key={reason} className="flex items-center gap-3">
-                <span className={cn('text-xs font-medium w-28 px-2 py-0.5 rounded', color.bg, color.text)}>{reason}</span>
-                <div className="flex-1 h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={cn('h-full rounded-full transition-all duration-500', color.bar)}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="text-xs font-mono text-slate-400 w-16 text-right">{count} ({Math.round(pct)}%)</span>
+    <GmPanel title={t('exitTitle')}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {Object.entries(reasons).map(([reason, count]) => {
+          const color = getExitReasonColor(reason);
+          const pct = total > 0 ? (count / total) * 100 : 0;
+          return (
+            <div key={reason}>
+              <div className={`flex items-center justify-between gap-2 ${GMT.meta} mb-1.5`}>
+                <span className={`${GM.textStrong} font-mono truncate`}>{reason}</span>
+                <span className={`${GM.textMuted} ${GMT.mono} shrink-0`}>{count} · {Math.round(pct)}%</span>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              <div className="h-1.5 rounded-full bg-[rgba(148,163,184,.12)] overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all duration-[var(--gm-dur-slow)]', color.bar)}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </GmPanel>
   );
 }
 
@@ -473,6 +525,7 @@ function EquityCurveChart({ trades, initialCapital, seriesPoints }: {
    *  present it replaces the trade-step curve (trades can't represent partial windows). */
   seriesPoints?: Array<{ d: string; eq: number }>;
 }) {
+  const t = useGmT(DICT);
   const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const formatTradeDate = (iso: string | undefined): string => {
     if (!iso) return '?';
@@ -485,9 +538,9 @@ function EquityCurveChart({ trades, initialCapital, seriesPoints }: {
     ? seriesPoints.map((r, i) => ({ label: formatTradeDate(r.d), equity: r.eq, idx: i }))
     : [
       { label: trades.length > 0 ? formatTradeDate(trades[0].timestamp as string) : 'Inicio', equity: initialCapital, idx: 0 },
-      ...trades.map((t, i) => ({
-        label: formatTradeDate((t.exit_timestamp || t.timestamp) as string),
-        equity: Number(t.equity_at_exit),
+      ...trades.map((tr, i) => ({
+        label: formatTradeDate((tr.exit_timestamp || tr.timestamp) as string),
+        equity: Number(tr.equity_at_exit),
         idx: i + 1,
       }))
     ];
@@ -498,65 +551,62 @@ function EquityCurveChart({ trades, initialCapital, seriesPoints }: {
   const padding = (maxEq - minEq) * 0.1 || 100;
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader variant="minimal" className="pb-2">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-cyan-500/10">
-            <LineChart className="w-4 h-4 text-cyan-400" />
-          </div>
-          <CardTitle variant="default" gradient={false} className="text-sm text-white uppercase tracking-wider">
-            Curva de Equity
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dataPoints}>
-              <defs>
-                <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={[minEq - padding, maxEq + padding]}
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(1)}k`}
-              />
-              <RechartsTooltip
-                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-                labelStyle={{ color: '#94a3b8' }}
-                formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 'Equity']}
-              />
-              <ReferenceLine y={initialCapital} stroke="#475569" strokeDasharray="3 3" />
-              <Area
-                type="monotone"
-                dataKey="equity"
-                stroke="#06b6d4"
-                strokeWidth={2}
-                fill="url(#equityGradient)"
-                dot={{ fill: '#06b6d4', r: 3 }}
-                activeDot={{ r: 5, stroke: '#06b6d4', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+    <GmPanel title={t('equityTitle')}>
+      <div className="h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={dataPoints}>
+            <defs>
+              <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={HEX.accent} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={HEX.accent} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: HEX.tick }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              domain={[minEq - padding, maxEq + padding]}
+              tick={{ fontSize: 10, fill: HEX.tick }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v: number) => `$${(v / 1000).toFixed(1)}k`}
+            />
+            <RechartsTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload[0]) return null;
+                const d = payload[0].payload as { label: string; equity: number };
+                return (
+                  <div className={`${GM.popover} px-3 py-2`}>
+                    <p className={`${GMT.micro} ${GM.textSec} m-0 mb-1`}>{d.label}</p>
+                    <p className={`${GMT.mono} text-[0.8125rem] font-bold ${GM.text} m-0`}>
+                      ${d.equity.toLocaleString(undefined, { minimumFractionDigits: 2 })} <span className={`${GMT.micro} ${GM.textMuted} font-normal`}>{t('equityLabel')}</span>
+                    </p>
+                  </div>
+                );
+              }}
+            />
+            <ReferenceLine y={initialCapital} stroke={HEX.ref} strokeDasharray="3 3" />
+            <Area
+              type="monotone"
+              dataKey="equity"
+              stroke={HEX.accent}
+              strokeWidth={2}
+              fill="url(#equityGradient)"
+              dot={{ fill: HEX.accent, r: 3 }}
+              activeDot={{ r: 5, stroke: HEX.accent, strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </GmPanel>
   );
 }
 
 // ============================================================================
-// Trading Summary (Backtest)
+// Resumen del periodo (Backtest) — grid 4 col (prototipo btSummary)
 // ============================================================================
 function TradingSummary({
   stats,
@@ -571,92 +621,61 @@ function TradingSummary({
   strategyName?: string;
   year?: number;
 }) {
+  const t = useGmT(DICT);
   const totalTrades = trades.length;
-  const wins = trades.filter(t => Number(t.pnl_usd) > 0).length;
+  const wins = trades.filter(tr => Number(tr.pnl_usd) > 0).length;
   const losses = totalTrades - wins;
   const currentEquity = trades.length > 0 ? Number(trades[trades.length - 1].equity_at_exit) : initialCapital;
   const profit = currentEquity - initialCapital;
   const profitPct = stats?.total_return_pct ?? (profit / initialCapital * 100);
   const winRate = stats?.win_rate_pct ?? (totalTrades > 0 ? (wins / totalTrades) * 100 : 0);
   const tradingDays = stats?.trading_days ?? 0;
+  const entryStart = trades.length > 0 && trades[0].entry_price != null
+    ? `$${Number(trades[0].entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—';
+  const exitEnd = trades.length > 0 && trades[trades.length - 1].exit_price != null
+    ? `$${Number(trades[trades.length - 1].exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—';
+
+  const items: Array<{ label: string; value: string; cls: string }> = [
+    { label: t('sCapIni'), value: `$${initialCapital.toLocaleString()}`, cls: GM.text },
+    { label: t('sEqFin'), value: `$${currentEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, cls: GM.textStrong },
+    { label: t('sEntryStart'), value: entryStart, cls: GM.textSec },
+    { label: t('sExitEnd'), value: exitEnd, cls: GM.textSec },
+    { label: t('sOps'), value: `${totalTrades} (${wins}W / ${losses}L)`, cls: GM.text },
+    { label: t('sWr'), value: `${winRate.toFixed(1)}%`, cls: winRate >= 50 ? GM.pos : GM.warn },
+    { label: t('sDays'), value: tradingDays > 0 ? String(tradingDays) : '—', cls: GM.text },
+    { label: t('sRet'), value: `${profitPct >= 0 ? '+' : ''}${profitPct.toFixed(2)}%`, cls: profitPct >= 0 ? GM.pos : GM.neg },
+  ];
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader className="py-3 px-4">
-        <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
-          <Activity className="w-4 h-4" />
-          Trading Summary
-          {strategyName && (
-            <span className="ml-auto text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400">
-              {strategyName}
-            </span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-500">
-            <DollarSign className="w-3.5 h-3.5" />
-            <span className="text-sm">Capital Inicial</span>
+    <GmPanel
+      title={t('summaryTitle')}
+      actions={strategyName ? <GmBadge tone="accent">{strategyName}</GmBadge> : undefined}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        {items.map((it) => (
+          <div key={it.label}>
+            <div className={`${GMT.label} ${GM.textMuted} mb-1.5`}>{it.label}</div>
+            <div className={`text-[0.9375rem] font-extrabold ${GMT.mono} ${it.cls}`}>{it.value}</div>
           </div>
-          <span className="font-mono text-sm text-slate-300">${initialCapital.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-500">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span className="text-sm">Equity Final</span>
+        ))}
+      </div>
+      <div className="border-t border-[rgba(148,163,184,.10)] pt-3 mt-4 flex items-center justify-between gap-3">
+        <span className={`${GMT.meta} ${GM.textSec}`}>{t('sPnl')}</span>
+        <div className="text-right">
+          <div className={`${GMT.mono} text-lg font-extrabold ${profit >= 0 ? GM.pos : GM.neg}`}>
+            {profit >= 0 ? '+' : ''}${profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <span className="font-mono text-sm font-bold text-white">
-            ${currentEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-500">
-            <Activity className="w-3.5 h-3.5" />
-            <span className="text-sm">Operaciones</span>
-          </div>
-          <span className="font-mono text-sm text-slate-300">
-            {totalTrades} <span className="text-slate-500">({wins}W / {losses}L)</span>
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-500">
-            <Target className="w-3.5 h-3.5" />
-            <span className="text-sm">Win Rate</span>
-          </div>
-          <span className={cn('font-mono text-sm', winRate >= 50 ? 'text-emerald-400' : 'text-amber-400')}>
-            {winRate.toFixed(1)}%
-          </span>
-        </div>
-        {tradingDays > 0 && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-500">
-              <CalendarDays className="w-3.5 h-3.5" />
-              <span className="text-sm">Dias de Trading</span>
-            </div>
-            <span className="font-mono text-sm text-slate-300">{tradingDays}</span>
-          </div>
-        )}
-        <div className="border-t border-slate-700 pt-3 mt-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">Profit/Loss</span>
-            <div className="text-right">
-              <div className={cn('font-mono text-lg font-bold', profit >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                {profit >= 0 ? '+' : ''}${profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-              <div className={cn('text-xs font-mono', profitPct >= 0 ? 'text-emerald-400/70' : 'text-red-400/70')}>
-                {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(2)}%
-              </div>
-            </div>
+          <div className={`${GMT.micro} ${GMT.mono} ${profitPct >= 0 ? GM.pos : GM.neg}`}>
+            {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(2)}%
           </div>
         </div>
-        <div className="mt-2 px-2 py-1.5 rounded bg-blue-500/10 border border-blue-500/20">
-          <span className="text-xs text-blue-400">
-            Backtest {year} — {totalTrades} trades OOS
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className={`mt-3 rounded-[9px] px-2.5 py-1.5 ${GM.infoBadge}`}>
+        <span className={GMT.micro}>
+          {t('backtestNote')} {year} — {totalTrades} {t('tradesOos')}
+        </span>
+      </div>
+    </GmPanel>
   );
 }
 
@@ -680,6 +699,7 @@ function TradeTable({ trades, showAll, onToggle }: {
   showAll: boolean;
   onToggle: () => void;
 }) {
+  const t = useGmT(DICT);
   const [sortField, setSortField] = useState<string>('trade_id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -705,160 +725,97 @@ function TradeTable({ trades, showAll, onToggle }: {
     }
   };
 
-  const SortHeader = ({ field, label }: { field: string; label: string }) => (
+  const SortHeader = ({ field, label, align = 'left' }: { field: string; label: string; align?: 'left' | 'right' }) => (
     <th
       onClick={() => handleSort(field)}
-      className="px-3 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-cyan-400 transition-colors select-none"
+      className={cn(
+        `px-3 py-3 ${GMT.label} ${GM.textMuted} cursor-pointer hover:text-[var(--gm-accent)] transition-colors duration-[var(--gm-dur-fast)] select-none`,
+        align === 'right' ? 'text-right' : 'text-left'
+      )}
     >
-      <span className="flex items-center gap-1">
+      <span className={cn('inline-flex items-center gap-1', align === 'right' && 'flex-row-reverse')}>
         {label}
         {sortField === field && (
-          sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+          sortDir === 'asc' ? <ChevronUp className="w-3 h-3" aria-hidden /> : <ChevronDown className="w-3 h-3" aria-hidden />
         )}
       </span>
     </th>
   );
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardHeader variant="minimal" className="pb-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-cyan-500/10">
-              <ArrowUpDown className="w-4 h-4 text-cyan-400" />
-            </div>
-            <div>
-              <CardTitle variant="default" gradient={false} className="text-sm text-white">
-                Historial de Trades (Backtest 2025)
-              </CardTitle>
-              <p className="text-[10px] text-slate-500 mt-0.5">{trades.length} operaciones</p>
-            </div>
-          </div>
-          {trades.length > 10 && (
-            <button
-              onClick={onToggle}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors flex items-center gap-1"
-            >
-              {showAll ? (
-                <><ChevronUp className="w-3.5 h-3.5" /> Menos</>
-              ) : (
-                <><ChevronDown className="w-3.5 h-3.5" /> Todos ({trades.length})</>
-              )}
-            </button>
+    <GmPanel
+      title={t('tradesTitle')}
+      meta={`${trades.length} ${t('ops')}`}
+      actions={trades.length > 10 ? (
+        <button
+          onClick={onToggle}
+          className={`${GM.focus} ${GMT.meta} ${GM.accent} font-semibold inline-flex items-center gap-1 min-h-[44px] px-2 transition-colors duration-[var(--gm-dur-fast)] hover:opacity-80`}
+        >
+          {showAll ? (
+            <><ChevronUp className="w-3.5 h-3.5" aria-hidden /> {t('less')}</>
+          ) : (
+            <><ChevronDown className="w-3.5 h-3.5" aria-hidden /> {t('showAll')} ({trades.length})</>
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-700/50">
-                <SortHeader field="trade_id" label="#" />
-                <SortHeader field="side" label="Lado" />
-                <SortHeader field="timestamp" label="Entrada" />
-                <SortHeader field="exit_timestamp" label="Salida" />
-                <SortHeader field="entry_price" label="Precio E." />
-                <SortHeader field="exit_price" label="Precio S." />
-                <SortHeader field="leverage" label="Lev" />
-                <th className="px-3 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider text-center">Confianza</th>
-                <th className="px-3 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider text-right">HS%</th>
-                <th className="px-3 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider text-right">TP%</th>
-                <SortHeader field="pnl_usd" label="PnL $" />
-                <SortHeader field="pnl_pct" label="PnL %" />
-                <SortHeader field="exit_reason" label="Razon" />
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((t) => {
-                const exitColor = getExitReasonColor(t.exit_reason);
-                const pnlPositive = Number(t.pnl_usd) >= 0;
-                return (
-                  <tr key={t.trade_id} className="border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors">
-                    <td className="px-3 py-2.5 text-slate-500 text-xs font-mono">{t.trade_id}</td>
-                    <td className="px-3 py-2.5">
-                      <span className={cn(
-                        'px-2 py-0.5 rounded text-[10px] font-bold',
-                        t.side === 'LONG' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                      )}>
-                        {t.side}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono whitespace-nowrap">
-                      {formatTsCOT(t.timestamp as string)}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono whitespace-nowrap">
-                      {formatTsCOT(t.exit_timestamp as string | undefined)}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
-                      {t.entry_price != null ? `$${Number(t.entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">
-                      {t.exit_price != null ? `$${Number(t.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs font-mono text-right">{Number(t.leverage).toFixed(2)}x</td>
-                    <td className="px-3 py-2.5 text-center">
-                      <span className={cn(
-                        'px-1.5 py-0.5 rounded text-[10px] font-bold',
-                        (t as Record<string, unknown>).confidence_tier === 'HIGH' ? 'bg-emerald-500/15 text-emerald-400' :
-                        (t as Record<string, unknown>).confidence_tier === 'MEDIUM' ? 'bg-amber-500/15 text-amber-400' :
-                        'bg-slate-500/15 text-slate-400'
-                      )}>
-                        {String((t as Record<string, unknown>).confidence_tier ?? '-')}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-red-400/70 text-xs font-mono text-right">
-                      {(t as Record<string, unknown>).hard_stop_pct != null ? `${Number((t as Record<string, unknown>).hard_stop_pct).toFixed(1)}%` : '-'}
-                    </td>
-                    <td className="px-3 py-2.5 text-emerald-400/70 text-xs font-mono text-right">
-                      {(t as Record<string, unknown>).take_profit_pct != null ? `${Number((t as Record<string, unknown>).take_profit_pct).toFixed(1)}%` : '-'}
-                    </td>
-                    <td className={cn('px-3 py-2.5 text-xs font-mono font-semibold text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {t.pnl_usd != null ? `${pnlPositive ? '+' : ''}${Number(t.pnl_usd).toFixed(2)}` : '—'}
-                    </td>
-                    <td className={cn('px-3 py-2.5 text-xs font-mono text-right', pnlPositive ? 'text-emerald-400' : 'text-red-400')}>
-                      {t.pnl_pct != null ? `${pnlPositive ? '+' : ''}${Number(t.pnl_pct).toFixed(2)}%` : '—'}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className={cn('px-2 py-0.5 rounded text-[10px] font-medium', exitColor.bg, exitColor.text)}>
-                        {t.exit_reason}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================================
-// Section Header
-// ============================================================================
-function SectionHeader({ title, subtitle, icon }: {
-  title: string;
-  subtitle?: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-8 sm:mb-10 lg:mb-12 text-center flex flex-col items-center">
-      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center justify-center gap-3">
-        {icon && <span className="text-cyan-400">{icon}</span>}
-        {title}
-      </h2>
-      {subtitle && (
-        <p className="mt-3 text-sm sm:text-base text-slate-400 max-w-2xl">
-          {subtitle}
-        </p>
-      )}
-      <div className="mt-4 flex items-center justify-center gap-1">
-        <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-transparent to-cyan-500/50" />
-        <div className="h-0.5 w-16 rounded-full bg-gradient-to-r from-cyan-500/50 to-blue-500/50" />
-        <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-blue-500/50 to-transparent" />
+        </button>
+      ) : undefined}
+      className="!p-0 [&>header]:px-[18px] [&>header]:pt-4 [&>header]:mb-2"
+    >
+      <div className="overflow-x-auto">
+        <table className={`w-full ${GMT.body}`}>
+          <thead>
+            <tr className="border-b border-[rgba(148,163,184,.10)]">
+              <SortHeader field="timestamp" label={t('thDate')} />
+              <SortHeader field="side" label={t('thSide')} />
+              <SortHeader field="entry_price" label={t('thEntry')} align="right" />
+              <SortHeader field="exit_price" label={t('thExit')} align="right" />
+              <SortHeader field="pnl_usd" label={t('thPnl')} align="right" />
+              <SortHeader field="exit_reason" label={t('thReason')} align="right" />
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((tr) => {
+              const exitColor = getExitReasonColor(tr.exit_reason);
+              const pnlPositive = Number(tr.pnl_usd) >= 0;
+              return (
+                <tr key={tr.trade_id} className={`border-b border-[rgba(148,163,184,.07)] ${GM.rowHover} transition-colors duration-[var(--gm-dur-fast)]`}>
+                  <td className={`px-3 py-2.5 ${GMT.meta} ${GMT.mono} whitespace-nowrap`}>
+                    <span className={GM.textSec}>{formatTsCOT(tr.timestamp as string)}</span>
+                    <span className={`block ${GMT.micro} ${GM.textMuted}`}>
+                      → {formatTsCOT(tr.exit_timestamp as string | undefined)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className={cn(
+                      'inline-flex px-2 py-0.5 rounded-[7px] text-[10px] font-bold',
+                      tr.side === 'LONG' ? GM.posBadge : GM.negBadge
+                    )}>
+                      {tr.side}
+                    </span>
+                  </td>
+                  <td className={`px-3 py-2.5 ${GMT.meta} ${GMT.mono} ${GM.textStrong} text-right whitespace-nowrap`}>
+                    {tr.entry_price != null ? `$${Number(tr.entry_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
+                  </td>
+                  <td className={`px-3 py-2.5 ${GMT.meta} ${GMT.mono} ${GM.textStrong} text-right whitespace-nowrap`}>
+                    {tr.exit_price != null ? `$${Number(tr.exit_price).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : '—'}
+                  </td>
+                  <td className={cn(`px-3 py-2.5 ${GMT.meta} ${GMT.mono} font-bold text-right whitespace-nowrap`, pnlPositive ? GM.pos : GM.neg)}>
+                    {tr.pnl_usd != null ? `${pnlPositive ? '+' : ''}${Number(tr.pnl_usd).toFixed(2)}` : '—'}
+                    <span className="block text-[10px] font-normal opacity-80">
+                      {tr.pnl_pct != null ? `${pnlPositive ? '+' : ''}${Number(tr.pnl_pct).toFixed(2)}%` : ''}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <span className={cn('inline-flex px-2 py-0.5 rounded-[7px] text-[10px] font-medium', exitColor.bg, exitColor.text)}>
+                      {tr.exit_reason}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </GmPanel>
   );
 }
 
@@ -866,40 +823,18 @@ function SectionHeader({ title, subtitle, icon }: {
 // Chart Loading Fallback
 // ============================================================================
 function ChartLoadingFallback() {
+  const t = useGmT(DICT);
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-900/40">
-      <div className="px-6 py-4 border-b border-slate-700/50">
-        <span className="text-sm font-medium text-slate-300">USD/COP Price Chart</span>
-      </div>
-      <div className="h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-10 h-10 text-cyan-400 animate-spin mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">Loading chart...</p>
-        </div>
-      </div>
+    <div className={`${GM.panelInner} h-[400px] flex items-center justify-center gap-3`}>
+      <RefreshCw className={`w-6 h-6 ${GM.accent} motion-safe:animate-spin`} aria-hidden />
+      <p className={`${GMT.body} ${GM.textMuted} m-0`}>{t('loading')}</p>
     </div>
   );
 }
 
 // ============================================================================
-// Helpers
+// Deploy Panel — One-Click Production Deploy (lógica intacta)
 // ============================================================================
-function formatProfitFactor(pf: number | null | undefined): string {
-  if (pf == null) return 'N/A';
-  if (pf > 100) return '>100';
-  return pf.toFixed(2);
-}
-
-// ============================================================================
-// Deploy Panel — One-Click Production Deploy
-// ============================================================================
-const DEPLOY_PHASE_LABELS: Record<string, string> = {
-  initializing: 'Inicializando...',
-  retraining: 'Reentrenando modelos (2020-2025)...',
-  exporting: 'Exportando datos de produccion...',
-  done: 'Completado',
-};
-
 const DEPLOY_PHASE_PROGRESS: Record<string, number> = {
   initializing: 10,
   retraining: 50,
@@ -908,6 +843,7 @@ const DEPLOY_PHASE_PROGRESS: Record<string, number> = {
 };
 
 function DeployPanel({ approval }: { approval: ApprovalState }) {
+  const t = useGmT(DICT);
   const [deployStatus, setDeployStatus] = useState<DeployStatus>({ status: 'idle' });
   const [isDeploying, setIsDeploying] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -979,122 +915,122 @@ function DeployPanel({ approval }: { approval: ApprovalState }) {
 
   const phase = deployStatus.phase || 'initializing';
   const progress = DEPLOY_PHASE_PROGRESS[phase] || 0;
+  const phaseLabels: Record<string, string> = {
+    initializing: t('phInit'),
+    retraining: t('phRetrain'),
+    exporting: t('phExport'),
+    done: t('phDone'),
+  };
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800">
-      <CardContent className="p-4 sm:p-6">
-        {/* Idle — Show deploy button */}
-        {deployStatus.status === 'idle' && (
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-2.5 rounded-xl bg-cyan-500/10">
-                <Rocket className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">Desplegar a Produccion</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Reentrenar con datos completos (2020-2025) y generar trades 2026
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleDeploy}
-              disabled={isDeploying}
-              className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-            >
-              {isDeploying ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Rocket className="w-4 h-4" />
-              )}
-              Desplegar a Produccion
-            </button>
+    <GmPanel>
+      {/* Idle — Show deploy button */}
+      {deployStatus.status === 'idle' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-[rgba(34,211,238,.10)] shrink-0">
+              <Rocket className={`w-5 h-5 ${GM.accent}`} aria-hidden />
+            </span>
+            <span>
+              <span className={`block ${GMT.body} font-semibold ${GM.textStrong}`}>{t('deployTitle')}</span>
+              <span className={`block ${GMT.micro} ${GM.textMuted} mt-0.5`}>{t('deployDesc')}</span>
+            </span>
           </div>
-        )}
+          <button
+            onClick={handleDeploy}
+            disabled={isDeploying}
+            className={`${GM.ctaPrimary} ${GM.focus} w-full h-11 text-[0.8125rem] disabled:opacity-50 inline-flex items-center justify-center gap-2`}
+          >
+            {isDeploying ? (
+              <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-hidden />
+            ) : (
+              <Rocket className="w-4 h-4" aria-hidden />
+            )}
+            {t('deployTitle')}
+          </button>
+        </div>
+      )}
 
-        {/* Running — Progress bar */}
-        {deployStatus.status === 'running' && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-cyan-500/10">
-                <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white">Desplegando...</p>
-                <p className="text-xs text-cyan-400 mt-0.5">
-                  {DEPLOY_PHASE_LABELS[phase] || 'Procesando...'}
-                </p>
-              </div>
-              {deployStatus.started_at && (
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {Math.round((Date.now() - new Date(deployStatus.started_at).getTime()) / 1000)}s
-                </span>
-              )}
-            </div>
-            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-slate-500">
-              <span>Inicializar</span>
-              <span>Reentrenar</span>
-              <span>Exportar</span>
-              <span>Listo</span>
-            </div>
+      {/* Running — Progress bar */}
+      {deployStatus.status === 'running' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-[rgba(34,211,238,.10)] shrink-0">
+              <Loader2 className={`w-5 h-5 ${GM.accent} motion-safe:animate-spin`} aria-hidden />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className={`block ${GMT.body} font-semibold ${GM.textStrong}`}>{t('deploying')}</span>
+              <span className={`block ${GMT.micro} ${GM.accent} mt-0.5`}>
+                {phaseLabels[phase] || t('phGeneric')}
+              </span>
+            </span>
+            {deployStatus.started_at && (
+              <span className={`${GMT.micro} ${GM.textMuted} font-mono shrink-0`}>
+                {Math.round((Date.now() - new Date(deployStatus.started_at).getTime()) / 1000)}s
+              </span>
+            )}
           </div>
-        )}
+          <div className="h-1.5 rounded-full bg-[rgba(148,163,184,.14)] overflow-hidden">
+            <div
+              className="h-full bg-[var(--gm-accent)] rounded-full transition-all duration-[var(--gm-dur-slow)] ease-[var(--gm-ease-out)]"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className={`flex justify-between ${GMT.micro} ${GM.textMuted}`}>
+            <span>{t('stepInit')}</span>
+            <span>{t('stepRetrain')}</span>
+            <span>{t('stepExport')}</span>
+            <span>{t('stepReady')}</span>
+          </div>
+        </div>
+      )}
 
-        {/* Completed — Success banner */}
-        {deployStatus.status === 'completed' && (
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-emerald-300">Deploy completado!</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Estrategia desplegada exitosamente. Los datos de produccion 2026 estan listos.
-                </p>
-              </div>
-            </div>
-            <a
-              href="/production"
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 whitespace-nowrap"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Ver Produccion
-            </a>
+      {/* Completed — Success banner */}
+      {deployStatus.status === 'completed' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-[rgba(52,211,153,.12)] shrink-0">
+              <CheckCircle2 className={`w-5 h-5 ${GM.pos}`} aria-hidden />
+            </span>
+            <span>
+              <span className={`block ${GMT.body} font-semibold ${GM.pos}`}>{t('deployDone')}</span>
+              <span className={`block ${GMT.micro} ${GM.textMuted} mt-0.5`}>{t('deployDoneDesc')}</span>
+            </span>
           </div>
-        )}
+          <a
+            href="/production"
+            className={`${GM.ctaSoft} ${GM.focus} w-full h-11 text-[0.8125rem] inline-flex items-center justify-center gap-2`}
+          >
+            <ExternalLink className="w-4 h-4" aria-hidden />
+            {t('seeProd')}
+          </a>
+        </div>
+      )}
 
-        {/* Failed — Error message */}
-        {deployStatus.status === 'failed' && (
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-2.5 rounded-xl bg-red-500/10">
-                <XCircle className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-red-300">Error en deploy</p>
-                <p className="text-xs text-slate-400 mt-0.5 max-w-md break-words">
-                  {deployStatus.error || 'Error desconocido durante el despliegue.'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleRetry}
-              className="px-4 py-2.5 bg-slate-800 border border-slate-700 hover:border-cyan-500/50 text-slate-300 hover:text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 whitespace-nowrap"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reintentar
-            </button>
+      {/* Failed — Error message */}
+      {deployStatus.status === 'failed' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-[rgba(251,113,133,.10)] shrink-0">
+              <XCircle className={`w-5 h-5 ${GM.neg}`} aria-hidden />
+            </span>
+            <span className="min-w-0">
+              <span className={`block ${GMT.body} font-semibold ${GM.neg}`}>{t('deployErr')}</span>
+              <span className={`block ${GMT.micro} ${GM.textMuted} mt-0.5 break-words`}>
+                {deployStatus.error || t('unknownErr')}
+              </span>
+            </span>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <button
+            onClick={handleRetry}
+            className={`${GM.ctaGhost} ${GM.focus} w-full h-11 text-[0.8125rem] font-semibold inline-flex items-center justify-center gap-2`}
+          >
+            <RefreshCw className="w-4 h-4" aria-hidden />
+            {t('retry')}
+          </button>
+        </div>
+      )}
+    </GmPanel>
   );
 }
 
@@ -1218,6 +1154,7 @@ export function ForecastingBacktestSection({
   /** Notifies the parent when the in-card selector changes, keeping both in sync. */
   onStrategyChange?: (id: string) => void;
 } = {}) {
+  const t = useGmT(DICT);
   const [registry, setRegistry] = useState<StrategyRegistry | null>(null);
   const [selectedStrategyId, setSelectedStrategyId] = useState<string>('');
   const [summary, setSummary] = useState<ProductionSummary | null>(null);
@@ -1782,413 +1719,287 @@ export function ForecastingBacktestSection({
   // an unofficial slice right next to the Approve button).
   const displayGates = approval?.gates ?? [];
 
+  // Presentational only: the parent (page header) owns the selector when controlled —
+  // header sin duplicados (prototipo). Uncontrolled/standalone keeps the in-card selector.
+  const isControlled = controlledStrategyId !== undefined || onStrategyChange !== undefined;
+
+  // Trades shown in meta line + KPI builder (misma expresión que la versión previa)
+  const nTradesShown = dynamicMetrics
+    ? visibleTrades.length
+    : (best ? (best.n_long ?? 0) + (best.n_short ?? 0) : trades.length);
+  const { kpis, ratiosHidden } = buildStrategyKpis(displayStats, {
+    initialCapital: initialCap,
+    nTrades: nTradesShown,
+  });
+
   // Loading state
   if (loading) {
-    return (
-      <section className="w-full py-8 sm:py-10 lg:py-12 flex flex-col items-center">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            title="Backtest OOS 2025"
-            subtitle="Cargando datos..."
-            icon={<BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />}
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
-            {[1,2,3,4,5].map(i => <KPICard key={i} title="" value="" icon={<div />} isLoading />)}
-          </div>
-        </div>
-      </section>
-    );
+    return <GmSkeleton label={t('loading')} />;
   }
 
   // Error or no data — hide silently (backtest data may not exist)
   if (error || !summary) return null;
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       {/* ════════════════════════════════════════════════════════════════
-          Backtest OOS 2025 — Header + Status
+          Meta: procedencia (MetricBadge), estado, p-value, selector, versión
       ════════════════════════════════════════════════════════════════ */}
-      <section className="w-full py-8 sm:py-10 lg:py-12 flex flex-col items-center">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 sm:mb-10 lg:mb-12 text-center flex flex-col items-center">
-            <div className="flex items-center gap-3 mb-3">
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white flex items-center justify-center gap-3">
-                <span className="text-cyan-400"><BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" /></span>
-                Backtest OOS 2025
-              </h2>
-              {approval && <StatusBadge status={approval.status} />}
-            </div>
-            {/* Strategy selector */}
-            {registry && registry.strategies.length >= 1 && (
-              <div className="mb-4">
-                <StrategySelector
-                  strategies={registry.strategies}
-                  selectedId={selectedStrategyId}
-                  onSelect={handleStrategyChange}
-                />
-              </div>
-            )}
-            {/* Version selector + promote (CTR-STRAT-REGISTRY-001) — additive, renders only
-                when a manifest with versioned backtests is available */}
-            {manifest && (manifest.backtests?.length ?? 0) >= 1 && (
-              <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
-                <span className="text-[11px] uppercase tracking-wide text-slate-500">Versión</span>
-                <select
-                  value={selectedVersion}
-                  onChange={(e) => handleVersionChange(e.target.value)}
-                  className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-cyan-500"
-                >
-                  {manifest.backtests.map((b) => {
-                    const isActive = manifest.model_versions?.find((v) => v.version === b.model_version)?.active;
-                    return (
-                      <option key={b.immutable_id} value={b.model_version}>
-                        {`v${b.model_version}${isActive ? ' ★' : ''}${b.replayable ? '' : ' (sin replay)'} · ${b.year}`}
-                      </option>
-                    );
-                  })}
-                </select>
-                {/* "Promover a activa" button REMOVED (operator request 2026-07-07 + audit A4-04:
-                    promote-from-TS races the Python registry rebuild). The version dropdown stays
-                    for REVIEW/replay; the single promotion path is the two-vote flow
-                    (Aprobar y Promover → Airflow L4b deploy). API endpoint kept for tooling. */}
-              </div>
-            )}
-            <p className="text-sm sm:text-base text-slate-400 max-w-2xl">
-              <MetricBadge phase="backtest" provenance={{ strategyId, version: selectedVersion || undefined }} className="mr-2 align-middle" />
-              {summary.strategy_name || strategyId} | {dynamicMetrics ? visibleTrades.length : (best ? (best.n_long ?? 0) + (best.n_short ?? 0) : trades.length)} trades | DA {displayDA?.toFixed(1) ?? '-'}%
-            </p>
-            {/* p-value badge */}
-            {displayPValue != null && (
-              <div className="mt-3">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'text-xs font-bold',
-                    displayIsSignificant
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : 'bg-red-500/10 text-red-400 border-red-500/30'
-                  )}
-                >
-                  p={displayPValue.toFixed(4)} {displayIsSignificant ? '(Significativo)' : '(No Significativo)'}
-                </Badge>
-              </div>
-            )}
-            <div className="mt-4 flex items-center justify-center gap-1">
-              <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-transparent to-cyan-500/50" />
-              <div className="h-0.5 w-16 rounded-full bg-gradient-to-r from-cyan-500/50 to-blue-500/50" />
-              <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-blue-500/50 to-transparent" />
-            </div>
-          </div>
-
-          {/* Replay-preview disclaimer (audit I-4): when metrics are recomputed from visible/
-              filtered trades they are a PREVIEW — the official decision numbers are the bundle's. */}
-          {dynamicMetrics && (
-            <div className="mb-4 flex justify-center">
-              <Badge
-                variant="outline"
-                className="text-[11px] font-semibold bg-amber-500/10 text-amber-300 border-amber-500/40"
-              >
-                PREVIEW DEL REPLAY — cifras recomputadas de los trades visibles; NO son las métricas
-                oficiales del bundle (el Vote 2 y los gates usan el bundle publicado)
-              </Badge>
-            </div>
-          )}
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8">
-            <KPICard
-              title="Retorno Total"
-              value={`${(displayStats?.total_return_pct ?? 0) >= 0 ? '+' : ''}${displayStats?.total_return_pct?.toFixed(1) ?? 'N/A'}%`}
-              subtitle={`$${(summary.initial_capital + (summary.initial_capital * (displayStats?.total_return_pct ?? 0) / 100)).toFixed(0)} final`}
-              icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(displayStats?.total_return_pct ?? 0) >= 0 ? '#10b981' : '#ef4444'}
-              trend={(displayStats?.total_return_pct ?? 0) >= 0 ? 'up' : 'down'}
-            />
-            <KPICard
-              title="Sharpe Ratio"
-              value={displayStats?.sharpe?.toFixed(2) ?? 'N/A'}
-              subtitle="Risk-adjusted"
-              icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(displayStats?.sharpe ?? 0) >= 1.5 ? '#10b981' : (displayStats?.sharpe ?? 0) >= 1 ? '#f59e0b' : '#ef4444'}
-              trend={(displayStats?.sharpe ?? 0) >= 1.5 ? 'up' : 'neutral'}
-            />
-            <KPICard
-              title="Profit Factor"
-              value={formatProfitFactor(displayStats?.profit_factor)}
-              subtitle="Ganancia/Perdida"
-              icon={<Target className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(displayStats?.profit_factor ?? 0) >= 1.5 ? '#10b981' : (displayStats?.profit_factor ?? 0) >= 1 ? '#f59e0b' : '#ef4444'}
-              trend={(displayStats?.profit_factor ?? 0) >= 1.5 ? 'up' : 'neutral'}
-            />
-            <KPICard
-              title="Calmar Ratio"
-              value={(() => { const c = calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days); return c == null ? 'N/A' : c.toFixed(2); })()}
-              subtitle="Retorno anualizado / |DD| (métrica primaria)"
-              icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days) ?? 0) >= 1 ? '#10b981' : '#f59e0b'}
-              trend={(calmarRatio(displayStats?.total_return_pct, displayStats?.max_dd_pct, displayStats?.trading_days) ?? 0) >= 1 ? 'up' : 'neutral'}
-            />
-            <KPICard
-              title="Win Rate"
-              value={`${displayStats?.win_rate_pct?.toFixed(0) ?? 'N/A'}%`}
-              subtitle="Profitable"
-              icon={<Percent className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(displayStats?.win_rate_pct ?? 0) >= 50 ? '#10b981' : '#f59e0b'}
-              trend={(displayStats?.win_rate_pct ?? 0) >= 50 ? 'up' : 'down'}
-            />
-            <KPICard
-              title="Max Drawdown"
-              value={`-${displayStats?.max_dd_pct?.toFixed(1) ?? 'N/A'}%`}
-              subtitle="Peak-to-trough"
-              icon={<TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />}
-              color={(displayStats?.max_dd_pct ?? 100) < 10 ? '#10b981' : (displayStats?.max_dd_pct ?? 100) < 15 ? '#f59e0b' : '#ef4444'}
-              trend="down"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          Backtest Chart — 2025 Candles with Trade Markers
-      ════════════════════════════════════════════════════════════════ */}
-      <section className="w-full py-12 sm:py-16 lg:py-20 bg-slate-900/30 flex flex-col items-center">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            title="Senales de Trading (2025)"
-            subtitle="Grafico de velas con senales de entrada y salida del backtest"
-            icon={<BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <MetricBadge phase="backtest" provenance={{ strategyId, version: selectedVersion || undefined }} />
+        <span className={`${GMT.body} font-bold ${GM.textStrong}`}>{summary.strategy_name || strategyId}</span>
+        <span className={`${GMT.meta} ${GMT.mono} ${GM.textMuted}`}>
+          {nTradesShown} {t('trades')} · DA {displayDA?.toFixed(1) ?? '-'}%
+        </span>
+        {approval && <StatusBadge status={approval.status} />}
+        {displayPValue != null && (
+          <GmBadge tone={displayIsSignificant ? 'pos' : 'neg'}>
+            p={displayPValue.toFixed(4)} · {displayIsSignificant ? t('significant') : t('notSignificant')}
+          </GmBadge>
+        )}
+        <span className="flex-1" />
+        {!isControlled && registry && registry.strategies.length >= 1 && (
+          <StrategySelector
+            strategies={registry.strategies}
+            selectedId={selectedStrategyId}
+            onSelect={handleStrategyChange}
           />
-          <Suspense fallback={<ChartLoadingFallback />}>
-            <div className="rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
-              <TradingChartWithSignals
-                key={`backtest-chart-${strategyId}-${selectedVersion || '2025'}`}
-                symbol={manifest?.chart_symbol || 'USDCOP'}
-                timeframe="5m"
-                height={400}
-                showSignals={true}
-                showPositions={false}
-                showStopLossTakeProfit={false}
-                enableRealTime={false}
-                isReplayMode={true}
-                startDate={replayStartDate}
-                endDate={chartEndDate}
-                replayTrades={visibleTrades.flatMap(t => {
-                  const entry = {
-                    trade_id: t.trade_id,
-                    timestamp: String(t.timestamp),
-                    side: t.side,
-                    entry_price: Number(t.entry_price),
-                    pnl: 0,
-                    status: 'closed' as const,
-                  };
-                  const exitTs = t.exit_timestamp ? String(t.exit_timestamp) : null;
-                  if (!exitTs) return [entry];
-                  const exitSide = t.side === 'SHORT' ? 'LONG' : 'SHORT';
-                  const exit = {
-                    trade_id: t.trade_id + 10000,
-                    timestamp: exitTs,
-                    side: exitSide,
-                    entry_price: Number(t.exit_price),
-                    pnl: Number(t.pnl_usd),
-                    status: 'closed' as const,
-                  };
-                  return [entry, exit];
-                })}
-              />
-            </div>
-          </Suspense>
+        )}
+        {/* Version selector (CTR-STRAT-REGISTRY-001) — additive, renders only
+            when a manifest with versioned backtests is available */}
+        {manifest && (manifest.backtests?.length ?? 0) >= 1 && (
+          <label className="flex items-center gap-2">
+            <span className={`${GMT.label} ${GM.textMuted}`}>{t('versionLabel')}</span>
+            <select
+              value={selectedVersion}
+              onChange={(e) => handleVersionChange(e.target.value)}
+              className={`${GM.input} ${GM.focus} min-h-[44px]`}
+            >
+              {manifest.backtests.map((b) => {
+                const isActive = manifest.model_versions?.find((v) => v.version === b.model_version)?.active;
+                return (
+                  <option key={b.immutable_id} value={b.model_version}>
+                    {`v${b.model_version}${isActive ? ' ★' : ''}${b.replayable ? '' : ` ${t('noReplay')}`} · ${b.year}`}
+                  </option>
+                );
+              })}
+            </select>
+            {/* "Promover a activa" button REMOVED (operator request 2026-07-07 + audit A4-04:
+                promote-from-TS races the Python registry rebuild). The version dropdown stays
+                for REVIEW/replay; the single promotion path is the two-vote flow
+                (Aprobar y Promover → Airflow L4b deploy). API endpoint kept for tooling. */}
+          </label>
+        )}
+      </div>
 
-          {/* Replay Controls — Date-Based */}
-          {trades.length > 0 && (
-            <div className="mt-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-cyan-400" />
-                <span className="text-sm font-medium text-white">Replay de Trades</span>
-                <span className="text-[10px] text-slate-500 ml-auto">
-                  {filteredTrades.length} trades en rango
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-end gap-4">
-                {/* Date range */}
-                <div className="flex items-center gap-3">
-                  <div>
-                    <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Desde</label>
-                    <input
-                      type="date"
-                      value={replayStartDate}
-                      onChange={e => { setReplayStartDate(e.target.value); setIsPlaying(false); setReplayIndex(-1); }}
-                      className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Hasta</label>
-                    <input
-                      type="date"
-                      value={replayEndDate}
-                      onChange={e => { setReplayEndDate(e.target.value); setIsPlaying(false); setReplayIndex(-1); }}
-                      className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      if (isPlaying) {
-                        setIsPlaying(false);
-                      } else {
-                        if (replayIndex >= replaySteps || replayIndex < 0) {
-                          setReplayIndex(0);
-                        }
-                        setIsPlaying(true);
-                      }
-                    }}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
-                      isPlaying
-                        ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30'
-                        : 'bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-lg shadow-cyan-500/20'
-                    )}
-                  >
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    {isPlaying ? 'Pausar' : 'Replay'}
-                  </button>
-                  <button
-                    onClick={() => { setIsPlaying(false); setReplayIndex(-1); }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white text-sm transition-colors"
-                    title="Mostrar todos los trades"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Todos
-                  </button>
-                </div>
-
-                {/* Speed controls */}
-                <div className="flex items-center gap-1.5">
-                  <Gauge className="w-3.5 h-3.5 text-slate-500" />
-                  {[1, 2, 4].map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setPlaySpeed(s)}
-                      className={cn(
-                        'px-2.5 py-1.5 rounded text-xs font-bold transition-colors',
-                        playSpeed === s
-                          ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                          : 'text-slate-500 hover:text-slate-300 border border-transparent'
-                      )}
-                    >
-                      {s}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Progress bar (visible during replay) */}
-              {replayIndex >= 0 && (
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-200"
-                      style={{ width: `${replaySteps > 0 ? (Math.min(replayIndex, replaySteps) / replaySteps) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono text-slate-400">
-                    {seriesClockDate
-                      ? `${seriesClockDate} · ${visibleTrades.length}/${filteredTrades.length} trades`
-                      : `${replayIndex}/${filteredTrades.length} trades`}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Replay-preview disclaimer (audit I-4): when metrics are recomputed from visible/
+          filtered trades they are a PREVIEW — the official decision numbers are the bundle's. */}
+      {dynamicMetrics && (
+        <div className={`${GM.warnBadge} rounded-xl px-3.5 py-2.5 ${GMT.micro} font-semibold leading-relaxed`}>
+          {t('previewBanner')}
         </div>
-      </section>
-
-      {/* ════════════════════════════════════════════════════════════════
-          Equity Curve + Trading Summary
-      ════════════════════════════════════════════════════════════════ */}
-      {trades.length > 0 && (
-        <section className="w-full py-12 sm:py-16 lg:py-20 flex flex-col items-center">
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              title="Curva de Equity"
-              subtitle={`${summary.strategy_name || strategyId} — Backtest 2025`}
-              icon={<LineChart className="w-5 h-5 sm:w-6 sm:h-6" />}
-            />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-              <div className="lg:col-span-2">
-                <EquityCurveChart
-                  seriesPoints={windowMetrics?.series}
-                  trades={visibleTrades}
-                  initialCapital={summary.initial_capital ?? 10000}
-                />
-              </div>
-              <div>
-                <TradingSummary
-                  stats={displayStats}
-                  trades={visibleTrades}
-                  initialCapital={summary.initial_capital ?? 10000}
-                  strategyName={summary.strategy_name || strategyId}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
+      )}
+      {ratiosHidden && (
+        <div className={`${GM.neutralBadge} rounded-xl px-3.5 py-2 ${GMT.micro}`}>
+          {t('ratiosNote')}
+        </div>
       )}
 
       {/* ════════════════════════════════════════════════════════════════
-          Approval + Gates
+          KPI row — builder SSOT (mismas métricas del bundle que Producción)
       ════════════════════════════════════════════════════════════════ */}
-      {approval && (
-        <section className="w-full py-12 sm:py-16 lg:py-20 flex flex-col items-center">
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              title="Aprobacion y Gates"
-              subtitle="Validacion automatica y revision humana"
-              icon={<Shield className="w-5 h-5 sm:w-6 sm:h-6" />}
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(118px,1fr))]">
+        {kpis.map((k) => (
+          <GmKpi key={k.label} label={k.label} value={k.value} tone={k.tone} sub={k.sub} />
+        ))}
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════
+          Candle panel + replay bar (prototipo: título + nota Lightweight Charts)
+      ════════════════════════════════════════════════════════════════ */}
+      <GmPanel title={t('chartTitle')} meta={t('lwNote')}>
+        <Suspense fallback={<ChartLoadingFallback />}>
+          <div className="rounded-xl overflow-hidden border border-[rgba(148,163,184,.10)]">
+            <TradingChartWithSignals
+              key={`backtest-chart-${strategyId}-${selectedVersion || '2025'}`}
+              symbol={manifest?.chart_symbol || 'USDCOP'}
+              timeframe="5m"
+              height={400}
+              showSignals={true}
+              showPositions={false}
+              showStopLossTakeProfit={false}
+              enableRealTime={false}
+              isReplayMode={true}
+              startDate={replayStartDate}
+              endDate={chartEndDate}
+              replayTrades={visibleTrades.flatMap(tr => {
+                const entry = {
+                  trade_id: tr.trade_id,
+                  timestamp: String(tr.timestamp),
+                  side: tr.side,
+                  entry_price: Number(tr.entry_price),
+                  pnl: 0,
+                  status: 'closed' as const,
+                };
+                const exitTs = tr.exit_timestamp ? String(tr.exit_timestamp) : null;
+                if (!exitTs) return [entry];
+                const exitSide = tr.side === 'SHORT' ? 'LONG' : 'SHORT';
+                const exit = {
+                  trade_id: tr.trade_id + 10000,
+                  timestamp: exitTs,
+                  side: exitSide,
+                  entry_price: Number(tr.exit_price),
+                  pnl: Number(tr.pnl_usd),
+                  status: 'closed' as const,
+                };
+                return [entry, exit];
+              })}
             />
-            <div className="space-y-6 sm:space-y-8">
-              {/* Approved/Rejected status display */}
-              {approval.status === 'APPROVED' && (
-                <Card className="bg-slate-900/50 border-emerald-500/30">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
-                      <div>
-                        <p className="text-sm text-emerald-300 font-medium">
-                          Estrategia aprobada{approval.approved_by ? ` por ${approval.approved_by}` : ''}
-                        </p>
-                        {approval.approved_at && (
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {new Date(approval.approved_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        )}
-                        {approval.reviewer_notes && (
-                          <p className="text-xs text-slate-500 mt-1 italic">&quot;{approval.reviewer_notes}&quot;</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {approval.status === 'REJECTED' && (
-                <Card className="bg-slate-900/50 border-red-500/30">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex items-center gap-3">
-                      <XCircle className="w-6 h-6 text-red-400 shrink-0" />
-                      <div>
-                        <p className="text-sm text-red-300 font-medium">
-                          Estrategia rechazada{approval.rejected_by ? ` por ${approval.rejected_by}` : ''}
-                        </p>
-                        {approval.rejection_reason && (
-                          <p className="text-xs text-slate-400 mt-0.5">{approval.rejection_reason}</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          </div>
+        </Suspense>
+
+        {/* Replay Controls — Date-Based (barra del prototipo) */}
+        {trades.length > 0 && (
+          <div className="mt-3.5 pt-3.5 border-t border-[rgba(148,163,184,.10)] flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className={`w-4 h-4 ${GM.accent}`} aria-hidden />
+              <span className={`${GMT.panelTitle} ${GM.textStrong}`}>{t('replayTitle')}</span>
+              <span className={`${GMT.micro} ${GMT.mono} ${GM.textMuted} ml-auto`}>
+                {filteredTrades.length} {t('inRange')}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3.5">
+              {/* Action button — gradiente del prototipo */}
+              <button
+                onClick={() => {
+                  if (isPlaying) {
+                    setIsPlaying(false);
+                  } else {
+                    if (replayIndex >= replaySteps || replayIndex < 0) {
+                      setReplayIndex(0);
+                    }
+                    setIsPlaying(true);
+                  }
+                }}
+                className={cn(
+                  `${GM.focus} inline-flex items-center gap-2 h-11 px-4 text-[0.78125rem] font-bold shrink-0`,
+                  isPlaying ? `${GM.ctaSoft}` : `${GM.ctaPrimary}`
+                )}
+              >
+                {isPlaying ? <Pause className="w-4 h-4" aria-hidden /> : <Play className="w-4 h-4" aria-hidden />}
+                {isPlaying ? t('pause') : t('play')}
+              </button>
+
+              {/* Date range Desde/Hasta */}
+              <label className="flex flex-col gap-1">
+                <span className={`${GMT.label} ${GM.textMuted}`}>{t('from')}</span>
+                <input
+                  type="date"
+                  value={replayStartDate}
+                  onChange={e => { setReplayStartDate(e.target.value); setIsPlaying(false); setReplayIndex(-1); }}
+                  className={`${GM.input} ${GM.focus} ${GMT.mono} min-h-[44px]`}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className={`${GMT.label} ${GM.textMuted}`}>{t('to')}</span>
+                <input
+                  type="date"
+                  value={replayEndDate}
+                  onChange={e => { setReplayEndDate(e.target.value); setIsPlaying(false); setReplayIndex(-1); }}
+                  className={`${GM.input} ${GM.focus} ${GMT.mono} min-h-[44px]`}
+                />
+              </label>
+
+              <button
+                onClick={() => { setIsPlaying(false); setReplayIndex(-1); }}
+                className={`${GM.ctaGhost} ${GM.focus} inline-flex items-center gap-1.5 h-11 px-3.5 text-[0.78125rem] font-semibold`}
+                title={t('showAllTitle')}
+              >
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden />
+                {t('showAll')}
+              </button>
+
+              {/* Speed controls */}
+              <div className="flex items-center gap-1.5">
+                <Gauge className={`w-3.5 h-3.5 ${GM.textMuted}`} aria-hidden />
+                {[1, 2, 4].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setPlaySpeed(s)}
+                    className={cn(
+                      `${GM.focus} h-11 min-w-[44px] px-2 rounded-[10px] text-xs font-bold transition-colors duration-[var(--gm-dur-fast)]`,
+                      playSpeed === s
+                        ? 'bg-[rgba(34,211,238,.10)] text-[var(--gm-accent)] border border-[rgba(34,211,238,.28)]'
+                        : `${GM.textMuted} hover:text-[var(--gm-text)] border border-transparent`
+                    )}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Progress bar (visible during replay) — accent del prototipo */}
+            {replayIndex >= 0 && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 rounded-full bg-[rgba(148,163,184,.14)] overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--gm-accent)] rounded-full transition-all duration-[var(--gm-dur-base)]"
+                    style={{ width: `${replaySteps > 0 ? (Math.min(replayIndex, replaySteps) / replaySteps) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className={`${GMT.micro} ${GMT.mono} ${GM.textMuted} shrink-0`}>
+                  {seriesClockDate
+                    ? `${seriesClockDate} · ${visibleTrades.length}/${filteredTrades.length} ${t('trades')}`
+                    : `${replayIndex}/${filteredTrades.length} ${t('trades')}`}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </GmPanel>
+
+      {/* ════════════════════════════════════════════════════════════════
+          Equity panel
+      ════════════════════════════════════════════════════════════════ */}
+      {trades.length > 0 && (
+        <EquityCurveChart
+          seriesPoints={windowMetrics?.series}
+          trades={visibleTrades}
+          initialCapital={summary.initial_capital ?? 10000}
+        />
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════
+          Grid 1.5fr/1fr — Resumen · Razones · Tabla | Gates (Voto 1) · Voto 2
+      ════════════════════════════════════════════════════════════════ */}
+      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-4 items-start">
+        <div className="flex flex-col gap-4 min-w-0">
+          {trades.length > 0 && (
+            <TradingSummary
+              stats={displayStats}
+              trades={visibleTrades}
+              initialCapital={summary.initial_capital ?? 10000}
+              strategyName={summary.strategy_name || strategyId}
+            />
+          )}
+          {displayStats?.exit_reasons && Object.keys(displayStats.exit_reasons).length > 0 && (
+            <ExitReasonsSummary reasons={displayStats.exit_reasons} />
+          )}
+          <TradeTable
+            trades={replayIndex < 0 ? filteredTrades : visibleTrades}
+            showAll={showAllTrades}
+            onToggle={() => setShowAllTrades(!showAllTrades)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-4 min-w-0">
+          {approval && (
+            <>
+              {/* Gates — always the published bundle's Vote-1 results (never replay-recomputed) */}
+              {displayGates.length > 0 && (
+                <GatesPanel gates={displayGates} />
               )}
 
               {/* Interactive approval + deploy — ADMIN ONLY (Vote 2 / promote / deploy).
@@ -2205,32 +2016,46 @@ export function ForecastingBacktestSection({
                 </>
               )}
 
-              {/* Gates — always the published bundle's Vote-1 results (never replay-recomputed) */}
-              {displayGates.length > 0 && (
-                <GatesPanel gates={displayGates} />
+              {/* Approved/Rejected status display */}
+              {approval.status === 'APPROVED' && (
+                <section className={`${GM.panel} gm-contain p-[18px] !border-[rgba(52,211,153,.3)]`}>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className={`w-6 h-6 ${GM.pos} shrink-0`} aria-hidden />
+                    <div>
+                      <p className={`${GMT.body} font-semibold ${GM.pos} m-0`}>
+                        {t('approvedMsg')}{approval.approved_by ? ` ${t('by')} ${approval.approved_by}` : ''}
+                      </p>
+                      {approval.approved_at && (
+                        <p className={`${GMT.micro} ${GMT.mono} ${GM.textMuted} m-0 mt-1`}>
+                          {new Date(approval.approved_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                      {approval.reviewer_notes && (
+                        <p className={`${GMT.micro} ${GM.textMuted} italic m-0 mt-1`}>&quot;{approval.reviewer_notes}&quot;</p>
+                      )}
+                    </div>
+                  </div>
+                </section>
               )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════════
-          Exit Reasons + Trade Table
-      ════════════════════════════════════════════════════════════════ */}
-      <section className="w-full py-12 sm:py-16 lg:py-20 bg-slate-900/30 flex flex-col items-center">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {displayStats?.exit_reasons && Object.keys(displayStats.exit_reasons).length > 0 && (
-            <div className="mb-8">
-              <ExitReasonsSummary reasons={displayStats.exit_reasons} />
-            </div>
+              {approval.status === 'REJECTED' && (
+                <section className={`${GM.panel} gm-contain p-[18px] !border-[rgba(251,113,133,.24)]`}>
+                  <div className="flex items-start gap-3">
+                    <XCircle className={`w-6 h-6 ${GM.neg} shrink-0`} aria-hidden />
+                    <div>
+                      <p className={`${GMT.body} font-semibold ${GM.neg} m-0`}>
+                        {t('rejectedMsg')}{approval.rejected_by ? ` ${t('by')} ${approval.rejected_by}` : ''}
+                      </p>
+                      {approval.rejection_reason && (
+                        <p className={`${GMT.micro} ${GM.textMuted} m-0 mt-1`}>{approval.rejection_reason}</p>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
           )}
-          <TradeTable
-            trades={replayIndex < 0 ? filteredTrades : visibleTrades}
-            showAll={showAllTrades}
-            onToggle={() => setShowAllTrades(!showAllTrades)}
-          />
         </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }

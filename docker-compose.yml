@@ -700,6 +700,10 @@ services:
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
       # SignalBridge API (internal Docker network)
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
+      # Guest demo login (POST /api/auth/guest) — must match signalbridge-api's
+      # GUEST_BOOTSTRAP_* values (bootstrap_guest re-ensures the account+password).
+      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      GUEST_BOOTSTRAP_PASSWORD: ${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       # Airflow REST (container-native deploy: Vote-2 approve → H5-L4b DAG trigger)
       AIRFLOW_API_URL: http://usdcop-airflow-webserver:8080
       AIRFLOW_API_USER: ${AIRFLOW_USER}
@@ -1507,6 +1511,12 @@ services:
       - ADMIN_BOOTSTRAP_EMAIL=${ADMIN_BOOTSTRAP_EMAIL:-admin@trading.usdcop.com}
       - ADMIN_BOOTSTRAP_PASSWORD=${ADMIN_BOOTSTRAP_PASSWORD:-Admin2026!}
       - ADMIN_BOOTSTRAP_NAME=${ADMIN_BOOTSTRAP_NAME:-Administrator}
+      # Shared demo account for "Explorar como invitado" (rol free, is_test=true).
+      # bootstrap_guest() re-ensures it (and its password) on every startup; the
+      # dashboard's POST /api/auth/guest logs in with these same credentials.
+      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      - GUEST_BOOTSTRAP_PASSWORD=${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
+      - GUEST_BOOTSTRAP_NAME=${GUEST_BOOTSTRAP_NAME:-Invitado}
     volumes:
       - ./services/signalbridge_api:/app
     ports:

@@ -14,24 +14,39 @@ import { ROLES } from './rbac.contract';
 // ─────────────────────────────────────────────────────────── sections (portal nav)
 
 export interface AdminSectionDef {
-  id: 'overview' | 'registros' | 'usuarios' | 'suscripciones' | 'sistema' | 'auditoria' | 'configuracion' | 'comunicaciones';
+  id: 'overview' | 'ingresos' | 'registros' | 'usuarios' | 'roles' | 'modelos' | 'riesgo' | 'catalogo-admin' | 'sistema' | 'auditoria';
   label: string;
   /** Sections gated on a future phase render as disabled with the phase note. */
   phaseGate?: string;
 }
 
+/**
+ * 9 pestañas en orden EXACTO del prototipo Var B (VISUAL-SPEC-CHECKLIST §Admin).
+ * Ingresos absorbe la vieja "Suscripciones" (fase-gated); configuracion/comunicaciones
+ * salen del tab-bar (alias abajo). Badges dinámicos: registros=queue.count,
+ * modelos=candidatos PENDING, riesgo=llaves API pendientes.
+ */
 export const ADMIN_SECTIONS: readonly AdminSectionDef[] = [
-  { id: 'overview', label: 'Overview' },
+  { id: 'overview', label: 'Resumen' },
+  { id: 'ingresos', label: 'Ingresos' },
   { id: 'registros', label: 'Registros' },
   { id: 'usuarios', label: 'Usuarios' },
+  { id: 'roles', label: 'Roles y vistas' },
+  { id: 'modelos', label: 'Modelos' },
+  { id: 'riesgo', label: 'Riesgo y bloqueos' },
+  { id: 'catalogo-admin', label: 'Catálogo' },
   { id: 'sistema', label: 'Sistema' },
   { id: 'auditoria', label: 'Auditoría' },
-  { id: 'suscripciones', label: 'Suscripciones', phaseGate: 'Fase 6 · billing' },
-  { id: 'configuracion', label: 'Configuración', phaseGate: 'Próximo incremento' },
-  { id: 'comunicaciones', label: 'Comunicaciones', phaseGate: 'Fase 2' },
 ] as const;
 
 export type AdminSectionId = AdminSectionDef['id'];
+
+/** Ids viejos de ?tab= → sección nueva (deep-links guardados siguen funcionando). */
+export const LEGACY_TAB_ALIASES: Record<string, AdminSectionId> = {
+  suscripciones: 'ingresos',
+  configuracion: 'sistema',
+  comunicaciones: 'overview',
+};
 
 // ─────────────────────────────────────────────────────────── roles & plans (C2/C3)
 
@@ -144,6 +159,51 @@ export interface Vote2Summary {
   pending: boolean;
 }
 
+// ── Sistema ampliado (§4.11 CTR-OBS-001): proxies server-side Prometheus/AM/Airflow.
+
+export interface SloMetric {
+  id: string;
+  label: string;
+  /** Valor medido (unidad en `unit`); null = Prometheus sin datos para la query. */
+  value: number | null;
+  unit: 'ms' | '%' | 'rps';
+  target: string;             // e.g. "< 50 ms"
+  ok: boolean | null;
+}
+
+export interface PromTargetRow {
+  job: string;
+  instance: string;
+  health: 'up' | 'down' | 'unknown';
+  last_scrape_ms: number | null;
+}
+
+export interface ActiveAlertRow {
+  name: string;
+  severity: string;           // critical | warning | info | none
+  state: string;              // active | suppressed
+  since: string | null;
+  summary: string | null;
+}
+
+export interface PipelineStageChip {
+  stage: string;              // L0 … L7
+  dag_id: string;
+  name: string;
+  /** null = sin runs registrados aún. */
+  ok: boolean | null;
+  state: string | null;       // success | running | failed | …
+  last_run: string | null;    // ISO end/start date of latest run
+  paused: boolean | null;
+}
+
+export interface ResourceGauge {
+  id: string;
+  label: string;
+  pct: number | null;
+  detail?: string;
+}
+
 export interface SystemStatus {
   freshness: FreshnessSource[];
   services: ServiceCheck[];
@@ -151,6 +211,12 @@ export interface SystemStatus {
   deploy: { phase: string | null; runner: string | null; updated_at: string | null } | null;
   /** Sub-checks that failed — surfaced, never silently dropped. */
   partial_errors: string[];
+  /** Ampliado 2026-07 (opcionales: cada proxy degrada a null + partial_errors). */
+  slos?: SloMetric[] | null;
+  prom_targets?: PromTargetRow[] | null;
+  alerts_active?: ActiveAlertRow[] | null;
+  pipeline?: PipelineStageChip[] | null;
+  resources?: ResourceGauge[] | null;
 }
 
 // ─────────────────────────────────────────────────────────── overview · alertas
@@ -265,4 +331,148 @@ export interface AuditQuery {
 export interface AuditResponse {
   entries: AuditEntry[];
   total_scanned: number;
+}
+
+// ─────────────────────────────────────────────────────────── modelos (GET /api/admin/models)
+
+export type AdminModelEstado = 'produccion' | 'candidato' | 'experimental' | 'deprecado';
+
+export interface AdminModelGate {
+  gate: string;
+  label: string;
+  passed: boolean;
+  value: number | null;
+  threshold: number | null;
+}
+
+export interface AdminModelRow {
+  strategy_id: string;
+  display_name: string;
+  asset_id: string;
+  asset_symbol: string;
+  timeframe: string | null;
+  active_version: string | null;
+  sharpe: number | null;
+  return_pct: number | null;
+  p_value: number | null;
+  /** DA no está en el registry hoy — null hasta que el bundle lo publique. */
+  da_pct: number | null;
+  gates_passed: number | null;
+  gates_total: number | null;
+  estado: AdminModelEstado;
+}
+
+/** Candidato = approval_state con PENDING_APPROVAL. El voto vive en /dashboard (una sola superficie). */
+export interface AdminModelCandidate {
+  strategy_id: string;
+  strategy_name: string;
+  asset_id: string | null;
+  backtest_year: number | null;
+  recommendation: string | null;   // PROMOTE | REVIEW | REJECT
+  status: string;
+  gates: AdminModelGate[];
+}
+
+export interface AdminModelsResponse {
+  models: AdminModelRow[];
+  candidates: AdminModelCandidate[];
+  /** Badge de la pestaña Modelos. */
+  pending_count: number;
+}
+
+// ─────────────────────────────────────────────────────────── riesgo (GET /api/admin/risk)
+
+export interface AdminRiskUserKill {
+  user_id: string;
+  email: string | null;
+  mode: string;
+  kill_switch: boolean;
+}
+
+export interface AdminRiskApiPending {
+  id: string;
+  user_id: string;
+  email: string | null;
+  exchange: string;
+  created_at: string;
+}
+
+export interface AdminRiskSuspended {
+  id: string;
+  email: string;
+  status: string;
+  created_at: string | null;
+}
+
+export interface AdminRiskResponse {
+  /** null = SignalBridge inalcanzable (partial). */
+  global_kill: { active: boolean | null; detail: string | null };
+  user_kills: AdminRiskUserKill[];
+  modes: { paper: number; live: number };
+  api_pending: AdminRiskApiPending[];
+  suspended: AdminRiskSuspended[];
+  /** Techos de sistema (espejo de tenant.py CEILING_*). */
+  limits: { max_notional_usd: number; max_open_positions: number; max_daily_loss_pct: number };
+  partial_errors: string[];
+}
+
+// ─────────────────────────────────────────────────────────── ingresos (GET /api/admin/revenue)
+
+/**
+ * Estructura fiel del prototipo con TODOS los valores null hasta Fase 6 (billing):
+ * la UI pinta "— · Fase 6". Nunca mocks.
+ */
+export interface AdminRevenueResponse {
+  kpis: { mrr: number | null; arr: number | null; arpu: number | null; ltv: number | null };
+  por_plan: Array<{ plan: string; amount: number | null; pct: number | null }>;
+  movimiento: {
+    nuevo: number | null; expansion: number | null; contraccion: number | null;
+    churn: number | null; neto: number | null;
+  };
+  cobros: {
+    exitosos: number | null; fallidos: number | null;
+    reembolsos: number | null; contracargos: number | null;
+  };
+  por_activo: Array<{ symbol: string; amount: number | null }>;
+  dunning: Array<{ user: string; plan: string; amount: number | null; attempts: string | null; reason: string | null }>;
+  phase_note: string;
+}
+
+// ─────────────────────────────────────────────────────────── catálogo (GET /api/admin/catalog)
+
+export interface AdminCatalogRow {
+  asset_id: string;
+  symbol: string;
+  name: string;
+  asset_class: string;
+  status: 'available' | 'coming_soon';
+  addon_price_month: number | null;
+}
+
+export interface AdminCatalogResponse {
+  assets: AdminCatalogRow[];
+  /** El registry lo genera el pipeline (RegistryBuilder) — solo lectura desde la consola. */
+  mutable: false;
+  note: string;
+}
+
+// ─────────────────────────────────────────────────────────── "ver como" (impersonate read-only)
+
+/** Cookie httpOnly firmada (HMAC NEXTAUTH_SECRET): `role|exp|sig`. */
+export const VIEW_AS_COOKIE = 'gm-view-as';
+/** Espejo legible por el cliente (solo el rol, no sensible) para banner/hooks. */
+export const VIEW_AS_ROLE_COOKIE = 'gm-view-as-role';
+export const VIEW_AS_TTL_SECONDS = 30 * 60;
+
+export interface ImpersonateRequest {
+  /** Uno de los dos: usuario concreto (se resuelve su rol) o rol directo. */
+  user_id?: string;
+  role?: Role;
+  /** Obligatorio — va al audit_log ('view_as_start'). */
+  motivo: string;
+}
+
+export interface ImpersonateResponse {
+  role: Role;
+  expires_at: string;
 }

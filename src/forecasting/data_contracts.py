@@ -322,8 +322,18 @@ class FeatureBuildResult:
 # VALIDATION
 # =============================================================================
 
-def validate_daily_record(record: dict[str, Any]) -> tuple[bool, list[str]]:
-    """Validate a daily OHLCV record."""
+def validate_daily_record(
+    record: dict[str, Any],
+    price_range: tuple[float, float] = (3000, 6000),
+) -> tuple[bool, list[str]]:
+    """Validate a daily OHLCV record.
+
+    Args:
+        record: OHLCV record dict.
+        price_range: (min, max) sanity bounds for the close price. Defaults to
+            the USD/COP range; pass the per-asset range for other assets
+            (e.g. BTC ~ (1000, 250000)). Never weaken the COP default.
+    """
     errors = []
 
     # Required fields
@@ -338,8 +348,9 @@ def validate_daily_record(record: dict[str, Any]) -> tuple[bool, list[str]]:
     # Price validation
     o, h, l, c = record["open"], record["high"], record["low"], record["close"]
 
-    if not (3000 <= c <= 6000):  # COP range sanity check
-        errors.append(f"Close price {c} outside valid COP range [3000, 6000]")
+    lo, hi = price_range
+    if not (lo <= c <= hi):  # per-asset range sanity check
+        errors.append(f"Close price {c} outside valid range [{lo}, {hi}]")
 
     if h < l:
         errors.append(f"High ({h}) < Low ({l})")

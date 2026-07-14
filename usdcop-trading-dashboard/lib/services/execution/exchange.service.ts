@@ -72,11 +72,14 @@ async function fetchWithTimeout<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new ExchangeServiceError(
-        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
-        response.status,
-        url
-      );
+      // The BFF envelope (CTR-FE-BE-001) returns `error: { code, message }` — an
+      // OBJECT, not a string. Passing it straight to Error() renders "[object Object]".
+      // Extract the human message from either the enveloped or a flat `{ error }` shape.
+      const message =
+        (typeof errorData.error === 'string' ? errorData.error : errorData.error?.message) ||
+        errorData.message ||
+        `HTTP ${response.status}: ${response.statusText}`;
+      throw new ExchangeServiceError(message, response.status, url);
     }
 
     return await response.json();

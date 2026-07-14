@@ -16,6 +16,7 @@ import {
   LineChart,
   Layers,
 } from 'lucide-react';
+import { GM } from '@/lib/ui/gm-tokens';
 
 export function MethodologySection() {
   const [expandedSection, setExpandedSection] = useState<string | null>('drivers');
@@ -27,13 +28,13 @@ export function MethodologySection() {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-6"
+      className={`${GM.panel} p-6`}
     >
-      <h2 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
-        <Brain className="w-5 h-5 text-cyan-400" />
+      <h2 className={`text-base font-semibold ${GM.textStrong} mb-2 flex items-center gap-2`}>
+        <Brain className={`w-5 h-5 ${GM.accent}`} />
         Metodologia e Interpretabilidad del Analisis
       </h2>
-      <p className="text-xs text-gray-500 mb-5">
+      <p className={`text-xs ${GM.textMuted} mb-5`}>
         Como funciona este reporte, que impulsa el USD/COP, y como interpretar cada seccion.
       </p>
 
@@ -48,13 +49,13 @@ export function MethodologySection() {
           onToggle={() => toggle('drivers')}
         >
           <div className="space-y-4">
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className={`text-xs ${GM.textSec} leading-relaxed`}>
               El tipo de cambio USD/COP es determinado por la oferta y demanda de dolares en Colombia.
               Los principales factores que influyen son:
             </p>
 
             <DriverCard
-              icon={<Fuel className="w-4 h-4 text-amber-400" />}
+              icon={<Fuel className={`w-4 h-4 ${GM.warn}`} />}
               title="Petroleo (WTI / Brent)"
               impact="cop_strengthening"
               description="Colombia exporta ~40% de sus divisas en petroleo. Cuando el precio del crudo sube, entran mas dolares al pais, el peso se fortalece y el USD/COP baja."
@@ -63,7 +64,7 @@ export function MethodologySection() {
             />
 
             <DriverCard
-              icon={<DollarSign className="w-4 h-4 text-blue-400" />}
+              icon={<DollarSign className={`w-4 h-4 ${GM.info}`} />}
               title="DXY (Dollar Index)"
               impact="cop_weakening"
               description="El DXY mide la fortaleza del dolar contra 6 monedas principales. Cuando sube, el dolar se fortalece globalmente y todas las monedas emergentes (incluyendo COP) se debilitan."
@@ -72,7 +73,7 @@ export function MethodologySection() {
             />
 
             <DriverCard
-              icon={<AlertTriangle className="w-4 h-4 text-red-400" />}
+              icon={<AlertTriangle className={`w-4 h-4 ${GM.neg}`} />}
               title="VIX (Indice de Volatilidad)"
               impact="cop_weakening"
               description="El VIX mide el miedo del mercado (volatilidad implicita del S&P 500). Cuando sube, los inversionistas salen de mercados emergentes (risk-off) y el COP se debilita."
@@ -81,7 +82,7 @@ export function MethodologySection() {
             />
 
             <DriverCard
-              icon={<Activity className="w-4 h-4 text-orange-400" />}
+              icon={<Activity className={`w-4 h-4 ${GM.warn}`} />}
               title="EMBI Colombia (Riesgo Pais)"
               impact="cop_weakening"
               description="El EMBI mide la prima de riesgo de los bonos colombianos vs bonos del tesoro de EE.UU. Un spread mas alto indica mayor riesgo percibido y debilita el peso."
@@ -90,7 +91,7 @@ export function MethodologySection() {
             />
 
             <DriverCard
-              icon={<TrendingUp className="w-4 h-4 text-emerald-400" />}
+              icon={<TrendingUp className={`w-4 h-4 ${GM.pos}`} />}
               title="Tasas BanRep (TPM / IBR)"
               impact="cop_strengthening"
               description="Tasas de interes altas en Colombia atraen capital extranjero (carry trade), fortaleciendo el peso. Recortes de tasas reducen el diferencial y debilitan el COP."
@@ -99,7 +100,7 @@ export function MethodologySection() {
             />
 
             <DriverCard
-              icon={<DollarSign className="w-4 h-4 text-yellow-400" />}
+              icon={<DollarSign className={`w-4 h-4 ${GM.warn}`} />}
               title="Tasas Fed (FOMC)"
               impact="cop_weakening"
               description="Subidas de tasas de la Fed fortalecen el USD globalmente. El diferencial de tasas Colombia-EE.UU. se reduce, haciendo menos atractivo el carry trade hacia COP."
@@ -107,9 +108,9 @@ export function MethodologySection() {
               metric="Correlacion: UST10Y vs USD/COP aprox. +0.4 (directa)"
             />
 
-            <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
-              <p className="text-[10px] text-gray-500 leading-relaxed">
-                <strong className="text-gray-400">Resumen de impactos:</strong> Petroleo alto + carry trade alto = COP fuerte (USD/COP baja).
+            <div className="bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)]">
+              <p className={`text-[10px] ${GM.textMuted} leading-relaxed`}>
+                <strong className={GM.textSec}>Resumen de impactos:</strong> Petroleo alto + carry trade alto = COP fuerte (USD/COP baja).
                 DXY alto + VIX alto + EMBI alto = COP debil (USD/COP sube). En 2025-2026, el regimen
                 cambio: las posiciones SHORT (apostar que USD/COP baja) tienen WR 56%, mientras LONG
                 (apostar que sube) cayo de 58% a 28% de win rate (p=0.0014).
@@ -182,8 +183,8 @@ export function MethodologySection() {
           onToggle={() => toggle('ai')}
         >
           <div className="space-y-3">
-            <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
-              <h4 className="text-xs font-medium text-white mb-2">Pipeline Diario (Automatizado)</h4>
+            <div className="bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)]">
+              <h4 className={`text-xs font-medium ${GM.textStrong} mb-2`}>Pipeline Diario (Automatizado)</h4>
               <div className="space-y-1.5">
                 <PipelineStep step={1} text="Ingestion de datos: OHLCV de USD/COP (intradía 5-min + diario), 13 variables macro de 7 fuentes" />
                 <PipelineStep step={2} text="Ingestion de noticias: 3x/dia desde Investing.com, Portafolio, GDELT, La Republica" />
@@ -194,8 +195,8 @@ export function MethodologySection() {
               </div>
             </div>
 
-            <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
-              <h4 className="text-xs font-medium text-white mb-2">Modelos de Forecasting (Semanales)</h4>
+            <div className="bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)]">
+              <h4 className={`text-xs font-medium ${GM.textStrong} mb-2`}>Modelos de Forecasting (Semanales)</h4>
               <div className="space-y-1.5">
                 <PipelineStep step={1} text="H1 Diario: 9 modelos (Ridge, BayesianRidge, ARD, XGBoost, LightGBM, CatBoost, 3 hibridos) con 21 features" />
                 <PipelineStep step={2} text="H5 Semanal: Ensemble Ridge + BayesianRidge, prediccion a 5 dias con confidence scoring (HIGH/MEDIUM/LOW)" />
@@ -204,23 +205,23 @@ export function MethodologySection() {
               </div>
             </div>
 
-            <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
-              <h4 className="text-xs font-medium text-white mb-2">Limitaciones y Advertencias</h4>
-              <ul className="space-y-1 text-[11px] text-gray-400">
+            <div className="bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)]">
+              <h4 className={`text-xs font-medium ${GM.textStrong} mb-2`}>Limitaciones y Advertencias</h4>
+              <ul className={`space-y-1 text-[11px] ${GM.textSec}`}>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-0.5">!</span>
+                  <span className={`${GM.warn} mt-0.5`}>!</span>
                   Las narrativas de IA son generadas automaticamente y pueden contener errores de interpretacion.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-0.5">!</span>
+                  <span className={`${GM.warn} mt-0.5`}>!</span>
                   El sentimiento de noticias usa VADER (ingles) y tono GDELT — no es un modelo financiero especializado.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-0.5">!</span>
+                  <span className={`${GM.warn} mt-0.5`}>!</span>
                   Los indicadores tecnicos son descriptivos, no predictivos. Rendimientos pasados no garantizan resultados futuros.
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400 mt-0.5">!</span>
+                  <span className={`${GM.warn} mt-0.5`}>!</span>
                   Este reporte NO constituye consejo de inversion. Es una herramienta de analisis para toma de decisiones informada.
                 </li>
               </ul>
@@ -293,20 +294,20 @@ function AccordionItem({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-gray-800/50 overflow-hidden">
+    <div className="rounded-lg border border-[var(--gm-border)] overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-gray-800/20 hover:bg-gray-800/40 transition-colors text-left"
+        className={`w-full flex items-center gap-3 px-4 py-3 bg-[rgba(148,163,184,.04)] hover:bg-[rgba(148,163,184,.08)] transition-colors text-left ${GM.focus}`}
       >
-        <span className="text-cyan-400">{icon}</span>
+        <span className={GM.accent}>{icon}</span>
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-medium text-white">{title}</span>
-          <span className="text-[10px] text-gray-500 block">{subtitle}</span>
+          <span className={`text-sm font-medium ${GM.textStrong}`}>{title}</span>
+          <span className={`text-[10px] ${GM.textMuted} block`}>{subtitle}</span>
         </div>
         {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" />
+          <ChevronUp className={`w-4 h-4 ${GM.textMuted} shrink-0`} />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />
+          <ChevronDown className={`w-4 h-4 ${GM.textMuted} shrink-0`} />
         )}
       </button>
       <AnimatePresence>
@@ -318,7 +319,7 @@ function AccordionItem({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 py-4 border-t border-gray-800/30">{children}</div>
+            <div className="px-4 py-4 border-t border-[var(--gm-border)]">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -341,24 +342,24 @@ function DriverCard({
   example: string;
   metric: string;
 }) {
-  const impactBg = impact === 'cop_strengthening' ? 'border-l-emerald-500' : 'border-l-red-500';
+  const impactBg = impact === 'cop_strengthening' ? 'border-l-[var(--gm-pos)]' : 'border-l-[var(--gm-neg)]';
   const impactLabel = impact === 'cop_strengthening' ? 'Fortalece COP' : 'Debilita COP';
-  const impactColor = impact === 'cop_strengthening' ? 'text-emerald-400' : 'text-red-400';
+  const impactColor = impact === 'cop_strengthening' ? GM.pos : GM.neg;
 
   return (
-    <div className={`bg-gray-800/30 rounded-lg p-3 border border-gray-700/30 border-l-2 ${impactBg}`}>
+    <div className={`bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)] border-l-2 ${impactBg}`}>
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-xs font-medium text-white">{title}</span>
+          <span className={`text-xs font-medium ${GM.textStrong}`}>{title}</span>
         </div>
         <span className={`text-[10px] font-medium ${impactColor}`}>
           {impact === 'cop_strengthening' ? '↓' : '↑'} {impactLabel}
         </span>
       </div>
-      <p className="text-[11px] text-gray-400 leading-relaxed mb-1.5">{description}</p>
-      <p className="text-[10px] text-cyan-400/70 leading-relaxed mb-1">{example}</p>
-      <p className="text-[10px] text-gray-600">{metric}</p>
+      <p className={`text-[11px] ${GM.textSec} leading-relaxed mb-1.5`}>{description}</p>
+      <p className={`text-[10px] ${GM.accent} opacity-80 leading-relaxed mb-1`}>{example}</p>
+      <p className={`text-[10px] ${GM.textFaint}`}>{metric}</p>
     </div>
   );
 }
@@ -375,13 +376,13 @@ function IndicatorExplainer({
   interpretation: string;
 }) {
   return (
-    <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+    <div className="bg-[rgba(148,163,184,.05)] rounded-lg p-3 border border-[var(--gm-border)]">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-white">{name}</span>
-        <span className="text-[10px] text-gray-600 bg-gray-800/60 rounded px-1.5 py-0.5">{periods}</span>
+        <span className={`text-xs font-medium ${GM.textStrong}`}>{name}</span>
+        <span className={`text-[10px] ${GM.textMuted} bg-[rgba(148,163,184,.08)] rounded px-1.5 py-0.5`}>{periods}</span>
       </div>
-      <p className="text-[11px] text-gray-400 leading-relaxed mb-1.5">{description}</p>
-      <p className="text-[10px] text-cyan-400/70 leading-relaxed">{interpretation}</p>
+      <p className={`text-[11px] ${GM.textSec} leading-relaxed mb-1.5`}>{description}</p>
+      <p className={`text-[10px] ${GM.accent} opacity-80 leading-relaxed`}>{interpretation}</p>
     </div>
   );
 }
@@ -389,21 +390,21 @@ function IndicatorExplainer({
 function PipelineStep({ step, text }: { step: number; text: string }) {
   return (
     <div className="flex items-start gap-2 text-[11px]">
-      <span className="bg-cyan-500/20 text-cyan-400 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">
+      <span className={`bg-[rgba(34,211,238,.16)] ${GM.accent} rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5`}>
         {step}
       </span>
-      <span className="text-gray-400 leading-relaxed">{text}</span>
+      <span className={`${GM.textSec} leading-relaxed`}>{text}</span>
     </div>
   );
 }
 
 function SectionGuide({ name, description }: { name: string; description: string }) {
   return (
-    <div className="flex items-start gap-2 bg-gray-800/20 rounded-lg px-3 py-2">
-      <BarChart3 className="w-3 h-3 text-cyan-400 shrink-0 mt-0.5" />
+    <div className="flex items-start gap-2 bg-[rgba(148,163,184,.04)] rounded-lg px-3 py-2">
+      <BarChart3 className={`w-3 h-3 ${GM.accent} shrink-0 mt-0.5`} />
       <div>
-        <span className="text-xs font-medium text-white">{name}</span>
-        <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">{description}</p>
+        <span className={`text-xs font-medium ${GM.textStrong}`}>{name}</span>
+        <p className={`text-[10px] ${GM.textMuted} leading-relaxed mt-0.5`}>{description}</p>
       </div>
     </div>
   );

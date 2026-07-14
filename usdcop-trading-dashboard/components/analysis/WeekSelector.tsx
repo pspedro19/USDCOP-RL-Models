@@ -3,6 +3,10 @@
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { AnalysisWeekEntry } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface WeekSelectorProps {
   weeks: AnalysisWeekEntry[];
@@ -12,6 +16,7 @@ interface WeekSelectorProps {
 }
 
 export function WeekSelector({ weeks, currentYear, currentWeek, onSelect }: WeekSelectorProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const currentIndex = weeks.findIndex(w => w.year === currentYear && w.week === currentWeek);
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < weeks.length - 1;
@@ -30,7 +35,6 @@ export function WeekSelector({ weeks, currentYear, currentWeek, onSelect }: Week
     }
   };
 
-  const weekStr = String(currentWeek).padStart(2, '0');
   const currentEntry = weeks.find(w => w.year === currentYear && w.week === currentWeek);
 
   return (
@@ -39,9 +43,10 @@ export function WeekSelector({ weeks, currentYear, currentWeek, onSelect }: Week
       <button
         onClick={goPrev}
         disabled={!hasPrev}
-        className="p-2 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:bg-gray-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        aria-label={t('prevWeek')}
+        className={`${GM.ctaGhost} ${GM.focus} p-2.5 disabled:opacity-30 disabled:cursor-not-allowed`}
       >
-        <ChevronLeft className="w-5 h-5 text-gray-300" />
+        <ChevronLeft className={`w-5 h-5 ${GM.text}`} />
       </button>
 
       {/* Center label */}
@@ -52,17 +57,17 @@ export function WeekSelector({ weeks, currentYear, currentWeek, onSelect }: Week
         className="flex-1 text-center"
       >
         <div className="flex items-center justify-center gap-2 mb-1">
-          <Calendar className="w-4 h-4 text-cyan-400" />
-          <span className="text-xl font-bold text-white">
-            SEMANA {currentWeek}
+          <Calendar className={`w-4 h-4 ${GM.accent}`} />
+          <span className={`text-xl font-bold ${GM.textStrong} ${GMT.mono}`}>
+            {t('weekWord')} {currentWeek}
           </span>
-          <span className="text-sm text-gray-500">{currentYear}</span>
+          <span className={`${GMT.body} ${GM.textMuted} ${GMT.mono}`}>{currentYear}</span>
         </div>
         {currentEntry && (
-          <p className="text-xs text-gray-500">
+          <p className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
             {currentEntry.start} — {currentEntry.end}
             {currentEntry.daily_count > 0 && (
-              <span className="ml-2 text-gray-600">({currentEntry.daily_count} dias)</span>
+              <span className={`ml-2 ${GM.textFaint}`}>({currentEntry.daily_count} {t('days')})</span>
             )}
           </p>
         )}
@@ -72,20 +77,22 @@ export function WeekSelector({ weeks, currentYear, currentWeek, onSelect }: Week
       <button
         onClick={goNext}
         disabled={!hasNext}
-        className="p-2 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:bg-gray-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+        aria-label={t('nextWeek')}
+        className={`${GM.ctaGhost} ${GM.focus} p-2.5 disabled:opacity-30 disabled:cursor-not-allowed`}
       >
-        <ChevronRight className="w-5 h-5 text-gray-300" />
+        <ChevronRight className={`w-5 h-5 ${GM.text}`} />
       </button>
 
       {/* Jump dropdown */}
       {weeks.length > 3 && (
         <select
           value={`${currentYear}-${currentWeek}`}
+          aria-label={t('jumpToWeek')}
           onChange={(e) => {
             const [y, w] = e.target.value.split('-').map(Number);
             onSelect(y, w);
           }}
-          className="ml-2 bg-gray-800/80 border border-gray-700/50 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+          className={`ml-2 ${GM.input} ${GM.focus} ${GMT.mono}`}
         >
           {weeks.map(w => (
             <option key={`${w.year}-${w.week}`} value={`${w.year}-${w.week}`}>

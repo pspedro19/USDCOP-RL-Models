@@ -763,3 +763,11 @@ The signal→tenants fan-out (CTR-RBAC-001 R5, S4) is now a real, audited path:
 - **Remaining**: anti-withdraw key verification against a live exchange (`/me/keys` fails closed
   to `pending` when it cannot prove no-withdraw) and `paper_weeks_required` enforcement at the
   paper→live transition.
+
+---
+
+## As-built increment (2026-07-11) — per-user wiring + shared BFF constant
+
+- **Single backend constant**: `lib/services/execution/bff.ts` exports the one `SIGNALBRIDGE_BACKEND_URL` (in-container `:8000`) + `resolveExecutionIdentity` (NextAuth session → SB-token `sub`) + `sbFetch`; all owned BFF routes import it (killed the `:8085`/`:8000`/localhost drift).
+- **Per-user risk limits**: BFF resolves the real user id server-side and hits SB `/user/me/limits` (removed the `'current'`/hardcoded-UUID/`DEFAULT_LIMITS` path). New `DELETE /exchanges/[exchange]/disconnect` (was a 404). Connect path now create→`/validate`→**reject+rollback if the key has withdraw permission** (rbac rule 5), returns a real `ValidationResult`; "Permisos de la llave" shows real scopes.
+- **Honest KPIs**: `statistics` returns `degraded:true` on backend failure (no more zero-fill lie); paper panel uses SB user-state `trade_count_today` (not bridge uptime). New `GET|PATCH /api/execution/users/me` (profile). Honest-disabled (no SB store yet): notification prefs, copy-trading persistence, profile timezone, MEXC withdraw-flag.

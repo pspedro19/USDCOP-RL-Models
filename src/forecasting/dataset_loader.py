@@ -116,6 +116,10 @@ class ForecastingDatasetLoader:
             import psycopg2
 
             ohlcv_cfg = self.config.get_data_source("ohlcv")
+            # Per-asset opt-out: some assets (e.g. BTC in the mixed-symbol
+            # asset_daily_ohlcv table) must always use the parquet seed.
+            if ohlcv_cfg.get("disable_db"):
+                return None
             table = ohlcv_cfg["db_table"]
             cols = ohlcv_cfg["db_columns"]
             col_str = ", ".join(cols)

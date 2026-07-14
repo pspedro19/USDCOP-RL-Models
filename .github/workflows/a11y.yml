@@ -1,0 +1,72 @@
+# a11y — automated accessibility gate (VISUAL-SPEC-CHECKLIST item 18.1).
+#
+# Scope: PUBLIC pages only (no auth). We build the dashboard, start it, and run
+# @axe-core/cli against the anonymous surface. Authenticated pages (hub/dashboard/
+# production/forecasting/analysis/admin) are covered locally by `npm run qa:visual`,
+# which now runs mobile + wide + zoom (200% reflow) accessibility passes as admin.
+# CI keeps the public pages green automatically; keep it pragmatic and non-flaky.
+name: a11y
+
+on:
+  pull_request:
+    paths:
+      - 'usdcop-trading-dashboard/**'
+
+jobs:
+  axe-public:
+    name: axe-core (public pages)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: usdcop-trading-dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: usdcop-trading-dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Start app
+        run: npm run start &
+
+      - name: Wait for server
+        run: npx wait-on -t 120000 http://localhost:5000/
+
+      - name: Run axe-core on public pages
+        run: |
+          npx @axe-core/cli \
+            http://localhost:5000/ \
+            http://localhost:5000/pricing \
+            http://localhost:5000/login \
+            http://localhost:5000/legal/riesgo \
+            --exit --save axe-results.json || true
+
+      - name: Fail on critical/serious violations
+        run: |
+          node -e '
+            const fs = require("fs");
+            const raw = JSON.parse(fs.readFileSync("axe-results.json", "utf8"));
+            const runs = Array.isArray(raw) ? raw : [raw];
+            const bad = [];
+            for (const r of runs) {
+              for (const v of (r.violations || [])) {
+                if (v.impact === "critical" || v.impact === "serious") {
+                  bad.push({ url: r.url, id: v.id, impact: v.impact, help: v.help });
+                }
+              }
+            }
+            if (bad.length) {
+              console.error("Accessibility violations (critical/serious):");
+              for (const b of bad) console.error(`  [${b.impact}] ${b.url} — ${b.id}: ${b.help}`);
+              process.exit(1);
+            }
+            console.log("No critical/serious axe violations on public pages.");
+          '

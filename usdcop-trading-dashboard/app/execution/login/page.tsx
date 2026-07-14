@@ -12,14 +12,19 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { EXEC_DICT } from './../i18n';
+
 export default function ExecutionLoginRedirect() {
   const router = useRouter();
+  const t = useGmT(EXEC_DICT);
   useEffect(() => {
     router.replace('/login?callbackUrl=%2Fexecution%2Fdashboard');
   }, [router]);
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-      <p className="text-slate-300 text-sm">Redirigiendo al acceso…</p>
+    <div className={`min-h-screen ${GM.page} flex items-center justify-center`}>
+      <p className={`${GMT.body} ${GM.textSec}`}>{t('redirecting')}</p>
     </div>
   );
 }

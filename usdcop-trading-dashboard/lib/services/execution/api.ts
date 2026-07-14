@@ -65,7 +65,13 @@ async function fetchWithAuth<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      // BFF envelope returns `error: { code, message }` (object) — extract the string
+      // so callers never surface "[object Object]".
+      const message =
+        (typeof errorData.error === 'string' ? errorData.error : errorData.error?.message) ||
+        errorData.message ||
+        `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(message);
     }
 
     return await response.json();

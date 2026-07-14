@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, RotateCcw, Zap } from 'lucide-react';
 import { useAnalysisChatStore } from '@/stores/useAnalysisChatStore';
 import type { ChatMessage } from '@/lib/contracts/weekly-analysis.contract';
+import { GM } from '@/lib/ui/gm-tokens';
 import { AnalysisMarkdown } from './AnalysisMarkdown';
 
 const QUICK_ACTIONS = [
@@ -67,7 +68,7 @@ export function FloatingChatWidget() {
       const assistantMsg: ChatMessage = {
         id: `msg_${Date.now()}_assistant`,
         role: 'assistant',
-        content: data.reply || 'Error procesando respuesta.',
+        content: data.reply || data.error || 'Error procesando respuesta.',
         timestamp: new Date().toISOString(),
         tokens_used: data.tokens_used,
       };
@@ -103,7 +104,7 @@ export function FloatingChatWidget() {
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
             onClick={toggle}
-            className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-shadow flex items-center justify-center"
+            className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full ${GM.brandGradient} text-white shadow-lg shadow-[rgba(34,211,238,.25)] hover:shadow-[rgba(34,211,238,.4)] transition-shadow flex items-center justify-center ${GM.focus}`}
           >
             <MessageSquare className="w-6 h-6" />
           </motion.button>
@@ -117,30 +118,30 @@ export function FloatingChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-h-[560px] bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-gray-800 shadow-2xl shadow-black/50 flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[380px] max-h-[560px] bg-[var(--gm-panel)] backdrop-blur-xl rounded-2xl border border-[var(--gm-border)] shadow-2xl shadow-black/50 flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/50 bg-gray-900/80">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--gm-border)] bg-[var(--gm-panel-inner)]">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-sm font-semibold text-white">Asistente USDCOP</span>
-                <span className="text-[10px] text-gray-600 bg-gray-800/60 rounded px-1.5 py-0.5">
+                <div className="w-2 h-2 rounded-full bg-[var(--gm-pos)] animate-pulse" />
+                <span className={`text-sm font-semibold ${GM.textStrong}`}>Asistente USDCOP</span>
+                <span className={`text-[10px] ${GM.textMuted} bg-[rgba(148,163,184,.08)] rounded px-1.5 py-0.5`}>
                   {contextYear}-W{String(contextWeek).padStart(2, '0')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={newSession}
-                  className="p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+                  className={`p-1.5 rounded-lg hover:bg-[rgba(148,163,184,.08)] transition-colors ${GM.focus}`}
                   title="Nueva sesion"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-gray-500" />
+                  <RotateCcw className={`w-3.5 h-3.5 ${GM.textMuted}`} />
                 </button>
                 <button
                   onClick={toggle}
-                  className="p-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+                  className={`p-1.5 rounded-lg hover:bg-[rgba(148,163,184,.08)] transition-colors ${GM.focus}`}
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className={`w-4 h-4 ${GM.textSec}`} />
                 </button>
               </div>
             </div>
@@ -149,8 +150,8 @@ export function FloatingChatWidget() {
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[380px]">
               {messages.length === 0 && (
                 <div className="text-center py-6">
-                  <MessageSquare className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 mb-3">
+                  <MessageSquare className={`w-8 h-8 ${GM.textFaint} mx-auto mb-2`} />
+                  <p className={`text-sm ${GM.textMuted} mb-3`}>
                     Pregunta sobre el analisis semanal del USD/COP
                   </p>
 
@@ -160,7 +161,7 @@ export function FloatingChatWidget() {
                       <button
                         key={qa.label}
                         onClick={() => sendMessage(qa.prompt)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-800/60 border border-gray-700/40 rounded-full text-xs text-gray-400 hover:text-white hover:border-cyan-500/30 transition-all"
+                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 bg-[rgba(148,163,184,.08)] border border-[var(--gm-border)] rounded-full text-xs ${GM.textSec} hover:text-[var(--gm-text)] hover:border-[rgba(34,211,238,.3)] transition-all ${GM.focus}`}
                       >
                         <Zap className="w-3 h-3" />
                         {qa.label}
@@ -175,11 +176,11 @@ export function FloatingChatWidget() {
               ))}
 
               {isTyping && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className={`flex items-center gap-2 text-sm ${GM.textMuted}`}>
                   <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--gm-text-muted)] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--gm-text-muted)] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--gm-text-muted)] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                   Pensando...
                 </div>
@@ -191,7 +192,7 @@ export function FloatingChatWidget() {
             {/* Input */}
             <form
               onSubmit={handleSubmit}
-              className="flex items-center gap-2 px-4 py-3 border-t border-gray-800/50 bg-gray-900/60"
+              className="flex items-center gap-2 px-4 py-3 border-t border-[var(--gm-border)] bg-[var(--gm-panel-inner)]"
             >
               <input
                 ref={inputRef}
@@ -200,12 +201,12 @@ export function FloatingChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu pregunta..."
                 disabled={isTyping}
-                className="flex-1 bg-gray-800/60 border border-gray-700/40 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 disabled:opacity-50"
+                className={`flex-1 bg-[rgba(148,163,184,.08)] border border-[var(--gm-border)] rounded-lg px-3 py-2 text-sm text-[var(--gm-text)] placeholder:text-[var(--gm-text-faint)] ${GM.focus} disabled:opacity-50`}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isTyping}
-                className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className={`p-2 rounded-lg bg-[rgba(34,211,238,.16)] ${GM.accent} hover:bg-[rgba(34,211,238,.24)] disabled:opacity-30 disabled:cursor-not-allowed transition-all ${GM.focus}`}
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -224,8 +225,8 @@ function ChatBubble({ message }: { message: ChatMessage }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[85%] rounded-xl px-3 py-2 ${
         isUser
-          ? 'bg-cyan-500/20 border border-cyan-500/20 text-white'
-          : 'bg-gray-800/60 border border-gray-700/30 text-gray-200'
+          ? `bg-[rgba(34,211,238,.16)] border border-[rgba(34,211,238,.28)] ${GM.textStrong}`
+          : `bg-[rgba(148,163,184,.08)] border border-[var(--gm-border)] ${GM.text}`
       }`}>
         {isUser ? (
           <p className="text-sm">{message.content}</p>
@@ -233,7 +234,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           <AnalysisMarkdown content={message.content} className="text-sm" />
         )}
         {message.tokens_used && (
-          <p className="text-[9px] text-gray-600 mt-1 text-right">{message.tokens_used} tokens</p>
+          <p className={`text-[9px] ${GM.textFaint} mt-1 text-right`}>{message.tokens_used} tokens</p>
         )}
       </div>
     </div>

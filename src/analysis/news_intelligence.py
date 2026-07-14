@@ -169,9 +169,10 @@ def get_media_bias(source: str) -> tuple[str, str]:
     # Try exact match first
     if source_lower in MEDIA_BIAS:
         return MEDIA_BIAS[source_lower]
-    # Try domain extraction
+    # Try domain extraction — full-domain substrings AND bare source ids
+    # ("portafolio"/"investing" → "portafolio.co"/"investing.com").
     for domain, bias in MEDIA_BIAS.items():
-        if domain in source_lower:
+        if domain in source_lower or domain.split(".")[0] == source_lower:
             return bias
     return ("unknown", "unknown")
 
@@ -482,6 +483,12 @@ class NewsIntelligenceEngine:
                     representative_titles=[a.title for a in arts[:5]],
                     articles=[a.to_dict() for a in arts],
                 ))
+
+            # HDBSCAN can label everything as noise (label -1) on small/short
+            # headline sets — fall back to category grouping so we still surface
+            # clusters instead of an empty list.
+            if not clusters:
+                return self._cluster_by_category(articles)
 
             # Sort by article count
             clusters.sort(key=lambda c: c.article_count, reverse=True)

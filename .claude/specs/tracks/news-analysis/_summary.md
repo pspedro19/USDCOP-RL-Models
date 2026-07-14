@@ -147,6 +147,7 @@ Dashboard: /analysis (14 React components, 5 API routes, file-based JSON)
 | `prompt_templates.py` | (constants) | `SYSTEM_DAILY`, `SYSTEM_WEEKLY`, `DAILY_TEMPLATE`, `WEEKLY_TEMPLATE` + builders |
 | `chart_generator.py` | `generate_all_charts()` | Matplotlib dark-theme PNGs for macro overlays |
 | `weekly_generator.py` | `WeeklyAnalysisGenerator` | Orchestrator: daily + weekly analysis + JSON export |
+| `news_enrichment.py` | `enrich_news()` | **Shared, LangGraph-independent** producer of `news_intelligence` (clusters+sentiment) + `political_bias_analysis` for both COP and Gold/BTC tracks — deterministic floor, opt-in budget-gated LLM polish. See `07_ANALYSIS_ENGINE.md` §12 (CTR-NEWS-ENRICH-001). |
 | `__init__.py` | Package | Exports |
 
 ### Key Macro Variables (13)

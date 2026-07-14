@@ -102,7 +102,9 @@ def get_media_bias_expanded(source: str) -> tuple[str, str]:
     if source_lower in MEDIA_BIAS_EXPANDED:
         return MEDIA_BIAS_EXPANDED[source_lower]
     for domain, bias in MEDIA_BIAS_EXPANDED.items():
-        if domain in source_lower:
+        # Match full-domain substrings ("reuters.com" in "www.reuters.com/...")
+        # AND bare source ids ("portafolio"/"investing" → "portafolio.co"/"investing.com").
+        if domain in source_lower or domain.split(".")[0] == source_lower:
             return bias
     return ("unknown", "unknown")
 
@@ -160,7 +162,7 @@ class PoliticalBiasDetector:
             import math
             entropy = -sum(p * math.log(p + 1e-10) for p in proportions if p > 0)
             max_entropy = math.log(5)  # 5 categories
-            diversity_score = round(entropy / max_entropy, 3)
+            diversity_score = abs(round(entropy / max_entropy, 3))  # avoid -0.0
         else:
             diversity_score = 0.0
 

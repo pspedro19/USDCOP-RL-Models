@@ -1,68 +1,59 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, ShieldAlert, ShieldOff, Activity } from 'lucide-react';
+import { Shield, ShieldAlert, Activity, AlertTriangle } from 'lucide-react';
 import type { MacroRegimeOutput } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT, type GmTone } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface RegimeIndicatorProps {
   regime: MacroRegimeOutput;
 }
 
-const REGIME_CONFIG = {
-  risk_on: {
-    label: 'Risk-On',
-    labelEs: 'Apetito por riesgo',
-    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    icon: Shield,
-    dotColor: 'bg-emerald-400',
-  },
-  transition: {
-    label: 'Transicion',
-    labelEs: 'Transicion de regimen',
-    color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    icon: Activity,
-    dotColor: 'bg-amber-400',
-  },
-  risk_off: {
-    label: 'Risk-Off',
-    labelEs: 'Aversion al riesgo',
-    color: 'bg-red-500/20 text-red-400 border-red-500/30',
-    icon: ShieldAlert,
-    dotColor: 'bg-red-400',
-  },
-} as const;
+const REGIME_CONFIG: Record<string, { tone: GmTone; icon: typeof Shield; dictKey: 'riskOn' | 'riskOff' | 'transition' }> = {
+  risk_on: { tone: 'pos', icon: Shield, dictKey: 'riskOn' },
+  transition: { tone: 'warn', icon: Activity, dictKey: 'transition' },
+  risk_off: { tone: 'neg', icon: ShieldAlert, dictKey: 'riskOff' },
+};
 
 export function RegimeIndicator({ regime }: RegimeIndicatorProps) {
+  const t = useGmT(ANALYSIS_DICT);
+
   // Lean-schema assets (Gold/BTC) may omit confidence and the alert/leader arrays —
   // default them so this card degrades gracefully instead of crashing on toFixed()/.length.
   const regimeState = regime.regime;
   const config = REGIME_CONFIG[regimeState?.label] || REGIME_CONFIG.transition;
   const Icon = config.icon;
   const confidence = regimeState?.confidence ?? 0;
+  const barColor =
+    config.tone === 'pos' ? 'bg-[var(--gm-pos)]' : config.tone === 'neg' ? 'bg-[var(--gm-neg)]' : 'bg-[var(--gm-warn)]';
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-4"
+      className={`${GM.panel} gm-contain p-4`}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-300">Regimen Macro</h3>
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${config.color}`}>
+        <h3 className={`${GMT.panelTitle} ${GM.textStrong}`}>{t('regimeTitle')}</h3>
+        <GmBadge tone={config.tone} className="text-xs px-3 py-1">
           <Icon className="w-3.5 h-3.5" />
-          {config.label}
-        </span>
+          {t(config.dictKey)}
+        </GmBadge>
       </div>
 
       {/* Confidence bar */}
       <div className="mb-3">
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-          <span>Confianza</span>
-          <span>{(confidence * 100).toFixed(0)}%</span>
+        <div className={`flex items-center justify-between ${GMT.meta} ${GM.textMuted} mb-1`}>
+          <span>{t('confidence')}</span>
+          <span className={GMT.mono}>{(confidence * 100).toFixed(0)}%</span>
         </div>
-        <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-[rgba(148,163,184,.12)] rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all ${config.dotColor}`}
+            className={`h-full rounded-full transition-all duration-[var(--gm-dur-base)] ${barColor}`}
             style={{ width: `${confidence * 100}%` }}
           />
         </div>
@@ -70,36 +61,37 @@ export function RegimeIndicator({ regime }: RegimeIndicatorProps) {
 
       {/* Since date */}
       {regimeState.since && (
-        <p className="text-xs text-gray-500 mb-3">
-          Activo desde: <span className="text-gray-400">{regimeState.since}</span>
+        <p className={`${GMT.meta} ${GM.textMuted} mb-3`}>
+          {t('activeSince')}: <span className={`${GM.textSec} ${GMT.mono}`}>{regimeState.since}</span>
         </p>
       )}
 
-      {/* Z-Score alerts */}
+      {/* Z-Score alerts — prototype amber alert chip */}
       {(regime.zscore_alerts?.length ?? 0) > 0 && (
         <div className="space-y-1.5 mb-3">
-          <p className="text-xs font-medium text-gray-400">Alertas Z-Score</p>
+          <p className={`${GMT.label} ${GM.textMuted}`}>{t('zAlerts')}</p>
           {(regime.zscore_alerts ?? []).slice(0, 3).map((alert, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs">
-              <span className={alert.direction === 'extreme_high' ? 'text-red-400' : 'text-blue-400'}>
+            <div key={i} className={`flex items-center gap-2 ${GMT.meta} ${GM.warnBadge} rounded-[10px] px-2.5 py-1.5`}>
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span className={alert.direction === 'extreme_high' ? GM.neg : GM.info}>
                 {alert.direction === 'extreme_high' ? '▲' : '▼'}
               </span>
-              <span className="text-gray-300">{alert.variable_name}</span>
-              <span className="text-gray-500 ml-auto">z={alert.z_score.toFixed(1)}</span>
+              <span className={GM.text}>{alert.variable_name}</span>
+              <span className={`${GM.warn} ${GMT.mono} ml-auto font-semibold`}>z={alert.z_score.toFixed(1)}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Granger leaders */}
+      {/* Granger leaders — prototype "Variables líderes" mono rows */}
       {(regime.granger_leaders?.length ?? 0) > 0 && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-400">Variables lideres</p>
+          <p className={`${GMT.label} ${GM.textMuted}`}>{t('leaders')}</p>
           {(regime.granger_leaders ?? []).slice(0, 3).map((leader, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
-              <span className="text-cyan-400 font-medium">{leader.variable.toUpperCase()}</span>
-              <span className="text-gray-600">lag={leader.optimal_lag}d</span>
-              <span className="text-gray-600 ml-auto">p={leader.p_value.toFixed(3)}</span>
+            <div key={i} className={`flex items-center gap-2 ${GMT.meta} ${GM.textSec}`}>
+              <span className={`${GM.text} font-bold ${GMT.mono}`}>{leader.variable.toUpperCase()}</span>
+              <span className={`${GM.textMuted} ${GMT.mono}`}>lag={leader.optimal_lag}d</span>
+              <span className={`${GM.textMuted} ${GMT.mono} ml-auto`}>p={leader.p_value.toFixed(3)}</span>
             </div>
           ))}
         </div>

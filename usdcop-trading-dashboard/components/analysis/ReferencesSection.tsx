@@ -2,7 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { ExternalLink, Database, Newspaper, BarChart3, BookOpen } from 'lucide-react';
-import type { WeeklyViewData, NewsArticleRef } from '@/lib/contracts/weekly-analysis.contract';
+import type { WeeklyViewData } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT, GM_VIOLET } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface ReferencesSectionProps {
   weekData: WeeklyViewData;
@@ -125,6 +129,7 @@ const METHODOLOGY_REFS: SourceRef[] = [
 ];
 
 export function ReferencesSection({ weekData }: ReferencesSectionProps) {
+  const t = useGmT(ANALYSIS_DICT);
   // Collect unique article URLs from news clusters and daily entries
   const articleLinks: { title: string; source: string; url: string }[] = [];
   const seenUrls = new Set<string>();
@@ -181,17 +186,17 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-6"
+      className={`${GM.panel} p-6`}
     >
-      <h2 className="text-base font-semibold text-white mb-5 flex items-center gap-2">
-        <BookOpen className="w-5 h-5 text-cyan-400" />
+      <h2 className={`text-base font-semibold ${GM.textStrong} mb-5 flex items-center gap-2`}>
+        <BookOpen className={`w-5 h-5 ${GM.accent}`} />
         Referencias y Fuentes de Datos
       </h2>
 
       {/* Macro data sources */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-3">
-          <Database className="w-4 h-4 text-blue-400" />
+        <h3 className={`text-sm font-medium ${GM.textSec} flex items-center gap-2 mb-3`}>
+          <Database className={`w-4 h-4 ${GM.info}`} />
           Fuentes de Datos Macroeconomicos
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -203,8 +208,8 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
 
       {/* News sources */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-3">
-          <Newspaper className="w-4 h-4 text-amber-400" />
+        <h3 className={`text-sm font-medium ${GM.textSec} flex items-center gap-2 mb-3`}>
+          <Newspaper className={`w-4 h-4 ${GM.warn}`} />
           Fuentes de Noticias
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -217,8 +222,8 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
       {/* Article hyperlinks from this week's data */}
       {articleLinks.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-3">
-            <ExternalLink className="w-4 h-4 text-emerald-400" />
+          <h3 className={`text-sm font-medium ${GM.textSec} flex items-center gap-2 mb-3`}>
+            <ExternalLink className={`w-4 h-4 ${GM.pos}`} />
             Articulos Citados Esta Semana ({articleLinks.length})
           </h3>
           <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2">
@@ -228,16 +233,16 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-2 text-xs group hover:bg-gray-800/30 rounded px-2 py-1.5 transition-colors"
+                className={`flex items-start gap-2 text-xs group ${GM.rowHover} rounded px-2 py-1.5 transition-colors ${GM.focus}`}
               >
-                <span className="text-gray-600 shrink-0 mt-0.5">{i + 1}.</span>
+                <span className={`${GM.textFaint} shrink-0 mt-0.5`}>{i + 1}.</span>
                 <div className="min-w-0 flex-1">
-                  <span className="text-gray-300 group-hover:text-cyan-400 transition-colors line-clamp-1">
+                  <span className={`${GM.textSec} group-hover:text-[var(--gm-accent)] transition-colors line-clamp-1`}>
                     {link.title}
                   </span>
-                  <span className="text-gray-600 text-[10px] block">{link.source}</span>
+                  <span className={`${GM.textFaint} text-[10px] block`}>{link.source}</span>
                 </div>
-                <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-cyan-400 shrink-0 mt-0.5" />
+                <ExternalLink className={`w-3 h-3 ${GM.textFaint} group-hover:text-[var(--gm-accent)] shrink-0 mt-0.5`} />
               </a>
             ))}
           </div>
@@ -246,8 +251,8 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
 
       {/* Data infrastructure */}
       <div>
-        <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-3">
-          <BarChart3 className="w-4 h-4 text-purple-400" />
+        <h3 className={`text-sm font-medium ${GM.textSec} flex items-center gap-2 mb-3`}>
+          <BarChart3 className={`w-4 h-4 ${GM_VIOLET.text}`} />
           Infraestructura de Datos
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -258,8 +263,8 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
       </div>
 
       {/* Disclaimer */}
-      <div className="mt-5 pt-4 border-t border-gray-800/50">
-        <p className="text-[10px] text-gray-600 leading-relaxed">
+      <div className="mt-5 pt-4 border-t border-[var(--gm-border)]">
+        <p className={`text-[10px] ${GM.textFaint} leading-relaxed`}>
           Nota: Los datos macroeconomicos se actualizan automaticamente cada hora durante el horario de
           mercado (8:00-12:55 COT, Lun-Vie). Las noticias se ingestan 3 veces al dia. Los indicadores
           tecnicos (SMA, RSI, Bollinger) se calculan con ventanas de 5, 10, 20 y 50 dias usando EMA de
@@ -277,16 +282,16 @@ function SourceLink({ source }: { source: SourceRef }) {
       href={source.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-start gap-2.5 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 border border-gray-800/30 hover:border-cyan-500/20 px-3 py-2.5 transition-all group"
+      className={`flex items-start gap-2.5 rounded-lg bg-[rgba(148,163,184,.05)] hover:bg-[rgba(148,163,184,.10)] border border-[var(--gm-border)] hover:border-[rgba(34,211,238,.28)] px-3 py-2.5 transition-all group ${GM.focus}`}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-gray-200 group-hover:text-cyan-400 transition-colors">
+          <span className={`text-xs font-medium ${GM.text} group-hover:text-[var(--gm-accent)] transition-colors`}>
             {source.name}
           </span>
-          <ExternalLink className="w-2.5 h-2.5 text-gray-600 group-hover:text-cyan-400 shrink-0" />
+          <ExternalLink className={`w-2.5 h-2.5 ${GM.textFaint} group-hover:text-[var(--gm-accent)] shrink-0`} />
         </div>
-        <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">{source.description}</p>
+        <p className={`text-[10px] ${GM.textMuted} mt-0.5 leading-relaxed`}>{source.description}</p>
       </div>
     </a>
   );

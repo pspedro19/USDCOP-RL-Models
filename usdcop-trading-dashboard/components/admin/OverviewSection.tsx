@@ -13,10 +13,12 @@ import type { AdminSectionId, BusinessKpis, SystemStatus, AdminAlert } from '@/l
 import { QUEUE_SLA_HOURS } from '@/lib/contracts/admin-console.contract';
 import { COLOR, CTA, RING_ACCENT, TYPE, type SemanticTone } from '@/lib/ui/tokens';
 
+import { PAID_PLANS } from '@/lib/billing/prices';
+
 import { REFRESH, useAdminWidget, type WidgetState } from './useAdminWidget';
 import {
   Badge, Card, EmptyState, KpiTile, ProgressBar, SkeletonRows, StatusDot,
-  fmtHours, fmtRelative, useNow,
+  fmtCop, fmtHours, fmtPct, fmtRelative, useNow,
 } from './ui';
 
 const FRESH_TONE: Record<string, SemanticTone> = { ok: 'ok', warn: 'warn', stale: 'error', unknown: 'neutral' };
@@ -74,7 +76,7 @@ export function OverviewSection({ onNavigate, queueWaitingMax, pendingQueue, sys
       )}
       {kpis.loading && !k && <SkeletonRows rows={1} cols={4} />}
       {k && (
-        <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-4 ${kpis.stale ? 'opacity-60' : ''}`}>
+        <div className={`grid gap-3 sm:grid-cols-2 lg:grid-cols-3 ${kpis.stale ? 'opacity-60' : ''}`}>
           <KpiTile
             label="Usuarios" value={String(k.total_users)}
             delta={k.new_7d > 0 ? `+${k.new_7d} en 7d` : undefined} deltaTone={k.new_7d > 0 ? 'ok' : 'neutral'}
@@ -103,7 +105,28 @@ export function OverviewSection({ onNavigate, queueWaitingMax, pendingQueue, sys
             testId="kpi-pendientes"
           />
           <KpiTile
-            label="MRR" value="—" note="Fase 6 · billing" dimmed
+            label="MRR" value={fmtCop(k.mrr_cop)}
+            note={k.mrr_cop === 0 ? 'sin suscriptores de pago' : 'mensual'}
+            dimmed={k.mrr_cop == null}
+            onClick={() => onNavigate('ingresos')}
+          />
+          {(() => {
+            const paidSubs = PAID_PLANS.reduce((s, p) => s + (k.plan_mix[p] ?? 0), 0);
+            return (
+              <KpiTile
+                label="Suscriptores" value={String(paidSubs)}
+                note={k.conversion_30d_pct != null ? `conv. ${fmtPct(k.conversion_30d_pct)}` : undefined}
+                deltaTone={paidSubs > 0 ? 'ok' : 'neutral'}
+                onClick={() => onNavigate('ingresos')}
+              />
+            );
+          })()}
+          <KpiTile
+            label="Churn" value={k.churn_monthly_pct == null ? '—' : fmtPct(k.churn_monthly_pct)}
+            note={k.churn_monthly_pct == null ? 'sin datos aún' : 'mensual'}
+            dimmed={k.churn_monthly_pct == null}
+            deltaTone={(k.churn_monthly_pct ?? 0) > 0 ? 'warn' : 'neutral'}
+            onClick={() => onNavigate('ingresos')}
           />
         </div>
       )}

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://usdcop-signalbridge:8000';
+import { SIGNALBRIDGE_BACKEND_URL as BACKEND_URL } from '@/lib/services/execution/bff';
 
 // Default empty response for when backend fails
 const DEFAULT_HISTORY = {

@@ -3,31 +3,34 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus, Gauge, Eye } from 'lucide-react';
 import type { TechnicalAnalysisOutput } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT, type GmTone } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface TechnicalAnalysisCardProps {
   ta: TechnicalAnalysisOutput;
 }
 
-const BIAS_CONFIG = {
-  bullish: { label: 'Alcista', color: 'text-emerald-400', bg: 'bg-emerald-500/20', icon: TrendingUp },
-  bearish: { label: 'Bajista', color: 'text-red-400', bg: 'bg-red-500/20', icon: TrendingDown },
-  neutral: { label: 'Neutral', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: Minus },
-} as const;
-
-const VOLATILITY_CONFIG = {
-  low: { label: 'Baja', color: 'text-blue-400' },
-  normal: { label: 'Normal', color: 'text-gray-400' },
-  high: { label: 'Alta', color: 'text-amber-400' },
-} as const;
+const BIAS_TONE: Record<string, { tone: GmTone; icon: typeof TrendingUp }> = {
+  bullish: { tone: 'pos', icon: TrendingUp },
+  bearish: { tone: 'neg', icon: TrendingDown },
+  neutral: { tone: 'neutral', icon: Minus },
+};
 
 export function TechnicalAnalysisCard({ ta }: TechnicalAnalysisCardProps) {
+  const t = useGmT(ANALYSIS_DICT);
+
   // This card renders the rich USD/COP technical schema (bias/RSI/ATR/current_price).
   // Assets with a leaner analysis (Gold/BTC) omit these fields — skip the card rather
   // than crash on `undefined.toFixed()`. Graceful degradation over a broken page.
   if (ta == null || ta.current_price == null || ta.bias_confidence == null) return null;
 
-  const bias = BIAS_CONFIG[ta.dominant_bias] || BIAS_CONFIG.neutral;
-  const vol = VOLATILITY_CONFIG[ta.volatility_regime] || VOLATILITY_CONFIG.normal;
+  const bias = BIAS_TONE[ta.dominant_bias] || BIAS_TONE.neutral;
+  const biasLabel = ta.dominant_bias === 'bullish' ? t('bullish') : ta.dominant_bias === 'bearish' ? t('bearish') : t('neutral');
+  const volLabel = ta.volatility_regime === 'low' ? t('volLow') : ta.volatility_regime === 'high' ? t('volHigh') : t('volNormal');
+  const volClass = ta.volatility_regime === 'low' ? GM.info : ta.volatility_regime === 'high' ? GM.warn : GM.textSec;
   const BiasIcon = bias.icon;
   const confidencePct = (ta.bias_confidence * 100).toFixed(0);
 
@@ -35,83 +38,83 @@ export function TechnicalAnalysisCard({ ta }: TechnicalAnalysisCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-5"
+      className={`${GM.panel} gm-contain p-5`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <Gauge className="w-4 h-4 text-cyan-400" />
-          Analisis Tecnico
+        <h3 className={`${GMT.panelTitle} ${GM.textStrong} flex items-center gap-2`}>
+          <Gauge className={`w-4 h-4 ${GM.accent}`} />
+          {t('techTitle')}
         </h3>
-        <span className="text-xs text-gray-500">
+        <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
           USD/COP {ta.current_price.toFixed(2)}
         </span>
       </div>
 
-      {/* Bias gauge */}
+      {/* Bias gauge — prototype: bias chip + "Confianza NN%" */}
       <div className="flex items-center gap-4 mb-4">
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${bias.bg}`}>
-          <BiasIcon className={`w-5 h-5 ${bias.color}`} />
-          <div>
-            <p className={`text-sm font-bold ${bias.color}`}>{bias.label}</p>
-            <p className="text-xs text-gray-500">Confianza {confidencePct}%</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <GmBadge tone={bias.tone} className="text-xs px-3 py-1">
+            <BiasIcon className="w-3.5 h-3.5" />
+            {biasLabel}
+          </GmBadge>
+          <span className={`${GMT.meta} ${GM.textMuted}`}>{t('confidence')} {confidencePct}%</span>
         </div>
 
         {/* Confidence bar */}
         <div className="flex-1">
-          <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="relative h-2 bg-[rgba(148,163,184,.12)] rounded-full overflow-hidden">
             {/* Bearish side (left) / Bullish side (right) */}
             <div className="absolute inset-0 flex">
               <div className="w-1/2 flex justify-end">
                 {ta.dominant_bias === 'bearish' && (
                   <div
-                    className="h-full bg-red-400/60 rounded-l-full"
+                    className="h-full bg-[var(--gm-neg)] opacity-60 rounded-l-full"
                     style={{ width: `${ta.bias_confidence * 100}%` }}
                   />
                 )}
               </div>
-              <div className="w-px bg-gray-600" />
+              <div className="w-px bg-[rgba(148,163,184,.3)]" />
               <div className="w-1/2">
                 {ta.dominant_bias === 'bullish' && (
                   <div
-                    className="h-full bg-emerald-400/60 rounded-r-full"
+                    className="h-full bg-[var(--gm-pos)] opacity-60 rounded-r-full"
                     style={{ width: `${ta.bias_confidence * 100}%` }}
                   />
                 )}
               </div>
             </div>
           </div>
-          <div className="flex justify-between text-[10px] text-gray-600 mt-0.5">
-            <span>Bajista</span>
-            <span>Alcista</span>
+          <div className={`flex justify-between ${GMT.micro} ${GM.textFaint} mt-0.5`}>
+            <span>{t('bearish')}</span>
+            <span>{t('bullish')}</span>
           </div>
         </div>
       </div>
 
       {/* Volatility + ATR */}
-      <div className="flex items-center gap-4 mb-4 text-xs">
-        <span className="text-gray-500">Volatilidad:</span>
-        <span className={`font-medium ${vol.color}`}>{vol.label}</span>
+      <div className={`flex items-center gap-4 mb-4 ${GMT.meta}`}>
+        <span className={GM.textMuted}>{t('volatility')}:</span>
+        <span className={`font-semibold ${volClass}`}>{volLabel}</span>
         {ta.atr_pct !== null && (
-          <span className="text-gray-500 ml-auto">ATR: {ta.atr_pct.toFixed(2)}%</span>
+          <span className={`${GM.textMuted} ${GMT.mono} ml-auto`}>ATR: {ta.atr_pct.toFixed(2)}%</span>
         )}
         {ta.rsi !== null && ta.rsi !== undefined && (
-          <span className={`${ta.rsi > 70 ? 'text-red-400' : ta.rsi < 30 ? 'text-emerald-400' : 'text-gray-400'}`}>
+          <span className={`${GMT.mono} ${ta.rsi > 70 ? GM.neg : ta.rsi < 30 ? GM.pos : GM.textSec}`}>
             RSI: {ta.rsi.toFixed(1)}
           </span>
         )}
       </div>
 
-      {/* Signals grid */}
+      {/* Signals grid — prototype tech factors (Alcistas / Bajistas / Vigilar) */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         {/* Bullish signals */}
         {ta.bullish_signals.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-emerald-400 mb-1.5">Alcistas</p>
+            <p className={`${GMT.label} ${GM.pos} mb-1.5`}>{t('bullishGroup')}</p>
             <div className="space-y-1">
               {ta.bullish_signals.slice(0, 4).map((sig, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+                <div key={i} className={`flex items-center gap-1.5 ${GMT.meta} ${GM.textSec}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--gm-pos)] opacity-60 shrink-0" />
                   {sig}
                 </div>
               ))}
@@ -122,11 +125,11 @@ export function TechnicalAnalysisCard({ ta }: TechnicalAnalysisCardProps) {
         {/* Bearish signals */}
         {ta.bearish_signals.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-red-400 mb-1.5">Bajistas</p>
+            <p className={`${GMT.label} ${GM.neg} mb-1.5`}>{t('bearishGroup')}</p>
             <div className="space-y-1">
               {ta.bearish_signals.slice(0, 4).map((sig, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-xs text-gray-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400/60" />
+                <div key={i} className={`flex items-center gap-1.5 ${GMT.meta} ${GM.textSec}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--gm-neg)] opacity-60 shrink-0" />
                   {sig}
                 </div>
               ))}
@@ -137,13 +140,13 @@ export function TechnicalAnalysisCard({ ta }: TechnicalAnalysisCardProps) {
 
       {/* Watch list */}
       {ta.watch_list.length > 0 && (
-        <div className="border-t border-gray-800/50 pt-3">
-          <p className="text-xs font-medium text-gray-400 flex items-center gap-1 mb-1.5">
-            <Eye className="w-3 h-3" /> Vigilar
+        <div className="border-t border-[var(--gm-border)] pt-3">
+          <p className={`${GMT.label} ${GM.warn} flex items-center gap-1 mb-1.5`}>
+            <Eye className="w-3 h-3" /> {t('watch')}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {ta.watch_list.slice(0, 5).map((item, i) => (
-              <span key={i} className="px-2 py-0.5 rounded bg-gray-800/60 text-[10px] text-gray-400">
+              <span key={i} className={`px-2 py-0.5 rounded ${GM.neutralBadge} ${GMT.micro}`}>
                 {item}
               </span>
             ))}

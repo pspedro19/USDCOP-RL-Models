@@ -21,6 +21,17 @@ _meta:
   status: "production"
 
 # =============================================================================
+# ASSET IDENTITY / DISPLAY (per-asset metadata; USD/COP defaults)
+# =============================================================================
+asset:
+  id: usdcop
+  display_label: "USD/COP"
+  price_label: "Precio USD/COP"
+  output_subdir: ""              # root of public/forecasting/ (unchanged)
+  price_range: [3000, 6000]
+  annualization_days: 252        # business-day (Mon-Fri) market
+
+# =============================================================================
 # DATA SOURCES
 # =============================================================================
 data_sources:

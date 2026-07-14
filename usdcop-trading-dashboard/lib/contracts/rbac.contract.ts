@@ -135,7 +135,11 @@ export const PAGE_ROUTES: readonly RouteRule[] = [
   { prefix: '/production', permission: 'signals:read' },   // "Señales" for clients
   { prefix: '/execution', permission: 'execution:self' },
   { prefix: '/admin', permission: 'admin:all' },
+  // Archived pre-GlobalMarkets UI (CTR-GM-UI-001 migration) — admin-only reference copies.
+  { prefix: '/legacy', permission: 'admin:all' },
   { prefix: '/account', permission: 'authenticated' },
+  { prefix: '/catalog', permission: 'authenticated' },     // catálogo/watchlist/carrito (§4.3)
+  { prefix: '/cart', permission: 'authenticated' },        // página completa del carrito (§4.3)
   { prefix: '/', permission: 'public' },                   // landing (exact match only)
 ] as const;
 
@@ -145,6 +149,7 @@ export const API_ROUTES: readonly RouteRule[] = [
   { prefix: '/api/auth', permission: 'public' },
   { prefix: '/api/health', permission: 'public' },
   { prefix: '/api/billing/webhook', permission: 'public' }, // signature-verified inside handler
+  { prefix: '/api/billing/prices', permission: 'public' },  // plan prices shown on the public pricing page
   { prefix: '/api/public', permission: 'public' },          // marketing aggregates only (live-stats)
   { prefix: '/api/captcha', permission: 'public' },         // signed challenge for auth forms (answer never in response)
   // SignalBridge auth endpoints ARE the login (they mint the session) — must be public.
@@ -181,6 +186,10 @@ export const API_ROUTES: readonly RouteRule[] = [
   { prefix: '/api/admin', permission: 'admin:all' },
   { prefix: '/api/users', permission: 'admin:all' },
   { prefix: '/api/billing', permission: 'authenticated' },
+  // catálogo · watchlist · carrito (CTR-FE-BE-001 §4.3) — per-user rows, any role
+  { prefix: '/api/catalog', permission: 'authenticated' },
+  { prefix: '/api/watchlist', permission: 'authenticated' },
+  { prefix: '/api/cart', permission: 'authenticated' },
   { prefix: '/api/agent', permission: 'research:read' },
   { prefix: '/api/signals', permission: 'signals:read' },
 ] as const;
@@ -210,6 +219,30 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
 export function roleHasPermission(role: Role | string | undefined, perm: Permission): boolean {
   if (!role || !(ROLES as readonly string[]).includes(role)) return false;
   return ROLE_PERMISSIONS[role as Role].includes(perm);
+}
+
+/** Narrow an arbitrary string to a known Role. */
+export function isRole(x: string | undefined | null): x is Role {
+  return !!x && (ROLES as readonly string[]).includes(x);
+}
+
+/**
+ * Membership check against an EFFECTIVE permission set (dynamic RBAC, migration
+ * 056). Used by middleware/relay off the JWT-baked `permissions` claim; when the
+ * claim is absent (legacy tokens) callers fall back to `roleHasPermission`.
+ */
+export function permsHave(perms: readonly string[] | undefined | null, perm: Permission): boolean {
+  return !!perms && perms.includes(perm);
+}
+
+/**
+ * Downgrade-only intersection for role PREVIEW ("Ver como"): the effective set an
+ * admin sees while previewing role X = their real permissions ∩ X's permissions.
+ * Because it only ever RESTRICTS, a forged view-as cookie can never escalate.
+ */
+export function intersectPerms(real: readonly string[], view: readonly string[]): string[] {
+  const v = new Set(view);
+  return real.filter((p) => v.has(p));
 }
 
 export function requiredPermissionFor(pathname: string, rules: readonly RouteRule[]):

@@ -47,6 +47,7 @@ import {
   PERIOD_COLORS,
   getDataType
 } from '@/lib/config/training-periods'
+import { GM_TV } from '@/lib/ui/gm-tokens'
 import { TIMESTAMP_TOLERANCE_NORMAL_S, TIMESTAMP_TOLERANCE_REPLAY_S } from '@/lib/contracts/ssot.contract'
 
 interface TradingChartWithSignalsProps {
@@ -88,10 +89,10 @@ interface SignalOverlay {
 
 // P1-6: Helper para color de marker basado en confidence
 const getConfidenceColor = (confidence: number): string => {
-  if (confidence >= 90) return '#00C853'  // Alto - verde brillante
-  if (confidence >= 75) return '#4CAF50'  // Bueno - verde
-  if (confidence >= 60) return '#FFC107'  // Medio - amarillo
-  return '#FF5722'                         // Bajo - naranja
+  if (confidence >= 90) return GM_TV.conf.high  // Alto - verde brillante
+  if (confidence >= 75) return GM_TV.conf.good  // Bueno - verde
+  if (confidence >= 60) return GM_TV.conf.mid   // Medio - amarillo
+  return GM_TV.conf.low                          // Bajo - naranja
 }
 
 export default function TradingChartWithSignals({
@@ -297,24 +298,24 @@ export default function TradingChartWithSignals({
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: '#0f172a' },
-        textColor: '#94a3b8'
+        background: { type: ColorType.Solid, color: GM_TV.bg },
+        textColor: GM_TV.axisText
       },
       grid: {
-        vertLines: { color: '#1e293b' },
-        horzLines: { color: '#1e293b' }
+        vertLines: { color: GM_TV.grid },
+        horzLines: { color: GM_TV.grid }
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: '#475569', labelBackgroundColor: '#1e293b' },
-        horzLine: { color: '#475569', labelBackgroundColor: '#1e293b' }
+        vertLine: { color: GM_TV.crosshair, labelBackgroundColor: GM_TV.grid },
+        horzLine: { color: GM_TV.crosshair, labelBackgroundColor: GM_TV.grid }
       },
       rightPriceScale: {
-        borderColor: '#334155',
+        borderColor: GM_TV.border,
         scaleMargins: { top: 0.1, bottom: 0.2 }
       },
       timeScale: {
-        borderColor: '#334155',
+        borderColor: GM_TV.border,
         timeVisible: true,
         secondsVisible: false,
         tickMarkFormatter: (time: number) => formatTimeToCOT(time)
@@ -328,12 +329,12 @@ export default function TradingChartWithSignals({
     })
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      borderUpColor: '#22c55e',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#22c55e',
-      wickDownColor: '#ef4444'
+      upColor: GM_TV.candleUp,
+      downColor: GM_TV.candleDown,
+      borderUpColor: GM_TV.candleUp,
+      borderDownColor: GM_TV.candleDown,
+      wickUpColor: GM_TV.candleUp,
+      wickDownColor: GM_TV.candleDown
     })
 
     chartRef.current = chart
@@ -378,8 +379,18 @@ export default function TradingChartWithSignals({
 
     window.addEventListener('resize', handleResize)
 
+    // Observe the container itself so the canvas re-fits on CSS-driven width
+    // changes (e.g. collapsing/expanding the sidebar via the hamburger), which
+    // never fire a window 'resize'. Mirrors UnifiedMacroChart.tsx.
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined' && chartContainerRef.current) {
+      resizeObserver = new ResizeObserver(handleResize)
+      resizeObserver.observe(chartContainerRef.current)
+    }
+
     return () => {
       window.removeEventListener('resize', handleResize)
+      if (resizeObserver) resizeObserver.disconnect()
       markersPluginRef.current = null
       chart.remove()
     }
@@ -401,29 +412,29 @@ export default function TradingChartWithSignals({
         const isUp = d.close >= d.open
 
         // Determine period-based colors (subtle tint)
-        let upColor = '#22c55e'      // Default green
-        let downColor = '#ef4444'    // Default red
-        let borderUp = '#22c55e'
-        let borderDown = '#ef4444'
-        let wickUp = '#22c55e'
-        let wickDown = '#ef4444'
+        let upColor = GM_TV.candleUp      // Default green
+        let downColor = GM_TV.candleDown  // Default red
+        let borderUp = GM_TV.candleUp
+        let borderDown = GM_TV.candleDown
+        let wickUp = GM_TV.candleUp
+        let wickDown = GM_TV.candleDown
 
         if (candleTs < valStartTs) {
           // Train period - slight blue tint
-          upColor = '#3B82F6'
-          downColor = '#60A5FA'
-          borderUp = '#3B82F6'
-          borderDown = '#60A5FA'
-          wickUp = '#3B82F6'
-          wickDown = '#60A5FA'
+          upColor = GM_TV.modelBlue
+          downColor = GM_TV.modelBlueSoft
+          borderUp = GM_TV.modelBlue
+          borderDown = GM_TV.modelBlueSoft
+          wickUp = GM_TV.modelBlue
+          wickDown = GM_TV.modelBlueSoft
         } else if (candleTs < testStartTs) {
           // Validation period - slight purple tint
-          upColor = '#8B5CF6'
-          downColor = '#A78BFA'
-          borderUp = '#8B5CF6'
-          borderDown = '#A78BFA'
-          wickUp = '#8B5CF6'
-          wickDown = '#A78BFA'
+          upColor = GM_TV.modelViolet
+          downColor = GM_TV.modelVioletSoft
+          borderUp = GM_TV.modelViolet
+          borderDown = GM_TV.modelVioletSoft
+          wickUp = GM_TV.modelViolet
+          wickDown = GM_TV.modelVioletSoft
         }
         // Test/OOS period uses default green/red
 
@@ -503,7 +514,7 @@ export default function TradingChartWithSignals({
         return {
           time: snappedTs as Time,
           position: isBuy ? 'belowBar' : 'aboveBar',
-          color: isBuy ? '#22c55e' : '#ef4444',
+          color: isBuy ? GM_TV.candleUp : GM_TV.candleDown,
           shape: isBuy ? 'arrowUp' : 'arrowDown',
           text: `${signal.type} ${signal.confidence.toFixed(0)}%`,
           size: 1.5
@@ -661,7 +672,7 @@ export default function TradingChartWithSignals({
       if (signal.stopLoss) {
         const slLine = candleSeriesRef.current!.createPriceLine({
           price: signal.stopLoss,
-          color: '#ef4444',
+          color: GM_TV.candleDown,
           lineWidth: 1,
           lineStyle: 2, // Dashed
           axisLabelVisible: true,
@@ -673,7 +684,7 @@ export default function TradingChartWithSignals({
       if (signal.takeProfit) {
         const tpLine = candleSeriesRef.current!.createPriceLine({
           price: signal.takeProfit,
-          color: '#22c55e',
+          color: GM_TV.candleUp,
           lineWidth: 1,
           lineStyle: 2, // Dashed
           axisLabelVisible: true,

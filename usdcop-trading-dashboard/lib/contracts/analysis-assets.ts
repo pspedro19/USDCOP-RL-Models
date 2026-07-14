@@ -12,6 +12,14 @@
  *   - the Python AssetProfile key in config/analysis/analysis_assets.yaml
  */
 
+/**
+ * How an asset's /forecasting surface is rendered:
+ *   - 'model_zoo'         : 9 ML models × 7 horizons (bi_dashboard_unified.csv + PNGs).
+ *                           USD/COP (root) and BTC/USDT (btcusdt/ subdir).
+ *   - 'weekly_inference'  : rule-based causal weekly positioning JSON (Gold).
+ */
+export type ForecastMode = 'model_zoo' | 'weekly_inference';
+
 export interface AnalysisAsset {
   /** Canonical, path-safe key (lowercase, no slashes). */
   asset_id: string;
@@ -23,6 +31,8 @@ export interface AnalysisAsset {
   display_name: string;
   /** fx | commodity | crypto — used only for grouping/icons. */
   asset_class: string;
+  /** /forecasting rendering mode (model-zoo vs weekly-inference). */
+  forecast_mode: ForecastMode;
 }
 
 /**
@@ -30,9 +40,9 @@ export interface AnalysisAsset {
  * onboarded science stacks. Kept in registry order-of-importance for the selector.
  */
 export const ANALYSIS_ASSETS: AnalysisAsset[] = [
-  { asset_id: 'usdcop', symbol: 'USD/COP', chart_symbol: 'USDCOP', display_name: 'USD/COP', asset_class: 'fx' },
-  { asset_id: 'xauusd', symbol: 'XAU/USD', chart_symbol: 'XAUUSD', display_name: 'Oro (Gold)', asset_class: 'commodity' },
-  { asset_id: 'btcusdt', symbol: 'BTC/USDT', chart_symbol: 'BTCUSDT', display_name: 'Bitcoin', asset_class: 'crypto' },
+  { asset_id: 'usdcop', symbol: 'USD/COP', chart_symbol: 'USDCOP', display_name: 'USD/COP', asset_class: 'fx', forecast_mode: 'model_zoo' },
+  { asset_id: 'xauusd', symbol: 'XAU/USD', chart_symbol: 'XAUUSD', display_name: 'Oro (Gold)', asset_class: 'commodity', forecast_mode: 'model_zoo' },
+  { asset_id: 'btcusdt', symbol: 'BTC/USDT', chart_symbol: 'BTCUSDT', display_name: 'Bitcoin', asset_class: 'crypto', forecast_mode: 'model_zoo' },
 ];
 
 /** Default asset when none is specified (backward-compatible with legacy COP-only URLs). */

@@ -409,6 +409,22 @@ class WeeklyAnalysisGenerator:
         if self.mode != "legacy":
             self._enrich_with_langgraph(export, iso_year, iso_week, start, end)
 
+        # 7c. News intelligence + political bias — deterministic, LangGraph-independent.
+        # Only fills what LangGraph left empty, so the cluster + bias cards render
+        # even when the multi-agent stack is unavailable at generation time.
+        ni_missing = not getattr(export, "news_intelligence", None) or not (
+            export.news_intelligence.get("clusters")
+        )
+        bias_missing = not getattr(export, "political_bias_analysis", None) or not (
+            export.political_bias_analysis.get("total_analyzed")
+        )
+        if ni_missing or bias_missing:
+            ni, bias = self._compute_news_intelligence(start, end)
+            if ni_missing and ni and ni.get("clusters"):
+                export.news_intelligence = ni
+            if bias_missing and bias and bias.get("total_analyzed"):
+                export.political_bias_analysis = bias
+
         # 8. Save JSON export
         self._save_weekly_export(export, iso_year, iso_week, start, end, weekly_llm)
 
@@ -1143,6 +1159,59 @@ class WeeklyAnalysisGenerator:
             "inference_week": target_week_str,
         }
 
+    def _compute_news_intelligence(
+        self, start: date, end: date
+    ) -> tuple[dict | None, dict | None]:
+        """Compute news_intelligence + political_bias_analysis directly.
+
+        LangGraph-independent (mirrors _compute_regime_direct): reuses the same
+        merged article pool as _load_news_context and the shared enrich_news
+        helper so the cluster + bias cards populate even when the multi-agent
+        pipeline is unavailable (Airflow/Docker env without heavy deps). Uses the
+        same start..end+2d window as _load_news_context (GDELT indexes with a
+        1-2 day lag). Non-blocking: returns (None, None) on any failure.
+        """
+        try:
+            articles_df = self._get_all_articles()
+            if articles_df.empty:
+                return None, None
+
+            # Capture Sat/Sun GDELT-lagged items; +1d upper bound is exclusive of
+            # the next day so same-day intraday timestamps (e.g. 08:45) are kept.
+            news_end = pd.Timestamp(end + timedelta(days=2)) + pd.Timedelta(days=1)
+            mask = (articles_df["date"] >= pd.Timestamp(start)) & (
+                articles_df["date"] < news_end
+            )
+            week_articles = articles_df[mask]
+            if week_articles.empty:
+                return None, None
+
+            articles = [
+                {
+                    "title": str(row.get("title", "")),
+                    "source": str(row.get("source", row.get("news_source", ""))),
+                    "url": str(row.get("url", "")),
+                    "date": str(row.get("date", ""))[:10],
+                    "tone": float(row.get("tone", 0) or 0),
+                    "language": str(row.get("language", "es")),
+                }
+                for _, row in week_articles.iterrows()
+            ]
+
+            from src.analysis.news_enrichment import enrich_news
+
+            return enrich_news(
+                articles,
+                week_start=str(start),
+                week_end=str(end),
+                min_relevance=0.3,
+                llm_client=self.llm,
+                allow_llm=not self.dry_run,
+            )
+        except Exception as e:
+            logger.warning(f"Direct news intelligence failed (non-blocking): {e}")
+            return None, None
+
     def _load_news_context(self, start: date, end: date) -> dict:
         """Load news context from all sources (GDELT + Google News + Investing.com + Colombia news).
 
@@ -1693,6 +1762,31 @@ class WeeklyAnalysisGenerator:
                 logger.info(f"DB news_articles: loaded {len(df)} articles (with sentiment)")
         except Exception as e:
             logger.debug(f"Could not load from news_articles DB: {e}")
+
+        # 6. Tracked feature backup (bootstrap fallback). Only when nothing else
+        #    loaded — a fresh clone has no CSVs and an empty DB, but the git-tracked
+        #    backup parquet (data-governance: feature backups) still lets the news
+        #    cards render. Forward pipelines/DAGs then supersede this snapshot.
+        if not frames:
+            backup_path = PROJECT_ROOT / "data/backups/features/news_articles.parquet"
+            if backup_path.exists():
+                try:
+                    df = pd.read_parquet(backup_path)
+                    date_col = "published_at" if "published_at" in df.columns else "date"
+                    df["date"] = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+                    df["date"] = df["date"].dt.tz_convert("America/Bogota").dt.tz_localize(None)
+                    df["source"] = df.get("source_id", df.get("source", "news"))
+                    df["news_source"] = df["source"]
+                    if "language" not in df.columns:
+                        df["language"] = "es"
+                    if "url" not in df.columns:
+                        df["url"] = ""
+                    df["tone"] = df["sentiment_score"].fillna(0.0) if "sentiment_score" in df.columns else 0.0
+                    cols = ["date", "title", "source", "language", "news_source", "url", "tone"]
+                    frames.append(df[[c for c in cols if c in df.columns]])
+                    logger.info(f"News backup parquet: loaded {len(df)} articles (bootstrap fallback)")
+                except Exception as e:
+                    logger.debug(f"Could not load news backup parquet: {e}")
 
         if not frames:
             self._all_articles_cache = pd.DataFrame()

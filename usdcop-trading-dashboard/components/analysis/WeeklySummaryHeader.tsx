@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, Tag, Award, ChevronDown, ChevronUp } from 'lucide-react';
-import { getSentimentColor } from '@/lib/contracts/weekly-analysis.contract';
+import { TrendingUp, TrendingDown, Tag, Award, ChevronDown, ChevronUp } from 'lucide-react';
 import type { WeeklySummary, WeeklyTheme } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT, GM_TONE_TEXT, type GmTone } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT, sentimentTone } from './gm-analysis';
 import { AnalysisMarkdown } from './AnalysisMarkdown';
 
 interface WeeklySummaryHeaderProps {
@@ -13,6 +17,12 @@ interface WeeklySummaryHeaderProps {
   newsArticleCount?: number;
   clusterCount?: number;
   sourceBreakdown?: Record<string, number>;
+  /**
+   * Suppress the markdown body + expand button (KPIs/themes/news digest still show).
+   * Set when a richer `synthesis_markdown` is rendered separately (SynthesisCard) so
+   * the same report isn't shown twice. Defaults to false → legacy behavior preserved.
+   */
+  hideMarkdown?: boolean;
 }
 
 /** Extract first section (up to second ## heading) from markdown. */
@@ -48,9 +58,10 @@ function truncateMarkdown(md: string): { preview: string; isTruncated: boolean }
   return { preview: md, isTruncated: false };
 }
 
-export function WeeklySummaryHeader({ summary, qualityScore, newsArticleCount, clusterCount, sourceBreakdown }: WeeklySummaryHeaderProps) {
+export function WeeklySummaryHeader({ summary, qualityScore, newsArticleCount, clusterCount, sourceBreakdown, hideMarkdown = false }: WeeklySummaryHeaderProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const [expanded, setExpanded] = useState(false);
-  const sentimentColor = getSentimentColor(summary.sentiment);
+  const tone = sentimentTone(summary.sentiment);
   const ohlcv = summary.ohlcv ?? {};
   const changePct = ohlcv.change_pct ?? 0;
   const isPositive = changePct >= 0;
@@ -59,50 +70,48 @@ export function WeeklySummaryHeader({ summary, qualityScore, newsArticleCount, c
   const { preview, isTruncated } = truncateMarkdown(summary.markdown);
   const displayMarkdown = expanded ? summary.markdown : preview;
 
+  const sentimentLabel =
+    tone === 'pos' ? t('bullish') : tone === 'neg' ? t('bearish') : tone === 'warn' ? t('mixed') : t('neutral');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-6"
+      className={`${GM.panel} gm-contain p-6`}
     >
       {/* Top row: headline + badges */}
       <div className="flex items-start justify-between gap-4 mb-4">
-        <h2 className="text-lg font-bold text-white flex-1">{summary.headline}</h2>
+        <h2 className={`${GMT.h2} ${GM.headline} flex-1`}>{summary.headline}</h2>
         <div className="flex items-center gap-2 shrink-0">
           {qualityScore !== undefined && qualityScore !== null && (
-            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border ${
-              qualityScore >= 0.8
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                : qualityScore >= 0.6
-                ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                : 'bg-red-500/15 text-red-400 border-red-500/30'
-            }`}>
+            <GmBadge
+              tone={qualityScore >= 0.8 ? 'pos' : qualityScore >= 0.6 ? 'warn' : 'neg'}
+              className={GMT.mono}
+            >
               <Award className="w-3 h-3" />
               {(qualityScore * 100).toFixed(0)}%
-            </span>
+            </GmBadge>
           )}
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${sentimentColor.bg} ${sentimentColor.text} ${sentimentColor.border} border`}>
-            {summary.sentiment}
-          </span>
+          <GmBadge tone={tone}>{sentimentLabel}</GmBadge>
         </div>
       </div>
 
-      {/* OHLCV row */}
+      {/* OHLCV row — prototype "Recap semana anterior" (label + 18px mono figure) */}
       {hasOhlcv && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-          <OHLCVCard label="Apertura" value={ohlcv.open} />
-          <OHLCVCard label="Maximo" value={ohlcv.high} />
-          <OHLCVCard label="Minimo" value={ohlcv.low} />
-          <OHLCVCard label="Cierre" value={ohlcv.close} />
-          <div className="bg-gray-800/40 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Cambio</p>
+          <OHLCVCard label={t('open')} value={ohlcv.open} />
+          <OHLCVCard label={t('high')} value={ohlcv.high} tone="pos" />
+          <OHLCVCard label={t('low')} value={ohlcv.low} tone="neg" />
+          <OHLCVCard label={t('close')} value={ohlcv.close} />
+          <div className={`${GM.panelSoft} p-3`}>
+            <p className={`${GMT.label} ${GM.textMuted} mb-1.5`}>{t('change')}</p>
             <div className="flex items-center gap-1">
               {isPositive ? (
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <TrendingUp className={`w-4 h-4 ${GM.pos}`} />
               ) : (
-                <TrendingDown className="w-4 h-4 text-red-400" />
+                <TrendingDown className={`w-4 h-4 ${GM.neg}`} />
               )}
-              <span className={`text-lg font-bold ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span className={`text-lg font-extrabold ${GMT.mono} ${isPositive ? GM.pos : GM.neg}`}>
                 {isPositive ? '+' : ''}{changePct.toFixed(2)}%
               </span>
             </div>
@@ -122,44 +131,41 @@ export function WeeklySummaryHeader({ summary, qualityScore, newsArticleCount, c
       {/* News digest */}
       {(newsArticleCount !== undefined && newsArticleCount > 0) && (
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="text-xs text-gray-500">{newsArticleCount} articulos</span>
+          <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>{newsArticleCount} {t('articles')}</span>
           {clusterCount !== undefined && clusterCount > 0 && (
-            <span className="text-xs text-gray-500">&middot; {clusterCount} clusters</span>
+            <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>&middot; {clusterCount} {t('clustersWord')}</span>
           )}
           {sourceBreakdown && Object.keys(sourceBreakdown).length > 0 && (
             <>
-              <span className="text-xs text-gray-700">|</span>
+              <span className={`${GMT.meta} ${GM.textFaint}`}>|</span>
               {Object.entries(sourceBreakdown).map(([src, count]) => (
-                <span
-                  key={src}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-gray-800/60 text-gray-400 border border-gray-700/40"
-                >
+                <GmBadge key={src} tone="neutral" className="normal-case tracking-normal font-semibold">
                   {src.replace('_', ' ')}: {count}
-                </span>
+                </GmBadge>
               ))}
             </>
           )}
         </div>
       )}
 
-      {/* Markdown summary (truncated) */}
-      <AnalysisMarkdown content={displayMarkdown} />
+      {/* Markdown summary (truncated) — suppressed when a richer synthesis renders separately */}
+      {!hideMarkdown && <AnalysisMarkdown content={displayMarkdown} />}
 
       {/* Expand/collapse button */}
-      {isTruncated && (
+      {!hideMarkdown && isTruncated && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-3 flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+          className={`mt-3 flex items-center gap-1.5 ${GMT.meta} font-semibold ${GM.accent} hover:opacity-80 transition-opacity duration-[var(--gm-dur-fast)] ${GM.focus} rounded`}
         >
           {expanded ? (
             <>
               <ChevronUp className="w-3.5 h-3.5" />
-              Ver menos
+              {t('showLess')}
             </>
           ) : (
             <>
               <ChevronDown className="w-3.5 h-3.5" />
-              Ver informe completo
+              {t('showFullReport')}
             </>
           )}
         </button>
@@ -168,11 +174,13 @@ export function WeeklySummaryHeader({ summary, qualityScore, newsArticleCount, c
   );
 }
 
-function OHLCVCard({ label, value }: { label: string; value?: number }) {
+function OHLCVCard({ label, value, tone }: { label: string; value?: number; tone?: GmTone }) {
   return (
-    <div className="bg-gray-800/40 rounded-lg p-3">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-lg font-bold text-white">{value != null ? value.toFixed(2) : '\u2014'}</p>
+    <div className={`${GM.panelSoft} p-3`}>
+      <p className={`${GMT.label} ${GM.textMuted} mb-1.5`}>{label}</p>
+      <p className={`text-lg font-extrabold ${GMT.mono} ${tone ? GM_TONE_TEXT[tone] : GM.text}`}>
+        {value != null ? value.toFixed(2) : '—'}
+      </p>
     </div>
   );
 }
@@ -184,17 +192,12 @@ function ThemeBadge({ theme }: { theme: WeeklyTheme | string }) {
   const impact = isObject ? theme.impact : 'neutral';
   const description = isObject ? theme.description : '';
 
-  const impactColors: Record<string, string> = {
-    positive: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    negative: 'bg-red-500/15 text-red-400 border-red-500/30',
-    neutral: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
-  };
-  const color = impactColors[impact] || impactColors.neutral;
-
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${color}`} title={description}>
-      <Tag className="w-3 h-3" />
-      {label}
-    </span>
+    <GmBadge tone={sentimentTone(impact)} className="normal-case tracking-normal font-semibold">
+      <span title={description} className="inline-flex items-center gap-1">
+        <Tag className="w-3 h-3" />
+        {label}
+      </span>
+    </GmBadge>
   );
 }

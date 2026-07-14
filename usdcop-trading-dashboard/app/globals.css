@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind v4 source detection: explicit scan — heuristics missed some arbitrary
+   classes in components/gm (CTR-GM-UI-001 layout bug, 2026-07-10). */
+@source "../components";
+@source "../lib";
+@source "../app";
+
 /* Bloomberg Terminal Professional Theme - Enhanced Glassmorphism System */
 :root {
   /* === Enhanced Base Surface Hierarchy with Glassmorphism === */
@@ -1582,4 +1588,114 @@ body:has(.landing-root)::after {
 /* Reset cualquier offset del body/html */
 .landing-root * {
   box-sizing: border-box;
+}
+/* GlobalMarkets terminal (CTR-GM-UI-001): JetBrains Mono for tabular figures */
+.gm-root .font-mono {
+  font-family: var(--font-gm-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* GM shell layout — explicit CSS (load-bearing: the sidebar/content offset must not
+   depend on utility-class scanning; regression 2026-07-10 left content under the
+   sidebar and broke the admin queue E2E). Toggled via data-attrs from TerminalShell. */
+.gm-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-drawer);
+  width: 248px;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  background: #0A0F1E;
+  border-right: 1px solid rgba(148, 163, 184, .10);
+}
+.gm-sidebar[data-mobile-open="true"] { display: flex; }
+.gm-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+@media (min-width: 1024px) {
+  .gm-sidebar[data-visible="true"] { display: flex; }
+  .gm-sidebar[data-visible="false"] { display: none; }
+  .gm-content[data-shifted="true"] { padding-left: 248px; }
+}
+
+/* ============================================================================
+   GM primitives + a11y/motion base (CTR-GM-UI-001 v2 · Checklist Front-End Pro)
+   Capa primitiva de tokens: los arbitrary values de gm-tokens.ts consumen estos
+   nombres vía var(); z-index SOLO de la escala nombrada. Tailwind v4 ya ordena
+   sus propias @layer (theme/base/components/utilities) — los primitivos van en
+   :root sin layer para precedencia estable.
+   ============================================================================ */
+:root {
+  /* --- superficies / texto (primitivos GM, espejo del prototipo Var B) --- */
+  --gm-page: #0A0D15;
+  --gm-panel: rgba(14, 21, 38, .72);
+  --gm-panel-inner: rgba(9, 13, 26, .6);
+  --gm-border: rgba(148, 163, 184, .12);
+  --gm-headline: #F1F6FE;
+  --gm-text: #E6EDF7;
+  --gm-text-strong: #C4D0E3;
+  --gm-text-sec: #8494AC;
+  --gm-text-muted: #7C8AA3;   /* AA ≥4.5 sobre --gm-page (antes #64748B: 3.7 — falla) */
+  --gm-text-faint: #64748B;   /* SOLO decorativo/no esencial */
+  --gm-accent: #22D3EE;
+  --gm-pos: #34D399;
+  --gm-neg: #FB7185;
+  --gm-warn: #F59E0B;
+  --gm-info: #3B82F6;
+  --gm-violet: #A78BFA;         /* rol/experimental (matiz, nunca peligro) */
+  --gm-on-accent: #06121C;      /* texto sobre superficies accent/CTA */
+  --gm-text-disabled: #475569;  /* estado deshabilitado (feature no incluida) */
+  --gm-surface-drawer: #0A0F1E; /* fondo de drawers laterales (carrito) */
+  --gm-chart-tooltip: #0E1526;  /* fondo tooltip de gráficos */
+  --gm-chart-ref: #4A5A72;      /* línea de referencia en gráficos */
+
+  /* --- motion (Checklist §8: tokenizado, nunca valores sueltos) --- */
+  --gm-dur-fast: 150ms;
+  --gm-dur-base: 250ms;
+  --gm-dur-slow: 400ms;
+  --gm-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --gm-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- z-index nombrado (Checklist §9: nada de 9999) --- */
+  --z-sticky: 55;
+  --z-backdrop: 65;
+  --z-drawer: 70;
+  --z-modal: 75;
+  --z-toast: 80;
+}
+
+/* Reduced motion — obligatorio (Checklist §8 🔴): mata animaciones/transiciones. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Aislamiento de render en cards de grids densos (Checklist §11). */
+.gm-contain { contain: layout paint; }
+
+/* Prosa: medida y wrapping (Checklist §1). */
+.gm-prose { max-width: 65ch; text-wrap: pretty; }
+.gm-root h1, .gm-root h2 { text-wrap: balance; }
+
+/* Container queries (Checklist §3.2): las cards responden a SU contenedor, no al
+   viewport → se comportan igual en cualquier columna (hub, drawer, admin) sin
+   reescribir CSS. `.gm-cq` marca el contenedor; `.gm-auto-grid` es el grid
+   auto-responsivo con fix anti-overflow (§3.5: min() evita desborde <280px). */
+.gm-cq { container-type: inline-size; }
+.gm-auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 14px;
+}
+@container (max-width: 420px) {
+  .gm-cq-stack { grid-template-columns: 1fr !important; }
 }

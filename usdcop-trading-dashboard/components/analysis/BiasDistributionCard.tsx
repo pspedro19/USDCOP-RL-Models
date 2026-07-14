@@ -1,52 +1,52 @@
 'use client';
 
 import { PoliticalBiasOutput } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface BiasDistributionCardProps {
   biasData: PoliticalBiasOutput;
 }
 
-const BIAS_COLORS: Record<string, string> = {
-  left: 'bg-blue-500',
-  'center-left': 'bg-sky-400',
-  center: 'bg-slate-400',
-  'center-right': 'bg-orange-400',
-  right: 'bg-red-500',
-  unknown: 'bg-slate-600',
-};
-
-const BIAS_LABELS: Record<string, string> = {
-  left: 'Izquierda',
-  'center-left': 'Centro-Izq',
-  center: 'Centro',
-  'center-right': 'Centro-Der',
-  right: 'Derecha',
-  unknown: 'Sin clasificar',
-};
-
-const FACTUALITY_COLORS: Record<string, { bg: string; text: string }> = {
-  high: { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
-  mixed: { bg: 'bg-amber-500/20', text: 'text-amber-400' },
-  low: { bg: 'bg-red-500/20', text: 'text-red-400' },
-  unknown: { bg: 'bg-slate-500/20', text: 'text-slate-400' },
+/** Political-spectrum segments — categorical mapping onto the GM semantic ramp. */
+const BIAS_BAR_STYLE: Record<string, string> = {
+  left: 'var(--gm-info)',
+  'center-left': 'var(--gm-accent)',
+  center: 'var(--gm-text-faint)',
+  'center-right': 'var(--gm-warn)',
+  right: 'var(--gm-neg)',
+  unknown: 'var(--gm-border)',
 };
 
 export function BiasDistributionCard({ biasData }: BiasDistributionCardProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const { source_bias_distribution, bias_diversity_score, factuality_distribution, flagged_articles, total_analyzed, bias_narrative, cluster_bias_assessments } = biasData;
+
+  const biasLabels: Record<string, string> = {
+    left: t('left'),
+    'center-left': t('centerLeft'),
+    center: t('center'),
+    'center-right': t('centerRight'),
+    right: t('right'),
+    unknown: t('unclassified'),
+  };
 
   // Compute total for spectrum bar (exclude unknown)
   const spectrumOrder = ['left', 'center-left', 'center', 'center-right', 'right'] as const;
   const spectrumTotal = spectrumOrder.reduce((sum, key) => sum + (source_bias_distribution[key] || 0), 0);
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4">
+    <div className={`${GM.panel} gm-contain p-5 space-y-4`}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">Sesgo Mediatico</h3>
+        <h3 className={`${GMT.panelTitle} ${GM.textStrong}`}>{t('biasTitle')}</h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">Diversidad:</span>
-          <span className={`text-xs font-mono font-bold ${
-            bias_diversity_score >= 0.7 ? 'text-emerald-400' :
-            bias_diversity_score >= 0.4 ? 'text-amber-400' : 'text-red-400'
+          <span className={`${GMT.meta} ${GM.textSec}`}>{t('diversity')}:</span>
+          <span className={`${GMT.meta} ${GMT.mono} font-bold ${
+            bias_diversity_score >= 0.7 ? GM.pos :
+            bias_diversity_score >= 0.4 ? GM.warn : GM.neg
           }`}>
             {(bias_diversity_score * 100).toFixed(0)}%
           </span>
@@ -64,17 +64,17 @@ export function BiasDistributionCard({ biasData }: BiasDistributionCardProps) {
               return (
                 <div
                   key={key}
-                  className={`${BIAS_COLORS[key]} transition-all`}
-                  style={{ width: `${pct}%` }}
-                  title={`${BIAS_LABELS[key]}: ${count} (${pct.toFixed(0)}%)`}
+                  className="transition-all duration-[var(--gm-dur-base)]"
+                  style={{ width: `${pct}%`, background: BIAS_BAR_STYLE[key] }}
+                  title={`${biasLabels[key]}: ${count} (${pct.toFixed(0)}%)`}
                 />
               );
             })}
           </div>
-          <div className="flex justify-between text-[10px] text-slate-500">
-            <span>Izquierda</span>
-            <span>Centro</span>
-            <span>Derecha</span>
+          <div className={`flex justify-between ${GMT.micro} ${GM.textMuted}`}>
+            <span>{t('left')}</span>
+            <span>{t('center')}</span>
+            <span>{t('right')}</span>
           </div>
         </div>
       )}
@@ -82,18 +82,18 @@ export function BiasDistributionCard({ biasData }: BiasDistributionCardProps) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center">
-          <div className="text-lg font-bold text-white">{total_analyzed}</div>
-          <div className="text-[10px] text-slate-400 uppercase">Analizados</div>
+          <div className={`text-lg font-bold ${GMT.mono} ${GM.textStrong}`}>{total_analyzed}</div>
+          <div className={`${GMT.label} ${GM.textMuted}`}>{t('analyzed')}</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-amber-400">{flagged_articles}</div>
-          <div className="text-[10px] text-slate-400 uppercase">Con sesgo</div>
+          <div className={`text-lg font-bold ${GMT.mono} ${GM.warn}`}>{flagged_articles}</div>
+          <div className={`${GMT.label} ${GM.textMuted}`}>{t('flagged')}</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-slate-300">
+          <div className={`text-lg font-bold ${GMT.mono} ${GM.text}`}>
             {source_bias_distribution['center'] || 0}
           </div>
-          <div className="text-[10px] text-slate-400 uppercase">Centro</div>
+          <div className={`${GMT.label} ${GM.textMuted}`}>{t('center')}</div>
         </div>
       </div>
 
@@ -101,35 +101,35 @@ export function BiasDistributionCard({ biasData }: BiasDistributionCardProps) {
       <div className="flex gap-2 flex-wrap">
         {Object.entries(factuality_distribution)
           .filter(([k, v]) => k !== 'unknown' && v > 0)
-          .map(([key, count]) => {
-            const colors = FACTUALITY_COLORS[key] || FACTUALITY_COLORS.unknown;
-            return (
-              <span
-                key={key}
-                className={`px-2 py-0.5 rounded text-xs ${colors.bg} ${colors.text}`}
-              >
-                {key === 'high' ? 'Alta' : key === 'mixed' ? 'Media' : 'Baja'} fact.: {count}
-              </span>
-            );
-          })}
+          .map(([key, count]) => (
+            <GmBadge
+              key={key}
+              tone={key === 'high' ? 'pos' : key === 'mixed' ? 'warn' : 'neg'}
+              className="normal-case tracking-normal font-semibold"
+            >
+              {key === 'high' ? t('factHigh') : key === 'mixed' ? t('factMixed') : t('factLow')} {t('factSuffix')} {count}
+            </GmBadge>
+          ))}
       </div>
 
       {/* Cluster bias assessments */}
       {cluster_bias_assessments && cluster_bias_assessments.length > 0 && (
         <div className="space-y-1.5">
-          <h4 className="text-xs font-medium text-slate-400 uppercase">Sesgo por Cluster</h4>
+          <h4 className={`${GMT.label} ${GM.textMuted}`}>{t('biasByCluster')}</h4>
           {cluster_bias_assessments.map((assessment, i) => (
-            <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-slate-300 truncate max-w-[60%]">
+            <div key={i} className={`flex items-center justify-between ${GMT.meta}`}>
+              <span className={`${GM.text} truncate max-w-[60%]`}>
                 {assessment.cluster_label}
               </span>
-              <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                assessment.bias_label === 'balanced' ? 'bg-slate-600 text-slate-300' :
-                assessment.bias_label.includes('left') ? 'bg-blue-500/20 text-blue-400' :
-                'bg-orange-500/20 text-orange-400'
-              }`}>
+              <GmBadge
+                tone={
+                  assessment.bias_label === 'balanced' ? 'neutral' :
+                  assessment.bias_label.includes('left') ? 'info' : 'warn'
+                }
+                className="normal-case tracking-normal"
+              >
                 {assessment.bias_label.replace('_', ' ')}
-              </span>
+              </GmBadge>
             </div>
           ))}
         </div>
@@ -137,7 +137,7 @@ export function BiasDistributionCard({ biasData }: BiasDistributionCardProps) {
 
       {/* Narrative */}
       {bias_narrative && (
-        <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-700/50 pt-3">
+        <p className={`${GMT.meta} ${GM.textSec} leading-relaxed border-t border-[var(--gm-border)] pt-3`}>
           {bias_narrative}
         </p>
       )}

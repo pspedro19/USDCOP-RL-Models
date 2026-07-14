@@ -1,0 +1,226 @@
+# =============================================================================
+# XAU/USD (Gold) Forecasting SSOT — model-zoo config for the /forecasting model zoo
+# =============================================================================
+#
+# Same structure as config/forecasting_ssot.yaml (9 models x 7 horizons) but with
+# a Gold-appropriate feature set and data sources. Consumed by
+# scripts/pipeline/generate_weekly_forecasts.py --asset xauusd.
+#
+# Parity decision (operator): Gold behaves like BTC + USD/COP — full 9-model zoo,
+# CSV + regenerated PNGs, working Modelo/Horizonte dropdowns.
+#   • 17 computable features (4 price + 4 returns + 3 vol + 3 technical + 3 calendar)
+#   • macro = DXY + VIX (DXY is the dominant Gold driver; VIX = risk-off bid).
+#     WTI oil and EMBI-Colombia are dropped (not Gold drivers), mirroring BTC's set.
+#   • Gold is a weekday market (NY-close daily bars) → sqrt(252) annualization.
+#
+# Honesty note (quant-constitution): price-only ML on Gold is likely near coin-flip
+# (DA ≈ 50%); this is a transparency/visualization surface, NOT an edge claim. Gold's
+# real edge remains the rule-based trend stack (gold_trend_b2), unaffected by this.
+#
+# Contract: CTR-FORECAST-SSOT-001 (per-asset profile)
+# Version: 1.0.0
+# Date: 2026-07-12
+
+_meta:
+  version: "1.0.0"
+  experiment_id: "xauusd_model_zoo_v1"
+  description: "XAU/USD 9-model model zoo (17 features + DXY/VIX, weekday market)"
+  created_at: "2026-07-12"
+  status: "production"
+
+# =============================================================================
+# ASSET IDENTITY / DISPLAY (per-asset metadata consumed by the generator)
+# =============================================================================
+asset:
+  id: xauusd
+  display_label: "XAU/USD"
+  price_label: "Precio XAU/USD"
+  output_subdir: "xauusd"        # public/forecasting/xauusd/
+  price_range: [300, 6000]       # sanity check range for validate_daily_record
+  annualization_days: 252        # weekday market -> sqrt(252)
+
+# =============================================================================
+# DATA SOURCES
+# =============================================================================
+data_sources:
+  ohlcv:
+    # Gold daily bars live in the multi-asset table with mixed symbols; force parquet
+    # (the seed) so we never pull mixed-symbol rows. File-driven is the SSOT here.
+    db_table: "asset_daily_ohlcv"
+    db_columns: [date, open, high, low, close]
+    disable_db: true             # always use the parquet seed for Gold
+    fallback_parquet: "seeds/latest/xauusd_daily_ohlcv.parquet"
+    parquet_time_column: "time"  # renamed to "date" on load
+  macro:
+    db_table: "macro_indicators_daily"
+    db_date_column: "fecha"
+    fallback_parquet: "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet"
+    column_mapping:
+      FXRT_INDEX_DXY_USA_D_DXY: "dxy_close_lag1"
+      VOLT_VIX_USA_D_VIX: "vix_close_lag1"
+    lag_days: 1                  # T-1 anti-leakage shift
+  monitoring:
+    db_table: "asset_daily_ohlcv"
+    symbol: "XAU/USD"
+
+# =============================================================================
+# FEATURES — 19 (21 SSOT minus WTI oil + EMBI-Colombia, not Gold drivers)
+# =============================================================================
+features:
+  count: 19
+  columns:
+    # Price (4)
+    - close
+    - open
+    - high
+    - low
+    # Returns (4)
+    - return_1d
+    - return_5d
+    - return_10d
+    - return_20d
+    # Volatility (3)
+    - volatility_5d
+    - volatility_10d
+    - volatility_20d
+    # Technical (3)
+    - rsi_14d
+    - ma_ratio_20d
+    - ma_ratio_50d
+    # Calendar (3)
+    - day_of_week
+    - month
+    - is_month_end
+    # Macro T-1 (2) — DXY + VIX only
+    - dxy_close_lag1
+    - vix_close_lag1
+
+# =============================================================================
+# MODELS — 9 model definitions (3 linear + 3 boosting + 3 hybrid)
+# =============================================================================
+models:
+  ridge:
+    type: linear
+    class: sklearn.linear_model.Ridge
+    params:
+      alpha: 1.0
+  bayesian_ridge:
+    type: linear
+    class: sklearn.linear_model.BayesianRidge
+    params:
+      max_iter: 300
+  ard:
+    type: linear
+    class: sklearn.linear_model.ARDRegression
+    params:
+      max_iter: 300
+  xgboost_pure:
+    type: boosting
+    class: xgboost.XGBRegressor
+    params: {}
+  lightgbm_pure:
+    type: boosting
+    class: lightgbm.LGBMRegressor
+    params: {}
+  catboost_pure:
+    type: boosting
+    class: catboost.CatBoostRegressor
+    param_translation:
+      n_estimators: iterations
+      max_depth: depth
+    params:
+      verbose: false
+      allow_writing_files: false
+  hybrid_xgboost:
+    type: hybrid
+    class: xgboost.XGBRegressor
+    params: {}
+  hybrid_lightgbm:
+    type: hybrid
+    class: lightgbm.LGBMRegressor
+    params: {}
+  hybrid_catboost:
+    type: hybrid
+    class: catboost.CatBoostRegressor
+    param_translation:
+      n_estimators: iterations
+      max_depth: depth
+    params:
+      verbose: false
+      allow_writing_files: false
+
+# =============================================================================
+# HORIZONS — 7 forecast horizons with category-specific hyperparams
+# =============================================================================
+horizons:
+  values: [1, 5, 10, 15, 20, 25, 30]
+  categories:
+    short: [1, 5]
+    medium: [10, 15, 20]
+    long: [25, 30]
+  configs:
+    short:
+      n_estimators: 50
+      max_depth: 3
+      learning_rate: 0.05
+      colsample_bytree: 0.6
+      reg_alpha: 0.5
+      reg_lambda: 1.0
+      min_samples_leaf: 20
+    medium:
+      n_estimators: 30
+      max_depth: 2
+      learning_rate: 0.08
+      colsample_bytree: 0.5
+      reg_alpha: 1.0
+      reg_lambda: 2.0
+      min_samples_leaf: 30
+    long:
+      n_estimators: 20
+      max_depth: 1
+      learning_rate: 0.1
+      colsample_bytree: 0.4
+      reg_alpha: 2.0
+      reg_lambda: 3.0
+      min_samples_leaf: 50
+
+# =============================================================================
+# TARGET
+# =============================================================================
+target:
+  formula: "ln(close[t+H]/close[t])"
+  column_template: "target_return_{H}d"
+
+# =============================================================================
+# TRAINING
+# =============================================================================
+training:
+  start_date: "2004-01-01"
+  expanding_window: true
+  scaler: StandardScaler
+  warmup_bars: 50
+
+# =============================================================================
+# WALK-FORWARD VALIDATION
+# =============================================================================
+walk_forward:
+  n_windows: 5
+  min_train_pct: 0.4
+  gap_days: 30
+  step_pct: 0.1
+
+# =============================================================================
+# TRACKS — single model-zoo track for Gold
+# =============================================================================
+tracks:
+  h1:
+    name: "Gold Daily Zoo"
+    horizon: 1
+    models: all
+    ensemble: top_3_by_magnitude
+
+# =============================================================================
+# PATHS
+# =============================================================================
+paths:
+  dashboard_forecasting: "usdcop-trading-dashboard/public/forecasting"

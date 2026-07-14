@@ -3,6 +3,16 @@
   "weeks": [
     {
       "year": 2026,
+      "week": 28,
+      "start": "2026-07-06",
+      "end": "2026-07-12",
+      "sentiment": "bearish",
+      "headline": "Oro (Gold) · Semana 28 de 2026",
+      "has_weekly": true,
+      "daily_count": 2
+    },
+    {
+      "year": 2026,
       "week": 27,
       "start": "2026-06-29",
       "end": "2026-07-05",
@@ -19,7 +29,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 26 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -29,17 +39,17 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 25 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 24,
       "start": "2026-06-08",
       "end": "2026-06-14",
-      "sentiment": "mixed",
+      "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 24 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -49,27 +59,27 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 23 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 22,
       "start": "2026-05-25",
       "end": "2026-05-31",
-      "sentiment": "bearish",
+      "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 22 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 21,
       "start": "2026-05-18",
       "end": "2026-05-24",
-      "sentiment": "mixed",
+      "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 21 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -79,7 +89,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 20 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -89,7 +99,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 19 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -99,7 +109,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 18 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -109,7 +119,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 17 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -119,7 +129,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 16 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -129,7 +139,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 15 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -139,17 +149,17 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 14 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 13,
       "start": "2026-03-23",
       "end": "2026-03-29",
-      "sentiment": "bullish",
+      "sentiment": "mixed",
       "headline": "Oro (Gold) · Semana 13 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -159,7 +169,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 12 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -169,7 +179,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 11 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -179,7 +189,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 10 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -189,7 +199,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 09 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -199,27 +209,27 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 08 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 7,
       "start": "2026-02-09",
       "end": "2026-02-15",
-      "sentiment": "bearish",
+      "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 07 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 6,
       "start": "2026-02-02",
       "end": "2026-02-08",
-      "sentiment": "bullish",
+      "sentiment": "mixed",
       "headline": "Oro (Gold) · Semana 06 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -229,7 +239,7 @@
       "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 05 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -239,7 +249,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 04 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -249,7 +259,7 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 03 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
@@ -259,17 +269,17 @@
       "sentiment": "bullish",
       "headline": "Oro (Gold) · Semana 02 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     },
     {
       "year": 2026,
       "week": 1,
       "start": "2025-12-29",
       "end": "2026-01-04",
-      "sentiment": "bullish",
+      "sentiment": "bearish",
       "headline": "Oro (Gold) · Semana 01 de 2026",
       "has_weekly": true,
-      "daily_count": 7
+      "daily_count": 5
     }
   ]
 }

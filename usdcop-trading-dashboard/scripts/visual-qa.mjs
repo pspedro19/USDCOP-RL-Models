@@ -16,6 +16,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 const BASE = process.env.QA_BASE ?? 'http://localhost:5000';
 const OUT = process.argv[2] ?? 'shots/iter-x';
 const MOBILE = process.argv.includes('--mobile');
+const WIDE = process.argv.includes('--wide');
+const ZOOM = process.argv.includes('--zoom');
 mkdirSync(OUT, { recursive: true });
 
 const USERS = {
@@ -143,6 +145,51 @@ for (const role of Object.keys(USERS)) {
   await crawlNav(page, role);
   for (const url of APP_VIEWS[role].filter((u) => u !== '/hub')) {
     await capture(page, url, `${role}${url.replace(/\//g, '-')}`, WAITS[url] ?? 5000);
+  }
+  await ctx.close();
+}
+
+// ── wide pass (ultrawide layout check: catches left-pinned / uncentered content
+//    that a fixed 1440 capture hides — regression 2026-07-11). Measures the content
+//    column's left/right gap; flags asymmetry > 8px as a layout failure.
+if (WIDE) {
+  const { ctx, page } = await newPage(browser, { width: 2560, height: 1400 });
+  if (await login(page, 'admin')) {
+    for (const url of ['/hub', '/production', '/analysis', '/dashboard']) {
+      await capture(page, url, `wide2560${url.replace(/\//g, '-')}`, WAITS[url] ?? 5000);
+      const gap = await page.evaluate(() => {
+        const inner = document.querySelector('main > div');
+        if (!inner) return null;
+        const b = inner.getBoundingClientRect();
+        const SIDEBAR = 248;
+        const gapL = Math.round(b.left - SIDEBAR);
+        const gapR = Math.round(window.innerWidth - b.right);
+        return { gapL, gapR, colWidth: Math.round(b.width), balanced: Math.abs(gapL - gapR) <= 8 };
+      }).catch(() => null);
+      const ok = !gap || gap.balanced;
+      report.nav.push({ role: 'admin', step: `wide-center ${url}`, ...(gap ?? {}), ok });
+      if (!ok) report.shots.push({ file: null, url: `${url}@2560`, error: `content not centered: gapL=${gap.gapL} gapR=${gap.gapR}` });
+    }
+  }
+  await ctx.close();
+}
+
+// ── zoom pass (200% zoom / reflow check: WCAG 1.4.4 text-resize & 1.4.10 reflow —
+//    at 200% zoom content must reflow WITHOUT a horizontal scrollbar. Emulates 200%
+//    zoom via a 720px-wide viewport (half of the 1440 baseline) and asserts the page
+//    never overflows its own viewport width on the key data-dense admin views).
+if (ZOOM) {
+  const { ctx, page } = await newPage(browser, { width: 720, height: 900 });
+  if (await login(page, 'admin')) {
+    for (const url of ['/hub', '/analysis']) {
+      await capture(page, url, `zoom200${url.replace(/\//g, '-')}`, WAITS[url] ?? 5000);
+      const overflow = await page.evaluate(() =>
+        Math.round(document.documentElement.scrollWidth - window.innerWidth)
+      ).catch(() => null);
+      const ok = overflow === null || overflow <= 2;
+      report.nav.push({ role: 'admin', step: `zoom200 ${url}`, overflow: overflow ?? 0, ok });
+      if (!ok) report.shots.push({ file: null, url: `${url}@720`, error: `horizontal overflow at 200% zoom: ${overflow}px over` });
+    }
   }
   await ctx.close();
 }

@@ -83,6 +83,24 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning("Bootstrap admin failed", error=str(e))
 
+    # Idempotently ensure the shared guest/demo account ("Explorar como invitado"):
+    # role 'free', approved+active, is_test=True. Controlled by GUEST_BOOTSTRAP_*
+    # env; a no-op when the password is unset.
+    if settings.guest_bootstrap_email and settings.guest_bootstrap_password:
+        try:
+            from app.core.database import get_db_context as _get_db_context
+            from app.services.user import UserService
+
+            async with _get_db_context() as _db:
+                guest = await UserService(_db).bootstrap_guest(
+                    email=settings.guest_bootstrap_email,
+                    password=settings.guest_bootstrap_password,
+                    name=settings.guest_bootstrap_name,
+                )
+                logger.info("Bootstrap guest ensured", email=guest.email)
+        except Exception as e:
+            logger.warning("Bootstrap guest failed", error=str(e))
+
     # Initialize bridges to consume signals from:
     # 1. WebSocket (for backtests and dashboard)
     # 2. Redis Streams (for live trading from L5 DAG)

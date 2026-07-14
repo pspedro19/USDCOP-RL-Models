@@ -12,13 +12,21 @@ import { Suspense } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 import {
-  ADMIN_SECTIONS, type AdminSectionId, type QueueResponse, type SystemStatus,
+  ADMIN_SECTIONS, type AdminModelsResponse, type AdminRiskResponse,
+  type AdminSectionId, type QueueResponse, type SystemStatus,
 } from '@/lib/contracts/admin-console.contract';
 import { COLOR, CTA, SURFACE, TYPE, type SemanticTone } from '@/lib/ui/tokens';
 
+import { TerminalShell } from '@/components/gm/TerminalShell';
+
 import { AuditSection } from '@/components/admin/AuditSection';
+import { CatalogSection } from '@/components/admin/CatalogSection';
+import { ModelsSection } from '@/components/admin/ModelsSection';
 import { OverviewSection } from '@/components/admin/OverviewSection';
 import { QueueSection } from '@/components/admin/QueueSection';
+import { RevenueSection } from '@/components/admin/RevenueSection';
+import { RiskSection } from '@/components/admin/RiskSection';
+import { RolesSection } from '@/components/admin/RolesSection';
 import { SystemSection } from '@/components/admin/SystemSection';
 import { UsersSection } from '@/components/admin/UsersSection';
 import { REFRESH, useAdminWidget } from '@/components/admin/useAdminWidget';
@@ -45,6 +53,10 @@ function AdminConsole() {
   // system feeds app-bar dot + Overview + Sistema.
   const queue = useAdminWidget<QueueResponse>('/api/admin/queue', { refreshMs: REFRESH.queue });
   const system = useAdminWidget<SystemStatus>('/api/admin/system', { refreshMs: REFRESH.system });
+  // Lifted for the tab badges so they show even when the tab is closed (mirrors how
+  // queue feeds the Registros badge). Each section still owns its own fetch (C5).
+  const models = useAdminWidget<AdminModelsResponse>('/api/admin/models', { refreshMs: REFRESH.models });
+  const risk = useAdminWidget<AdminRiskResponse>('/api/admin/risk', { refreshMs: REFRESH.risk });
   const now = useNow(5_000);
 
   const queueWaitingMax = queue.data?.items.length
@@ -54,8 +66,8 @@ function AdminConsole() {
   const updatedAt = Math.max(queue.updatedAt ?? 0, system.updatedAt ?? 0) || null;
 
   return (
-    <main className={`min-h-screen ${SURFACE.page} ${COLOR.textPrimary}`}>
-      <div className={`${SURFACE.container} py-5 space-y-4`}>
+    <div className={`${COLOR.textPrimary}`}>
+      <div className="space-y-4">
         {/* app bar compacta (§2.1) */}
         <header className="flex items-center gap-4">
           <h1 className={TYPE.pageTitle}>Consola de administración</h1>
@@ -75,7 +87,7 @@ function AdminConsole() {
         </header>
 
         {/* tabs — activa en URL (§3.3); fase-gated no parecen clickeables (§2.1) */}
-        <nav className="flex flex-wrap gap-1 border-b border-slate-800 pb-px" role="tablist">
+        <nav className="flex flex-wrap gap-1 border-b border-[var(--gm-border)] pb-px" role="tablist">
           {ADMIN_SECTIONS.map((s) => (
             <button
               key={s.id}
@@ -90,11 +102,17 @@ function AdminConsole() {
                   ? CTA.tabActive
                   : s.phaseGate
                     ? 'border-transparent opacity-45 cursor-not-allowed'
-                    : `border-transparent ${COLOR.textSecondary} hover:bg-slate-900/40`}`}
+                    : `border-transparent ${COLOR.textSecondary} hover:bg-[rgba(148,163,184,.06)]`}`}
             >
               {s.label}
               {s.id === 'registros' && queue.data && queue.data.count > 0 && (
                 <Badge tone="warn" className="ml-1.5">{queue.data.count}</Badge>
+              )}
+              {s.id === 'modelos' && models.data && models.data.pending_count > 0 && (
+                <Badge tone="warn" className="ml-1.5">{models.data.pending_count}</Badge>
+              )}
+              {s.id === 'riesgo' && risk.data && risk.data.api_pending.length > 0 && (
+                <Badge tone="warn" className="ml-1.5">{risk.data.api_pending.length}</Badge>
               )}
             </button>
           ))}
@@ -108,22 +126,29 @@ function AdminConsole() {
             system={system}
           />
         )}
+        {section === 'ingresos' && <RevenueSection />}
         {section === 'registros' && <QueueSection queue={queue} />}
         {section === 'usuarios' && <UsersSection />}
+        {section === 'roles' && <RolesSection />}
+        {section === 'modelos' && <ModelsSection />}
+        {section === 'riesgo' && <RiskSection />}
+        {section === 'catalogo-admin' && <CatalogSection />}
         {section === 'sistema' && <SystemSection system={system} />}
         {section === 'auditoria' && <AuditSection />}
       </div>
-    </main>
+    </div>
   );
 }
 
 export default function AdminPage() {
   // Suspense: useSearchParams requires a boundary during prerender (Next 15).
   return (
-    <ToastProvider>
-      <Suspense fallback={<main className={`min-h-screen ${SURFACE.page}`} />}>
-        <AdminConsole />
-      </Suspense>
-    </ToastProvider>
+    <TerminalShell active="admin">
+      <ToastProvider>
+        <Suspense fallback={<div className={`min-h-screen ${SURFACE.page}`} />}>
+          <AdminConsole />
+        </Suspense>
+      </ToastProvider>
+    </TerminalShell>
   );
 }

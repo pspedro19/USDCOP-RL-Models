@@ -182,3 +182,24 @@ export function fmtDateTime(iso: string | null | undefined): string {
 export function fmtDate(iso: string | null | undefined): string {
   return iso ? iso.slice(0, 10) : '—';
 }
+
+// Locale-aware formatters (checklist 10.1/10.2): null → "—" (missing), never a fake 0.
+const _cop = new Intl.NumberFormat('es-CO', {
+  style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+});
+const _int = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
+
+/** COP currency; null ⇒ "—" (not measured), 0 ⇒ "$0" (a real zero). */
+export function fmtCop(v: number | null | undefined): string {
+  return v == null ? '—' : _cop.format(v);
+}
+
+/** Plain integer with locale grouping; null ⇒ "—". */
+export function fmtInt(v: number | null | undefined): string {
+  return v == null ? '—' : _int.format(v);
+}
+
+/** Percentage with one decimal; null ⇒ "—". */
+export function fmtPct(v: number | null | undefined): string {
+  return v == null ? '—' : `${_int.format(Math.round(v * 10) / 10)}%`;
+}

@@ -514,3 +514,11 @@ The `ForecastingBacktestSection` component renders at the top of `/dashboard`, b
 - `strategy-contract.md` — Universal strategy schemas + StrategySelector contract
 - `approval-gates.md` — Approval gates and lifecycle
 - `mlops-lifecycle.md` — 8-stage pipeline quick reference
+
+---
+
+## As-built (2026-07-12) — BTC forecasting model-zoo + production backtest metrics
+
+- **`/forecasting` branches by `analysis-assets.ts::forecast_mode`** (`'model_zoo' | 'weekly_inference'`), not the old `isUsdcop` boolean. **USD/COP + BTC = model-zoo** (`AssetModelZoo`, 9 models × 7 horizons, CSV+PNGs); **Gold = weekly_inference** (`AssetWeeklyBody`). BTC data lives under `public/forecasting/btcusdt/` (`bi_dashboard_unified.csv` + `backtest_*`/`forward_*`/`consensus`/`ensemble` PNGs); USD/COP keeps the root paths (no files moved — `AssetModelZoo` takes a `pngBase` prop). Generator: `generate_weekly_forecasts.py --asset <id> --num-weeks 30` (per-asset config `config/assets/<id>_forecasting.yaml`; BTC = 19 features, √365, price range [1000,250000]). BTC price-only DA ≈ 0.46 — a transparency surface, **not** an edge claim.
+- **`/production` backtest-metrics table**: `ProductionView` reads the frozen `summary_2025.json` via a 2nd `useGmQuery` and renders "Métricas del backtest (2025)" via the shared `buildStrategyKpis` with the **backtest** trade count (so Calmar/Sharpe/PF show; N<20 gate stays on the live-YTD row only). Non-default strategies read `summary_<sid>_2025.json`.
+- **Catalog buy → cart**: `CatalogView` "Añadir" now `router.push('/cart')` after add; `/catalog` + `/cart` pages pass `active="catalog"` so the sidebar highlights "Activos". Coming-soon teasers: 2 per class in `catalog-registry.ts::COMING_SOON_ASSETS` (non-purchasable).

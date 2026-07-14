@@ -2,9 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Minus, Newspaper, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
-import { getSentimentColor, DAY_NAMES_ES } from '@/lib/contracts/weekly-analysis.contract';
+import { TrendingUp, TrendingDown, Newspaper, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
+import { DAY_NAMES_ES } from '@/lib/contracts/weekly-analysis.contract';
 import type { DailyAnalysisEntry } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT, impactTone, sentimentTone } from './gm-analysis';
 import { MacroEventChip } from './MacroEventChip';
 import { AnalysisMarkdown } from './AnalysisMarkdown';
 
@@ -15,6 +20,14 @@ interface DailyTimelineEntryProps {
 }
 
 const PREVIEW_CHARS = 300;
+
+/** Timeline dot color per sentiment tone (prototype: Lun-Vie dots). */
+const DOT_BG: Record<string, string> = {
+  pos: 'bg-[var(--gm-pos)]',
+  neg: 'bg-[var(--gm-neg)]',
+  warn: 'bg-[var(--gm-warn)]',
+  neutral: 'bg-[var(--gm-text-faint)]',
+};
 
 function getPreview(md: string): { preview: string; isTruncated: boolean } {
   if (!md || md.length <= PREVIEW_CHARS + 50) return { preview: md, isTruncated: false };
@@ -33,8 +46,9 @@ function getPreview(md: string): { preview: string; isTruncated: boolean } {
 }
 
 export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const [expanded, setExpanded] = useState(false);
-  const sentimentColor = getSentimentColor(entry.sentiment);
+  const tone = sentimentTone(entry.sentiment);
   const dayName = DAY_NAMES_ES[entry.day_of_week] || `Dia ${entry.day_of_week}`;
   const isPositive = entry.usdcop_change_pct !== null && entry.usdcop_change_pct >= 0;
 
@@ -52,46 +66,44 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
     >
       {/* Timeline connector */}
       <div className="flex flex-col items-center">
-        <div className={`w-3 h-3 rounded-full mt-2 ${sentimentColor.bg} border-2 ${sentimentColor.border}`} />
-        {!isLast && <div className="w-px flex-1 bg-gray-800/60 mt-1" />}
+        <div className={`w-3 h-3 rounded-full mt-2 ${DOT_BG[tone]}`} />
+        {!isLast && <div className="w-px flex-1 bg-[var(--gm-border)] mt-1" />}
       </div>
 
       {/* Content card */}
       <div className="flex-1 pb-6">
-        <div className="bg-gray-900/40 backdrop-blur-sm rounded-xl border border-gray-800/40 p-4 hover:border-gray-700/60 transition-all">
+        <div className={`${GM.panel} gm-contain p-4 hover:border-[rgba(148,163,184,.24)] transition-colors duration-[var(--gm-dur-fast)]`}>
           {/* Day header */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-semibold text-white">{dayName}</span>
-              <span className="text-xs text-gray-500">{entry.analysis_date}</span>
+              <CalendarDays className={`w-4 h-4 ${GM.textMuted}`} />
+              <span className={`${GMT.body} font-bold ${GM.textStrong} ${GMT.mono}`}>{dayName}</span>
+              <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>{entry.analysis_date}</span>
             </div>
             {entry.sentiment && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase ${sentimentColor.bg} ${sentimentColor.text}`}>
-                {entry.sentiment}
-              </span>
+              <GmBadge tone={tone}>{entry.sentiment}</GmBadge>
             )}
           </div>
 
           {/* Headline */}
           {entry.headline && (
-            <h4 className="text-sm font-medium text-gray-200 mb-2">{entry.headline}</h4>
+            <h4 className={`${GMT.body} font-medium ${GM.text} mb-2`}>{entry.headline}</h4>
           )}
 
           {/* Price bar */}
           {entry.usdcop_close !== null && (
-            <div className="flex items-center gap-3 mb-3 bg-gray-800/30 rounded-lg px-3 py-2">
-              <span className="text-sm text-gray-400">USD/COP:</span>
-              <span className="text-sm font-bold text-white">{entry.usdcop_close.toFixed(2)}</span>
+            <div className={`flex items-center gap-3 mb-3 ${GM.panelSoft} px-3 py-2`}>
+              <span className={`${GMT.body} ${GM.textSec}`}>USD/COP:</span>
+              <span className={`${GMT.body} font-bold ${GM.textStrong} ${GMT.mono}`}>{entry.usdcop_close.toFixed(2)}</span>
               {entry.usdcop_change_pct !== null && (
-                <span className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                <span className={`flex items-center gap-1 ${GMT.meta} font-semibold ${GMT.mono} ${isPositive ? GM.pos : GM.neg}`}>
                   {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                   {isPositive ? '+' : ''}{entry.usdcop_change_pct.toFixed(2)}%
                 </span>
               )}
               {entry.usdcop_high !== null && entry.usdcop_low !== null && (
-                <span className="text-xs text-gray-600 ml-auto">
-                  Rango: {entry.usdcop_low.toFixed(0)}-{entry.usdcop_high.toFixed(0)}
+                <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono} ml-auto`}>
+                  {t('range')}: {entry.usdcop_low.toFixed(0)}–{entry.usdcop_high.toFixed(0)}
                 </span>
               )}
             </div>
@@ -109,18 +121,18 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
           {/* Economic events */}
           {(entry.economic_events?.length ?? 0) > 0 && (
             <div className="mb-3 space-y-1">
-              {(entry.economic_events ?? []).slice(0, 3).map((evt, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className={
-                    evt.impact_level === 'high' ? 'text-red-400' :
-                    evt.impact_level === 'medium' ? 'text-amber-400' : 'text-gray-500'
-                  }>
-                    {evt.impact_level === 'high' ? '\u25cf' : evt.impact_level === 'medium' ? '\u25cf' : '\u25cb'}
-                  </span>
-                  <span className="text-gray-400">{evt.event}</span>
-                  {evt.actual && <span className="text-white font-medium ml-auto">{evt.actual}</span>}
-                </div>
-              ))}
+              {(entry.economic_events ?? []).slice(0, 3).map((evt, i) => {
+                const evtTone = impactTone(evt.impact_level);
+                return (
+                  <div key={i} className={`flex items-center gap-2 ${GMT.meta}`}>
+                    <span className={evtTone === 'neg' ? GM.neg : evtTone === 'warn' ? GM.warn : GM.textMuted}>
+                      {evt.impact_level === 'low' ? '○' : '●'}
+                    </span>
+                    <span className={GM.textSec}>{evt.event}</span>
+                    {evt.actual && <span className={`${GM.textStrong} font-semibold ${GMT.mono} ml-auto`}>{evt.actual}</span>}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -128,23 +140,23 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
           {(entry.news_highlights?.length ?? 0) > 0 && (
             <div className="mb-3 space-y-1.5">
               {(entry.news_highlights ?? []).slice(0, 5).map((news, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <Newspaper className="w-3 h-3 text-gray-600 mt-0.5 shrink-0" />
+                <div key={i} className={`flex items-start gap-2 ${GMT.meta}`}>
+                  <Newspaper className={`w-3 h-3 ${GM.textFaint} mt-0.5 shrink-0`} />
                   <div className="flex-1 min-w-0">
                     {news.url ? (
                       <a
                         href={news.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-300 hover:text-cyan-400 transition-colors underline decoration-gray-700 hover:decoration-cyan-400/50"
+                        className={`${GM.text} hover:text-[var(--gm-accent)] transition-colors duration-[var(--gm-dur-fast)] underline decoration-[rgba(148,163,184,.3)] hover:decoration-[rgba(34,211,238,.5)] ${GM.focus} rounded`}
                       >
                         {news.title}
                       </a>
                     ) : (
-                      <span className="text-gray-400">{news.title}</span>
+                      <span className={GM.textSec}>{news.title}</span>
                     )}
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-500 shrink-0 uppercase tracking-wide">
+                  <span className={`${GMT.micro} px-1.5 py-0.5 rounded ${GM.neutralBadge} shrink-0 uppercase tracking-wide`}>
                     {news.source}
                   </span>
                 </div>
@@ -161,12 +173,12 @@ export function DailyTimelineEntry({ entry, index, isLast }: DailyTimelineEntryP
           {isTruncated && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="mt-2 flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+              className={`mt-2 flex items-center gap-1 text-[11px] font-semibold ${GM.accent} hover:opacity-80 transition-opacity duration-[var(--gm-dur-fast)] ${GM.focus} rounded`}
             >
               {expanded ? (
-                <><ChevronUp className="w-3 h-3" /> Ver menos</>
+                <><ChevronUp className="w-3 h-3" /> {t('showLess')}</>
               ) : (
-                <><ChevronDown className="w-3 h-3" /> Ver analisis completo</>
+                <><ChevronDown className="w-3 h-3" /> {t('showFullAnalysis')}</>
               )}
             </button>
           )}

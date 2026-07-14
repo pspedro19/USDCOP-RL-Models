@@ -34,14 +34,23 @@ export function useAdminWidget<T>(url: string, opts: { refreshMs?: number } = {}
     fetch(url, { cache: 'no-store' })
       .then(async (r) => {
         if (r.ok) {
-          setData(await r.json());
+          // Endpoints nuevos usan el envelope { ok, data } (lib/api/envelope.ts);
+          // los legacy devuelven el body plano — se aceptan ambos.
+          const body = await r.json();
+          const isEnvelope = body && typeof body === 'object' && 'ok' in body && ('data' in body || 'error' in body);
+          if (isEnvelope && body.ok === false) {
+            setError(body.error?.message ?? body.error?.code ?? `HTTP ${r.status}`);
+            return;
+          }
+          setData(isEnvelope ? body.data : body);
           setUpdatedAt(Date.now());
           setError(null);
           hasData.current = true;
           return;
         }
         const body = await r.json().catch(() => ({}));
-        setError(body?.error ? `${body.error} (HTTP ${r.status})` : `HTTP ${r.status}`);
+        const msg = body?.error?.message ?? body?.error;
+        setError(msg && typeof msg === 'string' ? `${msg} (HTTP ${r.status})` : `HTTP ${r.status}`);
       })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
@@ -65,4 +74,8 @@ export const REFRESH = {
   kpis: 300_000,
   audit: 120_000,
   users: 120_000,
+  models: 120_000,
+  risk: 60_000,
+  revenue: 300_000,
+  catalog: 300_000,
 } as const;

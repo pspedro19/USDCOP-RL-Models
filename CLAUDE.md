@@ -194,7 +194,7 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 ### Forecasting Pipeline
 `src/forecasting/` — ForecastingEngine, 9 models, 21 features, walk-forward validation, experiment tracking.
 Scripts: `scripts/pipeline/generate_weekly_forecasts.py`, `scripts/pipeline/run_forecast_experiment.py`, `scripts/data/build_forecasting_dataset_aligned.py`.
-**`/forecasting` is multi-asset** (pair selector): USD/COP = 9-model ML zoo (CSV+PNG, whole-year via `--num-weeks 30`); **Gold/BTC = rule-based whole-year weekly inference** (`scripts/pipeline/generate_asset_weekly_forecast.py` → `public/forecasting/<asset>/weekly_inference_<year>.json`, `WeeklyInferenceView.tsx`). **Methodology (all pairs): trained ≤ Dec-2024, 2025 = backtest (OOS, default), 2026 = production.** See `dashboard-integration.md`.
+**`/forecasting` is multi-asset** (pair selector), branched by `analysis-assets.ts::forecast_mode`: **USD/COP + BTC = 9-model ML zoo** (CSV+PNG, whole-year via `generate_weekly_forecasts.py --asset <id> --num-weeks 30` → root for COP, `public/forecasting/btcusdt/` for BTC; `AssetModelZoo`); **Gold = rule-based weekly inference** (`generate_asset_weekly_forecast.py` → `public/forecasting/xauusd/weekly_inference_<year>.json`, `AssetWeeklyBody`). **BTC uses a BTC-appropriate 19-feature set** (17 price/technical/calendar + DXY + VIX; drops the Colombia-only WTI/EMBI; √365; config `config/assets/btcusdt_forecasting.yaml`) — same STRUCTURE as COP, honest features. BTC price-only DA ≈ 0.46 (a transparency surface, **not** an edge claim — quant-constitution). **Methodology (all pairs): trained ≤ Dec-2024, 2025 = backtest (OOS, default), 2026 = production.** See `dashboard-integration.md`.
 
 ### H5 Weekly Pipeline (Smart Simple v1.1)
 `src/forecasting/{confidence_scorer,adaptive_stops,vol_targeting}.py` — 3-tier confidence, vol-adaptive TP/HS.
@@ -239,6 +239,7 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
 API groups: execution (13), experiments (7), production (6), backtest (5), analysis (4), trading (3), registry (2), models (2), market (2), strategies, replay, pipeline, health, auth.
 Data flow: file-based BFF (`public/data/**`) + DB-live (`production/live`) + proxy (`INFERENCE_API_URL`) + SSE + WS; adaptive polling + graceful degradation. Contracts: `lib/contracts/*.ts` mirror `src/contracts/`.
+**UI = GlobalMarkets Terminal (2026-07-10, CTR-GM-UI-001)**: chrome `components/gm/TerminalShell` + design system `components/gm/*` (tokens `lib/ui/gm-tokens.ts`, estados `AsyncBoundary`, hook `useGmQuery`); BFF contract CTR-FE-BE-001 (`lib/api/{envelope,relay,gm-client}.ts`, spec `frontend-backend-contract.md` + `docs/api/openapi.yaml`); páginas pre-GM archivadas en `/legacy/*` (admin-only). Migración/estado/gaps: `.claude/specs/platform/gm-terminal-migration.md`.
 **Full as-built: `.claude/specs/platform/frontend-architecture.md`.** Data contract: `dashboard-integration.md`.
 
 ### Execution Layer (OMS + Risk)

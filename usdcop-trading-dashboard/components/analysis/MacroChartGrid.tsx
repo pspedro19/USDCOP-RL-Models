@@ -1,8 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MacroVariableChart } from './MacroVariableChart';
 import type { MacroChartData } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT } from './gm-analysis';
+import { MacroVariableChart } from './MacroVariableChart';
 
 interface MacroChartGridProps {
   charts: Record<string, MacroChartData>;
@@ -39,6 +43,7 @@ const DATA_SOURCES: Record<string, { name: string; url: string }> = {
 };
 
 export function MacroChartGrid({ charts, onChartClick }: MacroChartGridProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const keys = Object.keys(charts);
   if (keys.length === 0) return null;
 
@@ -57,26 +62,26 @@ export function MacroChartGrid({ charts, onChartClick }: MacroChartGridProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-4 hover:border-cyan-500/20 transition-all cursor-pointer"
+            className={`${GM.panel} gm-contain p-4 hover:border-[rgba(34,211,238,.2)] transition-colors duration-[var(--gm-dur-fast)] cursor-pointer`}
             onClick={() => onChartClick?.(key)}
           >
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-sm font-semibold text-white">{name}</h3>
+                <h3 className={`${GMT.panelTitle} ${GM.textStrong}`}>{name}</h3>
                 {DATA_SOURCES[key] && (
                   <a
                     href={DATA_SOURCES[key].url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-gray-600 mt-0.5 hover:text-cyan-400 transition-colors"
+                    className={`${GMT.micro} ${GM.textFaint} mt-0.5 hover:text-[var(--gm-accent)] transition-colors duration-[var(--gm-dur-fast)] ${GM.focus} rounded`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    Fuente: {DATA_SOURCES[key].name} ↗
+                    {t('source')}: {DATA_SOURCES[key].name} ↗
                   </a>
                 )}
               </div>
               {chart.png_url && (
-                <span className="text-[10px] text-gray-600 bg-gray-800/50 rounded px-1.5 py-0.5">PNG</span>
+                <span className={`${GMT.micro} ${GM.neutralBadge} rounded px-1.5 py-0.5`}>PNG</span>
               )}
             </div>
 
@@ -92,8 +97,8 @@ export function MacroChartGrid({ charts, onChartClick }: MacroChartGridProps) {
                 }}
               />
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-600 text-sm">
-                Sin datos
+              <div className={`h-48 flex items-center justify-center ${GM.textMuted} ${GMT.body}`}>
+                {t('noData')}
               </div>
             )}
           </motion.div>

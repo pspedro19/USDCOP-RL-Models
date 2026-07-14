@@ -1,0 +1,861 @@
+openapi: 3.1.0
+# =============================================================================
+# GlobalMarkets Terminal — Frontend↔Backend API (OpenAPI 3.1)
+# Contract: CTR-FE-BE-001  ·  Version: 1.0.0  ·  Date: 2026-07-10
+#
+# WHAT THIS IS
+#   Machine-readable, contract-first definition of the surface the browser
+#   consumes. Every path here is a Next.js BFF route (app/api/**). The browser
+#   NEVER calls a microservice directly — the BFF holds the session, re-checks
+#   RBAC, and relays the SignalBridge bearer upstream (see `x-upstream`).
+#
+# HOW TO USE IT (backend)
+#   • Generate a server stub / typed client:  `openapi-generator` / `orval`.
+#   • Spin a mock while the real service is WIP: `prism mock openapi.yaml`.
+#   • Enforce in CI: every BFF route must resolve to an operationId here
+#     (contract test); a route with no operationId fails the build.
+#   • The `x-upstream` vendor field documents the real microservice + path the
+#     BFF proxies to, so backend owners know exactly what to implement.
+#
+# CONVENTIONS (apply to EVERY operation unless overridden)
+#   • Success envelope: { ok: true, data: <T>, meta? }
+#   • Error   envelope: { ok: false, error: Error }   (see components/Error)
+#   • Auth: session cookie (NextAuth) on the browser→BFF hop; Bearer on the
+#     BFF→upstream hop. 401 = not authenticated, 403 = authenticated but role/
+#     entitlement denies. Never 200-with-error-body.
+#   • Every response carries `traceparent` (W3C) for Jaeger correlation.
+#   • Live/authorized reads set `Cache-Control: no-store`.
+# =============================================================================
+
+info:
+  title: GlobalMarkets Terminal — FE↔BE Contract
+  version: 1.0.0
+  description: >
+    Frontend-facing API (BFF) for the USDCOP multi-asset RL trading platform.
+    See specs/frontend-backend-contract.md for prose, RBAC matrix and the
+    view→endpoint map. This file is the authoritative machine-readable subset.
+  contact: { name: Platform, url: "https://github.com/pspedro19/USDCOP-RL-Models" }
+
+servers:
+  - url: /            # same-origin BFF (browser → Next.js)
+    description: Browser-facing BFF (relative; no cross-origin from the client)
+
+tags:
+  - { name: auth,        description: Session, registration, password reset }
+  - { name: billing,     description: Effective entitlements, checkout, provider webhook }
+  - { name: catalog,     description: "🆕 Asset catalog, watchlist, unlock cart" }
+  - { name: backtest,    description: Deterministic historical replay (SSOT) }
+  - { name: production,  description: Live signals, executions, paper trading }
+  - { name: forecasting, description: Plan-gated forecast artifacts (delay by plan) }
+  - { name: analysis,    description: Weekly news analysis, calendar, assistant }
+  - { name: signalbridge, description: Exchange credentials, copy-trading, kill-switch }
+  - { name: admin,       description: Console — KPIs, queue, users, revenue, models, risk, system }
+  - { name: system,      description: Observability surface (Prometheus/Grafana/Loki/Alertmanager) }
+
+# ---------------------------------------------------------------------------
+security:
+  - sessionCookie: []          # default: authenticated session required
+
+paths:
+
+  # ============================ AUTH ====================================
+  /api/auth/session:
+    get:
+      tags: [auth]
+      operationId: getSession
+      summary: Current session (role, plan, entitlements) or null.
+      security: [{}]           # public: returns null when unauthenticated
+      responses:
+        "200":
+          description: Session or null
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/Session" } }
+
+  /api/execution/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Authenticate against SignalBridge; sets the session cookie.
+      x-upstream: "signalbridge-api POST /api/auth/login  (+ GET /api/users/me for role)"
+      security: [{}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, captchaToken]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8 }
+                captchaToken: { type: string, description: "From GET /api/captcha (public forms)" }
+      responses:
+        "200": { $ref: "#/components/responses/SessionOk" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "429": { $ref: "#/components/responses/Error429" }
+
+  /api/execution/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Request an account. Lands in the admin approval queue (status=pending).
+      x-upstream: "signalbridge-api POST /api/auth/register"
+      security: [{}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, plan, captchaToken]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8 }
+                plan: { $ref: "#/components/schemas/PlanId" }
+                captchaToken: { type: string }
+      responses:
+        "202":
+          description: Accepted into approval queue (no session yet).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [pending] }
+                          userId: { type: string }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+
+  /api/execution/auth/reset-password:
+    post:
+      tags: [auth]
+      operationId: resetPassword
+      summary: Trigger a password-reset email.
+      x-upstream: "signalbridge-api POST /api/auth/reset-password"
+      security: [{}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email], properties: { email: { type: string, format: email } } }
+      responses:
+        "202": { description: Always 202 (no account enumeration) }
+
+  /api/captcha:
+    get:
+      tags: [auth]
+      operationId: getCaptcha
+      summary: Issue a signed arithmetic challenge for public auth forms.
+      security: [{}]
+      responses:
+        "200":
+          description: Challenge
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties:
+                      data:
+                        type: object
+                        properties: { challenge: { type: string }, token: { type: string } }
+
+  # ============================ BILLING =================================
+  /api/billing/me:
+    get:
+      tags: [billing]
+      operationId: getEntitlements
+      summary: Server-resolved EFFECTIVE entitlements for the logged-in user.
+      description: Source of truth for gating (plan + per-asset add-ons + execution scope).
+      responses:
+        "200":
+          description: Entitlements
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/Entitlements" } }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /api/billing/checkout:
+    post:
+      tags: [billing]
+      operationId: createCheckout
+      summary: Create a hosted-checkout session for a plan or asset add-ons.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan: { $ref: "#/components/schemas/PlanId" }
+                addonAssetIds: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: Redirect URL to hosted checkout.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: object, properties: { checkoutUrl: { type: string, format: uri } } } }
+
+  /api/billing/webhook:
+    post:
+      tags: [billing]
+      operationId: billingWebhook
+      summary: Payment-provider events (grants/revokes entitlements). Signature-verified.
+      description: Server-to-server. Must be idempotent by provider event id. CTR-RBAC-001 rule 9.
+      security: [{ webhookSignature: [] }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        "200": { description: Acknowledged (idempotent) }
+        "400": { $ref: "#/components/responses/Error400" }
+
+  # ======================= CATALOG / WATCHLIST / CART (🆕) ==============
+  /api/catalog:
+    get:
+      tags: [catalog]
+      operationId: getCatalog
+      summary: "🆕 Multi-asset catalog with per-user lock/unlock state."
+      description: Merges the strategy/asset registry (CTR-STRAT-REGISTRY-001) with the caller's entitlements.
+      parameters:
+        - { name: assetClass, in: query, schema: { type: string, enum: [fx, crypto, commodity, equity_index] } }
+      responses:
+        "200":
+          description: Catalog
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: array, items: { $ref: "#/components/schemas/CatalogAsset" } } }
+
+  /api/watchlist:
+    get:
+      tags: [catalog]
+      operationId: getWatchlist
+      summary: "🆕 The user's followed assets."
+      responses:
+        "200":
+          description: Watchlist
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: array, items: { type: string, description: assetId } } }
+  /api/watchlist/{assetId}:
+    parameters: [{ name: assetId, in: path, required: true, schema: { type: string } }]
+    post:
+      tags: [catalog]
+      operationId: addWatchlist
+      summary: "🆕 Follow an asset (free; no entitlement needed)."
+      responses: { "204": { description: Followed } }
+    delete:
+      tags: [catalog]
+      operationId: removeWatchlist
+      summary: "🆕 Unfollow an asset."
+      responses: { "204": { description: Unfollowed } }
+
+  /api/cart/checkout:
+    post:
+      tags: [catalog]
+      operationId: cartCheckout
+      summary: "🆕 Unlock the cart's assets/add-ons — delegates to billing checkout."
+      description: Thin wrapper over POST /api/billing/checkout; the cart is client state, entitlements are server truth.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [assetIds], properties: { assetIds: { type: array, items: { type: string } } } }
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: object, properties: { checkoutUrl: { type: string, format: uri } } } }
+
+  # ============================ BACKTEST ================================
+  /api/backtest/real:
+    post:
+      tags: [backtest]
+      operationId: runBacktest
+      summary: Run a deterministic backtest over a date range (non-streaming).
+      x-upstream: "backtest-api POST /api/v1/backtest/real?proposal_id=&start_date=&end_date="
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proposal_id, start_date, end_date]
+              properties:
+                proposal_id: { type: string, description: strategy/model version id }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+      responses:
+        "200":
+          description: Backtest result (SSOT shape — identical to production).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/RunResult" } }
+        "403": { $ref: "#/components/responses/Error403" }
+
+  /api/backtest/real/stream:
+    get:
+      tags: [backtest]
+      operationId: streamBacktest
+      summary: Stream backtest progress as Server-Sent Events.
+      x-upstream: "backtest-api GET /api/v1/backtest/real/stream (SSE)"
+      parameters:
+        - { name: proposalId, in: query, required: true, schema: { type: string } }
+        - { name: startDate, in: query, required: true, schema: { type: string, format: date } }
+        - { name: endDate, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: "text/event-stream — events: progress | bar | trade | done | error"
+          content:
+            text/event-stream:
+              schema: { type: string, description: "SSE frames; see production-monitor.contract.ts" }
+
+  /api/backtest/status/{modelId}:
+    get:
+      tags: [backtest]
+      operationId: getBacktestStatus
+      parameters: [{ name: modelId, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: object, properties: { status: { type: string, enum: [queued, running, completed, failed] } } } }
+
+  /api/models/{modelId}/metrics:
+    get:
+      tags: [backtest]
+      operationId: getModelMetrics
+      parameters: [{ name: modelId, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: KPI set (7 metrics) with promotion-gate pass/fail.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/ModelMetrics" } }
+
+  /api/registry:
+    get:
+      tags: [backtest]
+      operationId: getRegistry
+      summary: Dynamic strategy/asset registry (SSOT).
+      x-upstream: "fs public/data/registry.json (RegistryBuilder). CTR-STRAT-REGISTRY-001"
+      responses:
+        "200":
+          description: Registry
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { type: array, items: { $ref: "#/components/schemas/Strategy" } } }
+
+  /api/registry/promote:
+    post:
+      tags: [admin]
+      operationId: promoteModel
+      summary: Promote a model version to "active" for a strategy (admin).
+      security: [{ sessionCookie: [admin] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [strategyId, version], properties: { strategyId: { type: string }, version: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/GenericOk" }
+        "403": { $ref: "#/components/responses/Error403" }
+
+  # ============================ PRODUCTION ==============================
+  /api/production/live:
+    get:
+      tags: [production]
+      operationId: getProductionLive
+      summary: Live signal, executions, subtrades and paper-trading rows.
+      x-upstream: "TimescaleDB: forecast_h5_signals | _executions | _subtrades | _paper_trading"
+      parameters: [{ name: asset, in: query, schema: { type: string, default: usdcop } }]
+      responses:
+        "200":
+          description: Live production snapshot.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/RunResult" } }
+        "403": { $ref: "#/components/responses/Error403" }
+
+  /api/production/deploy:
+    post:
+      tags: [production]
+      operationId: deployProduction
+      summary: Trigger the production-deploy DAG for an approved model (admin).
+      x-upstream: "Airflow DAG forecast_h5_l4b_production_deploy"
+      security: [{ sessionCookie: [admin] }]
+      responses:
+        "202": { description: DAG run triggered }
+        "403": { $ref: "#/components/responses/Error403" }
+
+  # ============================ FORECASTING =============================
+  /api/forecasting/{path}:
+    get:
+      tags: [forecasting]
+      operationId: getForecastArtifact
+      summary: Serve a plan-gated forecast artifact (JSON/CSV/PNG).
+      description: >
+        ⚠ CONTRACT (do not break): free plan sees a T-1-week delayed forecast
+        (forecast_delay_hours=168) — current-week rows are stripped server-side;
+        paid sees live. PNG image paths are preserved verbatim.
+      parameters:
+        - { name: path, in: path, required: true, schema: { type: string }, description: "e.g. usdcop/weekly_inference_2026.json | usdcop_h5.png" }
+      responses:
+        "200":
+          description: Artifact (application/json | text/csv | image/png)
+          content:
+            application/json: { schema: { type: object } }
+            image/png: { schema: { type: string, format: binary } }
+        "400": { $ref: "#/components/responses/Error400" }   # path escapes dir
+        "403": { $ref: "#/components/responses/Error403" }
+
+  # ============================ ANALYSIS ================================
+  /api/analysis/assets:
+    get: { tags: [analysis], operationId: getAnalysisAssets, summary: Assets that have weekly analysis, responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+  /api/analysis/weeks:
+    get:
+      tags: [analysis]
+      operationId: getAnalysisWeeks
+      parameters: [{ name: asset, in: query, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/analysis/week/{year}/{week}:
+    get:
+      tags: [analysis]
+      operationId: getWeeklyAnalysis
+      parameters:
+        - { name: year, in: path, required: true, schema: { type: integer } }
+        - { name: week, in: path, required: true, schema: { type: integer } }
+        - { name: asset, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Weekly analysis document (recap, technical, macro regime, timeline, news).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/WeeklyAnalysis" } }
+  /api/analysis/calendar:
+    get:
+      tags: [analysis]
+      operationId: getEconomicCalendar
+      parameters: [{ name: asset, in: query, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/analysis/chat:
+    post:
+      tags: [analysis]
+      operationId: analysisChat
+      summary: Assistant — streamed answer grounded in the current week's analysis.
+      x-upstream: "Anthropic Messages API (key server-side only)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages]
+              properties:
+                messages: { type: array, items: { type: object, properties: { role: { type: string }, content: { type: string } } } }
+                asset: { type: string }
+      responses:
+        "200": { description: "text/event-stream (token stream)", content: { text/event-stream: { schema: { type: string } } } }
+        "429": { $ref: "#/components/responses/Error429" }
+
+  /api/trading/performance/multi-strategy:
+    get: { tags: [production], operationId: getMultiStrategyPerf, summary: Performance across strategies, responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+  /api/trading/trades/history:
+    get:
+      tags: [production]
+      operationId: getTradesHistory
+      parameters:
+        - { $ref: "#/components/parameters/limit" }
+        - { $ref: "#/components/parameters/cursor" }
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+
+  # ========================= SIGNALBRIDGE ===============================
+  /api/execution/exchanges:
+    get:
+      tags: [signalbridge]
+      operationId: listExchanges
+      summary: Connected exchanges for the user (secrets never returned).
+      x-upstream: "signalbridge-api GET /api/exchanges/credentials"
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/execution/exchanges/credentials:
+    post:
+      tags: [signalbridge]
+      operationId: connectExchange
+      summary: Register API key/secret. Permissions must be read+trade, WITHDRAWALS DISABLED.
+      x-upstream: "signalbridge-api POST /api/exchanges/credentials"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exchange, apiKey, apiSecret]
+              properties:
+                exchange: { type: string, enum: [binance, mexc] }
+                apiKey: { type: string }
+                apiSecret: { type: string, description: "Write-only. Never returned by any GET." }
+      responses:
+        "201": { description: Connected (secret stored encrypted, masked thereafter) }
+        "400": { $ref: "#/components/responses/Error400" }   # withdrawal permission present ⇒ reject
+  /api/execution/exchanges/{exchange}/balance:
+    get:
+      tags: [signalbridge]
+      operationId: getExchangeBalance
+      x-upstream: "signalbridge-api GET /api/exchanges/credentials/{exchange}/balances"
+      parameters: [{ name: exchange, in: path, required: true, schema: { type: string, enum: [binance, mexc] } }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/execution/executions:
+    get:
+      tags: [signalbridge]
+      operationId: listExecutions
+      x-upstream: "signalbridge-api GET /api/executions"
+      parameters: [{ $ref: "#/components/parameters/limit" }, { $ref: "#/components/parameters/cursor" }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/execution/signal-bridge/kill-switch:
+    get:
+      tags: [signalbridge]
+      operationId: getKillSwitch
+      x-upstream: "signalbridge-api GET /api/signal-bridge/kill-switch/status"
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+    post:
+      tags: [signalbridge]
+      operationId: setKillSwitch
+      summary: Flip the global kill-switch (halts copy-trading immediately).
+      security: [{ sessionCookie: [admin] }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [active], properties: { active: { type: boolean }, reason: { type: string } } } } } }
+      responses: { "200": { $ref: "#/components/responses/GenericOk" }, "403": { $ref: "#/components/responses/Error403" } }
+
+  # ============================ ADMIN ===================================
+  /api/admin/kpis:
+    get: { tags: [admin], operationId: adminKpis, summary: Business KPIs (users, MRR, conversion, churn), security: [{ sessionCookie: [admin] }], responses: { "200": { $ref: "#/components/responses/GenericOk" }, "403": { $ref: "#/components/responses/Error403" } } }
+  /api/admin/overview:
+    get: { tags: [admin], operationId: adminOverview, summary: Users + recent audit + plan mix, security: [{ sessionCookie: [admin] }], responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+  /api/admin/queue:
+    get: { tags: [admin], operationId: adminQueue, summary: Approval queue (pending registrations + KYC), security: [{ sessionCookie: [admin] }], responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+  /api/admin/users:
+    get:
+      tags: [admin]
+      operationId: adminUsersByStatus
+      summary: Users filtered by status (approval queue when status=pending).
+      x-upstream: "signalbridge-api GET /api/admin/users?status= (source of truth)"
+      security: [{ sessionCookie: [admin] }]
+      parameters: [{ name: status, in: query, schema: { type: string, enum: [pending, active, suspended] } }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/admin/users/list:
+    get: { tags: [admin], operationId: adminUsersList, summary: Full users table for the console, security: [{ sessionCookie: [admin] }], responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+  /api/admin/users/{id}/approve:
+    post:
+      tags: [admin]
+      operationId: approveUser
+      x-upstream: "signalbridge-api POST /api/admin/users/{id}/approve"
+      security: [{ sessionCookie: [admin] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" }, "403": { $ref: "#/components/responses/Error403" } }
+  /api/admin/users/{id}/reject:
+    post:
+      tags: [admin]
+      operationId: rejectUser
+      x-upstream: "signalbridge-api POST /api/admin/users/{id}/reject"
+      security: [{ sessionCookie: [admin] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } } }
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+
+  /api/admin/revenue:
+    get:
+      tags: [admin]
+      operationId: adminRevenue
+      summary: "🆕 MRR/ARR/ARPU/LTV, revenue by plan, MRR movement, dunning."
+      security: [{ sessionCookie: [admin] }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/admin/models:
+    get:
+      tags: [admin]
+      operationId: adminModels
+      summary: "🆕 Model registry + promotion-review candidates with gates/votes."
+      security: [{ sessionCookie: [admin] }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/admin/models/{id}/vote:
+    post:
+      tags: [admin]
+      operationId: voteModelPromotion
+      summary: "🆕 Cast one of the two required approval votes for promotion."
+      security: [{ sessionCookie: [admin] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [decision], properties: { decision: { type: string, enum: [approve, reject] }, note: { type: string } } } } } }
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+  /api/admin/risk:
+    get:
+      tags: [admin]
+      operationId: adminRisk
+      summary: "🆕 Kill-switch state, risk limits, blocked users, API approvals."
+      security: [{ sessionCookie: [admin] }]
+      responses: { "200": { $ref: "#/components/responses/GenericOk" } }
+
+  /api/admin/system:
+    get:
+      tags: [system]
+      operationId: adminSystem
+      summary: Observability surface — service health, scrape targets, alerts, pipeline, resources.
+      description: Aggregates Prometheus/Alertmanager/Airflow. Deep-links open Grafana (:3002). CTR-OBS-001.
+      security: [{ sessionCookie: [admin] }]
+      responses:
+        "200":
+          description: System snapshot
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Ok"
+                  - properties: { data: { $ref: "#/components/schemas/SystemSnapshot" } }
+  /api/admin/audit:
+    get: { tags: [admin], operationId: adminAudit, summary: Audit ledger (who did what, when), security: [{ sessionCookie: [admin] }], parameters: [{ $ref: "#/components/parameters/limit" }, { $ref: "#/components/parameters/cursor" }], responses: { "200": { $ref: "#/components/responses/GenericOk" } } }
+
+# ---------------------------------------------------------------------------
+components:
+
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: >
+        Browser→BFF auth. NextAuth session cookie (httpOnly, Secure, SameSite=Lax).
+        The scope list on an operation (e.g. [admin]) documents the RBAC role the
+        BFF re-checks in-handler — it is NOT an OAuth scope. 401 if absent, 403 if role denies.
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: HMAC signature for provider webhooks (server-to-server; verified before processing).
+
+  parameters:
+    limit:  { name: limit,  in: query, schema: { type: integer, default: 50, maximum: 200 }, description: Page size }
+    cursor: { name: cursor, in: query, schema: { type: string }, description: Opaque forward cursor (keyset pagination) }
+
+  responses:
+    SessionOk:
+      description: Authenticated; session cookie set.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Ok"
+              - properties: { data: { $ref: "#/components/schemas/Session" } }
+    GenericOk:
+      description: Success envelope.
+      content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } }
+    Error400: { description: Bad request, content: { application/json: { schema: { $ref: "#/components/schemas/Err" } } } }
+    Error401: { description: Not authenticated, content: { application/json: { schema: { $ref: "#/components/schemas/Err" } } } }
+    Error403: { description: Authenticated but role/entitlement denies, content: { application/json: { schema: { $ref: "#/components/schemas/Err" } } } }
+    Error409: { description: Conflict (e.g. email already registered), content: { application/json: { schema: { $ref: "#/components/schemas/Err" } } } }
+    Error429:
+      description: Rate limited.
+      headers:
+        Retry-After: { schema: { type: integer }, description: Seconds until retry }
+        RateLimit-Remaining: { schema: { type: integer } }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Err" } } }
+
+  schemas:
+    Ok:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data: {}
+        meta:
+          type: object
+          properties:
+            nextCursor: { type: string, nullable: true }
+            asOf: { type: string, format: date-time }
+    Err:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { $ref: "#/components/schemas/Error" }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: FORBIDDEN, description: Stable machine code (SCREAMING_SNAKE) }
+        message: { type: string, description: Human-readable; safe to surface }
+        status: { type: integer, example: 403 }
+        details: { type: object, additionalProperties: true }
+        traceId: { type: string, description: W3C trace id (correlate in Jaeger) }
+        path: { type: string }
+        timestamp: { type: string, format: date-time }
+
+    Role: { type: string, enum: [admin, developer, subscriber, free] }
+    PlanId: { type: string, enum: [free, signals, auto] }
+
+    Session:
+      type: object
+      nullable: true
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/Role" }
+        plan: { $ref: "#/components/schemas/PlanId" }
+        status: { type: string, enum: [active, pending, suspended] }
+
+    Entitlements:
+      type: object
+      description: Server-resolved truth for gating. The client renders from this; it never decides access itself.
+      properties:
+        plan: { $ref: "#/components/schemas/PlanId" }
+        permissions:
+          type: array
+          items: { type: string, example: signals:read }
+        unlockedAssetIds: { type: array, items: { type: string } }
+        executionScope: { type: string, enum: [none, self, global] }
+
+    CatalogAsset:
+      type: object
+      properties:
+        assetId: { type: string, example: btcusdt }
+        symbol: { type: string, example: BTC/USDT }
+        name: { type: string }
+        assetClass: { type: string, enum: [fx, crypto, commodity, equity_index] }
+        unlocked: { type: boolean, description: Derived from caller entitlements }
+        inWatchlist: { type: boolean }
+        priceUsd: { type: number }
+        change24hPct: { type: number }
+
+    Strategy:
+      type: object
+      properties:
+        id: { type: string }
+        assetId: { type: string }
+        activeVersion: { type: string }
+        pipeline_type: { type: string, example: ml_forecasting }
+        status: { type: string, enum: [production, candidate, paper, experimental, deprecated] }
+
+    ModelMetrics:
+      type: object
+      properties:
+        modelId: { type: string }
+        kpis:
+          type: object
+          properties:
+            returnYtdPct: { type: number }
+            sharpe: { type: number }
+            sortino: { type: number }
+            maxDrawdownPct: { type: number }
+            winRatePct: { type: number }
+            calmar: { type: number }
+            psr: { type: number, description: Probabilistic Sharpe Ratio }
+        gates:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string, example: PSR }
+              value: { type: number }
+              threshold: { type: number }
+              pass: { type: boolean }
+
+    RunResult:
+      type: object
+      description: Shared shape for BOTH backtest and production (SSOT — same builder).
+      properties:
+        candles:
+          type: array
+          items: { type: object, properties: { t: { type: integer }, o: { type: number }, h: { type: number }, l: { type: number }, c: { type: number } } }
+        equity:
+          type: array
+          items: { type: object, properties: { t: { type: integer }, v: { type: number } } }
+        trades:
+          type: array
+          items:
+            type: object
+            properties:
+              t: { type: integer }
+              side: { type: string, enum: [BUY, SELL] }
+              price: { type: number }
+              qty: { type: number }
+              pnl: { type: number }
+        kpis: { $ref: "#/components/schemas/ModelMetrics/properties/kpis" }
+
+    WeeklyAnalysis:
+      type: object
+      properties:
+        year: { type: integer }
+        week: { type: integer }
+        asset: { type: string }
+        recap: { type: object, description: OHLC recap }
+        technical: { type: object }
+        macroRegime:
+          type: object
+          properties:
+            regime: { type: string }
+            leaders: { type: array, items: { type: object, properties: { name: { type: string }, zScore: { type: number } } } }
+        timeline: { type: array, items: { type: object } }
+        news: { type: array, items: { type: object } }
+
+    SystemSnapshot:
+      type: object
+      properties:
+        services:
+          type: array
+          items: { type: object, properties: { name: { type: string }, port: { type: string }, status: { type: string, enum: [healthy, activation, down] }, grafanaUrl: { type: string, format: uri } } }
+        slo:
+          type: object
+          properties:
+            p50Ms: { type: number }
+            p95Ms: { type: number }
+            p99Ms: { type: number }
+            errorRatePct: { type: number }
+            uptimePct: { type: number }
+        targets:
+          type: array
+          items: { type: object, properties: { job: { type: string }, up: { type: boolean }, scrapeMs: { type: number } } }
+        alerts:
+          type: array
+          items: { type: object, properties: { name: { type: string }, severity: { type: string, enum: [info, warning, critical] }, for: { type: string } } }
+        pipeline:
+          type: array
+          items: { type: object, properties: { stage: { type: string, example: L0 }, ok: { type: boolean }, lastRun: { type: string, format: date-time } } }

@@ -3,6 +3,11 @@
 import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import type { DailyAnalysisEntry } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 import { DailyTimelineEntry } from './DailyTimelineEntry';
 
 interface DailyTimelineProps {
@@ -10,11 +15,13 @@ interface DailyTimelineProps {
 }
 
 export function DailyTimeline({ entries }: DailyTimelineProps) {
+  const t = useGmT(ANALYSIS_DICT);
+
   if (!entries || entries.length === 0) {
     return (
-      <div className="bg-gray-900/40 rounded-xl border border-gray-800/40 p-8 text-center">
-        <Clock className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-        <p className="text-gray-500 text-sm">Sin analisis diarios para esta semana</p>
+      <div className={`${GM.panel} gm-contain p-8 text-center`}>
+        <Clock className={`w-8 h-8 ${GM.textFaint} mx-auto mb-3`} />
+        <p className={`${GM.textMuted} ${GMT.body}`}>{t('noDaily')}</p>
       </div>
     );
   }
@@ -28,11 +35,11 @@ export function DailyTimeline({ entries }: DailyTimelineProps) {
       animate={{ opacity: 1 }}
     >
       <div className="flex items-center gap-2 mb-4">
-        <Clock className="w-4 h-4 text-cyan-400" />
-        <h2 className="text-base font-semibold text-white">Timeline Diario</h2>
-        <span className="text-xs text-gray-500 bg-gray-800/50 rounded-full px-2 py-0.5">
-          {entries.length} dias
-        </span>
+        <Clock className={`w-4 h-4 ${GM.accent}`} />
+        <h2 className={`${GMT.h2} ${GM.textStrong}`}>{t('timelineTitle')}</h2>
+        <GmBadge tone="neutral" className={GMT.mono}>
+          {entries.length} {t('days')}
+        </GmBadge>
       </div>
 
       <div className="space-y-0">

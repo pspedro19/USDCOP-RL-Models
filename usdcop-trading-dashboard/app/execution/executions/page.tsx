@@ -1,7 +1,12 @@
 'use client';
 
+/**
+ * /execution/executions — historial de ejecuciones, re-skin GM (prototipo Var B:
+ * tabla "Ejecuciones recientes" con cifras en mono). Presentación + i18n
+ * ÚNICAMENTE: paginación, filtros y fetch (signalBridgeService) quedan intactos.
+ */
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   History,
   RefreshCw,
@@ -16,19 +21,27 @@ import {
   TrendingDown,
   Search,
 } from 'lucide-react';
-import { signalBridgeService, type PaginatedResponse } from '@/lib/services/execution/signal-bridge.service';
-import {
-  type BridgeExecutionResult,
-  INFERENCE_ACTION_LABELS,
-  INFERENCE_ACTION_COLORS,
-} from '@/lib/contracts/execution/signal-bridge.contract';
-import {
-  ORDER_STATUS_COLORS,
-  ORDER_STATUS_NAMES,
-  type OrderStatus,
-} from '@/lib/contracts/execution/execution.contract';
+import { GmPageHeader } from '@/components/gm';
+import { GM, GMT, type GmTone, GM_TONE_TEXT } from '@/lib/ui/gm-tokens';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { signalBridgeService } from '@/lib/services/execution/signal-bridge.service';
+import { type BridgeExecutionResult } from '@/lib/contracts/execution/signal-bridge.contract';
+import { type OrderStatus } from '@/lib/contracts/execution/execution.contract';
+import { EXEC_DICT } from './../i18n';
+
+/** Tono GM por estado de orden (presentacional; el enum viene del contrato). */
+const STATUS_TONE: Record<OrderStatus, GmTone> = {
+  pending: 'warn',
+  submitted: 'warn',
+  partial: 'info',
+  filled: 'pos',
+  cancelled: 'neutral',
+  rejected: 'neg',
+  failed: 'neg',
+};
 
 export default function ExecutionsPage() {
+  const t = useGmT(EXEC_DICT);
   const [executions, setExecutions] = useState<BridgeExecutionResult[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -59,7 +72,7 @@ export default function ExecutionsPage() {
       setHasMore(response.has_more);
     } catch (err) {
       console.error('Failed to fetch executions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load executions');
+      setError(err instanceof Error ? err.message : t('loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -71,194 +84,221 @@ export default function ExecutionsPage() {
 
   const totalPages = Math.ceil(total / limit);
 
+  /** Nombre ES/EN por estado de orden (i18n local; el enum del contrato no cambia). */
+  const statusName: Record<OrderStatus, string> = {
+    pending: t('stPending'),
+    submitted: t('stSubmitted'),
+    partial: t('stPartial'),
+    filled: t('stFilled'),
+    cancelled: t('stCancelled'),
+    rejected: t('stRejected'),
+    failed: t('stFailed'),
+  };
+
   const getStatusIcon = (status: OrderStatus) => {
     switch (status) {
       case 'filled':
-        return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+        return <CheckCircle2 className={`w-4 h-4 ${GM.pos}`} aria-hidden />;
       case 'failed':
       case 'rejected':
-        return <XCircle className="w-4 h-4 text-red-400" />;
+        return <XCircle className={`w-4 h-4 ${GM.neg}`} aria-hidden />;
       case 'pending':
       case 'submitted':
-        return <Clock className="w-4 h-4 text-yellow-400" />;
+        return <Clock className={`w-4 h-4 ${GM.warn}`} aria-hidden />;
       case 'cancelled':
-        return <AlertTriangle className="w-4 h-4 text-gray-400" />;
+        return <AlertTriangle className={`w-4 h-4 ${GM.textMuted}`} aria-hidden />;
       default:
-        return <Clock className="w-4 h-4 text-gray-400" />;
+        return <Clock className={`w-4 h-4 ${GM.textMuted}`} aria-hidden />;
     }
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Execution History</h1>
-          <p className="text-gray-400">View all trading executions and their status</p>
-        </div>
-        <button
-          onClick={fetchExecutions}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
-        >
-          <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+  const selectClass = `${GM.input} ${GM.focus} h-11 px-4`;
 
-      {/* Filters */}
-      <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-4">
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <GmPageHeader
+        kicker={t('kicker')}
+        title={t('execTitle')}
+        subtitle={t('execSub')}
+        actions={
+          <button
+            onClick={fetchExecutions}
+            aria-label={t('refresh')}
+            className={`${GM.ctaGhost} ${GM.focus} w-11 h-11 flex items-center justify-center`}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'motion-safe:animate-spin' : ''}`} aria-hidden />
+          </button>
+        }
+      />
+
+      {/* Filtros */}
+      <div className={`${GM.panel} p-4`}>
         <div className="flex flex-wrap gap-4 items-center">
-          {/* Search */}
+          {/* Búsqueda */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${GM.textMuted}`} aria-hidden />
             <input
               type="text"
-              placeholder="Search by symbol or order ID..."
+              placeholder={t('searchPh')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+              className={`${GM.input} ${GM.focus} w-full h-11 pl-10 pr-4`}
             />
           </div>
 
-          {/* Status Filter */}
+          {/* Filtro de estado */}
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+            aria-label={t('thStatus')}
+            className={selectClass}
           >
-            <option value="">All Status</option>
-            <option value="filled">Filled</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">{t('allStatus')}</option>
+            <option value="filled">{t('fFilled')}</option>
+            <option value="pending">{t('fPending')}</option>
+            <option value="failed">{t('fFailed')}</option>
+            <option value="cancelled">{t('fCancelled')}</option>
           </select>
 
-          {/* Exchange Filter */}
+          {/* Filtro de exchange */}
           <select
             value={exchangeFilter}
             onChange={(e) => {
               setExchangeFilter(e.target.value);
               setPage(1);
             }}
-            className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+            aria-label={t('thExchange')}
+            className={selectClass}
           >
-            <option value="">All Exchanges</option>
+            <option value="">{t('allExchanges')}</option>
             <option value="binance">Binance</option>
             <option value="mexc">MEXC</option>
           </select>
 
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Filter className="w-4 h-4" />
-            {total} executions
+          <div className={`flex items-center gap-2 ${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
+            <Filter className="w-4 h-4" aria-hidden />
+            {total} {t('countSuffix')}
           </div>
         </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-400" />
-          <span className="text-red-400">{error}</span>
+        <div className={`${GM.negBadge} rounded-xl p-4 flex items-center gap-3`} role="alert">
+          <AlertTriangle className={`w-5 h-5 ${GM.neg}`} aria-hidden />
+          <span className={`${GMT.body} ${GM.neg}`}>{error}</span>
         </div>
       )}
 
       {/* Loading State */}
       {isLoading && executions.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin" />
+        <div className="flex items-center justify-center py-12" aria-busy>
+          <RefreshCw className={`w-8 h-8 ${GM.accent} motion-safe:animate-spin`} aria-hidden />
         </div>
       ) : executions.length === 0 ? (
         /* Empty State */
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-12 text-center">
-          <History className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-300 mb-2">No Executions Found</h3>
-          <p className="text-gray-500">
-            {statusFilter || exchangeFilter
-              ? 'Try adjusting your filters'
-              : 'Executions will appear here once trades are made'}
+        <div className={`${GM.panel} p-12 text-center`}>
+          <History className={`w-12 h-12 ${GM.textFaint} mx-auto mb-4`} aria-hidden />
+          <h3 className={`text-lg font-medium ${GM.textStrong} mb-2`}>{t('noExecTitle')}</h3>
+          <p className={`${GMT.body} ${GM.textMuted}`}>
+            {statusFilter || exchangeFilter ? t('noExecFilter') : t('noExecBody')}
           </p>
         </div>
       ) : (
-        /* Executions Table */
+        /* Tabla de ejecuciones */
         <>
-          <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl overflow-hidden">
+          <div className={`${GM.panel} overflow-hidden`}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800/50">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Exchange</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Symbol</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Side</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Quantity</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Price</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Exec Time</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Date</th>
+                  <tr className="border-b border-[var(--gm-border)]">
+                    <th className={`px-4 py-3 text-left ${GMT.label} ${GM.textMuted}`}>{t('thStatus')}</th>
+                    <th className={`px-4 py-3 text-left ${GMT.label} ${GM.textMuted}`}>{t('thExchange')}</th>
+                    <th className={`px-4 py-3 text-left ${GMT.label} ${GM.textMuted}`}>{t('thSymbol')}</th>
+                    <th className={`px-4 py-3 text-left ${GMT.label} ${GM.textMuted}`}>{t('thSide')}</th>
+                    <th className={`px-4 py-3 text-right ${GMT.label} ${GM.textMuted}`}>{t('thQty')}</th>
+                    <th className={`px-4 py-3 text-right ${GMT.label} ${GM.textMuted}`}>{t('thPrice')}</th>
+                    <th className={`px-4 py-3 text-right ${GMT.label} ${GM.textMuted}`}>{t('thPnl')}</th>
+                    <th className={`px-4 py-3 text-right ${GMT.label} ${GM.textMuted}`}>{t('thExecTime')}</th>
+                    <th className={`px-4 py-3 text-right ${GMT.label} ${GM.textMuted}`}>{t('thDate')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/50">
+                <tbody className="divide-y divide-[rgba(148,163,184,.07)]">
                   {executions.map((execution, idx) => (
                     <motion.tr
                       key={execution.execution_id || idx}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.02 }}
-                      className="hover:bg-gray-800/30 transition-colors"
+                      className={`${GM.rowHover} transition-colors duration-[var(--gm-dur-fast)]`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(execution.status)}
-                          <span className={ORDER_STATUS_COLORS[execution.status]?.split(' ')[0] || 'text-gray-400'}>
-                            {ORDER_STATUS_NAMES[execution.status] || execution.status}
+                          <span className={`${GMT.meta} ${GM_TONE_TEXT[STATUS_TONE[execution.status] ?? 'neutral']}`}>
+                            {statusName[execution.status] || execution.status}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-white capitalize">{execution.exchange || '-'}</span>
+                        <span className={`${GMT.body} ${GM.text} capitalize`}>{execution.exchange || '-'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-white font-medium">{execution.symbol || 'USD/COP'}</span>
+                        <span className={`${GMT.body} ${GM.text} font-medium ${GMT.mono}`}>
+                          {execution.symbol || 'USD/COP'}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {execution.side && (
-                          <span className={`flex items-center gap-1 ${execution.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className={`flex items-center gap-1 ${GMT.meta} font-bold ${execution.side === 'buy' ? GM.pos : GM.neg}`}>
                             {execution.side === 'buy' ? (
-                              <TrendingUp className="w-4 h-4" />
+                              <TrendingUp className="w-4 h-4" aria-hidden />
                             ) : (
-                              <TrendingDown className="w-4 h-4" />
+                              <TrendingDown className="w-4 h-4" aria-hidden />
                             )}
                             {execution.side.toUpperCase()}
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-white">
+                        <span className={`${GMT.body} ${GM.text} ${GMT.mono}`}>
                           {execution.filled_quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                         </span>
                         {execution.requested_quantity > execution.filled_quantity && (
-                          <span className="text-gray-500 text-xs ml-1">
+                          <span className={`${GMT.micro} ${GM.textMuted} ${GMT.mono} ml-1`}>
                             /{execution.requested_quantity.toLocaleString()}
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-white">
+                        <span className={`${GMT.body} ${GM.text} ${GMT.mono}`}>
                           {execution.filled_price
                             ? `$${execution.filled_price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                             : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-gray-400">
+                        {execution.pnl != null ? (
+                          <span className={`${GMT.body} font-bold ${GMT.mono} ${execution.pnl > 0 ? GM.pos : execution.pnl < 0 ? GM.neg : GM.textMuted}`}>
+                            {execution.pnl > 0 ? '+' : ''}${execution.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        ) : (
+                          <span className={`${GMT.meta} ${GM.textFaint} ${GMT.mono}`}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
                           {execution.processing_time_ms
                             ? `${execution.processing_time_ms.toFixed(0)}ms`
                             : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-gray-400 text-sm">
+                        <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
                           {execution.created_at
                             ? new Date(execution.created_at).toLocaleString()
                             : '-'}
@@ -271,29 +311,31 @@ export default function ExecutionsPage() {
             </div>
           </div>
 
-          {/* Pagination */}
+          {/* Paginación */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">
-                Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>
+                {t('showingLabel')} {(page - 1) * limit + 1}-{Math.min(page * limit, total)} {t('ofLabel')} {total}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-2 bg-gray-800 rounded-lg text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={t('prevPage')}
+                  className={`${GM.ctaGhost} ${GM.focus} w-11 h-11 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" aria-hidden />
                 </button>
-                <span className="px-4 py-2 text-white">
-                  Page {page} of {totalPages}
+                <span className={`px-4 py-2 ${GMT.body} ${GM.text} ${GMT.mono}`}>
+                  {t('pageLabel')} {page} {t('ofLabel')} {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={!hasMore}
-                  className="p-2 bg-gray-800 rounded-lg text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={t('nextPage')}
+                  className={`${GM.ctaGhost} ${GM.focus} w-11 h-11 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-5 h-5" aria-hidden />
                 </button>
               </div>
             </div>

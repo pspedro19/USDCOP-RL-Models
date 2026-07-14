@@ -1,0 +1,9 @@
+{
+  "_comment": "Token guardrail (VISUAL-SPEC-CHECKLIST item 18.3 — 'cero numeros magicos'). Flags raw hex colors in CSS so new styles reach for the --gm-* design tokens instead of hardcoded values. color-no-hex is a WARNING (not an error) on purpose: app/globals.css legitimately DEFINES the --gm-* primitives with hex literals, so those warnings are EXPECTED there; the rule still surfaces new hex usage in any other CSS for review. Run with: npm run lint:css.",
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "color-no-hex": [true, { "severity": "warning" }],
+    "custom-property-pattern": null,
+    "declaration-block-no-redundant-longhand-properties": null
+  }
+}

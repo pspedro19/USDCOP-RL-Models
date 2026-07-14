@@ -1,7 +1,13 @@
 'use client';
 
+/**
+ * /execution/dashboard — SignalBridge panel, re-skin GM (prototipo Var B §Execution,
+ * líneas 855–970 + view-model 2636–2718). Presentación + i18n ÚNICAMENTE:
+ * fetch/polling 10s, handlers del kill switch y contratos quedan intactos.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import {
   Activity,
   AlertTriangle,
@@ -12,23 +18,47 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Power,
 } from 'lucide-react';
+import { GmBadge, GmPageHeader, GmPanel } from '@/components/gm';
+import { GM, GMT, type GmTone } from '@/lib/ui/gm-tokens';
+import { useGmT } from '@/lib/i18n/gm-core';
 import { signalBridgeService } from '@/lib/services/execution';
 import {
   type BridgeStatus,
   type BridgeStatistics,
   type TradingMode,
-  TRADING_MODE_LABELS,
-  TRADING_MODE_COLORS,
   formatUptime,
   isBridgeOperational,
 } from '@/lib/contracts/execution/signal-bridge.contract';
+import { EXEC_DICT } from './../i18n';
+
+/** Tono GM por modo de trading (presentacional; el enum viene del contrato). */
+const MODE_TONE: Record<TradingMode, GmTone> = {
+  KILLED: 'neg',
+  DISABLED: 'neutral',
+  SHADOW: 'info',
+  PAPER: 'warn',
+  STAGING: 'info',
+  LIVE: 'pos',
+};
+
+/** Real per-user trading state (subset used here) resolved from SignalBridge. */
+interface UserTradingState {
+  trade_count_today: number;
+  daily_pnl_pct: number;
+}
 
 export default function ExecutionDashboardPage() {
+  const t = useGmT(EXEC_DICT);
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role ?? 'free';
+  const subtitle = role === 'admin' ? t('subAdmin') : t('subUser');
+
   const [status, setStatus] = useState<BridgeStatus | null>(null);
   const [statistics, setStatistics] = useState<BridgeStatistics | null>(null);
+  const [statsDegraded, setStatsDegraded] = useState(false);
+  const [userState, setUserState] = useState<UserTradingState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isKillSwitchLoading, setIsKillSwitchLoading] = useState(false);
@@ -36,15 +66,19 @@ export default function ExecutionDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const [statusData, statsData] = await Promise.all([
+      const [statusData, statsResult, userStateResult] = await Promise.all([
         signalBridgeService.getStatus(),
-        signalBridgeService.getStatistics(7),
+        signalBridgeService.getStatisticsWithHealth(7),
+        // Per-user state is best-effort — never fail the whole panel over it.
+        signalBridgeService.getUserState().catch(() => null),
       ]);
       setStatus(statusData);
-      setStatistics(statsData);
+      setStatistics(statsResult.statistics);
+      setStatsDegraded(statsResult.degraded);
+      setUserState(userStateResult);
     } catch (err) {
       console.error('Failed to fetch bridge data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(err instanceof Error ? err.message : t('loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -59,11 +93,8 @@ export default function ExecutionDashboardPage() {
   const handleKillSwitch = async () => {
     if (!status) return;
 
-    const action = status.kill_switch_active ? 'deactivate' : 'activate';
     const confirmed = window.confirm(
-      status.kill_switch_active
-        ? 'Are you sure you want to DEACTIVATE the kill switch? Trading will resume.'
-        : 'Are you sure you want to ACTIVATE the kill switch? All trading will stop immediately.'
+      status.kill_switch_active ? t('killConfirmOff') : t('killConfirmOn')
     );
 
     if (!confirmed) return;
@@ -78,7 +109,7 @@ export default function ExecutionDashboardPage() {
       await fetchData();
     } catch (err) {
       console.error('Kill switch error:', err);
-      alert('Failed to toggle kill switch');
+      alert(t('killError'));
     } finally {
       setIsKillSwitchLoading(false);
     }
@@ -86,10 +117,10 @@ export default function ExecutionDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[50vh] flex items-center justify-center" aria-busy>
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin" />
-          <p className="text-gray-400">Loading bridge status...</p>
+          <RefreshCw className={`w-8 h-8 ${GM.accent} motion-safe:animate-spin`} aria-hidden />
+          <p className={`${GMT.body} ${GM.textMuted}`}>{t('loadingBridge')}</p>
         </div>
       </div>
     );
@@ -97,16 +128,17 @@ export default function ExecutionDashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-[50vh] flex items-center justify-center" role="alert">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Connection Error</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <AlertTriangle className={`w-12 h-12 ${GM.neg} mx-auto mb-4`} aria-hidden />
+          <h2 className={`text-xl font-bold ${GM.headline} mb-2`}>{t('connErrorTitle')}</h2>
+          <p className={`${GMT.body} ${GM.textMuted} mb-4`}>{error}</p>
           <button
             onClick={fetchData}
-            className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+            className={`${GM.ctaPrimary} ${GM.focus} h-11 px-5 text-[13.5px] inline-flex items-center gap-2`}
           >
-            Retry
+            <RefreshCw className="w-4 h-4" aria-hidden />
+            {t('retry')}
           </button>
         </div>
       </div>
@@ -114,186 +146,243 @@ export default function ExecutionDashboardPage() {
   }
 
   const isOperational = status ? isBridgeOperational(status) : false;
+  const mode = status?.trading_mode;
+  const modeTone: GmTone = mode ? MODE_TONE[mode] : 'neutral';
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Execution Dashboard</h1>
-          <p className="text-gray-400">Real-time SignalBridge monitoring</p>
-        </div>
-        <button
-          onClick={fetchData}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
-      </div>
+    <div className="space-y-6">
+      {/* Header (título + subtítulo por rol como el prototipo `exSub`) */}
+      <GmPageHeader
+        kicker={t('kicker')}
+        title={t('dashTitle')}
+        subtitle={subtitle}
+        actions={
+          <>
+            {mode && <GmBadge tone={modeTone}>{mode}</GmBadge>}
+            <button
+              onClick={fetchData}
+              aria-label={t('refresh')}
+              className={`${GM.ctaGhost} ${GM.focus} w-11 h-11 flex items-center justify-center`}
+            >
+              <RefreshCw className="w-4 h-4" aria-hidden />
+            </button>
+          </>
+        }
+      />
 
-      {/* Kill Switch Alert */}
+      {/* Alerta kill switch activo */}
       {status?.kill_switch_active && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 flex items-center gap-4"
+          className={`${GM.negBadge} rounded-xl p-4 flex flex-wrap items-center gap-4`}
+          role="alert"
         >
-          <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
-          <div className="flex-1">
-            <h3 className="font-bold text-red-400">Kill Switch Active</h3>
-            <p className="text-sm text-red-300">{status.kill_switch_reason || 'Trading halted'}</p>
+          <AlertTriangle className={`w-6 h-6 ${GM.neg} flex-shrink-0`} aria-hidden />
+          <div className="flex-1 min-w-[200px]">
+            <h3 className={`font-bold ${GM.neg}`}>{t('killAlertTitle')}</h3>
+            <p className={`${GMT.meta} ${GM.textSec}`}>
+              {status.kill_switch_reason || t('killAlertFallback')}
+            </p>
           </div>
           <button
             onClick={handleKillSwitch}
             disabled={isKillSwitchLoading}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+            className={`${GM.posBadge} ${GM.focus} h-11 px-4 rounded-[11px] font-bold text-[13px] disabled:opacity-50`}
           >
-            {isKillSwitchLoading ? 'Processing...' : 'Deactivate'}
+            {isKillSwitchLoading ? t('processing') : t('killResume')}
           </button>
         </motion.div>
       )}
 
-      {/* Status Cards */}
+      {/* Aviso: estadísticas degradadas (backend inaccesible) — no fingir $0/0 */}
+      {statsDegraded && (
+        <div className={`${GM.warnBadge} rounded-xl p-4 flex items-center gap-3`} role="alert">
+          <AlertTriangle className={`w-5 h-5 ${GM.warn} flex-shrink-0`} aria-hidden />
+          <span className={`${GMT.body} ${GM.warn}`}>{t('statsDegraded')}</span>
+        </div>
+      )}
+
+      {/* KPIs de estado */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Bridge Status */}
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+        {/* Estado del bridge */}
+        <div className={`${GM.panel} p-5`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-gray-400 text-sm">Bridge Status</span>
-            <Activity className={`w-5 h-5 ${isOperational ? 'text-green-400' : 'text-red-400'}`} />
+            <span className={`${GMT.label} ${GM.textMuted}`}>{t('bridgeStatus')}</span>
+            <Activity className={`w-5 h-5 ${isOperational ? GM.pos : GM.neg}`} aria-hidden />
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${isOperational ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-xl font-bold text-white">
-              {isOperational ? 'Operational' : 'Stopped'}
+            <div
+              className={`w-3 h-3 rounded-full ${
+                isOperational
+                  ? 'bg-[var(--gm-pos)] motion-safe:animate-pulse'
+                  : 'bg-[var(--gm-neg)]'
+              }`}
+              aria-hidden
+            />
+            <span className={`text-xl font-bold ${GM.headline}`}>
+              {isOperational ? t('operational') : t('stoppedStatus')}
             </span>
           </div>
           {status && (
-            <p className="text-xs text-gray-500 mt-2">
-              Uptime: {formatUptime(status.uptime_seconds)}
+            <p className={`${GMT.micro} ${GM.textMuted} ${GMT.mono} mt-2`}>
+              {t('uptime')}: {formatUptime(status.uptime_seconds)}
             </p>
           )}
         </div>
 
-        {/* Trading Mode */}
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+        {/* Modo de trading */}
+        <div className={`${GM.panel} p-5`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-gray-400 text-sm">Trading Mode</span>
-            <Shield className="w-5 h-5 text-cyan-400" />
+            <span className={`${GMT.label} ${GM.textMuted}`}>{t('tradingMode')}</span>
+            <Shield className={`w-5 h-5 ${GM.accent}`} aria-hidden />
           </div>
           {status && (
             <>
-              <span className={`text-xl font-bold ${TRADING_MODE_COLORS[status.trading_mode]?.split(' ')[0] || 'text-gray-400'}`}>
-                {TRADING_MODE_LABELS[status.trading_mode]}
-              </span>
-              <p className="text-xs text-gray-500 mt-2">
-                {status.inference_ws_connected ? 'WS Connected' : 'WS Disconnected'}
+              <GmBadge tone={modeTone} className="text-[13px] px-3 py-1">
+                {status.trading_mode}
+              </GmBadge>
+              <p className={`${GMT.micro} ${GM.textMuted} mt-2`}>
+                {status.inference_ws_connected ? t('wsConnected') : t('wsDisconnected')}
               </p>
             </>
           )}
         </div>
 
-        {/* Executions Today */}
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+        {/* Ejecuciones 7d */}
+        <div className={`${GM.panel} p-5`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-gray-400 text-sm">Executions (7d)</span>
-            <Zap className="w-5 h-5 text-amber-400" />
+            <span className={`${GMT.label} ${GM.textMuted}`}>{t('executions7d')}</span>
+            <Zap className={`w-5 h-5 ${GM.warn}`} aria-hidden />
           </div>
-          <span className="text-xl font-bold text-white">
-            {statistics?.total_executions || 0}
+          <span className={`${GMT.kpi} ${GM.headline}`}>
+            {statsDegraded ? '—' : statistics?.total_executions || 0}
           </span>
-          <div className="flex items-center gap-2 mt-2 text-xs">
-            <span className="text-green-400">{statistics?.successful_executions || 0} success</span>
-            <span className="text-gray-500">|</span>
-            <span className="text-red-400">{statistics?.failed_executions || 0} failed</span>
+          <div className={`flex items-center gap-2 mt-2 ${GMT.micro} ${GMT.mono}`}>
+            {statsDegraded ? (
+              <span className={GM.textMuted}>{t('noData')}</span>
+            ) : (
+              <>
+                <span className={GM.pos}>{statistics?.successful_executions || 0} {t('okSuffix')}</span>
+                <span className={GM.textFaint} aria-hidden>|</span>
+                <span className={GM.neg}>{statistics?.failed_executions || 0} {t('failSuffix')}</span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* P&L */}
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-5">
+        {/* P&L 7d */}
+        <div className={`${GM.panel} p-5`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-gray-400 text-sm">Total P&L (7d)</span>
-            <TrendingUp className="w-5 h-5 text-green-400" />
+            <span className={`${GMT.label} ${GM.textMuted}`}>{t('pnl7d')}</span>
+            <TrendingUp className={`w-5 h-5 ${GM.pos}`} aria-hidden />
           </div>
-          <span className={`text-xl font-bold ${(statistics?.total_pnl_usd || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            ${(statistics?.total_pnl_usd || 0).toFixed(2)}
-          </span>
-          <p className="text-xs text-gray-500 mt-2">
-            Volume: ${(statistics?.total_volume_usd || 0).toLocaleString()}
+          {statsDegraded ? (
+            <span className={`${GMT.kpi} ${GM.textMuted}`}>—</span>
+          ) : (
+            <span className={`${GMT.kpi} ${(statistics?.total_pnl_usd || 0) >= 0 ? GM.pos : GM.neg}`}>
+              ${(statistics?.total_pnl_usd || 0).toFixed(2)}
+            </span>
+          )}
+          <p className={`${GMT.micro} ${GM.textMuted} ${GMT.mono} mt-2`}>
+            {statsDegraded
+              ? t('noData')
+              : `${t('volumeLabel')}: $${(statistics?.total_volume_usd || 0).toLocaleString()}`}
           </p>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kill Switch Control */}
-        <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-6">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Power className="w-5 h-5 text-cyan-400" />
-            Emergency Controls
-          </h2>
-
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-800/50 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-gray-300">Kill Switch</span>
-                <span className={`text-sm px-2 py-1 rounded-full ${
-                  status?.kill_switch_active
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-green-500/20 text-green-400'
-                }`}>
-                  {status?.kill_switch_active ? 'ACTIVE' : 'INACTIVE'}
-                </span>
-              </div>
-              <button
-                onClick={handleKillSwitch}
-                disabled={isKillSwitchLoading}
-                className={`w-full py-3 rounded-lg font-bold transition-all ${
-                  status?.kill_switch_active
-                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
-                    : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
-                } disabled:opacity-50`}
-              >
-                {isKillSwitchLoading
-                  ? 'Processing...'
-                  : status?.kill_switch_active
-                    ? 'Resume Trading'
-                    : 'Stop All Trading'
-                }
-              </button>
+      {/* Grid principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Columna kill switch + paper (prototipo, columna derecha) */}
+        <div className="space-y-6">
+          {/* Kill switch */}
+          <section
+            className="rounded-2xl bg-[rgba(251,113,133,.05)] border border-[rgba(251,113,133,.25)] p-[18px]"
+            aria-labelledby="kill-switch-title"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <h2 id="kill-switch-title" className={`${GMT.panelTitle} ${GM.neg} flex items-center gap-2`}>
+                <Power className="w-4 h-4" aria-hidden />
+                {t('killTitle')}
+              </h2>
+              <GmBadge tone={status?.kill_switch_active ? 'neg' : 'pos'}>
+                {status?.kill_switch_active ? t('killStateActive') : t('killStateInactive')}
+              </GmBadge>
             </div>
+            <p className={`${GMT.meta} ${GM.textSec} mb-4 leading-relaxed`}>{t('killDesc')}</p>
+            <button
+              onClick={handleKillSwitch}
+              disabled={isKillSwitchLoading}
+              className={`${GM.focus} w-full h-11 rounded-[11px] font-extrabold text-[13.5px] tracking-[.5px] transition-colors duration-[var(--gm-dur-fast)] disabled:opacity-50 ${
+                status?.kill_switch_active
+                  ? `${GM.posBadge} font-bold`
+                  : `bg-[var(--gm-neg)] ${GM.onAccent} shadow-[0_6px_20px_rgba(251,113,133,.3)] hover:opacity-90`
+              }`}
+            >
+              {isKillSwitchLoading
+                ? t('processing')
+                : status?.kill_switch_active
+                  ? t('killResume')
+                  : t('killStop')}
+            </button>
+            <p className={`${GMT.micro} ${GM.textMuted} mt-3 leading-relaxed`}>{t('killNote')}</p>
+          </section>
 
-            <p className="text-xs text-gray-500">
-              The kill switch immediately halts all trading activity across all exchanges.
-              Use in case of emergency or unexpected market conditions.
-            </p>
-          </div>
+          {/* Actividad real del usuario (trades de hoy) — datos de SB user state,
+              NO el uptime del bridge. SB no expone una "semana de paper", así que
+              mostramos el conteo real de trades y el P&L diario, etiquetado con honestidad. */}
+          <GmPanel title={t('paperTitle')}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`${GMT.meta} ${GM.textSec}`}>{t('tradesTodayLabel')}</span>
+              {mode && <GmBadge tone={modeTone}>{mode}</GmBadge>}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className={`${GMT.kpi} ${GM.headline}`}>
+                {userState ? userState.trade_count_today : '—'}
+              </span>
+              {userState && (
+                <span
+                  className={`${GMT.micro} ${GMT.mono} ${
+                    userState.daily_pnl_pct >= 0 ? GM.pos : GM.neg
+                  }`}
+                >
+                  {userState.daily_pnl_pct >= 0 ? '+' : ''}
+                  {userState.daily_pnl_pct.toFixed(2)}%
+                </span>
+              )}
+            </div>
+            <p className={`${GMT.micro} ${GM.textMuted} mt-3`}>{t('paperRealNote')}</p>
+          </GmPanel>
         </div>
 
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-gray-900/50 border border-gray-800/50 rounded-xl p-6">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-cyan-400" />
-            System Status
-          </h2>
-
+        {/* Estado del sistema */}
+        <GmPanel
+          title={
+            <span className="flex items-center gap-2">
+              <Clock className={`w-4 h-4 ${GM.accent}`} aria-hidden />
+              {t('systemStatus')}
+            </span>
+          }
+          className="lg:col-span-2"
+        >
           <div className="space-y-3">
-            {/* Connection Status Items */}
             {[
               {
-                label: 'Inference WebSocket',
+                label: t('inferenceWs'),
                 status: status?.inference_ws_connected,
                 icon: Activity,
               },
               {
-                label: 'Connected Exchanges',
+                label: t('connectedLabel'),
                 status: (status?.connected_exchanges?.length || 0) > 0,
-                detail: status?.connected_exchanges?.join(', ') || 'None',
+                detail: status?.connected_exchanges?.join(', ') || t('noneLabel'),
                 icon: Link2Icon,
               },
               {
-                label: 'Pending Executions',
+                label: t('pendingLabel'),
                 status: true,
-                detail: `${status?.pending_executions || 0} pending`,
+                detail: `${status?.pending_executions || 0} ${t('pendingSuffix')}`,
                 icon: Clock,
               },
             ].map((item, idx) => {
@@ -301,20 +390,20 @@ export default function ExecutionDashboardPage() {
               return (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg"
+                  className={`${GM.panelInner} flex items-center justify-between p-3`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-300">{item.label}</span>
+                    <Icon className={`w-4 h-4 ${GM.textMuted}`} aria-hidden />
+                    <span className={`${GMT.body} ${GM.textStrong}`}>{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {item.detail && (
-                      <span className="text-sm text-gray-500">{item.detail}</span>
+                      <span className={`${GMT.meta} ${GM.textMuted} ${GMT.mono}`}>{item.detail}</span>
                     )}
                     {item.status ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-400" />
+                      <CheckCircle2 className={`w-5 h-5 ${GM.pos}`} aria-hidden />
                     ) : (
-                      <XCircle className="w-5 h-5 text-red-400" />
+                      <XCircle className={`w-5 h-5 ${GM.neg}`} aria-hidden />
                     )}
                   </div>
                 </div>
@@ -322,28 +411,28 @@ export default function ExecutionDashboardPage() {
             })}
           </div>
 
-          {/* Stats Summary */}
-          {statistics && (
-            <div className="mt-6 pt-4 border-t border-gray-800/50">
+          {/* Resumen de stats (oculto si están degradadas para no mostrar ceros falsos) */}
+          {statistics && !statsDegraded && (
+            <div className="mt-6 pt-4 border-t border-[var(--gm-border)]">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-white">{statistics.total_signals_received}</p>
-                  <p className="text-xs text-gray-500">Signals Received</p>
+                  <p className={`${GMT.kpi} ${GM.headline}`}>{statistics.total_signals_received}</p>
+                  <p className={`${GMT.micro} ${GM.textMuted}`}>{t('signalsReceived')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-amber-400">{statistics.blocked_by_risk}</p>
-                  <p className="text-xs text-gray-500">Blocked by Risk</p>
+                  <p className={`${GMT.kpi} ${GM.warn}`}>{statistics.blocked_by_risk}</p>
+                  <p className={`${GMT.micro} ${GM.textMuted}`}>{t('blockedByRisk')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-cyan-400">
+                  <p className={`${GMT.kpi} ${GM.accent}`}>
                     {statistics.avg_execution_time_ms.toFixed(0)}ms
                   </p>
-                  <p className="text-xs text-gray-500">Avg Exec Time</p>
+                  <p className={`${GMT.micro} ${GM.textMuted}`}>{t('avgExecTime')}</p>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </GmPanel>
       </div>
     </div>
   );

@@ -1,133 +1,55 @@
 'use client';
 
+/**
+ * /login — GlobalMarkets Terminal skin (CTR-GM-UI-001, prototype Var B lines 1527-1552).
+ *
+ * Re-skin ONLY — the auth flow is preserved verbatim from the legacy page
+ * (components/legacy/LoginLegacy.tsx): SignalBridge proxy login → NextAuth cookie is
+ * minted server-side by the proxy route → tokens to localStorage → must_reset_password
+ * forces /reset-password → 429 lockout copy → NextAuth credentials fallback.
+ *
+ * E2E contract (scripts/registration-qa.mjs — DO NOT break):
+ *   - username input matches `input[name="username"], input[type="text"]` and is the
+ *     FIRST text input in the DOM (the captcha input comes after it).
+ *   - single `input[type="password"]`.
+ *   - captcha question text "¿Cuánto es A + B?" visible + `input[placeholder="respuesta"]`.
+ *   - `button[type="submit"]` submits the form; link `data-testid="login-to-register"`.
+ *   - `?callbackUrl=` / `?next=` destinations and `?reset=1` notice are respected.
+ */
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { motion } from 'framer-motion';
-import {
-  Eye, EyeOff, LogIn, Shield, Lock, User, TrendingUp, Activity,
-  Zap, Database, CheckCircle, AlertTriangle, Globe,
-  BarChart3, Signal, Clock, Target, Wifi, Key, AlertCircle,
-  Gauge, XCircle
-} from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, Loader2, LogIn, RefreshCw, ShieldCheck, Sparkles, UserRound, XCircle } from 'lucide-react';
 
-// Real-time market data from API
-const useMarketData = () => {
-  const [data, setData] = useState({
-    price: null as number | null,
-    change: null as number | null,
-    changePercent: null as number | null,
-    volume: null as number | null,
-    timestamp: new Date(),
-    trend: [] as number[],
-    loading: true,
-    error: null as string | null
-  });
+import { PublicHeader, PublicFooter } from '@/components/gm/views/PublicChrome';
+import { defineGmDict, useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
 
-  useEffect(() => {
-    const fetchMarketData = async () => {
-      try {
-        // Public spot quote — no session needed (the login hero is anonymous). Avoids the
-        // 401 console noise from the gated /api/market + /api/proxy/trading endpoints.
-        const res = await fetch('/api/public/market-price?symbol=USD/COP');
-        const stats = res.ok ? await res.json() : null;
-        if (stats && !stats.unavailable && typeof stats.price === 'number') {
-          setData(prev => {
-            const trendArray = prev.trend.length > 0 && prev.price
-              ? [...prev.trend.slice(1), stats.price]
-              : [stats.price];
-            return {
-              price: stats.price,
-              change: stats.change ?? null,
-              changePercent: stats.changePercent ?? null,
-              volume: null,
-              timestamp: new Date(),
-              trend: trendArray.slice(-8),
-              loading: false,
-              error: null
-            };
-          });
-        } else {
-          throw new Error('No market data available');
-        }
-      } catch (err) {
-        // Network or API error - show placeholder
-        setData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Market data unavailable'
-        }));
-      }
-    };
-
-    // Initial fetch
-    fetchMarketData();
-
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchMarketData, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return data;
-};
-
-// Password strength calculator (no hardcoded exceptions)
-const calculatePasswordStrength = (password: string) => {
-  let score = 0;
-  const checks = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    numbers: /\d/.test(password),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-  };
-
-  score = Object.values(checks).filter(Boolean).length;
-
-  return {
-    score,
-    percentage: (score / 5) * 100,
-    checks,
-    message: score <= 1 ? 'Muy débil' :
-      score <= 2 ? 'Débil' :
-        score <= 3 ? 'Regular' :
-          score <= 4 ? 'Fuerte' : 'Muy fuerte',
-    color: score <= 1 ? 'bg-red-500' :
-      score <= 2 ? 'bg-orange-500' :
-        score <= 3 ? 'bg-yellow-500' :
-          score <= 4 ? 'bg-blue-500' : 'bg-green-500'
-  };
-};
-
-// Trading ID validator (no hardcoded admin exception)
-const validateTradingId = (id: string) => {
-  const tradingIdPattern = /^[A-Z]{3}-\d{8}-\d{3}$/;
-  const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-  const usernamePattern = /^[a-zA-Z0-9_-]{3,50}$/;
-
-  if (usernamePattern.test(id)) return { valid: true, message: 'Usuario válido' };
-  if (tradingIdPattern.test(id)) return { valid: true, message: 'Trading ID válido' };
-  if (emailPattern.test(id)) return { valid: true, message: 'Email corporativo válido' };
-
-  return {
-    valid: false,
-    message: 'Formato: usuario, email@empresa.com o XXX-YYYYMMDD-NNN'
-  };
-};
+// CTA invitado (prototipo Var B: login('free','Invitado'), l. 3151-3160).
+const LOGIN_GUEST_DICT = defineGmDict({
+  es: {
+    guestCta: 'Explorar como invitado',
+    guestBusy: 'Entrando…',
+    guestError: 'El acceso de invitado no está disponible ahora.',
+  },
+  en: {
+    guestCta: 'Explore as guest',
+    guestBusy: 'Signing in…',
+    guestError: 'Guest access is unavailable right now.',
+  },
+});
 
 export default function LoginPage() {
   const router = useRouter();
+  const tGuest = useGmT(LOGIN_GUEST_DICT);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(calculatePasswordStrength(''));
-  const [usernameValidation, setUsernameValidation] = useState(validateTradingId(''));
-  const [rememberDevice, setRememberDevice] = useState(true);
-  const [secureSession, setSecureSession] = useState(true);
-  const marketData = useMarketData();
+  const [guestLoading, setGuestLoading] = useState(false);
+  // `?reset=1` — the reset-password page just completed; invite a clean sign-in.
+  const [justReset, setJustReset] = useState(false);
 
   // Anti-bot verification: server-issued signed challenge (lib/auth/captcha.ts).
   const [captcha, setCaptcha] = useState<{ question: string; token: string } | null>(null);
@@ -137,6 +59,12 @@ export default function LoginPage() {
     try { setCaptcha(await (await fetch('/api/captcha')).json()); } catch { setCaptcha(null); }
   };
   useEffect(() => { loadCaptcha(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setJustReset(new URLSearchParams(window.location.search).get('reset') === '1');
+    }
+  }, []);
 
   // Prevent Web3 wallet injections on mount
   useEffect(() => {
@@ -168,21 +96,37 @@ export default function LoginPage() {
             }
           }
         } catch (e) {
-          console.log(`Could not modify ${prop}:`, e.message);
+          console.log(`Could not modify ${prop}:`, (e as Error).message);
         }
       });
     }
   }, []);
 
-  // Real-time validation handlers
-  const handleUsernameChange = (value: string) => {
-    setUsername(value);
-    setUsernameValidation(validateTradingId(value));
+  // Post-login destination: middleware/legacy paths emit ?callbackUrl=, the GM api
+  // client (lib/api/gm-client.ts) emits ?next=. Both are respected; /hub is the default.
+  const loginDestination = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('callbackUrl') || params.get('next') || '/hub';
   };
 
-  const handlePasswordChange = (value: string) => {
-    setPassword(value);
-    setPasswordStrength(calculatePasswordStrength(value));
+  // Sesión demo rol free (guest@demo.local, is_test) — el endpoint hace el login
+  // SERVER-SIDE con las credenciales GUEST_BOOTSTRAP_* y mintea las mismas cookies
+  // que el proxy de login (next-auth.session-token + sb-token). Sin captcha: no
+  // viajan credenciales del usuario (ver app/api/auth/guest/route.ts).
+  const handleGuest = async () => {
+    setError('');
+    setGuestLoading(true);
+    try {
+      const res = await fetch('/api/auth/guest', { method: 'POST' });
+      if (res.ok) {
+        window.location.href = loginDestination();
+        return;
+      }
+      setError(tGuest('guestError'));
+    } catch {
+      setError(tGuest('guestError'));
+    }
+    setGuestLoading(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -238,7 +182,7 @@ export default function LoginPage() {
         localStorage.setItem('username', username);
         sessionStorage.setItem('username', username);
 
-        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
+        const callbackUrl = loginDestination();
         setTimeout(() => {
           window.location.href = callbackUrl;
         }, 100);
@@ -264,7 +208,7 @@ export default function LoginPage() {
         localStorage.setItem('username', username);
         sessionStorage.setItem('username', username);
 
-        const callbackUrl = new URLSearchParams(window.location.search).get('callbackUrl') || '/hub';
+        const callbackUrl = loginDestination();
         router.push(callbackUrl);
         return;
       }
@@ -278,558 +222,168 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col lg:flex-row overflow-x-hidden relative isolate">
-      {/* Enhanced Background Pattern */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-48 sm:w-72 lg:w-96 h-48 sm:h-72 lg:h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }} />
-          <div className="absolute top-1/2 left-1/2 w-32 sm:w-48 lg:w-64 h-32 sm:h-48 lg:h-64 bg-green-500/15 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '6s' }} />
-        </div>
+    <div className={`min-h-screen flex flex-col ${GM.page}`}>
+      <PublicHeader />
 
-        {/* Grid Pattern - Hidden on mobile for performance */}
-        <div className="hidden sm:block absolute inset-0 opacity-[0.03]">
-          <div className="grid grid-cols-20 grid-rows-20 h-full w-full">
-            {Array.from({ length: 400 }).map((_, i) => (
-              <div key={i} className="border border-cyan-500/30"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Left Panel - Market Context & Branding - Hidden on mobile/tablet */}
-      <div className="hidden lg:flex flex-col w-2/5 xl:w-[45%] relative z-10 bg-gradient-to-br from-black/98 to-gray-900/95 backdrop-blur-xl border-r border-gray-800/30">
-
-        {/* Header */}
-        <div className="p-8 border-b border-fintech-dark-700/50">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex items-center gap-4 mb-6"
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-[420px]">
+          <form
+            onSubmit={handleLogin}
+            className={`${GM.panel} p-8 space-y-5 shadow-[0_20px_60px_rgba(0,0,0,.4)]`}
           >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="p-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl shadow-glow-cyan"
-            >
-              <Activity className="w-8 h-8 text-white" />
-            </motion.div>
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-1">
-                GlobalMarkets Terminal
-              </h1>
-              <p className="text-fintech-dark-300 text-sm">
-                Trading Cuantitativo • Smart Simple v2.0
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Build Info */}
-          <div className="text-xs text-fintech-dark-400 font-mono bg-fintech-dark-800/50 rounded-lg p-3 border border-fintech-dark-700/30">
-            <div className="flex justify-between items-center">
-              <span>Smart Simple v2.0</span>
-              <span>USD/COP · Oro · BTC</span>
-              <span className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                Operational
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Market Data Widget */}
-        <div className="p-8 flex-1">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="glass-surface p-6 rounded-xl border border-cyan-500/20"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-cyan-400" />
-                USD/COP SPOT
-              </h3>
-              <div className="flex items-center gap-2 text-green-400">
-                <Wifi className="w-4 h-4" />
-                <span className="text-xs font-medium">LIVE</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="text-3xl font-bold text-white">
-                  {marketData.loading ? (
-                    <span className="animate-pulse">Loading...</span>
-                  ) : marketData.price ? (
-                    `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                  ) : (
-                    <span className="text-gray-400">--</span>
-                  )}
-                </div>
-                {marketData.price && marketData.change !== null && marketData.changePercent !== null && (
-                  <div className={`flex items-center gap-2 ${marketData.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    <TrendingUp className="w-5 h-5" />
-                    <div>
-                      <div className="text-lg font-bold">
-                        {marketData.change >= 0 ? '+' : ''}{marketData.change.toFixed(2)}
-                      </div>
-                      <div className="text-sm">
-                        ({marketData.changePercent >= 0 ? '+' : ''}{marketData.changePercent.toFixed(2)}%)
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {marketData.error && (
-                  <div className="text-sm text-gray-400">
-                    {marketData.error}
-                  </div>
-                )}
-              </div>
-
-              {/* Mini Chart */}
-              <div className="h-16 flex items-end gap-1">
-                {marketData.loading ? (
-                  <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                    <span className="animate-pulse">Loading chart...</span>
-                  </div>
-                ) : marketData.trend.length > 0 ? (
-                  marketData.trend.map((point, i) => (
-                    <motion.div
-                      key={i}
-                      className="bg-cyan-400/60 rounded-t flex-1"
-                      style={{
-                        height: `${((point - Math.min(...marketData.trend)) / (Math.max(...marketData.trend) - Math.min(...marketData.trend))) * 100}%`,
-                        minHeight: '4px'
-                      }}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${((point - Math.min(...marketData.trend)) / (Math.max(...marketData.trend) - Math.min(...marketData.trend))) * 100}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  ))
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-                    Chart unavailable
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-fintech-dark-400">Mercado</div>
-                  <div className={`font-bold flex items-center gap-1 ${marketData.loading ? 'text-gray-400' : 'text-green-400'}`}>
-                    <div className={`w-2 h-2 rounded-full ${marketData.loading ? 'bg-gray-400' : 'bg-green-400 animate-pulse'}`}></div>
-                    {marketData.loading ? 'CARGANDO' : 'ABIERTO'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-fintech-dark-400">Volumen 24H</div>
-                  <div className="text-white font-bold">
-                    {marketData.loading ? (
-                      <span className="animate-pulse">--</span>
-                    ) : marketData.volume ? (
-                      `${(marketData.volume / 1000000).toFixed(2)}M COP`
-                    ) : (
-                      <span className="text-gray-400">--</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* System Health */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="mt-6 glass-surface p-6 rounded-xl border border-purple-500/20"
-          >
-            <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-400" />
-              System Health
-            </h4>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-fintech-dark-300">API Latency</span>
-                <span className="text-green-400 font-medium flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4" />
-                  12ms
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-fintech-dark-300">Data Feed</span>
-                <span className="text-green-400 font-medium flex items-center gap-1">
-                  <Signal className="w-4 h-4" />
-                  LIVE
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-fintech-dark-300">Estrategia</span>
-                <span className="text-cyan-400 font-medium flex items-center gap-1">
-                  <Zap className="w-4 h-4" />
-                  Smart Simple v2.0
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-fintech-dark-300">Uptime</span>
-                <span className="text-green-400 font-medium">99.98% (30d)</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Security Badges */}
-        <div className="p-8 border-t border-fintech-dark-700/50">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex items-center justify-center gap-4 text-xs text-fintech-dark-400"
-          >
-            <div className="flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              TLS 1.3
-            </div>
-            <div className="flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Cifrado AES-256
-            </div>
-            <div className="flex items-center gap-1">
-              <Globe className="w-3 h-3" />
-              Llaves en Vault
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Right Panel - Login Form - Full width on mobile */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:p-8 relative z-10 min-h-screen lg:min-h-0">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="w-full max-w-sm sm:max-w-md"
-        >
-          {/* Mobile Header - Only shown on mobile/tablet */}
-          <div className="lg:hidden text-center mb-6 sm:mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center gap-3 mb-4"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="p-2 sm:p-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl"
+            {/* Brand + title */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <span
+                className={`w-[52px] h-[52px] rounded-[14px] ${GM.brandGradient} flex items-center justify-center shadow-[0_8px_24px_rgba(34,211,238,.3)]`}
+                aria-hidden
               >
-                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </motion.div>
-              <div className="text-left">
-                <h1 className="text-lg sm:text-xl font-bold text-white">
-                  GlobalMarkets
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-400">
-                  Trading Cuantitativo • Smart Simple v2.0
-                </p>
-              </div>
-            </motion.div>
-            <div className="text-[10px] sm:text-xs text-gray-500 font-mono bg-gray-900/50 rounded-lg py-1.5 px-3 inline-flex items-center gap-2">
-              <span>Smart Simple v2.0</span>
-              <span className="text-gray-600">•</span>
-              <span className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                PROD
+                <Sparkles className="w-6 h-6 text-white" />
               </span>
-            </div>
-          </div>
-
-          <div className="glass-surface bg-black/70 backdrop-blur-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-gray-800/30 overflow-hidden">
-
-            {/* Security Header */}
-            <div className="bg-gradient-to-r from-cyan-500/5 to-purple-500/5 p-4 sm:p-6 border-b border-gray-800/30">
-              <div className="text-center mb-3 sm:mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">Acceso Seguro</h2>
-                <p className="text-fintech-dark-300 text-xs sm:text-sm">Terminal de Trading Algorítmico</p>
-              </div>
-
-              {/* Security Badge - Responsive layout */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-fintech-dark-400 bg-fintech-dark-800/30 rounded-lg py-1.5 sm:py-2 px-2 sm:px-3">
-                <Lock className="w-3 h-3 text-green-400" />
-                <span>TLS 1.3</span>
-                <span className="text-fintech-dark-500 hidden sm:inline">•</span>
-                <span className="hidden sm:inline">Sesión Protegida</span>
-                <Shield className="w-3 h-3 text-cyan-400" />
-              </div>
-            </div>
-
-            {/* Login Form */}
-            <form onSubmit={handleLogin} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-
-              {/* Trading ID Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fintech-dark-300 flex items-center gap-2">
-                  <User className="w-4 h-4 text-cyan-400" />
-                  Trading ID o Email Corporativo <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => handleUsernameChange(e.target.value)}
-                    className={`w-full px-4 py-3 bg-fintech-dark-800/50 border rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none transition-all duration-200 font-mono min-h-[48px] ${username ? (usernameValidation.valid ? 'border-green-500/50 focus:border-green-500 focus:ring-2 focus:ring-green-500/20' : 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20') : 'border-fintech-dark-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20'
-                      }`}
-                    placeholder="usuario o email"
-                    required
-                    autoFocus
-                    autoComplete="username"
-                    aria-describedby="username-help"
-                  />
-                  {username && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      {usernameValidation.valid ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-400" />
-                      )}
-                    </div>
-                  )}
-                </div>
-                <p
-                  id="username-help"
-                  className={`text-xs transition-colors duration-200 ${username ? (usernameValidation.valid ? 'text-green-400' : 'text-red-400') : 'text-fintech-dark-400'
-                    }`}
-                >
-                  {username ? usernameValidation.message : 'Formato: XXX-YYYYMMDD-NNN o email@empresa.com'}
+              <div className="space-y-1.5">
+                <h1 className={`text-[22px] font-extrabold ${GM.headline}`}>Inicia sesión</h1>
+                <p className={`${GMT.meta} ${GM.textSec}`}>
+                  Terminal de trading cuantitativo · acceso para cuentas aprobadas
                 </p>
               </div>
+            </div>
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-fintech-dark-300 flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-purple-400" />
-                  Contraseña Segura <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => handlePasswordChange(e.target.value)}
-                    className={`w-full px-4 py-3 pr-12 bg-fintech-dark-800/50 border rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none transition-all duration-200 font-mono min-h-[48px] ${password ? (passwordStrength.score >= 3 ? 'border-green-500/50 focus:border-green-500 focus:ring-2 focus:ring-green-500/20' : passwordStrength.score >= 2 ? 'border-yellow-500/50 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20' : 'border-red-500/50 focus:border-red-500 focus:ring-2 focus:ring-red-500/20') : 'border-fintech-dark-700/50 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20'
-                      }`}
-                    placeholder="contraseña (8+ caracteres)"
-                    required
-                    minLength={8}
-                    aria-describedby="password-strength"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-fintech-dark-400 hover:text-fintech-dark-200 transition-colors duration-200"
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-
-                {/* Password Strength Meter */}
-                {password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Gauge className="w-3 h-3 text-fintech-dark-400" />
-                      <span className="text-xs text-fintech-dark-400">Fortaleza:</span>
-                      <span className={`text-xs font-medium ${passwordStrength.score <= 1 ? 'text-red-400' :
-                        passwordStrength.score <= 2 ? 'text-orange-400' :
-                          passwordStrength.score <= 3 ? 'text-yellow-400' :
-                            passwordStrength.score <= 4 ? 'text-blue-400' : 'text-green-400'
-                        }`}>
-                        {passwordStrength.message}
-                      </span>
-                    </div>
-
-                    {/* Strength Bar */}
-                    <div className="w-full bg-fintech-dark-800 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
-                        style={{ width: `${passwordStrength.percentage}%` }}
-                      />
-                    </div>
-
-                    {/* Requirements Checklist */}
-                    <div className="grid grid-cols-2 gap-1 text-xs">
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.length ? 'text-green-400' : 'text-fintech-dark-500'}`}>
-                        {passwordStrength.checks.length ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        <span>8+ caracteres</span>
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.uppercase ? 'text-green-400' : 'text-fintech-dark-500'}`}>
-                        {passwordStrength.checks.uppercase ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        <span>Mayúscula</span>
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.numbers ? 'text-green-400' : 'text-fintech-dark-500'}`}>
-                        {passwordStrength.checks.numbers ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        <span>Números</span>
-                      </div>
-                      <div className={`flex items-center gap-1 ${passwordStrength.checks.special ? 'text-green-400' : 'text-fintech-dark-500'}`}>
-                        {passwordStrength.checks.special ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        <span>Especiales</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            {/* Post-reset notice (?reset=1) */}
+            {justReset && !error && (
+              <div className={`${GM.posBadge} rounded-xl p-3 flex items-start gap-2 ${GMT.meta}`}>
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
+                <span>Contraseña actualizada. Inicia sesión con tu nueva contraseña.</span>
               </div>
+            )}
 
-              {/* Anti-bot verification (server-signed challenge) */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-fintech-dark-200">
-                  <Shield className="w-4 h-4 text-cyan-400" />
-                  Verificación <span className="text-red-400">*</span>
-                  <span className="text-fintech-dark-300 font-normal">{captcha?.question ?? 'cargando…'}</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={captchaAnswer}
-                    onChange={(e) => setCaptchaAnswer(e.target.value)}
-                    className="w-full px-4 py-3 bg-fintech-dark-800/50 border border-fintech-dark-700/50 rounded-xl text-white placeholder-fintech-dark-400 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 font-mono min-h-[48px]"
-                    placeholder="respuesta"
-                    required
-                    aria-label="Respuesta de verificación"
-                  />
-                  <button
-                    type="button"
-                    onClick={loadCaptcha}
-                    title="Nueva operación"
-                    className="shrink-0 rounded-xl border border-fintech-dark-700/50 px-4 text-fintech-dark-300 hover:text-white hover:bg-fintech-dark-800 transition-colors"
-                  >↻</button>
-                </div>
+            {/* Error */}
+            {error && (
+              <div className={`${GM.negBadge} rounded-xl p-3 flex items-start gap-2 ${GMT.meta}`} role="alert">
+                <XCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
+                <span>{error}</span>
               </div>
+            )}
 
-              {/* Session Options */}
-              <div className="bg-fintech-dark-800/30 rounded-lg p-4 space-y-3">
-                <h4 className="text-sm font-medium text-fintech-dark-300 flex items-center gap-2">
-                  <Key className="w-4 h-4 text-cyan-400" />
-                  Opciones de Sesión
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      checked={rememberDevice}
-                      onChange={(e) => setRememberDevice(e.target.checked)}
-                      className="w-4 h-4 text-cyan-500 bg-fintech-dark-700 border-fintech-dark-600 rounded focus:ring-cyan-500 focus:ring-2 transition-all duration-200"
-                    />
-                    <label htmlFor="remember" className="text-sm text-fintech-dark-300 cursor-pointer">
-                      Recordar dispositivo (30 días)
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="secure"
-                      checked={secureSession}
-                      onChange={(e) => setSecureSession(e.target.checked)}
-                      className="w-4 h-4 text-purple-500 bg-fintech-dark-700 border-fintech-dark-600 rounded focus:ring-purple-500 focus:ring-2 transition-all duration-200"
-                    />
-                    <label htmlFor="secure" className="text-sm text-fintech-dark-300 cursor-pointer">
-                      Auto-logout por inactividad (15 min)
-                    </label>
-                  </div>
-                </div>
-              </div>
+            {/* Usuario / email — FIRST text input in the DOM (E2E selector contract) */}
+            <label className="block">
+              <span className={`${GMT.label} ${GM.textSec} block mb-1.5`}>Usuario o correo</span>
+              <input
+                type="text"
+                name="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className={`${GM.input} ${GM.focus} w-full h-11`}
+                placeholder="usuario o tu@correo.com"
+                required
+                autoFocus
+                autoComplete="username"
+              />
+            </label>
 
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2"
+            {/* Contraseña */}
+            <label className="block">
+              <span className={`${GMT.label} ${GM.textSec} block mb-1.5`}>Contraseña</span>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${GM.input} ${GM.focus} w-full h-11 pr-11`}
+                  placeholder="••••••••"
+                  required
+                  minLength={8}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${GM.textMuted} hover:text-[var(--gm-text)] ${GM.focus}`}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <p className="text-red-400 text-sm">{error}</p>
-                </motion.div>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </label>
+
+            {/* Verificación anti-bot (server-signed challenge) */}
+            <label className="block">
+              <span className={`${GMT.label} ${GM.textSec} mb-1.5 flex items-center gap-1.5`}>
+                <ShieldCheck className={`w-3.5 h-3.5 ${GM.accent}`} aria-hidden />
+                Verificación
+                <span className={`${GMT.meta} ${GM.textStrong} normal-case tracking-normal font-normal`}>
+                  {captcha?.question ?? 'cargando…'}
+                </span>
+              </span>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={captchaAnswer}
+                  onChange={(e) => setCaptchaAnswer(e.target.value)}
+                  className={`${GM.input} ${GM.focus} w-full h-11`}
+                  placeholder="respuesta"
+                  required
+                  aria-label="Respuesta de verificación"
+                />
+                <button
+                  type="button"
+                  onClick={loadCaptcha}
+                  title="Nueva operación"
+                  className={`${GM.ctaGhost} ${GM.focus} shrink-0 h-11 px-3.5 flex items-center justify-center`}
+                  aria-label="Generar nueva operación"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+            </label>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading || !username || !password}
+              className={`${GM.ctaPrimary} ${GM.focus} w-full h-[46px] text-[14px] shadow-[0_8px_24px_rgba(34,211,238,.25)] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2`}
+            >
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" aria-hidden /> Verificando acceso…</>
+              ) : (
+                <><LogIn className="w-4 h-4" aria-hidden /> Entrar a la terminal</>
               )}
+            </button>
 
-              {/* Submit Button - Relaxed validation for testing */}
-              <motion.button
-                type="submit"
-                disabled={isLoading || !username || !password}
-                whileHover={{ scale: (isLoading || !username || !password) ? 1 : 1.02 }}
-                whileTap={{ scale: (isLoading || !username || !password) ? 1 : 0.98 }}
-                className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 min-h-[56px] text-base ${isLoading
-                  ? 'bg-gradient-to-r from-green-600 to-green-500 text-white cursor-not-allowed shadow-lg shadow-green-500/25'
-                  : (!username || !password)
-                    ? 'bg-fintech-dark-700 text-fintech-dark-400 cursor-not-allowed border border-fintech-dark-600'
-                    : 'bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:shadow-xl hover:shadow-cyan-500/30 hover:from-cyan-500 hover:to-purple-500 active:scale-95'
-                  }`}
-              >
-                {isLoading ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      <CheckCircle className="w-5 h-5" />
-                    </motion.div>
-                    <span>✓ Acceso Autorizado • Iniciando Terminal...</span>
-                  </>
-                ) : (!username || !password) ? (
-                  <>
-                    <AlertCircle className="w-5 h-5" />
-                    <span>Ingresa credenciales</span>
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5" />
-                    <span>Iniciar Sesión Terminal</span>
-                  </>
-                )}
-              </motion.button>
-
-              {/* Create account */}
-              <div className="border-t border-fintech-dark-700/30 pt-4">
-                <p className="text-xs text-fintech-dark-500 text-center">
-                  <span className="text-fintech-dark-400">¿No tienes cuenta?</span>
-                  <a href="/register" data-testid="login-to-register" className="ml-1 text-cyan-400 hover:text-cyan-300 font-medium underline underline-offset-2">
-                    Solicitar acceso
-                  </a>
-                </p>
-              </div>
-            </form>
-          </div>
-
-          {/* Enhanced Compliance Footer */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="mt-6 space-y-3"
-          >
-            {/* Security Notice */}
-            <div className="bg-fintech-dark-800/20 border border-fintech-dark-700/30 rounded-lg p-3">
-              <div className="flex items-center justify-center gap-2 text-xs text-fintech-dark-400">
-                <Shield className="w-3 h-3 text-cyan-400" />
-                <span>Acceso exclusivo para cuentas aprobadas</span>
-                <span className="text-fintech-dark-600">•</span>
-                <span>Actividad registrada en audit log</span>
-                <Lock className="w-3 h-3 text-purple-400" />
-              </div>
-            </div>
-
-            {/* Legal Footer */}
-            <div className="text-center text-xs text-fintech-dark-500 space-y-1">
-              <p>© 2026 GlobalMarkets Terminal • Plataforma de Trading Cuantitativo</p>
-              <p className="max-w-md mx-auto leading-relaxed">
-                Contenido informativo y educativo. No es asesoría financiera.
-                Rendimientos pasados no garantizan resultados. Riesgo de pérdida total.
+            {/* Crear cuenta */}
+            <div className="border-t border-[rgba(148,163,184,.12)] pt-4 text-center">
+              <p className={`${GMT.meta} ${GM.textMuted}`}>
+                ¿No tienes cuenta?{' '}
+                <a
+                  href="/register"
+                  data-testid="login-to-register"
+                  className={`${GM.accent} font-semibold hover:underline underline-offset-2 ${GM.focus}`}
+                >
+                  Solicitar acceso
+                </a>
               </p>
+              {/* Invitado — botón real (prototipo: el único quick-access que se replica) */}
+              <button
+                type="button"
+                data-testid="login-guest"
+                onClick={handleGuest}
+                disabled={guestLoading || isLoading}
+                className={`${GM.ctaGhost} ${GM.focus} mt-3 w-full h-11 text-[13px] font-bold inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {guestLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden /> {tGuest('guestBusy')}</>
+                  : <><UserRound className="w-4 h-4" aria-hidden /> {tGuest('guestCta')}</>}
+              </button>
             </div>
-          </motion.div>
-        </motion.div>
-      </div>
+          </form>
+
+          {/* Security note */}
+          <p className={`mt-4 text-center ${GMT.micro} ${GM.textFaint}`}>
+            Sesión protegida · actividad registrada en audit log
+          </p>
+        </div>
+      </main>
+
+      <PublicFooter />
     </div>
   );
 }

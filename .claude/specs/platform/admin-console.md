@@ -224,3 +224,10 @@ plan signals) · anuncios in-app · estado de envíos. No bloquea nada de lo ant
 *Regla final: en esta consola no existe ninguna acción privilegiada sin (a) confirmación
 proporcional al daño y (b) fila en audit_log. Si una acción nueva no puede cumplir ambas,
 no se agrega.*
+
+---
+
+## As-built increment (2026-07-11) — Sistema observability + admin mutations
+
+- **Sistema tab wired ON**: `GET /api/admin/system` now calls the (previously dormant) `readSlos`/`readPromTargets`/`readActiveAlerts`/`readPipeline`/`readResources` under the `settle()` fault-tolerant pattern → `SystemSection` renders SLO p50/p95/p99, Prometheus target health, active AlertManager alerts, L0→L6 DAG pipeline, CPU/mem. Unreachable source degrades to `partial_errors` (no blank console). Obs deep-links derive from `NEXT_PUBLIC_*_URL` (dead localhost links hidden).
+- **New audited endpoints** (all INSERT `audit_log`, typed-confirm): `POST /api/admin/system/recover` (whitelisted Airflow DAG trigger), `POST /api/admin/risk/keys/[id]` (approve/reject pending exchange keys — approve fail-closed unless withdraw-disabled confirmed), `PATCH /api/admin/users/[id]` (role/plan/entitlements editor — validates `PlanId`/`Role`, writes canonical `PLAN_DEFAULTS[plan]` to `sb_users.entitlements`).

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.SIGNALBRIDGE_BACKEND_URL || 'http://localhost:8085';
+import { SIGNALBRIDGE_BACKEND_URL as BACKEND_URL } from '@/lib/services/execution/bff';
 
 interface Params {
   params: Promise<{ exchange: string }>;

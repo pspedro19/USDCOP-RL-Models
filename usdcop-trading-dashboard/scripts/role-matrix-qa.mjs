@@ -55,6 +55,29 @@ const b = await chromium.launch();
 let pass = 0, fail = 0;
 const failures = [];
 
+// Nav/hub visibility truth-table (DOM). Sidebar items are <button> (router.push),
+// so match by label inside the sections <nav>. Backtest→research:read,
+// Admin→admin:all. Locks in: a subscriber never sees Admin/Backtest; admin
+// (superset) sees both; developer sees Backtest but not Admin.
+const NAV_EXPECT = {
+  free:       { Backtest: false, Admin: false },
+  subscriber: { Backtest: false, Admin: false },
+  developer:  { Backtest: true,  Admin: false },
+  admin:      { Backtest: true,  Admin: true },
+};
+
+async function probeNav(role, page) {
+  await page.goto(`${BASE}/hub`, { waitUntil: 'commit', timeout: 90000 }).catch(() => {});
+  await page.waitForTimeout(3000);
+  const want = NAV_EXPECT[role];
+  for (const [label, shouldShow] of Object.entries(want)) {
+    const count = await page.locator('nav button', { hasText: new RegExp(`^${label}$`) }).count().catch(() => -1);
+    const shown = count > 0;
+    const ok = shown === shouldShow;
+    if (ok) pass++; else { fail++; failures.push(`${role} nav ${label}: ${shown ? 'visible' : 'hidden'}, want ${shouldShow ? 'visible' : 'hidden'}`); }
+  }
+}
+
 async function probeAll(role, page) {
   for (const [method, url, expects, body] of CELLS) {
     const want = expects[role];
@@ -92,6 +115,7 @@ for (const [role, [u, p]] of Object.entries(USERS)) {
   await page.waitForTimeout(6000);
   if (page.url().includes('/login')) { fail++; failures.push(`${role}: login failed`); await ctx.close(); continue; }
   await probeAll(role, page);
+  await probeNav(role, page);
   await ctx.close();
 }
 await b.close();

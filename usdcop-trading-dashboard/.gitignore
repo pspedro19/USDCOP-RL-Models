@@ -65,3 +65,8 @@ debug/
 # (Reverts the 2026-07 "regenerable ⇒ untracked" rule for public/forecasting/
 # and public/data/analysis/ by operator order. Runtime-only state stays out:)
 public/data/production/deploy_status.json
+
+# Local QA/dev artifacts (screenshots, scratch design folder) — not product
+shots/
+series_*.png
+mejora-frontend-dashboard-trading/

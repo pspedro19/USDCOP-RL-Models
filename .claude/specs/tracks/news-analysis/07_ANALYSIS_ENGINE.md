@@ -445,3 +445,75 @@ python scripts/pipeline/generate_asset_analysis.py --all-assets --year 2026 [--n
 
 - **Generated:** 27 weeks × Gold + BTC with real news (~40 articles/week).
 - **Tests:** `tests/unit/test_asset_analysis_generator.py` (7) + `tests/unit/test_news_sources.py` (7).
+
+---
+
+## 12. News Intelligence & Political Bias (both tracks — added 2026-07-11)
+
+> **Wiring fix (CTR-NEWS-ENRICH-001).** `NewsClusterCard` + `BiasDistributionCard` on `/analysis`
+> render from `news_intelligence.clusters` and `political_bias_analysis`. These were **empty**: for
+> USD/COP both fields are produced only by the LangGraph multi-agent pipeline, which silently no-ops
+> when its heavy deps are absent at generation time (Airflow/Docker) — the import guard at
+> `weekly_generator.py::_enrich_with_langgraph` swallows the `ImportError` and returns. Gold/BTC never
+> emitted bias and emitted lean neutral clusters. Now both tracks fill the two blocks
+> **deterministically, independent of LangGraph** (mirrors `_compute_regime_direct` for `macro_regime`).
+
+### 12.1 Shared helper — `src/analysis/news_enrichment.py::enrich_news`
+
+Single source of truth for turning a `list[dict]` of articles → `(news_intelligence, political_bias_analysis)`:
+
+1. `NewsIntelligenceEngine.process_articles` (one sentiment pass) → enriched articles with tone /
+   category / relevance / source-bias. **Adaptive relevance floor**: prefer articles ≥ `min_relevance`,
+   but if fewer than `min_kept` (5) clear it, fall back to the full set so a genuinely-covered week
+   never renders an empty panel.
+2. `NewsIntelligenceEngine.cluster_articles` → HDBSCAN semantic clusters, **falling back to category
+   grouping when embeddings are unavailable *or* HDBSCAN labels everything as noise** (the empty-`[]`
+   case that previously returned zero clusters). Every cluster gets a human label (dominant category,
+   Title-Cased) as a deterministic floor.
+3. `PoliticalBiasDetector.analyze` → source-based bias distribution + factuality + diversity (Layer 1,
+   free) — matches `PoliticalBiasOutput` exactly, so **no frontend/contract change**.
+
+**LLM polish is opt-in + budget-gated** (`allow_llm`): cluster topic labels + bias narrative fire only
+when an LLM client is passed *and* keys/budget exist; the deterministic path always runs at zero cost.
+News only ever classifies/summarizes — it never touches a trading decision (quant-constitution §7).
+
+### 12.2 Track wiring
+
+| Track | Call site | Relevance floor | LLM |
+|-------|-----------|-----------------|-----|
+| USD/COP | `weekly_generator.py::_compute_news_intelligence` (called in `generate_for_week` step 7c, **only fills what LangGraph left empty**) | `0.3` (adaptive) | `allow_llm = not dry_run` |
+| Gold/BTC | `asset_analysis_generator.py::generate_week` (replaces lean `_cluster_news` output) | `0.0` (feeds pre-queried) | off (DAG env) |
+
+### 12.3 Robustness fixes applied to the shared engine (benefit all callers)
+
+- **HDBSCAN-noise → category fallback** (`news_intelligence.py::cluster_articles`): empty HDBSCAN result
+  now falls back instead of returning `[]`.
+- **Source→domain bias match** (`news_intelligence.py::get_media_bias` + `bias_detector.py::get_media_bias_expanded`):
+  bare `source_id`s (`portafolio`, `investing`) now match domain keys (`portafolio.co`, `investing.com`)
+  via `domain.split(".")[0] == source`. Previously all DB-sourced articles resolved to `unknown`.
+- **Day-inclusive week window** (`_compute_news_intelligence`): upper bound is exclusive of the next day
+  so same-day intraday timestamps (08:45 COT) are kept.
+- **Bootstrap article fallback** (`_get_all_articles` source #6): when CSVs + DB are unavailable (fresh
+  clone), read the git-tracked `data/backups/features/news_articles.parquet` so the cards still render.
+
+### 12.4 Article source of truth
+
+`_get_all_articles` merges (in priority): GDELT/Google/Investing/Colombia CSVs (`data/news/*`, gitignored)
+→ live `news_articles` DB → **tracked backup parquet** (fresh-clone fallback). A fresh clone with no CSVs
+and an empty DB still renders news from the backup snapshot; forward pipelines/DAGs then supersede it.
+
+### 12.5 Chat context (`app/api/analysis/chat/route.ts`)
+
+The analysis chat now injects the richer week context it previously ignored: technical (trend/RSI/levels),
+macro regime, top news-cluster themes, source-bias landscape, and upcoming events — in addition to
+headline/sentiment/OHLCV/signals. The LLM call itself is unchanged (Azure→Anthropic when keys present;
+config-gated placeholder otherwise, now showing the richer context).
+
+### 12.6 Backfill CLI
+
+```bash
+# Inject news_intelligence + political_bias into published USD/COP weekly JSONs
+python -m scripts.ops.patch_news_intelligence [--year 2026] [--force] [--dry-run]
+# Gold/BTC: regenerate via the asset generator (writes the enriched blocks natively)
+python scripts/pipeline/generate_asset_analysis.py --all-assets --year 2026
+```

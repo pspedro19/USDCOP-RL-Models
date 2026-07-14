@@ -93,7 +93,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.className} antialiased bg-[#050816] text-slate-100`}
+        className={`${inter.className} antialiased bg-[var(--gm-page)] text-[var(--gm-text)]`}
         suppressHydrationWarning
       >
         <ErrorBoundary

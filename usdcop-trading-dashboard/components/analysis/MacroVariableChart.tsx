@@ -13,6 +13,10 @@ import {
   Legend,
 } from 'recharts';
 import type { MacroChartPoint } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
+import { ANALYSIS_DICT, CHART } from './gm-analysis';
 
 interface MacroVariableChartProps {
   data: MacroChartPoint[];
@@ -21,6 +25,7 @@ interface MacroVariableChartProps {
 }
 
 export function MacroVariableChart({ data, variableName, className = '' }: MacroVariableChartProps) {
+  const t = useGmT(ANALYSIS_DICT);
   const { chartData, yDomain } = useMemo(() => {
     // Get valid values
     const validValues = data
@@ -75,8 +80,8 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
 
   if (!chartData.length) {
     return (
-      <div className={`flex items-center justify-center h-48 text-gray-500 text-sm ${className}`}>
-        Sin datos de grafico
+      <div className={`flex items-center justify-center h-48 ${GM.textMuted} ${GMT.body} ${className}`}>
+        {t('noChartData')}
       </div>
     );
   }
@@ -85,15 +90,15 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
     <div className={className}>
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
           <XAxis
             dataKey="dateStr"
-            tick={{ fill: '#64748b', fontSize: 10 }}
+            tick={{ fill: CHART.tick, fontSize: 10 }}
             interval="preserveStartEnd"
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#64748b', fontSize: 10 }}
+            tick={{ fill: CHART.tick, fontSize: 10 }}
             tickLine={false}
             domain={yDomain}
             width={55}
@@ -106,12 +111,12 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#0f172a',
-              border: '1px solid #334155',
-              borderRadius: '8px',
+              backgroundColor: CHART.tooltipBg,
+              border: `1px solid ${CHART.border}`,
+              borderRadius: '10px',
               fontSize: '12px',
             }}
-            labelStyle={{ color: '#94a3b8' }}
+            labelStyle={{ color: CHART.text }}
           />
           <Legend
             wrapperStyle={{ fontSize: '11px' }}
@@ -122,7 +127,7 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
           <Area
             dataKey="bb_upper"
             stroke="none"
-            fill="#64748b"
+            fill={CHART.tick}
             fillOpacity={0.08}
             name="BB Upper"
             legendType="none"
@@ -130,7 +135,7 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
           <Area
             dataKey="bb_lower"
             stroke="none"
-            fill="#0f172a"
+            fill={CHART.maskFill}
             fillOpacity={1}
             name="BB Lower"
             legendType="none"
@@ -139,7 +144,7 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
           {/* SMA-20 */}
           <Line
             dataKey="sma20"
-            stroke="#22d3ee"
+            stroke={CHART.accent}
             strokeWidth={1}
             strokeDasharray="4 4"
             dot={false}
@@ -150,7 +155,7 @@ export function MacroVariableChart({ data, variableName, className = '' }: Macro
           {/* Main price line */}
           <Line
             dataKey="value"
-            stroke="#ffffff"
+            stroke={CHART.line}
             strokeWidth={1.5}
             dot={false}
             name={variableName}

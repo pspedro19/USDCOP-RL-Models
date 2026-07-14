@@ -1,15 +1,18 @@
 /**
- * API Module Index
- * ================
+ * API module — CTR-FE-BE-001 surface (spec `.claude/specs/platform/frontend-backend-contract.md`).
  *
- * Central export point for API client and utilities.
+ * Server (route handlers): `ok`/`fail` envelope + `requirePermission`/`requireSession`
+ * + `relayUpstream`. Browser: `apiFetch` (envelope-aware, legacy-tolerant).
  *
- * @module lib/api
- *
- * @example
- * import { apiClient, ApiClientError } from '@/lib/api';
- *
- * const data = await apiClient.getRealtimePrice();
+ * (The pre-contract zod `apiClient` was removed 2026-07-10 — it had zero consumers.)
  */
 
-export { apiClient, ApiClientError, createFetcher } from './client';
+export {
+  ok, fail, UpstreamError, upstreamCode,
+  type ApiErrorShape, type Envelope, type Meta,
+} from './envelope';
+export {
+  bearerFrom, relayUpstream, requirePermission, requireSession,
+  type HandlerIdentity, type RelayOpts,
+} from './relay';
+export { apiFetch, ClientApiError, goToLogin, type ApiResult } from './gm-client';

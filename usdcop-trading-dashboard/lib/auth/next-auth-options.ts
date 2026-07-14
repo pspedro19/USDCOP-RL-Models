@@ -11,6 +11,7 @@ import type { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { authService } from './auth-service';
 import type { SessionUser, UserRole } from './types';
+import { effectivePermissions } from './rbac-resolver';
 
 // ============================================================================
 // Type Extensions
@@ -18,7 +19,7 @@ import type { SessionUser, UserRole } from './types';
 
 declare module 'next-auth' {
   interface Session {
-    user: SessionUser;
+    user: SessionUser & { permissions?: string[] };
     accessToken?: string;
   }
 
@@ -28,6 +29,8 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT extends SessionUser {
     accessToken?: string;
+    /** Effective RBAC permission set, baked at login (CTR-RBAC-001 / migration 056). */
+    permissions?: string[];
   }
 }
 
@@ -167,6 +170,12 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as SessionUser).role;
         token.fullName = (user as SessionUser).fullName;
         token.avatarUrl = (user as SessionUser).avatarUrl;
+        // Bake the effective RBAC permission set (dynamic role perms ± user
+        // overrides) so the edge middleware authorizes without a DB hit.
+        // Failure ⇒ leave undefined; middleware falls back to the static matrix.
+        try {
+          token.permissions = await effectivePermissions(user.id, (user as SessionUser).role);
+        } catch { /* static fallback in middleware */ }
       }
 
       // Handle session update
@@ -190,6 +199,7 @@ export const authOptions: NextAuthOptions = {
           role: token.role as UserRole,
           fullName: token.fullName as string | undefined,
           avatarUrl: token.avatarUrl as string | undefined,
+          permissions: (token.permissions as string[] | undefined) ?? undefined,
         };
       }
 

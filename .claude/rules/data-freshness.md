@@ -304,6 +304,8 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase both
 | **051_asset_daily_ohlcv** | Multi-asset daily OHLCV table + coverage view | **Applied 2026-07-03** | Gold/BTC daily bars |
 | **052_crypto_native_data** | 5 crypto-native tables (onchain/derivatives/flows/events/exposure) + coverage view | Additive (apply on BTC onboarding) | BTC/USDT strategy |
 | **054_h5_subtrades_unique** | `UNIQUE(execution_id, subtrade_index)` (`uq_h5_subtrade`) on `forecast_h5_subtrades` | **Applied 2026-07-05** | H5 promotion DB seeding (`ON CONFLICT` upsert) |
+| **055_rbac_monetization** | `sb_users.entitlements` JSONB, `audit_log` (append-only trigger), role CHECK | **Applied** | RBAC/monetization (CTR-RBAC-001) |
+| **056_rbac_dynamic_roles** | `rbac_role_permissions` + `rbac_user_overrides` (seeded from static matrix) | **Applied 2026-07-12** | Admin "Roles y vistas" console — dynamic role→permission + per-user overrides |
 | 047_pgvector_embeddings | pgvector extension | Not applied | Future (embeddings) |
 
 ---

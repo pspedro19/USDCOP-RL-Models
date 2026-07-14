@@ -1,18 +1,48 @@
 'use client';
 
 /**
- * Dashboard Page
- * ==============
- * Shows ForecastingBacktestSection (2025 OOS + approval)
- * with KPIs, candlestick chart, gates, and trade table.
- * Strategy selector lives inside ForecastingBacktestSection.
+ * Dashboard Page — vista BACKTEST del GlobalMarkets Terminal
+ * ==========================================================
+ * GM re-skin (CTR-GM-UI-001, prototipo Var B líneas 363-484): GmPageHeader único
+ * (sin duplicados) + selector de estrategia con dot pulse + badge "OOS 2025 ·
+ * BACKTEST". El contenido es ForecastingBacktestSection (KPIs, candle+replay,
+ * equity, resumen, razones de salida, tabla, gates Voto 1 y aprobación Voto 2/2
+ * — lógica de aprobación INTACTA, ver approval-gates.md).
  */
 
 import { Suspense, useState, useEffect, useRef } from "react";
-import { GlobalNavbar } from "@/components/navigation/GlobalNavbar";
-import { Badge } from "@/components/ui/badge";
-import { RefreshCw, DollarSign, ChevronDown } from "lucide-react";
+import { TerminalShell } from "@/components/gm/TerminalShell";
+import { GmBadge, GmPageHeader } from "@/components/gm";
+import { defineGmDict, useGmT } from "@/lib/i18n/gm-core";
+import { GM, GMT } from "@/lib/ui/gm-tokens";
+import { RefreshCw, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ── Diccionario local ES/EN (gm-core) ──────────────────────────────────────
+const DICT = defineGmDict({
+  es: {
+    title: 'Backtest',
+    kicker: 'Estrategias · OOS',
+    oosBadge: 'OOS 2025 · BACKTEST',
+    paper: 'PAPER',
+    open: 'Abierto',
+    closed: 'Cerrado',
+    loading: 'Cargando dashboard…',
+    footerTitle: 'USDCOP Trading System',
+    footerMode: 'Modo paper trading · Última actualización',
+  },
+  en: {
+    title: 'Backtest',
+    kicker: 'Strategies · OOS',
+    oosBadge: 'OOS 2025 · BACKTEST',
+    paper: 'PAPER',
+    open: 'Open',
+    closed: 'Closed',
+    loading: 'Loading dashboard…',
+    footerTitle: 'USDCOP Trading System',
+    footerMode: 'Paper trading mode · Last update',
+  },
+});
 
 // ============================================================================
 // Strategy Dropdown — visible in header
@@ -93,67 +123,47 @@ function HeaderStrategyDropdown({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-xl",
-          "bg-slate-800/90 border-2 border-cyan-500/40 hover:border-cyan-400/70",
-          "transition-all duration-200 shadow-lg shadow-cyan-500/10"
-        )}
+        className={`${GM.ctaGhost} ${GM.focus} flex items-center gap-2.5 min-h-[44px] px-3.5 py-1.5`}
+        aria-expanded={isOpen}
       >
-        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <div className="text-left">
-          <div className="font-bold text-white text-sm">{selected.strategy_name}</div>
-          <div className="text-[10px] text-slate-400">
-            {selected.asset_name} | +{selected.return_pct.toFixed(1)}% | Sharpe {selected.sharpe.toFixed(2)}
-          </div>
-        </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "text-[9px] font-bold ml-1",
-            selected.status === 'APPROVED'
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-              : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-          )}
-        >
+        <span className="w-2 h-2 rounded-full bg-[var(--gm-pos)] motion-safe:animate-pulse shrink-0" aria-hidden />
+        <span className="text-left">
+          <span className={`block text-[0.8125rem] font-bold leading-tight ${GM.text}`}>{selected.strategy_name}</span>
+          <span className={`block ${GMT.micro} ${GM.textMuted} font-mono leading-tight mt-0.5`}>
+            {selected.asset_name} · +{selected.return_pct.toFixed(1)}% · Sharpe {selected.sharpe.toFixed(2)}
+          </span>
+        </span>
+        <GmBadge tone={selected.status === 'APPROVED' ? 'pos' : 'warn'} className="shrink-0">
           {selected.status}
-        </Badge>
-        <ChevronDown className={cn("w-4 h-4 text-cyan-400 transition-transform", isOpen && "rotate-180")} />
+        </GmBadge>
+        <ChevronDown className={cn(`w-4 h-4 ${GM.accent} transition-transform`, isOpen && "rotate-180")} aria-hidden />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-slate-800 border-2 border-cyan-500/30 rounded-xl overflow-hidden shadow-2xl min-w-[340px] max-h-[70vh] overflow-y-auto">
+        <div className={`absolute top-full left-0 mt-1.5 z-40 min-w-[340px] max-h-[70vh] overflow-y-auto ${GM.popover} p-1.5 flex flex-col gap-0.5`}>
           {Object.entries(byAsset).map(([assetId, list]) => (
             <div key={assetId}>
-              <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-700/50 sticky top-0">
-                <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">{list[0].asset_name}</span>
+              <div className={`px-3 py-2 border-b border-[rgba(148,163,184,.10)] ${GMT.label} ${GM.accent}`}>
+                {list[0].asset_name}
               </div>
               {list.map((s) => (
                 <button
                   key={s.strategy_id}
                   className={cn(
-                    "w-full flex items-center justify-between px-4 py-3",
-                    "hover:bg-cyan-500/10 transition-colors text-left",
-                    s.strategy_id === selected.strategy_id && "bg-cyan-500/5 border-l-2 border-cyan-400"
+                    `${GM.rowHover} ${GM.focus} w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-[9px] text-left`,
+                    s.strategy_id === selected.strategy_id && 'bg-[rgba(34,211,238,.07)]'
                   )}
                   onClick={() => { onSelect(s.strategy_id); setIsOpen(false); }}
                 >
-                  <div>
-                    <div className="text-white font-semibold text-sm">{s.strategy_name}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
-                      {s.pipeline} | +{s.return_pct.toFixed(1)}% | Sharpe {s.sharpe.toFixed(2)} | p={s.p_value.toFixed(4)}
-                    </div>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[9px] font-bold ml-3 shrink-0",
-                      s.status === 'APPROVED'
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                        : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                    )}
-                  >
+                  <span className="min-w-0">
+                    <span className={`block text-[0.8125rem] font-bold ${GM.text}`}>{s.strategy_name}</span>
+                    <span className={`block ${GMT.micro} ${GM.textMuted} font-mono mt-0.5`}>
+                      {s.pipeline} · +{s.return_pct.toFixed(1)}% · Sharpe {s.sharpe.toFixed(2)} · p={s.p_value.toFixed(4)}
+                    </span>
+                  </span>
+                  <GmBadge tone={s.status === 'APPROVED' ? 'pos' : 'warn'} className="shrink-0">
                     {s.status}
-                  </Badge>
+                  </GmBadge>
                 </button>
               ))}
             </div>
@@ -164,13 +174,14 @@ function HeaderStrategyDropdown({
   );
 }
 
-// Forecasting backtest section (self-contained, includes strategy selector)
+// Forecasting backtest section (self-contained; el selector del header lo controla)
 import { ForecastingBacktestSection } from "@/components/production/ForecastingBacktestSection";
 
 // ============================================================================
 // Live Price Display — polls /api/market/realtime-price adaptively
 // ============================================================================
 function LivePriceDisplay() {
+  const t = useGmT(DICT);
   const [price, setPrice] = useState<number | null>(null);
   const [change, setChange] = useState<number | null>(null);
   const [changePct, setChangePct] = useState<number | null>(null);
@@ -211,35 +222,24 @@ function LivePriceDisplay() {
 
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex items-center gap-1.5">
-        <DollarSign className="w-3.5 h-3.5 text-slate-400" />
-        <span className="font-mono text-sm font-bold text-white">
-          {price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-        </span>
-      </div>
+      <span className={`${GMT.mono} ${GMT.body} font-bold ${GM.textStrong}`}>
+        ${price.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+      </span>
       {change !== null && (
-        <span className={cn(
-          'font-mono text-xs font-semibold',
-          isPositive ? 'text-emerald-400' : 'text-red-400'
-        )}>
+        <span className={`${GMT.mono} ${GMT.micro} font-semibold ${isPositive ? GM.pos : GM.neg}`}>
           {isPositive ? '+' : ''}{change.toFixed(1)} ({isPositive ? '+' : ''}{changePct?.toFixed(2)}%)
         </span>
       )}
-      <Badge
-        variant="outline"
-        className={cn(
-          "text-[9px] font-semibold px-1.5 py-0.5",
-          isMarketOpen
-            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-            : "bg-slate-500/10 text-slate-400 border-slate-500/30"
-        )}
-      >
-        <span className={cn(
-          "w-1.5 h-1.5 rounded-full mr-1 inline-block",
-          isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-500"
-        )} />
-        {isMarketOpen ? 'Open' : 'Closed'}
-      </Badge>
+      <GmBadge tone={isMarketOpen ? 'pos' : 'neutral'}>
+        <span
+          className={cn(
+            'w-1.5 h-1.5 rounded-full inline-block',
+            isMarketOpen ? 'bg-[var(--gm-pos)] motion-safe:animate-pulse' : 'bg-[var(--gm-text-faint)]'
+          )}
+          aria-hidden
+        />
+        {isMarketOpen ? t('open') : t('closed')}
+      </GmBadge>
     </div>
   );
 }
@@ -248,6 +248,7 @@ function LivePriceDisplay() {
 // Dashboard Content
 // ============================================================================
 function DashboardContent() {
+  const t = useGmT(DICT);
   const [lastUpdate, setLastUpdate] = useState<string>('--:--:--');
   // Shared strategy selection: the header selector and the backtest section stay in sync,
   // so choosing a USD/COP, Gold or BTC strategy up here replays it below.
@@ -263,62 +264,38 @@ function DashboardContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#030712] via-[#0f172a] to-[#030712] overflow-x-hidden">
-      {/* Global Navigation (fixed position) */}
-      <GlobalNavbar currentPage="dashboard" />
-
-      {/* Sticky Header - Compact single row */}
-      <header className="sticky top-16 z-40 bg-[#030712]/95 backdrop-blur-xl border-b border-slate-800/50">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
-            {/* Left: Title + Strategy Dropdown */}
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent whitespace-nowrap">
-                Backtest
-              </h1>
-              <HeaderStrategyDropdown selectedId={selectedStrategyId} onSelect={setSelectedStrategyId} />
+    <TerminalShell active="dashboard" width="wide">
+      {/* Header único (prototipo: título + selector con dot pulse + badge OOS) */}
+      <GmPageHeader
+        kicker={t('kicker')}
+        title={t('title')}
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <HeaderStrategyDropdown selectedId={selectedStrategyId} onSelect={setSelectedStrategyId} />
+            <div className="hidden sm:block">
+              <LivePriceDisplay />
             </div>
-
-            {/* Right: Live Price */}
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:block">
-                <LivePriceDisplay />
-              </div>
-              <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px] px-2 py-0.5">
-                PAPER
-              </Badge>
-            </div>
+            <GmBadge tone="info">{t('oosBadge')}</GmBadge>
+            <GmBadge tone="neutral">{t('paper')}</GmBadge>
           </div>
-        </div>
-      </header>
+        }
+      />
 
-      {/* Minimal spacer for fixed navbar */}
-      <div className="h-16" aria-hidden="true" />
+      {/* ================================================================
+          Forecasting Backtest (2025 OOS) + Approval — Vote 2/2 flow intacto
+      ================================================================ */}
+      <ForecastingBacktestSection controlledStrategyId={selectedStrategyId} onStrategyChange={setSelectedStrategyId} />
 
-      {/* Main Content */}
-      <main className="w-full overflow-x-hidden">
-
-        {/* ================================================================
-            Forecasting Backtest (2025 OOS) + Approval
-            Self-contained component with strategy selector
-        ================================================================ */}
-        <ForecastingBacktestSection controlledStrategyId={selectedStrategyId} onStrategyChange={setSelectedStrategyId} />
-
-        {/* ================================================================
-            Footer
-        ================================================================ */}
-        <footer className="w-full py-12 sm:py-16 border-t border-slate-800/50 flex flex-col items-center pb-32">
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p className="text-sm sm:text-base text-slate-400 font-medium">
-              USDCOP Trading System
-            </p>
-            <p className="mt-2 text-xs sm:text-sm text-slate-500">
-              Paper Trading Mode | Last update: {lastUpdate}
-            </p>
-          </div>
-        </footer>
-      </main>
-    </div>
+      {/* ================================================================
+          Footer
+      ================================================================ */}
+      <footer className="w-full pt-10 mt-8 border-t border-[rgba(148,163,184,.10)] text-center">
+        <p className={`${GMT.body} font-medium ${GM.textSec} m-0`}>{t('footerTitle')}</p>
+        <p className={`mt-2 ${GMT.micro} ${GMT.mono} ${GM.textMuted}`}>
+          {t('footerMode')}: {lastUpdate}
+        </p>
+      </footer>
+    </TerminalShell>
   );
 }
 
@@ -326,11 +303,12 @@ function DashboardContent() {
 // Loading State
 // ============================================================================
 function DashboardSkeleton() {
+  const t = useGmT(DICT);
   return (
-    <div className="min-h-screen bg-[#030712] flex items-center justify-center">
+    <div className={`min-h-screen ${GM.page} flex items-center justify-center`}>
       <div className="text-center">
-        <RefreshCw className="w-10 h-10 text-cyan-400 animate-spin mx-auto mb-4" />
-        <p className="text-slate-400">Loading Dashboard...</p>
+        <RefreshCw className={`w-10 h-10 ${GM.accent} motion-safe:animate-spin mx-auto mb-4`} aria-hidden />
+        <p className={`${GMT.body} ${GM.textMuted}`}>{t('loading')}</p>
       </div>
     </div>
   );

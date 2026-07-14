@@ -104,3 +104,40 @@ double-approve→409 (no 500).
 `docker-compose.mailhog.yml` overlay points SB SMTP→`mailhog:1025`, `SIGNALBRIDGE_DEV_MODE=false`,
 idempotent bootstrap admin. Temp pw is captured from the approval email via the MailHog JSON API
 (`/api/v2/messages`). In prod, set `SMTP_HOST`/`SMTP_PORT` to the real relay.
+
+---
+
+## As-built increment (2026-07-11) — prices surfaced + chat quota
+
+- **Public prices**: `GET /api/billing/prices` (RBAC `public`) serves plan+add-on COP from the `lib/billing/prices.ts` SSOT (signals 99k, auto 299k, add-ons 39k/mo). Pricing/Cart/Catalog render real amounts (Intl es-CO); Pricing's feature matrix is **derived from `PLAN_DEFAULTS`** (can't drift). Catalog joins live `/api/public/market-price` for FX. Follow-up: cart displays plan+add-ons while Wompi charges plan only (add-on amount not yet in the charge).
+- **Chat as a paid lever (CTR-CHAT-001)**: the analysis chatbot (`analysis:read`) is quota-gated per plan server-side (`lib/chat/quota.ts`: free 15/day · signals 100 · auto 250). Provider abstraction `lib/chat/*` (Azure primary → Anthropic fallback); free gets delayed content per entitlements, paid gets higher limits.
+
+---
+
+## Dynamic RBAC — as-built (2026-07-12, migración 056, CTR-RBAC-001)
+
+El mapeo **rol→permiso** y los **overrides por usuario** son ahora DATOS editables desde
+la consola admin ("Roles y vistas"), sin tocar el piso estático:
+
+- **Estático (inmutable, invariante `rbac:check`)**: `PAGE_ROUTES`/`API_ROUTES` + enums
+  `PERMISSIONS`/`ROLES` en `rbac.contract.ts`. Semilla y *fallback* de la matriz.
+- **Dinámico (DB, migración 056)**: `rbac_role_permissions` (matriz permiso×rol) +
+  `rbac_user_overrides` (`grant`/`deny` por usuario). Resolver `lib/auth/rbac-resolver.ts`
+  (`effectivePermissions = rolePerms ∪ grants − denies`, cache 60s, fallback a la matriz
+  estática si la tabla está vacía o la DB cae — **fail-to-code, nunca OPEN**).
+- **Aplicación (edge-safe)**: el set efectivo se **hornea en el JWT al login** (los 3 mint
+  paths: NextAuth callback + proxy `/api/execution/auth/login` + guest). `middleware.ts` lo
+  lee (fallback estático) y lo estampa en `x-user-perms`; `relay.ts::requirePermission`
+  chequea ese header (fallback `roleHasPermission`). Cambios aplican en el **próximo login**
+  del usuario (JWT re-mint) / dentro de 60s para lecturas server-side.
+- **Preview real "Ver como" (downgrade-only)**: para admin real + petición GET + cookie
+  `gm-view-as-role` válida, el middleware autoriza LECTURAS contra `realPerms ∩ rol
+  previsualizado` — solo restringe, nunca escala (una cookie forjada no da privilegios). Las
+  MUTACIONES siguen exigiendo el rol admin real. Nav/hub del cliente usan el set horneado
+  (`session.user.permissions`) para reflejar ediciones; en preview usan el rol simulado.
+- **Guardrails**: no se puede quitar `admin:all` del rol `admin` (servidor 403); no se puede
+  auto-denegar `admin:all` (self-lockout). Todo edit → `audit_log` (`role_perm_change` /
+  `user_override_change`).
+- **Endpoints** (`admin:all`, auditados): `GET|PATCH /api/admin/roles`,
+  `GET|PATCH /api/admin/users/[id]/overrides`. Sección `RolesSection.tsx` (tab "Roles y
+  vistas") + editor de overrides en el drawer de `UsersSection`.

@@ -300,6 +300,11 @@ services:
       FRED_API_KEY: ${FRED_API_KEY}
       USDCOP_AZURE_OPENAI_API_KEY: ${USDCOP_AZURE_OPENAI_API_KEY}
       USDCOP_AZURE_OPENAI_ENDPOINT: ${USDCOP_AZURE_OPENAI_ENDPOINT}
+      # Deployment + api-version MUST match the Azure resource (SSOT:
+      # config/analysis/weekly_analysis_ssot.yaml). The chat route otherwise
+      # defaulted to gpt-4o/2024-10-21, which isn't deployed → silent chat failure.
+      USDCOP_AZURE_OPENAI_DEPLOYMENT: ${USDCOP_AZURE_OPENAI_DEPLOYMENT:-gpt-4o-mini}
+      USDCOP_AZURE_OPENAI_API_VERSION: ${USDCOP_AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
       USDCOP_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
@@ -532,6 +537,12 @@ services:
       - DEBUG=true
       - SIGNALBRIDGE_DEV_MODE=true
       - TRADING_MODE=PAPER
+      # Shared demo account for "Explorar como invitado" (rol free, is_test=true).
+      # bootstrap_guest() re-ensures it (and its password) on every startup; the
+      # dashboard's POST /api/auth/guest logs in with these same credentials.
+      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      - GUEST_BOOTSTRAP_PASSWORD=${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
+      - GUEST_BOOTSTRAP_NAME=${GUEST_BOOTSTRAP_NAME:-Invitado}
     volumes:
       - ./services/signalbridge_api:/app
     ports:
@@ -574,6 +585,10 @@ services:
       TRADING_API_URL: http://usdcop-trading-api:8000
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
+      # Guest demo login (POST /api/auth/guest) — must match signalbridge-api's
+      # GUEST_BOOTSTRAP_* values (bootstrap_guest re-ensures the account+password).
+      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      GUEST_BOOTSTRAP_PASSWORD: ${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       BACKTEST_API_URL: http://usdcop-backtest-api:8000
       BACKTEST_SERVICE_URL: http://usdcop-backtest-api:8000
       ML_ANALYTICS_URL: http://usdcop-analytics-api:8001
@@ -582,6 +597,24 @@ services:
       NEXTAUTH_URL: http://localhost:5000
       DEBUG_AUTH: "true"
       AUTH_BYPASS_ENABLED: "true"
+      # Analysis chatbot LLM (CTR-CHAT-001). Deployment/api-version MUST match the
+      # Azure resource (SSOT config/analysis/weekly_analysis_ssot.yaml = gpt-4o-mini);
+      # the generic gpt-4o/2024-10-21 is NOT deployed → 404 → silent chat failure.
+      USDCOP_AZURE_OPENAI_API_KEY: ${USDCOP_AZURE_OPENAI_API_KEY:-}
+      USDCOP_AZURE_OPENAI_ENDPOINT: ${USDCOP_AZURE_OPENAI_ENDPOINT:-}
+      USDCOP_AZURE_OPENAI_DEPLOYMENT: ${USDCOP_AZURE_OPENAI_DEPLOYMENT:-gpt-4o-mini}
+      USDCOP_AZURE_OPENAI_API_VERSION: ${USDCOP_AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
+      USDCOP_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Billing / Wompi (CTR-RBAC-001). Keys unset by default → createCheckout throws
+      # "WOMPI_PUBLIC_KEY not configured" (checkout 500s cleanly, no live charge) and
+      # verifyWebhook rejects. Set WOMPI_* in .env to enable real subscriptions/add-ons.
+      # Var names must match lib/billing/{index,wompi}.ts exactly.
+      BILLING_PROVIDER: ${BILLING_PROVIDER:-wompi}
+      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY:-}
+      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET:-}
+      WOMPI_EVENTS_SECRET: ${WOMPI_EVENTS_SECRET:-}
+      # Optional: JSON {"signals":<cents>,"auto":<cents>} to override placeholder prices.
+      BILLING_PRICES_COP: ${BILLING_PRICES_COP:-}
     volumes:
       # public/data is READ-WRITE: approval (Vote 2), registry promote and deploy API routes
       # fs.writeFile into it (approval_state.json, manifest.json). :ro silently 500s those (EROFS).

@@ -63,7 +63,6 @@ from src.forecasting.contracts import (
     HORIZON_CATEGORIES,
     get_horizon_config,
 )
-from src.forecasting.data_contracts import FEATURE_COLUMNS
 from src.forecasting.models.factory import ModelFactory
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
@@ -75,8 +74,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Output directory
-OUTPUT_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "forecasting"
+# Base output directory (per-asset subdir appended at runtime)
+FORECASTING_BASE_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "forecasting"
+
+
+def resolve_asset_config_path(asset: str) -> Optional[str]:
+    """Map an --asset id to its forecasting SSOT config path.
+
+    usdcop -> None (the default config/forecasting_ssot.yaml, unchanged).
+    other  -> config/assets/<asset>_forecasting.yaml
+    """
+    if asset == "usdcop":
+        return None
+    candidate = PROJECT_ROOT / "config" / "assets" / f"{asset}_forecasting.yaml"
+    if not candidate.exists():
+        raise FileNotFoundError(
+            f"No forecasting config for asset '{asset}': expected {candidate}"
+        )
+    return str(candidate)
 
 # Model classifications (same as L5a DAG)
 LINEAR_MODELS = {"ridge", "bayesian_ridge", "ard"}
@@ -144,13 +159,12 @@ CSV_COLUMNS = [
 # DATA LOADING (mirrors L5a DAG pattern)
 # =============================================================================
 
-def load_full_dataset() -> pd.DataFrame:
-    """Load full daily OHLCV + macro dataset, build 21 SSOT features.
+def load_full_dataset(cfg: ForecastingSSOTConfig) -> pd.DataFrame:
+    """Load full daily OHLCV + macro dataset, build SSOT features for `cfg`'s asset.
 
     Uses shared ForecastingDatasetLoader (DB-first with parquet fallback).
-    All 4 macro columns: DXY, WTI, VIX, EMBI.
+    USD/COP: 4 macro columns (DXY, WTI, VIX, EMBI). BTC: DXY + VIX only.
     """
-    cfg = ForecastingSSOTConfig.load()
     loader = ForecastingDatasetLoader(cfg, project_root=PROJECT_ROOT)
     df, _ = loader.load_dataset()
     return df
@@ -200,6 +214,7 @@ def walk_forward_validate(
     params: Optional[dict],
     horizon: int,
     n_folds: int = 3,
+    annualization_days: int = 252,
 ) -> Dict[str, Any]:
     """Walk-forward validation returning full metrics + predicted/actual arrays."""
     n = len(X)
@@ -247,7 +262,7 @@ def walk_forward_validate(
     signals = np.sign(preds_arr)
     trade_returns = signals * actuals_arr
 
-    periods_per_year = 252 / max(horizon, 1)
+    periods_per_year = annualization_days / max(horizon, 1)
     mean_ret = np.mean(trade_returns)
     std_ret = np.std(trade_returns)
     sharpe = float(mean_ret / std_ret * np.sqrt(periods_per_year)) if std_ret > 0 else 0.0
@@ -325,6 +340,8 @@ def generate_week_data(
     cutoff_date: pd.Timestamp,
     week_label: str,
     is_latest_week: bool,
+    feature_cols: List[str],
+    annualization_days: int = 252,
 ) -> Tuple[List[Dict], Dict[str, Dict[int, float]], Dict, float, pd.Timestamp]:
     """
     Train 9 models x 7 horizons for one week, run walk-forward.
@@ -336,7 +353,7 @@ def generate_week_data(
 
     inference_year = cutoff_date.year
     df = df_full[df_full["date"] <= cutoff_date].copy()
-    feature_cols = list(FEATURE_COLUMNS)
+    feature_cols = list(feature_cols)
     feature_mask = df[feature_cols].notna().all(axis=1)
     df_clean = df[feature_mask].reset_index(drop=True)
 
@@ -385,7 +402,10 @@ def generate_week_data(
                 use_scaled = model_tmp.requires_scaling
                 X_wf = X_scaled[valid_mask] if use_scaled else X[valid_mask]
 
-                wf = walk_forward_validate(X_wf, y_valid, model_id, params, horizon)
+                wf = walk_forward_validate(
+                    X_wf, y_valid, model_id, params, horizon,
+                    annualization_days=annualization_days,
+                )
                 wf_results[model_id][horizon] = wf
                 all_metrics[model_id][horizon] = {
                     "da": wf["da"], "rmse": wf["rmse"], "mae": wf["mae"], "r2": wf["r2"],
@@ -607,6 +627,7 @@ def generate_forward_forecast_image(
     target_info: Dict[int, Dict],
     title_override: str = "",
     filename_override: str = "",
+    price_label: str = "Precio USD/COP",
 ):
     """
     Forward forecast PNG with ~1 month historical context, date X-axis,
@@ -710,7 +731,7 @@ def generate_forward_forecast_image(
     ax.set_title(f"{title} — Forecast desde {inference_date.date()}",
                  color=S["text"], fontsize=13, fontweight="bold")
     ax.set_xlabel("Fecha", color=S["text"], fontsize=10)
-    ax.set_ylabel("Precio USD/COP", color=S["text"], fontsize=10)
+    ax.set_ylabel(price_label, color=S["text"], fontsize=10)
 
     # --- Date formatting ---
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
@@ -734,6 +755,7 @@ def generate_consensus_image(
     week_suffix: str,
     df_full: pd.DataFrame,
     target_info: Dict[int, Dict],
+    price_label: str = "Precio USD/COP",
 ):
     """All models consensus with historical context, dates, and actuals."""
     fig, ax = _setup_dark_fig(figsize=(14, 7))
@@ -803,7 +825,7 @@ def generate_consensus_image(
     ax.set_title(f"Consenso — Forecast desde {inference_date.date()}",
                  color=S["text"], fontsize=13, fontweight="bold")
     ax.set_xlabel("Fecha", color=S["text"], fontsize=10)
-    ax.set_ylabel("Precio USD/COP", color=S["text"], fontsize=10)
+    ax.set_ylabel(price_label, color=S["text"], fontsize=10)
 
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
     ax.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=0, interval=1))
@@ -838,14 +860,31 @@ def main():
     parser = argparse.ArgumentParser(description="Generate weekly forecast data (CSV + PNG)")
     parser.add_argument("--week", type=str, help="Single week (e.g., 2025-W50)")
     parser.add_argument("--num-weeks", type=int, default=7, help="Number of retroactive weeks (default: 7)")
+    parser.add_argument("--asset", type=str, default="usdcop",
+                        help="Asset id (usdcop=default root; e.g. btcusdt -> public/forecasting/btcusdt/)")
     args = parser.parse_args()
 
+    # Resolve per-asset config + profile
+    config_path = resolve_asset_config_path(args.asset)
+    ForecastingSSOTConfig.reset()
+    cfg = ForecastingSSOTConfig.load(config_path)
+    asset_meta = cfg.get_asset_meta()
+    feature_cols = list(cfg.get_feature_columns())
+    price_label = asset_meta["price_label"]
+    annualization_days = int(asset_meta["annualization_days"])
+
+    OUTPUT_DIR = (FORECASTING_BASE_DIR / asset_meta["output_subdir"]) if asset_meta["output_subdir"] \
+        else FORECASTING_BASE_DIR
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"Asset: {args.asset} ({asset_meta['display_label']}) | "
+                f"{len(feature_cols)} features | annualization={annualization_days} | "
+                f"output={OUTPUT_DIR}")
 
     # Load data
     logger.info("Loading full dataset...")
     t0 = time.time()
-    df_full = load_full_dataset()
+    df_full = load_full_dataset(cfg)
     logger.info(f"Dataset loaded: {len(df_full)} rows in {time.time()-t0:.1f}s")
 
     # Determine weeks
@@ -876,7 +915,8 @@ def main():
 
         t1 = time.time()
         csv_rows, raw_preds, wf_results, base_price, inf_date = generate_week_data(
-            df_full, cutoff_date, week_label, is_latest_week=is_latest
+            df_full, cutoff_date, week_label, is_latest_week=is_latest,
+            feature_cols=feature_cols, annualization_days=annualization_days,
         )
         logger.info(f"  Models trained in {time.time()-t1:.1f}s ({len(csv_rows)} CSV rows)")
         all_csv_rows.extend(csv_rows)
@@ -890,6 +930,7 @@ def main():
                 generate_forward_forecast_image(
                     raw_preds[model_id], base_price, model_id, inf_date,
                     OUTPUT_DIR, week_suffix, df_full, target_info,
+                    price_label=price_label,
                 )
                 total_images += 1
 
@@ -897,6 +938,7 @@ def main():
         generate_consensus_image(
             raw_preds, base_price, inf_date, OUTPUT_DIR,
             week_suffix, df_full, target_info,
+            price_label=price_label,
         )
         total_images += 1
 
@@ -935,6 +977,7 @@ def main():
                     OUTPUT_DIR, week_suffix, df_full, target_info,
                     title_override=ens_label,
                     filename_override=f"forward_ensemble_{ens_key}_{week_suffix}.png",
+                    price_label=price_label,
                 )
                 total_images += 1
 

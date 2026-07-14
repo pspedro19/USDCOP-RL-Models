@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from src.analysis.asset_macro_charts import build_macro_blocks
 from src.analysis.news_sources import (
     AssetNewsFetcher,
     NewsQuery,
@@ -421,6 +422,35 @@ class AssetAnalysisGenerator:
         arts = [] if skip_news else self._fetch_news(p, w_start, w_end)
         news = self._cluster_news(arts)
 
+        # Enriched news intelligence + political bias — shared helper with the
+        # USD/COP track (same NewsClusterCard / BiasDistributionCard contract).
+        # Asset feeds are pre-filtered by query → min_relevance=0; no LLM client
+        # in the Gold/BTC DAG env → deterministic clusters + source-based bias.
+        asset_ni: dict | None = None
+        asset_bias: dict | None = None
+        if arts:
+            try:
+                from src.analysis.news_enrichment import enrich_news
+                asset_ni, asset_bias = enrich_news(
+                    [
+                        {
+                            "title": a.get("title", ""),
+                            "source": a.get("source", ""),
+                            "url": a.get("url", ""),
+                            "date": str(a.get("date", a.get("published_at", "")))[:10],
+                            "tone": float(a.get("tone", a.get("sentiment_score", 0)) or 0),
+                            "language": a.get("language", "en"),
+                        }
+                        for a in arts
+                    ],
+                    week_start=str(w_start),
+                    week_end=str(w_end),
+                    min_relevance=0.0,
+                    allow_llm=False,
+                )
+            except Exception as e:
+                logger.warning("Asset news enrichment failed (non-blocking): %s", e)
+
         # Daily entries (real per-day OHLCV + concise note)
         daily_entries = []
         wk_sorted = wk_bars.sort_values("time")
@@ -471,19 +501,20 @@ class AssetAnalysisGenerator:
                 "themes": [ta["trend"], f"RSI {ta['indicators']['rsi_14']}" if ta["indicators"]["rsi_14"] else "RSI n/d"],
             },
             "daily_entries": daily_entries,
-            "macro_snapshots": {},
-            "macro_charts": {},
+            **dict(zip(("macro_snapshots", "macro_charts"),
+                       build_macro_blocks(w_end, p.asset_id))),
             "signals": sig,
             "technical_analysis": ta,
             "news_context": {
                 "article_count": news["total_articles"],
-                "avg_sentiment": None,
+                "avg_sentiment": (asset_ni or {}).get("avg_sentiment"),
                 "source_breakdown": news["source_breakdown"],
             },
-            "news_intelligence": {
+            "news_intelligence": asset_ni or {
                 "total_articles": news["total_articles"],
                 "clusters": news["clusters"],
             },
+            **({"political_bias_analysis": asset_bias} if asset_bias else {}),
             "macro_regime": {
                 "regime": {
                     "label": regime_label,

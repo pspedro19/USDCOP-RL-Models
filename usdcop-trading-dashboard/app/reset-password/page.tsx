@@ -1,16 +1,24 @@
 'use client';
 
 /**
- * /reset-password — forced consumption of the admin-issued temporary password.
+ * /reset-password — forced consumption of the admin-issued temporary password,
+ * GlobalMarkets skin (CTR-GM-UI-001). Re-skin only — logic preserved verbatim from
+ * components/legacy/ResetPasswordLegacy.tsx.
  *
  * Journey (QA-100 §F1++): the temp-pw login lands here (never /hub). The temp session
  * bearer was stashed in sessionStorage by /login; we send it to SignalBridge along with
  * the temporary password + a new one. On success we wipe every temp credential and send
- * the user back to /login to sign in cleanly with the new password.
+ * the user back to /login to sign in cleanly with the new password (/login?reset=1).
+ *
+ * E2E contract (scripts/registration-qa.mjs): data-testids rst-current (pre-filled),
+ * rst-new, rst-confirm, rst-submit, and panel reset-done after success.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { KeyRound, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, KeyRound, Loader2, XCircle } from 'lucide-react';
+
+import { PublicHeader, PublicFooter } from '@/components/gm/views/PublicChrome';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
 
 function rules(pw: string) {
   return { length: pw.length >= 8, upper: /[A-Z]/.test(pw), lower: /[a-z]/.test(pw), digit: /\d/.test(pw) };
@@ -67,69 +75,100 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-slate-100 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        {status === 'done' ? (
-          <div data-testid="reset-done" className="rounded-2xl border border-emerald-500/30 bg-slate-900/70 p-8 text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-            <h1 className="text-xl font-bold">Contraseña actualizada</h1>
-            <p className="text-sm text-slate-300">Redirigiendo al inicio de sesión…</p>
-          </div>
-        ) : (
-          <form onSubmit={onSubmit} className="rounded-2xl border border-slate-700/60 bg-slate-900/70 p-8 space-y-5">
-            <div className="text-center space-y-1.5">
-              <div className="mx-auto w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center mb-2">
-                <KeyRound className="w-6 h-6 text-amber-300" />
+    <div className={`min-h-screen flex flex-col ${GM.page}`}>
+      <PublicHeader />
+
+      <main className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-[420px]">
+          {status === 'done' ? (
+            <div
+              data-testid="reset-done"
+              className={`${GM.panel} p-8 text-center space-y-3 shadow-[0_20px_60px_rgba(0,0,0,.4)]`}
+            >
+              <div className={`mx-auto w-14 h-14 rounded-2xl ${GM.posBadge} flex items-center justify-center`}>
+                <CheckCircle2 className="w-7 h-7" aria-hidden />
               </div>
-              <h1 className="text-xl font-bold">Cambia tu contraseña temporal</h1>
-              <p className="text-xs text-slate-400">Tu acceso fue aprobado. Define una contraseña propia para continuar.</p>
+              <h1 className={`text-[21px] font-extrabold ${GM.headline}`}>Contraseña actualizada</h1>
+              <p className={`${GMT.body} ${GM.textStrong}`}>Redirigiendo al inicio de sesión…</p>
             </div>
-
-            {!bearer && (
-              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-300">
-                No encontramos una sesión temporal. Inicia sesión con la contraseña temporal del correo.
+          ) : (
+            <form onSubmit={onSubmit} className={`${GM.panel} p-8 space-y-5 shadow-[0_20px_60px_rgba(0,0,0,.4)]`}>
+              <div className="flex flex-col items-center text-center space-y-3">
+                <span
+                  className={`w-12 h-12 rounded-[13px] ${GM.warnBadge} flex items-center justify-center`}
+                  aria-hidden
+                >
+                  <KeyRound className="w-6 h-6" />
+                </span>
+                <div className="space-y-1.5">
+                  <h1 className={`text-[21px] font-extrabold ${GM.headline}`}>Cambia tu contraseña temporal</h1>
+                  <p className={`${GMT.meta} ${GM.textSec}`}>
+                    Tu acceso fue aprobado. Define una contraseña propia para continuar.
+                  </p>
+                </div>
               </div>
-            )}
-            {error && (
-              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300 flex items-start gap-2">
-                <XCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{error}</span>
-              </div>
-            )}
 
-            <label className="block">
-              <span className="text-xs font-medium text-slate-300 block mb-1.5">Contraseña temporal</span>
-              <input data-testid="rst-current" type="password" value={current} onChange={(e) => setCurrent(e.target.value)}
-                placeholder="La del correo" className="w-full rounded-lg bg-slate-950/60 border border-slate-700/70 px-3 py-2.5 text-sm outline-none focus:border-cyan-500/70" />
-            </label>
+              {!bearer && (
+                <div className={`${GM.warnBadge} rounded-xl p-3 ${GMT.meta}`}>
+                  No encontramos una sesión temporal. Inicia sesión con la contraseña temporal del correo.
+                </div>
+              )}
+              {error && (
+                <div className={`${GM.negBadge} rounded-xl p-3 flex items-start gap-2 ${GMT.meta}`} role="alert">
+                  <XCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden /> <span>{error}</span>
+                </div>
+              )}
 
-            <label className="block">
-              <span className="text-xs font-medium text-slate-300 block mb-1.5">Nueva contraseña</span>
-              <input data-testid="rst-new" type="password" value={next} onChange={(e) => setNext(e.target.value)}
-                placeholder="••••••••" className="w-full rounded-lg bg-slate-950/60 border border-slate-700/70 px-3 py-2.5 text-sm outline-none focus:border-cyan-500/70" />
-              <ul className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-                {([['8+ caracteres', pw.length], ['Mayúscula', pw.upper], ['Minúscula', pw.lower], ['Número', pw.digit]] as const).map(([l, ok]) => (
-                  <li key={l} className={`flex items-center gap-1 ${ok ? 'text-emerald-400' : 'text-slate-500'}`}>
-                    <CheckCircle2 className={`w-3 h-3 ${ok ? 'opacity-100' : 'opacity-30'}`} /> {l}
-                  </li>
-                ))}
-              </ul>
-              {next && !differs && <p className="text-[11px] text-red-400 mt-1">Debe ser distinta a la temporal.</p>}
-            </label>
+              <label className="block">
+                <span className={`${GMT.label} ${GM.textSec} block mb-1.5`}>Contraseña temporal</span>
+                <input
+                  data-testid="rst-current" type="password" value={current}
+                  onChange={(e) => setCurrent(e.target.value)}
+                  placeholder="La del correo" className={`${GM.input} ${GM.focus} w-full h-11`}
+                />
+              </label>
 
-            <label className="block">
-              <span className="text-xs font-medium text-slate-300 block mb-1.5">Confirmar</span>
-              <input data-testid="rst-confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
-                placeholder="••••••••" className="w-full rounded-lg bg-slate-950/60 border border-slate-700/70 px-3 py-2.5 text-sm outline-none focus:border-cyan-500/70" />
-              {confirm && !matchOk && <p className="text-[11px] text-red-400 mt-1">No coincide.</p>}
-            </label>
+              <label className="block">
+                <span className={`${GMT.label} ${GM.textSec} block mb-1.5`}>Nueva contraseña</span>
+                <input
+                  data-testid="rst-new" type="password" value={next}
+                  onChange={(e) => setNext(e.target.value)}
+                  placeholder="••••••••" className={`${GM.input} ${GM.focus} w-full h-11`}
+                />
+                <ul className={`mt-2 grid grid-cols-2 gap-1 ${GMT.micro}`}>
+                  {([['8+ caracteres', pw.length], ['Mayúscula', pw.upper], ['Minúscula', pw.lower], ['Número', pw.digit]] as const).map(([l, ok]) => (
+                    <li key={l} className={`flex items-center gap-1 ${ok ? GM.pos : GM.textMuted}`}>
+                      <CheckCircle2 className={`w-3 h-3 ${ok ? 'opacity-100' : 'opacity-30'}`} aria-hidden /> {l}
+                    </li>
+                  ))}
+                </ul>
+                {next && !differs && <p className={`${GMT.micro} ${GM.neg} mt-1`}>Debe ser distinta a la temporal.</p>}
+              </label>
 
-            <button data-testid="rst-submit" type="submit" disabled={!canSubmit}
-              className="w-full rounded-lg bg-cyan-500 enabled:hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-semibold py-2.5 inline-flex items-center justify-center gap-2">
-              {status === 'submitting' ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando…</> : 'Guardar y continuar'}
-            </button>
-          </form>
-        )}
-      </div>
+              <label className="block">
+                <span className={`${GMT.label} ${GM.textSec} block mb-1.5`}>Confirmar</span>
+                <input
+                  data-testid="rst-confirm" type="password" value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  placeholder="••••••••" className={`${GM.input} ${GM.focus} w-full h-11`}
+                />
+                {confirm && !matchOk && <p className={`${GMT.micro} ${GM.neg} mt-1`}>No coincide.</p>}
+              </label>
+
+              <button
+                data-testid="rst-submit" type="submit" disabled={!canSubmit}
+                className={`${GM.ctaPrimary} ${GM.focus} w-full h-[46px] text-[14px] shadow-[0_8px_24px_rgba(34,211,238,.25)] disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2`}
+              >
+                {status === 'submitting'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden /> Guardando…</>
+                  : 'Guardar y continuar'}
+              </button>
+            </form>
+          )}
+        </div>
+      </main>
+
+      <PublicFooter />
     </div>
   );
 }

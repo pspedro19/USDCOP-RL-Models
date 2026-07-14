@@ -23,8 +23,11 @@ import { getToken } from 'next-auth/jwt';
 import {
   API_ROUTES,
   PAGE_ROUTES,
+  ROLE_PERMISSIONS,
+  intersectPerms,
+  isRole,
+  permsHave,
   requiredPermissionFor,
-  roleHasPermission,
   type Permission,
 } from '@/lib/contracts/rbac.contract';
 
@@ -92,6 +95,7 @@ export async function middleware(request: NextRequest) {
       const headers = new Headers(request.headers);
       headers.delete('x-user-id');
       headers.delete('x-user-role');
+      headers.delete('x-user-perms'); // anti-spoof: only middleware asserts identity/perms
       if (token.id) headers.set('x-user-id', String(token.id));
       if (role) headers.set('x-user-role', role);
       return withSecurityHeaders(NextResponse.rewrite(url, { request: { headers } }));
@@ -107,6 +111,22 @@ export async function middleware(request: NextRequest) {
 
   if (!token) return deny(request, pathname);
 
+  // Effective permission set (dynamic RBAC, migration 056): the JWT-baked `permissions`
+  // claim, else the static role matrix (legacy tokens / bake failure ⇒ never OPEN).
+  const realPerms: string[] = Array.isArray((token as { permissions?: unknown }).permissions)
+    ? ((token as { permissions?: string[] }).permissions as string[])
+    : (isRole(role) ? [...ROLE_PERMISSIONS[role]] : []);
+
+  // Role PREVIEW ("Ver como", admin-only): for READ requests, authorize against
+  // real ∩ preview-role (downgrade-only — a forged cookie can only restrict, never
+  // escalate; the admin is already a superset). Mutations always keep the real role.
+  const viewAs = request.cookies.get('gm-view-as-role')?.value;
+  const isRead = request.method === 'GET' || request.method === 'HEAD';
+  const effectivePerms: string[] =
+    role === 'admin' && isRead && isRole(viewAs) && viewAs !== 'admin'
+      ? intersectPerms(realPerms, ROLE_PERMISSIONS[viewAs])
+      : realPerms;
+
   // R7 rate limit on data-heavy APIs (per user id, fallback IP). MUST run before the
   // `authenticated`-permission early return below — /api/data & friends resolve to
   // 'authenticated', which used to bypass the limiter entirely (found by burst smoke test).
@@ -120,10 +140,10 @@ export async function middleware(request: NextRequest) {
   if (required === 'authenticated' || required === null) {
     // Unmatched routes still require a session (deny-by-default floor). Unmatched APIs
     // are additionally flagged by the CI coverage test so the matrix stays exhaustive.
-    return withUserHeaders(request, token, role);
+    return withUserHeaders(request, token, role, effectivePerms);
   }
 
-  if (!roleHasPermission(role ?? undefined, required as Permission)) {
+  if (!permsHave(effectivePerms, required as Permission)) {
     if (isApi) {
       return NextResponse.json(
         { error: 'Forbidden', required, timestamp: new Date().toISOString() },
@@ -133,7 +153,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/hub', request.url)); // page: bounce to hub
   }
 
-  return withUserHeaders(request, token, role);
+  return withUserHeaders(request, token, role, effectivePerms);
 }
 
 // ─────────────────────────────────────────────────────────────── helpers
@@ -154,6 +174,7 @@ function withUserHeaders(
   request: NextRequest,
   token: Record<string, unknown>,
   role: string | null,
+  effectivePerms: string[] = [],
 ) {
   // Identity must travel on the REQUEST headers so downstream route handlers can read it
   // (the legacy middleware set these on the response — the client saw them, handlers never
@@ -161,9 +182,12 @@ function withUserHeaders(
   const headers = new Headers(request.headers);
   headers.delete('x-user-id');
   headers.delete('x-user-role');
+  headers.delete('x-user-perms');
   if (request.nextUrl.pathname.startsWith('/api')) {
     if (token.id) headers.set('x-user-id', String(token.id));
     if (role) headers.set('x-user-role', role);
+    // Effective (dynamic + preview-downgraded) permission set for in-handler re-checks.
+    headers.set('x-user-perms', effectivePerms.join(','));
   }
   const response = NextResponse.next({ request: { headers } });
   addSecurityHeaders(response);

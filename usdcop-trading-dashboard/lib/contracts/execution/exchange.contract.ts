@@ -33,6 +33,9 @@ export const EXCHANGE_METADATA: Record<SupportedExchange, {
   color: string;
   docsUrl: string;
   description: string;
+  /** True only for exchanges whose API keys carry a passphrase (e.g. OKX/KuCoin/Coinbase).
+   *  Binance and MEXC do NOT — the connect form must not demand it for them. */
+  requiresPassphrase: boolean;
 }> = {
   binance: {
     name: 'binance',
@@ -41,6 +44,7 @@ export const EXCHANGE_METADATA: Record<SupportedExchange, {
     color: '#F0B90B',
     docsUrl: 'https://binance-docs.github.io/apidocs/',
     description: 'World\'s largest crypto exchange',
+    requiresPassphrase: false,
   },
   mexc: {
     name: 'mexc',
@@ -49,6 +53,7 @@ export const EXCHANGE_METADATA: Record<SupportedExchange, {
     color: '#00B897',
     docsUrl: 'https://mexcdevelop.github.io/apidocs/',
     description: 'Global crypto exchange',
+    requiresPassphrase: false,
   },
 };
 

@@ -67,6 +67,12 @@ no traducir aún) · Mobile: bottom-tabs, kill switch ≤2 taps · LCP<2.5s land
 contraste sobre tema oscuro (grises del hub actuales no pasan — corregir con tokens).
 
 ## AS-BUILT ledger
+
+> **2026-07-10 — GlobalMarkets Terminal (CTR-GM-UI-001):** toda la app migró al chrome GM
+> (sidebar + topbar `TerminalShell`, tokens Var B, estados de datos envelope-driven).
+> Este ledger describe las pasadas previas; el estado actual por vista está en
+> `gm-terminal-migration.md`. Los principios P1/P2/P3 de este spec siguen vigentes y
+> los cumple el DS GM (badges ●◆○ reutilizados, cifras del bundle, divulgación por rol).
 | Pieza | Estado |
 |---|---|
 | `lib/contracts/ui.contract.ts` (tokens + procedencia) | ✅ 2026-07-06 |

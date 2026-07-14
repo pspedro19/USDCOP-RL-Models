@@ -10,23 +10,15 @@
  */
 import { createHash } from 'node:crypto';
 
+import { planPricesCents } from './prices';
 import type {
   BillingProvider, CheckoutRequest, CheckoutSession, WebhookVerification,
 } from './provider';
 import { encodeReference } from './provider';
 
-const DEFAULT_PRICES_COP_CENTS: Record<string, number> = {
-  signals: 990_000_00 / 10, // placeholder: real prices are a business decision (spec §B.5)
-  auto: 2_990_000_00 / 10,
-};
-
-function pricesCopCents(): Record<string, number> {
-  try {
-    return { ...DEFAULT_PRICES_COP_CENTS, ...JSON.parse(process.env.BILLING_PRICES_COP ?? '{}') };
-  } catch {
-    return DEFAULT_PRICES_COP_CENTS;
-  }
-}
+// Prices are shared SSOT (lib/billing/prices.ts) so admin revenue and checkout
+// never diverge. Env override: BILLING_PRICES_COP.
+const pricesCopCents = planPricesCents;
 
 export class WompiProvider implements BillingProvider {
   readonly name = 'wompi';

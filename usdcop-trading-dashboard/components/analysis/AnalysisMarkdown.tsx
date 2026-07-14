@@ -3,6 +3,8 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+
 interface AnalysisMarkdownProps {
   content: string;
   className?: string;
@@ -15,66 +17,66 @@ export function AnalysisMarkdown({ content, className = '' }: AnalysisMarkdownPr
         remarkPlugins={[remarkGfm]}
         components={{
           h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-white mt-6 mb-3 border-b border-gray-700/50 pb-2">
+            <h2 className={`${GMT.h2} ${GM.headline} mt-6 mb-3 border-b border-[var(--gm-border)] pb-2`}>
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-gray-200 mt-4 mb-2">{children}</h3>
+            <h3 className={`text-base font-semibold ${GM.text} mt-4 mb-2`}>{children}</h3>
           ),
           p: ({ children }) => (
-            <p className="text-gray-300 text-sm leading-relaxed mb-3">{children}</p>
+            <p className={`${GM.textSec} ${GMT.body} leading-relaxed mb-3`}>{children}</p>
           ),
           ul: ({ children }) => (
-            <ul className="list-disc list-inside text-gray-300 text-sm space-y-1 mb-3">{children}</ul>
+            <ul className={`list-disc list-inside ${GM.textSec} ${GMT.body} space-y-1 mb-3`}>{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal list-inside text-gray-300 text-sm space-y-1 mb-3">{children}</ol>
+            <ol className={`list-decimal list-inside ${GM.textSec} ${GMT.body} space-y-1 mb-3`}>{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="text-gray-300 text-sm">{children}</li>
+            <li className={`${GM.textSec} ${GMT.body}`}>{children}</li>
           ),
           strong: ({ children }) => (
-            <strong className="text-white font-semibold">{children}</strong>
+            <strong className={`${GM.textStrong} font-semibold`}>{children}</strong>
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto mb-4">
-              <table className="w-full text-sm text-left border-collapse">{children}</table>
+              <table className={`w-full ${GMT.body} text-left border-collapse`}>{children}</table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="border-b border-gray-700 bg-gray-800/30">{children}</thead>
+            <thead className="border-b border-[var(--gm-border)] bg-[rgba(148,163,184,.05)]">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 text-gray-400 font-medium text-xs uppercase tracking-wider">{children}</th>
+            <th className={`px-3 py-2 ${GMT.label} ${GM.textMuted}`}>{children}</th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 text-gray-300 border-b border-gray-800/50">{children}</td>
+            <td className={`px-3 py-2 ${GM.textSec} border-b border-[var(--gm-border)]`}>{children}</td>
           ),
           a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 underline decoration-cyan-400/30 hover:decoration-cyan-300/60 transition-colors"
+              className={`${GM.accent} hover:opacity-80 underline decoration-[rgba(34,211,238,.3)] transition-opacity duration-[var(--gm-dur-fast)] ${GM.focus} rounded`}
             >
               {children}
             </a>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-cyan-500/50 pl-4 italic text-gray-400 my-3">{children}</blockquote>
+            <blockquote className={`border-l-2 border-[var(--gm-accent)] pl-4 italic ${GM.textMuted} my-3`}>{children}</blockquote>
           ),
           code: ({ children, className: codeClassName }) => {
             const isBlock = codeClassName?.includes('language-');
             if (isBlock) {
               return (
-                <pre className="bg-gray-900/80 rounded-lg p-3 overflow-x-auto mb-3">
-                  <code className="text-sm text-gray-300">{children}</code>
+                <pre className={`${GM.panelInner} p-3 overflow-x-auto mb-3`}>
+                  <code className={`${GMT.body} ${GM.textSec} ${GMT.mono}`}>{children}</code>
                 </pre>
               );
             }
             return (
-              <code className="bg-gray-800/80 rounded px-1.5 py-0.5 text-cyan-300 text-sm">{children}</code>
+              <code className={`${GM.panelInner} rounded px-1.5 py-0.5 ${GM.accent} ${GMT.body} ${GMT.mono}`}>{children}</code>
             );
           },
         }}

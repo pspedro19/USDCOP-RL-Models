@@ -3,113 +3,114 @@
 import { motion } from 'framer-motion';
 import { Target, ArrowUp, ArrowDown } from 'lucide-react';
 import type { TradingScenario } from '@/lib/contracts/weekly-analysis.contract';
+import { useGmT } from '@/lib/i18n/gm-core';
+import { GM, GMT } from '@/lib/ui/gm-tokens';
+import { GmBadge } from '@/components/gm';
+
+import { ANALYSIS_DICT } from './gm-analysis';
 
 interface TradingScenariosTableProps {
   scenarios: TradingScenario[];
   noTradeZone?: [number, number];
 }
 
-const CONFIDENCE_CONFIG = {
-  high: 'text-emerald-400 bg-emerald-500/10',
-  medium: 'text-amber-400 bg-amber-500/10',
-  low: 'text-gray-400 bg-gray-500/10',
-} as const;
-
-const PROFILE_LABELS: Record<string, string> = {
-  scalp: 'Scalp',
-  intraday: 'Intradía',
-  swing: 'Swing',
-};
+/** Prototype view-model: conf high → pos, medium → warn, low → neg. */
+const CONFIDENCE_TONE = { high: 'pos', medium: 'warn', low: 'neg' } as const;
 
 export function TradingScenariosTable({ scenarios, noTradeZone }: TradingScenariosTableProps) {
+  const t = useGmT(ANALYSIS_DICT);
   if (scenarios.length === 0) return null;
+
+  const profileLabels: Record<string, string> = {
+    scalp: t('profileScalp'),
+    intraday: t('profileIntraday'),
+    swing: t('profileSwing'),
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-900/60 backdrop-blur-sm rounded-xl border border-gray-800/50 p-5"
+      className={`${GM.panel} gm-contain p-5`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <Target className="w-4 h-4 text-cyan-400" />
-          Escenarios de Trading
+        <h3 className={`${GMT.panelTitle} ${GM.textStrong} flex items-center gap-2`}>
+          <Target className={`w-4 h-4 ${GM.accent}`} />
+          {t('scenTitle')}
         </h3>
         {noTradeZone?.[0] != null && noTradeZone[1] != null && noTradeZone[0] !== noTradeZone[1] && (
-          <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded">
-            Zona de no-operar: {noTradeZone[0].toFixed(0)}-{noTradeZone[1].toFixed(0)}
+          <span className={`${GMT.micro} ${GM.warnBadge} ${GMT.mono} px-2 py-0.5 rounded`}>
+            {t('noTradeZone')}: {noTradeZone[0].toFixed(0)}–{noTradeZone[1].toFixed(0)}
           </span>
         )}
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className={`w-full ${GMT.meta}`}>
           <thead>
-            <tr className="border-b border-gray-800/50">
-              <th className="text-left py-2 px-2 text-gray-500 font-medium">Dir</th>
-              <th className="text-left py-2 px-2 text-gray-500 font-medium">Entrada</th>
-              <th className="text-right py-2 px-2 text-gray-500 font-medium">Stop</th>
-              <th className="text-right py-2 px-2 text-gray-500 font-medium">Objetivo(s)</th>
-              <th className="text-right py-2 px-2 text-gray-500 font-medium">R:R</th>
-              <th className="text-center py-2 px-2 text-gray-500 font-medium">Confianza</th>
-              <th className="text-center py-2 px-2 text-gray-500 font-medium">Perfil</th>
+            <tr className="border-b border-[var(--gm-border)]">
+              <th className={`text-left py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thDir')}</th>
+              <th className={`text-left py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thEntry')}</th>
+              <th className={`text-right py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thStop')}</th>
+              <th className={`text-right py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thTargets')}</th>
+              <th className={`text-right py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thRR')}</th>
+              <th className={`text-center py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thConf')}</th>
+              <th className={`text-center py-2 px-2 ${GMT.label} ${GM.textMuted}`}>{t('thProfile')}</th>
             </tr>
           </thead>
           <tbody>
             {scenarios.map((scenario, i) => {
               const isLong = scenario.direction === 'long';
-              const confConfig = CONFIDENCE_CONFIG[scenario.confidence] || CONFIDENCE_CONFIG.low;
+              const confTone = CONFIDENCE_TONE[scenario.confidence] || 'neutral';
 
               return (
                 <tr
                   key={i}
-                  className="border-b border-gray-800/30 hover:bg-gray-800/20 transition-colors"
+                  className={`border-b border-[rgba(148,163,184,.07)] ${GM.rowHover} transition-colors duration-[var(--gm-dur-fast)]`}
                 >
                   {/* Direction */}
                   <td className="py-2.5 px-2">
-                    <span className={`inline-flex items-center gap-1 font-semibold ${isLong ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className={`inline-flex items-center gap-1 font-bold ${isLong ? GM.pos : GM.neg}`}>
                       {isLong ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                       {isLong ? 'LONG' : 'SHORT'}
                     </span>
                   </td>
 
                   {/* Entry condition */}
-                  <td className="py-2.5 px-2 text-gray-300 max-w-[200px]">
+                  <td className={`py-2.5 px-2 ${GM.text} max-w-[200px]`}>
                     <div className="truncate" title={scenario.entry_condition}>
                       {scenario.entry_condition}
                     </div>
                     {scenario.entry_price != null && (
-                      <span className="text-gray-500">{scenario.entry_price.toFixed(2)}</span>
+                      <span className={`${GM.textMuted} ${GMT.mono}`}>{scenario.entry_price.toFixed(2)}</span>
                     )}
                   </td>
 
                   {/* Stop */}
-                  <td className="py-2.5 px-2 text-right text-red-400/80">
+                  <td className={`py-2.5 px-2 text-right ${GM.neg} ${GMT.mono}`}>
                     {scenario.stop_loss != null ? scenario.stop_loss.toFixed(2) : '—'}
                   </td>
 
                   {/* Targets */}
-                  <td className="py-2.5 px-2 text-right text-emerald-400/80">
+                  <td className={`py-2.5 px-2 text-right ${GM.pos} ${GMT.mono}`}>
                     {(scenario.targets?.length ?? 0) > 0
-                      ? (scenario.targets ?? []).map(t => t.toFixed(0)).join(' / ')
+                      ? (scenario.targets ?? []).map(tg => tg.toFixed(0)).join(' / ')
                       : '—'}
                   </td>
 
                   {/* R:R */}
-                  <td className="py-2.5 px-2 text-right text-white font-medium">
+                  <td className={`py-2.5 px-2 text-right ${GM.textStrong} font-semibold ${GMT.mono}`}>
                     {scenario.risk_reward != null ? `${scenario.risk_reward.toFixed(1)}:1` : '—'}
                   </td>
 
                   {/* Confidence */}
                   <td className="py-2.5 px-2 text-center">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase ${confConfig}`}>
-                      {scenario.confidence}
-                    </span>
+                    <GmBadge tone={confTone}>{scenario.confidence}</GmBadge>
                   </td>
 
                   {/* Profile */}
-                  <td className="py-2.5 px-2 text-center text-gray-400">
-                    {PROFILE_LABELS[scenario.profile] || scenario.profile}
+                  <td className={`py-2.5 px-2 text-center ${GM.textSec}`}>
+                    {profileLabels[scenario.profile] || scenario.profile}
                   </td>
                 </tr>
               );
