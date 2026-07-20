@@ -2,6 +2,7 @@
 User service for user management operations.
 """
 
+import logging
 import secrets
 import string
 from datetime import datetime
@@ -21,6 +22,8 @@ from app.core.exceptions import (
 )
 from app.core.security import get_password_hash, verify_password
 from app.models import TradingConfig, User
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
@@ -196,13 +199,36 @@ class UserService:
         user.is_active = True
         user.hashed_password = get_password_hash(temp_password)
         user.must_reset_password = True
-        user.approved_by = admin_id
+        user.approved_by = await self._resolve_admin_fk(admin_id)
         user.approved_at = datetime.utcnow()
         user.updated_at = datetime.utcnow()
 
         await self.db.commit()
         await self.db.refresh(user)
         return user, temp_password
+
+    async def _resolve_admin_fk(self, admin_id: UUID | None) -> UUID | None:
+        """Return ``admin_id`` only if it is a real row in ``sb_users``, else ``None``.
+
+        ``sb_users.approved_by`` is a self-FK. The dashboard's admin session carries a
+        synthetic principal (``DEV_USER_ID`` = 00000000-…-00de) that has no row, so writing
+        it raised ForeignKeyViolationError and the whole approval 500'd — the operator could
+        not approve ANY user from the console.
+
+        The column is nullable by design, so degrading to NULL keeps the approval working
+        while losing only the attribution. The action is still recorded in ``audit_log``
+        with the authenticated principal, which is the record that matters for RBAC.
+        """
+        if admin_id is None:
+            return None
+        exists = await self.db.execute(select(User.id).where(User.id == admin_id))
+        if exists.scalar_one_or_none() is not None:
+            return admin_id
+        logger.warning(
+            "approved_by=%s is not a row in sb_users (synthetic session principal); "
+            "storing NULL. The audit_log entry retains the real actor.", admin_id
+        )
+        return None
 
     async def reject(
         self, user_id: UUID, admin_id: UUID, reason: str | None = None
@@ -213,7 +239,7 @@ class UserService:
         user.is_active = False
         user.rejected_at = datetime.utcnow()
         user.rejection_reason = reason
-        user.approved_by = admin_id
+        user.approved_by = await self._resolve_admin_fk(admin_id)
         user.updated_at = datetime.utcnow()
 
         await self.db.commit()

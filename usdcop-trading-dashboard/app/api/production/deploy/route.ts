@@ -20,9 +20,24 @@ import type {
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'data', 'production');
 const APPROVAL_FILE = path.join(DATA_DIR, 'approval_state.json');
-function approvalFileFor(sid?: string | null): string {
+/** Same resolution rule as the approve route — they must agree or approval succeeds and
+ *  deploy silently 404s, which is exactly what happened: the export pipeline writes the
+ *  ACTIVE strategy to the unsuffixed `approval_state.json`, the dashboard always sends a
+ *  `strategy_id`, so `smart_simple_v11` resolved to a file that is never written.
+ *  Falls back to the singleton only when it IS this strategy. */
+async function approvalFileFor(sid?: string | null): Promise<string> {
   if (!sid || !/^[A-Za-z0-9_-]+$/.test(sid)) return APPROVAL_FILE;
-  return path.join(DATA_DIR, `approval_state_${sid}.json`);
+  const scoped = path.join(DATA_DIR, `approval_state_${sid}.json`);
+  try {
+    await fs.access(scoped);
+    return scoped;
+  } catch {
+    try {
+      const raw = await fs.readFile(APPROVAL_FILE, 'utf-8');
+      if ((JSON.parse(raw) as { strategy?: string }).strategy === sid) return APPROVAL_FILE;
+    } catch { /* unreadable singleton — keep the scoped path so the 404 stays honest */ }
+    return scoped;
+  }
 }
 const DEPLOY_FILE = path.join(DATA_DIR, 'deploy_status.json');
 
@@ -97,7 +112,7 @@ export async function POST(request: NextRequest) {
     } catch { /* empty body = default strategy */ }
 
     // 1. Validate approval state
-    const approval = await readJsonFile<ApprovalState>(approvalFileFor(strategyId));
+    const approval = await readJsonFile<ApprovalState>(await approvalFileFor(strategyId));
     if (!approval) {
       return NextResponse.json(
         { success: false, status: 'idle', message: 'No approval state found. Run backtest first.' } as DeployResponse,

@@ -68,11 +68,28 @@ def _write_deploy_status(patch: Dict[str, Any]) -> None:
 
 def _approval_file(context) -> Path:
     """Multi-strategy: dag_run.conf.strategy_id selects approval_state_<sid>.json
-    (e.g. btc_trend_b2 paper); default = the COP singleton."""
+    (e.g. btc_trend_b2 paper); default = the COP singleton.
+
+    The singleton fallback is load-bearing and must match the dashboard's approve/deploy
+    routes: the export pipeline writes the ACTIVE strategy to the unsuffixed
+    `approval_state.json`, while the dashboard always sends a `strategy_id`. Without it,
+    `smart_simple_v11` resolved to a file that is never written and this hard gate failed
+    on a bundle that WAS approved. Falls back only when the singleton IS that strategy, so
+    a stale id can never deploy somebody else's bundle.
+    """
     sid = ((context.get('dag_run') and context['dag_run'].conf) or {}).get('strategy_id')
-    if sid and str(sid).replace('_', '').replace('-', '').isalnum():
-        return DASHBOARD_DATA_DIR / f"approval_state_{sid}.json"
-    return APPROVAL_FILE
+    if not (sid and str(sid).replace('_', '').replace('-', '').isalnum()):
+        return APPROVAL_FILE
+    scoped = DASHBOARD_DATA_DIR / f"approval_state_{sid}.json"
+    if scoped.is_file():
+        return scoped
+    try:
+        singleton = json.loads(APPROVAL_FILE.read_text(encoding='utf-8'))
+        if singleton.get('strategy') == sid:
+            return APPROVAL_FILE
+    except Exception:  # noqa: BLE001 — unreadable singleton: keep the scoped path so the gate fails honestly
+        pass
+    return scoped
 
 
 def guard_approved(**context) -> Dict[str, Any]:

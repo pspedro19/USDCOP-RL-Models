@@ -174,6 +174,10 @@ services:
         condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # REST con basic auth: la ruta de deploy del dashboard dispara el DAG L4b por API.
+      # Sin esto solo existe auth por sesion y el POST devuelve 401, dejando el deploy
+      # sin ninguna via viable (el contenedor node no tiene python3 para el fallback local).
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -257,6 +261,10 @@ services:
         condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # REST con basic auth: la ruta de deploy del dashboard dispara el DAG L4b por API.
+      # Sin esto solo existe auth por sesion y el POST devuelve 401, dejando el deploy
+      # sin ninguna via viable (el contenedor node no tiene python3 para el fallback local).
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -348,6 +356,10 @@ services:
         condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      # REST con basic auth: la ruta de deploy del dashboard dispara el DAG L4b por API.
+      # Sin esto solo existe auth por sesion y el POST devuelve 401, dejando el deploy
+      # sin ninguna via viable (el contenedor node no tiene python3 para el fallback local).
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -535,7 +547,7 @@ services:
       - VAULT_ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-me-32-byte-encryption-key}
       - APP_ENV=development
       - DEBUG=true
-      - SIGNALBRIDGE_DEV_MODE=true
+      - SIGNALBRIDGE_DEV_MODE=false
       - TRADING_MODE=PAPER
       # Shared demo account for "Explorar como invitado" (rol free, is_test=true).
       # bootstrap_guest() re-ensures it (and its password) on every startup; the
@@ -582,6 +594,11 @@ services:
       NEXT_PUBLIC_ANALYTICS_API_URL: http://localhost:5000/api/analytics
       NEXT_PUBLIC_WS_TRADING_URL: ws://localhost:8000/ws
       NEXT_PUBLIC_DEV_MODE: "true"
+      # Ruta REAL de deploy en contenedor: el fallback spawn(python3) no existe aqui.
+      AIRFLOW_API_URL: http://airflow-webserver:8080
+      AIRFLOW_API_USER: ${AIRFLOW_USER}
+      AIRFLOW_API_PASSWORD: ${AIRFLOW_PASSWORD}
+      DEPLOY_DAG_ID: forecast_h5_l4b_production_deploy
       TRADING_API_URL: http://usdcop-trading-api:8000
       ANALYTICS_API_URL: http://usdcop-analytics-api:8001/api/analytics
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000

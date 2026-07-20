@@ -63,9 +63,12 @@ await page.goto(`${BASE}/dashboard`, { waitUntil: 'commit', timeout: 90000 });
 await page.waitForTimeout(9000);
 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 await page.waitForTimeout(1500);
-const approveBtn = page.getByText('Aprobar y Promover', { exact: false }).first();
+// The GM Terminal migration renamed this button from "Aprobar y Promover a Produccion"
+// to "Aprobar (Voto 2/2)". The old selector kept failing against a UI that works, so
+// accept both rather than pinning to whichever wording is current.
+const approveBtn = page.getByText(/Aprobar\s*\(Voto\s*2\/2\)|Aprobar y Promover/i).first();
 const approveVisible = await approveBtn.isVisible().catch(() => false);
-check('ApprovalPanel "Aprobar y Promover" visible for admin', approveVisible);
+check('ApprovalPanel boton Vote-2 visible for admin', approveVisible);
 await approveBtn.scrollIntoViewIfNeeded().catch(() => {});
 await page.waitForTimeout(500);
 await page.screenshot({ path: `${OUT}/01-pending-approvalpanel.png` });
