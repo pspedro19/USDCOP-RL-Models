@@ -16,6 +16,7 @@ notification still goes out and the run goes red.
 """
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -50,8 +51,17 @@ def test_all_done_tasks_do_not_mask_failure(path: Path):
     the run's verdict.
     """
     src = path.read_text(encoding="utf-8", errors="replace")
-    assert "fail_if_upstream_failed" in src, (
-        f"{path.name} has a task with trigger_rule='all_done' but never calls "
+    tree = ast.parse(src)
+    calls = [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and getattr(n.func, "id", None) == "fail_if_upstream_failed"
+    ]
+    # Parse, don't grep. The first attempt at this fix was inserted INSIDE a triple-quoted
+    # f-string in l0_macro_backfill.py: the text was present, a substring check passed, and
+    # the guard never ran — the DAG kept reporting success over a dead critical path (and
+    # the comment leaked into the operator's alert). Only the AST knows it is executable.
+    assert calls, (
+        f"{path.name} has a task with trigger_rule='all_done' but no executable call to "
         "fail_if_upstream_failed(context). If that task is a leaf, a fully failed run "
         "will report success — which is how a 13-day-stale macro table went unnoticed."
     )

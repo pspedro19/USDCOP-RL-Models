@@ -1123,13 +1123,6 @@ def send_report(**context) -> None:
 
     # Build message
     message = f"""
-
-    # El reporte ya se emitio; ahora que el estado del DAG sea honesto.
-    # Sin esto, esta tarea hoja con trigger_rule='all_done' marcaba el run como
-    # success aunque el camino critico entero hubiera fallado.
-    fail_if_upstream_failed(context)
-
-
 Pipeline completed with {success_rate:.0%} extraction success rate.
 
 Extraction: {total_records} records from {extraction_metrics.get('total_variables', 0)} variables
@@ -1153,6 +1146,11 @@ Post-validation: {'PASSED' if post_val_results.get('passed') else 'FAILED'}
     # Log final summary
     logger.info(f"[REPORT] {title}")
     logger.info(f"[REPORT] {message}")
+
+    # El reporte ya se emitio; ahora que el estado del DAG sea honesto.
+    # Sin esto, esta tarea hoja con trigger_rule='all_done' marca el run como
+    # success aunque el camino critico entero haya fallado.
+    fail_if_upstream_failed(context)
 
 
 # =============================================================================
