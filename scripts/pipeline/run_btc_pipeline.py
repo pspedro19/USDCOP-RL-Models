@@ -27,6 +27,13 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
+
+def _suppress(summary):
+    """Lazy import: these scripts extend sys.path at runtime, so a module-level
+    `from src...` import runs before the repo root is on the path."""
+    from src.contracts.strategy_schema import suppress_small_sample_stats
+    return suppress_small_sample_stats(summary)
+
 # services/ may be absent in the Airflow container (volume not mounted). Fail-safe per
 # quant-constitution: without DSR nothing can PROMOTE (verdict degrades to REVIEW).
 try:
@@ -273,7 +280,7 @@ def main() -> int:
                 _json.dump(doc, f, indent=2, ensure_ascii=False, default=str)
             print(f"  [production] wrote {path}")
 
-        _dump(prod_dir / f"summary_{sid}.json", summary_doc)
+        _dump(prod_dir / f"summary_{sid}.json", _suppress(summary_doc))
         _dump(prod_dir / f"approval_state_{sid}.json", approval_doc)
         _dump(prod_dir / "trades" / f"{sid}.json", trades_doc)
         print(f"\n[production] {sid} exported (PAPER). 2026 YTD: ret={ret26}% "

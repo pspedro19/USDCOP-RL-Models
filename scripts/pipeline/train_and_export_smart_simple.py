@@ -733,14 +733,27 @@ def export_summary(result, year, cfg):
         return {}
 
     sid = cfg.get("strategy_id", "smart_simple_v11")
+
+    # quant-constitution.md §6: with N < 20 trades, report ONLY count and PnL — never a
+    # Sharpe or a p-value. The 2026 production slice had 5 trades and was still publishing
+    # `sharpe: -0.949` and `p_value: 0.5944` to the dashboard, i.e. the pipeline was
+    # breaking its own rule and showing operators statistical confidence that does not
+    # exist at that sample size. Return, drawdown and win-rate stay: they are descriptive,
+    # not inferential.
+    MIN_TRADES_FOR_STATS = 20
+    n_trades = m["n_trades"]
+    stats_valid = n_trades >= MIN_TRADES_FOR_STATS
+
     summary = {
         "generated_at": datetime.now().isoformat(),
         "strategy_name": f"Smart Simple v{cfg['version']}",
         "strategy_id": sid,
         "year": year,
         "initial_capital": 10000.0,
-        "n_trading_days": m["n_trades"] * 5,
+        "n_trading_days": n_trades * 5,
         "direction_accuracy_pct": m["direction_accuracy_pct"],
+        "n_trades": n_trades,
+        "insufficient_trades": not stats_valid,
         "strategies": {
             "buy_and_hold": {
                 "final_equity": round(10000 * (1 + m["bh_return_pct"] / 100), 2),
@@ -749,19 +762,35 @@ def export_summary(result, year, cfg):
             sid: {
                 "final_equity": m["final_equity"],
                 "total_return_pct": m["total_return_pct"],
-                "sharpe": m["sharpe"],
+                # Calmar is the constitution's PRIMARY graduation metric (§2); Sharpe is
+                # secondary. It is also the only metric on which this strategy beats the
+                # mandatory dumb baseline: 2025 gave Calmar 7.44 vs always-short 5.37 while
+                # LOSING on raw return (+26.05% vs +28.20%). Publishing return alone hides
+                # the one place the model earns its keep. See EXP-DIR-002.
+                # Unlike Sharpe it is descriptive (return over worst drawdown), so it is not
+                # suppressed by the N<20 rule.
+                "calmar": (
+                    round(m["total_return_pct"] / abs(m["max_dd_pct"]), 3)
+                    if m.get("max_dd_pct") else None
+                ),
+                "sharpe": m["sharpe"] if stats_valid else None,
                 "max_dd_pct": m["max_dd_pct"],
                 "win_rate_pct": m["win_rate_pct"],
                 "profit_factor": m["profit_factor"],
-                "trading_days": m["n_trades"] * 5,
+                "trading_days": n_trades * 5,
                 "exit_reasons": m["exit_reasons"],
                 "n_long": m["n_long"],
                 "n_short": m["n_short"],
+                "insufficient_trades": not stats_valid,
             },
         },
         "statistical_tests": {
-            "p_value": m["p_value"],
-            "significant": bool(m["p_value"] < 0.05),
+            # Nulled below N=20 (quant-constitution §6): a p-value on 5 trades is noise
+            # wearing a lab coat, and the dashboard renders it as if it meant something.
+            "p_value": m["p_value"] if stats_valid else None,
+            "significant": bool(m["p_value"] < 0.05) if stats_valid else False,
+            "insufficient_trades": not stats_valid,
+            "min_trades_for_stats": MIN_TRADES_FOR_STATS,
         },
     }
 

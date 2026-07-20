@@ -192,3 +192,62 @@ EXIT_REASONS = {
     "circuit_breaker": {"color": "amber",   "label": "Circuit Breaker"},
     "no_bars":         {"color": "slate",   "label": "No Bars"},
 }
+
+
+# ---------------------------------------------------------------------------
+# Small-sample guard (quant-constitution.md §6)
+# ---------------------------------------------------------------------------
+MIN_TRADES_FOR_STATS = 20
+
+
+def suppress_small_sample_stats(summary: dict, n_trades: int | None = None) -> dict:
+    """Null out inferential statistics when the trade count is too small to support them.
+
+    The constitution is explicit: "con N < 20 trades se reporta solo conteo y PnL (nada de
+    'Sharpe 19, p=0.000, 3 trades')". Three published bundles were breaking it — COP with
+    5 trades reporting Sharpe -0.949 and p=0.5944, BTC with **3 trades** reporting Sharpe
+    -1.617, p=0.9562 and a PSR, Gold with 7 trades reporting Sharpe 0.618.
+
+    A p-value on 3 trades is not a weak result; it is not a result. Rendering it next to
+    a real one invites the reader to compare them, which is the harm.
+
+    Descriptive quantities survive (return, drawdown, win rate, counts) — they describe
+    what happened. Inferential ones (Sharpe, p-value, PSR, bootstrap CI) are nulled, and
+    ``insufficient_trades`` is set so the UI can say why instead of rendering a blank.
+
+    Mutates and returns ``summary`` for convenience at call sites.
+    """
+    if n_trades is None:
+        n_trades = summary.get("n_trades")
+        if n_trades is None:
+            for block in (summary.get("strategies") or {}).values():
+                if isinstance(block, dict):
+                    lo, sh = block.get("n_long"), block.get("n_short")
+                    if isinstance(lo, int) and isinstance(sh, int):
+                        n_trades = lo + sh
+                        break
+    if n_trades is None or n_trades >= MIN_TRADES_FOR_STATS:
+        return summary
+
+    summary["n_trades"] = n_trades
+    summary["insufficient_trades"] = True
+
+    tests = summary.get("statistical_tests")
+    if isinstance(tests, dict):
+        for key in ("p_value", "bootstrap_95ci_ann", "psr", "sharpe_per_period",
+                    "t_stat", "dsr", "deflated_sharpe"):
+            if key in tests:
+                tests[key] = None
+        tests["significant"] = False
+        tests["insufficient_trades"] = True
+        tests["min_trades_for_stats"] = MIN_TRADES_FOR_STATS
+
+    for sid, block in (summary.get("strategies") or {}).items():
+        if sid == "buy_and_hold" or not isinstance(block, dict):
+            continue
+        for key in ("sharpe", "sortino", "calmar"):
+            if key in block:
+                block[key] = None
+        block["insufficient_trades"] = True
+
+    return summary

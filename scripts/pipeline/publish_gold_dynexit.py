@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+
 import sys
 from pathlib import Path
 
@@ -26,6 +27,13 @@ import pandas as pd
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
+
+
+def _suppress(summary):
+    """Lazy import: these scripts extend sys.path at runtime, so a module-level
+    `from src...` import runs before the repo root is on the path."""
+    from src.contracts.strategy_schema import suppress_small_sample_stats
+    return suppress_small_sample_stats(summary)
 
 from scripts.analysis.gold_dynamic_exit import simulate  # noqa: E402
 from services.common.metrics import (deflated_sharpe_ratio,  # noqa: E402
@@ -275,7 +283,7 @@ def main() -> int:
                      "exit_reasons": {r2: sum(1 for t in tr26 if t["exit_reason"] == r2)
                                       for r2 in {t["exit_reason"] for t in tr26}}},
                      "buy_and_hold": {"total_return_pct": round(bh26, 2)}}}
-        (prod / f"summary_{SID}.json").write_text(json.dumps(sum26, indent=2, ensure_ascii=False),
+        (prod / f"summary_{SID}.json").write_text(json.dumps(_suppress(sum26), indent=2, ensure_ascii=False),
                                                   encoding="utf-8")
         (prod / "trades").mkdir(exist_ok=True)
         (prod / "trades" / f"{SID}.json").write_text(json.dumps(
