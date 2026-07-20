@@ -166,6 +166,41 @@ def backup(out_dir: Path) -> dict:
         conn.close()
 
 
+def _resync_sequences(cur, table: str) -> None:
+    """Advance every sequence backing `table` past the ids we just inserted.
+
+    The backup carries explicit `id` values, so the restore writes rows without ever
+    calling `nextval`. The sequence therefore stays where it was — and the NEXT natural
+    insert gets an id that already exists, failing with a primary-key UniqueViolation.
+
+    Observed 2026-07-20: `news_articles_id_seq.last_value = 3` against `MAX(id) = 37`,
+    which broke `news_daily_pipeline::ingest_all_sources` on every run. The same drift was
+    present in forecast_h5_{predictions,subtrades,paper_trading,signals,executions} — i.e.
+    a cold restore left the H5 signal and execution path unable to accept a single new row.
+    A restore that silently disables writes is not a restore.
+
+    `setval(..., max(id), true)` is idempotent and safe to re-run; on an empty column
+    `COALESCE` keeps the sequence at 1 with `is_called = false`.
+    """
+    cur.execute(
+        """
+        SELECT a.attname, pg_get_serial_sequence(%s, a.attname)
+        FROM pg_attribute a
+        WHERE a.attrelid = %s::regclass
+          AND a.attnum > 0 AND NOT a.attisdropped
+          AND pg_get_serial_sequence(%s, a.attname) IS NOT NULL
+        """,
+        (table, table, table),
+    )
+    for col, seq in cur.fetchall():
+        cur.execute(
+            f'SELECT setval(%s, COALESCE((SELECT MAX("{col}") FROM "{table}"), 1),'
+            f'  (SELECT MAX("{col}") FROM "{table}") IS NOT NULL)',
+            (seq,),
+        )
+        log.info("resync  %-28s %s -> max(%s)", table, seq.split(".")[-1], col)
+
+
 def restore(in_dir: Path) -> dict:
     """Bulk-insert parquet rows into EMPTY matching tables only. Returns a report."""
     import pandas as pd
@@ -248,6 +283,7 @@ def restore(in_dir: Path) -> dict:
                     rows,
                     page_size=1000,
                 )
+                _resync_sequences(cur, table)
                 conn.commit()
                 report["restored"][table] = len(rows)
                 log.info("restored %-28s rows=%d", table, len(rows))

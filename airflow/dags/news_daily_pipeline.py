@@ -128,7 +128,21 @@ def _ingest_all_sources(**context):
             total_articles += count
             logger.info(f"[{name}] Ingested {count} articles")
         except Exception as e:
-            db.log_ingestion_end(log_id, status="failed", error_details=str(e), errors=1)
+            # Roll back FIRST. When the failure came from the database itself (a
+            # UniqueViolation on the insert), the connection is left in an aborted
+            # transaction and every subsequent statement raises InFailedSqlTransaction.
+            # Logging the failure would then raise out of this handler, killing the whole
+            # task over ONE bad source and masking the original error -- which is exactly
+            # what happened on 2026-07-20: the log showed a transaction-aborted error, and
+            # the real cause (a desynchronized id sequence) stayed invisible for 3 retries.
+            try:
+                db.conn.rollback()
+            except Exception:  # noqa: BLE001 - connection may already be gone
+                logger.debug("[%s] rollback failed; connection likely closed", name)
+            try:
+                db.log_ingestion_end(log_id, status="failed", error_details=str(e), errors=1)
+            except Exception as log_err:  # noqa: BLE001
+                logger.warning("[%s] could not record ingestion failure: %s", name, log_err)
             source_results[name] = 0
             logger.error(f"[{name}] Ingestion failed: {e}")
 
