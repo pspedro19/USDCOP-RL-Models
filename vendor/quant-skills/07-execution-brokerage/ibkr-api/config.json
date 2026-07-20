@@ -1,0 +1,39 @@
+{
+  "name": "ibkr-api-skill",
+  "version": "1.0.0",
+  "category": "Business",
+  "created": "2026-03-13",
+  "author": "Tim Kipper",
+  "depends_on": [
+    "trading-signals-skill"
+  ],
+  "mcp_tools": [
+    "get_portfolio",
+    "get_account_summary",
+    "switch_account",
+    "get_market_data",
+    "get_historical_data",
+    "place_order",
+    "check_shortable_shares",
+    "get_margin_requirements",
+    "get_borrow_rates",
+    "short_selling_analysis",
+    "get_connection_status"
+  ],
+  "activation_triggers": [
+    "IBKR",
+    "Interactive Brokers",
+    "IB Gateway",
+    "portfolio positions",
+    "account balances",
+    "place trade",
+    "ib_async",
+    "TWS API"
+  ],
+  "reference_files": [
+    "reference/connection-patterns.md",
+    "reference/trading-patterns.md",
+    "reference/multi-broker-strategy.md"
+  ],
+  "description": "Interactive Brokers (IBKR) API integration for portfolio management, account queries, and trade execution across multiple account types (Roth IRA, personal brokerage, business). Use when the user mentions IBKR, Interactive Brokers, IB Gateway, TWS API, Client Portal API, brokerage API, portfolio positions, account balances, placing trades via API, multi-account trading, IRA trading restrictions, or wants to build/debug code that connects to Interactive Brokers. Also triggers on \"ib_async\", \"ib_insync\", \"ibapi\", or any IBKR endpoint reference."
+}

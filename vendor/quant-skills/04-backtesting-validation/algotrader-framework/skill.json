@@ -1,0 +1,59 @@
+{
+  "name": "algotrader",
+  "version": "1.0.0",
+  "description": "Comprehensive quantitative trading expert for Indian equity markets with Zerodha integration, backtesting, live trading, signal generation, and risk management",
+  "author": "Trading Systems Lab",
+  "invocation": "/algotrader",
+  "capabilities": [
+    "Interactive trading bot generation wizard",
+    "Universe curation (Nifty 50/100/Midcap/Smallcap from live data)",
+    "Signal generation with multi-factor confirmation",
+    "Zerodha API integration and error handling",
+    "Backtest vs live mode parity",
+    "Position reconciliation and stop loss lifecycle",
+    "Performance optimization (Parquet caching, vectorization)",
+    "Post-trade analytics and signal attribution",
+    "Exit strategies (intraday and positional)",
+    "Risk-adjusted returns with Kelly Criterion",
+    "Market regime detection and position sizing",
+    "Production failure pattern recognition",
+    "Indian market timing and circuit breaker handling"
+  ],
+  "commands": {
+    "": "Interactive wizard to generate trading bot or analyze existing code",
+    "wizard": "Launch bot generation wizard",
+    "universe": "Fetch and create universe JSON files from live index data",
+    "signal <symbol>": "Generate entry signal for a symbol",
+    "backtest": "Run backtest comparison tool",
+    "check": "Analyze existing trading code for issues",
+    "fix <issue>": "Fix common production issues",
+    "optimize <file>": "Optimize code for performance"
+  },
+  "knowledge_domains": [
+    "zerodha_integration",
+    "backtest_live_parity",
+    "signal_generation",
+    "rebalancing_logic",
+    "stock_universe_selection",
+    "performance_optimization",
+    "indian_market_specifics",
+    "failure_patterns",
+    "indicators_formulas",
+    "multi_timeframe_trading",
+    "logging_observability",
+    "post_trade_analytics",
+    "signal_attribution",
+    "exit_strategies",
+    "risk_management",
+    "capital_compounding"
+  ],
+  "requires": {
+    "python": ">=3.10",
+    "packages": [
+      "polars",
+      "kiteconnect",
+      "requests",
+      "beautifulsoup4"
+    ]
+  }
+}
