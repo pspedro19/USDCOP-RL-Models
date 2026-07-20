@@ -1,3 +1,16 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/experiments/exp_hourly_ppo_001.yaml
+  - config/experiments/exp_hourly_ppo_002.yaml
+  - config/experiments/exp_daily_ppo_001.yaml
+  - src/forecasting/regime_features.py
+  - config/execution/smart_simple_v1.yaml
+---
 # EXPERIMENT LOG — USDCOP RL Trading
 
 > Append-only log. Every experiment gets a unique ID. Never edit past entries.

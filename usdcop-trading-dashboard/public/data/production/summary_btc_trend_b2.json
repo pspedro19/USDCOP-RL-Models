@@ -9,7 +9,7 @@
     "btc_trend_b2": {
       "final_equity": 9738.0,
       "total_return_pct": -2.62,
-      "sharpe": -1.617,
+      "sharpe": null,
       "max_dd_pct": 3.5,
       "win_rate_pct": 0.0,
       "profit_factor": 0.0,
@@ -19,22 +19,24 @@
       },
       "n_long": 3,
       "n_short": 0,
-      "calmar": -1.435
+      "calmar": null,
+      "insufficient_trades": true
     }
   },
   "statistical_tests": {
-    "p_value": 0.9562,
+    "p_value": null,
     "significant": false,
-    "bootstrap_95ci_ann": [
-      -14.8,
-      0.67
-    ],
-    "sharpe_per_period": -0.084613,
+    "bootstrap_95ci_ann": null,
+    "sharpe_per_period": null,
     "skew": -1.7652,
     "kurtosis": 22.0398,
     "n_obs": 188,
-    "psr": 0.1098
+    "psr": null,
+    "insufficient_trades": true,
+    "min_trades_for_stats": 20
   },
   "withdrawal_protocol": ".claude/specs/assets/btcusdt/WITHDRAWAL-PROTOCOL-BTC.md",
-  "chart_symbol": "BTCUSDT"
+  "chart_symbol": "BTCUSDT",
+  "n_trades": 3,
+  "insufficient_trades": true
 }

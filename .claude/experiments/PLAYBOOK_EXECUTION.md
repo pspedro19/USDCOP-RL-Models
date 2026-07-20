@@ -1,3 +1,19 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/forecasting/engine.py
+  - src/forecasting/config.py
+  - src/forecasting/contracts.py
+  - src/forecasting/data_contracts.py
+  - src/forecasting/evaluation/walk_forward.py
+  - src/forecasting/evaluation/backtest.py
+  - src/forecasting/evaluation/metrics.py
+  - src/trading/paper_trader.py
+---
 # PLAYBOOK DE EJECUCION — Arbol de Decision
 # USDCOP Forecasting + RL Integration
 # Fecha inicio: ___________

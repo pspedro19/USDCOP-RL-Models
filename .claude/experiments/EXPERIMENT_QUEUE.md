@@ -1,3 +1,14 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/analysis/cop_trials_dsr.py
+  - config/forecast_experiments/vol_target_v1.yaml
+  - config/execution/smart_executor_v1.yaml
+---
 # EXPERIMENT QUEUE — Prioritized
 
 > Experiments ordered by: (1) information value, (2) compute cost, (3) risk.

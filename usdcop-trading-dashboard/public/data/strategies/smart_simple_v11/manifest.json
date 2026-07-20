@@ -18,7 +18,7 @@
     "version": "2.0.0",
     "year": 2026,
     "phase": "production",
-    "generated_at": "2026-07-07T16:34:42.166442+00:00"
+    "generated_at": "2026-07-20T21:24:23.862981+00:00"
   },
   "backtests": [
     {
@@ -38,20 +38,6 @@
         "return_pct": 25.63,
         "sharpe": 3.347,
         "p_value": 0.0063
-      }
-    },
-    {
-      "model_version": "2.0.0",
-      "year": 2025,
-      "immutable_id": "smart_simple_v11__2.0.0__2025",
-      "summary": "strategies/smart_simple_v11/backtests/2.0.0/summary_2025.json",
-      "trades": "strategies/smart_simple_v11/backtests/2.0.0/trades_2025.json",
-      "signals": null,
-      "replayable": true,
-      "gates": {},
-      "headline": {
-        "return_pct": 25.63,
-        "sharpe": 3.347
       }
     },
     {
@@ -155,6 +141,28 @@
         "p_value": 0.0722,
         "trades": 40
       }
+    },
+    {
+      "model_version": "2.0.0",
+      "year": 2025,
+      "immutable_id": "smart_simple_v11__2.0.0__2025",
+      "summary": "strategies/smart_simple_v11/backtests/2.0.0/summary_2025.json",
+      "trades": "strategies/smart_simple_v11/backtests/2.0.0/trades_2025.json",
+      "signals": null,
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 26.05,
+        "sharpe": 3.84,
+        "max_dd_pct": 3.5,
+        "win_rate_pct": 77.4,
+        "p_value": 0.004,
+        "trades": 155
+      }
     }
   ],
   "production": {
@@ -162,7 +170,7 @@
     "year": 2026,
     "summary": "strategies/smart_simple_v11/production/summary.json",
     "trades": "strategies/smart_simple_v11/production/trades.json",
-    "updated_at": "2026-07-07T16:34:42.166442+00:00"
+    "updated_at": "2026-07-20T21:24:23.862981+00:00"
   },
   "approval": {
     "file": "production/approval_state.json",
@@ -208,17 +216,11 @@
     {
       "version": "2.0.0",
       "active": true,
-      "trained_at": "2026-07-07T16:34:42.166513+00:00",
+      "trained_at": "2026-07-20T21:24:23.862981+00:00",
       "train_window": null,
       "feature_hash": null,
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ],
-  "promoted": {
-    "version": "2.0.0",
-    "status": "production",
-    "promoted_at": "2026-07-07T20:06:09.825Z",
-    "promoted_by": "dashboard_user"
-  }
+  ]
 }

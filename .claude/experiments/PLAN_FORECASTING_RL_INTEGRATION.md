@@ -1,3 +1,19 @@
+---
+kind: roadmap
+status: PLANNED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/forecasting/data_contracts.py
+  - src/forecasting/engine.py
+  - src/forecasting/vol_targeting.py
+  - database/migrations/041_forecast_vol_targeting.sql
+  - config/forecast_experiments/vol_target_v1.yaml
+  - config/experiments/exp_rl_executor_001.yaml
+  - src/training/environments/trading_env.py
+  - src/training/reward_calculator.py
+---
 # PLAN DE INTEGRACION FORECASTING + RL
 ## v2.0 — Basado en evidencia estadistica + arquitectura real del codebase
 ## Fecha: 2026-02-15
