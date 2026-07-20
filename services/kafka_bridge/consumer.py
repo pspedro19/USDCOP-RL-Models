@@ -27,7 +27,16 @@ from pathlib import Path
 from typing import Any
 
 from kafka import KafkaConsumer
-from kafka.errors import KafkaError, NoBrokersAvailable
+# kafka-python 3.x elimino `NoBrokersAvailable` de kafka.errors, y requirements.txt
+# permitia `>=2.0` — el salto de major dejo estos contenedores en crash-loop con
+# ImportError. Se importa de forma defensiva para que cualquiera de las dos ramas
+# funcione: en 3.x el fallo de conexion llega como KafkaError, que ya se captura.
+from kafka.errors import KafkaError
+
+try:  # kafka-python < 3.0
+    from kafka.errors import NoBrokersAvailable
+except ImportError:  # kafka-python >= 3.0
+    NoBrokersAvailable = KafkaError
 
 # ---------------------------------------------------------------------------
 # Configuration
