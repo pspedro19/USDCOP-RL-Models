@@ -37,6 +37,7 @@ from airflow.decorators import task, task_group
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.dates import days_ago
+from utils.run_status import fail_if_upstream_failed
 
 logger = logging.getLogger(__name__)
 
@@ -1122,6 +1123,13 @@ def send_report(**context) -> None:
 
     # Build message
     message = f"""
+
+    # El reporte ya se emitio; ahora que el estado del DAG sea honesto.
+    # Sin esto, esta tarea hoja con trigger_rule='all_done' marcaba el run como
+    # success aunque el camino critico entero hubiera fallado.
+    fail_if_upstream_failed(context)
+
+
 Pipeline completed with {success_rate:.0%} extraction success rate.
 
 Extraction: {total_records} records from {extraction_metrics.get('total_variables', 0)} variables

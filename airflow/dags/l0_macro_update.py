@@ -36,6 +36,7 @@ import pandas as pd
 from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.utils.dates import days_ago
+from utils.run_status import fail_if_upstream_failed
 
 logger = logging.getLogger(__name__)
 
@@ -828,6 +829,11 @@ def daily_summary(**context) -> Optional[Dict[str, Any]]:
 
     context['ti'].xcom_push(key='daily_summary', value=summary.to_dict())
     return summary.to_dict()
+
+    # El reporte ya se emitio; ahora que el estado del DAG sea honesto.
+    # Sin esto, esta tarea hoja con trigger_rule='all_done' marcaba el run como
+    # success aunque el camino critico entero hubiera fallado.
+    fail_if_upstream_failed(context)
 
 
 # =============================================================================

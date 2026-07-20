@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from utils.run_status import fail_if_upstream_failed
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +107,11 @@ def alert_discrepancies(**context):
         )
     else:
         logger.info("Reconciliation clean — zero discrepancies.")
+
+    # El reporte ya se emitio; ahora que el estado del DAG sea honesto.
+    # Sin esto, esta tarea hoja con trigger_rule='all_done' marcaba el run como
+    # success aunque el camino critico entero hubiera fallado.
+    fail_if_upstream_failed(context)
 
 
 with DAG(
