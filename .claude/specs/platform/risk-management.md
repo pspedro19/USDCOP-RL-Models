@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-RISK-001
+version: 2.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - services/mlops/risk_manager.py
+  - src/risk/risk_manager.py
+  - src/trading/risk_enforcer.py
+  - services/signalbridge_api/app/services/pretrade.py
+  - src/risk/commands.py
+  - src/forecasting/regime_gate.py
+  - src/forecasting/dynamic_leverage.py
+  - airflow/dags/utils/regime_gate_live.py
+---
 # SDD Spec: Risk Management System
 
 > **Responsibility**: Authoritative source for the USDCOP trading system's risk management

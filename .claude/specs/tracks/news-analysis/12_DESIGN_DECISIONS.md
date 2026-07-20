@@ -1,3 +1,13 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/data/contracts.py
+  - src/contracts/strategy_schema.py
+---
 # SDD-12: Design Decisions & ADRs
 
 | Campo | Valor |

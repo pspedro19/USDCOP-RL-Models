@@ -1,3 +1,14 @@
+---
+kind: adr
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/xauusd.yaml
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - tests/contracts/test_strategy_registry.py
+---
 # Architecture Decision Records (ADR log)
 
 Registro de decisiones de diseño no obvias. Formato: Contexto → Decisión → Consecuencias. Para cambiar una decisión, añade un nuevo ADR que supersede al anterior.

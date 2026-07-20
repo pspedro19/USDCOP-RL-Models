@@ -277,6 +277,9 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+# `testpaths` already scopes collection, but a `pytest .` or a widened CI path would pull in
+# vendor/quant-skills (236 external tests, colliding basenames, network calls). Explicit.
+norecursedirs = ["vendor", ".claude", "*.egg", ".git", "node_modules", "build", "dist"]
 addopts = [
     "-v",
     "--tb=short",

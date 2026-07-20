@@ -1,3 +1,11 @@
+---
+kind: adr
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR-0009 — Combinación en riesgo vs. multiplicación de gates
 
 **Estado:** Aceptado · **Fecha:** pre-registro · **Spec:** SPEC-03 · **Modo de fallo:** §7.1

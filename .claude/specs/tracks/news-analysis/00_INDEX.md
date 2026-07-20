@@ -1,3 +1,16 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/analysis/asset_analysis_generator.py
+  - scripts/pipeline/generate_asset_analysis.py
+  - src/analysis/news_sources.py
+  - config/analysis/analysis_assets.yaml
+  - usdcop-trading-dashboard/lib/contracts/analysis-assets.ts
+---
 # USDCOP Trading Intelligence Platform — Unified SDD Suite
 
 **Author:** Pedro Sánchez Briceño  
@@ -31,7 +44,7 @@
 | **08** | [Dashboard & Frontend](08_DASHBOARD_FRONTEND.md) | 🆕 NEW | /analysis page, components, design system, data hooks |
 | **09** | [Chat Widget](09_CHAT_WIDGET.md) | 🆕 NEW | Floating assistant, context injection, WebSocket, UX |
 | **10** | [Orchestration & Ops](10_ORCHESTRATION.md) | 🔄 MERGED | All Airflow DAGs, CLI, deployment, monitoring |
-| **11** | [Implementation Roadmap](11_IMPLEMENTATION_ROADMAP.md) | 🆕 NEW | 8-phase plan, timeline, risks, verification |
+| **11** | [Implementation Roadmap](../../archive/2026-07/11_IMPLEMENTATION_ROADMAP.md) | 🆕 NEW | 8-phase plan, timeline, risks, verification |
 | **12** | [Design Decisions](12_DESIGN_DECISIONS.md) | 🆕 NEW | Unified ADRs, SOLID/DRY compliance, trade-offs |
 
 ---

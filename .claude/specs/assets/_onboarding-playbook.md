@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-ASSET-ONBOARD-001
+version: 1.1.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/asset_profile.py
+  - config/macro_variables_ssot.yaml
+  - config/assets/usdcop.yaml
+  - airflow/dags/l0_ohlcv_realtime.py
+  - config/seed_config.yaml
+  - config/forecasting_ssot.yaml
+  - config/pipeline_ssot.yaml
+  - config/execution/smart_simple_v1.yaml
+---
 # SDD Spec: Multi-Asset Onboarding (Add a New Tradeable Asset)
 
 > **Responsibility**: Authoritative, spec-driven + test-driven playbook for onboarding a NEW

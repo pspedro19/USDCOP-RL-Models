@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/btcusdt.yaml
+---
 # BTC/USDT — Estrategia de Exposición Spot (paquete SDD)
 
 Paquete de especificaciones para onboardear **Bitcoin (BTC/USDT)** como el **3.er activo tradeable**
@@ -22,7 +31,7 @@ Development + TDD**: el activo entra por **config + datos**, no por código copi
    (AssetProfile, reutilización de tablas, migración 052 crypto-native, registro dinámico, DAGs por
    fábrica, decisiones 24/7). Es el puente entre `design/` y la **columna vertebral multi-activo ya probada**.
 
-Complementos: [`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md) · [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) · [`adr/ADR-log.md`](./adr/ADR-log.md)
+Complementos: [`IMPLEMENTATION_ROADMAP.md` (archivado)](../../archive/2026-07/btcusdt-IMPLEMENTATION_ROADMAP.md) · [`IMPLEMENTATION_STATUS.md` (archivado)](../../archive/2026-07/btcusdt-IMPLEMENTATION_STATUS.md) · [`adr/ADR-log.md`](./adr/ADR-log.md)
 
 ---
 
@@ -60,7 +69,7 @@ Reglas del sistema que este paquete respeta (en `.claude/rules/` + `.claude/spec
 
 ## Estado (honesto)
 
-**BTC ONBOARDADO END-TO-END Y VISIBLE EN EL FRONT.** Ver [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md).
+**BTC ONBOARDADO END-TO-END Y VISIBLE EN EL FRONT.** Ver [`IMPLEMENTATION_STATUS.md` (archivado)](../../archive/2026-07/btcusdt-IMPLEMENTATION_STATUS.md).
 - **Fase 0** ✅ AssetProfile (`config/assets/btcusdt.yaml`), migración **052** crypto-native, tests A1/B1.
 - **Fase 1** ✅ Data canónica real vía **Binance público (sin API key)**: daily 3,245 barras 2017→2026
   (cierre UTC 00:00) + 5-min 288/día con fines de semana. Tests A2/A3/A4/C1 verdes (7/7).

@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR-0010 — HMM de régimen con fit congelado walk-forward
 
 **Estado:** Aceptado · **Fecha:** pre-registro · **Spec:** SPEC-01 · **Modo de fallo:** §4.3 (anti-look-ahead capa modelos)

@@ -1,3 +1,12 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - docker-compose.yml
+---
 # SDD-11: Unified Implementation Roadmap
 
 | Campo | Valor |

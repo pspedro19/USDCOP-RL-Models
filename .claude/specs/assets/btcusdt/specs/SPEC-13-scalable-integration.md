@@ -1,3 +1,15 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/btcusdt.yaml
+  - tests/onboarding/test_asset_btcusdt.py
+  - database/migrations/052_crypto_native_data.sql
+  - scripts/data/ingest_asset_ohlcv.py
+---
 # SPEC-13 — Integración escalable de BTC/USDT en el monorepo
 
 | Campo | Valor |

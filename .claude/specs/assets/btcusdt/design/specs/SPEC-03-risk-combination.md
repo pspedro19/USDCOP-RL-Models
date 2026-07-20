@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SPEC-03 — Combinación en Riesgo (R → M_interno) ★
 
 | Campo | Valor |

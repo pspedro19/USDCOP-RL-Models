@@ -1,3 +1,19 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/analysis/mr_dip_hypothesis.py
+  - scripts/analysis/oos2025_report.py
+  - scripts/analysis/gold_weekly_tphs.py
+  - scripts/analysis/btc_weekly_tphs.py
+  - scripts/analysis/wktphs_horizon_grid.py
+  - scripts/analysis/gold_dynamic_exit.py
+  - scripts/analysis/cop_btc_dynamic_exit.py
+  - scripts/pipeline/publish_gold_dynexit.py
+---
 # Historia de Estrategias, Lineage de Datos y Veredictos — Oro · BTC · (COP referencia)
 
 > **SSOT del ciclo de ciencia de datos por activo**: qué datos entran, con qué frecuencia,

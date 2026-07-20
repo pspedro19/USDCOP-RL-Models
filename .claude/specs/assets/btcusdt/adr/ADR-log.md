@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR log — Integración BTC/USDT en el monorepo
 
 > Decisiones arquitectónicas del **onboarding** (cómo BTC se enchufa al sistema). Las decisiones de

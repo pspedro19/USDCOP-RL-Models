@@ -1,3 +1,15 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-BACKUP-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - data/backups/seeds/backup_manifest.json
+  - data/backups/features/feature_backup_manifest.json
+  - init-scripts/26-restore-features.sh
+---
 # Rule: Backup, Recovery & Disaster Protocol
 
 > Governs all backup, restore, and disaster recovery procedures for the USDCOP trading system.

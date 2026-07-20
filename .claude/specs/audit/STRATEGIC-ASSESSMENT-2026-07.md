@@ -1,3 +1,15 @@
+---
+kind: audit
+status: HISTORICAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/data_quality/ohlcv_validators.py
+  - database/migrations/052_crypto_native_data.sql
+  - scripts/analysis/cop_trials_dsr.py
+  - scripts/data/ingest_btc_derivatives.py
+---
 # Strategic Assessment — 2026-07 (honest state of the system + forward plan)
 
 > **Purpose.** A grounded, evidence-based read of where the system actually stands after the 2026-07
@@ -97,7 +109,7 @@ DB from the multi-asset path entirely and own the file-driven model.
 
 The system already knew this: `migration 052` defines exactly these tables and the BTC roadmap Fase 1 lists
 `BGeo/funding/Farside/DefiLlama` extractors. **Derivatives ingestion is now BUILT** (funding/OI/long-short →
-`crypto_derivatives_daily`, plan `../assets/btcusdt/PLAN-binance-derivatives-2026-07.md`); on-chain + the
+`crypto_derivatives_daily`, plan `../archive/2026-07/PLAN-binance-derivatives-2026-07.md`); on-chain + the
 features/strategy consuming the derivatives are still pending. The regime-gated S3 (the intended "good"
 strategy) still *"needs the on-chain HMM"* fed by the remaining on-chain extractors.
 
@@ -111,7 +123,7 @@ best case is sitting out); fixed-threshold rules (no ML, no adaptation); price-o
    public Binance/exchange APIs (no paid key) → populate `crypto_derivatives_daily` → add as features
    (`z_funding`, `oi_change`, `liq_imbalance`). This alone tells you if there's real orthogonal signal
    before spending on on-chain. **This is the single biggest lever.**
-   > **Concrete plan: [`../assets/btcusdt/PLAN-binance-derivatives-2026-07.md`](../assets/btcusdt/PLAN-binance-derivatives-2026-07.md).**
+   > **Concrete plan: [`../archive/2026-07/PLAN-binance-derivatives-2026-07.md`](../archive/2026-07/PLAN-binance-derivatives-2026-07.md).**
    > Honest API reality: **only funding has deep history (~2019→now) → backtesteable**; OI/long-short/
    > taker are **forward-only (30-day window)**; liquidations have no public REST (WS/Coinglass). So the
    > first deliverable is `funding_rate → z_funding` + `btc_trend_funding_s4`, gated by DSR>0.95 ∧ OOS-2025+.
@@ -170,5 +182,5 @@ demonstrably works and feed BTC the non-price data it needs**, not to add more f
 - `AUDIT-2026-07-remediation.md` — code↔spec findings backlog (P0/P1/P2)
 - `../assets/_ds-cycle-asbuilt.md §8, §10` — per-asset conclusions + systemic read
 - `../assets/_strategy-science.md §5` — trial-aware evaluation (DSR/OOS) methodology
-- `../assets/btcusdt/IMPLEMENTATION_ROADMAP.md` — BTC phased plan (Fase 1 crypto-native = the unblocker)
+- `../archive/2026-07/btcusdt-IMPLEMENTATION_ROADMAP.md` — BTC phased plan (Fase 1 crypto-native = the unblocker)
 - `../../rules/data-governance.md`, `../../rules/data-freshness.md` — OHLCV validator contract (CTR-DQ-OHLCV-001)

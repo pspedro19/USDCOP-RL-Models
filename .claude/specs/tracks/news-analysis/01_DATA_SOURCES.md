@@ -1,3 +1,14 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/analysis/news_sources.py
+  - config/analysis/analysis_assets.yaml
+  - usdcop-trading-dashboard/lib/contracts/analysis-assets.ts
+---
 > **Status: ✅ RETAINED** from NewsEngine v1.0.0 — No changes needed for unified platform.
 
 # SDD-01: Data Sources Specification

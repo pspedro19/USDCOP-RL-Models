@@ -1,3 +1,16 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/btc_strategy/indicators.py
+  - scripts/data/ingest_btc_derivatives.py
+  - src/btc_strategy/strategies.py
+  - config/assets/pipelines.yaml
+  - scripts/pipeline/run_btc_pipeline.py
+---
 # PLAN — Integrar data de derivados de Binance para mejorar el modelo de BTC
 
 > **Objetivo:** dar al modelo de BTC su insumo faltante — **datos no-precio** (funding, open interest,

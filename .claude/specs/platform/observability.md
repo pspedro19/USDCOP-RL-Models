@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: PARTIAL
+contract: CTR-OBS-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - prometheus/prometheus.yml
+  - config/alertmanager/alertmanager.yml
+  - config/loki/loki-config.yml
+  - config/promtail/promtail-config.yml
+  - config/grafana/provisioning/datasources/datasources.yml
+  - config/grafana/provisioning/dashboards/dashboards.yml
+  - services/common/tracing.py
+  - src/shared/tracing/otel_setup.py
+---
 # SDD Spec: Observability & Monitoring Stack
 
 > **Responsibility**: Authoritative source for the USDCOP trading system's monitoring,

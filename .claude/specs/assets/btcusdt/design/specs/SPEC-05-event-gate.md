@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SPEC-05 — Gate de Eventos (Clasificador LLM + Vol-Spike Breaker)
 
 | Campo | Valor |

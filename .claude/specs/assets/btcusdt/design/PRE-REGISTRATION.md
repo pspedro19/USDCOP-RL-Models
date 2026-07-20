@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # PRE-REGISTRATION — Parámetros Congelados del Sistema
 
 > **La "constitución numérica".** Todos los parámetros del sistema se fijan **aquí, por

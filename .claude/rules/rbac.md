@@ -1,3 +1,12 @@
+---
+kind: rule
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - usdcop-trading-dashboard/lib/contracts/rbac.contract.ts
+---
 # Rule: RBAC + Monetización (CTR-RBAC-001)
 
 > Reglas duras de control de acceso y producto. SSOT de matrices/roles/planes:

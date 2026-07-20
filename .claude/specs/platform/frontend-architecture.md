@@ -1,3 +1,18 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-FE-ARCH-001
+version: 1.1.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - usdcop-trading-dashboard/docs/api/openapi.yaml
+  - config/analysis/analysis_assets.yaml
+  - docker-compose.yml
+  - docker-compose.compact.yml
+  - src/core/contracts/feature_contract.py
+  - src/analysis/asset_analysis_generator.py
+---
 # SDD Spec: Frontend Architecture (Dashboard)
 
 > **Responsibility**: Authoritative source for **how the Next.js dashboard is built and behaves** —

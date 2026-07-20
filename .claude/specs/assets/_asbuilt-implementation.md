@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-ASSET-IMPL-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/asset_profile.py
+  - config/assets/usdcop.yaml
+  - scripts/data/ingest_asset_ohlcv.py
+  - airflow/dags/asset_pipeline_factory.py
+  - config/assets/pipelines.yaml
+  - config/assets/xauusd.yaml
+  - src/gold_rl/backtest.py
+  - config/assets/btcusdt.yaml
+---
 # SDD Spec: Multi-Asset Implementation (AS-BUILT, today)
 
 > **Responsibility**: Descriptive *as-built* map of how the system is **actually implemented today**
@@ -30,7 +47,7 @@ The system is no longer single-asset "by construction". A new keystone contract 
 to be hardcoded to USD/COP: `symbol`, `chart_symbol`, **session/timezone**, `bars_per_day`,
 `bars_per_year`, `price_range`, macro drivers, and regime thresholds. USD/COP itself is now
 `config/assets/usdcop.yaml` (not a special case). One **asset-generic ingestion script**
-(`scripts/ingest_asset_ohlcv.py`) reads a profile and downloads/aligns/audits/UPSERTs OHLCV for any
+(`scripts/data/ingest_asset_ohlcv.py`) reads a profile and downloads/aligns/audits/UPSERTs OHLCV for any
 asset. Gold's 5-min bars live in the existing multi-pair table `usdcop_m5_ohlcv` (symbol `XAU/USD`);
 Gold's daily deep history lives in a new multi-asset table `asset_daily_ohlcv` (migration 051). A
 rule-based science stack (`src/gold_rl/`) computes features → 4 regimes with hysteresis → vol-target
@@ -78,7 +95,7 @@ stack) so it is cheap to load in DAGs, ingestion, and fast tests.
 
 ## 2. Data Engineering (as implemented)
 
-### 2.1 Asset-generic ingestion — `scripts/ingest_asset_ohlcv.py` (`CTR-L0-ASSET-INGEST-001`)
+### 2.1 Asset-generic ingestion — `scripts/data/ingest_asset_ohlcv.py` (`CTR-L0-ASSET-INGEST-001`)
 
 Driven ENTIRELY by an `AssetProfile`. `--asset xauusd` runs the whole flow; no symbol is hardcoded.
 
@@ -115,7 +132,7 @@ needed — `symbol` is the asset dimension.
 ### 2.3 Seeds (Git-tracked restore + local training)
 
 `seeds/latest/xauusd_m5_ohlcv.parquet` (~976 KB), `seeds/latest/xauusd_daily_ohlcv.parquet` (~201 KB),
-identical schema to the FX seeds. Regenerate: `python scripts/ingest_asset_ohlcv.py --asset xauusd`.
+identical schema to the FX seeds. Regenerate: `python scripts/data/ingest_asset_ohlcv.py --asset xauusd`.
 
 ### 2.4 What was ingested (evidence, 2026-07-03)
 
@@ -249,7 +266,7 @@ registry keeps each strategy's metrics under its own bundle — the frontend nev
 either manually or as the `l4_backtest_publish` task of the per-asset DS-cycle DAG (§0 load-bearing truth;
 `asset_pipeline_factory.py`), which first refreshes the daily seed (`l0_ingest`, graceful) and afterwards
 asserts the registry (`l6_verify_registry`).
-- **Gold**: `scripts/run_gold_pipeline.py` → Gold daily seed → features → regime → backtest
+- **Gold**: `scripts/pipeline/run_gold_pipeline.py` → Gold daily seed → features → regime → backtest
   B1/B2/regime-gated → `BundlePublisher.publish(... asset_id="xauusd", symbol="XAU/USD" ...)`.
 - **BTC**: `scripts/pipeline/run_btc_pipeline.py` → BTC daily seed → features → regime → backtest
   B1/B2/S3 → `BundlePublisher.publish(... asset_id="btcusdt", symbol="BTC/USDT" ...)`. BTC's
@@ -301,15 +318,15 @@ COP-hardcoded and host→DB is closed; trade markers + replay work off the trade
 |------|------|
 | `src/contracts/asset_profile.py` | AssetProfile contract + loaders |
 | `config/assets/usdcop.yaml`, `config/assets/xauusd.yaml` | Asset SSOTs |
-| `scripts/ingest_asset_ohlcv.py` | Asset-generic OHLCV ingestion |
+| `scripts/data/ingest_asset_ohlcv.py` | Asset-generic OHLCV ingestion |
 | `database/migrations/051_asset_daily_ohlcv.sql` | Multi-asset daily table + coverage view |
 | `src/gold_rl/{__init__,indicators,strategies,backtest}.py` | Gold science stack |
-| `scripts/run_gold_pipeline.py` | Gold E2E runner → publishes bundles |
+| `scripts/pipeline/run_gold_pipeline.py` | Gold E2E runner → publishes bundles |
 | `tests/onboarding/test_asset_xauusd.py` | Onboarding tests A1–B1 (6, green) |
 | `seeds/latest/xauusd_{m5,daily}_ohlcv.parquet` | Gold seeds |
 | `usdcop-trading-dashboard/public/data/{registry.json,strategies/xauusd*}` | Registry + Gold bundles |
 | `components/production/ForecastingBacktestSection.tsx` | Selector + version replay + no-clobber fix (edited additively) |
-| `.claude/specs/assets/xauusd/**` | Gold spec package + `IMPLEMENTATION_STATUS.md` |
+| `.claude/specs/assets/xauusd/**` | Gold spec package (status histórico archivado) |
 | `config/assets/btcusdt.yaml` | **BTC AssetProfile** (crypto, 24/7 UTC, √365) — keystone |
 | `database/migrations/052_crypto_native_data.sql` | **Crypto-native tables** (on-chain/funding/flows/events/exposure) — additive |
 | `scripts/data/ingest_btc_ohlcv.py` | **BTC ingestion** — canonical Binance public klines (no key) + TwelveData fallback; UTC 00:00 daily |
@@ -326,13 +343,13 @@ COP-hardcoded and host→DB is closed; trade markers + replay work off the trade
 
 ```bash
 # 1. Ingest Gold (5-min + daily deep history, idempotent)
-python scripts/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
+python scripts/data/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
 
 # 2. Onboarding tests
 python -m pytest tests/onboarding/test_asset_xauusd.py -q
 
 # 3. Science + publish bundles (additive; COP untouched)
-python scripts/run_gold_pipeline.py
+python scripts/pipeline/run_gold_pipeline.py
 
 # 4. Open /dashboard → strategy selector → "Gold · Trend-follower Daily (B2)"
 ```
@@ -349,7 +366,7 @@ python scripts/run_gold_pipeline.py
 | L0 data governance (OHLCV/macro, timezone golden rule) | `data-governance.md` |
 | Strategy/trade/gate schemas | `strategy-contract.md`, `approval-gates.md` |
 | Dashboard artifact schemas | `dashboard-integration.md` |
-| Gold spec package + live status | `.claude/specs/assets/xauusd/` + `.claude/specs/assets/xauusd/IMPLEMENTATION_STATUS.md` |
+| Gold spec package + live status | `.claude/specs/assets/xauusd/` + `.claude/specs/archive/2026-07/xauusd-IMPLEMENTATION_STATUS.md` (archivado) |
 
 ---
 

@@ -1,6 +1,6 @@
 # Config de datos (SPEC-01/02/03)
 # status: SUPERSEDED (2026-07-06, G5/I-5) — diseño original Dukascopy M1; el as-built usa
-# TwelveData 5-min + Investing cross-check (scripts/ingest_asset_ohlcv.py, _asbuilt-implementation.md).
+# TwelveData 5-min + Investing cross-check (scripts/data/ingest_asset_ohlcv.py, _asbuilt-implementation.md).
 gold:
   symbol: xauusd
   source: dukascopy

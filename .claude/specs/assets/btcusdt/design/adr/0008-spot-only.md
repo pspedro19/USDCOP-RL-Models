@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR-0008 — Instrumento spot-only (exposición ∈ [0, 1])
 
 **Estado:** Aceptado · **Fecha:** pre-registro · **Spec:** SPEC-06, SPEC-07 · **Modo de fallo:** §7.2

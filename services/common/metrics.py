@@ -467,3 +467,160 @@ def cost_stress(position: np.ndarray, asset_ret: np.ndarray, cost: np.ndarray,
     out["survives_2x"] = bool(out["x2"]["ann_return_pct"] > 0 and out["x2"]["calmar"] > 0)
     out["survives_3x"] = bool(out["x3"]["ann_return_pct"] > 0)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Selection-bias validation (ported 2026-07-20 from the xasset-alpha-engine skill).
+#
+# `quant-constitution.md` requires trial-aware evidence, but the repo only had the
+# Deflated Sharpe half of it. These three close the gap:
+#   * purged_kfold_splits - the repo's walk-forward has a gap but no embargo, so serial
+#     correlation still carried test information into training.
+#   * pbo_cscv - answers "does my in-sample winner stay above median out-of-sample?".
+#     There was no implementation at all; DSR deflates a Sharpe, PBO indicts the
+#     selection procedure itself.
+#   * sharpe_ratio_stderr - autocorrelation-adjusted, so error bars stop being
+#     optimistic on overlapping or trending returns.
+#
+# They live HERE, not in the skill, because a skill is advisory and this is the
+# module the constitution names for edge claims.
+# ---------------------------------------------------------------------------
+
+
+def sharpe_ratio_stderr(
+    returns: np.ndarray | list[float], adjust_autocorr: bool = True
+) -> float:
+    """Standard error of a per-period Sharpe estimate.
+
+    With ``adjust_autocorr`` the SE is inflated for first-order serial correlation
+    (Lo 2002). Overlapping windows and trend-following returns are positively
+    autocorrelated, and ignoring that makes every confidence interval too narrow.
+    """
+    import math
+
+    r = np.asarray(returns, dtype=float)
+    r = r[np.isfinite(r)]
+    n = len(r)
+    if n < 3:
+        return float("inf")
+    sd = r.std(ddof=1)
+    if sd <= 0:
+        return float("inf")
+    sr = r.mean() / sd
+    var = (1.0 + 0.5 * sr * sr) / (n - 1)
+    se = math.sqrt(var)
+    if adjust_autocorr and n > 3:
+        rho = float(np.corrcoef(r[:-1], r[1:])[0, 1])
+        if np.isfinite(rho) and abs(rho) < 0.999:
+            se *= math.sqrt((1.0 + rho) / (1.0 - rho))
+    return float(se)
+
+
+def purged_kfold_splits(t1, n_splits: int = 5, embargo_pct: float = 0.01):
+    """K-fold splits with purging AND embargo (López de Prado, AFML ch. 7).
+
+    Plain K-fold leaks whenever label windows straddle a fold boundary: the training set
+    then contains information about the test period and OOS Sharpe comes back inflated.
+    Every multi-day-hold strategy in this repo has that exposure.
+
+    Purging drops training samples whose label window overlaps the test window; the embargo
+    additionally drops samples immediately AFTER the test window, where serial correlation
+    still carries test information.
+
+    Args:
+        t1: ``pd.Series`` of label END times, indexed by label start time, sorted ascending.
+        n_splits: number of folds (>= 2).
+        embargo_pct: fraction of the sample embargoed after each test fold.
+
+    Yields:
+        ``(train_indices, test_indices)`` positional integer arrays.
+    """
+    import pandas as pd
+
+    if not isinstance(t1, pd.Series):
+        raise TypeError("t1 must be a pd.Series of label end times")
+    if not t1.index.is_monotonic_increasing:
+        raise ValueError("t1 index must be sorted ascending")
+    if n_splits < 2:
+        raise ValueError("n_splits must be >= 2")
+    if not 0.0 <= embargo_pct < 1.0:
+        raise ValueError("embargo_pct must be in [0, 1)")
+
+    n = len(t1)
+    indices = np.arange(n)
+    embargo = int(n * embargo_pct)
+
+    for test_idx in np.array_split(indices, n_splits):
+        test_start_time = t1.index[test_idx[0]]
+        test_end_time = t1.iloc[test_idx].max()
+        before = indices[(t1.values < test_start_time)]
+        after_pos = int(t1.index.searchsorted(test_end_time, side="right"))
+        after = indices[min(after_pos + embargo, n):]
+        train_idx = np.concatenate([before, after])
+        if train_idx.size == 0:
+            raise ValueError(
+                "Purging removed the entire training set for a fold. Label horizon is too "
+                f"long relative to sample length (n={n}, n_splits={n_splits})."
+            )
+        yield train_idx, test_idx
+
+
+def pbo_cscv(returns_matrix, n_blocks: int = 16) -> dict:
+    """Probability of Backtest Overfitting via Combinatorially Symmetric CV.
+
+    DSR deflates a Sharpe for how many trials you ran. PBO asks the complementary and
+    arguably harsher question: **when I pick the best variant in-sample, does it stay above
+    median out-of-sample?** PBO is the fraction of splits where it does not.
+
+    ``pbo > 0.5`` means the selection procedure is worse than random — the in-sample winner
+    tends to be an out-of-sample loser. That is a REJECT regardless of Sharpe.
+
+    Args:
+        returns_matrix: ``(T observations x N strategies)``, N >= 2.
+        n_blocks: even, <= 20. C(n_blocks, n_blocks/2) splits are evaluated.
+
+    Returns:
+        ``{pbo, n_combinations, n_strategies}``.
+    """
+    import math
+    from itertools import combinations
+
+    from scipy import stats
+
+    m = np.asarray(returns_matrix, dtype=float)
+    if m.ndim != 2:
+        raise ValueError("returns_matrix must be 2-D (T x N)")
+    t, n_strat = m.shape
+    if n_strat < 2:
+        raise ValueError("PBO needs >= 2 strategies to rank")
+    if n_blocks % 2 != 0:
+        raise ValueError("n_blocks must be even")
+    if n_blocks > 20:
+        raise ValueError(f"n_blocks={n_blocks} gives too many combinations")
+    if t < n_blocks * 2:
+        raise ValueError(f"need >= {n_blocks * 2} observations for {n_blocks} blocks")
+
+    blocks = np.array_split(np.arange(t), n_blocks)
+    logits: list[float] = []
+    for combo in combinations(range(n_blocks), n_blocks // 2):
+        is_idx = np.concatenate([blocks[i] for i in combo])
+        oos_idx = np.concatenate([blocks[i] for i in range(n_blocks) if i not in combo])
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sd_is = m[is_idx].std(axis=0, ddof=1)
+            sd_oos = m[oos_idx].std(axis=0, ddof=1)
+            sr_is = np.where(sd_is > 0, m[is_idx].mean(axis=0) / sd_is, -np.inf)
+            sr_oos = np.where(sd_oos > 0, m[oos_idx].mean(axis=0) / sd_oos, -np.inf)
+        if not np.isfinite(sr_is).any():
+            continue
+        best = int(np.nanargmax(sr_is))
+        rank = float(stats.rankdata(sr_oos)[best]) / (n_strat + 1)
+        logits.append(math.log(rank / (1.0 - rank)))
+
+    if not logits:
+        raise ValueError("no valid splits - check for degenerate return series")
+    arr = np.asarray(logits)
+    return {
+        "pbo": round(float((arr <= 0).mean()), 4),
+        "n_combinations": int(arr.size),
+        "n_strategies": int(n_strat),
+    }

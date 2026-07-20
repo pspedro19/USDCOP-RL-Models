@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-WITHDRAWAL-BTC-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # Protocolo de Retiro — btc_trend_b2 (producción-paper) — PARA FIRMA DEL OPERADOR
 
 > **Regla de la constitución (§5):** ningún track opera en producción sin protocolo de retiro

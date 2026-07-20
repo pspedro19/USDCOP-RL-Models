@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/analysis/asset_analysis_generator.py
+---
 # SDD-08: Dashboard & Frontend
 
 | Campo | Valor |

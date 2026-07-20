@@ -22,7 +22,7 @@
 2. **News Engine & Analysis Module (OPERATIONAL)**: AI-generated market analysis + news intelligence
    - Active sources: Investing.com (78 articles), Portafolio (276 articles) in DB
    - LLM weekly analysis: W01-W15 generated (Azure OpenAI GPT-4o-mini)
-   - Dashboard: `/analysis` page (14 components, 4 API routes)
+   - Dashboard: `/analysis` page (componentes + rutas API: ver `.claude/generated/inventory.json`)
    - See `.claude/specs/tracks/news-analysis/_summary.md`
 
 3. **H1 Daily Pipeline (PAUSED)**: 9 models, H=1 horizon — DAGs paused pending v2.0 validation
@@ -51,30 +51,13 @@ Anti-selection discipline is now transversal (`.claude/rules/quant-constitution.
 
 > See `.claude/specs/platform/mlops-lifecycle.md` for the full operator guide with checklists.
 
-### Two Deployment Modes
+Arranque: `make compact` (uso diario) · `make compact-monitoring` (+observabilidad) ·
+`make docker-up` (enterprise completo). Luego backfill L0 → forecasts → backtest → Vote 2 en
+`/dashboard` → producción → los DAGs toman el ciclo semanal.
 
-| Mode | Command | Services | RAM | Use Case |
-|------|---------|----------|-----|----------|
-| **Compact** | `make compact` | 12 | ~6-8GB | Daily: training, APIs, MLflow, SignalBridge, dashboard |
-| **Compact + Monitoring** | `make compact-monitoring` | 15 | ~8-10GB | + Prometheus, Grafana, AlertManager |
-| **Full Enterprise** | `make docker-up` | 25+ | ~12GB | + Vault, Jaeger, Loki, Promtail, pgAdmin |
-
-```
-# COMPACT (recommended for daily use):
-1. make compact                                    → 12 services (Stage 0)
-
-# FULL ENTERPRISE (all services):
-1. docker-compose up -d                            → 25+ containers (Stage 0)
-
-# Then (same for both modes):
-2. airflow dags trigger core_l0_01_ohlcv_backfill  → OHLCV current (Stage 1)
-3. airflow dags trigger core_l0_03_macro_backfill  → Macro current (Stage 1)
-4. python scripts/pipeline/generate_weekly_forecasts.py     → /forecasting page activates (Stage 2)
-5. python scripts/pipeline/train_and_export_smart_simple.py --phase backtest  → /dashboard shows 2025 (Stage 2)
-6. Review & approve on /dashboard                  → Vote 2/2 (Stage 5)
-7. python scripts/pipeline/train_and_export_smart_simple.py --phase production → /production shows 2026 (Stage 6)
-8. Airflow DAGs take over weekly cycle (Stage 7)   → L3→L5→L7→L6
-```
+**Los conteos de servicios y la secuencia completa con checklists están en
+`.claude/specs/platform/mlops-lifecycle.md`** (Stages 0-7). No se duplican aquí: la versión
+manual de esta tabla ya divergía del compose real.
 
 ---
 
@@ -100,7 +83,7 @@ Anti-selection discipline is now transversal (`.claude/rules/quant-constitution.
 
 ```
 Layer 1: SPEC (defines what)      -> .claude/rules/ (auto-loaded) + .claude/specs/ (on-demand)
-Layer 2: CONTRACT (enforces how)  -> lib/contracts/ + src/contracts/   (10 TS + 6 Python contracts)
+Layer 2: CONTRACT (enforces how)  -> lib/contracts/ + src/contracts/
 Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform to contracts)
 ```
 
@@ -122,7 +105,7 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 
 | Spec | Purpose |
 |------|---------|
-| `architecture-overview.md` | As-built architecture map (infra, 38 DAGs, contracts + drift, COP/Gold coupling) |
+| `architecture-overview.md` | As-built architecture map (infra, DAGs, contracts + drift, COP/Gold coupling) |
 | `platform/mlops-lifecycle.md` | **Master lifecycle** (bootstrap→production): 8 stages, CLI `--phase`, operator guide |
 | `platform/frontend-architecture.md` | **Dashboard as-built** (Next.js app: routing, BFF API layer, data-flow/dynamism, contracts boundary, scalability + roadmap) |
 | `platform/dashboard-integration.md` | Python→Dashboard **data contract** (JSON/CSV/PNG conventions, strategy selector) |
@@ -130,7 +113,8 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 | `platform/execution-bridge.md` | SignalBridge OMS + Execution (MEXC/Binance CCXT, kill switch) |
 | `platform/risk-management.md` | Risk checks & circuit breakers (9-check chain, RiskEnforcer, kill-switch audit) |
 | `platform/observability.md` | Monitoring & alerting (Prometheus/Grafana/AlertManager/Loki) |
-| `platform/cicd-testing.md` | CI/CD & quality gates (9 GitHub Actions, Makefile, 70% coverage gate) |
+| `platform/cicd-testing.md` | CI/CD & quality gates (GitHub Actions, Makefile, 70% coverage gate) |
+| `platform/codex-review-integration.md` | **Codex como revisor independiente** (Claude piloto): CLI 0.144.6 as-built, config validada con `--strict-config`, perfil `audit` con deny-read de secretos, loop de auditoría |
 | `platform/authentication.md` | Authentication & user creation as-built (SignalBridge JWT/bcrypt/lockout, dashboard NextAuth, `sb_users`) |
 | `pipelines/{training-l2-l3-l4,inference-l1-l5}.md` | RL training + inference pipeline internals |
 | `operations/elite-operations.md` | **DAG schedule / collision-free timeline (SSOT)** + recovery playbooks |
@@ -201,7 +185,7 @@ Scripts: `scripts/pipeline/generate_weekly_forecasts.py`, `scripts/pipeline/run_
 Script: `scripts/pipeline/train_and_export_smart_simple.py`. Migrations: 043-044. See `h5-smart-simple.md`.
 
 ### H1 Daily Pipeline
-`airflow/dags/forecast_h1_l3..l7*.py` — 5 DAGs (Sun train, Mon-Fri signal+execute+monitor).
+`airflow/dags/forecast_h1_l3..l7*.py` (Sun train, Mon-Fri signal+execute+monitor).
 Config: `config/execution/smart_executor_v1.yaml`.
 
 ### RL Pipeline (deprioritized)
@@ -235,7 +219,12 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 
 **Add a script**: place it in the subdir matching its purpose — NEVER at `scripts/` root (a regression test enforces this: `tests/regression/test_scripts_layout.py`). If it's wired into a DAG / Makefile / `dvc.yaml` / deploy-manifest, that path is **load-bearing** — update the reference when moving.
 
-### Dashboard (Next.js 15 App Router, 13 route files, 49 API routes)
+### Dashboard (Next.js 15 App Router)
+
+<!-- inv:frontend -->
+**22 páginas activas** (8 en `/legacy`) · **93 rutas API**
+<!-- /inv -->
+
 Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
 API groups: execution (13), experiments (7), production (6), backtest (5), analysis (4), trading (3), registry (2), models (2), market (2), strategies, replay, pipeline, health, auth.
 Data flow: file-based BFF (`public/data/**`) + DB-live (`production/live`) + proxy (`INFERENCE_API_URL`) + SSE + WS; adaptive polling + graceful degradation. Contracts: `lib/contracts/*.ts` mirror `src/contracts/`.
@@ -253,18 +242,17 @@ PostgreSQL+TimescaleDB (5432), Redis (6379), MinIO (9001), Airflow (8080), Signa
 Vault (8200), Prometheus (9090), Grafana (3002), AlertManager (9093), Loki (3100), Promtail, pgAdmin (5050), MLflow (5001).
 See `observability.md`.
 
-**Infra lista, activación en próximos pasos (status realista 2026-04-16):**
-- **MinIO** — 11 buckets operativos pero actualmente solo usado por init-scripts (seed fallback).
-  Bucket storage disponible para artefactos; los modelos se persisten en filesystem. **Roadmap**: migración modelos → MinIO.
-- **MLflow** — Tracking server + SQLite + artifact store desplegados. El DAG **H5-L3 SÍ invoca MLflow**
-  (`_mlflow_safe_start_run`, no-bloqueante); scripts ad-hoc también loguean. **Roadmap**: extender el logging automatizado a H1-L3 (audit A9).
-- **AlertManager** — Rules cargadas (53 alertas), Slack webhook vacío por defecto. Usar la UI estática
-  para reglas; alertas activas requieren `SLACK_WEBHOOK_URL` en `.env`. **No crítico** si se opera en local.
-- **Jaeger / OpenTelemetry** — **Instrumentado** (`services/common/tracing.py`, `src/shared/tracing/otel_setup.py`,
-  wired en `inference_api` + `signalbridge_api` `main.py`). Ya NO es "0 servicios instrumentados" (audit A9).
+**Infra desplegada pero parcialmente activada** (MinIO solo como fallback de seeds · MLflow
+invocado por H5-L3, pendiente en H1-L3 · AlertManager necesita `SLACK_WEBHOOK_URL` · Jaeger/OTel
+ya instrumentado): detalle y roadmap en `observability.md`.
 
 ### CI/CD & Testing
-9 GitHub Actions: ci, deploy, security (x2), contracts-check, drift-check, dvc-validate, experiment, canary-promote.
+<!-- inv:workflows -->
+**12 GitHub Actions**
+<!-- /inv -->
+
+Includes: ci, deploy, security (x2), contracts-check, drift-check, dvc-validate, experiment,
+canary-promote, rbac-gate, a11y.
 Makefile: 268 lines (test, lint, docker, db, validate). 70% coverage gate. See `cicd-testing.md`.
 
 ### Data Sources (for local training without DB)
@@ -272,8 +260,8 @@ Makefile: 268 lines (test, lint, docker, db, validate). 70% coverage gate. See `
 seeds/latest/
 ├── usdcop_daily_ohlcv.parquet      <- Daily COP OHLCV (~3K rows, 2015 -> 2026, COT tz) [H1/H5 training]
 ├── usdcop_m5_ohlcv.parquet        <- 5-min COP (81K rows, 2019-12 -> 2026-01, COT tz) [RL training]
-├── usdmxn_m5_ohlcv.parquet        <- 5-min MXN (95K rows, 2020-01 -> 2026-01, COT tz)
-├── usdbrl_m5_ohlcv.parquet        <- 5-min BRL (90K rows, 2020-02 -> 2026-02, COT tz)
+├── usdmxn_m5_ohlcv.parquet        <- 5-min MXN (2.3K rows, 2026-03 -> 2026-07 ONLY)
+├── usdbrl_m5_ohlcv.parquet        <- 5-min BRL (2.3K rows, 2026-03 -> 2026-07 ONLY)
 ├── fx_multi_m5_ohlcv.parquet      <- Unified 3-pair seed (266K rows, for DB restore)
 └── macro_indicators_daily.parquet <- Macro ALL 41 cols (10K rows, 1954 -> 2026)
 
@@ -298,7 +286,12 @@ state — must also stay OUT of the docker build context: its NTFS mode breaks `
 
 ---
 
-## DAG SCHEDULE (29 DAGs + watchdog)
+## DAG SCHEDULE
+
+<!-- inv:dags -->
+**45 DAGs** (43 declarados en 43 módulos + 2 generados por factory)
+<!-- /inv -->
+
 
 | Pipeline | DAGs | Key Timing (COT) | Spec |
 |----------|------|-------------------|------|
@@ -342,76 +335,16 @@ Plus: mean±std, bootstrap 95% CI, comparison vs buy-and-hold. If p>0.05: "NOT s
 
 ---
 
-## KNOWN BUGS & FIXES (already applied)
+## KNOWN BUGS · VERSION HISTORY
 
-1. **Infinity in JSON** — `profit_factor: float("inf")` crashes `JSON.parse()`. Fixed: use `None` + `safe_json_dump()`
-2. **Hardcoded strategy IDs** — Dashboard read `forecast_vt_trailing` but export wrote `smart_simple_v11`. Fixed: dynamic `strategy_id` lookup
-3. **Exit reason mismatch** — Dashboard only knew `trailing_stop`/`session_close`, not `take_profit`/`week_end`. Fixed: universal `EXIT_REASON_COLORS` registry
-4. **min_hold_bars bypass** — CLOSE action and reversals must check min_hold_bars BEFORE executing
-5. **LSTM states in backtest** — RecurrentPPO requires `model.predict(obs, state=lstm_states, episode_start=...)`
-6. **close_reason not passed** — Must propagate from env -> info dict -> reward calculator
-7. **flat_reward_weight** — Must be 0.0 (non-zero creates HOLD bias)
-8. **backtest max_drawdown** — Must be 99% (not 15% which kills equity curve)
-9. **volume_zscore dead** — OHLCV volume is 100% zeros, feature removed
-10. **dow encoding** — Use /5.0 (trading days) not /7.0 (calendar days)
-11. **USDCOP seed timezone** — Raw TwelveData timestamps were UTC mislabeled as COT. Fixed by `build_unified_fx_seed.py`
-
----
-
-## VERSION HISTORY (condensed)
-
-| Track | Best Strategy | Return 2025 | Sharpe | p-value | $10K -> | Status |
-|-------|---------------|-------------|--------|---------|---------|--------|
-| **H5 Weekly** | **Smart Simple v2.0** | **+25.63%** | **3.35** | **0.006** | **$12,563** | **PRODUCTION** |
-| H5 Weekly | v2.0 (2026 YTD) | +0.61% | -- | -- | $10,061 | Gate active (1 trade) |
-| H1 Daily | Forecast+VT+Trailing | +36.84% | 3.135 | 0.0178 | $13,684 | PAUSED |
-| RL | V21.5b | +2.51% | 0.321 | 0.272 | $10,251 | NOT significant |
-| Baseline | Buy & Hold | -12.29% | -- | -- | $8,771 | -- |
-
-**v1.1→v2.0** (2026-03-18): Added regime gate (Hurst), effective HS (3.5% portfolio cap),
-XGBoost in ensemble, vol_regime_ratio + trend_slope_60d features, dynamic leverage, circuit breaker.
-Weekly retraining restored (was monthly in v1.1.0 — methodology bug).
-**10-agent audit** revealed R² < 0 in both years, model alpha negative vs Always SHORT.
-Gate is the MVP: blocked 11/12 mean-reverting weeks in Q1 2026, converting -5.17% into +0.61%.
-**RL baselines**: Buy-and-hold -14.66%, Random -4.12%, Bootstrap CI [-0.69%, +6.15%].
-**RL history**: V20 failed, V21 failed, V21.5 superseded, V22 mixed (1/5), V21.5b best (4/5), EXP-ASYM-001 failed, EXP-HOURLY/DAILY failed.
-
-### Multi-asset (rule-based daily science stacks — onboarded to web, NOT COP-comparable)
-
-> The table above is COP-only. Gold/BTC are separate assets on their own clocks/units — **never
-> compare across assets** (each annualized per-asset, see `assets/_strategy-science.md §6`). These are
-> rule-based baselines (intent × vol-targeting × regime), published to the dynamic registry and
-> visible on `/dashboard`; backtest+web only (no live execution). Honest gate: a candidate must beat
-> **both** baselines OOS on Sharpe *and* Calmar.
-
-| Asset | Best strategy | Return (OOS) | Sharpe | p-value | Rec | Runner |
-|-------|---------------|--------------|--------|---------|-----|--------|
-| **XAU/USD** (Gold) | `gold_trend_b2` (2004→2026) | +55.3% | 0.362 | 0.041 | PROMOTE | `scripts/run_gold_pipeline.py` |
-| **BTC/USDT** (Bitcoin) | `btc_trend_b2` (2018→2026) | **+351%** | **1.40** | 0.0 | PROMOTE | `scripts/pipeline/run_btc_pipeline.py` |
-
-> **Gold seed calendar bug fixed (2026-07)**: `ingest_asset_ohlcv.py::_daily_to_nyclose` shifted daily
-> bars one day onto Sunday (`tz_convert(ET).normalize()` on a 00:00-UTC stamp). Fixed to anchor the date
-> in UTC; Gold metrics recomputed (`gold_trend_b2` 61.1%→55.3%, verdicts unchanged) and republished at
-> bundle **v1.1.0**. A new OHLCV weekday/gap/tz validator (`src/data_quality/ohlcv_validators.py`) now
-> gates every ingest. Bundles also carry **Deflated Sharpe** (trial-aware) + a **true OOS-2025** slice.
-> Cross-asset comparison caveat still applies (each annualized per-asset).
-
-**BTC data note**: canonical price is **Binance spot BTC/USDT, UTC 00:00 close** — ingested from
-Binance's **public** klines API (no API key), 3,245 daily bars 2017→2026 via `scripts/data/ingest_btc_ohlcv.py`.
-BTC is **24/7** → √365 annualization, spot-only `exposure∈[0,1]`, no forced-close. The regime-gated
-engine (S3) does **not** yet beat B2 — it needs the on-chain HMM fed by the still-pending crypto-native
-extractors (→ migration 052 tables). See `assets/btcusdt/` + `assets/_strategy-science.md`.
-
----
+Ambos son **referencia**, no reglas de cada sesión → `.claude/specs/platform/known-issues-and-history.md`
+(12 bugs ya corregidos + historial de resultados por track + advertencia de DSR sobre 2025).
 
 ## DO NOT
 
-### JSON & Dashboard
-- Do NOT produce `Infinity`, `NaN`, or `undefined` in JSON — use `null` via `safe_json_dump()`
-- Do NOT hardcode `strategy_id` in dashboard — use `summary.strategy_id` dynamic lookup
-- Do NOT add exit reasons without updating BOTH `strategy.contract.ts` AND `strategy_schema.py`
-- Do NOT bypass the 2-vote approval — backtest gates (auto) + human review (manual) required
-- Do NOT modify `approval_state.json` manually — use `--reset-approval` CLI or dashboard API
+> **JSON/dashboard, aprobación, datos L0 y frescura**: sus DO-NOTs viven en las rules
+> auto-cargadas (`strategy-contract.md`, `approval-gates.md`, `data-governance.md`,
+> `data-freshness.md`). No se duplican aquí.
 
 ### RL Pipeline
 - Do NOT hardcode values — everything from pipeline_ssot.yaml
@@ -446,15 +379,10 @@ extractors (→ migration 052 tables). See `assets/btcusdt/` + `assets/_strategy
 - Do NOT run `analysis_l8_daily_generation` before news ingestion DAGs complete
 - Do NOT skip `_sanitize_for_json()` on analysis exports — same JSON safety as strategy exports
 
-### Data & Infrastructure
-- Do NOT store OHLCV timestamps in UTC — always America/Bogota
-- Do NOT fetch BRL from TwelveData with `timezone=America/Bogota` (returns incomplete data, use UTC + convert)
+### Data & Infrastructure (solo lo NO cubierto por `data-governance.md` / `data-freshness.md`)
 - Do NOT compute features in L5 — L1 is the ONLY feature computation layer (RL)
 - Do NOT write to `inference_ready_nrt` from outside L1 DAGs (RL)
-- Do NOT train models on stale data — OHLCV must be <3 days, macro <7 days (enforced by `data_quality.py`)
 - Do NOT skip DB migrations on fresh install — 043-046 are required for H5/News/Analysis
-- Do NOT delete seed parquets or MACRO_DAILY_CLEAN.parquet — they are restore fallbacks
-- Do NOT ignore model freshness warnings — they indicate L3 training failure
 
 ### Execution & Risk
 - Do NOT place live orders without setting `EXECUTION_MODE=testnet` first — validate on testnet before going live

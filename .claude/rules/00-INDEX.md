@@ -1,3 +1,11 @@
+---
+kind: rule
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # Rules Index (auto-loaded)
 
 > These `rules/*.md` are injected into **every** session — keep them thin and always-true.
@@ -5,10 +13,10 @@
 
 | Rule (auto-loaded) | Governs | Deep reference (on-demand) |
 |--------------------|---------|-----------------------------|
-| `data-governance.md` | L0 OHLCV + macro: timezone golden rule (America/Bogota), multi-pair table, UPSERT, BRL quirk | `../specs/pipelines/`, `../specs/operations/elite-operations.md` |
-| `data-freshness.md` | Freshness thresholds (OHLCV 3d, macro 7d, models 10d) + recovery procedures **(SSOT)** | `../specs/data/backup-recovery.md`, `../specs/operations/elite-operations.md` |
-| `strategy-contract.md` | Universal strategy/trade/gate schemas, StrategyRegistry, exit reasons, signal contract | `../specs/platform/dashboard-integration.md`, `../specs/platform/registry-lifecycle.md` |
-| `approval-gates.md` | 2-vote approval lifecycle + 5 gates + `approval_state.json` | `../specs/platform/mlops-lifecycle.md` |
+| `data-governance.md` | L0 OHLCV + macro: timezone golden rule (America/Bogota), multi-pair table, UPSERT, BRL quirk | `../specs/pipelines/l0-data-reference.md` |
+| `data-freshness.md` | Freshness **thresholds** (OHLCV 3d, macro 7d, models 10d) **(SSOT)** | `../specs/operations/freshness-recovery.md` (runbooks + migraciones) |
+| `strategy-contract.md` | Invariantes de estrategia (id universal, JSON safety, per-asset) | `../specs/platform/strategy-schemas.md` (schemas completos) |
+| `approval-gates.md` | Invariantes del doble voto | `../specs/platform/approval-lifecycle.md` (secuencia + schema) |
 | `experiment-protocol.md` | Experiment discipline: 1 variable, 5 seeds, statistical validation | `../templates/experiment-config-template.md`, `../experiments/` |
 | `quant-constitution.md` | **Transversal anti-selección** (todos los tracks): no grid-search sobre test, trials+DSR, baselines B1′/tonto/costos, anti-look-ahead 3 capas, retiro pre-firmado | `../specs/assets/btcusdt/design/constitution-modeling.md`, `../specs/audit/PLAN-completar-sistema-2026-07.md` |
 | `rbac.md` | **RBAC + monetización** (CTR-RBAC-001): deny-by-default, rol≠plan, entitlements server-side, PreTradeGate paper-first, billing por webhook, audit append-only | `../specs/platform/rbac-monetization.md` |

@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SDD-00: Unified System Architecture
 
 | Campo | Valor |
@@ -183,7 +191,7 @@ usdcop-trading-platform/
 │   ├── 08_DASHBOARD_FRONTEND.md
 │   ├── 09_CHAT_WIDGET.md
 │   ├── 10_ORCHESTRATION.md
-│   ├── 11_IMPLEMENTATION_ROADMAP.md
+│   ├── (11_IMPLEMENTATION_ROADMAP.md → archivado)
 │   └── 12_DESIGN_DECISIONS.md
 │
 ├── src/

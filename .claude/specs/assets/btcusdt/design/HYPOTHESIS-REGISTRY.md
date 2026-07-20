@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/btc_strategy/strategies.py
+---
 # HYPOTHESIS REGISTRY — Registro de Hipótesis y Trials
 
 > **Insumo directo del Deflated Sharpe Ratio.** El DSR necesita saber **cuántas hipótesis se

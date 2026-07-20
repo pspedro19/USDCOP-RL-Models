@@ -1,3 +1,14 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/xauusd.yaml
+  - config/assets/usdcop.yaml
+  - tests/contracts/test_strategy_registry.py
+---
 # XAU/USD RL Strategy — Paquete de Especificaciones (SDD)
 
 Paquete de especificaciones para implementar la estrategia de trading algorítmico de XAU/USD descrita en [`STRATEGY.md`](./STRATEGY.md). Metodología **Spec-Driven Development + TDD**: cada spec define contrato (inputs/outputs), detalle de implementación concreto y **criterios de aceptación testeables** antes de escribir código.
@@ -9,7 +20,7 @@ Paquete de especificaciones para implementar la estrategia de trading algorítmi
 ## Cómo usar este paquete
 
 1. Lee `STRATEGY.md` (el norte) y `SPEC-00` (arquitectura + stack).
-2. Sigue `IMPLEMENTATION_ROADMAP.md` — construye por fases, cada una con su gate de aceptación.
+2. Sigue `../../archive/2026-07/xauusd-IMPLEMENTATION_ROADMAP.md` (archivado) — construyó por fases, cada una con su gate de aceptación.
 3. Cada `SPEC-XX` es autocontenida: **Propósito → Contrato → Implementación → Criterios de aceptación → Dependencias**.
 4. Las decisiones de diseño no obvias están registradas en `adr/`.
 
@@ -35,7 +46,7 @@ Paquete de especificaciones para implementar la estrategia de trading algorítmi
 | [SPEC-11](./specs/SPEC-11-deployment-monitoring.md) | Paper/live, shadow, drift, kill switch | 8–9 | Despliegue |
 | [SPEC-12](./specs/SPEC-12-scalable-registry-integration.md) | **Integración con el registro dinámico + fábrica de pipelines** | 0, 6, 8 | AssetProfile + bundle publicado + replay en el front |
 
-Complementos: [`IMPLEMENTATION_ROADMAP.md`](./IMPLEMENTATION_ROADMAP.md) · [`adr/ADR-log.md`](./adr/ADR-log.md) · [`config/`](./config/) (plantillas YAML)
+Complementos: [`IMPLEMENTATION_ROADMAP.md` (archivado)](../../archive/2026-07/xauusd-IMPLEMENTATION_ROADMAP.md) · [`adr/ADR-log.md`](./adr/ADR-log.md) · [`config/`](./config/) (plantillas YAML)
 
 ---
 
@@ -50,15 +61,15 @@ El Oro entra por **config + datos**, no por código copiado:
 3. El **frontend lee `/api/registry`** y se arma solo: dropdown Activo→Estrategia→Versión→Año + **replay** dinámico. Cero `strategy_id`/`symbol`/año hardcodeado.
 4. La **fábrica de pipelines** (config-driven) emite los DAGs por `(activo, estrategia)` → agregar Oro = una entrada de config, **0 DAGs nuevos**.
 
-> **Estado de la columna vertebral (2026-07-03): IMPLEMENTADA y PROBADA sobre USD/COP.** El publisher está cableado en el export (aditivo), el versionado inmutable coexiste (3 versiones vivas bajo `smart_simple_v11` + rama `smart_simple_aggr`, probado como A/B), las rutas `/api/registry` · `/api/strategies/{id}/manifest` · `/api/registry/promote` existen, y el frontend arma solo el selector Estrategia→Versión + replay + promote (validado con Playwright). Blindado por 9 tests R (`tests/contracts/test_strategy_registry.py`). **El Oro no construye esta maquinaria — la reutiliza.** Lo pendiente es el *onboarding del activo* (crear `config/assets/xauusd.yaml`, aún inexistente), la **fábrica de pipelines** y el rebuild del dashboard baked. Detalle honesto en [SPEC-12 §Estado real hoy](./specs/SPEC-12-scalable-registry-integration.md#estado-real-hoy-honesto--qué-ya-funciona-y-qué-falta-cablear).
+> **Estado de la columna vertebral (2026-07-03): IMPLEMENTADA y PROBADA sobre USD/COP.** El publisher está cableado en el export (aditivo), el versionado inmutable coexiste (3 versiones vivas bajo `smart_simple_v11` + rama `smart_simple_aggr`, probado como A/B), las rutas `/api/registry` · `/api/strategies/{id}/manifest` · `/api/registry/promote` existen, y el frontend arma solo el selector Estrategia→Versión + replay + promote (validado con Playwright). Blindado por 9 tests R (`tests/contracts/test_strategy_registry.py`). **El Oro no construye esta maquinaria — la reutiliza.** **Onboarding COMPLETADO (2026-07)**: `config/assets/xauusd.yaml` existe, la **fábrica de pipelines** emite `asset_xauusd_pipeline_weekly` y el rebuild del dashboard baked. Detalle honesto en [SPEC-12 §Estado real hoy](./specs/SPEC-12-scalable-registry-integration.md#estado-real-hoy-honesto--qué-ya-funciona-y-qué-falta-cablear).
 
 Reglas vigentes del sistema que este paquete debe respetar (en `.claude/rules/`):
 
 | Regla | Qué gobierna |
 |---|---|
-| [`architecture-overview.md`](../rules/architecture-overview.md) | Mapa as-built (infra, contratos, drift TS↔Python §5.3) |
-| [`_onboarding-playbook.md`](../rules/_onboarding-playbook.md) | Contrato `AssetProfile`, stages, tests **A1–F1** |
-| [`registry-lifecycle.md`](../rules/registry-lifecycle.md) | `StrategyBundleManifest`, `registry.json`, contrato I/O de DAG, inmutabilidad, replay, fábrica, tests **R1–R9** |
+| [`architecture-overview.md`](../../architecture-overview.md) | Mapa as-built (infra, contratos, drift TS↔Python §5.3) |
+| [`_onboarding-playbook.md`](../_onboarding-playbook.md) | Contrato `AssetProfile`, stages, tests **A1–F1** |
+| [`registry-lifecycle.md`](../../platform/registry-lifecycle.md) | `StrategyBundleManifest`, `registry.json`, contrato I/O de DAG, inmutabilidad, replay, fábrica, tests **R1–R9** |
 
 ---
 

@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/xauusd.yaml
+---
 # Estrategia XAU/USD — Especificación Final v2 (Norte)
 
 Documento canónico de la estrategia. Todas las specs (`specs/SPEC-XX`) implementan lo aquí definido. Si hay conflicto, este documento manda; propón cambios vía ADR.

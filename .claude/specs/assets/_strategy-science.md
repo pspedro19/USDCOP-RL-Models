@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-STRAT-SCIENCE-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - services/common/metrics.py
+  - src/data_quality/ohlcv_validators.py
+  - scripts/pipeline/run_gold_pipeline.py
+  - scripts/pipeline/run_btc_pipeline.py
+  - scripts/pipeline/generate_asset_weekly_forecast.py
+  - airflow/dags/asset_pipeline_factory.py
+  - config/assets/pipelines.yaml
+  - tests/contracts/test_strategy_registry.py
+---
 # SDD Spec: Strategy Science — how the rule-based strategies are built, sized, and judged (AS-BUILT)
 
 > **Responsibility**: The cross-asset, *as-built* explanation of the strategy science that powers the
@@ -200,7 +217,7 @@ print this verdict explicitly and do not promote a candidate that fails it.
 OOS backtest, $10k initial. Numbers are the registry headline (active version). **Never compare across
 assets** as if on one clock — each is annualized with its own `N` (§1) and priced in its own units.
 
-### Gold (XAU/USD) — daily, 2004 → 2026 (`scripts/run_gold_pipeline.py`, bundle **v1.1.0**)
+### Gold (XAU/USD) — daily, 2004 → 2026 (`scripts/pipeline/run_gold_pipeline.py`, bundle **v1.1.0**)
 Recomputed on the **calendar-corrected** seed (the daily day-shift bug is fixed — see §7). `DSR` =
 Deflated Sharpe, deflating each strategy's PSR for the N=3 trials tested (trial-aware bar = DSR > 0.95):
 | Strategy | Return | Sharpe | p-value | **DSR** | Rec | Type |
@@ -325,8 +342,8 @@ A/B recipe, and `_asbuilt-implementation.md §5-8` for the backend/frontend reso
 
 ```bash
 # Gold
-python scripts/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
-python scripts/run_gold_pipeline.py            # backtest B1/B2/regime-gated + publish bundles
+python scripts/data/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
+python scripts/pipeline/run_gold_pipeline.py            # backtest B1/B2/regime-gated + publish bundles
 
 # BTC (canonical Binance public data — no API key needed)
 python scripts/data/ingest_btc_ohlcv.py --no-db

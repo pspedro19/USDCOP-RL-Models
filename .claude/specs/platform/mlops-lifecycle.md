@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/execution/smart_simple_v1.yaml
+---
 # SDD Spec: MLOps Lifecycle — Bootstrap to Production
 
 > Master operator's guide for the complete USDCOP trading system lifecycle.

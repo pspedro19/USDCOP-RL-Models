@@ -1,3 +1,13 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-OPS-001
+version: 2.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - airflow/dags/utils/data_quality.py
+---
 # Rule: Elite Operations Rulebook
 
 > Comprehensive operational rulebook for the USDCOP trading system.

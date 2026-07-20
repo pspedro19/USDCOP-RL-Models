@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-EXEC-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - services/signalbridge_api/app/contracts/signal_bridge.py
+  - src/execution/smart_executor.py
+  - src/execution/multiday_executor.py
+  - src/execution/broker_adapter.py
+  - src/execution/trailing_stop.py
+  - config/execution/smart_executor_v1.yaml
+  - config/execution/smart_simple_v1.yaml
+  - init-scripts/20-signalbridge-schema.sql
+---
 # SDD Spec: SignalBridge OMS & Execution Layer
 
 > **Responsibility**: Authoritative source for the SignalBridge order management system,

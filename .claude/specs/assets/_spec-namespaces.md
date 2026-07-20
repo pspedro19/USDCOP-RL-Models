@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SPEC numbering — namespaces por activo (desambiguación)
 
 > **Creado 2026-07-06 (G4, hallazgo I-6 de la auditoría).** Existen DOS familias `SPEC-01..13`

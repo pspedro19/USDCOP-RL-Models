@@ -1,3 +1,12 @@
+---
+kind: rule
+status: IMPLEMENTED
+contract: CTR-QUANT-CONSTITUTION-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # Rule: Quant Constitution (TRANSVERSAL — todos los tracks)
 
 > **SSOT de disciplina anti-selección para TODOS los activos y tracks** (USD/COP, XAU/USD,

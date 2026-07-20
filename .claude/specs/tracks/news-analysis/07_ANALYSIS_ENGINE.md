@@ -1,3 +1,18 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/analysis/weekly_analysis_ssot.yaml
+  - src/analysis/asset_analysis_generator.py
+  - scripts/pipeline/generate_asset_analysis.py
+  - src/analysis/news_sources.py
+  - config/analysis/analysis_assets.yaml
+  - tests/unit/test_asset_analysis_generator.py
+  - tests/unit/test_news_sources.py
+---
 # SDD-07: Analysis Engine
 
 | Campo | Valor |

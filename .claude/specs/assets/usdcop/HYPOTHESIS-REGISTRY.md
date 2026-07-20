@@ -1,3 +1,15 @@
+---
+kind: as-built
+status: PARTIAL
+contract: CTR-QUANT-CONSTITUTION-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/analysis/cop_trials_dsr.py
+  - scripts/analysis/cop_null_suite.py
+  - scripts/analysis/portfolio_layer.py
+---
 # HYPOTHESIS-REGISTRY — USD/COP (retroactivo + prospectivo)
 
 > **Creado 2026-07-06 (G2 del plan maestro, hallazgo I-1 de la auditoría).** El track COP no

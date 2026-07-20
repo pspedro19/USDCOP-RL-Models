@@ -345,3 +345,11 @@ models/**/tensorboard/
 # video-pitch rendered media (Remotion code/scripts stay tracked)
 video-pitch/out/
 video-pitch/public/
+
+# Knowledge-system junk (CTR-KNOWLEDGE-001): duplicate snapshots + ephemeral session state
+.claude/*.zip
+.claude/scheduled_tasks.lock
+
+# Vendored quant skill library (CTR-QUANT-LIBRARY-001)
+vendor/quant-skills/**/.pytest_cache/
+vendor/quant-skills/**/__pycache__/

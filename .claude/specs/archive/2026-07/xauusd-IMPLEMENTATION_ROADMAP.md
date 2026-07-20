@@ -1,3 +1,12 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/xauusd.yaml
+---
 # Roadmap de Implementación
 
 Construcción por fases. **No avanzar sin pasar el gate de aceptación** (tests verdes) de la fase previa. La Fase 6 es el gate honesto.

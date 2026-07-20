@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-ARCH-001
+version: 1.1.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/asset_profile.py
+  - docker-compose.yml
+  - docker-compose.compact.yml
+  - config/feature_config.json
+  - config/feature_registry.yaml
+  - scripts/data/ingest_asset_ohlcv.py
+  - config/macro_variables_ssot.yaml
+  - tests/regression/test_scripts_layout.py
+---
 # SDD Spec: Architecture Overview & Implementation Map
 
 > **Responsibility**: Single entry-point that describes HOW the USDCOP trading system is
@@ -129,7 +146,7 @@ The `usdcop_m5_ohlcv` table has `PRIMARY KEY (time, symbol)` — it is multi-pai
 **Storage model (as-built + roadmap).** OHLCV uses **one table per granularity, multi-asset via a
 `symbol` discriminator** — 5-min → `usdcop_m5_ohlcv` (legacy name kept; symbol-parameterized), daily →
 `asset_daily_ohlcv` (migration 051). The two are schema-identical; the granularity→table map is a single
-SSOT constant `GRANULARITY_TABLE` in `scripts/ingest_asset_ohlcv.py`, and asset→seed routing reads the
+SSOT constant `GRANULARITY_TABLE` in `scripts/data/ingest_asset_ohlcv.py`, and asset→seed routing reads the
 `AssetProfile` (no hardcoded per-asset dicts; the chart exporter is `AssetProfile`-driven too). **Reality:
 `asset_daily_ohlcv` is currently a durability mirror** — the Gold/BTC serving path is 100% seed-parquet →
 bundle-JSON; the DB table is written best-effort and read only by the backup job. **Roadmap** (not done —

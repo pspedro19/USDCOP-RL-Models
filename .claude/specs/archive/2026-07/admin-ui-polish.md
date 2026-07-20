@@ -1,3 +1,13 @@
+---
+kind: historical
+status: ARCHIVED
+contract: CTR-ADMIN-UI-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - usdcop-trading-dashboard/lib/ui/tokens.ts
+---
 # Admin Console — UI Polish + Lógica de Interacciones
 
 > **Estado: IMPLEMENTADO (2026-07-07)** · Aplica sobre lo ya construido

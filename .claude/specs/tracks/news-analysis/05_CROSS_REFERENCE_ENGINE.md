@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 > **Status: ✅ RETAINED** from NewsEngine v1.0.0 — No changes needed for unified platform.
 
 # SDD-05: Cross-Reference Engine

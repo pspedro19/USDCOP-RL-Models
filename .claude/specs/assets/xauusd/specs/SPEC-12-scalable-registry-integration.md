@@ -1,3 +1,17 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/xauusd.yaml
+  - airflow/dags/utils/register_bundle.py
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - src/contracts/strategy_manifest.py
+  - tests/contracts/test_strategy_registry.py
+  - config/assets/usdcop.yaml
+---
 # SPEC-12 — Integración con el Registro Dinámico y la Fábrica de Pipelines
 
 ## Propósito
@@ -44,7 +58,7 @@ Lo único que se escribe como **código nuevo** es un `ExecutionStrategy` cuando
 
 El Oro se define en `config/assets/xauusd.yaml` (contrato `AssetProfile`, ver `_onboarding-playbook.md` §2). Parametriza TODO lo que hoy está pegado a COP: `symbol`, `chart_symbol`, `price_range`, `session` (timezone metales, `bars_per_day`, `bars_per_year`, cierre), `data_source` (símbolo TwelveData/Dukascopy + seed), `macro_drivers` (DXY −, real-yield −, VIX +, Brent +), y umbrales del `regime_gate` (**re-ajustados**, NO copiados de COP 0.52/0.42).
 
-> **Plantilla concreta en este paquete:** [`config/asset-profile.example.yaml`](../config/asset-profile.example.yaml). Documenta el schema completo del perfil del Oro (sesión metales, drivers macro, `bars_per_day`/`hurst_*` = `null` para forzar la medición/re-fit). La copia REAL vive en el repo raíz `config/assets/xauusd.yaml` — **hoy inexistente** (bloque 0 del onboarding, test A1).
+> **Plantilla concreta en este paquete:** [`templates/asset-profile.example.yaml`](../../../../templates/asset-profile.example.yaml). Documenta el schema completo del perfil del Oro (sesión metales, drivers macro, `bars_per_day`/`hurst_*` = `null` para forzar la medición/re-fit). La copia REAL vive en `config/assets/xauusd.yaml` — **ya existe** (onboarding completado 2026-07).
 
 > Los drivers macro de este paquete (SPEC-03) — DXY, tasas reales (DFII10/T10YIE), calendario — son exactamente los `macro_drivers` del `AssetProfile`. NO reusar EMBI/IBR/TPM/WTI-como-export de COP.
 > **TwelveData verificado (2026-07-03):** 8/8 keys válidas; `XAU/USD` y `BTC/USD` descargables. La ingesta (SPEC-01) alimenta `data_source.seed_file`.

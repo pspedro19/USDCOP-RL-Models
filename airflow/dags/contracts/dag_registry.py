@@ -201,6 +201,36 @@ CORE_L6_WEEKLY_REPORT = "core_l6_02_weekly_report"
 
 
 # =============================================================================
+# PLATFORM / OPS DAGS
+# =============================================================================
+# These DAGs shipped without registry constants, so `get_all_dag_ids()` under-
+# reported the fleet and every doc that quoted it inherited the error
+# (CTR-KNOWLEDGE-INVENTORY-001, reconciled 2026-07-20 against the AST inventory).
+CORE_WATCHDOG = "core_watchdog"
+RECONCILIATION_DAILY = "reconciliation_daily"
+RBAC_ENTITLEMENTS_DAILY = "rbac_entitlements_daily"
+FORECAST_WEEKLY_GENERATION = "forecast_weekly_generation"
+FORECAST_ASSET_ANALYSIS_WEEKLY = "forecast_asset_analysis_weekly"
+
+# Config-driven, emitted per enabled asset by airflow/dags/asset_pipeline_factory.py
+# from config/assets/pipelines.yaml — never hardcode; derive with get_asset_dag_ids().
+ASSET_PIPELINE_DAG_PATTERN = "asset_{asset}_pipeline_weekly"
+
+# Declared historically but NO module on disk emits them. Kept as constants so any
+# stale back-reference still resolves, yet excluded from the active fleet: counting
+# them is how "40 DAGs" got into the specs while 45 real ones existed.
+ABSENT_DAGS = frozenset({
+    FORECAST_L0_DAILY_DATA,
+    FORECAST_L1_DAILY_FEATURES,
+    FORECAST_L2_DATASET_BUILD,
+    FORECAST_L4_BACKTEST_VALIDATION,
+    FORECAST_L4_EXPERIMENT_RUNNER,
+    FORECAST_L6_DRIFT_MONITOR,
+    FORECAST_L6_ACCURACY_REPORT,
+})
+
+
+# =============================================================================
 # LEGACY IDs (for backward compatibility during migration)
 # =============================================================================
 
@@ -463,14 +493,9 @@ def get_all_dag_ids() -> List[str]:
         RL_L6_PRODUCTION_MONITOR,
         RL_L6_DRIFT_MONITOR,
         # Forecasting Pipeline (generic)
-        FORECAST_L0_DAILY_DATA,
-        FORECAST_L1_DAILY_FEATURES,
-        FORECAST_L2_DATASET_BUILD,
+        # NOTE: FORECAST_L0/L1/L2/L4/L6_* are in ABSENT_DAGS — declared here
+        # historically but no module on disk emits them.
         FORECAST_L3_MODEL_TRAINING,
-        FORECAST_L4_BACKTEST_VALIDATION,
-        FORECAST_L4_EXPERIMENT_RUNNER,
-        FORECAST_L6_DRIFT_MONITOR,
-        FORECAST_L6_ACCURACY_REPORT,
         # H1 Daily Pipeline
         FORECAST_H1_L3_WEEKLY_TRAINING,
         FORECAST_H1_L4_BACKTEST_PROMOTION,
@@ -481,6 +506,7 @@ def get_all_dag_ids() -> List[str]:
         # H5 Weekly Pipeline
         FORECAST_H5_L3_WEEKLY_TRAINING,
         FORECAST_H5_L4_BACKTEST_PROMOTION,
+        FORECAST_H5_L4B_PRODUCTION_DEPLOY,
         FORECAST_H5_L5_WEEKLY_SIGNAL,
         FORECAST_H5_L5_VOL_TARGETING,
         FORECAST_H5_L7_MULTIDAY_EXECUTOR,
@@ -494,7 +520,50 @@ def get_all_dag_ids() -> List[str]:
         # Shared Monitoring
         CORE_L6_ALERT_MONITOR,
         CORE_L6_WEEKLY_REPORT,
+        # Platform / Ops
+        CORE_WATCHDOG,
+        RECONCILIATION_DAILY,
+        RBAC_ENTITLEMENTS_DAILY,
+        FORECAST_WEEKLY_GENERATION,
+        FORECAST_ASSET_ANALYSIS_WEEKLY,
     ]
+
+
+def get_asset_dag_ids() -> List[str]:
+    """DAG ids emitted by the asset pipeline factory, one per ENABLED asset.
+
+    Config-driven (`config/assets/pipelines.yaml`), so they never appear as literals
+    in any module. Any inventory that scans source alone under-counts the fleet by
+    exactly the number of enabled assets.
+    """
+    import os
+
+    import yaml
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    cfg_path = os.path.join(here, "..", "..", "..", "config", "assets", "pipelines.yaml")
+    cfg_path = os.path.normpath(cfg_path)
+    if not os.path.isfile(cfg_path):
+        return []
+    with open(cfg_path, encoding="utf-8") as fh:
+        cfg = yaml.safe_load(fh) or {}
+    pattern = cfg.get("dag_id_pattern", ASSET_PIPELINE_DAG_PATTERN)
+    return [
+        pattern.format(asset=aid)
+        for aid, spec in (cfg.get("assets") or {}).items()
+        if spec.get("enabled")
+    ]
+
+
+def get_active_dag_ids() -> List[str]:
+    """Every DAG that should exist in a healthy Airflow deployment.
+
+    This is the executable SSOT the knowledge inventory reconciles against —
+    static registrations plus config-driven asset pipelines, minus deprecated
+    and absent ids.
+    """
+    ids = [d for d in get_all_dag_ids() if d not in DEPRECATED_DAGS and d not in ABSENT_DAGS]
+    return ids + get_asset_dag_ids()
 
 
 def get_dags_by_pipeline(pipeline: DagPipeline) -> List[str]:

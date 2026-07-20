@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR Log — Capa de Modelado BTC
 
 Registro de decisiones de arquitectura. Continúa la numeración del pipeline de datos

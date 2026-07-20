@@ -42,7 +42,7 @@ assets:
     stages:
       - id: l0_ingest
         name: "Data ingestion (daily OHLCV -> seed + asset_daily_ohlcv)"
-        script: "scripts/ingest_asset_ohlcv.py"
+        script: "scripts/data/ingest_asset_ohlcv.py"
         args: ["--asset", "xauusd", "--skip-intraday", "--daily-start", "2004-01-01"]
         # Graceful: if the live feed is unavailable, the science stage still runs
         # on the last good seed (the run is marked failed on this task = visible).
@@ -55,7 +55,7 @@ assets:
         graceful: true
       - id: l4_backtest_publish
         name: "Features -> regime -> backtest (honest gate) -> publish bundles"
-        script: "scripts/run_gold_pipeline.py"
+        script: "scripts/pipeline/run_gold_pipeline.py"
         args: []
         graceful: false
       - id: l5_weekly_forecast

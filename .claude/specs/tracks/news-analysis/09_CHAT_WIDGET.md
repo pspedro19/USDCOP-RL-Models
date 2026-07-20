@@ -1,3 +1,13 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/analysis/weekly_analysis_ssot.yaml
+  - docker-compose.compact.yml
+---
 # SDD-09: Chat Widget
 
 | Campo | Valor |

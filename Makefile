@@ -153,7 +153,7 @@ validate-contracts: ## Validate all data contracts
 # DOCKER
 # =============================================================================
 
-docker-up: ## Start all Docker services (enterprise, 25+ containers)
+docker-up: ## Start all Docker services (enterprise; count: docker compose config --services)
 	@echo "$(CYAN)Starting ALL Docker services (enterprise)...$(RESET)"
 	$(DOCKER_COMPOSE) up -d
 	@echo "$(GREEN)Docker services started!$(RESET)"
@@ -166,7 +166,7 @@ docker-up: ## Start all Docker services (enterprise, 25+ containers)
 	@echo "  pgAdmin:       http://localhost:5050"
 	@echo "  Prometheus:    http://localhost:9090"
 
-compact: ## Start compact mode (12 containers: DB, Airflow, APIs, MLflow, SignalBridge, Dashboard)
+compact: ## Start compact mode (DB, Airflow, APIs, MLflow, SignalBridge, Dashboard)
 	@echo "$(CYAN)Starting COMPACT mode (12 services, ~6-8GB RAM)...$(RESET)"
 	$(DOCKER_COMPOSE) -f docker-compose.compact.yml up -d
 	@echo "$(GREEN)Compact services started!$(RESET)"
@@ -183,7 +183,7 @@ compact: ## Start compact mode (12 containers: DB, Airflow, APIs, MLflow, Signal
 	@echo "$(YELLOW)Add monitoring: make compact-monitoring$(RESET)"
 	@echo "$(YELLOW)Full enterprise: make docker-up$(RESET)"
 
-compact-monitoring: ## Start compact + Prometheus/Grafana/AlertManager (15 containers)
+compact-monitoring: ## Start compact + Prometheus/Grafana/AlertManager (monitoring profile)
 	@echo "$(CYAN)Starting COMPACT + monitoring (15 services)...$(RESET)"
 	$(DOCKER_COMPOSE) -f docker-compose.compact.yml --profile monitoring up -d
 	@echo "$(GREEN)Compact + monitoring started!$(RESET)"

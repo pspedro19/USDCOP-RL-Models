@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SPEC-04 — Gate de Liquidez (M_liquidez)
 
 | Campo | Valor |

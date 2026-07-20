@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-AUTH-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SDD Spec: Authentication & User Management
 
 > **Responsibility**: Authoritative source for how users authenticate and are created across the

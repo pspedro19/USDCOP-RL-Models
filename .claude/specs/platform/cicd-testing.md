@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-CICD-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - usdcop-trading-dashboard/playwright.config.ts
+  - src/monitoring/drift_detector.py
+  - dvc.yaml
+  - params.yaml
+  - tests/unit/test_contracts.py
+  - tests/integration/test_feature_parity.py
+  - scripts/validation/run_e2e_suite.py
+  - results/e2e/report.json
+---
 # SDD Spec: CI/CD & Testing Infrastructure
 
 > **Responsibility**: Authoritative source for GitHub Actions workflows, Makefile automation,

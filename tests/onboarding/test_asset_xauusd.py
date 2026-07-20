@@ -54,7 +54,7 @@ def test_a1_profile_loads_and_validates():
 def _seed(rel: str) -> pd.DataFrame:
     path = _REPO / rel
     if not path.exists():
-        pytest.skip(f"seed not ingested yet: {rel} (run scripts/ingest_asset_ohlcv.py --asset xauusd)")
+        pytest.skip(f"seed not ingested yet: {rel} (run scripts/data/ingest_asset_ohlcv.py --asset xauusd)")
     return pd.read_parquet(path)
 
 

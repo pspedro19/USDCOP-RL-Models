@@ -1,3 +1,20 @@
+---
+kind: audit
+status: HISTORICAL
+contract: CTR-AUDIT-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - init-scripts/04-data-seeding.py
+  - config/feature_registry.yaml
+  - src/forecasting/enhance_v2.py
+  - src/forecasting/momentum_signal.py
+  - airflow/dags/utils/signalbridge_client.py
+  - services/signalbridge_api/app/models.py
+  - src/risk/risk_manager.py
+  - src/trading/risk_enforcer.py
+---
 # SDD Spec: Remediation Changeset — Code ↔ Spec Audit (2026-07)
 
 > **Responsibility**: Authoritative backlog of **tasks to correct** found by a 10-agent deep audit
@@ -58,7 +75,7 @@ will bite) · `MEDIUM` (redundancy/dead code/maintainability) · `LOW` (cosmetic
 
 | ID | Sev | Category | File:line | Issue | Fix | Status |
 |----|-----|----------|-----------|-------|-----|--------|
-| A1-01 | HIGH | spec-drift | `scripts/ingest_asset_ohlcv.py:129`, `migrations/051:23-24` | Gold stores 5-min at UTC instants / daily at NY-close UTC — violates data-governance "ALL timestamps America/Bogota, no exceptions" (never amended for multi-asset) | Amend golden rule to document the instant-based TIMESTAMPTZ convention for non-COP assets; cross-ref mig 051/SPEC-02 | OPEN |
+| A1-01 | HIGH | spec-drift | `scripts/data/ingest_asset_ohlcv.py:129`, `migrations/051:23-24` | Gold stores 5-min at UTC instants / daily at NY-close UTC — violates data-governance "ALL timestamps America/Bogota, no exceptions" (never amended for multi-asset) | Amend golden rule to document the instant-based TIMESTAMPTZ convention for non-COP assets; cross-ref mig 051/SPEC-02 | OPEN |
 | A1-02 | HIGH | scalability | `migrations/051` + `ingest_asset_ohlcv.py` | `asset_daily_ohlcv` + Gold ingestion have ZERO references in airflow/dags or src/data — no realtime DAG, no freshness gate, no seed-backup, no restore path (manual script only) | Add table to `l0_seed_backup` + `seed_config.yaml` + per-asset freshness; add Gold DAG or mark Gold manual-only in spec | OPEN |
 | A1-03 | HIGH | bad-practice | `src/data/ohlcv_loader.py:127,163,182` | `filter_market_hours` documents/filters "13:00-18:00 UTC" (legacy pre-COT), contradicts 08:00-12:55 COT session — silently keeps/drops wrong bars | Update docstrings + `TradingCalendar.filter_market_hours` to COT 08:00-12:55; verify filter runs in COT not UTC | OPEN |
 | A1-04 | HIGH | redundancy | `config/seed_config.yaml:40-105` vs `specs/data/backup-recovery.md:136-144` | Two contradicting restore-priority SSOTs: seed_config = MinIO→local→CSV; backup-recovery = daily-backup→seeds→manual | Reconcile to one restore SSOT matching what `04-data-seeding.py` actually does | OPEN |

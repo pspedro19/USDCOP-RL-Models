@@ -1,3 +1,13 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/btc_strategy/indicators.py
+  - config/assets/btcusdt.yaml
+---
 # BTC/USDT — Roadmap de Implementación (por fases, con gate)
 
 > Construye por fases; no avances sin pasar el gate (tests verdes) de la anterior. Combina el

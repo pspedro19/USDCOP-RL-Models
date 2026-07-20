@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR-0011 — Contaminación del clasificador LLM; ningún LLM ejecuta
 
 **Estado:** Aceptado · **Fecha:** pre-registro · **Spec:** SPEC-05 · **Modo de fallo:** §7.8 (anti-look-ahead capa clasificadores)

@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-PIPELINE-RUNNER-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/pipeline/run_ssot_pipeline.py
+  - src/data/ssot_dataset_builder.py
+  - src/features/calculator_registry.py
+  - src/training/engine.py
+  - src/training/trainers/ppo_trainer.py
+  - config/pipeline_ssot.yaml
+  - src/config/pipeline_config.py
+  - src/core/contracts/feature_contract.py
+---
 # Rule: L2→L3→L4 Training Pipeline
 
 > Governs the full training pipeline: dataset build, model training, and backtest validation.

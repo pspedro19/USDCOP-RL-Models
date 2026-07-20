@@ -1,3 +1,18 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/assets/btcusdt.yaml
+  - database/migrations/052_crypto_native_data.sql
+  - tests/onboarding/test_asset_btcusdt.py
+  - scripts/data/ingest_btc_ohlcv.py
+  - scripts/pipeline/run_btc_pipeline.py
+  - airflow/dags/asset_pipeline_factory.py
+  - config/assets/pipelines.yaml
+---
 # Estado de Implementación — BTC/USDT (traza SDD)
 
 > Registro **honesto** de lo YA construido y verificado vs lo pendiente. Cada entrega trae evidencia.

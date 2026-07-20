@@ -1,3 +1,20 @@
+---
+kind: as-built
+status: IMPLEMENTED
+contract: CTR-STRAT-REGISTRY-001
+version: 1.1.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/strategy_manifest.py
+  - tests/contracts/test_strategy_registry.py
+  - airflow/dags/asset_pipeline_factory.py
+  - config/assets/pipelines.yaml
+  - src/contracts/replay_engine.py
+  - airflow/dags/utils/register_bundle.py
+  - scripts/pipeline/run_gold_pipeline.py
+  - scripts/pipeline/run_btc_pipeline.py
+---
 # SDD Spec: Strategy Lifecycle & Dynamic Registry
 
 > **Responsibility**: Authoritative contract that makes the system **multi-strategy,
@@ -455,7 +472,7 @@ The abstract contracts above are **realized and populated**. `registry.json` cur
 | Asset | Strategies (published bundles) | Runner |
 |-------|-------------------------------|--------|
 | `usdcop` | `smart_simple_v11` (production, default), `smart_simple_aggr` (A/B branch) | `train_and_export_smart_simple.py` |
-| `xauusd` | `gold_long_only_b1`, `gold_trend_b2`, `gold_regime_gated_v1` | `scripts/run_gold_pipeline.py` |
+| `xauusd` | `gold_long_only_b1`, `gold_trend_b2`, `gold_regime_gated_v1` | `scripts/pipeline/run_gold_pipeline.py` |
 | `btcusdt` | `btc_hodl_b1`, `btc_trend_b2`, `btc_exposure_s3` | `scripts/pipeline/run_btc_pipeline.py` |
 
 Both A/B mechanisms are proven live: **two versions of one strategy** (COP `smart_simple_v11` 3
@@ -465,7 +482,7 @@ publishing the bundles was the whole integration. The science behind Gold/BTC st
 sizing, anti-leakage, evaluation, results) is documented in `../assets/_strategy-science.md`.
 
 **Gold/BTC are registry-only (no production-deploy path).** Their pipeline scripts
-(`scripts/run_gold_pipeline.py`, `scripts/pipeline/run_btc_pipeline.py`) publish bundles to
+(`scripts/pipeline/run_gold_pipeline.py`, `scripts/pipeline/run_btc_pipeline.py`) publish bundles to
 `usdcop-trading-dashboard/public/data/registry.json` via `src/contracts/strategy_manifest.py`. They are
 **not** in `config/strategy_registry.yaml` and have **no deploy DAG / DB seeding**. "Promoting" a
 Gold/BTC strategy means only `POST /api/registry/promote` flipping the **active version pointer** in

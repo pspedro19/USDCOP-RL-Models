@@ -1,3 +1,19 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/execution/smart_simple_v1.yaml
+  - database/migrations/043_forecast_h5_tables.sql
+  - airflow/dags/forecast_h5_l3_weekly_training.py
+  - airflow/dags/forecast_h5_l4_backtest_promotion.py
+  - airflow/dags/forecast_h5_l5_weekly_signal.py
+  - airflow/dags/forecast_h5_l5_vol_targeting.py
+  - airflow/dags/forecast_h5_l7_multiday_executor.py
+  - airflow/dags/forecast_h5_l6_weekly_monitor.py
+---
 # Rule: H5 Weekly Smart Simple Pipeline
 
 > Governs the H5 (5-day horizon) weekly forecasting pipeline with Smart Simple v2.0 execution.

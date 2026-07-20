@@ -1,3 +1,11 @@
+---
+kind: adr
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # ADR-0012 — Protocolo de retiro pre-firmado
 
 **Estado:** Aceptado · **Fecha:** pre-registro · **Spec:** SPEC-12 · **Sección:** §14

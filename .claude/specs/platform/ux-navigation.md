@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # UX/IA — Navegación Definitiva, Landing y Contenido por Rol
 
 > Complementa `rbac-monetization.md` (CTR-RBAC-001): aquel define *quién puede ver qué*;
@@ -16,10 +24,10 @@
 
 ## 1. Mapa del sitio
 PÚBLICO: `/` landing · `/metodologia` (**AS-BUILT** — arma de ventas) · `/pricing` ·
-`/legal/*` (pendiente) · `/login`. APP (deny-by-default): `/hub` por rol · Señales
+`/legal/*` (AS-BUILT) · `/login`. APP (deny-by-default): `/hub` por rol · Señales
 (ex-Producción, subscriber) · `/forecasting` + `/analysis` (frescura por plan) ·
 SignalBridge (auto propio / admin global) · `/dashboard`+experimentos (dev/admin) ·
-`/admin` (pendiente) · `/account`.
+`/admin` (AS-BUILT, ver `admin-console.md`) · `/account`.
 
 ## 2. Landing (S1-S10)
 Navbar sticky 1 CTA · Hero honesto ("Señales cuantitativas USD/COP verificadas en

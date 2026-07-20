@@ -1,3 +1,19 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - docker-compose.yml
+  - usdcop-trading-dashboard/scripts/registration-qa.mjs
+  - docker-compose.mailhog.yml
+  - config/execution/smart_simple_v1.yaml
+  - scripts/ops/patch_analysis_macro_charts.py
+  - scripts/validation/signalbridge_fanout_e2e.sh
+  - services/signalbridge_api/app/api/routes/tenant.py
+  - airflow/dags/utils/signalbridge_client.py
+---
 # PLAN FINAL — QA Funcional+Visual+Suscripciones hasta 100/100
 
 > Consolidación 2026-07-06. Método: iterar (capturar fullPage + console logs + docker logs +

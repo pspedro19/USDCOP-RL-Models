@@ -1,3 +1,15 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - database/migrations/055_rbac_monetization.sql
+  - services/signalbridge_api/app/services/pretrade.py
+  - scripts/validation/signalbridge_fanout_e2e.sh
+  - docker-compose.mailhog.yml
+---
 # RBAC + Monetización — AS-BUILT + roadmap (CTR-RBAC-001)
 
 > **Estado 2026-07-06: núcleo IMPLEMENTADO** (primera pasada de OLA 8 del plan maestro,

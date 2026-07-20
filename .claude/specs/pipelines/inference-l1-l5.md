@@ -1,3 +1,16 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - database/migrations/038_nrt_tables.sql
+  - src/core/contracts/feature_contract.py
+  - config/norm_stats.json
+  - src/core/contracts/production_contract.py
+  - airflow/dags/sensors/postgres_notify_sensor.py
+---
 # Rule: L1→L5 Inference Pipeline
 
 > Governs the unified feature computation and inference pipeline.

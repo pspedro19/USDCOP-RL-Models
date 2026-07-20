@@ -3,7 +3,7 @@
 WHY THIS EXISTS
 ---------------
 The Gold daily seed shipped with ~20% of its bars mis-dated onto **Sunday** (a day-shift bug in
-``scripts/ingest_asset_ohlcv.py::_daily_to_nyclose`` — it converted a 00:00-UTC stamp to ET, landing
+``scripts/data/ingest_asset_ohlcv.py::_daily_to_nyclose`` — it converted a 00:00-UTC stamp to ET, landing
 on the *previous* ET day, then ``normalize()`` snapped the calendar date back one day). Nothing in
 the pipeline validated **weekday coverage / bars-per-period / calendar gaps / timezone-of-close** on
 an OHLCV seed, so the corruption silently biased every downstream Gold metric (ann.vol, Sharpe,

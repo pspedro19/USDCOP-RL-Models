@@ -1,3 +1,19 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/news_engine/ingestion/base_adapter.py
+  - src/news_engine/ingestion/registry.py
+  - src/news_engine/enrichment/pipeline.py
+  - src/news_engine/cross_reference/engine.py
+  - src/news_engine/models.py
+  - src/contracts/news_engine_schema.py
+  - src/news_engine/output/feature_exporter.py
+  - database/migrations/045_newsengine_initial.sql
+---
 # Rule: News Engine & Analysis Module
 
 > Governs the News Engine (ingestion + enrichment) and Analysis Module (LLM-generated narratives).

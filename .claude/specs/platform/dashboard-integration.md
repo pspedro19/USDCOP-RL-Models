@@ -1,3 +1,17 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/strategy_schema.py
+  - docker-compose.compact.yml
+  - src/analysis/asset_analysis_generator.py
+  - config/analysis/analysis_assets.yaml
+  - usdcop-trading-dashboard/lib/contracts/analysis-assets.ts
+  - usdcop-trading-dashboard/lib/analysis-paths.ts
+---
 # SDD Spec: Dashboard Integration
 
 > **Responsibility**: Authoritative source for the **data contract** — file layouts, JSON export

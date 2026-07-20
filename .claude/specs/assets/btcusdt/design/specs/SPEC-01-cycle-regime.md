@@ -1,3 +1,11 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # SPEC-01 — Régimen de Ciclo (HMM fit congelado + z_ciclo)
 
 | Campo | Valor |

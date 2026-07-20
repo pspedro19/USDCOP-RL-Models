@@ -1,3 +1,14 @@
+---
+kind: as-built
+status: PARTIAL
+contract: CTR-ADMIN-CONSOLE-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - usdcop-trading-dashboard/lib/contracts/admin-console.contract.ts
+  - database/migrations/056_admin_console_is_test.sql
+---
 # Admin Console — Especificación Completa
 
 > **Estado: PRIORIDADES §10.1–§10.4 IMPLEMENTADAS (2026-07-07)** · Complementa CTR-RBAC-001

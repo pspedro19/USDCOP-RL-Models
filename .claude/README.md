@@ -1,7 +1,16 @@
+---
+kind: as-built
+status: PARTIAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # `.claude/` — Project Knowledge Base
 
-> Single entry-point to the USDCOP/Gold trading system's specs, rules, and process docs.
-> Start here. Every doc has a `Contract · Version · Status` header and cross-links.
+> Single entry-point to the USDCOP/Gold trading system's specs, rules, skills and agents.
+> Start here. Every document carries typed YAML front matter (see **Conventions**), and the
+> architectural counts below are **generated from source** — never hand-maintained.
 
 ---
 
@@ -12,50 +21,54 @@ else in `.claude/` is **on-demand** (read only when a task needs it). Design acc
 
 | Folder | Loaded | Put here |
 |--------|--------|----------|
-| **`rules/`** | **Every session (auto)** | Thin, imperative, always-true rules & contracts. Keep it small. |
+| **`rules/`** | **Every session (auto)** | Thin, imperative, always-true rules & contracts. **Presupuesto: ≤3.000 palabras, verificado en CI.** |
 | `specs/` | On demand | Dense reference (how things are built/wired). |
+| `skills/` | On demand (invocadas) | Flujos operativos repetidos, ejecutables. |
+| `agents/` | On demand (invocados) | Revisores especializados, **read-only**. |
 | `experiments/` | On demand | RL experiment logs, queue, plans (process artifacts). |
 | `templates/` | On demand | Scaffolds to copy when adding an asset / spec / experiment. |
+| `generated/` | Nunca a mano | Inventario derivado del código (`inventory.json`). |
 
 > Adding a big reference doc? It goes in `specs/`, **not** `rules/` — or it bloats every session.
 > Only genuine always-apply rules (governance, contracts, gates, DO-NOTs) belong in `rules/`.
 
 ---
 
-## Map
+## Map — árbol real de `specs/` (generado)
 
+> Escrito por `scripts/diagnostics/generate_inventory.py --write`. **No editar a mano.**
+> Aquí vivía un árbol mantenido a mano que acabó describiendo un `assets/` con solo `xauusd/`
+> mientras existían `btcusdt/` y `usdcop/` — y era el punto de entrada del que depende todo el
+> esquema. Se eliminó a propósito: un índice manual del propio árbol siempre se queda atrás.
+
+<!-- inv:specs_tree -->
 ```
-.claude/
-├── README.md                     ← you are here
-├── rules/                        ← AUTO-LOADED. Always-true rules & contracts.
-│   ├── 00-INDEX.md                  rule map → points to specs/ for depth
-│   ├── data-governance.md           L0 data rules (timezone golden rule, OHLCV/macro contracts)
-│   ├── data-freshness.md            freshness thresholds + recovery (SSOT)
-│   ├── strategy-contract.md         universal strategy/trade/gate schemas
-│   ├── approval-gates.md            2-vote approval + 5 gates
-│   ├── experiment-protocol.md       experiment discipline (1 var, 5 seeds, stats)
-│   └── ssot-versioning.md           frozen experiment configs
-│
-├── specs/                        ← ON-DEMAND reference, by domain.
-│   ├── architecture-overview.md     as-built map of the whole system
-│   ├── platform/                    cross-cutting contracts (mlops, frontend-architecture, dashboard,
-│   │                                registry, execution, risk, observability, cicd, authentication)
-│   ├── data/                        backup-recovery
-│   ├── pipelines/                   training (L2-L3-L4) + inference (L1-L5)
-│   ├── operations/                  elite-operations (DAG schedule SSOT, recovery playbooks)
-│   ├── tracks/                      ONE folder/file per strategy track  ← scalable
-│   │   ├── h5-smart-simple.md          production track (COP weekly)
-│   │   └── news-analysis/              News Engine + Analysis package
-│   ├── assets/                      ONE folder/file per tradeable asset ← scalable
-│   │   ├── _onboarding-playbook.md     how to add an asset (prescriptive)
-│   │   ├── _asbuilt-implementation.md  multi-asset as-built (session/tz/annualization)
-│   │   └── xauusd/                     Gold spec package (SPEC-00..12, ADR, status)
-│   └── audit/                       point-in-time audits → tasks-to-fix
-│       └── AUDIT-2026-07-remediation.md  10-agent code↔spec audit (~114 findings, P0/P1/P2)
-│
-├── experiments/                  ← ON-DEMAND. RL experiment log, queue, plans.
-└── templates/                    ← ON-DEMAND. Scaffolds for new asset/spec/experiment.
+. (2)
+archive/2026-07/ (10)
+assets/ (5)
+assets/btcusdt/ (2)
+assets/btcusdt/adr/ (1)
+assets/btcusdt/design/ (3)
+assets/btcusdt/design/adr/ (6)
+assets/btcusdt/design/specs/ (13)
+assets/btcusdt/specs/ (1)
+assets/usdcop/ (3)
+assets/xauusd/ (2)
+assets/xauusd/adr/ (1)
+assets/xauusd/specs/ (13)
+audit/ (3)
+data/ (1)
+operations/ (2)
+pipelines/ (3)
+platform/ (20)
+tracks/ (1)
+tracks/news-analysis/ (14)
 ```
+<!-- /inv -->
+
+<!-- inv:knowledge -->
+**9 rules** (~3,133 palabras auto-cargadas) · **106 specs** · **24 skills** · **3 agents**
+<!-- /inv -->
 
 ---
 
@@ -74,6 +87,21 @@ else in `.claude/` is **on-demand** (read only when a task needs it). Design acc
 ## Conventions
 
 - **Naming**: kebab-case topic names. `NN-` prefix only inside ordered packages (`assets/xauusd/specs/SPEC-NN`, `tracks/news-analysis/NN_`).
-- **Header**: every spec starts with `> Contract · Version · Status · cross-refs`.
+- **Front matter obligatorio** (validado en CI por `test_knowledge_frontmatter.py`):
+
+  ```yaml
+  ---
+  kind: rule | as-built | roadmap | adr | audit | historical
+  status: IMPLEMENTED | PARTIAL | PLANNED | PAUSED | DEPRECATED | SUPERSEDED | HISTORICAL | ARCHIVED
+  version: 1.0.0
+  last_verified: YYYY-MM-DD     # "lo verifiqué contra el código", no "toqué el archivo"
+  supersedes: []
+  code_anchors: []              # rutas reales que la spec describe; si no existen, el gate falla
+  ---
+  ```
+
+  `skills/` y `agents/` usan su propio front matter (`name` + `description`), que parsea el harness.
+- **Ningún número vive en prosa.** Los conteos van en bloques `<!-- inv:key --> … <!-- /inv -->`
+  que rellena `scripts/diagnostics/generate_inventory.py --write`.
 - **SSOT ownership** (avoid duplication): freshness thresholds/recovery → `rules/data-freshness.md`; DAG schedule/timeline → `specs/operations/elite-operations.md`; strategy schemas → `rules/strategy-contract.md`; approval gates → `rules/approval-gates.md`. Other docs **link**, never re-tabulate.
 - **`CLAUDE.md`** (repo root) is the always-loaded master; its "SDD Architecture" section indexes this tree.

@@ -1,3 +1,19 @@
+---
+kind: audit
+status: HISTORICAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/analysis/cop_trials_dsr.py
+  - tests/regression/test_prereg_yaml_consistency.py
+  - services/common/metrics.py
+  - scripts/analysis/cop_null_suite.py
+  - scripts/analysis/portfolio_layer.py
+  - src/contracts/signal_adapters.py
+  - config/macro_variables_ssot.yaml
+  - src/btc_strategy/indicators.py
+---
 # Plan maestro — Completar el sistema: SignalBridge + auditoría (Partes I–IV)
 
 > **Copia durable en el repo** del plan aprobado 2026-07-06. Contiene: roadmap por olas (OLA 0–8)
@@ -54,7 +70,7 @@ hipótesis para el período siguiente, jamás cambios evaluados en el mismo**.
   recomputa Sharpe/p/gates desde los trades; `displayStats/displayPValue/displayIsSignificant/dynamicGates`
   usan esa recomputación. El Vote-2 humano se emite sobre números que **no** son los del bundle. Recompute
   también en `utils/replayMetrics.ts`, `lib/services/financial-metrics/MetricsCalculator.ts`.
-- **Gate DSR no se aplica (I-3):** `scripts/run_gold_pipeline.py:93-116` calcula e inyecta `deflated_sharpe`
+- **Gate DSR no se aplica (I-3):** `scripts/pipeline/run_gold_pipeline.py:93-116` calcula e inyecta `deflated_sharpe`
   pero el `recommendation` sale del p-value bootstrap (`res["recommendation"]`), **no gateado por DSR>0.95**
   → `gold_trend_b2` queda PROMOTE con DSR 0.921. Mismo patrón en `scripts/pipeline/run_btc_pipeline.py:96-132`.
 - **Constitución BTC-only (I-2):** `constitution-modeling.md`, `HYPOTHESIS-REGISTRY.md`, `PRE-REGISTRATION.md`
@@ -193,7 +209,7 @@ hipótesis para el período siguiente, jamás cambios evaluados en el mismo**.
 
 ## Critical files
 - Frontend: `ForecastingBacktestSection.tsx` (1572-1615), `utils/replayMetrics.ts`, `lib/services/financial-metrics/MetricsCalculator.ts`.
-- Honest-gate: `scripts/run_gold_pipeline.py` (93-116), `scripts/pipeline/run_btc_pipeline.py` (96-132), `services/common/metrics.py`, `src/{gold_rl,btc_strategy}/backtest.py`.
+- Honest-gate: `scripts/pipeline/run_gold_pipeline.py` (93-116), `scripts/pipeline/run_btc_pipeline.py` (96-132), `services/common/metrics.py`, `src/{gold_rl,btc_strategy}/backtest.py`.
 - SignalBridge: `services/signalbridge_api/app/services/execution.py` (155, 100), `adapters/{base,mexc}.py`, `services/risk_bridge.py`, `core/config.py`, `api/routes/exchanges.py`.
 - BTC: `src/btc_strategy/{indicators,strategies}.py`, nuevos `scripts/data/ingest_btc_{onchain,flows}.py`.
 - COP/gobernanza: nuevos `scripts/analysis/cop_null_suite.py`, `.claude/rules/quant-constitution.md`, COP `HYPOTHESIS-REGISTRY`; `config/execution/smart_simple_v1.yaml` (congelado).

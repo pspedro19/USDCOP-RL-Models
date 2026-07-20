@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: PARTIAL
+contract: CTR-GM-UI-001
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
 # GlobalMarkets Terminal — migración de UI + contrato FE↔BE
 
 > **Estado: FASES 1–3 IMPLEMENTADAS Y VERIFICADAS (2026-07-11)** — E2E 20/20 y 0 errores

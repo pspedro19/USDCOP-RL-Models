@@ -1,3 +1,19 @@
+---
+kind: historical
+status: ARCHIVED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - src/contracts/asset_profile.py
+  - config/assets/xauusd.yaml
+  - config/assets/usdcop.yaml
+  - scripts/data/ingest_asset_ohlcv.py
+  - tests/onboarding/test_asset_xauusd.py
+  - src/gold_rl/indicators.py
+  - src/gold_rl/strategies.py
+  - src/gold_rl/backtest.py
+---
 # Estado de Implementación (traza SDD)
 
 > Registro honesto de lo que YA está construido y verificado vs lo pendiente. Se actualiza a
@@ -20,7 +36,7 @@
 
 | Artefacto | Estado / evidencia |
 |---|---|
-| `scripts/ingest_asset_ohlcv.py` | ✅ Ingesta **asset-genérica** (driven by AssetProfile). CLI: `--asset xauusd`. |
+| `scripts/data/ingest_asset_ohlcv.py` | ✅ Ingesta **asset-genérica** (driven by AssetProfile). CLI: `--asset xauusd`. |
 | **5-min TwelveData** | ✅ 21,558 bars (2026-03-18→2026-07-03). La API sirve solo la ventana intradía reciente (floor ~2026-03); se pagina hacia atrás hasta agotarla. Audit limpio (0 dup/nan/integridad/rango). `bars_per_day` medido = **288** (24h metales). |
 | **Daily TwelveData (deep)** | ✅ 5,992 bars **2004→2026** (paginado). Audit limpio. |
 | **Daily Investing.com (cross-check)** | ✅ 1,205 bars vía cloudscraper (recipe del extractor, `instrument_id=8830`). Acuerdo TD↔Investing: **mediana 0.61%**, flag OK. Rellenó **65** fechas que TD no tenía → **6,057** daily. Degradación grácil si CF bloquea. |
@@ -32,7 +48,7 @@
 
 **Comando reproducible:**
 ```bash
-python scripts/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
+python scripts/data/ingest_asset_ohlcv.py --asset xauusd --daily-start 2004-01-01
 python -m pytest tests/onboarding/test_asset_xauusd.py -q
 ```
 
@@ -55,14 +71,14 @@ python -m pytest tests/onboarding/test_asset_xauusd.py -q
 
 | Artefacto | Estado / evidencia |
 |---|---|
-| `scripts/run_gold_pipeline.py` | ✅ Runner E2E: seed → features → régimen → backtest B1/B2/regime-gated → **publica bundles inmutables** vía `BundlePublisher` (additive, no toca COP). |
+| `scripts/pipeline/run_gold_pipeline.py` | ✅ Runner E2E: seed → features → régimen → backtest B1/B2/regime-gated → **publica bundles inmutables** vía `BundlePublisher` (additive, no toca COP). |
 | Registro dinámico | ✅ `registry.json` ahora lista **2 activos (usdcop, xauusd) · 5 estrategias**. 3 bundles Gold `(strategy_id, 1.0.0, 2026)` inmutables + manifests. |
 | **Dashboard web** | ✅ **VERIFICADO** (Playwright): selector muestra "Gold · Trend-follower Daily (B2)" (badge experimental, rule_based). Chart etiquetado **XAUUSD** (chart_symbol del manifest, NO USDCOP). KPIs, Curva de Equity, Trading Summary (95 ops, +63%), **tabla de 95 trades**, Replay con rango **21/12/2004→18/03/2026**, panel de gates, dropdown de versión + "Promover a activa". |
 | **No-regresión COP** | ✅ Vista default (smart_simple_v11) intacta: +25.6% / Sharpe 3.30 / 34 trades / gates 5/5. |
 
 **Comando reproducible:**
 ```bash
-python scripts/run_gold_pipeline.py            # backtest B1/B2/regime-gated + publica bundles
+python scripts/pipeline/run_gold_pipeline.py            # backtest B1/B2/regime-gated + publica bundles
 # → abrir /dashboard, seleccionar "Gold · ..." en el selector de estrategia
 ```
 

@@ -1,3 +1,12 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - config/execution/smart_simple_v1.yaml
+---
 # WITHDRAWAL-PROTOCOL — USD/COP `smart_simple_v11` (firmado ex-ante)
 
 > **Firmado 2026-07-06 (G3 del plan maestro).** BTC lo tenía constitucional (SPEC-12); el

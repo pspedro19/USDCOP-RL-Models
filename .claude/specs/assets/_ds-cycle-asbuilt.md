@@ -1,3 +1,16 @@
+---
+kind: as-built
+status: IMPLEMENTED
+version: 1.1.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors:
+  - scripts/data/ingest_btc_ohlcv.py
+  - src/data_quality/ohlcv_validators.py
+  - src/gold_rl/indicators.py
+  - src/btc_strategy/indicators.py
+  - scripts/pipeline/generate_asset_weekly_forecast.py
+---
 # SDD Spec: Data-Science Cycle AS-BUILT — lineage, stats, transforms, training, results & conclusions (per asset × strategy)
 
 > **Purpose**: the end-to-end **data-engineering + data-science record** for every tradeable asset and
@@ -34,7 +47,7 @@ rule-based lineage below; **USD/COP** production is a different lineage (`smart_
 | | **Gold — XAU/USD** | **Bitcoin — BTC/USDT** | **USD/COP** |
 |---|---|---|---|
 | Source | TwelveData deep history | **Binance public klines** (no API key) | TwelveData + macro (FRED/BanRep/Investing) |
-| Ingest script | `scripts/ingest_asset_ohlcv.py --asset xauusd` | `scripts/data/ingest_btc_ohlcv.py` | `core_l0_*` DAGs + `build_forecasting_dataset_aligned.py` |
+| Ingest script | `scripts/data/ingest_asset_ohlcv.py --asset xauusd` | `scripts/data/ingest_btc_ohlcv.py` | `core_l0_*` DAGs + `build_forecasting_dataset_aligned.py` |
 | Seed (canonical) | `seeds/latest/xauusd_daily_ohlcv.parquet` | `seeds/latest/btcusdt_daily_ohlcv.parquet` | `seeds/latest/usdcop_daily_ohlcv.parquet` |
 | Bar / clock / tz | daily, NY-close, **UTC** | daily, **UTC 00:00** close, 24/7 | daily, COT session |
 | Annualization | **√252** | **√365** (24/7) | √252 |
@@ -262,7 +275,7 @@ Beyond the per-asset read in §8, the honest system-level conclusions (full deta
    single source-of-truth decision remain.
 3. **BTC's ceiling is data, not modelling.** Features are **100% price**; the crypto-native tables
    (migration 052: funding/OI/liquidations + on-chain) are **designed but empty** — no extractor exists.
-   The unblock is **Fase 1 derivatives extractor first** (`btcusdt/IMPLEMENTATION_ROADMAP.md`).
+   The unblock is **Fase 1 derivatives extractor first** (`../archive/2026-07/btcusdt-IMPLEMENTATION_ROADMAP.md`, archivado).
 4. **Infra > signal.** 25+ services / ~29 DAGs (H1 paused, RL deprioritized, MLflow/MinIO/Jaeger under-used)
    on top of a fragile edge. **Narrow the system around what works**; adopt DSR/OOS as the promotion bar;
    feed BTC non-price data. Priorities table: `../audit/STRATEGIC-ASSESSMENT-2026-07.md §6`.

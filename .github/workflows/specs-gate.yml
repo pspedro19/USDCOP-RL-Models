@@ -1,0 +1,101 @@
+# Knowledge-system merge gate (CTR-KNOWLEDGE-INVENTORY-001).
+#
+# The 2026-07-20 audit found every architectural count in the docs was wrong, that the
+# docs contradicted each other, and that a "regression test enforces this" claim had been
+# red for weeks unnoticed. Nothing watched `.claude/**` — contracts-check only covers
+# Python paths. This gate closes that hole.
+#
+# Static only: no live stack, no DB, no Airflow. It reads source and fails on drift.
+name: specs-gate
+
+on:
+  pull_request:
+    paths:
+      - '.claude/**'
+      - 'CLAUDE.md'
+      - 'airflow/dags/**'
+      - 'usdcop-trading-dashboard/app/**'
+      - 'usdcop-trading-dashboard/lib/contracts/**'
+      - 'src/contracts/**'
+      - 'src/core/contracts/**'
+      - 'services/**/contracts/**'
+      - 'config/pipeline_ssot.yaml'
+      - 'database/migrations/**'
+      - 'config/assets/**'
+      - 'scripts/diagnostics/generate_inventory.py'
+      - 'tests/regression/test_knowledge_*.py'
+  push:
+    branches: [main]
+
+jobs:
+  knowledge-system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: python -m pip install --quiet pytest pyyaml
+
+      # Read-only by construction: --check regenerates in memory and diffs.
+      # Never call --write here; a knowledge gate that writes can launder drift.
+      - name: Inventory is generated from source and in sync
+        run: python scripts/diagnostics/generate_inventory.py --check
+
+      - name: Every document is typed, anchored and current
+        run: python -m pytest tests/regression/test_knowledge_frontmatter.py -q
+
+      - name: Registry matches disk; no hand-maintained counts
+        run: python -m pytest tests/regression/test_knowledge_inventory.py -q
+
+      - name: Auto-loaded rules stay within budget
+        run: python -m pytest tests/regression/test_knowledge_autoload_budget.py -q
+
+      - name: Scripts layout contract holds
+        run: python -m pytest tests/regression/test_scripts_layout.py -q
+
+      # The mirror map lives in the contract-change skill; nothing else knows which
+      # Python file pairs with which .contract.ts, so the map must not rot.
+      - name: Contract mirror map is accurate
+        run: python -m pytest tests/regression/test_contract_mirrors.py -q
+
+      # The vendored library stays vendored and quarantined skills stay out.
+      - name: Quant skill library gate
+        run: python -m pytest tests/regression/test_quant_library_gate.py -q
+
+      - name: Markdown links resolve
+        run: python scripts/validation/check_knowledge_links.py
+
+      # Promoted skills ship executable code, and `.claude` is in `norecursedirs`
+      # so the default run never sees it. An explicit path still collects.
+      #
+      # This step exists because it was already needed: the promoted
+      # `xasset-alpha-engine` was edited to delegate Deflated Sharpe to the
+      # constitutional SSOT, the return type changed from float to dict, and
+      # `validate()` kept comparing it as a float. Six tests caught it instantly
+      # — but they had been stripped during promotion, so nothing ran them and
+      # the gate stayed green over a skill that raised TypeError on use.
+      #
+      # Needs numpy/scipy/pandas, unlike the pure-markdown checks above. Still
+      # static: no stack, no DB, no network.
+      - name: Promoted skill code is tested
+        run: |
+          python -m pip install --quiet numpy scipy pandas
+          python -m pytest .claude/skills/*/scripts/tests -q
+
+      # The other promotion pattern: a single PEP-723 module whose `--verify` mode
+      # recomputes the worked examples printed in its own SKILL.md and exits 1 on
+      # mismatch. Ten skills ship one and nothing ran them, so a SKILL.md could
+      # drift from its code indefinitely. `test_quant_library_gate.py` requires
+      # every promoted skill to have tests OR --verify; this is what runs the OR.
+      - name: Promoted skill self-checks agree with their documented examples
+        run: |
+          set -e
+          for f in .claude/skills/*/scripts/*.py; do
+            grep -q -- "--verify" "$f" || continue
+            echo "--- $f"
+            python "$f" --verify
+          done
