@@ -32,15 +32,35 @@ def _synthetic_df(n=200):
     )
 
 
-def test_enhance_v2_adds_exactly_the_two_regime_features():
+def test_enhance_v2_appends_the_v2_features_in_a_stable_order():
+    """Order and membership must be deterministic — that is what parity depends on.
+
+    This used to assert "exactly 2" features, which quietly encoded a BUG as the contract:
+    the macro merge read `macro["fecha"]` (the DatetimeIndex, not a column) and looked for
+    lowercase names MACRO_DAILY_CLEAN does not use, so the macro block always failed and
+    only the 2 regime features survived.
+
+    With the merge fixed there are 4. The macro pair is conditional on the parquet being
+    present (the DAGs pass their own project_root), so assert the regime pair strictly and
+    the macro pair as an ordered optional suffix — pinning a hard count is what let the
+    silent no-op live here in the first place.
+    """
     df = _synthetic_df()
     base = ["close", "volatility_5d", "volatility_20d"]
     out, cols = enhance_features_v2(df, base)
+
     assert cols[: len(base)] == base, "base features must be preserved in order"
-    assert cols[len(base):] == ["vol_regime_ratio", "trend_slope_60d"], (
-        "must append exactly the 2 v2.0 regime features (audit A3-02)"
+
+    added = cols[len(base):]
+    assert added[:2] == ["vol_regime_ratio", "trend_slope_60d"], (
+        "the 2 v2.0 regime features must come first, in this order (audit A3-02)"
     )
-    assert len(cols) == len(base) + 2
+    assert added[2:] in ([], ["rate_diff_ibr_ust2y", "term_spread"]), (
+        f"unexpected macro feature tail: {added[2:]}. Expected either none (no macro "
+        "parquet) or the ordered pair — anything else breaks train/backtest/infer parity."
+    )
+    for col in added:
+        assert col in out.columns, f"{col} is in feature_cols but not in the dataframe"
 
 
 def test_enhance_v2_no_nan_in_new_columns():
