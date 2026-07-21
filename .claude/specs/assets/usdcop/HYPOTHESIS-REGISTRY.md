@@ -618,3 +618,16 @@ block-bootstrap (b=4) que excluye 0 → UN trial económico adicional: sizing mo
 P(gap) (candidata v13, techo probabilístico), juez = forward desde su freeze. Si ninguna
 gana → familia CERRADA por escrito, el cap bruto de v12 queda como la última palabra en
 sizing. Nada de esto toca v11 ni v12.
+
+---
+
+## RE-MEDICIÓN #3 (2026-07-21, Puerta 1.4): fills de HS open-aware — 2025 = +7.35%
+
+El yaml pedía `hard_stop: "limit"` (orden que no se ejecuta en gap-through); el motor
+llenaba al nivel exacto — un precio que en gap no existió. Fix: stop-market open-aware
+(gap-through → fill al open). Re-medición: **2025: +7.66→+7.35% (−0.31pp; el auditor
+fin-math había medido −0.28pp a mano — validación cruzada), p=0.2277, Sharpe 0.942**;
+2026 sin cambio (+3.36%). Serie oficial de honestidad del OOS-2025:
++26.05 → +13.05 → +7.66 → **+7.35** (datos, purga, fills). Cada número anterior queda
+como historia de su capa de rigor. Manifest v5. Herramientas añadidas al SSOT de
+métricas: `circular_block_bootstrap()` y `e_process()` (descriptivo, no habilita PASS).

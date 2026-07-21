@@ -10,14 +10,14 @@
       "gate": "min_return_pct",
       "label": "Retorno Minimo",
       "passed": true,
-      "value": 7.66,
+      "value": 7.35,
       "threshold": -15.0
     },
     {
       "gate": "min_sharpe_ratio",
       "label": "Sharpe Minimo",
       "passed": true,
-      "value": 0.987,
+      "value": 0.942,
       "threshold": 0.0
     },
     {
@@ -38,22 +38,22 @@
       "gate": "statistical_significance",
       "label": "Significancia (p<0.05)",
       "passed": false,
-      "value": 0.2154,
+      "value": 0.2277,
       "threshold": 0.05
     },
     {
       "gate": "deflated_sharpe",
       "label": "DSR trial-aware (N=59, min de 2 lecturas de sigma)",
       "passed": false,
-      "value": 0.0641,
+      "value": 0.0587,
       "threshold": 0.95
     }
   ],
   "backtest_metrics": {
-    "return_pct": 7.66,
-    "sharpe": 0.987,
+    "return_pct": 7.35,
+    "sharpe": 0.942,
     "max_dd_pct": 7.84,
-    "p_value": 0.2154,
+    "p_value": 0.2277,
     "trades": 32,
     "win_rate_pct": 71.9
   },
@@ -75,6 +75,6 @@
       "forecast_h5_paper_trading"
     ]
   },
-  "created_at": "2026-07-21T17:21:11.129129",
-  "last_updated": "2026-07-21T17:21:11.129129"
+  "created_at": "2026-07-21T17:58:39.439388",
+  "last_updated": "2026-07-21T17:58:39.439388"
 }

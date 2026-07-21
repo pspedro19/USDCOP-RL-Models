@@ -33,9 +33,15 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: fdf289f4472f7c4c
+code_hash_sha256_16: 75b6bbd9bafa0527
 manifest_frozen_at: '2026-07-21'
-manifest_version: 4
+manifest_version: 5
+refreeze_note_v5: >-
+  Re-freeze v5 (2026-07-21, Puerta 1.4 del plan post-panel): fills de hard-stop
+  OPEN-AWARE (stop-market real: en gap-through llena al open, no al nivel que no
+  existio) + yaml hard_stop stop-market. Re-medicion: 2025 +7.66->+7.35 (-0.31pp,
+  clava el -0.28pp que el auditor fin-math midio a mano), 2026 sin cambio (+3.36).
+  Señal servida: sin cambio (es honestidad de MEDICION del fill).
 refreeze_note_v4: >-
   Re-freeze v4 (2026-07-21, auditoria ML): purga de labels solapados en el fit del
   backtest (BUG A-1 — el backtest entrenaba con el desenlace de la semana operada;

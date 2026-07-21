@@ -791,3 +791,57 @@ def qlike_loss(true_var, pred_var) -> np.ndarray:
     ratio = t[ok] / p[ok]
     out[ok] = ratio - np.log(ratio) - 1.0
     return out
+
+
+def circular_block_bootstrap(x, stat_fn, n_boot: int = 2000, block: int = 4,
+                             seed: int = 42) -> dict:
+    """Circular block bootstrap of an arbitrary statistic over a (possibly paired) series.
+
+    Panel audit 2026-07-21: every analysis was re-implementing ad-hoc bootstraps; this is
+    the SSOT. `block=4` weekly preserves the monthly dependence structure that iid
+    resampling destroys. For PAIRED comparisons pass the delta series and a stat_fn over
+    it -- pairing must happen before resampling, never after.
+
+    Returns {stat, ci95, se, n_boot, block}.
+    """
+    rng = np.random.default_rng(seed)
+    x = np.asarray(x, dtype=float)
+    x = x[np.isfinite(x)]
+    n = len(x)
+    if n < block + 1:
+        return {"stat": None, "ci95": [None, None], "se": None,
+                "n_boot": 0, "block": block, "reason": f"n={n} < block+1"}
+    stats = np.empty(n_boot)
+    n_blocks = int(np.ceil(n / block))
+    for b in range(n_boot):
+        starts = rng.integers(0, n, size=n_blocks)
+        idx = (starts[:, None] + np.arange(block)[None, :]).ravel() % n
+        stats[b] = stat_fn(x[idx[:n]])
+    return {"stat": float(stat_fn(x)),
+            "ci95": [float(np.percentile(stats, 2.5)), float(np.percentile(stats, 97.5))],
+            "se": float(np.std(stats, ddof=1)), "n_boot": n_boot, "block": block}
+
+
+def e_process(deltas, clip: float = 0.10, lam: float = 0.5) -> dict:
+    """Betting-martingale e-process over a bounded paired-delta stream (DESCRIPTIVE ONLY).
+
+    Status per the sealed v12 judge (registry 2026-07-21): DEGRADED to monitoring -- it
+    does NOT enable PASS until a frozen spec exists (this is that spec's first draft, and
+    it stays descriptive until an ADR promotes it). H0: E[delta] <= 0. Wealth update per
+    week t: W_t = W_{t-1} * (1 + lam * clip(delta_t, -clip, clip) / clip). Anytime-valid:
+    the operator may look every week; e >= 20 would correspond to alpha=0.05 IF promoted.
+
+    Returns the wealth path and the running max (never a decision).
+    """
+    d = np.asarray(deltas, dtype=float)
+    d = d[np.isfinite(d)]
+    w = 1.0
+    path = []
+    for x in d:
+        bet = max(-1.0 + 1e-9, min(1.0 - 1e-9, lam * np.clip(x, -clip, clip) / clip))
+        w *= (1.0 + bet)
+        path.append(w)
+    return {"e_final": float(w), "e_max": float(max(path)) if path else 1.0,
+            "n": len(d), "clip": clip, "lam": lam,
+            "descriptive_only": True,
+            "note": "no habilita PASS; ver juez sellado de v12 en el registry"}

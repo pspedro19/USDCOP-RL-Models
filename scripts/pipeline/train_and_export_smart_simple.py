@@ -174,11 +174,21 @@ def load_data():
 # ---------------------------------------------------------------------------
 
 def simulate_week(direction, entry, bars, hard_stop_pct, take_profit_pct):
-    """Simulate a 5-day hold with TP/HS/Friday-close. Bars = Tue-Fri."""
+    """Simulate a 5-day hold with TP/HS/Friday-close. Bars = Tue-Fri.
+
+    Hard-stop fills are OPEN-AWARE (auditoria fin-math 2026-07-21 #2): un stop es
+    stop-MARKET, no limit — si el open del dia ya esta mas alla del nivel del stop
+    (gap-through), el fill honesto es el OPEN, no el nivel exacto (que en un gap contra
+    la posicion es un precio que jamas existio). Medido 2025: trade 7 abrio 14bps mas
+    alla del stop. TP sigue siendo limit (solo mejora, nunca empeora, el nivel).
+    """
+    hs_level = entry * (1 - direction * hard_stop_pct)
     for i, bar in enumerate(bars):
-        h, l, c = bar["high"], bar["low"], bar["close"]
+        o, h, l, c = bar.get("open", bar["close"]), bar["high"], bar["low"], bar["close"]
         if check_hard_stop(direction, entry, h, l, hard_stop_pct):
-            ep = get_exit_price(direction, entry, "hard_stop", hard_stop_pct, take_profit_pct, c)
+            gap_through = (direction > 0 and o <= hs_level) or (direction < 0 and o >= hs_level)
+            ep = o if gap_through else get_exit_price(
+                direction, entry, "hard_stop", hard_stop_pct, take_profit_pct, c)
             return ep, "hard_stop", i
         if check_take_profit(direction, entry, h, l, take_profit_pct):
             ep = get_exit_price(direction, entry, "take_profit", hard_stop_pct, take_profit_pct, c)
@@ -349,6 +359,7 @@ def _run_weekly_loop(df, feature_cols, cfg, year, collect_week_data=False):
             r = df[df["date"] == day]
             if not r.empty:
                 bars.append({
+                    "open": float(r["open"].iloc[0]),
                     "high": float(r["high"].iloc[0]),
                     "low": float(r["low"].iloc[0]),
                     "close": float(r["close"].iloc[0]),
@@ -594,7 +605,8 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
         for day in week_dates:
             r = df[df["date"] == day]
             if not r.empty:
-                bars.append({"high": float(r["high"].iloc[0]), "low": float(r["low"].iloc[0]),
+                bars.append({"open": float(r["open"].iloc[0]),
+                             "high": float(r["high"].iloc[0]), "low": float(r["low"].iloc[0]),
                              "close": float(r["close"].iloc[0])})
                 last_bar_date = pd.Timestamp(r["date"].iloc[0])
         if not bars:

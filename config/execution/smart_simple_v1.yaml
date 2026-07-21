@@ -100,7 +100,7 @@ execution:
   order_type:
     entry: "limit"             # 0% maker fee en MEXC
     take_profit: "limit"       # OCO: TP limit
-    hard_stop: "limit"         # OCO: HS limit
+    hard_stop: "stop-market"   # fin-math 2026-07-21: un buy-limit al nivel del stop NO se ejecuta en gap-through; el motor llena open-aware         # OCO: HS limit
     week_end: "market"         # Solo Friday close es market (~5% de trades)
 
   costs:
@@ -194,13 +194,16 @@ models:
     method: "mean"             # Promedio simple de modelos
     target: "ln(close[t+5]/close[t])"
 
-  use_xgboost: true            # v2.0: add XGBoost to ensemble (Ridge+BR+XGB)
+  # Must match the live H5 signal adapter and forecasting_ssot (Ridge +
+  # BayesianRidge). XGBoost remains an offline experiment until separately
+  # promoted with its own immutable bundle.
+  use_xgboost: false
 
 # ============================================================================
-# Features (21, identicas a Track A)
+# Features (25, identical to the promoted Track A bundle)
 # ============================================================================
 features:
-  count: 21
+  count: 25
   list:
     - close
     - open

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-21T17:21:10.482895",
+  "generated_at": "2026-07-21T17:58:38.446701",
   "strategy_name": "Smart Simple v2.0.0",
   "strategy_id": "smart_simple_v11",
   "year": 2025,
@@ -14,13 +14,13 @@
       "total_return_pct": -14.48
     },
     "smart_simple_v11": {
-      "final_equity": 10766.37,
-      "total_return_pct": 7.66,
-      "calmar": 0.977,
-      "sharpe": 0.987,
+      "final_equity": 10734.62,
+      "total_return_pct": 7.35,
+      "calmar": 0.938,
+      "sharpe": 0.942,
       "max_dd_pct": 7.84,
       "win_rate_pct": 71.9,
-      "profit_factor": 1.345,
+      "profit_factor": 1.327,
       "trading_days": 160,
       "exit_reasons": {
         "take_profit": 16,
@@ -33,7 +33,7 @@
     }
   },
   "statistical_tests": {
-    "p_value": 0.2154,
+    "p_value": 0.2277,
     "significant": false,
     "insufficient_trades": false,
     "min_trades_for_stats": 20
@@ -65,7 +65,7 @@
     ],
     "pnl_pct": [
       2.11,
-      -1.63,
+      -1.91,
       2.98,
       7.25,
       -1.75,
