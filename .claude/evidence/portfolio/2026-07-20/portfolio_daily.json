@@ -32,38 +32,74 @@
       "sharpe": 1.221
     },
     "spx500": {
-      "ann_return_pct": 7.02,
-      "max_dd_pct": -12.14,
-      "calmar": 0.578,
-      "sharpe": 0.805
+      "ann_return_pct": 5.71,
+      "max_dd_pct": -8.85,
+      "calmar": 0.645,
+      "sharpe": 0.762
     }
   },
-  "max_abs_corr": 0.0806,
-  "portfolio": {
-    "ann_return_pct": 10.77,
-    "max_dd_pct": -7.28,
-    "calmar": 1.48,
-    "sharpe": 1.42
+  "correlations": {
+    "unconditional": {
+      "xauusd~btcusdt": 0.0682,
+      "xauusd~spx500": 0.0402,
+      "btcusdt~spx500": 0.0864
+    },
+    "co_active": {
+      "xauusd~btcusdt": 0.1271,
+      "xauusd~spx500": 0.0643,
+      "btcusdt~spx500": 0.1958
+    },
+    "pairwise_overlap_fraction": {
+      "xauusd~btcusdt": 0.2498,
+      "xauusd~spx500": 0.4162,
+      "btcusdt~spx500": 0.1962
+    },
+    "fraction_days_all_legs_active": 0.1286,
+    "max_abs_unconditional": 0.0864,
+    "max_abs_co_active": 0.1958,
+    "warning": "The unconditional rho understates dependence. Read it next to co_active and to fraction_days_all_legs_active: low correlation achieved by not being in the market is availability, not diversification, and it disappears the moment both legs are on."
   },
-  "omega": 1.3134,
+  "portfolio": {
+    "ann_return_pct": 10.07,
+    "max_dd_pct": -7.92,
+    "calmar": 1.271,
+    "sharpe": 1.394
+  },
+  "omega": 1.3135,
+  "portfolio_with_cash_yield": {
+    "ann_return_pct": 11.2,
+    "max_dd_pct": -7.41,
+    "calmar": 1.511,
+    "sharpe": 1.539
+  },
+  "cash": {
+    "rate_column": "polr_fed_funds_usa_m_fedfunds",
+    "source": "macro_indicators_daily.parquet",
+    "lag": "shift(1), ffill (monthly series)",
+    "mean_gross_exposure": 0.5741,
+    "mean_rate": 0.02842
+  },
   "mean_weights": {
-    "xauusd": 0.356,
-    "btcusdt": 0.2708,
-    "spx500": 0.3733
+    "xauusd": 0.3412,
+    "btcusdt": 0.2565,
+    "spx500": 0.4023
   },
   "diversification_ratio": 1.614,
   "H_PORT_D_01": {
     "vs_best_sleeve": "btcusdt",
-    "delta_calmar_observed": 0.548,
-    "delta_calmar_mean": 0.0,
+    "delta_calmar_observed": 0.339,
+    "delta_calmar_mean": -0.049,
     "ci95": [
-      -1.45,
-      1.292
+      -1.526,
+      1.238
     ],
     "excludes_zero": false,
     "periods_per_year": 252,
     "block": 20
   },
+  "product_class": "risk_controlled_book",
+  "adr": "ADR-0020",
   "evidence_class": "research_only",
-  "promotion_eligible": false
+  "promotion_eligible": false,
+  "not_promoted_because": "H-PORT-D-01 CI includes zero and no forward evidence has accumulated (ADR-0020 criterion 7)"
 }
