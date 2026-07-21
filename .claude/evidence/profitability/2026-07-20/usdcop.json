@@ -31,6 +31,13 @@
     "pct_time_long": 59.62,
     "pct_time_short": 0.0
   },
+  "shape": {
+    "omega": 2.6473,
+    "capture": {
+      "valid": false,
+      "reason": "no underlying benchmark series in this data source"
+    }
+  },
   "baselines": {
     "B1_buy_and_hold": {
       "valid": false,

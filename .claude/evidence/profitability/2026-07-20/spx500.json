@@ -31,6 +31,12 @@
     "pct_time_long": 71.15,
     "pct_time_short": 0.0
   },
+  "shape": {
+    "omega": 1.1741,
+    "up_capture_pct": 43.26,
+    "down_capture_pct": 42.39,
+    "capture_ratio": 1.021
+  },
   "baselines": {
     "B1_buy_and_hold": {
       "net_return_pct": 129.3627,

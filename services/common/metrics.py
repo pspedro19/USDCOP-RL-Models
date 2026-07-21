@@ -624,3 +624,54 @@ def pbo_cscv(returns_matrix, n_blocks: int = 16) -> dict:
         "n_combinations": int(arr.size),
         "n_strategies": int(n_strat),
     }
+
+
+# ---------------------------------------------------------------------------
+# Distribution-shape metrics (skill: performance-metrics)
+# ---------------------------------------------------------------------------
+
+def omega_ratio(returns, threshold: float = 0.0) -> float | None:
+    """Omega = sum(gains above threshold) / sum(losses below it).
+
+    Uses the WHOLE distribution -- skew and kurtosis included -- where Sharpe uses only its
+    first two moments. That matters here because the edge in this system is risk control, and
+    risk control shows up as asymmetry that a Sharpe cannot see.
+
+    Returns None when there are no losses, never inf (JSON safety, strategy-contract rule 2).
+    """
+    r = np.asarray(returns, dtype=float)
+    r = r[~np.isnan(r)]
+    if r.size == 0:
+        return None
+    gains = np.sum(np.clip(r - threshold, 0, None))
+    losses = np.sum(np.clip(threshold - r, 0, None))
+    if losses <= 0:
+        return None
+    return float(round(gains / losses, 4))
+
+
+def capture_ratios(returns, benchmark) -> dict:
+    """Up/down capture against a benchmark, and their ratio.
+
+    The target profile is up_capture > 100 and down_capture < 100: participate in the rises,
+    sit out the falls. This is the honest way to frame a strategy whose directional forecast
+    has no edge -- it asks "what share of each side did you take", not "did you predict".
+    """
+    r = np.asarray(returns, dtype=float)
+    b = np.asarray(benchmark, dtype=float)
+    n = min(len(r), len(b))
+    r, b = r[:n], b[:n]
+    ok = ~(np.isnan(r) | np.isnan(b))
+    r, b = r[ok], b[ok]
+
+    out: dict = {}
+    for name, mask in (("up", b > 0), ("down", b < 0)):
+        if not mask.any() or np.isclose(b[mask].mean(), 0):
+            out[f"{name}_capture_pct"] = None
+            continue
+        out[f"{name}_capture_pct"] = float(round(r[mask].mean() / b[mask].mean() * 100, 2))
+    up, dn = out.get("up_capture_pct"), out.get("down_capture_pct")
+    # A negative or zero down-capture means the strategy GAINED while the benchmark fell; the
+    # ratio is not meaningful there, so it is None rather than a large flattering number.
+    out["capture_ratio"] = float(round(up / dn, 3)) if (up and dn and dn > 0) else None
+    return out

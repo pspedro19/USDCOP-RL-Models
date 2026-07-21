@@ -53,7 +53,9 @@ if str(ROOT) not in sys.path:
 from services.common.metrics import (  # noqa: E402
     calculate_all_metrics,
     calculate_expected_shortfall,
+    capture_ratios,
     cost_stress,
+    omega_ratio,
     deflated_sharpe_ratio,
     paired_exposure_baseline,
     pbo_cscv,
@@ -347,6 +349,19 @@ def evaluate(sleeve: Sleeve, trials: dict) -> dict:
     dumb = _block(sleeve.dumb_position * sleeve.asset_ret - sleeve.cost, sleeve.clock)
     flat = _block(np.zeros_like(sleeve.asset_ret), sleeve.clock)
 
+    # Shape metrics. The benchmark is the asset itself (B1), so capture answers "what share of
+    # each side did we take" -- the right question when the directional forecast has no edge.
+    shape = {"omega": omega_ratio(sleeve.strat_ret)}
+    if "B1_buy_and_hold" in sleeve.invalid_baselines:
+        # Capture needs a real benchmark series. Where asset_ret IS the strategy's own return
+        # (COP: the bundle stores net P&L, not the underlying price), capture is trivially
+        # 100/100 and says nothing. Reporting that as "perfect participation" would be a lie
+        # dressed as a metric.
+        shape["capture"] = {"valid": False,
+                            "reason": "no underlying benchmark series in this data source"}
+    else:
+        shape.update(capture_ratios(sleeve.strat_ret, sleeve.asset_ret))
+
     costs = cost_stress(sleeve.position, sleeve.asset_ret, sleeve.cost,
                         sleeve.swap, float(sleeve.clock))
     dsr = _dsr_over_grid(sleeve, trials)
@@ -385,6 +400,7 @@ def evaluate(sleeve: Sleeve, trials: dict) -> dict:
         "strategy": strat,
         "turnover": round(float(np.nanmean(np.abs(np.diff(sleeve.position, prepend=0.0)))), 4),
         "exposure_profile": _exposure_profile(sleeve.position),
+        "shape": shape,
         "baselines": baselines,
         "cost_stress": costs,
         "deflated_sharpe": dsr,
