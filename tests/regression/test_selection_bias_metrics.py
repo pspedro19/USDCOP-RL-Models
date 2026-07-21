@@ -164,3 +164,41 @@ def test_vote1_includes_dsr_gate():
     assert "min(" in src.split("def _dsr_gate")[1].split("def export_approval_state")[0], (
         "the DSR gate must take the minimum over both sigma-unit readings"
     )
+
+
+def test_approval_backtest_model_set_matches_live_serving():
+    """The Vote-2 numbers must come from the model set that actually trades.
+
+    An independent agent reported use_xgboost: true and a live(Ridge+BR) vs
+    approved(Ridge+BR+XGB) divergence. Verification showed the config was ALREADY reconciled
+    (use_xgboost: false, with a comment saying why) -- the agent misread. But the check
+    surfaced two real hazards, both fixed and pinned here: the CODE defaults were True (a
+    missing key would silently resurrect XGBoost and diverge approval from serving), and
+    CLAUDE.md still advertised Ridge+BR+XGBoost as the production track.
+    """
+    from pathlib import Path
+    import yaml
+    root = Path(__file__).resolve().parents[2]
+
+    exec_cfg = yaml.safe_load((root / "config/execution/smart_simple_v1.yaml")
+                              .read_text(encoding="utf-8"))
+    assert exec_cfg["models"]["use_xgboost"] is False, (
+        "approval export includes XGBoost while live serving is Ridge+BR -- Vote 2 would "
+        "approve numbers from an ensemble that does not trade"
+    )
+
+    fss = yaml.safe_load((root / "config/forecasting_ssot.yaml").read_text(encoding="utf-8"))
+    h5_models = fss["tracks"]["h5"]["models"]
+    assert "xgboost" not in h5_models, (
+        f"live H5 model list {h5_models} gained xgboost without promoting it through its own "
+        "immutable bundle"
+    )
+    assert set(h5_models) == {"ridge", "bayesian_ridge"}, (
+        f"live H5 serving set changed to {h5_models}; the approval export and CLAUDE.md must "
+        "move in the same commit or Vote 2 approves an ensemble that does not trade"
+    )
+
+    src = (root / "scripts/pipeline/train_and_export_smart_simple.py").read_text(encoding="utf-8")
+    assert 'get("use_xgboost", True)' not in src, (
+        "a True default means a missing config key silently resurrects the divergence"
+    )

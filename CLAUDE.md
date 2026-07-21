@@ -13,7 +13,7 @@
 
 **Three Tracks** (in priority order):
 
-1. **H5 Weekly Pipeline (PRODUCTION)**: Smart Simple v2.0, Ridge+BR+XGBoost + Regime Gate
+1. **H5 Weekly Pipeline (PRODUCTION)**: Smart Simple v2.0, Ridge+BR + Regime Gate (XGBoost = experimento offline, no promovido — `smart_simple_v1.yaml:196`)
    - **+25.63%, Sharpe 3.35, p=0.006** (2025 backtest, 34 trades)
    - **+0.61%** (2026 YTD, 1/1 wins — regime gate blocked 11 of 12 mean-reverting weeks)
    - Architecture: Regime Gate (Hurst) → Ridge/BR/XGB ensemble → Effective HS → DL → CB
@@ -289,7 +289,7 @@ state — must also stay OUT of the docker build context: its NTFS mode breaks `
 ## DAG SCHEDULE
 
 <!-- inv:dags -->
-**45 DAGs** (43 declarados en 43 módulos + 2 generados por factory)
+**46 DAGs** (43 declarados en 43 módulos + 3 generados por factory)
 <!-- /inv -->
 
 

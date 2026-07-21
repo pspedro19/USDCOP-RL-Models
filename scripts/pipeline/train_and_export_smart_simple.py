@@ -148,7 +148,7 @@ def load_config(config_path=None, version_override=None, strategy_id=None):
         "cb_max_consecutive": _cb.get("max_consecutive_losses", 5),
         "cb_max_dd_pct": _cb.get("max_drawdown_pct", 12.0),
         "regime_gate": rg_config,
-        "use_xgboost": cfg.get("models", {}).get("use_xgboost", True),
+        "use_xgboost": cfg.get("models", {}).get("use_xgboost", False),  # default MUST match the live serving set (Ridge+BR): a missing key must not silently resurrect XGBoost and diverge the approval backtest from what actually trades
         "effective_hs_portfolio_cap": cfg.get("adaptive_stops", {}).get(
             "effective_portfolio_cap_pct", 0.025),
     }
@@ -437,7 +437,7 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
 
     # Try XGBoost
     xgb_cls = None
-    if cfg.get("use_xgboost", True):
+    if cfg.get("use_xgboost", False):  # fail-closed to the live set (see smart_simple_v1.yaml:196-199)
         try:
             from xgboost import XGBRegressor
             xgb_cls = XGBRegressor
