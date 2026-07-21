@@ -1,0 +1,207 @@
+{
+  "results": [
+    {
+      "asset": "btcusdt",
+      "strategy_id": "btc_trend_b2",
+      "clock": 365,
+      "mean_realized_exposure": 0.1604,
+      "scale_factor": 6.236,
+      "as_is": {
+        "ann_return_pct": 27.78,
+        "max_dd_pct": -19.72,
+        "calmar": 1.409,
+        "sharpe": 1.421
+      },
+      "exposure_matched": {
+        "ann_return_pct": 172.07,
+        "max_dd_pct": -81.89,
+        "calmar": 2.101,
+        "sharpe": 1.421
+      },
+      "b1_buy_and_hold": {
+        "ann_return_pct": 35.61,
+        "max_dd_pct": -83.19,
+        "calmar": 0.428,
+        "sharpe": 0.793
+      },
+      "omega_matched": 1.4951,
+      "omega_b1": 1.1335,
+      "capture_matched": {
+        "up_capture_pct": 108.53,
+        "down_capture_pct": 82.16,
+        "capture_ratio": 1.321
+      },
+      "sharpe_stderr_matched": 0.01762,
+      "leverage_warning": "matching B1 requires 6.24x leverage and a -81.89% drawdown -- this is a diagnostic of timing, NOT a position size",
+      "verdict": {
+        "calmar_beats_b1": true,
+        "return_beats_b1": true,
+        "dd_no_worse_than_b1": true,
+        "timing_is_real": true
+      }
+    },
+    {
+      "asset": "xauusd",
+      "strategy_id": "gold_dynamic_exit",
+      "clock": 252,
+      "mean_realized_exposure": 0.459,
+      "scale_factor": 2.179,
+      "as_is": {
+        "ann_return_pct": 0.24,
+        "max_dd_pct": -53.37,
+        "calmar": 0.005,
+        "sharpe": 0.073
+      },
+      "exposure_matched": {
+        "ann_return_pct": -0.66,
+        "max_dd_pct": -83.44,
+        "calmar": -0.008,
+        "sharpe": 0.073
+      },
+      "b1_buy_and_hold": {
+        "ann_return_pct": 10.22,
+        "max_dd_pct": -44.66,
+        "calmar": 0.229,
+        "sharpe": 0.646
+      },
+      "omega_matched": 1.0166,
+      "omega_b1": 1.1221,
+      "capture_matched": {
+        "up_capture_pct": 90.01,
+        "down_capture_pct": 99.33,
+        "capture_ratio": 0.906
+      },
+      "sharpe_stderr_matched": 0.01352,
+      "leverage_warning": "matching B1 requires 2.18x leverage and a -83.44% drawdown -- this is a diagnostic of timing, NOT a position size",
+      "verdict": {
+        "calmar_beats_b1": false,
+        "return_beats_b1": false,
+        "dd_no_worse_than_b1": false,
+        "timing_is_real": false
+      }
+    },
+    {
+      "asset": "xauusd",
+      "strategy_id": "gold_trend_simple",
+      "clock": 252,
+      "mean_realized_exposure": 0.4637,
+      "scale_factor": 2.156,
+      "as_is": {
+        "ann_return_pct": 5.42,
+        "max_dd_pct": -22.43,
+        "calmar": 0.241,
+        "sharpe": 0.638
+      },
+      "exposure_matched": {
+        "ann_return_pct": 10.94,
+        "max_dd_pct": -43.96,
+        "calmar": 0.249,
+        "sharpe": 0.638
+      },
+      "b1_buy_and_hold": {
+        "ann_return_pct": 10.22,
+        "max_dd_pct": -44.66,
+        "calmar": 0.229,
+        "sharpe": 0.646
+      },
+      "omega_matched": 1.1449,
+      "omega_b1": 1.1221,
+      "capture_matched": {
+        "up_capture_pct": 93.25,
+        "down_capture_pct": 91.36,
+        "capture_ratio": 1.021
+      },
+      "sharpe_stderr_matched": 0.01311,
+      "leverage_warning": "matching B1 requires 2.16x leverage and a -43.96% drawdown -- this is a diagnostic of timing, NOT a position size",
+      "verdict": {
+        "calmar_beats_b1": true,
+        "return_beats_b1": true,
+        "dd_no_worse_than_b1": true,
+        "timing_is_real": true
+      }
+    },
+    {
+      "asset": "spx500",
+      "strategy_id": "spx500_regime_gated_v1",
+      "clock": 252,
+      "mean_realized_exposure": 0.468,
+      "scale_factor": 2.137,
+      "as_is": {
+        "ann_return_pct": 5.7,
+        "max_dd_pct": -8.85,
+        "calmar": 0.644,
+        "sharpe": 0.762
+      },
+      "exposure_matched": {
+        "ann_return_pct": 11.77,
+        "max_dd_pct": -18.3,
+        "calmar": 0.643,
+        "sharpe": 0.762
+      },
+      "b1_buy_and_hold": {
+        "ann_return_pct": 13.58,
+        "max_dd_pct": -32.45,
+        "calmar": 0.418,
+        "sharpe": 0.755
+      },
+      "omega_matched": 1.1941,
+      "omega_b1": 1.1505,
+      "capture_matched": {
+        "up_capture_pct": 68.64,
+        "down_capture_pct": 66.13,
+        "capture_ratio": 1.038
+      },
+      "sharpe_stderr_matched": 0.02388,
+      "leverage_warning": "matching B1 requires 2.14x leverage and a -18.3% drawdown -- this is a diagnostic of timing, NOT a position size",
+      "verdict": {
+        "calmar_beats_b1": true,
+        "return_beats_b1": false,
+        "dd_no_worse_than_b1": true,
+        "timing_is_real": false
+      }
+    },
+    {
+      "asset": "spx500",
+      "strategy_id": "spx500_trend_simple",
+      "clock": 252,
+      "mean_realized_exposure": 0.5946,
+      "scale_factor": 1.682,
+      "as_is": {
+        "ann_return_pct": 7.01,
+        "max_dd_pct": -12.14,
+        "calmar": 0.577,
+        "sharpe": 0.805
+      },
+      "exposure_matched": {
+        "ann_return_pct": 11.55,
+        "max_dd_pct": -19.83,
+        "calmar": 0.583,
+        "sharpe": 0.805
+      },
+      "b1_buy_and_hold": {
+        "ann_return_pct": 13.58,
+        "max_dd_pct": -32.45,
+        "calmar": 0.418,
+        "sharpe": 0.755
+      },
+      "omega_matched": 1.1741,
+      "omega_b1": 1.1505,
+      "capture_matched": {
+        "up_capture_pct": 72.76,
+        "down_capture_pct": 71.29,
+        "capture_ratio": 1.021
+      },
+      "sharpe_stderr_matched": 0.0243,
+      "leverage_warning": "matching B1 requires 1.68x leverage and a -19.83% drawdown -- this is a diagnostic of timing, NOT a position size",
+      "verdict": {
+        "calmar_beats_b1": true,
+        "return_beats_b1": false,
+        "dd_no_worse_than_b1": true,
+        "timing_is_real": false
+      }
+    }
+  ],
+  "evidence_class": "research_only",
+  "promotion_eligible": false,
+  "note": "Scaled figures diagnose whether timing is real at equal beta. They are NOT position sizes: see leverage_warning per asset."
+}
