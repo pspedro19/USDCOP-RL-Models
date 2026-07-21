@@ -1,0 +1,34 @@
+# MANIFIESTO INMUTABLE DE ESTRATEGIA (CTR-STRAT-MANIFEST-001, Fase 0 plan 2026-07-21)
+# Congelado al publicar. Cambiar CUALQUIER campo = nueva version + re-freeze consciente:
+# el test de regresion compara code_hash contra los fuentes actuales y falla en drift.
+# El reloj de anualizacion va DECLARADO porque la libreria carga dos convenciones
+# incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
+# metrica puede citarse sin la suya.
+strategy_id: btc_hodl_b1
+frozen: '2026-07-21 (campeona por OOS: +4.70% vs -1.37% de toda variante)'
+tz_storage: TIMESTAMPTZ instantes; barra diaria cierre UTC-00 (carve-out A1-01, 24/7)
+session: 24/7
+freq:
+  data: daily + derivados diarios (funding 8h agregado)
+  decision: daily
+  execution: daily shift(1)
+clock:
+  periods_per_year: 365
+  label: daily/365
+  note: DECLARADO sqrt(365). Jamas mezclar con reloj 252 de cartera sin conversion
+    escrita (contradiccion onboard-asset vs xasset, resuelta por declaracion)
+model:
+  kind: rule_based
+  rules: 'intent constante 1.0 (HODL); constitucion 3: el baseline ES la estrategia'
+  sizing: vol_target 0.30 / rv20 clip[floor 0.30, cap 1.0 spot ADR-0008]
+  retrain: NUNCA
+costs:
+  turnover_bps: 13.0
+  swap_annual_pct: 0.0
+execution_lag: shift(1)
+files:
+- src/btc_strategy/strategies.py
+- src/btc_strategy/indicators.py
+asset_id: btcusdt
+code_hash_sha256_16: 3b9b3c6dd1b9a70d
+manifest_frozen_at: '2026-07-21'

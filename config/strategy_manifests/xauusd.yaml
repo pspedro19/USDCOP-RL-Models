@@ -1,0 +1,32 @@
+# MANIFIESTO INMUTABLE DE ESTRATEGIA (CTR-STRAT-MANIFEST-001, Fase 0 plan 2026-07-21)
+# Congelado al publicar. Cambiar CUALQUIER campo = nueva version + re-freeze consciente:
+# el test de regresion compara code_hash contra los fuentes actuales y falla en drift.
+# El reloj de anualizacion va DECLARADO porque la libreria carga dos convenciones
+# incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
+# metrica puede citarse sin la suya.
+strategy_id: gold_trend_simple
+frozen: 2026-07-21 (H-SIMP-GOLD-01; historico=contexto, juez=forward)
+tz_storage: 'daily UTC-anclado (bug Sunday pile-up: JAMAS tz_convert(ET).normalize())'
+session: ~24h metales; barra diaria
+freq:
+  data: daily
+  decision: daily (causal t-1)
+  execution: daily shift(1)
+clock:
+  periods_per_year: 252
+  label: daily/252
+model:
+  kind: rule_based
+  rules: voto SMA{63,126,252}>=2 binario; SIN trailing exit (la ausencia ES la hipotesis)
+  sizing: vol_target 0.10 / rv20 clip[floor 0.06, cap 1.5]
+  retrain: 'NUNCA: constantes fijas'
+costs:
+  turnover_bps: 2.0
+  swap_annual_pct: 2.5
+execution_lag: 'shift(1): la posicion de hoy se decidio ayer'
+files:
+- src/gold_rl/strategies.py
+- src/gold_rl/indicators.py
+asset_id: xauusd
+code_hash_sha256_16: 4fd3574fbfbe615f
+manifest_frozen_at: '2026-07-21'

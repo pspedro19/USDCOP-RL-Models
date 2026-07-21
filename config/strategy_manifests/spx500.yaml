@@ -1,0 +1,33 @@
+# MANIFIESTO INMUTABLE DE ESTRATEGIA (CTR-STRAT-MANIFEST-001, Fase 0 plan 2026-07-21)
+# Congelado al publicar. Cambiar CUALQUIER campo = nueva version + re-freeze consciente:
+# el test de regresion compara code_hash contra los fuentes actuales y falla en drift.
+# El reloj de anualizacion va DECLARADO porque la libreria carga dos convenciones
+# incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
+# metrica puede citarse sin la suya.
+strategy_id: spx500_regime_gated_v1
+frozen: 2026-07-21 (sobre datos SPY reales; techo research_validated)
+tz_storage: daily; snapshot SPY adj_close (total-return, SDD-000.4)
+session: 09:30-16:00 America/New_York
+freq:
+  data: daily
+  decision: daily sobre sesion cerrada
+  execution: NEXT-OPEN (senal t opera al open t+1)
+clock:
+  periods_per_year: 252
+  label: daily/252
+model:
+  kind: rule_based
+  rules: MA200 x TSMOM 12-1 x exposure_ceiling(regimen), clip[0,1.5], long-only
+  proxies: vix=vol realizada 21d shift(1) (VIXCLS ausente); macro_stress=z252 del
+    proxy — modelo MAS DEBIL que el disenado, declarado
+  retrain: NUNCA
+costs:
+  roundtrip_bps: 3.0
+execution_lag: '_lag_weights: shift EXACTAMENTE una vez (SDD-006.6)'
+files:
+- src/strategies/spx500_regime_gated_v1/policies.py
+- src/strategies/spx500_regime_gated_v1/engine.py
+- src/strategies/spx500_regime_gated_v1/load_real.py
+asset_id: spx500
+code_hash_sha256_16: 8edb8c264c4108c4
+manifest_frozen_at: '2026-07-21'

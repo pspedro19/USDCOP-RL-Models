@@ -1,0 +1,37 @@
+# MANIFIESTO INMUTABLE DE ESTRATEGIA (CTR-STRAT-MANIFEST-001, Fase 0 plan 2026-07-21)
+# Congelado al publicar. Cambiar CUALQUIER campo = nueva version + re-freeze consciente:
+# el test de regresion compara code_hash contra los fuentes actuales y falla en drift.
+# El reloj de anualizacion va DECLARADO porque la libreria carga dos convenciones
+# incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
+# metrica puede citarse sin la suya.
+strategy_id: smart_simple_v11
+frozen: 2026-03-18 (v11 FROZEN; juez=forward 2026)
+tz_storage: TIMESTAMPTZ instantes verdaderos (CTR-DQ-TZ-001); lectura AT TIME ZONE
+  America/Bogota
+session: 08:00-12:55 America/Bogota, Lun-Vie (60 barras M5)
+freq:
+  data: M5 + daily
+  decision: weekly (senal lunes)
+  execution: M5 en sesion, */30 min
+clock:
+  periods_per_year: 52
+  label: weekly/52
+  note: 'NUNCA 261: la estrategia toma <=1 posicion/semana'
+model:
+  kind: ml_ensemble
+  members:
+  - ridge
+  - bayesian_ridge
+  xgboost: OFFLINE-ONLY (use_xgboost:false, fail-closed; test estructural)
+  retrain: semanal, ventana expansiva, scaler train-only
+  features: 25
+costs:
+  maker_bps: 0.0
+  weekend_exit_slippage_bps: 1.0
+execution_lag: entrada lunes al cierre; HS/TP gestionados intra-semana
+files:
+- scripts/pipeline/train_and_export_smart_simple.py
+- src/forecasting/enhance_v2.py
+asset_id: usdcop
+code_hash_sha256_16: 6624b7798a044579
+manifest_frozen_at: '2026-07-21'
