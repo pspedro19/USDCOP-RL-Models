@@ -66,7 +66,9 @@ def main() -> int:
         "BTC/USDT": ("all_days", 288),
         "XAU/USD":  ("weekdays", 276),
         "USD/MXN":  ("weekdays", 276),
-        "USD/BRL":  ("weekdays", 276),
+        # BRL trades ~11.5 liquid hours offshore (~138 M5 bars/day), NOT a 23h book:
+        # the 50% "completeness" of the first scorecard was expectation mismatch, not loss.
+        "USD/BRL":  ("weekdays", 138),
     }
     for sym, (clock, per_day) in m5_exp.items():
         n, bad, first, last = q1(cur, """
@@ -113,6 +115,8 @@ def main() -> int:
             per_day = per_day_247 if sym == "BTC/USDT" else per_day_fx
             if sym == "SPY":
                 per_day = 7 if tf == "1h" else 2
+            if sym == "USD/BRL":
+                per_day = 15 if tf == "1h" else 5  # ~media jornada liquida
             expected = (span_days if sym == "BTC/USDT"
                         else int(span_days * 5 / 7)) * per_day
             comp = min(1.0, n / expected)

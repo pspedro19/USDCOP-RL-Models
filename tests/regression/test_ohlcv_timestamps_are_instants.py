@@ -32,6 +32,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 SESSION_SYMBOLS = ("USD/COP", "USD/MXN", "USD/BRL")
 SESSION_UTC_HOURS = (13, 17)   # 8:00-12:55 America/Bogota (no DST in Colombia)
+# MXN/BRL became FULL-BOOK pairs on 2026-07-22 (max-history backfill: 24h FX bars are the
+# honest coverage). The session-hour histogram can only detect wall-clock-as-UTC drift on
+# feeds that RUN in-session: COP (all sources, backfill is session-filtered by design) and
+# the MXN/BRL realtime sources. Their 24h backfill source is exempt — not session-bounded.
+FULL_BOOK_EXEMPT_SOURCES = ("twelvedata_backfill",)
 
 
 def _conn():
@@ -60,11 +65,13 @@ def test_session_pairs_are_mono_convention_instants():
                                     NOT BETWEEN %s AND %s) AS off_session
             FROM usdcop_m5_ohlcv
             WHERE symbol IN %s
+              AND NOT (symbol IN ('USD/MXN', 'USD/BRL') AND source IN %s)
             GROUP BY symbol, source
             HAVING COUNT(*) FILTER (WHERE EXTRACT(hour FROM time AT TIME ZONE 'UTC')
                                     NOT BETWEEN %s AND %s) > 0
             """,
             (SESSION_UTC_HOURS[0], SESSION_UTC_HOURS[1], SESSION_SYMBOLS,
+             FULL_BOOK_EXEMPT_SOURCES,
              SESSION_UTC_HOURS[0], SESSION_UTC_HOURS[1]),
         )
         offenders = cur.fetchall()

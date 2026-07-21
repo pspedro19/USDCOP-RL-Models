@@ -1142,8 +1142,8 @@ variables:
       frequency: daily
 
     extraction:
-      primary_source: investing
-      fallback_source: twelvedata
+      primary_source: twelvedata
+      fallback_source: investing
       investing:
         method: api
         instrument_id: 39
@@ -1176,8 +1176,8 @@ variables:
       frequency: daily
 
     extraction:
-      primary_source: investing
-      fallback_source: twelvedata
+      primary_source: twelvedata
+      fallback_source: investing
       investing:
         method: api
         instrument_id: 2110

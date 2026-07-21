@@ -210,11 +210,16 @@ class UpsertService:
                 for col in available_cols
             ])
 
+            # is_complete/source_date hygiene (column audit 2026-07-22 found is_complete
+            # false on 100% of macro_indicators_daily and source_date never populated):
+            # every successful upsert marks the row complete and stamps the source date.
             query = f"""
-                INSERT INTO {self._full_table} ({', '.join(all_cols)})
-                VALUES ({placeholders})
+                INSERT INTO {self._full_table} ({', '.join(all_cols)}, is_complete, source_date)
+                VALUES ({placeholders}, TRUE, CURRENT_DATE)
                 ON CONFLICT ({self.date_col}) DO UPDATE SET
                     {update_clause},
+                    is_complete = TRUE,
+                    source_date = COALESCE({self._full_table}.source_date, CURRENT_DATE),
                     updated_at = NOW()
             """
 

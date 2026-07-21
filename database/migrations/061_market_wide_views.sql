@@ -17,10 +17,8 @@
 -- ---------------------------------------------------------------------------
 -- DAILY (the one the operator asked to see spelled out), with the 17 verified
 -- CLEAN macros — each in TWO forms: as-of (reporting) and _t1 (the ONLY form a
--- model may consume; T-1 rule). USDMXN/USDCLP are EXCLUDED until the macro
--- cleaning learns scale normalization (corrupted x10^4 since 2026-01-27; guard
--- test_macro_clean_fx_scale). Feeding garbage into a "clean" view would repeat
--- the mistake the view exists to prevent.
+-- model may consume; T-1 rule). USDMXN/USDCLP were excluded while corrupted x10^4;
+-- REINSTATED 2026-07-22 after the twelvedata repair (guard is now a hard test).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE VIEW market_ohlcv_daily_wide AS
 WITH grid AS (
@@ -52,7 +50,11 @@ WITH grid AS (
            finc_rate_ibr_overnight_col_d_ibr AS ibr,
            polr_policy_rate_col_d_tpm        AS tpm,
            polr_prime_rate_usa_d_prime       AS prime,
-           fxrt_spot_usdcop_col_d_usdcop     AS usdcop_spot
+           fxrt_spot_usdcop_col_d_usdcop     AS usdcop_spot,
+           -- reincorporadas 2026-07-22: corrupcion x10^4 reparada (twelvedata primaria,
+           -- 111 filas corregidas + 147 gaps rellenados; guard duro test_macro_clean_fx_scale)
+           fxrt_spot_usdmxn_mex_d_usdmxn     AS usdmxn,
+           fxrt_spot_usdclp_chl_d_usdclp     AS usdclp
     FROM macro_indicators_daily
 )
 SELECT
@@ -162,7 +164,9 @@ SELECT
     ma.ibr AS macro_ibr,   LAG(ma.ibr)   OVER w AS macro_ibr_t1,
     ma.tpm AS macro_tpm,   LAG(ma.tpm)   OVER w AS macro_tpm_t1,
     ma.prime AS macro_prime, LAG(ma.prime) OVER w AS macro_prime_t1,
-    ma.usdcop_spot AS macro_usdcop_spot, LAG(ma.usdcop_spot) OVER w AS macro_usdcop_spot_t1
+    ma.usdcop_spot AS macro_usdcop_spot, LAG(ma.usdcop_spot) OVER w AS macro_usdcop_spot_t1,
+    ma.usdmxn AS macro_usdmxn, LAG(ma.usdmxn) OVER w AS macro_usdmxn_t1,
+    ma.usdclp AS macro_usdclp, LAG(ma.usdclp) OVER w AS macro_usdclp_t1
 
 FROM grid g
 LEFT JOIN px p1 ON p1.asset_id='usdcop'  AND p1.session_date_local = g.d

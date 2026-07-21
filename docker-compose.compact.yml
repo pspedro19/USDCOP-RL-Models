@@ -56,6 +56,9 @@ services:
   postgres:
     image: timescale/timescaledb:latest-pg15
     container_name: usdcop-postgres-timescale
+    # 64MB default /dev/shm crashed the server under parallel hash joins on the
+    # 2.2M-bar M5 table (2026-07-22, "could not resize shared memory segment")
+    shm_size: 1gb
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

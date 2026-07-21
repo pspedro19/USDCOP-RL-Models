@@ -23,9 +23,10 @@ CLEAN = Path(__file__).resolve().parents[2] / "data/pipeline/04_cleaning/output/
 FX_COLS = ("FXRT_SPOT_USDMXN_MEX_D_USDMXN", "FXRT_SPOT_USDCLP_CHL_D_USDCLP")
 
 
-@pytest.mark.xfail(reason="known live corruption since 2026-01-27; macro cleaning must add "
-                          "scale normalization -- remove this marker when it does",
-                   strict=False)
+# xfail lifted 2026-07-22: root cause was investing.com es-locale (comma-decimal) quotes;
+# the source now 403s anyway. Fixed by promoting twelvedata to primary in the SSOT, repairing
+# the DB rows (56 MXN + 55 CLP) and the CLEAN parquet from the repaired DB. This is now a
+# HARD guard: a new scale splice must fail CI, not be waved through.
 def test_clean_fx_series_have_no_scale_splices():
     if not CLEAN.is_file():
         pytest.skip("CLEAN parquet absent")

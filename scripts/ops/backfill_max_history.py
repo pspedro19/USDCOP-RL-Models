@@ -129,6 +129,15 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
     """Paginate [start, end) in windows, validate, upsert, manifest each window."""
     cur = conn.cursor()
     src = source or f"twelvedata_{interval}_backfill"
+    existing_dates: set = set()
+    if table == "asset_daily_ohlcv":
+        # Daily bars are date-identified but hour-stamped inconsistently across feeds
+        # (seed 21:00/22:00 UTC vs backfill 00:00): ON CONFLICT(time,symbol) cannot see a
+        # same-date/different-hour twin, which duplicated XAU 2026-07-21 and broke the
+        # wide-no-invention invariant. Dedupe by UTC DATE here, not by instant.
+        cur.execute("SELECT DISTINCT (time AT TIME ZONE 'UTC')::date "
+                    "FROM asset_daily_ohlcv WHERE symbol=%s", (symbol,))
+        existing_dates = {r[0] for r in cur.fetchall()}
     total_new = 0
     w0 = start
     while w0 < end:
@@ -161,6 +170,8 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
                 rows.append((ts, symbol, tf_label, o, h, l, c, vol, src,
                              datetime.now(UTC)))
             elif table == "asset_daily_ohlcv":
+                if ts.astimezone(UTC).date() in existing_dates:
+                    continue
                 rows.append((ts, symbol, o, h, l, c, vol, src, datetime.now(UTC)))
             else:  # usdcop_m5_ohlcv
                 rows.append((ts, symbol, o, h, l, c, int(vol), src, datetime.now(UTC)))
@@ -191,7 +202,7 @@ def binance_klines(conn, interval: str, table: str, tf_label: str | None,
     cur = conn.cursor()
     total_new, t = 0, int(start.timestamp() * 1000)
     end_ms = int(datetime.now(UTC).timestamp() * 1000)
-    step_ms = {"5m": 300_000, "1h": 3_600_000, "4h": 14_400_000, "1M": None}[interval]
+    step_ms = {"5m": 300_000, "1h": 3_600_000, "4h": 14_400_000, "1d": 86_400_000, "1M": None}[interval]
     while t < end_ms:
         t0 = _time.time()
         url = ("https://api.binance.com/api/v3/klines?"
@@ -242,13 +253,81 @@ def binance_klines(conn, interval: str, table: str, tf_label: str | None,
     return total_new
 
 
+def catchup(conn) -> None:
+    """Incremental refresh: pull from each series' last bar to now (Fase 3/4 del plan
+    de calidad 2026-07-22 — convierte el backfill one-shot en sistema vivo).
+
+    Designed to run hourly from the l0_multiframe_catchup DAG: windows are tiny
+    (last bar - 1 day), so a full pass costs ~30 TwelveData credits.
+    """
+    cur = conn.cursor()
+
+    def last(table, sym, tf=None):
+        if tf:
+            cur.execute(f"SELECT max(time) FROM {table} WHERE symbol=%s AND tf=%s", (sym, tf))
+        else:
+            cur.execute(f"SELECT max(time) FROM {table} WHERE symbol=%s", (sym,))
+        r = cur.fetchone()[0]
+        return (r - timedelta(days=1)).date() if r else None
+
+    today_plus = date.today() + timedelta(days=1)
+    # M5 (TwelveData): XAU sin realtime propio; MXN/BRL/COP tienen realtime pero el
+    # catch-up cubre huecos del servicio. BTC va por binance abajo.
+    for sym, filt, src in (("XAU/USD", None, "twelvedata_xauusd"),
+                           ("USD/COP", _cop_session_ok, "twelvedata_gap_fill"),
+                           ("USD/MXN", None, "twelvedata_backfill"),
+                           ("USD/BRL", None, "twelvedata_backfill")):
+        d0 = last("usdcop_m5_ohlcv", sym)
+        if d0:
+            td_series(conn, sym, "5min", d0, today_plus, "usdcop_m5_ohlcv",
+                      session_filter=filt, window_days=12, source=src)
+    # 1h/4h nativos + diario + mensual (TwelveData)
+    for sym in ("USD/COP", "XAU/USD", "SPY", "USD/MXN", "USD/BRL"):
+        for tf in ("1h", "4h"):
+            d0 = last("asset_native_ohlcv", sym, tf)
+            if d0:
+                td_series(conn, sym, tf, d0, today_plus, "asset_native_ohlcv",
+                          tf_label=tf, window_days=400)
+        d0 = last("asset_daily_ohlcv", sym)
+        if d0:
+            td_series(conn, sym, "1day", d0, today_plus, "asset_daily_ohlcv",
+                      window_days=400, source="twelvedata_daily_deep")
+        d0 = last("asset_native_ohlcv", sym, "1month")
+        if d0:
+            td_series(conn, sym, "1month", max(d0 - timedelta(days=40), date(2020, 1, 1)),
+                      today_plus, "asset_native_ohlcv", tf_label="1month", window_days=36500)
+    # BTC (Binance, misma serie)
+    for iv, table, tf in (("5m", "usdcop_m5_ohlcv", None), ("1h", "asset_native_ohlcv", "1h"),
+                          ("4h", "asset_native_ohlcv", "4h"),
+                          ("1M", "asset_native_ohlcv", "1month")):
+        cur.execute("SELECT max(time) FROM {} WHERE symbol='BTC/USDT'{}".format(
+            table, " AND tf=%s" if tf else ""), (tf,) if tf else None)
+        r = cur.fetchone()[0]
+        if r:
+            binance_klines(conn, iv, table, tf, r - timedelta(days=2))
+    # BTC diario (antes solo venia del snapshot semanal)
+    cur.execute("SELECT max(time) FROM asset_daily_ohlcv WHERE symbol='BTC/USDT'")
+    r = cur.fetchone()[0]
+    if r:
+        binance_klines(conn, "1d", "asset_daily_ohlcv", None, r - timedelta(days=2))
+    # agregados derivados al dia
+    cur.execute("REFRESH MATERIALIZED VIEW market_ohlcv_1h_agg")
+    cur.execute("REFRESH MATERIALIZED VIEW market_ohlcv_4h_agg")
+    conn.commit()
+    print("catchup completo + matviews refrescados", flush=True)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase", default="all",
-                    choices=["m5", "native", "daily", "monthly", "btc", "all"])
+                    choices=["m5", "native", "daily", "monthly", "btc", "catchup", "all"])
     args = ap.parse_args()
     conn = _conn()
     today = date.today()
+
+    if args.phase == "catchup":
+        catchup(conn)
+        return 0
 
     if args.phase in ("m5", "all"):
         print("== M5 (TwelveData) ==", flush=True)

@@ -30,17 +30,17 @@ SQL_062 = (MIG / "062_macro_monthly_views.sql").read_text(encoding="utf-8")
 # Structural (always run)
 # ---------------------------------------------------------------------------
 
-def test_corrupted_fx_series_are_excluded_from_wide_views():
-    """USDMXN/USDCLP are corrupted x10^4 since 2026-01-27 (test_macro_clean_fx_scale).
+def test_repaired_fx_series_are_served_with_t1_form():
+    """USDMXN/USDCLP were excluded while corrupted x10^4; reinstated 2026-07-22 after the
+    twelvedata repair (111 rows fixed + 147 gaps filled; investing.com es-locale was the
+    corruptor and now 403s — SSOT primary flipped to twelvedata).
 
-    They must not appear in any wide view until the macro cleaning learns scale
-    normalization — serving garbage through a 'clean' contract view would repeat the
-    mistake the view exists to prevent.
+    The daily wide must serve BOTH forms (as-of + _t1); the scale guard that keeps them
+    honest is test_macro_clean_fx_scale, now a HARD test (xfail lifted).
     """
-    for sql, name in ((SQL_061, "061"), (SQL_062, "062")):
-        code = "\n".join(line.split("--")[0] for line in sql.splitlines())
-        assert "usdmxn" not in code.lower(), f"{name}: usdmxn leaked into view SQL"
-        assert "usdclp" not in code.lower(), f"{name}: usdclp leaked into view SQL"
+    code = "\n".join(line.split("--")[0] for line in SQL_061.splitlines()).lower()
+    for col in ("macro_usdmxn", "macro_usdmxn_t1", "macro_usdclp", "macro_usdclp_t1"):
+        assert col in code, f"061: {col} missing from daily wide"
 
 
 def test_daily_bars_are_anchored_in_utc():
