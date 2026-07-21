@@ -9,6 +9,17 @@ code_anchors:
   - scripts/analysis/cop_trials_dsr.py
   - scripts/analysis/cop_null_suite.py
   - scripts/analysis/portfolio_layer.py
+# Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
+# aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
+# código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
+n_trials_total: 56
+n_trials_scenarios: [44, 56, 70]   # conservador / central / amplio — se publican los tres
+n_trials_sources:
+  - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
+  - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)"
+  - "public/data/strategies/{smart_simple_v11,smart_simple_aggr}/backtests/* (5 bundles = suelo)"
+sigma_trials: null                 # nunca se persistió la dispersión de Sharpe entre trials
+sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
 ---
 # HYPOTHESIS-REGISTRY — USD/COP (retroactivo + prospectivo)
 

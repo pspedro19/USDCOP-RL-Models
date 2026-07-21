@@ -1,0 +1,217 @@
+{
+  "asset": "btcusdt",
+  "strategy_id": "btc_trend_b2",
+  "clock": {
+    "periods_per_year": 365,
+    "label": "daily/365"
+  },
+  "window": {
+    "start": "2017-08-17 00:00:00+00:00",
+    "end": "2026-07-20 00:00:00+00:00",
+    "n_periods": 3260
+  },
+  "n_trades": 51,
+  "strategy": {
+    "net_return_pct": 793.1191,
+    "ann_return_pct": null,
+    "calmar": 1.4089,
+    "sortino": 2.571,
+    "sharpe": 1.4206,
+    "max_dd_pct": 0.1972,
+    "volatility": 0.1845,
+    "cvar_95_pct": 2.1152,
+    "sharpe_stderr": 0.0176
+  },
+  "turnover": 0.024,
+  "exposure_profile": {
+    "mean_abs": 0.1604,
+    "p50": 0.0,
+    "p95": 0.7655,
+    "pct_time_flat": 71.23,
+    "pct_time_long": 28.77,
+    "pct_time_short": 0.0
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "net_return_pct": 1419.4188,
+      "ann_return_pct": null,
+      "calmar": 0.4281,
+      "sortino": 1.303,
+      "sharpe": 0.7934,
+      "max_dd_pct": 0.8319,
+      "volatility": 0.6729,
+      "cvar_95_pct": 8.1307
+    },
+    "B1_prime_exposure_matched": {
+      "mean_exposure": 0.1604,
+      "ann_return_pct": 8.3,
+      "max_dd_pct": -20.94,
+      "calmar": 0.397,
+      "sharpe": 0.793
+    },
+    "dumb_hodl_vol_targeted": {
+      "net_return_pct": 84.1659,
+      "ann_return_pct": null,
+      "calmar": 0.3295,
+      "sortino": 1.127,
+      "sharpe": 0.6876,
+      "max_dd_pct": 0.2148,
+      "volatility": 0.1079,
+      "cvar_95_pct": 1.3064
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 27.78,
+      "max_dd_pct": -19.72,
+      "calmar": 1.409,
+      "sharpe": 1.421
+    },
+    "x2": {
+      "ann_return_pct": 26.33,
+      "max_dd_pct": -20.84,
+      "calmar": 1.263,
+      "sharpe": 1.359
+    },
+    "x3": {
+      "ann_return_pct": 24.9,
+      "max_dd_pct": -22.12,
+      "calmar": 1.126,
+      "sharpe": 1.297
+    },
+    "survives_2x": true,
+    "survives_3x": true
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.074358,
+    "n_obs": 3260,
+    "cells": [
+      {
+        "n_trials": 21,
+        "sigma_trials": 0.05,
+        "sr0": 0.0961,
+        "dsr": 0.0939,
+        "significant": false
+      },
+      {
+        "n_trials": 21,
+        "sigma_trials": 0.1,
+        "sr0": 0.1922,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 21,
+        "sigma_trials": 0.15,
+        "sr0": 0.2883,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 31,
+        "sigma_trials": 0.05,
+        "sr0": 0.1043,
+        "dsr": 0.0347,
+        "significant": false
+      },
+      {
+        "n_trials": 31,
+        "sigma_trials": 0.1,
+        "sr0": 0.2087,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 31,
+        "sigma_trials": 0.15,
+        "sr0": 0.313,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 45,
+        "sigma_trials": 0.05,
+        "sr0": 0.1118,
+        "dsr": 0.0117,
+        "significant": false
+      },
+      {
+        "n_trials": 45,
+        "sigma_trials": 0.1,
+        "sr0": 0.2236,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 45,
+        "sigma_trials": 0.15,
+        "sr0": 0.3353,
+        "dsr": 0.0,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.0,
+    "headline_cell": {
+      "n_trials": 21,
+      "sigma_trials": 0.1
+    },
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": 0.4828,
+    "n_combinations": 12870,
+    "n_strategies": 12,
+    "n_variants": 12
+  },
+  "trials": {
+    "n_trials_total": 31,
+    "n_trials_scenarios": [
+      21,
+      31,
+      45
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 16,
+    "sources": [
+      "Registro principal de este archivo: 21 filas (H-xxx)",
+      "Sensibilidades pre-registradas: \u03c3_objetivo 3 + banda 3 + pesos R 3 + re-versi\u00f3n LLM \u22651",
+      "public/data/strategies/btc_*/backtests/* = 16 bundles publicados (suelo de verificaci\u00f3n)"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": true,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": true,
+    "calmar_gt_dumb_baseline": true,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": true
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "net_return_gt_b1"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "60d73d55b6c56da3"
+}

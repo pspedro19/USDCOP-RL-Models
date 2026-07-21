@@ -1,0 +1,209 @@
+{
+  "asset": "usdcop",
+  "strategy_id": "smart_simple_v11",
+  "clock": {
+    "periods_per_year": 52,
+    "label": "weekly/52"
+  },
+  "window": {
+    "start": "2025-01-06 00:00:00",
+    "end": "2025-12-29 00:00:00",
+    "n_periods": 52
+  },
+  "n_trades": 31,
+  "strategy": {
+    "net_return_pct": 18.7272,
+    "ann_return_pct": null,
+    "calmar": 3.895,
+    "sortino": 3.341,
+    "sharpe": 2.2917,
+    "max_dd_pct": 0.0481,
+    "volatility": 0.0763,
+    "cvar_95_pct": 2.7961,
+    "sharpe_stderr": 0.1361
+  },
+  "turnover": 0.4423,
+  "exposure_profile": {
+    "mean_abs": 0.5962,
+    "p50": 1.0,
+    "p95": 1.0,
+    "pct_time_flat": 40.38,
+    "pct_time_long": 59.62,
+    "pct_time_short": 0.0
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "valid": false,
+      "reason": "this data source does not carry the underlying asset price, so this baseline degenerates into the strategy itself"
+    },
+    "B1_prime_exposure_matched": {
+      "valid": false,
+      "reason": "this data source does not carry the underlying asset price, so this baseline degenerates into the strategy itself"
+    },
+    "dumb_always_short_1x": {
+      "net_return_pct": -16.302,
+      "ann_return_pct": null,
+      "calmar": -0.9288,
+      "sortino": -3.998,
+      "sharpe": -2.2917,
+      "max_dd_pct": 0.1755,
+      "volatility": 0.0763,
+      "cvar_95_pct": 1.4
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 18.73,
+      "max_dd_pct": -4.81,
+      "calmar": 3.895,
+      "sharpe": 2.292
+    },
+    "x2": {
+      "ann_return_pct": 18.73,
+      "max_dd_pct": -4.81,
+      "calmar": 3.895,
+      "sharpe": 2.292
+    },
+    "x3": {
+      "ann_return_pct": 18.73,
+      "max_dd_pct": -4.81,
+      "calmar": 3.895,
+      "sharpe": 2.292
+    },
+    "survives_2x": true,
+    "survives_3x": true
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.317801,
+    "n_obs": 52,
+    "cells": [
+      {
+        "n_trials": 44,
+        "sigma_trials": 0.05,
+        "sr0": 0.1113,
+        "dsr": 0.8701,
+        "significant": false
+      },
+      {
+        "n_trials": 44,
+        "sigma_trials": 0.1,
+        "sr0": 0.2227,
+        "dsr": 0.6982,
+        "significant": false
+      },
+      {
+        "n_trials": 44,
+        "sigma_trials": 0.15,
+        "sr0": 0.334,
+        "dsr": 0.4647,
+        "significant": false
+      },
+      {
+        "n_trials": 56,
+        "sigma_trials": 0.05,
+        "sr0": 0.116,
+        "dsr": 0.8647,
+        "significant": false
+      },
+      {
+        "n_trials": 56,
+        "sigma_trials": 0.1,
+        "sr0": 0.2319,
+        "dsr": 0.6803,
+        "significant": false
+      },
+      {
+        "n_trials": 56,
+        "sigma_trials": 0.15,
+        "sr0": 0.3479,
+        "dsr": 0.4347,
+        "significant": false
+      },
+      {
+        "n_trials": 70,
+        "sigma_trials": 0.05,
+        "sr0": 0.1201,
+        "dsr": 0.8597,
+        "significant": false
+      },
+      {
+        "n_trials": 70,
+        "sigma_trials": 0.1,
+        "sr0": 0.2402,
+        "dsr": 0.664,
+        "significant": false
+      },
+      {
+        "n_trials": 70,
+        "sigma_trials": 0.15,
+        "sr0": 0.3604,
+        "dsr": 0.4081,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.4081,
+    "headline_cell": {
+      "n_trials": 70,
+      "sigma_trials": 0.15
+    },
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": 0.3333,
+    "n_combinations": 6,
+    "n_strategies": 7,
+    "n_variants": 7
+  },
+  "trials": {
+    "n_trials_total": 56,
+    "n_trials_scenarios": [
+      44,
+      56,
+      70
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 5,
+    "sources": [
+      "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucci\u00f3n retroactiva v1.0\u2192v11)",
+      ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)",
+      "public/data/strategies/{smart_simple_v11,smart_simple_aggr}/backtests/* (5 bundles = suelo)"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": true,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": false,
+    "calmar_gt_dumb_baseline": true,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": true
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "calmar_gt_b1_prime",
+    "net_return_gt_b1"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "8b102163773df226"
+}

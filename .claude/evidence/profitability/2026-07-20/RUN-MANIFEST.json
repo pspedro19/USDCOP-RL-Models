@@ -1,0 +1,49 @@
+{
+  "generated": "2026-07-20",
+  "git_sha": "3d047047e961f86dd51f6383083e9bdb54fe18e0",
+  "assets": {
+    "usdcop": {
+      "params_hash": "8b102163773df226",
+      "n_trials_total": 56,
+      "trials_source": ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 5,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "calmar_gt_b1_prime",
+        "net_return_gt_b1"
+      ]
+    },
+    "xauusd": {
+      "params_hash": "27ca6718737e72ff",
+      "n_trials_total": 74,
+      "trials_source": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 21,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_b1_prime",
+        "calmar_gt_dumb_baseline",
+        "net_return_gt_b1",
+        "survives_cost_x2"
+      ]
+    },
+    "btcusdt": {
+      "params_hash": "60d73d55b6c56da3",
+      "n_trials_total": 31,
+      "trials_source": ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 16,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "net_return_gt_b1"
+      ]
+    }
+  },
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "note": "A FAIL verdict is a successful measurement. This harness has no tuning knobs; if a params_hash changes, the registry trial count must be incremented before the result may be cited."
+}

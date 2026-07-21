@@ -6,6 +6,17 @@ last_verified: 2026-07-20
 supersedes: []
 code_anchors:
   - src/btc_strategy/strategies.py
+# Conteo de trials LEGIBLE POR MÁQUINA (ver §"Conteo para el DSR" abajo, que da la fórmula
+# pero nunca su resultado). `scripts/analysis/profitability_evidence.py` lo lee de aquí y
+# lanza excepción si falta — el DSR no puede depender de un número hardcodeado en el código.
+n_trials_total: 31
+n_trials_scenarios: [21, 31, 45]   # solo registro / registro+sensibilidades / +descartados
+n_trials_sources:
+  - "Registro principal de este archivo: 21 filas (H-xxx)"
+  - "Sensibilidades pre-registradas: σ_objetivo 3 + banda 3 + pesos R 3 + re-versión LLM ≥1"
+  - "public/data/strategies/btc_*/backtests/* = 16 bundles publicados (suelo de verificación)"
+sigma_trials: null
+sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
 ---
 # HYPOTHESIS REGISTRY — Registro de Hipótesis y Trials
 

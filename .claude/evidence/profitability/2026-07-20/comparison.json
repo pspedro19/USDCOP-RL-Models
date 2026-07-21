@@ -1,0 +1,96 @@
+{
+  "table_a_clock_free": [
+    {
+      "asset": "usdcop",
+      "strategy_id": "smart_simple_v11",
+      "net_return_pct": 18.7272,
+      "max_dd_pct": 0.0481,
+      "cvar_95_pct": 2.7961,
+      "n_trades": 31,
+      "turnover": 0.4423,
+      "mean_exposure": 0.5962,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "calmar_gt_b1_prime",
+        "net_return_gt_b1"
+      ]
+    },
+    {
+      "asset": "xauusd",
+      "strategy_id": "gold_dynamic_exit",
+      "net_return_pct": 5.8013,
+      "max_dd_pct": 0.5337,
+      "cvar_95_pct": 1.5789,
+      "n_trades": 227,
+      "turnover": 0.0259,
+      "mean_exposure": 0.459,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_b1_prime",
+        "calmar_gt_dumb_baseline",
+        "net_return_gt_b1",
+        "survives_cost_x2"
+      ]
+    },
+    {
+      "asset": "btcusdt",
+      "strategy_id": "btc_trend_b2",
+      "net_return_pct": 793.1191,
+      "max_dd_pct": 0.1972,
+      "cvar_95_pct": 2.1152,
+      "n_trades": 51,
+      "turnover": 0.024,
+      "mean_exposure": 0.1604,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "net_return_gt_b1"
+      ]
+    }
+  ],
+  "table_b_by_clock": {
+    "weekly/52": [
+      {
+        "asset": "usdcop",
+        "strategy_id": "smart_simple_v11",
+        "ann_return_pct": null,
+        "calmar": 3.895,
+        "sortino": 3.341,
+        "sharpe": 2.2917,
+        "sharpe_stderr": 0.1361,
+        "dsr_headline": 0.4081,
+        "pbo": 0.3333
+      }
+    ],
+    "daily/252": [
+      {
+        "asset": "xauusd",
+        "strategy_id": "gold_dynamic_exit",
+        "ann_return_pct": null,
+        "calmar": 0.0045,
+        "sortino": 0.1043,
+        "sharpe": 0.0734,
+        "sharpe_stderr": 0.0135,
+        "dsr_headline": 0.0,
+        "pbo": 0.7236
+      }
+    ],
+    "daily/365": [
+      {
+        "asset": "btcusdt",
+        "strategy_id": "btc_trend_b2",
+        "ann_return_pct": null,
+        "calmar": 1.4089,
+        "sortino": 2.571,
+        "sharpe": 1.4206,
+        "sharpe_stderr": 0.0176,
+        "dsr_headline": 0.0,
+        "pbo": 0.4828
+      }
+    ]
+  },
+  "warning": "Table B is grouped by clock and must NOT be ranked across groups. A weekly/52 Calmar and a daily/365 Calmar are different statistics. With COP weekly and gold/BTC daily, no cross-asset risk-adjusted ranking is possible at all \u2014 that is a property of the data, not a gap to be filled by resampling."
+}
