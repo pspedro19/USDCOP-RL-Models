@@ -19,10 +19,12 @@ built on the registry will reject a valid 20-dim dataset, or wave through a lega
 as production. Feature ORDER is positional: a mismatch does not raise, it silently feeds the
 model the wrong column in each slot. That is the worst kind of failure -- it produces numbers.
 
-This test is expected to FAIL until the conflict is resolved. That is deliberate. Deleting or
-xfail-ing it re-hides a live inconsistency between training and inference; the fix is to pick
-one authority and make the others derive from it. The RL track being deprioritized is a reason
-to leave the dimension alone, NOT a reason to stop the drift from being visible.
+RESOLVED 2026-07-21: feature_registry.yaml is now a DERIVED VIEW of experiment_ssot.yaml
+(20 dims, EXP-B-001 order), and DataQualityGate's EXPECTED_FEATURES was moved off the
+superseded 13-predictor generation. This test stays as the tripwire: if either side drifts
+again, it goes red again. The stronger order-level check below pins the full sequence, not
+just the count — feature order is positional, and a same-length reshuffle is the failure
+mode a count check cannot see.
 """
 from __future__ import annotations
 
@@ -72,3 +74,22 @@ def test_feature_dimension_has_a_single_authority():
           "the wrong column in each slot and still returns a number. Pick ONE authority and "
           "make the others read from it; do not silence this test."
     )
+
+
+def test_registry_order_matches_experiment_ssot():
+    """The registry's canonical order must BE the experiment SSOT's order, element by element.
+
+    Equal counts with different orders is the worst case: every consumer passes the dimension
+    check and every feature lands in the wrong slot.
+    """
+    reg = _load("config/feature_registry.yaml")
+    exp = _load("config/experiment_ssot.yaml")
+    reg_order = (reg.get("observation_space") or {}).get("order") or []
+    exp_feats = [f["name"] for f in exp.get("features", []) if isinstance(f, dict)]
+    if not reg_order or not exp_feats:
+        pytest.skip("one side lacks an explicit order")
+    assert reg_order == exp_feats, (
+        "feature_registry.yaml order diverged from experiment_ssot.yaml. The registry is a "
+        "derived view -- regenerate it from the SSOT, never hand-edit the order."
+    )
+

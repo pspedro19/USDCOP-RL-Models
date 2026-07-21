@@ -821,6 +821,12 @@ def export_trades(result, year, cfg):
     if not m:
         return {}
 
+    # Same N<20 suppression as the summary export (quant-constitution 6). This block was the
+    # one path still emitting sharpe_ratio and p_value unconditionally, so the 2026 trades
+    # file carried a p-value computed on ~6 trades while summary_2026.json correctly nulled
+    # it -- two files, one number, two answers. The dashboard reads BOTH.
+    stats_valid = m["n_trades"] >= MIN_TRADES_FOR_STATS
+
     return {
         "strategy_name": f"Smart Simple v{cfg['version']}",
         "strategy_id": cfg.get("strategy_id", "smart_simple_v11"),
@@ -838,10 +844,11 @@ def export_trades(result, year, cfg):
             "total_pnl": round(m["final_equity"] - 10000, 2),
             "total_return_pct": m["total_return_pct"],
             "max_drawdown_pct": m["max_dd_pct"],
-            "sharpe_ratio": m["sharpe"],
+            "sharpe_ratio": m["sharpe"] if stats_valid else None,
             "direction_accuracy_pct": m["direction_accuracy_pct"],
             "profit_factor": m["profit_factor"],
-            "p_value": m["p_value"],
+            "p_value": m["p_value"] if stats_valid else None,
+            "insufficient_trades": not stats_valid,
             "n_long": m["n_long"],
             "n_short": m["n_short"],
         },

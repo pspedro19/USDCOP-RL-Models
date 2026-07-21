@@ -131,7 +131,7 @@ class DataQualityGate:
     DEFAULT_CONFIG = {
         "max_nan_percentage": 0.05,
         "min_row_count": 100000,
-        "expected_feature_count": 15,
+        "expected_feature_count": 20,  # EXP-B-001 active set (was pinned to the superseded 15)
         "require_monotonic_dates": True,
         "max_zscore": 10.0,
         "allow_duplicate_timestamps": False,
@@ -146,11 +146,17 @@ class DataQualityGate:
     }
 
     # Expected feature order (from SSOT)
+    # EXP-B-001 active market-feature order (audit FEAT-001, aligned 2026-07-21).
+    # The previous list was the SUPERSEDED 13-predictor generation (atr_pct, adx_14,
+    # rate_spread, ...) — features that no longer exist in the active dataset, so the order
+    # check at _check_feature_order could reject a valid v3 dataset or pass a legacy one.
+    # One authority: config/experiment_ssot.yaml -> config/feature_registry.yaml -> here.
     EXPECTED_FEATURES = [
-        "log_ret_5m", "log_ret_1h", "log_ret_4h",
-        "rsi_9", "atr_pct", "adx_14",
+        "log_ret_5m", "log_ret_1h", "log_ret_4h", "log_ret_1d",
+        "rsi_9", "rsi_21", "volatility_pct", "trend_z",
         "dxy_z", "dxy_change_1d", "vix_z", "embi_z",
-        "brent_change_1d", "rate_spread", "usdmxn_change_1d",
+        "brent_change_1d", "rate_spread_z", "rate_spread_change",
+        "usdmxn_change_1d", "yield_curve_z", "gold_change_1d",
     ]
 
     def __init__(self, config: dict[str, Any] | None = None):
