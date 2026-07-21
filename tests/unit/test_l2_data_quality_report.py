@@ -17,6 +17,33 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+import sys
+
+# ---------------------------------------------------------------------------
+# Module loading: two packages in this repo are named `services`
+# ---------------------------------------------------------------------------
+# The DAG-side one (airflow/dags/services/) holds l2_data_quality_report; the repo-root one
+# (services/) holds the API code. `sys.path.insert` + `import services.x` is not enough: by the
+# time this test runs, pytest has usually already imported the ROOT `services` package, and a
+# package name resolves once per process. Every import here then raised ModuleNotFoundError --
+# 32 tests reported as "module absent" when the module was present all along (audit DATA-001).
+#
+# Loading by explicit file path sidesteps the name collision entirely and does not depend on
+# which package happened to be imported first.
+import importlib.util as _ilu
+
+_L2_PATH = Path(__file__).resolve().parents[2] / "airflow" / "dags" / "services" / "l2_data_quality_report.py"
+
+
+def _load_l2():
+    if "l2_data_quality_report" in sys.modules:
+        return sys.modules["l2_data_quality_report"]
+    spec = _ilu.spec_from_file_location("l2_data_quality_report", _L2_PATH)
+    mod = _ilu.module_from_spec(spec)
+    sys.modules["l2_data_quality_report"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
 
 
 # =============================================================================
@@ -99,10 +126,8 @@ def norm_stats():
 def generator():
     """Create a report generator instance."""
     # Import here to avoid import errors if module not found
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'airflow' / 'dags'))
 
-    from services.l2_data_quality_report import L2DataQualityReportGenerator
+    _l2 = _load_l2(); L2DataQualityReportGenerator = _l2.L2DataQualityReportGenerator
     return L2DataQualityReportGenerator()
 
 
@@ -115,7 +140,7 @@ class TestDataClasses:
 
     def test_variable_report_creation(self):
         """Test VariableReport can be created."""
-        from services.l2_data_quality_report import VariableReport
+        _l2 = _load_l2(); VariableReport = _l2.VariableReport
 
         report = VariableReport(
             variable_name='close',
@@ -130,7 +155,7 @@ class TestDataClasses:
 
     def test_variable_report_to_dict(self):
         """Test VariableReport serialization."""
-        from services.l2_data_quality_report import VariableReport
+        _l2 = _load_l2(); VariableReport = _l2.VariableReport
 
         report = VariableReport(
             variable_name='test',
@@ -144,7 +169,7 @@ class TestDataClasses:
 
     def test_l2_report_creation(self):
         """Test L2DataQualityReport can be created."""
-        from services.l2_data_quality_report import L2DataQualityReport
+        _l2 = _load_l2(); L2DataQualityReport = _l2.L2DataQualityReport
 
         report = L2DataQualityReport(
             report_id='test_001',
@@ -158,7 +183,7 @@ class TestDataClasses:
 
     def test_anomaly_info_creation(self):
         """Test AnomalyInfo creation."""
-        from services.l2_data_quality_report import AnomalyInfo
+        _l2 = _load_l2(); AnomalyInfo = _l2.AnomalyInfo
 
         anomaly = AnomalyInfo(
             type='outlier_iqr',
@@ -462,10 +487,8 @@ class TestConvenienceFunction:
 
     def test_generate_l2_report_function(self, sample_df):
         """Test the generate_l2_report convenience function."""
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'airflow' / 'dags'))
 
-        from services.l2_data_quality_report import generate_l2_report
+        _l2 = _load_l2(); generate_l2_report = _l2.generate_l2_report
 
         with tempfile.TemporaryDirectory() as tmpdir:
             report = generate_l2_report(
@@ -554,10 +577,8 @@ class TestIntegration:
 
     def test_full_workflow(self, sample_df, norm_stats):
         """Test complete workflow from generation to saving."""
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'airflow' / 'dags'))
 
-        from services.l2_data_quality_report import L2DataQualityReportGenerator
+        _l2 = _load_l2(); L2DataQualityReportGenerator = _l2.L2DataQualityReportGenerator
 
         generator = L2DataQualityReportGenerator(
             zscore_threshold=2.5,

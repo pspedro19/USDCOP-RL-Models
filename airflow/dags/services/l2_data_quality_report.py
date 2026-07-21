@@ -435,6 +435,21 @@ class L2DataQualityReportGenerator:
         if correlation_matrix is None and len(numeric_cols) > 1:
             correlation_matrix = df[numeric_cols].corr()
 
+        # No rows means no variables to judge. Analyzing a zero-row column produces statistics
+        # computed from nothing, and those were being scored as CRITICAL quality plus a failed
+        # anti-leakage check -- so an empty extraction (a provider outage, an upstream failure)
+        # surfaced to the operator as "your data is critically corrupt" instead of "there is no
+        # data". Wrong diagnosis, wrong runbook. Absence of data is its own state.
+        if len(df) == 0:
+            report.total_variables = 0
+            report.overall_quality = 'NO_DATA'
+            report.critical_issues = [
+                'NO DATA: the input frame is empty. This is an ingestion/extraction problem, '
+                'not a data-quality problem -- check the upstream source before reading any '
+                'quality metric below, which would be computed from zero rows.'
+            ]
+            return report
+
         # Analyze each variable
         for col in df.columns:
             if col in exclude_columns:
