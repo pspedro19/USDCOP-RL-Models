@@ -68,34 +68,39 @@ def _iso_week(ts: pd.Timestamp) -> str:
     return f"{y}-W{int(w):02d}"
 
 
-def record(week: str | None = None) -> int:
+def record(week: str | None = None, amend: bool = False) -> int:
     """Append this week's row per live strategy. Idempotent per (strategy, week, source)."""
     STORE.parent.mkdir(parents=True, exist_ok=True)
     now = pd.Timestamp.now(tz=timezone.utc)
     wk = week or _iso_week(now)
 
-    existing = set()
+    existing, prior_rows = set(), []
     if STORE.exists():
         for line in STORE.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             r = json.loads(line)
             existing.add((r["strategy_id"], r["week"]))
+            prior_rows.append(r)
 
     from scripts.analysis.profitability_adapters import ADAPTERS
 
     written = 0
     for champ in _champions():
         sid, asset = champ["strategy_id"], champ.get("asset_id")
-        if (sid, wk) in existing:
-            print(f"  {sid:26} {wk}  ya registrado (no se reescribe)")
+        if (sid, wk) in existing and not amend:
+            print(f"  {sid:26} {wk}  ya registrado (usa --amend para corregir con fila nueva)")
             continue
 
-        # Backtest-replay return for this same week, from the adapter that produced the bundle.
+        # Backtest-replay return for this same week. Resolved by STRATEGY id first: the
+        # asset-keyed adapter can point at a replaced strategy after a champion change
+        # (btcusdt -> btc_trend_b2 while the champion is btc_hodl_b1), and divergence between
+        # two different strategies is not tracking error, it is a category mistake.
         replay_ret = None
         try:
-            if asset in ADAPTERS:
-                s = ADAPTERS[asset]()
+            key = sid if sid in ADAPTERS else asset
+            if key in ADAPTERS:
+                s = ADAPTERS[key]()
                 idx = pd.to_datetime(pd.Index(s.index))
                 mask = np.asarray([_iso_week(t) == wk for t in idx], dtype=bool)
                 if mask.any():
@@ -125,15 +130,34 @@ def record(week: str | None = None) -> int:
             except Exception as e:  # noqa: BLE001
                 print(f"  {sid:26} {prod.name} no legible: {e}")
 
-        div = (abs(paper_ret - replay_ret)
-               if paper_ret is not None and replay_ret is not None else None)
+        # UNITS (corrected 2026-07-21): the production summary publishes a YTD total, while the
+        # replay slice is ONE week. The first version subtracted them directly and recorded
+        # "divergence 2.68pp" -- a YTD-vs-week mix that would have breached the protocol's 2pp
+        # threshold with a number that means nothing. Paper WEEKLY return is only derivable by
+        # differencing consecutive YTD snapshots, so divergence exists from the second recorded
+        # week onward, and is null -- not zero, not the mix -- before that.
+        paper_week = None
+        prev_ytd = None
+        if paper_ret is not None:
+            for r_prev in reversed(prior_rows):
+                if r_prev["strategy_id"] == sid and r_prev.get("paper_ytd_pct") is not None                         and r_prev["week"] < wk:
+                    prev_ytd = r_prev["paper_ytd_pct"]
+                    break
+            if prev_ytd is not None:
+                paper_week = round(((1 + paper_ret / 100) / (1 + prev_ytd / 100) - 1) * 100, 4)
+
+        div = (abs(paper_week - replay_ret)
+               if paper_week is not None and replay_ret is not None else None)
         row = {
             "recorded_at": now.isoformat(), "week": wk,
             "strategy_id": sid, "asset_id": asset, "status": champ.get("status"),
-            "paper_return_pct": paper_ret, "paper_source": paper_src,
-            "replay_return_pct": replay_ret,
+            "paper_ytd_pct": paper_ret, "paper_week_pct": paper_week,
+            "paper_source": paper_src,
+            "replay_week_pct": replay_ret,
             "divergence_pp": round(div, 4) if div is not None else None,
             "divergence_breach": bool(div > MAX_WEEKLY_DIVERGENCE_PP) if div is not None else None,
+            "divergence_note": (None if div is not None else
+                                "needs two consecutive weekly YTD snapshots to difference"),
             "evidence_class": "research_only",
         }
         with STORE.open("a", encoding="utf-8") as fh:
@@ -141,7 +165,7 @@ def record(week: str | None = None) -> int:
         written += 1
         miss = [k for k, v in (("paper", paper_ret), ("replay", replay_ret)) if v is None]
         tag = f"  FALTA: {'+'.join(miss)}" if miss else ""
-        print(f"  {sid:26} {wk}  paper={paper_ret}  replay={replay_ret}  "
+        print(f"  {sid:26} {wk}  ytd={paper_ret}  sem={paper_week}  replay={replay_ret}  "
               f"div={row['divergence_pp']}{tag}")
 
     print(f"\n{written} fila(s) escritas -> {STORE}")
@@ -165,7 +189,8 @@ def report() -> int:
     print("=" * 78)
     for sid, g in df.groupby("strategy_id"):
         g = g.sort_values("week")
-        paper = g["paper_return_pct"].dropna().to_numpy(float) / 100.0
+        col = "paper_week_pct" if "paper_week_pct" in g else "paper_return_pct"
+        paper = g[col].dropna().to_numpy(float) / 100.0
         divs = g["divergence_pp"].dropna().to_numpy(float)
         weeks = len(g)
         print(f"\n{sid}  ({g['asset_id'].iloc[0]})  semanas registradas={weeks}")
@@ -189,9 +214,12 @@ def main() -> int:
     ap.add_argument("--record", action="store_true")
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--week", default=None, help="ISO week, e.g. 2026-W30")
+    ap.add_argument("--amend", action="store_true",
+                    help="append a corrected row for an existing (strategy, week); the ledger "
+                         "keeps both rows and the report reads the newest")
     a = ap.parse_args()
     if a.record:
-        return record(a.week)
+        return record(a.week, amend=a.amend)
     return report()
 
 

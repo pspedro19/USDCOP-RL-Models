@@ -289,3 +289,41 @@ def spx500_simple() -> Sleeve:
 
 ADAPTERS["xauusd_simple"] = gold_simple
 ADAPTERS["spx500_simple"] = spx500_simple
+
+
+def btc_hodl() -> Sleeve:
+    """btc_hodl_b1 — the OOS champion (constitution: the baseline IS the strategy).
+
+    Exists because the forward tracker resolves a replay series for each CHAMPION, and the
+    asset-keyed `btc()` adapter returns btc_trend_b2 — the strategy the champion replaced.
+    Computing divergence between hodl's paper and trend_b2's replay would compare two
+    different strategies and call the difference "tracking error".
+    """
+    from src.btc_strategy.backtest import compute_returns, extract_trades
+    from src.btc_strategy.indicators import build_daily_features
+    from src.btc_strategy.strategies import STRATEGIES, build_positions
+
+    df = pd.read_parquet(ROOT / "seeds/latest/btcusdt_daily_ohlcv.parquet")
+    df = df.sort_values("time").reset_index(drop=True)
+    df["time"] = pd.to_datetime(df["time"])
+    feat = build_daily_features(df)
+
+    _, intent_fn, _ = STRATEGIES["btc_hodl_b1"]
+    d = compute_returns(build_positions(feat, intent_fn))
+    pos = d["position"].to_numpy(float)
+
+    return Sleeve(
+        asset="btcusdt", strategy_id="btc_hodl_b1",
+        index=d["time"] if "time" in d else d.index,
+        position=pos, asset_ret=d["ret"].to_numpy(float),
+        cost=d["cost"].to_numpy(float), swap=d["swap"].to_numpy(float),
+        n_trades=len(extract_trades(d)), clock=365, clock_label="daily/365",
+        dumb_name="flat", dumb_position=np.zeros_like(pos),
+    )
+
+
+# Strategy-keyed entries: the tracker resolves by strategy_id FIRST, so a champion change
+# never silently points the replay at the strategy it replaced.
+ADAPTERS["btc_hodl_b1"] = btc_hodl
+ADAPTERS["gold_trend_simple"] = gold_simple
+ADAPTERS["spx500_regime_gated_v1"] = spx500
