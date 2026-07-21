@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def enhance_features_v2(df, base_feature_cols, project_root=None):
+def enhance_features_v2(df, base_feature_cols, project_root=None, include_xlead=False):
     """
     Smart Simple v2.0 feature enhancement.
 
@@ -139,4 +139,24 @@ def enhance_features_v2(df, base_feature_cols, project_root=None):
         if new_col in df.columns:
             v2_features.append(new_col)
 
+
+    # ── H-COP-XLEAD-01 (registrada 2026-07-06, corrida 2026-07-21) ──
+    # Lideres cross-asset t-1: MXN y CLP imprimen el driver dolar ANTES de que abra la sesion
+    # COP de las 8:00 (em-fx: pares EM liquidos ~24h vs COP 5h). shift(1) obligatorio: el
+    # cierre de hoy de MXN/CLP no es conocible al decidir la senal de hoy.
+    # DEFAULT False: cero cambio de comportamiento para v11 (CONGELADA). Solo el experimento
+    # pre-registrado lo enciende; si pasa, entra a una VERSION NUEVA, jamas a v11.
+    if include_xlead:
+        macro = pd.read_parquet(macro_path).reset_index()
+        date_col = "fecha" if "fecha" in macro.columns else macro.columns[0]
+        macro[date_col] = pd.to_datetime(macro[date_col])
+        for col, feat in (("FXRT_SPOT_USDMXN_MEX_D_USDMXN", "usdmxn_ret_1d_lag"),
+                          ("FXRT_SPOT_USDCLP_CHL_D_USDCLP", "usdclp_ret_1d_lag")):
+            if col in macro.columns:
+                lead = macro[[date_col, col]].dropna().sort_values(date_col)
+                lead[feat] = np.log(lead[col] / lead[col].shift(1)).shift(1)  # t-1 causal
+                df = pd.merge_asof(df.sort_values("date"), lead[[date_col, feat]],
+                                   left_on="date", right_on=date_col,
+                                   direction="backward").drop(columns=[date_col])
+                v2_features.append(feat)  # a la lista FINAL: base ya fue copiada arriba
     return df, v2_features

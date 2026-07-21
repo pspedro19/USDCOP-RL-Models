@@ -1,0 +1,52 @@
+{
+  "results": [
+    {
+      "hypothesis": "H-COP-XLEAD-01",
+      "da_without": 0.5294,
+      "da_with": 0.5294,
+      "delta_da": 0.0,
+      "n": 51,
+      "discordant_with_right": 1,
+      "discordant_without_right": 1,
+      "p_mcnemar": 1.0,
+      "h0_rejected": false,
+      "criterion": "OOS-2025: McNemar p<0.05 AND DA_with > DA_without",
+      "consequence": "avenue closed on this data; stated plainly",
+      "detail": {
+        "without": {
+          "n_weeks": 51,
+          "da": 0.5294
+        },
+        "with": {
+          "n_weeks": 51,
+          "da": 0.5294
+        }
+      }
+    },
+    {
+      "hypothesis": "H-DIR-FUND-01",
+      "da_without": 0.4986,
+      "da_with": 0.4767,
+      "delta_da": -0.0219,
+      "n": 365,
+      "discordant_with_right": 12,
+      "discordant_without_right": 20,
+      "p_mcnemar": 0.2153,
+      "h0_rejected": false,
+      "criterion": "OOS-2025: McNemar p<0.05 AND DA_with > DA_without",
+      "consequence": "avenue closed on this data; stated plainly",
+      "detail": {
+        "without": {
+          "n_days": 365,
+          "da": 0.4986
+        },
+        "with": {
+          "n_days": 365,
+          "da": 0.4767
+        }
+      }
+    }
+  ],
+  "evidence_class": "research_only",
+  "promotion_eligible": false
+}

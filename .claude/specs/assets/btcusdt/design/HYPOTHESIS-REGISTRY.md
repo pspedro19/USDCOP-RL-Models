@@ -9,8 +9,8 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA (ver §"Conteo para el DSR" abajo, que da la fórmula
 # pero nunca su resultado). `scripts/analysis/profitability_evidence.py` lo lee de aquí y
 # lanza excepción si falta — el DSR no puede depender de un número hardcodeado en el código.
-n_trials_total: 33
-n_trials_scenarios: [22, 33, 47]   # solo registro / registro+sensibilidades / +descartados
+n_trials_total: 34
+n_trials_scenarios: [23, 34, 48]   # solo registro / registro+sensibilidades / +descartados
 n_trials_sources:
   - "Registro principal de este archivo: 21 filas (H-xxx)"
   - "Sensibilidades pre-registradas: σ_objetivo 3 + banda 3 + pesos R 3 + re-versión LLM ≥1"
@@ -223,3 +223,40 @@ H-VOL-01 (EWMA en el sizer) y H-VOLF-01 (HAR **significativamente peor** que EWM
 [+0.013, +0.412]). **En BTC la persistencia es el estimador, dos veces confirmado.** La vía
 queda cerrada salvo dato nuevo (OI con historia, on-chain de migración 052).
 
+---
+
+## H-DIR-FUND-01 — funding como predictor DIRECCIONAL (registrada ANTES de implementar)
+
+**Registrada 2026-07-21.** `z_funding` (2.506 días) solo se probó como FRENO (S4, no
+promovida). Nunca como predictor de dirección: funding extremo positivo = crowding largo =
+probabilidad de reversión. Mecanismo distinto al freno; información que el zoo price-only no
+contiene. Es el "unblock cripto-nativo" del STRATEGIC-ASSESSMENT.
+
+- **H0**: DA_OOS(Ridge base+z_funding) ≤ DA_OOS(Ridge base) — el funding no añade dirección.
+- **Diseño pre-firmado (UNA variable)**: modelo Ridge lineal (el del track, sin barrer),
+  horizonte 5d, features base {ret_1d, ret_5d, ret_20d, rv_20} vs base+{z_funding(t−1)};
+  walk-forward expansivo refit 21d; veredicto = DA sobre OOS-2025 con **McNemar pareado**
+  (mismas semanas, mismos aciertos/fallos discordantes).
+- **Criterio**: p<0.05 del McNemar Y DA_con > DA_sin. Cualquier otro resultado ⇒ NO_RECHAZA
+  y la vía direccional-funding se cierra hasta que OI/basis acumulen historia.
+- **Si pasa**: NO se opera — entra a la secuencia de promoción completa (manifest, PIT, forward,
+  DSR/PBO) como candidata; la dirección sigue diagnóstica hasta superar todo (regla Codex).
+
+**Coste en trials: +1 (33 → 34).**
+
+
+### Resultado H-DIR-FUND-01 (2026-07-21) — **NO_RECHAZA H0**
+
+| | DA OOS-2025 (diaria, h=5d) |
+|---|---|
+| Ridge base {ret_1d, ret_5d, ret_20d, rv_20} | **0.4986** |
+| Ridge base + z_funding(t−1) | 0.4767 |
+
+Δ = **−2.19pp** (el funding EMPEORA la dirección), McNemar p = 0.2153.
+
+**Veredicto**: el funding no contiene dirección a 5 días — coherente con S4 (como freno
+tampoco aportó retorno). Con esto, **las dos vías de funding están cerradas** (freno y
+dirección). La vía cripto-nativa direccional queda a la espera de datos con historia que hoy
+no existe: OI (44 días acumulando), basis con más profundidad, on-chain (migración 052).
+Trial pagado (N=34). Cierre honesto: dos experimentos, dos noes, cero operaciones basadas
+en funding.

@@ -12,8 +12,8 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 57
-n_trials_scenarios: [45, 57, 71]   # conservador / central / amplio — se publican los tres
+n_trials_total: 58
+n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
   - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)"
@@ -211,3 +211,29 @@ persistencia ES el estimador y esta vía se cierra (resultado aceptable).
 QLIKE OOS-2025: HAR 0.3104 vs EWMA 0.3783 (mejor en media), pero IC95 del diferencial
 [−0.196, +0.014] **incluye cero**. La mejora no es distinguible de ruido con un año de datos.
 La persistencia sigue siendo el estimador. Sin test económico (criterio pre-firmado).
+
+### Resultado H-COP-XLEAD-01 (2026-07-21) — **NO_RECHAZA H0**
+
+Diseño pre-firmado: Ridge+BR del track, walk-forward semanal expansivo, OOS-2025 (51 lunes),
+UNA variable = `include_xlead` (features `usdmxn_ret_1d_lag`, `usdclp_ret_1d_lag`, t−1 causal,
+historia 2020→ del MACRO_DAILY_CLEAN).
+
+| | DA OOS-2025 |
+|---|---|
+| sin líderes | 0.5294 |
+| con líderes MXN+CLP | 0.5294 |
+
+Δ = **0.0000** — cero semanas discordantes de 51 (McNemar p=1.0): añadir los líderes no
+cambió NI UN signo semanal. Los pares EM líquidos no imprimen información a horizonte 5d que
+el set de 25 features no tenga ya.
+
+**Hallazgo colateral que importa más que el veredicto**: `MACRO_DAILY_CLEAN` tiene las series
+MXN y CLP **corruptas ×10.000 desde 2026-01-27** (cotización sin separador decimal: MXN 17.36
+→ 171.335). El veredicto OOS-2025 NO está contaminado (ventanas de train < 2026), verificado:
+std pre-2026 = 0.008 (sano). Pero cualquier consumidor 2026 de esas columnas (página de
+análisis, features futuras) está leyendo basura. Guard de regresión añadido
+(`test_macro_clean_fx_scale.py`); la corrección de la limpieza es tarea del pipeline macro.
+
+Trial pagado (N=58). Con esto y EXP-DIR-001: la dirección COP queda cerrada también con
+líderes cross-asset. Solo quedan vintages PIT (Codex) como fuente de información nueva.
+

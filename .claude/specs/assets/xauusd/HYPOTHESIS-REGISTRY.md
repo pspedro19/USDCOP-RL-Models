@@ -176,3 +176,20 @@ un rango donde los clips dominan. La vía "vol forecasting → sizing" queda **c
 con la mecánica actual**; re-abrirla exigiría cambiar la mecánica del sizer (otra variable,
 otro experimento, otro trial). La persistencia sigue siendo el estimador operativo.
 
+
+---
+
+## Abstención deliberada 2026-07-21 (F1c del plan robusto) — 0 trials
+
+**Decisión**: NO correr ninguna hipótesis direccional nueva sobre Oro, y que quede escrito.
+
+Razones: (1) 77 trials ya cargados — cada mirada nueva deflacta todo lo demás; (2) Oro tiene
+la mejor OOS del libro (Calmar 10.76) con reglas que NO usan dirección predicha; (3) el costo
+marginal de un trial supera el beneficio esperado de una DA que su estrategia no consume.
+
+**H-VOL-PARK-01 (registrada como PENDIENTE, sin correr)**: vol Parkinson H-L en lugar de
+close-to-close para el sizer — la skill la respalda (`historical-risk:22`, proceso ~continuo).
+**Criterio de activación**: solo si la mecánica del sizer cambia (floor/cap), porque
+H-VOLE-01 ya demostró que mejorar el estimador de vol NO mejora este sizer — los clips
+(floor 0.06 / cap 1.5) dominan donde vive la precisión extra. Correrla hoy repetiría un
+experimento cuyo resultado ya conocemos por otra vía. Registrar sin correr no cuesta trial.
