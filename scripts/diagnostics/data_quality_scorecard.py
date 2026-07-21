@@ -195,12 +195,11 @@ def main() -> int:
                    "macro_impusd", "macro_cci", "macro_ici"]
     rates = []
     for c in series_cols:
-        cur.execute(f"""SELECT count({c}),
-            (SELECT count(*) FROM market_macro_monthly_wide
-             WHERE month_start BETWEEN x.f AND x.l)
-            FROM (SELECT min(month_start) f, max(month_start) l
-                  FROM market_macro_monthly_wide WHERE {c} IS NOT NULL) x,
-                 market_macro_monthly_wide LIMIT 1""")
+        cur.execute(f"""WITH x AS (SELECT min(month_start) f, max(month_start) l
+                                   FROM market_macro_monthly_wide WHERE {c} IS NOT NULL)
+            SELECT (SELECT count({c}) FROM market_macro_monthly_wide),
+                   (SELECT count(*) FROM market_macro_monthly_wide, x
+                    WHERE month_start BETWEEN x.f AND x.l)""")
         got, span = cur.fetchone()
         if span:
             rates.append(got / span)
