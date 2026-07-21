@@ -139,6 +139,11 @@ JOIN dim_asset da ON da.symbol = d.symbol;
 --    delivers native 1h, it lands in its own table and WINS in the contract
 --    view; these aggregates are the declared fallback, never silently mixed.
 -- ---------------------------------------------------------------------------
+-- Expression index for the wide views' joins on the COMPUTED session_date_local:
+-- without it every daily-wide LEFT JOIN degenerates into a quadratic seq scan.
+CREATE INDEX IF NOT EXISTS ix_asset_daily_utc_date
+    ON asset_daily_ohlcv (((time AT TIME ZONE 'UTC')::date), symbol);
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS market_ohlcv_1h_agg AS
 SELECT date_trunc('hour', m.time) AS bar_start_utc, m.symbol,
        (array_agg(m.open  ORDER BY m.time ASC ))[1] AS open,
