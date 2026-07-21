@@ -28,6 +28,7 @@ Contract: CTR-L0-SEED-BACKUP-001
 
 from datetime import datetime, timedelta
 from airflow import DAG
+from utils.run_status import honest_leaf
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 import pandas as pd
@@ -546,7 +547,7 @@ with DAG(
 
     t_features = PythonOperator(
         task_id='export_feature_data_backup',
-        python_callable=export_feature_data_backup,
+        python_callable=honest_leaf(export_feature_data_backup),
         # Best-effort: derived-data backup never blocks the critical OHLCV/macro path.
         trigger_rule=TriggerRule.ALL_DONE,
     )

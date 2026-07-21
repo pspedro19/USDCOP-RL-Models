@@ -80,6 +80,7 @@ def _rows_to_enriched(rows):
             language=row.get("language", "es"),
             country_focus=row.get("country_focus", "CO"),
         )
+        raw.id = row.get("id")
         ea = EnrichedArticle(
             raw=raw,
             category=row.get("category"),
@@ -212,7 +213,7 @@ def _cross_reference(**context):
 
     for cluster in clusters:
         # cluster.articles contains indices, not DB IDs — pass empty for now
-        db.insert_cross_reference(cluster, article_ids=[])
+        db.insert_cross_reference(cluster, article_ids=cluster.articles)
 
     logger.info(f"Found {len(clusters)} cross-reference clusters from {len(rows)} articles")
     return len(clusters)

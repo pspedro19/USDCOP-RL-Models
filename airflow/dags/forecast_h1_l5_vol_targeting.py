@@ -53,6 +53,7 @@ import math
 import sys
 
 from airflow import DAG
+from utils.run_status import honest_leaf
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.utils.trigger_rule import TriggerRule
@@ -583,7 +584,7 @@ with DAG(
 
     t_summary = PythonOperator(
         task_id='signal_summary',
-        python_callable=signal_summary,
+        python_callable=honest_leaf(signal_summary),
         provide_context=True,
         trigger_rule=TriggerRule.ALL_DONE,
     )

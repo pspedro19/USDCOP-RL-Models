@@ -35,6 +35,7 @@ import math
 import sys
 
 from airflow import DAG
+from utils.run_status import honest_leaf
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -640,7 +641,7 @@ with DAG(
 
     t_summary = PythonOperator(
         task_id='daily_summary',
-        python_callable=daily_summary,
+        python_callable=honest_leaf(daily_summary),
         provide_context=True,
         trigger_rule=TriggerRule.ALL_DONE,
     )

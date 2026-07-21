@@ -61,3 +61,30 @@ def fail_if_upstream_failed(context, *, task_name: str | None = None) -> None:
     )
     logger.error(msg)
     raise RuntimeError(msg)
+
+
+def honest_leaf(fn=None):
+    """Wrap a leaf callable so its success cannot mask upstream failures.
+
+    The one-line fix for the pattern found across ELEVEN DAGs on 2026-07-21 (after the widened
+    regex caught the ``TriggerRule.ALL_DONE`` constant spelling): a summary/notify leaf with
+    all_done paints the whole run green over a dead critical path. Wrapping at the operator
+    level (``python_callable=honest_leaf(summary_fn)``) keeps each summary's own body intact —
+    the report still goes out first, then the run state is restored to honest.
+
+    ``honest_leaf()`` with no argument returns a callable for marker leaves (EmptyOperator
+    replacements) that have nothing to report.
+    """
+    import functools
+
+    if fn is None:
+        def _marker(**context):
+            fail_if_upstream_failed(context)
+        return _marker
+
+    @functools.wraps(fn)
+    def _wrapped(**context):
+        result = fn(**context)
+        fail_if_upstream_failed(context)
+        return result
+    return _wrapped

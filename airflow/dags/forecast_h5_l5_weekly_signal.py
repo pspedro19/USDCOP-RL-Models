@@ -34,6 +34,7 @@ from contracts.dag_registry import (
     get_dag_tags,
 )
 from utils.dag_common import get_db_connection
+from utils.run_status import fail_if_upstream_failed
 
 DAG_ID = FORECAST_H5_L5_WEEKLY_SIGNAL
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -334,7 +335,7 @@ def persist_signal(**context) -> Dict[str, Any]:
 # =============================================================================
 
 def notify_signal(**context) -> None:
-    """Log the final signal for downstream DAGs."""
+    """Log the final signal for downstream DAGs, then keep the run state honest."""
     ti = context['ti']
     signal_data = ti.xcom_pull(key='signal', task_ids='generate_signal')
 
@@ -349,6 +350,13 @@ def notify_signal(**context) -> None:
             f"sizing={signal_data.get('sizing_multiplier', '?')}{skip_str}"
         )
 
+    # Run-state honesty (CTR-DQ-OPS-001). Found live on scheduled__2026-07-13T13:15:
+    # generate_signal FAILED, persist was upstream_failed, and this all_done leaf still
+    # painted the run green -- the same masking fixed in the l0 DAGs, missed here because the
+    # regression test grepped for the string 'all_done' and this file uses the
+    # TriggerRule.ALL_DONE constant. Skipped upstreams (holiday Mondays) are fine; FAILED
+    # upstreams are not.
+    fail_if_upstream_failed(context)
 
 # =============================================================================
 # TASK 5: PUBLISH SIGNAL TO KAFKA (MLOps course project — gRPC+Kafka compliance)
@@ -589,10 +597,14 @@ with DAG(
     # MLOps course project (gRPC+Kafka compliance): optional, always-runs-after
     # task that publishes the generated signal to the ``signals.h5`` Kafka topic.
     # Never blocks or fails the DAG regardless of upstream status or Kafka health.
+    # NONE_FAILED, not ALL_DONE (fixed 2026-07-21): with ALL_DONE this published to Kafka
+    # even when generate_signal had FAILED and persist never ran -- a consumer would receive
+    # a "signal" that does not exist in the DB. Holiday skips still propagate as skip;
+    # Kafka's own availability is handled inside the callable and never fails the DAG.
     t_kafka = PythonOperator(
         task_id='publish_signal_to_kafka',
         python_callable=publish_signal_to_kafka,
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.NONE_FAILED,
         retries=0,
     )
 

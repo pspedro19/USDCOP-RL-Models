@@ -54,6 +54,7 @@ import os
 import sys
 
 from airflow import DAG
+from utils.run_status import honest_leaf
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
@@ -575,7 +576,7 @@ with dag:
     # Task 5: Summary
     summary_task = PythonOperator(
         task_id='training_summary',
-        python_callable=training_summary,
+        python_callable=honest_leaf(training_summary),
         provide_context=True,
         trigger_rule=TriggerRule.ALL_DONE,
     )
