@@ -384,3 +384,40 @@ hipergeométrica de forma independiente (coincide al 4º decimal). Ajustes acept
    prospectivo tentativo de v12: 2026-07-27, tras resolver ambos.
 
 N sigue en 59; 2025 siguió tratado como contaminado; v11 FROZEN.
+
+---
+
+## FASES A+B DEL PLAN CONSOLIDADO — ejecutadas 2026-07-21 (0 trials nuevos; N=59)
+
+**Fase A (ingeniería)**: A1 migración 064 (`strategy_id` en signals/executions/paper,
+unicidad `(fecha, strategy_id)`, colisión v11/v12 probada resuelta) · A2 artefactos raíz
+solo-campeona (`_is_champion`, manifest re-freeze v3 hash c2ddb5eb54d88400) · A3 test PIT
+fila-a-fila de features macro (`test_cop_features_pit.py`, T-1 verificado, 2/2 verde) ·
+A4 ledger ya cubría COP semanal con supresión N<16.
+
+**Fase B (matemáticas, artefactos en `.claude/evidence/cop_{plan_b,v12_design}/2026-07-21/`)**:
+
+- **B1 — Motor real pareado (misma celda 1.5 pagada; 25 features, camino exacto de main)**:
+
+| Año | v11 (cap 2.0) | v12 (cap 1.5) | Delta |
+|---|---|---|---|
+| 2022 | −3.78% / DD 5.88 | −3.74% / DD 5.87 | ≈0 (cap no muerde) |
+| 2023 | −1.14% / DD 7.68 | **+1.91% / DD 4.96** | v12 mejor en TODO |
+| 2024 | +7.68% / DD 6.88 | **+14.23% / DD 3.50** | v12 casi 2× retorno, ½ DD |
+| 2025* | +13.05% / DD 7.74 | +9.22% / DD 5.19 | cede retorno, Calmar ≈ igual |
+
+  *2025 = re-medición de la misma celda con mejor instrumento, no trial nuevo. Compuesto
+  2022-2024 (años que la elección del cap JAMÁS miró): v11 +2.4% vs **v12 +12.1%**.
+  Mecanismo (el que Codex predijo en R2): menos leverage → el effective-HS salta menos →
+  más trades sobreviven hasta el TP. El motor confirma que el replay SUBESTIMABA a v12.
+- **B2 — Potencia del forward (bootstrap PAREADO por trade)**: P(Calmar v12>v11) = 97.6%
+  a 26 semanas, 99.8% a 52. (La v1 del cálculo escalaba uniforme y daba 50% — corregida.)
+- **B3 — Gap de lunes (M5 reparado, 335 lunes)**: |gap| p50 16.7 / p90 73 / p99 157 bps;
+  peor −163/+247. A lev 2.0 el p99 ≈ 3.1% de equity — el riesgo que el HS no limita;
+  a cap 1.5 ≈ 2.3%.
+- **B4 — Sharpe honesto (Lo-Mertens, skew −1.29)**: 2025 = 1.48, IC95 [−1.27, +4.24]
+  — **INCLUYE CERO**. Ningún titular de Sharpe COP debe publicarse sin este IC.
+
+**Spec v12 respaldado por diseño**: la evidencia de v12 ya no es solo la celda 2025
+contaminada — es el delta pareado en 3 años de diseño que la elección del cap nunca vio.
+Arranque paper 2026-07-27 (A1/A2 listos). Juez: forward.

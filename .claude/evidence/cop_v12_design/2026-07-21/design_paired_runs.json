@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "design_years": [
+      2022,
+      2023,
+      2024
+    ],
+    "y2025": "re-medicion de la MISMA celda pagada (1.5) con motor real + 25 features",
+    "correcciones": [
+      "override via cfg['vt_max'] (la clave aplanada que el motor lee)",
+      "features = load_data + enhance_features_v2 (camino exacto de main)"
+    ]
+  },
+  "results": {
+    "v11_cap2.0": {
+      "2022": {
+        "ret": -3.78,
+        "dd": 5.88,
+        "sharpe": -1.874,
+        "n": 14,
+        "lev_max": 2.0,
+        "lev_mean": 0.8
+      },
+      "2023": {
+        "ret": -1.14,
+        "dd": 7.68,
+        "sharpe": -0.206,
+        "n": 20,
+        "lev_max": 2.0,
+        "lev_mean": 1.12
+      },
+      "2024": {
+        "ret": 7.68,
+        "dd": 6.88,
+        "sharpe": 1.647,
+        "n": 24,
+        "lev_max": 2.0,
+        "lev_mean": 1.22
+      },
+      "2025": {
+        "ret": 13.05,
+        "dd": 7.74,
+        "sharpe": 1.506,
+        "n": 34,
+        "lev_max": 2.0,
+        "lev_mean": 1.61
+      }
+    },
+    "v12_cap1.5": {
+      "2022": {
+        "ret": -3.74,
+        "dd": 5.87,
+        "sharpe": -1.858,
+        "n": 14,
+        "lev_max": 1.5,
+        "lev_mean": 0.75
+      },
+      "2023": {
+        "ret": 1.91,
+        "dd": 4.96,
+        "sharpe": 0.557,
+        "n": 20,
+        "lev_max": 1.5,
+        "lev_mean": 1.04
+      },
+      "2024": {
+        "ret": 14.23,
+        "dd": 3.5,
+        "sharpe": 3.504,
+        "n": 24,
+        "lev_max": 1.5,
+        "lev_mean": 1.08
+      },
+      "2025": {
+        "ret": 9.22,
+        "dd": 5.19,
+        "sharpe": 1.234,
+        "n": 34,
+        "lev_max": 1.5,
+        "lev_mean": 1.25
+      }
+    }
+  }
+}

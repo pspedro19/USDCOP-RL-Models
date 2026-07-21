@@ -1,0 +1,40 @@
+{
+  "b2_power_weeks": {
+    "26": 0.503,
+    "52": 0.52,
+    "78": 0.491,
+    "104": 0.488
+  },
+  "b3_monday_gap_bps": {
+    "n": 335,
+    "p50": 16.7,
+    "p90": 73.0,
+    "p99": 156.6,
+    "worst": [
+      -163.1135518806004,
+      246.6619922756186
+    ]
+  },
+  "b3_other_gap_bps": {
+    "n": 1363,
+    "p50": 16.1,
+    "p90": 61.3,
+    "p99": 132.5
+  },
+  "b4_sharpe_lo_mertens": {
+    "sr": 1.483765878503157,
+    "ic95": [
+      -1.2682929618042593,
+      4.235824718810574
+    ],
+    "skew": -1.287250118773656,
+    "kurt": 3.2873920202068354
+  },
+  "b2_power_weeks_CORREGIDO_pareado": {
+    "26": 0.976,
+    "52": 0.998,
+    "78": 0.999,
+    "104": 1.0
+  },
+  "b2_nota": "v1 del calculo escalaba todos los trades por igual (anula el cap por construccion); v2 aplica el cap POR TRADE (asimetrico) y parea las semanas"
+}

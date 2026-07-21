@@ -33,9 +33,14 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: d4c8af5fc7db7fb5
+code_hash_sha256_16: c2ddb5eb54d88400
 manifest_frozen_at: '2026-07-21'
-manifest_version: 2
+manifest_version: 3
+refreeze_note_v3: >-
+  Re-freeze v3 (2026-07-21): (1) MIN_TRADES_FOR_STATS promovida a modulo (NameError
+  que abortaba el export — bugfix, cero cambio de señal); (2) gating A2 de artefactos
+  raiz por campeona (gobernanza de publicacion para v12 paralelo, Codex R5b — la
+  generacion de señal de v11 es bit-identica). Trials sin cambio (N=59).
 refreeze_note: >-
   Re-freeze consciente 2026-07-21 (v2): (1) enhance_v2.py gano include_xlead
   (default False -> señal v11 bit-identica; el experimento H-COP-XLEAD-01 ya

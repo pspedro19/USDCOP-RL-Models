@@ -728,6 +728,22 @@ def _compute_result_metrics(trades, equity, df, year):
 # Export functions
 # ---------------------------------------------------------------------------
 
+
+def _is_champion(cfg) -> bool:
+    """Root dashboard artifacts (summary*.json, approval_state.json, PNGs) belong to the
+    CHAMPION only (plan COP A2 / Codex R5b): a candidate (e.g. v12) publishes exclusively
+    to its per-strategy registry bundle and never overwrites v11's root files."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "normalize_champions", PROJECT_ROOT / "scripts/pipeline/normalize_champions.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.CHAMPION_BY_ASSET.get("usdcop") == cfg["strategy_id"]
+    except Exception as e:  # fail-open to champion for v11 continuity, but say so
+        print(f"    [champion-check] {e} -- assuming champion")
+        return True
+
 def export_summary(result, year, cfg):
     """Export summary.json in dashboard format."""
     m = result["metrics"]
@@ -1572,9 +1588,13 @@ def main():
         # Export backtest files
         print(f"\n    Exporting backtest files...")
         summary_2025 = export_summary(result_2025, 2025, cfg)
-        with open(DASHBOARD_DIR / "summary_2025.json", "w") as f:
-            safe_json_dump(summary_2025, f)
-        print(f"    -> summary_2025.json (OOS walk-forward)")
+        is_champ = _is_champion(cfg)
+        if is_champ:
+            with open(DASHBOARD_DIR / "summary_2025.json", "w") as f:
+                safe_json_dump(summary_2025, f)
+            print(f"    -> summary_2025.json (OOS walk-forward)")
+        else:
+            print(f"    [A2] {cfg['strategy_id']} NO es campeona: root summary_2025.json intacto (solo bundle)")
 
         trades_2025 = export_trades(result_2025, 2025, cfg)
         with open(TRADES_DIR / f"{cfg['strategy_id']}_2025.json", "w") as f:
@@ -1582,8 +1602,9 @@ def main():
         print(f"    -> trades/{cfg['strategy_id']}_2025.json ({m25.get('n_trades', 0)} trades)")
 
         approval = export_approval_state(result_2025, cfg)
-        with open(DASHBOARD_DIR / "approval_state.json", "w") as f:
-            safe_json_dump(approval, f)
+        if is_champ:
+            with open(DASHBOARD_DIR / "approval_state.json", "w") as f:
+                safe_json_dump(approval, f)
         print(f"    -> approval_state.json (recommendation: {approval.get('backtest_recommendation', 'N/A')})")
 
         # ADDITIVE: versioned immutable bundle + registry refresh (never touches legacy files above)
@@ -1597,7 +1618,7 @@ def main():
             status="experimental",
         )
 
-        if not args.no_png:
+        if not args.no_png and is_champ:
             generate_pngs(result_2025, df, 2025, DASHBOARD_DIR, version=cfg["version"])
 
         # MLflow experiment tracking (optional — silent if MLflow unavailable)
@@ -1649,9 +1670,13 @@ def main():
         # Export production files
         print(f"\n    Exporting production files...")
         summary_2026 = export_summary(result_2026, 2026, cfg)
-        with open(DASHBOARD_DIR / "summary.json", "w") as f:
-            safe_json_dump(summary_2026, f)
-        print(f"    -> summary.json (production 2026)")
+        is_champ_prod = _is_champion(cfg)
+        if is_champ_prod:
+            with open(DASHBOARD_DIR / "summary.json", "w") as f:
+                safe_json_dump(summary_2026, f)
+            print(f"    -> summary.json (production 2026)")
+        else:
+            print(f"    [A2] {cfg['strategy_id']} NO es campeona: root summary.json intacto (solo bundle)")
 
         trades_2026 = export_trades(result_2026, 2026, cfg)
         with open(TRADES_DIR / f"{cfg['strategy_id']}.json", "w") as f:
@@ -1662,7 +1687,7 @@ def main():
         publish_versioned_bundle(cfg, summary_2026, trades_2026, 2026, status="production",
                                  phase="production")  # live year is MUTABLE (audit A4-01)
 
-        if not args.no_png:
+        if not args.no_png and is_champ_prod:
             generate_pngs(result_2026, df, 2026, DASHBOARD_DIR, version=cfg["version"])
 
         # DB seeding (--seed-db flag, typically set by deploy API)
