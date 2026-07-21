@@ -589,3 +589,32 @@ actual. Contabilidad por celda (precedente H-CARRY-02 "+1 (+6 sensibilidad)").
 
 GBM/no-lineal y multi-task: muertos a este N (DIR-001 H3 α=−0.096; pooling BLOCKED_DATA).
 N=59 sin cambio — el panel entero fue análisis de diseño, cero variantes miradas.
+
+---
+
+## H-RISK-FAM-01 (PRE-REGISTRO 2026-07-21 — familia COMPLETA, 0 miradas hasta hoy)
+
+**La única familia con prior estadístico a favor según el panel 4/4** (vol/colas se
+predicen con IC 0.3-0.5 → potencia ~100% al N actual; mecanismo documentado: 5/5 HS a
+lev-max; la persistencia es ciega al calendario por construcción).
+
+**Familia CERRADA (estas 5 y ninguna más; añadir después = nueva familia):**
+| Celda | Feature (forma exacta, todo t−1) | Prior económico |
+|---|---|---|
+| F1 | `event_week` = dummy {decisión BanRep, IPC DANE, FOMC} en la semana operada (calendarios ex-ante del SSOT `schedule.publication`) | eventos programados ⇒ P(gap)↑ sin decir signo |
+| F2 | `vol_of_vol_20` = std20 de Δvol20 diaria | fragilidad que el nivel de vol no ve ("la calma que precede al gap") |
+| F3 | `gap_tail_cond` = P̂(|gap lunes|>p90) condicionada a nivel VIX/EMBI (kernel simple, ventana 252) | B3 midió la incondicional (p99=157bps); condicionar es el paso |
+| F4 | `embi_accel` = Δ5d del EMBI z-scoreado 252 | precio del riesgo soberano acelerando ⇒ cola |
+| F5 | `resint_z` = reservas internacionales z-12m (mensual, lag publicación real) | riesgo de intervención BanRep |
+
+**Protocolo (sellado):** target = {gap_week: |gap lunes|>p90} y {q90 del rango semanal}.
+Screening SOLO ≤2024-12-31, purged K-fold K=5 (purga 5bd + embargo = lookback máx de la
+celda). Métrica = Brier (gap_week) y pinball q90 (rango) **vs el baseline de persistencia
+EWMA** — el listón de H-VOLF-01. Se publica la tabla ENTERA (las 5 celdas, ganen o
+pierdan). Contabilidad: **+5 trials al abrir resultados** (por celda, precedente
+H-CARRY-02); hoy N sigue en 59 — registrar no cuesta.
+**Consecuencia pre-firmada**: si ≥1 celda bate a la persistencia en su scoring con IC95
+block-bootstrap (b=4) que excluye 0 → UN trial económico adicional: sizing modulado
+P(gap) (candidata v13, techo probabilístico), juez = forward desde su freeze. Si ninguna
+gana → familia CERRADA por escrito, el cap bruto de v12 queda como la última palabra en
+sizing. Nada de esto toca v11 ni v12.
