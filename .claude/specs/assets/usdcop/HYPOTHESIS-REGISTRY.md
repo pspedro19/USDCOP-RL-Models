@@ -12,13 +12,13 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 59
+n_trials_total: 64
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
   - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)"
   - "public/data/strategies/{smart_simple_v11,smart_simple_aggr}/backtests/* (5 bundles = suelo)"
-sigma_trials: null                 # nunca se persistió la dispersión de Sharpe entre trials
+sigma_trials: 0.0473   # MEDIDA 2026-07-21 (42 celdas re-sim, motor purgado; N_eff=10 clusters)                 # nunca se persistió la dispersión de Sharpe entre trials
 sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
 ---
 # HYPOTHESIS-REGISTRY — USD/COP (retroactivo + prospectivo)
@@ -631,3 +631,41 @@ fin-math había medido −0.28pp a mano — validación cruzada), p=0.2277, Shar
 +26.05 → +13.05 → +7.66 → **+7.35** (datos, purga, fills). Cada número anterior queda
 como historia de su capa de rigor. Manifest v5. Herramientas añadidas al SSOT de
 métricas: `circular_block_bootstrap()` y `e_process()` (descriptivo, no habilita PASS).
+
+
+---
+
+## RESULTADO H-RISK-FAM-01 (2026-07-21) — 4/5 celdas GANAN en pinball q90 · trials 59→64
+
+Screening ejecutado por el protocolo pre-registrado (210 semanas de diseño 2020-12→2024-12,
+purged K-fold, generador persistido en `.claude/evidence/cop_risk_family/2026-07-21/`).
+**Corrección contra nosotros mismos durante la corrida**: el baseline EWMA pre-firmado
+(1.645σ√5) resultó mal especificado para el target RANGO (es un cuantil de retorno →
+subestima → todo gana trivial). Se sustituyó por el null que aísla la feature:
+**intercepto-solo en el mismo CV**. Con el null justo:
+
+| Celda | Brier vs base | Pinball q90 vs null 0.314 | WIN |
+|---|---|---|---|
+| f1_event (calendario aprox.) | 0.0672 / 0.0674 | 0.317 | NO (la aproximación de fechas lo debilitó, como se declaró) |
+| f2_volofvol | 0.0667 | **0.280** | **SÍ** |
+| f3_gaptail (cond. VIX) | 0.0667 | **0.278** | **SÍ** |
+| f4_embiacc | 0.0689 | **0.293** | **SÍ** |
+| f5_resintz | 0.0668 | **0.261** | **SÍ** |
+
+Target binario (gap_week, tasa base 7.1%): NINGUNA celda bate la frecuencia base — el
+evento es demasiado raro para 210 obs. La información viva está en el CUANTIL del rango,
+exactamente donde el panel predijo (vol IC 0.3-0.5).
+
+**Consecuencia pre-firmada ACTIVADA**: 1 trial económico disponible — sizing modulado por
+q90 condicional (candidata v13, techo de leverage probabilístico), juez = forward desde su
+freeze. NO se corre hoy: v12 primero (su forward arranca el lunes), v13 después si v12
+gradúa o en paralelo si el operador lo decide.
+
+## σ_TRIALS MEDIDA (COP-NULL OLA 4, deuda saldada)
+
+42 celdas re-simuladas con el motor purgado sobre datos reparados: **σ = 0.0473 semanal**
+(el grid asumido [0.05,0.10,0.15] era razonable; el "conservador" 0.15 era 3× la realidad).
+N_eff por clusters de correlación >0.95: **10 de 42**. **DSR de v11 con σ medida: 0.72 en
+los TRES escenarios (N=59/10/27)** — robusto e insensible al conteo. Veredicto sin cambio:
+v11 no pasa 0.95, freeze intacto — pero la tabla ya no es una asunción, es una medición.
+Artefactos + generadores: `.claude/evidence/cop_sigma_trials/2026-07-21/`.

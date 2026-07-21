@@ -226,3 +226,13 @@ features:
     - oil_close_lag1
     - vix_close_lag1
     - embi_close_lag1
+
+# ============================================================================
+# CARRY BIDIRECCIONAL (Puerta 1.4c, panel 2026-07-21) — APAGADO hasta medir
+# ============================================================================
+# El motor devenga carry por noche de posicion: corto USDCOP COBRA, largo PAGA.
+# swap_annual_pp = tasa NETA MEDIDA del broker (H-COP-CARRY-00, >=20 accruals).
+# null = apagado (comportamiento actual). PROHIBIDO poner aqui el teorico
+# IBR-FFR: la banda honesta del panel incluye signo negativo; solo statements.
+carry:
+  swap_annual_pp: null

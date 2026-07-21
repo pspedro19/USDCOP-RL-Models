@@ -33,9 +33,14 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: 75b6bbd9bafa0527
+code_hash_sha256_16: a308ee93ac890b67
 manifest_frozen_at: '2026-07-21'
-manifest_version: 5
+manifest_version: 6
+refreeze_note_v6: >-
+  Re-freeze v6 (2026-07-21, goal 'implementarla apropiadamente'): plumbing de carry
+  bidireccional en compute_pnl (APAGADO por default — swap_annual_pp: null en yaml;
+  solo se enciende con la tasa NETA MEDIDA de H-COP-CARRY-00). Señal y numeros:
+  bit-identicos con default.
 refreeze_note_v5: >-
   Re-freeze v5 (2026-07-21, Puerta 1.4 del plan post-panel): fills de hard-stop
   OPEN-AWARE (stop-market real: en gap-through llena al open, no al nivel que no

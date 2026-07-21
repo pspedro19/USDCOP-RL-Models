@@ -1,0 +1,103 @@
+{
+  "family": "H-RISK-FAM-01",
+  "cells": {
+    "f1_event": {
+      "n": 210,
+      "brier_model": 0.0671645025621229,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0021932788666385455,
+        0.002480886820159338
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.3167587280995113,
+      "pinball_base_ewma": 0.3793030268161508,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        -0.00916750192671071,
+        0.004827264252218086
+      ],
+      "WIN_pinball": false
+    },
+    "f2_volofvol": {
+      "n": 210,
+      "brier_model": 0.06669930784046874,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0016647176669224671,
+        0.0028356071796074894
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.2803997736130514,
+      "pinball_base_ewma": 0.3793030268161508,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        0.004070803404196588,
+        0.07011654890210639
+      ],
+      "WIN_pinball": true
+    },
+    "f3_gaptail": {
+      "n": 210,
+      "brier_model": 0.06670369920804686,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0016899244468634423,
+        0.002835309908129637
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.27776122323291313,
+      "pinball_base_ewma": 0.3793030268161508,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        0.007008147458560003,
+        0.06821580004647736
+      ],
+      "WIN_pinball": true
+    },
+    "f4_embiacc": {
+      "n": 210,
+      "brier_model": 0.06892618180872655,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.005073770570484383,
+        0.0015380188738181285
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.29250179224197986,
+      "pinball_base_ewma": 0.3793030268161508,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        0.0037514771360080052,
+        0.04314769047708779
+      ],
+      "WIN_pinball": true
+    },
+    "f5_resintz": {
+      "n": 210,
+      "brier_model": 0.06676610211194733,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0019300063403435595,
+        0.0030872130409722175
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.26123958619266924,
+      "pinball_base_ewma": 0.3793030268161508,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        0.008929196688973885,
+        0.10026194151767957
+      ],
+      "WIN_pinball": true
+    }
+  },
+  "wins": [
+    "f2_volofvol",
+    "f3_gaptail",
+    "f4_embiacc",
+    "f5_resintz"
+  ],
+  "trials_spent": 5,
+  "consequence": "1 trial economico adicional (sizing P(gap), v13, juez forward)"
+}

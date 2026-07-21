@@ -196,15 +196,26 @@ def simulate_week(direction, entry, bars, hard_stop_pct, take_profit_pct):
     return bars[-1]["close"], "week_end", len(bars) - 1
 
 
-def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, slippage):
-    """Compute PnL with costs — identical to backtest_smart_simple_v1.py."""
+def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, slippage,
+                nights_held: int = 0, swap_annual_pp=None):
+    """Compute PnL with costs — identical to backtest_smart_simple_v1.py.
+
+    Carry bidireccional (Puerta 1.4c): si swap_annual_pp (tasa NETA MEDIDA, no teorica)
+    esta configurada, el corto USDCOP la COBRA y el largo la PAGA por noche de posicion
+    sobre el notional (lev x equity). Apagado (None) = comportamiento historico. El
+    forward 2026 (10L/1S) esta inflado ~0.24pp por esta omision mientras siga apagado.
+    """
     raw_pnl = direction * (exit_price - entry) / entry * leverage
     entry_cost = maker_fee * leverage       # Limit order (0% on MEXC)
     if exit_reason == "week_end":
         exit_cost = slippage * leverage     # Market order, slippage only
     else:
         exit_cost = maker_fee * leverage    # Limit order (TP/HS)
-    return raw_pnl - entry_cost - exit_cost
+    carry = 0.0
+    if swap_annual_pp is not None and nights_held > 0:
+        # corto = -1*direction... direction=-1 (short) cobra: signo = -direction
+        carry = (-direction) * (swap_annual_pp / 100.0) * (nights_held / 365.0) * leverage
+    return raw_pnl - entry_cost - exit_cost + carry
 
 
 # ---------------------------------------------------------------------------
