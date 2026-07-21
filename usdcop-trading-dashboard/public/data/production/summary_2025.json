@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-20T16:24:13.601717",
+  "generated_at": "2026-07-21T16:17:11.991303",
   "strategy_name": "Smart Simple v2.0.0",
   "strategy_id": "smart_simple_v11",
   "year": 2025,
   "initial_capital": 10000.0,
-  "n_trading_days": 155,
-  "direction_accuracy_pct": 77.4,
-  "n_trades": 31,
+  "n_trading_days": 170,
+  "direction_accuracy_pct": 73.5,
+  "n_trades": 34,
   "insufficient_trades": false,
   "strategies": {
     "buy_and_hold": {
@@ -14,27 +14,27 @@
       "total_return_pct": -14.48
     },
     "smart_simple_v11": {
-      "final_equity": 12605.3,
-      "total_return_pct": 26.05,
-      "calmar": 7.443,
-      "sharpe": 3.84,
-      "max_dd_pct": 3.5,
-      "win_rate_pct": 77.4,
-      "profit_factor": 3.296,
-      "trading_days": 155,
+      "final_equity": 11304.5,
+      "total_return_pct": 13.05,
+      "calmar": 1.686,
+      "sharpe": 1.506,
+      "max_dd_pct": 7.74,
+      "win_rate_pct": 73.5,
+      "profit_factor": 1.562,
+      "trading_days": 170,
       "exit_reasons": {
         "take_profit": 19,
         "week_end": 10,
-        "hard_stop": 2
+        "hard_stop": 5
       },
       "n_long": 2,
-      "n_short": 29,
+      "n_short": 32,
       "insufficient_trades": false
     }
   },
   "statistical_tests": {
-    "p_value": 0.004,
-    "significant": true,
+    "p_value": 0.1151,
+    "significant": false,
     "insufficient_trades": false,
     "min_trades_for_stats": 20
   },
@@ -54,29 +54,29 @@
     ],
     "trades": [
       2,
-      4,
+      3,
       3,
       4,
+      5,
+      4,
+      2,
       4,
       3,
-      2,
-      4,
-      2,
       1,
-      2
+      3
     ],
     "pnl_pct": [
       3.5,
-      1.9,
+      2.11,
       -1.63,
       3.26,
-      5.5,
-      1.75,
+      7.25,
+      -1.75,
       3.5,
       0.95,
-      1.53,
-      1.75,
-      1.54
+      -2.43,
+      0.03,
+      -1.96
     ]
   }
 }

@@ -39,6 +39,8 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
+MIN_TRADES_FOR_STATS = 20  # quant-constitution &6: below this, no Sharpe/p-value
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -740,7 +742,6 @@ def export_summary(result, year, cfg):
     # breaking its own rule and showing operators statistical confidence that does not
     # exist at that sample size. Return, drawdown and win-rate stay: they are descriptive,
     # not inferential.
-    MIN_TRADES_FOR_STATS = 20
     n_trades = m["n_trades"]
     stats_valid = n_trades >= MIN_TRADES_FOR_STATS
 

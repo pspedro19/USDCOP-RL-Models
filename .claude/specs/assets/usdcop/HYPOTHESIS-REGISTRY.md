@@ -298,3 +298,32 @@ Sin cambios: una variable (el tilt), clip [0.5,1.5] y ventana z-252 como priors 
 candidata = `strategy_id` nuevo, v11 intacta, baselines (overlay sin tilt, exposición
 emparejada, tilt aleatorio, costos ×1/×2/×3 + swap real). PASS económico: ΔCalmar vs mejor
 baseline con IC95>0 y DD dentro de protocolo; claim de alfa además exige DSR>0.95.
+
+---
+
+## EVENTO DE REVISIÓN DE DATOS 2026-07-21 — el backtest 2025 cambia de +26.05% a +13.05%
+
+**No es un trial ni un cambio de estrategia: es la MISMA mecánica congelada medida sobre
+datos reparados.** La remediación de calidad (gap-fill dirigido M5 + backfill máximo,
+CTR-MKT-CANON-001) revisó el seed diario USD/COP: **+57 días que antes no existían y 31
+cierres corregidos (15 de ellos en 2025, deltas hasta $38.8 ≈ 1%)**, verificado por diff
+contra el seed en HEAD (LFS).
+
+Re-run del ciclo completo (`train_and_export_smart_simple --phase both`, 2026-07-21):
+
+| Ventana | Antes (datos con huecos) | Ahora (datos reparados) |
+|---|---|---|
+| Backtest OOS-2025 | +26.05%, Sharpe 3.84, p=0.004, 31 trades | **+13.05%, Sharpe 1.506, p=0.1151, 34 trades (2L/32S), WR 73.5%, PF 1.562** |
+| Producción 2026 YTD (entrenado 2020-2025) | −0.30%, 5 trades | **+2.45%, 11 trades (10L/1S)** — N<20 ⇒ solo conteo y PnL |
+
+**Lecturas obligadas:**
+1. p=0.1151 ⇒ el 2025 reparado es **NO estadísticamente significativo** — coherente con el
+   veredicto DSR<0.95 que ya congeló a v11; ahora ni el titular sobrevive a los datos limpios.
+   La mitad del "+26%" era artefacto de 57 días ausentes y 31 cierres malos.
+2. El forward 2026 (+2.45% YTD con el gate bloqueando la mayoría de semanas mean-reverting)
+   sigue siendo el único juez; Corte A 2026-09-16 intacto.
+3. Los bundles publicados con los números viejos quedan como historia generada sobre el
+   dato viejo; los nuevos exports (2026-07-21) son la referencia. Cualquier cita futura del
+   "+25.6%/p=0.006" debe llevar este asterisco.
+4. Fix de código en el mismo run: `MIN_TRADES_FOR_STATS` promovida a módulo (NameError que
+   abortaba el export de trades — el ciclo backtest→production ahora ejecuta completo).

@@ -3,52 +3,59 @@
   "strategy": "smart_simple_v11",
   "strategy_name": "Smart Simple v2.0.0",
   "backtest_year": 2025,
-  "backtest_recommendation": "PROMOTE",
-  "backtest_confidence": 1.0,
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": 0.67,
   "gates": [
     {
       "gate": "min_return_pct",
       "label": "Retorno Minimo",
       "passed": true,
-      "value": 26.05,
+      "value": 13.05,
       "threshold": -15.0
     },
     {
       "gate": "min_sharpe_ratio",
       "label": "Sharpe Minimo",
       "passed": true,
-      "value": 3.84,
+      "value": 1.506,
       "threshold": 0.0
     },
     {
       "gate": "max_drawdown_pct",
       "label": "Max Drawdown",
       "passed": true,
-      "value": 3.5,
+      "value": 7.74,
       "threshold": 20.0
     },
     {
       "gate": "min_trades",
       "label": "Trades Minimos",
       "passed": true,
-      "value": 31,
+      "value": 34,
       "threshold": 10
     },
     {
       "gate": "statistical_significance",
       "label": "Significancia (p<0.05)",
-      "passed": true,
-      "value": 0.004,
+      "passed": false,
+      "value": 0.1151,
       "threshold": 0.05
+    },
+    {
+      "gate": "deflated_sharpe",
+      "label": "DSR trial-aware (N=58, min de 2 lecturas de sigma)",
+      "passed": false,
+      "value": 0.1595,
+      "threshold": 0.95
     }
   ],
   "backtest_metrics": {
-    "return_pct": 26.05,
-    "sharpe": 3.84,
-    "max_dd_pct": 3.5,
-    "p_value": 0.004,
-    "trades": 31,
-    "win_rate_pct": 77.4
+    "return_pct": 13.05,
+    "sharpe": 1.506,
+    "max_dd_pct": 7.74,
+    "p_value": 0.1151,
+    "trades": 34,
+    "win_rate_pct": 73.5
   },
   "deploy_manifest": {
     "pipeline_type": "ml_forecasting",
@@ -68,6 +75,6 @@
       "forecast_h5_paper_trading"
     ]
   },
-  "created_at": "2026-07-20T16:24:13.649880",
-  "last_updated": "2026-07-20T16:24:13.649880"
+  "created_at": "2026-07-21T16:17:13.692149",
+  "last_updated": "2026-07-21T16:17:13.692149"
 }
