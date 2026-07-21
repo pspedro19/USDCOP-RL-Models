@@ -90,10 +90,14 @@ def rows() -> list[tuple]:
         out.append(("btcusdt", d, True,
                     datetime.combine(d, time(0, 0), ZoneInfo("UTC")),
                     datetime.combine(d + timedelta(days=1), time(0, 0), ZoneInfo("UTC"))))
-        # xauusd: weekdays (metals ~23h; weekend closed)
-        trading = wd < 5
+        # xauusd: metals trade Sun ~22:00 UTC -> Fri ~21:00 UTC; only SATURDAY is closed.
+        # (384 real Sunday daily bars existed vs the old weekday rule — the calendar was
+        # wrong on one side, not the data.)
+        trading = wd != 5
+        xau_open = (datetime.combine(d, time(22, 0), ZoneInfo("UTC")) if wd == 6
+                    else datetime.combine(d, time(0, 0), ZoneInfo("UTC")))
         out.append(("xauusd", d, trading,
-                    datetime.combine(d, time(0, 0), ZoneInfo("UTC")) if trading else None,
+                    xau_open if trading else None,
                     datetime.combine(d + timedelta(days=1), time(0, 0), ZoneInfo("UTC"))
                     if trading else None))
         d += timedelta(days=1)

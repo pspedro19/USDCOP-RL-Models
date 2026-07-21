@@ -77,7 +77,7 @@ SELECT
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END),
         (CASE WHEN g.d < f2.first_bar THEN 'closed'
-              WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
+              WHEN extract(dow FROM g.d) = 6 THEN 'closed'
               WHEN p2.close IS NOT NULL THEN 'ok'
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END),
@@ -99,7 +99,8 @@ SELECT
     COALESCE(c1.is_trading_day, false) AS is_session_bar_usdcop,
     EXTRACT(epoch FROM now() - p1.bar_end_utc)::bigint AS staleness_seconds_usdcop,
     CASE WHEN g.d < f1.first_bar THEN 'no_native_data'
-         WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
+         WHEN c1.is_trading_day IS NOT TRUE THEN
+              CASE WHEN p1.close IS NULL THEN 'closed' ELSE 'off_session' END
          WHEN p1.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p1.quality_status <> 'ok' THEN 'incoherent'
@@ -112,7 +113,8 @@ SELECT
     (p2.close IS NOT NULL) AS is_session_bar_xauusd,
     EXTRACT(epoch FROM now() - p2.bar_end_utc)::bigint AS staleness_seconds_xauusd,
     CASE WHEN g.d < f2.first_bar THEN 'no_native_data'
-         WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
+         WHEN extract(dow FROM g.d) = 6 THEN
+              CASE WHEN p2.close IS NULL THEN 'closed' ELSE 'off_session' END
          WHEN p2.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p2.quality_status <> 'ok' THEN 'incoherent'
@@ -137,7 +139,8 @@ SELECT
     COALESCE(c4.is_trading_day, false) AS is_session_bar_spx500,
     EXTRACT(epoch FROM now() - p4.bar_end_utc)::bigint AS staleness_seconds_spx500,
     CASE WHEN g.d < f4.first_bar THEN 'no_native_data'
-         WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
+         WHEN c4.is_trading_day IS NOT TRUE THEN
+              CASE WHEN p4.close IS NULL THEN 'closed' ELSE 'off_session' END
          WHEN p4.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p4.quality_status <> 'ok' THEN 'incoherent'
