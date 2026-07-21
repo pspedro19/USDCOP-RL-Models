@@ -1,102 +1,123 @@
 {
-  "created_at": "2026-07-07T15:03:23.252586+00:00",
+  "created_at": "2026-07-21T19:53:06.917147+00:00",
   "tables": {
     "news_articles": {
       "status": "ok",
-      "rows": 28,
-      "sha256": "1d59197fe21a90be0a70505227fdde4d4e0d3877534aad223c326e81e84de6e8",
-      "latest": "2026-07-07 11:50:10+00:00",
+      "rows": 57,
+      "sha256": "bdeb638afdcd4f1e66d6ccac47a7c400dadc6b5f333e15da4a7cf40de49f3a80",
+      "latest": "2026-07-21 17:43:55+00:00",
       "file": "news_articles.parquet"
     },
     "news_feature_snapshots": {
       "status": "ok",
-      "rows": 2,
-      "sha256": "b79d66c370d7281a58a45e79b8242fb47d9cb354158d609c0a20382de342ab89",
-      "latest": "2026-07-07 00:00:00",
+      "rows": 4,
+      "sha256": "77885a6b99497883fecac8e984c4d2c9f50f91df806b20348a2ddb7b8604a608",
+      "latest": "2026-07-21 00:00:00",
       "file": "news_feature_snapshots.parquet"
     },
     "weekly_analysis": {
       "status": "ok",
       "rows": 0,
-      "sha256": "96264f51dc21d6820a27917ccf904cd50c7e3659bd49c364d4c05e47c97bdaa2",
+      "sha256": "d26aacd21c645ef7eb8fd47f2aab0fcd7e768cdb6afafddde3d81a6bc35e7dcb",
       "latest": null,
       "file": "weekly_analysis.parquet"
     },
     "daily_analysis": {
       "status": "ok",
       "rows": 0,
-      "sha256": "fac021b745c3d3fdddc7820a40df1016f21b3d74db1b7ef1e990e83abed765a3",
+      "sha256": "1def5260915fbe27bfeb7458b3461a0407fcc50e676a3d238e3a40eaee7993e9",
       "latest": null,
       "file": "daily_analysis.parquet"
     },
     "forecast_h5_predictions": {
       "status": "ok",
       "rows": 18,
-      "sha256": "392d00ffd3fa62ec067a68809f2dc932bb47de2e848efb85748a868248a56712",
+      "sha256": "234da8b5c251856998a8c28216d88761207ed264c05d970834ab1c834887b1c5",
       "latest": "2026-07-07 04:38:31.127306+00:00",
       "file": "forecast_h5_predictions.parquet"
     },
     "forecast_h5_signals": {
       "status": "ok",
       "rows": 10,
-      "sha256": "c498c05515a756b69ca125a13e2a27a877b1258dd9876a77db4875b3c52a97c3",
+      "sha256": "d578d4f5f3fc4f7e2f1ab1970bcc86eee1085e8679ea18bdc3362ed262e572ad",
       "latest": "2026-07-07 00:00:00",
       "file": "forecast_h5_signals.parquet"
     },
     "forecast_h5_executions": {
       "status": "ok",
       "rows": 8,
-      "sha256": "df3421d2b4e9ec99493101cc4d4d07983fb92cc61aa41c41f4a6c16d173156db",
+      "sha256": "156820a4ef33488dc6b7861fb0c3cfe5c12b1a5696ae5ef8b47464ff8cd7b262",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_executions.parquet"
     },
     "forecast_h5_subtrades": {
       "status": "ok",
       "rows": 8,
-      "sha256": "3ea540cb592a2b1e292afd8c3b953a44d117c6d2e4c1f8e5cba46a6d572e7a3f",
+      "sha256": "7cb166b09889f010379ada062d003ba405ab8e068aec3248835bc7ea5612be1b",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_subtrades.parquet"
     },
     "forecast_h5_paper_trading": {
       "status": "ok",
       "rows": 8,
-      "sha256": "cd9ed2c2702dd3830606382025c0b360e626c10bf2bf940d143e11ed8cee20ae",
+      "sha256": "03d10aad32fe4095e4f984b0a9778a77f2c5c90035a7a6d558e69040aa08f23a",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_paper_trading.parquet"
     },
     "asset_daily_ohlcv": {
       "status": "ok",
-      "rows": 10335,
-      "sha256": "114e09edf4e06278322873e4bdf72045a7a0c2f1c2288ade28b625fad972058b",
-      "latest": "2026-07-07 21:00:00+00:00",
+      "rows": 54093,
+      "sha256": "c420e2a0137116e7c335eb718302040dfcef37ed5dee80041d32e11559c86d52",
+      "latest": "2026-07-21 21:00:00+00:00",
       "file": "asset_daily_ohlcv.parquet"
+    },
+    "usdcop_m5_ohlcv": {
+      "status": "ok",
+      "rows": 2197621,
+      "sha256": "2ab0e4d40cd25e7cfb1e2f2e5ba2ff53945c944d3791e470d5c140485b51505a",
+      "latest": "2026-07-21 19:20:00+00:00",
+      "file": "usdcop_m5_ohlcv.parquet"
+    },
+    "asset_native_ohlcv": {
+      "status": "ok",
+      "rows": 299886,
+      "sha256": "78f45cde4e3df7250733e2b52725b8b895f93fb4a2558ab259acddfb119a524d",
+      "latest": "2026-07-21 19:00:00+00:00",
+      "file": "asset_native_ohlcv.parquet"
+    },
+    "market_ingestion_manifest": {
+      "status": "ok",
+      "rows": 1853,
+      "sha256": "1f2a225c838611d05a9d833793493001b05b3a7d5037a0776b5dbe2ef52f3839",
+      "latest": "2026-07-21 19:20:45.645175+00:00",
+      "file": "market_ingestion_manifest.parquet"
     },
     "crypto_derivatives_daily": {
       "status": "ok",
-      "rows": 2493,
-      "sha256": "dfcae09e6cbdc0991f0c1850c11f19a87b04c7cd4642fb2b612b805428ab779e",
-      "latest": "2026-07-07 00:00:00",
+      "rows": 2506,
+      "sha256": "ff7c2fd032f3f361a7535d77433ba42cfc7caf94a27a6b6af82c79716d3fda5b",
+      "latest": "2026-07-20 00:00:00",
       "file": "crypto_derivatives_daily.parquet"
     },
     "macro_indicators_monthly": {
       "status": "ok",
-      "rows": 0,
-      "sha256": "310788bbf3723821074b29c343ae491d0bdbb76e60335bd3086d2a439769f813",
-      "latest": null,
+      "rows": 282,
+      "sha256": "846f3676eb3c6c5ec2ca0699cb8b8d689efd68cc7d8af9216d930726e1d5228b",
+      "latest": "2026-06-01 00:00:00",
       "file": "macro_indicators_monthly.parquet"
     },
     "macro_indicators_quarterly": {
       "status": "ok",
-      "rows": 0,
-      "sha256": "8848d2f18c8a312c9944a0e3571c9dd6d69bf4d51667736d7db57e1c5208322a",
-      "latest": null,
+      "rows": 38,
+      "sha256": "8b60a533b741cea013222b1837e33c0ad773a044f68dbf8690dc0ad0af26a2d8",
+      "latest": "2025-06-30 00:00:00",
       "file": "macro_indicators_quarterly.parquet"
     },
     "audit_log": {
       "status": "ok",
-      "rows": 0,
-      "sha256": "49fe6a1725605109cef7b73e20bc6c892555c33ba49a31ee47377036cc2abab7",
-      "latest": null,
+      "rows": 54,
+      "sha256": "760c40206387cdcce441aabdb3f698a60cc783624a745ca729051a57f0af5889",
+      "latest": "2026-07-21 02:54:15.720348+00:00",
       "file": "audit_log.parquet"
     }
   }

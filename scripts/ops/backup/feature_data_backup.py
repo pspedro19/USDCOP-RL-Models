@@ -64,6 +64,13 @@ TABLES: list[tuple[str, str | None]] = [
     ("forecast_h5_paper_trading", "created_at"),
     # Multi-asset daily OHLCV (Gold/BTC/… — per-asset via asset_id column)
     ("asset_daily_ohlcv", "time"),
+    # CTR-MKT-CANON-001 (2026-07-22): full multi-pair M5 (BTC 2017→ + XAU/MXN/BRL 2020→
+    # exceed what l0_seed_backup exports) + native 1h/4h/1month + ingestion lineage.
+    # dim_asset / market_session_calendar are NOT here: regenerable from migration 060 +
+    # seed_session_calendar.py (code, not data).
+    ("usdcop_m5_ohlcv", "time"),
+    ("asset_native_ohlcv", "time"),
+    ("market_ingestion_manifest", "run_at"),
     # Crypto-native derivatives (BTC perp funding/OI/long-short — migration 052)
     ("crypto_derivatives_daily", "date"),
     # Macro monthly/quarterly (daily already covered by l0_seed_backup)
