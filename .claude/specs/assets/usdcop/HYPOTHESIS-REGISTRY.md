@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 58
+n_trials_total: 59
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -327,3 +327,30 @@ Re-run del ciclo completo (`train_and_export_smart_simple --phase both`, 2026-07
    "+25.6%/p=0.006" debe llevar este asterisco.
 4. Fix de código en el mismo run: `MIN_TRADES_FOR_STATS` promovida a módulo (NameError que
    abortaba el export de trades — el ciclo backtest→production ahora ejecuta completo).
+
+
+---
+
+## DIAGNÓSTICO DE INGENIERÍA INVERSA DEL P&L 2026-07-21 (+1 trial: la celda cap-1.5)
+
+Descomposición del OOS-2025 REPARADO (+13.05%, 34 trades) sobre trades publicados —
+mediciones descriptivas (0 trials) salvo donde se indica:
+
+| Componente | Números | Lectura |
+|---|---|---|
+| take_profit | 19 trades, **+30.26pp** | TODO el retorno vive aquí |
+| hard_stop | 5 trades, **−17.50pp** (todos −3.5% exacto) | Se come el 58% de los TP. **Los 5 HS tenían leverage = 2.0 (el máximo), vs 1.70 en TP y 1.24 en week_end**: el vol-targeter estaba en máxima agresión exactamente en las semanas que gapearon — confirmación literal de em-fx §2 ("la vol realizada se mide en la calma que precede al gap; el peso vol-targeted es un TECHO") |
+| week_end | 10 trades (29%), **+0.085pp ≈ 0** | Opcionalidad que expiró sin valor; con carry cobrado serían positivos |
+| CARRY no cobrado | IBR 8.80% − FFR≈4.37% = 4.43pp; 103 días-posición cortos × lev 1.67 → **+2.01pp/año teórico (+1.0 al 50% pass-through)** | Retorno sin riesgo de señal nuevo; gate = H-COP-CARRY-00 |
+| Timing intra-sesión (M5) | media +0.7bps vs open, agregado ±1pp ruido | **NO es palanca** — descartado con números, coherente con RL p=0.272 |
+
+**Trial pagado (N=59): sensibilidad ÚNICA pre-declarada cap-leverage-1.5** (prior ex-ante:
+em-fx "ceiling" + el MAX_LEV=1.5 que ya usa el manifest SPX; NO grid, una celda):
+retorno +12.85→+11.51pp, maxDD −7.74%→−5.21%, **Calmar-proxy 1.66→2.21 (+33%)**.
+Combinado con carry al 50%: retorno ≈ igual (+12.5pp) con un tercio menos de drawdown.
+
+**Candidata v12 registrada (PLANNED, sin correr nada más):** `smart_simple_v12_lev_cap`
+= v11 con MAX_LEVERAGE 2.0→1.5, UNA variable, juez = **forward desde su freeze** (2025 ya
+está doblemente contaminado). v11 NO se toca (Corte A 2026-09-16 sigue siendo su juez).
+La decisión de abrir v12 es del operador; correrla en paper paralelo a v11 no consume
+más trials hasta abrir resultados forward.
