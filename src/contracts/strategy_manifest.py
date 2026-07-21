@@ -61,6 +61,38 @@ _DEFAULT_ASSETS: dict[str, dict[str, str]] = {
 }
 
 
+def _asset_meta(asset_id: str) -> dict[str, str]:
+    """Asset metadata, preferring the per-asset SSOT over this module's hardcoded table.
+
+    `_DEFAULT_ASSETS` above predates spx500, so refreshing the registry stamped that asset with
+    `asset_class: "unknown"` and broke a downstream test — a new asset can be fully onboarded
+    (`config/assets/spx500.yaml` declares `asset_class: equity_index`) and still be mislabelled
+    by a dict nobody remembered to extend. Falling back to "unknown" made it look like missing
+    data rather than a stale hardcode.
+
+    `config/assets/<id>.yaml` is the SSOT; the table stays as the offline fallback.
+    """
+    fallback = _DEFAULT_ASSETS.get(asset_id, {
+        "symbol": asset_id.upper(), "chart_symbol": asset_id.upper(),
+        "display_name": asset_id.upper(), "asset_class": "unknown",
+    })
+    try:
+        import yaml
+        p = Path(__file__).resolve().parents[2] / "config" / "assets" / f"{asset_id}.yaml"
+        if not p.is_file():
+            return fallback
+        cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        sym = cfg.get("symbol") or fallback["symbol"]
+        return {
+            "symbol": sym,
+            "chart_symbol": cfg.get("chart_symbol") or chart_symbol_for(sym),
+            "display_name": cfg.get("display_name") or fallback["display_name"],
+            "asset_class": cfg.get("asset_class") or fallback["asset_class"],
+        }
+    except Exception:  # noqa: BLE001 - metadata must never block a publish
+        return fallback
+
+
 def chart_symbol_for(symbol: str) -> str:
     """Derive the UI chart symbol from a provider symbol (e.g. 'USD/COP' -> 'USDCOP')."""
     return symbol.replace("/", "").replace(" ", "").upper()
@@ -355,7 +387,7 @@ class RegistryBuilder:
         asset_ids = {m.asset_id for m in manifests.values()} or {"usdcop"}
         assets = []
         for aid in sorted(asset_ids):
-            meta = _DEFAULT_ASSETS.get(aid, {"symbol": aid.upper(), "chart_symbol": aid.upper(), "display_name": aid.upper(), "asset_class": "unknown"})
+            meta = _asset_meta(aid)
             assets.append({"asset_id": aid, **meta})
 
         def _entry(m: StrategyBundleManifest) -> RegistryStrategyEntry:

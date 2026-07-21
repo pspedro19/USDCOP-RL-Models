@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-21T01:37:18.499360+00:00",
+  "generated_at": "2026-07-21T01:44:33.714884+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -10,10 +10,10 @@
     },
     {
       "asset_id": "spx500",
-      "symbol": "SPX500",
+      "symbol": "SPX/500",
       "chart_symbol": "SPX500",
-      "display_name": "SPX500",
-      "asset_class": "unknown"
+      "display_name": "S&P 500",
+      "asset_class": "equity_index"
     },
     {
       "asset_id": "usdcop",
