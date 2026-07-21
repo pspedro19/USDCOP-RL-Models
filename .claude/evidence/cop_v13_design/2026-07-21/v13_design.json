@@ -1,0 +1,19 @@
+{
+  "formula": "techo = 1.5*clip(med/q90_hat, 0.5, 1)",
+  "mediana_diseno": 4.697431749565984,
+  "v12_replay": {
+    "ret_total_pct": -12.79,
+    "maxdd_pct": -14.26,
+    "calmar": -0.651,
+    "n": 73
+  },
+  "v13_replay": {
+    "ret_total_pct": -12.5,
+    "maxdd_pct": -13.98,
+    "calmar": -0.649,
+    "n": 73
+  },
+  "aprueba_diseno": true,
+  "trials": "+1 (N 66->67)",
+  "juez": "forward desde freeze"
+}

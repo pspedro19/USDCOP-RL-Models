@@ -1,0 +1,15 @@
+strategy_id: smart_simple_v12_lev_cap
+asset_id: usdcop
+frozen: 2026-07-21 (paper desde 2026-07-27)
+variable_unica: max_leverage 2.0 -> 1.5 (todo lo demas identico a v11 manifest v6)
+clock:
+  periods_per_year: 52
+  label: weekly/52
+files:
+- scripts/pipeline/train_and_export_smart_simple.py
+- src/forecasting/enhance_v2.py
+- config/execution/smart_simple_v12_lev_cap.yaml
+code_hash_sha256_16: 3bc28b36448892a1
+juez: registry COP seccion 'juez SELLADO' — corte-52 unico test; e-process descriptivo
+evidencia_diseno: .claude/evidence/cop_v12_design/2026-07-21/ (+12.1% vs +2.4% compuesto
+  22-24)

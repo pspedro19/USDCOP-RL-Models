@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 66
+n_trials_total: 67
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -788,3 +788,38 @@ techo de v13 son las 4 features simples validadas de H-RISK-FAM-01 COMPUESTAS co
 persistencia rolling-q90 (el listón imbatido), no un modelo profundo. El presupuesto de
 lo aprendido hoy: 2 hipótesis grandes probadas y cerradas con evidencia (LATAM-TSMOM,
 transformer-vol) + 4 predictores simples validados — el sistema sabe más y gasta menos.
+
+---
+
+## H-V13-QRISK-01 (PRE-REGISTRO 2026-07-21, 0 miradas) — techo de leverage probabilístico
+
+**Fórmula SELLADA (cero grid; cada constante con su prior declarado):**
+- `q90_hat_t` = 0.5·persistencia(q90 rolling-252 del rango 5d) + 0.5·QR(q90) sobre las
+  4 features ganadoras de H-RISK-FAM-01 {vol-of-vol, gap-cola, EMBI-acel, RESINT},
+  ajustada walk-forward SOLO con datos < t (composición 50/50: el listón imbatido ancla,
+  las features validadas modulan — sin pesos optimizados).
+- `techo_t = 1.5 × clip(mediana_diseño(q90_hat) / q90_hat_t, 0.5, 1.0)` — riesgo predicho
+  sobre la mediana ⇒ el techo baja proporcionalmente; JAMÁS sube de 1.5 (v13 ⊂ v12).
+- Todo lo demás idéntico a v12. Ventanas canónicas del operador (diseño 2020/22-24).
+- **Design-run pareado** (v12 vs v13, mismas señales): abre +1 trial (N 66→67).
+  Aprobación por diseño = Calmar_v13 ≥ Calmar_v12 en 2022-2024 (replay de salidas con
+  effective-HS recalculado por leverage). **Juez real = forward** desde su freeze,
+  mismo protocolo sellado de v12 (reloj propio, corte-52).
+
+
+---
+
+## H-V13-QRISK-01 design-run: INSTRUMENTO INVÁLIDO (2026-07-21) · trials 66→67
+
+El replay de salidas construido para el design-run pareado NO reproduce al motor: dio
+v12 = −12.8% en 2022-24 donde el motor real (autoridad, `cop_v12_design/`) dio +12.1%
+compuesto — la aproximación effective-HS/producción-wrapper es incorrecta. **Regla
+aplicada: un instrumento que no reproduce al motor no puede juzgar nada.** La mirada se
+contabiliza igual (+1, conservador), el resultado se marca INVALID_INSTRUMENT y NO se
+interpreta ni a favor ni en contra de v13.
+
+**Pendiente**: el design-run válido de v13 exige implementar el techo dinámico DENTRO
+del motor (flag de candidata, mismo camino que validó a v12). El spec de v13 sigue
+sellado sin cambios. v12 queda formalmente congelada para el lunes:
+`config/execution/smart_simple_v12_lev_cap.yaml` + `config/strategy_manifests/usdcop_v12.yaml`
+(hash 3bc28b36448892a1).
