@@ -84,14 +84,20 @@ def cash_rate_daily(index: pd.DatetimeIndex) -> pd.Series:
             .fillna(0.0) / 100.0)
 
 
-def _sleeve_series() -> dict[str, pd.Series]:
+def _sleeve_series(want: str = "strat") -> dict[str, pd.Series]:
+    """`strat` = the sleeve's net return; `asset` = the underlying's raw return.
+
+    The asset series is what prohibition 4 compares against: a book highly correlated to simply
+    owning its constituents is passive beta, whatever the strategy layer is called.
+    """
     from scripts.analysis.profitability_adapters import ADAPTERS
 
     out: dict[str, pd.Series] = {}
     for name in DAILY_ASSETS:
         s = ADAPTERS[name]()
         idx = pd.to_datetime(pd.Index(s.index)).tz_localize(None).normalize()
-        out[name] = pd.Series(s.strat_ret, index=idx).groupby(level=0).last()
+        vals = s.strat_ret if want == "strat" else s.asset_ret
+        out[name] = pd.Series(vals, index=idx).groupby(level=0).last()
     return out
 
 
@@ -111,6 +117,28 @@ def align_sleeves(sleeves: dict[str, pd.Series]) -> tuple[pd.DataFrame, dict]:
         "window": [str(df.index.min().date()), str(df.index.max().date())] if len(df) else None,
     }
     return df, info
+
+
+def _passive_corr(mix: pd.Series, asset_rets: pd.DataFrame,
+                  sleeve_rets: pd.DataFrame) -> dict:
+    """How much of the book is just owning the underlying assets (ADR-0020 prohibition 4).
+
+    The first version of this compared the book against an equal-weight mix of the SLEEVES and
+    reported 0.96 -- which is nearly tautological, since the ERC book IS a weighting of those
+    same sleeves. It measured "does ERC differ from equal weight" (barely), not "is this
+    passive beta" (the actual disclosure duty).
+
+    The number the prohibition is about is the correlation to a passive long of the underlying
+    ASSETS. Both are emitted, because they answer different questions and confusing them is
+    exactly how a 0.96 would get published as if it discharged the disclosure.
+    """
+    return {
+        "vs_passive_long_assets": round(float(mix.corr(asset_rets.mean(axis=1))), 4),
+        "vs_equal_weight_sleeves": round(float(mix.corr(sleeve_rets.mean(axis=1))), 4),
+        "note": ("vs_passive_long_assets is the disclosure (how much is just owning the "
+                 "assets). vs_equal_weight_sleeves only says whether ERC differs from equal "
+                 "weighting, and is near 1.0 by construction."),
+    }
 
 
 def correlation_report(df: pd.DataFrame) -> dict:
@@ -185,8 +213,9 @@ def main() -> int:
     print("CARTERA DIARIA CROSS-ASSET (ERC + Ledoit-Wolf)")
     print("=" * 74)
 
-    sleeves = _sleeve_series()
+    sleeves = _sleeve_series('strat')
     df, info = align_sleeves(sleeves)
+    asset_rets = pd.concat(_sleeve_series('asset'), axis=1).reindex(df.index).fillna(0.0)
     print(f"\nAlineación (intersección estricta, sin ffill):")
     for k, nb in info["rows_per_sleeve_before_align"].items():
         print(f"  {k:9s} {nb:>6} filas -> comun {info['common_fraction'][k]:.1%}")
@@ -260,6 +289,20 @@ def main() -> int:
         # lower evidence bar (B1' + cost x2 + DD brake + crisis behaviour) but stricter
         # disclosure duties, enforced by test_risk_controlled_book_disclosure.py.
         "product_class": "risk_controlled_book", "adr": "ADR-0020",
+        # ADR-0020 prohibitions 1, 2 and 4, emitted as data so they can be asserted rather
+        # than trusted. Prohibitions are only real if a machine can check them: a document
+        # saying "do not describe this as alpha" does not stop anyone describing it as alpha.
+        "disclosure": {
+            "headline_metric": "calmar",          # prohibition 2: never Sharpe alone
+            "return_source": "managed_beta",      # prohibition 4
+            "correlation": _passive_corr(mix, asset_rets, df),
+            "is_alpha_claim": False,              # prohibition 1
+            "statement": (
+                "Managed exposure, not a forecast. Returns are diversified beta shaped by "
+                "vol targeting and a drawdown brake. No predictive edge is claimed and none "
+                "has been demonstrated: every constituent fails DSR > 0.95."
+            ),
+        },
         "evidence_class": "research_only", "promotion_eligible": False,
         "not_promoted_because": ("H-PORT-D-01 CI includes zero and no forward evidence has "
                                  "accumulated (ADR-0020 criterion 7)"),

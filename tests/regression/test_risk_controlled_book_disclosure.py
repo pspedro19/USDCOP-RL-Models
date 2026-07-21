@@ -94,3 +94,68 @@ def test_book_is_not_promoted_without_forward_evidence():
         "the book is promotion_eligible without a signed withdrawal protocol and accumulated "
         "forward evidence. ADR-0020 criterion 7 is not satisfied by a good backtest."
     )
+
+
+# ---------------------------------------------------------------------------
+# Prohibitions 1, 2 and 4 — added 2026-07-21 after an independent review
+# over-attributed coverage to this file.
+# ---------------------------------------------------------------------------
+# A reviewer read the four passing tests above and reported that they verify all five ADR
+# prohibitions. They verified two. The remaining three lived only in prose, and prose does not
+# stop anyone describing the book as alpha.
+#
+# That is the failure mode this whole codebase keeps producing: a green check standing in for
+# a check that was never written. Four passing tests are not evidence about the prohibitions
+# they do not cover.
+
+ALPHA_WORDS = ("alpha", "alfa", "edge", "predict", "forecast", "signal", "señal", "model")
+
+
+def test_book_does_not_describe_itself_as_alpha():
+    """ADR-0020 prohibition 1."""
+    art = _latest_artifact()
+    d = art.get("disclosure")
+    assert isinstance(d, dict), "no `disclosure` block: prohibitions 1/2/4 are unverifiable"
+    assert d.get("is_alpha_claim") is False, "the book must declare it is not an alpha claim"
+
+    # The prose statement may say what the book is NOT ("no predictive edge is claimed"), so a
+    # blanket keyword ban would be self-defeating. What must not appear is a positive claim.
+    stmt = str(d.get("statement", "")).lower()
+    assert stmt, "disclosure.statement is empty"
+    for bad in ("has edge", "predictive edge is real", "our model predicts", "alpha generating"):
+        assert bad not in stmt, f"disclosure asserts alpha: {bad!r}"
+    assert any(w in stmt for w in ("not a forecast", "no predictive edge", "managed exposure")), (
+        "the statement must positively disclaim prediction, not merely omit it"
+    )
+
+
+def test_headline_metric_is_not_sharpe():
+    """ADR-0020 prohibition 2. Sharpe flatters a book that is simply flat a lot."""
+    art = _latest_artifact()
+    headline = str(art.get("disclosure", {}).get("headline_metric", "")).lower()
+    assert headline, "no headline_metric declared"
+    assert "sharpe" not in headline, (
+        f"headline_metric is {headline!r}. The headline is Calmar and drawdown behaviour; "
+        "Sharpe travels with its standard error or not at all."
+    )
+    assert headline in ("calmar", "calmar_ratio"), f"unexpected headline metric {headline!r}"
+
+
+def test_passive_beta_share_is_disclosed_against_the_assets():
+    """ADR-0020 prohibition 4.
+
+    The comparison must be against a passive long of the UNDERLYING ASSETS. My first
+    implementation compared the book to an equal-weight mix of its own sleeves and reported
+    0.96 -- near-tautological, since the book is a weighting of those same sleeves. It answered
+    "does ERC differ from equal weight" while appearing to discharge the disclosure.
+    """
+    corr = _latest_artifact().get("disclosure", {}).get("correlation", {})
+    assert "vs_passive_long_assets" in corr, (
+        "prohibition 4 requires correlation to a passive long of the underlying assets"
+    )
+    v = corr["vs_passive_long_assets"]
+    assert v is not None and abs(v) <= 1.0
+    assert abs(v) < 0.90, (
+        f"book correlates {v} with simply owning its constituents. Above ~0.9 it IS the "
+        "passive basket and must not be presented as anything else."
+    )

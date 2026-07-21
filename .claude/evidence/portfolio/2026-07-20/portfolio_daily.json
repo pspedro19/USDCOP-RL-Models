@@ -99,6 +99,17 @@
   },
   "product_class": "risk_controlled_book",
   "adr": "ADR-0020",
+  "disclosure": {
+    "headline_metric": "calmar",
+    "return_source": "managed_beta",
+    "correlation": {
+      "vs_passive_long_assets": 0.5356,
+      "vs_equal_weight_sleeves": 0.9616,
+      "note": "vs_passive_long_assets is the disclosure (how much is just owning the assets). vs_equal_weight_sleeves only says whether ERC differs from equal weighting, and is near 1.0 by construction."
+    },
+    "is_alpha_claim": false,
+    "statement": "Managed exposure, not a forecast. Returns are diversified beta shaped by vol targeting and a drawdown brake. No predictive edge is claimed and none has been demonstrated: every constituent fails DSR > 0.95."
+  },
   "evidence_class": "research_only",
   "promotion_eligible": false,
   "not_promoted_because": "H-PORT-D-01 CI includes zero and no forward evidence has accumulated (ADR-0020 criterion 7)"
