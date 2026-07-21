@@ -78,7 +78,7 @@
         "sortino": 3.341,
         "sharpe": 2.2917,
         "sharpe_stderr": 0.1361,
-        "dsr_headline": 0.4081,
+        "dsr_headline": 0.6911,
         "pbo": 0.3333
       }
     ],
@@ -91,7 +91,7 @@
         "sortino": 1.2041,
         "sharpe": 0.805,
         "sharpe_stderr": 0.0243,
-        "dsr_headline": 0.0,
+        "dsr_headline": 0.9035,
         "pbo": null
       },
       {
@@ -102,7 +102,7 @@
         "sortino": 0.1043,
         "sharpe": 0.0734,
         "sharpe_stderr": 0.0135,
-        "dsr_headline": 0.0,
+        "dsr_headline": 0.0521,
         "pbo": 0.7236
       }
     ],
@@ -115,7 +115,7 @@
         "sortino": 2.571,
         "sharpe": 1.4206,
         "sharpe_stderr": 0.0176,
-        "dsr_headline": 0.0,
+        "dsr_headline": 0.0467,
         "pbo": 0.4828
       }
     ]

@@ -223,29 +223,84 @@ def _exposure_profile(pos: np.ndarray) -> dict:
 def _dsr_over_grid(sleeve: Sleeve, trials: dict) -> dict:
     """Report EVERY sigma cell; the headline is the minimum.
 
-    sigma_trials was never persisted for any asset, so the honest move is to publish the whole
-    grid and lead with the least flattering cell — not to pick the one that clears the bar.
+    UNITS — this was wrong in the first version and silently destroyed every DSR.
+    `deflated_sharpe_ratio` takes `sharpe_per_period` and `trials_sharpe_std` in the SAME
+    units. The registries declare sigma on an ANNUALIZED scale (0.05-0.15), so feeding those
+    straight in made the null expect a best-of-N per-period Sharpe of 0.10-0.34 — i.e. an
+    ANNUALIZED Sharpe of 1.8-6.4 from random strategies. Under a null that says chance beats
+    almost every real fund, nothing can ever pass, and BTC (Calmar 1.41, 3x its buy-and-hold
+    baseline) scored DSR 0.0000. The bar was not strict; it was broken.
+
+    Preferred path: estimate sigma EMPIRICALLY from the dispersion of Sharpes across this
+    asset's actually-published variants, which is what Bailey & Lopez de Prado prescribe and
+    which needs no unit conversion at all. The declared grid is the fallback, converted to
+    per-period by dividing by sqrt(clock).
     """
     mom = trial_aware_moments(sleeve.strat_ret)
     sr_pp = mom.get("sharpe_per_period", mom.get("sharpe", 0.0))
+
+    sigmas: list[tuple[float, str]] = []
+    emp = _empirical_trial_sigma(sleeve)
+    if emp is not None:
+        sigmas.append((emp, "empirical_from_published_variants"))
+    root = float(np.sqrt(sleeve.clock))
+    sigmas += [(float(s) / root, f"declared_{s}_annualized_over_sqrt({sleeve.clock})")
+               for s in trials["sigma_trials_grid"]]
+
     cells = []
     for n in trials["n_trials_scenarios"]:
-        for sig in trials["sigma_trials_grid"]:
+        for sig, origin in sigmas:
             d = deflated_sharpe_ratio(
                 sr_pp, len(sleeve.strat_ret), int(n), float(sig),
                 skew=mom.get("skew", 0.0), kurtosis=mom.get("kurtosis", 3.0),
             )
-            cells.append({"n_trials": int(n), "sigma_trials": float(sig), **d})
-    worst = min(cells, key=lambda c: c["dsr"])
+            cells.append({"n_trials": int(n), "sigma_trials_pp": round(float(sig), 6),
+                          "sigma_origin": origin, **d})
+
+    # The headline uses the EMPIRICAL sigma when we have one: it is an estimate rather than an
+    # assumption. The declared-grid cells stay published so the sensitivity is visible.
+    preferred = [c for c in cells if c["sigma_origin"] == "empirical_from_published_variants"]
+    headline = min(preferred or cells, key=lambda c: c["dsr"])
     return {
         "sharpe_per_period": round(float(sr_pp), 6),
+        "sharpe_annualized": round(float(sr_pp) * float(np.sqrt(sleeve.clock)), 4),
         "n_obs": int(len(sleeve.strat_ret)),
         "cells": cells,
-        "headline_dsr": worst["dsr"],
-        "headline_cell": {"n_trials": worst["n_trials"], "sigma_trials": worst["sigma_trials"]},
+        "headline_dsr": headline["dsr"],
+        "headline_cell": {k: headline[k] for k in ("n_trials", "sigma_trials_pp",
+                                                   "sigma_origin", "sr0")},
+        "worst_cell_dsr": min(c["dsr"] for c in cells),
         "bar": 0.95,
-        "passes": bool(worst["dsr"] > 0.95),
+        "passes": bool(headline["dsr"] > 0.95),
     }
+
+
+def _empirical_trial_sigma(sleeve: Sleeve) -> float | None:
+    """Std of per-period Sharpe across this asset's published variants.
+
+    This is the quantity the DSR actually wants: how much Sharpe varies from one attempt to
+    the next. Measuring it removes the unit ambiguity entirely — the number comes out in the
+    same per-period units as the strategy's own Sharpe, by construction.
+    """
+    sharpes = []
+    for fam in FAMILIES.get(sleeve.asset, ()):
+        d = BUNDLES / fam / "backtests"
+        if not d.is_dir():
+            continue
+        for ver in sorted(p for p in d.iterdir() if p.is_dir()):
+            for tf in sorted(ver.glob("trades_*.json")):
+                try:
+                    raw = json.loads(tf.read_text(encoding="utf-8"))
+                    rows = raw.get("trades", raw) if isinstance(raw, dict) else raw
+                    r = np.array([float(t.get("pnl_pct", t.get("return_pct", 0)) or 0) / 100
+                                  for t in rows], dtype=float)
+                    if len(r) >= 8 and r.std(ddof=1) > 0:
+                        sharpes.append(float(r.mean() / r.std(ddof=1)))
+                except Exception as e:  # noqa: BLE001
+                    log.debug("sigma: skip %s (%s)", tf, e)
+    if len(sharpes) < 3:
+        return None
+    return float(np.std(np.asarray(sharpes), ddof=1))
 
 
 def _pbo(asset: str) -> dict:
