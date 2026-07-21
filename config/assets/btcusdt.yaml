@@ -73,14 +73,36 @@ cross_asset_leaders: []            # optional: ["NDX","QQQ"] risk-asset beta (re
 # strategy-native regime model. Both re-fit on BTC history — nothing is copied from COP.
 regime_gate:
   hurst_lookback: 100
-  hurst_trending: null            # << re-fit on BTC history
-  hurst_mean_rev: null            # << re-fit on BTC history
+  # NEVER FITTED ON BTC (flagged 2026-07-21). These are null, so any code reading them for a
+  # regime decision is either falling back to a default or silently skipping the check. The
+  # implemented classifier (indicators.py) is RULE-BASED and stands in for the frozen-fit HMM of
+  # SPEC-01 until the on-chain data of migration 052 lands. Do not describe BTC regime detection
+  # as "Hurst-based" while these are null.
+  hurst_trending: null            # << NOT re-fit on BTC history: unused
+  hurst_mean_rev: null            # << NOT re-fit on BTC history: unused
   hysteresis_dwell_days: 5        # HMM min_dwell 5-10d (SPEC design 04)
 
 # --- STRATEGY BINDING (spot exposure-modulation engine = new ExecutionStrategy, SPEC design 06) ---
-# Ladder: B1 HODL-vol-target -> B2 cycle-rules -> S3 exposure-engine -> S4 meta-label -> S5 RL.
+# Ladder AS DESIGNED: B1 HODL-vol-target -> B2 cycle-rules -> S3 exposure-engine
+#                     -> S4 meta-label -> S5 RL.
+# Ladder AS BUILT (corrected 2026-07-21 -- the line above described intent, not code):
+#   B1 = intent_hodl              constant 1.0                       (strategies.py:39)
+#   B2 = intent_trend             close>SMA100 & ADX>25              (strategies.py:44)
+#   S3 = intent_regime_gated      SMA200 + regime exclusion          (strategies.py:50)
+#        ^ "S3-lite": SPEC-06's continuous band-rebalance engine is NOT built
+#   S4 = intent_trend_funding     DETERMINISTIC funding brake, no ML (strategies.py:91)
+#        ^ NOT meta-labeling. SPEC-08 is PROPOSED; no classifier exists
+#   S5 = intent_trend_volbrk      vol z-score breaker                (strategies.py:114)
+#        ^ NOT reinforcement learning. No RL agent exists on this path
 # Honest gate (Phase 6): a rung ships only if it beats the previous in OOS Calmar AND Sortino + DSR.
-strategy_id: "btc_exposure_s3"
+#
+# OOS-2025 RESULT (the only truly held-out year): every "skilled" rung was NEGATIVE
+#   b2 -1.37% | s4 -1.42% | s5 -1.37% | s3 -2.83% | B1 hodl +4.70%
+# Per quant-constitution section 3 ("si la estrategia no lo bate, el baseline ES la estrategia"),
+# B1 is the champion until a rung beats it FORWARD. The full-history DSR of 0.9987 is real but
+# dominated by 2018-2024.
+strategy_id: "btc_hodl_b1"        # champion by OOS evidence, not by seniority
 base_strategy: null
-pipeline_type: rl                 # exposure engine (not ml_forecasting); RL-tactical is optional S5
+challenger_strategy_id: "btc_trend_b2"   # runs alongside in paper; promotes only if it wins forward
+pipeline_type: rule_based         # exposure engine. NOT rl: no RL agent exists on this path
 timeframe: intraday_h1            # daily decision + 1h execution/breaker

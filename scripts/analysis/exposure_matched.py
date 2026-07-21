@@ -29,6 +29,7 @@ from datetime import date
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
@@ -39,6 +40,22 @@ from services.common.metrics import (  # noqa: E402
 )
 
 ASSETS = ("btcusdt", "xauusd", "xauusd_simple", "spx500", "spx500_simple")
+
+
+OOS_YEAR = 2025   # the one truly held-out year; declared, not chosen after seeing results
+
+
+def _oos_mask(index) -> np.ndarray:
+    """Boolean mask for the held-out year.
+
+    `Index.year == 2025` already returns a numpy ndarray, not an Index, so calling `.to_numpy()`
+    on it raises AttributeError. The first version wrapped that in a bare `except` and returned
+    an all-False mask, which made every asset silently report OOS `n/a` -- a swallowed exception
+    turning the most important column in the table into a blank. Raising here instead: if the
+    index cannot be interpreted as dates, that is a broken adapter, not a missing window.
+    """
+    idx = pd.to_datetime(pd.Index(index))
+    return np.asarray(idx.year == OOS_YEAR, dtype=bool)
 
 
 def analyse(name: str) -> dict | None:
@@ -52,7 +69,29 @@ def analyse(name: str) -> dict | None:
     k = 1.0 / exp                       # scale to average exposure 1.0 == B1's exposure
     scaled = k * s.position * s.asset_ret - k * s.cost - k * s.swap
 
+    # THE CORRECTION THAT MATTERS (2026-07-21). The first version of this module reported only
+    # full-history figures, and I read BTC's "172% vs 36%, Calmar 2.101" as proof of timing
+    # skill. It is not: that window includes 2018-2024, where the strategy was fitted. In the
+    # single held-out year every BTC rung was NEGATIVE while plain HODL made +4.70%.
+    #
+    # An edge that appears only before the hold-out is not an edge, it is a memory. Reporting
+    # the two windows side by side is the whole point -- a full-history number alone is the
+    # most persuasive misleading statistic this codebase can produce.
+    m = _oos_mask(s.index)
+    oos = None
+    if m.sum() >= 20:
+        oos = {
+            "year": OOS_YEAR, "n_obs": int(m.sum()),
+            "as_is": _ann_return_dd_calmar(s.strat_ret[m], s.clock),
+            "exposure_matched": _ann_return_dd_calmar(scaled[m], s.clock),
+            "b1_buy_and_hold": _ann_return_dd_calmar(s.asset_ret[m], s.clock),
+        }
+        o_m, o_b = oos["exposure_matched"], oos["b1_buy_and_hold"]
+        oos["timing_is_real_oos"] = bool(o_m["calmar"] > o_b["calmar"]
+                                         and o_m["ann_return_pct"] > o_b["ann_return_pct"])
+
     out = {
+        "oos_window": oos,
         "asset": s.asset, "strategy_id": s.strategy_id, "clock": s.clock,
         "mean_realized_exposure": round(exp, 4), "scale_factor": round(k, 3),
         "as_is": _ann_return_dd_calmar(s.strat_ret, s.clock),
@@ -73,8 +112,15 @@ def analyse(name: str) -> dict | None:
         "calmar_beats_b1": bool(m["calmar"] > b["calmar"]),
         "return_beats_b1": bool(m["ann_return_pct"] > b["ann_return_pct"]),
         "dd_no_worse_than_b1": bool(m["max_dd_pct"] >= b["max_dd_pct"]),  # both negative
-        "timing_is_real": bool(m["calmar"] > b["calmar"] and m["ann_return_pct"] > b["ann_return_pct"]),
+        "timing_is_real_full_history": bool(m["calmar"] > b["calmar"]
+                                            and m["ann_return_pct"] > b["ann_return_pct"]),
     }
+    # The verdict that counts is the OOS one. When the two disagree, the full-history number is
+    # the one to distrust: it is the window the strategy was built on.
+    if out["oos_window"] is not None:
+        out["verdict"]["timing_is_real_OOS"] = out["oos_window"]["timing_is_real_oos"]
+        out["verdict"]["disagrees_with_full_history"] = bool(
+            out["oos_window"]["timing_is_real_oos"] != out["verdict"]["timing_is_real_full_history"])
     return out
 
 
@@ -83,7 +129,7 @@ def main() -> int:
     print("COMPARACION A EXPOSICION EMPAREJADA (¿timing real o solo menos beta?)")
     print("=" * 92)
     print(f"{'estrategia':26} {'exp':>6} {'k':>6} | {'ann% B1':>9} {'ann% match':>11} "
-          f"{'Calmar B1':>10} {'Calmar match':>13} {'timing':>8}")
+          f"{'Calmar B1':>10} {'Calmar match':>13} {'hist':>8} {'OOS-2025':>8}")
 
     results = []
     for a in ASSETS:
@@ -98,7 +144,8 @@ def main() -> int:
         m, b = r["exposure_matched"], r["b1_buy_and_hold"]
         print(f"{r['strategy_id']:26} {r['mean_realized_exposure']:>6} {r['scale_factor']:>6} | "
               f"{b['ann_return_pct']:>9} {m['ann_return_pct']:>11} {b['calmar']:>10} "
-              f"{m['calmar']:>13} {'SI' if r['verdict']['timing_is_real'] else 'no':>8}")
+              f"{m['calmar']:>13} {'SI' if r['verdict']['timing_is_real_full_history'] else 'no':>8}"
+              f" {('SI' if r['verdict'].get('timing_is_real_OOS') else ('no' if r['oos_window'] else 'n/a')):>8}")
 
     out = REPO / ".claude" / "evidence" / "exposure_matched" / date.today().isoformat()
     out.mkdir(parents=True, exist_ok=True)

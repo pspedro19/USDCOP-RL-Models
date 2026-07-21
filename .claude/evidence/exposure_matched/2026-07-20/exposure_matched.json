@@ -1,6 +1,29 @@
 {
   "results": [
     {
+      "oos_window": {
+        "year": 2025,
+        "n_obs": 365,
+        "as_is": {
+          "ann_return_pct": -3.05,
+          "max_dd_pct": -13.27,
+          "calmar": -0.23,
+          "sharpe": -0.181
+        },
+        "exposure_matched": {
+          "ann_return_pct": -37.68,
+          "max_dd_pct": -65.09,
+          "calmar": -0.579,
+          "sharpe": -0.181
+        },
+        "b1_buy_and_hold": {
+          "ann_return_pct": -6.33,
+          "max_dd_pct": -32.02,
+          "calmar": -0.198,
+          "sharpe": 0.051
+        },
+        "timing_is_real_oos": false
+      },
       "asset": "btcusdt",
       "strategy_id": "btc_trend_b2",
       "clock": 365,
@@ -37,10 +60,35 @@
         "calmar_beats_b1": true,
         "return_beats_b1": true,
         "dd_no_worse_than_b1": true,
-        "timing_is_real": true
+        "timing_is_real_full_history": true,
+        "timing_is_real_OOS": false,
+        "disagrees_with_full_history": true
       }
     },
     {
+      "oos_window": {
+        "year": 2025,
+        "n_obs": 259,
+        "as_is": {
+          "ann_return_pct": 33.98,
+          "max_dd_pct": -6.52,
+          "calmar": 5.215,
+          "sharpe": 2.54
+        },
+        "exposure_matched": {
+          "ann_return_pct": 85.69,
+          "max_dd_pct": -14.01,
+          "calmar": 6.116,
+          "sharpe": 2.54
+        },
+        "b1_buy_and_hold": {
+          "ann_return_pct": 62.12,
+          "max_dd_pct": -10.43,
+          "calmar": 5.954,
+          "sharpe": 2.637
+        },
+        "timing_is_real_oos": true
+      },
       "asset": "xauusd",
       "strategy_id": "gold_dynamic_exit",
       "clock": 252,
@@ -77,10 +125,35 @@
         "calmar_beats_b1": false,
         "return_beats_b1": false,
         "dd_no_worse_than_b1": false,
-        "timing_is_real": false
+        "timing_is_real_full_history": false,
+        "timing_is_real_OOS": true,
+        "disagrees_with_full_history": true
       }
     },
     {
+      "oos_window": {
+        "year": 2025,
+        "n_obs": 259,
+        "as_is": {
+          "ann_return_pct": 43.35,
+          "max_dd_pct": -4.14,
+          "calmar": 10.478,
+          "sharpe": 3.139
+        },
+        "exposure_matched": {
+          "ann_return_pct": 113.58,
+          "max_dd_pct": -8.89,
+          "calmar": 12.776,
+          "sharpe": 3.139
+        },
+        "b1_buy_and_hold": {
+          "ann_return_pct": 62.12,
+          "max_dd_pct": -10.43,
+          "calmar": 5.954,
+          "sharpe": 2.637
+        },
+        "timing_is_real_oos": true
+      },
       "asset": "xauusd",
       "strategy_id": "gold_trend_simple",
       "clock": 252,
@@ -117,10 +190,35 @@
         "calmar_beats_b1": true,
         "return_beats_b1": true,
         "dd_no_worse_than_b1": true,
-        "timing_is_real": true
+        "timing_is_real_full_history": true,
+        "timing_is_real_OOS": true,
+        "disagrees_with_full_history": false
       }
     },
     {
+      "oos_window": {
+        "year": 2025,
+        "n_obs": 250,
+        "as_is": {
+          "ann_return_pct": 7.74,
+          "max_dd_pct": -6.19,
+          "calmar": 1.25,
+          "sharpe": 0.863
+        },
+        "exposure_matched": {
+          "ann_return_pct": 16.07,
+          "max_dd_pct": -12.91,
+          "calmar": 1.245,
+          "sharpe": 0.863
+        },
+        "b1_buy_and_hold": {
+          "ann_return_pct": 16.48,
+          "max_dd_pct": -20.01,
+          "calmar": 0.824,
+          "sharpe": 0.849
+        },
+        "timing_is_real_oos": false
+      },
       "asset": "spx500",
       "strategy_id": "spx500_regime_gated_v1",
       "clock": 252,
@@ -157,10 +255,35 @@
         "calmar_beats_b1": true,
         "return_beats_b1": false,
         "dd_no_worse_than_b1": true,
-        "timing_is_real": false
+        "timing_is_real_full_history": false,
+        "timing_is_real_OOS": false,
+        "disagrees_with_full_history": false
       }
     },
     {
+      "oos_window": {
+        "year": 2025,
+        "n_obs": 250,
+        "as_is": {
+          "ann_return_pct": 7.19,
+          "max_dd_pct": -8.31,
+          "calmar": 0.866,
+          "sharpe": 0.743
+        },
+        "exposure_matched": {
+          "ann_return_pct": 11.74,
+          "max_dd_pct": -13.65,
+          "calmar": 0.86,
+          "sharpe": 0.743
+        },
+        "b1_buy_and_hold": {
+          "ann_return_pct": 16.48,
+          "max_dd_pct": -20.01,
+          "calmar": 0.824,
+          "sharpe": 0.849
+        },
+        "timing_is_real_oos": false
+      },
       "asset": "spx500",
       "strategy_id": "spx500_trend_simple",
       "clock": 252,
@@ -197,7 +320,9 @@
         "calmar_beats_b1": true,
         "return_beats_b1": false,
         "dd_no_worse_than_b1": true,
-        "timing_is_real": false
+        "timing_is_real_full_history": false,
+        "timing_is_real_OOS": false,
+        "disagrees_with_full_history": false
       }
     }
   ],

@@ -1,11 +1,25 @@
 ---
 kind: as-built
-status: IMPLEMENTED
+status: PROPOSED
 version: 1.0.0
 last_verified: 2026-07-20
 supersedes: []
 code_anchors: []
 ---
+> ### ⚠️ Estado real (corregido 2026-07-21)
+>
+> Esta spec declaraba `status: IMPLEMENTED`. **Su objetivo de materializacion
+> `src/strategy/meta_label.py` no existe en disco.** Corregido a `PROPOSED`.
+>
+> El slot S4 del ladder lo ocupa `intent_trend_funding` (strategies.py:91), un freno de
+> funding DETERMINISTA sin ML. No hay clasificador, ni `p_success`, ni `postpone_flag`, ni
+> etiquetado triple-barrier. Bloqueado ademas por dos dependencias: el motor de bandas de
+> SPEC-06 (hoy S3 produce 44 trades en 8 anos: no hay cruces que etiquetar) y la migracion
+> 052 de datos on-chain.
+>
+> Una spec que se declara implementada sin codigo que la respalde es peor que
+> una spec ausente: convierte una laguna en una casilla marcada.
+
 # SPEC-08 — Meta-Labeling (exposición continua) = S4
 
 | Campo | Valor |

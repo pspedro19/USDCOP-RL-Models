@@ -1,11 +1,23 @@
 ---
 kind: as-built
-status: IMPLEMENTED
+status: PROPOSED
 version: 1.0.0
 last_verified: 2026-07-20
 supersedes: []
 code_anchors: []
 ---
+> ### ⚠️ Estado real (corregido 2026-07-21)
+>
+> Esta spec declaraba `status: IMPLEMENTED`. **Su objetivo de materializacion
+> `ops/retirement.py` no existe en disco.** Corregido a `PROPOSED`.
+>
+> Los niveles RUN/SUSPEND/HALF/DEATH y los disparadores automaticos (DD live > 1.25x el
+> MaxDD del backtest OOS, divergencia shadow-vs-real > 2% NAV en 30d, PSI > 0.25 sostenido)
+> estan especificados pero no implementados.
+>
+> Una spec que se declara implementada sin codigo que la respalde es peor que
+> una spec ausente: convierte una laguna en una casilla marcada.
+
 # SPEC-12 — Protocolo de Retiro del Sistema en Vivo ★
 
 | Campo | Valor |
