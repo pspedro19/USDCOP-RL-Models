@@ -705,3 +705,28 @@ H-LATAM-01 (la pata de CARRY de la cesta) sigue gated en tasas locales medidas
 carry es el retorno y el momentum el ruido, y esta corrida es consistente con eso.
 Las rutas activas hacia la meta 20-30% quedan: v12 (lunes), v13 (materia prima validada),
 transformer-vol (+1 trial disponible), carry/colateral (operador).
+
+---
+
+## REGLA DE VENTANAS CANÓNICAS DEL PROGRAMA COP (operador, 2026-07-21) + re-reporte alineado de H-LATAM-02
+
+**Regla (vinculante para toda hipótesis futura del programa)**: ventana primaria =
+**DISEÑO 2020-01→2024-12 · OOS 2025 (un disparo) · LIVE 2026+**, anclada al inicio del
+M5 de USD/COP (2019-12-18). Historia más profunda solo como contexto de robustez,
+etiquetada, jamás como juez. Estrategias con macro: universo = intersección con la
+cobertura CLEAN real de cada serie. Nada se rellena hacia atrás.
+
+**H-LATAM-02 re-reportada en la ventana alineada** (mismo trial N=65, 0 miradas nuevas —
+re-slice del artefacto; `h_latam_02_ALIGNED_window.json`):
+
+| Ventana alineada | Cesta TSMOM | B1′ (pasivo emparejado) |
+|---|---|---|
+| DISEÑO 2020-2024 (261 sem) | ann +0.79% · maxDD −21.3% · **Calmar 0.037** | ann +4.31% · maxDD −12.0% · **Calmar 0.358** |
+| Por par (diseño) | COP −0.09 · MXN 0.047 · BRL 0.093 | — |
+| OOS-2025 (52 sem) | −1.89% · Calmar −0.49 | −9.20% · Calmar −0.97 |
+| ΔCalmar OOS | +0.476, IC95 block-4 [−0.57, +3.29] | **NO_RECHAZA** |
+
+**Lectura alineada — MÁS dura que la de 35 años**: en la ventana del programa la cesta
+ni siquiera bate a su propio baseline pasivo en diseño (0.037 vs 0.358) y las tres patas
+están muertas individualmente. El decaimiento por décadas queda como contexto; el
+veredicto en la ventana canónica es inequívoco: vía cerrada.

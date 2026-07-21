@@ -1,0 +1,58 @@
+{
+  "ventana": "ALINEADA al programa COP: 2019-12-18 (min M5) -> hoy",
+  "warmup": "13 semanas previas solo para calcular votos (causal)",
+  "design_2020_2024": {
+    "basket": {
+      "ann_pct": 0.79,
+      "maxdd_pct": -21.33,
+      "calmar": 0.037,
+      "n": 261
+    },
+    "b1prime": {
+      "ann_pct": 4.31,
+      "maxdd_pct": -12.04,
+      "calmar": 0.358,
+      "n": 261
+    }
+  },
+  "oos_2025": {
+    "basket": {
+      "ann_pct": -1.89,
+      "maxdd_pct": -3.82,
+      "calmar": -0.493,
+      "n": 52
+    },
+    "b1prime": {
+      "ann_pct": -9.2,
+      "maxdd_pct": -9.49,
+      "calmar": -0.969,
+      "n": 52
+    },
+    "delta_calmar": 0.476,
+    "ci95_block4": [
+      -0.572,
+      3.288
+    ]
+  },
+  "per_pair_design": {
+    "COP": {
+      "ann_pct": -2.44,
+      "maxdd_pct": -27.21,
+      "calmar": -0.09,
+      "n": 261
+    },
+    "MXN": {
+      "ann_pct": 1.25,
+      "maxdd_pct": -26.58,
+      "calmar": 0.047,
+      "n": 261
+    },
+    "BRL": {
+      "ann_pct": 2.51,
+      "maxdd_pct": -27.02,
+      "calmar": 0.093,
+      "n": 261
+    }
+  },
+  "verdict": "NO_RECHAZA"
+}
