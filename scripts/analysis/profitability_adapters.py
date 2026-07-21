@@ -178,14 +178,19 @@ def spx500() -> Sleeve:
 
     from src.strategies.spx500_regime_gated_v1.engine import BacktestConfig, BacktestEngine
     from src.strategies.spx500_regime_gated_v1.load_real import load_real
-    from src.strategies.spx500_regime_gated_v1.policies import vol_target_weights
+    from src.strategies.spx500_regime_gated_v1.policies import spx_regime_gated_v1
 
     df = load_real()
     close = df["close"].astype(float)
 
-    ma = close.rolling(200, min_periods=200).mean()
-    trend_on = (close > ma).astype(float)
-    w = (trend_on * vol_target_weights(close, target=0.10)).clip(upper=1.5)
+    # Use the ACTUAL gated policy. The first version of this adapter built
+    # `trend_on * vol_target_weights` by hand, which is the SIMPLE strategy -- it never
+    # invoked regime.py at all. It then scored identically to the deliberately-simplified
+    # variant (Calmar 0.577 vs 0.578), which is what exposed the mistake. Measuring a
+    # strategy that is not the strategy is worse than not measuring it: every conclusion
+    # drawn about "the regime gate" would have been about code that never ran.
+    w = spx_regime_gated_v1(df)
+    trend_on = (close > close.rolling(200, min_periods=200).mean()).astype(float)
 
     res = BacktestEngine(BacktestConfig(cost_bps_roundtrip=3.0)).run(w, df)
 
@@ -206,3 +211,71 @@ def spx500() -> Sleeve:
 
 
 ADAPTERS = {"usdcop": cop, "xauusd": gold, "btcusdt": btc, "spx500": spx500}
+
+
+# ---------------------------------------------------------------------------
+# Simplification hypotheses — H-SIMP-GOLD-01 / H-SIMP-SPX-01
+# ---------------------------------------------------------------------------
+# These are the strategies with the machinery REMOVED. Registered in the hypothesis
+# registries on 2026-07-21 BEFORE being run. Their historical numbers are context only:
+# the observation that motivated them was made on the same history, so that history cannot
+# also judge them (quant-constitution 1). The forward is the judge.
+
+def gold_simple() -> Sleeve:
+    """H-SIMP-GOLD-01: same 2-of-3 SMA vote, vol-targeted, NO trailing exit."""
+    from src.gold_rl.indicators import build_daily_features
+
+    df = pd.read_parquet(ROOT / "seeds/latest/xauusd_daily_ohlcv.parquet")
+    df = df.sort_values("time").reset_index(drop=True)
+    df["time"] = pd.to_datetime(df["time"])
+    d = build_daily_features(df).reset_index(drop=True)
+
+    votes = sum((d["close"] > d["close"].rolling(w).mean()).astype(int) for w in (63, 126, 252))
+    sig = (votes >= 2).astype(float)
+    size = (0.10 / d["realized_vol_20"].clip(lower=0.06)).clip(upper=1.5)
+    pos = (sig * size).shift(1).fillna(0.0).to_numpy(float)   # causal: yesterday's close
+
+    ret = d["close"].pct_change().fillna(0.0).to_numpy(float)
+    COST, SWAP_D = 2.0 / 1e4, 0.025 / 252                      # identical to gold_dynamic_exit
+    cost = np.abs(np.diff(pos, prepend=0.0)) * COST
+    swap = np.abs(pos) * SWAP_D
+    n_trades = int((np.abs(np.diff((pos > 0).astype(float), prepend=0.0)) > 0).sum())
+
+    return Sleeve(
+        asset="xauusd", strategy_id="gold_trend_simple",
+        index=d["time"], position=pos, asset_ret=ret, cost=cost, swap=swap,
+        n_trades=n_trades, clock=252, clock_label="daily/252",
+        dumb_name="sma_vote_unsized", dumb_position=sig.shift(1).fillna(0.0).to_numpy(float),
+    )
+
+
+def spx500_simple() -> Sleeve:
+    """H-SIMP-SPX-01: MA200 + vol target, NO regime gate."""
+    pkg = ROOT / "src" / "strategies" / "spx500_regime_gated_v1"
+    if str(pkg) not in sys.path:
+        sys.path.insert(0, str(pkg))
+    from src.strategies.spx500_regime_gated_v1.engine import BacktestConfig, BacktestEngine
+    from src.strategies.spx500_regime_gated_v1.load_real import load_real
+    from src.strategies.spx500_regime_gated_v1.policies import vol_target_weights
+
+    df = load_real()
+    close = df["close"].astype(float)
+    trend_on = (close > close.rolling(200, min_periods=200).mean()).astype(float)
+    w = (trend_on * vol_target_weights(close, target=0.10)).clip(upper=1.5)
+
+    res = BacktestEngine(BacktestConfig(cost_bps_roundtrip=3.0)).run(w, df)
+    pos = res.weights_exec.to_numpy(float)
+    ret = df["open_to_open_return"].to_numpy(float)[: len(pos)]
+
+    return Sleeve(
+        asset="spx500", strategy_id="spx500_trend_simple",
+        index=df["timestamp"].iloc[: len(pos)],
+        position=pos, asset_ret=ret, cost=res.cost.to_numpy(float), swap=None,
+        n_trades=int((np.abs(np.diff(pos, prepend=0.0)) > 1e-9).sum()),
+        clock=252, clock_label="daily/252",
+        dumb_name="ma200_always_on", dumb_position=trend_on.to_numpy(float)[: len(pos)],
+    )
+
+
+ADAPTERS["xauusd_simple"] = gold_simple
+ADAPTERS["spx500_simple"] = spx500_simple

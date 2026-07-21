@@ -1,6 +1,6 @@
 {
   "asset": "xauusd",
-  "strategy_id": "gold_dynamic_exit",
+  "strategy_id": "gold_trend_simple",
   "clock": {
     "periods_per_year": 252,
     "label": "daily/252"
@@ -10,32 +10,32 @@
     "end": "2026-07-21 21:00:00+00:00",
     "n_periods": 5871
   },
-  "n_trades": 227,
+  "n_trades": 250,
   "strategy": {
-    "net_return_pct": 5.8013,
+    "net_return_pct": 241.7054,
     "ann_return_pct": null,
-    "calmar": 0.0045,
-    "sortino": 0.1043,
-    "sharpe": 0.0734,
-    "max_dd_pct": 0.5337,
-    "volatility": 0.0955,
-    "cvar_95_pct": 1.5789,
-    "sharpe_stderr": 0.0135
+    "calmar": 0.2415,
+    "sortino": 0.9986,
+    "sharpe": 0.6383,
+    "max_dd_pct": 0.2243,
+    "volatility": 0.0888,
+    "cvar_95_pct": 1.3895,
+    "sharpe_stderr": 0.0131
   },
-  "turnover": 0.0259,
+  "turnover": 0.0504,
   "exposure_profile": {
-    "mean_abs": 0.459,
-    "p50": 0.4725,
-    "p95": 1.141,
-    "pct_time_flat": 33.79,
-    "pct_time_long": 66.21,
+    "mean_abs": 0.4637,
+    "p50": 0.5137,
+    "p95": 1.1146,
+    "pct_time_flat": 35.6,
+    "pct_time_long": 64.4,
     "pct_time_short": 0.0
   },
   "shape": {
-    "omega": 1.0166,
-    "up_capture_pct": 41.31,
-    "down_capture_pct": 45.59,
-    "capture_ratio": 0.906
+    "omega": 1.1449,
+    "up_capture_pct": 43.24,
+    "down_capture_pct": 42.37,
+    "capture_ratio": 1.021
   },
   "baselines": {
     "B1_buy_and_hold": {
@@ -49,21 +49,21 @@
       "cvar_95_pct": 2.6045
     },
     "B1_prime_exposure_matched": {
-      "mean_exposure": 0.459,
-      "ann_return_pct": 4.96,
-      "max_dd_pct": -22.54,
+      "mean_exposure": 0.4637,
+      "ann_return_pct": 5.01,
+      "max_dd_pct": -22.76,
       "calmar": 0.22,
       "sharpe": 0.646
     },
-    "dumb_sma_vote_always_on": {
-      "net_return_pct": 2819.7465,
+    "dumb_sma_vote_unsized": {
+      "net_return_pct": 457.8953,
       "ann_return_pct": null,
-      "calmar": 0.908,
-      "sortino": 1.7121,
-      "sharpe": 1.1013,
-      "max_dd_pct": 0.1716,
-      "volatility": 0.1405,
-      "cvar_95_pct": 2.1947
+      "calmar": 0.2399,
+      "sortino": 0.9106,
+      "sharpe": 0.6003,
+      "max_dd_pct": 0.3192,
+      "volatility": 0.1391,
+      "cvar_95_pct": 2.2353
     },
     "flat_zero": {
       "net_return_pct": 0.0,
@@ -78,29 +78,29 @@
   },
   "cost_stress": {
     "x1": {
-      "ann_return_pct": 0.24,
-      "max_dd_pct": -53.37,
-      "calmar": 0.005,
-      "sharpe": 0.073
+      "ann_return_pct": 5.42,
+      "max_dd_pct": -22.43,
+      "calmar": 0.241,
+      "sharpe": 0.638
     },
     "x2": {
-      "ann_return_pct": -5.87,
-      "max_dd_pct": -82.89,
-      "calmar": -0.071,
-      "sharpe": -0.518
+      "ann_return_pct": 5.15,
+      "max_dd_pct": -23.52,
+      "calmar": 0.219,
+      "sharpe": 0.61
     },
     "x3": {
-      "ann_return_pct": -11.66,
-      "max_dd_pct": -95.52,
-      "calmar": -0.122,
-      "sharpe": -0.981
+      "ann_return_pct": 4.88,
+      "max_dd_pct": -24.75,
+      "calmar": 0.197,
+      "sharpe": 0.581
     },
-    "survives_2x": false,
-    "survives_3x": false
+    "survives_2x": true,
+    "survives_3x": true
   },
   "deflated_sharpe": {
-    "sharpe_per_period": 0.004621,
-    "sharpe_annualized": 0.0734,
+    "sharpe_per_period": 0.040207,
+    "sharpe_annualized": 0.6383,
     "n_obs": 5871,
     "cells": [
       {
@@ -108,7 +108,7 @@
         "sigma_trials_pp": 0.010386,
         "sigma_origin": "empirical_from_published_variants",
         "sr0": 0.02,
-        "dsr": 0.1206,
+        "dsr": 0.9384,
         "significant": false
       },
       {
@@ -116,31 +116,31 @@
         "sigma_trials_pp": 0.00315,
         "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
         "sr0": 0.0061,
-        "dsr": 0.4564,
-        "significant": false
+        "dsr": 0.9954,
+        "significant": true
       },
       {
         "n_trials": 21,
         "sigma_trials_pp": 0.006299,
         "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
         "sr0": 0.0121,
-        "dsr": 0.2837,
-        "significant": false
+        "dsr": 0.9838,
+        "significant": true
       },
       {
         "n_trials": 21,
         "sigma_trials_pp": 0.009449,
         "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
         "sr0": 0.0182,
-        "dsr": 0.1505,
-        "significant": false
+        "dsr": 0.9534,
+        "significant": true
       },
       {
         "n_trials": 75,
         "sigma_trials_pp": 0.010386,
         "sigma_origin": "empirical_from_published_variants",
         "sr0": 0.0252,
-        "dsr": 0.0579,
+        "dsr": 0.8732,
         "significant": false
       },
       {
@@ -148,23 +148,23 @@
         "sigma_trials_pp": 0.00315,
         "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
         "sr0": 0.0076,
-        "dsr": 0.4086,
-        "significant": false
+        "dsr": 0.9934,
+        "significant": true
       },
       {
         "n_trials": 75,
         "sigma_trials_pp": 0.006299,
         "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
         "sr0": 0.0153,
-        "dsr": 0.2075,
-        "significant": false
+        "dsr": 0.9711,
+        "significant": true
       },
       {
         "n_trials": 75,
         "sigma_trials_pp": 0.009449,
         "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
         "sr0": 0.0229,
-        "dsr": 0.0809,
+        "dsr": 0.9057,
         "significant": false
       },
       {
@@ -172,7 +172,7 @@
         "sigma_trials_pp": 0.010386,
         "sigma_origin": "empirical_from_published_variants",
         "sr0": 0.0259,
-        "dsr": 0.0518,
+        "dsr": 0.8614,
         "significant": false
       },
       {
@@ -180,34 +180,34 @@
         "sigma_trials_pp": 0.00315,
         "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
         "sr0": 0.0079,
-        "dsr": 0.4021,
-        "significant": false
+        "dsr": 0.9931,
+        "significant": true
       },
       {
         "n_trials": 91,
         "sigma_trials_pp": 0.006299,
         "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
         "sr0": 0.0157,
-        "dsr": 0.1981,
-        "significant": false
+        "dsr": 0.9688,
+        "significant": true
       },
       {
         "n_trials": 91,
         "sigma_trials_pp": 0.009449,
         "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
         "sr0": 0.0236,
-        "dsr": 0.0736,
+        "dsr": 0.8971,
         "significant": false
       }
     ],
-    "headline_dsr": 0.0518,
+    "headline_dsr": 0.8614,
     "headline_cell": {
       "n_trials": 91,
       "sigma_trials_pp": 0.010386,
       "sigma_origin": "empirical_from_published_variants",
       "sr0": 0.0259
     },
-    "worst_cell_dsr": 0.0518,
+    "worst_cell_dsr": 0.8614,
     "bar": 0.95,
     "passes": false
   },
@@ -242,23 +242,20 @@
     "dsr_min_over_grid_gt_0.95": false,
     "pbo_lt_0.50": false,
     "n_trades_ge_20": true,
-    "calmar_gt_b1_prime": false,
-    "calmar_gt_dumb_baseline": false,
+    "calmar_gt_b1_prime": true,
+    "calmar_gt_dumb_baseline": true,
     "net_return_gt_b1": false,
-    "survives_cost_x2": false
+    "survives_cost_x2": true
   },
   "failed_gates": [
     "dsr_min_over_grid_gt_0.95",
     "pbo_lt_0.50",
-    "calmar_gt_b1_prime",
-    "calmar_gt_dumb_baseline",
-    "net_return_gt_b1",
-    "survives_cost_x2"
+    "net_return_gt_b1"
   ],
   "verdict": "FAIL",
   "evidence_class": "research_only",
   "point_in_time": false,
   "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
   "promotion_eligible": false,
-  "params_hash": "27ca6718737e72ff"
+  "params_hash": "195e02d19805f45d"
 }

@@ -72,6 +72,8 @@ log = logging.getLogger("profitability")
 REGISTRIES = {
     "usdcop": ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
     "spx500": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+    "spx500_simple": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+    "xauusd_simple": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
     "xauusd": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
     "btcusdt": ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
 }
@@ -87,6 +89,12 @@ FAMILIES = {
     "btcusdt": ("btc_exposure_s3", "btc_hodl_b1", "btc_trend_b2", "btc_trend_funding_s4",
                 "btc_trend_volbrk_s5"),
     "spx500": ("spx500_regime_gated_v1",),
+    # The simplification variants share their asset's registry and bundle floor: they are
+    # hypotheses ABOUT that asset, not a new asset.
+    "spx500_simple": ("spx500_regime_gated_v1",),
+    "xauusd_simple": ("gold_dxy_tilt", "gold_dxy_tilt_s05", "gold_dxy_tilt_s07",
+                      "gold_dynamic_exit", "gold_long_only_b1", "gold_regime_gated_v1",
+                      "gold_trend_b2", "gold_trend_ens"),
 }
 
 

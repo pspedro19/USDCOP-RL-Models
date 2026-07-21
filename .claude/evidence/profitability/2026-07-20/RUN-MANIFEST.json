@@ -1,6 +1,6 @@
 {
   "generated": "2026-07-20",
-  "git_sha": "3c884a00965f0f6fbe6ef7b888c8975667dc1382",
+  "git_sha": "911402ecd0cd46b68b76f9d94a8409d421c30831",
   "assets": {
     "usdcop": {
       "params_hash": "8b102163773df226",
@@ -15,8 +15,8 @@
       ]
     },
     "spx500": {
-      "params_hash": "2f5c9884f8457f90",
-      "n_trials_total": 14,
+      "params_hash": "785822ed8684d9ec",
+      "n_trials_total": 16,
       "trials_source": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
       "published_bundle_floor": 0,
       "verdict": "FAIL",
@@ -27,9 +27,34 @@
         "net_return_gt_b1"
       ]
     },
+    "spx500_simple": {
+      "params_hash": "595fdb813afec570",
+      "n_trials_total": 16,
+      "trials_source": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 0,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_dumb_baseline",
+        "net_return_gt_b1"
+      ]
+    },
+    "xauusd_simple": {
+      "params_hash": "195e02d19805f45d",
+      "n_trials_total": 75,
+      "trials_source": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 21,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "net_return_gt_b1"
+      ]
+    },
     "xauusd": {
       "params_hash": "27ca6718737e72ff",
-      "n_trials_total": 74,
+      "n_trials_total": 75,
       "trials_source": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
       "published_bundle_floor": 21,
       "verdict": "FAIL",

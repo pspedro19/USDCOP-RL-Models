@@ -19,6 +19,23 @@
     {
       "asset": "spx500",
       "strategy_id": "spx500_regime_gated_v1",
+      "net_return_pct": 43.5372,
+      "max_dd_pct": 0.0885,
+      "cvar_95_pct": 1.3053,
+      "n_trades": 922,
+      "turnover": 0.0325,
+      "mean_exposure": 0.468,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_dumb_baseline",
+        "net_return_gt_b1"
+      ]
+    },
+    {
+      "asset": "spx500",
+      "strategy_id": "spx500_trend_simple",
       "net_return_pct": 55.5123,
       "max_dd_pct": 0.1214,
       "cvar_95_pct": 1.4598,
@@ -30,6 +47,22 @@
         "dsr_min_over_grid_gt_0.95",
         "pbo_lt_0.50",
         "calmar_gt_dumb_baseline",
+        "net_return_gt_b1"
+      ]
+    },
+    {
+      "asset": "xauusd",
+      "strategy_id": "gold_trend_simple",
+      "net_return_pct": 241.7054,
+      "max_dd_pct": 0.2243,
+      "cvar_95_pct": 1.3895,
+      "n_trades": 250,
+      "turnover": 0.0504,
+      "mean_exposure": 0.4637,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
         "net_return_gt_b1"
       ]
     },
@@ -87,12 +120,34 @@
         "asset": "spx500",
         "strategy_id": "spx500_regime_gated_v1",
         "ann_return_pct": null,
+        "calmar": 0.6441,
+        "sortino": 1.119,
+        "sharpe": 0.7617,
+        "sharpe_stderr": 0.0239,
+        "dsr_headline": 0.8804,
+        "pbo": null
+      },
+      {
+        "asset": "spx500",
+        "strategy_id": "spx500_trend_simple",
+        "ann_return_pct": null,
         "calmar": 0.5773,
         "sortino": 1.2041,
         "sharpe": 0.805,
         "sharpe_stderr": 0.0243,
-        "dsr_headline": 0.9035,
+        "dsr_headline": 0.9008,
         "pbo": null
+      },
+      {
+        "asset": "xauusd",
+        "strategy_id": "gold_trend_simple",
+        "ann_return_pct": null,
+        "calmar": 0.2415,
+        "sortino": 0.9986,
+        "sharpe": 0.6383,
+        "sharpe_stderr": 0.0131,
+        "dsr_headline": 0.8614,
+        "pbo": 0.7236
       },
       {
         "asset": "xauusd",
@@ -102,7 +157,7 @@
         "sortino": 0.1043,
         "sharpe": 0.0734,
         "sharpe_stderr": 0.0135,
-        "dsr_headline": 0.0521,
+        "dsr_headline": 0.0518,
         "pbo": 0.7236
       }
     ],

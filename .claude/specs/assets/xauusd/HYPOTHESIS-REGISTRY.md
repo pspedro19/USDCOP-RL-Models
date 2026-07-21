@@ -10,11 +10,12 @@ code_anchors:
   - scripts/pipeline/publish_gold_dynexit.py
   - src/gold_rl/backtest.py
 # Conteo de trials LEGIBLE POR MÁQUINA.
-n_trials_total: 74
-n_trials_scenarios: [21, 74, 90]   # suelo publicado / programa declarado / +descartados
+n_trials_total: 75
+n_trials_scenarios: [21, 75, 91]   # suelo publicado / programa declarado / +descartados
 n_trials_sources:
   - "scripts/pipeline/publish_gold_dynexit.py:48 TRIALS_PROGRAM = 74 (número heredado)"
   - "public/data/strategies/gold_*/backtests/* = 21 bundles publicados (suelo verificable)"
+  - "H-SIMP-GOLD-01 (registrada 2026-07-21, prospectiva): +1"
 sigma_trials: null
 sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
 ---
@@ -75,3 +76,30 @@ Toda hipótesis nueva sobre XAU/USD se registra **aquí y antes** de correr su t
 criterio de decisión pre-registrado, e incrementa `n_trials_total` en el front-matter. El
 harness `scripts/analysis/profitability_evidence.py` compara el `params_hash` de cada corrida
 contra el anterior y **exige el incremento** cuando cambia.
+
+---
+
+## 5. Hipótesis prospectivas (registradas ANTES de correr)
+
+### H-SIMP-GOLD-01 — la maquinaria de salida destruye la tendencia
+
+**Registrada**: 2026-07-21, antes de implementar `gold_trend_simple`.
+
+**Motivación**: la medición de evidencia del 2026-07-20 mostró que el baseline tonto —el mismo
+voto SMA 63/126/252, siempre encendido, **sin trailing exit**— rindió 2819.75% con Calmar 0.908
+frente al 5.80% y Calmar 0.0045 de `gold_dynamic_exit`. El capture ratio lo confirma desde otro
+ángulo: la estrategia captura **más bajada (45.6%) que subida (41.3%)**, ratio 0.906. El exit
+no es inútil: está invertido.
+
+- **H0**: `Calmar(gold_trend_simple) ≤ Calmar(gold_dynamic_exit)` — el trailing exit aporta.
+- **H1**: `Calmar(gold_trend_simple) > Calmar(gold_dynamic_exit)` — el exit resta.
+- **Estadístico**: ΔCalmar por block bootstrap pareado (bloque 20d, 252/año, 5000 muestras).
+- **Criterio de decisión**: IC95 excluye cero **en el forward**, no en 2004-2026.
+- **Costos**: idénticos a `gold_dynamic_exit` (2 bps + swap), y stress ×2/×3.
+
+> **El juez es el forward.** La observación que motiva esta hipótesis se hizo sobre 2004-2026,
+> así que ese periodo **ya no puede evaluarla** (`quant-constitution.md` §1). El backtest
+> histórico se publica como contexto y queda explícitamente marcado como NO-evidencia para
+> H-SIMP-GOLD-01.
+
+**Coste en trials**: +1. `n_trials_total` 74 → 75.
