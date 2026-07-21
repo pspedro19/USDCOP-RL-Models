@@ -15,14 +15,40 @@ Date: 2026-03-12
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import timedelta, datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
+def _trading_days_since(latest_date, today) -> int:
+    """Trading days strictly after `latest_date`, up to and including `today`.
+
+    Colombian calendar via TradingCalendar (weekends always; holidays when the
+    colombian_holidays package is present, else weekend-only — still correct for the common
+    Monday-holiday case because the weekend absorbs 2 of the 4 calendar days).
+
+    Why this exists (2026-07-21): Monday July 20 is Colombia's Independence Day. The market was
+    closed, ZERO bars were missing, the gap detector agreed — and the gate still blocked H5-L3
+    all Tuesday morning because Friday->Tuesday is 4 CALENDAR days. A staleness gate that
+    counts days the market could not have produced data measures the calendar, not the data.
+    """
+    try:
+        from utils.trading_calendar import TradingCalendar
+        cal = TradingCalendar()
+        is_trading = cal.is_trading_day
+    except Exception:  # noqa: BLE001 - fallback keeps the gate functional anywhere
+        is_trading = lambda d: d.weekday() < 5  # noqa: E731
+    days, cur = 0, latest_date
+    while cur < today:
+        cur = cur + timedelta(days=1)
+        if is_trading(cur):
+            days += 1
+    return days
+
+
 def check_table_freshness(conn, table: str, date_col: str, max_age_days: int,
-                          label: str, where_clause: str = ""):
+                          label: str, where_clause: str = "", count: str = "calendar"):
     """
     Raise ValueError if the latest row in `table` is older than max_age_days.
 
@@ -54,21 +80,33 @@ def check_table_freshness(conn, table: str, date_col: str, max_age_days: int,
     # Calculate age depending on whether the value is tz-aware or a date
     if hasattr(latest, 'tzinfo') and latest.tzinfo:
         age = (datetime.now(timezone.utc) - latest).days
+        latest_date = latest.date()
     elif hasattr(latest, 'year') and hasattr(latest, 'hour'):
         # Naive datetime — assume UTC
         age = (datetime.now(timezone.utc).replace(tzinfo=None) - latest).days
+        latest_date = latest.date()
     elif hasattr(latest, 'year'):
         # date object
         age = (datetime.now().date() - latest).days
+        latest_date = latest
     else:
         raise ValueError(f"{label}: unexpected type for {date_col}: {type(latest)}")
 
+    unit = "d"
+    if count == "trading":
+        # Session-bound series (OHLCV): count only days the market could have produced data.
+        # The 3-day threshold keeps its intent and becomes STRICTER on normal weeks
+        # (Fri->Sun = 0 trading days) while no longer blocking the day after a holiday for
+        # data that never existed.
+        age = _trading_days_since(latest_date, datetime.now(timezone.utc).date())
+        unit = " trading days"
+
     if age > max_age_days:
         raise ValueError(
-            f"{label}: latest={latest}, age={age}d, threshold={max_age_days}d"
+            f"{label}: latest={latest}, age={age}{unit}, threshold={max_age_days}{unit}"
         )
 
-    logger.info(f"{label}: latest={latest}, age={age}d (threshold={max_age_days}d) — OK")
+    logger.info(f"{label}: latest={latest}, age={age}{unit} (threshold={max_age_days}{unit}) — OK")
     return latest
 
 
@@ -97,7 +135,8 @@ def validate_training_data_freshness(ohlcv_max_age=3, macro_max_age=7, symbol="U
     try:
         ohlcv_latest = check_table_freshness(
             conn, "usdcop_m5_ohlcv", "time", ohlcv_max_age,
-            "OHLCV freshness", f"WHERE symbol = '{safe_symbol}'"
+            "OHLCV freshness", f"WHERE symbol = '{safe_symbol}'",
+            count="trading",   # session-bound series: holidays are not staleness
         )
         macro_latest = check_table_freshness(
             conn, "macro_indicators_daily", "fecha", macro_max_age,

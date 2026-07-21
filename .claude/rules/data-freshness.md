@@ -27,6 +27,11 @@ code_anchors:
 
 **Por qué**: el mercado cierra viernes 12:55 COT y el training corre domingo → el dato más
 reciente tiene 2 días; 3 días absorbe eso. Macro admite 7 porque varias variables son semanales.
+**Unidad OHLCV = días HÁBILES del calendario colombiano** (2026-07-21, directiva del operador):
+el 20-jul (festivo) demostró que contar días calendario bloquea el martes post-festivo con cero
+barras faltantes. El umbral 3 se mantiene — en semanas normales la cuenta hábil es MÁS estricta
+(vie→dom = 0). Implementación: `utils/data_quality.py::_trading_days_since` + test
+`test_freshness_gate_trading_days.py`. Macro sigue en días calendario.
 Modelos a 10 días = dos domingos fallidos seguidos; se avisa pero no se detiene el trading.
 
 ## Invariantes
