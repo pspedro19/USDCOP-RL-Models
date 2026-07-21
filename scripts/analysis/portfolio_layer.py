@@ -34,17 +34,39 @@ WEEKS = 52
 
 
 def sleeve_weekly(strategy_id: str, version: str, year: int = 2026) -> pd.Series:
-    """Weekly returns of a published sleeve from its immutable bundle trades (2025 slice)."""
+    """Weekly returns of a published sleeve, sliced to the year whose file was loaded.
+
+    This used to load `trades_{year}.json` and then unconditionally filter to 2025 and reindex
+    onto a fixed 2025-01-06..2025-12-29 grid. Asking for 2026 therefore loaded the 2026 file
+    and returned an all-zero 2025 series -- so COP had no 2026 slice anywhere in the analysis
+    stack, and the window report showed it as "sin datos suficientes" for the LIVE window while
+    its production bundle reported +1.77%.
+
+    The year now drives both the file AND the slice. A partial year (2026 to date) returns the
+    weeks that exist rather than being padded to a full calendar, because padding a live year
+    with zeros invents flat weeks that have not happened yet.
+    """
     f = PUB / strategy_id / "backtests" / version / f"trades_{year}.json"
+    if not f.is_file():
+        return pd.Series(dtype=float)
     data = json.loads(f.read_text(encoding="utf-8"))
     rows = []
     for t in data.get("trades", []):
         ts = pd.Timestamp(str(t.get("exit_timestamp") or t.get("timestamp"))).tz_localize(None)
         rows.append((ts, float(t.get("pnl_pct", 0.0)) / 100.0))
+    if not rows:
+        return pd.Series(dtype=float)
     s = pd.Series(dict(rows)).sort_index()
-    s = s[(s.index >= "2025-01-01") & (s.index <= "2025-12-31")]
-    return s.resample("W-MON").sum().reindex(
-        pd.date_range("2025-01-06", "2025-12-29", freq="W-MON"), fill_value=0.0)
+    s = s[(s.index >= f"{year}-01-01") & (s.index <= f"{year}-12-31")]
+    if s.empty:
+        return pd.Series(dtype=float)
+    weekly = s.resample("W-MON").sum()
+    # Full calendar only for years that have closed; a live year stops at its last observed week.
+    end = pd.Timestamp(f"{year}-12-29")
+    if weekly.index.max() < end - pd.Timedelta(days=14):
+        end = weekly.index.max()
+    return weekly.reindex(
+        pd.date_range(f"{year}-01-06", end, freq="W-MON"), fill_value=0.0)
 
 
 MIN_ACTIVE_PERIODS = 8   # ex-ante prior: below this a sleeve cannot inform a covariance

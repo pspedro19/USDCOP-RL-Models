@@ -116,18 +116,28 @@ def cop() -> Sleeve:
     """
     from scripts.analysis.portfolio_layer import sleeve_weekly
 
-    # Use the LATEST published version, resolved from disk — not a literal, which would go
-    # stale silently the next time a bundle is published.
-    vdir = ROOT / "usdcop-trading-dashboard/public/data/strategies/smart_simple_v11/backtests"
-    versions = sorted(p.name for p in vdir.iterdir() if p.is_dir()) if vdir.is_dir() else []
-    if not versions:
-        raise RuntimeError(
-            f"COP: no published bundle under {vdir}. The harness will not fabricate a series."
-        )
-    version = versions[-1]
-    s = sleeve_weekly("smart_simple_v11", version, 2025)   # sleeve_weekly slices OOS-2025
-    if s is None or not len(s):
-        raise RuntimeError(f"COP: bundle {version} produced an empty weekly sleeve.")
+    # ACTIVE version from the registry, not the last one alphabetically. Sorting directory
+    # names picked "3.0.0-B", which has no trades_2026.json, so COP silently lost its entire
+    # LIVE window while the registry said active_version = 2.0.0 with backtest_years
+    # [2025, 2026]. "Newest name" and "the one we actually run" are different questions.
+    import json as _j
+    reg = _j.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
+                   .read_text(encoding="utf-8"))
+    version = next((r.get("active_version") for r in reg["strategies"]
+                    if r.get("strategy_id") == "smart_simple_v11"), None)
+    if not version:
+        raise RuntimeError("COP: registry declares no active_version for smart_simple_v11.")
+    # Concatenate every published year so COP has the same DESIGN/OOS/LIVE windows as the
+    # other assets. Previously this loaded 2025 only, so COP was absent from every 2026 report
+    # while its production bundle showed +1.77% -- present in one place, missing in another.
+    parts = []
+    for yr in (2025, 2026):
+        y = sleeve_weekly("smart_simple_v11", version, yr)
+        if y is not None and len(y):
+            parts.append(y)
+    if not parts:
+        raise RuntimeError(f"COP: bundle {version} produced no weekly sleeve for 2025 or 2026.")
+    s = pd.concat(parts).sort_index()
     ret = s.to_numpy(float)
 
     # v11 is flat unless the regime gate opens; a non-zero week is a trade.
