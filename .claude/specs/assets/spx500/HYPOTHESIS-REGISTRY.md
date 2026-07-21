@@ -159,3 +159,27 @@ QLIKE OOS-2025: HAR 0.6307 vs EWMA 0.8202 (mejor en media, la mayor diferencia d
 pero IC95 [−0.511, +0.039] **incluye cero** — un año de datos de índice no basta para
 distinguirlo. Candidato natural a re-evaluación cuando el forward acumule; sin re-corridas
 sobre el mismo 2025.
+
+---
+
+## ERRATUM 2026-07-21 — el Calmar 1.641 de `ma200_always_on` queda RETRACTADO y recomputado
+
+**Defecto (encontrado por Codex en su plan v1 SPX, verificado en código por Claude):**
+`profitability_evidence.py::evaluate` puntuaba el baseline tonto con (a) la señal SIN rezagar
+contra el retorno open-to-open de la misma barra — un día de look-ahead — y (b) el stream de
+costos de la estrategia gated en lugar del turnover propio del baseline. Afectaba también al
+tonto de Oro (`sma_vote_always_on`).
+
+**Corrección aplicada** (mismo convenio de ejecución que toda estrategia: lag 1 barra +
+costo |ΔW|×tarifa-unitaria): commit en `profitability_evidence.py`; artefactos anteriores
+(`.claude/evidence/profitability/2026-07-20/`) se conservan como INVÁLIDOS para este gate,
+los corregidos viven en `2026-07-21/`.
+
+**Números corregidos:**
+- `ma200_always_on`: Calmar 1.641 → **0.5393**. El campeón gated (0.6482) **SÍ bate al
+  baseline tonto**; el gate `calmar_gt_dumb_baseline` pasa ahora.
+- `sma_vote_always_on` (Oro): → **−0.032**.
+- Nada más cambia: DSR 0.8813 < 0.95, `net_return_gt_b1` sigue FAIL → SPX sigue
+  `research_only`. Esta corrección NO es una hipótesis nueva ni consume trial
+  (medición defectuosa de un gate ya registrado; conteo se conserva). H-SIMP-SPX-02 sigue
+  viva con el forward como juez, ahora contra el baseline BIEN medido.

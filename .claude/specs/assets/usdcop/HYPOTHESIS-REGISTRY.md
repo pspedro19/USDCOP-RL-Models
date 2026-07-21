@@ -274,3 +274,27 @@ El "multi-horizonte" honesto disponible es de ROBUSTEZ, no de señal: replay de 
 campeona congelada sobre las décadas nuevas de diseño (Oro 1979-2019, COP post-1991-2019)
 con pass/fail pre-firmado — registrado como H-ROBUST-DECADES-01 (PLANNED) en cada activo
 cuando se decida pagarlo.
+
+---
+
+## ENMIENDA a H-CARRY-01 (2026-07-21, ANTES de cualquier corrida — 0 miradas, 0 trials)
+
+La revisión cruzada Codex↔Claude del plan consolidado encontró dos defectos de diseño en la
+entrada PLANNED original, y se corrigen ex-ante (enmendar un diseño no corrido es legítimo;
+lo ilegítimo sería enmendar después de mirar):
+
+1. **Scope**: "tilt sobre los pesos ERC del libro" era una categoría imposible — el libro
+   diario (portfolio_daily.py) EXCLUYE a COP por reloj (52 vs 252). El carry COP solo puede
+   modular (a) el sleeve COP semanal o (b) el overlay semanal libro+COP (que debe existir
+   primero — U2 del plan). Jamás los pesos diarios XAU/BTC/SPX.
+2. **Juez**: el OOS-2025 ya fue observado repetidamente por este programa; no puede volver a
+   llamarse OOS para esta hipótesis. **El juez es el forward posterior al freeze de la
+   candidata** (constitución §1: el juez es el período siguiente).
+3. **Gate previo endurecido** (U1): ≥20 accruals válidos del swap real del broker y
+   pass-through mediano neto ≥50% sin que el IC95 (block bootstrap) quede por debajo de 50%.
+   Si falla, H-CARRY-01 se cancela SIN gastar trial.
+
+Sin cambios: una variable (el tilt), clip [0.5,1.5] y ventana z-252 como priors ex-ante,
+candidata = `strategy_id` nuevo, v11 intacta, baselines (overlay sin tilt, exposición
+emparejada, tilt aleatorio, costos ×1/×2/×3 + swap real). PASS económico: ΔCalmar vs mejor
+baseline con IC95>0 y DD dentro de protocolo; claim de alfa además exige DSR>0.95.

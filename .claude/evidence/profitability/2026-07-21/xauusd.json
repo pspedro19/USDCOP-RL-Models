@@ -1,0 +1,263 @@
+{
+  "asset": "xauusd",
+  "strategy_id": "gold_dynamic_exit",
+  "clock": {
+    "periods_per_year": 252,
+    "label": "daily/252"
+  },
+  "window": {
+    "start": "2004-01-02 22:00:00+00:00",
+    "end": "2026-07-21 21:00:00+00:00",
+    "n_periods": 5871
+  },
+  "n_trades": 227,
+  "strategy": {
+    "net_return_pct": 5.8013,
+    "ann_return_pct": null,
+    "calmar": 0.0045,
+    "sortino": 0.1043,
+    "sharpe": 0.0734,
+    "max_dd_pct": 0.5337,
+    "volatility": 0.0955,
+    "cvar_95_pct": 1.5789,
+    "sharpe_stderr": 0.0135
+  },
+  "turnover": 0.0259,
+  "exposure_profile": {
+    "mean_abs": 0.459,
+    "p50": 0.4725,
+    "p95": 1.141,
+    "pct_time_flat": 33.79,
+    "pct_time_long": 66.21,
+    "pct_time_short": 0.0
+  },
+  "shape": {
+    "omega": 1.0166,
+    "up_capture_pct": 41.31,
+    "down_capture_pct": 45.59,
+    "capture_ratio": 0.906
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "net_return_pct": 865.6153,
+      "ann_return_pct": null,
+      "calmar": 0.2289,
+      "sortino": 1.0361,
+      "sharpe": 0.6464,
+      "max_dd_pct": 0.4466,
+      "volatility": 0.1741,
+      "cvar_95_pct": 2.6045
+    },
+    "B1_prime_exposure_matched": {
+      "mean_exposure": 0.459,
+      "ann_return_pct": 4.96,
+      "max_dd_pct": -22.54,
+      "calmar": 0.22,
+      "sharpe": 0.646
+    },
+    "dumb_sma_vote_always_on": {
+      "net_return_pct": -44.9544,
+      "ann_return_pct": null,
+      "calmar": -0.032,
+      "sortino": -0.1634,
+      "sharpe": -0.1091,
+      "max_dd_pct": 0.7916,
+      "volatility": 0.1421,
+      "cvar_95_pct": 2.2615
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 0.24,
+      "max_dd_pct": -53.37,
+      "calmar": 0.005,
+      "sharpe": 0.073
+    },
+    "x2": {
+      "ann_return_pct": -5.87,
+      "max_dd_pct": -82.89,
+      "calmar": -0.071,
+      "sharpe": -0.518
+    },
+    "x3": {
+      "ann_return_pct": -11.66,
+      "max_dd_pct": -95.52,
+      "calmar": -0.122,
+      "sharpe": -0.981
+    },
+    "survives_2x": false,
+    "survives_3x": false
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.004621,
+    "sharpe_annualized": 0.0734,
+    "n_obs": 5871,
+    "cells": [
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.0204,
+        "dsr": 0.1145,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0062,
+        "dsr": 0.4527,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0124,
+        "dsr": 0.2773,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0185,
+        "dsr": 0.144,
+        "significant": false
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.0253,
+        "dsr": 0.057,
+        "significant": false
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0077,
+        "dsr": 0.4077,
+        "significant": false
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0154,
+        "dsr": 0.2062,
+        "significant": false
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.023,
+        "dsr": 0.0799,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.026,
+        "dsr": 0.0511,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0079,
+        "dsr": 0.4014,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0158,
+        "dsr": 0.197,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0237,
+        "dsr": 0.0729,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.0511,
+    "headline_cell": {
+      "n_trials": 93,
+      "sigma_trials_pp": 0.010386,
+      "sigma_origin": "empirical_from_published_variants",
+      "sr0": 0.026
+    },
+    "worst_cell_dsr": 0.0511,
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": 0.7236,
+    "n_combinations": 12870,
+    "n_strategies": 11,
+    "n_variants": 11
+  },
+  "trials": {
+    "n_trials_total": 77,
+    "n_trials_scenarios": [
+      23,
+      77,
+      93
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 21,
+    "sources": [
+      "scripts/pipeline/publish_gold_dynexit.py:48 TRIALS_PROGRAM = 74 (n\u00famero heredado)",
+      "public/data/strategies/gold_*/backtests/* = 21 bundles publicados (suelo verificable)",
+      "H-SIMP-GOLD-01 (registrada 2026-07-21, prospectiva): +1"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": false,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": false,
+    "calmar_gt_dumb_baseline": true,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": false
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "pbo_lt_0.50",
+    "calmar_gt_b1_prime",
+    "net_return_gt_b1",
+    "survives_cost_x2"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "27ca6718737e72ff"
+}

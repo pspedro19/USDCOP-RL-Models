@@ -354,7 +354,17 @@ def evaluate(sleeve: Sleeve, trials: dict) -> dict:
     ones = np.ones_like(sleeve.position)
     b1 = _block(ones * sleeve.asset_ret, sleeve.clock)
     b1p = paired_exposure_baseline(sleeve.position, sleeve.asset_ret, float(sleeve.clock))
-    dumb = _block(sleeve.dumb_position * sleeve.asset_ret - sleeve.cost, sleeve.clock)
+    # ERRATUM 2026-07-21 (plan SPX S0.3, Codex retraction verified): the dumb baseline was
+    # scored with (a) the UNLAGGED signal against the same bar's return -- one bar of
+    # look-ahead that inflated ma200_always_on to Calmar 1.641 -- and (b) the STRATEGY's
+    # cost stream instead of its own turnover. Both fixed: lag by one bar (same execution
+    # convention as every strategy) and charge the baseline its own |dW| x per-unit cost.
+    dumb_pos = np.roll(sleeve.dumb_position, 1)
+    dumb_pos[0] = 0.0
+    unit_cost = float(np.sum(sleeve.cost)) / max(
+        float(np.sum(np.abs(np.diff(sleeve.position, prepend=0.0)))), 1e-12)
+    dumb_cost = np.abs(np.diff(dumb_pos, prepend=0.0)) * unit_cost
+    dumb = _block(dumb_pos * sleeve.asset_ret - dumb_cost, sleeve.clock)
     flat = _block(np.zeros_like(sleeve.asset_ret), sleeve.clock)
 
     # Shape metrics. The benchmark is the asset itself (B1), so capture answers "what share of

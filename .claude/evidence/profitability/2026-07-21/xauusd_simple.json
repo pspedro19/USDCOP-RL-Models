@@ -1,0 +1,261 @@
+{
+  "asset": "xauusd",
+  "strategy_id": "gold_trend_simple",
+  "clock": {
+    "periods_per_year": 252,
+    "label": "daily/252"
+  },
+  "window": {
+    "start": "2004-01-02 22:00:00+00:00",
+    "end": "2026-07-21 21:00:00+00:00",
+    "n_periods": 5871
+  },
+  "n_trades": 250,
+  "strategy": {
+    "net_return_pct": 241.7054,
+    "ann_return_pct": null,
+    "calmar": 0.2415,
+    "sortino": 0.9986,
+    "sharpe": 0.6383,
+    "max_dd_pct": 0.2243,
+    "volatility": 0.0888,
+    "cvar_95_pct": 1.3895,
+    "sharpe_stderr": 0.0131
+  },
+  "turnover": 0.0504,
+  "exposure_profile": {
+    "mean_abs": 0.4637,
+    "p50": 0.5137,
+    "p95": 1.1146,
+    "pct_time_flat": 35.6,
+    "pct_time_long": 64.4,
+    "pct_time_short": 0.0
+  },
+  "shape": {
+    "omega": 1.1449,
+    "up_capture_pct": 43.24,
+    "down_capture_pct": 42.37,
+    "capture_ratio": 1.021
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "net_return_pct": 865.6153,
+      "ann_return_pct": null,
+      "calmar": 0.2289,
+      "sortino": 1.0361,
+      "sharpe": 0.6464,
+      "max_dd_pct": 0.4466,
+      "volatility": 0.1741,
+      "cvar_95_pct": 2.6045
+    },
+    "B1_prime_exposure_matched": {
+      "mean_exposure": 0.4637,
+      "ann_return_pct": 5.01,
+      "max_dd_pct": -22.76,
+      "calmar": 0.22,
+      "sharpe": 0.646
+    },
+    "dumb_sma_vote_unsized": {
+      "net_return_pct": 382.3182,
+      "ann_return_pct": null,
+      "calmar": 0.1782,
+      "sortino": 0.8404,
+      "sharpe": 0.5558,
+      "max_dd_pct": 0.3921,
+      "volatility": 0.139,
+      "cvar_95_pct": 2.2401
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 5.42,
+      "max_dd_pct": -22.43,
+      "calmar": 0.241,
+      "sharpe": 0.638
+    },
+    "x2": {
+      "ann_return_pct": 5.15,
+      "max_dd_pct": -23.52,
+      "calmar": 0.219,
+      "sharpe": 0.61
+    },
+    "x3": {
+      "ann_return_pct": 4.88,
+      "max_dd_pct": -24.75,
+      "calmar": 0.197,
+      "sharpe": 0.581
+    },
+    "survives_2x": true,
+    "survives_3x": true
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.040207,
+    "sharpe_annualized": 0.6383,
+    "n_obs": 5871,
+    "cells": [
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.0204,
+        "dsr": 0.9345,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0062,
+        "dsr": 0.9952,
+        "significant": true
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0124,
+        "dsr": 0.983,
+        "significant": true
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0185,
+        "dsr": 0.9506,
+        "significant": true
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.0253,
+        "dsr": 0.8716,
+        "significant": false
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0077,
+        "dsr": 0.9934,
+        "significant": true
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0154,
+        "dsr": 0.9708,
+        "significant": true
+      },
+      {
+        "n_trials": 77,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.023,
+        "dsr": 0.9046,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.010386,
+        "sigma_origin": "empirical_from_published_variants",
+        "sr0": 0.026,
+        "dsr": 0.8601,
+        "significant": false
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0079,
+        "dsr": 0.9931,
+        "significant": true
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0158,
+        "dsr": 0.9686,
+        "significant": true
+      },
+      {
+        "n_trials": 93,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0237,
+        "dsr": 0.8961,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.8601,
+    "headline_cell": {
+      "n_trials": 93,
+      "sigma_trials_pp": 0.010386,
+      "sigma_origin": "empirical_from_published_variants",
+      "sr0": 0.026
+    },
+    "worst_cell_dsr": 0.8601,
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": 0.7236,
+    "n_combinations": 12870,
+    "n_strategies": 11,
+    "n_variants": 11
+  },
+  "trials": {
+    "n_trials_total": 77,
+    "n_trials_scenarios": [
+      23,
+      77,
+      93
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 21,
+    "sources": [
+      "scripts/pipeline/publish_gold_dynexit.py:48 TRIALS_PROGRAM = 74 (n\u00famero heredado)",
+      "public/data/strategies/gold_*/backtests/* = 21 bundles publicados (suelo verificable)",
+      "H-SIMP-GOLD-01 (registrada 2026-07-21, prospectiva): +1"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": false,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": true,
+    "calmar_gt_dumb_baseline": true,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": true
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "pbo_lt_0.50",
+    "net_return_gt_b1"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "195e02d19805f45d"
+}
