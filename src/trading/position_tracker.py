@@ -85,6 +85,11 @@ class Position:
     status: PositionStatus = PositionStatus.OPEN
     pnl: float = 0.0
     pnl_pct: float = 0.0
+    # Which instrument this position is in. Optional for backwards compatibility with the
+    # single-asset callers that predate it, but REQUIRED for any multi-asset book: without it
+    # there is no way to know which price marks which position, and `get_total_unrealized_pnl`
+    # was marking every position against one scalar price (see its docstring).
+    symbol: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -429,16 +434,51 @@ class PositionTracker:
             return 0.0
         return position.calculate_unrealized_pnl(current_price)
 
-    def get_total_unrealized_pnl(self, current_price: float) -> float:
+    def get_total_unrealized_pnl(self, current_price: float | dict[str, float]) -> float:
         """
         Get total unrealized P&L across all positions.
 
         Args:
-            current_price: Current market price
+            current_price: a scalar (single-symbol book) or {symbol: price}
 
         Returns:
             Total unrealized P&L
+
+        Raises:
+            ValueError: if positions span more than one symbol and a scalar price was given.
+
+        This used to be `sum(pos.calculate_unrealized_pnl(current_price) for pos in ...)` — one
+        scalar price applied to EVERY position. With a single-asset book that is correct and
+        was never wrong in practice. With a multi-asset book it silently marks gold at BTC's
+        price and reports a number that is not P&L at all.
+
+        Passing a `{symbol: price}` mapping is the multi-asset form. A scalar remains valid for
+        a single-symbol book, but is now REFUSED when the book actually spans symbols, because
+        the one thing worse than failing to compute P&L is computing a confident wrong one.
         """
+        if isinstance(current_price, dict):
+            total = 0.0
+            missing = []
+            for pos in self._positions.values():
+                px = current_price.get(pos.symbol)
+                if px is None:
+                    missing.append(pos.symbol)
+                    continue
+                total += pos.calculate_unrealized_pnl(px)
+            if missing:
+                raise ValueError(
+                    f"no price supplied for open positions in {sorted(set(missing))}. "
+                    "Marking a book with a partial price map silently under-reports exposure."
+                )
+            return total
+
+        symbols = {pos.symbol for pos in self._positions.values()}
+        if len(symbols) > 1:
+            raise ValueError(
+                f"positions span {len(symbols)} symbols {sorted(s or '<unset>' for s in symbols)} "
+                "but a single scalar price was given. Pass a {symbol: price} mapping — one "
+                "price cannot mark a multi-asset book."
+            )
         return sum(
             pos.calculate_unrealized_pnl(current_price)
             for pos in self._positions.values()
