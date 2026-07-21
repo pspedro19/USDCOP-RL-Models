@@ -9,8 +9,8 @@ code_anchors:
   - src/strategies/spx500_regime_gated_v1/run_strategy.py
   - src/strategies/spx500_regime_gated_v1/load_real.py
   - src/validation/sp500_oos_gate.py
-n_trials_total: 16
-n_trials_scenarios: [12, 16, 22]
+n_trials_total: 17
+n_trials_scenarios: [13, 17, 23]
 n_trials_sources:
   - "_config_family(): 4 vol targets x 3 MA windows = 12 celdas, todas evaluadas"
   - "B1/B2/S3: 3 variantes de política declaradas en el patrón"
@@ -122,3 +122,40 @@ real, y no lo causa el gate.
 - **Juez**: forward.
 
 **Coste en trials**: +2 (H-SIMP-SPX-01 y -02). `n_trials_total` 14 → 16.
+
+
+---
+
+## H-VOLF-01 — ¿HAR-RV bate a la persistencia prediciendo volatilidad a 5d?
+
+**Registrada 2026-07-21, ANTES de implementar el harness.** Contexto: la dirección está
+cerrada (mejor celda modelo×horizonte p_adj=1.0 sobre 63 celdas); el re-propósito sancionado
+del forecasting es predecir VOLATILIDAD, que alimenta el sizing — la única palanca con edge
+demostrado (2026: las estrategias pierden menos que sus subyacentes).
+
+El bar honesto NO es "¿predice algo?" — la vol es fuertemente autocorrelada y cualquier cosa
+"predice" — sino "¿bate a la persistencia?" (sigma_hat_{t+5} = sigma_t). Si no la bate, la
+persistencia ES el estimador y esta vía se cierra (resultado aceptable).
+
+- **H0**: QLIKE_OOS(HAR-RV) >= QLIKE_OOS(persistencia EWMA lambda=0.94) en h=5d.
+- **H1**: HAR-RV (Corsi: regresión lineal sobre RV diaria/semanal/mensual, 3+1 coeficientes,
+  walk-forward expansivo con refit mensual, entrenado <=2024) mejora el QLIKE OOS-2025.
+- **Estadístico**: QLIKE medio sobre OOS-2025 + block bootstrap pareado (bloque 20) del
+  diferencial de pérdidas; IC95 debe excluir cero.
+- **Baselines en la misma tabla, siempre**: persistencia RV-20d y persistencia EWMA(0.94).
+- **Presupuesto cerrado: 1 modelo × 1 horizonte (5d) × este activo = 1 trial.** No se corre
+  el zoo de 9 modelos sobre vol: serían 63 trials y es el mismo error direccional con otro
+  target. No se barre lambda ni las ventanas HAR (1/5/22 son el estándar de Corsi, prior).
+- **Expectativa honesta ex-ante**: H-VOL-01 (EWMA en el sizer) ya falló NO_RECHAZA. La
+  persistencia puede ganar aquí también.
+- **Sin test económico salvo que H0 se rechace** — sin QLIKE ganado no hay trial de sizing
+  que pagar.
+
+**Coste en trials: +1.**
+
+### Resultado H-VOLF-01 (2026-07-21) — **NO_RECHAZA H0**
+
+QLIKE OOS-2025: HAR 0.6307 vs EWMA 0.8202 (mejor en media, la mayor diferencia de los 4),
+pero IC95 [−0.511, +0.039] **incluye cero** — un año de datos de índice no basta para
+distinguirlo. Candidato natural a re-evaluación cuando el forward acumule; sin re-corridas
+sobre el mismo 2025.

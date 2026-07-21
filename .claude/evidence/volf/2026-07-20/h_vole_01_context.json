@@ -1,0 +1,16 @@
+{
+  "hypothesis": "H-VOLE-01",
+  "judge": "FORWARD (2025 selecciono HAR; no puede juzgar)",
+  "delta_calmar_full": {
+    "delta_calmar_observed": -0.011,
+    "delta_calmar_mean": -0.021,
+    "ci95": [
+      -0.104,
+      0.045
+    ],
+    "excludes_zero": false,
+    "periods_per_year": 252,
+    "block": 20
+  },
+  "evidence_class": "research_only_context"
+}

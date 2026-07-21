@@ -10,8 +10,8 @@ code_anchors:
   - scripts/pipeline/publish_gold_dynexit.py
   - src/gold_rl/backtest.py
 # Conteo de trials LEGIBLE POR MÁQUINA.
-n_trials_total: 75
-n_trials_scenarios: [21, 75, 91]   # suelo publicado / programa declarado / +descartados
+n_trials_total: 77
+n_trials_scenarios: [23, 77, 93]   # suelo publicado / programa declarado / +descartados
 n_trials_sources:
   - "scripts/pipeline/publish_gold_dynexit.py:48 TRIALS_PROGRAM = 74 (número heredado)"
   - "public/data/strategies/gold_*/backtests/* = 21 bundles publicados (suelo verificable)"
@@ -103,3 +103,76 @@ no es inútil: está invertido.
 > H-SIMP-GOLD-01.
 
 **Coste en trials**: +1. `n_trials_total` 74 → 75.
+
+
+---
+
+## H-VOLF-01 — ¿HAR-RV bate a la persistencia prediciendo volatilidad a 5d?
+
+**Registrada 2026-07-21, ANTES de implementar el harness.** Contexto: la dirección está
+cerrada (mejor celda modelo×horizonte p_adj=1.0 sobre 63 celdas); el re-propósito sancionado
+del forecasting es predecir VOLATILIDAD, que alimenta el sizing — la única palanca con edge
+demostrado (2026: las estrategias pierden menos que sus subyacentes).
+
+El bar honesto NO es "¿predice algo?" — la vol es fuertemente autocorrelada y cualquier cosa
+"predice" — sino "¿bate a la persistencia?" (sigma_hat_{t+5} = sigma_t). Si no la bate, la
+persistencia ES el estimador y esta vía se cierra (resultado aceptable).
+
+- **H0**: QLIKE_OOS(HAR-RV) >= QLIKE_OOS(persistencia EWMA lambda=0.94) en h=5d.
+- **H1**: HAR-RV (Corsi: regresión lineal sobre RV diaria/semanal/mensual, 3+1 coeficientes,
+  walk-forward expansivo con refit mensual, entrenado <=2024) mejora el QLIKE OOS-2025.
+- **Estadístico**: QLIKE medio sobre OOS-2025 + block bootstrap pareado (bloque 20) del
+  diferencial de pérdidas; IC95 debe excluir cero.
+- **Baselines en la misma tabla, siempre**: persistencia RV-20d y persistencia EWMA(0.94).
+- **Presupuesto cerrado: 1 modelo × 1 horizonte (5d) × este activo = 1 trial.** No se corre
+  el zoo de 9 modelos sobre vol: serían 63 trials y es el mismo error direccional con otro
+  target. No se barre lambda ni las ventanas HAR (1/5/22 son el estándar de Corsi, prior).
+- **Expectativa honesta ex-ante**: H-VOL-01 (EWMA en el sizer) ya falló NO_RECHAZA. La
+  persistencia puede ganar aquí también.
+- **Sin test económico salvo que H0 se rechace** — sin QLIKE ganado no hay trial de sizing
+  que pagar.
+
+**Coste en trials: +1.**
+
+### Resultado H-VOLF-01 (2026-07-21) — **RECHAZA H0** ✅ (el único de los 4 activos)
+
+QLIKE OOS-2025: **HAR 0.4223 vs EWMA 0.4779 vs RV20 0.4876**. Diferencial −0.0556,
+**IC95 [−0.129, −0.028] excluye cero**. HAR-RV predice la vol del oro a 5d mejor que la
+persistencia, con significancia.
+
+**Qué habilita y qué NO**: habilita el test económico condicional pre-firmado (sizing de
+`gold_trend_simple` con σ̂_HAR en vez de la vol realizada) — que se registra como
+**H-VOLE-01, +1 trial, juez el FORWARD**: la selección de HAR se hizo mirando 2025, así que
+2025 ya no puede juzgar su efecto económico (constitución §1). NO habilita ningún claim de
+retorno: predecir vol no es predecir dirección.
+
+---
+
+## H-VOLE-01 — sizing de gold_trend_simple con σ̂_HAR (económico, condicional cumplido)
+
+**Registrada 2026-07-21, tras rechazar H0 en H-VOLF-01 y ANTES de correr la medición.**
+
+- **H0**: `Calmar(gold_trend_simple con σ̂_HAR) ≤ Calmar(con vol realizada actual)`.
+- **Cambio de UNA variable** (experiment-protocol regla 1): el estimador de vol del sizer.
+  Misma señal, mismos costos, mismo cap 1.5.
+- **Estadístico**: ΔCalmar por block bootstrap pareado (bloque 20, 252/año).
+- **JUEZ: EL FORWARD.** La selección de HAR se hizo mirando OOS-2025 ⇒ 2025 no puede juzgar
+  su efecto económico (constitución §1). El backtest que sigue es CONTEXTO, no evidencia.
+- **Coste en trials: +1** (76 → 77).
+
+### Resultado H-VOLE-01, contexto (2026-07-21) — **NO_RECHAZA H0**
+
+| Ventana | sizer base (RV-20) | sizer σ̂_HAR |
+|---|---|---|
+| Full · Calmar | **0.241** | 0.230 |
+| OOS-2025 · Calmar | **10.478** | 9.052 |
+| 2026 · Calmar | −0.217 | −0.217 |
+
+ΔCalmar(HAR, base) = −0.011, IC95 [−0.104, +0.045] — incluye cero.
+
+**Lectura**: predecir mejor la vol (H-VOLF-01 ✅) **no** mejoró el sizing. Mecanismo probable:
+el sizer usa la vol como divisor con floor 0.06 y cap 1.5 — la mayor precisión de HAR cae en
+un rango donde los clips dominan. La vía "vol forecasting → sizing" queda **cerrada para Oro
+con la mecánica actual**; re-abrirla exigiría cambiar la mecánica del sizer (otra variable,
+otro experimento, otro trial). La persistencia sigue siendo el estimador operativo.
+

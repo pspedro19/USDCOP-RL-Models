@@ -9,8 +9,8 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA (ver §"Conteo para el DSR" abajo, que da la fórmula
 # pero nunca su resultado). `scripts/analysis/profitability_evidence.py` lo lee de aquí y
 # lanza excepción si falta — el DSR no puede depender de un número hardcodeado en el código.
-n_trials_total: 32
-n_trials_scenarios: [21, 32, 46]   # solo registro / registro+sensibilidades / +descartados
+n_trials_total: 33
+n_trials_scenarios: [22, 33, 47]   # solo registro / registro+sensibilidades / +descartados
 n_trials_sources:
   - "Registro principal de este archivo: 21 filas (H-xxx)"
   - "Sensibilidades pre-registradas: σ_objetivo 3 + banda 3 + pesos R 3 + re-versión LLM ≥1"
@@ -159,3 +159,67 @@ y se perdió el rebote.
 **Acción**: `realized_vol_20` se mantiene. El estimador EWMA queda en
 `services/common/metrics.py::ewma_volatility` como herramienta disponible, **no cableado al
 sizer**. Trial contabilizado (N=32) — el coste de mirar se paga aunque el resultado sea negativo.
+
+
+---
+
+## H-VOLF-01 — ¿HAR-RV bate a la persistencia prediciendo volatilidad a 5d?
+
+**Registrada 2026-07-21, ANTES de implementar el harness.** Contexto: la dirección está
+cerrada (mejor celda modelo×horizonte p_adj=1.0 sobre 63 celdas); el re-propósito sancionado
+del forecasting es predecir VOLATILIDAD, que alimenta el sizing — la única palanca con edge
+demostrado (2026: las estrategias pierden menos que sus subyacentes).
+
+El bar honesto NO es "¿predice algo?" — la vol es fuertemente autocorrelada y cualquier cosa
+"predice" — sino "¿bate a la persistencia?" (sigma_hat_{t+5} = sigma_t). Si no la bate, la
+persistencia ES el estimador y esta vía se cierra (resultado aceptable).
+
+- **H0**: QLIKE_OOS(HAR-RV) >= QLIKE_OOS(persistencia EWMA lambda=0.94) en h=5d.
+- **H1**: HAR-RV (Corsi: regresión lineal sobre RV diaria/semanal/mensual, 3+1 coeficientes,
+  walk-forward expansivo con refit mensual, entrenado <=2024) mejora el QLIKE OOS-2025.
+- **Estadístico**: QLIKE medio sobre OOS-2025 + block bootstrap pareado (bloque 20) del
+  diferencial de pérdidas; IC95 debe excluir cero.
+- **Baselines en la misma tabla, siempre**: persistencia RV-20d y persistencia EWMA(0.94).
+- **Presupuesto cerrado: 1 modelo × 1 horizonte (5d) × este activo = 1 trial.** No se corre
+  el zoo de 9 modelos sobre vol: serían 63 trials y es el mismo error direccional con otro
+  target. No se barre lambda ni las ventanas HAR (1/5/22 son el estándar de Corsi, prior).
+- **Expectativa honesta ex-ante**: H-VOL-01 (EWMA en el sizer) ya falló NO_RECHAZA. La
+  persistencia puede ganar aquí también.
+- **Sin test económico salvo que H0 se rechace** — sin QLIKE ganado no hay trial de sizing
+  que pagar.
+
+**Coste en trials: +1.**
+
+### Resultado H-VOLF-01 (2026-07-21) — **NO_RECHAZA H0, con hallazgo invertido**
+
+QLIKE OOS-2025: HAR 0.7117 vs EWMA 0.4836 — **HAR es significativamente PEOR**
+(diferencial +0.228, IC95 [+0.013, +0.412] excluye cero por el lado positivo). La estructura
+lineal de HAR no captura los saltos de vol de BTC; la persistencia EWMA gana con claridad.
+Coherente con H-VOL-01. **En BTC, la persistencia ES el estimador — dos veces confirmado.**
+
+---
+
+## H-BASIS-01 — basis extremo como freno (PENDIENTE, deliberadamente sin correr)
+
+**Registrada 2026-07-21 como PENDIENTE. NO se corre todavía, y la razón queda escrita:**
+
+`basis_annualized` tiene 994 días de historia en el seed y `merge_funding_features` no lo usa
+(solo funding). Es la única feature de derivados profunda sin explotar. PERO: S4
+(funding-brake) ya falló su gate pre-registrado, y un segundo freno del mismo tipo sobre la
+misma señal-base tiene prior bajo. Criterio de activación: motor de bandas de SPEC-06
+construido, O ≥180 días de OI acumulado (hoy: 44 y creciendo semanalmente vía
+`l0c_ingest_derivatives`, verificado success). Registrar sin correr no cuesta trial;
+correrla costará +1.
+
+## Nota de datos: `liquidations_usd` está MUERTA
+
+0/2506 no-nulos en el seed. La REST API de liquidaciones fue deprecada; la columna espera la
+Fase-3 WS del extractor. Que nadie la "descubra" y construya features sobre NULLs.
+
+## Estado de la vía vol-forecasting en BTC (cierre 2026-07-21)
+
+Dos hipótesis corridas, dos NO_RECHAZA con la misma conclusión desde ángulos distintos:
+H-VOL-01 (EWMA en el sizer) y H-VOLF-01 (HAR **significativamente peor** que EWMA, IC95
+[+0.013, +0.412]). **En BTC la persistencia es el estimador, dos veces confirmado.** La vía
+queda cerrada salvo dato nuevo (OI con historia, on-chain de migración 052).
+

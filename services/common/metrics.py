@@ -770,3 +770,24 @@ def ewma_volatility(returns, lam: float = 0.94, periods_per_year: int = 365,
         out[i] = np.sqrt(var * periods_per_year)   # sigma_t, built from r_{<t}
         var = lam * var + (1.0 - lam) * (r[i] ** 2)
     return out
+
+
+def qlike_loss(true_var, pred_var) -> np.ndarray:
+    """QLIKE loss per observation: true/pred - ln(true/pred) - 1.
+
+    The standard loss for variance forecasts (Patton 2011: one of only two losses robust to
+    noisy volatility proxies; the other is MSE on variance). RMSE on sigma rewards
+    under-prediction because vol is right-skewed -- a forecaster that always guesses low looks
+    good on RMSE and then under-sizes the one week that matters. QLIKE penalizes
+    under-prediction asymmetrically, which is the direction risk actually hurts.
+
+    Element-wise; observations where either side is non-positive return NaN rather than being
+    silently dropped -- the caller decides what a zero-variance day means for its series.
+    """
+    t = np.asarray(true_var, dtype=float)
+    p = np.asarray(pred_var, dtype=float)
+    out = np.full(np.broadcast(t, p).shape, np.nan)
+    ok = (t > 0) & (p > 0)
+    ratio = t[ok] / p[ok]
+    out[ok] = ratio - np.log(ratio) - 1.0
+    return out

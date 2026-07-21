@@ -1,0 +1,196 @@
+{
+  "hypothesis": "H-VOLF-01",
+  "results": [
+    {
+      "asset": "usdcop",
+      "n_total": 1634,
+      "h": 5,
+      "har_windows": [
+        1,
+        5,
+        22
+      ],
+      "lambda": 0.94,
+      "windows": {
+        "OOS_2025": {
+          "n": 258,
+          "qlike_har": 0.310406,
+          "rmse_har": 6.6912544e-05,
+          "qlike_p_ewma": 0.378291,
+          "rmse_p_ewma": 7.0264963e-05,
+          "qlike_p_rv20": 0.365058,
+          "rmse_p_rv20": 7.1807481e-05,
+          "qlike_diff_har_minus_ewma": -0.067885,
+          "ci95": [
+            -0.195706,
+            0.013656
+          ],
+          "excludes_zero": false
+        },
+        "LIVE_2026_context_only": {
+          "n": 101,
+          "qlike_har": 0.407995,
+          "rmse_har": 7.4195118e-05,
+          "qlike_p_ewma": 0.43102,
+          "rmse_p_ewma": 7.5450863e-05,
+          "qlike_p_rv20": 0.525147,
+          "rmse_p_rv20": 8.2962559e-05,
+          "qlike_diff_har_minus_ewma": -0.023025,
+          "ci95": [
+            -0.061696,
+            0.026961
+          ],
+          "excludes_zero": false
+        }
+      },
+      "verdict": {
+        "h0_rejected": false,
+        "criterion": "OOS-2025: mean QLIKE(HAR) < QLIKE(EWMA) AND paired block-bootstrap CI95 of the differential excludes zero"
+      }
+    },
+    {
+      "asset": "xauusd",
+      "n_total": 5844,
+      "h": 5,
+      "har_windows": [
+        1,
+        5,
+        22
+      ],
+      "lambda": 0.94,
+      "windows": {
+        "OOS_2025": {
+          "n": 259,
+          "qlike_har": 0.42227,
+          "rmse_har": 0.000188321079,
+          "qlike_p_ewma": 0.477886,
+          "rmse_p_ewma": 0.000196102229,
+          "qlike_p_rv20": 0.487601,
+          "rmse_p_rv20": 0.000197981404,
+          "qlike_diff_har_minus_ewma": -0.055616,
+          "ci95": [
+            -0.128865,
+            -0.027621
+          ],
+          "excludes_zero": true
+        },
+        "LIVE_2026_context_only": {
+          "n": 139,
+          "qlike_har": 0.556434,
+          "rmse_har": 0.00043425644,
+          "qlike_p_ewma": 0.547806,
+          "rmse_p_ewma": 0.000446287227,
+          "qlike_p_rv20": 0.58532,
+          "rmse_p_rv20": 0.00046654802,
+          "qlike_diff_har_minus_ewma": 0.008628,
+          "ci95": [
+            -0.0723,
+            0.103246
+          ],
+          "excludes_zero": false
+        }
+      },
+      "verdict": {
+        "h0_rejected": true,
+        "criterion": "OOS-2025: mean QLIKE(HAR) < QLIKE(EWMA) AND paired block-bootstrap CI95 of the differential excludes zero"
+      }
+    },
+    {
+      "asset": "btcusdt",
+      "n_total": 3233,
+      "h": 5,
+      "har_windows": [
+        1,
+        5,
+        22
+      ],
+      "lambda": 0.94,
+      "windows": {
+        "OOS_2025": {
+          "n": 365,
+          "qlike_har": 0.711699,
+          "rmse_har": 0.000764960442,
+          "qlike_p_ewma": 0.483596,
+          "rmse_p_ewma": 0.000545857612,
+          "qlike_p_rv20": 0.556908,
+          "rmse_p_rv20": 0.000585763496,
+          "qlike_diff_har_minus_ewma": 0.228103,
+          "ci95": [
+            0.012691,
+            0.411535
+          ],
+          "excludes_zero": true
+        },
+        "LIVE_2026_context_only": {
+          "n": 196,
+          "qlike_har": 0.610902,
+          "rmse_har": 0.001203407595,
+          "qlike_p_ewma": 0.635906,
+          "rmse_p_ewma": 0.001227193387,
+          "qlike_p_rv20": 0.642243,
+          "rmse_p_rv20": 0.001271665884,
+          "qlike_diff_har_minus_ewma": -0.025004,
+          "ci95": [
+            -0.512619,
+            0.288429
+          ],
+          "excludes_zero": false
+        }
+      },
+      "verdict": {
+        "h0_rejected": false,
+        "criterion": "OOS-2025: mean QLIKE(HAR) < QLIKE(EWMA) AND paired block-bootstrap CI95 of the differential excludes zero"
+      }
+    },
+    {
+      "asset": "spx500",
+      "n_total": 1616,
+      "h": 5,
+      "har_windows": [
+        1,
+        5,
+        22
+      ],
+      "lambda": 0.94,
+      "windows": {
+        "OOS_2025": {
+          "n": 250,
+          "qlike_har": 0.630724,
+          "rmse_har": 0.00041001367,
+          "qlike_p_ewma": 0.820162,
+          "rmse_p_ewma": 0.000427082759,
+          "qlike_p_rv20": 0.747112,
+          "rmse_p_rv20": 0.000443137067,
+          "qlike_diff_har_minus_ewma": -0.189438,
+          "ci95": [
+            -0.510997,
+            0.03884
+          ],
+          "excludes_zero": false
+        },
+        "LIVE_2026_context_only": {
+          "n": 130,
+          "qlike_har": 0.337437,
+          "rmse_har": 7.0620254e-05,
+          "qlike_p_ewma": 0.368139,
+          "rmse_p_ewma": 6.3023176e-05,
+          "qlike_p_rv20": 0.415008,
+          "rmse_p_rv20": 6.8242705e-05,
+          "qlike_diff_har_minus_ewma": -0.030702,
+          "ci95": [
+            -0.147815,
+            0.049112
+          ],
+          "excludes_zero": false
+        }
+      },
+      "verdict": {
+        "h0_rejected": false,
+        "criterion": "OOS-2025: mean QLIKE(HAR) < QLIKE(EWMA) AND paired block-bootstrap CI95 of the differential excludes zero"
+      }
+    }
+  ],
+  "evidence_class": "research_only",
+  "promotion_eligible": false,
+  "note": "Verdict is OOS-2025 only; 2026 is context (it is the forward). No economic test is run for any asset whose H0 stands -- a sizing trial is only paid for once QLIKE is won."
+}

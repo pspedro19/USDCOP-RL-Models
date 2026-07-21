@@ -12,8 +12,8 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 56
-n_trials_scenarios: [44, 56, 70]   # conservador / central / amplio — se publican los tres
+n_trials_total: 57
+n_trials_scenarios: [45, 57, 71]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
   - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)"
@@ -175,3 +175,39 @@ requiere backfill histórico de MXN y BRL (el extractor existe; el seed no tiene
 CLP queda fuera por falta de seed, exclusión ya declarada.
 
 **No cuenta como trial**: no se evaluó ninguna hipótesis, se descubrió que no era evaluable.
+
+
+---
+
+## H-VOLF-01 — ¿HAR-RV bate a la persistencia prediciendo volatilidad a 5d?
+
+**Registrada 2026-07-21, ANTES de implementar el harness.** Contexto: la dirección está
+cerrada (mejor celda modelo×horizonte p_adj=1.0 sobre 63 celdas); el re-propósito sancionado
+del forecasting es predecir VOLATILIDAD, que alimenta el sizing — la única palanca con edge
+demostrado (2026: las estrategias pierden menos que sus subyacentes).
+
+El bar honesto NO es "¿predice algo?" — la vol es fuertemente autocorrelada y cualquier cosa
+"predice" — sino "¿bate a la persistencia?" (sigma_hat_{t+5} = sigma_t). Si no la bate, la
+persistencia ES el estimador y esta vía se cierra (resultado aceptable).
+
+- **H0**: QLIKE_OOS(HAR-RV) >= QLIKE_OOS(persistencia EWMA lambda=0.94) en h=5d.
+- **H1**: HAR-RV (Corsi: regresión lineal sobre RV diaria/semanal/mensual, 3+1 coeficientes,
+  walk-forward expansivo con refit mensual, entrenado <=2024) mejora el QLIKE OOS-2025.
+- **Estadístico**: QLIKE medio sobre OOS-2025 + block bootstrap pareado (bloque 20) del
+  diferencial de pérdidas; IC95 debe excluir cero.
+- **Baselines en la misma tabla, siempre**: persistencia RV-20d y persistencia EWMA(0.94).
+- **Presupuesto cerrado: 1 modelo × 1 horizonte (5d) × este activo = 1 trial.** No se corre
+  el zoo de 9 modelos sobre vol: serían 63 trials y es el mismo error direccional con otro
+  target. No se barre lambda ni las ventanas HAR (1/5/22 son el estándar de Corsi, prior).
+- **Expectativa honesta ex-ante**: H-VOL-01 (EWMA en el sizer) ya falló NO_RECHAZA. La
+  persistencia puede ganar aquí también.
+- **Sin test económico salvo que H0 se rechace** — sin QLIKE ganado no hay trial de sizing
+  que pagar.
+
+**Coste en trials: +1.**
+
+### Resultado H-VOLF-01 (2026-07-21) — **NO_RECHAZA H0**
+
+QLIKE OOS-2025: HAR 0.3104 vs EWMA 0.3783 (mejor en media), pero IC95 del diferencial
+[−0.196, +0.014] **incluye cero**. La mejora no es distinguible de ruido con un año de datos.
+La persistencia sigue siendo el estimador. Sin test económico (criterio pre-firmado).
