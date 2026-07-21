@@ -96,6 +96,50 @@ function SectionHeader({ title, subtitle, icon }: SectionHeaderProps) {
 }
 
 // ============================================================================
+// Diagnostic caveat — the models' DA is statistically indistinguishable from chance
+// ============================================================================
+// Contract: CTR-QUANT-CONSTITUTION-001 ("no dejar que un numero sin significancia se presente
+// con solemnidad"). This surface exists for transparency into model behaviour, NOT as a signal
+// source, and it must say so where the DA is shown — a ~52% displayed without context reads as
+// "the models work". The mean is computed from the loaded rows so the banner stays true if the
+// data ever changes; the verdict text only flips once DA clears the project's own 55% bar.
+function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
+  const stats = useMemo(() => {
+    const das = data
+      .map((r) => r.direction_accuracy)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    if (!das.length) return null;
+    const mean = das.reduce((a, b) => a + b, 0) / das.length;
+    // CSV stores DA as 0-1 or 0-100 depending on generator version; normalize to 0-1.
+    const m = mean > 1.5 ? mean / 100 : mean;
+    return { mean: m, n: das.length };
+  }, [data]);
+
+  if (!stats) return null;
+  const beatsBar = stats.mean >= 0.55; // the project's own DA bar (CLAUDE.md forecasting rules)
+
+  return (
+    <div
+      data-testid="da-caveat"
+      className={cn(
+        'rounded-xl border px-4 py-3 text-sm leading-relaxed',
+        beatsBar
+          ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-200'
+          : 'border-amber-500/30 bg-amber-500/5 text-amber-200/90',
+      )}
+    >
+      <span className="font-semibold">
+        {beatsBar ? 'Direccion con senal: ' : 'Superficie de diagnostico, no de senales: '}
+      </span>
+      la precision direccional media es {(stats.mean * 100).toFixed(1)}% sobre {stats.n}{' '}
+      mediciones{beatsBar
+        ? ', por encima del umbral del 55% del proyecto.'
+        : ' — estadisticamente indistinguible de una moneda al aire (el mejor modelo no supera p<0.05 tras ajustar por los 9 modelos probados). Ninguna decision de trading debe basarse en estas predicciones.'}
+    </div>
+  );
+}
+
+// ============================================================================
 // KPI Card Component - Professional centered style
 // ============================================================================
 interface KPICardProps {
@@ -375,6 +419,13 @@ export function ForecastingDashboard() {
 
   return (
     <div className="space-y-12 sm:space-y-16 lg:space-y-20">
+      {/* Honest-DA caveat (CTR-QUANT-CONSTITUTION-001). Computed from the loaded data, never
+          hardcoded: if the models ever become genuinely predictive, this banner says so on its
+          own. Until then, presenting a ~52% DA without context reads as "the models work",
+          which the statistics do not support (best model p=0.11 unadjusted, p≈0.66 adjusted
+          for the 9 models tried; best model×horizon cell p_adj=1.0 over 63 cells). */}
+      <DiagnosticCaveat data={data} />
+
       {/* Filters Section - Centered */}
       <div className="text-center">
         <SectionHeader

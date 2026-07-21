@@ -775,6 +775,21 @@ export function ForecastingView() {
 
   return (
     <div data-testid="forecasting-view">
+      {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001): la DA media del zoo es ~0.52 y el
+          mejor modelo no supera p<0.05 tras ajustar por los 9 probados. Esta superficie
+          diagnostica el comportamiento de los modelos; NO emite señales de trading, y decirlo
+          junto a las métricas es lo que impide que un 52% sin contexto se lea como "funciona". */}
+      {isModelZoo && (
+        <div
+          data-testid="da-caveat"
+          className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs leading-relaxed text-amber-200/90"
+        >
+          <span className="font-semibold">Superficie de diagnóstico, no de señales. </span>
+          La precisión direccional media de estos modelos es ≈52% — estadísticamente
+          indistinguible de una moneda al aire tras ajustar por los 9 modelos probados. Ninguna
+          decisión de trading debe basarse en estas predicciones.
+        </div>
+      )}
       <GmPageHeader
         kicker="Predicción semanal"
         title="Forecasting"
