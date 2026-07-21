@@ -1,0 +1,56 @@
+{
+  "strategy_id": "gold_trend_simple",
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Gold \u00b7 Trend simple (voto SMA, sin trailing exit)",
+  "pipeline_type": "rule_based",
+  "timeframe": "daily",
+  "status": "experimental",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.0.0",
+    "year": 2026,
+    "generated_at": "2026-07-21T01:37:18.480282+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "gold_trend_simple__1.0.0__2026",
+      "summary": "strategies/gold_trend_simple/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/gold_trend_simple/backtests/1.0.0/trades_2026.json",
+      "signals": "strategies/gold_trend_simple/backtests/1.0.0/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 225.26,
+        "sharpe": 0.634,
+        "p_value": 0.0024
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

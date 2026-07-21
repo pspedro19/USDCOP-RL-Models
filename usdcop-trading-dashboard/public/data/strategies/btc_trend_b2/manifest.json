@@ -3,10 +3,10 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin \u00b7 Trend-follower Daily (B2)",
+  "display_name": "Bitcoin · Trend-follower Daily (B2)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
-  "status": "experimental",
+  "status": "archived",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,
@@ -17,7 +17,7 @@
     "source": "BundlePublisher",
     "version": "1.0.0",
     "year": 2026,
-    "generated_at": "2026-07-20T20:27:37.254907+00:00"
+    "generated_at": "2026-07-20T22:41:28.120344+00:00"
   },
   "backtests": [
     {
@@ -88,11 +88,11 @@
       "gates": {
         "passed": 5,
         "of": 5,
-        "recommendation": "PROMOTE"
+        "recommendation": "REVIEW"
       },
       "headline": {
         "return_pct": 351.16,
-        "sharpe": 1.399,
+        "sharpe": 1.396,
         "p_value": 0.0
       }
     }

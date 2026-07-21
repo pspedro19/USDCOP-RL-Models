@@ -9,7 +9,7 @@
   "week_end": "2026-01-18",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 03 de 2026",
-    "markdown": "### Bitcoin — Semana 03 (2026-01-12 → 2026-01-18)\n\nEl cierre semanal de BTC/USDT fue **93673.14 USD**, un cambio de **+2.92%** en la semana (rango 90128.44–97924.49). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 93673.14. RSI(14)=56 (neutral). Soporte 86845.66, resistencia 97924.49.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: The Regulatory Review, CoinDesk, Yahoo Finance.",
+    "markdown": "### Bitcoin — Semana 03 (2026-01-12 → 2026-01-18)\n\nEl cierre semanal de BTC/USDT fue **93673.14 USD**, un cambio de **+2.92%** en la semana (rango 90128.44–97924.49). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 93673.14. RSI(14)=56 (neutral). Soporte 86845.66, resistencia 97924.49.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Crypto News, CoinDesk, Yahoo Finance.",
     "sentiment": "bullish",
     "ohlcv": {
       "open": 91013.66,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-13",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-14",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-15",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-16",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-17",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-01-18",
@@ -148,7 +148,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6156,20 +6156,20 @@
     "article_count": 40,
     "avg_sentiment": 0.0,
     "source_breakdown": {
-      "The Regulatory Review": 1,
-      "CoinDesk": 13,
-      "Yahoo Finance": 11,
+      "Crypto News": 2,
+      "CoinDesk": 12,
+      "Yahoo Finance": 10,
       "Charlotte Observer": 1,
-      "Barron's": 1,
-      "Bitcoin Magazine": 3,
-      "CryptoSlate": 1,
-      "ig.com": 1,
-      "FOREX.com": 1,
-      "TradingView": 3,
+      "Bitcoin Magazine": 2,
+      "CryptoSlate": 2,
       "Investopedia": 1,
-      "Forbes": 1,
+      "ig.com": 1,
       "dlnews.com": 1,
-      "Kiplinger": 1
+      "FOREX.com": 1,
+      "TradingView": 4,
+      "Forbes": 1,
+      "Kiplinger": 1,
+      "Kraken Blog": 1
     }
   },
   "news_intelligence": {
@@ -6177,38 +6177,93 @@
     "relevant_articles": 40,
     "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 17,
-      "negative": 14,
-      "neutral": 9
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 14,
-        "avg_sentiment": 0.019,
+        "article_count": 36,
+        "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
+          "Bitcoin Price Will Reach $100,000 In 24 Hours, Claims World's Smartest Man, as Fear and Greed Index Shifts - Yahoo Finance",
+          "Bitcoin price targets $97k zone while Remittix draws attention with rapid triple-digit gains - Crypto News",
           "Bitcoin (BTC) price climbs past $97,000 as investors seek haven assets - CoinDesk",
-          "Bitcoin price surges to $97,500. Here’s what experts say will drive the price even higher - Yahoo Finance",
           "Bitcoin price outlook: Why this expert predicts at least $130K - Yahoo Finance",
-          "Bitcoin price news: BTC is selling off again during U.S. market hours - CoinDesk",
-          "Why Is Bitcoin Up Today? BTC Price Surges For $100k - Yahoo Finance"
+          "Bitcoin price surges to $97,500. Here’s what experts say will drive the price even higher - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
+          {
+            "title": "Bitcoin Price Will Reach $100,000 In 24 Hours, Claims World's Smartest Man, as Fear and Greed Index Shifts - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1sVnNUTmhJTHE3b01sbU80aEIxMjZDZTNpNFNBdGFOYXcwU1VpUTlYN2x4UkVseHJtMmZUSGo0SXY2TEk0TnVSQlJ0VjRaOElVNGJ4NVBxdXBMWlJvaW1iTEt5cFhSNGVBeDE3WDBFTndxRUxLUE1ETkZwNEI1dw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Bitcoin",
+              "Price",
+              "Will",
+              "Reach",
+              "Hours"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price targets $97k zone while Remittix draws attention with rapid triple-digit gains - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNR1pYVmlBb2cxUWZBMW1ZbXV0cVZMNU5STUwxY2xON2xOcGNxd0d4Q2twdnpkRDg0cDdRdXNRb2h6bHlNYklhbUhOVXRPc1FfZ0RVY2JNSmpMdWJOajAyTkwxRVdNR0pTY002OVBSekxGTGNGT21rZXpNdy1XcS1xMWZwUVJ6aUtDTjFWRU5UQTBNYW8xUWFJdTlkc2tfOUxWejk5WVBvQzF4RHZuSEFHWlV3?oc=5",
+            "source": "Crypto News",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Remittix",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
           {
             "title": "Bitcoin (BTC) price climbs past $97,000 as investors seek haven assets - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNNGRoS2p4V0JBVXdCYTA1b0dpbG9HR0ROUTA5ckRETkZRNUd4SS0wQWdxaGd2Q21FQ3Q5YnRZMGpYc1U1dDZXbnd1MGswVUJGUXBQb2xTdXNYMFFtTEtaQ21mQ2JOTmgycHhLd3h4bzhrd0VhUS00SW9iMzc3a01pbmxkSlhGWWpybC1uVDdtTTZwTzJqV014cWE2akFhQ1BSZ2FjcER3OGU?oc=5",
             "source": "CoinDesk",
             "date": "Wed, 14 Ja",
             "language": "en",
-            "tone": 0.501,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price outlook: Why this expert predicts at least $130K - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNVnlGelM3MmNlU3FWbzBUUWR4dWwtSm9pZHNhcHdBRm5fcU9FTmRLeDZfcVhsaHFKeXVSQmpjd0t4V09BWUxUZGQtc294RHpWdG5lUm9aekxwNlJaRERTTHN3MXVZQlM1aFQ4eDE2VTdta19DRDNBUkFmcmpuRjBDMDhQUTFRQQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6219,7 +6274,7 @@
             "source": "Yahoo Finance",
             "date": "Wed, 14 Ja",
             "language": "en",
-            "tone": 0.224,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6232,29 +6287,12 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price outlook: Why this expert predicts at least $130K - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNVnlGelM3MmNlU3FWbzBUUWR4dWwtSm9pZHNhcHdBRm5fcU9FTmRLeDZfcVhsaHFKeXVSQmpjd0t4V09BWUxUZGQtc294RHpWdG5lUm9aekxwNlJaRERTTHN3MXVZQlM1aFQ4eDE2VTdta19DRDNBUkFmcmpuRjBDMDhQUTFRQQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Fri, 16 Ja",
-            "language": "en",
-            "tone": 0.022,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "Bitcoin price news: BTC is selling off again during U.S. market hours - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQQlBLMUZKZjFTX2Fnd29QaGNBRGs2dWZFUnM3N3RvdjQ4aEUxREdtYnFvRDB3TXEzSFVNRGQzOGFQM2lWUTh4dVpMc3pXY0dyRWtrUEI1b1lHX3JvY3E0SWFyR1pkOHZYem9sM25kQ1hnc21rNC14U2s5Y3VHemg5b042c3A3VmREM1ZVQ3NHazJEQjdqN2R5bUFsRTBQdVNXSTdlWElHTjkxem5nWDNCRk5B?oc=5",
             "source": "CoinDesk",
             "date": "Thu, 15 Ja",
             "language": "en",
-            "tone": 0.255,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6264,51 +6302,18 @@
             "factuality": "unknown"
           },
           {
-            "title": "Why Is Bitcoin Up Today? BTC Price Surges For $100k - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9TU3BsRzE4UXNxcmE4czhMYXFWNVRiQl9fc1dlTnZOYmhFeFhXQXo3MDdpTDdITkE2Z21RVmkyUTJqbThxemhMYTNJSVBENUMyX205U2gzYUJtaTVMaUtKT3lwYlVFR2NVZkZ2NG8xb042ZHBXVVpodHc0MnBidw?oc=5",
+            "title": "Iran crypto balloons to $8bn with Bitcoin price up 2,000% as economy crumbles, Chainalysis finds - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxPWWhYMkRrNnFYZE5nZDFZTXFuOFFrZ3R3VG54dWdLVXozRkp3NXBScmQ4dmR1cHUzQ1AxdDBOQzFaTG1ad3pEckRqVnVycXowczdqSXhGX1U3UU5LTG1uQUc4Zm1uZzczN3VtUjdrS2dYcDZFanNaQkROdmdzWi1QcE9rNmg?oc=5",
             "source": "Yahoo Finance",
-            "date": "Wed, 14 Ja",
-            "language": "en",
-            "tone": 0.164,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Today",
-              "Price",
-              "Surges",
-              "Yahoo"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price news: Week's gains continue to evaporate with BTC retreating to $94,000 - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQbzRKbks5WEZQTDJ2Z0JMQWpROXRab3Q4bWpHckstai1TZlRGTjM5WWx1VHdBcFpxaXpUQXNIQm85bzE3SHVWWDlocHpNVUstM0NWQ3JMdHkyaDdiV1J3Q0pqb0lBczBJandMMjVNM2ZmNzFRT2E3U0RtZUJwanV1RE9LUXJSTkxyUXAtNlk5MGY5T3ByQWZuRzRvNDM4Y0Jnc2R4RW9EZWNPdmZZRHFhV244ci1zSzBG?oc=5",
-            "source": "CoinDesk",
             "date": "Fri, 16 Ja",
             "language": "en",
-            "tone": -0.322,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
+              "Iran",
               "Bitcoin",
-              "Week"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin's price hasn't peaked yet and its just a 'mid-cycle' correction, historical data shows - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxNZU1IRWtRU0hQQ040Z0I1TVh6M01paWFxR19UcUpGQ3ZVOHYyMFlpdExFZHpwdHF0NGg2RUFYN3JzbS1qR2htOTR6QTAzb3pNUmwyMXZuYVpHZzc2ZkhxNTBlU01JWFhKb1dsQk1xME1Zc3lValVMY18ybHl4blFDbXNUaw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 12 Ja",
-            "language": "en",
-            "tone": -0.293,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
+              "Chainalysis",
               "Yahoo",
               "Finance"
             ],
@@ -6321,7 +6326,7 @@
             "source": "CoinDesk",
             "date": "Tue, 13 Ja",
             "language": "en",
-            "tone": 0.472,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6333,12 +6338,162 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin (BTC) price bull case grows as U.S. Treasury volatility sinks to lowest since 2021 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPMmc1ZGtOOUFGNS0zd2p2eThwbWg5NkR6WkZwaFQtcEY3Zm1jTHNiM092anR4S3lQZkxQZzNKTWUzVFNzakhxS09ZM1hZa2NRVHFhWXd0U1N6Vl9IbGkxREt5cDhlWm1PZV96dGFUdFZwbTZLMWZzUWRfbXNjT19CQVZSRmpyeE1vay1SdXF5d2M3YjZKR05BU0NDSGV5bTBVblBuSkVSMXMyWnVtS3d2TmQ0NUoybDk1NTJ0MmRRZ1pldw?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Treasury"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price news: Week's gains continue to evaporate with BTC retreating to $94,000 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQbzRKbks5WEZQTDJ2Z0JMQWpROXRab3Q4bWpHckstai1TZlRGTjM5WWx1VHdBcFpxaXpUQXNIQm85bzE3SHVWWDlocHpNVUstM0NWQ3JMdHkyaDdiV1J3Q0pqb0lBczBJandMMjVNM2ZmNzFRT2E3U0RtZUJwanV1RE9LUXJSTkxyUXAtNlk5MGY5T3ByQWZuRzRvNDM4Y0Jnc2R4RW9EZWNPdmZZRHFhV244ci1zSzBG?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Week"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Prediction: Bitcoin Will Not Be Worth $1 Million in 5 Years - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNLWVldlRIZHp0M2hqVDJ6MFJ5TGhMTGFfS2hlX0xTeGRqUW5ocmtibDM1M1NGUS1uSVU5clpjQmFHZUxWUDZlYkx2bjk4U3NwNVExS0ljdGJrMHVLVllCZHJjWnhHZThxQ3BURjBzYkZRMmEyTDI1TV9FSnRDZ2xWLWFB?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 12 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Prediction",
+              "Bitcoin",
+              "Will",
+              "Worth",
+              "Million"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC, ETH price news: Bitcoin could lose $96,000 as traders take profits - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNeHRzMy1NVm9aTHV1VzlMdGVMbWdkTkFPbG83WWlDTkdobHBqZl9xdUhOakI4LU1ybjJEZkMxcFZuV0tPazdsVDc4NWRxdXJUXzR5dXBOcjZsQ3l0UU1lUGhCby1EN3VUSzdQOEllNXZ1YTE5RlpLajZ0WUdzYzV6SzZ5US1lSTduVGoxVFZKbUxnRjJUMVpXY2NqT3lxLVRDdlJTZ1lzNm9LbXRjdDV6dkRReXNsUDBDV2I4Z0gyWEhid29jUExpczRR?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 14 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin's price hasn't peaked yet and its just a 'mid-cycle' correction, historical data shows - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxNZU1IRWtRU0hQQ040Z0I1TVh6M01paWFxR19UcUpGQ3ZVOHYyMFlpdExFZHpwdHF0NGg2RUFYN3JzbS1qR2htOTR6QTAzb3pNUmwyMXZuYVpHZzc2ZkhxNTBlU01JWFhKb1dsQk1xME1Zc3lValVMY18ybHl4blFDbXNUaw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 12 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin stalls below $92,000 as privacy coins rally; crypto miners surge on Meta AI news - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxNNEo3MnYzWDBFdDNGUkhqMTFINnQzc3FxZjJaVHNSRF96ajF3bVJPNmgzQXFzb3VETHFOMWpKVHk5Y2xNVTJxdHFLNS15VmZ5cS02WTFJNURMZzZYcFdZR1R1QkxQbnBrSU1Ja3hFN3BCSnNkOXlseFZNUVpRU1FGX3U4MWxtTnRjZDVkUkFPLWJlUTRCVVk5a1YyOEJJeHhkSmgybFRZb2pZekVQY19yVDNfUGoxR3lnMHVuQjNNQzZfc3hNWmRTR19ndkd5dw?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 12 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Meta"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price may hit $300,000 to $1.5 million by 2030, Ark Invest Says - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPQmh5SHktcGVpTlR6cG42WndDZThuQ0dwQUpXMGVDNXF1eHZTaEpVdTI3VG9XaUNSbFVUS2Vkc1lCa241UnEyd3cwM0Z0eXZZTkdaQ1plYkJ0NGkyWFphTkxLLVVIUTdEMGNCOFJ5cXhGVF8wUXc4M3M2MUVBLVpaMHFPVUhlWnBSMDZEUUoyY284MlVuTXZEcjl0dWlhZUxBMXR3alFTVHUwcV9YVFA3VHlaTGdfVWV6M3dSYThkcVVmajJublJPVw?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Invest",
+              "Says"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Is Bitcoin About to Break Out? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE9qOXVreXBxLWdsbHFMVlhnT1hhbUUtdjFrTEJsR0t2R19jb0lTRE9MNzdvZ3NzUzc4YnBVWlpjNTYyM204WnJWc2xPUnAwVVI3R1hZUXVUV0JkX19vdFFQZEpmcWU0WldxZFk0?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 14 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "About",
+              "Break",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin options open interest extends dominance over futures, damping BTC volatility - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPbzNPZ1FnRTNidEtReHBRRjJSLWc2d0ZkOVlhUkVtMW5fZ1J2V3VQSXE5TFl3Qm5GWjlrd2k1V0dmMlhfLXFSQ1ExeFE4UDdEM1hLdXg5cTZhU1RyWktRUzM1NWZpR3h4TjV5QjhrVXlCbzNxRGZRdWlBTUJZVkxHbnAzd21Gb0ZFX1F0NjlwZm90eGJnRXlfbHJFcmoyc2cyY3drLTFPalRrUFdfNGxvRDB4anJHZHVHYUxPSENIRzFTalUtZGc?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin price news: slips to nearly $95,000 as U.S. selling returns on crypto bill stall - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPa1JZWlpKaS1XbDYyNFEyaHhzSFVpa05UMUxjZkUxSjc0XzdzWE1zYmY0RWl1Y2JwUWU5ZnN1ZUZ6WTFwU2xkVTJ4TlQ2R2c3SFU1Ujctd3B0MzdpT0YzYXpzWW50a19fVkl1S2NyVW5rMjY0bHlqcFNUSGJUbG5IdkJtT3ZsMTFGSVlYbWZFcnFkcUpWTmVtTGlYWWFyWjgtaDNETjJNZzVrZHV5eHRxa0RmLWV6T3lPR1RocE5OeDlkS2hvNUVV?oc=5",
             "source": "CoinDesk",
             "date": "Thu, 15 Ja",
             "language": "en",
-            "tone": -0.532,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6348,111 +6503,31 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price is exploding, and a rare \"gamma squeeze\" suggests the price action is about to get violent - CryptoSlate",
-            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxPOXF3dGJNT1JnR2NYdFctZXpDZGRiVG4zaG9hN3U5NGdVV24xNWVzVTQ0MmdvQkpXaDJrMVpnLTV0bm1ONGJKVUcwa2V5dVBZdFE5SGdZaVpBWnE0MFRnQ2s4ZjRZSkZ5UGhBSU9xbG5zMDlZLTVhbHNLX3l3aHlQSUl1SnVBZHdjOFo5UEpjaGZyQ09JdmVwR3o2YUYwdm5UTzZjVDVmcTZ0MTV0bHJ4RU9WRVh0MzlMZzF4c0VhV2Q5SGlv?oc=5",
-            "source": "CryptoSlate",
-            "date": "Thu, 15 Ja",
+            "title": "Bitcoin BTC USD Price Slides Below $92K as Tariff Fears Spook Global Markets - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE4zSGJQWEFmWktZWmt6cnZjNFNBNHFTV2FlZDhkdUphYUpDTzViRzRkQUtUQ1VUWGl4bVR5cDBpQ3E5WlY2eC1KZFJ0b2twTWN6MUxWblAtT3ZhNTRKRDZNSHZxbHRhcDA0SEtTY2RHQVNKYXZ0dkxWQlR3cXVQR1U?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sun, 18 Ja",
             "language": "en",
-            "tone": -0.644,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "​​Bitcoin price update: BTC trades sideways as macro uncertainty caps momentum - ig.com",
-            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNZkMwOUFVRWpXMjlIcmJ1ZW5NbFg5c1BqS2FRMVU1Q0lGQ0ZYSWVFQTRSSnN6YnlGeUNOX05NVWpJc2Q1bXZlaGc2TFRVcVJ6Umx3Rm9SNFJMVEdIT1BzcXBXMWx5ejV5SWcycGZHRmxXNTRQVUpOS192cUd1d005M1gtZWJpdlBBamtzenRMREVfazBaM240bUczMm9iVG9ta0psY0RyR3AzVFQweHJlazR6aVI?oc=5",
-            "source": "ig.com",
-            "date": "Mon, 12 Ja",
-            "language": "en",
-            "tone": -0.496,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Rockets 5.5% Past $96,000, Strategy ($MSTR) Jumps 8% - Bitcoin Magazine",
-            "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTE8yb3Nid2hxc1pOOXNZR1lNejNLQmtlX1hUWm1iRlBjd0ZyeXBWUEVFZUhZNERiX2IxNHE1anIyMV9QanB1cnJpei1fMEg2X1JhTWp2a2hfM2lHVENKMTAta2lXZEcySzdsS0ttalFyTWVaY2oxZF9z?oc=5",
-            "source": "Bitcoin Magazine",
-            "date": "Tue, 13 Ja",
-            "language": "en",
-            "tone": 0.448,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
               "Price",
-              "Rockets",
-              "Past",
-              "Strategy"
+              "Slides",
+              "Below",
+              "Tariff"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
-          {
-            "title": "Bitcoin price prediction: Top reasons why BTC may surge soon - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPOGQydDhaTW9HWnpuVG9HcWNrRkhFSVE3VmxKUDh0eVJ6Uk1RdVRwR2NtT0hfTGVvMGp1VDhjLVE1VS1BZUh5Nk01eGNwNTU3ZllISUZra3BfSWJ1VzhCNGVkbDNFektueG8xQWM5NVV4d1NPb2JkVWF5UFJ0eC1uWHR6OG4tNkhTd1BadlprblhtT25BX3UtOUMwOEJmTDJ1UW1XMXFTTC1VbV8xTlZQcjZNNWdSeDA?oc=5",
-            "source": "TradingView",
-            "date": "Thu, 15 Ja",
-            "language": "en",
-            "tone": 0.301,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Climbs Near $92,000 as the Federal Reserve and DOJ Showdown - Bitcoin Magazine",
-            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQOU45eU9LSGJvcWcxQUliVHVVRXVTMUQzQmtUN1UwWk1Bakx2dXpvSC1XcXpRcHZ1Y0d3Nkl5WHR2RW1HY1ZHOXQ1M1U4MGNOUVNhNHYyMDQ2V1JtR3RpVldzRHo1bHZrRy1BdGF0dm84OTNzRnMxSHB5Y3R6VWpERA?oc=5",
-            "source": "Bitcoin Magazine",
-            "date": "Mon, 12 Ja",
-            "language": "en",
-            "tone": 0.162,
-            "category": "monetary_policy",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Climbs",
-              "Near",
-              "Federal"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "General",
-        "article_count": 3,
-        "avg_sentiment": 0.012,
-        "dominant_category": "general",
-        "bias_distribution": {},
-        "representative_titles": [
-          "Is it too late to profitably invest in bitcoin? - Charlotte Observer",
-          "Bitcoin Is on the Rise Again. Why Some Experts Think This Might Last a While - Investopedia",
-          "Is It Too Late to Invest in Bitcoin? - Kiplinger"
-        ],
-        "narrative_summary": "",
-        "articles": [
           {
             "title": "Is it too late to profitably invest in bitcoin? - Charlotte Observer",
             "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5qekpQZTBJRGF1Umt4TXNXWFBBS1ZiOVNmS2owTmtPTXhObHJJV1d6eld4V0o3QWVJM0tLaEg0SEh4ODJzWm9TSEExNEFmZG9yZElkNUNVRS1STkcxUXFJUXFRNUJjS0hQdEJCN0xxNkNUVHZjb2huSA?oc=5",
             "source": "Charlotte Observer",
             "date": "Wed, 14 Ja",
             "language": "en",
-            "tone": -0.032,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6463,12 +6538,61 @@
             "factuality": "unknown"
           },
           {
+            "title": "BTC, ETH price news: Breakout liquidate nearly $700 million crypto shorts - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxQaVJQMGVLQUJ4VVR4SlI4bE5rNUNuazlrczNTN3NGRlRFOXpkNVBfd3ZwRjJBNUtxWlRnOVhUQ21jV0Q4SmxLSGQ4RFBqNlgyaU9KREoya3hETzYwS1pfaDlEX2NtV0xHcTlfY2Q3d1F4dmJxUG04UElqQ0tjdWdVRjN4YlJPRHdHNTlKclFpTmVwYVl3YVowanRVNDVEb1NuVlZ3SEhodHBLYldRd0hjNGVzMXdFNVRQaWJReE92UjZkNDh2d0tPUTNMaFJDMF9CZnBjeg?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 14 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Breakout"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "After A Snake-Like 2025, Is The Bitcoin Price Ready To Break Out In 2026? - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxNQXRTZXVWSFF1cjZwOU1VSFNDbFplNFVWWldBVE5LdG00WkY1RFcwNDZSRlZoVmhHRC10aU5yT2JRSGlYQ1BYeGd0RXUxd3NwRG9kLVNybkdrUi1najhjcW9aQVpZdEhRUERIUGZfcnpKY3dHOWtnTkU0dzF6UGVvZTlVX25VMHFMSkFv?oc=5",
+            "source": "Bitcoin Magazine",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "After",
+              "Snake",
+              "Like",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price is exploding, and a rare \"gamma squeeze\" suggests the price action is about to get violent - CryptoSlate",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxPOXF3dGJNT1JnR2NYdFctZXpDZGRiVG4zaG9hN3U5NGdVV24xNWVzVTQ0MmdvQkpXaDJrMVpnLTV0bm1ONGJKVUcwa2V5dVBZdFE5SGdZaVpBWnE0MFRnQ2s4ZjRZSkZ5UGhBSU9xbG5zMDlZLTVhbHNLX3l3aHlQSUl1SnVBZHdjOFo5UEpjaGZyQ09JdmVwR3o2YUYwdm5UTzZjVDVmcTZ0MTV0bHJ4RU9WRVh0MzlMZzF4c0VhV2Q5SGlv?oc=5",
+            "source": "CryptoSlate",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin Is on the Rise Again. Why Some Experts Think This Might Last a While - Investopedia",
             "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNRFNveGRKUVU1ZXdRLU9HbmFiX3E1NVlOMDV6OS1hX19kRG1jUktXLUxxVWt5ZFhjR0o5WnlmeGxZTXdEWmJxdHJTTDhJNDktY2lzOUdwbDZYVVpHTUVZM2ZtWFozeW5GOUcyMUFJRTc1aVMyRWI0djd4eFlMUll3TTJYdFctekY3Y2dhdnhlVS1zbk9abTR6VWQtaWl2UExqX1FnckdXNXV0Qmw0ZTk2QTlKbEcydW1Jbzlieg?oc=5",
             "source": "Investopedia",
             "date": "Wed, 14 Ja",
             "language": "en",
-            "tone": 0.132,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6482,12 +6606,108 @@
             "factuality": "unknown"
           },
           {
+            "title": "​​Bitcoin price update: BTC trades sideways as macro uncertainty caps momentum - ig.com",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNZkMwOUFVRWpXMjlIcmJ1ZW5NbFg5c1BqS2FRMVU1Q0lGQ0ZYSWVFQTRSSnN6YnlGeUNOX05NVWpJc2Q1bXZlaGc2TFRVcVJ6Umx3Rm9SNFJMVEdIT1BzcXBXMWx5ejV5SWcycGZHRmxXNTRQVUpOS192cUd1d005M1gtZWJpdlBBamtzenRMREVfazBaM240bUczMm9iVG9ta0psY0RyR3AzVFQweHJlazR6aVI?oc=5",
+            "source": "ig.com",
+            "date": "Mon, 12 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Ethereum to $40,000? Why one analyst expects the second-biggest crypto to outperform Bitcoin - dlnews.com",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQajkzRGxOdG00TVJYUWItQ2JqR0xUeFBhR2dwcDNQYzVsRUFEdjU1ZFpGeFVyWTVvWVRWaWdfYm1SZXRhWWtSVWI0eWZZV0ltWmZpVDJlenVFMkJjMjlzc3BSWXNtY1YzVUNrV0RzeXc5d1UzVUN1WWNSN0xvN0UxOTdxQzAtbGZTa190eUUtLU54Mm5jdUs4RzU3MEY0dU1yalU1bGZLajBtc3FPcTdOaGcxN1h4bEJO?oc=5",
+            "source": "dlnews.com",
+            "date": "Mon, 12 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Ethereum",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price prediction: Top reasons why BTC may surge soon - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPOGQydDhaTW9HWnpuVG9HcWNrRkhFSVE3VmxKUDh0eVJ6Uk1RdVRwR2NtT0hfTGVvMGp1VDhjLVE1VS1BZUh5Nk01eGNwNTU3ZllISUZra3BfSWJ1VzhCNGVkbDNFektueG8xQWM5NVV4d1NPb2JkVWF5UFJ0eC1uWHR6OG4tNkhTd1BadlprblhtT25BX3UtOUMwOEJmTDJ1UW1XMXFTTC1VbV8xTlZQcjZNNWdSeDA?oc=5",
+            "source": "TradingView",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC, ETH, ADA price news: Bitcoin rockets above $95,000 as risk-appetite returns - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNM3RJYmJCRDdZUEZyVDE5WEM4TjVtN3FJOXJsQmFQUVhYYnd0OUdaRzEzWXM1dlZ0RmdMRlhsSVpxX3RoWjdWc0prenlUaDVjallQdW1zbXRac2p3UVl1NGluaG1aQnVSQUpiM1k1a0xHUS1QUjE4YWxFcVdyTnZLWmFLSjFzWlQzZENTcFRQMnZTSFU3NWI3MXdZOVNtaTYzWERRMURmaFl5OTZEdkpUaE5zUENMQUEwTWFz?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price slips below $95K as CLARITY Act stalls, Dash leads altcoin gains - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxNcktHOHBpWng1M2N0ZERuMkNqekR3cEVRbzZvdm9ERTJRcUp6dFlRNmNWMFlHcEYxVTRkNW1KUUhVaklaZzBYdHQ5WUU5bmJ1QW5scVJXb0IwUFhMMzdvRzJGOFJCYlQtdzdKMVA0QmQ1WVpJUFhEMXlNbEZuRU9nTHF5UGE1cy05cWRneW45Y2Zob0sxQlNDRHVWZzN1dllxN05jV3gxUTgxUGlWaUt4bmItcjFJeG1ZTUNpTjAxcUVRUzZJUmJ6Vk5nYUN5UQ?oc=5",
+            "source": "TradingView",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Dash"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Crypto Suddenly Braced For A ‘Massive’ Shock As The Bitcoin Price Soars - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxQWjdOUGNucTB1NzdQNWtETzl0aktWZHZpRlpHNXFKQ3hDUzItcDQ2ejBoLXRvWWZaeUZ5X1hFdXdWbnJHRHo4Y2dfQUlpNUY2U1JvRldHT3BtSlhMOFk0QXU0eDRtUEl1QS0xZVVMQkJRbVdaRDFjRGFGYWlmZkxFRGhTcllBcmNPUFpLVDBzek5QVzZ0MzlqaW5FeUhBSkpodGUzSlJmUFdGNzl1TklLbHp4S1FJdVlkYW1FN0R5amF6TlU?oc=5",
+            "source": "Forbes",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Suddenly",
+              "Braced",
+              "Massive",
+              "Shock"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
             "title": "Is It Too Late to Invest in Bitcoin? - Kiplinger",
             "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxOTU9nc2J0UHVsM2JZLXk1eUdBM2wxdzFFNnBNYmdmbWFvemRXWHV0d05PS3M3ci1oZXFvNlMybUxkSi1RakMwXzZkS244cERsZjVXaGpweERka093NVBTekpuY0FXZVBqd2FRZ3kzZHA4NzZMMnFEcEIzclhoR0dHREFqUVI?oc=5",
             "source": "Kiplinger",
             "date": "Tue, 13 Ja",
             "language": "en",
-            "tone": -0.065,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6495,6 +6715,146 @@
               "Invest",
               "Bitcoin",
               "Kiplinger"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price shows failed auction traits as breakout volume weakens, rejection next? - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTFBTLXVIeDcyV1RwNk1NX2o0SDA2Q1RXbjFYVzVXcDBWNVlzeUt6Rl9OMmFPa0lld2FmM1cwc1lJZ0plSjlNeFBfckoydURwa1NkZGt6ZUNpOTFnVWVLX2ZKM2xMbnlmZ3BpMlJzUG1VbVg3NHB6enVLZ182ckU?oc=5",
+            "source": "Crypto News",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Analyst Reveals How Far Bitcoin Price Will Crash If The Uptrend Doesn’t Continue - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxQNU53VzFXclotWEVTeDBreGExYnhLRms0aHQwdzM0dWVlSlR2dmF2aXM1MjJRYmdMaDVYOUhCUUdsdWFUa0xjTWlZSkxRejY1WEstbFFKVnN1a2R4YW01TDYwZml6MGg4SFRpZW9WeGhjU2VZMjV6N1psTkxZNTdua25ST2d2YmVSSXpVWGNfUXpheFFsWHdKQ05RbnhhaVdONlBaa0trVVBxMkwwQS0tWkJtcS11bWM1S0ZKdXVHYVBlZXBqRk0ySk9DWmF4RXdUMU1YYQ?oc=5",
+            "source": "TradingView",
+            "date": "Sat, 17 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Analyst",
+              "Reveals",
+              "Bitcoin",
+              "Price",
+              "Will"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "The road ahead for crypto markets in 2026 - Kraken Blog",
+            "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTFBLWXlMM2QydHc2Q3hUTzdXRjZmVmcxRGdxOXhDZ2ZZUEVyQWtGMVFrcDFxb29Sd0puUHBWaTdYV3d6SGg0ZjF5Ym5UNkhTWVhJTjZqdDhqdzVfOGJHd1pTa29IZnlGZFhmckg2b0pMbEg?oc=5",
+            "source": "Kraken Blog",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Kraken",
+              "Blog"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin copying 2022 ‘bear market rally’ despite 21% BTC price gains - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPOXBTMUtuZERQa0QyWkpIVkVIZkVpdDZPNndoWEVLeFBjQ0k3R2VLOUl2ZEJTLWY2LURiSk0wT2xscG14UVlyRHNjT05KNDVzNEpnbTR5SGNPN3lVUTJSQ2c1X1A2TEgyYmF6NWFrRHVhZ1NfYnNPOXFiX2NUaEQ3S080d0dPWW55YnJ1eU1rdDAxdnlONGRHUmpWdnJUcWdmYVp2aFJsc1FpOEVNeVJMUHFPcEo2Y0tvMk5tbHFGMHpHMzBsU240TA?oc=5",
+            "source": "TradingView",
+            "date": "Fri, 16 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Arthur Hayes: Dollar Liquidity Will Drive BTC Higher in 2026 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQMWticDR5NFJLOHZYcFpYX0l4bDM0ajFKTEhjX0pENWktdnNpdWVFUDFuX0NFZmo5OXk4dS1laE1VeHJmVVpwTlduOGE5bGRCX005UHdQaHFERWc4amJCaGsyNnlOcnZic0dGSUgxMWNKaFBQTDRqRjNoYkxHNU93bnI2LVptOW5t?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 15 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Arthur",
+              "Hayes",
+              "Dollar",
+              "Liquidity",
+              "Will"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 1,
+        "label": "Fx Market",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "fx_market",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Iran’s Currency Crash Tests Bitcoin’s Use Without Internet - Yahoo Finance",
+          "Bitcoin Analysis: Is a New Bullish Bias Entering the Market? - FOREX.com"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "Iran’s Currency Crash Tests Bitcoin’s Use Without Internet - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNZzF6ck9hTklEdS1kUVFTVWdTZWhOdDVXZEkwX3R5c1FReW9PdGxveXEySUVnckljTnB3SFJTNGRmMHVzRHI5SkZWbEpsWjlKRHB6YldCSXU0VVp6U3dmUUV5ZWloRWZoNlFaRGd1TUtkclY0eF8zWkRLX0ZIQXg4Znh6QkVGQQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "fx_market",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Iran",
+              "Currency",
+              "Crash",
+              "Tests",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Analysis: Is a New Bullish Bias Entering the Market? - FOREX.com",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNWWR2cHFicUxtNkgxdmpSWFo5ekM0TWtXTHo2SFo0STlyZTNVOF9Nb0JGWFU4MkctT2w4Qy1CNTl5dlB0NzhOZTRQaWVNQWpOeU1OVDBXSU5GZ0lyN05rQ1d6RXJGSlFUSFE2bmkxUXdwMExYN0xGRi1zdzFrcV9OLUduQVV3QTlUNS1yYl9fejNuazlmTUZyRGZzTXVBaVV4OEk0Rm13WmjSAbQBQVVfeXFMT2w3aHJoNmdwWVVYeFpfZXlZc25zWXNGUHozYkt0d2V2ZTFiWDBpN0NmNnY3WkxST0pQcVlxeEZ5NTk2NnlTVk5DZ094SUxJNWdFNXB3a0hlY2ZyQU9NdXhkT0VUYTRzWU9BSTdHaHpKaWhzSk9ua2xZZ3Z2NVdNOE81Y04yMEtQQmx1VzJTMy1oY3V3aGtmVEhkb2Nmem5nOXhIWndxWGRoeDZTajdHOGxSekY5?oc=5",
+            "source": "FOREX.com",
+            "date": "Tue, 13 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "fx_market",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Analysis",
+              "Bullish",
+              "Bias",
+              "Entering"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6509,7 +6869,7 @@
         "source": "Yahoo Finance",
         "date": "Thu, 15 Ja",
         "language": "en",
-        "tone": 0.241,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.5,
         "keywords": [
@@ -6529,7 +6889,7 @@
         "source": "Yahoo Finance",
         "date": "Tue, 13 Ja",
         "language": "en",
-        "tone": -0.656,
+        "tone": 0.0,
         "category": "fx_market",
         "relevance": 0.5,
         "keywords": [
@@ -6544,20 +6904,19 @@
         "factuality": "unknown"
       },
       {
-        "title": "The Hidden Bitcoin Leverage Trap - The Regulatory Review",
-        "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNMHoydElGOEdWUGNxdEk1WUYyaFNkdnNYLVd2b3NwLXdXV1BqOFYyVUhFdW9rOTI3ZDhCcl9xWG53Z2x5dGozVFF0OFUtNmQ4dG1mNnhmSFNJLW5MZ1Bxbk5ERUhBdGh6aUxEZEpQakZXTHprdVdrLVlFR3RhamdFdDMzc3QxNmc?oc=5",
-        "source": "The Regulatory Review",
+        "title": "Bitcoin price targets $97k zone while Remittix draws attention with rapid triple-digit gains - Crypto News",
+        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNR1pYVmlBb2cxUWZBMW1ZbXV0cVZMNU5STUwxY2xON2xOcGNxd0d4Q2twdnpkRDg0cDdRdXNRb2h6bHlNYklhbUhOVXRPc1FfZ0RVY2JNSmpMdWJOajAyTkwxRVdNR0pTY002OVBSekxGTGNGT21rZXpNdy1XcS1xMWZwUVJ6aUtDTjFWRU5UQTBNYW8xUWFJdTlkc2tfOUxWejk5WVBvQzF4RHZuSEFHWlV3?oc=5",
+        "source": "Crypto News",
         "date": "Tue, 13 Ja",
         "language": "en",
-        "tone": -0.161,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "Hidden",
           "Bitcoin",
-          "Leverage",
-          "Trap",
-          "Regulatory"
+          "Remittix",
+          "Crypto",
+          "News"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6568,11 +6927,28 @@
         "source": "CoinDesk",
         "date": "Wed, 14 Ja",
         "language": "en",
-        "tone": 0.501,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
           "Bitcoin"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin price outlook: Why this expert predicts at least $130K - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNVnlGelM3MmNlU3FWbzBUUWR4dWwtSm9pZHNhcHdBRm5fcU9FTmRLeDZfcVhsaHFKeXVSQmpjd0t4V09BWUxUZGQtc294RHpWdG5lUm9aekxwNlJaRERTTHN3MXVZQlM1aFQ4eDE2VTdta19DRDNBUkFmcmpuRjBDMDhQUTFRQQ?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Fri, 16 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Yahoo",
+          "Finance"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6583,7 +6959,7 @@
         "source": "Yahoo Finance",
         "date": "Wed, 14 Ja",
         "language": "en",
-        "tone": 0.224,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6596,70 +6972,16 @@
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin price outlook: Why this expert predicts at least $130K - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNVnlGelM3MmNlU3FWbzBUUWR4dWwtSm9pZHNhcHdBRm5fcU9FTmRLeDZfcVhsaHFKeXVSQmpjd0t4V09BWUxUZGQtc294RHpWdG5lUm9aekxwNlJaRERTTHN3MXVZQlM1aFQ4eDE2VTdta19DRDNBUkFmcmpuRjBDMDhQUTFRQQ?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Fri, 16 Ja",
-        "language": "en",
-        "tone": 0.022,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Yahoo",
-          "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Bitcoin price news: BTC is selling off again during U.S. market hours - CoinDesk",
         "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQQlBLMUZKZjFTX2Fnd29QaGNBRGs2dWZFUnM3N3RvdjQ4aEUxREdtYnFvRDB3TXEzSFVNRGQzOGFQM2lWUTh4dVpMc3pXY0dyRWtrUEI1b1lHX3JvY3E0SWFyR1pkOHZYem9sM25kQ1hnc21rNC14U2s5Y3VHemg5b042c3A3VmREM1ZVQ3NHazJEQjdqN2R5bUFsRTBQdVNXSTdlWElHTjkxem5nWDNCRk5B?oc=5",
         "source": "CoinDesk",
         "date": "Thu, 15 Ja",
         "language": "en",
-        "tone": 0.255,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
           "Bitcoin"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Why Is Bitcoin Up Today? BTC Price Surges For $100k - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9TU3BsRzE4UXNxcmE4czhMYXFWNVRiQl9fc1dlTnZOYmhFeFhXQXo3MDdpTDdITkE2Z21RVmkyUTJqbThxemhMYTNJSVBENUMyX205U2gzYUJtaTVMaUtKT3lwYlVFR2NVZkZ2NG8xb042ZHBXVVpodHc0MnBidw?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Wed, 14 Ja",
-        "language": "en",
-        "tone": 0.164,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Today",
-          "Price",
-          "Surges",
-          "Yahoo"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Analysts see BTC price on track for $100,000 led by gold, haven demand: Crypto Daybook Americas - CoinDesk",
-        "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQUHIwM0laRWtpMEI1NHBYdTlURXZleElXNnpXdy1QUTdrTlo3ckE3NEVReEtkeXZMRGhnVm9pdFJWUzJZRFZ2TE83UlZ0UllyeWVWSmJHMjdWdlJwbVd6cjlxcUJ3S0JHbnBVT01YZUhrbVc3Qi12VnF3cWcyUHNzbzRCSklNWDB3Y3pXTEVTNFVDZXhoSzQ1d01iMDRUNTFuVnBtaXpnTDJELWwxSmFGcTVwVEVmTGc?oc=5",
-        "source": "CoinDesk",
-        "date": "Wed, 14 Ja",
-        "language": "en",
-        "tone": 0.272,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Analysts",
-          "Crypto",
-          "Daybook",
-          "Americas"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6670,7 +6992,7 @@
         "source": "Yahoo Finance",
         "date": "Fri, 16 Ja",
         "language": "en",
-        "tone": 0.496,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6682,23 +7004,56 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "BTC Price News: Bitcoin rises to key level while analyst sets $100,000 target - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOdWdHSmswZnBhMHRkS2dCaWFOTjA1M0dnN180TDdvbU54bFlzYnAxb09pM2dURTBfNEpuNEplTW1kaGFZTkxkUU0wd1ZRVGVvZFc5NlhuT3BXdmlxTGRjd1FEVHdtR0l6eFBYT2Via1NabWN0dWtIck5PTm1Ld3ZNb2lCTU9DbkJfME5zZkJpSUF6Z1NXeDdRVHJaSVo3eXBZSzY0c19KVGY2ZHlRNGFFbUozOHZFaHpvVXpXd0NlNFhIX0FBT043dElJYXY?oc=5",
+        "source": "CoinDesk",
+        "date": "Tue, 13 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Price",
+          "News",
+          "Bitcoin"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin (BTC) price bull case grows as U.S. Treasury volatility sinks to lowest since 2021 - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPMmc1ZGtOOUFGNS0zd2p2eThwbWg5NkR6WkZwaFQtcEY3Zm1jTHNiM092anR4S3lQZkxQZzNKTWUzVFNzakhxS09ZM1hZa2NRVHFhWXd0U1N6Vl9IbGkxREt5cDhlWm1PZV96dGFUdFZwbTZLMWZzUWRfbXNjT19CQVZSRmpyeE1vay1SdXF5d2M3YjZKR05BU0NDSGV5bTBVblBuSkVSMXMyWnVtS3d2TmQ0NUoybDk1NTJ0MmRRZ1pldw?oc=5",
+        "source": "CoinDesk",
+        "date": "Thu, 15 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Treasury"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "Yahoo Finance": 11,
-      "The Regulatory Review": 1,
-      "CoinDesk": 13,
+      "Yahoo Finance": 10,
+      "Crypto News": 2,
+      "CoinDesk": 12,
       "Charlotte Observer": 1,
-      "Barron's": 1,
-      "Bitcoin Magazine": 3,
-      "CryptoSlate": 1,
-      "ig.com": 1,
-      "FOREX.com": 1,
-      "TradingView": 3,
+      "Bitcoin Magazine": 2,
+      "CryptoSlate": 2,
       "Investopedia": 1,
-      "Forbes": 1,
+      "ig.com": 1,
       "dlnews.com": 1,
-      "Kiplinger": 1
+      "FOREX.com": 1,
+      "TradingView": 4,
+      "Forbes": 1,
+      "Kiplinger": 1,
+      "Kraken Blog": 1
     }
   },
   "political_bias_analysis": {
@@ -6732,5 +7087,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-20T22:48:59.305086+00:00"
 }

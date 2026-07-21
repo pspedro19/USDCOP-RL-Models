@@ -9,7 +9,7 @@
   "week_end": "2026-05-10",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 19 de 2026",
-    "markdown": "### Bitcoin — Semana 19 (2026-05-04 → 2026-05-10)\n\nEl cierre semanal de BTC/USDT fue **82210.07 USD**, un cambio de **+4.63%** en la semana (rango 78202.00–82850.00). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 82210.07. RSI(14)=68 (neutral). Soporte 74821.57, resistencia 82850.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.35x). Régimen: markdown.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Strategy, Bitcoin Foundation, Fortune.",
+    "markdown": "### Bitcoin — Semana 19 (2026-05-04 → 2026-05-10)\n\nEl cierre semanal de BTC/USDT fue **82210.07 USD**, un cambio de **+4.63%** en la semana (rango 78202.00–82850.00). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 82210.07. RSI(14)=68 (neutral). Soporte 74821.57, resistencia 82850.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.35x). Régimen: markdown.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Bitcoin Foundation, Yahoo Finance, CNBC.",
     "sentiment": "bullish",
     "ohlcv": {
       "open": 78568.58,
@@ -44,7 +44,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-05",
@@ -66,7 +66,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-06",
@@ -88,7 +88,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-07",
@@ -110,7 +110,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-08",
@@ -132,7 +132,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-09",
@@ -154,7 +154,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-05-10",
@@ -176,7 +176,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6186,70 +6186,67 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": 0.081,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
-      "Strategy": 1,
       "Bitcoin Foundation": 4,
-      "Fortune": 3,
       "Yahoo Finance": 7,
       "CNBC": 1,
-      "Fast Company": 1,
-      "Barron's": 2,
-      "San Antonio Report": 1,
-      "CoinDesk": 5,
+      "Fortune": 3,
       "Bitcoin Magazine": 1,
-      "24/7 Wall St.": 7,
+      "CoinDesk": 8,
+      "Fast Company": 1,
+      "TradingKey": 1,
+      "TradingView": 4,
+      "San Antonio Report": 1,
+      "Barron's": 1,
+      "24/7 Wall St.": 4,
       "FOREX.com": 1,
       "Finance Magnates": 1,
-      "Seeking Alpha": 1,
-      "Mitrade": 1,
-      "investingLive": 1,
-      "TradingView": 1,
-      "Kiplinger": 1
+      "Crypto News": 1,
+      "Mitrade": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": 0.081,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 17,
-      "negative": 7,
-      "neutral": 16
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 8,
-        "avg_sentiment": 0.225,
+        "article_count": 36,
+        "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
-          "Why Is Bitcoin Surging Today? BTC Price Tops $80,000 for Three-Month High as Iran De-escalation Lifts Crypto - Finance Magnates",
+          "Bitcoin Price Could Hit $1M in Five Years, VanEck Says - Bitcoin Foundation",
           "Bitcoin Price Prediction: We Asked ChatGPT About Bitcoin’s Realistic Price by Year-End - Yahoo Finance",
-          "Bitcoin Price Prediction: Peter Brandt Says Bitcoin Could Hit $300K–$500K by 2029 - Yahoo Finance",
-          "Bitcoin Price Prediction: Arthur Hayes Predicts Bitcoin at $125K by December - Yahoo Finance",
-          "Bitcoin Price: BTC Is Up 19% in 30 Days — Is the Bear Market Officially Over? - 24/7 Wall St."
+          "Bitcoin treasury firm Strategy breaks from 'never sell' approach to the flagship crypto - CNBC",
+          "Current price of Bitcoin for May 6, 2026 - Fortune",
+          "Bitcoin Price Rockets Past $81,000 for the First Time Since January - Bitcoin Magazine"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Why Is Bitcoin Surging Today? BTC Price Tops $80,000 for Three-Month High as Iran De-escalation Lifts Crypto - Finance Magnates",
-            "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxOUWpBQ1FqYWU0a0Fsdk9kYXM3eFplVzF2SEFseGR6R19Vdy1rNC05dlVmWnM2YWRuRkdPV2IzRy1zVGpqREZNNnRSVmZOaTJaLThDaHdHQS05QVJLd3VXV1d3RUVPV1I1cm5NN1F5dDRaT3J4MVZwMzItY1lqbnlNM1FtSjNucHZoWnBrdEFKaXJDVVRDazZfbGhyZWxua1pLaUV5bVIwWlFMSU5jOFlXdS1DVzBXM19LOEJPVmdRZi1lMV9HNnVXZkFydWxaWndpcnkwNTBCOXBIS1lsZ0JMbw?oc=5",
-            "source": "Finance Magnates",
-            "date": "Mon, 04 Ma",
+            "title": "Bitcoin Price Could Hit $1M in Five Years, VanEck Says - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE90cFpIM2tjOFllTkpfYlZ6LUVDSkFncGlMSXZvUHdmYmh5MHk3bFBaSUhnYW01YU1uQ3Q2MU5BTEU5Z2dpbGRFci1pdjRtY3ZYaEd6LXR2NlNkbVhmVVM4anRrN3dXaDVoZE1teC1oaGd5a25kZUdmWWZRZw?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Fri, 08 Ma",
             "language": "en",
-            "tone": 0.461,
-            "category": "risk_premium",
-            "relevance": 0.5,
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
             "keywords": [
-              "TES",
               "Bitcoin",
-              "Surging",
-              "Today",
               "Price",
-              "Tops"
+              "Could",
+              "Five",
+              "Years"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6260,7 +6257,7 @@
             "source": "Yahoo Finance",
             "date": "Wed, 06 Ma",
             "language": "en",
-            "tone": 0.03,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6274,20 +6271,157 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Prediction: Peter Brandt Says Bitcoin Could Hit $300K–$500K by 2029 - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNZmRtTF8zYXl6ZGw5akFaa2d6VTN4R1BwNDVNcEpmZTFPeUJrcURKeUFUb3NUZ2w4MzEtRllPTGd4bWFpUzU1SlZSS2FFai1IMkNmWTJVXzNoVWVLNUl1aXJRNHhMMkROSUU5ZFhXRGh5ZzBHenR6cElNcl9uVXJnS3Z0VXMxc0VvWTdPeTQ4WHpYcWpsX2g4MWRMS0RQUUJRTnpwNw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Sat, 09 Ma",
+            "title": "Bitcoin treasury firm Strategy breaks from 'never sell' approach to the flagship crypto - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNVTVUanlzQzE0OXdfSWpEMW50R0o2TGt2LXhPeFU3MkxWU1R1Z05CeHVQdDRKejh6eDVDSFdTdTM0NGQwbm5iSzlxaW1fY1lZOWwxOG9XNVNyWVkwVUZCQjlzYlZfY1Y5UTR6eEZfTEl5WHBuajBIbEE5SW9zXzdMUDN0RUVTVXZnTG0zYkxn0gGTAUFVX3lxTE5yOTNlMktuRXY1Sm9UTXBPVzFkN3FkWU15NG5Yc2tqSFZBSVY2a1ZRNWJvdVdyX201YkJ0QWRXLWM2ZHJDLXpXNXI5bVlpOERBcWhPcnV2dmZNWGVYeUpIcDR4dzd3TGU0bThuZXJLQUdwMDdpVkRsS000ZmdjcEg4V2VrZ2MtY1ZNT3BMcHpPdkhOVQ?oc=5",
+            "source": "CNBC",
+            "date": "Tue, 05 Ma",
             "language": "en",
-            "tone": 0.103,
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Strategy"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Current price of Bitcoin for May 6, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1EOUlCTWFGQm94LVl0X0lOdEw5WFY4N194YWw3d0F5VThPUEk4blVrVTZSaWIyX0xxaVNZM1ppX3VtRlY1S01NTmdHcVkyX29KSWpydS1tOUxUMm5KdVpsRjYwSVNVZFk?oc=5",
+            "source": "Fortune",
+            "date": "Wed, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Current",
+              "Bitcoin",
+              "Fortune"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Rockets Past $81,000 for the First Time Since January - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE5qTVVJOXFiakpzX3pBYnA3dmpybk1wQVJOek9LaTVTZXJKWHJOZnpRQjFNQlpiaFVYOHZlUS1NSGlNWFpiVDlkUnhpVTRsd3dKdGJJQl9hVl9acTFZbzJETDExbHpGeUc2d0xNV19iOUF5Z0I4Zm04NTlfWQ?oc=5",
+            "source": "Bitcoin Magazine",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
               "Price",
-              "Prediction",
-              "Peter",
-              "Brandt"
+              "Rockets",
+              "Past",
+              "First"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC price now: Bitcoin crosses $81,000, ETH, SOL, DOGE to move higher - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOcm5ETUJfakZUd0RPRTVqS24xRjFndkwtRVM4b0JkbHZGTjljNi0xSDMwcDFIZEtBckE0cHh6LXFNTUdCVDRpa2NZMXpyVFhHVlYwU1Bhb1htXzdkVGJrQ2RQa1E0Q1NjRzdLSUdvc2ctajl6SHVzTmpmUWN4TGdDM0FDbzJyNVYtSzVZM2FpX3lBMW5NTUxyWXpRa1UtMDR2cmtVdGhCWWtwSUVfWmhUYS1penRuMTdPcl96ZDVSMTlDYktQN3B3M21kdmU?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Hits $82,000: BTC Nears Highest Level Since February Despite Strategy Warnings - TradingKey",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQcGZQUVpIQ3djY2wtWFJ5dXYyd2R1UkFwVG5fWnJ6SXZ2VnNPdU5GcVhZVXdaY092VlhOa2c2UllLNE5GRjNENngtNU0xcWp1OTVyZ21SSC16WHRxbFF2Tk1RUDFpZ3JKOUJFeXk5NlBjUC1mcXlpMlp4azM0VGpzV24wYS1rbVFBWFRYQW9wcUo3Y3k1WFRJRU5RckxMUHIxalZGTF9YWVQ2SXZtYXIxdGt4U3Q3SXdETE1IbQ?oc=5",
+            "source": "TradingKey",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Hits",
+              "Nears",
+              "Highest"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "CME Bitcoin Volatility Futures Open New Trade Beyond BTC Price - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPRUp3TEdnNFdyd3hKcGpIcXRRS2IwZ0ZCYkxPWGl4dTdZZDJzWFJwN25TSGttbW5OUzhiVVFVNTU0MWpwNkJJTHNGMlVZdTFULUpWSnFjVlEtOFptMFVRN0MzdHhOa2hKTGVvaGZOcWQyMTUyZnI2Z1BtQkkzRGVZWVVtVGtjX2dvVEx1RmREQl8zU1JJM21YWkc1ZG1QSXN5Ml9YQ3pmTmJCUQ?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Wed, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Volatility",
+              "Futures",
+              "Open",
+              "Trade"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Surge Incoming? Tom Lee Says 'Crypto Spring' Is Here Amid 2027 'Biggest Rally Ever' Prediction - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPLUZNWWk2ejBMeU52dDdaQUV0UkNrVVhkNVBvRDhtNWxqOXBSdS0ybmdpZjRHZld1bElrQkJ1dEJwcURybm4wNlZHQWNZRkI0VHd6dkk5UWFGQUZYWmtHYTB2ek9lYjVkY1hyYy1RdTl3M054ekxjNldMOEJ6SUxfNWQtazdnQTJpSjBIUGRSNDJqM0Q1TXN2OE5mdnJndw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 07 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Surge",
+              "Incoming",
+              "Says"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Current price of Bitcoin for May 5, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9oUEtTSjZHRF9iQU9MQVBvLWR6aGkyX3NseW1mUVdoRXhsN1VycklMNUYwd29NT3lybTlBY1QzOXoxNlJLY09MVEJLTU85N2Z2eXoyeXdjX3JYRDhSazdWTFpmMnZUVDQ?oc=5",
+            "source": "Fortune",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Current",
+              "Bitcoin",
+              "Fortune"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price news: BTC closing May over $76,000 would confirm bull market, Tom Lee says - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNX3pDTy1Pc0d6NENMYm5SRFlPa0hMUW1BeFBTVk52SmlISFRIQWJyaDBEMzRvV0ptdDVmVjNaaDBoLVJjMlFJT3Y3MTZNRXBtNkl2dFRIVGYyOWxHY0Z3SlVaTHBCTTlzaU9xM0l6blBCX1REa2dIU2tIckRtM1I1WElHMk5CSWdSUGVnLVdwYW5ESEI4YVM3WHBDRndmX2JubzA0SEVHaDhvTm5ReGhQM3F0R1BTUTJxZk1HYzVR?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 07 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6298,7 +6432,7 @@
             "source": "Yahoo Finance",
             "date": "Fri, 08 Ma",
             "language": "en",
-            "tone": 0.046,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6312,39 +6446,382 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price: BTC Is Up 19% in 30 Days — Is the Bear Market Officially Over? - 24/7 Wall St.",
-            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxOWmtaVUJBMjlRdjVsVmlOdTk0MzRoemRGS1R1a2tUb1lmaVFicnBMV082Zk40SWVmblpTdXFkTWRWWW4xa1lPY0p1X2R1YjVMSmtEQzlmcXZmbXNlRkc5TXdSZW5sdC12NEJtdElyNnF6ZUhCbm50NXZadDNLLWxwbUVaZzJiVWNFREJBQ1FQMV85Vk05Yms2LUk3b1pwemJIT051aGVvZTlrRWs4UVR5Y29HUXlOb2c?oc=5",
-            "source": "24/7 Wall St.",
-            "date": "Mon, 04 Ma",
+            "title": "Current price of Bitcoin for May 8, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE12Z0pmYVZIZHI0ZmExc2RSTVl1M0lTTWp2bVJzQkx1WENESjZodUlnaHBjWG1FN2QxTHVjQzB5YlVqampXVFQtUkpadTJqMmZxcDZEUlM3VnpEdFpWYjhLWVQwOXpLcTA?oc=5",
+            "source": "Fortune",
+            "date": "Fri, 08 Ma",
             "language": "en",
-            "tone": 0.303,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
+              "Current",
               "Bitcoin",
-              "Price",
-              "Days",
-              "Bear",
-              "Market"
+              "Fortune"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Prediction: We Asked ChatGPT About Bitcoin’s Realistic Price by Year-End - 24/7 Wall St.",
-            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOX0xwSHpJUlVNVUpFRS0wRGR3dXZXM3Z4dkRGcU5XeGVndkhtbDl4S2tmUzQ0RUl3NEZRNktpQmRMNE9QTU81ZzZaUHVXcjlQMXFaaXp3OW9lUm5tNkliQVh5UTBtNEw3bVh0dXV5bUMybmdHYkVFMFRpYWhwN2Z2ZUV1ZUJyRWxkUVo4bWRSc2FBZkl4dWdLTUkydjZ6OXFpeVBsTkVtTFhPMFl3QzM3Tzk2OWMteTlOMkxpaDRnQUptUFdqcDY0?oc=5",
-            "source": "24/7 Wall St.",
+            "title": "Bitcoin's price rally has a hidden rhythm. Here are the hours and days driving gains. - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQNHd4UXFuZ2haVGl2czZzQlR6dkFGOENyUW9NYXZqX2tMTjByZ1M3akF2RUdwYWhOaF9hblFFUjhBQ1g0SkFHLTNCVnFSN1NvN2RfN05HQUJvNlFrQURtbUJJSi1oeEJBMTVYU3AwLWZGbzdYRnNISjd4dDktSTRXaElKTEgzWnZKb3Q4Q3Bjd3ZHeS1FUTBvNy0yZ2VMNXY5Tjg2X3lTdEE0VllUSzlGX0d0cUwzWU5sNVBQeTlFbGRoMkRyWXc?oc=5",
+            "source": "CoinDesk",
             "date": "Wed, 06 Ma",
             "language": "en",
-            "tone": 0.026,
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Here"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price $0.02 Drop Scare — Revolut Glitch Gives Users Nightmare Scenario - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxPdFlDU0wyNzFLZm5VU3F5SE5Md04xaHpUN1Rad05qV0tnVmxzTGgySkFkYWJqWDk3LTNwTy1NQW8zSkNWd19KRUotb3FGaEhYZ0ZpNXBNZmViekJVSkpueW4yd2pnWW4tdWF1SzJJdmJpNmxjYWZ1M3JBV3lFQTZRSXpOQ0JSZTA4eDJiSy1hSTlJUQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 08 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Drop",
+              "Scare",
+              "Revolut"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "American Bitcoin Q1 Loss Nears $82M Despite BTC Mining Record - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOVmhVQkpOT01NVnZkb0d1aUM5dm1PQ0pqbmZKcDdhbHcyaXNJLThpdE9FRDVPd2FGUEFRX2F1YnJyd1ZFZUpEWGNrcTNfYU9RVE1SX0RVa3JZd3VqcmprUlhudHV5Ymt6Z0FjWUNvaU9sU1lWTmJodjZRWVlvR094NGExb3lLVXZaSnB0N3B3N0YwczE5b19FeGRsdE1ITVVjYktR?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Thu, 07 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "American",
+              "Loss",
+              "Nears",
+              "Despite"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Forecast: BTC USD Hits the ‘Magnet Zone’ at $80K - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNXzB4M2ZjTUJ0NzlhaVoxSDQ3a0FtTzhmRFJlUG5qcXFZY2dveFBNbHRBRnJGWEQzaEdtZ25MSlpXZnZBMHVyTUdCdXVWb3NzN3VVc1pKcFkzTkJydVRnaEtZd1ljRFYwU05RNHppbklFcThOV2NNa1E3SF9KUDVXOHFiVU1wSGpmaG9GN250U1V2Z1VlRFR4ZmZ5UQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Forecast",
+              "Hits",
+              "Magnet"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "'CLARITY Act Will Bring Nothing': Arthur Hayes Dismisses Impact on Bitcoin, Doubles Down on $125K Price Call - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxNbnZjcU4tOEloVkhhT3Fva1J4NF8zNUN0MU9HSWgxNVBDTVJOVkpaWEFscEIyMTlIQ3h0NmxvT0lOOXlYVmRXSUhnZGNiMFBNczlZajlxZjZRcXRRcnhOQnpfMkdqcmJKakVHTkQxbDNlMmtyNUlmRk4tQlo1VzhkTDVNQXFYbHpQVUwwdDFVYjlHNFZmT1NuaUhZUG5Mdw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Will",
+              "Bring",
+              "Nothing",
+              "Arthur",
+              "Hayes"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Michael Saylor's Strategy (MSTR) booked massive Q1 loss as BTC tumbled - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxPYzUxV1BkVFl4UWVqeVlTblEzYWRhVm5JbWdkN3lJWEZXWG1jb0NXZTk3SkVTOXM5eDMtUFItUU9uYjVMQUMyZEdMZVdrNllVMk0xT3gzMS1iaFNEZ1U3YmM3Mmo0T2JVTlBBNHU3TFViVGRMcFBkVm9RdjdTcndGaDZiZ281NTFJa204NVYtRy04eS14OHdOOElKWDNjS0xEUDk2alRLeWFtNHJjelUw?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Michael",
+              "Saylor",
+              "Strategy"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin must clear $88K to confirm bottom, analysts say - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQZzZ3QzBjYXZDeHp2akd1TmRkdnp4Y0JPeng3V1h4aFBUTU96MmdISXBtR09XQzQwSnZYTU9hTTJrY3hPdXZaM3NVdzJCbFQ1RzFTZXdfbzk0TUstWjl6dHNHWVhzWUpONXljVk1FbHpsWXZGQ3hRTkdkWVZWYW9ZZmx2bGptYk9aVUFkRFFkME1ON3o2OHlpc3BxS0NiaEFLRk1JQXZXdFJXbHA0blF4Y01mTi1LQUoy?oc=5",
+            "source": "TradingView",
+            "date": "Thu, 07 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC price can ‘easily’ hit $95K: Five things to know in Bitcoin this week - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQOHdPWjU0SDNOT2I2XzhCOWlHd2I1SFVFZ2k1eVVvZUhBT2lKd2pVdFlhYjdtZ0lwN21WRnE1MHdXN29RSGo4MXpSUVlEbUN0ME1hMkU0dmFDZm42TDg4ZDFLN1prMHFSWjUwZlZLSnFKdjJiSTR2UWV5TVRBQV9oZER3V2kwMktYenRqYkhxcGwyUjYtd3hHaHVxOG43ZVBKcG9pYTBRR1A0LUlHb203Mms0aVhpSWI1NmNwUUtaWTd3dnh2SEttcmVIWDBuQQ?oc=5",
+            "source": "TradingView",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Five",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin (BTC) price just plunged to 2-cents for some Revolut users - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPRkJmSmZwR3J4dnYwcGFQbHNfanc1SmMwTkt6cWlidHBWb1pxVnNQbkV3ekw5anlXTFZQYks5RV9QSDN3YktkcWlQZEVlZmswZTcyT2QzMzVxTC15QmFjQ1VqN0VFaEowS0sxTUJLMUpNODNVUTl4dWo4Z0Y4dkRaODgzdWRhMS1LMDZla2U0WUgwTmFzV3N0Q2J6WVRQZkkzVUczdVBTQjEweThhNGl2ZFF3dHgzclhPb29ZME1vT3p3Q1E?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 08 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Revolut"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Coinbase (COIN) bounces 10%, Solana, LINK, SUI outperform as bitcoin (BTC) holds $80K - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNYUt5d1Q5LTllR09ITlM0VmFaZDdTV0E2Vy1HbTJobkE3MG5SNWpIWEhnY3hHTjZwaFRTMWhjdFhuYkltNVBubjNpVi05QjFHRDFqX21VN2NCWUFEc1RVVm9PZ2tONlVVRE1CUGhyNERLUVl3cG05ZXc2SE11c1E5eFpZTVpXS3BiN0VjdGo3cHVLRGI3LXV6cWdzOWV1TkJES0YtZEJ1RkFsOE5ZTzVkakh1TlI4a0E?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 08 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Coinbase",
+              "Solana"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin rallies above $82K as Michael Saylor considers selling - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOclh0X2Y0a3FIY1hBb0ttMnpINzhPZW9uY2tySUExMGRycXhMZDVLa3dMLV9hai10QzZPNlF1bGRTaFhpcXduODN2b0MyQVl6QmJtY2NBdG04Yms3dUI0OUtDR3hjYzQtSUdELUFQbmdRd0FvZ0oxVjRsWEJMREJrVmFxSmoyTHFQSXJyZ3AzcHhYc1U4YlRrM200V1pkaGxMNkEzNE9zYUJLTlhp?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Michael",
+              "Saylor",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why is crypto up today: Bitcoin (BTC) tops $81,500 as tokenization push lifts BLSH, GLXY - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxOVms5ZXRJY2d4cGFvWjVwcWZRb05UNUFJRTBFcDczVFI1NlhZVEwtclZJdW1kRFFLYS04REFwT0Z2RTdZaWVKaU0yR3dpSl9YNWY4dVYtN0VRNTFOcllCaktzaU04TzFBYTJhM3NJdDNGeWhwNjRJRFdjaEN6SkdvODlwZkVOWEZUNDF2YWNTNm5ZcmktX2Y1X3k1ek5UMFJQWEVwcUIwRVgzWFh5UG1GWWUtRFFNeV8tWkRFYk9hWWZYM1ROc0Z2elBURQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Falls. Why Cryptos Aren’t Following the Stocks Rally. - Barron's",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQVWN3MkR2ZW1FYkpjeHFVVHJ3anJuOE42RWhKNzB1QmFlYm5HUnNzUUNnSWNiZlZZcU56TDVMMVZwdEV5X2MxMlpIMVJfaEJwQUNDamctOG5vUWxfZ05HTWNRSlJJQTZvd3lweHVpOThjbURCTFJYOWM5OHYzbVJfNF8wWmpJV1U?oc=5",
+            "source": "Barron's",
+            "date": "Thu, 07 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Falls",
+              "Cryptos",
+              "Aren"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin holds $80K into weekly close as traders say BTC price dip not yet over - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxQdmxrTDltMEVCdTJxdUFhZkVRX3ZPRE9jTU5ZdjhMbVltM0VpQWJTRmVNTmUxelN5R2pod1JreGZUVUZudWdGSTZiaUI5YnlRQ1ZoS0lmT2NLdW5hSkgxb3FwUkZrTEV0WU83aDJNT0hnd0ZTbnc2d2dFRWk4QW1FQzdMcVBmeVlQNGtoV0J5Y0stLXJJOG9UdUVPMldxdkw0X3Z6LVBUQWh1UnUzcHBUVVNiTEdrdTA0bl9GRFpmVjNPVm9fbGdjT04zMWdQZ0Y1YzRhdWVVZF8?oc=5",
+            "source": "TradingView",
+            "date": "Sun, 10 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Hits $80K: We Asked Grok If BTC Could Hold $80K in May - 24/7 Wall St.",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPaFREQ0laM3BLRUhjbU1OcGNVZG1mQUFUN0k2azJnWGQ4dWgtLUNjZUFKRkVvcXg4TmxoZ29YaEIwUG13Sm0wMHJNUVlwejZvTTUtSnRRbzlTYkdWX2dkUmgydGwwRmJNNWVkT3FhZWtIdlFnc042cjhTQ1M1Rml2UWpvY0N0aUhIRzZrUFRESXVWbmUzTXA3RG1lYXR1NTdiVmt3cTBNMkhKTUpwS0E?oc=5",
+            "source": "24/7 Wall St.",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Hits",
+              "Asked",
+              "Grok"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "P2P Bitcoin Exchange Bisq Hit by 11 BTC Hack - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9XLWVxbUVvRUpqR3BJS0dhaF9FcHNOcnBGUWNKaURaZUd5UkxGeDMzeUo0eDhwb1BpMllfV3FueEVSWXppcVRiTUd6U1lydUlIMmV0NzN2R0lNTVgyTTd5QVRhZURRQlE0QXpnRlZOaC1ucUhmeHlDZkFUS01DOTg?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Exchange",
+              "Bisq",
+              "Hack",
+              "Foundation"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Prediction as BTC Breaks Above $80,000 - 24/7 Wall St.",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNUDVuLUxkdHFkazFPdlF1eXg3ZU5Xd0hPNkRDbVRERXRpQjhtbWJSWHVtMjlVTUZLZThZWEROS0dYcG1RYlQxZGk0aS1jRTBkaDB0WENFOFVMckJ3X3l1d04yT3V3c2hqb0pYdDF1bnAzVlBaOGpGUFBuTXQyY1lTeFM0VXhTMm04OWg4SjlxVHVfYS1pbWV6bVdR?oc=5",
+            "source": "24/7 Wall St.",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
               "Price",
               "Prediction",
-              "Asked",
-              "About"
+              "Breaks",
+              "Above"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin (BTC) price prediction: Three signals pointing to a possible jump to $85,000 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxOX3laMnZBQW85NWJUQVpTVWZCbGlPVzAyVHRFZzEySlJOeW01dG11WDM3VllwLV8wU2ZEVmZQaWJ5aDQwZnVndmpjWW44djRzcEFhdGlZRjFHYUpkUVFRMk54RUVCVTNoZkNxQ1ZndnRCc0hpZGItMDgycWR4STByUC1sdmtkRnk2YWw0cm5FSGhPVHBlaDY3QXFIU1BfbXg2UkRhWGl2Znh6QQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Three"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin in ‘disbelief rally’ as traders spot $84K BTC price target - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQNldmQUNKQWRMUURvaHFOM0kzMEZVSXpySWg4V3Q3dEFpTEhDQ0ZWSzZRNDhqZk9WZ2VtdnBtay1TV3BVV2VVazJBVS1IbkFlNXAtZm9vLWNyZ0xGb0R2YmljaDhaWXdNeFpNd2lxanhRQVh0ODB1MFNyNENpNGFqUDJ6UE11WnZnNmdiMTNsSGxmRmxJUFJLTEM5SHVLSklzY3JtM2FrVnpVeXZSaDlYb0RXblRBdzAyTmtmbDVEcjJQWDBGVGc?oc=5",
+            "source": "TradingView",
+            "date": "Mon, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price breaches $82K resistance, bullish crossover hints move to $85K next - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxOZUQ2VGFueTNOZXUtY0dRandKaUp4TklLREtQZTFOWldjaVZ4VGVjc3pEWVJielpWeC1MSGJHd0xEQlE4b3lZM2lmUXBrdUpSS09Sa3Rvc3RpbTJjWllGVGtuZmRVNjYtYkdsaHQ2ak5EbklxRnRoZG5DNGxyZGRsQkVOV0M5Wk1qQlQzMnFvcy1sa0NFbmhmM3BvT2dNcXlR?oc=5",
+            "source": "Crypto News",
+            "date": "Wed, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin’s 4-Year Cycle Says BTC Should Be at $150,000 by End of 2026 - 24/7 Wall St.",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNZUQ1Vm5zYTRFQUxGQW55dTk5QnpETGdBVWRwcWNkRmlPTzFfWWc2eG1EVUQ0c1E4bGQ1aFNpQUt6SC1ZWXA1MXEzT0pfVFhZTWp0MlFrOW0zYVpIMkZXSGZDQmFOd3BsakVQd0RhamhFa0ZYeWNZSGs3RXpjUWxEblRjVVExYW5FQU5qNTF4R2hCZ3gtZGRWUENDTW1VdUtQUUpjb2VGWlV4cGJNUkE?oc=5",
+            "source": "24/7 Wall St.",
+            "date": "Sun, 10 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Year",
+              "Cycle",
+              "Says",
+              "Should"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6355,7 +6832,7 @@
             "source": "Mitrade",
             "date": "Mon, 04 Ma",
             "language": "en",
-            "tone": 0.523,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6368,20 +6845,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Prediction as BTC Breaks Above $80,000 - 24/7 Wall St.",
-            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNUDVuLUxkdHFkazFPdlF1eXg3ZU5Xd0hPNkRDbVRERXRpQjhtbWJSWHVtMjlVTUZLZThZWEROS0dYcG1RYlQxZGk0aS1jRTBkaDB0WENFOFVMckJ3X3l1d04yT3V3c2hqb0pYdDF1bnAzVlBaOGpGUFBuTXQyY1lTeFM0VXhTMm04OWg4SjlxVHVfYS1pbWV6bVdR?oc=5",
+            "title": "Bitcoin Price Prediction: Peter Brandt Says Bitcoin Could Hit $300K–$500K by 2029 - 24/7 Wall St.",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxORDFlM3hlR3FBUHUzZlplMUJ4R01kclBaSmFCWWZ2ejhrNU9KZFRmZC1qd0gyamc1NUx4bHBHU1oxV2RSVU1ZOXlGaTFrQklzX0xtYm13R0loNDlyZ1JhLS1PcTRIY0VjdFNMaHJIajRDQ09BNUVPS3l3cUdBNzVjYmtSVDBucFlULWRTS2lZRkd0M2lTWmpTal9kTWU3MklnVWFKVWF1dGFRRElENUhzYV9KWUNXcm5NeHg4Rk1RSQ?oc=5",
             "source": "24/7 Wall St.",
-            "date": "Mon, 04 Ma",
+            "date": "Sat, 09 Ma",
             "language": "en",
-            "tone": 0.307,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
               "Price",
               "Prediction",
-              "Breaks",
-              "Above"
+              "Peter",
+              "Brandt"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6390,65 +6867,67 @@
       },
       {
         "cluster_id": 1,
-        "label": "General",
+        "label": "Fx Market",
         "article_count": 3,
-        "avg_sentiment": 0.016,
-        "dominant_category": "general",
+        "avg_sentiment": 0.0,
+        "dominant_category": "fx_market",
         "bias_distribution": {},
         "representative_titles": [
-          "Current price of Bitcoin for May 5, 2026 - Fortune",
-          "Current price of Bitcoin for May 6, 2026 - Fortune",
-          "Current price of Bitcoin for May 8, 2026 - Fortune"
+          "Bitcoin is rising again: 2 reasons why the cryptocurrency just passed a key milestone for the first time in months - Fast Company",
+          "San Antonio to post warnings at Bitcoin ATMs after rise in cryptocurrency scams - San Antonio Report",
+          "Bitcoin Update: BTC Breaks Above the 80k Level - FOREX.com"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Current price of Bitcoin for May 5, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9oUEtTSjZHRF9iQU9MQVBvLWR6aGkyX3NseW1mUVdoRXhsN1VycklMNUYwd29NT3lybTlBY1QzOXoxNlJLY09MVEJLTU85N2Z2eXoyeXdjX3JYRDhSazdWTFpmMnZUVDQ?oc=5",
-            "source": "Fortune",
+            "title": "Bitcoin is rising again: 2 reasons why the cryptocurrency just passed a key milestone for the first time in months - Fast Company",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOZm9sLTR3YXZ6OWpHajJvRGJiYmUyV2FmTkVEVW80SktOdEMwbVFIZ1VGTl9vaFg0Z1otMFI3eWJYX0x2aXFfd1NvNlZmRUNQc09XVW9NNGU2WnhHR2h5eW5MRFAzbUVoTTI5RjVWV2xFWFJ4aW53ck1IeTBBaHZ3bnJ3NEpRM2dPSml5Rm1WQkZpWlNQZ090LUFqNA?oc=5",
+            "source": "Fast Company",
             "date": "Tue, 05 Ma",
             "language": "en",
-            "tone": 0.017,
-            "category": "general",
+            "tone": 0.0,
+            "category": "fx_market",
             "relevance": 0.2,
             "keywords": [
-              "Current",
               "Bitcoin",
-              "Fortune"
+              "Fast",
+              "Company"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Current price of Bitcoin for May 6, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1EOUlCTWFGQm94LVl0X0lOdEw5WFY4N194YWw3d0F5VThPUEk4blVrVTZSaWIyX0xxaVNZM1ppX3VtRlY1S01NTmdHcVkyX29KSWpydS1tOUxUMm5KdVpsRjYwSVNVZFk?oc=5",
-            "source": "Fortune",
-            "date": "Wed, 06 Ma",
+            "title": "San Antonio to post warnings at Bitcoin ATMs after rise in cryptocurrency scams - San Antonio Report",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQSl91bjh3RnVST1E1cVFWX0FtQ29jSGtMVndnRkI3SFlMYjFpRFJ4M25NQUdpYVJMV3NOd0Q2N3pDd1Vzd1BmaElWRTJLdktaRFp4Uy1EVWVnWEtIXy1YWkFpX2xhRktDOE1LdXk2VHNSSHZDVE5UczgzbE8tdjBlcDkzWmtvdllWcndCVjZlTjNtSDdaLVZ5a3hRSXBBcEhLWHNLWFZxSGhlX1BFbVE?oc=5",
+            "source": "San Antonio Report",
+            "date": "Thu, 07 Ma",
             "language": "en",
-            "tone": 0.016,
-            "category": "general",
+            "tone": 0.0,
+            "category": "fx_market",
             "relevance": 0.2,
             "keywords": [
-              "Current",
+              "Antonio",
               "Bitcoin",
-              "Fortune"
+              "Report"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Current price of Bitcoin for May 8, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE12Z0pmYVZIZHI0ZmExc2RSTVl1M0lTTWp2bVJzQkx1WENESjZodUlnaHBjWG1FN2QxTHVjQzB5YlVqampXVFQtUkpadTJqMmZxcDZEUlM3VnpEdFpWYjhLWVQwOXpLcTA?oc=5",
-            "source": "Fortune",
-            "date": "Fri, 08 Ma",
+            "title": "Bitcoin Update: BTC Breaks Above the 80k Level - FOREX.com",
+            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxOY3Mya0JKY1NfVGJwc3U4SWI5al9PaXlMbHBfSzJfU0VrbDQwcVB2RXJPTnJucVNzZFh1V2R3aTRpNXlzckFmcmRybDVreWFocGkyZG5EZVBsNXVTaDUxYTg2WjVnRDZBYXVYMzltSDVXSUt5UmZMWW5lTktBWExXSFNMRFk0T2RfLXU5Z2FlaE1QNW1EOTUw0gGjAUFVX3lxTE9nYnE5QWJMdmdWa2ZVSmNma0ExTDh4T3RYRF8yS0hfUmtjdVNuRmxMTlB1aHV0QTBDUDQ3WktNQklxOVYwZFNCeDctQ2Zmc1hnbWVxUlV0MFVVeTJDekQ1R2VrRFVSU0k1WF92b0M3MGlKM0EtVDNCeVVDOVRvbVlpSUYzT3otb1RzcHZMV01nWlp3bERwSW1YWnJLcThhandqdTQ?oc=5",
+            "source": "FOREX.com",
+            "date": "Tue, 05 Ma",
             "language": "en",
-            "tone": 0.016,
-            "category": "general",
+            "tone": 0.0,
+            "category": "fx_market",
             "relevance": 0.2,
             "keywords": [
-              "Current",
               "Bitcoin",
-              "Fortune"
+              "Update",
+              "Breaks",
+              "Above",
+              "Level"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6463,7 +6942,7 @@
         "source": "Finance Magnates",
         "date": "Mon, 04 Ma",
         "language": "en",
-        "tone": 0.461,
+        "tone": 0.0,
         "category": "risk_premium",
         "relevance": 0.5,
         "keywords": [
@@ -6478,31 +6957,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Strategy Announces First Quarter 2026 Financial Results - Strategy",
-        "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxONzhBczVHcGVPdk04QVFWbWlHMXZNUURlbS04R3d0Z2JlU2lYM1NSdC1Ndm5oYXpkeDVUNTNyRzVfM0Rxd2pTUTJHU2tSM0xlRDYtQjduSTlnblpyWmFzQ3RTang5dW5hSkd0MjJpRU8wTHg0dGxsYTBJU3RiYkJndDY4X1cyRUstY2dCYkpzY2FEVkRYOVhfUGFWZ3FaUQ?oc=5",
-        "source": "Strategy",
-        "date": "Tue, 05 Ma",
-        "language": "en",
-        "tone": 0.082,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Strategy",
-          "Announces",
-          "First",
-          "Quarter",
-          "Financial"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Bitcoin Price Could Hit $1M in Five Years, VanEck Says - Bitcoin Foundation",
         "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE90cFpIM2tjOFllTkpfYlZ6LUVDSkFncGlMSXZvUHdmYmh5MHk3bFBaSUhnYW01YU1uQ3Q2MU5BTEU5Z2dpbGRFci1pdjRtY3ZYaEd6LXR2NlNkbVhmVVM4anRrN3dXaDVoZE1teC1oaGd5a25kZUdmWWZRZw?oc=5",
         "source": "Bitcoin Foundation",
         "date": "Fri, 08 Ma",
         "language": "en",
-        "tone": 0.18,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6516,29 +6976,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Current price of Bitcoin for May 5, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE9oUEtTSjZHRF9iQU9MQVBvLWR6aGkyX3NseW1mUVdoRXhsN1VycklMNUYwd29NT3lybTlBY1QzOXoxNlJLY09MVEJLTU85N2Z2eXoyeXdjX3JYRDhSazdWTFpmMnZUVDQ?oc=5",
-        "source": "Fortune",
-        "date": "Tue, 05 Ma",
-        "language": "en",
-        "tone": 0.017,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Current",
-          "Bitcoin",
-          "Fortune"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Bitcoin Price Prediction: We Asked ChatGPT About Bitcoin’s Realistic Price by Year-End - Yahoo Finance",
         "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxPRHFheG5JZkg0RU43WnJrdnJPME1ZcmhRd18yT3BieVRwVlZiUUVPYjNDYXFjWjRhMkNiMXJxYWlLX0xQblRpNTZ3bnV6ci1sQjhmdVZFWE1VaVkwb2ZrdGRBa1hwOHRkYVVIOE5vdVJaWUdXc1VIcHlxX05mX01WbXlJZHNNU2RiRUdCd2QyOWstOUNUTmtneEZFUkNkczNCQlltZHVn?oc=5",
         "source": "Yahoo Finance",
         "date": "Wed, 06 Ma",
         "language": "en",
-        "tone": 0.03,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6557,7 +7000,7 @@
         "source": "CNBC",
         "date": "Tue, 05 Ma",
         "language": "en",
-        "tone": 0.085,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6568,12 +7011,63 @@
         "factuality": "high"
       },
       {
+        "title": "Current price of Bitcoin for May 6, 2026 - Fortune",
+        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1EOUlCTWFGQm94LVl0X0lOdEw5WFY4N194YWw3d0F5VThPUEk4blVrVTZSaWIyX0xxaVNZM1ppX3VtRlY1S01NTmdHcVkyX29KSWpydS1tOUxUMm5KdVpsRjYwSVNVZFk?oc=5",
+        "source": "Fortune",
+        "date": "Wed, 06 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Current",
+          "Bitcoin",
+          "Fortune"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin Price Rockets Past $81,000 for the First Time Since January - Bitcoin Magazine",
+        "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE5qTVVJOXFiakpzX3pBYnA3dmpybk1wQVJOek9LaTVTZXJKWHJOZnpRQjFNQlpiaFVYOHZlUS1NSGlNWFpiVDlkUnhpVTRsd3dKdGJJQl9hVl9acTFZbzJETDExbHpGeUc2d0xNV19iOUF5Z0I4Zm04NTlfWQ?oc=5",
+        "source": "Bitcoin Magazine",
+        "date": "Tue, 05 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Price",
+          "Rockets",
+          "Past",
+          "First"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "BTC price now: Bitcoin crosses $81,000, ETH, SOL, DOGE to move higher - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOcm5ETUJfakZUd0RPRTVqS24xRjFndkwtRVM4b0JkbHZGTjljNi0xSDMwcDFIZEtBckE0cHh6LXFNTUdCVDRpa2NZMXpyVFhHVlYwU1Bhb1htXzdkVGJrQ2RQa1E0Q1NjRzdLSUdvc2ctajl6SHVzTmpmUWN4TGdDM0FDbzJyNVYtSzVZM2FpX3lBMW5NTUxyWXpRa1UtMDR2cmtVdGhCWWtwSUVfWmhUYS1penRuMTdPcl96ZDVSMTlDYktQN3B3M21kdmU?oc=5",
+        "source": "CoinDesk",
+        "date": "Mon, 04 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
         "title": "Bitcoin is rising again: 2 reasons why the cryptocurrency just passed a key milestone for the first time in months - Fast Company",
         "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOZm9sLTR3YXZ6OWpHajJvRGJiYmUyV2FmTkVEVW80SktOdEMwbVFIZ1VGTl9vaFg0Z1otMFI3eWJYX0x2aXFfd1NvNlZmRUNQc09XVW9NNGU2WnhHR2h5eW5MRFAzbUVoTTI5RjVWV2xFWFJ4aW53ck1IeTBBaHZ3bnJ3NEpRM2dPSml5Rm1WQkZpWlNQZ090LUFqNA?oc=5",
         "source": "Fast Company",
         "date": "Tue, 05 Ma",
         "language": "en",
-        "tone": 0.844,
+        "tone": 0.0,
         "category": "fx_market",
         "relevance": 0.2,
         "keywords": [
@@ -6585,54 +7079,39 @@
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin Price Falls. Why Cryptos Aren’t Following the Stocks Rally. - Barron's",
-        "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQVWN3MkR2ZW1FYkpjeHFVVHJ3anJuOE42RWhKNzB1QmFlYm5HUnNzUUNnSWNiZlZZcU56TDVMMVZwdEV5X2MxMlpIMVJfaEJwQUNDamctOG5vUWxfZ05HTWNRSlJJQTZvd3lweHVpOThjbURCTFJYOWM5OHYzbVJfNF8wWmpJV1U?oc=5",
-        "source": "Barron's",
-        "date": "Thu, 07 Ma",
+        "title": "Bitcoin Price Hits $82,000: BTC Nears Highest Level Since February Despite Strategy Warnings - TradingKey",
+        "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQcGZQUVpIQ3djY2wtWFJ5dXYyd2R1UkFwVG5fWnJ6SXZ2VnNPdU5GcVhZVXdaY092VlhOa2c2UllLNE5GRjNENngtNU0xcWp1OTVyZ21SSC16WHRxbFF2Tk1RUDFpZ3JKOUJFeXk5NlBjUC1mcXlpMlp4azM0VGpzV24wYS1rbVFBWFRYQW9wcUo3Y3k1WFRJRU5RckxMUHIxalZGTF9YWVQ2SXZtYXIxdGt4U3Q3SXdETE1IbQ?oc=5",
+        "source": "TradingKey",
+        "date": "Tue, 05 Ma",
         "language": "en",
-        "tone": -0.477,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
           "Bitcoin",
           "Price",
-          "Falls",
-          "Cryptos",
-          "Aren"
+          "Hits",
+          "Nears",
+          "Highest"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       },
       {
-        "title": "San Antonio to post warnings at Bitcoin ATMs after rise in cryptocurrency scams - San Antonio Report",
-        "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQSl91bjh3RnVST1E1cVFWX0FtQ29jSGtMVndnRkI3SFlMYjFpRFJ4M25NQUdpYVJMV3NOd0Q2N3pDd1Vzd1BmaElWRTJLdktaRFp4Uy1EVWVnWEtIXy1YWkFpX2xhRktDOE1LdXk2VHNSSHZDVE5UczgzbE8tdjBlcDkzWmtvdllWcndCVjZlTjNtSDdaLVZ5a3hRSXBBcEhLWHNLWFZxSGhlX1BFbVE?oc=5",
-        "source": "San Antonio Report",
-        "date": "Thu, 07 Ma",
-        "language": "en",
-        "tone": -0.725,
-        "category": "fx_market",
-        "relevance": 0.2,
-        "keywords": [
-          "Antonio",
-          "Bitcoin",
-          "Report"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Current price of Bitcoin for May 6, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1EOUlCTWFGQm94LVl0X0lOdEw5WFY4N194YWw3d0F5VThPUEk4blVrVTZSaWIyX0xxaVNZM1ppX3VtRlY1S01NTmdHcVkyX29KSWpydS1tOUxUMm5KdVpsRjYwSVNVZFk?oc=5",
-        "source": "Fortune",
+        "title": "CME Bitcoin Volatility Futures Open New Trade Beyond BTC Price - Bitcoin Foundation",
+        "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPRUp3TEdnNFdyd3hKcGpIcXRRS2IwZ0ZCYkxPWGl4dTdZZDJzWFJwN25TSGttbW5OUzhiVVFVNTU0MWpwNkJJTHNGMlVZdTFULUpWSnFjVlEtOFptMFVRN0MzdHhOa2hKTGVvaGZOcWQyMTUyZnI2Z1BtQkkzRGVZWVVtVGtjX2dvVEx1RmREQl8zU1JJM21YWkc1ZG1QSXN5Ml9YQ3pmTmJCUQ?oc=5",
+        "source": "Bitcoin Foundation",
         "date": "Wed, 06 Ma",
         "language": "en",
-        "tone": 0.016,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "Current",
           "Bitcoin",
-          "Fortune"
+          "Volatility",
+          "Futures",
+          "Open",
+          "Trade"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6640,23 +7119,21 @@
     ],
     "source_diversity": {
       "Finance Magnates": 1,
-      "Strategy": 1,
       "Bitcoin Foundation": 4,
-      "Fortune": 3,
       "Yahoo Finance": 7,
       "CNBC": 1,
-      "Fast Company": 1,
-      "Barron's": 2,
-      "San Antonio Report": 1,
-      "CoinDesk": 5,
+      "Fortune": 3,
       "Bitcoin Magazine": 1,
-      "24/7 Wall St.": 7,
+      "CoinDesk": 8,
+      "Fast Company": 1,
+      "TradingKey": 1,
+      "TradingView": 4,
+      "San Antonio Report": 1,
+      "Barron's": 1,
+      "24/7 Wall St.": 4,
       "FOREX.com": 1,
-      "Seeking Alpha": 1,
-      "Mitrade": 1,
-      "investingLive": 1,
-      "TradingView": 1,
-      "Kiplinger": 1
+      "Crypto News": 1,
+      "Mitrade": 1
     }
   },
   "political_bias_analysis": {
@@ -6690,5 +7167,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-20T22:48:59.305086+00:00"
 }

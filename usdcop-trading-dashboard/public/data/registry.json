@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T21:24:23.862981+00:00",
+  "generated_at": "2026-07-21T01:37:18.499360+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -7,6 +7,13 @@
       "chart_symbol": "BTCUSDT",
       "display_name": "Bitcoin",
       "asset_class": "crypto"
+    },
+    {
+      "asset_id": "spx500",
+      "symbol": "SPX500",
+      "chart_symbol": "SPX500",
+      "display_name": "SPX500",
+      "asset_class": "unknown"
     },
     {
       "asset_id": "usdcop",
@@ -39,13 +46,13 @@
       "has_replay": true,
       "active_version": "1.0.0",
       "return_pct": 124.36,
-      "sharpe": 0.619,
-      "p_value": 0.0576
+      "sharpe": 0.618,
+      "p_value": 0.0566
     },
     {
       "strategy_id": "btc_hodl_b1",
       "asset_id": "btcusdt",
-      "status": "archived",
+      "status": "experimental",
       "display_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
       "pipeline_type": "rule_based",
       "timeframe": "daily",
@@ -56,14 +63,14 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 274.18,
+      "return_pct": 276.16,
       "sharpe": 0.793,
-      "p_value": 0.0274
+      "p_value": 0.0242
     },
     {
       "strategy_id": "btc_trend_b2",
       "asset_id": "btcusdt",
-      "status": "experimental",
+      "status": "archived",
       "display_name": "Bitcoin \u00b7 Trend-follower Daily (B2)",
       "pipeline_type": "rule_based",
       "timeframe": "daily",
@@ -75,7 +82,7 @@
       "has_replay": true,
       "active_version": "1.0.0",
       "return_pct": 351.16,
-      "sharpe": 1.399,
+      "sharpe": 1.396,
       "p_value": 0.0
     },
     {
@@ -93,8 +100,8 @@
       "has_replay": true,
       "active_version": "1.0.0",
       "return_pct": 256.92,
-      "sharpe": 1.332,
-      "p_value": 0.0
+      "sharpe": 1.329,
+      "p_value": 0.0002
     },
     {
       "strategy_id": "btc_trend_volbrk_s5",
@@ -111,7 +118,7 @@
       "has_replay": true,
       "active_version": "1.0.0",
       "return_pct": 351.14,
-      "sharpe": 1.43,
+      "sharpe": 1.427,
       "p_value": 0.0
     },
     {
@@ -128,9 +135,9 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 206.54,
-      "sharpe": 0.539,
-      "p_value": 0.0074
+      "return_pct": 204.03,
+      "sharpe": 0.535,
+      "p_value": 0.0068
     },
     {
       "strategy_id": "gold_dxy_tilt_s05",
@@ -146,8 +153,8 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 211.44,
-      "sharpe": 0.548,
+      "return_pct": 208.89,
+      "sharpe": 0.543,
       "p_value": 0.0066
     },
     {
@@ -164,14 +171,14 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 201.66,
-      "sharpe": 0.531,
-      "p_value": 0.0074
+      "return_pct": 199.19,
+      "sharpe": 0.526,
+      "p_value": 0.0078
     },
     {
       "strategy_id": "gold_dynamic_exit",
       "asset_id": "xauusd",
-      "status": "experimental",
+      "status": "archived",
       "display_name": "Gold \u00b7 Dynamic exit (se\u00f1al + Chandelier 3\u00d7ATR)",
       "pipeline_type": "rule_based",
       "timeframe": "daily",
@@ -200,9 +207,9 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 187.11,
-      "sharpe": 0.503,
-      "p_value": 0.01
+      "return_pct": 184.75,
+      "sharpe": 0.499,
+      "p_value": 0.012
     },
     {
       "strategy_id": "gold_regime_gated_v1",
@@ -218,9 +225,9 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 116.69,
-      "sharpe": 0.455,
-      "p_value": 0.0174
+      "return_pct": 120.29,
+      "sharpe": 0.464,
+      "p_value": 0.0146
     },
     {
       "strategy_id": "gold_trend_b2",
@@ -236,9 +243,9 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 55.31,
-      "sharpe": 0.362,
-      "p_value": 0.0398
+      "return_pct": 56.22,
+      "sharpe": 0.366,
+      "p_value": 0.0388
     },
     {
       "strategy_id": "gold_trend_ens",
@@ -254,9 +261,27 @@
       "has_production": false,
       "has_replay": true,
       "active_version": "1.0.0",
-      "return_pct": 160.94,
-      "sharpe": 0.587,
-      "p_value": 0.0054
+      "return_pct": 162.99,
+      "sharpe": 0.591,
+      "p_value": 0.0042
+    },
+    {
+      "strategy_id": "gold_trend_simple",
+      "asset_id": "xauusd",
+      "status": "experimental",
+      "display_name": "Gold \u00b7 Trend simple (voto SMA, sin trailing exit)",
+      "pipeline_type": "rule_based",
+      "timeframe": "daily",
+      "manifest": "strategies/gold_trend_simple/manifest.json",
+      "backtest_years": [
+        2026
+      ],
+      "has_production": false,
+      "has_replay": true,
+      "active_version": "1.0.0",
+      "return_pct": 225.26,
+      "sharpe": 0.634,
+      "p_value": 0.0024
     },
     {
       "strategy_id": "smart_simple_aggr",
@@ -294,6 +319,22 @@
       "return_pct": 1.77,
       "sharpe": 3.792,
       "p_value": 0.0722
+    },
+    {
+      "strategy_id": "spx500_regime_gated_v1",
+      "asset_id": "spx500",
+      "status": "experimental",
+      "display_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
+      "pipeline_type": "forecasting",
+      "timeframe": "daily",
+      "manifest": "strategies/spx500_regime_gated_v1/manifest.json",
+      "backtest_years": [],
+      "has_production": false,
+      "has_replay": false,
+      "active_version": "0.1.0-scaffold",
+      "return_pct": null,
+      "sharpe": null,
+      "p_value": null
     }
   ],
   "default": {

@@ -1,0 +1,97 @@
+{
+  "strategy_id": "gold_trend_simple",
+  "strategy_name": "Gold · Trend simple (voto SMA, sin trailing exit)",
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2026-01-01",
+    "end": "2026-07-21"
+  },
+  "trades": [
+    {
+      "trade_id": 121,
+      "timestamp": "2023-10-16T21:00:00+00:00",
+      "exit_timestamp": "2026-03-23T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 1919.44,
+      "exit_price": 4400.01,
+      "pnl_pct": 85.7875,
+      "pnl_usd": 15430.35,
+      "equity_at_entry": 17986.7,
+      "equity_at_exit": 33417.06,
+      "leverage": 0.61,
+      "exit_reason": "signal_died",
+      "hold_days": 631
+    },
+    {
+      "trade_id": 122,
+      "timestamp": "2026-03-26T21:00:00+00:00",
+      "exit_timestamp": "2026-03-26T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 4362.64,
+      "exit_price": 4362.64,
+      "pnl_pct": -1.1851,
+      "pnl_usd": -395.99,
+      "equity_at_entry": 33414.92,
+      "equity_at_exit": 33018.92,
+      "leverage": 0.316,
+      "exit_reason": "signal_died",
+      "hold_days": 0
+    },
+    {
+      "trade_id": 123,
+      "timestamp": "2026-03-30T21:00:00+00:00",
+      "exit_timestamp": "2026-03-30T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 4513.41,
+      "exit_price": 4513.41,
+      "pnl_pct": -0.0171,
+      "pnl_usd": -5.63,
+      "equity_at_entry": 33016.84,
+      "equity_at_exit": 33011.21,
+      "leverage": 0.277,
+      "exit_reason": "signal_died",
+      "hold_days": 0
+    },
+    {
+      "trade_id": 124,
+      "timestamp": "2026-04-01T21:00:00+00:00",
+      "exit_timestamp": "2026-04-28T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 4768.03,
+      "exit_price": 4596.47,
+      "pnl_pct": -1.1465,
+      "pnl_usd": -378.46,
+      "equity_at_entry": 33009.38,
+      "equity_at_exit": 32630.92,
+      "leverage": 0.274,
+      "exit_reason": "signal_died",
+      "hold_days": 19
+    },
+    {
+      "trade_id": 125,
+      "timestamp": "2026-05-07T21:00:00+00:00",
+      "exit_timestamp": "2026-05-14T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 4689.44,
+      "exit_price": 4651.91,
+      "pnl_pct": -0.485,
+      "pnl_usd": -158.25,
+      "equity_at_entry": 32627.91,
+      "equity_at_exit": 32469.66,
+      "leverage": 0.471,
+      "exit_reason": "signal_died",
+      "hold_days": 5
+    }
+  ],
+  "summary": {
+    "total_trades": 5,
+    "win_rate": 20.0,
+    "total_return_pct": -1.39,
+    "sharpe_ratio": -0.226,
+    "max_drawdown_pct": -10.83,
+    "profit_factor": null,
+    "p_value": null,
+    "n_long": 5,
+    "n_short": 0
+  }
+}

@@ -3,10 +3,10 @@
   "asset_id": "xauusd",
   "symbol": "XAU/USD",
   "chart_symbol": "XAUUSD",
-  "display_name": "Gold \u00b7 Dynamic exit (se\u00f1al + Chandelier 3\u00d7ATR)",
+  "display_name": "Gold · Dynamic exit (señal + Chandelier 3×ATR)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
-  "status": "experimental",
+  "status": "archived",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,

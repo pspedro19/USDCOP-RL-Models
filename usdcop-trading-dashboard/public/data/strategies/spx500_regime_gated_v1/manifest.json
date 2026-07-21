@@ -1,0 +1,39 @@
+{
+  "strategy_id": "spx500_regime_gated_v1",
+  "asset_id": "spx500",
+  "symbol": "SPX500",
+  "chart_symbol": "SPX500",
+  "display_name": "S&P 500 · Trend + régimen",
+  "pipeline_type": "forecasting",
+  "timeframe": "daily",
+  "status": "experimental",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": false,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "SP500 v2 adaptation",
+    "strategy": "spx500_regime_gated_v1",
+    "data_status": "synthetic_scaffold_until_real_feed",
+    "feature_profile": "spx500_v1",
+    "validation": [
+      "purged_kfold",
+      "cpcv",
+      "deflated_sharpe",
+      "pbo"
+    ]
+  },
+  "backtests": [],
+  "production": null,
+  "approval": {
+    "status": "PENDING_REAL_DATA_AND_OOS"
+  },
+  "model_versions": [
+    {
+      "version": "0.1.0-scaffold",
+      "active": true
+    }
+  ]
+}

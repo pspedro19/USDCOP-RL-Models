@@ -3,10 +3,10 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
+  "display_name": "Bitcoin · HODL vol-targeted (B1)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
-  "status": "archived",
+  "status": "experimental",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,
@@ -17,7 +17,7 @@
     "source": "BundlePublisher",
     "version": "1.0.0",
     "year": 2026,
-    "generated_at": "2026-07-20T20:27:37.254907+00:00"
+    "generated_at": "2026-07-20T22:41:28.120344+00:00"
   },
   "backtests": [
     {
@@ -91,9 +91,9 @@
         "recommendation": "REVIEW"
       },
       "headline": {
-        "return_pct": 274.18,
+        "return_pct": 276.16,
         "sharpe": 0.793,
-        "p_value": 0.0274
+        "p_value": 0.0242
       }
     }
   ],

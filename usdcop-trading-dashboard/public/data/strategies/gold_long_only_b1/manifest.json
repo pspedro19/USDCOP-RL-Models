@@ -17,7 +17,7 @@
     "source": "BundlePublisher",
     "version": "1.0.0",
     "year": 2026,
-    "generated_at": "2026-07-20T19:03:50.433903+00:00"
+    "generated_at": "2026-07-20T22:40:58.759455+00:00"
   },
   "backtests": [
     {
@@ -91,9 +91,9 @@
         "recommendation": "REJECT"
       },
       "headline": {
-        "return_pct": 187.11,
-        "sharpe": 0.503,
-        "p_value": 0.01
+        "return_pct": 184.75,
+        "sharpe": 0.499,
+        "p_value": 0.012
       }
     }
   ],

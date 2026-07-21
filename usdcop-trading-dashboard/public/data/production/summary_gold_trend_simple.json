@@ -1,0 +1,33 @@
+{
+  "strategy_id": "gold_trend_simple",
+  "strategy_name": "Gold · Trend simple (voto SMA, sin trailing exit)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "mode": "paper",
+  "chart_symbol": "XAUUSD",
+  "n_trading_days": 144,
+  "strategies": {
+    "gold_trend_simple": {
+      "final_equity": 9864.89,
+      "total_return_pct": -1.39,
+      "sharpe": null,
+      "calmar": null,
+      "max_dd_pct": -10.83,
+      "win_rate_pct": 20.0,
+      "profit_factor": null,
+      "n_long": 5,
+      "n_short": 0,
+      "trading_days": 144,
+      "exit_reasons": {
+        "signal_died": 5
+      },
+      "insufficient_trades": true
+    },
+    "buy_and_hold": {
+      "total_return_pct": -7.11
+    }
+  },
+  "n_trades": 5,
+  "insufficient_trades": true
+}

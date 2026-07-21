@@ -9,7 +9,7 @@
   "week_end": "2026-02-08",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 06 de 2026",
-    "markdown": "### Bitcoin — Semana 06 (2026-02-02 → 2026-02-08)\n\nEl cierre semanal de BTC/USDT fue **70330.38 USD**, un cambio de **-8.62%** en la semana (rango 60000.00–79360.00). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 70330.38. RSI(14)=33 (neutral). Soporte 60000.00, resistencia 92870.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: PBS, CNN, CNBC.",
+    "markdown": "### Bitcoin — Semana 06 (2026-02-02 → 2026-02-08)\n\nEl cierre semanal de BTC/USDT fue **70330.38 USD**, un cambio de **-8.62%** en la semana (rango 60000.00–79360.00). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 70330.38. RSI(14)=33 (neutral). Soporte 60000.00, resistencia 92870.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: CNN, CNBC, ABC News - Breaking News, Latest News and Videos.",
     "sentiment": "bearish",
     "ohlcv": {
       "open": 76968.22,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-03",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-04",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-05",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-06",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-07",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     },
     {
       "analysis_date": "2026-02-08",
@@ -148,7 +148,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-20T22:48:59.305086+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6154,59 +6154,55 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": -0.383,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
-      "PBS": 1,
       "CNN": 2,
       "CNBC": 3,
       "ABC News - Breaking News, Latest News and Videos": 1,
       "BBC": 1,
       "Strategy": 1,
+      "Yahoo Finance": 10,
       "Federal News Network": 1,
-      "Yahoo Finance": 9,
       "Reuters": 1,
-      "NBC News": 1,
-      "Grayscale": 1,
+      "CoinDesk": 6,
       "NerdWallet": 1,
-      "CoinDesk": 5,
-      "Mashable": 1,
+      "NBC News": 1,
+      "Crypto News": 1,
+      "Grayscale": 1,
+      "Fortune": 1,
       "Yahoo Finance UK": 1,
       "Al Jazeera": 1,
-      "The New York Times": 1,
+      "Mashable": 2,
       "galaxy.com": 1,
       "The Guardian": 1,
-      "Bitcoin Magazine": 2,
       "Axios": 1,
-      "Forbes": 1,
-      "Investopedia": 1,
-      "PYMNTS.com": 1
+      "Bitcoin Magazine": 1,
+      "Forbes": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": -0.383,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 1,
-      "negative": 32,
-      "neutral": 7
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 13,
-        "avg_sentiment": -0.477,
+        "article_count": 35,
+        "avg_sentiment": 0.0,
         "dominant_category": "general",
-        "bias_distribution": {
-          "center-right": 2
-        },
+        "bias_distribution": {},
         "representative_titles": [
           "Why has the price of bitcoin plummeted? Experts explain - ABC News - Breaking News, Latest News and Videos",
-          "Bitcoin price drops below pre-Trump second term levels, now hovering below $67,000 - PBS",
+          "No, but seriously: What’s going on with bitcoin? | CNN Business - CNN",
           "Bitcoin drops 15%, briefly breaking below $61,000 as sell-off intensifies, doubts about crypto grow - CNBC",
-          "Bitcoin Price Falls Below $67,000: Odds for BTC Low This Year - Federal News Network",
-          "Bitcoin price rebounds to $70,000 after worst daily drop since 2022 - Yahoo Finance"
+          "Bitcoin falls to lowest level since Trump took office - BBC",
+          "Strategy Announces Fourth Quarter 2025 Financial Results - Strategy"
         ],
         "narrative_summary": "",
         "articles": [
@@ -6216,7 +6212,7 @@
             "source": "ABC News - Breaking News, Latest News and Videos",
             "date": "Mon, 02 Fe",
             "language": "en",
-            "tone": -0.174,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.5,
             "keywords": [
@@ -6231,20 +6227,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price drops below pre-Trump second term levels, now hovering below $67,000 - PBS",
-            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNNEtqckFZRzZHclBKMzh2MEc2WnNIN1RsRVY1c1poeVY5d1lMcmVsQUk0aTMzdGYtOUpnbWs4X2JiZ1otZFd5a2h6bjhzUEI0Y1RWLVd0NEtPcEZYWV8wTW1pTVhPN1FRaTdiMDM1T2pyTFVYSl8zZThfZENpQ3I5LWpMdVNkNzQxdHd2QWpINmtQRnAtVDFpcV9FYnJnOWZSbnBVcDNEYl81aFZKZWhjVjU5c093SEnSAbwBQVVfeXFMTlZLOHN2NEJGdWIwcm5WeXRhaTZMbVJ1N2Y0VjhGMkhkb2JCNmpYZ2VJSmhyVjdqMDVuYUZUbGdtU1ZWY3FMWWxhdU1FRmNXcEhZNTBrNDFBWFIzR20wZUZHdDJqWGxrZG1TYXFHV0paSDl6Qk0wX2ZjUE5xQjN5Qk8yTDdQOUpiZWR1dVNhOUlscVF3c3FZTXFQR2ZyaC1ubnNDeDBCQ25PNDlaYmhSQlJmQks4LUYyZFdxQmY?oc=5",
-            "source": "PBS",
-            "date": "Fri, 06 Fe",
+            "title": "No, but seriously: What’s going on with bitcoin? | CNN Business - CNN",
+            "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9iOGxvT1hGSGUwWFEzMkFsWlJxZm1Vd3dYanlsUjFHVnFYVEo1T3JLaUVwbDZCMXJNNXU3U1hSQkFWMDdKaFNoRGoxLWZJYjZ1ZmNVVnhLZnN3b1UxMUp5SzdSMG4?oc=5",
+            "source": "CNN",
+            "date": "Thu, 05 Fe",
             "language": "en",
-            "tone": -0.426,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin",
-              "Trump"
+              "What",
+              "Business"
             ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
+            "bias_label": "center-left",
+            "factuality": "mixed"
           },
           {
             "title": "Bitcoin drops 15%, briefly breaking below $61,000 as sell-off intensifies, doubts about crypto grow - CNBC",
@@ -6252,7 +6248,7 @@
             "source": "CNBC",
             "date": "Thu, 05 Fe",
             "language": "en",
-            "tone": -0.521,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6262,12 +6258,47 @@
             "factuality": "high"
           },
           {
+            "title": "Bitcoin falls to lowest level since Trump took office - BBC",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9sM2VFM2g0UUl4dzcyajdYYVMwemhKTjhzWklsNm41c3dfU0FOM053ZkFoNzZ0VkNZbG41V192YXlvQTVKM201bmlEd3cxTmtZbXZtVXptZlhWdw?oc=5",
+            "source": "BBC",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Trump"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Strategy Announces Fourth Quarter 2025 Financial Results - Strategy",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOWkswOWVFYld4bHVXalNhMUFoTGQzV1A4dzN3MnhNZkJ2aFhHTEttVVRoX0diS2puRzJ4dUlvbE5ldlNrWE9tdlBEUGFMY01PdTFrb3lNdVdzenVmUXZjdnNpbi1WQjFLeERkTk9FejlNTzFpUFhYdjZCMFYydXZUbjNUYWpYZUVGdUsyeTNKakk5VEpsT2VHUVd6LTA3cTg?oc=5",
+            "source": "Strategy",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Strategy",
+              "Announces",
+              "Fourth",
+              "Quarter",
+              "Financial"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin Price Falls Below $67,000: Odds for BTC Low This Year - Federal News Network",
             "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNd2sxWThSUjVCeFR5UVpXRXFkZ1FhaGhXRk9PS0tTeXc0LUpHNlRzdFlwLUlMNnNxZlRxbjZDbzBBMkVfMEozUFRNUng3Z1pnT1B0NnZ6MnUwTEJ0VnNDVVg4Nk1WTTQtTTczRERoTUFndGdzaDkwbkwtMy1lYkhCQXhQeVpDTVhnM1hFY1JiMTFZWG9XSnE5QUVnTHJtNmxIRGt4VEpST3FRRFE?oc=5",
             "source": "Federal News Network",
             "date": "Thu, 05 Fe",
             "language": "en",
-            "tone": -0.525,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6281,12 +6312,93 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin loses Trump-era gains as crypto market volatility signals uncertainty - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQMC1ROFdDZ2paTU1aSDRvSFFlVUZZRnRpN2tLaWxvZzZvT3cyM1ppc1pVeHU4RXpaRkRhTGpwcmh3VTdSNzF2LTZScWRFaXhsc2NtTVBaLXlBZ0dYcUIzRHUyajhDaVFUbE1FaGNkU29ZRDV4cGt4Q1c5ZHJpLXR4SkJzcXd6X2NkU3c1RERmRlFRLUU0ZkI0VHpCNDlPWTJSTXlXbmJYT19ZblNFVE9wTXE3ZDFtVlRaN1M0?oc=5",
+            "source": "Reuters",
+            "date": "Sat, 07 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Trump",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "BTC price drops below $70,000 as crypto selloff deepens - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNVGd5YVBGc2hQOHRZdGl5aGQ4a2hBOTU2bTk4YjBEd2dZTDFfVTZSVWhsOHRGekQ3ZnZfeFBwU0tDaGsydlFmdDlobTJhSnl3bzkwYzdWM3JET19sc3pzMGZrWHBqQkVnNV85UGloT2FrV2c3d2VWWTh2WXV6WGxyeHNhT29xdHBVSmZtY3dzeEZEREdKRG1kMDVEV0xlQnE4aEY4YnVDWTlZVklIbTN1RVY2enFvOUZBUnBiVkNjZWJwRmt6R0VBdEx3?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "How to Buy Bitcoin (BTC): Quick-Start Guide - NerdWallet",
+            "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5LbFVvN0RJeHYxQkZwY05Qbk5JRmN3N2tyN01wLXZEeG43UlcybHQ3QURsSzU0NkEyYnhtUkdlZTQ0azNVZ0VhdElPUHhxaEZnd1Q5YjVGNm81OWFNVEdRUTlmWjMwVDZ4bWRQRnJCUHA5bTdWS1E?oc=5",
+            "source": "NerdWallet",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Quick",
+              "Start",
+              "Guide"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price eyes rebound from oversold RSI as spot BTC ETFs see first net inflows in 5 days - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTFBOUnpsc3Q5Z3dzSmM2emxJQ0RPbEVQUFpXTFVvUm5lOXl5ajdQR2RON1JhSGFBZWR3Sjk1OWtmUjd2b2tqdmZOc01JbzRtcjZvdk5POHN6MXc1Yk04VGNXcTNra2JrQi1PSXlDVl9FclZzc2gyblE2QVJ1R1FfZw?oc=5",
+            "source": "Crypto News",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin is coming off a brutal week. Here's what's happening - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNV2Vwd25lYVNhS3hvUG85TzVsS2Iza20wUVRsdnpRZm16eHE2UEtnUFRrTkZXNXE1MjdOQTJmM2hBUU9DdGN4UFQ1MGZUNnoxeG9ZZlBsempNcTk0aUxzTUFIMjEtemNDbFU4ZWMzb1NkcVM0Wk1NcUpDdE1vNW1MTtIBhgFBVV95cUxQV0x6VXhOb2JEMWpySDVfZGYzcEQ0bmZ2NXB6c3NSNXhQNEg4ZDNRbGtSV29tQ3dwc3g2dDNISUNNUEFmNFBMOUJvTW8zS0RURE5BaVlZWjlOb3ZXRzl4Vk9rb3Q4ZWxBTkExb0ZKYm1QT2FsdDg1Sm9ob1hhN0o5Q0liRXRVQQ?oc=5",
+            "source": "CNBC",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Here"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
             "title": "Bitcoin price rebounds to $70,000 after worst daily drop since 2022 - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQSkNmR1dwbWpKN1dLUEVqSVpacW9xenlOWjRGYzhUMVFuMEZOMHIwX0JMN0lzZk50ZWFDaGdCbWJEaFFUbFJCX0Mxc0tySGx2VHUtdUprOFZ5bTdreFk4cVIzczB0cUZSNkd1Mk9WWFV2R3JrTHZEQ0txQ0RhWHpmM2xpdVhNcEV4eXM1X2l5UlVvc1RvcEk5dnlibGpWcmRYVEI0S2lwQ2s0Qk1SRXVFcA?oc=5",
             "source": "Yahoo Finance",
             "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.451,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6298,19 +6410,100 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price sinks below $67,000 after Bessent says the US government can't tell banks to bail out crypto - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxNcXJ4dmUwQkNrV3VPaDBIWmk5cDZQS0JUZkZaWFBGRkZEbzhqSm01Rkh1Wk8wSzZKdEEwMl91RFRKVTE0NGhKS1BzXzdTMTFXX1ZaS09wbFh0ZTl0V2ZtcGJUdzM0QlN4M0psN0VvSW14aWMtUTFkMUJTOVZuclA1T0xIa0dRZ2dRcFpwc1NoMjVzekZJRW4zMEUwaV9WbmNUeWRsaUJPdHl1ZkJMYVl6MHZUT0hrZHlsMm1FdlpCZi1BRHlxbWQwRU82M1lIeU1mZkdNVTJYYnpHZm5WWWc5dzRpSQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 05 Fe",
+            "title": "Crypto market rebounds after BTC price tumbles to 2024 low: Crypto Markets Today - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxPVGQxek9iUmxOQVNxak51WDd1VnNVREFVS3JxMUlHOVBwMVlrMGNKbFBvUmx2LVlrRFE2SUE2bWJ5enNEWlhyZGJNcDR2WHpQVWFtQ3ZOYTNUZ25taWw4MVZZY2Y5dGthSG9VOTlaY2VpTURwZzVhTVROay1ob0hLUGZVdllxS3RzbEVZRmp3cnd2eVlPUWhkYmxZUnU5Z0VmbGoyM29qc2NlUzlNT3hIUWFsY1o5bjR6VmpYVkVVczFlWlBE?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.821,
-            "category": "political",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Markets",
+              "Today"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin gets slashed in half. What's behind the crypto's existential crisis - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPejdiazhheG90WGV6VEpQcTdZcUxTd1NEbkltUjEzVnJ6S1dSZFltaDNmbkZoa3JBRm5aZWxMTzNNbXBNX1lpNmxKMDRDQk9KUDFrbFNiRzBHTlNYWndNM0F1akdnVHd4bXlQRGJONkc4bms5RE9VQXdDaFpSX0tmTGlHT2hVd0hsRHhxSTNtS2RSQjVqemE3QXhIWDhjemcwUTFJZnpvMDBlYkJ2TnfSAbMBQVVfeXFMUE5jRDI1bkhSeDJoRFNKZjhaNktQYy16aDZ2czJsSW1TYWVVZGZJVmItR1pua2UyeWJpRXFDVE9WazRiZ184OGk2dmtWQ0tTZjFhaU1lMHAteFNWWURPbTQtRVdoRDBseW5DdGNNdmhLWWNEejByVVAwakdPVmhwZ2IyOUQ0eGhxOWcwOXNPNUhkTmY4djdrbm5KY0t6WFJVMnZsRzdKMUdZOEV4VHZJN051X3M?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Bessent",
-              "Yahoo",
-              "Finance"
+              "What"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Bitcoin price news: BTC under pressure as U.S. tech sector stumbles - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOQWNiLWNqY2NIS1gtajJNTzAtWHNtM3o3TWtFRmtfMVA5UGlyQkgzUXZIODRGdEItdm5Xd1NiNGl5eW1iOTBlSnpWV3MzdGMtYlRjRDU0OHEtaVhaOTh1TnZiZnhERUoxWFE5SEh2WGd1X0pmOVI4bjBVT0N1NzEwa2Z0b3IweFdlOVluOHZNX0dZZXpHU2ZiN3lsTmZlemNGVngtN21sU1c5WlhKcUZsZjRtSzhGNG1SYW51aG5RclNDQXFpTWxr?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "January 2026: Bitcoin and the Debasement Trade - Grayscale",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxQUFZVbldrV1E0WkFTMVRuU3E0X0E1eE91dmlCVHhPYUwtN2hBalNnVmVyUV9GbVlvd1Q0ajNfdGpxemNpaDJKeGRrM3BzZjNPMkxDQ1p5NjhSaEJTdWFIUldvNVpvZ3ZMREYxZXNfTmticjIzekd4UnJxcnFwbGNqODBnQU42cUJ3Qm1STGV5aGlWZXd1eGVFZkhB?oc=5",
+            "source": "Grayscale",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "January",
+              "Bitcoin",
+              "Debasement",
+              "Trade",
+              "Grayscale"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Don’t panic yet: Bitcoin has a line in the sand that has saved every bull market since 2015 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPQ3ZNMnllUHg4V3p5M2dTd2o5WHdSdzlrVTdVejJWOUdUbmN5SF80dkE2TXNMZjdPOU5IeDdBbFBERHlqZnA3eW9lbDhieFN0cnNTQ0o2U2tJeFAtTWpSMTZja2hRNUVwRV90X25HMDV6alRtc2tBcm9YQk5jNVFDaDBtSUdMUDAzT2s1M3AxTmU4YmJzM0hHWTd3VGlVRnZTYS0yTHdjSVVWZ0RPdkNQSWJ1QTF3bXM?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin whales and ETFs are bailing out of the market; UBS warns: ‘Crypto is not an asset’ - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxQSWpvUnFRcFFRbkZmc00tQ0Q5aHFxMGN2eThSR082LWEyY1FYZEdHWkhJUjMxcXFvS3VvN0xPNGsxWU42ZVlUdXY0Y3dSSFlERXpaTDZHdjB2U2VaWVFZUDBBVUtCR1NVOHFQSGF0S29rSi1pci04SWxKNEgtVjNwaHhJUUJVc2ZPazlwNFVFbkZjR2g1Uy1rTER3?oc=5",
+            "source": "Fortune",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "Fortune"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6321,7 +6514,7 @@
             "source": "Yahoo Finance UK",
             "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.642,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6334,187 +6527,12 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin loses half its value in three months amid crypto crunch - The Guardian",
-            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQNXdlMHZWT3FFa3pheHhncmtmQXdTNTVxZmZENVd6WXhXRjM3NlRlWGtHRmszN3ZjZE1Kb0tja2U5MkRySmhBYXNNY2VRWjZDYnAzYUJLYlE0U29EMUxPQ3NuTTRqSHhjUUlkMXR6MXM1dkwxajFhQTJhQjlkY3puZndtZW1GZw?oc=5",
-            "source": "The Guardian",
-            "date": "Thu, 05 Fe",
-            "language": "en",
-            "tone": -0.868,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Guardian"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin’s price roars back over $70,000 following brutal selloff — experts say bottom is in - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPLVlOeWhiaW01c214MW13c0pBYW9DSzlTMjVPbkkwdDFNUGhYOVBQT2t3OF9kdEFvMENteDNPVmF5VnFBR1ZPUlY2QXYwNkpVSUphbUFEb2xUSEtvclJvbnBrRlBxbFN4Ni13clFRTmlGNmlJbVA0aVVEXzcxUWgtdA?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Fri, 06 Fe",
-            "language": "en",
-            "tone": -0.334,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "BTC price: Bitcoin sinks under $64K as new investors lose faith - Axios",
-            "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBrSWlaRXRSTGk4enVtQkhnYU93TEl0eGJxdFlJTU5iX18taEpfakFBaW1RYmZFbjB2WFNxbXE0eVVEa3RsRVhTeWhuWmx5QWZkZXhUb1NTVXdLWVBHWUloZjZ5akQyREct?oc=5",
-            "source": "Axios",
-            "date": "Thu, 05 Fe",
-            "language": "en",
-            "tone": -0.75,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Axios"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin: Finally The Crash Is Here - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxQWnZ5TExiMFdtVEhVaTQ0SkhmN0xqVHVhc29lYUs2bGdaV1R2azRXTDdXYW04MTlXNk55ZDJacnBXVEhmbzVYblphQjExd3VjZkJNVW53TlZ5alRVSXpOM0MzelhTdGVMQVlIY0JiRHQ2Njg1YzI0SVR1ek8zTHEtOUJkY0RNYkxuNkk1amJ0eTJjUm8?oc=5",
-            "source": "Forbes",
-            "date": "Mon, 02 Fe",
-            "language": "en",
-            "tone": -0.221,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Finally",
-              "Crash",
-              "Here",
-              "Forbes"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Bitcoin's Price Plunges Below $64,000. Welcome to 2026's 'Crypto Winter' - Investopedia",
-            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOd2kzY21QbVZJbzgtaWVyQ0ZDd3ZRZm9mbVl1NUhybVlFNGtmVi1kdHk0TWxIQXZmSFVUd2pZNEItdmZwWlVuODFJc0cxWm5yOENzczlPaFpseGN5SllENlFsaVRJRnRZVFZZbm5BZC1HVTFFNVdzWlJPSExYVEFJc0xJUDhWVC1DNkhKZlFkZl9aVThDa0FIVnZISjRJbjA?oc=5",
-            "source": "Investopedia",
-            "date": "Thu, 05 Fe",
-            "language": "en",
-            "tone": 0.012,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Plunges",
-              "Below",
-              "Welcome"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Plunges To $74,000 And One Year Lows - Bitcoin Magazine",
-            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1yT2h6R0Z0WFdJd1o5WUY2RFBadllSZWZ0NTJ1Qk5VVFh6TFluVkxXNTRVVjhMUFoxaTRjZGhYaFlVWkpqRUdpV1BicHQyaHo0cVRLT2VQai05a1R0TGNhVkdUem45QWJ6b1VTS1UxVkZjNWFaX00zOHVSam4?oc=5",
-            "source": "Bitcoin Magazine",
-            "date": "Tue, 03 Fe",
-            "language": "en",
-            "tone": -0.486,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Plunges",
-              "Year",
-              "Lows"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "General",
-        "article_count": 5,
-        "avg_sentiment": -0.488,
-        "dominant_category": "general",
-        "bias_distribution": {
-          "center-left": 1,
-          "center-right": 2
-        },
-        "representative_titles": [
-          "No, but seriously: What’s going on with bitcoin? | CNN Business - CNN",
-          "Bitcoin is coming off a brutal week. Here's what's happening - CNBC",
-          "Bitcoin gets slashed in half. What's behind the crypto's existential crisis - CNBC",
-          "‘Crypto winter’: Why is Bitcoin crashing despite Trump’s support? - Al Jazeera",
-          "Bitcoin Price Crash – Is it All Donald Trump’s Fault? - Yahoo Finance"
-        ],
-        "narrative_summary": "",
-        "articles": [
-          {
-            "title": "No, but seriously: What’s going on with bitcoin? | CNN Business - CNN",
-            "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9iOGxvT1hGSGUwWFEzMkFsWlJxZm1Vd3dYanlsUjFHVnFYVEo1T3JLaUVwbDZCMXJNNXU3U1hSQkFWMDdKaFNoRGoxLWZJYjZ1ZmNVVnhLZnN3b1UxMUp5SzdSMG4?oc=5",
-            "source": "CNN",
-            "date": "Thu, 05 Fe",
-            "language": "en",
-            "tone": -0.219,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "Business"
-            ],
-            "bias_label": "center-left",
-            "factuality": "mixed"
-          },
-          {
-            "title": "Bitcoin is coming off a brutal week. Here's what's happening - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNV2Vwd25lYVNhS3hvUG85TzVsS2Iza20wUVRsdnpRZm16eHE2UEtnUFRrTkZXNXE1MjdOQTJmM2hBUU9DdGN4UFQ1MGZUNnoxeG9ZZlBsempNcTk0aUxzTUFIMjEtemNDbFU4ZWMzb1NkcVM0Wk1NcUpDdE1vNW1MTtIBhgFBVV95cUxQV0x6VXhOb2JEMWpySDVfZGYzcEQ0bmZ2NXB6c3NSNXhQNEg4ZDNRbGtSV29tQ3dwc3g2dDNISUNNUEFmNFBMOUJvTW8zS0RURE5BaVlZWjlOb3ZXRzl4Vk9rb3Q4ZWxBTkExb0ZKYm1QT2FsdDg1Sm9ob1hhN0o5Q0liRXRVQQ?oc=5",
-            "source": "CNBC",
-            "date": "Mon, 02 Fe",
-            "language": "en",
-            "tone": -0.455,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Here"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Bitcoin gets slashed in half. What's behind the crypto's existential crisis - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPejdiazhheG90WGV6VEpQcTdZcUxTd1NEbkltUjEzVnJ6S1dSZFltaDNmbkZoa3JBRm5aZWxMTzNNbXBNX1lpNmxKMDRDQk9KUDFrbFNiRzBHTlNYWndNM0F1akdnVHd4bXlQRGJONkc4bms5RE9VQXdDaFpSX0tmTGlHT2hVd0hsRHhxSTNtS2RSQjVqemE3QXhIWDhjemcwUTFJZnpvMDBlYkJ2TnfSAbMBQVVfeXFMUE5jRDI1bkhSeDJoRFNKZjhaNktQYy16aDZ2czJsSW1TYWVVZGZJVmItR1pua2UyeWJpRXFDVE9WazRiZ184OGk2dmtWQ0tTZjFhaU1lMHAteFNWWURPbTQtRVdoRDBseW5DdGNNdmhLWWNEejByVVAwakdPVmhwZ2IyOUQ0eGhxOWcwOXNPNUhkTmY4djdrbm5KY0t6WFJVMnZsRzdKMUdZOEV4VHZJN051X3M?oc=5",
-            "source": "CNBC",
-            "date": "Fri, 06 Fe",
-            "language": "en",
-            "tone": -0.561,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "What"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
             "title": "‘Crypto winter’: Why is Bitcoin crashing despite Trump’s support? - Al Jazeera",
             "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNT01paVlkZ1JWc1FIUWNoTEFsN2VhdWxVczNSSWpybWJoNHFNMHozcThjQS03aFZDZHowbkZPYmNXZTVlcXhmQksybi1FQmxRb2NvZjd5ejA3bm5yRjFPWjJFSHo4RTNZWjg2dEdwRzN6LVU3ZVFWc2g3YkZjQ1FvX2M1VHppQW1tNUFNSEZaNGF0R0dLb3JIaExHbnFtZjVUZVHSAacBQVVfeXFMTVNhQVlNeFlvWV9rd2ZTd1dQYWVxX3EwcW1WRGJXWmM4YkhsaTl3ZVF4d3JQODZMUHNJbmVmTUZ1UXlZVm9pRnU4alhDd0ZENEdLdkJiUVZmanpaa2tjY2dRVmNCWmRvYzV0YjBIOUVCal9iVGtCeGpDb3phYUsyc3AwaVg4cDhCQUJJcTlZMHROaG5kajZ5UFhKVlFtd3daME9jcEd0MUk?oc=5",
             "source": "Al Jazeera",
             "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.521,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6527,20 +6545,363 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Crash – Is it All Donald Trump’s Fault? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNakpHY2VZckxLeWVKeWc1SnBaRzFjOXJxOGQwWlY1cmUtaHpaZ0daTHhaVXktSndpald2dUFDbEtwVXdhU3NMc1YwOVJIMG1KdDUxZVF2TUl3MGNMMjQxeEs3WGtYcDhKSjFwazRha0NtMTNhZ1VuWkhWaTZTQlJRTXZaV1M?oc=5",
-            "source": "Yahoo Finance",
+            "title": "Bitcoin price climbs Friday, but can it continue? Experts are skeptical. - Mashable",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQVDYyVWVkSUl0VHcyNEIwYjdPLWducGZLNThrSy1qZE5EOUpUSTN4Y3ZoMnVieGsxeEhiUDhGblVCbThYaFpLMG5RckxuN1E4WUZiaXFpXzB1T084NlZmbmJLNGdaT2Q1SjBSLThRQXRyUHYzejRVVXllSm9HbVUtSWdKYk9BcU9lYTFTLVg1Y2FEZldidk1yNHZJZEZTcUU?oc=5",
+            "source": "Mashable",
             "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.684,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Price",
+              "Friday",
+              "Experts",
+              "Mashable"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why bitcoin price is trending | CNN Business - CNN",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTFBvNTlXeG5zeU9VRmh1eEVrdk1lZjFJRjU3bHA1c0ZZUFdISTdQV2swTG1sODA5MjlnOC02cTZHcm4tZFFVTmJqb1hKQk9kOWpVWVZOY2lIMm1JZjJWNnp1ZjJFUVV0ektZNVlSV09TWWgwbVA0dVNNOWZSa196dw?oc=5",
+            "source": "CNN",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Business"
+            ],
+            "bias_label": "center-left",
+            "factuality": "mixed"
+          },
+          {
+            "title": "Bitcoin Drawdown Nears 40%; Weakness Suggests Lower Prices Coming - galaxy.com",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPTmItejRRWEk0UGJlbnB4eTNISENURTBQNWVmUkpLZTk0YTctVHd1Y1REOTdYTlUzTkFKUHNRTTNyTXdoMEUxcUxiLVY1ZUJYbjA2Y1VwTXpDUS0zc0EtZDlsVTRIcHpSMk9NamxxZkZ6VWhndTBHZGtWOGlSVWp4Y2ktX04zeEpzdnctY0NxbFJwMUIwWlBucWlTTnRnT0k3QVdfMXhtOA?oc=5",
+            "source": "galaxy.com",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Drawdown",
+              "Nears",
+              "Weakness",
+              "Suggests"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin loses half its value in three months amid crypto crunch - The Guardian",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQNXdlMHZWT3FFa3pheHhncmtmQXdTNTVxZmZENVd6WXhXRjM3NlRlWGtHRmszN3ZjZE1Kb0tja2U5MkRySmhBYXNNY2VRWjZDYnAzYUJLYlE0U29EMUxPQ3NuTTRqSHhjUUlkMXR6MXM1dkwxajFhQTJhQjlkY3puZndtZW1GZw?oc=5",
+            "source": "The Guardian",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Guardian"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price plummets further. Is crypto crashing? - Mashable",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOQmUxQVZWQUNhODV5SDYxQzdhbS1YZW5qS2dSRTI5LVJFY1pwdk5ydzdlZDdOOV9ldGpBZTRVazRIb2NQaFZsUWhRRTZkc3FndFFWTnp3ZHg5WGZ2UFp4ZWo3bEJERmJOb1pVeTk5SkVEeFBnMndtMVZrNHh0TGdfMXRYYkFuOU0?oc=5",
+            "source": "Mashable",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Mashable"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "South Korean Crypto Exchange Accidentally Gave Away $43 Billion in Bitcoin - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxNZVRMX3VJTDNfNV9TcUZCN3UyU2NFb0E2QkVaSUdhY0dLdWd6VDk0RFFacFZVVlB6QW5JMTVvN1FvdFJaX05RZ2hjU3l4ZlJqN2EyMm5hSEJ1MVZITXVhT25IaU4ya3R5N1IzZm9wakR3VWQtcHlxbVA1dTFfVEM3b0hPVldiVXlvbWhVY0c5RTM?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sat, 07 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "South",
+              "Korean",
+              "Crypto",
+              "Exchange",
+              "Accidentally"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "‘Big Short’ Michael Burry Warns Bitcoin May Repeat 2022 Collapse Pattern - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNcnVYV1lBU2dsSEdnUHJpdjY3bklOUDdVRWpMQVJBd1hJbGFvOVcxYUFKUjdaaUxoTG5nVzlucm9LWnEyVHF1b2JWZnVlRFFZNF8wWFRCck13Y1NiLTZmdW9PNVljQ1JVQ0F0SHJpR0pIclpQT1V0NFVDQ3lwZVdEeQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Short",
+              "Michael",
+              "Burry",
+              "Warns",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Popular hedge fund manager predicts Bitcoin will crash to zero - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQNTRBUmRUYmxKbkgyLXhCVEhqMnU2QWtFMVRjb3RrczR5akZfZElPRGdpQXI4d3l1ZUhyZHJrWVg4Q2NnOWxNVEEzcXB2UUVTS3c2bmJfaEpCenFKRmpsQXN3alJVaGpJTHBRejliM0ZKVWpxNVRtMUJHZHlBcUY0OWYwM3pRdzA3?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sun, 08 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Popular",
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price to $10,000 as markets barrel towards crash ‘reminiscent of 2008,’ Bloomberg analyst warns - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBFNXh1Rjc5Ni1SYjE3Y1Vzd3hEenpjSkUtcDRubHdUUHo5LVBJMl9PZlNLNG1XTzNoZXNjcEloNmN0X2pXZy0tRXJfSkRFS081WVZmcm12ZjZlbWlELWU0OGN6T2N2ZUJUazN2YU5XUmYwNUM1Mm10M1RNNE84Y1U?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Bloomberg",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC price news: Bitcoin spirals toward $60,000, headed for worst drawdown since FTX crash - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQNmpaZjFBTG1FSUpVTXlMbDJVdm1jT2s4bWJfTThCT3lITEVuVUJ6cnZKazJOckVSRDM4VGtWZkR6Y2pYZE12SmxMYkJLZHhmeXZFZE82SlF3eFdmU0didmZkRFdZOVVpV0VHSExXdjFxSXQ5Sk1YREpPeDRzTEJjT3BCdTByaWgxMVFZSjE2aTc1cExVOUZqYUNqbFJlU2dINXF0enNhckdWTXVhYnR6T0QxZVdQbGV2dWdVWmtMemhwUQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC price: Bitcoin sinks under $64K as new investors lose faith - Axios",
+            "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBrSWlaRXRSTGk4enVtQkhnYU93TEl0eGJxdFlJTU5iX18taEpfakFBaW1RYmZFbjB2WFNxbXE0eVVEa3RsRVhTeWhuWmx5QWZkZXhUb1NTVXdLWVBHWUloZjZ5akQyREct?oc=5",
+            "source": "Axios",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Axios"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price round trips Trump gains. Here’s how low analysts say it’s headed - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxNMTV6NGZpOXA0T2ZhVmhobW1NNS05dFBWWHdNMWtBc1JGRndyNDJPUm9wRzVzM0lkVkY2MmJhdTRla1RHX0hKci0wSjZwMDA3YWdEME5ybXJVMFJwdWl0ZUsyLVcyVVNpNHpkSWtFbTNrOVhoOFBMWUk1Q2I4V2Zmek5POA?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Trump",
+              "Here",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price crash brought on by these five reasons, says VanEck analyst - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQTW9Na3JhWWVWSzI2cnNhLTNYd0hrck9ERmMzZTM4NnN2RmpiSmhRRU54QmJvR0dhNzdtRHZCaklfMEdmVmFVVGxCUGpEc3lfS1ozUWJYYjYySHRPOFF5c3JBOExtZjhTNjliRWlVZTFHcVYxdllVSVhIV0hMdnJIRFNEMDA?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Had A Brutal Dip To $74,500. Here’s What’s Happening - Bitcoin Magazine",
+            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE95cXRCaWs3T0FQOWIzcW9zVXl1T1ZaLUpuQy04Q2YtckhOWFRHTlN4NEk0YktZSHVzMDl0TXUyN04yODk5clc3ZE82cFhGVThDcmxFSWt1ZGVKNDl3N3Y5RElGQmFEQXZuTmxTd1UyOHBDUHlrRnM0WWhVbw?oc=5",
+            "source": "Bitcoin Magazine",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Brutal",
+              "Here",
+              "What",
+              "Happening"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin: Finally The Crash Is Here - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxQWnZ5TExiMFdtVEhVaTQ0SkhmN0xqVHVhc29lYUs2bGdaV1R2azRXTDdXYW04MTlXNk55ZDJacnBXVEhmbzVYblphQjExd3VjZkJNVW53TlZ5alRVSXpOM0MzelhTdGVMQVlIY0JiRHQ2Njg1YzI0SVR1ek8zTHEtOUJkY0RNYkxuNkk1amJ0eTJjUm8?oc=5",
+            "source": "Forbes",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Finally",
               "Crash",
-              "Donald",
-              "Trump"
+              "Here",
+              "Forbes"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          }
+        ]
+      },
+      {
+        "cluster_id": 1,
+        "label": "Commodities",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "commodities",
+        "bias_distribution": {},
+        "representative_titles": [
+          "JPMorgan says bitcoin could reach $266,000 ‘long term’ as it looks more attractive than gold - Yahoo Finance",
+          "Bitcoin Price To $266,000? JPMorgan Sees BTC More Attractive Than Gold Long Term - Yahoo Finance"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "JPMorgan says bitcoin could reach $266,000 ‘long term’ as it looks more attractive than gold - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxOOTd0aVhlVUtDaUlZUnIxNm9ScnpQUXlaT2lnam5pVldhZlpwUFlvaUJYdDNxc1BtVWJ6dVZrVE1VMVg5enhqdUlpVHUyZEZ4MXpsMDBKOHVYcXNqbzFaZUN3QWpkaUE5TUtraW9FWldXTFdCaTY1Z3NfY18wdDJzbkJJR2Nqdw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price To $266,000? JPMorgan Sees BTC More Attractive Than Gold Long Term - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQQkJiNnRVM1UwQXBQVnNNdEpvRER4ZHRxVklDWGpXZnEzZWRMQ240TVlqRVU1NldzU2xVQ0RLc3FqRFFjQ0JFb3Vwa2t0ME13SDRjZjRXZndacEdHMjJOM0toc3F3S0k5S2FXN1dBS2tFWWdPM25yQzhwSWVJRG1UYnBB?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Sees",
+              "More",
+              "Attractive"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 2,
+        "label": "Political",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "political",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Bitcoin price sinks below $67,000 after Bessent says the US government can't tell banks to bail out crypto - Yahoo Finance",
+          "Bitcoin nears pre-election floor as ETF flows stall, Citi says - CoinDesk"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "Bitcoin price sinks below $67,000 after Bessent says the US government can't tell banks to bail out crypto - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxNcXJ4dmUwQkNrV3VPaDBIWmk5cDZQS0JUZkZaWFBGRkZEbzhqSm01Rkh1Wk8wSzZKdEEwMl91RFRKVTE0NGhKS1BzXzdTMTFXX1ZaS09wbFh0ZTl0V2ZtcGJUdzM0QlN4M0psN0VvSW14aWMtUTFkMUJTOVZuclA1T0xIa0dRZ2dRcFpwc1NoMjVzekZJRW4zMEUwaV9WbmNUeWRsaUJPdHl1ZkJMYVl6MHZUT0hrZHlsMm1FdlpCZi1BRHlxbWQwRU82M1lIeU1mZkdNVTJYYnpHZm5WWWc5dzRpSQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "political",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Bessent",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin nears pre-election floor as ETF flows stall, Citi says - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNeVZxX1hhT29lOGtNendmaXU2eDlTOEhVMkRBTmUtRU80M2RfSktrYWlRVkRMUTl6TWExa3VLcC1ZelhIdHNwSUtrNmNYWG9LU3VyOGF6Tjl6NUpYVVJRclRIX20zenl4UUJfUWpMSnFSd1FJRFFLWFVLNFB1T3hwNjVZNDdZUG9VUHhCYVl4d2lVaUFtMHJHOG5xTGgzb0pMMjR4UTlMeWg?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "political",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Citi"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6555,7 +6916,7 @@
         "source": "ABC News - Breaking News, Latest News and Videos",
         "date": "Mon, 02 Fe",
         "language": "en",
-        "tone": -0.174,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.5,
         "keywords": [
@@ -6575,7 +6936,7 @@
         "source": "NBC News",
         "date": "Thu, 05 Fe",
         "language": "en",
-        "tone": -0.31,
+        "tone": 0.0,
         "category": "risk_premium",
         "relevance": 0.5,
         "keywords": [
@@ -6587,28 +6948,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin price drops below pre-Trump second term levels, now hovering below $67,000 - PBS",
-        "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNNEtqckFZRzZHclBKMzh2MEc2WnNIN1RsRVY1c1poeVY5d1lMcmVsQUk0aTMzdGYtOUpnbWs4X2JiZ1otZFd5a2h6bjhzUEI0Y1RWLVd0NEtPcEZYWV8wTW1pTVhPN1FRaTdiMDM1T2pyTFVYSl8zZThfZENpQ3I5LWpMdVNkNzQxdHd2QWpINmtQRnAtVDFpcV9FYnJnOWZSbnBVcDNEYl81aFZKZWhjVjU5c093SEnSAbwBQVVfeXFMTlZLOHN2NEJGdWIwcm5WeXRhaTZMbVJ1N2Y0VjhGMkhkb2JCNmpYZ2VJSmhyVjdqMDVuYUZUbGdtU1ZWY3FMWWxhdU1FRmNXcEhZNTBrNDFBWFIzR20wZUZHdDJqWGxrZG1TYXFHV0paSDl6Qk0wX2ZjUE5xQjN5Qk8yTDdQOUpiZWR1dVNhOUlscVF3c3FZTXFQR2ZyaC1ubnNDeDBCQ25PNDlaYmhSQlJmQks4LUYyZFdxQmY?oc=5",
-        "source": "PBS",
-        "date": "Fri, 06 Fe",
-        "language": "en",
-        "tone": -0.426,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Trump"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "No, but seriously: What’s going on with bitcoin? | CNN Business - CNN",
         "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9iOGxvT1hGSGUwWFEzMkFsWlJxZm1Vd3dYanlsUjFHVnFYVEo1T3JLaUVwbDZCMXJNNXU3U1hSQkFWMDdKaFNoRGoxLWZJYjZ1ZmNVVnhLZnN3b1UxMUp5SzdSMG4?oc=5",
         "source": "CNN",
         "date": "Thu, 05 Fe",
         "language": "en",
-        "tone": -0.219,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6624,7 +6969,7 @@
         "source": "CNBC",
         "date": "Thu, 05 Fe",
         "language": "en",
-        "tone": -0.521,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6634,12 +6979,12 @@
         "factuality": "high"
       },
       {
-        "title": "Bitcoin price hits lowest level since Trump took office - BBC",
+        "title": "Bitcoin falls to lowest level since Trump took office - BBC",
         "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE9sM2VFM2g0UUl4dzcyajdYYVMwemhKTjhzWklsNm41c3dfU0FOM053ZkFoNzZ0VkNZbG41V192YXlvQTVKM201bmlEd3cxTmtZbXZtVXptZlhWdw?oc=5",
         "source": "BBC",
         "date": "Fri, 06 Fe",
         "language": "en",
-        "tone": -0.541,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6655,7 +7000,7 @@
         "source": "Strategy",
         "date": "Thu, 05 Fe",
         "language": "en",
-        "tone": 0.081,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6669,12 +7014,28 @@
         "factuality": "unknown"
       },
       {
+        "title": "JPMorgan says bitcoin could reach $266,000 ‘long term’ as it looks more attractive than gold - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxOOTd0aVhlVUtDaUlZUnIxNm9ScnpQUXlaT2lnam5pVldhZlpwUFlvaUJYdDNxc1BtVWJ6dVZrVE1VMVg5enhqdUlpVHUyZEZ4MXpsMDBKOHVYcXNqbzFaZUN3QWpkaUE5TUtraW9FWldXTFdCaTY1Z3NfY18wdDJzbkJJR2Nqdw?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Thu, 05 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Yahoo",
+          "Finance"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
         "title": "Bitcoin Price Falls Below $67,000: Odds for BTC Low This Year - Federal News Network",
         "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNd2sxWThSUjVCeFR5UVpXRXFkZ1FhaGhXRk9PS0tTeXc0LUpHNlRzdFlwLUlMNnNxZlRxbjZDbzBBMkVfMEozUFRNUng3Z1pnT1B0NnZ6MnUwTEJ0VnNDVVg4Nk1WTTQtTTczRERoTUFndGdzaDkwbkwtMy1lYkhCQXhQeVpDTVhnM1hFY1JiMTFZWG9XSnE5QUVnTHJtNmxIRGt4VEpST3FRRFE?oc=5",
         "source": "Federal News Network",
         "date": "Thu, 05 Fe",
         "language": "en",
-        "tone": -0.525,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6688,29 +7049,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin price rebounds to $70,000 after worst daily drop since 2022 - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQSkNmR1dwbWpKN1dLUEVqSVpacW9xenlOWjRGYzhUMVFuMEZOMHIwX0JMN0lzZk50ZWFDaGdCbWJEaFFUbFJCX0Mxc0tySGx2VHUtdUprOFZ5bTdreFk4cVIzczB0cUZSNkd1Mk9WWFV2R3JrTHZEQ0txQ0RhWHpmM2xpdVhNcEV4eXM1X2l5UlVvc1RvcEk5dnlibGpWcmRYVEI0S2lwQ2s0Qk1SRXVFcA?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Fri, 06 Fe",
-        "language": "en",
-        "tone": -0.451,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Yahoo",
-          "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Bitcoin loses Trump-era gains as crypto market volatility signals uncertainty - Reuters",
         "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQMC1ROFdDZ2paTU1aSDRvSFFlVUZZRnRpN2tLaWxvZzZvT3cyM1ppc1pVeHU4RXpaRkRhTGpwcmh3VTdSNzF2LTZScWRFaXhsc2NtTVBaLXlBZ0dYcUIzRHUyajhDaVFUbE1FaGNkU29ZRDV4cGt4Q1c5ZHJpLXR4SkJzcXd6X2NkU3c1RERmRlFRLUU0ZkI0VHpCNDlPWTJSTXlXbmJYT19ZblNFVE9wTXE3ZDFtVlRaN1M0?oc=5",
         "source": "Reuters",
         "date": "Sat, 07 Fe",
         "language": "en",
-        "tone": -0.817,
+        "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
@@ -6720,33 +7064,44 @@
         ],
         "bias_label": "center",
         "factuality": "high"
+      },
+      {
+        "title": "BTC price drops below $70,000 as crypto selloff deepens - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNVGd5YVBGc2hQOHRZdGl5aGQ4a2hBOTU2bTk4YjBEd2dZTDFfVTZSVWhsOHRGekQ3ZnZfeFBwU0tDaGsydlFmdDlobTJhSnl3bzkwYzdWM3JET19sc3pzMGZrWHBqQkVnNV85UGloT2FrV2c3d2VWWTh2WXV6WGxyeHNhT29xdHBVSmZtY3dzeEZEREdKRG1kMDVEV0xlQnE4aEY4YnVDWTlZVklIbTN1RVY2enFvOUZBUnBiVkNjZWJwRmt6R0VBdEx3?oc=5",
+        "source": "CoinDesk",
+        "date": "Thu, 05 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
       "ABC News - Breaking News, Latest News and Videos": 1,
       "NBC News": 1,
-      "PBS": 1,
       "CNN": 2,
       "CNBC": 3,
       "BBC": 1,
       "Strategy": 1,
+      "Yahoo Finance": 10,
       "Federal News Network": 1,
-      "Yahoo Finance": 9,
       "Reuters": 1,
-      "Grayscale": 1,
+      "CoinDesk": 6,
       "NerdWallet": 1,
-      "CoinDesk": 5,
-      "Mashable": 1,
+      "Crypto News": 1,
+      "Grayscale": 1,
+      "Fortune": 1,
       "Yahoo Finance UK": 1,
       "Al Jazeera": 1,
-      "The New York Times": 1,
+      "Mashable": 2,
       "galaxy.com": 1,
       "The Guardian": 1,
-      "Bitcoin Magazine": 2,
       "Axios": 1,
-      "Forbes": 1,
-      "Investopedia": 1,
-      "PYMNTS.com": 1
+      "Bitcoin Magazine": 1,
+      "Forbes": 1
     }
   },
   "political_bias_analysis": {
@@ -6780,5 +7135,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-20T22:48:59.305086+00:00"
 }
