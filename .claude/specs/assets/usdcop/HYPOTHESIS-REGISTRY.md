@@ -730,3 +730,31 @@ re-slice del artefacto; `h_latam_02_ALIGNED_window.json`):
 ni siquiera bate a su propio baseline pasivo en diseño (0.037 vs 0.358) y las tres patas
 están muertas individualmente. El decaimiento por décadas queda como contexto; el
 veredicto en la ventana canónica es inequívoco: vía cerrada.
+
+---
+
+## H-VOLT-01 (PRE-REGISTRO 2026-07-21, 0 miradas) — transformer de volatilidad intradía → q90 COP
+
+**Hipótesis**: la FORMA intradía (información que la persistencia rv20 y HAR jamás vieron
+— solo consumen cierres diarios) mejora el pronóstico del cuantil q90 del rango semanal
+de USD/COP. Prior: el mejor del sistema (vol IC 0.3-0.5, potencia ~100%; panel 4/4).
+
+**Diseño SELLADO (una configuración, cero búsqueda de arquitectura):**
+- Tokens: por día de sesión, vector de 8 features intradía del M5 (vol realizada, rango,
+  up-vol, down-vol, vol primera hora, vol última hora, |gap apertura|, |ret sesión|).
+- Secuencia: 60 días de tokens → encoder transformer 2 capas · 4 cabezas · d=64 ·
+  dropout 0.1 (~200k params) → cabeza dual: vol realizada 5d + q90 rango semanal (pinball).
+- Pool de entrenamiento multi-símbolo {COP, MXN, BRL, XAU, BTC} con embedding de activo
+  (truco de entrenamiento; el DESPLIEGUE y la evaluación son SOLO COP — regla de ventanas
+  del operador respetada: todo ≥ 2019-12/2020 según el M5 de cada par).
+- Splits temporales pre-declarados: train ≤2022-12 · val 2023 (early-stop únicamente) ·
+  **TEST = 2024, un disparo** (dentro del diseño; 2025/2026 NO se tocan — quedan para el
+  paso económico futuro si esto gana). Seeds: [42, 123, 456] (3 — DL supervisado).
+- **Bar pre-firmado**: batir en TEST-2024 (COP solamente) a TODOS: persistencia rv20,
+  EWMA λ=0.94, y la mejor celda simple de H-RISK-FAM-01 (resint/gap-cola) en
+  **pinball q90** con IC95 block-bootstrap (b=4) que excluya 0 en ≥2/3 seeds.
+- **Consecuencia**: WIN → su salida se convierte en el insumo del techo de v13
+  (reemplaza/compone con las 4 features simples; el paso económico es el mismo trial v13
+  ya activado, no uno nuevo). LOSE → las features simples de H-RISK-FAM-01 son el
+  estimador operativo y el transformer queda cerrado.
+- Costo: **+1 trial al abrir TEST-2024** (N 65→66). Generador persistido junto al artefacto.
