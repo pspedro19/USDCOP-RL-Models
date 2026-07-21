@@ -67,9 +67,9 @@ from src.contracts.strategy_schema import (  # noqa: E402
 
 log = logging.getLogger("profitability")
 
-# spx500 is deliberately absent: another agent owns that track.
 REGISTRIES = {
     "usdcop": ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
+    "spx500": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
     "xauusd": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
     "btcusdt": ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
 }
@@ -84,6 +84,7 @@ FAMILIES = {
                "gold_long_only_b1", "gold_regime_gated_v1", "gold_trend_b2", "gold_trend_ens"),
     "btcusdt": ("btc_exposure_s3", "btc_hodl_b1", "btc_trend_b2", "btc_trend_funding_s4",
                 "btc_trend_volbrk_s5"),
+    "spx500": ("spx500_regime_gated_v1",),
 }
 
 

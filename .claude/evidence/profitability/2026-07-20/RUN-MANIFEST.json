@@ -1,6 +1,6 @@
 {
   "generated": "2026-07-20",
-  "git_sha": "3d047047e961f86dd51f6383083e9bdb54fe18e0",
+  "git_sha": "0c8921a326b087159d9b11826cb0ccd1cddf6e0f",
   "assets": {
     "usdcop": {
       "params_hash": "8b102163773df226",
@@ -11,6 +11,19 @@
       "failed_gates": [
         "dsr_min_over_grid_gt_0.95",
         "calmar_gt_b1_prime",
+        "net_return_gt_b1"
+      ]
+    },
+    "spx500": {
+      "params_hash": "2f5c9884f8457f90",
+      "n_trials_total": 14,
+      "trials_source": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 0,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_dumb_baseline",
         "net_return_gt_b1"
       ]
     },

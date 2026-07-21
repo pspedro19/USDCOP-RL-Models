@@ -155,4 +155,54 @@ def cop() -> Sleeve:
     )
 
 
-ADAPTERS = {"usdcop": cop, "xauusd": gold, "btcusdt": btc}
+# ---------------------------------------------------------------------------
+# SPX500 — regime-gated, on REAL SPY total-return data
+# ---------------------------------------------------------------------------
+
+def spx500() -> Sleeve:
+    """Runs the engine on the real SPY snapshot, not `datagen.generate()`.
+
+    The strategy shipped wired to a synthetic series whose own docstring says
+    "NO evidencia de alfa", so its published metrics measured the wiring. `load_real` supplies
+    the same column contract from the actual snapshot, leaving regimes/policies/gates untouched.
+
+    Pinned to the CENTRAL prior of the declared family (vol target 0.10, MA 200) — never the
+    best of the 4x3 sweep in `_config_family`. That sweep exists to feed PBO, which is exactly
+    the measure of what picking its winner would cost.
+    """
+    # The SPX500 engine was vendored wholesale and its modules import each other flatly
+    # (`import costs`, not `from . import costs`), so its own directory must be on sys.path.
+    pkg = ROOT / "src" / "strategies" / "spx500_regime_gated_v1"
+    if str(pkg) not in sys.path:
+        sys.path.insert(0, str(pkg))
+
+    from src.strategies.spx500_regime_gated_v1.engine import BacktestConfig, BacktestEngine
+    from src.strategies.spx500_regime_gated_v1.load_real import load_real
+    from src.strategies.spx500_regime_gated_v1.policies import vol_target_weights
+
+    df = load_real()
+    close = df["close"].astype(float)
+
+    ma = close.rolling(200, min_periods=200).mean()
+    trend_on = (close > ma).astype(float)
+    w = (trend_on * vol_target_weights(close, target=0.10)).clip(upper=1.5)
+
+    res = BacktestEngine(BacktestConfig(cost_bps_roundtrip=3.0)).run(w, df)
+
+    pos = res.weights_exec.to_numpy(float)
+    ret = df["open_to_open_return"].to_numpy(float)[: len(pos)]
+    cost = res.cost.to_numpy(float)
+    n_trades = int((np.abs(np.diff(pos, prepend=0.0)) > 1e-9).sum())
+
+    return Sleeve(
+        asset="spx500", strategy_id="spx500_regime_gated_v1",
+        index=df["timestamp"].iloc[: len(pos)],
+        position=pos, asset_ret=ret, cost=cost, swap=None,
+        n_trades=n_trades, clock=252, clock_label="daily/252",
+        # An equity index trends up over almost any long window, so the honest dumb baseline
+        # is the trend filter with no vol targeting and no gating at all.
+        dumb_name="ma200_always_on", dumb_position=trend_on.to_numpy(float)[: len(pos)],
+    )
+
+
+ADAPTERS = {"usdcop": cop, "xauusd": gold, "btcusdt": btc, "spx500": spx500}

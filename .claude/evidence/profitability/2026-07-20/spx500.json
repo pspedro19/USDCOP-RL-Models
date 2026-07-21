@@ -1,0 +1,218 @@
+{
+  "asset": "spx500",
+  "strategy_id": "spx500_regime_gated_v1",
+  "clock": {
+    "periods_per_year": 252,
+    "label": "daily/252"
+  },
+  "window": {
+    "start": "2020-01-02 00:00:00+00:00",
+    "end": "2026-07-17 00:00:00+00:00",
+    "n_periods": 1643
+  },
+  "n_trades": 1168,
+  "strategy": {
+    "net_return_pct": 55.5123,
+    "ann_return_pct": null,
+    "calmar": 0.5773,
+    "sortino": 1.2041,
+    "sharpe": 0.805,
+    "max_dd_pct": 0.1214,
+    "volatility": 0.0891,
+    "cvar_95_pct": 1.4598,
+    "sharpe_stderr": 0.0243
+  },
+  "turnover": 0.0313,
+  "exposure_profile": {
+    "mean_abs": 0.5946,
+    "p50": 0.6905,
+    "p95": 1.2033,
+    "pct_time_flat": 28.85,
+    "pct_time_long": 71.15,
+    "pct_time_short": 0.0
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "net_return_pct": 129.3627,
+      "ann_return_pct": null,
+      "calmar": 0.4185,
+      "sortino": 1.1604,
+      "sharpe": 0.7548,
+      "max_dd_pct": 0.3245,
+      "volatility": 0.1937,
+      "cvar_95_pct": 2.996
+    },
+    "B1_prime_exposure_matched": {
+      "mean_exposure": 0.5946,
+      "ann_return_pct": 8.36,
+      "max_dd_pct": -20.44,
+      "calmar": 0.409,
+      "sharpe": 0.755
+    },
+    "dumb_ma200_always_on": {
+      "net_return_pct": 148.9164,
+      "ann_return_pct": null,
+      "calmar": 1.6452,
+      "sortino": 2.0748,
+      "sharpe": 1.3132,
+      "max_dd_pct": 0.0912,
+      "volatility": 0.1113,
+      "cvar_95_pct": 1.7413
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 7.01,
+      "max_dd_pct": -12.14,
+      "calmar": 0.577,
+      "sharpe": 0.805
+    },
+    "x2": {
+      "ann_return_pct": 6.75,
+      "max_dd_pct": -12.51,
+      "calmar": 0.54,
+      "sharpe": 0.778
+    },
+    "x3": {
+      "ann_return_pct": 6.5,
+      "max_dd_pct": -12.88,
+      "calmar": 0.505,
+      "sharpe": 0.752
+    },
+    "survives_2x": true,
+    "survives_3x": true
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.050708,
+    "n_obs": 1643,
+    "cells": [
+      {
+        "n_trials": 12,
+        "sigma_trials": 0.05,
+        "sr0": 0.0832,
+        "dsr": 0.098,
+        "significant": false
+      },
+      {
+        "n_trials": 12,
+        "sigma_trials": 0.1,
+        "sr0": 0.1665,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 12,
+        "sigma_trials": 0.15,
+        "sr0": 0.2497,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 14,
+        "sigma_trials": 0.05,
+        "sr0": 0.0869,
+        "dsr": 0.075,
+        "significant": false
+      },
+      {
+        "n_trials": 14,
+        "sigma_trials": 0.1,
+        "sr0": 0.1738,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 14,
+        "sigma_trials": 0.15,
+        "sr0": 0.2608,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 20,
+        "sigma_trials": 0.05,
+        "sr0": 0.095,
+        "dsr": 0.039,
+        "significant": false
+      },
+      {
+        "n_trials": 20,
+        "sigma_trials": 0.1,
+        "sr0": 0.1901,
+        "dsr": 0.0,
+        "significant": false
+      },
+      {
+        "n_trials": 20,
+        "sigma_trials": 0.15,
+        "sr0": 0.2851,
+        "dsr": 0.0,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.0,
+    "headline_cell": {
+      "n_trials": 12,
+      "sigma_trials": 0.1
+    },
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": null,
+    "n_variants": 0,
+    "reason": "insufficient published variants; PBO needs a selection to evaluate"
+  },
+  "trials": {
+    "n_trials_total": 14,
+    "n_trials_scenarios": [
+      12,
+      14,
+      20
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 0,
+    "sources": [
+      "_config_family(): 4 vol targets x 3 MA windows = 12 celdas, todas evaluadas",
+      "B1/B2/S3: 3 variantes de pol\u00edtica declaradas en el patr\u00f3n",
+      "sin bundles publicados todav\u00eda (piso = 0): la estrategia no ha pasado a `available`"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": false,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": true,
+    "calmar_gt_dumb_baseline": false,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": true
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "pbo_lt_0.50",
+    "calmar_gt_dumb_baseline",
+    "net_return_gt_b1"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "2f5c9884f8457f90"
+}

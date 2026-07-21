@@ -17,6 +17,23 @@
       ]
     },
     {
+      "asset": "spx500",
+      "strategy_id": "spx500_regime_gated_v1",
+      "net_return_pct": 55.5123,
+      "max_dd_pct": 0.1214,
+      "cvar_95_pct": 1.4598,
+      "n_trades": 1168,
+      "turnover": 0.0313,
+      "mean_exposure": 0.5946,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "calmar_gt_dumb_baseline",
+        "net_return_gt_b1"
+      ]
+    },
+    {
       "asset": "xauusd",
       "strategy_id": "gold_dynamic_exit",
       "net_return_pct": 5.8013,
@@ -66,6 +83,17 @@
       }
     ],
     "daily/252": [
+      {
+        "asset": "spx500",
+        "strategy_id": "spx500_regime_gated_v1",
+        "ann_return_pct": null,
+        "calmar": 0.5773,
+        "sortino": 1.2041,
+        "sharpe": 0.805,
+        "sharpe_stderr": 0.0243,
+        "dsr_headline": 0.0,
+        "pbo": null
+      },
       {
         "asset": "xauusd",
         "strategy_id": "gold_dynamic_exit",
