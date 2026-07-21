@@ -137,3 +137,41 @@ IC95=[−0.75, +0.27]. **La prima de tendencia NO existe en LATAM FX semanal** (
 el régimen mean-reverting Hurst 0.28-0.49) ⇒ NO se construye LATAM-XS-TSMOM. El almuerzo
 gratis de amplitud, si existe, está en el CARRY — que sigue gated en **H-COP-CARRY-00**
 (medición del broker, 0 compute, acción del operador). +1 trial.
+
+---
+
+## Pooling LATAM (H-LATAM-02) — BLOQUEADO POR DATOS, no refutado
+
+**Medido 2026-07-21.** El pooling era el único remedio que la librería de skills avala para el
+problema de muestra de COP (31 trades, 52 observaciones semanales:
+`performance-metrics/SKILL.md:169` — "los ratios con menos de 36 observaciones mensuales son
+estadísticamente poco fiables").
+
+Resultado de `portfolio_layer::latam_tsmom()` (TSMOM 4/8/13w):
+
+| Serie | ann% | MaxDD% | Calmar |
+|---|---|---|---|
+| COP | −1.36 | −27.33 | −0.05 |
+| MXN | −7.01 | −2.76 | −2.541 |
+| BRL | −5.69 | −2.47 | −2.303 |
+| basket | −2.01 | −27.33 | −0.074 |
+| basket B1′ | +1.11 | −22.95 | +0.048 |
+
+La cesta pierde contra su propio B1′. Pero **este test no concluye nada**, y la razón es la
+cobertura de los seeds:
+
+| Seed | Rango | Días |
+|---|---|---|
+| `usdcop_m5` | 2020-01-02 → 2026-07-17 | 2.388 |
+| `usdmxn_m5` | **2026-03-16** → 2026-07-17 | **122** |
+| `usdbrl_m5` | **2026-03-16** → 2026-07-17 | **123** |
+
+MXN y BRL tienen **~17 semanas**. Una cesta de 6,5 años de COP con 4 meses de MXN/BRL no
+triplica la muestra efectiva: la contamina. Los Calmar de −2.5 son el artefacto esperado de
+anualizar 17 observaciones, no una medición.
+
+**Estado**: `BLOCKED_DATA`. La hipótesis no está refutada — no ha podido probarse. Desbloquearla
+requiere backfill histórico de MXN y BRL (el extractor existe; el seed no tiene la historia).
+CLP queda fuera por falta de seed, exclusión ya declarada.
+
+**No cuenta como trial**: no se evaluó ninguna hipótesis, se descubrió que no era evaluable.
