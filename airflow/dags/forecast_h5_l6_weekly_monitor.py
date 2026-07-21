@@ -159,7 +159,9 @@ def compute_metrics(**context) -> Dict[str, Any]:
         da_long = (long_correct / len(long_weeks) * 100) if long_weeks else None
 
         # Running Sharpe (annualized from weekly returns)
-        if n_weeks >= 4 and np.std(pnls) > 0:
+        # quant-constitution &6 (panel Codex 2026-07-21): con N<20 NO se publica Sharpe.
+        # El monitor publicaba running_sharpe desde n=4 — confianza estadistica inexistente.
+        if n_weeks >= 20 and np.std(pnls) > 0:
             running_sharpe = float(np.mean(pnls) / np.std(pnls, ddof=1) * np.sqrt(52))
         else:
             running_sharpe = None
@@ -413,7 +415,7 @@ def alert_summary(**context) -> None:
 
     if gates:
         if gates.get("gate_status"):
-            logger.info(f"  GATE DECISION:    {gates['gate_status']}")
+            logger.info(f"  GATE STATUS (descriptivo — los cortes 26/52 del protocolo DECIDEN, esto no): {gates['gate_status']}")
         if gates.get("circuit_breaker"):
             logger.warning("  *** CIRCUIT BREAKER TRIGGERED ***")
         for alarm in gates.get("alarms", []):

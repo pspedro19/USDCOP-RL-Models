@@ -510,3 +510,40 @@ replican al 4º decimal** ✓. Los hallazgos son de matemática financiera, no d
 7. Calmar a cierres diarios = 1.69 ✓ defendible; el multi-año honesto (v12 2022-25:
    CAGR 5.2%, Calmar ≤0.88) es el número comparable con CTAs. vt_min=0.5 anula los
    multiplicadores de de-risking (candidato a spec v12 o +1 trial).
+
+---
+
+## PANEL CODEX (4º auditor, 2026-07-21) — integración final; el juez de v12 queda SELLADO
+
+Codex confirmó independientemente la fuga de purga y el estado NO-PROMOTE, y corrigió el
+diseño del juez donde aún estaba flojo. **Especificación FINAL del juez de v12 (sella y
+reemplaza las versiones anteriores; 0 miradas):**
+
+1. **Reloj propio desde SU freeze**: arranque paper 2026-07-27 → corte-26 ≈ **2027-01-22**
+   y corte-52 ≈ **2027-07-23**. El 2026-09-16 es EXCLUSIVAMENTE el Corte A de v11.
+2. **Semana a semana = solo integridad** (costos, exposición, missingness, safety).
+   Ninguna decisión de superioridad semanal (ilustración del panel: 38 miradas al 5% =
+   FWER 85.8%).
+3. **Corte-26 = safety/futility únicamente** (no promoción). **Corte-52 = ÚNICO test
+   confirmatorio**: ΔCalmar neto compuesto v12−v11, unilateral α=0.05, bootstrap circular
+   pareado b=4 pre-firmado. Si se exigiera promoción temprana: exactamente dos miradas,
+   α26=0.01 / α52=0.04 — ninguna más.
+4. **Gates económicos conjuntos**: retorno v12>v11 Y DD_v12≤DD_v11 Y DD absoluto<12%.
+5. **Intention-to-treat**: flat deliberado = retorno 0; dato faltante = NA (jamás 0).
+   Ledger append-only con strategy_id, semana ISO, config/code/data hash.
+6. **N_bind ≥ 12 se mantiene como criterio de INFORMACIÓN**: si el cap casi no muerde,
+   INCONCLUSO — ni derrota ni victoria. N<20 trades ⇒ solo conteo y PnL.
+7. **El e-process queda DEGRADADO a monitoreo descriptivo** hasta que exista una
+   implementación congelada (null condicional, transformación, betting schedule,
+   dependencia). No habilita PASS. (Corrección justa de Codex a la enmienda previa.)
+
+**Violación operativa encontrada por el panel y corregida en el mismo commit**: el monitor
+L6 publicaba `running_sharpe` desde n=4 y una "GATE DECISION" semanal desde la semana 15
+(promote/discard/switch por DA) — solo informativa (la promoción real es doble-voto), pero
+presionaba decisiones fuera de los cortes. Fix: Sharpe suprimido hasta N≥20 y el log
+re-etiquetado como descriptivo.
+
+**Veredicto consolidado de los 4 auditores**: NO PROMOTE; no abrir variantes nuevas;
+v11 congelada rumbo a su Corte A con los números honestos (+7.66% OOS-2025 purgado,
++3.36% YTD-2026); v12 al forward con este juez sellado; las palancas de rentabilidad
+inmediata son de infraestructura (colateral ocioso +4.3pp, carry si el swap pasa el gate).
