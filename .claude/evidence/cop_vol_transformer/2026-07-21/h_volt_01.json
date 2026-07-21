@@ -1,0 +1,68 @@
+{
+  "n_test": 260,
+  "seeds": {
+    "42": {
+      "pinball_model": 0.1222311481833458,
+      "vs_persistencia_q90_252": {
+        "pinball_base": 0.12334961055809182,
+        "ci95": [
+          -0.009026088850356299,
+          0.010285917365259592
+        ],
+        "win": false
+      },
+      "vs_ewma164": {
+        "pinball_base": 0.15238356985500143,
+        "ci95": [
+          0.004820903533807686,
+          0.05133409908527536
+        ],
+        "win": true
+      },
+      "WIN_all_baselines": false
+    },
+    "123": {
+      "pinball_model": 0.12642769515514374,
+      "vs_persistencia_q90_252": {
+        "pinball_base": 0.12334961055809182,
+        "ci95": [
+          -0.016490246968087482,
+          0.01829893429685782
+        ],
+        "win": false
+      },
+      "vs_ewma164": {
+        "pinball_base": 0.15238356985500143,
+        "ci95": [
+          0.01270655571353837,
+          0.041598561746419335
+        ],
+        "win": true
+      },
+      "WIN_all_baselines": false
+    },
+    "456": {
+      "pinball_model": 0.1361103355884552,
+      "vs_persistencia_q90_252": {
+        "pinball_base": 0.12334961055809182,
+        "ci95": [
+          -0.02699203176414023,
+          0.005789421170499784
+        ],
+        "win": false
+      },
+      "vs_ewma164": {
+        "pinball_base": 0.15238356985500143,
+        "ci95": [
+          -0.006412409026802022,
+          0.043431750312663255
+        ],
+        "win": false
+      },
+      "WIN_all_baselines": false
+    }
+  },
+  "bar": "IC95 b=4 excluye 0 en >=2/3 seeds vs TODOS los baselines",
+  "verdict": "NO_RECHAZA",
+  "trials": "+1 (N 65->66)"
+}

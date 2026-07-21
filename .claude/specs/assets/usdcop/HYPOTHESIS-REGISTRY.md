@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 65
+n_trials_total: 66
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -758,3 +758,33 @@ de USD/COP. Prior: el mejor del sistema (vol IC 0.3-0.5, potencia ~100%; panel 4
   ya activado, no uno nuevo). LOSE → las features simples de H-RISK-FAM-01 son el
   estimador operativo y el transformer queda cerrado.
 - Costo: **+1 trial al abrir TEST-2024** (N 65→66). Generador persistido junto al artefacto.
+
+
+---
+
+## RESULTADO H-VOLT-01 (2026-07-21) — NO_RECHAZA (0/3 seeds) · trials 65→66
+
+Ejecutado EXACTAMENTE el diseño sellado (9.084 secuencias multi-símbolo, 3.997 train /
+1.428 val / 260 TEST-COP-2024; 3 seeds; generador persistido en
+`.claude/evidence/cop_vol_transformer/2026-07-21/`).
+
+| Pinball q90 (TEST-2024 COP) | seed 42 | seed 123 | seed 456 |
+|---|---|---|---|
+| Transformer | 0.1222 | 0.1264 | 0.1361 |
+| Persistencia (q90 rolling-252) | **0.1233** | 0.1233 | 0.1233 |
+| EWMA 1.645σ | 0.1524 | 0.1524 | 0.1524 |
+
+**Lectura**: el transformer APLASTA a EWMA (−20%) pero NO bate a la persistencia empírica
+(mejor seed: empate estadístico, IC95 [−0.009, +0.010] incluye 0; 0/3 seeds ganan).
+**La persistencia queda imbatida por TERCERA vez** (HAR en H-VOLF-01, EWMA-sizer en
+H-VOLE-01, transformer aquí) — a horizonte semanal, el cuantil empírico rodante del rango
+de COP es un estimador que ni 200k parámetros con forma intradía mejoran. Nota de
+implementación: el tercer baseline pre-firmado (mejor celda simple de H-RISK-FAM-01) no
+alcanzó a evaluarse — irrelevante para el veredicto: fallar un baseline obligatorio ya
+es FAIL.
+
+**Consecuencia**: la vía transformer queda CERRADA para vol COP. El insumo operativo del
+techo de v13 son las 4 features simples validadas de H-RISK-FAM-01 COMPUESTAS con la
+persistencia rolling-q90 (el listón imbatido), no un modelo profundo. El presupuesto de
+lo aprendido hoy: 2 hipótesis grandes probadas y cerradas con evidencia (LATAM-TSMOM,
+transformer-vol) + 4 predictores simples validados — el sistema sabe más y gasta menos.
