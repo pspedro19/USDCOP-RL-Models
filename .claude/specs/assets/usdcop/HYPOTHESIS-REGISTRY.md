@@ -421,3 +421,92 @@ A4 ledger ya cubría COP semanal con supresión N<16.
 **Spec v12 respaldado por diseño**: la evidencia de v12 ya no es solo la celda 2025
 contaminada — es el delta pareado en 3 años de diseño que la elección del cap nunca vio.
 Arranque paper 2026-07-27 (A1/A2 listos). Juez: forward.
+
+---
+
+## EVENTO DE RE-MEDICIÓN #2 (2026-07-21): FUGA DE PURGA corregida — el 2025 honesto es +7.66%
+
+**BUG A-1 de la auditoría ML (verificado en código antes de aceptar)**: las últimas ~5 filas
+de cada ventana de train llevaban el label de la semana que se iba a operar (target 5d
+construido sobre el frame completo + filtro solo-NaN global), y la fila de predicción
+estaba DENTRO del fit con su propio desenlace como label. Producción nunca vio esos labels
+(NaN el domingo) → el backtest usaba una metodología que el modelo servido no tiene.
+
+**Fix**: purga de 7 días calendario (~5 hábiles) en el fit; features de predicción tomadas
+aparte del frame sin purga (exactamente lo que ve el DAG). Re-medición (no trial):
+
+| Ventana | con fuga | **purgado (honesto)** |
+|---|---|---|
+| OOS-2025 | +13.05%, p=0.115, 34 tr | **+7.66%, p=0.2154, 32 tr, Sharpe 0.987** |
+| 2026 YTD | +2.45% | **+3.36%, 11 tr** (el año limpio SUBE) |
+
+Cascada completa de honestidad del 2025: +26.05% (datos rotos + fuga) → +13.05%
+(reparados + fuga) → **+7.66% (reparados + purgados)**. Sigue batiendo al B&H (−14.5%)
+por 22pp, pero cada capa de rigor recortó el backtest a la mitad. El 2026 — el único
+juez limpio — MEJORÓ con el fix. BUG A-2 (circuit breaker sin salida) corregido con
+cooldown de 4 semanas + re-anclaje (no muerde en 2025/2026: números idénticos).
+
+## ENMIENDA EX-ANTE al juez de v12 (auditoría estadística, ANTES del arranque 2026-07-27)
+
+El diseño original ("ΔCalmar IC95 excluye 0 a 26 semanas") estaba mal especificado en tres
+puntos, medidos por el auditor y verificables en `.claude/evidence/`:
+
+1. **Potencia ≈ 3.4%** del criterio literal (el maxDD con N=26 es ruido) — el Corte A
+   habría salido INCONCLUSO casi seguro aunque v12 fuera genuinamente mejor.
+2. **Reloj en unidad equivocada**: la información del cap solo llega en trades con
+   lev>1.5 — y en 2026 YTD el cap NO ha mordido ni una vez (lev máx 1.27, 0/29 semanas).
+   26 semanas calendario en régimen 2026-like = 0 observaciones informativas.
+3. **El titular "P=97.6% a 26 sem" era condicional al régimen 2025**: banda honesta por
+   mezcla de regímenes = [0.50 – 0.98] (replicado con block bootstrap b=4/b=8: robusto a
+   autocorrelación, frágil a régimen).
+
+**Juez enmendado (pre-firmado, 0 miradas)**:
+- **Reloj**: N_bind ≥ 12 trades donde el cap muerde (lev_v11 > 1.5), no semanas.
+  Si a las 52 semanas N_bind < 12 → INCONCLUSO → extensión automática (mismo mecanismo
+  del WITHDRAWAL-PROTOCOL §4). Mínimo calendario: 26 semanas se mantiene.
+- **Estadístico**: block bootstrap circular (b=4) de la serie pareada semanal sobre
+  Δ(ret_ann − λ·|maxDD|) con λ=1 fijado aquí. NO sign test (los deltas son negativos en
+  semanas TP por construcción; castigaría a v12 aunque su Calmar fuera mejor).
+- **Monitoreo semanal sin gastar alfa**: e-process (betting martingale) sobre los deltas
+  clipeados a ±10%; PASS anticipado si e-value ≥ 20 (α=0.05 anytime-valid). El operador
+  puede mirar TODAS las semanas — el control de error no depende de cuándo mire.
+- La hipergeométrica 4.18% del patrón HS queda re-clasificada como DESCRIPTIVA (el null
+  "lev ⊥ HS" es mecánicamente falso: el buffer de precio es inverso al leverage). La
+  evidencia real de v12 es el delta pareado 2022-2024 en años que la elección jamás miró.
+
+**Deudas registradas por la misma auditoría**: la tabla DSR §2 está stale (usa el Sharpe
+pre-reparación 0.3585 semanal; con 0.209 el DSR base cae <0.50) → recomputar con σ_trials
+REAL re-corriendo las 42 celdas pagadas sobre datos reparados (0 trials, COP-NULL OLA 4);
+añadir `circular_block_bootstrap()` y `e_process()` a `services/common/metrics.py`;
+persistir script generador junto a cada JSON de evidencia.
+
+---
+
+## AUDITORÍA MATEMÁTICA FINANCIERA (2026-07-21) — la aritmética replica; el REPORTE tenía 3 sesgos optimistas
+
+Recálculos independientes: composición 2025/2022-24/2026, maxDD, PF, p-value — **todos
+replican al 4º decimal** ✓. Los hallazgos son de matemática financiera, no de aritmética:
+
+1. **Sharpe 1.506 está inflado por construcción**: es solo-trades (34 semanas), sin
+   risk-free. Con las 18 semanas flat = 1.21; en exceso de rf USD 4.37% = **0.80**.
+   El skill performance-metrics exige (Rp−Rf)/σ. Todo titular futuro publica el de exceso.
+2. **El fill del HS es una orden imposible**: el yaml declara `hard_stop: "limit"` — un
+   buy-limit al nivel del stop NO se ejecuta en gap-through. Medido 2025: trade 7 abrió
+   14bps más allá del stop → corrección −0.28pp; con slippage intradía realista
+   −0.3/−1.0pp/año y DD mayor. Favorece estructuralmente a v12 (menos HS). El yaml debe
+   decir stop-market y el motor llenar open-aware (re-medición, 0 trials).
+3. **El forward 2026 está inflado por carry omitido**: 10L/1S pagan diferencial —
+   recalculado −0.24pp (el +3.36% purgado sería ≈+3.12% con pass-through completo).
+   El único juez limpio tiene sesgo pro-LONG hasta que el motor devengue carry
+   bidireccional (gate: H-COP-CARRY-00).
+4. Carry teórico corregido: **+1.83/+1.91pp** (no +2.01: IBR es E.A. vs FFR nominal
+   act/360 → diferencial 4.27pp; 98 noches, no 103 días).
+5. **La palanca más grande del track no es de señal: colateral ocioso = +4.3-4.5pp/año**
+   (18 semanas 100% flat + margen no usado). Es elección de venue/broker declarable
+   ex-ante (0 trials). En venue sin interés (MEXC/USDT) ≈ 0 → entonces el Sharpe DEBE
+   reportarse en exceso de cash (≈0.8).
+6. Kelly guard: riesgo actual = 0.23×Kelly (v12 ≈ 0.17×) — no hay upside legal en subir
+   tamaño; el debate 2.0 vs 1.5 vive dentro de la zona fraccional segura.
+7. Calmar a cierres diarios = 1.69 ✓ defendible; el multi-año honesto (v12 2022-25:
+   CAGR 5.2%, Calmar ≤0.88) es el número comparable con CTAs. vt_min=0.5 anula los
+   multiplicadores de de-risking (candidato a spec v12 o +1 trial).

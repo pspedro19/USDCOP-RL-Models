@@ -231,6 +231,7 @@ def _run_weekly_loop(df, feature_cols, cfg, year, collect_week_data=False):
     # Circuit breaker (v3.0: tighter — 4 losses, 10% DD)
     consecutive_losses = 0
     cb_active = False
+    cb_activated_at = None
     cb_max_losses = cfg.get("cb_max_consecutive", 4)
     cb_max_dd = cfg.get("cb_max_dd_pct", 10.0)
 
@@ -245,12 +246,22 @@ def _run_weekly_loop(df, feature_cols, cfg, year, collect_week_data=False):
         friday_ts = monday_ts + pd.offsets.BDay(4)
 
         # --- Circuit breaker ---
+        # BUG A-2 (auditoria ML 2026-07-21): sin cooldown, el CB era una trampa sin
+        # salida — los contadores solo sanaban con trades que ya no ocurrian, y el
+        # "DEACTIVATED" era codigo muerto. Semantica declarada = pause_and_alert:
+        # pausa de 4 semanas, luego re-ancla (peak=equity, losses=0) y reintenta.
         current_dd = (1 - equity / peak_equity) * 100 if peak_equity > 0 else 0
-        if consecutive_losses >= cb_max_losses or current_dd >= cb_max_dd:
-            if not cb_active:
-                cb_active = True
-                print(f"    [CB] ACTIVATED at {monday_ts.date()}: "
-                      f"consec_losses={consecutive_losses}, DD={current_dd:.1f}%")
+        if cb_active and (monday_ts - cb_activated_at).days >= 28:
+            cb_active = False
+            consecutive_losses = 0
+            peak_equity = equity
+            print(f"    [CB] cooldown cumplido at {monday_ts.date()}: re-anclado y reactivado")
+        if not cb_active and (consecutive_losses >= cb_max_losses or current_dd >= cb_max_dd):
+            cb_active = True
+            cb_activated_at = monday_ts
+            print(f"    [CB] ACTIVATED at {monday_ts.date()}: "
+                  f"consec_losses={consecutive_losses}, DD={current_dd:.1f}%")
+        if cb_active:
             skipped_weeks.append({
                 "monday": monday_ts.strftime("%Y-%m-%d"),
                 "reason": f"circuit_breaker (losses={consecutive_losses}, DD={current_dd:.1f}%)",
@@ -483,7 +494,14 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
 
         # Train Ridge+BR (+XGBoost) on expanding window
         train_end = monday_ts - timedelta(days=1)
-        df_train = df[(df["date"] <= train_end) & df["target_return_5d"].notna()].copy()
+        # PURGE (auditoria ML 2026-07-21, BUG A-1): el label de la fila en fecha d usa
+        # cierres hasta d+5bd. Sin purga, las ~5 ultimas filas llevan el DESENLACE de la
+        # semana que se va a operar dentro del train (y la fila de prediccion se ajustaba
+        # con su propio label). Produccion nunca ve esos labels (NaN el domingo) -> el
+        # backtest era mas optimista que el modelo servido. Se purga d > train_end - 7d
+        # calendario (~5 habiles) del FIT; las features de prediccion se toman aparte.
+        purge_end = train_end - timedelta(days=7)
+        df_train = df[(df["date"] <= purge_end) & df["target_return_5d"].notna()].copy()
         # Build the feature matrix as a numpy float64 array up front. Coercing via
         # pd.to_numeric first neutralises object/nullable-extension dtypes that can
         # slip in on the extended (2026) slice — np.isfinite raises TypeError on a
@@ -503,7 +521,16 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
         ridge = Ridge(alpha=1.0).fit(Xs, y)
         br = BayesianRidge(max_iter=300).fit(Xs, y)
 
-        latest = scaler.transform(feats[-1:])
+        # Fila de prediccion: la ULTIMA fila con features finitas hasta train_end (el
+        # viernes previo), tomada del frame SIN purga — la purga saca esa fila del fit
+        # (su label solapa la semana operada) pero sus features siguen siendo las
+        # correctas para predecir. Exactamente lo que ve el DAG del domingo.
+        df_pred = df[df["date"] <= train_end]
+        pred_feats = df_pred[feature_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=np.float64)
+        pred_mask = np.isfinite(pred_feats).all(axis=1)
+        if not pred_mask.any():
+            continue
+        latest = scaler.transform(pred_feats[pred_mask][-1:])
         pr = float(ridge.predict(latest)[0])
         pbr = float(br.predict(latest)[0])
 

@@ -16,9 +16,8 @@
   "produced_by": {
     "source": "BundlePublisher",
     "version": "2.0.0",
-    "year": 2026,
-    "phase": "production",
-    "generated_at": "2026-07-21T21:17:25.240677+00:00"
+    "year": 2025,
+    "generated_at": "2026-07-21T22:21:11.139606+00:00"
   },
   "backtests": [
     {
@@ -156,12 +155,12 @@
         "recommendation": "REVIEW"
       },
       "headline": {
-        "return_pct": 13.05,
-        "sharpe": 1.506,
-        "max_dd_pct": 7.74,
-        "win_rate_pct": 73.5,
-        "p_value": 0.1151,
-        "trades": 170
+        "return_pct": 7.66,
+        "sharpe": 0.987,
+        "max_dd_pct": 7.84,
+        "win_rate_pct": 71.9,
+        "p_value": 0.2154,
+        "trades": 160
       }
     }
   ],
@@ -170,7 +169,7 @@
     "year": 2026,
     "summary": "strategies/smart_simple_v11/production/summary.json",
     "trades": "strategies/smart_simple_v11/production/trades.json",
-    "updated_at": "2026-07-21T21:17:25.240677+00:00"
+    "updated_at": "2026-07-21T22:19:45.398375+00:00"
   },
   "approval": {
     "file": "production/approval_state.json",
@@ -216,7 +215,7 @@
     {
       "version": "2.0.0",
       "active": true,
-      "trained_at": "2026-07-21T21:17:25.240677+00:00",
+      "trained_at": "2026-07-21T22:21:11.139606+00:00",
       "train_window": null,
       "feature_hash": null,
       "norm_stats_hash": null,

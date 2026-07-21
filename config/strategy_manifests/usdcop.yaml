@@ -33,9 +33,15 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: c2ddb5eb54d88400
+code_hash_sha256_16: fdf289f4472f7c4c
 manifest_frozen_at: '2026-07-21'
-manifest_version: 3
+manifest_version: 4
+refreeze_note_v4: >-
+  Re-freeze v4 (2026-07-21, auditoria ML): purga de labels solapados en el fit del
+  backtest (BUG A-1 — el backtest entrenaba con el desenlace de la semana operada;
+  produccion NUNCA lo vio: el fix hace que el backtest MIDA lo servido; re-medicion
+  2025 +13.05->+7.66, 2026 +2.45->+3.36) + circuit breaker con cooldown 4 sem
+  (BUG A-2, no muerde en 2025/2026). Señal servida: sin cambio.
 refreeze_note_v3: >-
   Re-freeze v3 (2026-07-21): (1) MIN_TRADES_FOR_STATS promovida a modulo (NameError
   que abortaba el export — bugfix, cero cambio de señal); (2) gating A2 de artefactos
