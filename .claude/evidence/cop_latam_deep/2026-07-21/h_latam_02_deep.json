@@ -1,0 +1,73 @@
+{
+  "universe": [
+    "COP",
+    "MXN",
+    "BRL"
+  ],
+  "mechanics": "votes(4/8/13w)/3, shift(1), sin vol-target/carry/CLP",
+  "design": {
+    "basket": {
+      "ann_pct": 5.9,
+      "maxdd_pct": -21.33,
+      "calmar": 0.277,
+      "n": 1833
+    },
+    "b1prime": {
+      "ann_pct": 5.23,
+      "maxdd_pct": -30.17,
+      "calmar": 0.173,
+      "n": 1833
+    }
+  },
+  "oos_2025": {
+    "basket": {
+      "ann_pct": -1.89,
+      "maxdd_pct": -3.82,
+      "calmar": -0.493,
+      "n": 52
+    },
+    "b1prime": {
+      "ann_pct": -9.69,
+      "maxdd_pct": -10.03,
+      "calmar": -0.967,
+      "n": 52
+    },
+    "delta_calmar": 0.474,
+    "delta_calmar_ci95_block4": [
+      -0.584,
+      3.288
+    ],
+    "delta_mean_weekly_ci95": [
+      -0.0012630225184674393,
+      0.004103627866687568
+    ]
+  },
+  "per_decade": {
+    "1990s": {
+      "ann_pct": 9.85,
+      "maxdd_pct": -14.66,
+      "calmar": 0.671,
+      "n": 522
+    },
+    "2000s": {
+      "ann_pct": 8.02,
+      "maxdd_pct": -7.16,
+      "calmar": 1.119,
+      "n": 521
+    },
+    "2010s": {
+      "ann_pct": 2.63,
+      "maxdd_pct": -14.32,
+      "calmar": 0.184,
+      "n": 522
+    },
+    "2020s": {
+      "ann_pct": 0.79,
+      "maxdd_pct": -21.33,
+      "calmar": 0.037,
+      "n": 261
+    }
+  },
+  "verdict": "NO_RECHAZA \u2014 cesta no distinguible de exposici\u00f3n pasiva emparejada en 2025",
+  "trials": "+1 (N 64->65)"
+}

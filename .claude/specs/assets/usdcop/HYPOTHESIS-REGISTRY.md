@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 64
+n_trials_total: 65
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -669,3 +669,39 @@ N_eff por clusters de correlación >0.95: **10 de 42**. **DSR de v11 con σ medi
 los TRES escenarios (N=59/10/27)** — robusto e insensible al conteo. Veredicto sin cambio:
 v11 no pasa 0.95, freeze intacto — pero la tabla ya no es una asunción, es una medición.
 Artefactos + generadores: `.claude/evidence/cop_sigma_trials/2026-07-21/`.
+
+
+---
+
+## RESULTADO H-LATAM-02 con historia profunda (2026-07-21) — NO_RECHAZA · trials 64→65
+
+La hipótesis desbloqueada por el backfill se corrió con la mecánica EXACTA pre-registrada
+(votos TSMOM 4/8/13w /3, shift(1), {COP,MXN,BRL}, sin vol-target/carry/CLP) sobre 35 años
+(COP 1989→, MXN 1990→, BRL 1994→). Generador persistido en
+`.claude/evidence/cop_latam_deep/2026-07-21/`.
+
+**DISEÑO ≤2024** (1.833 semanas): cesta ann 5.9% / Calmar 0.277 vs B1′ 0.173. Pero la
+tabla por décadas es el hallazgo:
+
+| Década | Calmar cesta |
+|---|---|
+| 1990s | 0.671 |
+| 2000s | **1.119** |
+| 2010s | 0.184 |
+| 2020s | **0.037** |
+
+**El edge TSMOM en FX latino lleva DOS DÉCADAS muriendo** — decaimiento de alfa clásico y
+documentado, no ruido (n=521/década).
+
+**OOS-2025 (un disparo)**: cesta −1.89% (Calmar −0.49) vs B1′ −9.69% (−0.97).
+ΔCalmar = +0.47 pero **IC95 block-4 = [−0.58, +3.29] INCLUYE CERO → NO_RECHAZA**.
+La cesta amortigua (pierde menos que la exposición pasiva emparejada) pero no se
+distingue estadísticamente de ella.
+
+**Consecuencia**: la vía "breadth por TSMOM LATAM ingenuo" queda CERRADA con 1 trial —
+conocimiento que ahorra el esfuerzo futuro. Lo que sigue vivo de la familia LATAM:
+H-LATAM-01 (la pata de CARRY de la cesta) sigue gated en tasas locales medidas
+(TIIE/Selic/TPM-CLP no ingestadas) + swaps reales — la teoría dice que en FX latino el
+carry es el retorno y el momentum el ruido, y esta corrida es consistente con eso.
+Las rutas activas hacia la meta 20-30% quedan: v12 (lunes), v13 (materia prima validada),
+transformer-vol (+1 trial disponible), carry/colateral (operador).
