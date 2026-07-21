@@ -105,22 +105,33 @@ def record(week: str | None = None) -> int:
 
         # Paper return comes from the live production bundle. Absent = absent, not zero: a week
         # with no signal is not a flat week, and recording 0.0 would quietly invent evidence.
-        paper_ret = None
-        prod = REPO / "usdcop-trading-dashboard/public/data/production" / f"summary_{sid}.json"
-        if prod.is_file():
+        paper_ret, paper_src = None, None
+        prod_dir = REPO / "usdcop-trading-dashboard/public/data/production"
+        # Filenames are not uniform: COP publishes `summary_smart_simple_v11_2025.json` while
+        # gold publishes `summary_gold_trend_simple.json`. The first version of this tracker
+        # only tried the unsuffixed name, so COP -- which HAS paper data -- was recorded as
+        # absent. "No data" and "data under another name" must not look identical, or the
+        # ledger under-reports coverage exactly where it matters.
+        candidates = sorted(prod_dir.glob(f"summary_{sid}*.json"), reverse=True)
+        for prod in candidates:
             try:
                 d = json.loads(prod.read_text(encoding="utf-8"))
-                paper_ret = (d.get("strategies", {}).get(sid, {})
-                             .get("total_return_pct"))
+                blocks = d.get("strategies", {})
+                block = blocks.get(sid) or next(
+                    (v for k, v in blocks.items() if k != "buy_and_hold"), {})
+                if block.get("total_return_pct") is not None:
+                    paper_ret, paper_src = block["total_return_pct"], prod.name
+                    break
             except Exception as e:  # noqa: BLE001
-                print(f"  {sid:26} paper no legible: {e}")
+                print(f"  {sid:26} {prod.name} no legible: {e}")
 
         div = (abs(paper_ret - replay_ret)
                if paper_ret is not None and replay_ret is not None else None)
         row = {
             "recorded_at": now.isoformat(), "week": wk,
             "strategy_id": sid, "asset_id": asset, "status": champ.get("status"),
-            "paper_return_pct": paper_ret, "replay_return_pct": replay_ret,
+            "paper_return_pct": paper_ret, "paper_source": paper_src,
+            "replay_return_pct": replay_ret,
             "divergence_pp": round(div, 4) if div is not None else None,
             "divergence_breach": bool(div > MAX_WEEKLY_DIVERGENCE_PP) if div is not None else None,
             "evidence_class": "research_only",
@@ -128,7 +139,10 @@ def record(week: str | None = None) -> int:
         with STORE.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row) + "\n")
         written += 1
-        print(f"  {sid:26} {wk}  paper={paper_ret}  replay={replay_ret}  div={row['divergence_pp']}")
+        miss = [k for k, v in (("paper", paper_ret), ("replay", replay_ret)) if v is None]
+        tag = f"  FALTA: {'+'.join(miss)}" if miss else ""
+        print(f"  {sid:26} {wk}  paper={paper_ret}  replay={replay_ret}  "
+              f"div={row['divergence_pp']}{tag}")
 
     print(f"\n{written} fila(s) escritas -> {STORE}")
     return 0
