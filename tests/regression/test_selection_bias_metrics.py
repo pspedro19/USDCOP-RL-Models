@@ -145,3 +145,22 @@ def test_skill_wrapper_returns_the_identical_ssot_result():
         skew=float(stats.skew(r)),
         kurtosis=float(stats.kurtosis(r, fisher=False)),
     )
+
+
+def test_vote1_includes_dsr_gate():
+    """STAT-001: Vote 1 must be unable to PROMOTE without a trial-aware DSR.
+
+    The original five gates accepted a candidate at -14% return and Sharpe 0.01 -- Vote 1
+    filtered nothing. Gate 6 implements the constitution's mandate, with the trial count read
+    from the registry front-matter (never a literal) and the sigma-unit ambiguity resolved in
+    the CONSERVATIVE direction: a gate that passes on the favorable reading of an ambiguity is
+    a gate someone will eventually argue past.
+    """
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[2] / "scripts" / "pipeline"
+           / "train_and_export_smart_simple.py").read_text(encoding="utf-8", errors="replace")
+    assert "_dsr_gate(m)" in src, "gate 6 (deflated_sharpe) missing from export_approval_state"
+    assert "n_trials_total" in src, "the DSR gate must read its trial count from the registry"
+    assert "min(" in src.split("def _dsr_gate")[1].split("def export_approval_state")[0], (
+        "the DSR gate must take the minimum over both sigma-unit readings"
+    )

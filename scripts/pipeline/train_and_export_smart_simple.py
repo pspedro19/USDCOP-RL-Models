@@ -855,6 +855,49 @@ def export_trades(result, year, cfg):
     }
 
 
+def _dsr_gate(m) -> dict:
+    """Gate 6: trial-aware Deflated Sharpe (quant-constitution 2, STAT-001).
+
+    The original five gates accept a candidate at -14% return and Sharpe 0.01 -- Vote 1
+    filtered nothing (audit STAT-001, RED). The constitution is explicit that no PROMOTE may
+    happen without a trial-aware DSR > 0.95, and it declares itself the winner of any conflict
+    with a spec or code ("ante conflicto ... gana esta regla"). This gate implements that
+    mandate; renegotiating the -15%/0.0 thresholds themselves is a separate operator/ADR
+    decision this function deliberately does not take.
+
+    Trial count comes from the COP hypothesis registry front-matter -- never a literal.
+    Fail-safe per constitution: if the DSR cannot be computed (missing module, missing
+    registry), the gate FAILS. Nothing promotes on an uncomputable deflation.
+    """
+    import math
+    try:
+        import yaml as _yaml
+        from services.common.metrics import dsr_report
+        reg = PROJECT_ROOT / ".claude" / "specs" / "assets" / "usdcop" / "HYPOTHESIS-REGISTRY.md"
+        text = reg.read_text(encoding="utf-8", errors="replace")
+        fm = _yaml.safe_load(text[3:text.index("\n---", 3)]) or {}
+        n_trials = int(fm["n_trials_total"])
+        sr_pp = float(m["sharpe"]) / math.sqrt(52)      # weekly clock
+
+        # The sigma grid's units are ambiguous across documents: the COP registry's historical
+        # table treats 0.05-0.15 as WEEKLY (per-period) Sharpe dispersion (cop_trials_dsr.py,
+        # DSR 0.50-0.92), while dsr_report's convention treats a declared grid as ANNUALIZED
+        # (which here yields 0.97). A gate must never pass on the favorable reading of an
+        # ambiguity, so it evaluates BOTH and takes the minimum. Under the conservative
+        # reading v11 does not clear 0.95 -- consistent with why it was frozen.
+        as_annualized = dsr_report(sr_pp, 52, n_trials, periods_per_year=52)
+        as_per_period = dsr_report(sr_pp, 52, n_trials, periods_per_year=1)
+        worst = min(float(as_annualized["headline_dsr"] or 0.0),
+                    float(as_per_period["headline_dsr"] or 0.0))
+        return {"gate": "deflated_sharpe", "label": f"DSR trial-aware (N={n_trials}, min de 2 lecturas de sigma)",
+                "passed": bool(worst > 0.95),
+                "value": round(worst, 4), "threshold": 0.95}
+    except Exception as e:  # noqa: BLE001 - fail SAFE, never fail open
+        return {"gate": "deflated_sharpe", "label": "DSR trial-aware (INCOMPUTABLE)",
+                "passed": False, "value": 0.0, "threshold": 0.95,
+                "error": f"{type(e).__name__}: {e}"}
+
+
 def export_approval_state(result_2025, cfg):
     """Export approval_state.json for 2-vote system."""
     m = result_2025["metrics"]
@@ -877,6 +920,7 @@ def export_approval_state(result_2025, cfg):
         {"gate": "statistical_significance", "label": "Significancia (p<0.05)",
          "passed": bool(m["p_value"] < 0.05),
          "value": float(m["p_value"]), "threshold": 0.05},
+        _dsr_gate(m),   # gate 6: constitution-mandated; PROMOTE is impossible without it
     ]
     n_passed = sum(1 for g in gates if g["passed"])
 

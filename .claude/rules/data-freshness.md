@@ -27,8 +27,8 @@ code_anchors:
 
 **Por qué**: el mercado cierra viernes 12:55 COT y el training corre domingo → el dato más
 reciente tiene 2 días; 3 días absorbe eso. Macro admite 7 porque varias variables son semanales.
-**Unidad OHLCV = días hábiles colombianos** (2026-07-21): un festivo de lunes bloqueaba el
-martes sin barras faltantes. Umbral 3 intacto. Ver `data_quality.py::_trading_days_since`.
+**Unidad OHLCV = días hábiles colombianos** (2026-07-21; umbral 3 intacto —
+`data_quality.py::_trading_days_since`).
 Modelos a 10 días = dos domingos fallidos seguidos; se avisa pero no se detiene el trading.
 
 ## Invariantes

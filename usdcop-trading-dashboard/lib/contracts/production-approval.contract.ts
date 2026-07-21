@@ -2,7 +2,9 @@
  * Production Approval Contract
  * ==============================
  * Types for the file-based 2-vote approval system.
- * Vote 1: Backtest validates 5 gates (automatic).
+ * Vote 1: Backtest validates 6 gates (automatic). Gate 6 (deflated_sharpe) is
+ * constitution-mandated (STAT-001): PROMOTE is impossible without trial-aware DSR > 0.95,
+ * evaluated under the LEAST favorable sigma-unit reading.
  * Vote 2: User clicks Approve (human review).
  *
  * Strategy types are imported from the universal strategy.contract.ts (SDD).
@@ -33,7 +35,7 @@ export type { StrategyStats };
 export type ProductionStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'LIVE';
 
 // -----------------------------------------------------------------------------
-// Gate Result (one of the 5 backtest gates)
+// Gate Result (one of the 6 backtest gates)
 // -----------------------------------------------------------------------------
 
 export interface GateResult {

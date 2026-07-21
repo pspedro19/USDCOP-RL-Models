@@ -28,8 +28,8 @@ code_anchors:
    `audit_log` (append-only). Ver `rbac.md`.
 6. **Estados válidos**: `PENDING_APPROVAL → APPROVED → LIVE`, o `→ REJECTED → PENDING_APPROVAL`
    vía `--reset-approval`.
-7. **5 gates por defecto**: retorno > -15%, Sharpe > 0, maxDD < 20%, trades >= 10, p < 0.05.
-   `PROMOTE` solo con 5/5.
+7. **6 gates**: retorno > -15%, Sharpe > 0, maxDD < 20%, trades >= 10, p < 0.05, y
+   **DSR trial-aware > 0.95** (sigma menos favorable; manda la constitución §2). 6/6 para `PROMOTE`.
 
 ## DO NOT
 
