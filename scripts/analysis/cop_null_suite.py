@@ -85,23 +85,43 @@ def v11_weekly_returns_2025() -> pd.Series:
 
 
 def block_bootstrap_delta_calmar(a: np.ndarray, b: np.ndarray, *, block: int = 6,
-                                 n_boot: int = 5000, seed: int = 42) -> dict:
-    """Paired moving-block bootstrap of Calmar(a) − Calmar(b) on aligned weekly returns.
-    Blocks preserve autocorrelation (quant-constitution: iid bootstrap inflates
-    significance on autocorrelated weekly series)."""
+                                 n_boot: int = 5000, seed: int = 42,
+                                 periods_per_year: int = WEEKS_PER_YEAR) -> dict:
+    """Paired moving-block bootstrap of Calmar(a) − Calmar(b) on aligned returns.
+
+    Blocks preserve autocorrelation (quant-constitution: an iid bootstrap inflates
+    significance on autocorrelated series).
+
+    `periods_per_year` and `block` MUST match the series' clock. This used to hardcode
+    WEEKS_PER_YEAR, which silently annualized daily series by 52 and resampled them in 6-day
+    blocks — both wrong by a factor of ~5, and wrong inside a function whose whole job is to
+    say whether a difference is real. Callers on daily data pass 252/365 and block ~20.
+
+    Also reports the OBSERVED delta on the unresampled series. The bootstrap mean regresses
+    toward zero because Calmar's denominator is a single extreme order statistic that moves
+    violently under resampling; reporting only the mean would understate the point estimate,
+    and reporting only the observed value would overstate its stability. Both, always.
+    """
     rng = np.random.default_rng(seed)
     n = len(a)
+    if n < block + 1:
+        return {"delta_calmar_mean": None, "ci95": [None, None], "excludes_zero": False,
+                "reason": f"series too short ({n}) for block {block}"}
     deltas = np.empty(n_boot)
     for i in range(n_boot):
         starts = rng.integers(0, n - block + 1, size=(n // block) + 1)
         idx = np.concatenate([np.arange(s, s + block) for s in starts])[:n]
-        ca = _ann_return_dd_calmar(a[idx], WEEKS_PER_YEAR)["calmar"]
-        cb = _ann_return_dd_calmar(b[idx], WEEKS_PER_YEAR)["calmar"]
+        ca = _ann_return_dd_calmar(a[idx], periods_per_year)["calmar"]
+        cb = _ann_return_dd_calmar(b[idx], periods_per_year)["calmar"]
         deltas[i] = ca - cb
     lo, hi = np.percentile(deltas, [2.5, 97.5])
-    return {"delta_calmar_mean": round(float(deltas.mean()), 3),
+    obs = (_ann_return_dd_calmar(a, periods_per_year)["calmar"]
+           - _ann_return_dd_calmar(b, periods_per_year)["calmar"])
+    return {"delta_calmar_observed": round(float(obs), 3),
+            "delta_calmar_mean": round(float(deltas.mean()), 3),
             "ci95": [round(float(lo), 3), round(float(hi), 3)],
-            "excludes_zero": bool(lo > 0 or hi < 0)}
+            "excludes_zero": bool(lo > 0 or hi < 0),
+            "periods_per_year": int(periods_per_year), "block": int(block)}
 
 
 def main() -> int:

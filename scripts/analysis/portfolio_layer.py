@@ -3,10 +3,10 @@
   P2  Equal-risk mix of the three sleeves (COP v11 weekly, gold_trend_ens, btc_trend_b2)
       with rolling-|rho| monitor and an aggregate DD breaker (12% -> x0.5, 18% -> flat;
       priors ex-ante, ADR-0012 style: never relaxed in drawdown).
-      H-PORT-01: block-bootstrap ΔCalmar(mix, best sleeve).
+      H-PORT-01: block-bootstrap DCalmar(mix, best sleeve).
   P1  LATAM TSMOM 4/8/13w on {COP, MXN, BRL} daily closes (resampled from the m5 seeds
       already in aux_pairs; CLP has no seed -> documented exclusion, not silent).
-      H-LATAM-02: ΔCalmar(TSMOM basket, B1' basket). Carry leg (H-LATAM-01) requires
+      H-LATAM-02: DCalmar(TSMOM basket, B1' basket). Carry leg (H-LATAM-01) requires
       measured policy rates + broker swaps -> stays gated on H-COP-CARRY-00 (honest).
 
 Reuses: `services.common.metrics._ann_return_dd_calmar`, block bootstrap from
@@ -45,6 +45,84 @@ def sleeve_weekly(strategy_id: str, version: str, year: int = 2026) -> pd.Series
     s = s[(s.index >= "2025-01-01") & (s.index <= "2025-12-31")]
     return s.resample("W-MON").sum().reindex(
         pd.date_range("2025-01-06", "2025-12-29", freq="W-MON"), fill_value=0.0)
+
+
+MIN_ACTIVE_PERIODS = 8   # ex-ante prior: below this a sleeve cannot inform a covariance
+
+
+def screen_sleeves(sleeves: dict[str, pd.Series]) -> tuple[dict, dict]:
+    """Drop sleeves that are degenerate, and say so instead of mixing them in.
+
+    Found 2026-07-21: `gold_ens` had ZERO non-zero weeks in the 2025 window and `btc_b2` had
+    6 of 52. `sleeve_weekly` reindexes onto a fixed weekly grid with `fill_value=0.0`, so a
+    sleeve with no trades becomes a legitimate-looking series of zeros. The mix then reported
+    Calmar 3.796 and max |rho| 0.00 -- the correlation was zero because there was nothing to
+    correlate. That number was COP diversified against cash wearing an asset's name.
+
+    A zero-return sleeve is not a low-risk asset. Mixing it in mechanically raises Calmar by
+    dilution, which is the most flattering possible artifact and the least real.
+    """
+    kept, dropped = {}, {}
+    for name, s in sleeves.items():
+        active = int((s != 0).sum())
+        if active < MIN_ACTIVE_PERIODS:
+            dropped[name] = f"only {active}/{len(s)} active periods (min {MIN_ACTIVE_PERIODS})"
+        else:
+            kept[name] = s
+    return kept, dropped
+
+
+def erc_mix(sleeves: dict[str, pd.Series], lookback: int = 26) -> pd.Series:
+    """Equal-risk-contribution mix using a shrunk covariance.
+
+    `equal_risk_mix` below is inverse-vol: it weights by each sleeve's own volatility and
+    never sees the covariance, so it cannot know the portfolio's actual risk (the gap called
+    out in xasset/sizing.py). True ERC solves w_i*(Sigma w)_i = b_i.
+
+    Ledoit-Wolf shrinkage is not optional at this sample size: an unshrunk covariance from ~26
+    weekly observations across 3-4 sleeves is dominated by estimation error, and ERC would
+    faithfully equalize risk contributions that are mostly noise.
+    """
+    from sklearn.covariance import LedoitWolf
+
+    sys.path.insert(0, str(REPO / ".claude" / "skills" / "xasset-alpha-engine" / "scripts"))
+    from xasset.sizing import risk_parity_weights
+
+    df = pd.DataFrame(sleeves).dropna(how="all").fillna(0.0)
+    out = pd.Series(0.0, index=df.index)
+    cols = list(df.columns)
+    for i in range(len(df)):
+        if i < lookback:
+            w = np.full(len(cols), 1.0 / len(cols))       # equal weight until estimable
+        else:
+            win = df.iloc[i - lookback:i]                  # strictly past: causal
+            try:
+                cov = LedoitWolf().fit(win.to_numpy()).covariance_
+                w = np.asarray(risk_parity_weights(cov), dtype=float)
+            except Exception:                              # noqa: BLE001
+                w = np.full(len(cols), 1.0 / len(cols))
+        out.iloc[i] = float(np.dot(w, df.iloc[i].to_numpy()))
+    return _apply_dd_breaker(out)
+
+
+def _apply_dd_breaker(mix: pd.Series) -> pd.Series:
+    """Aggregate DD breaker (priors ex-ante: 12% -> x0.5, 18% -> flat). Never relaxed."""
+    eq = (1 + mix).cumprod()
+    dd = eq / eq.cummax() - 1.0
+    scale = pd.Series(1.0, index=mix.index)
+    scale[dd.shift(1) < -0.12] = 0.5
+    scale[dd.shift(1) < -0.18] = 0.0
+    return mix * scale
+
+
+def diversification_ratio(sleeves: dict[str, pd.Series], w: np.ndarray | None = None) -> float:
+    """DR = sum(w_i * sigma_i) / sigma_p. DR = 1 means no diversification at all."""
+    df = pd.DataFrame(sleeves).fillna(0.0)
+    if w is None:
+        w = np.full(df.shape[1], 1.0 / df.shape[1])
+    sig = df.std(ddof=1).to_numpy()
+    port_sig = float((df * w).sum(axis=1).std(ddof=1))
+    return float(round(np.dot(w, sig) / port_sig, 3)) if port_sig > 0 else float("nan")
 
 
 def equal_risk_mix(sleeves: dict[str, pd.Series]) -> pd.Series:
@@ -97,6 +175,14 @@ def main() -> int:
     sleeves = {"cop_v11": v11,
                "gold_ens": sleeve_weekly("gold_trend_ens", "1.3.0"),
                "btc_b2": sleeve_weekly("btc_trend_b2", "1.2.1")}
+
+    sleeves, dropped = screen_sleeves(sleeves)
+    for name, why in dropped.items():
+        print(f"  DESCARTADO {name:9s}: {why}")
+    if len(sleeves) < 2:
+        print(f"\n  Quedan {len(sleeves)} sleeve(s) utilizables: NO HAY CARTERA que evaluar.")
+        print("  Una 'cartera' de un solo sleeve activo es ese sleeve. H-PORT-01 no aplica.")
+        return 0
     for k, s in sleeves.items():
         st = _ann_return_dd_calmar(s.values, WEEKS)
         print(f"  sleeve {k:9s}: ann={st['ann_return_pct']}%  MaxDD={st['max_dd_pct']}%  "
@@ -111,7 +197,7 @@ def main() -> int:
     res = block_bootstrap_delta_calmar(mix.values, best.reindex(mix.index).fillna(0).values)
     print(f"\n[P2] mix equal-risk: ann={sm['ann_return_pct']}%  MaxDD={sm['max_dd_pct']}%  "
           f"Calmar={sm['calmar']}")
-    print(f"[H-PORT-01] ΔCalmar(mix, mejor sleeve={best_id}) = {res['delta_calmar_mean']} "
+    print(f"[H-PORT-01] DCalmar(mix, mejor sleeve={best_id}) = {res['delta_calmar_mean']} "
           f"IC95={res['ci95']} excluye0={res['excludes_zero']}")
 
     print("\n[P1] LATAM TSMOM 4/8/13w (COP/MXN/BRL; CLP excluido: sin seed — exclusión declarada)")
@@ -120,7 +206,7 @@ def main() -> int:
         s = lat[k]
         print(f"  {k:15s}: ann={s['ann_return_pct']}%  MaxDD={s['max_dd_pct']}%  Calmar={s['calmar']}")
     r = lat["H-LATAM-02"]
-    print(f"[H-LATAM-02] ΔCalmar(basket, B1') = {r['delta_calmar_mean']} IC95={r['ci95']} "
+    print(f"[H-LATAM-02] DCalmar(basket, B1') = {r['delta_calmar_mean']} IC95={r['ci95']} "
           f"excluye0={r['excludes_zero']}")
     print("[H-LATAM-01 carry] GATED: requiere tasas medidas + swaps del broker (H-COP-CARRY-00)")
     return 0
