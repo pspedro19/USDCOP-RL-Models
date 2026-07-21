@@ -675,3 +675,63 @@ def capture_ratios(returns, benchmark) -> dict:
     # ratio is not meaningful there, so it is None rather than a large flattering number.
     out["capture_ratio"] = float(round(up / dn, 3)) if (up and dn and dn > 0) else None
     return out
+
+
+def dsr_report(sharpe_per_period: float, n_obs: int, n_trials: int, *,
+               variant_sharpes=None, sigma_grid=(0.05, 0.10, 0.15),
+               periods_per_year: int = 252, skew: float = 0.0,
+               kurtosis: float = 3.0) -> dict:
+    """Deflated Sharpe reported over EVERY sigma assumption, headline = the least flattering.
+
+    Exists because the same strategy was getting two different DSRs on 2026-07-21:
+    `gold_trend_simple` scored 0.861 in the evidence harness (sigma estimated from the
+    dispersion of published variants) and 0.0033 in its publisher (sigma hardcoded to
+    `0.5/sqrt(252)`). Neither was a bug -- they were different assumptions -- but a number that
+    swings 250x on an undocumented constant is a number someone will eventually quote
+    selectively. There is one DSR entry point now, and it always shows its work.
+
+    UNITS, which is where this goes wrong: `deflated_sharpe_ratio` needs
+    `trials_sharpe_std` in the SAME units as `sharpe_per_period`. Registries declare sigma
+    annualized, so a declared 0.10 becomes 0.10/sqrt(periods_per_year) here. Feeding an
+    annualized sigma against a per-period Sharpe makes the null expect random strategies to
+    achieve annualized Sharpes of 2-6, under which nothing can ever pass.
+
+    `variant_sharpes` (per-period Sharpes of the asset's actually-published variants) gives the
+    EMPIRICAL estimate, which needs no unit conversion because it is measured in the right
+    units by construction. It is preferred when >= 3 variants exist; the declared grid is the
+    fallback and is always published alongside so the sensitivity is visible.
+    """
+    root = float(np.sqrt(periods_per_year))
+    cells, sigmas = [], []
+
+    if variant_sharpes is not None:
+        vs = np.asarray([s for s in variant_sharpes if s is not None and np.isfinite(s)],
+                        dtype=float)
+        if vs.size >= 3:
+            sigmas.append((float(np.std(vs, ddof=1)), "empirical_from_published_variants"))
+
+    sigmas += [(float(s) / root, f"declared_{s}_annualized_over_sqrt({periods_per_year})")
+               for s in sigma_grid]
+
+    for sig, origin in sigmas:
+        if sig <= 0:
+            continue
+        d = deflated_sharpe_ratio(sharpe_per_period, n_obs, n_trials, sig,
+                                  skew=skew, kurtosis=kurtosis)
+        cells.append({"sigma_trials_pp": round(sig, 6), "sigma_origin": origin, **d})
+
+    if not cells:
+        return {"headline_dsr": None, "cells": [], "bar": 0.95, "passes": False,
+                "reason": "no usable sigma"}
+
+    preferred = [c for c in cells if c["sigma_origin"] == "empirical_from_published_variants"]
+    headline = min(preferred or cells, key=lambda c: c["dsr"])
+    return {
+        "headline_dsr": headline["dsr"],
+        "headline_sigma_origin": headline["sigma_origin"],
+        "headline_sr0": headline["sr0"],
+        "worst_cell_dsr": min(c["dsr"] for c in cells),
+        "n_trials": int(n_trials), "n_obs": int(n_obs),
+        "sharpe_per_period": round(float(sharpe_per_period), 6),
+        "cells": cells, "bar": 0.95, "passes": bool(headline["dsr"] > 0.95),
+    }

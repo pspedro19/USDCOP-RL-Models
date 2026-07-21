@@ -285,6 +285,18 @@ MAX_DAILY_LOSS_PCT: Final[float] = 0.05         # 5%
 MAX_DAILY_TRADES: Final[int] = 20
 MAX_DRAWDOWN_PCT: Final[float] = 0.15           # 15% kill switch
 
+# Leverage. There was NO explicit leverage constant anywhere in this file (audit 2026-07-21);
+# leverage was bounded only implicitly, by MAX_POSITION_SIZE = 1.0. An implicit bound is one
+# refactor away from not being a bound at all, and "we never levered" is not a control.
+#
+# 1.0 = spot only. This is not a tuning parameter: ADR-0008 makes spot-only a design invariant
+# for BTC (exposure in [0,1] on EVERY bar, never short, never levered), and no asset in this
+# system has an OOS-validated edge that would justify levering it. Raising this requires an ADR
+# AND a signed withdrawal protocol whose drawdown trigger accounts for the new exposure --
+# doubling exposure roughly doubles drawdown, and BTC's 11% would land near the 20% retirement
+# trigger on an edge the held-out year did not confirm.
+MAX_LEVERAGE: Final[float] = 1.0
+
 # Circuit breaker
 CONSECUTIVE_LOSS_LIMIT: Final[int] = 5
 COOLDOWN_BARS: Final[int] = 12
