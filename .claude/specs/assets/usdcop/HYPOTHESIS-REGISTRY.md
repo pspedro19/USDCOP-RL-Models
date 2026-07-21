@@ -354,3 +354,33 @@ Combinado con carry al 50%: retorno ≈ igual (+12.5pp) con un tercio menos de d
 está doblemente contaminado). v11 NO se toca (Corte A 2026-09-16 sigue siendo su juez).
 La decisión de abrir v12 es del operador; correrla en paper paralelo a v11 no consume
 más trials hasta abrir resultados forward.
+
+---
+
+## VEREDICTO FUSIONADO tras revisión adversarial de Codex (2026-07-21, 0 trials nuevos)
+
+Codex ejecutó R1-R5 (`codex exec -p audit`, informe en
+`.claude/codex/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`); Claude verificó la
+hipergeométrica de forma independiente (coincide al 4º decimal). Ajustes aceptados:
+
+1. **R1 — El patrón HS se REBAJA de "confirmación" a "consistente/sugestivo"**:
+   19/34 trades tenían lev 2.0; P(5/5 HS en lev-max | azar) = 4.1789% (Fisher bilateral
+   5.26%). La candidata v12 se sostiene por el prior em-fx (techo de cola), no por esta
+   estadística de N=5.
+2. **R2 — El veredicto del cap SOBREVIVE a la composición**: +13.045→+11.810%,
+   maxDD −7.74→−5.21%, ret/|DD| 1.686→2.268. Caveat aceptado: es replay con salidas
+   fijas; el motor real recalcula TP/HS con el leverage → v12 exige corrida de motor,
+   prospectiva.
+3. **R3 — Banda honesta del carry**: bruto +1.95 a +2.83 pp/año; al 50% de pass-through
+   +0.97 a +1.42 pp; **banda de estrés −0.62 a +2.83 pp con signo neto NO identificado**
+   — el swap real depende de tom-next/forward implícito + basis + fee del broker, no de
+   IBR−FFR. Refuerza que H-COP-CARRY-00 (statements reales) es EL gate; el diferencial
+   de tasas era techo, no estimado.
+4. **R4 — week_end confirmado como ruido**: 6 ganadores +2.73pp / 4 perdedores −2.65pp;
+   menor lev, menor Hurst, régimen indeterminado. Ninguna regla nueva.
+5. **R5 — Dos bloqueadores de ingeniería para correr v12 en paralelo** (nuevos, reales):
+   (a) las tablas H5 no tienen `strategy_id` (unicidad por fecha — dos estrategias
+   colisionarían), (b) el pipeline sobreescribe artefactos raíz de v11. Arranque
+   prospectivo tentativo de v12: 2026-07-27, tras resolver ambos.
+
+N sigue en 59; 2025 siguió tratado como contaminado; v11 FROZEN.
