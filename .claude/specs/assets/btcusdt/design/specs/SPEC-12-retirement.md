@@ -1,6 +1,6 @@
 ---
 kind: as-built
-status: PROPOSED
+status: PLANNED
 version: 1.0.0
 last_verified: 2026-07-20
 supersedes: []

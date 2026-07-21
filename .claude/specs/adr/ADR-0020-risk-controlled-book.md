@@ -1,6 +1,6 @@
 ---
 kind: adr
-status: PROPOSED
+status: PLANNED
 contract: CTR-PRODUCT-CLASS-001
 version: 1.0.0
 last_verified: 2026-07-21
