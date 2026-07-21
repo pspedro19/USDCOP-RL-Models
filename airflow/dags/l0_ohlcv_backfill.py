@@ -350,6 +350,16 @@ def fetch_ohlcv_data(symbol: str, start_date: str, end_date: str) -> pd.DataFram
                 if bar_time.tzinfo is None:
                     bar_time = UTC_TZ.localize(bar_time)
                 bar_time = bar_time.astimezone(COT_TZ)
+            elif bar_time.tzinfo is None:
+                # ROOT CAUSE of the tri-convention table (fixed 2026-07-21, CTR-DQ-TZ-001).
+                # TwelveData returns WALL-CLOCK strings in the requested timezone. For COP/MXN
+                # (api_tz=America/Bogota) this datetime is naive COT wall time; inserting it
+                # naive lets postgres read it as UTC — a 12:55 COT close became the instant
+                # 12:55 UTC (07:55 COT, pre-session). 15,865 rows were mislabeled this way and
+                # corrected by scripts/ops/fix_tz_wall_cot_rows.py. BRL never had the bug only
+                # because its UTC-fetch branch above localizes. Localizing to COT here makes
+                # the value a true tz-aware instant; postgres stores instants, not wall times.
+                bar_time = COT_TZ.localize(bar_time)
             records.append({
                 'time': bar_time,
                 'open': float(bar['open']),
