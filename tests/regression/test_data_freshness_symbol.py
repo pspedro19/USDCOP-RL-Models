@@ -37,7 +37,9 @@ def test_freshness_gate_symbol_is_escaped(data_quality, monkeypatch):
     """The symbol must flow into the WHERE clause with single-quote escaping."""
     captured = {}
 
-    def fake_check(conn, table, col, max_age, label, where_clause=None):
+    def fake_check(conn, table, col, max_age, label, where_clause=None, **kwargs):
+        # **kwargs: the gate gained `count="trading"` (holiday fix 2026-07-21); this fake
+        # asserts on WHERE-clause escaping and must not break when the signature grows.
         # Capture per-table so the macro check (no WHERE) doesn't clobber the OHLCV one.
         captured[table] = where_clause
         return "2026-07-01"
