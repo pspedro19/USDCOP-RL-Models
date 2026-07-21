@@ -823,3 +823,35 @@ del motor (flag de candidata, mismo camino que validó a v12). El spec de v13 si
 sellado sin cambios. v12 queda formalmente congelada para el lunes:
 `config/execution/smart_simple_v12_lev_cap.yaml` + `config/strategy_manifests/usdcop_v12.yaml`
 (hash 3bc28b36448892a1).
+
+---
+
+## RE-MEDICIÓN #4 (2026-07-21) — el diseño 2021-2024 con el motor HONESTO es NEGATIVO
+
+Corridas pareadas v11/v12 con el motor actual (purga + fills open-aware) sobre las
+ventanas canónicas — los "+12.1% vs +2.4%" del diseño eran del motor PRE-purga y quedan
+retractados como evidencia (la fuga inflaba precisamente los años de diseño):
+
+| Año | v11 (cap 2.0) | v12 (cap 1.5) |
+|---|---|---|
+| 2021 | −2.53% / DD 4.2 | −2.14% / DD 3.8 |
+| 2022 | −9.05% / DD 9.4 | −9.22% / DD 9.4 |
+| 2023 | −2.54% / DD 6.7 | −2.53% / DD 6.9 |
+| 2024 | −4.19% / DD 8.0 | **+4.60% / DD 3.5** |
+| **Compuesto 21-24** | **−17.22%** | **−9.43%** |
+| 2025 (celda pagada) | +7.35% / DD 7.8 | +7.69% / DD 5.7 |
+
+**Lecturas obligadas:**
+1. **La familia smart_simple NO tiene rentabilidad demostrada en NINGÚN período limpio de
+   diseño** — toda la rentabilidad histórica vive en 2025, el año sobre el que el grid de
+   42 celdas seleccionó. Es la confirmación más fuerte hasta ahora de que el backtest
+   2025 es artefacto de selección (coherente con DSR 0.72<0.95 y NULL-B).
+2. v12 domina a v11 en riesgo en todos los años (DD menor o igual; 2024 positivo; 2025
+   Calmar ~1.36 vs ~0.94) — el cap sigue siendo mejor mecánica — pero "mejor que v11"
+   ya no significa "rentable en diseño".
+3. **El único período positivo limpio es el forward 2026 (+3.36% YTD)** — el juez real.
+   El Corte A (16-sep) y W6 (si NULL-A ≥ v11, la mecánica sin modelo ES la estrategia)
+   pasan a ser el evento central del track.
+4. v12 va a paper el lunes igual (costo cero, menos riesgo que v11); su caso de diseño
+   se re-basa en dominancia de riesgo, no en retorno. Expectativas re-fijadas por escrito.
+0 trials nuevos (re-medición de celdas pagadas con mejor instrumento).
