@@ -547,3 +547,45 @@ re-etiquetado como descriptivo.
 v11 congelada rumbo a su Corte A con los números honestos (+7.66% OOS-2025 purgado,
 +3.36% YTD-2026); v12 al forward con este juez sellado; las palancas de rentabilidad
 inmediata son de infraestructura (colateral ocioso +4.3pp, carry si el swap pasa el gate).
+
+---
+
+## VEREDICTO DE PANEL 4/4 (2026-07-21): ¿más features macro/técnicas? — NO direccional, SÍ a riesgo/carry/N
+
+Cuatro auditores independientes (PhD fin-math Claude, ML Claude, estadística Claude,
+Codex exec-audit) convergieron con cálculos separados. Números triangulados:
+
+- **Techo de detectabilidad**: MDE a N=300 semanas = DA≥57.2% / IC≥0.143 (con maxT
+  familia-6: IC≥0.148-0.20) vs IC plausible de macro semanal 0.02-0.05. Potencia real
+  8-22%. Verificación de IC=0.05: **47.6-49.5 años** (dos cálculos independientes).
+- **El ruido gana**: E[max IC espurio] con 6 candidatas ≈ 0.11 — 2.5× el efecto buscado.
+  "Si una feature sobrevive el screen, la explicación más probable es leakage."
+- **Fundamental Law**: con BR efectivo 34 y TC~0.6, mover el Calmar exige IC≥0.086 —
+  fuera del rango institucional para un solo par EM de sesión 5h.
+- **Valor de +1pt DA ≈ +1.9pp/año** — y es incertificable (297 años para confirmar +1pt).
+
+**Ranking unánime del dinero**: (1) colateral remunerado +4.3-4.5pp [0 trials, venue];
+(2) carry ejecutable +1.0-1.9pp [gate H-COP-CARRY-00, statements]; (3) ejecución honesta
+(stop-market open-aware, carry bidireccional, costos ×2/×3 con dientes); (4) forward
+congelado v11/v12 sin reutilizar 2025; (5) **comprar N, no columnas** (historia mensual
+larga PIT — forwards BanRep desde 1997, remesas desde 2000 — y eventual panel LatAm);
+(6) al final, UN experimento pre-registrado de carry/flujo como tilt/gate.
+
+**Tabla de candidatas (ML, con acuerdo Codex)**: VIVAS = forwards BanRep + TES-extranjeros
+(cantidad/flujo, información nueva; condición dura: vintage PIT; Codex precisa que los
+forwards BanRep son MENSUALES desde 1997 → el estudio legal es mensual de carry/curva,
+no fingir 300 semanas). MUERTAS para dirección = Ecopetrol (≈WTI×COLCAP, canales
+refutados K3/K4), carbón (3er intento del canal ToT), remesas (~60 datos únicos, contenido
+de sorpresa ≈0 a 5d), carry real (canal ya cubierto por H-CARRY-01; infexp-EOF mejora el
+calificador suspect/genuine del gate, 0 trials), stress LatAm (muerta para signo, VIVA
+para magnitud/riesgo).
+
+**La puerta ABIERTA con prior a favor — familia de RIESGO (~5 trials, screening ≤2024,
+bar = batir persistencia en pinball q90, el listón de H-VOLF-01)**: calendario
+BanRep/DANE/FOMC (la persistencia es ciega al calendario POR CONSTRUCCIÓN; 0 datos
+nuevos), vol-of-vol, cola de gap-lunes condicionada (B3), EMBI re-propósito a cola,
+RESINT (riesgo de intervención). Vol se predice con IC 0.3-0.5 → potencia ~100% al N
+actual. Contabilidad por celda (precedente H-CARRY-02 "+1 (+6 sensibilidad)").
+
+GBM/no-lineal y multi-task: muertos a este N (DIR-001 H3 α=−0.096; pooling BLOCKED_DATA).
+N=59 sin cambio — el panel entero fue análisis de diseño, cero variantes miradas.
