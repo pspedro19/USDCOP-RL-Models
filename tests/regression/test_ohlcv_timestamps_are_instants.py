@@ -5,7 +5,9 @@ Contract: CTR-DQ-TZ-001
 Found live on 2026-07-21: `usdcop_m5_ohlcv` mixed THREE timestamp conventions. The realtime
 source stored true instants (session = 13:00-17:55 UTC); the backfill/gap-fill/manual sources
 stored COT WALL CLOCK mislabeled as UTC (session appearing at 08:00-12:55 UTC = pre-dawn
-Bogota instants). 15,865 rows were shifted +5h by `scripts/ops/fix_tz_wall_cot_rows.py`;
+Bogota instants). 15,109 rows were shifted +5h by `scripts/ops/fix_tz_wall_cot_rows.py`
+(+815 collisions and 86 strays deleted = 16,010, matching the immutable backup
+usdcop_m5_ohlcv_tz_backup_20260721 exactly — figure reconciled 2026-07-22, Codex audit P2);
 815 collisions resolved in favor of the instant-true row; 86 off-session strays deleted.
 
 Root cause: TwelveData returns wall-clock strings in the REQUESTED timezone. The COP/MXN

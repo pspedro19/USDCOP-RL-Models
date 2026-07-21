@@ -91,6 +91,12 @@ test-unit: ## Run unit tests only
 	$(PYTEST) tests/unit/ -v --tb=short -m "unit or not (integration or contracts or regression or load or chaos)"
 	@echo "$(GREEN)Unit tests completed!$(RESET)"
 
+restore-features: ## Restore feature-table DATA (m5/native/daily/manifest/news/h5) from data/backups/features (cold-start step 2; schema = init-scripts 043-063)
+	@echo "$(CYAN)Restoring feature tables from data/backups/features...$(RESET)"
+	POSTGRES_HOST=localhost python scripts/ops/backup/feature_data_backup.py --mode restore
+	@echo "$(GREEN)Feature restore done. Refresh matviews: REFRESH MATERIALIZED VIEW market_ohlcv_1h_agg/4h_agg$(RESET)"
+
+
 test-contracts: ## Run contract tests (API contracts, feature contracts)
 	@echo "$(CYAN)Running contract tests...$(RESET)"
 	$(PYTEST) tests/contracts/ tests/unit/test_contracts.py tests/unit/test_gtr_contracts.py tests/unit/test_all_layer_contracts.py -v --tb=short

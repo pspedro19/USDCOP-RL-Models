@@ -23,9 +23,11 @@
 set -u
 PSQL="psql -v ON_ERROR_STOP=0 --username ${POSTGRES_USER} --dbname ${POSTGRES_DB}"
 
-echo "[26-restore] applying feature migrations 043-053 ..."
+echo "[26-restore] applying feature migrations 043-063 ..."
 if [ -d /feature-migrations ]; then
-  for f in $(ls /feature-migrations/04[3-9]_*.sql /feature-migrations/05[0-9]_*.sql 2>/dev/null | sort); do
+  # 06x added 2026-07-22 (Codex audit P0: cold start never applied the canonical
+  # market layer 060-063 — dim_asset/calendar/native/wide views were unreachable)
+  for f in $(ls /feature-migrations/04[3-9]_*.sql /feature-migrations/05[0-9]_*.sql /feature-migrations/06[0-9]_*.sql 2>/dev/null | sort); do
     case "$f" in
       *047_pgvector*) echo "[26-restore] skip $(basename "$f") (optional pgvector)"; continue ;;
     esac
