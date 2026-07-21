@@ -237,3 +237,40 @@ análisis, features futuras) está leyendo basura. Guard de regresión añadido
 Trial pagado (N=58). Con esto y EXP-DIR-001: la dirección COP queda cerrada también con
 líderes cross-asset. Solo quedan vintages PIT (Codex) como fuente de información nueva.
 
+
+---
+
+## H-CARRY-01 (PLANNED 2026-07-22, sin correr — 0 trials hasta ejecutar)
+
+**La única familia de señal NUEVA que la librería de skills respalda y que este registro
+nunca ha probado: carry.** No es dirección-desde-precio (la puerta cerrada con 27+ trials);
+es retorno-si-nada-se-mueve (`xasset-alpha-engine`: evidencia cross-asset en 58 mercados de
+futuros; `currencies-and-fx`: IRP/forward points).
+
+**Datos que lo desbloquean (verificados hoy, calidad 9.7/10)**: IBR overnight (1.800 obs),
+TPM, fed funds/prime diarios en `macro_indicators_daily` CLEAN; funding BTC (ya probado como
+freno, jamás como tilt de cartera); vistas wide con `_t1` como única forma legal.
+
+**Diseño pre-firmado (una variable: el tilt; todo lo demás congelado)**:
+- Señal: carry_col = (IBR − fedfunds) diario, forma _t1, z-score 252d SIN mirar retornos.
+- Aplicación: tilt multiplicativo acotado [0.5×, 1.5×] sobre los pesos ERC del libro
+  (nunca una estrategia nueva; los campeones no se tocan; v11 sigue FROZEN).
+- Ventanas: DISEÑO ≤2024 (con la historia profunda nueva: IBR/prime hasta donde alcancen),
+  UN disparo OOS-2025. Sin grid: el clip [0.5,1.5] y la ventana 252 son priors declarados
+  aquí, antes de mirar dato alguno.
+- Veredicto: Calmar_libro_con_tilt > Calmar_libro (1.271 sin cash / 1.511 con cash, medidos)
+  en OOS-2025 Y DSR trial-aware > 0.95 con N actualizado. Baselines obligatorios: libro sin
+  tilt (B1′ natural), tilt aleatorio mismo clip (tonto), costos ×2.
+- Consecuencia si pasa: candidata a versión nueva del LIBRO → secuencia completa de
+  promoción. Si no pasa: se escribe NO_RECHAZA y carry queda cerrado con 1 trial.
+
+**Rechazado explícitamente en la misma decisión** (0 trials, que quede escrito): re-entrenar
+el zoo de forecasting a horizonte 7 semanas. Razones: (1) dirección cerrada en todos los
+niveles probados (27 trials, mejor celda p_adj=1.0; XLEAD delta 0.0000; FUND −2.2pp);
+(2) 9 modelos × H nuevo = +63 trials contra esa puerta, deflactando todo el programa;
+(3) el zoo es superficie de transparencia (DA≈0.46-0.5 publicado como caveat), no fuente de
+edge — quant-constitution §1: mirar el OOS para elegir horizonte es el grid que COP ya pagó.
+El "multi-horizonte" honesto disponible es de ROBUSTEZ, no de señal: replay de la mecánica
+campeona congelada sobre las décadas nuevas de diseño (Oro 1979-2019, COP post-1991-2019)
+con pass/fail pre-firmado — registrado como H-ROBUST-DECADES-01 (PLANNED) en cada activo
+cuando se decida pagarlo.
