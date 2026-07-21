@@ -186,7 +186,25 @@ def main() -> int:
        +count(macro_impusd)+count(macro_cci)+count(macro_ici)
         FROM market_macro_monthly_wide""")
     comp = min(1.0, n / months)
-    cell_rate = cells / (15 * n)
+    # cell fill INSIDE each series' own [first_obs, last_obs] span: a 2003-2026 grid
+    # must not count cells before a series existed as "invalid" (expectation mismatch,
+    # same lesson as BRL). Gaps WITHIN a live series are what validity punishes.
+    series_cols = ["macro_fedfunds", "macro_cpi_usa", "macro_pce_usa", "macro_unrate",
+                   "macro_indpro", "macro_m2_usa", "macro_umcsent", "macro_ipc_col",
+                   "macro_itcr", "macro_resint", "macro_tot", "macro_expusd",
+                   "macro_impusd", "macro_cci", "macro_ici"]
+    rates = []
+    for c in series_cols:
+        cur.execute(f"""SELECT count({c}),
+            (SELECT count(*) FROM market_macro_monthly_wide
+             WHERE month_start BETWEEN x.f AND x.l)
+            FROM (SELECT min(month_start) f, max(month_start) l
+                  FROM market_macro_monthly_wide WHERE {c} IS NOT NULL) x,
+                 market_macro_monthly_wide LIMIT 1""")
+        got, span = cur.fetchone()
+        if span:
+            rates.append(got / span)
+    cell_rate = sum(rates) / len(rates) if rates else 0.0
     fresh = freshness_score((now - datetime(last.year, last.month, 1,
                                             tzinfo=timezone.utc)).total_seconds(),
                             120 * 86400)
