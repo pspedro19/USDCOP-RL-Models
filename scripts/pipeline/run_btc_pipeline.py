@@ -57,6 +57,29 @@ def _load_publisher():
     return mod
 
 
+
+def _champion_strategy_id(*, asset_id: str = "btcusdt", default: str) -> str:
+    """The asset's live strategy per the published registry.
+
+    Falls back to `default` only if the registry is unreadable -- never silently, because
+    exporting production files for a strategy that is no longer the champion means the forward
+    ledger accumulates evidence for something nobody runs.
+    """
+    import json as _j
+    reg = (REPO / "usdcop-trading-dashboard" / "public" / "data" / "registry.json")
+    try:
+        rows = _j.loads(reg.read_text(encoding="utf-8"))["strategies"]
+        live = [r["strategy_id"] for r in rows
+                if r.get("asset_id") == asset_id and r.get("status") != "archived"]
+        if len(live) == 1:
+            return live[0]
+        print(f"  [prod] registry lists {len(live)} live strategies for {asset_id}: {live}")
+    except Exception as e:  # noqa: BLE001
+        print(f"  [prod] registry unreadable ({e})")
+    print(f"  [prod] falling back to {default}")
+    return default
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", default="seeds/latest/btcusdt_daily_ohlcv.parquet")
@@ -197,8 +220,17 @@ def main() -> int:
         import json as _json
         from datetime import datetime as _dt, timezone as _tz
 
-        sid = "btc_trend_b2"
+        # Champion resolved from the registry, not hardcoded. This said `sid = "btc_trend_b2"`,
+        # so when the champion moved to btc_hodl_b1 on OOS evidence (+4.70% in the held-out
+        # year vs -1.37%), production kept exporting the ARCHIVED strategy -- the paper trail
+        # would have been accumulating 26 weeks of forward evidence for something nobody was
+        # running. A hardcoded champion is a champion that cannot be changed.
+        sid = _champion_strategy_id(default="btc_trend_b2")
+        if sid not in results:
+            print(f"  [prod] champion {sid} not among computed strategies; skipping export")
+            return 0
         res, _ptype, name = results[sid]
+        print(f"  [prod] exporting champion: {sid}")
         pos = st.build_positions(feat, st.STRATEGIES[sid][1], target_vol=a.target_vol)
         res26 = bt.run_backtest(pos, sid, name, year=a.year, bh_df=bh, oos_year=2026)
         oos26 = (res26["summary"].get("oos") or {})

@@ -1,0 +1,40 @@
+{
+  "strategy_id": "btc_hodl_b1",
+  "strategy_name": "Bitcoin · HODL vol-targeted (B1)",
+  "year": 2026,
+  "mode": "paper",
+  "chart_symbol": "BTCUSDT",
+  "frozen_version": "1.2.1",
+  "generated_at": "2026-07-21T01:53:14.481242+00:00",
+  "strategies": {
+    "btc_hodl_b1": {
+      "final_equity": 9786.0,
+      "total_return_pct": -2.14,
+      "sharpe": null,
+      "max_dd_pct": 10.89,
+      "win_rate_pct": null,
+      "profit_factor": null,
+      "trading_days": 201,
+      "exit_reasons": {},
+      "n_long": 0,
+      "n_short": 0,
+      "calmar": null,
+      "insufficient_trades": true
+    }
+  },
+  "statistical_tests": {
+    "p_value": null,
+    "significant": false,
+    "bootstrap_95ci_ann": null,
+    "sharpe_per_period": null,
+    "skew": 0.168,
+    "kurtosis": 6.2321,
+    "n_obs": 201,
+    "psr": null,
+    "insufficient_trades": true,
+    "min_trades_for_stats": 20
+  },
+  "withdrawal_protocol": ".claude/specs/assets/btcusdt/WITHDRAWAL-PROTOCOL-BTC.md",
+  "n_trades": 0,
+  "insufficient_trades": true
+}

@@ -1,0 +1,12 @@
+{
+  "strategy_id": "btc_hodl_b1",
+  "strategy_name": "Bitcoin · HODL vol-targeted (B1)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "trades": [],
+  "summary": {
+    "total_trades": 0,
+    "win_rate": null,
+    "profit_factor": null
+  }
+}

@@ -15,30 +15,11 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "1.0.0",
+    "version": "1.2.1",
     "year": 2026,
-    "generated_at": "2026-07-20T22:41:28.120344+00:00"
+    "generated_at": "2026-07-21T01:53:13.496217+00:00"
   },
   "backtests": [
-    {
-      "model_version": "1.2.1",
-      "year": 2026,
-      "immutable_id": "btc_trend_volbrk_s5__1.2.1__2026",
-      "summary": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/summary_2026.json",
-      "trades": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/trades_2026.json",
-      "signals": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/signals_2026.json",
-      "replayable": true,
-      "gates": {
-        "passed": 5,
-        "of": 5,
-        "recommendation": "PROMOTE"
-      },
-      "headline": {
-        "return_pct": 351.14,
-        "sharpe": 1.43,
-        "p_value": 0.0
-      }
-    },
     {
       "model_version": "1.0.0",
       "year": 2026,
@@ -57,13 +38,32 @@
         "sharpe": 1.427,
         "p_value": 0.0
       }
+    },
+    {
+      "model_version": "1.2.1",
+      "year": 2026,
+      "immutable_id": "btc_trend_volbrk_s5__1.2.1__2026",
+      "summary": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/summary_2026.json",
+      "trades": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/trades_2026.json",
+      "signals": "strategies/btc_trend_volbrk_s5/backtests/1.2.1/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 351.14,
+        "sharpe": 1.427,
+        "p_value": 0.0
+      }
     }
   ],
   "production": null,
   "approval": null,
   "model_versions": [
     {
-      "version": "1.2.1",
+      "version": "1.0.0",
       "active": false,
       "trained_at": null,
       "train_window": null,
@@ -72,7 +72,7 @@
       "artifact_uri": null
     },
     {
-      "version": "1.0.0",
+      "version": "1.2.1",
       "active": true,
       "trained_at": null,
       "train_window": null,

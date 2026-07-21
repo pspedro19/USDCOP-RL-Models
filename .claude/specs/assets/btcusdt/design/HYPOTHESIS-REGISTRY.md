@@ -9,12 +9,13 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA (ver §"Conteo para el DSR" abajo, que da la fórmula
 # pero nunca su resultado). `scripts/analysis/profitability_evidence.py` lo lee de aquí y
 # lanza excepción si falta — el DSR no puede depender de un número hardcodeado en el código.
-n_trials_total: 31
-n_trials_scenarios: [21, 31, 45]   # solo registro / registro+sensibilidades / +descartados
+n_trials_total: 32
+n_trials_scenarios: [21, 32, 46]   # solo registro / registro+sensibilidades / +descartados
 n_trials_sources:
   - "Registro principal de este archivo: 21 filas (H-xxx)"
   - "Sensibilidades pre-registradas: σ_objetivo 3 + banda 3 + pesos R 3 + re-versión LLM ≥1"
   - "public/data/strategies/btc_*/backtests/* = 16 bundles publicados (suelo de verificación)"
+  - "H-VOL-01 EWMA sizing (registrada 2026-07-21, prospectiva): +1"
 sigma_trials: null
 sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
 ---
@@ -97,3 +98,64 @@ bate a B2 en Sharpe+Calmar). El freno por funding reduce levemente el DD pero no
 OOS ⇒ **NO se promueve**; se documenta como "funding-brake solo no rescata el año lateral".
 Siguiente palanca: z_ciclo on-chain (H-REG-01/H-BTC-CYCLE-02) — requiere extractor on-chain (B3).
 Trial añadido: +1 (N=4).
+
+---
+
+## H-VOL-01 — EWMA/RiskMetrics como estimador de volatilidad para el sizing
+
+**Registrada 2026-07-21, ANTES de implementarla.** Skill aplicada:
+`vendor/quant-skills/04-backtesting-validation/volatility-modeling`.
+
+**Motivación (mecánica, no de resultados)**: el sizer usa `realized_vol_20` — una media móvil
+simple de 20 días con pesos iguales. La skill señala el defecto: una ventana con pesos iguales
+trata un shock de hace 20 días igual que el de ayer, y luego lo **descarta de golpe** cuando
+sale de la ventana. EWMA de RiskMetrics (`σ²_t = λ·σ²_{t-1} + (1−λ)·r²_{t-1}`, λ=0.94 diario,
+ventana efectiva ≈ 17d) decae de forma suave.
+
+Esto NO es una búsqueda de señal: no toca `intent`, solo el estimador que alimenta
+`vol_target_size`. Es exactamente la palanca que la librería sí sanciona — riesgo y exposición,
+nunca dirección.
+
+- **H0**: `Calmar(BTC con σ_EWMA) ≤ Calmar(BTC con realized_vol_20)`.
+- **H1**: EWMA mejora el Calmar al reaccionar antes a los cambios de régimen de vol.
+- **Estadístico**: ΔCalmar por block bootstrap pareado (bloque 20d, 365/año, 5000 muestras).
+- **Criterio**: IC95 excluye cero **en el forward**.
+- **λ = 0.94 fijo**, el estándar de RiskMetrics. **No se barre λ**: barrer sería grid search
+  sobre el test, y cada celda costaría un trial.
+
+**Un solo cambio de variable** (`experiment-protocol` regla 1): el estimador de volatilidad.
+Nada más se toca.
+
+**Advertencia honesta esperada**: EWMA es IGARCH (α+β=1) — los shocks de vol **persisten
+indefinidamente**, sin reversión a la media. En un activo con vol tan mean-reverting como BTC
+eso puede dejar el tamaño demasiado bajo demasiado tiempo tras un shock. Es una razón real por
+la que esto puede EMPEORAR el Calmar, y se reporta pase lo que pase.
+
+**Coste en trials**: +1. `n_trials_total` 31 → 32.
+
+### Resultado H-VOL-01 (2026-07-21) — **NO_RECHAZA H0**
+
+| Ventana | realized_vol_20 | EWMA λ=0.94 |
+|---|---|---|
+| Historia completa · ann | 20.56% | 21.12% |
+| Historia completa · MaxDD | −54.61% | −52.57% |
+| Historia completa · **Calmar** | 0.376 | **0.402** |
+| **OOS-2025 · ann** | −5.09% | **−7.56%** |
+| **OOS-2025 · Calmar** | −0.198 | **−0.286** |
+
+`ΔCalmar(EWMA, base)` = **+0.026 observado**, bootstrap +0.030, **IC95 [−0.096, +0.174] —
+incluye cero**.
+
+**Veredicto: H0 NO se rechaza.** EWMA mejora marginalmente el Calmar sobre la historia completa,
+pero (a) la mejora no es distinguible de cero y (b) **en el año held-out es peor** (−0.286 vs
+−0.198).
+
+**La advertencia pre-registrada se cumplió.** Escribí antes de correrlo que EWMA es IGARCH
+(α+β=1), así que los shocks de volatilidad persisten sin reversión a la media, y que en un
+activo con vol tan mean-reverting como BTC eso podía dejar el tamaño suprimido demasiado tiempo.
+Es exactamente lo que pasó en el 2025 lateral: EWMA mantuvo la exposición baja tras los shocks
+y se perdió el rebote.
+
+**Acción**: `realized_vol_20` se mantiene. El estimador EWMA queda en
+`services/common/metrics.py::ewma_volatility` como herramienta disponible, **no cableado al
+sizer**. Trial contabilizado (N=32) — el coste de mirar se paga aunque el resultado sea negativo.

@@ -3,7 +3,7 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin · HODL vol-targeted (B1)",
+  "display_name": "Bitcoin \u00b7 HODL vol-targeted (B1)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
   "status": "experimental",
@@ -15,9 +15,9 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "1.0.0",
+    "version": "1.2.1",
     "year": 2026,
-    "generated_at": "2026-07-20T22:41:28.120344+00:00"
+    "generated_at": "2026-07-21T01:53:13.496217+00:00"
   },
   "backtests": [
     {
@@ -59,12 +59,12 @@
       }
     },
     {
-      "model_version": "1.2.1",
+      "model_version": "1.0.0",
       "year": 2026,
-      "immutable_id": "btc_hodl_b1__1.2.1__2026",
-      "summary": "strategies/btc_hodl_b1/backtests/1.2.1/summary_2026.json",
-      "trades": "strategies/btc_hodl_b1/backtests/1.2.1/trades_2026.json",
-      "signals": "strategies/btc_hodl_b1/backtests/1.2.1/signals_2026.json",
+      "immutable_id": "btc_hodl_b1__1.0.0__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.0.0/trades_2026.json",
+      "signals": "strategies/btc_hodl_b1/backtests/1.0.0/signals_2026.json",
       "replayable": true,
       "gates": {
         "passed": 4,
@@ -72,18 +72,18 @@
         "recommendation": "REVIEW"
       },
       "headline": {
-        "return_pct": 274.18,
+        "return_pct": 276.16,
         "sharpe": 0.793,
-        "p_value": 0.0274
+        "p_value": 0.0242
       }
     },
     {
-      "model_version": "1.0.0",
+      "model_version": "1.2.1",
       "year": 2026,
-      "immutable_id": "btc_hodl_b1__1.0.0__2026",
-      "summary": "strategies/btc_hodl_b1/backtests/1.0.0/summary_2026.json",
-      "trades": "strategies/btc_hodl_b1/backtests/1.0.0/trades_2026.json",
-      "signals": "strategies/btc_hodl_b1/backtests/1.0.0/signals_2026.json",
+      "immutable_id": "btc_hodl_b1__1.2.1__2026",
+      "summary": "strategies/btc_hodl_b1/backtests/1.2.1/summary_2026.json",
+      "trades": "strategies/btc_hodl_b1/backtests/1.2.1/trades_2026.json",
+      "signals": "strategies/btc_hodl_b1/backtests/1.2.1/signals_2026.json",
       "replayable": true,
       "gates": {
         "passed": 4,
@@ -119,7 +119,7 @@
       "artifact_uri": null
     },
     {
-      "version": "1.2.1",
+      "version": "1.0.0",
       "active": false,
       "trained_at": null,
       "train_window": null,
@@ -128,7 +128,7 @@
       "artifact_uri": null
     },
     {
-      "version": "1.0.0",
+      "version": "1.2.1",
       "active": true,
       "trained_at": null,
       "train_window": null,

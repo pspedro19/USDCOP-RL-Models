@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-21T01:44:33.714884+00:00",
+  "generated_at": "2026-07-21T01:53:13.496217+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -44,7 +44,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.2.1",
       "return_pct": 124.36,
       "sharpe": 0.618,
       "p_value": 0.0566
@@ -62,7 +62,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.2.1",
       "return_pct": 276.16,
       "sharpe": 0.793,
       "p_value": 0.0242
@@ -80,7 +80,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.2.1",
       "return_pct": 351.16,
       "sharpe": 1.396,
       "p_value": 0.0
@@ -98,7 +98,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.2.1",
       "return_pct": 256.92,
       "sharpe": 1.329,
       "p_value": 0.0002
@@ -116,7 +116,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.2.1",
       "return_pct": 351.14,
       "sharpe": 1.427,
       "p_value": 0.0

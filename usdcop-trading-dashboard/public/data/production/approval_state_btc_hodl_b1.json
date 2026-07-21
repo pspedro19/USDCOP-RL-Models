@@ -1,75 +1,78 @@
 {
   "status": "PENDING_APPROVAL",
-  "strategy": "gold_trend_simple",
-  "strategy_name": "Gold · Trend simple (voto SMA, sin trailing exit)",
-  "backtest_year": 2025,
+  "strategy": "btc_hodl_b1",
+  "strategy_name": "Bitcoin · HODL vol-targeted (B1)",
+  "backtest_year": 2026,
   "backtest_recommendation": "REVIEW",
-  "backtest_confidence": 0.8,
+  "backtest_confidence": 0.67,
   "gates": [
     {
       "gate": "min_return_pct",
       "label": "Retorno Minimo",
-      "value": 45.4,
+      "value": 276.16,
       "threshold": -15.0,
       "passed": true
     },
     {
       "gate": "min_sharpe_ratio",
       "label": "Sharpe Minimo",
-      "value": 3.185,
+      "value": 0.793,
       "threshold": 0.0,
       "passed": true
     },
     {
       "gate": "max_drawdown_pct",
       "label": "Max Drawdown",
-      "value": 4.11,
-      "threshold": 20.0,
+      "value": 34.3,
+      "threshold": 40.0,
       "passed": true
     },
     {
       "gate": "min_trades",
       "label": "Trades Minimos",
-      "value": 0,
+      "value": 1,
       "threshold": 10,
       "passed": false
     },
     {
       "gate": "statistical_significance",
       "label": "Significancia (p<0.05)",
-      "value": 0.0,
+      "value": 0.0242,
       "threshold": 0.05,
       "passed": true
+    },
+    {
+      "gate": "deflated_sharpe",
+      "label": "DSR trial-aware (>0.95)",
+      "passed": false,
+      "value": 0.8357,
+      "threshold": 0.95
     }
   ],
   "backtest_metrics": {
-    "return_pct": 45.4,
-    "sharpe": 3.185,
-    "calmar": 10.751,
-    "max_dd_pct": 4.11,
-    "p_value": 0.0,
-    "trades_2025": 0,
-    "full_calmar": 0.242,
-    "dsr": 0.0033,
-    "beats_b1_prime": true
+    "return_pct": 276.16,
+    "sharpe": 0.793,
+    "calmar": 0.508,
+    "max_dd_pct": 34.3,
+    "p_value": 0.0242,
+    "oos_2025_return_pct": 4.7
   },
-  "verdict_notes": [
-    "DSR 0.0033 < 0.95 (trial-aware, N=75) — sin claim de alfa"
-  ],
   "deploy_manifest": {
     "pipeline_type": "rule_based",
-    "script": "scripts/pipeline/publish_gold_dynexit.py",
+    "script": "scripts/pipeline/run_btc_pipeline.py",
     "args": [
+      "--phase",
+      "production",
       "--version",
-      "1.0.0"
+      "1.2.1"
     ],
-    "config_path": "config/assets/xauusd.yaml",
+    "config_path": "config/assets/btcusdt.yaml",
     "db_tables": [],
     "mode": "paper"
   },
   "approved_by": null,
   "approved_at": null,
   "reviewer_notes": null,
-  "created_at": "2026-07-21T01:35:52.624784+00:00",
-  "last_updated": "2026-07-21T01:44:33.756422+00:00"
+  "created_at": "2026-07-21T01:53:14.481242+00:00",
+  "last_updated": "2026-07-21T01:53:14.481242+00:00"
 }

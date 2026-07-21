@@ -735,3 +735,38 @@ def dsr_report(sharpe_per_period: float, n_obs: int, n_trials: int, *,
         "sharpe_per_period": round(float(sharpe_per_period), 6),
         "cells": cells, "bar": 0.95, "passes": bool(headline["dsr"] > 0.95),
     }
+
+
+def ewma_volatility(returns, lam: float = 0.94, periods_per_year: int = 365,
+                    seed_window: int = 20) -> np.ndarray:
+    """RiskMetrics EWMA volatility, annualized. sigma^2_t = lam*sigma^2_{t-1} + (1-lam)*r^2_{t-1}.
+
+    Skill: vendor/quant-skills/04-backtesting-validation/volatility-modeling.
+
+    Why this over a rolling window: an equal-weighted 20-day window treats a shock from 20 days
+    ago exactly like yesterday's, then drops it off a cliff when it leaves the window. EWMA
+    decays smoothly. Effective window is ~1/(1-lam) = 17 days at lam=0.94, the RiskMetrics daily
+    standard.
+
+    Honest caveat the skill itself raises: EWMA is IGARCH (alpha+beta=1), so vol shocks persist
+    INDEFINITELY with no mean reversion. For an asset whose volatility mean-reverts hard, that
+    can keep position size suppressed long after the shock has passed. This is a real reason it
+    may perform WORSE than a rolling window, not a footnote.
+
+    Strictly causal: sigma_t uses returns up to t-1 only, so it can size the bar at t.
+    """
+    r = np.asarray(returns, dtype=float)
+    r = np.nan_to_num(r, nan=0.0)
+    n = len(r)
+    if n == 0:
+        return np.zeros(0)
+
+    out = np.empty(n)
+    seed = r[:min(seed_window, n)]
+    var = float(np.var(seed, ddof=0)) if seed.size else 0.0
+    if var <= 0:
+        var = float(np.var(r, ddof=0)) or 1e-8
+    for i in range(n):
+        out[i] = np.sqrt(var * periods_per_year)   # sigma_t, built from r_{<t}
+        var = lam * var + (1.0 - lam) * (r[i] ** 2)
+    return out
