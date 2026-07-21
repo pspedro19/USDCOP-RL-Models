@@ -211,6 +211,7 @@ RECONCILIATION_DAILY = "reconciliation_daily"
 RBAC_ENTITLEMENTS_DAILY = "rbac_entitlements_daily"
 FORECAST_WEEKLY_GENERATION = "forecast_weekly_generation"
 FORECAST_ASSET_ANALYSIS_WEEKLY = "forecast_asset_analysis_weekly"
+FORWARD_LEDGER_WEEKLY = "forward_ledger_weekly"  # Fri 19:00 UTC forward-evidence ledger (2026-07-21)
 
 # Config-driven, emitted per enabled asset by airflow/dags/asset_pipeline_factory.py
 # from config/assets/pipelines.yaml — never hardcode; derive with get_asset_dag_ids().
@@ -526,6 +527,7 @@ def get_all_dag_ids() -> List[str]:
         RBAC_ENTITLEMENTS_DAILY,
         FORECAST_WEEKLY_GENERATION,
         FORECAST_ASSET_ANALYSIS_WEEKLY,
+        FORWARD_LEDGER_WEEKLY,
     ]
 
 

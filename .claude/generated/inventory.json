@@ -35,10 +35,11 @@
     ]
   },
   "dags": {
-    "generated_ids": 2,
+    "generated_ids": 3,
     "ids": {
       "analysis_l8_daily_generation": "analysis_l8_daily_generation.py",
       "asset_btcusdt_pipeline_weekly": "asset_pipeline_factory.py",
+      "asset_spx500_pipeline_weekly": "asset_pipeline_factory.py",
       "asset_xauusd_pipeline_weekly": "asset_pipeline_factory.py",
       "core_l0_01_ohlcv_backfill": "l0_ohlcv_backfill.py",
       "core_l0_02_ohlcv_realtime": "l0_ohlcv_realtime.py",
@@ -64,6 +65,7 @@
       "forecast_h5_l7_multiday_executor": "forecast_h5_l7_multiday_executor.py",
       "forecast_l3_01_model_training": "l3b_forecasting_training.py",
       "forecast_weekly_generation": "forecast_weekly_generation.py",
+      "forward_ledger_weekly": "forward_ledger_weekly.py",
       "news_alert_monitor": "news_alert_monitor.py",
       "news_daily_pipeline": "news_daily_pipeline.py",
       "news_maintenance": "news_maintenance.py",
@@ -83,9 +85,9 @@
       "rl_l6_01_production_monitor": "l6_production_monitoring.py",
       "rl_l6_02_drift_monitor": "mlops_drift_monitor.py"
     },
-    "modules": 43,
-    "static_ids": 43,
-    "total_ids": 45
+    "modules": 44,
+    "static_ids": 44,
+    "total_ids": 47
   },
   "frontend": {
     "api_routes": 93,
@@ -101,11 +103,12 @@
     ],
     "agents": 3,
     "rules": 9,
-    "rules_bytes": 23083,
-    "rules_words": 3133,
+    "rules_bytes": 23363,
+    "rules_words": 3154,
     "skill_names": [
       "approval-cycle",
       "bet-sizing",
+      "browser-use",
       "commodities",
       "contract-change",
       "currencies-and-fx",
@@ -122,22 +125,25 @@
       "release-and-rollback",
       "return-calculations",
       "run-experiment",
+      "security-testing",
       "spec-sync",
       "stack-operations",
       "statistics-fundamentals",
       "volatility-modeling",
+      "webapp-testing",
       "weekly-verify",
       "xasset-alpha-engine"
     ],
-    "skills": 24,
-    "specs": 106
+    "skills": 27,
+    "specs": 110
   },
   "migrations": {
-    "count": 47,
+    "count": 52,
     "latest": "rollback_033_event_triggers.sql"
   },
   "specs_tree": [
     ". (2)",
+    "adr/ (2)",
     "archive/2026-07/ (10)",
     "assets/ (5)",
     "assets/btcusdt/ (2)",
@@ -146,8 +152,9 @@
     "assets/btcusdt/design/adr/ (6)",
     "assets/btcusdt/design/specs/ (13)",
     "assets/btcusdt/specs/ (1)",
+    "assets/spx500/ (1)",
     "assets/usdcop/ (3)",
-    "assets/xauusd/ (2)",
+    "assets/xauusd/ (3)",
     "assets/xauusd/adr/ (1)",
     "assets/xauusd/specs/ (13)",
     "audit/ (3)",

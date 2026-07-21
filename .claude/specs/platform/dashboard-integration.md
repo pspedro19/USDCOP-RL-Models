@@ -522,6 +522,23 @@ The `ForecastingBacktestSection` component renders at the top of `/dashboard`, b
 
 ---
 
+## Vistas canónicas de mercado (CTR-MKT-CANON-001, migraciones 060/061/062)
+
+> Capa de consumo SQL para frontend/reporting/modelos. **El SSOT físico no se toca**
+> (`usdcop_m5_ohlcv`, `asset_daily_ohlcv`, `macro_indicators_{daily,monthly,quarterly}`);
+> todo lo canónico son VIEWS — cerrado no se almacena, staleness no se congela, y añadir
+> un activo es ALTER VIEW.
+
+| Objeto | Tipo | Qué da |
+|---|---|---|
+| `dim_asset` / `market_session_calendar` | tablas | 4 activos + calendario 2020-2027 (Colombia `TradingCalendar`, NYSE con DST resuelto a instantes UTC). El calendario es EL árbitro de cerrado-vs-faltante. Seed: `scripts/ops/seed_session_calendar.py` |
+| `market_ohlcv_5m` / `market_ohlcv_daily` | views largas | contrato por barra: `asset_id, bar_start_utc, bar_end_utc, timestamp_cot, session_date_local` (diaria **anclada en UTC** — invariante #1 de gobernanza), `bar_origin` (native/backfill/snapshot), `available_at` (NULL histórico = honesto), `quality_status` (coherencia OHLC, computado) |
+| `market_ohlcv_1h_agg` / `4h_agg` | matviews | agregados desde M5 con `n_m5_bars` expuesto (alimenta `partial`); REFRESH vía DAGs |
+| `market_ohlcv_{5m,1h,4h,daily}_wide` | views wide | clave `bar_start_utc`; por activo: OHLCV + `source`/`bar_origin`/`is_session_bar`/`staleness_seconds` (vivo, desde `now()`) + `status` ∈ `closed·ok·partial·missing·pending·incoherent·no_native_data`. **`closed`≠`missing`**: 2026-07-20 lee `usdcop=closed, btcusdt=ok`; hoy-sin-barra-diaria = `pending`, nunca falso `missing`. SPX sin intradía → `no_native_data` (no se fabrica microestructura). La diaria incluye las 17 macros CLEAN en forma as-of y `_t1` (única forma legal para modelos); MXN/CLP excluidas (corrupción ×10⁴, guard en CI) |
+| `market_macro_monthly_wide` / `quarterly_wide` | views wide | frecuencia nativa (nunca ffill cruzando frecuencias). PIT: `available_from_conservative = COALESCE(publication_date, ancla+3 meses)` — el join de modelo va por ahí, no por el mes de referencia (el IPC de junio no es conocible el 30 de junio). Seed: `scripts/ops/seed_macro_monthly.py` (normaliza anclas mixtas US-inicio/COL-fin de mes) |
+
+Guardas: `tests/regression/test_wide_views.py` (estructurales siempre; DB-backed con stack arriba).
+
 ## Related Specs
 
 - `mlops-lifecycle.md` — **Master lifecycle document** (Stages 0-7)

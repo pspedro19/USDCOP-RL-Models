@@ -33,5 +33,13 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: 6624b7798a044579
+code_hash_sha256_16: d4c8af5fc7db7fb5
 manifest_frozen_at: '2026-07-21'
+manifest_version: 2
+refreeze_note: >-
+  Re-freeze consciente 2026-07-21 (v2): (1) enhance_v2.py gano include_xlead
+  (default False -> señal v11 bit-identica; el experimento H-COP-XLEAD-01 ya
+  esta contado como trial en el HYPOTHESIS-REGISTRY, delta DA = 0.0000);
+  (2) train_and_export gano el gate 6 DSR trial-aware y la supresion N<20 —
+  gobernanza de promocion, no toca la generacion de señal. Cero cambios de
+  comportamiento en produccion; v11 sigue FROZEN, juez = forward 2026.
