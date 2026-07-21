@@ -151,3 +151,23 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase both
 | Schedule de DAGs (SSOT) | `elite-operations.md` |
 | Backup y restore | `../data/backup-recovery.md` |
 | Gobernanza L0 | `../../rules/data-governance.md` |
+
+---
+
+## Caso registrado 2026-07-21: el gate es ciego a festivos (no es un fallo de datos)
+
+**Síntoma**: martes 2026-07-21 pre-sesión, OHLCV staleness = 4 días > umbral 3 → H5-L3
+bloqueado. Backfill corrido: `success`, 0 barras nuevas para el 2026-07-20.
+
+**Causa**: el lunes 20 de julio es **festivo nacional en Colombia** (Independencia). No hay
+barras del lunes porque el mercado no abrió — el detector de gaps lo sabe (no marcó el 07-20
+como hueco) pero **el gate de frescura cuenta días calendario**, así que
+viernes→sábado→domingo→festivo = 4 días y bloquea aunque no falte ni una barra.
+
+**Regla operativa**: tras un festivo colombiano en lunes, el gate bloqueará todo el martes
+hasta que la sesión de ese día ingiera (13:05 UTC aprox. la primera barra vía
+`core_l0_02_ohlcv_realtime`). **No es un incidente y no se "recupera"**: no hay dato que
+traer. NO relajar el umbral (data-freshness.md es SSOT; cambiarlo pide ADR) — la corrección
+estructural sería contar días *hábiles del calendario colombiano* en
+`utils/data_quality.validate_training_data_freshness`, que hoy recibe `ohlcv_max_age=3`
+calendario.
