@@ -62,6 +62,8 @@ Usage:
 """
 from __future__ import annotations
 
+import pathlib
+
 import argparse
 import importlib
 import json
@@ -75,20 +77,41 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 OUT_ROOT = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "forecasting"
 
 # Per-asset science-stack wiring (SSOT for what differs; the logic is identical in shape).
+def _champion(asset_id: str, default: str) -> str:
+    """Primary strategy from the champion authority, not a literal.
+
+    Both entries below said `"primary": "btc_trend_b2"` / `"gold_trend_b2"` -- hardcoded at
+    write time and never revisited, so after the champions moved (hodl_b1 by OOS evidence,
+    trend_simple by exposure-matching) the weekly inference JSON kept presenting the DETHRONED
+    strategy as primary on the dashboard. A hardcoded champion is a champion that cannot
+    change.
+    """
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "normalize_champions",
+            pathlib.Path(__file__).resolve().parent / "normalize_champions.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.CHAMPION_BY_ASSET.get(asset_id, default)
+    except Exception:  # noqa: BLE001 - a broken import must not kill the forecast
+        return default
+
+
 ASSETS: dict[str, dict] = {
     "xauusd": {
         "pkg": "src.gold_rl", "display_name": "Oro (Gold)", "symbol": "XAU/USD",
         "chart_symbol": "XAUUSD", "asset_class": "commodity",
         "seed": "seeds/latest/xauusd_daily_ohlcv.parquet",
         "dwell": 4, "warmup": 252, "target_vol": 0.10, "cap": 1.5, "size_kw": "max_leverage",
-        "dir_col": "direction", "primary": "gold_trend_b2",
+        "dir_col": "direction", "primary": _champion("xauusd", "gold_trend_simple"),
     },
     "btcusdt": {
         "pkg": "src.btc_strategy", "display_name": "Bitcoin", "symbol": "BTC/USDT",
         "chart_symbol": "BTCUSDT", "asset_class": "crypto",
         "seed": "seeds/latest/btcusdt_daily_ohlcv.parquet",
         "dwell": 5, "warmup": 250, "target_vol": 0.30, "cap": 1.0, "size_kw": "max_exposure",
-        "dir_col": "intent", "primary": "btc_trend_b2",
+        "dir_col": "intent", "primary": _champion("btcusdt", "btc_hodl_b1"),
     },
 }
 

@@ -116,3 +116,22 @@ def direction_dxy_tilt_s07(df: pd.DataFrame) -> pd.Series:
 STRATEGIES["gold_dxy_tilt"] = ("Gold · B1 + tilt DXY (prior 0.6)", direction_dxy_tilt, "rule_based")
 STRATEGIES["gold_dxy_tilt_s05"] = ("Gold · tilt DXY sens 0.5", direction_dxy_tilt_s05, "rule_based")
 STRATEGIES["gold_dxy_tilt_s07"] = ("Gold · tilt DXY sens 0.7", direction_dxy_tilt_s07, "rule_based")
+
+
+# ── GOLD-TREND-SIMPLE (H-SIMP-GOLD-01, campeona por evidencia OOS 2026-07-21) ──
+# La misma señal 2-de-3 del ensemble pero BINARIA (>=2 votos => 1.0), sin trailing exit:
+# quitar el Chandelier llevó el DSR de 0.052 a 0.861 y es la única estrategia del libro que
+# pasa exposición-emparejada en AMBAS ventanas. Registrada aquí para que el ciclo semanal
+# estándar la publique — antes vivía solo en un publisher aparte y cada domingo el DAG
+# republicaba a la familia vieja mientras la campeona quedaba sin refresco.
+# El sizing de build_positions (floor 0.06, target 0.10, cap 1.5) es bit-idéntico al del
+# bundle publicado: una definición, dos consumidores, cero drift.
+def direction_trend_simple(df: pd.DataFrame) -> pd.Series:
+    votes = sum((df["close"] > df["close"].rolling(w).mean()).astype(float)
+                for w in (63, 126, 252))
+    return (votes >= 2).astype(float)  # binaria: dentro o fuera, sin tercios
+
+
+STRATEGIES["gold_trend_simple"] = (
+    "Gold · Trend simple (voto SMA, sin trailing exit)", direction_trend_simple, "rule_based")
+
