@@ -45,11 +45,28 @@ def _colombia_calendar():
 
 
 def _nyse_holidays():
+    """NYSE trading holidays, NOT the federal calendar.
+
+    NYSE = federal MINUS Columbus Day and Veterans Day (the exchange trades both)
+    PLUS Good Friday (closed, but not a federal holiday). Verified against the wide
+    view: the federal calendar mislabeled 8 traded Columbus/Veterans days as closed
+    and 2 Good Fridays as missing.
+    """
     try:
         import holidays
-        return holidays.US(years=range(2020, 2028))
     except ImportError:
-        return {}
+        return set()
+    from dateutil.easter import easter
+
+    fed = holidays.US(years=range(2020, 2028))
+    nyse = {d for d, name in fed.items()
+            if "Columbus" not in name and "Veterans" not in name}
+    nyse |= {easter(y) - timedelta(days=2) for y in range(2020, 2028)}  # Good Friday
+    # Historical quirks (verified against traded bars in the wide view):
+    nyse -= {date(2021, 6, 18)}    # Juneteenth federal since 2021 but NYSE first observed 2022
+    nyse -= {date(2021, 12, 31)}   # NYSE rule: Jan 1 on a Saturday is NOT observed Friday
+    nyse |= {date(2025, 1, 9)}     # national day of mourning (Jimmy Carter) — NYSE closed
+    return nyse
 
 
 def rows() -> list[tuple]:
@@ -127,7 +144,15 @@ def main() -> int:
     spx = pd.read_parquet(REPO / "data/snapshots/public_daily/spx500_daily.parquet")
     spx = spx.rename(columns={"timestamp": "time"}).sort_values("time")
     # Total-return series drives close (SDD-000 §4): using price-only inflates alpha ~1.8%/yr.
+    # Back-adjust the WHOLE bar by the same factor — an adj_close glued onto unadjusted
+    # O/H/L lands outside [low, high] and (correctly) trips the OHLC coherence check in
+    # market_ohlcv_daily (1,498 'incoherent' rows before this fix).
+    factor = spx["adj_close"] / spx["close"]
+    for col in ("open", "high", "low"):
+        spx[col] = spx[col] * factor
     spx["close"] = spx["adj_close"]
+    # Repair path: earlier seeds wrote unadjusted O/H/L; replace SPX rows wholesale.
+    cur.execute("DELETE FROM asset_daily_ohlcv WHERE symbol = 'SPX500'")
     n2 = upsert_daily(spx, "SPX500", "yahoo_snapshot", available_col="available_at")
 
     conn.commit()

@@ -31,6 +31,10 @@ WITH grid AS (
     SELECT * FROM market_ohlcv_daily
 ), cal AS (
     SELECT * FROM market_session_calendar
+), firsts AS (
+    -- Before an asset's first ingested bar there is no incident to report:
+    -- BTC in 2004 is 'no_native_data' (the grid reaches 2004 via XAU), not 'missing'.
+    SELECT asset_id, min(session_date_local) AS first_bar FROM market_ohlcv_daily GROUP BY asset_id
 ), macro AS (
     SELECT fecha,
            fxrt_index_dxy_usa_d_dxy          AS dxy,
@@ -67,18 +71,22 @@ SELECT
         WHEN bool_or(s.st = 'partial') THEN 'partial'
         ELSE 'ok' END
      FROM (VALUES
-        (CASE WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
+        (CASE WHEN g.d < f1.first_bar THEN 'closed'
+              WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
               WHEN p1.close IS NOT NULL THEN 'ok'
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END),
-        (CASE WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
+        (CASE WHEN g.d < f2.first_bar THEN 'closed'
+              WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
               WHEN p2.close IS NOT NULL THEN 'ok'
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END),
-        (CASE WHEN p3.close IS NOT NULL THEN 'ok'
+        (CASE WHEN g.d < f3.first_bar THEN 'closed'
+              WHEN p3.close IS NOT NULL THEN 'ok'
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END),
-        (CASE WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
+        (CASE WHEN g.d < f4.first_bar THEN 'closed'
+              WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
               WHEN p4.close IS NOT NULL THEN 'ok'
               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
               ELSE 'missing' END)
@@ -90,7 +98,8 @@ SELECT
     p1.source AS source_usdcop, p1.bar_origin AS bar_origin_usdcop,
     COALESCE(c1.is_trading_day, false) AS is_session_bar_usdcop,
     EXTRACT(epoch FROM now() - p1.bar_end_utc)::bigint AS staleness_seconds_usdcop,
-    CASE WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
+    CASE WHEN g.d < f1.first_bar THEN 'no_native_data'
+         WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
          WHEN p1.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p1.quality_status <> 'ok' THEN 'incoherent'
@@ -102,7 +111,8 @@ SELECT
     p2.source AS source_xauusd, p2.bar_origin AS bar_origin_xauusd,
     (p2.close IS NOT NULL) AS is_session_bar_xauusd,
     EXTRACT(epoch FROM now() - p2.bar_end_utc)::bigint AS staleness_seconds_xauusd,
-    CASE WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
+    CASE WHEN g.d < f2.first_bar THEN 'no_native_data'
+         WHEN extract(dow FROM g.d) IN (0,6) THEN 'closed'
          WHEN p2.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p2.quality_status <> 'ok' THEN 'incoherent'
@@ -114,7 +124,8 @@ SELECT
     p3.source AS source_btcusdt, p3.bar_origin AS bar_origin_btcusdt,
     true AS is_session_bar_btcusdt,
     EXTRACT(epoch FROM now() - p3.bar_end_utc)::bigint AS staleness_seconds_btcusdt,
-    CASE WHEN p3.close IS NULL THEN
+    CASE WHEN g.d < f3.first_bar THEN 'no_native_data'
+         WHEN p3.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p3.quality_status <> 'ok' THEN 'incoherent'
          ELSE 'ok' END AS status_btcusdt,
@@ -125,7 +136,8 @@ SELECT
     p4.source AS source_spx500, p4.bar_origin AS bar_origin_spx500,
     COALESCE(c4.is_trading_day, false) AS is_session_bar_spx500,
     EXTRACT(epoch FROM now() - p4.bar_end_utc)::bigint AS staleness_seconds_spx500,
-    CASE WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
+    CASE WHEN g.d < f4.first_bar THEN 'no_native_data'
+         WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
          WHEN p4.close IS NULL THEN
               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
          WHEN p4.quality_status <> 'ok' THEN 'incoherent'
@@ -156,6 +168,10 @@ LEFT JOIN px p3 ON p3.asset_id='btcusdt' AND p3.session_date_local = g.d
 LEFT JOIN px p4 ON p4.asset_id='spx500'  AND p4.session_date_local = g.d
 LEFT JOIN cal c1 ON c1.asset_id='usdcop' AND c1.session_date = g.d
 LEFT JOIN cal c4 ON c4.asset_id='spx500' AND c4.session_date = g.d
+LEFT JOIN firsts f1 ON f1.asset_id='usdcop'
+LEFT JOIN firsts f2 ON f2.asset_id='xauusd'
+LEFT JOIN firsts f3 ON f3.asset_id='btcusdt'
+LEFT JOIN firsts f4 ON f4.asset_id='spx500'
 LEFT JOIN macro ma ON ma.fecha = g.d
 WINDOW w AS (ORDER BY g.d);
 
@@ -172,7 +188,8 @@ SELECT
     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
     CASE WHEN p1.close IS NULL AND c1.is_trading_day IS TRUE
-              AND g.bar_start_utc BETWEEN c1.session_open_utc AND c1.session_close_utc
+              AND g.bar_start_utc >= c1.session_open_utc
+              AND g.bar_start_utc < c1.session_close_utc
          THEN 'missing' ELSE 'ok' END               AS availability_status,
 
     p1.open AS open_usdcop, p1.high AS high_usdcop, p1.low AS low_usdcop,
@@ -182,7 +199,18 @@ SELECT
        AND g.bar_start_utc < c1.session_close_utc)  AS is_session_bar_usdcop,
     EXTRACT(epoch FROM now() - (g.bar_start_utc + interval '5 minutes'))::bigint
                                                     AS staleness_seconds_usdcop,
-    CASE WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
+    -- closed = non-trading day OR out-of-session hour on a trading day: a BTC bar at
+    -- 03:00 UTC creates a grid row where COP's NULL is legitimate, not an incident.
+    -- The 12:55 closing bar is IN session (8:00-12:55 inclusive, 60 bars) — hence
+    -- strictly-greater on session_close_utc.
+    -- off_session = bar PRESENT while the calendar says closed (provider quotes
+    -- USD/COP offshore on Colombian holidays, ~12 days/yr): real data, but the
+    -- session-calendar arbiter says the local market did not trade — surfaced
+    -- distinctly instead of a contradictory 'closed'-with-a-price.
+    CASE WHEN c1.is_trading_day IS NOT TRUE
+           OR g.bar_start_utc < c1.session_open_utc
+           OR g.bar_start_utc > c1.session_close_utc THEN
+              CASE WHEN p1.close IS NULL THEN 'closed' ELSE 'off_session' END
          WHEN p1.close IS NULL THEN 'missing'
          WHEN p1.quality_status <> 'ok' THEN 'incoherent' ELSE 'ok' END AS status_usdcop,
 
