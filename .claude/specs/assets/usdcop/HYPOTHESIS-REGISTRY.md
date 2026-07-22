@@ -1447,3 +1447,41 @@ Puertas direccionales COP cerradas a la fecha: modelos individuales (~15), funda
 evidencia en TODAS sus formas probadas.
 Artefactos: `.claude/evidence/meta01_instrument/2026-07-22/` +
 `.claude/evidence/meta01_screen/2026-07-22/` (ledger, tabla de diseño, generators).
+
+
+---
+
+## AUDITORÍA DOBLE DEL STACK DIRECCIONAL (2026-07-22, Codex + Claude, 0 trials)
+
+Codex (funcional/metodológica, 10 hallazgos — review en swarm_codex_reviews/) + Claude
+(recomputo adversarial). VEREDICTO: FUNCIONAL CON ISSUES. Lo sano: purga y scaler del
+walk-forward correctos (sin fuga); agregados de los 3 artefactos consistentes (SHA
+idénticos, recomputo coincide); replay sin look-ahead de labels; RBAC bloquea anónimos.
+
+Hallazgos ALTOS (handoff al track direccional, ninguno cambia el veredicto estadístico):
+1. Pseudo-replicación: DA/Sharpe del zoo sobre observaciones diarias solapadas (H30:
+   29/30 sesiones compartidas) — N, selección e inferencia sobreestimados; el replay
+   hereda el problema en H10-H30 (52 "obs" H30 ≈ 8-9 independientes).
+2. `flatten_ledger` no exporta signal_authorized/execution_action — el CSV público trae
+   decision_action LONG/SHORT de 65 decisiones SHADOW sin gate: un consumidor podría
+   ejecutar lo no autorizado. Fix: execution_action=FLAT mientras no haya gate PASS.
+3. RBAC: el delay por plan se salta en JSON/CSV estáticos (middleware solo exige sesión
+   para no-PNG) y el filtro CSV de la API busca inference_date pero el ledger usa
+   origin_date → se sirve completo; el CI de cobertura no enumera public/**.
+4. view_type "forward_forecast" vs filtro "forward" → la próxima corrida del zoo pierde
+   los 3 ensembles y el DAG queda verde con warning.
+5. Airflow no monta ./reports → los entregables de reports/ son efímeros en el DAG.
+MEDIO: PIT del macro clásico presume T disponible T+1 sin vintages (promotion_only=False).
+
+APLICADO por Claude (nuestro): fix #8 — los 3 YAML de ejecución listaban 21 features
+con count:25; añadidas las 4 de enhance_v2 (vol_regime_ratio, trend_slope_60d,
+rate_diff_ibr_ust2y, term_spread). Prerequisito de H-META-01 cumplido.
+
+CONVERGENCIA FINAL (tabla de lift del propio track): ningún horizonte tiene lift
+positivo vs baseline mayoritario en 2025 ni 2026 (H30-2026 = 0.00pp exacto). Tercera
+confirmación independiente del cierre direccional. Propuestas vigentes que usan ambos
+lados: P1 ledger perpetuo viernes-origen → re-test H-META-02 pre-registrable con ≥40
+semanas frescas maduras (~2027); P2 monitor descriptivo intervalo-zoo vs persistencia
+(0 trials, bandera de régimen); P3 stack direccional = superficie de producto
+(signal_authorized:false, gate por plan tras fix #3). H20-DIR-SHADOW RETIRADA (la
+tabla de lift mató su premisa antes de sellarla).
