@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 69
+n_trials_total: 71
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -965,3 +965,24 @@ La config del +20.11% del contrafactual (ladder + cap 3.0) corrida en el MOTOR r
 una decisión de CAPITAL sobre lo graduado (a nivel libro, post-forward, con guard
 fraccional-Kelly). La escalera (v14) se queda; el lev alto en la pata queda cerrado con
 evidencia de motor. Celda reportada completa, no desplegable.
+
+
+---
+
+## MONITOREO 2026-07-21: v11/v12/v14 en 2025 + replay Ene-Jul 2026 · trials 69→71
+
+Pedido del operador ("¿cómo va 2025 con cada una y cómo va el paper 2026?"). 2025 =
+re-lectura de celdas pagadas (0 trials). **Replay 2026 de v12/v14 = 2 celdas nuevas
+miradas (+2 trials)**: ese tramo queda CONTAMINADO para v12/v14 y su juez sigue siendo
+el forward post-freeze (paper 2026-07-27). Prohibido seleccionar entre configs con esto.
+
+| Config | 2025 ret/DD/HS | 2026 YTD ret/DD/HS | Nota |
+|---|---|---|---|
+| v11 producción | +7.35% / −7.8 / 5 | +3.36% / −1.5 / 1 | 2026 = forward REAL |
+| v12 cap 1.5 | +7.69% / −5.7 / 4 | +3.12% / −1.5 / 1 | 2026 = replay descriptivo |
+| v14 cap+ladder | +6.59% / −5.1 / 4 | +3.09% / −1.5 / 1 | 2026 = replay descriptivo |
+
+Lectura: en 2026 el cap 1.5 casi no muerde (lev máx ~1.27) y la escalera apenas cambia
+salidas → las tres son casi idénticas YTD (diferencia −0.24/−0.27pp por semanas de lev
+recortado). La separación real entre ellas solo la dará el forward post-freeze.
+Artefacto: `.claude/evidence/cop_monitor_2025_2026/2026-07-21/` (mensual + trades).

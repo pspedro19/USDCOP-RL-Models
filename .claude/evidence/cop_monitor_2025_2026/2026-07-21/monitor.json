@@ -1,0 +1,1514 @@
+{
+  "note": "2025=re-lectura celdas pagadas; 2026 v12/v14=replay descriptivo (+2 trials); juez v12/v14 = forward post-freeze 2026-07-27",
+  "results": {
+    "v11_produccion": {
+      "2025": {
+        "ret_pct": 7.35,
+        "maxdd_pct": -7.84,
+        "n_trades": 32,
+        "hard_stops": 5,
+        "wr_pct": 71.9,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2025-02",
+            "trades": 3,
+            "ret_pct": 2.09,
+            "equity": 10209.0
+          },
+          {
+            "mes": "2025-03",
+            "trades": 3,
+            "ret_pct": -1.98,
+            "equity": 10007.0
+          },
+          {
+            "mes": "2025-05",
+            "trades": 4,
+            "ret_pct": 3.0,
+            "equity": 10307.0
+          },
+          {
+            "mes": "2025-06",
+            "trades": 5,
+            "ret_pct": 7.46,
+            "equity": 11076.0
+          },
+          {
+            "mes": "2025-07",
+            "trades": 4,
+            "ret_pct": -1.82,
+            "equity": 10875.0
+          },
+          {
+            "mes": "2025-08",
+            "trades": 2,
+            "ret_pct": 2.23,
+            "equity": 11117.0
+          },
+          {
+            "mes": "2025-09",
+            "trades": 4,
+            "ret_pct": 1.11,
+            "equity": 11240.0
+          },
+          {
+            "mes": "2025-10",
+            "trades": 3,
+            "ret_pct": -2.52,
+            "equity": 10957.0
+          },
+          {
+            "mes": "2025-11",
+            "trades": 1,
+            "ret_pct": 0.04,
+            "equity": 10961.0
+          },
+          {
+            "mes": "2025-12",
+            "trades": 3,
+            "ret_pct": -2.07,
+            "equity": 10735.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2025-02-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4160.75,
+            "exit_price": 4124.34,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-02-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4131.43,
+            "exit_price": 4095.28,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-02-24T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4116.0,
+            "exit_price": 4144.16,
+            "exit_reason": "week_end",
+            "leverage": 2.0,
+            "pnl_pct": -1.3883
+          },
+          {
+            "timestamp": "2025-03-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4132.08,
+            "exit_price": 4129.14,
+            "exit_reason": "week_end",
+            "leverage": 2.0,
+            "pnl_pct": 0.1223
+          },
+          {
+            "timestamp": "2025-03-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4091.85,
+            "exit_price": 4169.28,
+            "exit_reason": "hard_stop",
+            "leverage": 2.0,
+            "pnl_pct": -3.7846
+          },
+          {
+            "timestamp": "2025-03-31T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4191.98,
+            "exit_price": 4155.3,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-05-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4297.8,
+            "exit_price": 4233.33,
+            "exit_reason": "take_profit",
+            "leverage": 0.5,
+            "pnl_pct": 0.75
+          },
+          {
+            "timestamp": "2025-05-12T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4224.64,
+            "exit_price": 4161.27,
+            "exit_reason": "take_profit",
+            "leverage": 1.065,
+            "pnl_pct": 1.597
+          },
+          {
+            "timestamp": "2025-05-19T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4170.97,
+            "exit_price": 4149.73,
+            "exit_reason": "week_end",
+            "leverage": 1.745,
+            "pnl_pct": 0.8712
+          },
+          {
+            "timestamp": "2025-05-26T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4146.56,
+            "exit_price": 4158.63,
+            "exit_reason": "week_end",
+            "leverage": 0.8,
+            "pnl_pct": -0.2409
+          },
+          {
+            "timestamp": "2025-06-02T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4150.27,
+            "exit_price": 4113.96,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-06-09T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4144.35,
+            "exit_price": 4130.73,
+            "exit_reason": "week_end",
+            "leverage": 0.8,
+            "pnl_pct": 0.2549
+          },
+          {
+            "timestamp": "2025-06-16T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4103.93,
+            "exit_price": 4068.02,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-06-23T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4083.58,
+            "exit_price": 4047.85,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-06-30T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4088.0,
+            "exit_price": 4052.23,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-07-07T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4041.38,
+            "exit_price": 3997.06,
+            "exit_reason": "week_end",
+            "leverage": 0.8,
+            "pnl_pct": 0.8693
+          },
+          {
+            "timestamp": "2025-07-14T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4000.11,
+            "exit_price": 4017.09,
+            "exit_reason": "week_end",
+            "leverage": 2.0,
+            "pnl_pct": -0.869
+          },
+          {
+            "timestamp": "2025-07-21T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4044.41,
+            "exit_price": 4115.19,
+            "exit_reason": "hard_stop",
+            "leverage": 2.0,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-07-28T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4163.57,
+            "exit_price": 4127.14,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-08-18T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4029.65,
+            "exit_price": 3992.68,
+            "exit_reason": "take_profit",
+            "leverage": 1.907,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-08-25T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4025.42,
+            "exit_price": 4015.0,
+            "exit_reason": "week_end",
+            "leverage": 1.88,
+            "pnl_pct": 0.4679
+          },
+          {
+            "timestamp": "2025-09-01T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4016.27,
+            "exit_price": 3956.03,
+            "exit_reason": "take_profit",
+            "leverage": 0.8,
+            "pnl_pct": 1.2
+          },
+          {
+            "timestamp": "2025-09-08T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3940.56,
+            "exit_price": 3906.08,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-09-15T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3905.25,
+            "exit_price": 3871.08,
+            "exit_reason": "take_profit",
+            "leverage": 2.0,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-09-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3845.77,
+            "exit_price": 3913.07,
+            "exit_reason": "hard_stop",
+            "leverage": 2.0,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-10-06T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3853.51,
+            "exit_price": 3920.95,
+            "exit_reason": "hard_stop",
+            "leverage": 2.0,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-10-13T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3921.5,
+            "exit_price": 3875.61,
+            "exit_reason": "take_profit",
+            "leverage": 1.0,
+            "pnl_pct": 1.1701
+          },
+          {
+            "timestamp": "2025-10-27T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3844.42,
+            "exit_price": 3851.2,
+            "exit_reason": "week_end",
+            "leverage": 0.8,
+            "pnl_pct": -0.1491
+          },
+          {
+            "timestamp": "2025-11-10T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3749.99,
+            "exit_price": 3752.3,
+            "exit_reason": "week_end",
+            "leverage": 0.68,
+            "pnl_pct": 0.0351
+          },
+          {
+            "timestamp": "2025-12-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3799.36,
+            "exit_price": 3834.17,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": 0.4531
+          },
+          {
+            "timestamp": "2025-12-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3790.37,
+            "exit_price": 3733.52,
+            "exit_reason": "take_profit",
+            "leverage": 0.686,
+            "pnl_pct": 1.0292
+          },
+          {
+            "timestamp": "2025-12-29T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3734.07,
+            "exit_price": 3806.04,
+            "exit_reason": "hard_stop",
+            "leverage": 1.816,
+            "pnl_pct": -3.5
+          }
+        ]
+      },
+      "2026": {
+        "ret_pct": 3.36,
+        "maxdd_pct": -1.5,
+        "n_trades": 11,
+        "hard_stops": 1,
+        "wr_pct": 72.7,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2026-01",
+            "trades": 1,
+            "ret_pct": 0.61,
+            "equity": 10061.0
+          },
+          {
+            "mes": "2026-04",
+            "trades": 3,
+            "ret_pct": -0.29,
+            "equity": 10032.0
+          },
+          {
+            "mes": "2026-05",
+            "trades": 3,
+            "ret_pct": 3.15,
+            "equity": 10347.0
+          },
+          {
+            "mes": "2026-06",
+            "trades": 2,
+            "ret_pct": 0.96,
+            "equity": 10447.0
+          },
+          {
+            "mes": "2026-07",
+            "trades": 2,
+            "ret_pct": -1.07,
+            "equity": 10336.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2026-01-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3743.04,
+            "exit_price": 3714.11,
+            "exit_reason": "week_end",
+            "leverage": 0.8,
+            "pnl_pct": 0.6104
+          },
+          {
+            "timestamp": "2026-04-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3680.44,
+            "exit_price": 3644.39,
+            "exit_reason": "week_end",
+            "leverage": 0.642,
+            "pnl_pct": -0.6349
+          },
+          {
+            "timestamp": "2026-04-20T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3572.27,
+            "exit_price": 3559.85,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": -0.1789
+          },
+          {
+            "timestamp": "2026-04-27T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3608.03,
+            "exit_price": 3646.08,
+            "exit_reason": "take_profit",
+            "leverage": 0.5,
+            "pnl_pct": 0.5272
+          },
+          {
+            "timestamp": "2026-05-04T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3729.34,
+            "exit_price": 3745.27,
+            "exit_reason": "week_end",
+            "leverage": 0.748,
+            "pnl_pct": 0.3121
+          },
+          {
+            "timestamp": "2026-05-11T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3757.21,
+            "exit_price": 3799.14,
+            "exit_reason": "take_profit",
+            "leverage": 1.568,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2026-05-25T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3647.68,
+            "exit_price": 3700.85,
+            "exit_reason": "take_profit",
+            "leverage": 0.725,
+            "pnl_pct": 1.0564
+          },
+          {
+            "timestamp": "2026-06-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3569.39,
+            "exit_price": 3601.06,
+            "exit_reason": "week_end",
+            "leverage": 0.589,
+            "pnl_pct": 0.5168
+          },
+          {
+            "timestamp": "2026-06-22T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3432.33,
+            "exit_price": 3450.1,
+            "exit_reason": "week_end",
+            "leverage": 0.877,
+            "pnl_pct": 0.445
+          },
+          {
+            "timestamp": "2026-07-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3352.57,
+            "exit_price": 3251.99,
+            "exit_reason": "hard_stop",
+            "leverage": 0.5,
+            "pnl_pct": -1.5
+          },
+          {
+            "timestamp": "2026-07-13T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3239.84,
+            "exit_price": 3260.4,
+            "exit_reason": "week_end",
+            "leverage": 0.705,
+            "pnl_pct": 0.4402
+          }
+        ]
+      }
+    },
+    "v12_cap15": {
+      "2025": {
+        "ret_pct": 7.69,
+        "maxdd_pct": -5.66,
+        "n_trades": 32,
+        "hard_stops": 4,
+        "wr_pct": 71.9,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2025-02",
+            "trades": 3,
+            "ret_pct": 2.2,
+            "equity": 10220.0
+          },
+          {
+            "mes": "2025-03",
+            "trades": 3,
+            "ret_pct": -1.72,
+            "equity": 10044.0
+          },
+          {
+            "mes": "2025-05",
+            "trades": 4,
+            "ret_pct": 2.94,
+            "equity": 10339.0
+          },
+          {
+            "mes": "2025-06",
+            "trades": 5,
+            "ret_pct": 7.26,
+            "equity": 11089.0
+          },
+          {
+            "mes": "2025-07",
+            "trades": 4,
+            "ret_pct": -2.18,
+            "equity": 10848.0
+          },
+          {
+            "mes": "2025-08",
+            "trades": 2,
+            "ret_pct": 1.06,
+            "equity": 10963.0
+          },
+          {
+            "mes": "2025-09",
+            "trades": 4,
+            "ret_pct": 1.96,
+            "equity": 11177.0
+          },
+          {
+            "mes": "2025-10",
+            "trades": 3,
+            "ret_pct": -1.53,
+            "equity": 11006.0
+          },
+          {
+            "mes": "2025-11",
+            "trades": 1,
+            "ret_pct": 0.04,
+            "equity": 11010.0
+          },
+          {
+            "mes": "2025-12",
+            "trades": 3,
+            "ret_pct": -2.19,
+            "equity": 10769.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2025-02-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4160.75,
+            "exit_price": 4119.21,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.4977
+          },
+          {
+            "timestamp": "2025-02-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4131.43,
+            "exit_price": 4083.23,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-02-24T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4116.0,
+            "exit_price": 4144.16,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -1.0412
+          },
+          {
+            "timestamp": "2025-03-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4132.08,
+            "exit_price": 4129.14,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.0917
+          },
+          {
+            "timestamp": "2025-03-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4091.85,
+            "exit_price": 4187.33,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-03-31T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4191.98,
+            "exit_price": 4143.07,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-05-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4297.8,
+            "exit_price": 4233.33,
+            "exit_reason": "take_profit",
+            "leverage": 0.5,
+            "pnl_pct": 0.75
+          },
+          {
+            "timestamp": "2025-05-12T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4224.64,
+            "exit_price": 4161.27,
+            "exit_reason": "take_profit",
+            "leverage": 1.065,
+            "pnl_pct": 1.597
+          },
+          {
+            "timestamp": "2025-05-19T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4170.97,
+            "exit_price": 4149.73,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.7489
+          },
+          {
+            "timestamp": "2025-05-26T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4146.56,
+            "exit_price": 4158.63,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": -0.1806
+          },
+          {
+            "timestamp": "2025-06-02T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4150.27,
+            "exit_price": 4101.85,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-06-09T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4144.35,
+            "exit_price": 4130.73,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.1912
+          },
+          {
+            "timestamp": "2025-06-16T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4103.93,
+            "exit_price": 4059.56,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.6219
+          },
+          {
+            "timestamp": "2025-06-23T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4083.58,
+            "exit_price": 4035.94,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-06-30T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4088.0,
+            "exit_price": 4040.31,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-07-07T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4041.38,
+            "exit_price": 3997.06,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.652
+          },
+          {
+            "timestamp": "2025-07-14T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4000.11,
+            "exit_price": 4017.09,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -0.6517
+          },
+          {
+            "timestamp": "2025-07-21T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4044.41,
+            "exit_price": 4138.78,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-07-28T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4163.57,
+            "exit_price": 4124.96,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 1.376
+          },
+          {
+            "timestamp": "2025-08-18T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4029.65,
+            "exit_price": 4010.91,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.6826
+          },
+          {
+            "timestamp": "2025-08-25T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4025.42,
+            "exit_price": 4015.0,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.3733
+          },
+          {
+            "timestamp": "2025-09-01T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4016.27,
+            "exit_price": 3956.03,
+            "exit_reason": "take_profit",
+            "leverage": 0.6,
+            "pnl_pct": 0.9
+          },
+          {
+            "timestamp": "2025-09-08T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3940.56,
+            "exit_price": 3894.59,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-09-15T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3905.25,
+            "exit_price": 3868.23,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.4218
+          },
+          {
+            "timestamp": "2025-09-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3845.77,
+            "exit_price": 3898.82,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -2.0842
+          },
+          {
+            "timestamp": "2025-10-06T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3853.51,
+            "exit_price": 3933.48,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.1129
+          },
+          {
+            "timestamp": "2025-10-13T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3921.5,
+            "exit_price": 3875.75,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2025-10-27T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3844.42,
+            "exit_price": 3851.2,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": -0.1118
+          },
+          {
+            "timestamp": "2025-11-10T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3749.99,
+            "exit_price": 3752.3,
+            "exit_reason": "week_end",
+            "leverage": 0.68,
+            "pnl_pct": 0.0351
+          },
+          {
+            "timestamp": "2025-12-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3799.36,
+            "exit_price": 3834.17,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": 0.4531
+          },
+          {
+            "timestamp": "2025-12-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3790.37,
+            "exit_price": 3733.52,
+            "exit_reason": "take_profit",
+            "leverage": 0.6,
+            "pnl_pct": 0.9
+          },
+          {
+            "timestamp": "2025-12-29T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3734.07,
+            "exit_price": 3821.2,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          }
+        ]
+      },
+      "2026": {
+        "ret_pct": 3.12,
+        "maxdd_pct": -1.5,
+        "n_trades": 11,
+        "hard_stops": 1,
+        "wr_pct": 72.7,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2026-01",
+            "trades": 1,
+            "ret_pct": 0.46,
+            "equity": 10046.0
+          },
+          {
+            "mes": "2026-04",
+            "trades": 3,
+            "ret_pct": -0.29,
+            "equity": 10017.0
+          },
+          {
+            "mes": "2026-05",
+            "trades": 3,
+            "ret_pct": 3.07,
+            "equity": 10324.0
+          },
+          {
+            "mes": "2026-06",
+            "trades": 2,
+            "ret_pct": 0.96,
+            "equity": 10423.0
+          },
+          {
+            "mes": "2026-07",
+            "trades": 2,
+            "ret_pct": -1.07,
+            "equity": 10312.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2026-01-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3743.04,
+            "exit_price": 3714.11,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.4578
+          },
+          {
+            "timestamp": "2026-04-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3680.44,
+            "exit_price": 3644.39,
+            "exit_reason": "week_end",
+            "leverage": 0.642,
+            "pnl_pct": -0.6349
+          },
+          {
+            "timestamp": "2026-04-20T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3572.27,
+            "exit_price": 3559.85,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": -0.1789
+          },
+          {
+            "timestamp": "2026-04-27T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3608.03,
+            "exit_price": 3646.08,
+            "exit_reason": "take_profit",
+            "leverage": 0.5,
+            "pnl_pct": 0.5272
+          },
+          {
+            "timestamp": "2026-05-04T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3729.34,
+            "exit_price": 3745.27,
+            "exit_reason": "week_end",
+            "leverage": 0.562,
+            "pnl_pct": 0.2346
+          },
+          {
+            "timestamp": "2026-05-11T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3757.21,
+            "exit_price": 3801.05,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 1.75
+          },
+          {
+            "timestamp": "2026-05-25T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3647.68,
+            "exit_price": 3700.85,
+            "exit_reason": "take_profit",
+            "leverage": 0.725,
+            "pnl_pct": 1.0564
+          },
+          {
+            "timestamp": "2026-06-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3569.39,
+            "exit_price": 3601.06,
+            "exit_reason": "week_end",
+            "leverage": 0.589,
+            "pnl_pct": 0.5168
+          },
+          {
+            "timestamp": "2026-06-22T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3432.33,
+            "exit_price": 3450.1,
+            "exit_reason": "week_end",
+            "leverage": 0.877,
+            "pnl_pct": 0.445
+          },
+          {
+            "timestamp": "2026-07-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3352.57,
+            "exit_price": 3251.99,
+            "exit_reason": "hard_stop",
+            "leverage": 0.5,
+            "pnl_pct": -1.5
+          },
+          {
+            "timestamp": "2026-07-13T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3239.84,
+            "exit_price": 3260.4,
+            "exit_reason": "week_end",
+            "leverage": 0.705,
+            "pnl_pct": 0.4402
+          }
+        ]
+      }
+    },
+    "v14_cap15_ladder": {
+      "2025": {
+        "ret_pct": 6.59,
+        "maxdd_pct": -5.13,
+        "n_trades": 32,
+        "hard_stops": 4,
+        "wr_pct": 71.9,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2025-02",
+            "trades": 3,
+            "ret_pct": 2.22,
+            "equity": 10222.0
+          },
+          {
+            "mes": "2025-03",
+            "trades": 3,
+            "ret_pct": -2.9,
+            "equity": 9926.0
+          },
+          {
+            "mes": "2025-05",
+            "trades": 4,
+            "ret_pct": 2.86,
+            "equity": 10210.0
+          },
+          {
+            "mes": "2025-06",
+            "trades": 5,
+            "ret_pct": 6.2,
+            "equity": 10843.0
+          },
+          {
+            "mes": "2025-07",
+            "trades": 4,
+            "ret_pct": -2.18,
+            "equity": 10608.0
+          },
+          {
+            "mes": "2025-08",
+            "trades": 2,
+            "ret_pct": 1.06,
+            "equity": 10720.0
+          },
+          {
+            "mes": "2025-09",
+            "trades": 4,
+            "ret_pct": 2.13,
+            "equity": 10948.0
+          },
+          {
+            "mes": "2025-10",
+            "trades": 3,
+            "ret_pct": -0.68,
+            "equity": 10873.0
+          },
+          {
+            "mes": "2025-11",
+            "trades": 1,
+            "ret_pct": 0.04,
+            "equity": 10877.0
+          },
+          {
+            "mes": "2025-12",
+            "trades": 3,
+            "ret_pct": -2.01,
+            "equity": 10659.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2025-02-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4160.75,
+            "exit_price": 4119.83,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.4751
+          },
+          {
+            "timestamp": "2025-02-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4131.43,
+            "exit_price": 4082.13,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.7901
+          },
+          {
+            "timestamp": "2025-02-24T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4116.0,
+            "exit_price": 4144.16,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -1.0412
+          },
+          {
+            "timestamp": "2025-03-03T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4132.08,
+            "exit_price": 4129.14,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.0917
+          },
+          {
+            "timestamp": "2025-03-17T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4091.85,
+            "exit_price": 4187.33,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-03-31T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4191.98,
+            "exit_price": 4177.05,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 0.5342
+          },
+          {
+            "timestamp": "2025-05-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4297.8,
+            "exit_price": 4225.97,
+            "exit_reason": "take_profit_half",
+            "leverage": 0.5,
+            "pnl_pct": 0.8357
+          },
+          {
+            "timestamp": "2025-05-12T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4224.64,
+            "exit_price": 4167.63,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.065,
+            "pnl_pct": 1.4369
+          },
+          {
+            "timestamp": "2025-05-19T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4170.97,
+            "exit_price": 4149.73,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.7489
+          },
+          {
+            "timestamp": "2025-05-26T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4146.56,
+            "exit_price": 4158.63,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": -0.1806
+          },
+          {
+            "timestamp": "2025-06-02T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4150.27,
+            "exit_price": 4107.12,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.5595
+          },
+          {
+            "timestamp": "2025-06-09T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4144.35,
+            "exit_price": 4130.73,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.1912
+          },
+          {
+            "timestamp": "2025-06-16T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4103.93,
+            "exit_price": 4076.46,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.0039
+          },
+          {
+            "timestamp": "2025-06-23T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4083.58,
+            "exit_price": 4064.69,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 0.6939
+          },
+          {
+            "timestamp": "2025-06-30T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4088.0,
+            "exit_price": 4016.46,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 2.625
+          },
+          {
+            "timestamp": "2025-07-07T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4041.38,
+            "exit_price": 3997.06,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.652
+          },
+          {
+            "timestamp": "2025-07-14T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4000.11,
+            "exit_price": 4017.09,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -0.6517
+          },
+          {
+            "timestamp": "2025-07-21T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4044.41,
+            "exit_price": 4138.78,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          },
+          {
+            "timestamp": "2025-07-28T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4163.57,
+            "exit_price": 4124.96,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 1.376
+          },
+          {
+            "timestamp": "2025-08-18T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4029.65,
+            "exit_price": 4010.91,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.6826
+          },
+          {
+            "timestamp": "2025-08-25T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4025.42,
+            "exit_price": 4015.0,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": 0.3733
+          },
+          {
+            "timestamp": "2025-09-01T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 4016.27,
+            "exit_price": 3956.39,
+            "exit_reason": "take_profit_half",
+            "leverage": 0.6,
+            "pnl_pct": 0.8946
+          },
+          {
+            "timestamp": "2025-09-08T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3940.56,
+            "exit_price": 3893.51,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.7909
+          },
+          {
+            "timestamp": "2025-09-15T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3905.25,
+            "exit_price": 3864.67,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.5588
+          },
+          {
+            "timestamp": "2025-09-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3845.77,
+            "exit_price": 3898.82,
+            "exit_reason": "week_end",
+            "leverage": 1.5,
+            "pnl_pct": -2.0842
+          },
+          {
+            "timestamp": "2025-10-06T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3853.51,
+            "exit_price": 3933.48,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.1129
+          },
+          {
+            "timestamp": "2025-10-13T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3921.5,
+            "exit_price": 3852.87,
+            "exit_reason": "take_profit",
+            "leverage": 1.5,
+            "pnl_pct": 2.625
+          },
+          {
+            "timestamp": "2025-10-27T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3844.42,
+            "exit_price": 3851.2,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": -0.1118
+          },
+          {
+            "timestamp": "2025-11-10T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3749.99,
+            "exit_price": 3752.3,
+            "exit_reason": "week_end",
+            "leverage": 0.68,
+            "pnl_pct": 0.0351
+          },
+          {
+            "timestamp": "2025-12-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3799.36,
+            "exit_price": 3834.17,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": 0.4531
+          },
+          {
+            "timestamp": "2025-12-22T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3790.37,
+            "exit_price": 3721.45,
+            "exit_reason": "take_profit_half",
+            "leverage": 0.6,
+            "pnl_pct": 1.091
+          },
+          {
+            "timestamp": "2025-12-29T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3734.07,
+            "exit_price": 3821.2,
+            "exit_reason": "hard_stop",
+            "leverage": 1.5,
+            "pnl_pct": -3.5
+          }
+        ]
+      },
+      "2026": {
+        "ret_pct": 3.09,
+        "maxdd_pct": -1.5,
+        "n_trades": 11,
+        "hard_stops": 1,
+        "wr_pct": 72.7,
+        "bh_pct": null,
+        "monthly": [
+          {
+            "mes": "2026-01",
+            "trades": 1,
+            "ret_pct": 0.46,
+            "equity": 10046.0
+          },
+          {
+            "mes": "2026-04",
+            "trades": 3,
+            "ret_pct": -0.3,
+            "equity": 10015.0
+          },
+          {
+            "mes": "2026-05",
+            "trades": 3,
+            "ret_pct": 3.04,
+            "equity": 10320.0
+          },
+          {
+            "mes": "2026-06",
+            "trades": 2,
+            "ret_pct": 0.96,
+            "equity": 10420.0
+          },
+          {
+            "mes": "2026-07",
+            "trades": 2,
+            "ret_pct": -1.07,
+            "equity": 10309.0
+          }
+        ],
+        "trades": [
+          {
+            "timestamp": "2026-01-05T09:00:00-05:00",
+            "side": "SHORT",
+            "entry_price": 3743.04,
+            "exit_price": 3714.11,
+            "exit_reason": "week_end",
+            "leverage": 0.6,
+            "pnl_pct": 0.4578
+          },
+          {
+            "timestamp": "2026-04-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3680.44,
+            "exit_price": 3644.39,
+            "exit_reason": "week_end",
+            "leverage": 0.642,
+            "pnl_pct": -0.6349
+          },
+          {
+            "timestamp": "2026-04-20T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3572.27,
+            "exit_price": 3559.85,
+            "exit_reason": "week_end",
+            "leverage": 0.5,
+            "pnl_pct": -0.1789
+          },
+          {
+            "timestamp": "2026-04-27T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3608.03,
+            "exit_price": 3645.15,
+            "exit_reason": "take_profit_half",
+            "leverage": 0.5,
+            "pnl_pct": 0.5144
+          },
+          {
+            "timestamp": "2026-05-04T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3729.34,
+            "exit_price": 3745.27,
+            "exit_reason": "week_end",
+            "leverage": 0.562,
+            "pnl_pct": 0.2346
+          },
+          {
+            "timestamp": "2026-05-11T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3757.21,
+            "exit_price": 3800.64,
+            "exit_reason": "take_profit_half",
+            "leverage": 1.5,
+            "pnl_pct": 1.734
+          },
+          {
+            "timestamp": "2026-05-25T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3647.68,
+            "exit_price": 3700.59,
+            "exit_reason": "take_profit_half",
+            "leverage": 0.725,
+            "pnl_pct": 1.0513
+          },
+          {
+            "timestamp": "2026-06-01T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3569.39,
+            "exit_price": 3601.06,
+            "exit_reason": "week_end",
+            "leverage": 0.589,
+            "pnl_pct": 0.5168
+          },
+          {
+            "timestamp": "2026-06-22T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3432.33,
+            "exit_price": 3450.1,
+            "exit_reason": "week_end",
+            "leverage": 0.877,
+            "pnl_pct": 0.445
+          },
+          {
+            "timestamp": "2026-07-06T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3352.57,
+            "exit_price": 3251.99,
+            "exit_reason": "hard_stop",
+            "leverage": 0.5,
+            "pnl_pct": -1.5
+          },
+          {
+            "timestamp": "2026-07-13T09:00:00-05:00",
+            "side": "LONG",
+            "entry_price": 3239.84,
+            "exit_price": 3260.4,
+            "exit_reason": "week_end",
+            "leverage": 0.705,
+            "pnl_pct": 0.4402
+          }
+        ]
+      }
+    }
+  }
+}
