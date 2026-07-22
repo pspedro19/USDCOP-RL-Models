@@ -267,8 +267,15 @@ def check_gates(**context) -> Dict[str, Any]:
         alarms.append(f"{metrics['consecutive_losses']} consecutive losses >= {cb['max_consecutive_losses']}")
         logger.warning(f"[H5-L6] CIRCUIT BREAKER: {alarms[-1]}")
 
-    # Decision gates (only at week >= min_weeks)
-    if n_weeks >= min_weeks:
+    # Decision gates (only at week >= min_weeks). NEUTRALIZADOS cuando
+    # gates.enabled=false (2026-07-22): el juez sellado (Corte A/B de v11;
+    # corte-26/52 de v12/v14) es la UNICA autoridad decisoria — el monitor
+    # semanal solo reporta integridad, jamas promote/discard/switch.
+    if not gates.get("enabled", True):
+        gate_status = "sealed_judge_only"
+        logger.info(f"[H5-L6] Week {n_weeks}: gates disabled (sealed judge governs; "
+                    "weekly monitor = integrity only)")
+    elif n_weeks >= min_weeks:
         da = metrics["running_da_pct"]
         da_short = metrics.get("running_da_short_pct")
         da_long = metrics.get("running_da_long_pct")

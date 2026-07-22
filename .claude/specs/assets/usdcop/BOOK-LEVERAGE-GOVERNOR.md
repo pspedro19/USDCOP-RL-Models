@@ -164,7 +164,13 @@ peak-to-trough, marcada al cierre semanal (viernes 12:55 COT).
 
 ## REGISTRY-PROPOSAL (evento 0-trials — texto listo para que el OPERADOR lo pegue en `HYPOTHESIS-REGISTRY.md`; este task NO edita el registro)
 
-> ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials — N sigue en 72)
+> ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials — N sigue en 73)
+>
+> Nota (validación Codex del plan): ya está consolidado en el registry por el enjambre
+> 2026-07-22 — esta propuesta queda como referencia. Aplicabilidad a v13: el gobernador
+> gobierna el LIBRO, no la pata; si v13 se congela y entra como sleeve COP (sustituyendo
+> a v12 en book_v1), la graduación que habilita leverage es la de la config que
+> EFECTIVAMENTE ocupa el sleeve — nunca la de otra versión.
 >
 > Regla de capital sellada ANTES del veredicto forward (`BOOK-LEVERAGE-GOVERNOR.md`,
 > borrador esperando firma). No es un trial: no se evaluó ninguna variante ni se

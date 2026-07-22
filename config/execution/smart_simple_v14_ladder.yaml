@@ -172,6 +172,12 @@ regime_gate:
 # Decision gates (semana 15 de paper trading)
 # ============================================================================
 gates:
+  # NEUTRALIZADO 2026-07-22 (validacion Codex del plan, ajuste #2): el gate semana-15
+  # de promote/discard/switch_short CONTRADICE al juez sellado (v11: Corte A/B del
+  # WITHDRAWAL-PROTOCOL; v12/v14: corte-26 safety/futility + corte-52 unico test
+  # confirmatorio, registry 2026-07-21). Semana a semana el monitor solo reporta
+  # integridad. Los umbrales quedan documentados como historicos, no operativos.
+  enabled: false
   evaluation_week: 15
   promote_threshold:
     da_overall: 55             # DA general > 55%

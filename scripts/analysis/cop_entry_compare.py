@@ -93,6 +93,22 @@ TWAP_MIN_BARS = 6                # else the Monday is skipped (recorded)
 BOOTSTRAP_N = 10_000
 BOOTSTRAP_SEED = 42
 
+# ---------------------------------------------------------------------------
+# ALCANCE Y COSTO PRE-FIRMADOS (validacion Codex del plan, ajuste #3 — 2026-07-22,
+# fijados ANTES de consumir el trial, sin haber mirado ningun resultado):
+# 1. Este instrumento es un ESTUDIO DE PRECIO DE ENTRADA, no un backtest economico:
+#    NO simula la exposicion intradia del lunes que introduce adelantar la entrada
+#    de ~12:55 a 9:30-10:30, ni reproduce el circuit breaker (limitaciones declaradas).
+#    PROHIBIDO cualquier PASS economico basado solo en este estudio: el gate economico
+#    se decide en la medicion shadow forward (ambas entradas registradas en paper).
+# 2. Costo incremental TWAP pre-firmado: 12 fills maker MEXC 0% + mismo 1bp de
+#    slippage modelado sobre el mismo notional => costo marginal teorico ~0; se fija
+#    un colchon conservador de 0.5 bp por friccion multi-fill no modelada.
+# 3. BAR del estudio (diseño 2020-24): el limite INFERIOR del IC95 de improvement_bp
+#    (pooled) debe superar PRE_SIGNED_INCREMENTAL_COST_BP. Si no, REJECT sin variantes.
+# ---------------------------------------------------------------------------
+PRE_SIGNED_INCREMENTAL_COST_BP = 0.5
+
 
 def _assert_design_only(years) -> None:
     # raise explícito, NO assert: python -O elimina asserts y la barrera debe
@@ -269,6 +285,12 @@ def run_compare() -> dict:
             "improvement_bp_mean": float(vals.mean()) if len(vals) else None,
             "improvement_bp_ci95": [lo, hi],
             "ci95_excludes_zero": (lo is not None and (lo > 0 or hi < 0)),
+            # BAR pre-firmado: limite inferior del IC95 > costo incremental declarado.
+            # Aun si pasa, es solo estudio de PRECIO — el PASS economico exige shadow
+            # forward (ver bloque de alcance pre-firmado arriba).
+            "passes_presigned_bar": (lo is not None
+                                     and lo > PRE_SIGNED_INCREMENTAL_COST_BP),
+            "presigned_incremental_cost_bp": PRE_SIGNED_INCREMENTAL_COST_BP,
             "abs_diff_bp_mean": float(sub["abs_diff_bp"].mean()) if len(sub) else None,
             "share_twap_better": float((sub["improvement_bp"] > 0).mean()) if len(sub) else None,
         }
