@@ -1,0 +1,2116 @@
+{
+  "hypothesis": "H-ENTRY-01",
+  "task": "D1.2 pre-registered entry-rule comparison (DESIGN YEARS ONLY)",
+  "generated_at": "2026-07-22T09:04:59.016550-05:00",
+  "design_window": {
+    "start": "2020-01-01",
+    "end_exclusive": "2025-01-01"
+  },
+  "rule_engine_asis": "Monday DAILY close (~12:55 COT session close); holiday -> next bday close",
+  "rule_candidate": "TWAP mean of M5 closes stamped [09:30,10:25] COT",
+  "metric": "direction * (entry_engine - entry_twap) / entry_engine * 1e4  (>0 = TWAP better)",
+  "bootstrap": {
+    "kind": "weekly-block (obs=week)",
+    "n": 10000,
+    "seed": 42
+  },
+  "limitations": [
+    "circuit breaker (path-dependent) not reproduced for week selection",
+    "M5 2020-2022 bars are price snapshots (flat OHLC); closes are valid, ranges are not"
+  ],
+  "by_year": {
+    "2020": {
+      "n_weeks": 36,
+      "improvement_bp_mean": -1.291762,
+      "improvement_bp_ci95": [
+        -9.355673,
+        6.999404
+      ],
+      "ci95_excludes_zero": false,
+      "passes_presigned_bar": false,
+      "presigned_incremental_cost_bp": 0.5,
+      "abs_diff_bp_mean": 18.051457,
+      "share_twap_better": 0.472222
+    },
+    "2021": {
+      "n_weeks": 41,
+      "improvement_bp_mean": 5.024902,
+      "improvement_bp_ci95": [
+        -8.2845,
+        18.193356
+      ],
+      "ci95_excludes_zero": false,
+      "passes_presigned_bar": false,
+      "presigned_incremental_cost_bp": 0.5,
+      "abs_diff_bp_mean": 32.181367,
+      "share_twap_better": 0.609756
+    },
+    "2022": {
+      "n_weeks": 28,
+      "improvement_bp_mean": 16.356809,
+      "improvement_bp_ci95": [
+        -0.959119,
+        36.854042
+      ],
+      "ci95_excludes_zero": false,
+      "passes_presigned_bar": false,
+      "presigned_incremental_cost_bp": 0.5,
+      "abs_diff_bp_mean": 31.13524,
+      "share_twap_better": 0.5
+    },
+    "2023": {
+      "n_weeks": 50,
+      "improvement_bp_mean": 4.312056,
+      "improvement_bp_ci95": [
+        -5.874853,
+        14.473268
+      ],
+      "ci95_excludes_zero": false,
+      "passes_presigned_bar": false,
+      "presigned_incremental_cost_bp": 0.5,
+      "abs_diff_bp_mean": 25.669257,
+      "share_twap_better": 0.56
+    },
+    "2024": {
+      "n_weeks": 42,
+      "improvement_bp_mean": -3.328191,
+      "improvement_bp_ci95": [
+        -13.192931,
+        6.031078
+      ],
+      "ci95_excludes_zero": false,
+      "passes_presigned_bar": false,
+      "presigned_incremental_cost_bp": 0.5,
+      "abs_diff_bp_mean": 22.914213,
+      "share_twap_better": 0.428571
+    }
+  },
+  "pooled": {
+    "n_weeks": 197,
+    "improvement_bp_mean": 3.519426,
+    "improvement_bp_ci95": [
+      -1.867716,
+      9.079538
+    ],
+    "ci95_excludes_zero": false,
+    "passes_presigned_bar": false,
+    "presigned_incremental_cost_bp": 0.5,
+    "abs_diff_bp_mean": 25.822005,
+    "share_twap_better": 0.517766
+  },
+  "skipped_weeks": [
+    {
+      "monday": "2020-03-23",
+      "reason": "twap_window_bars=3 < 6"
+    },
+    {
+      "monday": "2020-05-25",
+      "reason": "twap_window_bars=5 < 6"
+    },
+    {
+      "monday": "2020-09-07",
+      "reason": "twap_window_bars=0 < 6"
+    },
+    {
+      "monday": "2021-05-31",
+      "reason": "twap_window_bars=5 < 6"
+    },
+    {
+      "monday": "2021-07-05",
+      "reason": "twap_window_bars=3 < 6"
+    },
+    {
+      "monday": "2021-09-06",
+      "reason": "twap_window_bars=2 < 6"
+    },
+    {
+      "monday": "2021-11-15",
+      "reason": "twap_window_bars=5 < 6"
+    },
+    {
+      "monday": "2022-01-10",
+      "reason": "twap_window_bars=3 < 6"
+    },
+    {
+      "monday": "2022-01-17",
+      "reason": "twap_window_bars=2 < 6"
+    },
+    {
+      "monday": "2022-02-21",
+      "reason": "twap_window_bars=5 < 6"
+    }
+  ],
+  "weeks": [
+    {
+      "year": 2020,
+      "monday": "2020-03-09",
+      "entry_date": "2020-03-09",
+      "direction": 1,
+      "engine_entry": 3812.1399,
+      "twap_entry": 3798.641658,
+      "improvement_bp": 35.408568,
+      "abs_diff_bp": 35.408568
+    },
+    {
+      "year": 2020,
+      "monday": "2020-03-16",
+      "entry_date": "2020-03-16",
+      "direction": 1,
+      "engine_entry": 4080.8601,
+      "twap_entry": 4097.878375,
+      "improvement_bp": -41.702667,
+      "abs_diff_bp": 41.702667
+    },
+    {
+      "year": 2020,
+      "monday": "2020-03-30",
+      "entry_date": "2020-03-30",
+      "direction": 1,
+      "engine_entry": 4062.5701,
+      "twap_entry": 4078.469183,
+      "improvement_bp": -39.13553,
+      "abs_diff_bp": 39.13553
+    },
+    {
+      "year": 2020,
+      "monday": "2020-04-06",
+      "entry_date": "2020-04-06",
+      "direction": 1,
+      "engine_entry": 3984.77,
+      "twap_entry": 3983.017517,
+      "improvement_bp": 4.397954,
+      "abs_diff_bp": 4.397954
+    },
+    {
+      "year": 2020,
+      "monday": "2020-04-13",
+      "entry_date": "2020-04-13",
+      "direction": -1,
+      "engine_entry": 3873.5049,
+      "twap_entry": 3873.620008,
+      "improvement_bp": 0.297168,
+      "abs_diff_bp": 0.297168
+    },
+    {
+      "year": 2020,
+      "monday": "2020-04-27",
+      "entry_date": "2020-04-27",
+      "direction": 1,
+      "engine_entry": 4060.4099,
+      "twap_entry": 4030.4791,
+      "improvement_bp": 73.71374,
+      "abs_diff_bp": 73.71374
+    },
+    {
+      "year": 2020,
+      "monday": "2020-05-04",
+      "entry_date": "2020-05-04",
+      "direction": -1,
+      "engine_entry": 3987.47,
+      "twap_entry": 3989.601683,
+      "improvement_bp": 5.345955,
+      "abs_diff_bp": 5.345955
+    },
+    {
+      "year": 2020,
+      "monday": "2020-05-11",
+      "entry_date": "2020-05-11",
+      "direction": 1,
+      "engine_entry": 3897.3101,
+      "twap_entry": 3903.045867,
+      "improvement_bp": -14.717245,
+      "abs_diff_bp": 14.717245
+    },
+    {
+      "year": 2020,
+      "monday": "2020-06-01",
+      "entry_date": "2020-06-01",
+      "direction": -1,
+      "engine_entry": 3720.8999,
+      "twap_entry": 3712.042467,
+      "improvement_bp": -23.804546,
+      "abs_diff_bp": 23.804546
+    },
+    {
+      "year": 2020,
+      "monday": "2020-06-15",
+      "entry_date": "2020-06-15",
+      "direction": -1,
+      "engine_entry": 3783.5601,
+      "twap_entry": 3782.25415,
+      "improvement_bp": -3.451643,
+      "abs_diff_bp": 3.451643
+    },
+    {
+      "year": 2020,
+      "monday": "2020-06-22",
+      "entry_date": "2020-06-22",
+      "direction": -1,
+      "engine_entry": 3735.5901,
+      "twap_entry": 3732.88001,
+      "improvement_bp": -7.254784,
+      "abs_diff_bp": 7.254784
+    },
+    {
+      "year": 2020,
+      "monday": "2020-06-29",
+      "entry_date": "2020-06-29",
+      "direction": 1,
+      "engine_entry": 3755.71,
+      "twap_entry": 3756.606667,
+      "improvement_bp": -2.387476,
+      "abs_diff_bp": 2.387476
+    },
+    {
+      "year": 2020,
+      "monday": "2020-07-06",
+      "entry_date": "2020-07-06",
+      "direction": 1,
+      "engine_entry": 3636.5701,
+      "twap_entry": 3636.111633,
+      "improvement_bp": 1.260712,
+      "abs_diff_bp": 1.260712
+    },
+    {
+      "year": 2020,
+      "monday": "2020-07-13",
+      "entry_date": "2020-07-13",
+      "direction": -1,
+      "engine_entry": 3620.6101,
+      "twap_entry": 3617.725808,
+      "improvement_bp": -7.966314,
+      "abs_diff_bp": 7.966314
+    },
+    {
+      "year": 2020,
+      "monday": "2020-07-20",
+      "entry_date": "2020-07-20",
+      "direction": -1,
+      "engine_entry": 3652.26,
+      "twap_entry": 3652.77005,
+      "improvement_bp": 1.396533,
+      "abs_diff_bp": 1.396533
+    },
+    {
+      "year": 2020,
+      "monday": "2020-07-27",
+      "entry_date": "2020-07-27",
+      "direction": -1,
+      "engine_entry": 3676.8999,
+      "twap_entry": 3673.968367,
+      "improvement_bp": -7.97284,
+      "abs_diff_bp": 7.97284
+    },
+    {
+      "year": 2020,
+      "monday": "2020-08-10",
+      "entry_date": "2020-08-10",
+      "direction": 1,
+      "engine_entry": 3775.1299,
+      "twap_entry": 3772.775825,
+      "improvement_bp": 6.235746,
+      "abs_diff_bp": 6.235746
+    },
+    {
+      "year": 2020,
+      "monday": "2020-08-17",
+      "entry_date": "2020-08-17",
+      "direction": 1,
+      "engine_entry": 3791.75,
+      "twap_entry": 3781.584243,
+      "improvement_bp": 26.810199,
+      "abs_diff_bp": 26.810199
+    },
+    {
+      "year": 2020,
+      "monday": "2020-08-24",
+      "entry_date": "2020-08-24",
+      "direction": 1,
+      "engine_entry": 3856.5,
+      "twap_entry": 3846.604142,
+      "improvement_bp": 25.660206,
+      "abs_diff_bp": 25.660206
+    },
+    {
+      "year": 2020,
+      "monday": "2020-08-31",
+      "entry_date": "2020-08-31",
+      "direction": 1,
+      "engine_entry": 3740.45,
+      "twap_entry": 3747.434992,
+      "improvement_bp": -18.674201,
+      "abs_diff_bp": 18.674201
+    },
+    {
+      "year": 2020,
+      "monday": "2020-09-14",
+      "entry_date": "2020-09-14",
+      "direction": -1,
+      "engine_entry": 3690.45,
+      "twap_entry": 3704.32165,
+      "improvement_bp": 37.587964,
+      "abs_diff_bp": 37.587964
+    },
+    {
+      "year": 2020,
+      "monday": "2020-09-21",
+      "entry_date": "2020-09-21",
+      "direction": -1,
+      "engine_entry": 3789.8601,
+      "twap_entry": 3796.058325,
+      "improvement_bp": 16.354759,
+      "abs_diff_bp": 16.354759
+    },
+    {
+      "year": 2020,
+      "monday": "2020-09-28",
+      "entry_date": "2020-09-28",
+      "direction": 1,
+      "engine_entry": 3871.97,
+      "twap_entry": 3859.750833,
+      "improvement_bp": 31.55801,
+      "abs_diff_bp": 31.55801
+    },
+    {
+      "year": 2020,
+      "monday": "2020-10-05",
+      "entry_date": "2020-10-05",
+      "direction": 1,
+      "engine_entry": 3830.3999,
+      "twap_entry": 3851.130875,
+      "improvement_bp": -54.122221,
+      "abs_diff_bp": 54.122221
+    },
+    {
+      "year": 2020,
+      "monday": "2020-10-12",
+      "entry_date": "2020-10-12",
+      "direction": 1,
+      "engine_entry": 3828.0,
+      "twap_entry": 3834.485062,
+      "improvement_bp": -16.941125,
+      "abs_diff_bp": 16.941125
+    },
+    {
+      "year": 2020,
+      "monday": "2020-10-19",
+      "entry_date": "2020-10-19",
+      "direction": 1,
+      "engine_entry": 3844.22,
+      "twap_entry": 3844.61665,
+      "improvement_bp": -1.031809,
+      "abs_diff_bp": 1.031809
+    },
+    {
+      "year": 2020,
+      "monday": "2020-10-26",
+      "entry_date": "2020-10-26",
+      "direction": -1,
+      "engine_entry": 3814.5,
+      "twap_entry": 3814.076642,
+      "improvement_bp": -1.109866,
+      "abs_diff_bp": 1.109866
+    },
+    {
+      "year": 2020,
+      "monday": "2020-11-02",
+      "entry_date": "2020-11-02",
+      "direction": -1,
+      "engine_entry": 3871.97,
+      "twap_entry": 3873.234158,
+      "improvement_bp": 3.264897,
+      "abs_diff_bp": 3.264897
+    },
+    {
+      "year": 2020,
+      "monday": "2020-11-09",
+      "entry_date": "2020-11-09",
+      "direction": -1,
+      "engine_entry": 3649.28,
+      "twap_entry": 3645.548325,
+      "improvement_bp": -10.225784,
+      "abs_diff_bp": 10.225784
+    },
+    {
+      "year": 2020,
+      "monday": "2020-11-16",
+      "entry_date": "2020-11-16",
+      "direction": -1,
+      "engine_entry": 3637.22,
+      "twap_entry": 3637.467542,
+      "improvement_bp": 0.680579,
+      "abs_diff_bp": 0.680579
+    },
+    {
+      "year": 2020,
+      "monday": "2020-11-23",
+      "entry_date": "2020-11-23",
+      "direction": -1,
+      "engine_entry": 3647.5501,
+      "twap_entry": 3629.33165,
+      "improvement_bp": -49.947086,
+      "abs_diff_bp": 49.947086
+    },
+    {
+      "year": 2020,
+      "monday": "2020-11-30",
+      "entry_date": "2020-11-30",
+      "direction": -1,
+      "engine_entry": 3596.8001,
+      "twap_entry": 3586.397508,
+      "improvement_bp": -28.921795,
+      "abs_diff_bp": 28.921795
+    },
+    {
+      "year": 2020,
+      "monday": "2020-12-07",
+      "entry_date": "2020-12-07",
+      "direction": -1,
+      "engine_entry": 3490.4399,
+      "twap_entry": 3491.416642,
+      "improvement_bp": 2.798334,
+      "abs_diff_bp": 2.798334
+    },
+    {
+      "year": 2020,
+      "monday": "2020-12-14",
+      "entry_date": "2020-12-14",
+      "direction": -1,
+      "engine_entry": 3428.04,
+      "twap_entry": 3424.999975,
+      "improvement_bp": -8.868114,
+      "abs_diff_bp": 8.868114
+    },
+    {
+      "year": 2020,
+      "monday": "2020-12-21",
+      "entry_date": "2020-12-21",
+      "direction": -1,
+      "engine_entry": 3431.0,
+      "twap_entry": 3440.916683,
+      "improvement_bp": 28.903187,
+      "abs_diff_bp": 28.903187
+    },
+    {
+      "year": 2020,
+      "monday": "2020-12-28",
+      "entry_date": "2020-12-28",
+      "direction": -1,
+      "engine_entry": 3500.0,
+      "twap_entry": 3496.519983,
+      "improvement_bp": -9.942905,
+      "abs_diff_bp": 9.942905
+    },
+    {
+      "year": 2021,
+      "monday": "2021-01-04",
+      "entry_date": "2021-01-04",
+      "direction": -1,
+      "engine_entry": 3448.96,
+      "twap_entry": 3412.044175,
+      "improvement_bp": -107.034657,
+      "abs_diff_bp": 107.034657
+    },
+    {
+      "year": 2021,
+      "monday": "2021-01-11",
+      "entry_date": "2021-01-11",
+      "direction": -1,
+      "engine_entry": 3511.02,
+      "twap_entry": 3514.5025,
+      "improvement_bp": 9.91877,
+      "abs_diff_bp": 9.91877
+    },
+    {
+      "year": 2021,
+      "monday": "2021-01-18",
+      "entry_date": "2021-01-18",
+      "direction": 1,
+      "engine_entry": 3478.0049,
+      "twap_entry": 3477.856617,
+      "improvement_bp": 0.426346,
+      "abs_diff_bp": 0.426346
+    },
+    {
+      "year": 2021,
+      "monday": "2021-01-25",
+      "entry_date": "2021-01-25",
+      "direction": 1,
+      "engine_entry": 3588.45,
+      "twap_entry": 3571.514983,
+      "improvement_bp": 47.193124,
+      "abs_diff_bp": 47.193124
+    },
+    {
+      "year": 2021,
+      "monday": "2021-02-01",
+      "entry_date": "2021-02-01",
+      "direction": 1,
+      "engine_entry": 3573.0049,
+      "twap_entry": 3557.769158,
+      "improvement_bp": 42.641256,
+      "abs_diff_bp": 42.641256
+    },
+    {
+      "year": 2021,
+      "monday": "2021-02-08",
+      "entry_date": "2021-02-08",
+      "direction": 1,
+      "engine_entry": 3575.5,
+      "twap_entry": 3546.8875,
+      "improvement_bp": 80.023773,
+      "abs_diff_bp": 80.023773
+    },
+    {
+      "year": 2021,
+      "monday": "2021-02-22",
+      "entry_date": "2021-02-22",
+      "direction": 1,
+      "engine_entry": 3593.7,
+      "twap_entry": 3602.774167,
+      "improvement_bp": -25.250206,
+      "abs_diff_bp": 25.250206
+    },
+    {
+      "year": 2021,
+      "monday": "2021-03-01",
+      "entry_date": "2021-03-01",
+      "direction": 1,
+      "engine_entry": 3620.3501,
+      "twap_entry": 3628.3375,
+      "improvement_bp": -22.062507,
+      "abs_diff_bp": 22.062507
+    },
+    {
+      "year": 2021,
+      "monday": "2021-03-15",
+      "entry_date": "2021-03-15",
+      "direction": 1,
+      "engine_entry": 3561.3701,
+      "twap_entry": 3581.711708,
+      "improvement_bp": -57.117367,
+      "abs_diff_bp": 57.117367
+    },
+    {
+      "year": 2021,
+      "monday": "2021-03-22",
+      "entry_date": "2021-03-22",
+      "direction": -1,
+      "engine_entry": 3560.46,
+      "twap_entry": 3559.3999,
+      "improvement_bp": -2.977424,
+      "abs_diff_bp": 2.977424
+    },
+    {
+      "year": 2021,
+      "monday": "2021-03-29",
+      "entry_date": "2021-03-29",
+      "direction": 1,
+      "engine_entry": 3718.0,
+      "twap_entry": 3701.580425,
+      "improvement_bp": 44.162386,
+      "abs_diff_bp": 44.162386
+    },
+    {
+      "year": 2021,
+      "monday": "2021-04-05",
+      "entry_date": "2021-04-05",
+      "direction": 1,
+      "engine_entry": 3669.1899,
+      "twap_entry": 3640.606658,
+      "improvement_bp": 77.900688,
+      "abs_diff_bp": 77.900688
+    },
+    {
+      "year": 2021,
+      "monday": "2021-04-12",
+      "entry_date": "2021-04-12",
+      "direction": 1,
+      "engine_entry": 3661.6899,
+      "twap_entry": 3651.446683,
+      "improvement_bp": 27.974015,
+      "abs_diff_bp": 27.974015
+    },
+    {
+      "year": 2021,
+      "monday": "2021-04-19",
+      "entry_date": "2021-04-19",
+      "direction": 1,
+      "engine_entry": 3615.1101,
+      "twap_entry": 3606.921242,
+      "improvement_bp": 22.651754,
+      "abs_diff_bp": 22.651754
+    },
+    {
+      "year": 2021,
+      "monday": "2021-04-26",
+      "entry_date": "2021-04-26",
+      "direction": -1,
+      "engine_entry": 3691.29,
+      "twap_entry": 3648.158333,
+      "improvement_bp": -116.847137,
+      "abs_diff_bp": 116.847137
+    },
+    {
+      "year": 2021,
+      "monday": "2021-05-03",
+      "entry_date": "2021-05-03",
+      "direction": 1,
+      "engine_entry": 3799.96,
+      "twap_entry": 3819.407492,
+      "improvement_bp": -51.178148,
+      "abs_diff_bp": 51.178148
+    },
+    {
+      "year": 2021,
+      "monday": "2021-05-10",
+      "entry_date": "2021-05-10",
+      "direction": 1,
+      "engine_entry": 3709.0,
+      "twap_entry": 3714.216258,
+      "improvement_bp": -14.063786,
+      "abs_diff_bp": 14.063786
+    },
+    {
+      "year": 2021,
+      "monday": "2021-05-17",
+      "entry_date": "2021-05-17",
+      "direction": 1,
+      "engine_entry": 3686.05,
+      "twap_entry": 3685.585008,
+      "improvement_bp": 1.26149,
+      "abs_diff_bp": 1.26149
+    },
+    {
+      "year": 2021,
+      "monday": "2021-05-24",
+      "entry_date": "2021-05-24",
+      "direction": 1,
+      "engine_entry": 3741.79,
+      "twap_entry": 3759.695817,
+      "improvement_bp": -47.853612,
+      "abs_diff_bp": 47.853612
+    },
+    {
+      "year": 2021,
+      "monday": "2021-06-07",
+      "entry_date": "2021-06-07",
+      "direction": -1,
+      "engine_entry": 3612.9399,
+      "twap_entry": 3614.081809,
+      "improvement_bp": 3.160609,
+      "abs_diff_bp": 3.160609
+    },
+    {
+      "year": 2021,
+      "monday": "2021-06-14",
+      "entry_date": "2021-06-14",
+      "direction": -1,
+      "engine_entry": 3652.9299,
+      "twap_entry": 3650.304192,
+      "improvement_bp": -7.187952,
+      "abs_diff_bp": 7.187952
+    },
+    {
+      "year": 2021,
+      "monday": "2021-06-21",
+      "entry_date": "2021-06-21",
+      "direction": 1,
+      "engine_entry": 3760.1001,
+      "twap_entry": 3758.127538,
+      "improvement_bp": 5.246037,
+      "abs_diff_bp": 5.246037
+    },
+    {
+      "year": 2021,
+      "monday": "2021-06-28",
+      "entry_date": "2021-06-28",
+      "direction": 1,
+      "engine_entry": 3717.3101,
+      "twap_entry": 3709.270825,
+      "improvement_bp": 21.626592,
+      "abs_diff_bp": 21.626592
+    },
+    {
+      "year": 2021,
+      "monday": "2021-07-12",
+      "entry_date": "2021-07-12",
+      "direction": 1,
+      "engine_entry": 3824.0,
+      "twap_entry": 3825.748308,
+      "improvement_bp": -4.571936,
+      "abs_diff_bp": 4.571936
+    },
+    {
+      "year": 2021,
+      "monday": "2021-07-19",
+      "entry_date": "2021-07-19",
+      "direction": 1,
+      "engine_entry": 3840.27,
+      "twap_entry": 3847.969055,
+      "improvement_bp": -20.048212,
+      "abs_diff_bp": 20.048212
+    },
+    {
+      "year": 2021,
+      "monday": "2021-07-26",
+      "entry_date": "2021-07-26",
+      "direction": 1,
+      "engine_entry": 3912.0,
+      "twap_entry": 3905.207517,
+      "improvement_bp": 17.363199,
+      "abs_diff_bp": 17.363199
+    },
+    {
+      "year": 2021,
+      "monday": "2021-08-02",
+      "entry_date": "2021-08-02",
+      "direction": 1,
+      "engine_entry": 3891.5,
+      "twap_entry": 3853.987475,
+      "improvement_bp": 96.396056,
+      "abs_diff_bp": 96.396056
+    },
+    {
+      "year": 2021,
+      "monday": "2021-08-09",
+      "entry_date": "2021-08-09",
+      "direction": 1,
+      "engine_entry": 3997.0,
+      "twap_entry": 3987.3875,
+      "improvement_bp": 24.049287,
+      "abs_diff_bp": 24.049287
+    },
+    {
+      "year": 2021,
+      "monday": "2021-08-16",
+      "entry_date": "2021-08-16",
+      "direction": 1,
+      "engine_entry": 3849.8799,
+      "twap_entry": 3844.049375,
+      "improvement_bp": 15.144693,
+      "abs_diff_bp": 15.144693
+    },
+    {
+      "year": 2021,
+      "monday": "2021-08-23",
+      "entry_date": "2021-08-23",
+      "direction": 1,
+      "engine_entry": 3880.0,
+      "twap_entry": 3866.925008,
+      "improvement_bp": 33.698432,
+      "abs_diff_bp": 33.698432
+    },
+    {
+      "year": 2021,
+      "monday": "2021-09-27",
+      "entry_date": "2021-09-27",
+      "direction": 1,
+      "engine_entry": 3843.575,
+      "twap_entry": 3837.056683,
+      "improvement_bp": 16.958994,
+      "abs_diff_bp": 16.958994
+    },
+    {
+      "year": 2021,
+      "monday": "2021-10-11",
+      "entry_date": "2021-10-11",
+      "direction": -1,
+      "engine_entry": 3760.8401,
+      "twap_entry": 3756.49802,
+      "improvement_bp": -11.545505,
+      "abs_diff_bp": 11.545505
+    },
+    {
+      "year": 2021,
+      "monday": "2021-10-18",
+      "entry_date": "2021-10-18",
+      "direction": -1,
+      "engine_entry": 3769.0,
+      "twap_entry": 3772.333333,
+      "improvement_bp": 8.844079,
+      "abs_diff_bp": 8.844079
+    },
+    {
+      "year": 2021,
+      "monday": "2021-10-25",
+      "entry_date": "2021-10-25",
+      "direction": -1,
+      "engine_entry": 3767.0,
+      "twap_entry": 3770.080017,
+      "improvement_bp": 8.176312,
+      "abs_diff_bp": 8.176312
+    },
+    {
+      "year": 2021,
+      "monday": "2021-11-08",
+      "entry_date": "2021-11-08",
+      "direction": 1,
+      "engine_entry": 3877.0,
+      "twap_entry": 3879.658342,
+      "improvement_bp": -6.856698,
+      "abs_diff_bp": 6.856698
+    },
+    {
+      "year": 2021,
+      "monday": "2021-11-22",
+      "entry_date": "2021-11-22",
+      "direction": 1,
+      "engine_entry": 3926.5,
+      "twap_entry": 3912.579175,
+      "improvement_bp": 35.453521,
+      "abs_diff_bp": 35.453521
+    },
+    {
+      "year": 2021,
+      "monday": "2021-11-29",
+      "entry_date": "2021-11-29",
+      "direction": 1,
+      "engine_entry": 4039.51,
+      "twap_entry": 4006.744175,
+      "improvement_bp": 81.113365,
+      "abs_diff_bp": 81.113365
+    },
+    {
+      "year": 2021,
+      "monday": "2021-12-06",
+      "entry_date": "2021-12-06",
+      "direction": 1,
+      "engine_entry": 3933.5,
+      "twap_entry": 3946.915417,
+      "improvement_bp": -34.105546,
+      "abs_diff_bp": 34.105546
+    },
+    {
+      "year": 2021,
+      "monday": "2021-12-13",
+      "entry_date": "2021-12-13",
+      "direction": 1,
+      "engine_entry": 3890.75,
+      "twap_entry": 3880.658571,
+      "improvement_bp": 25.936975,
+      "abs_diff_bp": 25.936975
+    },
+    {
+      "year": 2021,
+      "monday": "2021-12-20",
+      "entry_date": "2021-12-20",
+      "direction": 1,
+      "engine_entry": 4006.5,
+      "twap_entry": 4000.327282,
+      "improvement_bp": 15.406759,
+      "abs_diff_bp": 15.406759
+    },
+    {
+      "year": 2021,
+      "monday": "2021-12-27",
+      "entry_date": "2021-12-27",
+      "direction": -1,
+      "engine_entry": 4000.0,
+      "twap_entry": 3988.797264,
+      "improvement_bp": -28.006841,
+      "abs_diff_bp": 28.006841
+    },
+    {
+      "year": 2022,
+      "monday": "2022-01-03",
+      "entry_date": "2022-01-03",
+      "direction": 1,
+      "engine_entry": 4070.2,
+      "twap_entry": 4076.737488,
+      "improvement_bp": -16.061834,
+      "abs_diff_bp": 16.061834
+    },
+    {
+      "year": 2022,
+      "monday": "2022-01-24",
+      "entry_date": "2022-01-24",
+      "direction": -1,
+      "engine_entry": 3976.75,
+      "twap_entry": 3971.400657,
+      "improvement_bp": -13.451544,
+      "abs_diff_bp": 13.451544
+    },
+    {
+      "year": 2022,
+      "monday": "2022-01-31",
+      "entry_date": "2022-01-31",
+      "direction": -1,
+      "engine_entry": 3946.5349,
+      "twap_entry": 3942.867442,
+      "improvement_bp": -9.292857,
+      "abs_diff_bp": 9.292857
+    },
+    {
+      "year": 2022,
+      "monday": "2022-02-07",
+      "entry_date": "2022-02-07",
+      "direction": -1,
+      "engine_entry": 3965.7051,
+      "twap_entry": 3966.343292,
+      "improvement_bp": 1.609277,
+      "abs_diff_bp": 1.609277
+    },
+    {
+      "year": 2022,
+      "monday": "2022-02-14",
+      "entry_date": "2022-02-14",
+      "direction": -1,
+      "engine_entry": 3943.5,
+      "twap_entry": 3939.881633,
+      "improvement_bp": -9.175521,
+      "abs_diff_bp": 9.175521
+    },
+    {
+      "year": 2022,
+      "monday": "2022-03-14",
+      "entry_date": "2022-03-14",
+      "direction": -1,
+      "engine_entry": 3798.51,
+      "twap_entry": 3795.981658,
+      "improvement_bp": -6.656141,
+      "abs_diff_bp": 6.656141
+    },
+    {
+      "year": 2022,
+      "monday": "2022-04-11",
+      "entry_date": "2022-04-11",
+      "direction": -1,
+      "engine_entry": 3742.6699,
+      "twap_entry": 3750.35585,
+      "improvement_bp": 20.536008,
+      "abs_diff_bp": 20.536008
+    },
+    {
+      "year": 2022,
+      "monday": "2022-04-25",
+      "entry_date": "2022-04-25",
+      "direction": 1,
+      "engine_entry": 3935.5501,
+      "twap_entry": 3940.650833,
+      "improvement_bp": -12.960662,
+      "abs_diff_bp": 12.960662
+    },
+    {
+      "year": 2022,
+      "monday": "2022-05-02",
+      "entry_date": "2022-05-02",
+      "direction": 1,
+      "engine_entry": 4000.5601,
+      "twap_entry": 3995.790792,
+      "improvement_bp": 11.921602,
+      "abs_diff_bp": 11.921602
+    },
+    {
+      "year": 2022,
+      "monday": "2022-05-09",
+      "entry_date": "2022-05-09",
+      "direction": 1,
+      "engine_entry": 4086.6699,
+      "twap_entry": 4083.645833,
+      "improvement_bp": 7.399831,
+      "abs_diff_bp": 7.399831
+    },
+    {
+      "year": 2022,
+      "monday": "2022-05-23",
+      "entry_date": "2022-05-23",
+      "direction": 1,
+      "engine_entry": 3960.97,
+      "twap_entry": 3933.082492,
+      "improvement_bp": 70.405755,
+      "abs_diff_bp": 70.405755
+    },
+    {
+      "year": 2022,
+      "monday": "2022-05-30",
+      "entry_date": "2022-05-30",
+      "direction": -1,
+      "engine_entry": 3931.9099,
+      "twap_entry": 3932.43995,
+      "improvement_bp": 1.348073,
+      "abs_diff_bp": 1.348073
+    },
+    {
+      "year": 2022,
+      "monday": "2022-06-06",
+      "entry_date": "2022-06-06",
+      "direction": -1,
+      "engine_entry": 3795.115,
+      "twap_entry": 3801.095858,
+      "improvement_bp": 15.75936,
+      "abs_diff_bp": 15.75936
+    },
+    {
+      "year": 2022,
+      "monday": "2022-06-13",
+      "entry_date": "2022-06-13",
+      "direction": -1,
+      "engine_entry": 3971.0,
+      "twap_entry": 4035.913308,
+      "improvement_bp": 163.468417,
+      "abs_diff_bp": 163.468417
+    },
+    {
+      "year": 2022,
+      "monday": "2022-06-27",
+      "entry_date": "2022-06-27",
+      "direction": 1,
+      "engine_entry": 4132.8301,
+      "twap_entry": 4134.8301,
+      "improvement_bp": -4.839299,
+      "abs_diff_bp": 4.839299
+    },
+    {
+      "year": 2022,
+      "monday": "2022-07-04",
+      "entry_date": "2022-07-04",
+      "direction": 1,
+      "engine_entry": 4205.0498,
+      "twap_entry": 4205.0498,
+      "improvement_bp": 0.0,
+      "abs_diff_bp": 0.0
+    },
+    {
+      "year": 2022,
+      "monday": "2022-07-18",
+      "entry_date": "2022-07-18",
+      "direction": 1,
+      "engine_entry": 4326.3501,
+      "twap_entry": 4332.945725,
+      "improvement_bp": -15.245241,
+      "abs_diff_bp": 15.245241
+    },
+    {
+      "year": 2022,
+      "monday": "2022-07-25",
+      "entry_date": "2022-07-25",
+      "direction": 1,
+      "engine_entry": 4464.0,
+      "twap_entry": 4465.203325,
+      "improvement_bp": -2.695621,
+      "abs_diff_bp": 2.695621
+    },
+    {
+      "year": 2022,
+      "monday": "2022-08-29",
+      "entry_date": "2022-08-29",
+      "direction": 1,
+      "engine_entry": 4379.21,
+      "twap_entry": 4397.168325,
+      "improvement_bp": -41.008138,
+      "abs_diff_bp": 41.008138
+    },
+    {
+      "year": 2022,
+      "monday": "2022-09-19",
+      "entry_date": "2022-09-19",
+      "direction": 1,
+      "engine_entry": 4406.54,
+      "twap_entry": 4415.091708,
+      "improvement_bp": -19.406855,
+      "abs_diff_bp": 19.406855
+    },
+    {
+      "year": 2022,
+      "monday": "2022-09-26",
+      "entry_date": "2022-09-26",
+      "direction": 1,
+      "engine_entry": 4543.77,
+      "twap_entry": 4471.968208,
+      "improvement_bp": 158.022505,
+      "abs_diff_bp": 158.022505
+    },
+    {
+      "year": 2022,
+      "monday": "2022-10-03",
+      "entry_date": "2022-10-03",
+      "direction": 1,
+      "engine_entry": 4530.79,
+      "twap_entry": 4540.859092,
+      "improvement_bp": -22.2237,
+      "abs_diff_bp": 22.2237
+    },
+    {
+      "year": 2022,
+      "monday": "2022-10-24",
+      "entry_date": "2022-10-24",
+      "direction": 1,
+      "engine_entry": 4990.2798,
+      "twap_entry": 4987.584183,
+      "improvement_bp": 5.401735,
+      "abs_diff_bp": 5.401735
+    },
+    {
+      "year": 2022,
+      "monday": "2022-10-31",
+      "entry_date": "2022-10-31",
+      "direction": 1,
+      "engine_entry": 4939.6401,
+      "twap_entry": 4878.955842,
+      "improvement_bp": 122.851578,
+      "abs_diff_bp": 122.851578
+    },
+    {
+      "year": 2022,
+      "monday": "2022-11-07",
+      "entry_date": "2022-11-07",
+      "direction": 1,
+      "engine_entry": 5109.0,
+      "twap_entry": 5098.166667,
+      "improvement_bp": 21.204411,
+      "abs_diff_bp": 21.204411
+    },
+    {
+      "year": 2022,
+      "monday": "2022-11-28",
+      "entry_date": "2022-11-28",
+      "direction": 1,
+      "engine_entry": 4835.1499,
+      "twap_entry": 4851.531692,
+      "improvement_bp": -33.880628,
+      "abs_diff_bp": 33.880628
+    },
+    {
+      "year": 2022,
+      "monday": "2022-12-19",
+      "entry_date": "2022-12-19",
+      "direction": -1,
+      "engine_entry": 4777.77,
+      "twap_entry": 4786.283208,
+      "improvement_bp": 17.818372,
+      "abs_diff_bp": 17.818372
+    },
+    {
+      "year": 2022,
+      "monday": "2022-12-26",
+      "entry_date": "2022-12-26",
+      "direction": -1,
+      "engine_entry": 4729.3301,
+      "twap_entry": 4751.625,
+      "improvement_bp": 47.141772,
+      "abs_diff_bp": 47.141772
+    },
+    {
+      "year": 2023,
+      "monday": "2023-01-09",
+      "entry_date": "2023-01-09",
+      "direction": 1,
+      "engine_entry": 4851.3901,
+      "twap_entry": 4856.455958,
+      "improvement_bp": -10.442076,
+      "abs_diff_bp": 10.442076
+    },
+    {
+      "year": 2023,
+      "monday": "2023-01-16",
+      "entry_date": "2023-01-16",
+      "direction": -1,
+      "engine_entry": 4689.8799,
+      "twap_entry": 4689.7202,
+      "improvement_bp": -0.34052,
+      "abs_diff_bp": 0.34052
+    },
+    {
+      "year": 2023,
+      "monday": "2023-01-23",
+      "entry_date": "2023-01-23",
+      "direction": -1,
+      "engine_entry": 4538.02,
+      "twap_entry": 4584.73405,
+      "improvement_bp": 102.939277,
+      "abs_diff_bp": 102.939277
+    },
+    {
+      "year": 2023,
+      "monday": "2023-01-30",
+      "entry_date": "2023-01-30",
+      "direction": -1,
+      "engine_entry": 4603.6099,
+      "twap_entry": 4583.195908,
+      "improvement_bp": -44.343444,
+      "abs_diff_bp": 44.343444
+    },
+    {
+      "year": 2023,
+      "monday": "2023-02-06",
+      "entry_date": "2023-02-06",
+      "direction": -1,
+      "engine_entry": 4741.0698,
+      "twap_entry": 4736.216642,
+      "improvement_bp": -10.23642,
+      "abs_diff_bp": 10.23642
+    },
+    {
+      "year": 2023,
+      "monday": "2023-02-13",
+      "entry_date": "2023-02-13",
+      "direction": 1,
+      "engine_entry": 4810.3999,
+      "twap_entry": 4792.5883,
+      "improvement_bp": 37.027275,
+      "abs_diff_bp": 37.027275
+    },
+    {
+      "year": 2023,
+      "monday": "2023-02-20",
+      "entry_date": "2023-02-20",
+      "direction": 1,
+      "engine_entry": 4911.5601,
+      "twap_entry": 4910.206633,
+      "improvement_bp": 2.755676,
+      "abs_diff_bp": 2.755676
+    },
+    {
+      "year": 2023,
+      "monday": "2023-02-27",
+      "entry_date": "2023-02-27",
+      "direction": 1,
+      "engine_entry": 4779.7402,
+      "twap_entry": 4827.747383,
+      "improvement_bp": -100.438897,
+      "abs_diff_bp": 100.438897
+    },
+    {
+      "year": 2023,
+      "monday": "2023-03-06",
+      "entry_date": "2023-03-06",
+      "direction": 1,
+      "engine_entry": 4731.79,
+      "twap_entry": 4752.150892,
+      "improvement_bp": -43.029999,
+      "abs_diff_bp": 43.029999
+    },
+    {
+      "year": 2023,
+      "monday": "2023-03-13",
+      "entry_date": "2023-03-13",
+      "direction": -1,
+      "engine_entry": 4766.9302,
+      "twap_entry": 4766.254967,
+      "improvement_bp": -1.416495,
+      "abs_diff_bp": 1.416495
+    },
+    {
+      "year": 2023,
+      "monday": "2023-03-20",
+      "entry_date": "2023-03-20",
+      "direction": -1,
+      "engine_entry": 4816.98,
+      "twap_entry": 4824.29245,
+      "improvement_bp": 15.18057,
+      "abs_diff_bp": 15.18057
+    },
+    {
+      "year": 2023,
+      "monday": "2023-04-03",
+      "entry_date": "2023-04-03",
+      "direction": -1,
+      "engine_entry": 4606.2402,
+      "twap_entry": 4607.41085,
+      "improvement_bp": 2.541444,
+      "abs_diff_bp": 2.541444
+    },
+    {
+      "year": 2023,
+      "monday": "2023-04-10",
+      "entry_date": "2023-04-10",
+      "direction": -1,
+      "engine_entry": 4559.1401,
+      "twap_entry": 4559.668325,
+      "improvement_bp": 1.158607,
+      "abs_diff_bp": 1.158607
+    },
+    {
+      "year": 2023,
+      "monday": "2023-04-17",
+      "entry_date": "2023-04-17",
+      "direction": -1,
+      "engine_entry": 4427.96,
+      "twap_entry": 4424.463283,
+      "improvement_bp": -7.896902,
+      "abs_diff_bp": 7.896902
+    },
+    {
+      "year": 2023,
+      "monday": "2023-04-24",
+      "entry_date": "2023-04-24",
+      "direction": -1,
+      "engine_entry": 4479.04,
+      "twap_entry": 4488.335008,
+      "improvement_bp": 20.752233,
+      "abs_diff_bp": 20.752233
+    },
+    {
+      "year": 2023,
+      "monday": "2023-05-01",
+      "entry_date": "2023-05-01",
+      "direction": 1,
+      "engine_entry": 4708.25,
+      "twap_entry": 4708.229167,
+      "improvement_bp": 0.044249,
+      "abs_diff_bp": 0.044249
+    },
+    {
+      "year": 2023,
+      "monday": "2023-05-08",
+      "entry_date": "2023-05-08",
+      "direction": 1,
+      "engine_entry": 4502.77,
+      "twap_entry": 4487.546758,
+      "improvement_bp": 33.808615,
+      "abs_diff_bp": 33.808615
+    },
+    {
+      "year": 2023,
+      "monday": "2023-05-15",
+      "entry_date": "2023-05-15",
+      "direction": 1,
+      "engine_entry": 4509.9302,
+      "twap_entry": 4530.226692,
+      "improvement_bp": -45.004004,
+      "abs_diff_bp": 45.004004
+    },
+    {
+      "year": 2023,
+      "monday": "2023-05-22",
+      "entry_date": "2023-05-22",
+      "direction": 1,
+      "engine_entry": 4528.4399,
+      "twap_entry": 4529.79915,
+      "improvement_bp": -3.001586,
+      "abs_diff_bp": 3.001586
+    },
+    {
+      "year": 2023,
+      "monday": "2023-05-29",
+      "entry_date": "2023-05-29",
+      "direction": -1,
+      "engine_entry": 4428.7402,
+      "twap_entry": 4429.729942,
+      "improvement_bp": 2.234815,
+      "abs_diff_bp": 2.234815
+    },
+    {
+      "year": 2023,
+      "monday": "2023-06-05",
+      "entry_date": "2023-06-05",
+      "direction": -1,
+      "engine_entry": 4294.9399,
+      "twap_entry": 4329.532433,
+      "improvement_bp": 80.542532,
+      "abs_diff_bp": 80.542532
+    },
+    {
+      "year": 2023,
+      "monday": "2023-06-12",
+      "entry_date": "2023-06-12",
+      "direction": -1,
+      "engine_entry": 4175.0,
+      "twap_entry": 4183.466817,
+      "improvement_bp": 20.2798,
+      "abs_diff_bp": 20.2798
+    },
+    {
+      "year": 2023,
+      "monday": "2023-06-19",
+      "entry_date": "2023-06-19",
+      "direction": -1,
+      "engine_entry": 4168.0,
+      "twap_entry": 4165.87155,
+      "improvement_bp": -5.106646,
+      "abs_diff_bp": 5.106646
+    },
+    {
+      "year": 2023,
+      "monday": "2023-06-26",
+      "entry_date": "2023-06-26",
+      "direction": -1,
+      "engine_entry": 4163.97998,
+      "twap_entry": 4178.910765,
+      "improvement_bp": 35.857006,
+      "abs_diff_bp": 35.857006
+    },
+    {
+      "year": 2023,
+      "monday": "2023-07-03",
+      "entry_date": "2023-07-03",
+      "direction": -1,
+      "engine_entry": 4161.0,
+      "twap_entry": 4172.8901,
+      "improvement_bp": 28.575102,
+      "abs_diff_bp": 28.575102
+    },
+    {
+      "year": 2023,
+      "monday": "2023-07-10",
+      "entry_date": "2023-07-10",
+      "direction": 1,
+      "engine_entry": 4161.3501,
+      "twap_entry": 4156.786658,
+      "improvement_bp": 10.966253,
+      "abs_diff_bp": 10.966253
+    },
+    {
+      "year": 2023,
+      "monday": "2023-07-17",
+      "entry_date": "2023-07-17",
+      "direction": -1,
+      "engine_entry": 4040.21,
+      "twap_entry": 4072.07585,
+      "improvement_bp": 78.871767,
+      "abs_diff_bp": 78.871767
+    },
+    {
+      "year": 2023,
+      "monday": "2023-07-24",
+      "entry_date": "2023-07-24",
+      "direction": -1,
+      "engine_entry": 3950.36011,
+      "twap_entry": 3959.260844,
+      "improvement_bp": 22.53145,
+      "abs_diff_bp": 22.53145
+    },
+    {
+      "year": 2023,
+      "monday": "2023-07-31",
+      "entry_date": "2023-07-31",
+      "direction": -1,
+      "engine_entry": 3906.8301,
+      "twap_entry": 3902.863375,
+      "improvement_bp": -10.153308,
+      "abs_diff_bp": 10.153308
+    },
+    {
+      "year": 2023,
+      "monday": "2023-08-07",
+      "entry_date": "2023-08-07",
+      "direction": -1,
+      "engine_entry": 4028.8501,
+      "twap_entry": 4033.497475,
+      "improvement_bp": 11.535239,
+      "abs_diff_bp": 11.535239
+    },
+    {
+      "year": 2023,
+      "monday": "2023-08-14",
+      "entry_date": "2023-08-14",
+      "direction": -1,
+      "engine_entry": 4035.0,
+      "twap_entry": 4020.54085,
+      "improvement_bp": -35.834325,
+      "abs_diff_bp": 35.834325
+    },
+    {
+      "year": 2023,
+      "monday": "2023-08-21",
+      "entry_date": "2023-08-21",
+      "direction": 1,
+      "engine_entry": 4063.0601,
+      "twap_entry": 4069.740933,
+      "improvement_bp": -16.442861,
+      "abs_diff_bp": 16.442861
+    },
+    {
+      "year": 2023,
+      "monday": "2023-08-28",
+      "entry_date": "2023-08-28",
+      "direction": 1,
+      "engine_entry": 4117.50977,
+      "twap_entry": 4119.210775,
+      "improvement_bp": -4.131149,
+      "abs_diff_bp": 4.131149
+    },
+    {
+      "year": 2023,
+      "monday": "2023-09-04",
+      "entry_date": "2023-09-04",
+      "direction": -1,
+      "engine_entry": 4056.3301,
+      "twap_entry": 4057.504258,
+      "improvement_bp": 2.894632,
+      "abs_diff_bp": 2.894632
+    },
+    {
+      "year": 2023,
+      "monday": "2023-09-11",
+      "entry_date": "2023-09-11",
+      "direction": 1,
+      "engine_entry": 3986.5701,
+      "twap_entry": 4013.054192,
+      "improvement_bp": -66.433277,
+      "abs_diff_bp": 66.433277
+    },
+    {
+      "year": 2023,
+      "monday": "2023-09-18",
+      "entry_date": "2023-09-18",
+      "direction": -1,
+      "engine_entry": 3896.9299,
+      "twap_entry": 3915.328342,
+      "improvement_bp": 47.212657,
+      "abs_diff_bp": 47.212657
+    },
+    {
+      "year": 2023,
+      "monday": "2023-09-25",
+      "entry_date": "2023-09-25",
+      "direction": -1,
+      "engine_entry": 4018.55005,
+      "twap_entry": 4019.59668,
+      "improvement_bp": 2.604496,
+      "abs_diff_bp": 2.604496
+    },
+    {
+      "year": 2023,
+      "monday": "2023-10-02",
+      "entry_date": "2023-10-02",
+      "direction": 1,
+      "engine_entry": 4144.0298,
+      "twap_entry": 4142.417475,
+      "improvement_bp": 3.890718,
+      "abs_diff_bp": 3.890718
+    },
+    {
+      "year": 2023,
+      "monday": "2023-10-09",
+      "entry_date": "2023-10-09",
+      "direction": 1,
+      "engine_entry": 4319.9199,
+      "twap_entry": 4323.643308,
+      "improvement_bp": -8.619161,
+      "abs_diff_bp": 8.619161
+    },
+    {
+      "year": 2023,
+      "monday": "2023-10-16",
+      "entry_date": "2023-10-16",
+      "direction": 1,
+      "engine_entry": 4241.0,
+      "twap_entry": 4231.3799,
+      "improvement_bp": 22.683565,
+      "abs_diff_bp": 22.683565
+    },
+    {
+      "year": 2023,
+      "monday": "2023-10-23",
+      "entry_date": "2023-10-23",
+      "direction": 1,
+      "engine_entry": 4221.5,
+      "twap_entry": 4211.665852,
+      "improvement_bp": 23.295387,
+      "abs_diff_bp": 23.295387
+    },
+    {
+      "year": 2023,
+      "monday": "2023-10-30",
+      "entry_date": "2023-10-30",
+      "direction": 1,
+      "engine_entry": 4065.25,
+      "twap_entry": 4097.584142,
+      "improvement_bp": -79.537892,
+      "abs_diff_bp": 79.537892
+    },
+    {
+      "year": 2023,
+      "monday": "2023-11-06",
+      "entry_date": "2023-11-06",
+      "direction": -1,
+      "engine_entry": 3979.0,
+      "twap_entry": 3978.408408,
+      "improvement_bp": -1.486785,
+      "abs_diff_bp": 1.486785
+    },
+    {
+      "year": 2023,
+      "monday": "2023-11-13",
+      "entry_date": "2023-11-13",
+      "direction": -1,
+      "engine_entry": 4025.0,
+      "twap_entry": 4033.3401,
+      "improvement_bp": 20.720745,
+      "abs_diff_bp": 20.720745
+    },
+    {
+      "year": 2023,
+      "monday": "2023-11-20",
+      "entry_date": "2023-11-20",
+      "direction": -1,
+      "engine_entry": 4055.5501,
+      "twap_entry": 4050.931692,
+      "improvement_bp": -11.387871,
+      "abs_diff_bp": 11.387871
+    },
+    {
+      "year": 2023,
+      "monday": "2023-11-27",
+      "entry_date": "2023-11-27",
+      "direction": -1,
+      "engine_entry": 4000.94995,
+      "twap_entry": 4012.957499,
+      "improvement_bp": 30.011745,
+      "abs_diff_bp": 30.011745
+    },
+    {
+      "year": 2023,
+      "monday": "2023-12-04",
+      "entry_date": "2023-12-04",
+      "direction": -1,
+      "engine_entry": 4021.3999,
+      "twap_entry": 4009.880033,
+      "improvement_bp": -28.646409,
+      "abs_diff_bp": 28.646409
+    },
+    {
+      "year": 2023,
+      "monday": "2023-12-11",
+      "entry_date": "2023-12-11",
+      "direction": -1,
+      "engine_entry": 3978.5,
+      "twap_entry": 3984.599167,
+      "improvement_bp": 15.330317,
+      "abs_diff_bp": 15.330317
+    },
+    {
+      "year": 2023,
+      "monday": "2023-12-18",
+      "entry_date": "2023-12-18",
+      "direction": -1,
+      "engine_entry": 3934.21,
+      "twap_entry": 3963.042517,
+      "improvement_bp": 73.286674,
+      "abs_diff_bp": 73.286674
+    },
+    {
+      "year": 2023,
+      "monday": "2023-12-25",
+      "entry_date": "2023-12-25",
+      "direction": -1,
+      "engine_entry": 3952.83008,
+      "twap_entry": 3952.83008,
+      "improvement_bp": -0.0,
+      "abs_diff_bp": 0.0
+    },
+    {
+      "year": 2024,
+      "monday": "2024-01-01",
+      "entry_date": "2024-01-01",
+      "direction": -1,
+      "engine_entry": 3884.8401,
+      "twap_entry": 3884.8401,
+      "improvement_bp": -0.0,
+      "abs_diff_bp": 0.0
+    },
+    {
+      "year": 2024,
+      "monday": "2024-01-08",
+      "entry_date": "2024-01-08",
+      "direction": -1,
+      "engine_entry": 3884.5,
+      "twap_entry": 3901.0801,
+      "improvement_bp": 42.682713,
+      "abs_diff_bp": 42.682713
+    },
+    {
+      "year": 2024,
+      "monday": "2024-02-12",
+      "entry_date": "2024-02-12",
+      "direction": 1,
+      "engine_entry": 3915.03,
+      "twap_entry": 3927.32835,
+      "improvement_bp": -31.413169,
+      "abs_diff_bp": 31.413169
+    },
+    {
+      "year": 2024,
+      "monday": "2024-02-19",
+      "entry_date": "2024-02-19",
+      "direction": 1,
+      "engine_entry": 3916.15991,
+      "twap_entry": 3909.63916,
+      "improvement_bp": 16.650878,
+      "abs_diff_bp": 16.650878
+    },
+    {
+      "year": 2024,
+      "monday": "2024-03-04",
+      "entry_date": "2024-03-04",
+      "direction": 1,
+      "engine_entry": 3944.1599,
+      "twap_entry": 3950.469091,
+      "improvement_bp": -15.996286,
+      "abs_diff_bp": 15.996286
+    },
+    {
+      "year": 2024,
+      "monday": "2024-03-11",
+      "entry_date": "2024-03-11",
+      "direction": -1,
+      "engine_entry": 3910.25,
+      "twap_entry": 3906.291836,
+      "improvement_bp": -10.122533,
+      "abs_diff_bp": 10.122533
+    },
+    {
+      "year": 2024,
+      "monday": "2024-03-18",
+      "entry_date": "2024-03-18",
+      "direction": -1,
+      "engine_entry": 3887.95,
+      "twap_entry": 3882.307492,
+      "improvement_bp": -14.512811,
+      "abs_diff_bp": 14.512811
+    },
+    {
+      "year": 2024,
+      "monday": "2024-04-08",
+      "entry_date": "2024-04-08",
+      "direction": -1,
+      "engine_entry": 3776.6699,
+      "twap_entry": 3773.245,
+      "improvement_bp": -9.068571,
+      "abs_diff_bp": 9.068571
+    },
+    {
+      "year": 2024,
+      "monday": "2024-04-15",
+      "entry_date": "2024-04-15",
+      "direction": -1,
+      "engine_entry": 3883.04,
+      "twap_entry": 3878.754967,
+      "improvement_bp": -11.035254,
+      "abs_diff_bp": 11.035254
+    },
+    {
+      "year": 2024,
+      "monday": "2024-04-29",
+      "entry_date": "2024-04-29",
+      "direction": 1,
+      "engine_entry": 3912.79,
+      "twap_entry": 3920.964125,
+      "improvement_bp": -20.890784,
+      "abs_diff_bp": 20.890784
+    },
+    {
+      "year": 2024,
+      "monday": "2024-05-06",
+      "entry_date": "2024-05-06",
+      "direction": 1,
+      "engine_entry": 3904.79,
+      "twap_entry": 3891.1667,
+      "improvement_bp": 34.888688,
+      "abs_diff_bp": 34.888688
+    },
+    {
+      "year": 2024,
+      "monday": "2024-05-13",
+      "entry_date": "2024-05-13",
+      "direction": 1,
+      "engine_entry": 3889.0,
+      "twap_entry": 3887.810842,
+      "improvement_bp": 3.057748,
+      "abs_diff_bp": 3.057748
+    },
+    {
+      "year": 2024,
+      "monday": "2024-05-20",
+      "entry_date": "2024-05-20",
+      "direction": -1,
+      "engine_entry": 3817.75,
+      "twap_entry": 3817.385823,
+      "improvement_bp": -0.953904,
+      "abs_diff_bp": 0.953904
+    },
+    {
+      "year": 2024,
+      "monday": "2024-05-27",
+      "entry_date": "2024-05-27",
+      "direction": -1,
+      "engine_entry": 3869.01,
+      "twap_entry": 3864.823325,
+      "improvement_bp": -10.82105,
+      "abs_diff_bp": 10.82105
+    },
+    {
+      "year": 2024,
+      "monday": "2024-06-03",
+      "entry_date": "2024-06-03",
+      "direction": -1,
+      "engine_entry": 3856.0,
+      "twap_entry": 3866.020792,
+      "improvement_bp": 25.98753,
+      "abs_diff_bp": 25.98753
+    },
+    {
+      "year": 2024,
+      "monday": "2024-06-10",
+      "entry_date": "2024-06-10",
+      "direction": 1,
+      "engine_entry": 3965.29,
+      "twap_entry": 3965.115925,
+      "improvement_bp": 0.438997,
+      "abs_diff_bp": 0.438997
+    },
+    {
+      "year": 2024,
+      "monday": "2024-06-17",
+      "entry_date": "2024-06-17",
+      "direction": 1,
+      "engine_entry": 4138.0601,
+      "twap_entry": 4153.615858,
+      "improvement_bp": -37.59191,
+      "abs_diff_bp": 37.59191
+    },
+    {
+      "year": 2024,
+      "monday": "2024-06-24",
+      "entry_date": "2024-06-24",
+      "direction": 1,
+      "engine_entry": 4090.43994,
+      "twap_entry": 4129.922486,
+      "improvement_bp": -96.523958,
+      "abs_diff_bp": 96.523958
+    },
+    {
+      "year": 2024,
+      "monday": "2024-07-01",
+      "entry_date": "2024-07-01",
+      "direction": 1,
+      "engine_entry": 4156.6499,
+      "twap_entry": 4139.6099,
+      "improvement_bp": 40.994552,
+      "abs_diff_bp": 40.994552
+    },
+    {
+      "year": 2024,
+      "monday": "2024-07-08",
+      "entry_date": "2024-07-08",
+      "direction": 1,
+      "engine_entry": 4067.6699,
+      "twap_entry": 4066.686642,
+      "improvement_bp": 2.417252,
+      "abs_diff_bp": 2.417252
+    },
+    {
+      "year": 2024,
+      "monday": "2024-07-22",
+      "entry_date": "2024-07-22",
+      "direction": -1,
+      "engine_entry": 3995.12988,
+      "twap_entry": 4020.367513,
+      "improvement_bp": 63.170995,
+      "abs_diff_bp": 63.170995
+    },
+    {
+      "year": 2024,
+      "monday": "2024-07-29",
+      "entry_date": "2024-07-29",
+      "direction": -1,
+      "engine_entry": 4066.28,
+      "twap_entry": 4060.712475,
+      "improvement_bp": -13.691937,
+      "abs_diff_bp": 13.691937
+    },
+    {
+      "year": 2024,
+      "monday": "2024-08-05",
+      "entry_date": "2024-08-05",
+      "direction": 1,
+      "engine_entry": 4163.52,
+      "twap_entry": 4187.456667,
+      "improvement_bp": -57.491418,
+      "abs_diff_bp": 57.491418
+    },
+    {
+      "year": 2024,
+      "monday": "2024-08-12",
+      "entry_date": "2024-08-12",
+      "direction": 1,
+      "engine_entry": 4051.76,
+      "twap_entry": 4061.451683,
+      "improvement_bp": -23.919688,
+      "abs_diff_bp": 23.919688
+    },
+    {
+      "year": 2024,
+      "monday": "2024-08-19",
+      "entry_date": "2024-08-19",
+      "direction": 1,
+      "engine_entry": 4029.0,
+      "twap_entry": 4026.732545,
+      "improvement_bp": 5.627836,
+      "abs_diff_bp": 5.627836
+    },
+    {
+      "year": 2024,
+      "monday": "2024-08-26",
+      "entry_date": "2024-08-26",
+      "direction": -1,
+      "engine_entry": 4025.75,
+      "twap_entry": 4021.874133,
+      "improvement_bp": -9.627688,
+      "abs_diff_bp": 9.627688
+    },
+    {
+      "year": 2024,
+      "monday": "2024-09-02",
+      "entry_date": "2024-09-02",
+      "direction": 1,
+      "engine_entry": 4151.0298,
+      "twap_entry": 4162.287442,
+      "improvement_bp": -27.120118,
+      "abs_diff_bp": 27.120118
+    },
+    {
+      "year": 2024,
+      "monday": "2024-09-09",
+      "entry_date": "2024-09-09",
+      "direction": 1,
+      "engine_entry": 4212.1899,
+      "twap_entry": 4197.970825,
+      "improvement_bp": 33.756966,
+      "abs_diff_bp": 33.756966
+    },
+    {
+      "year": 2024,
+      "monday": "2024-09-16",
+      "entry_date": "2024-09-16",
+      "direction": 1,
+      "engine_entry": 4227.93994,
+      "twap_entry": 4215.73584,
+      "improvement_bp": 28.865359,
+      "abs_diff_bp": 28.865359
+    },
+    {
+      "year": 2024,
+      "monday": "2024-09-23",
+      "entry_date": "2024-09-23",
+      "direction": 1,
+      "engine_entry": 4161.3599,
+      "twap_entry": 4150.271725,
+      "improvement_bp": 26.645556,
+      "abs_diff_bp": 26.645556
+    },
+    {
+      "year": 2024,
+      "monday": "2024-09-30",
+      "entry_date": "2024-09-30",
+      "direction": -1,
+      "engine_entry": 4188.46,
+      "twap_entry": 4169.868367,
+      "improvement_bp": -44.387754,
+      "abs_diff_bp": 44.387754
+    },
+    {
+      "year": 2024,
+      "monday": "2024-10-07",
+      "entry_date": "2024-10-07",
+      "direction": 1,
+      "engine_entry": 4213.71,
+      "twap_entry": 4186.864067,
+      "improvement_bp": 63.710918,
+      "abs_diff_bp": 63.710918
+    },
+    {
+      "year": 2024,
+      "monday": "2024-10-14",
+      "entry_date": "2024-10-14",
+      "direction": 1,
+      "engine_entry": 4209.2402,
+      "twap_entry": 4211.3501,
+      "improvement_bp": -5.012544,
+      "abs_diff_bp": 5.012544
+    },
+    {
+      "year": 2024,
+      "monday": "2024-10-21",
+      "entry_date": "2024-10-21",
+      "direction": 1,
+      "engine_entry": 4283.41016,
+      "twap_entry": 4287.774983,
+      "improvement_bp": -10.190066,
+      "abs_diff_bp": 10.190066
+    },
+    {
+      "year": 2024,
+      "monday": "2024-10-28",
+      "entry_date": "2024-10-28",
+      "direction": 1,
+      "engine_entry": 4342.2598,
+      "twap_entry": 4340.229167,
+      "improvement_bp": 4.676444,
+      "abs_diff_bp": 4.676444
+    },
+    {
+      "year": 2024,
+      "monday": "2024-11-04",
+      "entry_date": "2024-11-04",
+      "direction": 1,
+      "engine_entry": 4419.6699,
+      "twap_entry": 4419.5498,
+      "improvement_bp": 0.27174,
+      "abs_diff_bp": 0.27174
+    },
+    {
+      "year": 2024,
+      "monday": "2024-11-11",
+      "entry_date": "2024-11-11",
+      "direction": 1,
+      "engine_entry": 4360.75,
+      "twap_entry": 4360.75,
+      "improvement_bp": 0.0,
+      "abs_diff_bp": 0.0
+    },
+    {
+      "year": 2024,
+      "monday": "2024-11-18",
+      "entry_date": "2024-11-18",
+      "direction": 1,
+      "engine_entry": 4401.68994,
+      "twap_entry": 4405.47416,
+      "improvement_bp": -8.597198,
+      "abs_diff_bp": 8.597198
+    },
+    {
+      "year": 2024,
+      "monday": "2024-11-25",
+      "entry_date": "2024-11-25",
+      "direction": 1,
+      "engine_entry": 4388.3501,
+      "twap_entry": 4384.873333,
+      "improvement_bp": 7.922719,
+      "abs_diff_bp": 7.922719
+    },
+    {
+      "year": 2024,
+      "monday": "2024-12-02",
+      "entry_date": "2024-12-02",
+      "direction": -1,
+      "engine_entry": 4458.8398,
+      "twap_entry": 4463.093333,
+      "improvement_bp": 9.539552,
+      "abs_diff_bp": 9.539552
+    },
+    {
+      "year": 2024,
+      "monday": "2024-12-09",
+      "entry_date": "2024-12-09",
+      "direction": 1,
+      "engine_entry": 4373.6899,
+      "twap_entry": 4405.929183,
+      "improvement_bp": -73.711864,
+      "abs_diff_bp": 73.711864
+    },
+    {
+      "year": 2024,
+      "monday": "2024-12-30",
+      "entry_date": "2024-12-30",
+      "direction": 1,
+      "engine_entry": 4405.21,
+      "twap_entry": 4413.319983,
+      "improvement_bp": -18.409981,
+      "abs_diff_bp": 18.409981
+    }
+  ],
+  "trial_accounting": "THIS RUN = +1 trial for H-ENTRY-01 in .claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md — log it."
+}

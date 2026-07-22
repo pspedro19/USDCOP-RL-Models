@@ -1,0 +1,13 @@
+H-ENTRY-01 — Engine Monday-close vs TWAP 9:30-10:30 (DESIGN 2020-2024 ONLY)
+Generado: 2026-07-22T09:04:59.016550-05:00
+
+  year |    n |  mean_bp |  ci95_lo |  ci95_hi | excl0 |  |d|_bp | %twap+
+------------------------------------------------------------------------
+  2020 |   36 |    -1.29 |    -9.36 |     7.00 | False |   18.05 |   0.47
+  2021 |   41 |     5.02 |    -8.28 |    18.19 | False |   32.18 |   0.61
+  2022 |   28 |    16.36 |    -0.96 |    36.85 | False |   31.14 |   0.50
+  2023 |   50 |     4.31 |    -5.87 |    14.47 | False |   25.67 |   0.56
+  2024 |   42 |    -3.33 |   -13.19 |     6.03 | False |   22.91 |   0.43
+pooled |  197 |     3.52 |    -1.87 |     9.08 | False |   25.82 |   0.52
+
+THIS RUN = +1 trial for H-ENTRY-01 in .claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md — log it.

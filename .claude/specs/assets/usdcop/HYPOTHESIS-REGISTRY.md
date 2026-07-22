@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 73
+n_trials_total: 74
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1183,3 +1183,32 @@ corra el resto del año." Implementación:
   integrar sus bundles (ITT, nunca 0 inventado).
 - Gate semana-15 NEUTRALIZADO el mismo día (3 YAML + monitor `sealed_judge_only`):
   el monitor semanal reporta integridad; ninguna decisión fuera de los cortes sellados.
+
+
+---
+
+## RESULTADO H-ENTRY-01 (2026-07-22) — REJECT · trials 73→74 · archivada sin variantes
+
+Ejecución única del instrumento congelado (`cop_entry_compare.py --confirm-trial`,
+diseño 2020-24, 197 lunes, IC95 bootstrap por bloque semanal 10k/seed 42):
+
+| Año | n | mejora media (pb) | IC95 | ¿excluye 0? |
+|---|---|---|---|---|
+| 2020 | 36 | −1.29 | [−9.36, +7.00] | no |
+| 2021 | 41 | +5.02 | [−8.28, +18.19] | no |
+| 2022 | 28 | +16.36 | [−0.96, +36.85] | no |
+| 2023 | 50 | +4.31 | [−5.87, +14.47] | no |
+| 2024 | 42 | −3.33 | [−13.19, +6.03] | no |
+| **pooled** | **197** | **+3.52** | **[−1.87, +9.08]** | **NO** |
+
+Bar pre-firmado: borde inferior del IC95 pooled > 0.5 pb (costo incremental declarado).
+Borde inferior = −1.87 pb ⇒ **REJECT**. La media es positiva (+3.5 pb) y el 52% de las
+semanas la TWAP mejora, pero la dispersión (|d| medio ~26 pb) hace que N=197 no alcance
+— y el prior del perfil (apertura 2.2× más cara) hablaba de la PRIMERA media hora,
+mientras la regla as-is entra al CLOSE (~12:55), que ya es zona tranquila: no había
+tanto que ganar como sugería el titular del perfil.
+
+Per pre-registro: **se archiva sin variantes** (probar otras ventanas/TWAP sería grid).
+La entrada del motor QUEDA COMO ESTÁ (close del lunes). Si algún día se revisita, es
+un pre-registro NUEVO con medición shadow forward, no un re-corte de este diseño.
+Evidencia: `.claude/evidence/cop_entry_compare/2026-07-22/`.
