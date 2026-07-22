@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 81
+n_trials_total: 82
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1306,3 +1306,34 @@ queda escrito para que el siguiente pre-registro mensual espere más N, no más 
 
 Artefactos: `.claude/evidence/cop_risk_family2/2026-07-22/` ·
 `.claude/evidence/cop_monthly_gate/2026-07-22/` (generadores persistidos).
+
+
+---
+
+## RESULTADO H-V15 design-run (2026-07-22) — APRUEBA por criterio, mejora INMATERIAL · trials 81→82
+
+v15 = v13 + dispersión EME como 5º regresor de la QR (una variante, fórmula sellada
+intacta, cutoff 2024-12-31, bit-identity v13 MATCH en los 3 años):
+
+| Año | v13 | v15 |
+|---|---|---|
+| 2022 | −7.46 / DD 9.38 / HS 4 | −7.52 / DD 9.38 / HS 4 |
+| 2023 | −1.24 / DD 6.19 / HS 4 | −1.11 / DD 6.19 / HS 4 |
+| 2024 | +4.58 / DD 3.50 / HS 2 | +4.60 / DD 3.50 / HS 2 |
+| Compuesto | −4.42 / DD 10.04 / **Calmar −0.1489** | −4.34 / DD 9.96 / **Calmar −0.1472** |
+
+**Veredicto formal: APRUEBA_DISEÑO** (Calmar −0.1472 ≥ −0.1489). **Lectura honesta
+(§6): la mejora es INMATERIAL** — +8pb de retorno y −8pb de DD en TRES años; el techo
+apenas cambia (mean 1.425→1.418). Causa probable: la cobertura EME útil arranca 2019-07
+(79 obs mensuales) y en el diseño la QR ya está dominada por las 4 features de FAM-01.
+La señal de g1 es real en screening pero económicamente redundante con lo que el techo
+ya sabe.
+
+**RECOMENDACIÓN AL OPERADOR (pre-declarada aquí, antes de cualquier corte): NO congelar
+v15 como cuarta candidata.** Añadirla al forward costaría bajar α a 0.05/4 en los
+cortes-52 de TODAS las candidatas (multiplicidad) a cambio de +0.0017 de Calmar de
+diseño — un mal negocio estadístico. g1 queda documentada como "gana screening, no
+traduce" y DISPONIBLE para re-evaluación solo cuando la historia EME crezca (≥120 obs)
+via nuevo pre-registro. Si el operador aun así quiere congelarla, el juez es el mismo
+protocolo sellado (forward, reloj propio).
+Artefacto: `.claude/evidence/cop_v15_engine/2026-07-22/` (JSON + generator).

@@ -250,7 +250,7 @@ def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, 
 # H-V13-QRISK-01 — probabilistic weekly leverage ceiling (sealed 2026-07-21)
 # ---------------------------------------------------------------------------
 
-def compute_v13_leverage_ceilings(df, cutoff=None):
+def compute_v13_leverage_ceilings(df, cutoff=None, eme_dispersion=False):
     """H-V13-QRISK-01 (pre-registered & SEALED 2026-07-21) — probabilistic weekly leverage
     ceiling, computed INSIDE the engine so a design-run judges the motor, not an external
     replay (the previous external instrument was ruled INVALID_INSTRUMENT).
@@ -310,6 +310,10 @@ def compute_v13_leverage_ceilings(df, cutoff=None):
     f3's 252-Monday tail, QR training depth) versus what H-RISK-FAM-01 screened. The `df`
     argument is therefore NOT used for the risk table; it is kept for signature stability.
     """
+    # v15 (H-RISK-FAM-02, 2026-07-22): eme_dispersion=True anade la celda GANADORA del
+    # screening FAM-02 (g1 = eme_near_std/|eme_near_mean|, PIT available_at <= asof) como
+    # QUINTO regresor de la QR. UNA variante pre-firmada; la composicion 50/50 y el resto
+    # de la formula sellada NO cambian. Con False el comportamiento es bit-identico a v13.
     import statsmodels.api as sm
 
     seed_path = PROJECT_ROOT / "seeds/latest/usdcop_daily_ohlcv.parquet"
@@ -328,6 +332,25 @@ def compute_v13_leverage_ceilings(df, cutoff=None):
     monthly = pd.read_parquet(monthly_path)
     monthly.index = pd.to_datetime(monthly.index)
     resint = monthly[[c for c in monthly.columns if "RESINT" in c.upper()][0]].rename("resint")
+
+    eme_disp = None
+    if eme_dispersion:
+        from src.data.usdcop_forward_macro import DEFAULT_OUTPUT as _PIT_PATH
+        _pit = pd.read_parquet(_PIT_PATH)
+
+        def _pit_ser(sid):
+            g = _pit[_pit["series_id"] == sid].copy()
+            g["available_at"] = pd.to_datetime(g["available_at"]).dt.tz_localize(None)
+            return (g.sort_values("available_at")
+                     .drop_duplicates("available_at", keep="last")[["available_at", "value"]])
+        _nm, _ns = _pit_ser("br_eme_usdcop_near_mean"), _pit_ser("br_eme_usdcop_near_std")
+
+        def eme_disp(asof):
+            m = _nm[_nm["available_at"] <= asof]
+            s = _ns[_ns["available_at"] <= asof]
+            if not len(m) or not len(s) or abs(float(m["value"].iloc[-1])) < 1e-9:
+                return np.nan
+            return float(s["value"].iloc[-1]) / abs(float(m["value"].iloc[-1]))
 
     d = pd.read_parquet(seed_path)
     d["date"] = pd.to_datetime(d["time"]).dt.tz_localize(None)
@@ -388,13 +411,16 @@ def compute_v13_leverage_ceilings(df, cutoff=None):
         # persistence: q90 of the trailing 252 realized-5d-range values strictly < t
         rng5_hist = prev["rng5"].dropna().tail(252)
         pers = float(rng5_hist.quantile(0.90)) if len(rng5_hist) >= 252 else np.nan
-        rows.append({"monday": wk.start_time, "last_date": g["date"].iloc[-1],
-                     "range_pct": float(range_pct), "persistence": pers,
-                     "f2": float(vv) if np.isfinite(vv) else np.nan,
-                     "f3": f3, "f4": embi_acc, "f5": res_z})
+        row = {"monday": wk.start_time, "last_date": g["date"].iloc[-1],
+               "range_pct": float(range_pct), "persistence": pers,
+               "f2": float(vv) if np.isfinite(vv) else np.nan,
+               "f3": f3, "f4": embi_acc, "f5": res_z}
+        if eme_disp is not None:
+            row["g1"] = eme_disp(asof)
+        rows.append(row)
     W = pd.DataFrame(rows).sort_values("monday").reset_index(drop=True)
 
-    feat_cols = ["f2", "f3", "f4", "f5"]
+    feat_cols = ["f2", "f3", "f4", "f5"] + (["g1"] if eme_disp is not None else [])
     design_start = pd.Timestamp("2020-01-01")
     design_end = pd.Timestamp("2025-01-01")
     cutoff_ts = pd.Timestamp(cutoff) if cutoff is not None else None

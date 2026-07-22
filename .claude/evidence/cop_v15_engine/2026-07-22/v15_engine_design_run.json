@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "hypothesis": "H-V15 (consecuencia pre-firmada H-RISK-FAM-02)",
+    "variante_unica": "QR features = {f2,f3,f4,f5} + g1_eme_disp (PIT available_at<=asof); resto de la formula sellada de v13 INTACTO",
+    "criterio_sellado": "aprueba diseno <=> Calmar_v15 >= Calmar_v13 en 2022-2024",
+    "trials": "+1 (N 81->82)",
+    "ceiling_cutoff": "2024-12-31",
+    "contaminacion": "feature EME pre-contaminada por audit externo (evento #3); juez real = forward"
+  },
+  "per_year": {
+    "2022": {
+      "v13": {
+        "ret_pct": -7.46,
+        "max_dd_pct": 9.38,
+        "n_trades": 27,
+        "n_hard_stops": 4,
+        "lev_mean": 0.581,
+        "lev_max": 1.417
+      },
+      "v15": {
+        "ret_pct": -7.52,
+        "max_dd_pct": 9.38,
+        "n_trades": 27,
+        "n_hard_stops": 4,
+        "lev_mean": 0.584,
+        "lev_max": 1.417
+      }
+    },
+    "2023": {
+      "v13": {
+        "ret_pct": -1.24,
+        "max_dd_pct": 6.19,
+        "n_trades": 22,
+        "n_hard_stops": 4,
+        "lev_mean": 0.869,
+        "lev_max": 1.324
+      },
+      "v15": {
+        "ret_pct": -1.11,
+        "max_dd_pct": 6.19,
+        "n_trades": 22,
+        "n_hard_stops": 4,
+        "lev_mean": 0.881,
+        "lev_max": 1.358
+      }
+    },
+    "2024": {
+      "v13": {
+        "ret_pct": 4.58,
+        "max_dd_pct": 3.5,
+        "n_trades": 24,
+        "n_hard_stops": 2,
+        "lev_mean": 1.054,
+        "lev_max": 1.5
+      },
+      "v15": {
+        "ret_pct": 4.6,
+        "max_dd_pct": 3.5,
+        "n_trades": 24,
+        "n_hard_stops": 2,
+        "lev_mean": 1.054,
+        "lev_max": 1.5
+      }
+    }
+  },
+  "composite": {
+    "v13": {
+      "ret_total_pct": -4.42,
+      "cagr_pct": -1.5,
+      "max_dd_pct": 10.04,
+      "calmar_cagr_over_dd": -0.1489,
+      "n_trades": 73
+    },
+    "v15": {
+      "ret_total_pct": -4.34,
+      "cagr_pct": -1.47,
+      "max_dd_pct": 9.96,
+      "calmar_cagr_over_dd": -0.1472,
+      "n_trades": 73
+    }
+  },
+  "fallbacks_per_year_v15": {
+    "2022": {
+      "n_qr_real": 52,
+      "n_persistence_only": 0,
+      "n_inactive": 0
+    },
+    "2023": {
+      "n_qr_real": 52,
+      "n_persistence_only": 0,
+      "n_inactive": 0
+    },
+    "2024": {
+      "n_qr_real": 53,
+      "n_persistence_only": 0,
+      "n_inactive": 0
+    }
+  },
+  "bit_identity_v13": {
+    "2022": {
+      "match": true
+    },
+    "2023": {
+      "match": true
+    },
+    "2024": {
+      "match": true
+    }
+  },
+  "verdict": "APRUEBA_DISENO"
+}
