@@ -1,0 +1,30 @@
+{
+  "hypothesis": "H-MONTHLY-01 etapa (i)",
+  "design_end": "2024-12-31",
+  "cells": {
+    "m1": {
+      "n": 61,
+      "ic_spearman": -0.1777,
+      "ci95_block3": [
+        -0.393,
+        0.0962
+      ],
+      "first": "2019-12-31",
+      "last": "2024-12-31",
+      "WIN": false
+    },
+    "m2": {
+      "n": 61,
+      "ic_spearman": 0.0015,
+      "ci95_block3": [
+        -0.2743,
+        0.276
+      ],
+      "first": "2019-12-31",
+      "last": "2024-12-31",
+      "WIN": false
+    }
+  },
+  "trials": "+2 (una por celda)",
+  "verdict": "NO_RECHAZA en ambas celdas \u2014 etapa (ii) NO se abre; reloj mensual cerrado hasta nuevo pre-registro"
+}

@@ -1,0 +1,95 @@
+{
+  "family": "H-RISK-FAM-02",
+  "cells": {
+    "g1_eme_disp": {
+      "n": 210,
+      "brier_model": 0.06670238904591212,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.001658705207131863,
+        0.002835794899397309
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.26142922996444534,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        0.01786388132505611,
+        0.09064061016413526
+      ],
+      "WIN_pinball": true
+    },
+    "g2_eme_rev": {
+      "n": 210,
+      "brier_model": 0.06670495447353467,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0016644524384024292,
+        0.002835036330043483
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.30077131984017125,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        -0.006731936043737464,
+        0.037523511244159334
+      ],
+      "WIN_pinball": false
+    },
+    "g3_sfc_flow": {
+      "n": 210,
+      "brier_model": 0.06459959801678777,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.000629885155440615,
+        0.006377807575985257
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.3317871020943818,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        -0.08110155480880439,
+        0.027374605509270174
+      ],
+      "WIN_pinball": false
+    },
+    "g4_sfc_netgross": {
+      "n": 210,
+      "brier_model": 0.06670093224975344,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.0016661384000148957,
+        0.0028379694232651413
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.330157788522901,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        -0.033032399622085214,
+        0.0006523834664351769
+      ],
+      "WIN_pinball": false
+    },
+    "g5_dev_chg": {
+      "n": 210,
+      "brier_model": 0.06670270026245534,
+      "brier_base": 0.06741168732355723,
+      "delta_brier_ci95": [
+        -0.001652864184248516,
+        0.0028307154246872226
+      ],
+      "WIN_brier": false,
+      "pinball_model": 0.2961733843438216,
+      "pinball_null_intercepto": 0.3140516661974274,
+      "delta_pinball_vs_null_ci95": [
+        -0.004129365886964938,
+        0.03960246036209811
+      ],
+      "WIN_pinball": false
+    }
+  },
+  "wins": [
+    "g1_eme_disp"
+  ],
+  "trials_spent": 5,
+  "consequence": "candidata v15 (features ganadoras a la QR del techo v13, 1 variante, design-run pareado +1 trial, juez forward)"
+}

@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 74
+n_trials_total: 81
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1263,3 +1263,46 @@ Lo que SÍ se pre-registra (dos programas sobre plantillas ya validadas):
   sin completar la etapa anterior.
 
 **Ninguna celda se abre sin aprobación del operador.** N sigue en 74.
+
+
+---
+
+## RESULTADOS H-RISK-FAM-02 + H-MONTHLY-01 (2026-07-22) · trials 74→81
+
+### H-RISK-FAM-02: 1/5 GANA — la dispersión EME (+5 trials)
+
+210 semanas de diseño (2020-12→2024-12; el arranque lo fija la cobertura EME 2019-07 +
+260 días de warm-up), tasa base gap_week 7.1%, protocolo idéntico a FAM-01:
+
+| Celda | Brier vs base | Pinball q90 vs NULL-intercepto | Veredicto |
+|---|---|---|---|
+| **g1_eme_disp** (desacuerdo analistas EME) | 0.0667 vs 0.0674 (no) | **0.261 vs 0.314 — WIN IC95** | **GANA** |
+| g2_eme_rev (|revisión| expectativa) | no | 0.301 vs 0.314 (no) | pierde |
+| g3_sfc_flow (flujo pensiones) | no | 0.332 vs 0.314 (peor que null) | pierde |
+| g4_sfc_netgross (posición relativa) | no | 0.330 vs 0.314 (peor) | pierde |
+| g5_dev_chg (Δ dev implícita) | no | 0.296 vs 0.314 (no concluyente) | pierde |
+
+g1 empata a la MEJOR celda de FAM-01 (f5_resintz 0.261) en pinball. Nada bate la tasa
+base en Brier (el gap-week sigue impredecible como binario — consistente con FAM-01).
+**Consecuencia pre-firmada: candidata v15 HABILITADA** — g1 se añade al set de la QR
+del techo v13 (una variante, composición 50/50 intacta), design-run pareado v13 vs v15
+en el motor (+1 trial cuando el operador apruebe), juez = forward desde freeze.
+Advertencia vigente: features pre-contaminadas por el audit externo (evento #3) —
+el screening ≤2024 mitiga; el juez real de cualquier uso es el forward.
+
+### H-MONTHLY-01 etapa (i): NO_RECHAZA en ambas celdas (+2 trials)
+
+61 meses de diseño (2019-12→2024-12; ventana canónica — el seed diario arranca 2019-12):
+
+| Celda | IC Spearman | IC95 block-b3 | Veredicto |
+|---|---|---|---|
+| m1 (dev implícita '91-180d') | −0.178 | [−0.393, +0.096] | NO excluye 0 |
+| m2 (curva EME 12m/near) | +0.002 | [−0.274, +0.276] | NO excluye 0 |
+
+**La etapa (ii) NO se abre. El reloj mensual queda cerrado hasta nuevo pre-registro**
+(p.ej. cuando el N crezca o con vintage TES-extranjeros real). Nota honesta: m1 con
+n=61 tiene MDE-IC ≈ 0.25 — la celda nunca tuvo potencia para IC plausibles ~0.1;
+queda escrito para que el siguiente pre-registro mensual espere más N, no más señales.
+
+Artefactos: `.claude/evidence/cop_risk_family2/2026-07-22/` ·
+`.claude/evidence/cop_monthly_gate/2026-07-22/` (generadores persistidos).
