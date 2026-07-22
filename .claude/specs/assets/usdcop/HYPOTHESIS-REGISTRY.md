@@ -1392,3 +1392,31 @@ Diseño de 15 puntos (resumen vinculante):
     YAML de features ANTES de cualquier freeze (hallazgo Codex R5).
 14. Fugas listadas en el review (19 ítems) son parte del pre-registro por referencia.
 15. N sigue en 86; nada se abre sin aprobación del operador.
+
+
+---
+
+## ENMIENDA H-META-01 #1 (2026-07-22, PRE-apertura — 0 miradas, N=86 intacto)
+
+Propuesta del operador (consenso temporal) auditada por Codex: **ACEPTAR CON CAMBIOS**
+(review en `.claude/evidence/swarm_codex_reviews/2026-07-22/codex_meta01_amendment.txt`).
+Reemplaza los puntos 5-6 del pre-registro sellado; el resto queda intacto:
+
+5. Celdas (2, CERRADAS — ninguna tercera celda ni variante, jamás):
+   5a. **c1 temporal** = media igual-peso de 21 votos: 7 modelos × orígenes exactos
+       t, t−1, t−2 (viernes-anterior cada uno; snapshots causales, sin backfill).
+   5b. Cada signo se compara SOLO con el lado H5 actual: alineado=1, opuesto=0.
+   5c. Forecast cero o ausente aporta 0.5; prohibidos exclusión, backfill e indicador
+       de missing.
+   5d. Solo la predicción CRUDA congelada en cada origen; NUNCA su acierto o PnL
+       realizado (momentum de skill = hipótesis distinta, RECHAZADA para esta familia).
+   5e. c2 sin cambio: −std transversal causal de los 7 forecasts del origen actual.
+   5f. Igual-peso definitivo: sin half-life, mínimos, estabilidad ni ponderaciones —
+       prohibido examinar alternativas.
+6. Target sin cambio: PnL neto a exposición unitaria; win/loss solo descriptivo.
+
+Salvedades registradas (R5): c1 reutiliza 14/21 votos entre semanas adyacentes
+(dependencia mecánica hasta lag 2) — b=4 queda FIJO sin sensibilidad de bloques; el
+tamaño efectivo será menor; el null intercepto+lado+leverage no elimina del todo el
+espejo por persistencia de H5 (se acepta como limitación declarada).
+Contabilidad confirmada: abrir la tabla = +2 (N 86→88); variante económica = +1 (→89).
