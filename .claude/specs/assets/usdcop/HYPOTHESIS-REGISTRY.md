@@ -1212,3 +1212,54 @@ Per pre-registro: **se archiva sin variantes** (probar otras ventanas/TWAP serí
 La entrada del motor QUEDA COMO ESTÁ (close del lunes). Si algún día se revisita, es
 un pre-registro NUEVO con medición shadow forward, no un re-corte de este diseño.
 Evidencia: `.claude/evidence/cop_entry_compare/2026-07-22/`.
+
+
+---
+
+## H-RISK-FAM-02 + H-MONTHLY-01 (PRE-REGISTRO 2026-07-22, 0 miradas) — features EME/SFC/forward ADAPTADAS a las plantillas probadas
+
+Origen: audit externo `reports/usdcop_forward_macro_weekly_oos_audit_20260721.xlsx`
+(59 series → 28 features → 10 seleccionadas mirando 2025 Y 2026 sobre 7 horizontes).
+**EVENTO DE CONTAMINACIÓN #3 registrado**: para la familia forward-macro, 2025 y 2026
+YTD quedan MIRADOS (selección no registrada, horizontes H25/H30 con ~2 obs no
+solapadas/año — sin valor probatorio per §6). Sus números NO se citan como evidencia.
+En el horizonte de nuestra estrategia (H5) el propio audit dio balanced-DA 2025 −4.4pp
+⇒ la vía "meterlas a la estrategia" queda REFUTADA de entrada.
+
+Lo que SÍ se pre-registra (dos programas sobre plantillas ya validadas):
+
+### A. H-RISK-FAM-02 — familia de RIESGO (plantilla H-RISK-FAM-01, la que dio 4/5)
+
+- **Familia COMPLETA declarada ex-ante (5 celdas, prohibido añadir/quitar tras abrir):**
+  g1 = pit_eme_near_dispersion (desacuerdo de analistas, z expanding)
+  g2 = |pit_eme_near_revision_pct| (magnitud de revisión de expectativa cercana)
+  g3 = pit_sfc_pension_usd_net_change (flujo pensiones, z)
+  g4 = pit_sfc_pension_usd_net_gross (posición relativa, z)
+  g5 = Δ devaluación implícita mensual (macro_banrep_forwards_monthly, tenor '91 a 180')
+  Series muertas (forward DIARIO termina feb-2025) EXCLUIDAS por inelegibles para
+  producción — no es selección por performance.
+- **Target y bar IDÉNTICOS a FAM-01**: pinball q90 del rango semanal futuro + Brier del
+  indicador gap-week, vs persistencia rolling-252 Y vs el null intercept-only justo,
+  purged K-fold (purga 5bd + embargo) SOLO ≤2024. PIT estricto: join por
+  published_at ≤ bar (EME/SFC mensuales con su rezago real; si el vintage es
+  reconstruido, el rezago documentado es COTA INFERIOR y se declara en la celda).
+- **Contabilidad: +5 trials al abrir el screening** (una celda = un trial, precedente
+  FAM-01). Advertencia declarada: las features llegan pre-contaminadas por la selección
+  del audit — el screening ≤2024 mitiga pero no elimina; por eso el consumo económico
+  SOLO puede juzgarse en forward.
+- **Consumidor económico si ≥1 gana**: candidata v15 = techo probabilístico de v13 con
+  la(s) ganadora(s) AÑADIDAS al set de la QuantReg (UNA variante, composición 50/50
+  intacta, cero grid) → design-run pareado v13 vs v15 en el motor (+1 trial) → juez =
+  forward desde su freeze. Nada toca v11/v12/v14 ni el paper en curso.
+
+### B. H-MONTHLY-01 — gate predictivo del reloj mensual (FASE 2.2, etapa i)
+
+- **DOS celdas pre-declaradas, sin selección posterior** (+2 trials al abrir):
+  m1 = devaluación implícita BanRep (ya en DB, 2005→, PIT +60d)
+  m2 = pit_eme_curve_12m_pct (pendiente de expectativas EME)
+  Target: retorno mensual siguiente de USD/COP. Diseño ≤2024, expanding causal por
+  published_at, IC con IC95 block-bootstrap. Las etapas ii-iv (traducción económica,
+  OOS-2025 un disparo, juez forward) siguen selladas como en el plan v2 — nada se abre
+  sin completar la etapa anterior.
+
+**Ninguna celda se abre sin aprobación del operador.** N sigue en 74.
