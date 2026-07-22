@@ -1,0 +1,18 @@
+{
+  "n_rows": 1841,
+  "n_weeks": 263,
+  "models": [
+    "ard",
+    "xgboost_pure",
+    "lightgbm_pure",
+    "catboost_pure",
+    "hybrid_xgboost",
+    "hybrid_lightgbm",
+    "hybrid_catboost"
+  ],
+  "horizon": 5,
+  "ledger_sha16": "21c7a432a1b9aa65",
+  "origen": "ultimo trading day < lunes (viernes-anterior)",
+  "purga_fit": "5 dias (targets no realizados excluidos del train)",
+  "nota": "SOLO predicciones crudas; ninguna m\u00e9trica de acierto computada (0 trials)"
+}

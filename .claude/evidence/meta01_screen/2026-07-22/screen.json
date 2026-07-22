@@ -1,0 +1,34 @@
+{
+  "hypothesis": "H-META-01 screening (enmienda #1)",
+  "n_trades": 98,
+  "trials": "+2 (N 86->88)",
+  "cells": {
+    "c1": {
+      "n_oof": 66,
+      "mse_null": 0.0002555834909923451,
+      "mse_cell": 0.0002795923541425892,
+      "delta_mse_mean": 2.4008863150244026e-05,
+      "delta_ci95_block4": [
+        -5.017652485824572e-07,
+        5.3635496145510456e-05
+      ],
+      "coef_oof_mean": -0.008392977808884188,
+      "sign_economico_ok": false,
+      "WIN": false
+    },
+    "c2": {
+      "n_oof": 49,
+      "mse_null": 0.0002545710343153063,
+      "mse_cell": 0.00026753323436324466,
+      "delta_mse_mean": 1.2962200047938339e-05,
+      "delta_ci95_block4": [
+        -2.484519086383561e-06,
+        2.9013987344056897e-05
+      ],
+      "coef_oof_mean": -0.0037071540468876464,
+      "sign_economico_ok": false,
+      "WIN": false
+    }
+  },
+  "verdict": "NO_RECHAZA ambas \u2014 el consenso del zoo NO a\u00f1ade sobre lado+leverage; familia CERRADA; la combinada \u00f3ptima sigue siendo v13"
+}

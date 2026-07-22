@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 86
+n_trials_total: 88
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1420,3 +1420,30 @@ Salvedades registradas (R5): c1 reutiliza 14/21 votos entre semanas adyacentes
 tamaño efectivo será menor; el null intercepto+lado+leverage no elimina del todo el
 espejo por persistencia de H5 (se acepta como limitación declarada).
 Contabilidad confirmada: abrir la tabla = +2 (N 86→88); variante económica = +1 (→89).
+
+
+---
+
+## RESULTADO H-META-01 (2026-07-22) — NO_RECHAZA ambas celdas · trials 86→88 · FAMILIA CERRADA
+
+Instrumento: ledger walk-forward viernes-origen (263 semanas, 7 modelos, 1.841 preds
+crudas, sha16 21c7a432a1b9aa65, 0 NaN). Política B = v12+techo v13, 98 trades de diseño
+2020-24. Screening EXACTO al pre-registro+enmienda (target exposición unitaria, null
+intercepto+lado+leverage, 5 folds expanding purgados, b=4 fijo):
+
+| Celda | n OOF | MSE celda vs null | ΔCI95 | coef OOF | Veredicto |
+|---|---|---|---|---|---|
+| c1 (consenso temporal 21 votos) | 66 | 0.000280 vs 0.000256 (PEOR) | [−5e-7, +5.4e-5] | **−0.0084 (signo ECONÓMICO INVERTIDO)** | NO |
+| c2 (−dispersión estandarizada) | 49 | 0.000268 vs 0.000255 (PEOR) | [−2.5e-6, +2.9e-5] | −0.0037 (invertido) | NO |
+
+Lectura: añadir el consenso EMPEORA el MSE fuera-de-fold (ajusta ruido) y el coeficiente
+sale con el signo económico INVERTIDO (más consenso → peor PnL unitario en diseño) —
+el espejo/ruido domina. **Consecuencia pre-firmada: familia CERRADA por escrito; la
+variante económica NO se abre; la combinada riesgo+dirección óptima disponible ES v13**
+(la información direccional del zoo no aporta sobre lado+leverage ni siquiera con la
+memoria temporal de la enmienda #1).
+Puertas direccionales COP cerradas a la fecha: modelos individuales (~15), fundacionales
+(2), consenso/meta-labeling (2), mensual (2). El canal direccional queda agotado con
+evidencia en TODAS sus formas probadas.
+Artefactos: `.claude/evidence/meta01_instrument/2026-07-22/` +
+`.claude/evidence/meta01_screen/2026-07-22/` (ledger, tabla de diseño, generators).
