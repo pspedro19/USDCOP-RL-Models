@@ -33,9 +33,14 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: d7a477d51d454e36
+code_hash_sha256_16: 3b54d02435658b7f
 manifest_frozen_at: '2026-07-22'
-manifest_version: 7
+manifest_version: 8
+refreeze_note_v8: >-
+  Re-freeze v8 (2026-07-22): parametro eme_dispersion (default False) en
+  compute_v13_leverage_ceilings para el design-run de v15 (H-RISK-FAM-02). Solo afecta
+  al techo v13/v15 cuando se pide explicitamente; con defaults el motor es bit-identico
+  (bit_identity_v13 MATCH 2022-24 en cop_v15_engine/2026-07-22). Senal v11 sin cambio.
 refreeze_note_v7: >-
   Re-freeze v7 (2026-07-22): dos features de candidatas anadidas al motor con flag
   default-OFF — ladder_enabled (v14, 2026-07-21) y v13_ceiling_enabled (H-V13-QRISK-01,
