@@ -1,0 +1,41 @@
+{
+  "label": "REPLAY DESCRIPTIVO (+4 trials, N 82->86) \u2014 prohibido seleccionar; juez = forward post-freeze; 2025 contaminado (DSR 0.72)",
+  "results": {
+    "v13": {
+      "2025": {
+        "ret_pct": 7.69,
+        "max_dd_pct": 5.66,
+        "n_trades": 32,
+        "n_hard_stops": 4,
+        "lev_mean": 1.23,
+        "note_n": null
+      },
+      "2026": {
+        "ret_pct": 3.12,
+        "max_dd_pct": 1.5,
+        "n_trades": 11,
+        "n_hard_stops": 1,
+        "lev_mean": 0.7,
+        "note_n": "N<20 => solo conteo y PnL"
+      }
+    },
+    "v15": {
+      "2025": {
+        "ret_pct": 7.69,
+        "max_dd_pct": 5.66,
+        "n_trades": 32,
+        "n_hard_stops": 4,
+        "lev_mean": 1.23,
+        "note_n": null
+      },
+      "2026": {
+        "ret_pct": 3.12,
+        "max_dd_pct": 1.5,
+        "n_trades": 11,
+        "n_hard_stops": 1,
+        "lev_mean": 0.7,
+        "note_n": "N<20 => solo conteo y PnL"
+      }
+    }
+  }
+}

@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 82
+n_trials_total: 86
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1337,3 +1337,19 @@ traduce" y DISPONIBLE para re-evaluación solo cuando la historia EME crezca (�
 via nuevo pre-registro. Si el operador aun así quiere congelarla, el juez es el mismo
 protocolo sellado (forward, reloj propio).
 Artefacto: `.claude/evidence/cop_v15_engine/2026-07-22/` (JSON + generator).
+
+
+---
+
+## REPLAY DESCRIPTIVO v13/v15 en 2025-2026 (2026-07-22, pedido operador) · trials 82→86
+
+| Config | 2025 | 2026 YTD |
+|---|---|---|
+| v13 | +7.69% / DD 5.66 / 32 tr / 4 HS | +3.12% / DD 1.5 / 11 tr |
+| v15 | +7.69% / DD 5.66 / 32 tr / 4 HS | +3.12% / DD 1.5 / 11 tr |
+
+**Idénticas a v12 al centavo**: el techo probabilístico NO mordió ni una semana en
+2025-2026 (leverage usado ≤1.23 < techo vigente). Confirma la lectura estructural: el
+techo de v13/v15 solo actúa en regímenes de vol alta (2022-2023); en años tranquilos
+v13 ≡ v15 ≡ v12. Celdas de monitoreo, prohibido seleccionar; el juez sigue siendo el
+forward. Artefacto: `.claude/evidence/cop_v13_v15_replay/2026-07-22/`.
