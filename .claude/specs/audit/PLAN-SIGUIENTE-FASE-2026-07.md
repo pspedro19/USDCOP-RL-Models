@@ -1,5 +1,5 @@
 ---
-kind: plan
+kind: roadmap
 status: ACTIVE
 contract: CTR-QUANT-CONSTITUTION-001
 version: 1.0.0
