@@ -69,7 +69,11 @@ disciplina). Ruta: decisión 0.4 → freeze (SSOT + manifest + strategy_id) → 
    El monitor semanal SOLO reporta integridad (verificar `gate_status=sealed_judge_only`).
 2. **Ledger del libro** (0 trials SOLO si): registra integridad, semanas faltantes = NA
    (ITT del juez sellado), pesos ERC CONGELADOS de book_v1 — sin re-optimización, sin
-   métricas de decisión.
+   métricas de decisión. **HECHO 2026-07-22 (directiva operador): ledger ANCLADO A
+   ENERO 2026** (`candidates_paper_ledger.py` → `public/data/production/paper/`,
+   refresh automático Vie 14:30 en L6 `paper_ledger_2026`; `judge_window` separa el
+   tramo que consume el juez; v13 excluida hasta freeze; componente XAU/BTC = NA
+   pendiente de integrar bundles).
 3. Si 0.5=sí: ejecutar H-ENTRY-01 (una pasada, +1 trial, N→74). Aun con PASS del bar
    pre-firmado, es estudio de PRECIO: el gate económico vive en la medición shadow
    forward (ambas entradas registradas en paper) y el cambio de producción exige

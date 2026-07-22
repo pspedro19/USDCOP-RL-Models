@@ -1161,3 +1161,25 @@ huecos, estacionalidad dic verificada (525 vs 458 USD mn). Endpoint JSON SUAMECA
 15363; PIT = fin de M+1 (cargue real día 24-26 de M+1). Codex: RECHAZADO → 2 issues
 corregidos (FAIL duro, span esperado) + re-ingesta limpia.
 Uso de ambos: join `published_at <= as_of`, nunca por month; ningún estudio abierto.
+
+
+---
+
+## DIRECTIVA OPERADOR 2026-07-22: paper anclado a ENERO 2026 + refresh automático (0 trials)
+
+"El paper debe ser siempre calculado desde enero del 2026 y dejarlo habilitado para que
+corra el resto del año." Implementación:
+- `scripts/pipeline/candidates_paper_ledger.py` → `public/data/production/paper/
+  candidates_ledger_2026.json` (dashboard-served, tracked): series 2026 completas de
+  v11 (+3.36%, forward real), v12 (+3.12%) y v14 (+3.09%) — para v12/v14 el tramo
+  Ene→2026-07-21 es el replay YA PAGADO (trials 69→71) y el campo `judge_window`
+  separa las semanas post-freeze que son las ÚNICAS que consume el juez sellado
+  (hoy 0 trades: el paper judicial arranca el lunes 2026-07-27).
+- Refresh: tarea `paper_ledger_2026` en `forecast_h5_l6_weekly_monitor` (Vie 14:30 COT)
+  — corre el resto del año sin intervención. Regenerar la misma celda semanalmente =
+  monitoreo, 0 trials; los cortes decisorios siguen siendo los de FASE 3 del plan.
+- v13 EXCLUIDA del ledger hasta su freeze (abrir su 2026 = +1 trial, decisión operador).
+- Libro: pesos ERC congelados en el JSON; componente COP poblado, XAU/BTC = NA hasta
+  integrar sus bundles (ITT, nunca 0 inventado).
+- Gate semana-15 NEUTRALIZADO el mismo día (3 YAML + monitor `sealed_judge_only`):
+  el monitor semanal reporta integridad; ninguna decisión fuera de los cortes sellados.

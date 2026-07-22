@@ -1,0 +1,411 @@
+{
+  "contract": "CTR-QUANT-CONSTITUTION-001",
+  "anchor": "2026-01-01 (directiva operador 2026-07-22)",
+  "labels": {
+    "smart_simple_v11": "forward real todo 2026 (producci\u00f3n)",
+    "smart_simple_v12": "replay descriptivo Ene->2026-07-21 (mirado, trial pagado) + forward post-freeze",
+    "smart_simple_v14": "replay descriptivo Ene->2026-07-21 (mirado, trial pagado) + forward post-freeze",
+    "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
+  },
+  "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
+  "generated_at": "2026-07-22",
+  "strategies": {
+    "smart_simple_v11": {
+      "ret_2026_ytd_pct": 3.36,
+      "n_trades": 11,
+      "note_n": "N<20 => solo conteo y PnL",
+      "judge_window": null,
+      "trades": [
+        {
+          "timestamp": "2026-01-05T09:00:00-05:00",
+          "side": "SHORT",
+          "pnl_pct": 0.6104,
+          "exit_reason": "week_end",
+          "leverage": 0.8,
+          "equity": 10061.04
+        },
+        {
+          "timestamp": "2026-04-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.6349,
+          "exit_reason": "week_end",
+          "leverage": 0.642,
+          "equity": 9997.16
+        },
+        {
+          "timestamp": "2026-04-20T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.1789,
+          "exit_reason": "week_end",
+          "leverage": 0.5,
+          "equity": 9979.28
+        },
+        {
+          "timestamp": "2026-04-27T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5272,
+          "exit_reason": "take_profit",
+          "leverage": 0.5,
+          "equity": 10031.89
+        },
+        {
+          "timestamp": "2026-05-04T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.3121,
+          "exit_reason": "week_end",
+          "leverage": 0.748,
+          "equity": 10063.2
+        },
+        {
+          "timestamp": "2026-05-11T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.75,
+          "exit_reason": "take_profit",
+          "leverage": 1.568,
+          "equity": 10239.3
+        },
+        {
+          "timestamp": "2026-05-25T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.0564,
+          "exit_reason": "take_profit",
+          "leverage": 0.725,
+          "equity": 10347.47
+        },
+        {
+          "timestamp": "2026-06-01T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5168,
+          "exit_reason": "week_end",
+          "leverage": 0.589,
+          "equity": 10400.95
+        },
+        {
+          "timestamp": "2026-06-22T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.445,
+          "exit_reason": "week_end",
+          "leverage": 0.877,
+          "equity": 10447.23
+        },
+        {
+          "timestamp": "2026-07-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -1.5,
+          "exit_reason": "hard_stop",
+          "leverage": 0.5,
+          "equity": 10290.52
+        },
+        {
+          "timestamp": "2026-07-13T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.4402,
+          "exit_reason": "week_end",
+          "leverage": 0.705,
+          "equity": 10335.82
+        }
+      ]
+    },
+    "smart_simple_v12": {
+      "ret_2026_ytd_pct": 3.12,
+      "n_trades": 11,
+      "note_n": "N<20 => solo conteo y PnL",
+      "judge_window": {
+        "starts_after": "2026-07-21",
+        "n_trades": 0,
+        "pnl_pct_compound": 0.0,
+        "note": "N<20 => solo conteo y PnL"
+      },
+      "trades": [
+        {
+          "timestamp": "2026-01-05T09:00:00-05:00",
+          "side": "SHORT",
+          "pnl_pct": 0.4578,
+          "exit_reason": "week_end",
+          "leverage": 0.6,
+          "equity": 10045.78
+        },
+        {
+          "timestamp": "2026-04-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.6349,
+          "exit_reason": "week_end",
+          "leverage": 0.642,
+          "equity": 9982.0
+        },
+        {
+          "timestamp": "2026-04-20T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.1789,
+          "exit_reason": "week_end",
+          "leverage": 0.5,
+          "equity": 9964.14
+        },
+        {
+          "timestamp": "2026-04-27T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5272,
+          "exit_reason": "take_profit",
+          "leverage": 0.5,
+          "equity": 10016.67
+        },
+        {
+          "timestamp": "2026-05-04T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.2346,
+          "exit_reason": "week_end",
+          "leverage": 0.562,
+          "equity": 10040.17
+        },
+        {
+          "timestamp": "2026-05-11T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.75,
+          "exit_reason": "take_profit",
+          "leverage": 1.5,
+          "equity": 10215.87
+        },
+        {
+          "timestamp": "2026-05-25T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.0564,
+          "exit_reason": "take_profit",
+          "leverage": 0.725,
+          "equity": 10323.8
+        },
+        {
+          "timestamp": "2026-06-01T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5168,
+          "exit_reason": "week_end",
+          "leverage": 0.589,
+          "equity": 10377.15
+        },
+        {
+          "timestamp": "2026-06-22T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.445,
+          "exit_reason": "week_end",
+          "leverage": 0.877,
+          "equity": 10423.33
+        },
+        {
+          "timestamp": "2026-07-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -1.5,
+          "exit_reason": "hard_stop",
+          "leverage": 0.5,
+          "equity": 10266.98
+        },
+        {
+          "timestamp": "2026-07-13T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.4402,
+          "exit_reason": "week_end",
+          "leverage": 0.705,
+          "equity": 10312.17
+        }
+      ]
+    },
+    "smart_simple_v14": {
+      "ret_2026_ytd_pct": 3.09,
+      "n_trades": 11,
+      "note_n": "N<20 => solo conteo y PnL",
+      "judge_window": {
+        "starts_after": "2026-07-21",
+        "n_trades": 0,
+        "pnl_pct_compound": 0.0,
+        "note": "N<20 => solo conteo y PnL"
+      },
+      "trades": [
+        {
+          "timestamp": "2026-01-05T09:00:00-05:00",
+          "side": "SHORT",
+          "pnl_pct": 0.4578,
+          "exit_reason": "week_end",
+          "leverage": 0.6,
+          "equity": 10045.78
+        },
+        {
+          "timestamp": "2026-04-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.6349,
+          "exit_reason": "week_end",
+          "leverage": 0.642,
+          "equity": 9982.0
+        },
+        {
+          "timestamp": "2026-04-20T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.1789,
+          "exit_reason": "week_end",
+          "leverage": 0.5,
+          "equity": 9964.14
+        },
+        {
+          "timestamp": "2026-04-27T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5144,
+          "exit_reason": "take_profit_half",
+          "leverage": 0.5,
+          "equity": 10015.4
+        },
+        {
+          "timestamp": "2026-05-04T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.2346,
+          "exit_reason": "week_end",
+          "leverage": 0.562,
+          "equity": 10038.89
+        },
+        {
+          "timestamp": "2026-05-11T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.734,
+          "exit_reason": "take_profit_half",
+          "leverage": 1.5,
+          "equity": 10212.97
+        },
+        {
+          "timestamp": "2026-05-25T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 1.0513,
+          "exit_reason": "take_profit_half",
+          "leverage": 0.725,
+          "equity": 10320.34
+        },
+        {
+          "timestamp": "2026-06-01T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.5168,
+          "exit_reason": "week_end",
+          "leverage": 0.589,
+          "equity": 10373.67
+        },
+        {
+          "timestamp": "2026-06-22T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.445,
+          "exit_reason": "week_end",
+          "leverage": 0.877,
+          "equity": 10419.83
+        },
+        {
+          "timestamp": "2026-07-06T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -1.5,
+          "exit_reason": "hard_stop",
+          "leverage": 0.5,
+          "equity": 10263.54
+        },
+        {
+          "timestamp": "2026-07-13T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": 0.4402,
+          "exit_reason": "week_end",
+          "leverage": 0.705,
+          "equity": 10308.72
+        }
+      ]
+    }
+  },
+  "book": {
+    "weights_frozen": {
+      "cop_smart_simple_v12": 0.420537,
+      "xau_gold_trend_simple": 0.383319,
+      "btc_hodl_b1": 0.196145
+    },
+    "cop_weight_used": 0.420537,
+    "policy": "pesos ERC congelados de book_v1.yaml; NA=dato faltante (ITT), nunca 0",
+    "weeks": [
+      {
+        "iso_week": "2026-W02",
+        "cop_component_pct": 0.4578,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W15",
+        "cop_component_pct": -0.6349,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W17",
+        "cop_component_pct": -0.1789,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W18",
+        "cop_component_pct": 0.5272,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W19",
+        "cop_component_pct": 0.2346,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W20",
+        "cop_component_pct": 1.75,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W22",
+        "cop_component_pct": 1.0564,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W23",
+        "cop_component_pct": 0.5168,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W26",
+        "cop_component_pct": 0.445,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W28",
+        "cop_component_pct": -1.5,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W29",
+        "cop_component_pct": 0.4402,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      }
+    ]
+  }
+}

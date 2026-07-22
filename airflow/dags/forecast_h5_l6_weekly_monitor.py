@@ -480,4 +480,27 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
+    def _paper_ledger_2026(**context):
+        """Ledger de paper de candidatas ANCLADO A ENERO 2026 (directiva operador
+        2026-07-22): regenera candidates_ledger_2026.json cada viernes para que la
+        serie corra el resto del año sin intervención. Etiquetado constitucional
+        (replay vs judge_window) vive en el propio script — 0 trials semanales."""
+        import subprocess
+        import sys as _sys
+        r = subprocess.run(
+            [_sys.executable, "scripts/pipeline/candidates_paper_ledger.py"],
+            cwd="/opt/airflow" if Path("/opt/airflow/scripts").exists() else str(Path(__file__).resolve().parents[2]),
+            capture_output=True, text=True, timeout=3600,
+        )
+        logger.info(r.stdout[-2000:] if r.stdout else "")
+        if r.returncode != 0:
+            raise RuntimeError(f"paper ledger failed: {r.stderr[-1500:]}")
+
+    t_paper_ledger = PythonOperator(
+        task_id='paper_ledger_2026',
+        python_callable=_paper_ledger_2026,
+        execution_timeout=timedelta(minutes=60),
+    )
+
     t_load >> t_metrics >> t_gates >> t_persist >> t_alert
+    t_persist >> t_paper_ledger
