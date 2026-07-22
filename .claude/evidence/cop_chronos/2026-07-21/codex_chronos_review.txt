@@ -1,0 +1,383 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f87d1-886c-7cc1-b664-c96793cbca5e
+--------
+user
+Eres revisor cuantitativo adversarial independiente (Claude es el piloto; tu auditas). NO uses herramientas ni leas archivos: TODO el contexto va inline abajo. Responde R1-R6 con veredicto ACEPTAR/CAMBIAR/RECHAZAR + justificacion breve cada una; luego fugas/grados de libertad ocultos adicionales; cierra con 'DISEÑO FINAL RECOMENDADO' (<=15 lineas, listo para pre-registro). Conciso y tecnico.
+
+=== REGLAS QUE GOBIERNAN (resumen constitucion) ===
+Prohibido grid sobre test/OOS; cada celda mirada = +1 trial; test insesgado de clasificadores/LLM solo post-cutoff del corpus; bar familia vol = batir persistencia rolling-252 q90 en pinball con IC95 block-bootstrap b=4; N<20 trades sin Sharpe.
+
+=== BORRADOR H-CHRONOS-01 ===
+# BORRADOR H-CHRONOS-01 — foundation model zero-shot para el q90 del rango semanal USD/COP
+
+Contexto (para el revisor): H-VOLT-01 (transformer local, diseño sellado, 3 seeds, TEST-2024
+un disparo) dio NO_RECHAZA 0/3 — pinball q90 transformer 0.122-0.136 vs persistencia
+(cuantil empírico rolling 252d) 0.1233. La persistencia lleva 3 victorias (HAR, EWMA-sizer,
+transformer). La dirección está muerta por MDE (IC min detectable 0.143 vs 0.02-0.05
+plausible a N~300 semanal). La única familia con potencia estadística es RIESGO/vol
+(IC 0.3-0.5). Constitución: CTR-QUANT-CONSTITUTION-001 (prohibido grid sobre test, +1 trial
+por celda mirada, DSR>0.95 para claims, N<20 trades sin Sharpe).
+
+## Hipótesis
+Un modelo fundacional de series de tiempo preentrenado (SIN fine-tuning con nuestros datos)
+predice el cuantil q90 del rango semanal futuro de USD/COP mejor que la persistencia
+rolling-252. Si gana, mejora el SIZING (hard-stop/TP efectivos y vol-target), no la dirección.
+
+## Diseño propuesto (v0 — a auditar)
+1. **Modelo ÚNICO pre-declarado**: amazon/chronos-bolt-base (HF, local, CPU ok). NO se
+   evalúan variantes (-small/-large, TimesFM) — cada variante extra sería +1 trial.
+2. **Input univariado**: serie diaria de rango de sesión en % ((max(high)-min(low))/close,
+   desde M5, sesión 8:00-12:55 COT), historial completo 2020→ como contexto (context window
+   máx del modelo). Forecast 5 pasos (1 semana hábil); Chronos entrega sample paths →
+   distribución empírica de max(rango d+1..d+5) → q90 directo de los samples.
+3. **Target idéntico a H-VOLT-01**: y_rng5 = max rolling-5 futuro del rango diario ×100
+   (mismo constructor de tokens, mismas fechas de sesión ≥30 barras).
+4. **ANTI-LEAKAGE DE CORPUS (constitución capa 3)**: Chronos-Bolt se publicó nov-2024; su
+   corpus de preentrenamiento puede contener FX (¿USDCOP?) hasta ~2024. Un TEST-2024 estaría
+   potencialmente contaminado ("el corpus ya sabe cómo terminó la historia"). Propuesta:
+   - Calibración de decisiones de configuración (context length, nº samples): SOLO en ≤2023.
+   - **TEST insesgado = 2025 completo, UN disparo** (post-release del modelo ⇒ imposible que
+     su corpus lo contenga). Nota: 2025 está contaminado para SELECCIÓN de estrategias COP,
+     pero aquí el modelo no se selecciona con 2025 (zero-shot, config congelada en ≤2023) —
+     2025 solo actúa de juez del forecast de vol. ¿Es esto defendible o hay que usar 2026
+     Ene-Jul? (2026 YTD ya fue mirado hoy para v12/v14 — ¿lo contamina para ESTE uso?)
+5. **Bar pre-firmado (idéntico a H-VOLT-01)**: batir a persistencia q90-252 en pinball q90
+   con IC95 block-bootstrap circular b=4 que excluya 0. Reporte descriptivo adicional vs
+   EWMA-1.645σ√5 y vs mejor celda H-RISK-FAM-01 (f4_embiacc 0.293 en su CV — no comparable
+   directamente, solo contexto). Sin seeds (zero-shot determinista con nº samples fijo alto,
+   p.ej. 256; seed del sampler fijada = 42).
+6. **Contabilidad**: +1 trial al abrir el TEST (N 71→72). Si NO_RECHAZA: puerta transformer
+   CERRADA por escrito (local + fundacional, ambos perdieron). Si WIN: +1 trial económico
+   posterior aparte (sizing modulado, candidata con juez = forward post-freeze; NO se toca
+   el backtest 2025 de la estrategia).
+7. **Artefactos**: pre-registro en HYPOTHESIS-REGISTRY ANTES de correr; script
+   scripts/analysis/cop_chronos_zeroshot.py; evidencia .claude/evidence/cop_chronos/<fecha>/
+   con generator_script.py persistido.
+
+## Preguntas concretas al revisor (Codex)
+R1. ¿El TEST-2025 es defendible dado que 2025 está quemado para selección de estrategia pero
+    no para juzgar un forecaster zero-shot congelado? ¿O exigirías 2026 Ene-Jul pese al
+    replay de hoy? ¿O ambos con jerarquía pre-declarada (2025 primario, 2026 confirmatorio)?
+R2. ¿Feed del rango directo vs feed del precio (y derivar rango de sample paths OHLC que
+    Chronos no produce)? ¿Algún sesgo en predecir la serie de rango como univariada
+    (autocorrelación de vol ya se la come la persistencia)?
+R3. ¿Chronos-bolt-base como único modelo es la elección correcta ex-ante, o TimesFM tiene
+    mejor prior para vol/rango? Elegir UNO, justificar, no probar ambos.
+R4. ¿El bar (pinball q90 vs persistencia, IC95 b=4) es el correcto o falta un baseline que
+    nos estamos ahorrando (p.ej. persistencia con ventana distinta estaría PROHIBIDA como
+    grid — pero ¿un HAR-q90 pre-firmado?)?
+R5. Costo/factibilidad: inferencia local CPU con ~250 predicciones diarias rolling de 2025,
+    contexto ~1200 puntos, 256 samples — ¿riesgo de tiempo/memoria que invalide el diseño?
+R6. Cualquier fuga o grado de libertad oculto que veas (nº samples, context length, mapping
+    de quantiles, festivos, días <30 barras).
+
+=== EXTRACTO REGISTRY (H-RISK-FAM-01 y H-VOLT-01) ===
+## H-RISK-FAM-01 (PRE-REGISTRO 2026-07-21 — familia COMPLETA, 0 miradas hasta hoy)
+
+**La única familia con prior estadístico a favor según el panel 4/4** (vol/colas se
+predicen con IC 0.3-0.5 → potencia ~100% al N actual; mecanismo documentado: 5/5 HS a
+lev-max; la persistencia es ciega al calendario por construcción).
+
+**Familia CERRADA (estas 5 y ninguna más; añadir después = nueva familia):**
+| Celda | Feature (forma exacta, todo t−1) | Prior económico |
+|---|---|---|
+| F1 | `event_week` = dummy {decisión BanRep, IPC DANE, FOMC} en la semana operada (calendarios ex-ante del SSOT `schedule.publication`) | eventos programados ⇒ P(gap)↑ sin decir signo |
+| F2 | `vol_of_vol_20` = std20 de Δvol20 diaria | fragilidad que el nivel de vol no ve ("la calma que precede al gap") |
+| F3 | `gap_tail_cond` = P̂(|gap lunes|>p90) condicionada a nivel VIX/EMBI (kernel simple, ventana 252) | B3 midió la incondicional (p99=157bps); condicionar es el paso |
+| F4 | `embi_accel` = Δ5d del EMBI z-scoreado 252 | precio del riesgo soberano acelerando ⇒ cola |
+| F5 | `resint_z` = reservas internacionales z-12m (mensual, lag publicación real) | riesgo de intervención BanRep |
+
+**Protocolo (sellado):** target = {gap_week: |gap lunes|>p90} y {q90 del rango semanal}.
+Screening SOLO ≤2024-12-31, purged K-fold K=5 (purga 5bd + embargo = lookback máx de la
+celda). Métrica = Brier (gap_week) y pinball q90 (rango) **vs el baseline de persistencia
+EWMA** — el listón de H-VOLF-01. Se publica la tabla ENTERA (las 5 celdas, ganen o
+pierdan). Contabilidad: **+5 trials al abrir resultados** (por celda, precedente
+H-CARRY-02); hoy N sigue en 59 — registrar no cuesta.
+**Consecuencia pre-firmada**: si ≥1 celda bate a la persistencia en su scoring con IC95
+block-bootstrap (b=4) que excluye 0 → UN trial económico adicional: sizing modulado
+P(gap) (candidata v13, techo probabilístico), juez = forward desde su freeze. Si ninguna
+gana → familia CERRADA por escrito, el cap bruto de v12 queda como la última palabra en
+sizing. Nada de esto toca v11 ni v12.
+
+---
+
+## RE-MEDICIÓN #3 (2026-07-21, Puerta 1.4): fills de HS open-aware — 2025 = +7.35%
+
+El yaml pedía `hard_stop: "limit"` (orden que no se ejecuta en gap-through); el motor
+llenaba al nivel exacto — un precio que en gap no existió. Fix: stop-market open-aware
+(gap-through → fill al open). Re-medición: **2025: +7.66→+7.35% (−0.31pp; el auditor
+fin-math había medido −0.28pp a mano — validación cruzada), p=0.2277, Sharpe 0.942**;
+2026 sin cambio (+3.36%). Serie oficial de honestidad del OOS-2025:
++26.05 → +13.05 → +7.66 → **+7.35** (datos, purga, fills). Cada número anterior queda
+como historia de su capa de rigor. Manifest v5. Herramientas añadidas al SSOT de
+métricas: `circular_block_bootstrap()` y `e_process()` (descriptivo, no habilita PASS).
+
+
+---
+
+## RESULTADO H-RISK-FAM-01 (2026-07-21) — 4/5 celdas GANAN en pinball q90 · trials 59→64
+
+Screening ejecutado por el protocolo pre-registrado (210 semanas de diseño 2020-12→2024-12,
+purged K-fold, generador persistido en `.claude/evidence/cop_risk_family/2026-07-21/`).
+**Corrección contra nosotros mismos durante la corrida**: el baseline EWMA pre-firmado
+(1.645σ√5) resultó mal especificado para el target RANGO (es un cuantil de retorno →
+subestima → todo gana trivial). Se sustituyó por el null que aísla la feature:
+**intercepto-solo en el mismo CV**. Con el null justo:
+
+| Celda | Brier vs base | Pinball q90 vs null 0.314 | WIN |
+|---|---|---|---|
+| f1_event (calendario aprox.) | 0.0672 / 0.0674 | 0.317 | NO (la aproximación de fechas lo debilitó, como se declaró) |
+| f2_volofvol | 0.0667 | **0.280** | **SÍ** |
+| f3_gaptail (cond. VIX) | 0.0667 | **0.278** | **SÍ** |
+| f4_embiacc | 0.0689 | **0.293** | **SÍ** |
+| f5_resintz | 0.0668 | **0.261** | **SÍ** |
+
+Target binario (gap_week, tasa base 7.1%): NINGUNA celda bate la frecuencia base — el
+evento es demasiado raro para 210 obs. La información viva está en el CUANTIL del rango,
+exactamente donde el panel predijo (vol IC 0.3-0.5).
+
+**Consecuencia pre-firmada ACTIVADA**: 1 trial económico disponible — sizing modulado por
+q90 condicional (candidata v13, techo de leverage probabilístico), juez = forward desde su
+freeze. NO se corre hoy: v12 primero (su forward arranca el lunes), v13 después si v12
+gradúa o en paralelo si el operador lo decide.
+
+## σ_TRIALS MEDIDA (COP-NULL OLA 4, deuda saldada)
+
+42 celdas re-simuladas con el motor purgado sobre datos reparados: **σ = 0.0473 semanal**
+(el grid asumido [0.05,0.10,0.15] era razonable; el "conservador" 0.15 era 3× la realidad).
+N_eff por clusters de correlación >0.95: **10 de 42**. **DSR de v11 con σ medida: 0.72 en
+los TRES escenarios (N=59/10/27)** — robusto e insensible al conteo. Veredicto sin cambio:
+v11 no pasa 0.95, freeze intacto — pero la tabla ya no es una asunción, es una medición.
+Artefactos + generadores: `.claude/evidence/cop_sigma_trials/2026-07-21/`.
+
+
+---
+
+## RESULTADO H-LATAM-02 con historia profunda (2026-07-21) — NO_RECHAZA · trials 64→65
+
+La hipótesis desbloqueada por el backfill se corrió con la mecánica EXACTA pre-registrada
+(votos TSMOM 4/8/13w /3, shift(1), {COP,MXN,BRL}, sin vol-target/carry/CLP) sobre 35 años
+(COP 1989→, MXN 1990→, BRL 1994→). Generador persistido en
+`.claude/evidence/cop_latam_deep/2026-07-21/`.
+
+**DISEÑO ≤2024** (1.833 semanas): cesta ann 5.9% / Calmar 0.277 vs B1′ 0.173. Pero la
+tabla por décadas es el hallazgo:
+
+| Década | Calmar cesta |
+|---|---|
+| 1990s | 0.671 |
+| 2000s | **1.119** |
+| 2010s | 0.184 |
+| 2020s | **0.037** |
+
+**El edge TSMOM en FX latino lleva DOS DÉCADAS muriendo** — decaimiento de alfa clásico y
+documentado, no ruido (n=521/década).
+
+**OOS-2025 (un disparo)**: cesta −1.89% (Calmar −0.49) vs B1′ −9.69% (−0.97).
+ΔCalmar = +0.47 pero **IC95 block-4 = [−0.58, +3.29] INCLUYE CERO → NO_RECHAZA**.
+La cesta amortigua (pierde menos que la exposición pasiva emparejada) pero no se
+distingue estadísticamente de ella.
+
+**Consecuencia**: la vía "breadth por TSMOM LATAM ingenuo" queda CERRADA con 1 trial —
+conocimiento que ahorra el esfuerzo futuro. Lo que sigue vivo de la familia LATAM:
+H-LATAM-01 (la pata de CARRY de la cesta) sigue gated en tasas locales medidas
+(TIIE/Selic/TPM-CLP no ingestadas) + swaps reales — la teoría dice que en FX latino el
+carry es el retorno y el momentum el ruido, y esta corrida es consistente con eso.
+Las rutas activas hacia la meta 20-30% quedan: v12 (lunes), v13 (materia prima validada),
+transformer-vol (+1 trial disponible), carry/colateral (operador).
+
+---
+
+## REGLA DE VENTANAS CANÓNICAS DEL PROGRAMA COP (operador, 2026-07-21) + re-reporte alineado de H-LATAM-02
+
+**Regla (vinculante para toda hipótesis futura del programa)**: ventana primaria =
+**DISEÑO 2020-01→2024-12 · OOS 2025 (un disparo) · LIVE 2026+**, anclada al inicio del
+M5 de USD/COP (2019-12-18). Historia más profunda solo como contexto de robustez,
+etiquetada, jamás como juez. Estrategias con macro: universo = intersección con la
+cobertura CLEAN real de cada serie. Nada se rellena hacia atrás.
+
+**H-LATAM-02 re-reportada en la ventana alineada** (mismo trial N=65, 0 miradas nuevas —
+re-slice del artefacto; `h_latam_02_ALIGNED_window.json`):
+
+| Ventana alineada | Cesta TSMOM | B1′ (pasivo emparejado) |
+|---|---|---|
+| DISEÑO 2020-2024 (261 sem) | ann +0.79% · maxDD −21.3% · **Calmar 0.037** | ann +4.31% · maxDD −12.0% · **Calmar 0.358** |
+| Por par (diseño) | COP −0.09 · MXN 0.047 · BRL 0.093 | — |
+| OOS-2025 (52 sem) | −1.89% · Calmar −0.49 | −9.20% · Calmar −0.97 |
+| ΔCalmar OOS | +0.476, IC95 block-4 [−0.57, +3.29] | **NO_RECHAZA** |
+
+**Lectura alineada — MÁS dura que la de 35 años**: en la ventana del programa la cesta
+ni siquiera bate a su propio baseline pasivo en diseño (0.037 vs 0.358) y las tres patas
+están muertas individualmente. El decaimiento por décadas queda como contexto; el
+veredicto en la ventana canónica es inequívoco: vía cerrada.
+
+---
+
+## H-VOLT-01 (PRE-REGISTRO 2026-07-21, 0 miradas) — transformer de volatilidad intradía → q90 COP
+
+**Hipótesis**: la FORMA intradía (información que la persistencia rv20 y HAR jamás vieron
+— solo consumen cierres diarios) mejora el pronóstico del cuantil q90 del rango semanal
+de USD/COP. Prior: el mejor del sistema (vol IC 0.3-0.5, potencia ~100%; panel 4/4).
+
+**Diseño SELLADO (una configuración, cero búsqueda de arquitectura):**
+- Tokens: por día de sesión, vector de 8 features intradía del M5 (vol realizada, rango,
+  up-vol, down-vol, vol primera hora, vol última hora, |gap apertura|, |ret sesión|).
+- Secuencia: 60 días de tokens → encoder transformer 2 capas · 4 cabezas · d=64 ·
+  dropout 0.1 (~200k params) → cabeza dual: vol realizada 5d + q90 rango semanal (pinball).
+- Pool de entrenamiento multi-símbolo {COP, MXN, BRL, XAU, BTC} con embedding de activo
+  (truco de entrenamiento; el DESPLIEGUE y la evaluación son SOLO COP — regla de ventanas
+  del operador respetada: todo ≥ 2019-12/2020 según el M5 de cada par).
+- Splits temporales pre-declarados: train ≤2022-12 · val 2023 (early-stop únicamente) ·
+  **TEST = 2024, un disparo** (dentro del diseño; 2025/2026 NO se tocan — quedan para el
+  paso económico futuro si esto gana). Seeds: [42, 123, 456] (3 — DL supervisado).
+- **Bar pre-firmado**: batir en TEST-2024 (COP solamente) a TODOS: persistencia rv20,
+  EWMA λ=0.94, y la mejor celda simple de H-RISK-FAM-01 (resint/gap-cola) en
+  **pinball q90** con IC95 block-bootstrap (b=4) que excluya 0 en ≥2/3 seeds.
+- **Consecuencia**: WIN → su salida se convierte en el insumo del techo de v13
+  (reemplaza/compone con las 4 features simples; el paso económico es el mismo trial v13
+  ya activado, no uno nuevo). LOSE → las features simples de H-RISK-FAM-01 son el
+  estimador operativo y el transformer queda cerrado.
+- Costo: **+1 trial al abrir TEST-2024** (N 65→66). Generador persistido junto al artefacto.
+
+
+---
+
+## RESULTADO H-VOLT-01 (2026-07-21) — NO_RECHAZA (0/3 seeds) · trials 65→66
+
+Ejecutado EXACTAMENTE el diseño sellado (9.084 secuencias multi-símbolo, 3.997 train /
+1.428 val / 260 TEST-COP-2024; 3 seeds; generador persistido en
+`.claude/evidence/cop_vol_transformer/2026-07-21/`).
+
+| Pinball q90 (TEST-2024 COP) | seed 42 | seed 123 | seed 456 |
+|---|---|---|---|
+| Transformer | 0.1222 | 0.1264 | 0.1361 |
+| Persistencia (q90 rolling-252) | **0.1233** | 0.1233 | 0.1233 |
+| EWMA 1.645σ | 0.1524 | 0.1524 | 0.1524 |
+
+**Lectura**: el transformer APLASTA a EWMA (−20%) pero NO bate a la persistencia empírica
+(mejor seed: empate estadístico, IC95 [−0.009, +0.010] incluye 0; 0/3 seeds ganan).
+**La persistencia queda imbatida por TERCERA vez** (HAR en H-VOLF-01, EWMA-sizer en
+H-VOLE-01, transformer aquí) — a horizonte semanal, el cuantil empírico rodante del rango
+de COP es un estimador que ni 200k parámetros con forma intradía mejoran. Nota de
+implementación: el tercer baseline pre-firmado (mejor celda simple de H-RISK-FAM-01) no
+alcanzó a evaluarse — irrelevante para el veredicto: fallar un baseline obligatorio ya
+es FAIL.
+
+**Consecuencia**: la vía transformer queda CERRADA para vol COP. El insumo operativo del
+techo de v13 son las 4 features simples validadas de H-RISK-FAM-01 COMPUESTAS con la
+persistencia rolling-q90 (el listón imbatido), no un modelo profundo. El presupuesto de
+lo aprendido hoy: 2 hipótesis grandes probadas y cerradas con evidencia (LATAM-TSMOM,
+transformer-vol) + 4 predictores simples validados — el sistema sabe más y gasta menos.
+
+---
+
+## H-V13-QRISK-01 (PRE-REGISTRO 2026-07-21, 0 miradas) — techo de leverage probabilístico
+
+**Fórmula SELLADA (cero grid; cada constante con su prior declarado):**
+- `q90_hat_t` = 0.5·persistencia(q90 rolling-252 del rango 5d) + 0.5·QR(q90) sobre las
+  4 features ganadoras de H-RISK-FAM-01 {vol-of-vol, gap-cola, EMBI-acel, RESINT},
+  ajustada walk-forward SOLO con datos < t (composición 50/50: el listón imbatido ancla,
+  las features validadas modulan — sin pesos optimizados).
+- `techo_t = 1.5 × clip(mediana_diseño(q90_hat) / q90_hat_t, 0.5, 1.0)` — riesgo predicho
+  sobre la mediana ⇒ el techo baja proporcionalmente; JAMÁS sube de 1.5 (v13 ⊂ v12).
+- Todo lo demás idéntico a v12. Ventanas canónicas del operador (diseño 2020/22-24).
+- **Design-run pareado** (v12 vs v13, mismas señales): abre +1 trial (N 66→67).
+  Aprobación por diseño = Calmar_v13 ≥ Calmar_v12 en 2022-2024 (replay de salidas con
+  effective-HS recalculado por leverage). **Juez real = forward** desde su freeze,
+  mismo protocolo sellado de v12 (reloj propio, corte-52).
+
+
+---
+
+## H-V13-QRISK-01 design-run: INSTRUMENTO INVÁLIDO (2026-07-21) · trials 66→67
+
+El replay de salidas construido para el design-run pareado NO reproduce al motor: dio
+v12 = −12.8% en 2022-24 donde el motor real (autoridad, `cop_v12_design/`) dio +12.1%
+compuesto — la aproximación effective-HS/producción-wrapper es incorrecta. **Regla
+aplicada: un instrumento que no reproduce al motor no puede juzgar nada.** La mirada se
+contabiliza igual (+1, conservador), el resultado se marca INVALID_INSTRUMENT y NO se
+interpreta ni a favor ni en contra de v13.
+
+**Pendiente**: el design-run válido de v13 exige implementar el techo dinámico DENTRO
+del motor (flag de candidata, mismo camino que validó a v12). El spec de v13 sigue
+sellado sin cambios. v12 queda formalmente congelada para el lunes:
+`config/execution/smart_simple_v12_lev_cap.yaml` + `config/strategy_manifests/usdcop_v12.yaml`
+(hash 3bc28b36448892a1).
+
+---
+
+## RE-MEDICIÓN #4 (2026-07-21) — el diseño 2021-2024 con el motor HONESTO es NEGATIVO
+codex
+R1 — CAMBIAR. 2025 es defendible como OOS específico de esta tarea si nunca se observaron sus pérdidas/residuos y se fija un checkpoint publicado antes de 2025; no es “insesgado globalmente”. 2026 YTD ya mirado no sirve como confirmatorio. Confirmación real: forward posterior al freeze.
+
+R2 — CAMBIAR. Alimentar rango es correcto; derivarlo de paths de precio/OHLC sería artificial. Pero Chronos-Bolt produce cuantiles marginales, no necesariamente trayectorias conjuntas coherentes: el q90 del máximo no puede obtenerse tomando/muestreando marginales. Pronosticar directamente la serie causal de máximos de cinco sesiones.
+
+R3 — ACEPTAR. Elegir `chronos-bolt-base`: mejor prior que TimesFM para una hipótesis explícitamente probabilística/q90 y factible en CPU. Fijar commit anterior a 2025; TimesFM queda prohibido incluso si Chronos pierde.
+
+R4 — ACEPTAR. El gate constitucional correcto es pérdida pinball q90 pareada contra persistencia rolling-252. HAR/EWMA/features pueden reportarse descriptivamente, nunca redefinir el PASS. Definir Δ = loss_model − loss_base; WIN sólo si el límite superior del IC95 es <0.
+
+R5 — ACEPTAR. ~250 orígenes es viable, pero 256 samples dejan sólo ~26 observaciones de cola y añaden Monte Carlo innecesario. Usar el canal q90 directo de Bolt. Benchmark sintético/≤2023 permitido; cambiar configuración por problemas vistos durante TEST invalida la corrida.
+
+R6 — CAMBIAR. Persisten grados de libertad materiales: revisión exacta y fecha del checkpoint; longitud/truncamiento de contexto; escalado ×100; canal/interpolación q90; disponibilidad causal del target; origen y horizonte; semilla/bootstrap; tratamiento de semanas incompletas, festivos y sesiones <30 barras; política ante NaN/error; versiones de librerías.
+
+Fugas/grados adicionales: publicación ≠ cutoff documental del corpus; “calibrar” context length o samples en ≤2023 sigue siendo búsqueda y cada alternativa mirada cuenta como trial. Los targets diarios a cinco sesiones se solapan: 250 pérdidas no equivalen a N=250 independiente. El cierre de 2025 requiere datos de enero-2026 sólo para realizar etiquetas, nunca como input. Comparar después con la mejor celda H-RISK puede convertirse en selección post hoc si influye en el veredicto.
+
+DISEÑO FINAL RECOMENDADO
+
+1. Modelo único: `amazon/chronos-bolt-base`, commit/hash publicado antes de 2025.  
+2. Sin fine-tuning, calibración de hiperparámetros ni modelos alternativos.  
+3. Sesión y filtro ≥30 barras idénticos a H-VOLT-01; porcentaje definido una sola vez.  
+4. \(y_t=\max(r_{t+1},…,r_{t+5})\), cinco sesiones elegibles, no días calendario.  
+5. En t sólo son observables etiquetas hasta \(y_{t-5}\); impedir cualquier off-by-one.  
+6. Input univariado: historial causal de `y`; contexto fijo al máximo soportado, truncado por la izquierda.  
+7. Forecast horizon=5; usar directamente el canal q90 correspondiente a \(y_t\), sin sample paths.  
+8. TEST primario: 2025, un disparo; 2026 YTD sólo descriptivo; confirmación = forward post-freeze.  
+9. Baseline único de gate: persistencia q90 rolling-252 oficial, con etiquetas disponibles en t.  
+10. Métrica: Δ pinball pareada modelo−baseline; agregación por semana para no inflar N.  
+11. IC95 circular block-bootstrap b=4 semanas, resamples y seed fijados ex ante.  
+12. WIN sólo si límite superior IC95(Δ)<0; cualquier otro resultado = NO_RECHAZA.  
+13. Smoke test exclusivamente funcional en ≤2023; cero métricas comparativas.  
+14. Registrar versiones, calendario, NaN, errores y política de fallo antes de abrir 2025.  
+15. Abrir 2025 = +1 trial; pérdida cierra fundacionales COP; victoria habilita sólo forward económico.
+tokens used
+17,424
+R1 — CAMBIAR. 2025 es defendible como OOS específico de esta tarea si nunca se observaron sus pérdidas/residuos y se fija un checkpoint publicado antes de 2025; no es “insesgado globalmente”. 2026 YTD ya mirado no sirve como confirmatorio. Confirmación real: forward posterior al freeze.
+
+R2 — CAMBIAR. Alimentar rango es correcto; derivarlo de paths de precio/OHLC sería artificial. Pero Chronos-Bolt produce cuantiles marginales, no necesariamente trayectorias conjuntas coherentes: el q90 del máximo no puede obtenerse tomando/muestreando marginales. Pronosticar directamente la serie causal de máximos de cinco sesiones.
+
+R3 — ACEPTAR. Elegir `chronos-bolt-base`: mejor prior que TimesFM para una hipótesis explícitamente probabilística/q90 y factible en CPU. Fijar commit anterior a 2025; TimesFM queda prohibido incluso si Chronos pierde.
+
+R4 — ACEPTAR. El gate constitucional correcto es pérdida pinball q90 pareada contra persistencia rolling-252. HAR/EWMA/features pueden reportarse descriptivamente, nunca redefinir el PASS. Definir Δ = loss_model − loss_base; WIN sólo si el límite superior del IC95 es <0.
+
+R5 — ACEPTAR. ~250 orígenes es viable, pero 256 samples dejan sólo ~26 observaciones de cola y añaden Monte Carlo innecesario. Usar el canal q90 directo de Bolt. Benchmark sintético/≤2023 permitido; cambiar configuración por problemas vistos durante TEST invalida la corrida.
+
+R6 — CAMBIAR. Persisten grados de libertad materiales: revisión exacta y fecha del checkpoint; longitud/truncamiento de contexto; escalado ×100; canal/interpolación q90; disponibilidad causal del target; origen y horizonte; semilla/bootstrap; tratamiento de semanas incompletas, festivos y sesiones <30 barras; política ante NaN/error; versiones de librerías.
+
+Fugas/grados adicionales: publicación ≠ cutoff documental del corpus; “calibrar” context length o samples en ≤2023 sigue siendo búsqueda y cada alternativa mirada cuenta como trial. Los targets diarios a cinco sesiones se solapan: 250 pérdidas no equivalen a N=250 independiente. El cierre de 2025 requiere datos de enero-2026 sólo para realizar etiquetas, nunca como input. Comparar después con la mejor celda H-RISK puede convertirse en selección post hoc si influye en el veredicto.
+
+DISEÑO FINAL RECOMENDADO
+
+1. Modelo único: `amazon/chronos-bolt-base`, commit/hash publicado antes de 2025.  
+2. Sin fine-tuning, calibración de hiperparámetros ni modelos alternativos.  
+3. Sesión y filtro ≥30 barras idénticos a H-VOLT-01; porcentaje definido una sola vez.  
+4. \(y_t=\max(r_{t+1},…,r_{t+5})\), cinco sesiones elegibles, no días calendario.  
+5. En t sólo son observables etiquetas hasta \(y_{t-5}\); impedir cualquier off-by-one.  
+6. Input univariado: historial causal de `y`; contexto fijo al máximo soportado, truncado por la izquierda.  
+7. Forecast horizon=5; usar directamente el canal q90 correspondiente a \(y_t\), sin sample paths.  
+8. TEST primario: 2025, un disparo; 2026 YTD sólo descriptivo; confirmación = forward post-freeze.  
+9. Baseline único de gate: persistencia q90 rolling-252 oficial, con etiquetas disponibles en t.  
+10. Métrica: Δ pinball pareada modelo−baseline; agregación por semana para no inflar N.  
+11. IC95 circular block-bootstrap b=4 semanas, resamples y seed fijados ex ante.  
+12. WIN sólo si límite superior IC95(Δ)<0; cualquier otro resultado = NO_RECHAZA.  
+13. Smoke test exclusivamente funcional en ≤2023; cero métricas comparativas.  
+14. Registrar versiones, calendario, NaN, errores y política de fallo antes de abrir 2025.  
+15. Abrir 2025 = +1 trial; pérdida cierra fundacionales COP; victoria habilita sólo forward económico.

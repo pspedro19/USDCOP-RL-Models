@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 71
+n_trials_total: 72
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1029,3 +1029,33 @@ al SIZING, nunca a la dirección.
 15. Contabilidad: abrir 2025 = **+1 trial (N 71→72)**. Pierde ⇒ puerta
     transformer/fundacional COP CERRADA por escrito. Gana ⇒ habilita UN trial económico
     posterior (techo de sizing tipo v13), juez = forward post-freeze.
+
+
+---
+
+## RESULTADO H-CHRONOS-01 (2026-07-22) — NO_RECHAZA por 0.0004 · trials 71→72 · PUERTA CERRADA
+
+Disparo único TEST-2025 (246 orígenes, 0 fallos, 53 semanas ISO; revisión del modelo
+6f8ced46 del 2024-11-28, pre-2025 como exigía el punto 1):
+
+| | Pinball q90 semanal |
+|---|---|
+| chronos-bolt-base (zero-shot) | **0.10495** |
+| persistencia rolling-252 | 0.12720 |
+| Δ medio (modelo − base) | **−0.02225** (−17.5%) |
+| IC95 block-bootstrap b=4 | **[−0.04584, +0.00040]** |
+
+**El borde superior cruza cero por +0.0004 ⇒ NO_RECHAZA** (regla 12 sellada: WIN solo si
+sup < 0). Es, por lejos, lo más cerca que algo ha estado de batir a la persistencia
+(el transformer local ni siquiera ganó en media). La media favorece al fundacional con
+claridad; la evidencia no alcanza el bar pre-firmado, y el bar no se mueve ex-post.
+
+**Consecuencia del pre-registro (punto 15): la puerta transformer/fundacional COP queda
+CERRADA por escrito** — local (H-VOLT-01) y zero-shot (H-CHRONOS-01), ambos NO_RECHAZA.
+Prohibido re-correr con otros resamples/bloques/modelos (TimesFM sigue prohibido).
+Única vía constitucional de revisita: NUEVO pre-registro sobre un período que hoy no
+existe (p.ej. 2026 completo juzgado en 2027), con ADR y aprobación del operador — el
+diagnóstico de hoy solo genera esa hipótesis futura, jamás un re-test sobre 2025.
+
+Artefacto: `.claude/evidence/cop_chronos/2026-07-21/` (JSON + orígenes CSV + generator
++ review adversarial de Codex `codex_chronos_review.txt`).

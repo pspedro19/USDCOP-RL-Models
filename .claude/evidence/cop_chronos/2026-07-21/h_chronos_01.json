@@ -1,0 +1,23 @@
+{
+  "model": "amazon/chronos-bolt-base",
+  "revision": "6f8ced46a499ae1dfd399981f551152d756cf4f6",
+  "revision_date": "2024-11-28T15:06:59+00:00",
+  "n_origins": 246,
+  "failures": 0,
+  "n_weeks": 53,
+  "pinball_model_weekly": 0.10495204860684255,
+  "pinball_persistencia_weekly": 0.12719959944299183,
+  "delta_mean": -0.022247550836149252,
+  "delta_ci95_block4": [
+    -0.04584165028984066,
+    0.00040342210036403345
+  ],
+  "verdict": "NO_RECHAZA",
+  "trials": "+1 (N 71->72)",
+  "versions": {
+    "torch": "2.6.0+cu124",
+    "chronos": "2.3.1",
+    "pandas": "2.2.3",
+    "numpy": "2.2.6"
+  }
+}
