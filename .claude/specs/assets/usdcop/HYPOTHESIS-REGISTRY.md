@@ -886,3 +886,32 @@ oráculo muestra bolsillos 2-3× el TP; el skill em-fx: dejar correr en EM con s
 tamaño), diseño en motor 2021-2024 pareado vs v12 + re-medición 2025 de la misma celda,
 juez = forward. Costo: +1 trial al abrir. Nota: revisa el DO-NOT histórico "no trailing"
 — esto NO es trailing (es ladder fijo); si el operador la aprueba, es la siguiente en cola.
+
+---
+
+## CONTRAFACTUAL DE DECISIONES 30% (2026-07-21, descriptivo 0 trials)
+
+10 políticas simuladas sobre M5 real + señales reales del motor purgado
+(`.claude/evidence/cop_counterfactual/2026-07-21/`). Meta: 30% en 2025 y su equivalente
+2026-YTD (+16.0%). NINGUNA política de la clase alcanza ambas:
+
+| Política (salida × leverage) | 2025 | DD | 2026 YTD | DD |
+|---|---|---|---|---|
+| S1 v11 tal cual | +6.75% | −8.0 | +3.24% | −1.5 |
+| S3 ladder 2×TP (lev igual) | +8.25% | −7.3 | +3.25% | −1.5 |
+| S7 ladder 2×TP, lev ×1.5 (cap 3) | **+20.11%** | −7.0 | +4.88% | −2.3 |
+| S10 ladder 2×TP, lev ×2 (cap 4) | **+21.74%** | −11.4 | +6.51% | −3.0 |
+
+**Las decisiones que el 30% de 2025 exigía**: (1) salida escalonada dejando correr la
+mitad al 2×TP (+1.5pp por sí sola — confirma el diagnóstico del oráculo, base de
+H-TP-LADDER-01); (2) **leverage ~3-4×** — y ahí está el precio: el 30% pleno requería
+lev ~4.5 con DD proyectado 15-18%, y por simetría el 2022 (−9% a lev 2) habría sido
+−18/−25%. El 30% de 2025 era una decisión de APALANCAMIENTO, no de señal.
+
+**2026 es el veredicto estructural**: ni la MEJOR política de la clase (S10) pasa de
++6.5% YTD vs los +16% del ritmo-30% — con el gate permitiendo 11 trades en un año
+mean-reverting, el ritmo 30% NO EXISTÍA en un solo par. Confirmación empírica de la
+Fundamental Law del panel: el 30% sostenido exige breadth (más sleeves), no más presión
+sobre COP. Prohibido desplegar la celda ganadora por estos números; H-TP-LADDER-01 sigue
+su cauce (motor + forward) y el apalancamiento del LIBRO (no de la pata) es la vía al
+objetivo. 0 trials (mapa de decisiones, sin selección de despliegue).
