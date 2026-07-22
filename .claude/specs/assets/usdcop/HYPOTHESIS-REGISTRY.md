@@ -1353,3 +1353,42 @@ Artefacto: `.claude/evidence/cop_v15_engine/2026-07-22/` (JSON + generator).
 techo de v13/v15 solo actúa en regímenes de vol alta (2022-2023); en años tranquilos
 v13 ≡ v15 ≡ v12. Celdas de monitoreo, prohibido seleccionar; el juez sigue siendo el
 forward. Artefacto: `.claude/evidence/cop_v13_v15_replay/2026-07-22/`.
+
+
+---
+
+## H-META-01 (PRE-REGISTRO SELLADO 2026-07-22, 0 miradas) — meta-labeling: el zoo como SIZING
+
+Diseño consolidado Claude+Codex (review adversarial R1-R6, veredicto CAMBIAR aplicado;
+review persistido en `.claude/evidence/swarm_codex_reviews/2026-07-22/codex_meta01_review.txt`).
+**Operador decidió: SOLO pre-registro — el instrumento y el screening NO se abren aún.**
+
+**Declaración de nacimiento: hipótesis EXPLORATORIA/CONTAMINADA** (el zoo comparte
+features con la señal H5; sus métricas selectivas ya fueron miradas). 2025-2026 sellados.
+
+Diseño de 15 puntos (resumen vinculante):
+1. Política base B = v12 + techo v13, congelada por hashes; idéntica en null y meta.
+2. Universo: trades que B habría ejecutado 2020-2024; una fila por semana ISO.
+3. **Instrumento (a construir ANTES de abrir)**: ledger del zoo con origen el VIERNES
+   ANTERIOR al lunes de entrada (el generador actual corta el viernes de la misma
+   semana = fuga de calendario), etiquetas maduras antes del origen, snapshots+hashes,
+   predicciones crudas persistidas. Regenerado walk-forward 2020-2024 sin tocar 2025+.
+4. Zoo fijo de SIETE modelos (excluidos ridge y bayesian_ridge — son la señal misma);
+   prohibido publicar/mirar métricas individuales por modelo.
+5. Celdas (2, cerradas): c1 = fracción de los 7 signos alineada con el lado H5 ·
+   c2 = −std transversal de predicciones estandarizadas con escala expanding por modelo.
+   c3 y todo feature del replay macro: EXCLUIDOS (el replay es post-selección, R3).
+6. Target = PnL neto a EXPOSICIÓN UNITARIA (dirección/entrada/salida de B congeladas);
+   win/loss solo descriptivo.
+7. CV: 5 folds EXPANDING con purga 1 semana; preprocessing/baseline solo con train.
+8. Null: intercepto + lado H5 + leverage pre-meta. Cada celda añade SOLO c1 o c2.
+9. Bar: upperIC95(ΔMSE OOF) < 0, bootstrap pareado b=4, signo económico correcto.
+10. **Abrir la tabla = +2 trials.** Si ambas ganan: combinación OOF equal-weight
+    pre-firmada (no elegir).
+11. Variante económica única (+1 trial): m = clip(1 + min(0, μ̂)/s_train, 0.5, 1),
+    aplicada AL FINAL (nunca sube exposición; el techo v13 manda encima).
+12. Juez: UN corte forward a 52 semanas; sin decisiones intermedias; N<20 sin Sharpe.
+13. Prerequisito contractual: resolver el defecto "25 declaradas vs 21 listadas" en los
+    YAML de features ANTES de cualquier freeze (hallazgo Codex R5).
+14. Fugas listadas en el review (19 ítems) son parte del pre-registro por referencia.
+15. N sigue en 86; nada se abre sin aprobación del operador.
