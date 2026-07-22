@@ -855,3 +855,34 @@ retractados como evidencia (la fuga inflaba precisamente los años de diseño):
 4. v12 va a paper el lunes igual (costo cero, menos riesgo que v11); su caso de diseño
    se re-basa en dominancia de riesgo, no en retorno. Expectativas re-fijadas por escrito.
 0 trials nuevos (re-medición de celdas pagadas con mejor instrumento).
+
+---
+
+## ORÁCULO 2025/2026 (descriptivo, 0 trials) + H-TP-LADDER-01 (PLANNED, 0 miradas)
+
+**Techo de la clase de mecánica** (M5 real, entrada solo lunes-cierre como v11, salida
+perfecta, lev 1.5, costos 1bp/lado — `.claude/evidence/cop_oracle/2026-07-21/`):
+
+| Año | Oráculo libre | Oráculo clase-v11 | Realizado v11 | Captura |
+|---|---|---|---|---|
+| 2025 | 179pp | **120pp** | +7.35% | **6.1%** |
+| 2026 YTD | 103pp | 50pp | +3.36% | 6.8% |
+
+**Lecturas:**
+1. **El 20-30% SÍ existe dentro de la clase de mecánica** (bastaría capturar 17-25% del
+   techo vs el 6% actual) — la meta es geométricamente alcanzable sin cambiar la clase
+   de entrada. La restricción no es la señal: es CUÁNTO se deja correr al ganador.
+2. Los bolsillos grandes (top semanas 3.7-6.0pp disponibles) mueren hoy en el TP fijo
+   ~1.6%: el TP captura la cola corta de semanas que ofrecían 3× más.
+3. **PROHIBICIÓN explícita** (constitución §1 + evento de hoy): entrenar CUALQUIER modelo
+   por prueba-y-error contra estos puntos de entrada/salida 2025 = imitación del oráculo
+   = la forma pura del overfitting que hoy vimos colapsar el diseño a −17%. El oráculo
+   es mapa de techo, jamás target de entrenamiento.
+
+**H-TP-LADDER-01 (PLANNED, la hipótesis mecánica que el diagnóstico habilita)**: salida
+escalonada pre-declarada — 50% del tamaño al TP actual (vol-escalado ~1.6%), 50% restante
+al 2×TP o week-end, mismo HS. UNA variable (estructura de salida), prior ex-ante (el
+oráculo muestra bolsillos 2-3× el TP; el skill em-fx: dejar correr en EM con stop de
+tamaño), diseño en motor 2021-2024 pareado vs v12 + re-medición 2025 de la misma celda,
+juez = forward. Costo: +1 trial al abrir. Nota: revisa el DO-NOT histórico "no trailing"
+— esto NO es trailing (es ladder fijo); si el operador la aprueba, es la siguiente en cola.
