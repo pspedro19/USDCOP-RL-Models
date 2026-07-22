@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 67
+n_trials_total: 68
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -915,3 +915,24 @@ Fundamental Law del panel: el 30% sostenido exige breadth (más sleeves), no má
 sobre COP. Prohibido desplegar la celda ganadora por estos números; H-TP-LADDER-01 sigue
 su cauce (motor + forward) y el apalancamiento del LIBRO (no de la pata) es la vía al
 objetivo. 0 trials (mapa de decisiones, sin selección de despliegue).
+
+
+---
+
+## RESULTADO H-TP-LADDER-01 / v14 (2026-07-21) — PASA generalización de diseño · trials 67→68
+
+Motor real pareado (v12 vs v14=v12+ladder 50/50 a TP y 2×TP; flag en motor, default off):
+
+| Año | v12 (ret/DD/Calmar~) | v14 (ret/DD/Calmar~) | v14 gana |
+|---|---|---|---|
+| 2021 | −2.14 / 3.8 / −0.56 | −2.71 / 3.8 / −0.71 | no |
+| 2022 | −9.22 / 9.4 / −0.98 | **−7.98 / 9.5 / −0.84** | sí |
+| 2023 | −2.53 / 6.9 / −0.37 | **−0.93 / 6.5 / −0.14** | sí |
+| 2024 | +4.60 / 3.5 / 1.31 | +4.61 / 3.5 / 1.32 | sí |
+| 2025* | +7.69 / 5.7 / 1.36 | +6.59 / 5.1 / 1.28 | no (*re-medición) |
+
+**Criterio pre-declarado (≥3/4 años de diseño): PASA (3/4).** El perfil es el de una
+mejora estructural genuina: mejora los años MALOS y cede en el año seleccionado —
+lo inverso del overfitting. Magnitudes modestas (0.2-1.6pp/año): se dice claro.
+Congelada `smart_simple_v14_ladder` (SSOT + manifest); juez = forward desde freeze,
+mismo protocolo sellado de v12. Entra a paper junto a v11/v12 (strategy_id propio, 064).

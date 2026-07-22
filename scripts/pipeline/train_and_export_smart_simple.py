@@ -196,6 +196,29 @@ def simulate_week(direction, entry, bars, hard_stop_pct, take_profit_pct):
     return bars[-1]["close"], "week_end", len(bars) - 1
 
 
+def simulate_week_ladder(direction, entry, bars, hard_stop_pct, take_profit_pct, k2=2.0):
+    """H-TP-LADDER-01 (v14): salida escalonada — 50% al TP, 50% al k2*TP / week_end.
+    HS activo sobre la posicion restante. Devuelve retorno-precio MEZCLADO equivalente,
+    para que compute_pnl y el resto del loop no cambien. Open-aware como simulate_week."""
+    hs_level = entry * (1 - direction * hard_stop_pct)
+    half = False
+    for i, bar in enumerate(bars):
+        o, h, l, c = bar.get("open", bar["close"]), bar["high"], bar["low"], bar["close"]
+        if check_hard_stop(direction, entry, h, l, hard_stop_pct):
+            gap = (direction > 0 and o <= hs_level) or (direction < 0 and o >= hs_level)
+            r_hs = direction * ((o if gap else entry * (1 - direction * hard_stop_pct)) - entry) / entry
+            r = (0.5 * take_profit_pct + 0.5 * r_hs) if half else r_hs
+            return entry * (1 + direction * r), "hard_stop", i
+        if not half and check_take_profit(direction, entry, h, l, take_profit_pct):
+            half = True
+        if half and check_take_profit(direction, entry, h, l, k2 * take_profit_pct):
+            r = 0.5 * take_profit_pct + 0.5 * (k2 * take_profit_pct)
+            return entry * (1 + direction * r), "take_profit", i
+    r_end = direction * (bars[-1]["close"] - entry) / entry
+    r = (0.5 * take_profit_pct + 0.5 * r_end) if half else r_end
+    return entry * (1 + direction * r), ("take_profit_half" if half else "week_end"), len(bars) - 1
+
+
 def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, slippage,
                 nights_held: int = 0, swap_annual_pp=None):
     """Compute PnL with costs — identical to backtest_smart_simple_v1.py.
@@ -623,7 +646,11 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
         if not bars:
             continue
 
-        exit_p, reason, exit_bar_idx = simulate_week(direction, entry, bars, effective_hs, effective_tp)
+        if cfg.get("ladder_enabled"):
+            exit_p, reason, exit_bar_idx = simulate_week_ladder(
+                direction, entry, bars, effective_hs, effective_tp, cfg.get("ladder_k2", 2.0))
+        else:
+            exit_p, reason, exit_bar_idx = simulate_week(direction, entry, bars, effective_hs, effective_tp)
         pnl = compute_pnl(direction, entry, exit_p, final_lev, reason, cfg["maker_fee"], cfg["slippage"])
 
         equity_at_entry = equity

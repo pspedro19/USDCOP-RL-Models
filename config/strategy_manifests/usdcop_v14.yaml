@@ -1,0 +1,13 @@
+strategy_id: smart_simple_v14_ladder
+asset_id: usdcop
+frozen: '2026-07-21'
+variable_unica: salida escalonada 50/50 al TP y 2xTP (vs v12)
+clock:
+  periods_per_year: 52
+files:
+- scripts/pipeline/train_and_export_smart_simple.py
+- src/forecasting/enhance_v2.py
+- config/execution/smart_simple_v14_ladder.yaml
+code_hash_sha256_16: 095c3e0b5c31f824
+generalizacion_diseno: '3/4 años (mejora 2022/2023/2024, cede 2025: perfil anti-overfit)'
+juez: forward desde freeze, mismo protocolo sellado de v12
