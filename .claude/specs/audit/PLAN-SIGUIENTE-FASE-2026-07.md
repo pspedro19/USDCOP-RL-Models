@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: ACTIVE
+status: PLANNED
 contract: CTR-QUANT-CONSTITUTION-001
 version: 1.0.0
 date: 2026-07-22
@@ -19,6 +19,31 @@ code_anchors:
 > Codex) · libro ERC + gobernador Kelly + stress MC listos (0 trials) · H-ENTRY-01
 > pre-registrado sin ejecutar · forwards/remesas BanRep ingestados PIT.
 > Regla transversal: nada de re-tocar 2025; el juez de todo es el forward.
+
+## META 20-30%: aritmética honesta (el norte de todo el plan)
+
+| Componente | pp/año | Certeza | Fase que lo captura |
+|---|---|---|---|
+| Señal actual (ritmo forward 2026) | ~6 | forward real (único número 100% limpio: +3.36% YTD v11) | FASE 1/3 |
+| Colateral remunerado | +4.3-4.5 | determinista, decisión de venue | FASE 0.3 |
+| Carry medido | +1.0-1.9 | gate ≥20 statements pendiente | FASE 0.4 → 2.1 |
+| Libro diversificado (XAU+BTC, corr ≈0) | mejora Calmar/DD, no suma retorno directo | medido | FASE 0.2 + 1.2 |
+| Leverage 1.5× a nivel LIBRO | ×1.5 sobre lo anterior | SOLO post-graduación corte-52 + Kelly forward > 0 | FASE 4 |
+
+**Suma honesta si todo confirma: ~11-13% sin leverage · ~17-19% con 1.5× post-graduación.**
+El 20-30% exige que el forward gradúe Y las palancas deterministas capturadas — no hay
+atajo por señal ni por leverage de pata (cerrados con evidencia, ver "Qué NO está").
+Mientras el forward no cruce un régimen distinto, ningún número prueba edge (DSR 0.72).
+
+### Ruta v13 (la candidata con mejor diseño: −4.42% / DD 10.0 / Calmar −0.149, HS −2)
+
+v13 NO tiene OOS-2025 corrido — **por disciplina, no por descuido**: su juez pre-registrado
+es el forward desde su freeze; correr 2025 ahora solo quemaría otra mirada sin poder
+probatorio (DSR ya lo descuenta). Ruta: decisión 0.5 (freeze: SSOT yaml +
+manifest propio + strategy_id) → paper junto a v12/v14 → mismo protocolo sellado
+(reloj propio, corte-52). Su caso es dominancia de RIESGO (mismo motor, DD y HS menores
+en cada año malo del diseño), que es exactamente lo que el libro necesita para sostener
+el leverage post-graduación.
 
 ## FASE 0 — Firmas y decisiones del OPERADOR (bloquean lo demás)
 
