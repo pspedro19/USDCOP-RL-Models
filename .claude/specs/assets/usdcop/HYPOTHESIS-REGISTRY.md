@@ -986,3 +986,46 @@ Lectura: en 2026 el cap 1.5 casi no muerde (lev máx ~1.27) y la escalera apenas
 salidas → las tres son casi idénticas YTD (diferencia −0.24/−0.27pp por semanas de lev
 recortado). La separación real entre ellas solo la dará el forward post-freeze.
 Artefacto: `.claude/evidence/cop_monitor_2025_2026/2026-07-21/` (mensual + trades).
+
+
+---
+
+## H-CHRONOS-01 (PRE-REGISTRO 2026-07-22, 0 miradas) — fundacional zero-shot → q90 rango semanal COP
+
+Diseño consolidado Claude+Codex (revisión adversarial R1-R6, `codex exec -p audit`,
+artefacto del review en `.claude/evidence/cop_chronos/`). Aprobado por el operador.
+
+**Hipótesis**: `amazon/chronos-bolt-base` zero-shot (SIN fine-tuning) predice el q90 del
+rango de las próximas 5 sesiones mejor que la persistencia rolling-252. Mejora candidata
+al SIZING, nunca a la dirección.
+
+**Diseño SELLADO (15 puntos Codex, todos los grados de libertad clavados ex-ante):**
+1. Modelo único: `amazon/chronos-bolt-base`, revisión = último commit HF con fecha
+   < 2025-01-01 (publicación ≠ cutoff del corpus; el checkpoint precede al test).
+2. Sin fine-tuning, sin calibración de hiperparámetros, sin modelos alternativos.
+   **TimesFM prohibido incluso si Chronos pierde.**
+3. Serie base: rango de sesión % = (max(high)−min(low))/close_última ×100 desde M5,
+   sesiones con ≥30 barras (constructor idéntico a H-VOLT-01). Escala definida UNA vez.
+4. Target: y_t = max(rng_{t+1..t+5}) sobre las próximas 5 sesiones ELEGIBLES (no días
+   calendario).
+5. Anti off-by-one: en el origen t solo son observables etiquetas hasta y_{t−5}.
+6. Input univariado: historial causal de y (hasta y_{t−5}); contexto = máximo soportado
+   por el modelo, truncado por la izquierda.
+7. Horizon=5; se lee el canal q90 nativo del paso 5 (= y_t). SIN sample paths (los
+   cuantiles de Bolt son marginales; máximos desde marginales = inválido — Codex R2).
+8. TEST primario: 2025, UN disparo (orígenes con fecha en 2025; enero-2026 solo para
+   realizar etiquetas de diciembre, jamás como input). 2026 YTD solo descriptivo.
+   Confirmación real = forward post-freeze.
+9. Baseline único del gate: persistencia q90 rolling-252 sobre y observable en t (mismo
+   cutoff y_{t−5} para ambos). EWMA/HAR/celdas H-RISK: solo descriptivo.
+10. Métrica: Δ = pinball_modelo − pinball_persistencia, pareada, AGREGADA POR SEMANA ISO
+    del origen (targets solapados ⇒ 250 pérdidas diarias ≠ N=250).
+11. IC95 bootstrap circular b=4 semanas, 2000 resamples, seed 42 — fijados aquí.
+12. **WIN solo si el borde SUPERIOR del IC95(Δ) < 0.** Todo lo demás = NO_RECHAZA.
+13. Smoke test funcional en ≤2023 (correr sin errores); CERO métricas comparativas.
+14. Política de fallo: error de inferencia en un origen ⇒ se excluye y loguea; >5% de
+    orígenes fallidos ⇒ corrida INVÁLIDA. Versiones de librerías al artefacto.
+    Cambiar config tras ver problemas en TEST ⇒ corrida INVÁLIDA.
+15. Contabilidad: abrir 2025 = **+1 trial (N 71→72)**. Pierde ⇒ puerta
+    transformer/fundacional COP CERRADA por escrito. Gana ⇒ habilita UN trial económico
+    posterior (techo de sizing tipo v13), juez = forward post-freeze.
