@@ -44,19 +44,21 @@ else in `.claude/` is **on-demand** (read only when a task needs it). Design acc
 <!-- inv:specs_tree -->
 ```
 . (2)
+adr/ (2)
 archive/2026-07/ (10)
 assets/ (5)
-assets/btcusdt/ (2)
+assets/btcusdt/ (3)
 assets/btcusdt/adr/ (1)
 assets/btcusdt/design/ (3)
 assets/btcusdt/design/adr/ (6)
 assets/btcusdt/design/specs/ (13)
 assets/btcusdt/specs/ (1)
-assets/usdcop/ (3)
-assets/xauusd/ (2)
+assets/spx500/ (3)
+assets/usdcop/ (6)
+assets/xauusd/ (5)
 assets/xauusd/adr/ (1)
 assets/xauusd/specs/ (13)
-audit/ (3)
+audit/ (4)
 data/ (1)
 operations/ (2)
 pipelines/ (3)
@@ -67,7 +69,7 @@ tracks/news-analysis/ (14)
 <!-- /inv -->
 
 <!-- inv:knowledge -->
-**9 rules** (~3,133 palabras auto-cargadas) · **106 specs** · **24 skills** · **3 agents**
+**9 rules** (~3,154 palabras auto-cargadas) · **119 specs** · **27 skills** · **3 agents**
 <!-- /inv -->
 
 ---

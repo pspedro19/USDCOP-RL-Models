@@ -289,7 +289,7 @@ state — must also stay OUT of the docker build context: its NTFS mode breaks `
 ## DAG SCHEDULE
 
 <!-- inv:dags -->
-**46 DAGs** (43 declarados en 43 módulos + 3 generados por factory)
+**49 DAGs** (46 declarados en 46 módulos + 3 generados por factory)
 <!-- /inv -->
 
 
