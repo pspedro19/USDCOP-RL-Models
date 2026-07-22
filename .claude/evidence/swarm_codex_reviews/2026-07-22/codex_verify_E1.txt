@@ -1,0 +1,2311 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f881d-7e6c-7b72-9fe4-e32941d0399a
+--------
+user
+Verificación de implementación (agente Claude E1, harness cross-asset). Lee: scripts/analysis/xasset_signals.py y scripts/analysis/xasset_cv_harness.py. Verifica: (1) LÍNEA ROJA: ninguna métrica de performance sobre datos post-2024 ni pre-2024 (solo señales y disponibilidad) — busca cualquier cómputo de retornos de estrategia/Sharpe/DA sobre targets reales; (2) señales causales: shift(1) presente en trend y value, z-score cross-sectional sin fuga temporal (por fecha, no global); (3) el harness re-exporta services/common/metrics.py sin re-implementar DSR/bootstrap (SSOT constitucional); (4) purged K-fold con purga+embargo correcto (compáralo con purged_kfold_idx en scripts/analysis/cop_risk_family_screen.py); (5) smoke solo con ruido sintético seed fijo; (6) la semana parcial de fin de 2024 descartada correctamente. Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues numerados con archivo:línea.
+codex
+Haré una revisión estática y comparativa, sin modificar archivos. Primero ubicaré las funciones relevantes y después contrastaré la lógica de purga/embargo y los límites temporales.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg --files -g "AGENTS.md" -g "scripts/analysis/xasset_signals.py" -g "scripts/analysis/xasset_cv_harness.py" -g "scripts/analysis/cop_risk_family_screen.py" -g "services/common/metrics.py"' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1184ms:
+scripts\analysis\xasset_signals.py
+scripts\analysis\xasset_cv_harness.py
+scripts\analysis\cop_risk_family_screen.py
+services\common\metrics.py
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$i=0; Get-Content -LiteralPath '"'scripts/analysis/xasset_signals.py' | ForEach-Object { "'$i++; '"'{0,5}: {1}' -f "'$i, $_ }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$i=0; Get-Content -LiteralPath '"'scripts/analysis/xasset_cv_harness.py' | ForEach-Object { "'$i++; '"'{0,5}: {1}' -f "'$i, $_ }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$i=0; Get-Content -LiteralPath '"'services/common/metrics.py' | ForEach-Object { "'$i++; '"'{0,5}: {1}' -f "'$i, $_ }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$i=0; Get-Content -LiteralPath '"'scripts/analysis/cop_risk_family_screen.py' | ForEach-Object { "'$i++; '"'{0,5}: {1}' -f "'$i, $_ }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1464ms:
+    1: """E1 â€” Harness reutilizable de validaciÃ³n cross-asset: purged K-fold + wrappers SSOT (0 trials).
+    2: 
+    3: Contract: CTR-QUANT-CONSTITUTION-001 Â· Skill: .claude/skills/xasset-alpha-engine
+    4: 
+    5: **0 trials â€” ningÃºn OOS abierto; cualquier estudio futuro requiere pre-registro en
+    6: HYPOTHESIS-REGISTRY + aprobaciÃ³n del operador.**
+    7: 
+    8: Este mÃ³dulo NO se ejecuta contra ningÃºn target real. Su `smoke()` usa EXCLUSIVAMENTE
+    9: datos sintÃ©ticos (numpy default_rng(42)) para probar la mecÃ¡nica: particiones purgadas
+   10: sin fuga, embargo aplicado, wrappers al SSOT constitucional devolviendo dicts sanos y
+   11: JSON-safe. Correrlo no abre ningÃºn test â€” no lee DB, ni seeds, ni parquets de seÃ±ales.
+   12: 
+   13: QuÃ© contiene y de dÃ³nde viene (DRY â€” no re-implementa el gate):
+   14:   purged_kfold_indices     generalizaciÃ³n posicional (purge + embargo) del
+   15:                            `purged_kfold_idx` ya usado en
+   16:                            scripts/analysis/cop_risk_family_screen.py (H-RISK-FAM-01)
+   17:   purged_kfold_splits_t1   variante por tiempos-de-etiqueta t1 (AFML cap.7), adaptada
+   18:                            de .claude/skills/xasset-alpha-engine/scripts/xasset/
+   19:                            validation.py::purged_kfold_splits
+   20:   dsr_report               RE-EXPORT del SSOT services/common/metrics.py â€” Ãºnico punto
+   21:   circular_block_bootstrap de entrada DSR/bootstrap (quant-constitution Â§2). Este
+   22:   deflated_sharpe_ratio    mÃ³dulo NO trae implementaciÃ³n propia: dos implementaciones
+   23:   probabilistic_sharpe_ratio  del gate es peor que ninguna.
+   24: 
+   25: Uso previsto (FUTURO, tras pre-registro):
+   26:     from scripts.analysis.xasset_cv_harness import purged_kfold_indices, dsr_report
+   27:     for tr, te in purged_kfold_indices(n, n_splits=5, purge=1, embargo=4):
+   28:         ...fit en tr, predecir en te...
+   29:     # y el claim final SIEMPRE via dsr_report con el conteo de trials del registry.
+   30: 
+   31: Smoke (sin targets):
+   32:     python -m scripts.analysis.xasset_cv_harness   # exit 0 = PASS
+   33: """
+   34: from __future__ import annotations
+   35: 
+   36: import sys
+   37: from pathlib import Path
+   38: from typing import Iterator
+   39: 
+   40: import numpy as np
+   41: import pandas as pd
+   42: 
+   43: REPO = Path(__file__).resolve().parents[2]
+   44: sys.path.insert(0, str(REPO))
+   45: 
+   46: # Wrappers/re-exports al SSOT constitucional (services/common/metrics.py).
+   47: from services.common.metrics import (  # noqa: E402
+   48:     circular_block_bootstrap,
+   49:     deflated_sharpe_ratio,
+   50:     dsr_report,
+   51:     probabilistic_sharpe_ratio,
+   52:     trial_aware_moments,
+   53: )
+   54: from src.contracts.strategy_schema import safe_json_dumps  # noqa: E402
+   55: 
+   56: __all__ = [
+   57:     "purged_kfold_indices",
+   58:     "purged_kfold_splits_t1",
+   59:     "dsr_report",
+   60:     "circular_block_bootstrap",
+   61:     "deflated_sharpe_ratio",
+   62:     "probabilistic_sharpe_ratio",
+   63:     "trial_aware_moments",
+   64:     "smoke",
+   65: ]
+   66: 
+   67: 
+   68: # ---------------------------------------------------------------------------
+   69: # Purged K-fold (posicional): folds contiguos + purga simÃ©trica + embargo post-test
+   70: # ---------------------------------------------------------------------------
+   71: 
+   72: def purged_kfold_indices(
+   73:     n_samples: int, n_splits: int = 5, purge: int = 1, embargo: int = 0,
+   74: ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+   75:     """K-fold purgado sobre Ã­ndices posicionales de una serie temporal ordenada.
+   76: 
+   77:     Generaliza `cop_risk_family_screen.purged_kfold_idx` aÃ±adiendo embargo explÃ­cito:
+   78:       - purge:   se eliminan del train los `purge` Ã­ndices adyacentes a CADA lado del
+   79:                  bloque test (etiquetas solapadas â€” p.ej. horizonte semanal â‡’ purge=1
+   80:                  en datos semanales, purge=5 en diarios).
+   81:       - embargo: se eliminan ADEMÃS `embargo` Ã­ndices inmediatamente POSTERIORES al
+   82:                  test (la autocorrelaciÃ³n serial sigue llevando informaciÃ³n del test
+   83:                  hacia adelante; AFML cap.7).
+   84: 
+   85:     Yields (train_idx, test_idx) posicionales. Lanza ValueError si algÃºn fold se
+   86:     queda sin train (horizonte demasiado largo para la muestra) â€” mejor ruido que
+   87:     silencio.
+   88:     """
+   89:     if n_splits < 2:
+   90:         raise ValueError("n_splits debe ser >= 2")
+   91:     if purge < 0 or embargo < 0:
+   92:         raise ValueError("purge y embargo deben ser >= 0")
+   93:     if n_samples < n_splits * 2:
+   94:         raise ValueError(f"n_samples={n_samples} demasiado corto para {n_splits} folds")
+   95: 
+   96:     idx = np.arange(n_samples)
+   97:     for test in np.array_split(idx, n_splits):
+   98:         lo, hi = int(test[0]), int(test[-1])
+   99:         keep = (idx < lo - purge) | (idx > hi + purge + embargo)
+  100:         train = idx[keep]
+  101:         if train.size == 0:
+  102:             raise ValueError(
+  103:                 f"Purga+embargo vaciaron el train (n={n_samples}, splits={n_splits}, "
+  104:                 f"purge={purge}, embargo={embargo})")
+  105:         yield train, test
+  106: 
+  107: 
+  108: # ---------------------------------------------------------------------------
+  109: # Purged K-fold por tiempos de etiqueta (t1) â€” para holding periods irregulares
+  110: # ---------------------------------------------------------------------------
+  111: 
+  112: def purged_kfold_splits_t1(
+  113:     t1: pd.Series, n_splits: int = 5, embargo_pct: float = 0.01,
+  114: ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+  115:     """Splits purgados usando los tiempos de FIN de etiqueta (AFML cap.7).
+  116: 
+  117:     `t1`: Serie de tiempos de fin de etiqueta, indexada por tiempo de inicio,
+  118:     ordenada ascendente (para un holding de 5 dÃ­as: starts + 5 dÃ­as hÃ¡biles).
+  119:     Purga toda etiqueta de train cuyo intervalo [start, t1] solape la ventana de
+  120:     test; embarga `embargo_pct` de la muestra tras el final del test.
+  121: 
+  122:     Adaptado de la skill xasset-alpha-engine (validation.py::purged_kfold_splits);
+  123:     preferir esta variante cuando los holding periods no son constantes.
+  124:     """
+  125:     if not isinstance(t1, pd.Series):
+  126:         raise TypeError("t1 debe ser pd.Series de tiempos de fin de etiqueta")
+  127:     if not t1.index.is_monotonic_increasing:
+  128:         raise ValueError("el Ã­ndice de t1 debe estar ordenado ascendente")
+  129:     if n_splits < 2:
+  130:         raise ValueError("n_splits debe ser >= 2")
+  131:     if not 0.0 <= embargo_pct < 1.0:
+  132:         raise ValueError("embargo_pct debe estar en [0, 1)")
+  133: 
+  134:     n = len(t1)
+  135:     indices = np.arange(n)
+  136:     embargo = int(n * embargo_pct)
+  137: 
+  138:     for test_idx in np.array_split(indices, n_splits):
+  139:         test_start_time = t1.index[test_idx[0]]
+  140:         test_end_time = t1.iloc[test_idx].max()
+  141:         before = indices[(t1.values < test_start_time)]
+  142:         after_pos = int(t1.index.searchsorted(test_end_time, side="right"))
+  143:         after = indices[min(after_pos + embargo, n):]
+  144:         train_idx = np.concatenate([before, after])
+  145:         if train_idx.size == 0:
+  146:             raise ValueError(
+  147:                 f"La purga vaciÃ³ el train de un fold (n={n}, n_splits={n_splits}): "
+  148:                 "horizonte de etiqueta demasiado largo para la muestra.")
+  149:         yield train_idx, test_idx
+  150: 
+  151: 
+  152: # ---------------------------------------------------------------------------
+  153: # Smoke â€” SOLO datos sintÃ©ticos con seed. NingÃºn target real, ningÃºn OOS abierto.
+  154: # ---------------------------------------------------------------------------
+  155: 
+  156: def smoke() -> dict:
+  157:     """Prueba la MECÃNICA del harness con ruido sintÃ©tico (default_rng(42)).
+  158: 
+  159:     Ninguna de estas cifras es un resultado de trading: el "retorno" es ruido
+  160:     gaussiano generado localmente. Verifica particiones, purga, embargo, wrappers
+  161:     SSOT y JSON-safety. 0 trials.
+  162:     """
+  163:     rng = np.random.default_rng(42)
+  164:     checks: dict[str, bool] = {}
+  165: 
+  166:     # --- 1) posicional: particiÃ³n completa, sin solape, purga+embargo respetados
+  167:     n, purge, embargo = 520, 2, 4
+  168:     seen = np.zeros(n, dtype=int)
+  169:     ok_no_leak, ok_gap = True, True
+  170:     for tr, te in purged_kfold_indices(n, n_splits=5, purge=purge, embargo=embargo):
+  171:         seen[te] += 1
+  172:         if np.intersect1d(tr, te).size:
+  173:             ok_no_leak = False
+  174:         lo, hi = te[0], te[-1]
+  175:         banned = np.arange(max(lo - purge, 0), min(hi + purge + embargo, n - 1) + 1)
+  176:         if np.intersect1d(tr, banned).size:
+  177:             ok_gap = False
+  178:     checks["pos_partition_covers_all_once"] = bool((seen == 1).all())
+  179:     checks["pos_no_train_test_overlap"] = ok_no_leak
+  180:     checks["pos_purge_embargo_respected"] = ok_gap
+  181: 
+  182:     # --- 2) t1: etiquetas solapadas de 5 dÃ­as â€” la purga debe excluirlas
+  183:     starts = pd.bdate_range("2019-01-01", periods=400)
+  184:     t1 = pd.Series(starts + pd.offsets.BDay(5), index=starts)
+  185:     ok_t1 = True
+  186:     for tr, te in purged_kfold_splits_t1(t1, n_splits=5, embargo_pct=0.01):
+  187:         test_start = t1.index[te[0]]
+  188:         test_end = t1.iloc[te].max()
+  189:         # ninguna etiqueta de train puede solapar la ventana de test
+  190:         overlaps = (t1.index[tr] <= test_end) & (t1.iloc[tr].values >= test_start)
+  191:         if overlaps.any():
+  192:             ok_t1 = False
+  193:     checks["t1_no_label_overlap"] = ok_t1
+  194: 
+  195:     # --- 3) wrappers SSOT sobre ruido sintÃ©tico
+  196:     fake_returns = rng.normal(0.0005, 0.01, size=260)     # ruido, no un backtest
+  197:     m = trial_aware_moments(fake_returns)
+  198:     rep = dsr_report(m["sharpe_per_period"], m["n_obs"], n_trials=25,
+  199:                      skew=m["skew"], kurtosis=m["kurtosis"], periods_per_year=52)
+  200:     checks["dsr_report_shape"] = all(k in rep for k in
+  201:                                      ("headline_dsr", "cells", "bar", "passes"))
+  202:     checks["dsr_in_unit_interval"] = (rep["headline_dsr"] is None or
+  203:                                       0.0 <= rep["headline_dsr"] <= 1.0)
+  204: 
+  205:     bb = circular_block_bootstrap(fake_returns, np.mean, n_boot=500, block=4, seed=42)
+  206:     checks["bootstrap_ci_finite"] = (bb["ci95"][0] is not None and
+  207:                                      np.isfinite(bb["ci95"][0]) and
+  208:                                      np.isfinite(bb["ci95"][1]))
+  209: 
+  210:     # --- 4) JSON-safety del reporte completo (sin Infinity/NaN)
+  211:     payload = {"checks": checks, "dsr_report_synthetic": rep, "bootstrap_synthetic": bb,
+  212:                "nan_probe": float("nan"), "inf_probe": float("inf")}
+  213:     js = safe_json_dumps(payload)
+  214:     checks["json_safe"] = ("Infinity" not in js) and ("NaN" not in js)
+  215: 
+  216:     passed = all(checks.values())
+  217:     return {"passed": passed, "checks": checks,
+  218:             "note": ("smoke sintetico default_rng(42) â€” 0 trials, ningun OOS abierto; "
+  219:                      "cualquier estudio futuro requiere pre-registro en "
+  220:                      "HYPOTHESIS-REGISTRY + aprobacion del operador")}
+  221: 
+  222: 
+  223: def main() -> int:
+  224:     res = smoke()
+  225:     for k, v in res["checks"].items():
+  226:         print(f"  [{'OK' if v else 'FAIL'}] {k}")
+  227:     print(("[PASS] " if res["passed"] else "[FAIL] ") + res["note"])
+  228:     return 0 if res["passed"] else 1
+  229: 
+  230: 
+  231: if __name__ == "__main__":
+  232:     raise SystemExit(main())
+
+ succeeded in 1482ms:
+    1: """H-RISK-FAM-01 â€” screening de la familia de riesgo pre-registrada (ABRE resultados: +5 trials).
+    2: 
+    3: Contract: CTR-QUANT-CONSTITUTION-001 Â· Pre-registro: HYPOTHESIS-REGISTRY.md
+    4: "H-RISK-FAM-01 (PRE-REGISTRO 2026-07-21)" â€” familia CERRADA de 5 celdas, protocolo
+    5: sellado ANTES de este script. Este archivo ES el generador persistido (deuda del panel).
+    6: 
+    7: Protocolo (del pre-registro, sin desviaciones):
+    8: - Universo: SOLO <= 2024-12-31, semanas lunes-viernes del seed COP reparado.
+    9: - Targets: gap_week = 1{|gap de apertura lunes| > p90 rolling-252d} Â· q90 del rango
+   10:   semanal (max high - min low, en % del cierre previo).
+   11: - Por celda: modelo UNIVARIADO (logistic -> Brier; QuantileRegressor q90 -> pinball),
+   12:   purged K-Fold K=5 con purga 1 semana + embargo = lookback de la celda.
+   13: - Bar: batir al BASELINE DE PERSISTENCIA (Brier: frecuencia base rolling; pinball:
+   14:   q90 = 1.645 * EWMA-vol * sqrt(5), lambda 0.94). Win = IC95 block-bootstrap (b=4) de
+   15:   la DIFERENCIA de perdida excluye 0 a favor de la celda.
+   16: - Se publica la tabla ENTERA. Consecuencia pre-firmada: >=1 win -> 1 trial economico
+   17:   (sizing P(gap), candidata v13, juez forward). 0 wins -> familia CERRADA.
+   18: 
+   19: Aproximaciones DECLARADAS (debilitan, no fabrican):
+   20: - F1 calendario: FOMC = fechas historicas publicas hardcodeadas; BanRep = ultimo viernes
+   21:   habil del mes (aprox de su calendario de decision); IPC DANE = dia 5 +/- (SSOT
+   22:   typical_day). Un dummy mal fechado REDUCE el poder de F1 â€” sesgo contra nosotros.
+   23: """
+   24: from __future__ import annotations
+   25: 
+   26: import json
+   27: import shutil
+   28: import sys
+   29: from datetime import date
+   30: from pathlib import Path
+   31: 
+   32: import numpy as np
+   33: import pandas as pd
+   34: 
+   35: REPO = Path(__file__).resolve().parents[2]
+   36: sys.path.insert(0, str(REPO))
+   37: 
+   38: from services.common.metrics import circular_block_bootstrap, ewma_volatility  # noqa: E402
+   39: 
+   40: RNG = np.random.default_rng(42)
+   41: END_DESIGN = pd.Timestamp("2024-12-31")
+   42: 
+   43: # FOMC decision dates 2020-2024 (public record)
+   44: FOMC = pd.to_datetime([
+   45:     "2020-01-29","2020-03-03","2020-03-15","2020-04-29","2020-06-10","2020-07-29",
+   46:     "2020-09-16","2020-11-05","2020-12-16","2021-01-27","2021-03-17","2021-04-28",
+   47:     "2021-06-16","2021-07-28","2021-09-22","2021-11-03","2021-12-15","2022-01-26",
+   48:     "2022-03-16","2022-05-04","2022-06-15","2022-07-27","2022-09-21","2022-11-02",
+   49:     "2022-12-14","2023-02-01","2023-03-22","2023-05-03","2023-06-14","2023-07-26",
+   50:     "2023-09-20","2023-11-01","2023-12-13","2024-01-31","2024-03-20","2024-05-01",
+   51:     "2024-06-12","2024-07-31","2024-09-18","2024-11-07","2024-12-18"])
+   52: 
+   53: 
+   54: def load_weekly():
+   55:     d = pd.read_parquet(REPO / "seeds/latest/usdcop_daily_ohlcv.parquet")
+   56:     d["time"] = pd.to_datetime(d["time"]).dt.tz_localize(None)
+   57:     d = d[d["time"] <= END_DESIGN].sort_values("time").reset_index(drop=True)
+   58:     d["ret"] = np.log(d["close"] / d["close"].shift(1))
+   59:     d["gap"] = (d["open"] / d["close"].shift(1) - 1).abs()
+   60:     d["dow"] = d["time"].dt.dayofweek
+   61:     d["week"] = d["time"].dt.to_period("W-SUN")
+   62: 
+   63:     macro = pd.read_parquet(REPO / "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet")
+   64:     macro.index = pd.to_datetime(macro.index)
+   65:     cols = {c.upper(): c for c in macro.columns}
+   66:     vix = macro[cols["VOLT_VIX_USA_D_VIX"]].rename("vix")
+   67:     embi = macro[cols["CRSK_SPREAD_EMBI_COL_D_EMBI"]].rename("embi")
+   68: 
+   69:     monthly = pd.read_parquet(REPO / "data/pipeline/04_cleaning/output/MACRO_MONTHLY_CLEAN.parquet")
+   70:     monthly.index = pd.to_datetime(monthly.index)
+   71:     resint = monthly[[c for c in monthly.columns if "RESINT" in c.upper()][0]].rename("resint")
+   72: 
+   73:     rows = []
+   74:     vol20 = d["ret"].rolling(20).std() * np.sqrt(252)
+   75:     d["vol20"] = vol20
+   76:     for wk, g in d.groupby("week"):
+   77:         if len(g) < 3:
+   78:             continue
+   79:         monday = g.iloc[0]
+   80:         prev = d[d["time"] < g["time"].iloc[0]]
+   81:         if len(prev) < 260:
+   82:             continue
+   83:         prev_close = prev["close"].iloc[-1]
+   84:         rng_pct = (g["high"].max() - g["low"].min()) / prev_close * 100
+   85:         gap_bps = monday["gap"] * 1e4
+   86:         p90_gap = prev.loc[prev["dow"] == 0, "gap"].tail(252).quantile(0.90) * 1e4
+   87:         asof = prev["time"].iloc[-1]
+   88:         # features t-1 (todas conocibles el viernes previo)
+   89:         vv = prev["vol20"].tail(20).diff().std() * np.sqrt(252)          # F2 vol-of-vol
+   90:         vix_t1 = float(vix.loc[:asof].iloc[-1]) if len(vix.loc[:asof]) else np.nan
+   91:         embi_ser = embi.loc[:asof].dropna()
+   92:         embi_acc = float((embi_ser.diff(5).iloc[-1] - embi_ser.diff(5).tail(252).mean())
+   93:                          / (embi_ser.diff(5).tail(252).std() + 1e-9)) if len(embi_ser) > 260 else np.nan
+   94:         res_ser = resint.loc[:asof - pd.Timedelta(days=45)].dropna()     # lag publicacion
+   95:         res_z = float((res_ser.iloc[-1] - res_ser.tail(12).mean())
+   96:                       / (res_ser.tail(12).std() + 1e-9)) if len(res_ser) > 12 else np.nan
+   97:         # F3: prob condicional de gap-cola dado nivel vix (kernel binario simple en terciles)
+   98:         prev_mon = prev[prev["dow"] == 0].tail(252)
+   99:         if len(prev_mon) > 30 and not np.isnan(vix_t1):
+  100:             vix_al = vix.reindex(prev_mon["time"], method="ffill")
+  101:             ter = pd.qcut(vix_al, 3, labels=False, duplicates="drop")
+  102:             my_ter = 1
+  103:             if len(pd.unique(ter.dropna())) == 3:
+  104:                 _cut = pd.cut([vix_t1], bins=pd.qcut(vix_al, 3, retbins=True,
+  105:                               duplicates="drop")[1], labels=False, include_lowest=True)[0]
+  106:                 # vix_t1 fuera del rango historico -> clip al tercil extremo
+  107:                 if pd.isna(_cut):
+  108:                     _cut = 0 if vix_t1 < float(vix_al.min()) else 2
+  109:                 my_ter = int(_cut)
+  110:             mask = (ter == my_ter).to_numpy()
+  111:             thr = prev_mon["gap"].quantile(0.90)
+  112:             f3 = float((prev_mon["gap"].to_numpy()[mask] > thr).mean()) if mask.sum() > 5 else np.nan
+  113:         else:
+  114:             f3 = np.nan
+  115:         # F1 calendario: evento en la semana operada (conocible ex-ante)
+  116:         wk_start, wk_end = g["time"].iloc[0], g["time"].iloc[-1]
+  117:         fomc_wk = int(((FOMC >= wk_start) & (FOMC <= wk_end)).any())
+  118:         last_bday = pd.date_range(wk_start.replace(day=1),
+  119:                                   wk_start + pd.offsets.MonthEnd(0), freq="B")[-1]
+  120:         banrep_wk = int(wk_start <= last_bday <= wk_end)
+  121:         ipc_wk = int(any((t.day in (4, 5, 6, 7, 8)) for t in g["time"]))
+  122:         f1 = int(fomc_wk or banrep_wk or ipc_wk)
+  123:         # EWMA vol para el baseline de pinball
+  124:         _ew = ewma_volatility(prev["ret"].dropna().to_numpy()[-260:],
+  125:                               lam=0.94, periods_per_year=252)
+  126:         sig_ewma = float(np.asarray(_ew).ravel()[-1])   # la serie EWMA: tomar el ultimo valor
+  127:         rows.append({"monday": monday["time"], "gap_bps": gap_bps,
+  128:                      "gap_week": int(gap_bps > p90_gap), "range_pct": rng_pct,
+  129:                      "f1_event": f1, "f2_volofvol": vv, "f3_gaptail": f3,
+  130:                      "f4_embiacc": embi_acc, "f5_resintz": res_z,
+  131:                      "base_rate": float(prev.loc[prev["dow"] == 0, "gap"].tail(252)
+  132:                                         .gt(prev.loc[prev["dow"] == 0, "gap"].tail(252)
+  133:                                             .quantile(0.90)).mean()),
+  134:                      "sigma_ewma": sig_ewma})
+  135:     return pd.DataFrame(rows)
+  136: 
+  137: 
+  138: def purged_kfold_idx(n, k=5, purge=1):
+  139:     fold = np.array_split(np.arange(n), k)
+  140:     for i in range(k):
+  141:         test = fold[i]
+  142:         tr = np.setdiff1d(np.arange(n), test)
+  143:         tr = tr[(tr < test.min() - purge) | (tr > test.max() + purge)]
+  144:         yield tr, test
+  145: 
+  146: 
+  147: def screen():
+  148:     from sklearn.linear_model import LogisticRegression, QuantileRegressor
+  149:     W = load_weekly()
+  150:     print(f"semanas de disenio: {len(W)} ({W.monday.min().date()} -> {W.monday.max().date()})")
+  151:     print(f"tasa base gap_week: {W.gap_week.mean():.3f}")
+  152:     cells = ["f1_event", "f2_volofvol", "f3_gaptail", "f4_embiacc", "f5_resintz"]
+  153:     results = {}
+  154:     for cell in cells:
+  155:         d = W.dropna(subset=[cell, "gap_week", "range_pct", "sigma_ewma"]).reset_index(drop=True)
+  156:         n = len(d)
+  157:         x = d[cell].to_numpy().reshape(-1, 1)
+  158:         # --- Brier: modelo univariado vs frecuencia base rolling ---
+  159:         p_model = np.full(n, np.nan)
+  160:         for tr, te in purged_kfold_idx(n):
+  161:             if len(np.unique(d.gap_week.iloc[tr])) < 2:
+  162:                 p_model[te] = d.gap_week.iloc[tr].mean()
+  163:                 continue
+  164:             m = LogisticRegression().fit(x[tr], d.gap_week.iloc[tr])
+  165:             p_model[te] = m.predict_proba(x[te])[:, 1]
+  166:         brier_m = (p_model - d.gap_week) ** 2
+  167:         brier_b = (d.base_rate - d.gap_week) ** 2
+  168:         db = circular_block_bootstrap((brier_b - brier_m).to_numpy(), np.mean, block=4)
+  169:         # --- pinball q90 del rango vs baseline persistencia EWMA ---
+  170:         q_model = np.full(n, np.nan)
+  171:         for tr, te in purged_kfold_idx(n):
+  172:             qr = QuantileRegressor(quantile=0.90, alpha=1e-4, solver="highs").fit(
+  173:                 x[tr], d.range_pct.iloc[tr])
+  174:             q_model[te] = qr.predict(x[te])
+  175:         q_base = 1.645 * d.sigma_ewma / np.sqrt(52) * np.sqrt(5) / np.sqrt(5) * 100 * np.sqrt(5) / np.sqrt(252/5)
+  176:         # baseline correcto: q90 semanal = 1.645 * sigma_ewma_anual * sqrt(5/252) * 100
+  177:         q_base = 1.645 * d.sigma_ewma * np.sqrt(5 / 252) * 100
+  178:         def pinball(y, q, tau=0.90):
+  179:             e = y - q
+  180:             return np.maximum(tau * e, (tau - 1) * e)
+  181:         pin_m = pinball(d.range_pct.to_numpy(), q_model)
+  182:         pin_b = pinball(d.range_pct.to_numpy(), q_base.to_numpy())
+  183:         # NULL JUSTO (correccion contra nosotros mismos, 2026-07-21): el baseline
+  184:         # 1.645*sigma*sqrt(5) es el q90 de un RETORNO, no del RANGO -> subestima y
+  185:         # cualquier modelo gana por el intercepto. El null que aisla la FEATURE es
+  186:         # intercepto-solo en el MISMO purged CV.
+  187:         q_null = np.full(n, np.nan)
+  188:         for tr, te in purged_kfold_idx(n):
+  189:             q_null[te] = np.quantile(d.range_pct.iloc[tr], 0.90)
+  190:         pin_null = pinball(d.range_pct.to_numpy(), q_null)
+  191:         dp = circular_block_bootstrap(pin_null - pin_m, np.mean, block=4)
+  192:         win_brier = db["ci95"][0] is not None and db["ci95"][0] > 0
+  193:         win_pin = dp["ci95"][0] is not None and dp["ci95"][0] > 0
+  194:         results[cell] = {
+  195:             "n": n,
+  196:             "brier_model": float(np.nanmean(brier_m)), "brier_base": float(np.nanmean(brier_b)),
+  197:             "delta_brier_ci95": db["ci95"], "WIN_brier": bool(win_brier),
+  198:             "pinball_model": float(np.nanmean(pin_m)), "pinball_base_ewma": float(np.nanmean(pin_b)),
+  199:             "pinball_null_intercepto": float(np.nanmean(pin_null)),
+  200:             "delta_pinball_vs_null_ci95": dp["ci95"], "WIN_pinball": bool(win_pin),
+  201:         }
+  202:         print(f"{cell}: n={n} | Brier {np.nanmean(brier_m):.4f} vs base "
+  203:               f"{np.nanmean(brier_b):.4f} (WIN={win_brier}) | pinball "
+  204:               f"{np.nanmean(pin_m):.3f} vs NULL-intercepto {np.nanmean(pin_null):.3f} "
+  205:               f"(ewma mal-especificado: {np.nanmean(pin_b):.3f}) (WIN={win_pin})")
+  206:     wins = [c for c, r in results.items() if r["WIN_brier"] or r["WIN_pinball"]]
+  207:     verdict = {"family": "H-RISK-FAM-01", "cells": results, "wins": wins,
+  208:                "trials_spent": 5, "consequence": (
+  209:                    "1 trial economico adicional (sizing P(gap), v13, juez forward)"
+  210:                    if wins else "familia CERRADA por escrito")}
+  211:     o = REPO / ".claude/evidence/cop_risk_family" / date.today().isoformat()
+  212:     o.mkdir(parents=True, exist_ok=True)
+  213:     (o / "screen_results.json").write_text(json.dumps(verdict, indent=2, default=str))
+  214:     shutil.copy(__file__, o / "generator_script.py")
+  215:     print(f"\nWINS: {wins if wins else 'NINGUNA â€” familia cerrada'}")
+  216:     print(f"artefacto -> {o}")
+  217:     return verdict
+  218: 
+  219: 
+  220: if __name__ == "__main__":
+  221:     screen()
+
+ succeeded in 1747ms:
+    1: """E1 â€” Libro cross-asset: seÃ±ales trend/value en escala comparable (INFRAESTRUCTURA, 0 trials).
+    2: 
+    3: Contract: CTR-QUANT-CONSTITUTION-001 Â· Skill: .claude/skills/xasset-alpha-engine
+    4: 
+    5: **0 trials â€” ningÃºn OOS abierto; cualquier estudio futuro requiere pre-registro en
+    6: HYPOTHESIS-REGISTRY + aprobaciÃ³n del operador.**
+    7: 
+    8: Este script construye SEÃ‘ALES y un reporte de disponibilidad â€” NO evalÃºa performance,
+    9: NO calcula Sharpe/retornos de estrategia, NO toca ningÃºn dato posterior a 2024-12-31.
+   10: La lÃ­nea roja se aplica en DOS capas: (1) el SQL corta en <= 2024-12-31; (2) un assert
+   11: aborta si cualquier fecha cargada excede el cutoff. 2025 = backtest sellado, 2026 =
+   12: forward: ninguno se abre aquÃ­, por eso este trabajo cuenta como 0 trials.
+   13: 
+   14: Universo (asset_daily_ohlcv, verificado 2026-07-21):
+   15:   USD/COP 1989â†’ Â· USD/MXN 1990â†’ Â· USD/BRL 1994â†’ Â· XAU/USD 1979â†’ Â· BTC/USDT 2017â†’ Â·
+   16:   SPX/500 1995â†’ Â· SPY 1993â†’ (SPY se excluye del z-score cross-sectional: mismo
+   17:   subyacente que SPX/500; incluir ambos duplicarÃ­a el peso equity en el ranking).
+   18:   NO hay USD/CLP en la tabla (solo existe como columna macro USDCLP en MACRO_DAILY_CLEAN).
+   19: 
+   20: SeÃ±ales (todas causales â€” shift(1) semanal antes del z-score cross-sectional):
+   21:   TREND  TSMOM votos 3/6/12 meses (13/26/52 semanas W-FRI), media de signos en [-1,1],
+   22:          luego z-score cross-sectional por fecha (Moskowitz-Ooi-Pedersen 2012).
+   23:   VALUE  ReversiÃ³n a media 3-5 aÃ±os: -z del log-precio vs su propia ventana de 260
+   24:          semanas (min 156 = 3 aÃ±os), luego z-score cross-sectional
+   25:          (Asness-Moskowitz-Pedersen 2013, definiciÃ³n "commodity-style" â€” la Ãºnica
+   26:          aplicable sin cash flows ni PPP ingestado).
+   27:   CARRY  PLACEHOLDER: columna NULL. Requiere datos no ingestados (ver CARRY_MISSING
+   28:          por asset abajo y en el JSON). Para BTC el funding de Binance YA estÃ¡ en DB
+   29:          (crypto_derivatives_daily.funding_rate, 2506 dÃ­as desde 2019-09-10) pero su
+   30:          uso estÃ¡ gateado por el plan pre-registrado (memoria
+   31:          btc-binance-derivatives-plan + .claude/specs/assets/btcusdt/design/
+   32:          HYPOTHESIS-REGISTRY.md, S4/H-POS-01): fundingâ†’z_funding solo tras
+   33:          pre-registro DSR/OOS â€” no se construye aquÃ­.
+   34: 
+   35: Escala comparable = z-score cross-sectional por seÃ±al y por fecha (media 0, sigma 1
+   36: sobre el universo XS de 6 activos). AlineaciÃ³n en semanas W-FRI para evitar el
+   37: problema de calendarios mixtos (BTC 24/7 vs FX 24/5 vs equity horario bolsa): con
+   38: alineaciÃ³n diaria solo ~68.5% de fechas son comunes y el ffill sesga la vol (skill
+   39: xasset-alpha-engine, secciÃ³n "Build a cross-asset book").
+   40: 
+   41: Salidas (data/pipeline/xasset_signals/ â€” aÃ±adido a .gitignore: intermedio regenerable,
+   42: polÃ­tica de tracking 2026-07-09):
+   43:   xasset_signals_weekly.parquet   panel largo [date, symbol, close_wfri, trend_raw,
+   44:                                   trend_z, value_raw, value_z, carry_z(NULL)]
+   45:   availability_report.json        aÃ±os por sÃ­mbolo, NaN%, carry faltante por asset,
+   46:                                   atestaciÃ³n del cutoff (JSON sin Infinity/NaN vÃ­a
+   47:                                   safe_json_dump)
+   48: 
+   49: Uso (repo root, DB arriba, .env cargado):
+   50:   set -a; . ./.env; set +a
+   51:   python -m scripts.analysis.xasset_signals
+   52: """
+   53: from __future__ import annotations
+   54: 
+   55: import os
+   56: import sys
+   57: from pathlib import Path
+   58: 
+   59: import numpy as np
+   60: import pandas as pd
+   61: 
+   62: REPO = Path(__file__).resolve().parents[2]
+   63: sys.path.insert(0, str(REPO))
+   64: 
+   65: from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
+   66: 
+   67: # ---------------------------------------------------------------------------
+   68: # DiseÃ±o congelado ANTES de correr (ex-ante, sin grid): cambiar cualquiera de
+   69: # estas constantes = otra versiÃ³n del archivo, no un "ajuste".
+   70: # ---------------------------------------------------------------------------
+   71: DESIGN_CUTOFF = pd.Timestamp("2024-12-31")          # lÃ­nea roja absoluta
+   72: TREND_LOOKBACKS_W = (13, 26, 52)                    # 3/6/12 meses en semanas
+   73: VALUE_WINDOW_W = 260                                # 5 aÃ±os
+   74: VALUE_MIN_W = 156                                   # mÃ­nimo 3 aÃ±os
+   75: MIN_XS_ASSETS = 3                                   # mÃ­nimo de activos para z-score XS
+   76: 
+   77: UNIVERSE = ["USD/COP", "USD/MXN", "USD/BRL", "XAU/USD", "BTC/USDT", "SPX/500", "SPY"]
+   78: # SPY = mismo subyacente que SPX/500; se computan sus seÃ±ales pero NO entra al
+   79: # ranking cross-sectional (duplicarÃ­a el peso equity). Declarado ex-ante.
+   80: XS_EXCLUDED = {"SPY": "redundante: mismo subyacente que SPX/500"}
+   81: 
+   82: # QuÃ© falta para CARRY, por asset (la columna queda NULL hasta que se ingiera y
+   83: # se pre-registre el estudio):
+   84: CARRY_MISSING = {
+   85:     "USD/COP": ("Falta la pata corta USD diaria (Fed funds/SOFR) y los forward points "
+   86:                 "COP (NDF). La pata larga SI existe: IBR overnight diario "
+   87:                 "(MACRO_DAILY_CLEAN::FINC_RATE_IBR_OVERNIGHT_COL_D_IBR) y TPM mensual; "
+   88:                 "UST2Y/prime no son la pata de financiacion."),
+   89:     "USD/MXN": ("Faltan TIIE/Cetes 28d (o fondeo Banxico) y/o forward points MXN. "
+   90:                 "Nada de esto esta ingestado en macro_indicators_daily."),
+   91:     "USD/BRL": ("Faltan Selic/DI y/o puntos NDF BRL. Por controles de capital el carry "
+   92:                 "forward-implied (NDF) es el honesto (skill xasset-alpha-engine, "
+   93:                 "references/em-fx.md); no ingestado."),
+   94:     "XAU/USD": ("Falta la curva de futuros GC (COMEX) para roll yield, o lease rates. "
+   95:                 "Solo hay spot en DB."),
+   96:     "BTC/USDT": ("Funding perp Binance YA en DB (crypto_derivatives_daily.funding_rate, "
+   97:                  "2506 dias desde 2019-09-10) â€” NO se usa aqui: gateado por el plan "
+   98:                  "pre-registrado (.claude/specs/assets/btcusdt/design/"
+   99:                  "HYPOTHESIS-REGISTRY.md S4/H-POS-01 y memoria "
+  100:                  "btc-binance-derivatives-plan); requiere pre-registro DSR/OOS antes "
+  101:                  "de entrar al libro."),
+  102:     "SPX/500": ("Falta dividend yield del indice y financing rate (carry equity = "
+  103:                 "div yield - financiacion). No ingestado."),
+  104:     "SPY": ("Igual que SPX/500 (dividend yield - financing rate); ademas excluido del "
+  105:             "XS por redundancia."),
+  106: }
+  107: 
+  108: OUT_DIR = REPO / "data" / "pipeline" / "xasset_signals"
+  109: 
+  110: 
+  111: # ---------------------------------------------------------------------------
+  112: # Carga (SQL corta en el cutoff â€” capa 1 de la lÃ­nea roja)
+  113: # ---------------------------------------------------------------------------
+  114: 
+  115: def load_weekly_closes() -> dict[str, pd.Series]:
+  116:     """Cierres semanales W-FRI por sÃ­mbolo, SOLO <= 2024-12-31 (corte en SQL)."""
+  117:     import psycopg2
+  118:     conn = psycopg2.connect(
+  119:         host=os.environ.get("POSTGRES_HOST", "localhost"),
+  120:         dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+  121:         user=os.environ.get("POSTGRES_USER", "admin"),
+  122:         password=os.environ.get("POSTGRES_PASSWORD", ""),
+  123:     )
+  124:     out: dict[str, pd.Series] = {}
+  125:     try:
+  126:         for sym in UNIVERSE:
+  127:             d = pd.read_sql(
+  128:                 "SELECT time, close FROM asset_daily_ohlcv "
+  129:                 "WHERE symbol=%s AND time <= %s ORDER BY time",
+  130:                 conn, params=(sym, DESIGN_CUTOFF.strftime("%Y-%m-%d 23:59:59+00")),
+  131:             )
+  132:             if d.empty:
+  133:                 continue
+  134:             d["time"] = pd.to_datetime(d["time"], utc=True).dt.tz_localize(None)
+  135:             s = d.set_index("time")["close"].astype(float)
+  136:             s = s[s > 0]
+  137:             out[sym] = s.resample("W-FRI").last().dropna()
+  138:     finally:
+  139:         conn.close()
+  140:     if not out:
+  141:         raise RuntimeError("asset_daily_ohlcv vacio o DB inaccesible â€” nada que construir")
+  142:     # Capa 2 de la lÃ­nea roja: nada posterior al cutoff puede estar en memoria.
+  143:     for sym, s in out.items():
+  144:         # el label W-FRI puede caer hasta 4 dÃ­as despuÃ©s del Ãºltimo dato real
+  145:         assert s.index.max() <= DESIGN_CUTOFF + pd.Timedelta(days=4), (
+  146:             f"LINEA ROJA: {sym} tiene datos post-cutoff ({s.index.max()})")
+  147:     return out
+  148: 
+  149: 
+  150: # ---------------------------------------------------------------------------
+  151: # SeÃ±ales por sÃ­mbolo (series de tiempo, causales)
+  152: # ---------------------------------------------------------------------------
+  153: 
+  154: def tsmom_votes(close: pd.Series, lookbacks=TREND_LOOKBACKS_W) -> pd.Series:
+  155:     """Media de sign(ret_w) para w en lookbacks â€” continua en [-1, 1].
+  156: 
+  157:     Votos multi-horizonte en vez de un solo lookback: un Ãºnico horizonte es un
+  158:     parÃ¡metro libre pidiendo overfit (skill xasset-alpha-engine::blended_tsmom).
+  159:     NaN hasta tener el lookback mÃ¡s largo completo â€” sin relleno parcial.
+  160:     """
+  161:     votes = [np.sign(close.pct_change(w)) for w in lookbacks]
+  162:     v = pd.concat(votes, axis=1)
+  163:     out = v.mean(axis=1)
+  164:     out[v.isna().any(axis=1)] = np.nan
+  165:     return out
+  166: 
+  167: 
+  168: def value_reversal(close: pd.Series, window=VALUE_WINDOW_W, min_p=VALUE_MIN_W) -> pd.Series:
+  169:     """-z del log-precio vs su propia media rolling 5y (min 3y) â€” positivo = barato.
+  170: 
+  171:     DefiniciÃ³n de value estilo commodity (Asness et al. 2013): sin cash flows ni
+  172:     PPP en DB, la Ãºnica definiciÃ³n honesta disponible para FX/oro/BTC/Ã­ndice por
+  173:     igual. El signo negativo hace que barato-vs-su-historia sea seÃ±al LARGA.
+  174:     """
+  175:     lp = np.log(close)
+  176:     mu = lp.rolling(window, min_periods=min_p).mean()
+  177:     sd = lp.rolling(window, min_periods=min_p).std(ddof=1)
+  178:     return -(lp - mu) / sd.replace(0.0, np.nan)
+  179: 
+  180: 
+  181: def xs_zscore(wide: pd.DataFrame, min_assets=MIN_XS_ASSETS) -> pd.DataFrame:
+  182:     """Z-score cross-sectional por fecha (fila). Filas con < min_assets â†’ NaN.
+  183: 
+  184:     Esta es la "escala comparable": media 0 / sigma 1 sobre el universo XS en
+  185:     cada fecha, para que +1 en BTC y +1 en COP signifiquen lo mismo en el libro.
+  186:     """
+  187:     mu = wide.mean(axis=1)
+  188:     sd = wide.std(axis=1, ddof=1)
+  189:     z = wide.sub(mu, axis=0).div(sd.replace(0.0, np.nan), axis=0)
+  190:     z[wide.notna().sum(axis=1) < min_assets] = np.nan
+  191:     return z
+  192: 
+  193: 
+  194: # ---------------------------------------------------------------------------
+  195: # Main
+  196: # ---------------------------------------------------------------------------
+  197: 
+  198: def build() -> tuple[pd.DataFrame, dict]:
+  199:     closes = load_weekly_closes()
+  200:     syms = [s for s in UNIVERSE if s in closes]
+  201: 
+  202:     close_w = pd.DataFrame({s: closes[s] for s in syms})
+  203:     # La Ãºltima semana parcial (cierres 30-31 dic) llevarÃ­a label W-FRI 2025-01-03.
+  204:     # Se DESCARTA en vez de re-etiquetarse: el panel termina visiblemente <= cutoff
+  205:     # y ninguna fila lleva fecha 2025 aunque su dato subyacente fuera de 2024.
+  206:     close_w = close_w[close_w.index <= DESIGN_CUTOFF]
+  207: 
+  208:     # seÃ±ales por sÃ­mbolo â€” CAUSALES: shift(1) ANTES del z-score XS, de modo que
+  209:     # la fila t solo contiene informaciÃ³n conocible al cierre del viernes t-1.
+  210:     trend_raw = pd.DataFrame({s: tsmom_votes(close_w[s].dropna()) for s in syms})
+  211:     value_raw = pd.DataFrame({s: value_reversal(close_w[s].dropna()) for s in syms})
+  212:     trend_raw = trend_raw.reindex(close_w.index).shift(1)
+  213:     value_raw = value_raw.reindex(close_w.index).shift(1)
+  214: 
+  215:     xs_cols = [s for s in syms if s not in XS_EXCLUDED]
+  216:     trend_z = xs_zscore(trend_raw[xs_cols])
+  217:     value_z = xs_zscore(value_raw[xs_cols])
+  218: 
+  219:     rows = []
+  220:     for s in syms:
+  221:         df = pd.DataFrame({
+  222:             "date": close_w.index,
+  223:             "symbol": s,
+  224:             "close_wfri": close_w[s].values,
+  225:             "trend_raw": trend_raw[s].values,
+  226:             "trend_z": trend_z[s].values if s in xs_cols else np.nan,
+  227:             "value_raw": value_raw[s].values,
+  228:             "value_z": value_z[s].values if s in xs_cols else np.nan,
+  229:             # CARRY placeholder â€” ver CARRY_MISSING en el docstring y el JSON.
+  230:             "carry_z": np.nan,
+  231:         })
+  232:         rows.append(df[df["close_wfri"].notna()])
+  233:     panel = pd.concat(rows, ignore_index=True).sort_values(["date", "symbol"])
+  234: 
+  235:     # reporte de disponibilidad
+  236:     per_symbol = {}
+  237:     for s in syms:
+  238:         sub = panel[panel["symbol"] == s]
+  239:         n = len(sub)
+  240:         first, last = sub["date"].min(), sub["date"].max()
+  241:         per_symbol[s] = {
+  242:             "first_week": str(first.date()), "last_week": str(last.date()),
+  243:             "years_of_history": round((last - first).days / 365.25, 1),
+  244:             "n_weeks": n,
+  245:             "nan_pct": {
+  246:                 "trend_raw": round(float(sub["trend_raw"].isna().mean()) * 100, 1),
+  247:                 "trend_z": round(float(sub["trend_z"].isna().mean()) * 100, 1),
+  248:                 "value_raw": round(float(sub["value_raw"].isna().mean()) * 100, 1),
+  249:                 "value_z": round(float(sub["value_z"].isna().mean()) * 100, 1),
+  250:                 "carry_z": 100.0,
+  251:             },
+  252:             "in_xs_universe": s not in XS_EXCLUDED,
+  253:             "xs_exclusion_reason": XS_EXCLUDED.get(s),
+  254:             "carry_missing": CARRY_MISSING.get(s, "sin nota"),
+  255:         }
+  256: 
+  257:     report = {
+  258:         "contract": "CTR-QUANT-CONSTITUTION-001",
+  259:         "task": "E1 xasset book infrastructure",
+  260:         "generated": pd.Timestamp.now().isoformat(timespec="seconds"),
+  261:         "trials_opened": 0,
+  262:         "attestation": (
+  263:             "0 trials â€” ningun OOS abierto. SQL corta en <= 2024-12-31 y un assert "
+  264:             "verifica que nada post-cutoff entro en memoria. NINGUNA metrica de "
+  265:             "performance fue computada sobre 2025 ni 2026. Cualquier estudio futuro "
+  266:             "requiere pre-registro en HYPOTHESIS-REGISTRY + aprobacion del operador."
+  267:         ),
+  268:         "design_cutoff": str(DESIGN_CUTOFF.date()),
+  269:         "max_week_in_panel": str(panel["date"].max().date()),
+  270:         "alignment": "W-FRI weekly (mixed-calendar safe: BTC 24/7 vs FX 24/5 vs equity)",
+  271:         "signals": {
+  272:             "trend": f"TSMOM votes {TREND_LOOKBACKS_W} weeks (3/6/12m), shift(1), XS z-score",
+  273:             "value": f"-z(log price vs rolling {VALUE_WINDOW_W}w mean, min {VALUE_MIN_W}w), "
+  274:                      "shift(1), XS z-score",
+  275:             "carry": "NULL placeholder â€” ver carry_missing por simbolo",
+  276:         },
+  277:         "xs_universe": xs_cols,
+  278:         "xs_excluded": XS_EXCLUDED,
+  279:         "usdclp_note": "USD/CLP NO esta en asset_daily_ohlcv (solo como columna macro "
+  280:                        "FXRT_SPOT_USDCLP_CHL_D_USDCLP en MACRO_DAILY_CLEAN, sin OHLC)",
+  281:         "per_symbol": per_symbol,
+  282:     }
+  283:     return panel, report
+  284: 
+  285: 
+  286: def main() -> int:
+  287:     OUT_DIR.mkdir(parents=True, exist_ok=True)
+  288:     panel, report = build()
+  289: 
+  290:     # lÃ­nea roja, capa 3 (cinturÃ³n final antes de persistir): ninguna fila con
+  291:     # label posterior al cutoff â€” la semana parcial de fin de aÃ±o se descartÃ³.
+  292:     assert panel["date"].max() <= DESIGN_CUTOFF, "post-cutoff en panel"
+  293: 
+  294:     pq = OUT_DIR / "xasset_signals_weekly.parquet"
+  295:     panel.to_parquet(pq, index=False)
+  296:     js = OUT_DIR / "availability_report.json"
+  297:     with open(js, "w", encoding="utf-8") as f:
+  298:         safe_json_dump(report, f)
+  299: 
+  300:     print(f"[OK] {pq}  rows={len(panel)}  symbols={panel['symbol'].nunique()}")
+  301:     print(f"[OK] {js}")
+  302:     print(f"[OK] max week = {panel['date'].max().date()}  (cutoff {DESIGN_CUTOFF.date()})")
+  303:     for s, meta in report["per_symbol"].items():
+  304:         print(f"  {s:9s} {meta['first_week']} -> {meta['last_week']} "
+  305:               f"({meta['years_of_history']}y, {meta['n_weeks']}w) "
+  306:               f"trend_z NaN {meta['nan_pct']['trend_z']}% / value_z NaN {meta['nan_pct']['value_z']}%")
+  307:     return 0
+  308: 
+  309: 
+  310: if __name__ == "__main__":
+  311:     raise SystemExit(main())
+
+ succeeded in 1987ms:
+    1: """
+    2: Financial Metrics Calculations
+    3: ==============================
+    4: Shared financial metric calculations for all services.
+    5: 
+    6: DRY: Centralizes Sharpe, Sortino, CAGR, VaR calculations.
+    7: 
+    8: Author: Pedro @ Lean Tech Solutions
+    9: Created: 2025-12-17
+   10: """
+   11: 
+   12: import logging
+   13: 
+   14: import numpy as np
+   15: 
+   16: logger = logging.getLogger(__name__)
+   17: 
+   18: 
+   19: def calculate_sharpe_ratio(
+   20:     returns: np.ndarray | list[float],
+   21:     risk_free_rate: float = 0.0,
+   22:     periods_per_year: int = 252
+   23: ) -> float:
+   24:     """
+   25:     Calculate annualized Sharpe ratio.
+   26: 
+   27:     Args:
+   28:         returns: Array of returns (daily, 5-min, etc.)
+   29:         risk_free_rate: Annual risk-free rate (default: 0)
+   30:         periods_per_year: Number of periods in a year (252 for daily, 60*5*252 for 5-min)
+   31: 
+   32:     Returns:
+   33:         Annualized Sharpe ratio
+   34:     """
+   35:     returns = np.asarray(returns)
+   36:     if len(returns) < 2:
+   37:         return 0.0
+   38: 
+   39:     excess_returns = returns - (risk_free_rate / periods_per_year)
+   40:     mean_excess = np.mean(excess_returns)
+   41:     std_excess = np.std(excess_returns, ddof=1)
+   42: 
+   43:     if std_excess == 0 or np.isnan(std_excess):
+   44:         return 0.0
+   45: 
+   46:     sharpe = (mean_excess / std_excess) * np.sqrt(periods_per_year)
+   47:     return float(sharpe)
+   48: 
+   49: 
+   50: def calculate_sortino_ratio(
+   51:     returns: np.ndarray | list[float],
+   52:     target_return: float = 0.0,
+   53:     periods_per_year: int = 252
+   54: ) -> float:
+   55:     """
+   56:     Calculate annualized Sortino ratio.
+   57: 
+   58:     Args:
+   59:         returns: Array of returns
+   60:         target_return: Target return (default: 0)
+   61:         periods_per_year: Number of periods in a year
+   62: 
+   63:     Returns:
+   64:         Annualized Sortino ratio
+   65:     """
+   66:     returns = np.asarray(returns)
+   67:     if len(returns) < 2:
+   68:         return 0.0
+   69: 
+   70:     excess_returns = returns - (target_return / periods_per_year)
+   71:     downside_returns = np.minimum(excess_returns, 0)
+   72:     downside_std = np.std(downside_returns, ddof=1)
+   73: 
+   74:     if downside_std == 0 or np.isnan(downside_std):
+   75:         return 0.0
+   76: 
+   77:     mean_excess = np.mean(excess_returns)
+   78:     sortino = (mean_excess / downside_std) * np.sqrt(periods_per_year)
+   79:     return float(sortino)
+   80: 
+   81: 
+   82: def calculate_cagr(
+   83:     prices: np.ndarray | list[float],
+   84:     periods_per_year: int = 252
+   85: ) -> float:
+   86:     """
+   87:     Calculate Compound Annual Growth Rate.
+   88: 
+   89:     Args:
+   90:         prices: Array of prices (first and last used)
+   91:         periods_per_year: Number of periods in a year
+   92: 
+   93:     Returns:
+   94:         CAGR as decimal (0.12 = 12%)
+   95:     """
+   96:     prices = np.asarray(prices)
+   97:     if len(prices) < 2 or prices[0] <= 0 or prices[-1] <= 0:
+   98:         return 0.0
+   99: 
+  100:     total_return = prices[-1] / prices[0]
+  101:     n_periods = len(prices) - 1
+  102:     years = n_periods / periods_per_year
+  103: 
+  104:     if years <= 0:
+  105:         return 0.0
+  106: 
+  107:     cagr = (total_return ** (1 / years)) - 1
+  108:     return float(cagr)
+  109: 
+  110: 
+  111: def calculate_max_drawdown(prices: np.ndarray | list[float]) -> float:
+  112:     """
+  113:     Calculate maximum drawdown.
+  114: 
+  115:     Args:
+  116:         prices: Array of prices or equity curve
+  117: 
+  118:     Returns:
+  119:         Maximum drawdown as positive decimal (0.15 = 15% drawdown)
+  120:     """
+  121:     prices = np.asarray(prices)
+  122:     if len(prices) < 2:
+  123:         return 0.0
+  124: 
+  125:     peak = np.maximum.accumulate(prices)
+  126:     drawdown = (peak - prices) / peak
+  127:     max_dd = np.max(drawdown)
+  128: 
+  129:     return float(max_dd) if not np.isnan(max_dd) else 0.0
+  130: 
+  131: 
+  132: def calculate_calmar_ratio(
+  133:     returns: np.ndarray | list[float],
+  134:     prices: np.ndarray | list[float] | None = None,
+  135:     periods_per_year: int = 252
+  136: ) -> float:
+  137:     """
+  138:     Calculate Calmar ratio (CAGR / Max Drawdown).
+  139: 
+  140:     Args:
+  141:         returns: Array of returns
+  142:         prices: Array of prices (optional, computed from returns if not provided)
+  143:         periods_per_year: Number of periods in a year
+  144: 
+  145:     Returns:
+  146:         Calmar ratio
+  147:     """
+  148:     returns = np.asarray(returns)
+  149: 
+  150:     if prices is None:
+  151:         # Compute prices from returns
+  152:         prices = np.cumprod(1 + returns)
+  153:         prices = np.insert(prices, 0, 1.0)  # Start at 1.0
+  154: 
+  155:     prices = np.asarray(prices)
+  156: 
+  157:     cagr = calculate_cagr(prices, periods_per_year)
+  158:     max_dd = calculate_max_drawdown(prices)
+  159: 
+  160:     if max_dd == 0:
+  161:         return 0.0
+  162: 
+  163:     return float(cagr / max_dd)
+  164: 
+  165: 
+  166: def calculate_var(
+  167:     returns: np.ndarray | list[float],
+  168:     confidence_level: float = 0.95
+  169: ) -> float:
+  170:     """
+  171:     Calculate Value at Risk (VaR) using historical method.
+  172: 
+  173:     Args:
+  174:         returns: Array of returns
+  175:         confidence_level: Confidence level (default: 0.95 = 95%)
+  176: 
+  177:     Returns:
+  178:         VaR as positive decimal (loss at risk)
+  179:     """
+  180:     returns = np.asarray(returns)
+  181:     if len(returns) < 2:
+  182:         return 0.0
+  183: 
+  184:     percentile = (1 - confidence_level) * 100
+  185:     var = -np.percentile(returns, percentile)
+  186: 
+  187:     return float(var) if not np.isnan(var) else 0.0
+  188: 
+  189: 
+  190: def calculate_expected_shortfall(
+  191:     returns: np.ndarray | list[float],
+  192:     confidence_level: float = 0.95
+  193: ) -> float:
+  194:     """
+  195:     Calculate Expected Shortfall (CVaR).
+  196: 
+  197:     Args:
+  198:         returns: Array of returns
+  199:         confidence_level: Confidence level (default: 0.95)
+  200: 
+  201:     Returns:
+  202:         Expected Shortfall as positive decimal
+  203:     """
+  204:     returns = np.asarray(returns)
+  205:     if len(returns) < 2:
+  206:         return 0.0
+  207: 
+  208:     var = calculate_var(returns, confidence_level)
+  209:     tail_returns = returns[returns <= -var]
+  210: 
+  211:     if len(tail_returns) == 0:
+  212:         return var
+  213: 
+  214:     es = -np.mean(tail_returns)
+  215:     return float(es) if not np.isnan(es) else var
+  216: 
+  217: 
+  218: def calculate_win_rate(returns: np.ndarray | list[float]) -> float:
+  219:     """
+  220:     Calculate win rate (percentage of positive returns).
+  221: 
+  222:     Args:
+  223:         returns: Array of returns
+  224: 
+  225:     Returns:
+  226:         Win rate as decimal (0.55 = 55%)
+  227:     """
+  228:     returns = np.asarray(returns)
+  229:     if len(returns) == 0:
+  230:         return 0.0
+  231: 
+  232:     wins = np.sum(returns > 0)
+  233:     total = len(returns)
+  234: 
+  235:     return float(wins / total)
+  236: 
+  237: 
+  238: def calculate_profit_factor(returns: np.ndarray | list[float]) -> float:
+  239:     """
+  240:     Calculate profit factor (gross profit / gross loss).
+  241: 
+  242:     Args:
+  243:         returns: Array of returns
+  244: 
+  245:     Returns:
+  246:         Profit factor (>1 is profitable)
+  247:     """
+  248:     returns = np.asarray(returns)
+  249:     if len(returns) == 0:
+  250:         return 0.0
+  251: 
+  252:     gross_profit = np.sum(returns[returns > 0])
+  253:     gross_loss = -np.sum(returns[returns < 0])
+  254: 
+  255:     if gross_loss == 0:
+  256:         return float('inf') if gross_profit > 0 else 0.0
+  257: 
+  258:     return float(gross_profit / gross_loss)
+  259: 
+  260: 
+  261: def _norm_cdf(x: float) -> float:
+  262:     """Standard-normal CDF via erf (no scipy dependency)."""
+  263:     import math
+  264:     return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+  265: 
+  266: 
+  267: def _norm_ppf(p: float) -> float:
+  268:     """Inverse standard-normal CDF (Acklam's rational approximation). Used for DSR's SR0."""
+  269:     import math
+  270:     if p <= 0.0:
+  271:         return -math.inf
+  272:     if p >= 1.0:
+  273:         return math.inf
+  274:     a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+  275:          1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+  276:     b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+  277:          6.680131188771972e+01, -1.328068155288572e+01]
+  278:     c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+  279:          -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
+  280:     d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+  281:          3.754408661907416e+00]
+  282:     plow, phigh = 0.02425, 1 - 0.02425
+  283:     if p < plow:
+  284:         q = math.sqrt(-2 * math.log(p))
+  285:         return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
+  286:                ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+  287:     if p > phigh:
+  288:         q = math.sqrt(-2 * math.log(1 - p))
+  289:         return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
+  290:                 ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+  291:     q = p - 0.5
+  292:     r = q * q
+  293:     return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / \
+  294:            (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+  295: 
+  296: 
+  297: def probabilistic_sharpe_ratio(
+  298:     sharpe_per_period: float, n_obs: int, skew: float = 0.0, kurtosis: float = 3.0,
+  299:     sr_benchmark: float = 0.0,
+  300: ) -> float:
+  301:     """Probabilistic Sharpe Ratio (Bailey & LÃ³pez de Prado 2012).
+  302: 
+  303:     Probability that the true (per-period, non-annualized) Sharpe exceeds ``sr_benchmark``, given the
+  304:     estimate's standard error inflated by non-normality (skew/kurtosis). ``kurtosis`` is the full
+  305:     (non-excess) kurtosis (normal = 3). Returns a probability in [0, 1].
+  306:     """
+  307:     if n_obs is None or n_obs < 3:
+  308:         return 0.0
+  309:     sr = float(sharpe_per_period)
+  310:     denom = 1.0 - skew * sr + ((kurtosis - 1.0) / 4.0) * sr * sr
+  311:     if denom <= 0:
+  312:         return 0.0
+  313:     import math
+  314:     z = (sr - sr_benchmark) * math.sqrt(n_obs - 1) / math.sqrt(denom)
+  315:     return float(_norm_cdf(z))
+  316: 
+  317: 
+  318: def expected_max_sharpe_null(n_trials: int, trials_sharpe_std: float) -> float:
+  319:     """Expected maximum per-period Sharpe under the null across ``n_trials`` independent strategies.
+  320: 
+  321:     SR0 = Ïƒ Â· [ (1âˆ’Î³)Â·Z(1âˆ’1/N) + Î³Â·Z(1âˆ’1/(NÂ·e)) ]  (Bailey & LÃ³pez de Prado 2014, Deflated Sharpe).
+  322:     ``trials_sharpe_std`` = std of the per-period Sharpe estimates across the trials.
+  323:     """
+  324:     import math
+  325:     n = max(int(n_trials), 1)
+  326:     if n == 1 or trials_sharpe_std <= 0:
+  327:         return 0.0
+  328:     gamma = 0.5772156649015329  # Eulerâ€“Mascheroni
+  329:     z1 = _norm_ppf(1.0 - 1.0 / n)
+  330:     z2 = _norm_ppf(1.0 - 1.0 / (n * math.e))
+  331:     return float(trials_sharpe_std * ((1.0 - gamma) * z1 + gamma * z2))
+  332: 
+  333: 
+  334: def deflated_sharpe_ratio(
+  335:     sharpe_per_period: float, n_obs: int, n_trials: int, trials_sharpe_std: float,
+  336:     skew: float = 0.0, kurtosis: float = 3.0,
+  337: ) -> dict:
+  338:     """Deflated Sharpe Ratio: PSR evaluated against the null-expected MAX Sharpe over N trials.
+  339: 
+  340:     Corrects the single-test PSR for multiple testing (selection bias from trying ``n_trials``
+  341:     strategies). Returns ``{sr0, dsr, significant}`` where ``dsr`` is the probability the strategy's
+  342:     true Sharpe beats the best-of-N under the null; ``significant`` = dsr > 0.95.
+  343:     """
+  344:     sr0 = expected_max_sharpe_null(n_trials, trials_sharpe_std)
+  345:     dsr = probabilistic_sharpe_ratio(sharpe_per_period, n_obs, skew, kurtosis, sr_benchmark=sr0)
+  346:     return {"sr0": round(sr0, 4), "dsr": round(dsr, 4), "significant": bool(dsr > 0.95)}
+  347: 
+  348: 
+  349: def trial_aware_moments(returns: np.ndarray | list[float], sr_benchmark: float = 0.0) -> dict:
+  350:     """Per-period Sharpe + higher moments + PSR for one return series.
+  351: 
+  352:     The building block for trial-aware (Deflated Sharpe) evaluation: the caller collects
+  353:     ``sharpe_per_period`` across N strategies to estimate the trial dispersion, then calls
+  354:     :func:`deflated_sharpe_ratio`. ``kurtosis`` is full (non-excess, normal = 3).
+  355:     """
+  356:     r = np.asarray(returns, dtype=float)
+  357:     r = r[~np.isnan(r)]
+  358:     n = len(r)
+  359:     if n < 3 or r.std(ddof=1) == 0:
+  360:         return {"sharpe_per_period": 0.0, "skew": 0.0, "kurtosis": 3.0, "n_obs": int(n), "psr": 0.0}
+  361:     mean, std = float(r.mean()), float(r.std(ddof=1))
+  362:     sr_pp = mean / std
+  363:     # sample skewness / kurtosis (full, non-excess)
+  364:     z = (r - mean) / std
+  365:     skew = float(np.mean(z ** 3))
+  366:     kurt = float(np.mean(z ** 4))
+  367:     psr = probabilistic_sharpe_ratio(sr_pp, n, skew, kurt, sr_benchmark)
+  368:     return {"sharpe_per_period": round(sr_pp, 6), "skew": round(skew, 4),
+  369:             "kurtosis": round(kurt, 4), "n_obs": int(n), "psr": round(psr, 4)}
+  370: 
+  371: 
+  372: def calculate_all_metrics(
+  373:     returns: np.ndarray | list[float],
+  374:     prices: np.ndarray | list[float] | None = None,
+  375:     periods_per_year: int = 252,
+  376:     risk_free_rate: float = 0.0
+  377: ) -> dict:
+  378:     """
+  379:     Calculate all financial metrics at once.
+  380: 
+  381:     Args:
+  382:         returns: Array of returns
+  383:         prices: Array of prices (optional)
+  384:         periods_per_year: Number of periods in a year
+  385:         risk_free_rate: Annual risk-free rate
+  386: 
+  387:     Returns:
+  388:         Dictionary with all metrics
+  389:     """
+  390:     returns = np.asarray(returns)
+  391: 
+  392:     if prices is None and len(returns) > 0:
+  393:         prices = np.cumprod(1 + returns)
+  394:         prices = np.insert(prices, 0, 1.0)
+  395: 
+  396:     return {
+  397:         'sharpe_ratio': calculate_sharpe_ratio(returns, risk_free_rate, periods_per_year),
+  398:         'sortino_ratio': calculate_sortino_ratio(returns, 0.0, periods_per_year),
+  399:         'cagr': calculate_cagr(prices, periods_per_year) if prices is not None else 0.0,
+  400:         'max_drawdown': calculate_max_drawdown(prices) if prices is not None else 0.0,
+  401:         'calmar_ratio': calculate_calmar_ratio(returns, prices, periods_per_year),
+  402:         'var_95': calculate_var(returns, 0.95),
+  403:         'expected_shortfall_95': calculate_expected_shortfall(returns, 0.95),
+  404:         'win_rate': calculate_win_rate(returns),
+  405:         'profit_factor': calculate_profit_factor(returns),
+  406:         'total_return': float(np.prod(1 + returns) - 1) if len(returns) > 0 else 0.0,
+  407:         'volatility': float(np.std(returns, ddof=1) * np.sqrt(periods_per_year)) if len(returns) > 1 else 0.0,
+  408:         'n_observations': len(returns),
+  409:     }
+  410: 
+  411: 
+  412: # ---------------------------------------------------------------------------
+  413: # Honest-gate extensions (master plan OLA 2, CTR-QUANT-CONSTITUTION-001 Â§3):
+  414: # B1' paired-exposure baseline + transaction-cost stress. ONE implementation
+  415: # consumed by src/gold_rl/backtest.py and src/btc_strategy/backtest.py.
+  416: # ---------------------------------------------------------------------------
+  417: 
+  418: def _ann_return_dd_calmar(returns: np.ndarray, ann_factor: float) -> dict:
+  419:     """Annualized return, max drawdown and Calmar for a daily-return series."""
+  420:     r = np.asarray(returns, dtype=float)
+  421:     r = r[~np.isnan(r)]
+  422:     if len(r) < 2:
+  423:         return {"ann_return_pct": 0.0, "max_dd_pct": 0.0, "calmar": 0.0, "sharpe": 0.0}
+  424:     eq = np.cumprod(1.0 + r)
+  425:     peak = np.maximum.accumulate(eq)
+  426:     mdd = float((eq / peak - 1.0).min())
+  427:     years = len(r) / ann_factor
+  428:     ann = float(eq[-1] ** (1.0 / years) - 1.0) if years > 0 and eq[-1] > 0 else 0.0
+  429:     sd = r.std(ddof=1)
+  430:     sharpe = float(r.mean() / sd * np.sqrt(ann_factor)) if sd > 0 else 0.0
+  431:     return {"ann_return_pct": round(ann * 100, 2), "max_dd_pct": round(mdd * 100, 2),
+  432:             "calmar": round(ann / abs(mdd), 3) if mdd < 0 else 0.0,
+  433:             "sharpe": round(sharpe, 3)}
+  434: 
+  435: 
+  436: def paired_exposure_baseline(position: np.ndarray, asset_ret: np.ndarray,
+  437:                              ann_factor: float) -> dict:
+  438:     """B1' â€” constant exposure equal to the strategy's mean realized |exposure|.
+  439: 
+  440:     Separates genuine timing from simply-less-beta (audit II-1): a vol-targeted sleeve
+  441:     whose typical exposure is ~0.44x must beat constant-0.44x, not HODL 1.0x. Costless by
+  442:     construction (a constant position has ~zero turnover), which makes the bar HARDER â€”
+  443:     honest in the right direction.
+  444:     """
+  445:     pos = np.asarray(position, dtype=float)
+  446:     ret = np.asarray(asset_ret, dtype=float)
+  447:     mean_exp = float(np.nanmean(np.abs(pos)))
+  448:     stats = _ann_return_dd_calmar(mean_exp * ret, ann_factor)
+  449:     return {"mean_exposure": round(mean_exp, 4), **stats}
+  450: 
+  451: 
+  452: def cost_stress(position: np.ndarray, asset_ret: np.ndarray, cost: np.ndarray,
+  453:                 swap: np.ndarray | None, ann_factor: float) -> dict:
+  454:     """Re-price the SAME positions at x1/x2/x3 transaction costs (audit II-4).
+  455: 
+  456:     REJECT rule (quant-constitution Â§3.4): a strategy that dies with costs doubled has no
+  457:     real edge â€” the assumed bps (gold 2bps, COP retail spread) are optimistic.
+  458:     """
+  459:     pos = np.asarray(position, dtype=float)
+  460:     ret = np.asarray(asset_ret, dtype=float)
+  461:     c = np.asarray(cost, dtype=float)
+  462:     sw = np.asarray(swap, dtype=float) if swap is not None else np.zeros_like(c)
+  463:     out: dict = {}
+  464:     for mult in (1, 2, 3):
+  465:         stats = _ann_return_dd_calmar(pos * ret - mult * c - sw, ann_factor)
+  466:         out[f"x{mult}"] = stats
+  467:     out["survives_2x"] = bool(out["x2"]["ann_return_pct"] > 0 and out["x2"]["calmar"] > 0)
+  468:     out["survives_3x"] = bool(out["x3"]["ann_return_pct"] > 0)
+  469:     return out
+  470: 
+  471: 
+  472: # ---------------------------------------------------------------------------
+  473: # Selection-bias validation (ported 2026-07-20 from the xasset-alpha-engine skill).
+  474: #
+  475: # `quant-constitution.md` requires trial-aware evidence, but the repo only had the
+  476: # Deflated Sharpe half of it. These three close the gap:
+  477: #   * purged_kfold_splits - the repo's walk-forward has a gap but no embargo, so serial
+  478: #     correlation still carried test information into training.
+  479: #   * pbo_cscv - answers "does my in-sample winner stay above median out-of-sample?".
+  480: #     There was no implementation at all; DSR deflates a Sharpe, PBO indicts the
+  481: #     selection procedure itself.
+  482: #   * sharpe_ratio_stderr - autocorrelation-adjusted, so error bars stop being
+  483: #     optimistic on overlapping or trending returns.
+  484: #
+  485: # They live HERE, not in the skill, because a skill is advisory and this is the
+  486: # module the constitution names for edge claims.
+  487: # ---------------------------------------------------------------------------
+  488: 
+  489: 
+  490: def sharpe_ratio_stderr(
+  491:     returns: np.ndarray | list[float], adjust_autocorr: bool = True
+  492: ) -> float:
+  493:     """Standard error of a per-period Sharpe estimate.
+  494: 
+  495:     With ``adjust_autocorr`` the SE is inflated for first-order serial correlation
+  496:     (Lo 2002). Overlapping windows and trend-following returns are positively
+  497:     autocorrelated, and ignoring that makes every confidence interval too narrow.
+  498:     """
+  499:     import math
+  500: 
+  501:     r = np.asarray(returns, dtype=float)
+  502:     r = r[np.isfinite(r)]
+  503:     n = len(r)
+  504:     if n < 3:
+  505:         return float("inf")
+  506:     sd = r.std(ddof=1)
+  507:     if sd <= 0:
+  508:         return float("inf")
+  509:     sr = r.mean() / sd
+  510:     var = (1.0 + 0.5 * sr * sr) / (n - 1)
+  511:     se = math.sqrt(var)
+  512:     if adjust_autocorr and n > 3:
+  513:         rho = float(np.corrcoef(r[:-1], r[1:])[0, 1])
+  514:         if np.isfinite(rho) and abs(rho) < 0.999:
+  515:             se *= math.sqrt((1.0 + rho) / (1.0 - rho))
+  516:     return float(se)
+  517: 
+  518: 
+  519: def purged_kfold_splits(t1, n_splits: int = 5, embargo_pct: float = 0.01):
+  520:     """K-fold splits with purging AND embargo (LÃ³pez de Prado, AFML ch. 7).
+  521: 
+  522:     Plain K-fold leaks whenever label windows straddle a fold boundary: the training set
+  523:     then contains information about the test period and OOS Sharpe comes back inflated.
+  524:     Every multi-day-hold strategy in this repo has that exposure.
+  525: 
+  526:     Purging drops training samples whose label window overlaps the test window; the embargo
+  527:     additionally drops samples immediately AFTER the test window, where serial correlation
+  528:     still carries test information.
+  529: 
+  530:     Args:
+  531:         t1: ``pd.Series`` of label END times, indexed by label start time, sorted ascending.
+  532:         n_splits: number of folds (>= 2).
+  533:         embargo_pct: fraction of the sample embargoed after each test fold.
+  534: 
+  535:     Yields:
+  536:         ``(train_indices, test_indices)`` positional integer arrays.
+  537:     """
+  538:     import pandas as pd
+  539: 
+  540:     if not isinstance(t1, pd.Series):
+  541:         raise TypeError("t1 must be a pd.Series of label end times")
+  542:     if not t1.index.is_monotonic_increasing:
+  543:         raise ValueError("t1 index must be sorted ascending")
+  544:     if n_splits < 2:
+  545:         raise ValueError("n_splits must be >= 2")
+  546:     if not 0.0 <= embargo_pct < 1.0:
+  547:         raise ValueError("embargo_pct must be in [0, 1)")
+  548: 
+  549:     n = len(t1)
+  550:     indices = np.arange(n)
+  551:     embargo = int(n * embargo_pct)
+  552: 
+  553:     for test_idx in np.array_split(indices, n_splits):
+  554:         test_start_time = t1.index[test_idx[0]]
+  555:         test_end_time = t1.iloc[test_idx].max()
+  556:         before = indices[(t1.values < test_start_time)]
+  557:         after_pos = int(t1.index.searchsorted(test_end_time, side="right"))
+  558:         after = indices[min(after_pos + embargo, n):]
+  559:         train_idx = np.concatenate([before, after])
+  560:         if train_idx.size == 0:
+  561:             raise ValueError(
+  562:                 "Purging removed the entire training set for a fold. Label horizon is too "
+  563:                 f"long relative to sample length (n={n}, n_splits={n_splits})."
+  564:             )
+  565:         yield train_idx, test_idx
+  566: 
+  567: 
+  568: def pbo_cscv(returns_matrix, n_blocks: int = 16) -> dict:
+  569:     """Probability of Backtest Overfitting via Combinatorially Symmetric CV.
+  570: 
+  571:     DSR deflates a Sharpe for how many trials you ran. PBO asks the complementary and
+  572:     arguably harsher question: **when I pick the best variant in-sample, does it stay above
+  573:     median out-of-sample?** PBO is the fraction of splits where it does not.
+  574: 
+  575:     ``pbo > 0.5`` means the selection procedure is worse than random â€” the in-sample winner
+  576:     tends to be an out-of-sample loser. That is a REJECT regardless of Sharpe.
+  577: 
+  578:     Args:
+  579:         returns_matrix: ``(T observations x N strategies)``, N >= 2.
+  580:         n_blocks: even, <= 20. C(n_blocks, n_blocks/2) splits are evaluated.
+  581: 
+  582:     Returns:
+  583:         ``{pbo, n_combinations, n_strategies}``.
+  584:     """
+  585:     import math
+  586:     from itertools import combinations
+  587: 
+  588:     from scipy import stats
+  589: 
+  590:     m = np.asarray(returns_matrix, dtype=float)
+  591:     if m.ndim != 2:
+  592:         raise ValueError("returns_matrix must be 2-D (T x N)")
+  593:     t, n_strat = m.shape
+  594:     if n_strat < 2:
+  595:         raise ValueError("PBO needs >= 2 strategies to rank")
+  596:     if n_blocks % 2 != 0:
+  597:         raise ValueError("n_blocks must be even")
+  598:     if n_blocks > 20:
+  599:         raise ValueError(f"n_blocks={n_blocks} gives too many combinations")
+  600:     if t < n_blocks * 2:
+  601:         raise ValueError(f"need >= {n_blocks * 2} observations for {n_blocks} blocks")
+  602: 
+  603:     blocks = np.array_split(np.arange(t), n_blocks)
+  604:     logits: list[float] = []
+  605:     for combo in combinations(range(n_blocks), n_blocks // 2):
+  606:         is_idx = np.concatenate([blocks[i] for i in combo])
+  607:         oos_idx = np.concatenate([blocks[i] for i in range(n_blocks) if i not in combo])
+  608:         with np.errstate(invalid="ignore", divide="ignore"):
+  609:             sd_is = m[is_idx].std(axis=0, ddof=1)
+  610:             sd_oos = m[oos_idx].std(axis=0, ddof=1)
+  611:             sr_is = np.where(sd_is > 0, m[is_idx].mean(axis=0) / sd_is, -np.inf)
+  612:             sr_oos = np.where(sd_oos > 0, m[oos_idx].mean(axis=0) / sd_oos, -np.inf)
+  613:         if not np.isfinite(sr_is).any():
+  614:             continue
+  615:         best = int(np.nanargmax(sr_is))
+  616:         rank = float(stats.rankdata(sr_oos)[best]) / (n_strat + 1)
+  617:         logits.append(math.log(rank / (1.0 - rank)))
+  618: 
+  619:     if not logits:
+  620:         raise ValueError("no valid splits - check for degenerate return series")
+  621:     arr = np.asarray(logits)
+  622:     return {
+  623:         "pbo": round(float((arr <= 0).mean()), 4),
+  624:         "n_combinations": int(arr.size),
+  625:         "n_strategies": int(n_strat),
+  626:     }
+  627: 
+  628: 
+  629: # ---------------------------------------------------------------------------
+  630: # Distribution-shape metrics (skill: performance-metrics)
+  631: # ---------------------------------------------------------------------------
+  632: 
+  633: def omega_ratio(returns, threshold: float = 0.0) -> float | None:
+  634:     """Omega = sum(gains above threshold) / sum(losses below it).
+  635: 
+  636:     Uses the WHOLE distribution -- skew and kurtosis included -- where Sharpe uses only its
+  637:     first two moments. That matters here because the edge in this system is risk control, and
+  638:     risk control shows up as asymmetry that a Sharpe cannot see.
+  639: 
+  640:     Returns None when there are no losses, never inf (JSON safety, strategy-contract rule 2).
+  641:     """
+  642:     r = np.asarray(returns, dtype=float)
+  643:     r = r[~np.isnan(r)]
+  644:     if r.size == 0:
+  645:         return None
+  646:     gains = np.sum(np.clip(r - threshold, 0, None))
+  647:     losses = np.sum(np.clip(threshold - r, 0, None))
+  648:     if losses <= 0:
+  649:         return None
+  650:     return float(round(gains / losses, 4))
+  651: 
+  652: 
+  653: def capture_ratios(returns, benchmark) -> dict:
+  654:     """Up/down capture against a benchmark, and their ratio.
+  655: 
+  656:     The target profile is up_capture > 100 and down_capture < 100: participate in the rises,
+  657:     sit out the falls. This is the honest way to frame a strategy whose directional forecast
+  658:     has no edge -- it asks "what share of each side did you take", not "did you predict".
+  659:     """
+  660:     r = np.asarray(returns, dtype=float)
+  661:     b = np.asarray(benchmark, dtype=float)
+  662:     n = min(len(r), len(b))
+  663:     r, b = r[:n], b[:n]
+  664:     ok = ~(np.isnan(r) | np.isnan(b))
+  665:     r, b = r[ok], b[ok]
+  666: 
+  667:     out: dict = {}
+  668:     for name, mask in (("up", b > 0), ("down", b < 0)):
+  669:         if not mask.any() or np.isclose(b[mask].mean(), 0):
+  670:             out[f"{name}_capture_pct"] = None
+  671:             continue
+  672:         out[f"{name}_capture_pct"] = float(round(r[mask].mean() / b[mask].mean() * 100, 2))
+  673:     up, dn = out.get("up_capture_pct"), out.get("down_capture_pct")
+  674:     # A negative or zero down-capture means the strategy GAINED while the benchmark fell; the
+  675:     # ratio is not meaningful there, so it is None rather than a large flattering number.
+  676:     out["capture_ratio"] = float(round(up / dn, 3)) if (up and dn and dn > 0) else None
+  677:     return out
+  678: 
+  679: 
+  680: def dsr_report(sharpe_per_period: float, n_obs: int, n_trials: int, *,
+  681:                variant_sharpes=None, sigma_grid=(0.05, 0.10, 0.15),
+  682:                periods_per_year: int = 252, skew: float = 0.0,
+  683:                kurtosis: float = 3.0) -> dict:
+  684:     """Deflated Sharpe reported over EVERY sigma assumption, headline = the least flattering.
+  685: 
+  686:     Exists because the same strategy was getting two different DSRs on 2026-07-21:
+  687:     `gold_trend_simple` scored 0.861 in the evidence harness (sigma estimated from the
+  688:     dispersion of published variants) and 0.0033 in its publisher (sigma hardcoded to
+  689:     `0.5/sqrt(252)`). Neither was a bug -- they were different assumptions -- but a number that
+  690:     swings 250x on an undocumented constant is a number someone will eventually quote
+  691:     selectively. There is one DSR entry point now, and it always shows its work.
+  692: 
+  693:     UNITS, which is where this goes wrong: `deflated_sharpe_ratio` needs
+  694:     `trials_sharpe_std` in the SAME units as `sharpe_per_period`. Registries declare sigma
+  695:     annualized, so a declared 0.10 becomes 0.10/sqrt(periods_per_year) here. Feeding an
+  696:     annualized sigma against a per-period Sharpe makes the null expect random strategies to
+  697:     achieve annualized Sharpes of 2-6, under which nothing can ever pass.
+  698: 
+  699:     `variant_sharpes` (per-period Sharpes of the asset's actually-published variants) gives the
+  700:     EMPIRICAL estimate, which needs no unit conversion because it is measured in the right
+  701:     units by construction. It is preferred when >= 3 variants exist; the declared grid is the
+  702:     fallback and is always published alongside so the sensitivity is visible.
+  703:     """
+  704:     root = float(np.sqrt(periods_per_year))
+  705:     cells, sigmas = [], []
+  706: 
+  707:     if variant_sharpes is not None:
+  708:         vs = np.asarray([s for s in variant_sharpes if s is not None and np.isfinite(s)],
+  709:                         dtype=float)
+  710:         if vs.size >= 3:
+  711:             sigmas.append((float(np.std(vs, ddof=1)), "empirical_from_published_variants"))
+  712: 
+  713:     sigmas += [(float(s) / root, f"declared_{s}_annualized_over_sqrt({periods_per_year})")
+  714:                for s in sigma_grid]
+  715: 
+  716:     for sig, origin in sigmas:
+  717:         if sig <= 0:
+  718:             continue
+  719:         d = deflated_sharpe_ratio(sharpe_per_period, n_obs, n_trials, sig,
+  720:                                   skew=skew, kurtosis=kurtosis)
+  721:         cells.append({"sigma_trials_pp": round(sig, 6), "sigma_origin": origin, **d})
+  722: 
+  723:     if not cells:
+  724:         return {"headline_dsr": None, "cells": [], "bar": 0.95, "passes": False,
+  725:                 "reason": "no usable sigma"}
+  726: 
+  727:     preferred = [c for c in cells if c["sigma_origin"] == "empirical_from_published_variants"]
+  728:     headline = min(preferred or cells, key=lambda c: c["dsr"])
+  729:     return {
+  730:         "headline_dsr": headline["dsr"],
+  731:         "headline_sigma_origin": headline["sigma_origin"],
+  732:         "headline_sr0": headline["sr0"],
+  733:         "worst_cell_dsr": min(c["dsr"] for c in cells),
+  734:         "n_trials": int(n_trials), "n_obs": int(n_obs),
+  735:         "sharpe_per_period": round(float(sharpe_per_period), 6),
+  736:         "cells": cells, "bar": 0.95, "passes": bool(headline["dsr"] > 0.95),
+  737:     }
+  738: 
+  739: 
+  740: def ewma_volatility(returns, lam: float = 0.94, periods_per_year: int = 365,
+  741:                     seed_window: int = 20) -> np.ndarray:
+  742:     """RiskMetrics EWMA volatility, annualized. sigma^2_t = lam*sigma^2_{t-1} + (1-lam)*r^2_{t-1}.
+  743: 
+  744:     Skill: vendor/quant-skills/04-backtesting-validation/volatility-modeling.
+  745: 
+  746:     Why this over a rolling window: an equal-weighted 20-day window treats a shock from 20 days
+  747:     ago exactly like yesterday's, then drops it off a cliff when it leaves the window. EWMA
+  748:     decays smoothly. Effective window is ~1/(1-lam) = 17 days at lam=0.94, the RiskMetrics daily
+  749:     standard.
+  750: 
+  751:     Honest caveat the skill itself raises: EWMA is IGARCH (alpha+beta=1), so vol shocks persist
+  752:     INDEFINITELY with no mean reversion. For an asset whose volatility mean-reverts hard, that
+  753:     can keep position size suppressed long after the shock has passed. This is a real reason it
+  754:     may perform WORSE than a rolling window, not a footnote.
+  755: 
+  756:     Strictly causal: sigma_t uses returns up to t-1 only, so it can size the bar at t.
+  757:     """
+  758:     r = np.asarray(returns, dtype=float)
+  759:     r = np.nan_to_num(r, nan=0.0)
+  760:     n = len(r)
+  761:     if n == 0:
+  762:         return np.zeros(0)
+  763: 
+  764:     out = np.empty(n)
+  765:     seed = r[:min(seed_window, n)]
+  766:     var = float(np.var(seed, ddof=0)) if seed.size else 0.0
+  767:     if var <= 0:
+  768:         var = float(np.var(r, ddof=0)) or 1e-8
+  769:     for i in range(n):
+  770:         out[i] = np.sqrt(var * periods_per_year)   # sigma_t, built from r_{<t}
+  771:         var = lam * var + (1.0 - lam) * (r[i] ** 2)
+  772:     return out
+  773: 
+  774: 
+  775: def qlike_loss(true_var, pred_var) -> np.ndarray:
+  776:     """QLIKE loss per observation: true/pred - ln(true/pred) - 1.
+  777: 
+  778:     The standard loss for variance forecasts (Patton 2011: one of only two losses robust to
+  779:     noisy volatility proxies; the other is MSE on variance). RMSE on sigma rewards
+  780:     under-prediction because vol is right-skewed -- a forecaster that always guesses low looks
+  781:     good on RMSE and then under-sizes the one week that matters. QLIKE penalizes
+  782:     under-prediction asymmetrically, which is the direction risk actually hurts.
+  783: 
+  784:     Element-wise; observations where either side is non-positive return NaN rather than being
+  785:     silently dropped -- the caller decides what a zero-variance day means for its series.
+  786:     """
+  787:     t = np.asarray(true_var, dtype=float)
+  788:     p = np.asarray(pred_var, dtype=float)
+  789:     out = np.full(np.broadcast(t, p).shape, np.nan)
+  790:     ok = (t > 0) & (p > 0)
+  791:     ratio = t[ok] / p[ok]
+  792:     out[ok] = ratio - np.log(ratio) - 1.0
+  793:     return out
+  794: 
+  795: 
+  796: def circular_block_bootstrap(x, stat_fn, n_boot: int = 2000, block: int = 4,
+  797:                              seed: int = 42) -> dict:
+  798:     """Circular block bootstrap of an arbitrary statistic over a (possibly paired) series.
+  799: 
+  800:     Panel audit 2026-07-21: every analysis was re-implementing ad-hoc bootstraps; this is
+  801:     the SSOT. `block=4` weekly preserves the monthly dependence structure that iid
+  802:     resampling destroys. For PAIRED comparisons pass the delta series and a stat_fn over
+  803:     it -- pairing must happen before resampling, never after.
+  804: 
+  805:     Returns {stat, ci95, se, n_boot, block}.
+  806:     """
+  807:     rng = np.random.default_rng(seed)
+  808:     x = np.asarray(x, dtype=float)
+  809:     x = x[np.isfinite(x)]
+  810:     n = len(x)
+  811:     if n < block + 1:
+  812:         return {"stat": None, "ci95": [None, None], "se": None,
+  813:                 "n_boot": 0, "block": block, "reason": f"n={n} < block+1"}
+  814:     stats = np.empty(n_boot)
+  815:     n_blocks = int(np.ceil(n / block))
+  816:     for b in range(n_boot):
+  817:         starts = rng.integers(0, n, size=n_blocks)
+  818:         idx = (starts[:, None] + np.arange(block)[None, :]).ravel() % n
+  819:         stats[b] = stat_fn(x[idx[:n]])
+  820:     return {"stat": float(stat_fn(x)),
+  821:             "ci95": [float(np.percentile(stats, 2.5)), float(np.percentile(stats, 97.5))],
+  822:             "se": float(np.std(stats, ddof=1)), "n_boot": n_boot, "block": block}
+  823: 
+  824: 
+  825: def e_process(deltas, clip: float = 0.10, lam: float = 0.5) -> dict:
+  826:     """Betting-martingale e-process over a bounded paired-delta stream (DESCRIPTIVE ONLY).
+  827: 
+  828:     Status per the sealed v12 judge (registry 2026-07-21): DEGRADED to monitoring -- it
+  829:     does NOT enable PASS until a frozen spec exists (this is that spec's first draft, and
+  830:     it stays descriptive until an ADR promotes it). H0: E[delta] <= 0. Wealth update per
+  831:     week t: W_t = W_{t-1} * (1 + lam * clip(delta_t, -clip, clip) / clip). Anytime-valid:
+  832:     the operator may look every week; e >= 20 would correspond to alpha=0.05 IF promoted.
+  833: 
+  834:     Returns the wealth path and the running max (never a decision).
+  835:     """
+  836:     d = np.asarray(deltas, dtype=float)
+  837:     d = d[np.isfinite(d)]
+  838:     w = 1.0
+  839:     path = []
+  840:     for x in d:
+  841:         bet = max(-1.0 + 1e-9, min(1.0 - 1e-9, lam * np.clip(x, -clip, clip) / clip))
+  842:         w *= (1.0 + bet)
+  843:         path.append(w)
+  844:     return {"e_final": float(w), "e_max": float(max(path)) if path else 1.0,
+  845:             "n": len(d), "clip": clip, "lam": lam,
+  846:             "descriptive_only": True,
+  847:             "note": "no habilita PASS; ver juez sellado de v12 en el registry"}
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Item -LiteralPath 'scripts/analysis/xasset_cv_harness.py','scripts/analysis/cop_risk_family_screen.py','services/common/metrics.py' | Select-Object Name,@{N='Lines';E={(Get-Content -LiteralPath "'$_.FullName).Count}} | Format-Table -AutoSize' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1184ms:
+
+Name                      Lines
+----                      -----
+xasset_cv_harness.py        232
+cop_risk_family_screen.py   221
+metrics.py                  847
+
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$i=0; Get-Content -LiteralPath '"'scripts/analysis/xasset_cv_harness.py' | ForEach-Object { "'$i++; '"'{0,5}: {1}' -f "'$i, $_ }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1194ms:
+    1: """E1 â€” Harness reutilizable de validaciÃ³n cross-asset: purged K-fold + wrappers SSOT (0 trials).
+    2: 
+    3: Contract: CTR-QUANT-CONSTITUTION-001 Â· Skill: .claude/skills/xasset-alpha-engine
+    4: 
+    5: **0 trials â€” ningÃºn OOS abierto; cualquier estudio futuro requiere pre-registro en
+    6: HYPOTHESIS-REGISTRY + aprobaciÃ³n del operador.**
+    7: 
+    8: Este mÃ³dulo NO se ejecuta contra ningÃºn target real. Su `smoke()` usa EXCLUSIVAMENTE
+    9: datos sintÃ©ticos (numpy default_rng(42)) para probar la mecÃ¡nica: particiones purgadas
+   10: sin fuga, embargo aplicado, wrappers al SSOT constitucional devolviendo dicts sanos y
+   11: JSON-safe. Correrlo no abre ningÃºn test â€” no lee DB, ni seeds, ni parquets de seÃ±ales.
+   12: 
+   13: QuÃ© contiene y de dÃ³nde viene (DRY â€” no re-implementa el gate):
+   14:   purged_kfold_indices     generalizaciÃ³n posicional (purge + embargo) del
+   15:                            `purged_kfold_idx` ya usado en
+   16:                            scripts/analysis/cop_risk_family_screen.py (H-RISK-FAM-01)
+   17:   purged_kfold_splits_t1   variante por tiempos-de-etiqueta t1 (AFML cap.7), adaptada
+   18:                            de .claude/skills/xasset-alpha-engine/scripts/xasset/
+   19:                            validation.py::purged_kfold_splits
+   20:   dsr_report               RE-EXPORT del SSOT services/common/metrics.py â€” Ãºnico punto
+   21:   circular_block_bootstrap de entrada DSR/bootstrap (quant-constitution Â§2). Este
+   22:   deflated_sharpe_ratio    mÃ³dulo NO trae implementaciÃ³n propia: dos implementaciones
+   23:   probabilistic_sharpe_ratio  del gate es peor que ninguna.
+   24: 
+   25: Uso previsto (FUTURO, tras pre-registro):
+   26:     from scripts.analysis.xasset_cv_harness import purged_kfold_indices, dsr_report
+   27:     for tr, te in purged_kfold_indices(n, n_splits=5, purge=1, embargo=4):
+   28:         ...fit en tr, predecir en te...
+   29:     # y el claim final SIEMPRE via dsr_report con el conteo de trials del registry.
+   30: 
+   31: Smoke (sin targets):
+   32:     python -m scripts.analysis.xasset_cv_harness   # exit 0 = PASS
+   33: """
+   34: from __future__ import annotations
+   35: 
+   36: import sys
+   37: from pathlib import Path
+   38: from typing import Iterator
+   39: 
+   40: import numpy as np
+   41: import pandas as pd
+   42: 
+   43: REPO = Path(__file__).resolve().parents[2]
+   44: sys.path.insert(0, str(REPO))
+   45: 
+   46: # Wrappers/re-exports al SSOT constitucional (services/common/metrics.py).
+   47: from services.common.metrics import (  # noqa: E402
+   48:     circular_block_bootstrap,
+   49:     deflated_sharpe_ratio,
+   50:     dsr_report,
+   51:     probabilistic_sharpe_ratio,
+   52:     trial_aware_moments,
+   53: )
+   54: from src.contracts.strategy_schema import safe_json_dumps  # noqa: E402
+   55: 
+   56: __all__ = [
+   57:     "purged_kfold_indices",
+   58:     "purged_kfold_splits_t1",
+   59:     "dsr_report",
+   60:     "circular_block_bootstrap",
+   61:     "deflated_sharpe_ratio",
+   62:     "probabilistic_sharpe_ratio",
+   63:     "trial_aware_moments",
+   64:     "smoke",
+   65: ]
+   66: 
+   67: 
+   68: # ---------------------------------------------------------------------------
+   69: # Purged K-fold (posicional): folds contiguos + purga simÃ©trica + embargo post-test
+   70: # ---------------------------------------------------------------------------
+   71: 
+   72: def purged_kfold_indices(
+   73:     n_samples: int, n_splits: int = 5, purge: int = 1, embargo: int = 0,
+   74: ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+   75:     """K-fold purgado sobre Ã­ndices posicionales de una serie temporal ordenada.
+   76: 
+   77:     Generaliza `cop_risk_family_screen.purged_kfold_idx` aÃ±adiendo embargo explÃ­cito:
+   78:       - purge:   se eliminan del train los `purge` Ã­ndices adyacentes a CADA lado del
+   79:                  bloque test (etiquetas solapadas â€” p.ej. horizonte semanal â‡’ purge=1
+   80:                  en datos semanales, purge=5 en diarios).
+   81:       - embargo: se eliminan ADEMÃS `embargo` Ã­ndices inmediatamente POSTERIORES al
+   82:                  test (la autocorrelaciÃ³n serial sigue llevando informaciÃ³n del test
+   83:                  hacia adelante; AFML cap.7).
+   84: 
+   85:     Yields (train_idx, test_idx) posicionales. Lanza ValueError si algÃºn fold se
+   86:     queda sin train (horizonte demasiado largo para la muestra) â€” mejor ruido que
+   87:     silencio.
+   88:     """
+   89:     if n_splits < 2:
+   90:         raise ValueError("n_splits debe ser >= 2")
+   91:     if purge < 0 or embargo < 0:
+   92:         raise ValueError("purge y embargo deben ser >= 0")
+   93:     if n_samples < n_splits * 2:
+   94:         raise ValueError(f"n_samples={n_samples} demasiado corto para {n_splits} folds")
+   95: 
+   96:     idx = np.arange(n_samples)
+   97:     for test in np.array_split(idx, n_splits):
+   98:         lo, hi = int(test[0]), int(test[-1])
+   99:         keep = (idx < lo - purge) | (idx > hi + purge + embargo)
+  100:         train = idx[keep]
+  101:         if train.size == 0:
+  102:             raise ValueError(
+  103:                 f"Purga+embargo vaciaron el train (n={n_samples}, splits={n_splits}, "
+  104:                 f"purge={purge}, embargo={embargo})")
+  105:         yield train, test
+  106: 
+  107: 
+  108: # ---------------------------------------------------------------------------
+  109: # Purged K-fold por tiempos de etiqueta (t1) â€” para holding periods irregulares
+  110: # ---------------------------------------------------------------------------
+  111: 
+  112: def purged_kfold_splits_t1(
+  113:     t1: pd.Series, n_splits: int = 5, embargo_pct: float = 0.01,
+  114: ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
+  115:     """Splits purgados usando los tiempos de FIN de etiqueta (AFML cap.7).
+  116: 
+  117:     `t1`: Serie de tiempos de fin de etiqueta, indexada por tiempo de inicio,
+  118:     ordenada ascendente (para un holding de 5 dÃ­as: starts + 5 dÃ­as hÃ¡biles).
+  119:     Purga toda etiqueta de train cuyo intervalo [start, t1] solape la ventana de
+  120:     test; embarga `embargo_pct` de la muestra tras el final del test.
+  121: 
+  122:     Adaptado de la skill xasset-alpha-engine (validation.py::purged_kfold_splits);
+  123:     preferir esta variante cuando los holding periods no son constantes.
+  124:     """
+  125:     if not isinstance(t1, pd.Series):
+  126:         raise TypeError("t1 debe ser pd.Series de tiempos de fin de etiqueta")
+  127:     if not t1.index.is_monotonic_increasing:
+  128:         raise ValueError("el Ã­ndice de t1 debe estar ordenado ascendente")
+  129:     if n_splits < 2:
+  130:         raise ValueError("n_splits debe ser >= 2")
+  131:     if not 0.0 <= embargo_pct < 1.0:
+  132:         raise ValueError("embargo_pct debe estar en [0, 1)")
+  133: 
+  134:     n = len(t1)
+  135:     indices = np.arange(n)
+  136:     embargo = int(n * embargo_pct)
+  137: 
+  138:     for test_idx in np.array_split(indices, n_splits):
+  139:         test_start_time = t1.index[test_idx[0]]
+  140:         test_end_time = t1.iloc[test_idx].max()
+  141:         before = indices[(t1.values < test_start_time)]
+  142:         after_pos = int(t1.index.searchsorted(test_end_time, side="right"))
+  143:         after = indices[min(after_pos + embargo, n):]
+  144:         train_idx = np.concatenate([before, after])
+  145:         if train_idx.size == 0:
+  146:             raise ValueError(
+  147:                 f"La purga vaciÃ³ el train de un fold (n={n}, n_splits={n_splits}): "
+  148:                 "horizonte de etiqueta demasiado largo para la muestra.")
+  149:         yield train_idx, test_idx
+  150: 
+  151: 
+  152: # ---------------------------------------------------------------------------
+  153: # Smoke â€” SOLO datos sintÃ©ticos con seed. NingÃºn target real, ningÃºn OOS abierto.
+  154: # ---------------------------------------------------------------------------
+  155: 
+  156: def smoke() -> dict:
+  157:     """Prueba la MECÃNICA del harness con ruido sintÃ©tico (default_rng(42)).
+  158: 
+  159:     Ninguna de estas cifras es un resultado de trading: el "retorno" es ruido
+  160:     gaussiano generado localmente. Verifica particiones, purga, embargo, wrappers
+  161:     SSOT y JSON-safety. 0 trials.
+  162:     """
+  163:     rng = np.random.default_rng(42)
+  164:     checks: dict[str, bool] = {}
+  165: 
+  166:     # --- 1) posicional: particiÃ³n completa, sin solape, purga+embargo respetados
+  167:     n, purge, embargo = 520, 2, 4
+  168:     seen = np.zeros(n, dtype=int)
+  169:     ok_no_leak, ok_gap = True, True
+  170:     for tr, te in purged_kfold_indices(n, n_splits=5, purge=purge, embargo=embargo):
+  171:         seen[te] += 1
+  172:         if np.intersect1d(tr, te).size:
+  173:             ok_no_leak = False
+  174:         lo, hi = te[0], te[-1]
+  175:         banned = np.arange(max(lo - purge, 0), min(hi + purge + embargo, n - 1) + 1)
+  176:         if np.intersect1d(tr, banned).size:
+  177:             ok_gap = False
+  178:     checks["pos_partition_covers_all_once"] = bool((seen == 1).all())
+  179:     checks["pos_no_train_test_overlap"] = ok_no_leak
+  180:     checks["pos_purge_embargo_respected"] = ok_gap
+  181: 
+  182:     # --- 2) t1: etiquetas solapadas de 5 dÃ­as â€” la purga debe excluirlas
+  183:     starts = pd.bdate_range("2019-01-01", periods=400)
+  184:     t1 = pd.Series(starts + pd.offsets.BDay(5), index=starts)
+  185:     ok_t1 = True
+  186:     for tr, te in purged_kfold_splits_t1(t1, n_splits=5, embargo_pct=0.01):
+  187:         test_start = t1.index[te[0]]
+  188:         test_end = t1.iloc[te].max()
+  189:         # ninguna etiqueta de train puede solapar la ventana de test
+  190:         overlaps = (t1.index[tr] <= test_end) & (t1.iloc[tr].values >= test_start)
+  191:         if overlaps.any():
+  192:             ok_t1 = False
+  193:     checks["t1_no_label_overlap"] = ok_t1
+  194: 
+  195:     # --- 3) wrappers SSOT sobre ruido sintÃ©tico
+  196:     fake_returns = rng.normal(0.0005, 0.01, size=260)     # ruido, no un backtest
+  197:     m = trial_aware_moments(fake_returns)
+  198:     rep = dsr_report(m["sharpe_per_period"], m["n_obs"], n_trials=25,
+  199:                      skew=m["skew"], kurtosis=m["kurtosis"], periods_per_year=52)
+  200:     checks["dsr_report_shape"] = all(k in rep for k in
+  201:                                      ("headline_dsr", "cells", "bar", "passes"))
+  202:     checks["dsr_in_unit_interval"] = (rep["headline_dsr"] is None or
+  203:                                       0.0 <= rep["headline_dsr"] <= 1.0)
+  204: 
+  205:     bb = circular_block_bootstrap(fake_returns, np.mean, n_boot=500, block=4, seed=42)
+  206:     checks["bootstrap_ci_finite"] = (bb["ci95"][0] is not None and
+  207:                                      np.isfinite(bb["ci95"][0]) and
+  208:                                      np.isfinite(bb["ci95"][1]))
+  209: 
+  210:     # --- 4) JSON-safety del reporte completo (sin Infinity/NaN)
+  211:     payload = {"checks": checks, "dsr_report_synthetic": rep, "bootstrap_synthetic": bb,
+  212:                "nan_probe": float("nan"), "inf_probe": float("inf")}
+  213:     js = safe_json_dumps(payload)
+  214:     checks["json_safe"] = ("Infinity" not in js) and ("NaN" not in js)
+  215: 
+  216:     passed = all(checks.values())
+  217:     return {"passed": passed, "checks": checks,
+  218:             "note": ("smoke sintetico default_rng(42) â€” 0 trials, ningun OOS abierto; "
+  219:                      "cualquier estudio futuro requiere pre-registro en "
+  220:                      "HYPOTHESIS-REGISTRY + aprobacion del operador")}
+  221: 
+  222: 
+  223: def main() -> int:
+  224:     res = smoke()
+  225:     for k, v in res["checks"].items():
+  226:         print(f"  [{'OK' if v else 'FAIL'}] {k}")
+  227:     print(("[PASS] " if res["passed"] else "[FAIL] ") + res["note"])
+  228:     return 0 if res["passed"] else 1
+  229: 
+  230: 
+  231: if __name__ == "__main__":
+  232:     raise SystemExit(main())
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -C 12 \"def purged_kfold_idx|purged_kfold_idx\\(\" scripts/analysis/cop_risk_family_screen.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 932ms:
+126-        sig_ewma = float(np.asarray(_ew).ravel()[-1])   # la serie EWMA: tomar el ultimo valor
+127-        rows.append({"monday": monday["time"], "gap_bps": gap_bps,
+128-                     "gap_week": int(gap_bps > p90_gap), "range_pct": rng_pct,
+129-                     "f1_event": f1, "f2_volofvol": vv, "f3_gaptail": f3,
+130-                     "f4_embiacc": embi_acc, "f5_resintz": res_z,
+131-                     "base_rate": float(prev.loc[prev["dow"] == 0, "gap"].tail(252)
+132-                                        .gt(prev.loc[prev["dow"] == 0, "gap"].tail(252)
+133-                                            .quantile(0.90)).mean()),
+134-                     "sigma_ewma": sig_ewma})
+135-    return pd.DataFrame(rows)
+136-
+137-
+138:def purged_kfold_idx(n, k=5, purge=1):
+139-    fold = np.array_split(np.arange(n), k)
+140-    for i in range(k):
+141-        test = fold[i]
+142-        tr = np.setdiff1d(np.arange(n), test)
+143-        tr = tr[(tr < test.min() - purge) | (tr > test.max() + purge)]
+144-        yield tr, test
+145-
+146-
+147-def screen():
+148-    from sklearn.linear_model import LogisticRegression, QuantileRegressor
+149-    W = load_weekly()
+150-    print(f"semanas de disenio: {len(W)} ({W.monday.min().date()} -> {W.monday.max().date()})")
+151-    print(f"tasa base gap_week: {W.gap_week.mean():.3f}")
+152-    cells = ["f1_event", "f2_volofvol", "f3_gaptail", "f4_embiacc", "f5_resintz"]
+153-    results = {}
+154-    for cell in cells:
+155-        d = W.dropna(subset=[cell, "gap_week", "range_pct", "sigma_ewma"]).reset_index(drop=True)
+156-        n = len(d)
+157-        x = d[cell].to_numpy().reshape(-1, 1)
+158-        # --- Brier: modelo univariado vs frecuencia base rolling ---
+159-        p_model = np.full(n, np.nan)
+160:        for tr, te in purged_kfold_idx(n):
+161-            if len(np.unique(d.gap_week.iloc[tr])) < 2:
+162-                p_model[te] = d.gap_week.iloc[tr].mean()
+163-                continue
+164-            m = LogisticRegression().fit(x[tr], d.gap_week.iloc[tr])
+165-            p_model[te] = m.predict_proba(x[te])[:, 1]
+166-        brier_m = (p_model - d.gap_week) ** 2
+167-        brier_b = (d.base_rate - d.gap_week) ** 2
+168-        db = circular_block_bootstrap((brier_b - brier_m).to_numpy(), np.mean, block=4)
+169-        # --- pinball q90 del rango vs baseline persistencia EWMA ---
+170-        q_model = np.full(n, np.nan)
+171:        for tr, te in purged_kfold_idx(n):
+172-            qr = QuantileRegressor(quantile=0.90, alpha=1e-4, solver="highs").fit(
+173-                x[tr], d.range_pct.iloc[tr])
+174-            q_model[te] = qr.predict(x[te])
+175-        q_base = 1.645 * d.sigma_ewma / np.sqrt(52) * np.sqrt(5) / np.sqrt(5) * 100 * np.sqrt(5) / np.sqrt(252/5)
+176-        # baseline correcto: q90 semanal = 1.645 * sigma_ewma_anual * sqrt(5/252) * 100
+177-        q_base = 1.645 * d.sigma_ewma * np.sqrt(5 / 252) * 100
+178-        def pinball(y, q, tau=0.90):
+179-            e = y - q
+180-            return np.maximum(tau * e, (tau - 1) * e)
+181-        pin_m = pinball(d.range_pct.to_numpy(), q_model)
+182-        pin_b = pinball(d.range_pct.to_numpy(), q_base.to_numpy())
+183-        # NULL JUSTO (correccion contra nosotros mismos, 2026-07-21): el baseline
+184-        # 1.645*sigma*sqrt(5) es el q90 de un RETORNO, no del RANGO -> subestima y
+185-        # cualquier modelo gana por el intercepto. El null que aisla la FEATURE es
+186-        # intercepto-solo en el MISMO purged CV.
+187-        q_null = np.full(n, np.nan)
+188:        for tr, te in purged_kfold_idx(n):
+189-            q_null[te] = np.quantile(d.range_pct.iloc[tr], 0.90)
+190-        pin_null = pinball(d.range_pct.to_numpy(), q_null)
+191-        dp = circular_block_bootstrap(pin_null - pin_m, np.mean, block=4)
+192-        win_brier = db["ci95"][0] is not None and db["ci95"][0] > 0
+193-        win_pin = dp["ci95"][0] is not None and dp["ci95"][0] > 0
+194-        results[cell] = {
+195-            "n": n,
+196-            "brier_model": float(np.nanmean(brier_m)), "brier_base": float(np.nanmean(brier_b)),
+197-            "delta_brier_ci95": db["ci95"], "WIN_brier": bool(win_brier),
+198-            "pinball_model": float(np.nanmean(pin_m)), "pinball_base_ewma": float(np.nanmean(pin_b)),
+199-            "pinball_null_intercepto": float(np.nanmean(pin_null)),
+200-            "delta_pinball_vs_null_ci95": dp["ci95"], "WIN_pinball": bool(win_pin),
+
+codex
+La estructura principal coincide con el encargo: el generador sólo construye señales/disponibilidad y el harness importa las métricas desde el SSOT. Estoy comprobando ahora casos límite del K-fold (incluido el embargo) y ejecutando el smoke para no basarme sólo en comentarios/docstrings.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'python -m scripts.analysis.xasset_cv_harness' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg -n "''^def (dsr_report|circular_block_bootstrap|deflated_sharpe_ratio|probabilistic_sharpe_ratio|trial_aware_moments)" scripts/analysis/xasset_cv_harness.py services/common/metrics.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -i \"sharpe|return|retorno|directional|accuracy|\\bDA\\b|target|strategy|backtest|pct_change|diff\\(\" scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1185ms:
+scripts/analysis/xasset_cv_harness.py:8:Este módulo NO se ejecuta contra ningún target real. Su `smoke()` usa EXCLUSIVAMENTE
+scripts/analysis/xasset_cv_harness.py:22:  deflated_sharpe_ratio    módulo NO trae implementación propia: dos implementaciones
+scripts/analysis/xasset_cv_harness.py:23:  probabilistic_sharpe_ratio  del gate es peor que ninguna.
+scripts/analysis/xasset_cv_harness.py:31:Smoke (sin targets):
+scripts/analysis/xasset_cv_harness.py:49:    deflated_sharpe_ratio,
+scripts/analysis/xasset_cv_harness.py:51:    probabilistic_sharpe_ratio,
+scripts/analysis/xasset_cv_harness.py:54:from src.contracts.strategy_schema import safe_json_dumps  # noqa: E402
+scripts/analysis/xasset_cv_harness.py:61:    "deflated_sharpe_ratio",
+scripts/analysis/xasset_cv_harness.py:62:    "probabilistic_sharpe_ratio",
+scripts/analysis/xasset_cv_harness.py:153:# Smoke — SOLO datos sintéticos con seed. Ningún target real, ningún OOS abierto.
+scripts/analysis/xasset_cv_harness.py:159:    Ninguna de estas cifras es un resultado de trading: el "retorno" es ruido
+scripts/analysis/xasset_cv_harness.py:196:    fake_returns = rng.normal(0.0005, 0.01, size=260)     # ruido, no un backtest
+scripts/analysis/xasset_cv_harness.py:197:    m = trial_aware_moments(fake_returns)
+scripts/analysis/xasset_cv_harness.py:198:    rep = dsr_report(m["sharpe_per_period"], m["n_obs"], n_trials=25,
+scripts/analysis/xasset_cv_harness.py:205:    bb = circular_block_bootstrap(fake_returns, np.mean, n_boot=500, block=4, seed=42)
+scripts/analysis/xasset_cv_harness.py:217:    return {"passed": passed, "checks": checks,
+scripts/analysis/xasset_cv_harness.py:228:    return 0 if res["passed"] else 1
+scripts/analysis/xasset_signals.py:9:NO calcula Sharpe/retornos de estrategia, NO toca ningún dato posterior a 2024-12-31.
+scripts/analysis/xasset_signals.py:11:aborta si cualquier fecha cargada excede el cutoff. 2025 = backtest sellado, 2026 =
+scripts/analysis/xasset_signals.py:65:from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
+scripts/analysis/xasset_signals.py:147:    return out
+scripts/analysis/xasset_signals.py:161:    votes = [np.sign(close.pct_change(w)) for w in lookbacks]
+scripts/analysis/xasset_signals.py:165:    return out
+scripts/analysis/xasset_signals.py:178:    return -(lp - mu) / sd.replace(0.0, np.nan)
+scripts/analysis/xasset_signals.py:191:    return z
+scripts/analysis/xasset_signals.py:283:    return panel, report
+scripts/analysis/xasset_signals.py:307:    return 0
+
+ succeeded in 1303ms:
+services/common/metrics.py:297:def probabilistic_sharpe_ratio(
+services/common/metrics.py:334:def deflated_sharpe_ratio(
+services/common/metrics.py:349:def trial_aware_moments(returns: np.ndarray | list[float], sr_benchmark: float = 0.0) -> dict:
+services/common/metrics.py:680:def dsr_report(sharpe_per_period: float, n_obs: int, n_trials: int, *,
+services/common/metrics.py:796:def circular_block_bootstrap(x, stat_fn, n_boot: int = 2000, block: int = 4,
+
+2026-07-22T04:38:35.039369Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2 seconds
+Output:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 2 Carácter: 1
++ python -m scripts.analysis.xasset_cv_harness
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ python -m scripts.analysis.xasset_cv_harness
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+ exited 1 in 2006ms:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 2 Carácter: 1
++ python -m scripts.analysis.xasset_cv_harness
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ python -m scripts.analysis.xasset_cv_harness
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'py -3 -m scripts.analysis.xasset_cv_harness' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -i \"sharpe|return|retorno|directional|accuracy|\\bDA\\b|target|strategy|backtest|pct_change|diff\\(\" scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg -n "''^def (dsr_report|circular_block_bootstrap|deflated_sharpe_ratio|probabilistic_sharpe_ratio|trial_aware_moments)" scripts/analysis/xasset_cv_harness.py services/common/metrics.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1111ms:
+scripts/analysis/xasset_cv_harness.py:8:Este módulo NO se ejecuta contra ningún target real. Su `smoke()` usa EXCLUSIVAMENTE
+scripts/analysis/xasset_cv_harness.py:22:  deflated_sharpe_ratio    módulo NO trae implementación propia: dos implementaciones
+scripts/analysis/xasset_cv_harness.py:23:  probabilistic_sharpe_ratio  del gate es peor que ninguna.
+scripts/analysis/xasset_cv_harness.py:31:Smoke (sin targets):
+scripts/analysis/xasset_cv_harness.py:49:    deflated_sharpe_ratio,
+scripts/analysis/xasset_cv_harness.py:51:    probabilistic_sharpe_ratio,
+scripts/analysis/xasset_cv_harness.py:54:from src.contracts.strategy_schema import safe_json_dumps  # noqa: E402
+scripts/analysis/xasset_cv_harness.py:61:    "deflated_sharpe_ratio",
+scripts/analysis/xasset_cv_harness.py:62:    "probabilistic_sharpe_ratio",
+scripts/analysis/xasset_cv_harness.py:153:# Smoke — SOLO datos sintéticos con seed. Ningún target real, ningún OOS abierto.
+scripts/analysis/xasset_cv_harness.py:159:    Ninguna de estas cifras es un resultado de trading: el "retorno" es ruido
+scripts/analysis/xasset_cv_harness.py:196:    fake_returns = rng.normal(0.0005, 0.01, size=260)     # ruido, no un backtest
+scripts/analysis/xasset_cv_harness.py:197:    m = trial_aware_moments(fake_returns)
+scripts/analysis/xasset_cv_harness.py:198:    rep = dsr_report(m["sharpe_per_period"], m["n_obs"], n_trials=25,
+scripts/analysis/xasset_cv_harness.py:205:    bb = circular_block_bootstrap(fake_returns, np.mean, n_boot=500, block=4, seed=42)
+scripts/analysis/xasset_cv_harness.py:217:    return {"passed": passed, "checks": checks,
+scripts/analysis/xasset_cv_harness.py:228:    return 0 if res["passed"] else 1
+scripts/analysis/xasset_signals.py:9:NO calcula Sharpe/retornos de estrategia, NO toca ningún dato posterior a 2024-12-31.
+scripts/analysis/xasset_signals.py:11:aborta si cualquier fecha cargada excede el cutoff. 2025 = backtest sellado, 2026 =
+scripts/analysis/xasset_signals.py:65:from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
+scripts/analysis/xasset_signals.py:147:    return out
+scripts/analysis/xasset_signals.py:161:    votes = [np.sign(close.pct_change(w)) for w in lookbacks]
+scripts/analysis/xasset_signals.py:165:    return out
+scripts/analysis/xasset_signals.py:178:    return -(lp - mu) / sd.replace(0.0, np.nan)
+scripts/analysis/xasset_signals.py:191:    return z
+scripts/analysis/xasset_signals.py:283:    return panel, report
+scripts/analysis/xasset_signals.py:307:    return 0
+
+ succeeded in 1157ms:
+services/common/metrics.py:297:def probabilistic_sharpe_ratio(
+services/common/metrics.py:334:def deflated_sharpe_ratio(
+services/common/metrics.py:349:def trial_aware_moments(returns: np.ndarray | list[float], sr_benchmark: float = 0.0) -> dict:
+services/common/metrics.py:680:def dsr_report(sharpe_per_period: float, n_obs: int, n_trials: int, *,
+services/common/metrics.py:796:def circular_block_bootstrap(x, stat_fn, n_boot: int = 2000, block: int = 4,
+
+2026-07-22T04:38:44.166353Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.2 seconds
+Output:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -m scripts.analysis.xasset_cv_harness': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+ exited 1 in 1196ms:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -m scripts.analysis.xasset_cv_harness': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Force | Select-Object Name,Mode; Get-ChildItem -Directory -Force | Where-Object { $_.Name -match '"'venv|env' } | Select-Object FullName" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1229ms:
+
+Name                                 Mode  
+----                                 ----  
+.agents                              d-----
+.claude                              dar--l
+.dvc                                 dar--l
+.git                                 darh-l
+.github                              dar--l
+.pytest_cache                        dar--l
+.ruff_cache                          dar--l
+airflow                              dar--l
+config                               dar--l
+data                                 dar--l
+database                             dar--l
+design-system                        dar--l
+docker                               dar--l
+docs                                 dar--l
+init-scripts                         dar--l
+Microsoft                            d-----
+mlflow_data                          dar--l
+models                               dar--l
+outputs                              dar--l
+presentation                         dar--l
+prometheus                           dar--l
+reports                              d-----
+results                              dar--l
+scripts                              dar--l
+secrets                              dar--l
+seeds                                dar--l
+services                             dar--l
+src                                  dar--l
+tests                                dar--l
+usdcop-trading-dashboard             dar--l
+vendor                               dar--l
+.dockerignore                        -a---l
+.dvcignore                           -a---l
+.env                                 -a---l
+.env.example                         -a---l
+.gitattributes                       -a---l
+.gitignore                           -a----
+.gitleaks.toml                       -a---l
+.pre-commit-config.yaml              -a---l
+.secrets.baseline                    -a---l
+CLAUDE.md                            -a----
+docker-compose.compact.yml           -a----
+docker-compose.mailhog.yml           -a---l
+docker-compose.override.testauth.yml -a---l
+docker-compose.yml                   -a----
+dvc.yaml                             -a---l
+LICENSE                              -a---l
+Makefile                             -a----
+params.yaml                          -a---l
+pyproject.toml                       -a---l
+README.md                            -a---l
+
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status --short -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py services/common/metrics.py scripts/analysis/cop_risk_family_screen.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git diff -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py services/common/metrics.py scripts/analysis/cop_risk_family_screen.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git diff --check -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:39:11.865975Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+ exited 1 in 976ms:
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -c safe.directory='C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' diff --check -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -c safe.directory='C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' status --short -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py services/common/metrics.py scripts/analysis/cop_risk_family_screen.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -c safe.directory='C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' diff -- scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py services/common/metrics.py scripts/analysis/cop_risk_family_screen.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1151ms:
+ succeeded in 1321ms:
+?? scripts/analysis/xasset_cv_harness.py
+?? scripts/analysis/xasset_signals.py
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+ succeeded in 1363ms:
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Command python,python3,py -All -ErrorAction SilentlyContinue | Select-Object Name,Source,CommandType | Format-Table -AutoSize' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1037ms:
+
+Name        Source                                                              CommandType
+----        ------                                                              -----------
+python.exe  C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe       Application
+python.exe  C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\python.exe Application
+python3.exe C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python3.exe      Application
+py.exe      C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe        Application
+
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:\\Users\\pedro\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe' -m scripts.analysis.xasset_cv_harness" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:39:51.530811Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+Traceback (most recent call last):
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 192, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\xasset_cv_harness.py", line 40, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+
+ exited 1 in 1460ms:
+Traceback (most recent call last):
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 192, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\xasset_cv_harness.py", line 40, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:\\Users\\pedro\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe' -m py_compile scripts/analysis/xasset_signals.py scripts/analysis/xasset_cv_harness.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:39:57.159546Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+Traceback (most recent call last):
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 192, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 218, in <module>
+    sys.exit(main())
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 209, in main
+    compile(filename, doraise=True)
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 172, in compile
+    importlib._bootstrap_external._write_atomic(cfile, bytecode, mode)
+  File "<frozen importlib._bootstrap_external>", line 126, in _write_atomic
+PermissionError: [Errno 13] Permission denied: 'scripts/analysis\\__pycache__\\xasset_signals.cpython-38.pyc.41147784'
+
+ exited 1 in 1020ms:
+Traceback (most recent call last):
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 192, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 218, in <module>
+    sys.exit(main())
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 209, in main
+    compile(filename, doraise=True)
+  File "C:\Users\pedro\AppData\Local\Programs\Python\Python38-32\lib\py_compile.py", line 172, in compile
+    importlib._bootstrap_external._write_atomic(cfile, bytecode, mode)
+  File "<frozen importlib._bootstrap_external>", line 126, in _write_atomic
+PermissionError: [Errno 13] Permission denied: 'scripts/analysis\\__pycache__\\xasset_signals.cpython-38.pyc.41147784'
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "& 'C:\\Users\\pedro\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe' -B -c \"from pathlib import Path; [compile(Path(p).read_text(encoding='utf-8'),p,'exec') for p in ('scripts/analysis/xasset_signals.py','scripts/analysis/xasset_cv_harness.py')]; print('syntax OK')\"" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1029ms:
+syntax OK
+
+codex
+VERDICT: APROBADO
+
+Issues numerados: ninguno.
+
+Verificado:
+
+1. No hay métricas de performance sobre datos reales; `pct_change` sólo construye TSMOM. El harness únicamente evalúa ruido sintético.
+2. Trend y value aplican `shift(1)` antes del z-score ([xasset_signals.py:212](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:212)).
+3. El z-score es cross-sectional por fecha mediante `axis=1` ([xasset_signals.py:187](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:187)).
+4. DSR/bootstrap son re-exportaciones directas del SSOT ([xasset_cv_harness.py:47](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:47)); no hay implementaciones locales.
+5. La purga reproduce `purged_kfold_idx` y añade correctamente embargo post-test ([xasset_cv_harness.py:99](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:99)).
+6. El smoke usa exclusivamente `default_rng(42)` y datos sintéticos ([xasset_cv_harness.py:163](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:163)).
+7. La semana parcial etiquetada `2025-01-03` se elimina después del resample y existe un assert final del cutoff ([xasset_signals.py:206](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:206)).
+
+La sintaxis compila correctamente. No pude ejecutar el smoke completo porque el intérprete disponible en el entorno carece de NumPy; no es un defecto de estos archivos.
+tokens used
+42,194
+VERDICT: APROBADO
+
+Issues numerados: ninguno.
+
+Verificado:
+
+1. No hay métricas de performance sobre datos reales; `pct_change` sólo construye TSMOM. El harness únicamente evalúa ruido sintético.
+2. Trend y value aplican `shift(1)` antes del z-score ([xasset_signals.py:212](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:212)).
+3. El z-score es cross-sectional por fecha mediante `axis=1` ([xasset_signals.py:187](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:187)).
+4. DSR/bootstrap son re-exportaciones directas del SSOT ([xasset_cv_harness.py:47](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:47)); no hay implementaciones locales.
+5. La purga reproduce `purged_kfold_idx` y añade correctamente embargo post-test ([xasset_cv_harness.py:99](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:99)).
+6. El smoke usa exclusivamente `default_rng(42)` y datos sintéticos ([xasset_cv_harness.py:163](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_cv_harness.py:163)).
+7. La semana parcial etiquetada `2025-01-03` se elimina después del resample y existe un assert final del cutoff ([xasset_signals.py:206](C:/Users/pedro/OneDrive/Documents/ALGO%20TRADING/USDCOP-RL-Models/scripts/analysis/xasset_signals.py:206)).
+
+La sintaxis compila correctamente. No pude ejecutar el smoke completo porque el intérprete disponible en el entorno carece de NumPy; no es un defecto de estos archivos.

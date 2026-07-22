@@ -153,6 +153,11 @@ def load_config(config_path=None, version_override=None, strategy_id=None):
         "use_xgboost": cfg.get("models", {}).get("use_xgboost", False),  # default MUST match the live serving set (Ridge+BR): a missing key must not silently resurrect XGBoost and diverge the approval backtest from what actually trades
         "effective_hs_portfolio_cap": cfg.get("adaptive_stops", {}).get(
             "effective_portfolio_cap_pct", 0.025),
+        # H-V13-QRISK-01 candidate flag (sealed pre-registration 2026-07-21). Default False
+        # == bit-identical to the current engine (v11/v12/v14 untouched). When True, the
+        # weekly leverage cap becomes the probabilistic ceiling of
+        # compute_v13_leverage_ceilings() instead of the static vt_max.
+        "v13_ceiling_enabled": bool(cfg.get("v13_ceiling_enabled", False)),
     }
 
 
@@ -239,6 +244,214 @@ def compute_pnl(direction, entry, exit_price, leverage, exit_reason, maker_fee, 
         # corto = -1*direction... direction=-1 (short) cobra: signo = -direction
         carry = (-direction) * (swap_annual_pp / 100.0) * (nights_held / 365.0) * leverage
     return raw_pnl - entry_cost - exit_cost + carry
+
+
+# ---------------------------------------------------------------------------
+# H-V13-QRISK-01 — probabilistic weekly leverage ceiling (sealed 2026-07-21)
+# ---------------------------------------------------------------------------
+
+def compute_v13_leverage_ceilings(df, cutoff=None):
+    """H-V13-QRISK-01 (pre-registered & SEALED 2026-07-21) — probabilistic weekly leverage
+    ceiling, computed INSIDE the engine so a design-run judges the motor, not an external
+    replay (the previous external instrument was ruled INVALID_INSTRUMENT).
+
+    Sealed formula (zero grid; every constant is a declared ex-ante prior):
+
+      q90_hat_t   = 0.5 * persistence_t + 0.5 * qr_pred_t          (50/50, no fitted weights)
+      ceiling_t   = 1.5 * clip(median_design_t / q90_hat_t, 0.5, 1.0)   -> in [0.75, 1.5]
+
+      persistence_t   Empirical q90 over the trailing 252 daily observations (strictly < t)
+                      of the realized 5d range — the unbeaten persistence baseline of
+                      H-VOLE-01 ("liston imbatido").
+      qr_pred_t       statsmodels QuantReg (tau=0.90) prediction of the weekly realized
+                      range (% of the close preceding the week) from the 4 winning
+                      H-RISK-FAM-01 features {f2 vol-of-vol 20d, f3 Monday gap-tail prob,
+                      f4 EMBI acceleration z, f5 RESINT z}. Feature definitions are
+                      REPLICATED VERBATIM from scripts/analysis/cop_risk_family_screen.py
+                      ::load_weekly() (that script embeds them inside a fixed-seed loader,
+                      so importing is not possible; any edit there must be mirrored here).
+                      The QR is re-fit each week on an EXPANDING window of weeks fully
+                      realized strictly before t (a week's target is known its Friday < t)
+                      — it never sees t or the future.
+      median_design_t Causal expanding median of q90_hat over design weeks
+                      2020-01-01 <= s < min(t, 2025-01-01). Documented one-time choice:
+                      "mediana_diseno sobre 2020-2024, expanding hasta t", capped at the
+                      design end so the constant freezes after 2024.
+
+    One-time documented implementation choices (no variants were tried — quant-constitution
+    §1; if the sealed formula looks improvable, it is REPORTED, never changed here):
+      * "rango 5d realizado" = TRUE 5-day range: (max(high, 5d) - min(low, 5d)) divided by
+        the close preceding the 5d window, in %. Chosen because it is unit-coherent with
+        the QR target range_pct of H-RISK-FAM-01, so the sealed 50/50 blend averages two
+        estimators of the SAME quantity.
+      * QR needs >= 52 realized training weeks and finite features at t; otherwise the
+        fail-safe is q90_hat_t = persistence_t alone (counted in meta, never optimized).
+      * Warm-up: the design median needs >= 26 prior q90_hat values; before that (H1-2020
+        only, outside every design year) the ceiling is inactive (= 1.5). The ceiling can
+        NEVER exceed 1.5 (v13 is a subset of v12 by construction).
+
+    `cutoff` (optional Timestamp/date): last Monday for which a ceiling is computed. A
+    design-run bounded at 2024 passes 2024-12-31 so the constructor never fits a QR nor
+    computes a ceiling for 2025+ weeks (scope hygiene — Codex review issue 3).
+
+    Returns (ceilings, meta): dict {Monday Timestamp (W-SUN period start) -> ceiling float}
+    and a diagnostics dict. meta["weeks"] instruments EVERY week's mode (Codex issue 1):
+      "qr"               sealed formula in full (0.5*persistence + 0.5*QR, active median)
+      "persistence_only" engineering fail-safe: QR unavailable (<52 train weeks or NaN
+                         feature) -> q90_hat = persistence alone (single variant, never
+                         optimized; deviation DECLARED in the registry proposal)
+      "inactive_warmup"  design median has <26 prior values -> ceiling 1.5 (inactive)
+      "inactive_invalid" q90_hat non-finite or <=0 -> ceiling 1.5 (inactive fail-safe)
+
+    Data source (part of the sealed definition, documented once): the daily table is built
+    from seeds/latest/usdcop_daily_ohlcv.parquet — the SAME source cop_risk_family_screen
+    ::load_weekly() validated the features on (history from 2015). The engine's loader df
+    starts 2019-12, which would silently change the conditioning sets (persistence roll-252,
+    f3's 252-Monday tail, QR training depth) versus what H-RISK-FAM-01 screened. The `df`
+    argument is therefore NOT used for the risk table; it is kept for signature stability.
+    """
+    import statsmodels.api as sm
+
+    seed_path = PROJECT_ROOT / "seeds/latest/usdcop_daily_ohlcv.parquet"
+    daily_path = PROJECT_ROOT / "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet"
+    monthly_path = PROJECT_ROOT / "data/pipeline/04_cleaning/output/MACRO_MONTHLY_CLEAN.parquet"
+    if not (seed_path.exists() and daily_path.exists() and monthly_path.exists()):
+        # Fail LOUD: a candidate flag silently degrading to v12 behavior would corrupt a
+        # design-run. v13 cannot run without its sealed inputs.
+        raise RuntimeError("v13_ceiling_enabled: seed/MACRO_DAILY_CLEAN/MACRO_MONTHLY_CLEAN missing")
+
+    macro = pd.read_parquet(daily_path)
+    macro.index = pd.to_datetime(macro.index)
+    mcols = {c.upper(): c for c in macro.columns}
+    vix = macro[mcols["VOLT_VIX_USA_D_VIX"]].rename("vix")
+    embi = macro[mcols["CRSK_SPREAD_EMBI_COL_D_EMBI"]].rename("embi")
+    monthly = pd.read_parquet(monthly_path)
+    monthly.index = pd.to_datetime(monthly.index)
+    resint = monthly[[c for c in monthly.columns if "RESINT" in c.upper()][0]].rename("resint")
+
+    d = pd.read_parquet(seed_path)
+    d["date"] = pd.to_datetime(d["time"]).dt.tz_localize(None)
+    d = d[["date", "open", "high", "low", "close"]].dropna(subset=["close"]).copy()
+    d = d.sort_values("date").reset_index(drop=True)
+    d["ret"] = np.log(d["close"] / d["close"].shift(1))
+    d["gap"] = (d["open"] / d["close"].shift(1) - 1).abs()
+    d["dow"] = d["date"].dt.dayofweek
+    d["week"] = d["date"].dt.to_period("W-SUN")
+    d["vol20"] = d["ret"].rolling(20).std() * np.sqrt(252)
+    # realized 5d range (true 5-day range, % of the close preceding the window); the value
+    # dated day t uses data up to t only -> taking values with date < monday is causal.
+    d["rng5"] = ((d["high"].rolling(5).max() - d["low"].rolling(5).min())
+                 / d["close"].shift(5) * 100)
+
+    # ---- weekly feature table (verbatim replication of cop_risk_family_screen.load_weekly)
+    rows = []
+    for wk, g in d.groupby("week"):
+        if len(g) < 3:
+            continue
+        week_start_day = g["date"].iloc[0]
+        prev = d[d["date"] < week_start_day]
+        if len(prev) < 260:
+            continue
+        prev_close = prev["close"].iloc[-1]
+        range_pct = (g["high"].max() - g["low"].min()) / prev_close * 100
+        asof = prev["date"].iloc[-1]
+        # f2 vol-of-vol 20d (identical to screen)
+        vv = prev["vol20"].tail(20).diff().std() * np.sqrt(252)
+        # f4 EMBI acceleration z (identical to screen)
+        embi_ser = embi.loc[:asof].dropna()
+        embi_acc = (float((embi_ser.diff(5).iloc[-1] - embi_ser.diff(5).tail(252).mean())
+                          / (embi_ser.diff(5).tail(252).std() + 1e-9))
+                    if len(embi_ser) > 260 else np.nan)
+        # f5 RESINT z with 45d publication lag (identical to screen)
+        res_ser = resint.loc[:asof - pd.Timedelta(days=45)].dropna()
+        res_z = (float((res_ser.iloc[-1] - res_ser.tail(12).mean())
+                       / (res_ser.tail(12).std() + 1e-9))
+                 if len(res_ser) > 12 else np.nan)
+        # f3 Monday gap-tail conditional prob given VIX tercile (identical to screen)
+        vix_t1 = float(vix.loc[:asof].iloc[-1]) if len(vix.loc[:asof]) else np.nan
+        prev_mon = prev[prev["dow"] == 0].tail(252)
+        if len(prev_mon) > 30 and not np.isnan(vix_t1):
+            vix_al = vix.reindex(prev_mon["date"], method="ffill")
+            ter = pd.qcut(vix_al, 3, labels=False, duplicates="drop")
+            my_ter = 1
+            if len(pd.unique(ter.dropna())) == 3:
+                _cut = pd.cut([vix_t1], bins=pd.qcut(vix_al, 3, retbins=True,
+                              duplicates="drop")[1], labels=False, include_lowest=True)[0]
+                if pd.isna(_cut):
+                    _cut = 0 if vix_t1 < float(vix_al.min()) else 2
+                my_ter = int(_cut)
+            mask = (ter == my_ter).to_numpy()
+            thr = prev_mon["gap"].quantile(0.90)
+            f3 = float((prev_mon["gap"].to_numpy()[mask] > thr).mean()) if mask.sum() > 5 else np.nan
+        else:
+            f3 = np.nan
+        # persistence: q90 of the trailing 252 realized-5d-range values strictly < t
+        rng5_hist = prev["rng5"].dropna().tail(252)
+        pers = float(rng5_hist.quantile(0.90)) if len(rng5_hist) >= 252 else np.nan
+        rows.append({"monday": wk.start_time, "last_date": g["date"].iloc[-1],
+                     "range_pct": float(range_pct), "persistence": pers,
+                     "f2": float(vv) if np.isfinite(vv) else np.nan,
+                     "f3": f3, "f4": embi_acc, "f5": res_z})
+    W = pd.DataFrame(rows).sort_values("monday").reset_index(drop=True)
+
+    feat_cols = ["f2", "f3", "f4", "f5"]
+    design_start = pd.Timestamp("2020-01-01")
+    design_end = pd.Timestamp("2025-01-01")
+    cutoff_ts = pd.Timestamp(cutoff) if cutoff is not None else None
+    ceilings, q90_hist = {}, []          # q90_hist: (monday, q90_hat) for the causal median
+    week_modes = {}                       # per-week instrumentation (Codex issue 1)
+    n_qr_fallback = n_inactive = n_weeks = 0
+    for i in range(len(W)):
+        t = W["monday"].iloc[i]
+        if t < design_start:
+            continue
+        if cutoff_ts is not None and t > cutoff_ts:
+            break                        # scope: no QR fit / ceiling beyond the cutoff
+        n_weeks += 1
+        row_feats = W[feat_cols].iloc[i].to_numpy(dtype=float)
+        train = W[(W["last_date"] < t) & W["range_pct"].notna()].dropna(subset=feat_cols)
+        qr_pred = np.nan
+        if np.isfinite(row_feats).all() and len(train) >= 52:
+            try:
+                X = sm.add_constant(train[feat_cols].to_numpy(dtype=float))
+                qr = sm.QuantReg(train["range_pct"].to_numpy(dtype=float), X).fit(q=0.90)
+                qr_pred = float(np.asarray(qr.params) @ np.concatenate(([1.0], row_feats)))
+            except Exception:
+                qr_pred = np.nan
+        pers = W["persistence"].iloc[i]
+        if np.isfinite(pers) and np.isfinite(qr_pred):
+            q90_hat = 0.5 * pers + 0.5 * qr_pred
+        elif np.isfinite(pers):
+            q90_hat = float(pers)
+            n_qr_fallback += 1
+        else:
+            q90_hat = np.nan
+        # causal design median: q90_hat values with design_start <= s < min(t, design_end)
+        med_vals = [v for (s, v) in q90_hist if s < min(t, design_end) and np.isfinite(v)]
+        if np.isfinite(q90_hat):
+            q90_hist.append((t, q90_hat))
+        if not (np.isfinite(q90_hat) and q90_hat > 0):
+            ceilings[t] = 1.5   # fail-safe: inactive, never raises above 1.5
+            week_modes[t] = "inactive_invalid"
+            n_inactive += 1
+        elif len(med_vals) < 26:
+            ceilings[t] = 1.5   # warm-up: inactive, never raises above 1.5
+            week_modes[t] = "inactive_warmup"
+            n_inactive += 1
+        else:
+            med = float(np.median(med_vals))
+            ceilings[t] = 1.5 * float(np.clip(med / q90_hat, 0.5, 1.0))
+            week_modes[t] = "qr" if np.isfinite(qr_pred) else "persistence_only"
+    meta = {
+        "n_weeks": n_weeks, "n_qr_fallback": n_qr_fallback, "n_ceiling_inactive": n_inactive,
+        "weeks": week_modes, "cutoff": str(cutoff_ts.date()) if cutoff_ts is not None else None,
+        "median_design_final": (float(np.median([v for (s, v) in q90_hist
+                                                 if s < design_end and np.isfinite(v)]))
+                                if q90_hist else None),
+        "ceiling_mean": float(np.mean(list(ceilings.values()))) if ceilings else None,
+        "ceiling_min": float(np.min(list(ceilings.values()))) if ceilings else None,
+    }
+    return ceilings, meta
 
 
 # ---------------------------------------------------------------------------
@@ -514,6 +727,20 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
     rg_config = cfg["regime_gate"]
     hs_cap = cfg.get("effective_hs_portfolio_cap", 0.035)
 
+    # H-V13-QRISK-01: probabilistic weekly leverage ceiling. With the flag False (default)
+    # week_cap == cfg["vt_max"] every week -> numerics BIT-IDENTICAL to the pre-flag engine.
+    v13_enabled = bool(cfg.get("v13_ceiling_enabled", False))
+    v13_ceilings = None
+    if v13_enabled:
+        v13_ceilings = cfg.get("_v13_ceiling_cache")
+        if v13_ceilings is None:
+            v13_ceilings, v13_meta = compute_v13_leverage_ceilings(df)
+            cfg["_v13_ceiling_cache"] = v13_ceilings   # same df across calls in one process
+            cfg["_v13_ceiling_meta"] = v13_meta
+            print(f"    [v13] ceilings: {v13_meta['n_weeks']} weeks, mean={v13_meta['ceiling_mean']:.3f}, "
+                  f"min={v13_meta['ceiling_min']:.3f}, qr_fallback={v13_meta['n_qr_fallback']}, "
+                  f"inactive={v13_meta['n_ceiling_inactive']}, med_design={v13_meta['median_design_final']:.3f}")
+
     for monday in mondays:
         monday_ts = pd.Timestamp(monday)
         friday_ts = monday_ts + pd.offsets.BDay(4)
@@ -601,18 +828,27 @@ def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False
             continue
 
         # Vol-targeting + sizing
+        # week_cap: static vt_max, or (v13) the sealed probabilistic ceiling for this Monday.
+        # Missing key -> fail-safe to vt_max (a v13 config runs with vt_max=1.5, and the
+        # ceiling never exceeds 1.5, so the fail-safe can only be MORE conservative than v11).
+        week_cap = cfg["vt_max"]
+        if v13_enabled:
+            # Invariant lives IN the engine (Codex issue 2): the v13 ceiling may only
+            # LOWER the configured cap, never raise it (v13 ⊂ v12 by construction).
+            week_cap = min(float(v13_ceilings.get(monday_ts.normalize(), cfg["vt_max"])),
+                           cfg["vt_max"])
         rets = df_train["return_1d"].dropna().values
         rv_daily = np.std(rets[-21:]) if len(rets) >= 21 else 0.0
         rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
         safe_vol = max(rv_ann, cfg["vt_floor"])
-        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], cfg["vt_max"])
-        final_lev = np.clip(base_lev * conf.sizing_multiplier, cfg["vt_min"], cfg["vt_max"])
+        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], week_cap)
+        final_lev = np.clip(base_lev * conf.sizing_multiplier, cfg["vt_min"], week_cap)
 
         # Dynamic leverage
         lev_adj = compute_leverage_adjustment(
             recent_pnls[-dl_config.lookback_weeks:] if len(recent_pnls) >= 3 else [],
             current_dd, dl_config)
-        final_lev = np.clip(final_lev * lev_adj * regime.sizing_factor, cfg["vt_min"], cfg["vt_max"])
+        final_lev = np.clip(final_lev * lev_adj * regime.sizing_factor, cfg["vt_min"], week_cap)
 
         # Stops
         stops = compute_adaptive_stops(rv_ann, cfg["stops"])

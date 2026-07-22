@@ -332,6 +332,7 @@ data/pipeline/03_fusion/
 data/pipeline/05_resampling/
 data/pipeline/06_rl_dataset_builder/
 data/pipeline/07_output/
+data/pipeline/xasset_signals/
 # stale historical snapshots (NOT the startup-restore backups)
 data/backups/full_backup_*/
 data/backups/pre_v20_migration_*/

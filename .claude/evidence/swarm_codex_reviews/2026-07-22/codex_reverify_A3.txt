@@ -1,0 +1,532 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f8830-4c68-7ad0-a9b2-70b1ed6a23d4
+--------
+user
+RE-verificación A3 (stress MC) tras correcciones. Rechazaste la v1 por: (1) MaxDD sin high-water inicial 1.0, (2) subset hostil no causal (vol incluia r[t], tercil full-sample), (3) bootstrap hostil compactando semanas no contiguas, (4) prob_ever_* marcado al disparo. Verifica SOLO que los 4 quedaron corregidos en scripts/analysis/book_mc_stress.py y .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json (busca: NAV 1.0 antepuesto en static_stats; vol con r[t-4..t-1] y tercil expanding min 8 obs; re-muestreo por runs contiguos completos; prob_applied_* en t+1). Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues con archivo:línea. Sé breve.
+codex
+Revisaré únicamente esos cuatro puntos en el script y la evidencia JSON, con referencias exactas de línea.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$targets = @('"'scripts/analysis/book_mc_stress.py', '.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json'); foreach ("'$target in $targets) { Write-Output "FILE $target"; $n=0; Get-Content -LiteralPath $target | ForEach-Object { $n++; if ($_ -match '"'static_stats|high.?water|NAV|nav|vol|tercil|tertile|expanding|min.*8|run|contigu|prob_.*applied|applied_.*prob|prob_ever|t\\s*\\+\\s*1|bootstrap|hostil|hostile') { '{0}:{1}: {2}' -f "'$target,$n,$_ } } }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1789ms:
+FILE scripts/analysis/book_mc_stress.py
+scripts/analysis/book_mc_stress.py:5: cuantifica la cola de drawdown del LIBRO ERC (book_v1) bajo bootstrap y se
+scripts/analysis/book_mc_stress.py:20:   1. Bootstrap por bloques circular b=4 (el prior de la casa: juez v12, A2) de la
+scripts/analysis/book_mc_stress.py:26:   3. Regimen hostil (CAUSAL, verificacion Codex #2/#3): la vol que clasifica la
+scripts/analysis/book_mc_stress.py:28:      de tercil es EXPANDING causal (min 8 observaciones). El re-muestreo hostil
+scripts/analysis/book_mc_stress.py:29:      es bootstrap de RUNS contiguos completos (no semanas compactadas: nada de
+scripts/analysis/book_mc_stress.py:48:   #1 MaxDD con high-water inicial NAV=1.0 (un path que arranca perdiendo ya
+scripts/analysis/book_mc_stress.py:50:   #2 Subset hostil causal: vol de t-4..t-1 (shift) + tercil expanding causal.
+scripts/analysis/book_mc_stress.py:51:   #3 Bootstrap hostil por RUNS contiguos, no semanas compactadas.
+scripts/analysis/book_mc_stress.py:52:   #4 prob_applied_* se registra cuando el multiplicador SE APLICA (t+1), no al
+scripts/analysis/book_mc_stress.py:73: BLOCK = 4  # bootstrap por bloques circular b=4 â€” mismo prior que el juez v12 / A2
+scripts/analysis/book_mc_stress.py:89: VOL_WINDOW = 4   # vol realizada de las semanas t-4..t-1 (estrictamente previas)
+scripts/analysis/book_mc_stress.py:90: MIN_VOL_OBS = 8  # observaciones minimas antes de clasificar con el tercil expanding
+scripts/analysis/book_mc_stress.py:119:     # sanity vs la vol anualizada del libro publicada en A1 (LW-cov: 0.072670);
+scripts/analysis/book_mc_stress.py:120:     # la vol muestral de la serie difiere un poco del w'Î£_LW w â€” tolerancia laxa
+scripts/analysis/book_mc_stress.py:121:     ann_vol_sample = float(r_book.std(ddof=1) * math.sqrt(52))
+scripts/analysis/book_mc_stress.py:122:     if abs(ann_vol_sample - book["vol_targeting"]["unit_book_annual_vol"]) > 0.015:
+scripts/analysis/book_mc_stress.py:124:             f"Vol anualizada muestral del libro {ann_vol_sample:.4f} demasiado "
+scripts/analysis/book_mc_stress.py:125:             f"lejos de la publicada {book['vol_targeting']['unit_book_annual_vol']:.4f}."
+scripts/analysis/book_mc_stress.py:132:         "ann_vol_sample": ann_vol_sample,
+scripts/analysis/book_mc_stress.py:145:     """Bootstrap por bloques circular: paths (n_paths, horizon)."""
+scripts/analysis/book_mc_stress.py:156:     """Bootstrap iid semanal (dependencia rota) â€” solo banda de comparacion."""
+scripts/analysis/book_mc_stress.py:162: def static_stats(paths: np.ndarray, mult: float) -> dict:
+scripts/analysis/book_mc_stress.py:167:     el bootstrap hereda la media 2025 y eso seria un claim de retorno.
+scripts/analysis/book_mc_stress.py:170:     # high-water inicial NAV=1.0 (Codex #1): un path que arranca perdiendo ya
+scripts/analysis/book_mc_stress.py:197: def run_ladder(paths: np.ndarray, start_mult: float) -> dict:
+scripts/analysis/book_mc_stress.py:203:       - La decision del cierre t se aplica a la semana t+1 (sin look-ahead).
+scripts/analysis/book_mc_stress.py:273:         "prob_applied_step_1p0x": float(ever_applied[1].mean()),
+scripts/analysis/book_mc_stress.py:274:         "prob_applied_step_0p5x": float(ever_applied[2].mean()),
+scripts/analysis/book_mc_stress.py:275:         "prob_applied_flat": float(ever_applied[3].mean()),
+scripts/analysis/book_mc_stress.py:279:             "t+1); trigger = el DD lo disparo al cierre t. Un disparo en la "
+scripts/analysis/book_mc_stress.py:286: # --------------------------------------------------------------------- hostile regime
+scripts/analysis/book_mc_stress.py:287: def hostile_subset(r_book: np.ndarray) -> dict:
+scripts/analysis/book_mc_stress.py:288:     """Semanas hostiles CAUSALES + runs contiguos (Codex #2/#3).
+scripts/analysis/book_mc_stress.py:290:     - La vol que clasifica la semana t usa SOLO r[t-4..t-1] (estrictamente
+scripts/analysis/book_mc_stress.py:292:     - El corte de tercil (percentil 66.7) es EXPANDING causal: en t se computa
+scripts/analysis/book_mc_stress.py:293:       sobre las vols observadas hasta t inclusive (todas derivadas de retornos
+scripts/analysis/book_mc_stress.py:294:       <= t-1), con un minimo de MIN_VOL_OBS observaciones antes de clasificar.
+scripts/analysis/book_mc_stress.py:295:     - Se devuelven los RUNS contiguos de semanas hostiles, no un subset
+scripts/analysis/book_mc_stress.py:296:       compactado: el bootstrap hostil re-muestrea runs completos.
+scripts/analysis/book_mc_stress.py:299:     vols = np.full(n, np.nan)
+scripts/analysis/book_mc_stress.py:300:     for t in range(VOL_WINDOW, n):
+scripts/analysis/book_mc_stress.py:301:         vols[t] = r_book[t - VOL_WINDOW : t].std(ddof=1)
+scripts/analysis/book_mc_stress.py:303:     hostile = np.zeros(n, dtype=bool)
+scripts/analysis/book_mc_stress.py:306:     for t in range(VOL_WINDOW, n):
+scripts/analysis/book_mc_stress.py:307:         seen.append(float(vols[t]))
+scripts/analysis/book_mc_stress.py:308:         if len(seen) >= MIN_VOL_OBS:
+scripts/analysis/book_mc_stress.py:311:             hostile[t] = vols[t] >= cut
+scripts/analysis/book_mc_stress.py:313:     runs: list[list[int]] = []
+scripts/analysis/book_mc_stress.py:316:         if hostile[t]:
+scripts/analysis/book_mc_stress.py:319:             runs.append(cur)
+scripts/analysis/book_mc_stress.py:322:         runs.append(cur)
+scripts/analysis/book_mc_stress.py:323:     if not runs:
+scripts/analysis/book_mc_stress.py:324:         raise ValueError("Sin semanas hostiles bajo la definicion causal. Abortando.")
+scripts/analysis/book_mc_stress.py:327:         "hostile_iso_weeks": [f"2025-W{t + 1:02d}" for t in np.where(hostile)[0]],
+scripts/analysis/book_mc_stress.py:328:         "n_weeks": int(hostile.sum()),
+scripts/analysis/book_mc_stress.py:329:         "vol_window_weeks": VOL_WINDOW,
+scripts/analysis/book_mc_stress.py:330:         "min_vol_obs": MIN_VOL_OBS,
+scripts/analysis/book_mc_stress.py:331:         "runs_iso": [
+scripts/analysis/book_mc_stress.py:332:             [f"2025-W{t + 1:02d}" for t in run] for run in runs
+scripts/analysis/book_mc_stress.py:334:         "run_lengths": [len(run) for run in runs],
+scripts/analysis/book_mc_stress.py:335:         "run_returns": [r_book[np.array(run)] for run in runs],
+scripts/analysis/book_mc_stress.py:339: def gen_run_paths(
+scripts/analysis/book_mc_stress.py:340:     run_returns: list[np.ndarray], n_paths: int, horizon: int, rng: np.random.Generator
+scripts/analysis/book_mc_stress.py:342:     """Bootstrap de RUNS contiguos completos (uniforme con reemplazo).
+scripts/analysis/book_mc_stress.py:344:     Concatena runs muestreados hasta llenar `horizon` semanas y trunca. Preserva
+scripts/analysis/book_mc_stress.py:345:     la contiguidad REAL dentro de cada run; no fabrica vecindades falsas entre
+scripts/analysis/book_mc_stress.py:348:     n_runs = len(run_returns)
+scripts/analysis/book_mc_stress.py:354:             r = run_returns[rng.integers(0, n_runs)]
+scripts/analysis/book_mc_stress.py:386:     host = hostile_subset(r_book)
+scripts/analysis/book_mc_stress.py:387:     paths_host = gen_run_paths(host["run_returns"], N_PATHS, HORIZON, rng)
+scripts/analysis/book_mc_stress.py:390:     static_block = [static_stats(paths_block, m) for m in (1.0, 1.5)]
+scripts/analysis/book_mc_stress.py:391:     static_iid = [static_stats(paths_iid, m) for m in (1.0, 1.5)]
+scripts/analysis/book_mc_stress.py:393:     # 3. Regimen hostil (tercil alto de vol) â€” stress conservador, NO pronostico
+scripts/analysis/book_mc_stress.py:394:     static_host = [static_stats(paths_host, m) for m in (1.0, 1.5)]
+scripts/analysis/book_mc_stress.py:397:     ladder_15 = run_ladder(paths_block, 1.5)   # la pregunta central
+scripts/analysis/book_mc_stress.py:398:     ladder_10 = run_ladder(paths_block, 1.0)   # secundario: pre-graduacion
+scripts/analysis/book_mc_stress.py:399:     ladder_host = run_ladder(paths_host, 1.5)  # escalera bajo stress hostil
+scripts/analysis/book_mc_stress.py:417:                 "annualized_vol_sample": data["ann_vol_sample"],
+scripts/analysis/book_mc_stress.py:435:             "bootstrap": (
+scripts/analysis/book_mc_stress.py:437:                 "comparacion; hostil: bootstrap de runs contiguos"
+scripts/analysis/book_mc_stress.py:440:                 "peak-to-trough sobre equity semanal con high-water inicial "
+scripts/analysis/book_mc_stress.py:441:                 "NAV=1.0 (Codex #1)"
+scripts/analysis/book_mc_stress.py:450:             "el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP "
+scripts/analysis/book_mc_stress.py:453:             "para presupuestar perdida es la del stress hostil (ES97.5 negativo)."
+scripts/analysis/book_mc_stress.py:457:         "hostile_regime_stress": {
+scripts/analysis/book_mc_stress.py:460:                 "hostiles del libro (clasificacion CAUSAL) como proxy de regimen "
+scripts/analysis/book_mc_stress.py:461:                 "hostil PERSISTENTE 52 semanas (peor que cualquier aÃ±o realista "
+scripts/analysis/book_mc_stress.py:466:                     "semana t es hostil si la vol realizada de r[t-4..t-1] "
+scripts/analysis/book_mc_stress.py:468:                     "EXPANDING causal de las vols observadas hasta t, con minimo "
+scripts/analysis/book_mc_stress.py:469:                     f"{MIN_VOL_OBS} observaciones antes de clasificar (Codex #2)"
+scripts/analysis/book_mc_stress.py:471:                 "vol_window_weeks": host["vol_window_weeks"],
+scripts/analysis/book_mc_stress.py:472:                 "min_vol_obs": host["min_vol_obs"],
+scripts/analysis/book_mc_stress.py:473:                 "hostile_weeks": host["hostile_iso_weeks"],
+scripts/analysis/book_mc_stress.py:474:                 "n_hostile_weeks": host["n_weeks"],
+scripts/analysis/book_mc_stress.py:478:                     "bootstrap de RUNS contiguos completos (uniforme con "
+scripts/analysis/book_mc_stress.py:479:                     "reemplazo), concatenados hasta llenar 52 semanas y truncado "
+scripts/analysis/book_mc_stress.py:480:                     "â€” preserva la contiguidad real, sin vecindades falsas "
+scripts/analysis/book_mc_stress.py:483:                 "runs_iso": host["runs_iso"],
+scripts/analysis/book_mc_stress.py:484:                 "run_lengths": host["run_lengths"],
+scripts/analysis/book_mc_stress.py:511:                 "hostile_regime_note": (
+scripts/analysis/book_mc_stress.py:512:                     f"bajo el stress hostil causal la escalera deja el p95 en "
+scripts/analysis/book_mc_stress.py:518:                     "efectiva en t+1 => el escalon flat congela el DD apenas "
+scripts/analysis/book_mc_stress.py:521:                 "hostile_causal_honesty_note": (
+scripts/analysis/book_mc_stress.py:522:                     "el stress hostil CAUSAL es mas benigno que la variante con "
+scripts/analysis/book_mc_stress.py:523:                     "look-ahead (que seleccionaba las propias semanas de vol alta "
+scripts/analysis/book_mc_stress.py:525:                     "de vol alta tendieron a recuperarse. Eso es herencia del "
+scripts/analysis/book_mc_stress.py:586:                 "El bootstrap b=4 preserva dependencia hasta ~4 semanas; "
+scripts/analysis/book_mc_stress.py:587:                 "clustering de vol mas largo no esta capturado (por eso se aÃ±ade "
+scripts/analysis/book_mc_stress.py:588:                 "el stress del tercil hostil persistente)."
+scripts/analysis/book_mc_stress.py:594:                 "bootstrap hereda la media 2025 (seria un claim de retorno)."
+scripts/analysis/book_mc_stress.py:607:         f"libro: ann_vol={data['ann_vol_sample']:.4f} | "
+scripts/analysis/book_mc_stress.py:612:                         ("HOSTIL", static_host)):
+scripts/analysis/book_mc_stress.py:624:                        ("ESCALERA hostil", ladder_host)):
+scripts/analysis/book_mc_stress.py:630:             f"{lad['prob_applied_flat']:.3f}/{lad['prob_trigger_flat']:.3f} | "
+FILE .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:19:       "annualized_vol_sample": 0.070899926913873,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:30:     "bootstrap": "base: circular block (b=4) â€” MANDA; iid solo banda de comparacion; hostil: bootstrap de runs contiguos",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:31:     "maxdd_definition": "peak-to-trough sobre equity semanal con high-water inicial NAV=1.0 (Codex #1)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:34:   "es97_5_disclaimer": "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:91:   "hostile_regime_stress": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:92:     "label": "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas hostiles del libro (clasificacion CAUSAL) como proxy de regimen hostil PERSISTENTE 52 semanas (peor que cualquier aÃ±o realista del regimen 2025).",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:94:       "method": "semana t es hostil si la vol realizada de r[t-4..t-1] (estrictamente previas, shift completo) >= percentil 66.7 EXPANDING causal de las vols observadas hasta t, con minimo 8 observaciones antes de clasificar (Codex #2)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:95:       "vol_window_weeks": 4,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:96:       "min_vol_obs": 8,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:97:       "hostile_weeks": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:115:       "n_hostile_weeks": 16
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:118:       "method": "bootstrap de RUNS contiguos completos (uniforme con reemplazo), concatenados hasta llenar 52 semanas y truncado â€” preserva la contiguidad real, sin vecindades falsas (Codex #3)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:119:       "runs_iso": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:149:       "run_lengths": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:198:       "prob_applied_step_1p0x": 0.2975,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:199:       "prob_applied_step_0p5x": 0.0432,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:200:       "prob_applied_flat": 0.0023,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:202:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:224:       "prob_applied_step_1p0x": 0.0696,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:225:       "prob_applied_step_0p5x": 0.0039,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:226:       "prob_applied_flat": 0.0002,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:228:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:243:       "prob_applied_step_1p0x": 0.0056,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:244:       "prob_applied_step_0p5x": 0.0003,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:245:       "prob_applied_flat": 0.0001,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:247:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:260:       "hostile_regime_note": "bajo el stress hostil causal la escalera deja el p95 en 9.89% y el p99 en 11.12% (vs 10.92% / 13.95% estatico 1.5x). Overshoot posible por diseÃ±o: DD marcado al cierre + decision efectiva en t+1 => el escalon flat congela el DD apenas CRUZADO el umbral, no antes.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:261:       "hostile_causal_honesty_note": "el stress hostil CAUSAL es mas benigno que la variante con look-ahead (que seleccionaba las propias semanas de vol alta con sus perdidas): en 2025 las semanas POSTERIORES a ventanas de vol alta tendieron a recuperarse. Eso es herencia del regimen 2025, no una propiedad general â€” otro motivo para no leer estas colas como techo del riesgo real."
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:285:     "El bootstrap b=4 preserva dependencia hasta ~4 semanas; clustering de vol mas largo no esta capturado (por eso se aÃ±ade el stress del tercil hostil persistente).",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:287:     "ES97.5 del retorno anual se reporta como mÃ©trica de COLA (perdida); el centro de la distribucion no se reporta porque el bootstrap hereda la media 2025 (seria un claim de retorno)."
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ranges = @(@{p='"'scripts/analysis/book_mc_stress.py'; a=158; b=276}, @{p='scripts/analysis/book_mc_stress.py'; a=287; b=361}, @{p='.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json'; a=25; b=35}, @{p='.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json'; a=91; b=160}, @{p='.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json'; a=188; b=250}); foreach ("'$x in $ranges) { Write-Output "FILE $($x.p) [$($x.a)-$($x.b)]"; $lines=Get-Content -LiteralPath $x.p; for ($i=$x.a; $i -le $x.b -and $i -le $lines.Count; $i++) { '"'{0}:{1}: {2}' -f "'$x.p,$i,$lines[$i-1] } }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 3793ms:
+FILE scripts/analysis/book_mc_stress.py [158-276]
+scripts/analysis/book_mc_stress.py:158:     return series[rng.integers(0, n, (n_paths, horizon))]
+scripts/analysis/book_mc_stress.py:159: 
+scripts/analysis/book_mc_stress.py:160: 
+scripts/analysis/book_mc_stress.py:161: # ------------------------------------------------------------------------ static MC
+scripts/analysis/book_mc_stress.py:162: def static_stats(paths: np.ndarray, mult: float) -> dict:
+scripts/analysis/book_mc_stress.py:163:     """MaxDD y cola del retorno anual a multiplicador de libro constante.
+scripts/analysis/book_mc_stress.py:164: 
+scripts/analysis/book_mc_stress.py:165:     SOLO riesgo: del retorno anual se reporta exclusivamente la cola ES97.5
+scripts/analysis/book_mc_stress.py:166:     (media del peor 2.5%); el centro de la distribucion NO se reporta porque
+scripts/analysis/book_mc_stress.py:167:     el bootstrap hereda la media 2025 y eso seria un claim de retorno.
+scripts/analysis/book_mc_stress.py:168:     """
+scripts/analysis/book_mc_stress.py:169:     eq = np.cumprod(1.0 + mult * paths, axis=1)
+scripts/analysis/book_mc_stress.py:170:     # high-water inicial NAV=1.0 (Codex #1): un path que arranca perdiendo ya
+scripts/analysis/book_mc_stress.py:171:     # esta en drawdown respecto del capital inicial
+scripts/analysis/book_mc_stress.py:172:     peak = np.maximum(np.maximum.accumulate(eq, axis=1), 1.0)
+scripts/analysis/book_mc_stress.py:173:     dd = eq / peak - 1.0
+scripts/analysis/book_mc_stress.py:174:     maxdd_mag = -dd.min(axis=1)  # magnitud (positiva) del peor drawdown del path
+scripts/analysis/book_mc_stress.py:175: 
+scripts/analysis/book_mc_stress.py:176:     ann = eq[:, -1] - 1.0
+scripts/analysis/book_mc_stress.py:177:     var_cut = np.percentile(ann, 2.5)
+scripts/analysis/book_mc_stress.py:178:     es975 = float(ann[ann <= var_cut].mean())
+scripts/analysis/book_mc_stress.py:179: 
+scripts/analysis/book_mc_stress.py:180:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+scripts/analysis/book_mc_stress.py:181:     return {
+scripts/analysis/book_mc_stress.py:182:         "book_multiplier": mult,
+scripts/analysis/book_mc_stress.py:183:         "maxdd_pct": {
+scripts/analysis/book_mc_stress.py:184:             "p50": float(p50 * 100),
+scripts/analysis/book_mc_stress.py:185:             "p90": float(p90 * 100),
+scripts/analysis/book_mc_stress.py:186:             "p95": float(p95 * 100),
+scripts/analysis/book_mc_stress.py:187:             "p99": float(p99 * 100),
+scripts/analysis/book_mc_stress.py:188:         },
+scripts/analysis/book_mc_stress.py:189:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+scripts/analysis/book_mc_stress.py:190:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+scripts/analysis/book_mc_stress.py:191:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+scripts/analysis/book_mc_stress.py:192:         "es97_5_annual_return_pct": es975 * 100,
+scripts/analysis/book_mc_stress.py:193:     }
+scripts/analysis/book_mc_stress.py:194: 
+scripts/analysis/book_mc_stress.py:195: 
+scripts/analysis/book_mc_stress.py:196: # --------------------------------------------------------------------- ladder engine
+scripts/analysis/book_mc_stress.py:197: def run_ladder(paths: np.ndarray, start_mult: float) -> dict:
+scripts/analysis/book_mc_stress.py:198:     """Simula la escalera del gobernador sobre paths (n, T), arrancando en start_mult.
+scripts/analysis/book_mc_stress.py:199: 
+scripts/analysis/book_mc_stress.py:200:     Reglas (BOOK-LEVERAGE-GOVERNOR.md Â§3, tal cual):
+scripts/analysis/book_mc_stress.py:201:       - DD medido peak-to-trough sobre la equity del LIBRO, al cierre semanal.
+scripts/analysis/book_mc_stress.py:202:       - DD > 7% => 1.0x ; DD > 10% => 0.5x ; DD > 12% => 0 (flat).
+scripts/analysis/book_mc_stress.py:203:       - La decision del cierre t se aplica a la semana t+1 (sin look-ahead).
+scripts/analysis/book_mc_stress.py:204:       - Bajadas: inmediatas (al escalon que dicte el DD). Subidas: UN escalon
+scripts/analysis/book_mc_stress.py:205:         tras REARM_WEEKS cierres consecutivos con DD < (umbral del escalon - 2pp)
+scripts/analysis/book_mc_stress.py:206:         (1.0x->base con DD<5%; 0.5x->1.0x con DD<8%).
+scripts/analysis/book_mc_stress.py:207:       - Flat es absorbente de facto: con equity congelada el DD queda clavado
+scripts/analysis/book_mc_stress.py:208:         >12% y la condicion de re-armado (DD<10%) es inalcanzable â€” coherente
+scripts/analysis/book_mc_stress.py:209:         con '0 (flat) + revision formal' del protocolo.
+scripts/analysis/book_mc_stress.py:210:     """
+scripts/analysis/book_mc_stress.py:211:     n, T = paths.shape
+scripts/analysis/book_mc_stress.py:212:     mults = np.array([start_mult, *LADDER_MULTS_TAIL])
+scripts/analysis/book_mc_stress.py:213:     # re-armado del step k -> k-1 exige DD < LADDER_TRIGGER[k-1] - 2pp
+scripts/analysis/book_mc_stress.py:214:     rearm_dd = np.array([np.inf, *[t - REARM_HYST_PP for t in LADDER_TRIGGER]])
+scripts/analysis/book_mc_stress.py:215: 
+scripts/analysis/book_mc_stress.py:216:     eq = np.ones(n)
+scripts/analysis/book_mc_stress.py:217:     peak = np.ones(n)
+scripts/analysis/book_mc_stress.py:218:     step = np.zeros(n, dtype=np.int64)  # multiplicador vigente ESTA semana
+scripts/analysis/book_mc_stress.py:219:     counter = np.zeros(n, dtype=np.int64)
+scripts/analysis/book_mc_stress.py:220:     maxdd = np.zeros(n)
+scripts/analysis/book_mc_stress.py:221:     mult_sum = np.zeros(n)
+scripts/analysis/book_mc_stress.py:222:     # Codex #4: 'applied' se registra cuando el multiplicador SE APLICA (la
+scripts/analysis/book_mc_stress.py:223:     # semana siguiente al disparo); 'trigger' registra el disparo al cierre.
+scripts/analysis/book_mc_stress.py:224:     ever_applied = {1: np.zeros(n, bool), 2: np.zeros(n, bool), 3: np.zeros(n, bool)}
+scripts/analysis/book_mc_stress.py:225:     ever_trigger = {1: np.zeros(n, bool), 2: np.zeros(n, bool), 3: np.zeros(n, bool)}
+scripts/analysis/book_mc_stress.py:226: 
+scripts/analysis/book_mc_stress.py:227:     for t in range(T):
+scripts/analysis/book_mc_stress.py:228:         for k in (1, 2, 3):
+scripts/analysis/book_mc_stress.py:229:             ever_applied[k] |= step == k  # escalon efectivamente OPERADO esta semana
+scripts/analysis/book_mc_stress.py:230:         m = mults[step]
+scripts/analysis/book_mc_stress.py:231:         mult_sum += m
+scripts/analysis/book_mc_stress.py:232:         eq = eq * (1.0 + m * paths[:, t])
+scripts/analysis/book_mc_stress.py:233:         peak = np.maximum(peak, eq)
+scripts/analysis/book_mc_stress.py:234:         dd = eq / peak - 1.0
+scripts/analysis/book_mc_stress.py:235:         maxdd = np.minimum(maxdd, dd)
+scripts/analysis/book_mc_stress.py:236:         ddm = -dd
+scripts/analysis/book_mc_stress.py:237: 
+scripts/analysis/book_mc_stress.py:238:         # bajada inmediata (efectiva desde la proxima semana)
+scripts/analysis/book_mc_stress.py:239:         trig = np.select(
+scripts/analysis/book_mc_stress.py:240:             [ddm > LADDER_TRIGGER[2], ddm > LADDER_TRIGGER[1], ddm > LADDER_TRIGGER[0]],
+scripts/analysis/book_mc_stress.py:241:             [3, 2, 1],
+scripts/analysis/book_mc_stress.py:242:             default=0,
+scripts/analysis/book_mc_stress.py:243:         )
+scripts/analysis/book_mc_stress.py:244:         down = trig > step
+scripts/analysis/book_mc_stress.py:245:         step = np.where(down, trig, step)
+scripts/analysis/book_mc_stress.py:246:         counter = np.where(down, 0, counter)
+scripts/analysis/book_mc_stress.py:247:         for k in (1, 2, 3):
+scripts/analysis/book_mc_stress.py:248:             ever_trigger[k] |= step == k
+scripts/analysis/book_mc_stress.py:249: 
+scripts/analysis/book_mc_stress.py:250:         # histeresis de re-armado (solo un escalon por evento)
+scripts/analysis/book_mc_stress.py:251:         cond = (step > 0) & (ddm < rearm_dd[step])
+scripts/analysis/book_mc_stress.py:252:         counter = np.where(cond, counter + 1, 0)
+scripts/analysis/book_mc_stress.py:253:         up = counter >= REARM_WEEKS
+scripts/analysis/book_mc_stress.py:254:         step = np.where(up, step - 1, step)
+scripts/analysis/book_mc_stress.py:255:         counter = np.where(up, 0, counter)
+scripts/analysis/book_mc_stress.py:256: 
+scripts/analysis/book_mc_stress.py:257:     maxdd_mag = -maxdd
+scripts/analysis/book_mc_stress.py:258:     ann = eq - 1.0
+scripts/analysis/book_mc_stress.py:259:     var_cut = np.percentile(ann, 2.5)
+scripts/analysis/book_mc_stress.py:260:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+scripts/analysis/book_mc_stress.py:261:     return {
+scripts/analysis/book_mc_stress.py:262:         "start_multiplier": start_mult,
+scripts/analysis/book_mc_stress.py:263:         "maxdd_pct": {
+scripts/analysis/book_mc_stress.py:264:             "p50": float(p50 * 100),
+scripts/analysis/book_mc_stress.py:265:             "p90": float(p90 * 100),
+scripts/analysis/book_mc_stress.py:266:             "p95": float(p95 * 100),
+scripts/analysis/book_mc_stress.py:267:             "p99": float(p99 * 100),
+scripts/analysis/book_mc_stress.py:268:         },
+scripts/analysis/book_mc_stress.py:269:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+scripts/analysis/book_mc_stress.py:270:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+scripts/analysis/book_mc_stress.py:271:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+scripts/analysis/book_mc_stress.py:272:         "es97_5_annual_return_pct": float(ann[ann <= var_cut].mean() * 100),
+scripts/analysis/book_mc_stress.py:273:         "prob_applied_step_1p0x": float(ever_applied[1].mean()),
+scripts/analysis/book_mc_stress.py:274:         "prob_applied_step_0p5x": float(ever_applied[2].mean()),
+scripts/analysis/book_mc_stress.py:275:         "prob_applied_flat": float(ever_applied[3].mean()),
+scripts/analysis/book_mc_stress.py:276:         "prob_trigger_flat": float(ever_trigger[3].mean()),
+FILE scripts/analysis/book_mc_stress.py [287-361]
+scripts/analysis/book_mc_stress.py:287: def hostile_subset(r_book: np.ndarray) -> dict:
+scripts/analysis/book_mc_stress.py:288:     """Semanas hostiles CAUSALES + runs contiguos (Codex #2/#3).
+scripts/analysis/book_mc_stress.py:289: 
+scripts/analysis/book_mc_stress.py:290:     - La vol que clasifica la semana t usa SOLO r[t-4..t-1] (estrictamente
+scripts/analysis/book_mc_stress.py:291:       previas: shift completo, r[t] jamas entra en su propia clasificacion).
+scripts/analysis/book_mc_stress.py:292:     - El corte de tercil (percentil 66.7) es EXPANDING causal: en t se computa
+scripts/analysis/book_mc_stress.py:293:       sobre las vols observadas hasta t inclusive (todas derivadas de retornos
+scripts/analysis/book_mc_stress.py:294:       <= t-1), con un minimo de MIN_VOL_OBS observaciones antes de clasificar.
+scripts/analysis/book_mc_stress.py:295:     - Se devuelven los RUNS contiguos de semanas hostiles, no un subset
+scripts/analysis/book_mc_stress.py:296:       compactado: el bootstrap hostil re-muestrea runs completos.
+scripts/analysis/book_mc_stress.py:297:     """
+scripts/analysis/book_mc_stress.py:298:     n = len(r_book)
+scripts/analysis/book_mc_stress.py:299:     vols = np.full(n, np.nan)
+scripts/analysis/book_mc_stress.py:300:     for t in range(VOL_WINDOW, n):
+scripts/analysis/book_mc_stress.py:301:         vols[t] = r_book[t - VOL_WINDOW : t].std(ddof=1)
+scripts/analysis/book_mc_stress.py:302: 
+scripts/analysis/book_mc_stress.py:303:     hostile = np.zeros(n, dtype=bool)
+scripts/analysis/book_mc_stress.py:304:     cuts = np.full(n, np.nan)
+scripts/analysis/book_mc_stress.py:305:     seen: list[float] = []
+scripts/analysis/book_mc_stress.py:306:     for t in range(VOL_WINDOW, n):
+scripts/analysis/book_mc_stress.py:307:         seen.append(float(vols[t]))
+scripts/analysis/book_mc_stress.py:308:         if len(seen) >= MIN_VOL_OBS:
+scripts/analysis/book_mc_stress.py:309:             cut = float(np.percentile(seen, 100 * 2 / 3))
+scripts/analysis/book_mc_stress.py:310:             cuts[t] = cut
+scripts/analysis/book_mc_stress.py:311:             hostile[t] = vols[t] >= cut
+scripts/analysis/book_mc_stress.py:312: 
+scripts/analysis/book_mc_stress.py:313:     runs: list[list[int]] = []
+scripts/analysis/book_mc_stress.py:314:     cur: list[int] = []
+scripts/analysis/book_mc_stress.py:315:     for t in range(n):
+scripts/analysis/book_mc_stress.py:316:         if hostile[t]:
+scripts/analysis/book_mc_stress.py:317:             cur.append(t)
+scripts/analysis/book_mc_stress.py:318:         elif cur:
+scripts/analysis/book_mc_stress.py:319:             runs.append(cur)
+scripts/analysis/book_mc_stress.py:320:             cur = []
+scripts/analysis/book_mc_stress.py:321:     if cur:
+scripts/analysis/book_mc_stress.py:322:         runs.append(cur)
+scripts/analysis/book_mc_stress.py:323:     if not runs:
+scripts/analysis/book_mc_stress.py:324:         raise ValueError("Sin semanas hostiles bajo la definicion causal. Abortando.")
+scripts/analysis/book_mc_stress.py:325: 
+scripts/analysis/book_mc_stress.py:326:     return {
+scripts/analysis/book_mc_stress.py:327:         "hostile_iso_weeks": [f"2025-W{t + 1:02d}" for t in np.where(hostile)[0]],
+scripts/analysis/book_mc_stress.py:328:         "n_weeks": int(hostile.sum()),
+scripts/analysis/book_mc_stress.py:329:         "vol_window_weeks": VOL_WINDOW,
+scripts/analysis/book_mc_stress.py:330:         "min_vol_obs": MIN_VOL_OBS,
+scripts/analysis/book_mc_stress.py:331:         "runs_iso": [
+scripts/analysis/book_mc_stress.py:332:             [f"2025-W{t + 1:02d}" for t in run] for run in runs
+scripts/analysis/book_mc_stress.py:333:         ],
+scripts/analysis/book_mc_stress.py:334:         "run_lengths": [len(run) for run in runs],
+scripts/analysis/book_mc_stress.py:335:         "run_returns": [r_book[np.array(run)] for run in runs],
+scripts/analysis/book_mc_stress.py:336:     }
+scripts/analysis/book_mc_stress.py:337: 
+scripts/analysis/book_mc_stress.py:338: 
+scripts/analysis/book_mc_stress.py:339: def gen_run_paths(
+scripts/analysis/book_mc_stress.py:340:     run_returns: list[np.ndarray], n_paths: int, horizon: int, rng: np.random.Generator
+scripts/analysis/book_mc_stress.py:341: ) -> np.ndarray:
+scripts/analysis/book_mc_stress.py:342:     """Bootstrap de RUNS contiguos completos (uniforme con reemplazo).
+scripts/analysis/book_mc_stress.py:343: 
+scripts/analysis/book_mc_stress.py:344:     Concatena runs muestreados hasta llenar `horizon` semanas y trunca. Preserva
+scripts/analysis/book_mc_stress.py:345:     la contiguidad REAL dentro de cada run; no fabrica vecindades falsas entre
+scripts/analysis/book_mc_stress.py:346:     semanas que no fueron consecutivas en el calendario (Codex #3).
+scripts/analysis/book_mc_stress.py:347:     """
+scripts/analysis/book_mc_stress.py:348:     n_runs = len(run_returns)
+scripts/analysis/book_mc_stress.py:349:     paths = np.empty((n_paths, horizon))
+scripts/analysis/book_mc_stress.py:350:     for i in range(n_paths):
+scripts/analysis/book_mc_stress.py:351:         buf: list[np.ndarray] = []
+scripts/analysis/book_mc_stress.py:352:         total = 0
+scripts/analysis/book_mc_stress.py:353:         while total < horizon:
+scripts/analysis/book_mc_stress.py:354:             r = run_returns[rng.integers(0, n_runs)]
+scripts/analysis/book_mc_stress.py:355:             buf.append(r)
+scripts/analysis/book_mc_stress.py:356:             total += len(r)
+scripts/analysis/book_mc_stress.py:357:         paths[i] = np.concatenate(buf)[:horizon]
+scripts/analysis/book_mc_stress.py:358:     return paths
+scripts/analysis/book_mc_stress.py:359: 
+scripts/analysis/book_mc_stress.py:360: 
+scripts/analysis/book_mc_stress.py:361: # ------------------------------------------------------------------------ sanitizado
+FILE .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json [25-35]
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:25:   "mc_config": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:26:     "seed": 42,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:27:     "n_paths": 10000,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:28:     "horizon_weeks": 52,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:29:     "block_size": 4,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:30:     "bootstrap": "base: circular block (b=4) â€” MANDA; iid solo banda de comparacion; hostil: bootstrap de runs contiguos",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:31:     "maxdd_definition": "peak-to-trough sobre equity semanal con high-water inicial NAV=1.0 (Codex #1)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:32:     "weights_handling": "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; no se simula drift de pesos intra-rebalanceo"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:33:   },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:34:   "es97_5_disclaimer": "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:35:   "static_mc_block_b4": [
+FILE .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json [91-160]
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:91:   "hostile_regime_stress": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:92:     "label": "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas hostiles del libro (clasificacion CAUSAL) como proxy de regimen hostil PERSISTENTE 52 semanas (peor que cualquier aÃ±o realista del regimen 2025).",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:93:     "classification": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:94:       "method": "semana t es hostil si la vol realizada de r[t-4..t-1] (estrictamente previas, shift completo) >= percentil 66.7 EXPANDING causal de las vols observadas hasta t, con minimo 8 observaciones antes de clasificar (Codex #2)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:95:       "vol_window_weeks": 4,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:96:       "min_vol_obs": 8,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:97:       "hostile_weeks": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:98:         "2025-W12",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:99:         "2025-W23",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:100:         "2025-W25",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:101:         "2025-W29",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:102:         "2025-W30",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:103:         "2025-W31",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:104:         "2025-W32",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:105:         "2025-W33",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:106:         "2025-W34",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:107:         "2025-W37",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:108:         "2025-W38",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:109:         "2025-W40",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:110:         "2025-W41",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:111:         "2025-W42",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:112:         "2025-W43",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:113:         "2025-W44"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:114:       ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:115:       "n_hostile_weeks": 16
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:116:     },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:117:     "resampling": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:118:       "method": "bootstrap de RUNS contiguos completos (uniforme con reemplazo), concatenados hasta llenar 52 semanas y truncado â€” preserva la contiguidad real, sin vecindades falsas (Codex #3)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:119:       "runs_iso": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:120:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:121:           "2025-W12"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:122:         ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:123:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:124:           "2025-W23"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:125:         ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:126:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:127:           "2025-W25"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:128:         ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:129:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:130:           "2025-W29",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:131:           "2025-W30",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:132:           "2025-W31",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:133:           "2025-W32",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:134:           "2025-W33",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:135:           "2025-W34"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:136:         ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:137:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:138:           "2025-W37",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:139:           "2025-W38"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:140:         ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:141:         [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:142:           "2025-W40",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:143:           "2025-W41",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:144:           "2025-W42",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:145:           "2025-W43",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:146:           "2025-W44"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:147:         ]
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:148:       ],
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:149:       "run_lengths": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:150:         1,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:151:         1,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:152:         1,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:153:         6,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:154:         2,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:155:         5
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:156:       ]
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:157:     },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:158:     "static_mc": [
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:159:       {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:160:         "book_multiplier": 1.0,
+FILE .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json [188-250]
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:188:       "maxdd_pct": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:189:         "p50": 5.72562956913027,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:190:         "p90": 8.903635550065866,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:191:         "p95": 9.88671459015684,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:192:         "p99": 11.120675011302666
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:193:       },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:194:       "prob_maxdd_gt_7pct": 0.3018,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:195:       "prob_maxdd_gt_10pct": 0.0449,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:196:       "prob_maxdd_gt_12pct": 0.0026,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:197:       "es97_5_annual_return_pct": -8.292331712469691,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:198:       "prob_applied_step_1p0x": 0.2975,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:199:       "prob_applied_step_0p5x": 0.0432,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:200:       "prob_applied_flat": 0.0023,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:201:       "prob_trigger_flat": 0.0026,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:202:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:203:       "avg_multiplier_over_horizon": 1.4483798076923078
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:204:     }
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:205:   },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:206:   "governor_ladder_simulation": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:207:     "rules_as_simulated": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:208:       "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:209:       "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:210:       "rearm": "subida de UN escalon tras 4 cierres consecutivos con DD < (umbral del escalon - 2pp); flat es absorbente de facto (equity congelada => DD clavado > 12%)"
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:211:     },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:212:     "from_1p5x_block_b4": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:213:       "start_multiplier": 1.5,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:214:       "maxdd_pct": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:215:         "p50": 3.9943716513759275,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:216:         "p90": 6.499185342760529,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:217:         "p95": 7.396526980011216,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:218:         "p99": 9.067022152626041
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:219:       },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:220:       "prob_maxdd_gt_7pct": 0.0706,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:221:       "prob_maxdd_gt_10pct": 0.004,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:222:       "prob_maxdd_gt_12pct": 0.0002,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:223:       "es97_5_annual_return_pct": 7.717219098261673,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:224:       "prob_applied_step_1p0x": 0.0696,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:225:       "prob_applied_step_0p5x": 0.0039,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:226:       "prob_applied_flat": 0.0002,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:227:       "prob_trigger_flat": 0.0002,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:228:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:229:       "avg_multiplier_over_horizon": 1.4916644230769232
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:230:     },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:231:     "from_1p0x_block_b4": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:232:       "start_multiplier": 1.0,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:233:       "maxdd_pct": {
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:234:         "p50": 2.6663296259829994,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:235:         "p90": 4.362058441072092,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:236:         "p95": 5.005394114408725,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:237:         "p99": 6.458486831891186
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:238:       },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:239:       "prob_maxdd_gt_7pct": 0.0058,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:240:       "prob_maxdd_gt_10pct": 0.0003,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:241:       "prob_maxdd_gt_12pct": 0.0001,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:242:       "es97_5_annual_return_pct": 6.174860102441912,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:243:       "prob_applied_step_1p0x": 0.0056,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:244:       "prob_applied_step_0p5x": 0.0003,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:245:       "prob_applied_flat": 0.0001,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:246:       "prob_trigger_flat": 0.0001,
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:247:       "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:248:       "avg_multiplier_over_horizon": 0.999951923076923
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:249:     },
+.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json:250:     "comparison_same_paths": {
+
+codex
+VERDICT: APROBADO
+
+- High-water inicial NAV=1.0: `scripts/analysis/book_mc_stress.py:169-174`; evidencia JSON `:31`.
+- Vol causal `r[t-4..t-1]` y tercil expanding con mínimo 8: script `:299-311`; JSON `:94-96`.
+- Bootstrap por runs contiguos completos: script `:313-357`; JSON `:118-155`.
+- `prob_applied_*` registrado al aplicarse en `t+1`: script `:227-245,273-275`; JSON `:198-202,224-228,243-247`.
+
+Sin issues en los cuatro puntos solicitados.
+tokens used
+23,189
+VERDICT: APROBADO
+
+- High-water inicial NAV=1.0: `scripts/analysis/book_mc_stress.py:169-174`; evidencia JSON `:31`.
+- Vol causal `r[t-4..t-1]` y tercil expanding con mínimo 8: script `:299-311`; JSON `:94-96`.
+- Bootstrap por runs contiguos completos: script `:313-357`; JSON `:118-155`.
+- `prob_applied_*` registrado al aplicarse en `t+1`: script `:227-245,273-275`; JSON `:198-202,224-228,243-247`.
+
+Sin issues en los cuatro puntos solicitados.

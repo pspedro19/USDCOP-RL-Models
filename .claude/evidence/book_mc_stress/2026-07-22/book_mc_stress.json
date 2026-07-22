@@ -1,0 +1,289 @@
+{
+  "task": "A3 — stress Monte Carlo del LIBRO + presupuesto de DD del gobernador",
+  "trials_consumed": 0,
+  "trials_note": "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis de retorno, no se selecciona ninguna variante, no se reporta Sharpe ni retorno esperado — solo colas de drawdown y ES97.5 (perdida).",
+  "inputs": {
+    "book": {
+      "book_id": "book_v1",
+      "window": "2025-W01..2025-W52 (52 semanas ISO)",
+      "source": ".claude\\evidence\\book_construction\\2026-07-22\\book_erc_v1.json"
+    },
+    "erc_weights": {
+      "cop_smart_simple_v12": 0.4205366366913926,
+      "xau_gold_trend_simple": 0.3833188509821214,
+      "btc_hodl_b1": 0.19614451232648608
+    },
+    "governor_spec": ".claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md",
+    "book_weekly_series_stats": {
+      "n_weeks": 52,
+      "annualized_vol_sample": 0.070899926913873,
+      "worst_week_pct": -2.3870121836643903,
+      "best_week_pct": 2.41422166869092,
+      "realized_maxdd_2025_pct_at_1x": 2.6663296259829994
+    }
+  },
+  "mc_config": {
+    "seed": 42,
+    "n_paths": 10000,
+    "horizon_weeks": 52,
+    "block_size": 4,
+    "bootstrap": "base: circular block (b=4) — MANDA; iid solo banda de comparacion; hostil: bootstrap de runs contiguos",
+    "maxdd_definition": "peak-to-trough sobre equity semanal con high-water inicial NAV=1.0 (Codex #1)",
+    "weights_handling": "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; no se simula drift de pesos intra-rebalanceo"
+  },
+  "es97_5_disclaimer": "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).",
+  "static_mc_block_b4": [
+    {
+      "book_multiplier": 1.0,
+      "maxdd_pct": {
+        "p50": 2.6663296259829994,
+        "p90": 4.362058441072092,
+        "p95": 5.005394114408725,
+        "p99": 6.458486831891186
+      },
+      "prob_maxdd_gt_7pct": 0.0058,
+      "prob_maxdd_gt_10pct": 0.0003,
+      "prob_maxdd_gt_12pct": 0.0001,
+      "es97_5_annual_return_pct": 6.198456708286673
+    },
+    {
+      "book_multiplier": 1.5,
+      "maxdd_pct": {
+        "p50": 3.9943716513759275,
+        "p90": 6.499185342760529,
+        "p95": 7.4630671432947615,
+        "p99": 9.595252406171282
+      },
+      "prob_maxdd_gt_7pct": 0.0706,
+      "prob_maxdd_gt_10pct": 0.008,
+      "prob_maxdd_gt_12pct": 0.0015,
+      "es97_5_annual_return_pct": 9.247601599780873
+    }
+  ],
+  "static_mc_iid_reference_only": [
+    {
+      "book_multiplier": 1.0,
+      "maxdd_pct": {
+        "p50": 2.865570712476151,
+        "p90": 4.804112720931951,
+        "p95": 5.561726762098227,
+        "p99": 7.382016009129928
+      },
+      "prob_maxdd_gt_7pct": 0.0136,
+      "prob_maxdd_gt_10pct": 0.0005,
+      "prob_maxdd_gt_12pct": 0.0,
+      "es97_5_annual_return_pct": 6.109284465604609
+    },
+    {
+      "book_multiplier": 1.5,
+      "maxdd_pct": {
+        "p50": 4.287464958675885,
+        "p90": 7.157734063668386,
+        "p95": 8.2549524208191,
+        "p99": 10.923600142899428
+      },
+      "prob_maxdd_gt_7pct": 0.1159,
+      "prob_maxdd_gt_10pct": 0.018,
+      "prob_maxdd_gt_12pct": 0.0058,
+      "es97_5_annual_return_pct": 9.102675035487069
+    }
+  ],
+  "hostile_regime_stress": {
+    "label": "STRESS CONSERVADOR — NO PRONOSTICO: re-muestreo solo de semanas hostiles del libro (clasificacion CAUSAL) como proxy de regimen hostil PERSISTENTE 52 semanas (peor que cualquier año realista del regimen 2025).",
+    "classification": {
+      "method": "semana t es hostil si la vol realizada de r[t-4..t-1] (estrictamente previas, shift completo) >= percentil 66.7 EXPANDING causal de las vols observadas hasta t, con minimo 8 observaciones antes de clasificar (Codex #2)",
+      "vol_window_weeks": 4,
+      "min_vol_obs": 8,
+      "hostile_weeks": [
+        "2025-W12",
+        "2025-W23",
+        "2025-W25",
+        "2025-W29",
+        "2025-W30",
+        "2025-W31",
+        "2025-W32",
+        "2025-W33",
+        "2025-W34",
+        "2025-W37",
+        "2025-W38",
+        "2025-W40",
+        "2025-W41",
+        "2025-W42",
+        "2025-W43",
+        "2025-W44"
+      ],
+      "n_hostile_weeks": 16
+    },
+    "resampling": {
+      "method": "bootstrap de RUNS contiguos completos (uniforme con reemplazo), concatenados hasta llenar 52 semanas y truncado — preserva la contiguidad real, sin vecindades falsas (Codex #3)",
+      "runs_iso": [
+        [
+          "2025-W12"
+        ],
+        [
+          "2025-W23"
+        ],
+        [
+          "2025-W25"
+        ],
+        [
+          "2025-W29",
+          "2025-W30",
+          "2025-W31",
+          "2025-W32",
+          "2025-W33",
+          "2025-W34"
+        ],
+        [
+          "2025-W37",
+          "2025-W38"
+        ],
+        [
+          "2025-W40",
+          "2025-W41",
+          "2025-W42",
+          "2025-W43",
+          "2025-W44"
+        ]
+      ],
+      "run_lengths": [
+        1,
+        1,
+        1,
+        6,
+        2,
+        5
+      ]
+    },
+    "static_mc": [
+      {
+        "book_multiplier": 1.0,
+        "maxdd_pct": {
+          "p50": 3.8355024657797943,
+          "p90": 6.3982419270666115,
+          "p95": 7.3853355815357125,
+          "p99": 9.461941349561327
+        },
+        "prob_maxdd_gt_7pct": 0.0644,
+        "prob_maxdd_gt_10pct": 0.0056,
+        "prob_maxdd_gt_12pct": 0.0015,
+        "es97_5_annual_return_pct": -5.803610777613974
+      },
+      {
+        "book_multiplier": 1.5,
+        "maxdd_pct": {
+          "p50": 5.72562956913027,
+          "p90": 9.493920454574448,
+          "p95": 10.923038115056375,
+          "p99": 13.9470079325091
+        },
+        "prob_maxdd_gt_7pct": 0.3018,
+        "prob_maxdd_gt_10pct": 0.0785,
+        "prob_maxdd_gt_12pct": 0.0306,
+        "es97_5_annual_return_pct": -8.698692890580006
+      }
+    ],
+    "ladder_from_1p5x": {
+      "start_multiplier": 1.5,
+      "maxdd_pct": {
+        "p50": 5.72562956913027,
+        "p90": 8.903635550065866,
+        "p95": 9.88671459015684,
+        "p99": 11.120675011302666
+      },
+      "prob_maxdd_gt_7pct": 0.3018,
+      "prob_maxdd_gt_10pct": 0.0449,
+      "prob_maxdd_gt_12pct": 0.0026,
+      "es97_5_annual_return_pct": -8.292331712469691,
+      "prob_applied_step_1p0x": 0.2975,
+      "prob_applied_step_0p5x": 0.0432,
+      "prob_applied_flat": 0.0023,
+      "prob_trigger_flat": 0.0026,
+      "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+      "avg_multiplier_over_horizon": 1.4483798076923078
+    }
+  },
+  "governor_ladder_simulation": {
+    "rules_as_simulated": {
+      "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+      "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+      "rearm": "subida de UN escalon tras 4 cierres consecutivos con DD < (umbral del escalon - 2pp); flat es absorbente de facto (equity congelada => DD clavado > 12%)"
+    },
+    "from_1p5x_block_b4": {
+      "start_multiplier": 1.5,
+      "maxdd_pct": {
+        "p50": 3.9943716513759275,
+        "p90": 6.499185342760529,
+        "p95": 7.396526980011216,
+        "p99": 9.067022152626041
+      },
+      "prob_maxdd_gt_7pct": 0.0706,
+      "prob_maxdd_gt_10pct": 0.004,
+      "prob_maxdd_gt_12pct": 0.0002,
+      "es97_5_annual_return_pct": 7.717219098261673,
+      "prob_applied_step_1p0x": 0.0696,
+      "prob_applied_step_0p5x": 0.0039,
+      "prob_applied_flat": 0.0002,
+      "prob_trigger_flat": 0.0002,
+      "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+      "avg_multiplier_over_horizon": 1.4916644230769232
+    },
+    "from_1p0x_block_b4": {
+      "start_multiplier": 1.0,
+      "maxdd_pct": {
+        "p50": 2.6663296259829994,
+        "p90": 4.362058441072092,
+        "p95": 5.005394114408725,
+        "p99": 6.458486831891186
+      },
+      "prob_maxdd_gt_7pct": 0.0058,
+      "prob_maxdd_gt_10pct": 0.0003,
+      "prob_maxdd_gt_12pct": 0.0001,
+      "es97_5_annual_return_pct": 6.174860102441912,
+      "prob_applied_step_1p0x": 0.0056,
+      "prob_applied_step_0p5x": 0.0003,
+      "prob_applied_flat": 0.0001,
+      "prob_trigger_flat": 0.0001,
+      "applied_vs_trigger_note": "applied = el escalon llego a OPERARSE (multiplicador aplicado en t+1); trigger = el DD lo disparo al cierre t. Un disparo en la ultima semana del horizonte cuenta como trigger pero no como applied.",
+      "avg_multiplier_over_horizon": 0.999951923076923
+    },
+    "comparison_same_paths": {
+      "static_1p5x_maxdd_p95_pct": 7.4630671432947615,
+      "ladder_from_1p5x_maxdd_p95_pct": 7.396526980011216,
+      "static_1p5x_prob_dd_gt_12pct": 0.0015,
+      "ladder_from_1p5x_prob_dd_gt_12pct": 0.0002
+    },
+    "verdict": {
+      "question": "¿la escalera acota el p95 del MaxDD por debajo del 12%?",
+      "ladder_p95_maxdd_pct": 7.396526980011216,
+      "p95_under_12pct": true,
+      "hostile_regime_note": "bajo el stress hostil causal la escalera deja el p95 en 9.89% y el p99 en 11.12% (vs 10.92% / 13.95% estatico 1.5x). Overshoot posible por diseño: DD marcado al cierre + decision efectiva en t+1 => el escalon flat congela el DD apenas CRUZADO el umbral, no antes.",
+      "hostile_causal_honesty_note": "el stress hostil CAUSAL es mas benigno que la variante con look-ahead (que seleccionaba las propias semanas de vol alta con sus perdidas): en 2025 las semanas POSTERIORES a ventanas de vol alta tendieron a recuperarse. Eso es herencia del regimen 2025, no una propiedad general — otro motivo para no leer estas colas como techo del riesgo real."
+    }
+  },
+  "dd_budget_proposal": {
+    "status": "PROPUESTA — el operador firma (BOOK-LEVERAGE-GOVERNOR.md §5)",
+    "rows": [
+      {
+        "threshold": "DD 7% => bajar a 1.0x",
+        "justification": "p50 del MaxDD del libro a 1.5x = 4.0% y a 1.0x = 2.7%: 7% separa la zona normal de la cola y corta la amplificacion 1.5x antes de que el path mediano invada el presupuesto"
+      },
+      {
+        "threshold": "DD 10% => bajar a 0.5x",
+        "justification": "P(MaxDD>10%) a 1.5x = 0.8% vs 0.0% a 1.0x: 10% ya es cola; a 0.5x la propagacion residual hacia 12% es minima y frena la sangria casi con certeza"
+      },
+      {
+        "threshold": "DD 12% => flat + revision formal (presupuesto total)",
+        "justification": "12% = umbral W1 del WITHDRAWAL-PROTOCOL ya firmado; un libro apalancado no puede tener presupuesto mas laxo que el retiro de su sleeve principal — la escalera simulada deja P(MaxDD>12%) = 0.0% (vs 0.1% estatico 1.5x)"
+      }
+    ]
+  },
+  "limitations": [
+    "La serie madre son 52 semanas de 2025: el MC HEREDA el regimen 2025 y NO simula regimenes no vistos (quiebre de correlaciones entre sleeves, crash conjunto tipo 2020, gaps de liquidez). Es una limitacion estructural, no un parametro ajustable.",
+    "El sleeve COP 2025 es un backtest contaminado por seleccion (DSR 0.72 < 0.95): estos numeros presupuestan riesgo, jamas evidencian edge. El juez sigue siendo el forward.",
+    "Correlaciones 2025 entre sleeves ~0 (COP-XAU -0.02, COP-BTC 0.09, XAU-BTC 0.05): el beneficio de diversificacion del libro esta heredado tal cual; en crisis las correlaciones suelen subir y la cola real seria peor que la simulada.",
+    "El bootstrap b=4 preserva dependencia hasta ~4 semanas; clustering de vol mas largo no esta capturado (por eso se añade el stress del tercil hostil persistente).",
+    "DD marcado solo al cierre semanal: drawdowns intra-semana no se miden.",
+    "ES97.5 del retorno anual se reporta como métrica de COLA (perdida); el centro de la distribucion no se reporta porque el bootstrap hereda la media 2025 (seria un claim de retorno)."
+  ]
+}

@@ -45,6 +45,7 @@
       "core_l0_02_ohlcv_realtime": "l0_ohlcv_realtime.py",
       "core_l0_03_macro_backfill": "l0_macro_backfill.py",
       "core_l0_04_macro_update": "l0_macro_update.py",
+      "core_l0_04_usdcop_forward_macro_pit": "l0_usdcop_forward_macro.py",
       "core_l0_05_seed_backup": "l0_seed_backup.py",
       "core_l6_01_alert_monitor": "alert_monitor.py",
       "core_l6_02_weekly_report": "l6_production_monitoring.py",
@@ -86,9 +87,9 @@
       "rl_l6_01_production_monitor": "l6_production_monitoring.py",
       "rl_l6_02_drift_monitor": "mlops_drift_monitor.py"
     },
-    "modules": 45,
-    "static_ids": 45,
-    "total_ids": 48
+    "modules": 46,
+    "static_ids": 46,
+    "total_ids": 49
   },
   "frontend": {
     "api_routes": 93,
@@ -136,10 +137,10 @@
       "xasset-alpha-engine"
     ],
     "skills": 27,
-    "specs": 117
+    "specs": 119
   },
   "migrations": {
-    "count": 53,
+    "count": 56,
     "latest": "rollback_033_event_triggers.sql"
   },
   "specs_tree": [
@@ -154,7 +155,7 @@
     "assets/btcusdt/design/specs/ (13)",
     "assets/btcusdt/specs/ (1)",
     "assets/spx500/ (3)",
-    "assets/usdcop/ (4)",
+    "assets/usdcop/ (6)",
     "assets/xauusd/ (5)",
     "assets/xauusd/adr/ (1)",
     "assets/xauusd/specs/ (13)",

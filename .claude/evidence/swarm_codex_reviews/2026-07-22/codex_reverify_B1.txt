@@ -1,0 +1,770 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f882d-f1e1-7f43-8c13-cdd1cd4745d4
+--------
+user
+RE-verificación B1 (v13) tras correcciones. En tu review anterior rechazaste por: (1) fallbacks no instrumentados, (2) invariante week_cap<=vt_max ausente del motor, (3) constructor de techos sin cutoff recorriendo 2025+. Verifica SOLO que los 3 quedaron corregidos: lee compute_v13_leverage_ceilings y _run_v2_ridge_gate_loop en scripts/pipeline/train_and_export_smart_simple.py (busca meta[weeks] con modos qr/persistence_only/inactive_*, min(techo, cfg[vt_max]), parámetro cutoff), scripts/analysis/cop_v13_design_run.py (cutoff=2024-12-31), y .claude/evidence/cop_v13_engine/2026-07-22/v13_engine_design_run.json (campos fallbacks_per_year y bit_identity_v12; confirma que 2022/2023/2024 muestran 0 fallbacks y MATCH). Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues con archivo:línea. Sé breve.
+codex
+Voy a contrastar únicamente esos tres puntos en código y evidencia, sin ampliar el alcance del review.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -C 8 \"def compute_v13_leverage_ceilings|def _run_v2_ridge_gate_loop|meta\\[weeks\\]|persistence_only|inactive_|vt_max|cutoff\" scripts/pipeline/train_and_export_smart_simple.py; rg -n -C 5 \"compute_v13_leverage_ceilings|cutoff|2024-12-31\" scripts/analysis/cop_v13_design_run.py; rg -n -C 3 'fallbacks_per_year|bit_identity_v12|2022|2023|2024|MATCH' .claude/evidence/cop_v13_engine/2026-07-22/v13_engine_design_run.json" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1177ms:
+134-        sizing_mean_rev=_rg.get("sizing_mean_rev", 0.0),
+135-    )
+136-
+137-    return {
+138-        "raw": cfg,
+139-        "stops": stops_config,
+140-        "conf": conf_config,
+141-        "vt_tv": _vt.get("target_vol", 0.15),
+142:        "vt_max": _vt.get("max_leverage", 2.0),
+143-        "vt_min": _vt.get("min_leverage", 0.5),
+144-        "vt_floor": _vt.get("vol_floor", 0.05),
+145-        "maker_fee": _costs.get("maker_fee_bps", 0.0) / 10000.0,
+146-        "slippage": _costs.get("slippage_bps", 1.0) / 10000.0,
+147-        "version": version_override or cfg.get("executor", {}).get("version", "2.0.0"),
+148-        "strategy_id": strategy_id or "smart_simple_v11",
+149-        "dynamic_leverage": dl_config,
+150-        "cb_max_consecutive": _cb.get("max_consecutive_losses", 5),
+151-        "cb_max_dd_pct": _cb.get("max_drawdown_pct", 12.0),
+152-        "regime_gate": rg_config,
+153-        "use_xgboost": cfg.get("models", {}).get("use_xgboost", False),  # default MUST match the live serving set (Ridge+BR): a missing key must not silently resurrect XGBoost and diverge the approval backtest from what actually trades
+154-        "effective_hs_portfolio_cap": cfg.get("adaptive_stops", {}).get(
+155-            "effective_portfolio_cap_pct", 0.025),
+156-        # H-V13-QRISK-01 candidate flag (sealed pre-registration 2026-07-21). Default False
+157-        # == bit-identical to the current engine (v11/v12/v14 untouched). When True, the
+158-        # weekly leverage cap becomes the probabilistic ceiling of
+159:        # compute_v13_leverage_ceilings() instead of the static vt_max.
+160-        "v13_ceiling_enabled": bool(cfg.get("v13_ceiling_enabled", False)),
+161-    }
+162-
+163-
+164-def load_data():
+165-    """Load OHLCV + macro, build 21 features, compute H=5 target.
+166-
+167-    Uses shared ForecastingDatasetLoader (DB-first with parquet fallback).
+--
+245-        carry = (-direction) * (swap_annual_pp / 100.0) * (nights_held / 365.0) * leverage
+246-    return raw_pnl - entry_cost - exit_cost + carry
+247-
+248-
+249-# ---------------------------------------------------------------------------
+250-# H-V13-QRISK-01 — probabilistic weekly leverage ceiling (sealed 2026-07-21)
+251-# ---------------------------------------------------------------------------
+252-
+253:def compute_v13_leverage_ceilings(df, cutoff=None):
+254-    """H-V13-QRISK-01 (pre-registered & SEALED 2026-07-21) — probabilistic weekly leverage
+255-    ceiling, computed INSIDE the engine so a design-run judges the motor, not an external
+256-    replay (the previous external instrument was ruled INVALID_INSTRUMENT).
+257-
+258-    Sealed formula (zero grid; every constant is a declared ex-ante prior):
+259-
+260-      q90_hat_t   = 0.5 * persistence_t + 0.5 * qr_pred_t          (50/50, no fitted weights)
+261-      ceiling_t   = 1.5 * clip(median_design_t / q90_hat_t, 0.5, 1.0)   -> in [0.75, 1.5]
+--
+285-        the QR target range_pct of H-RISK-FAM-01, so the sealed 50/50 blend averages two
+286-        estimators of the SAME quantity.
+287-      * QR needs >= 52 realized training weeks and finite features at t; otherwise the
+288-        fail-safe is q90_hat_t = persistence_t alone (counted in meta, never optimized).
+289-      * Warm-up: the design median needs >= 26 prior q90_hat values; before that (H1-2020
+290-        only, outside every design year) the ceiling is inactive (= 1.5). The ceiling can
+291-        NEVER exceed 1.5 (v13 is a subset of v12 by construction).
+292-
+293:    `cutoff` (optional Timestamp/date): last Monday for which a ceiling is computed. A
+294-    design-run bounded at 2024 passes 2024-12-31 so the constructor never fits a QR nor
+295-    computes a ceiling for 2025+ weeks (scope hygiene — Codex review issue 3).
+296-
+297-    Returns (ceilings, meta): dict {Monday Timestamp (W-SUN period start) -> ceiling float}
+298-    and a diagnostics dict. meta["weeks"] instruments EVERY week's mode (Codex issue 1):
+299-      "qr"               sealed formula in full (0.5*persistence + 0.5*QR, active median)
+300:      "persistence_only" engineering fail-safe: QR unavailable (<52 train weeks or NaN
+301-                         feature) -> q90_hat = persistence alone (single variant, never
+302-                         optimized; deviation DECLARED in the registry proposal)
+303:      "inactive_warmup"  design median has <26 prior values -> ceiling 1.5 (inactive)
+304:      "inactive_invalid" q90_hat non-finite or <=0 -> ceiling 1.5 (inactive fail-safe)
+305-
+306-    Data source (part of the sealed definition, documented once): the daily table is built
+307-    from seeds/latest/usdcop_daily_ohlcv.parquet — the SAME source cop_risk_family_screen
+308-    ::load_weekly() validated the features on (history from 2015). The engine's loader df
+309-    starts 2019-12, which would silently change the conditioning sets (persistence roll-252,
+310-    f3's 252-Monday tail, QR training depth) versus what H-RISK-FAM-01 screened. The `df`
+311-    argument is therefore NOT used for the risk table; it is kept for signature stability.
+312-    """
+--
+392-                     "range_pct": float(range_pct), "persistence": pers,
+393-                     "f2": float(vv) if np.isfinite(vv) else np.nan,
+394-                     "f3": f3, "f4": embi_acc, "f5": res_z})
+395-    W = pd.DataFrame(rows).sort_values("monday").reset_index(drop=True)
+396-
+397-    feat_cols = ["f2", "f3", "f4", "f5"]
+398-    design_start = pd.Timestamp("2020-01-01")
+399-    design_end = pd.Timestamp("2025-01-01")
+400:    cutoff_ts = pd.Timestamp(cutoff) if cutoff is not None else None
+401-    ceilings, q90_hist = {}, []          # q90_hist: (monday, q90_hat) for the causal median
+402-    week_modes = {}                       # per-week instrumentation (Codex issue 1)
+403-    n_qr_fallback = n_inactive = n_weeks = 0
+404-    for i in range(len(W)):
+405-        t = W["monday"].iloc[i]
+406-        if t < design_start:
+407-            continue
+408:        if cutoff_ts is not None and t > cutoff_ts:
+409:            break                        # scope: no QR fit / ceiling beyond the cutoff
+410-        n_weeks += 1
+411-        row_feats = W[feat_cols].iloc[i].to_numpy(dtype=float)
+412-        train = W[(W["last_date"] < t) & W["range_pct"].notna()].dropna(subset=feat_cols)
+413-        qr_pred = np.nan
+414-        if np.isfinite(row_feats).all() and len(train) >= 52:
+415-            try:
+416-                X = sm.add_constant(train[feat_cols].to_numpy(dtype=float))
+417-                qr = sm.QuantReg(train["range_pct"].to_numpy(dtype=float), X).fit(q=0.90)
+--
+427-        else:
+428-            q90_hat = np.nan
+429-        # causal design median: q90_hat values with design_start <= s < min(t, design_end)
+430-        med_vals = [v for (s, v) in q90_hist if s < min(t, design_end) and np.isfinite(v)]
+431-        if np.isfinite(q90_hat):
+432-            q90_hist.append((t, q90_hat))
+433-        if not (np.isfinite(q90_hat) and q90_hat > 0):
+434-            ceilings[t] = 1.5   # fail-safe: inactive, never raises above 1.5
+435:            week_modes[t] = "inactive_invalid"
+436-            n_inactive += 1
+437-        elif len(med_vals) < 26:
+438-            ceilings[t] = 1.5   # warm-up: inactive, never raises above 1.5
+439:            week_modes[t] = "inactive_warmup"
+440-            n_inactive += 1
+441-        else:
+442-            med = float(np.median(med_vals))
+443-            ceilings[t] = 1.5 * float(np.clip(med / q90_hat, 0.5, 1.0))
+444:            week_modes[t] = "qr" if np.isfinite(qr_pred) else "persistence_only"
+445-    meta = {
+446-        "n_weeks": n_weeks, "n_qr_fallback": n_qr_fallback, "n_ceiling_inactive": n_inactive,
+447:        "weeks": week_modes, "cutoff": str(cutoff_ts.date()) if cutoff_ts is not None else None,
+448-        "median_design_final": (float(np.median([v for (s, v) in q90_hist
+449-                                                 if s < design_end and np.isfinite(v)]))
+450-                                if q90_hist else None),
+451-        "ceiling_mean": float(np.mean(list(ceilings.values()))) if ceilings else None,
+452-        "ceiling_min": float(np.min(list(ceilings.values()))) if ceilings else None,
+453-    }
+454-    return ceilings, meta
+455-
+--
+555-        direction = signal.direction
+556-
+557-        # --- LAYER 3: Execution ---
+558-        # Vol-targeting
+559-        rets = daily_rets[-21:] if len(daily_rets) >= 21 else daily_rets
+560-        rv_daily = float(np.std(rets)) if len(rets) > 1 else 0.0
+561-        rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
+562-        safe_vol = max(rv_ann, cfg["vt_floor"])
+563:        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], cfg["vt_max"])
+564-
+565-        # Apply signal sizing + regime sizing
+566-        final_lev = np.clip(
+567-            base_lev * signal.sizing_multiplier * regime.sizing_factor,
+568:            cfg["vt_min"], cfg["vt_max"],
+569-        )
+570-
+571-        # Dynamic leverage
+572-        lookback = dl_config.lookback_weeks
+573-        lev_adj = compute_leverage_adjustment(
+574-            recent_pnls[-lookback:] if len(recent_pnls) >= 3 else [],
+575-            current_dd, dl_config,
+576-        )
+577:        final_lev = np.clip(final_lev * lev_adj, cfg["vt_min"], cfg["vt_max"])
+578-
+579-        # Adaptive stops
+580-        stops = compute_adaptive_stops(rv_ann, cfg["stops"])
+581-
+582-        # Effective hard stop (portfolio cap at 2.5%)
+583-        if final_lev > 0:
+584-            effective_hs = min(stops.hard_stop_pct, hs_portfolio_cap / final_lev)
+585-            effective_tp = effective_hs * cfg["stops"].tp_ratio
+--
+686-            })
+687-
+688-    result = _compute_result_metrics(trades, equity, df, year)
+689-    result["skipped_weeks"] = skipped_weeks
+690-    result["week_data"] = week_data
+691-    return result
+692-
+693-
+694:def _run_v2_ridge_gate_loop(df, feature_cols, cfg, year, collect_week_data=False):
+695-    """
+696-    Smart Simple v2.0: Ridge+BR+XGBoost + Regime Gate + Effective HS.
+697-    Best balance: +17.59% Sharpe 3.21 in 2025, +0.38% in 2026.
+698-    """
+699-    test_start = pd.Timestamp(f"{year}-01-01")
+700-    test_end = pd.Timestamp(f"{year}-12-31")
+701-    test_data = df[(df["date"] >= test_start) & (df["date"] <= test_end)].copy()
+702-    test_data["dow"] = test_data["date"].dt.dayofweek
+--
+723-    cb_max_losses = cfg.get("cb_max_consecutive", 5)
+724-    cb_max_dd = cfg.get("cb_max_dd_pct", 12.0)
+725-    recent_pnls = []
+726-    dl_config = cfg["dynamic_leverage"]
+727-    rg_config = cfg["regime_gate"]
+728-    hs_cap = cfg.get("effective_hs_portfolio_cap", 0.035)
+729-
+730-    # H-V13-QRISK-01: probabilistic weekly leverage ceiling. With the flag False (default)
+731:    # week_cap == cfg["vt_max"] every week -> numerics BIT-IDENTICAL to the pre-flag engine.
+732-    v13_enabled = bool(cfg.get("v13_ceiling_enabled", False))
+733-    v13_ceilings = None
+734-    if v13_enabled:
+735-        v13_ceilings = cfg.get("_v13_ceiling_cache")
+736-        if v13_ceilings is None:
+737-            v13_ceilings, v13_meta = compute_v13_leverage_ceilings(df)
+738-            cfg["_v13_ceiling_cache"] = v13_ceilings   # same df across calls in one process
+739-            cfg["_v13_ceiling_meta"] = v13_meta
+--
+823-        # Confidence scoring
+824-        conf = score_confidence(pr, pbr, direction, cfg["conf"])
+825-        if conf.skip_trade:
+826-            skipped_weeks.append({"monday": monday_ts.strftime("%Y-%m-%d"),
+827-                                  "reason": f"low_confidence_{('LONG' if direction==1 else 'SHORT')}"})
+828-            continue
+829-
+830-        # Vol-targeting + sizing
+831:        # week_cap: static vt_max, or (v13) the sealed probabilistic ceiling for this Monday.
+832:        # Missing key -> fail-safe to vt_max (a v13 config runs with vt_max=1.5, and the
+833-        # ceiling never exceeds 1.5, so the fail-safe can only be MORE conservative than v11).
+834:        week_cap = cfg["vt_max"]
+835-        if v13_enabled:
+836-            # Invariant lives IN the engine (Codex issue 2): the v13 ceiling may only
+837-            # LOWER the configured cap, never raise it (v13 ⊂ v12 by construction).
+838:            week_cap = min(float(v13_ceilings.get(monday_ts.normalize(), cfg["vt_max"])),
+839:                           cfg["vt_max"])
+840-        rets = df_train["return_1d"].dropna().values
+841-        rv_daily = np.std(rets[-21:]) if len(rets) >= 21 else 0.0
+842-        rv_ann = rv_daily * np.sqrt(252) if rv_daily > 0 else cfg["vt_tv"]
+843-        safe_vol = max(rv_ann, cfg["vt_floor"])
+844-        base_lev = np.clip(cfg["vt_tv"] / safe_vol, cfg["vt_min"], week_cap)
+845-        final_lev = np.clip(base_lev * conf.sizing_multiplier, cfg["vt_min"], week_cap)
+846-
+847-        # Dynamic leverage
+8-oficial run_walkforward_backtest, con el flag de candidata v13_ceiling_enabled.
+9-
+10-Protocolo (del pre-registro, sin desviaciones — UNA sola pasada):
+11-- v12 = config congelado smart_simple_v12_lev_cap.yaml (vt_max=1.5), flag OFF.
+12-- v13 = MISMO config, flag v13_ceiling_enabled=True (formula sellada en
+13:  compute_v13_leverage_ceilings; techo = 1.5*clip(mediana_diseno/q90_hat, 0.5, 1.0)).
+14-- Mismas senales (Ridge+BR no dependen del leverage); solo cambia el techo semanal.
+15-- Anios de diseno: 2022, 2023, 2024. NO se corre 2025 ni 2026.
+16-- Aprobacion por diseno = Calmar_v13 >= Calmar_v12 en el compuesto 2022-2024.
+17-  Definicion de Calmar (documentada UNA vez, simetrica entre brazos): CAGR del compuesto
+18-  ((1+ret_total)^(1/3)-1, 3 anios calendario) / |MaxDD| de la curva encadenada trade a
+--
+22-
+23-Evidencia: .claude/evidence/cop_v13_engine/2026-07-22/ (JSON + este generator).
+24-
+25-Re-medicion 2026-07-21 (review Codex, 0 trials nuevos — misma celda, misma formula):
+26-(1) fallbacks instrumentados por anio (meta['weeks'] del constructor); (2) invariante
+27:week_cap = min(techo, vt_max) movido AL MOTOR; (3) cutoff=2024-12-31 al constructor
+28-(sin QR ni techos 2025+ durante el design-run); (4) chequeo automatico de bit-identidad
+29-del brazo v12 contra la evidencia congelada v12_paired_PURGED_openaware.json.
+30-"""
+31-from __future__ import annotations
+32-
+--
+42-sys.path.insert(0, str(REPO))
+43-
+44-import pandas as pd  # noqa: E402
+45-
+46-from scripts.pipeline.train_and_export_smart_simple import (  # noqa: E402
+47:    load_config, load_data, run_walkforward_backtest, compute_v13_leverage_ceilings,
+48-)
+49-from src.forecasting.enhance_v2 import enhance_features_v2  # noqa: E402
+50-from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
+51-
+52-DESIGN_YEARS = (2022, 2023, 2024)
+53:DESIGN_CUTOFF = pd.Timestamp("2024-12-31")   # scope: no QR fit / ceiling beyond design end
+54-V12_CONFIG = REPO / "config" / "execution" / "smart_simple_v12_lev_cap.yaml"
+55-OUT_DIR = REPO / ".claude" / "evidence" / "cop_v13_engine" / "2026-07-22"
+56-# Frozen authority for the v12 arm (motor honesto purga+open-aware, 2026-07-21): the flag-OFF
+57-# path must reproduce these EXACTLY, otherwise the instrument is not the motor.
+58-V12_FROZEN = REPO / ".claude" / "evidence" / "cop_v12_design" / "2026-07-21" / "v12_paired_PURGED_openaware.json"
+--
+113-    df, feature_cols = load_data()
+114-    df, feature_cols = enhance_features_v2(df, feature_cols)
+115-    print(f"data: {len(df)} rows, {df['date'].iloc[0].date()} -> {df['date'].iloc[-1].date()}, "
+116-          f"{len(feature_cols)} features (camino exacto de main)")
+117-
+118:    # Precompute the v13 ceilings BOUNDED at the design cutoff (Codex issue 3) and inject
+119-    # them as the engine cache: the constructor never fits a QR nor computes a ceiling for
+120-    # 2025+ during this design-run.
+121:    ceilings_bounded, ceil_meta = compute_v13_leverage_ceilings(df, cutoff=DESIGN_CUTOFF)
+122-    cfg_v13["_v13_ceiling_cache"] = ceilings_bounded
+123-    cfg_v13["_v13_ceiling_meta"] = ceil_meta
+124:    print(f"ceilings (cutoff {DESIGN_CUTOFF.date()}): {ceil_meta['n_weeks']} semanas, "
+125-          f"qr_fallback={ceil_meta['n_qr_fallback']}, inactive={ceil_meta['n_ceiling_inactive']}")
+126-
+127-    out = {"meta": {
+128-        "hypothesis": "H-V13-QRISK-01",
+129-        "instrument": "motor real via run_walkforward_backtest (flag v13_ceiling_enabled)",
+--
+134-                           "q90_hat = 0.5*persistencia(q90 roll-252 rango-5d) + 0.5*QR(tau=.90, "
+135-                           "{vol-of-vol, gap-cola, EMBI-acel, RESINT-z})",
+136-        "calmar_def": "CAGR((1+ret_tot)^(1/3)-1) / |MaxDD curva encadenada 22-24|; "
+137-                      "se reporta tambien ret_tot/DD (misma definicion para ambos brazos)",
+138-        "criterio_sellado": "aprueba diseno <=> Calmar_v13 >= Calmar_v12 en 2022-2024",
+139:        "ceiling_cutoff": str(DESIGN_CUTOFF.date()),
+140-        "desviacion_declarada": "fail-safes de ingenieria NO presentes en la formula sellada, "
+141-                                "una sola variante, no optimizados: (a) QR sin >=52 semanas de "
+142-                                "train o feature NaN => q90_hat = persistencia sola; (b) mediana "
+143-                                "con <26 valores previos o q90_hat invalido => techo inactivo "
+144-                                "1.5. Instrumentados por anio en fallbacks_per_year.",
+145-        "remedicion": "re-medicion de la MISMA celda tras review Codex (instrumentacion + "
+146:                      "invariante min() en motor + cutoff); 0 trials nuevos",
+147-    }, "per_year": {}, "composite": {}, "fallbacks_per_year": {}, "bit_identity_v12": {}}
+148-
+149-    # Per-year fallback instrumentation (Codex issue 1): mode of every ceiling week
+150-    modes = ceil_meta["weeks"]
+151-    for year in DESIGN_YEARS:
+5-    "engine": "scripts/pipeline/train_and_export_smart_simple.py::_run_v2_ridge_gate_loop",
+6-    "config": "config\\execution\\smart_simple_v12_lev_cap.yaml",
+7-    "design_years": [
+8:      2022,
+9:      2023,
+10:      2024
+11-    ],
+12-    "formula_sellada": "techo_t = 1.5*clip(mediana_diseno(q90_hat)/q90_hat_t, 0.5, 1.0); q90_hat = 0.5*persistencia(q90 roll-252 rango-5d) + 0.5*QR(tau=.90, {vol-of-vol, gap-cola, EMBI-acel, RESINT-z})",
+13-    "calmar_def": "CAGR((1+ret_tot)^(1/3)-1) / |MaxDD curva encadenada 22-24|; se reporta tambien ret_tot/DD (misma definicion para ambos brazos)",
+14:    "criterio_sellado": "aprueba diseno <=> Calmar_v13 >= Calmar_v12 en 2022-2024",
+15:    "ceiling_cutoff": "2024-12-31",
+16:    "desviacion_declarada": "fail-safes de ingenieria NO presentes en la formula sellada, una sola variante, no optimizados: (a) QR sin >=52 semanas de train o feature NaN => q90_hat = persistencia sola; (b) mediana con <26 valores previos o q90_hat invalido => techo inactivo 1.5. Instrumentados por anio en fallbacks_per_year.",
+17-    "remedicion": "re-medicion de la MISMA celda tras review Codex (instrumentacion + invariante min() en motor + cutoff); 0 trials nuevos",
+18-    "ceiling_stats_design": {
+19-      "mean": 1.3991,
+--
+23-    }
+24-  },
+25-  "per_year": {
+26:    "2022": {
+27-      "v12": {
+28-        "ret_pct": -9.22,
+29-        "max_dd_pct": 9.38,
+--
+53-        "win_rate_pct": 44.4
+54-      }
+55-    },
+56:    "2023": {
+57-      "v12": {
+58-        "ret_pct": -2.53,
+59-        "max_dd_pct": 6.92,
+--
+83-        "win_rate_pct": 50.0
+84-      }
+85-    },
+86:    "2024": {
+87-      "v12": {
+88-        "ret_pct": 4.6,
+89-        "max_dd_pct": 3.5,
+--
+132-      "n_trades": 73
+133-    }
+134-  },
+135:  "fallbacks_per_year": {
+136:    "2022": {
+137-      "n_weeks_ceiling": 52,
+138-      "n_qr_real": 52,
+139-      "n_persistence_only": 0,
+140-      "n_inactive_warmup": 0,
+141-      "n_inactive_invalid": 0
+142-    },
+143:    "2023": {
+144-      "n_weeks_ceiling": 52,
+145-      "n_qr_real": 52,
+146-      "n_persistence_only": 0,
+147-      "n_inactive_warmup": 0,
+148-      "n_inactive_invalid": 0
+149-    },
+150:    "2024": {
+151-      "n_weeks_ceiling": 53,
+152-      "n_qr_real": 53,
+153-      "n_persistence_only": 0,
+--
+155-      "n_inactive_invalid": 0
+156-    }
+157-  },
+158:  "bit_identity_v12": {
+159:    "2022": {
+160-      "frozen": {
+161-        "ret": -9.22,
+162-        "dd": 9.38,
+--
+169-      },
+170-      "match": true
+171-    },
+172:    "2023": {
+173-      "frozen": {
+174-        "ret": -2.53,
+175-        "dd": 6.92,
+--
+182-      },
+183-      "match": true
+184-    },
+185:    "2024": {
+186-      "frozen": {
+187-        "ret": 4.6,
+188-        "dd": 3.5,
+--
+204-    "n_inactive_invalid": 0
+205-  },
+206-  "v13_ceilings_design_years": {
+207:    "2022-01-03": 1.5,
+208:    "2022-01-10": 1.5,
+209:    "2022-01-17": 1.5,
+210:    "2022-01-24": 1.5,
+211:    "2022-01-31": 1.5,
+212:    "2022-02-07": 1.5,
+213:    "2022-02-14": 1.5,
+214:    "2022-02-21": 1.5,
+215:    "2022-02-28": 1.5,
+216:    "2022-03-07": 1.5,
+217:    "2022-03-14": 1.5,
+218:    "2022-03-21": 1.5,
+219:    "2022-03-28": 1.5,
+220:    "2022-04-04": 1.5,
+221:    "2022-04-11": 1.5,
+222:    "2022-04-18": 1.5,
+223:    "2022-04-25": 1.5,
+224:    "2022-05-02": 1.5,
+225:    "2022-05-09": 1.5,
+226:    "2022-05-16": 1.5,
+227:    "2022-05-23": 1.5,
+228:    "2022-05-30": 1.5,
+229:    "2022-06-06": 1.5,
+230:    "2022-06-13": 1.5,
+231:    "2022-06-20": 1.4611,
+232:    "2022-06-27": 1.5,
+233:    "2022-07-04": 1.4692,
+234:    "2022-07-11": 1.2036,
+235:    "2022-07-18": 1.1857,
+236:    "2022-07-25": 1.0271,
+237:    "2022-08-01": 1.1365,
+238:    "2022-08-08": 1.1792,
+239:    "2022-08-15": 1.1433,
+240:    "2022-08-22": 1.1859,
+241:    "2022-08-29": 1.1472,
+242:    "2022-09-05": 1.2428,
+243:    "2022-09-12": 1.1544,
+244:    "2022-09-19": 1.2212,
+245:    "2022-09-26": 1.2187,
+246:    "2022-10-03": 1.2122,
+247:    "2022-10-10": 1.1673,
+248:    "2022-10-17": 1.2247,
+249:    "2022-10-24": 1.2079,
+250:    "2022-10-31": 1.0762,
+251:    "2022-11-07": 1.1403,
+252:    "2022-11-14": 1.0743,
+253:    "2022-11-21": 1.096,
+254:    "2022-11-28": 1.1168,
+255:    "2022-12-05": 1.1001,
+256:    "2022-12-12": 1.114,
+257:    "2022-12-19": 1.164,
+258:    "2022-12-26": 1.1609,
+259:    "2023-01-02": 1.1595,
+260:    "2023-01-09": 1.196,
+261:    "2023-01-16": 1.181,
+262:    "2023-01-23": 1.2105,
+263:    "2023-01-30": 1.2081,
+264:    "2023-02-06": 1.1966,
+265:    "2023-02-13": 1.2399,
+266:    "2023-02-20": 1.3236,
+267:    "2023-02-27": 1.2343,
+268:    "2023-03-06": 1.287,
+269:    "2023-03-13": 1.3015,
+270:    "2023-03-20": 1.3216,
+271:    "2023-03-27": 1.2504,
+272:    "2023-04-03": 1.2604,
+273:    "2023-04-10": 1.3123,
+274:    "2023-04-17": 1.2678,
+275:    "2023-04-24": 1.3194,
+276:    "2023-05-01": 1.2962,
+277:    "2023-05-08": 1.2758,
+278:    "2023-05-15": 1.3011,
+279:    "2023-05-22": 1.293,
+280:    "2023-05-29": 1.3151,
+281:    "2023-06-05": 1.3281,
+282:    "2023-06-12": 1.2913,
+283:    "2023-06-19": 1.3199,
+284:    "2023-06-26": 1.3826,
+285:    "2023-07-03": 1.3922,
+286:    "2023-07-10": 1.4382,
+287:    "2023-07-17": 1.3855,
+288:    "2023-07-24": 1.4462,
+289:    "2023-07-31": 1.4837,
+290:    "2023-08-07": 1.4625,
+291:    "2023-08-14": 1.4666,
+292:    "2023-08-21": 1.4712,
+293:    "2023-08-28": 1.4589,
+294:    "2023-09-04": 1.4191,
+295:    "2023-09-11": 1.5,
+296:    "2023-09-18": 1.4521,
+297:    "2023-09-25": 1.4519,
+298:    "2023-10-02": 1.5,
+299:    "2023-10-09": 1.488,
+300:    "2023-10-16": 1.415,
+301:    "2023-10-23": 1.4323,
+302:    "2023-10-30": 1.4204,
+303:    "2023-11-06": 1.4283,
+304:    "2023-11-13": 1.5,
+305:    "2023-11-20": 1.4575,
+306:    "2023-11-27": 1.4394,
+307:    "2023-12-04": 1.4326,
+308:    "2023-12-11": 1.4787,
+309:    "2023-12-18": 1.4745,
+310:    "2023-12-25": 1.5,
+311:    "2024-01-01": 1.5,
+312:    "2024-01-08": 1.5,
+313:    "2024-01-15": 1.5,
+314:    "2024-01-22": 1.5,
+315:    "2024-01-29": 1.5,
+316:    "2024-02-05": 1.5,
+317:    "2024-02-12": 1.5,
+318:    "2024-02-19": 1.4855,
+319:    "2024-02-26": 1.5,
+320:    "2024-03-04": 1.5,
+321:    "2024-03-11": 1.5,
+322:    "2024-03-18": 1.5,
+323:    "2024-03-25": 1.5,
+324:    "2024-04-01": 1.5,
+325:    "2024-04-08": 1.4679,
+326:    "2024-04-15": 1.5,
+327:    "2024-04-22": 1.5,
+328:    "2024-04-29": 1.5,
+329:    "2024-05-06": 1.5,
+330:    "2024-05-13": 1.5,
+331:    "2024-05-20": 1.5,
+332:    "2024-05-27": 1.5,
+333:    "2024-06-03": 1.5,
+334:    "2024-06-10": 1.5,
+335:    "2024-06-17": 1.5,
+336:    "2024-06-24": 1.5,
+337:    "2024-07-01": 1.5,
+338:    "2024-07-08": 1.5,
+339:    "2024-07-15": 1.5,
+340:    "2024-07-22": 1.5,
+341:    "2024-07-29": 1.5,
+342:    "2024-08-05": 1.5,
+343:    "2024-08-12": 1.5,
+344:    "2024-08-19": 1.5,
+345:    "2024-08-26": 1.5,
+346:    "2024-09-02": 1.5,
+347:    "2024-09-09": 1.5,
+348:    "2024-09-16": 1.5,
+349:    "2024-09-23": 1.5,
+350:    "2024-09-30": 1.5,
+351:    "2024-10-07": 1.5,
+352:    "2024-10-14": 1.5,
+353:    "2024-10-21": 1.5,
+354:    "2024-10-28": 1.5,
+355:    "2024-11-04": 1.5,
+356:    "2024-11-11": 1.5,
+357:    "2024-11-18": 1.5,
+358:    "2024-11-25": 1.5,
+359:    "2024-12-02": 1.5,
+360:    "2024-12-09": 1.5,
+361:    "2024-12-16": 1.5,
+362:    "2024-12-23": 1.5,
+363:    "2024-12-30": 1.5
+364-  },
+365-  "verdict": {
+366-    "calmar_v12": -0.1975,
+367-    "calmar_v13": -0.1489,
+368-    "aprueba_diseno": true,
+369:    "criterio": "Calmar_v13 >= Calmar_v12 (compuesto 2022-2024)",
+370-    "nota": "re-medicion de la misma celda (0 trials nuevos; la mirada ya esta pagada); juez real = forward"
+371-  }
+372-}
+
+codex
+Los tres cambios aparecen en los puntos esperados. Estoy cerrando la comprobación de consistencia: que los contadores por año se deriven realmente de `meta["weeks"]` y que los tres `match` sean verdaderos.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$p='"'scripts/pipeline/train_and_export_smart_simple.py'; "'$s=Get-Content -LiteralPath $p; for($i=400;$i -le 454;$i++){ '"'{0}:{1}' -f ("'$i+1),$s[$i] }; $p='"'scripts/analysis/cop_v13_design_run.py'; "'$s=Get-Content -LiteralPath $p; for($i=146;$i -le 180;$i++){ '"'{0}:{1}' -f ("'$i+1),$s[$i] }; $p='"'.claude/evidence/cop_v13_engine/2026-07-22/v13_engine_design_run.json'; "'$s=Get-Content -LiteralPath $p; for($i=134;$i -le 201;$i++){ '"'{0}:{1}' -f ("'$i+1),$s[$i] }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1078ms:
+401:    ceilings, q90_hist = {}, []          # q90_hist: (monday, q90_hat) for the causal median
+402:    week_modes = {}                       # per-week instrumentation (Codex issue 1)
+403:    n_qr_fallback = n_inactive = n_weeks = 0
+404:    for i in range(len(W)):
+405:        t = W["monday"].iloc[i]
+406:        if t < design_start:
+407:            continue
+408:        if cutoff_ts is not None and t > cutoff_ts:
+409:            break                        # scope: no QR fit / ceiling beyond the cutoff
+410:        n_weeks += 1
+411:        row_feats = W[feat_cols].iloc[i].to_numpy(dtype=float)
+412:        train = W[(W["last_date"] < t) & W["range_pct"].notna()].dropna(subset=feat_cols)
+413:        qr_pred = np.nan
+414:        if np.isfinite(row_feats).all() and len(train) >= 52:
+415:            try:
+416:                X = sm.add_constant(train[feat_cols].to_numpy(dtype=float))
+417:                qr = sm.QuantReg(train["range_pct"].to_numpy(dtype=float), X).fit(q=0.90)
+418:                qr_pred = float(np.asarray(qr.params) @ np.concatenate(([1.0], row_feats)))
+419:            except Exception:
+420:                qr_pred = np.nan
+421:        pers = W["persistence"].iloc[i]
+422:        if np.isfinite(pers) and np.isfinite(qr_pred):
+423:            q90_hat = 0.5 * pers + 0.5 * qr_pred
+424:        elif np.isfinite(pers):
+425:            q90_hat = float(pers)
+426:            n_qr_fallback += 1
+427:        else:
+428:            q90_hat = np.nan
+429:        # causal design median: q90_hat values with design_start <= s < min(t, design_end)
+430:        med_vals = [v for (s, v) in q90_hist if s < min(t, design_end) and np.isfinite(v)]
+431:        if np.isfinite(q90_hat):
+432:            q90_hist.append((t, q90_hat))
+433:        if not (np.isfinite(q90_hat) and q90_hat > 0):
+434:            ceilings[t] = 1.5   # fail-safe: inactive, never raises above 1.5
+435:            week_modes[t] = "inactive_invalid"
+436:            n_inactive += 1
+437:        elif len(med_vals) < 26:
+438:            ceilings[t] = 1.5   # warm-up: inactive, never raises above 1.5
+439:            week_modes[t] = "inactive_warmup"
+440:            n_inactive += 1
+441:        else:
+442:            med = float(np.median(med_vals))
+443:            ceilings[t] = 1.5 * float(np.clip(med / q90_hat, 0.5, 1.0))
+444:            week_modes[t] = "qr" if np.isfinite(qr_pred) else "persistence_only"
+445:    meta = {
+446:        "n_weeks": n_weeks, "n_qr_fallback": n_qr_fallback, "n_ceiling_inactive": n_inactive,
+447:        "weeks": week_modes, "cutoff": str(cutoff_ts.date()) if cutoff_ts is not None else None,
+448:        "median_design_final": (float(np.median([v for (s, v) in q90_hist
+449:                                                 if s < design_end and np.isfinite(v)]))
+450:                                if q90_hist else None),
+451:        "ceiling_mean": float(np.mean(list(ceilings.values()))) if ceilings else None,
+452:        "ceiling_min": float(np.min(list(ceilings.values()))) if ceilings else None,
+453:    }
+454:    return ceilings, meta
+455:
+147:    }, "per_year": {}, "composite": {}, "fallbacks_per_year": {}, "bit_identity_v12": {}}
+148:
+149:    # Per-year fallback instrumentation (Codex issue 1): mode of every ceiling week
+150:    modes = ceil_meta["weeks"]
+151:    for year in DESIGN_YEARS:
+152:        yr = {k: v for k, v in modes.items() if k.year == year}
+153:        out["fallbacks_per_year"][str(year)] = {
+154:            "n_weeks_ceiling": len(yr),
+155:            "n_qr_real": sum(1 for m in yr.values() if m == "qr"),
+156:            "n_persistence_only": sum(1 for m in yr.values() if m == "persistence_only"),
+157:            "n_inactive_warmup": sum(1 for m in yr.values() if m == "inactive_warmup"),
+158:            "n_inactive_invalid": sum(1 for m in yr.values() if m == "inactive_invalid"),
+159:        }
+160:    out["fallbacks_pre_design_2020_2021"] = {
+161:        "n_weeks_ceiling": sum(1 for k in modes if k.year < 2022),
+162:        "n_qr_real": sum(1 for k, m in modes.items() if k.year < 2022 and m == "qr"),
+163:        "n_persistence_only": sum(1 for k, m in modes.items()
+164:                                  if k.year < 2022 and m == "persistence_only"),
+165:        "n_inactive_warmup": sum(1 for k, m in modes.items()
+166:                                 if k.year < 2022 and m == "inactive_warmup"),
+167:        "n_inactive_invalid": sum(1 for k, m in modes.items()
+168:                                  if k.year < 2022 and m == "inactive_invalid"),
+169:    }
+170:    print("fallbacks por anio (design):", json.dumps(out["fallbacks_per_year"]))
+171:
+172:    frozen_v12 = json.loads(V12_FROZEN.read_text())["v12_cap1.5"] if V12_FROZEN.exists() else {}
+173:
+174:    yearly = {"v12": [], "v13": []}
+175:    for year in DESIGN_YEARS:
+176:        print(f"\n=== {year} ===")
+177:        print("  v12 (vt_max=1.5, flag OFF)...")
+178:        r12 = run_walkforward_backtest(df, feature_cols, cfg_v12, year)
+179:        print("  v13 (techo probabilistico)...")
+180:        r13 = run_walkforward_backtest(df, feature_cols, cfg_v13, year)
+181:        yearly["v12"].append(r12)
+135:  "fallbacks_per_year": {
+136:    "2022": {
+137:      "n_weeks_ceiling": 52,
+138:      "n_qr_real": 52,
+139:      "n_persistence_only": 0,
+140:      "n_inactive_warmup": 0,
+141:      "n_inactive_invalid": 0
+142:    },
+143:    "2023": {
+144:      "n_weeks_ceiling": 52,
+145:      "n_qr_real": 52,
+146:      "n_persistence_only": 0,
+147:      "n_inactive_warmup": 0,
+148:      "n_inactive_invalid": 0
+149:    },
+150:    "2024": {
+151:      "n_weeks_ceiling": 53,
+152:      "n_qr_real": 53,
+153:      "n_persistence_only": 0,
+154:      "n_inactive_warmup": 0,
+155:      "n_inactive_invalid": 0
+156:    }
+157:  },
+158:  "bit_identity_v12": {
+159:    "2022": {
+160:      "frozen": {
+161:        "ret": -9.22,
+162:        "dd": 9.38,
+163:        "n": 27
+164:      },
+165:      "got": {
+166:        "ret": -9.22,
+167:        "dd": 9.38,
+168:        "n": 27
+169:      },
+170:      "match": true
+171:    },
+172:    "2023": {
+173:      "frozen": {
+174:        "ret": -2.53,
+175:        "dd": 6.92,
+176:        "n": 22
+177:      },
+178:      "got": {
+179:        "ret": -2.53,
+180:        "dd": 6.92,
+181:        "n": 22
+182:      },
+183:      "match": true
+184:    },
+185:    "2024": {
+186:      "frozen": {
+187:        "ret": 4.6,
+188:        "dd": 3.5,
+189:        "n": 24
+190:      },
+191:      "got": {
+192:        "ret": 4.6,
+193:        "dd": 3.5,
+194:        "n": 24
+195:      },
+196:      "match": true
+197:    }
+198:  },
+199:  "fallbacks_pre_design_2020_2021": {
+200:    "n_weeks_ceiling": 54,
+201:    "n_qr_real": 2,
+202:    "n_persistence_only": 26,
+
+codex
+VERDICT: APROBADO
+
+Issues: ninguno.
+
+- Fallbacks instrumentados en `meta["weeks"]` con modos `qr`, `persistence_only` e `inactive_*`: `train_and_export_smart_simple.py:402-447`.
+- Invariante `week_cap = min(techo, cfg["vt_max"])` dentro del motor: `train_and_export_smart_simple.py:834-839`.
+- `cutoff` implementado y usado con `2024-12-31`: `train_and_export_smart_simple.py:253,400-409`; `cop_v13_design_run.py:53,121`.
+- Evidencia: 2022/2023/2024 tienen 0 fallbacks y `bit_identity_v12.match=true`: `v13_engine_design_run.json:135-196`.
+tokens used
+22,959
+VERDICT: APROBADO
+
+Issues: ninguno.
+
+- Fallbacks instrumentados en `meta["weeks"]` con modos `qr`, `persistence_only` e `inactive_*`: `train_and_export_smart_simple.py:402-447`.
+- Invariante `week_cap = min(techo, cfg["vt_max"])` dentro del motor: `train_and_export_smart_simple.py:834-839`.
+- `cutoff` implementado y usado con `2024-12-31`: `train_and_export_smart_simple.py:253,400-409`; `cop_v13_design_run.py:53,121`.
+- Evidencia: 2022/2023/2024 tienen 0 fallbacks y `bit_identity_v12.match=true`: `v13_engine_design_run.json:135-196`.

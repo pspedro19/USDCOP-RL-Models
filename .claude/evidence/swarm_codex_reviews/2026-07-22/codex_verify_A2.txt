@@ -1,0 +1,1963 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f881b-3cce-7b01-bbb9-994cf682e94b
+--------
+user
+Verificación de implementación (agente Claude A2, gobernador Kelly del libro). Lee: scripts/analysis/book_kelly_governor.py, .claude/evidence/book_kelly/2026-07-22/book_kelly.json, .claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md. Verifica: (1) el Kelly continuo mu/sigma^2 y el discreto argmax E[log(1+f r)] están bien computados sobre la serie semanal honesta (2025 purgado +7.35%/32 trades + 2026 +3.36%/11); (2) que los números pre-reparación (+26.05/+13.05) NO se usan en ningún cálculo; (3) el IC95 block-bootstrap del f* es metodológicamente correcto y la conclusión 'incluye cero' se sigue de los números; (4) el shrinkage Lo-Mertens está bien citado/aplicado; (5) el protocolo tiene regla anti-relajación en drawdown y estado DRAFT_AWAITING_OPERATOR_SIGNATURE; (6) sin Infinity/NaN en JSON; (7) ninguna promesa de retorno/edge en el spec. Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues numerados con archivo:línea.
+codex
+Voy a hacer una revisión estrictamente de lectura: primero comprobaré las instrucciones del repositorio y después contrastaré código, evidencia y especificación con cálculos reproducibles.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$files = rg --files -g '"'AGENTS.md' -g 'scripts/analysis/book_kelly_governor.py' -g '.claude/evidence/book_kelly/2026-07-22/book_kelly.json' -g '.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md'; "'$files; foreach ($f in $files) { "--- $f"; Get-Content -LiteralPath $f }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1342ms:
+scripts\analysis\book_kelly_governor.py
+.claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md
+.claude\evidence\book_kelly\2026-07-22\book_kelly.json
+--- scripts\analysis\book_kelly_governor.py
+"""TAREA A2 â€” Gobernador de leverage fraccional-Kelly a nivel LIBRO (0 trials).
+
+No prueba ninguna hipotesis: computa el f* de Kelly sobre la UNICA serie honesta
+(v11 2025 purgado +7.35% / 32 trades + 2026 YTD +3.36% / 11 trades) para sellar
+ex-ante una regla de apalancamiento del libro ANTES de que el forward gradue.
+Los numeros pre-reparacion (+26.05 / +13.05) estan invalidados y este script
+FALLA si el bundle no coincide con la serie purgada.
+
+Salidas:
+  .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+  .claude/evidence/book_kelly/2026-07-22/generator_script.py  (copia de este archivo)
+
+Metodologia:
+  - f* continuo = mu / sigma^2 (aproximacion log-normal / continua).
+  - f* discreto = argmax_f E[log(1 + f*r)] sobre la distribucion empirica.
+  - IC95 de ambos por bootstrap iid Y por block bootstrap circular b=4
+    (el estandar de la casa: HYPOTHESIS-REGISTRY, juez v12).
+  - Shrinkage: f* con media observada / 2, justificado por el error estandar
+    del Sharpe con N~43 semanas (Lo 2002; Mertens 2002 con skew/kurtosis).
+  - Simulacion de maxDD forward (52 semanas, block bootstrap) a multiplicadores
+    de libro 0.5x/1.0x/1.5x/2.0x para derivar los escalones de des-apalancamiento.
+
+Reglas respetadas: N=43 >= 20 para la serie combinada (se permiten ratios);
+para 2026 solo (N=11 < 20) se reporta UNICAMENTE conteo y PnL.
+JSON sin Infinity/NaN (sanitizado a null).
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import shutil
+from datetime import date, timedelta
+from pathlib import Path
+
+import numpy as np
+
+REPO = Path(__file__).resolve().parents[2]
+
+TRADES_2025 = (
+    REPO
+    / "usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json"
+)
+MONITOR_2026 = REPO / ".claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json"
+EVIDENCE_DIR = REPO / ".claude/evidence/book_kelly/2026-07-22"
+
+SEED = 42
+N_BOOT = 10_000
+BLOCK = 4  # block bootstrap circular b=4 â€” mismo prior que el juez sellado de v12
+
+# Guardas de datos honestos (falla si alguien apunta esto a un bundle viejo)
+EXPECTED_2025 = {"total_trades": 32, "total_return_pct": 7.35}
+EXPECTED_2026 = {"n_trades": 11, "ret_pct": 3.36}
+
+INVALIDATED_RETURNS = {26.05, 13.05}  # pre-reparacion / pre-purga: PROHIBIDOS
+
+
+# ----------------------------------------------------------------------------- data
+def load_honest_series() -> dict:
+    with open(TRADES_2025, encoding="utf-8") as f:
+        b25 = json.load(f)
+    s = b25["summary"]
+    if round(s["total_return_pct"], 2) in INVALIDATED_RETURNS:
+        raise ValueError(
+            "Bundle 2025 con numeros PRE-REPARACION (invalidados). Abortando."
+        )
+    if (
+        s["total_trades"] != EXPECTED_2025["total_trades"]
+        or round(s["total_return_pct"], 2) != EXPECTED_2025["total_return_pct"]
+    ):
+        raise ValueError(
+            f"Bundle 2025 no coincide con la serie purgada esperada "
+            f"({EXPECTED_2025}); encontrado trades={s['total_trades']}, "
+            f"ret={s['total_return_pct']}"
+        )
+    r25 = [t["pnl_pct"] / 100.0 for t in b25["trades"]]
+
+    with open(MONITOR_2026, encoding="utf-8") as f:
+        mon = json.load(f)
+    y26 = mon["results"]["v11_produccion"]["2026"]
+    if (
+        y26["n_trades"] != EXPECTED_2026["n_trades"]
+        or round(y26["ret_pct"], 2) != EXPECTED_2026["ret_pct"]
+    ):
+        raise ValueError(
+            f"Serie 2026 no coincide con lo esperado ({EXPECTED_2026}); "
+            f"encontrado n={y26['n_trades']}, ret={y26['ret_pct']}"
+        )
+    r26 = [t["pnl_pct"] / 100.0 for t in y26["trades"]]
+
+    # verificacion de composicion (tolerancia por redondeo del pnl_pct publicado)
+    comp25 = (np.prod([1 + r for r in r25]) - 1) * 100
+    comp26 = (np.prod([1 + r for r in r26]) - 1) * 100
+    assert abs(comp25 - 7.35) < 0.15, f"composicion 2025 = {comp25:.2f} != 7.35"
+    assert abs(comp26 - 3.36) < 0.15, f"composicion 2026 = {comp26:.2f} != 3.36"
+
+    return {
+        "r25": np.array(r25),
+        "r26": np.array(r26),
+        "combined": np.array(r25 + r26),
+        "comp25_pct": float(comp25),
+        "comp26_pct": float(comp26),
+    }
+
+
+def count_mondays(start: date, end: date) -> int:
+    """Semanas calendario en las que la estrategia estuvo viva (lunes)."""
+    d = start
+    while d.weekday() != 0:
+        d += timedelta(days=1)
+    n = 0
+    while d <= end:
+        n += 1
+        d += timedelta(days=7)
+    return n
+
+
+# ----------------------------------------------------------------------- estimadores
+def kelly_continuous(r: np.ndarray) -> float:
+    mu = r.mean()
+    var = r.var(ddof=1)
+    return float(mu / var) if var > 0 else 0.0
+
+
+def kelly_discrete(r: np.ndarray) -> float:
+    """argmax_f E[log(1+f r)] sobre la empirica, f en [0, 0.99/|peor perdida|)."""
+    worst = r.min()
+    if worst >= 0:  # sin perdidas: Kelly no acotado -> se reporta el borde del grid
+        f_max = 30.0
+    else:
+        f_max = 0.99 / abs(worst)
+    grid = np.linspace(0.0, min(f_max, 30.0), 3001)
+    growth = np.log1p(np.outer(grid, r)).mean(axis=1)
+    return float(grid[int(np.argmax(growth))])
+
+
+def iid_bootstrap(r: np.ndarray, stat, rng: np.random.Generator) -> np.ndarray:
+    n = len(r)
+    return np.array([stat(r[rng.integers(0, n, n)]) for _ in range(N_BOOT)])
+
+
+def circular_block_bootstrap_sample(
+    r: np.ndarray, b: int, rng: np.random.Generator
+) -> np.ndarray:
+    n = len(r)
+    n_blocks = math.ceil(n / b)
+    starts = rng.integers(0, n, n_blocks)
+    idx = (starts[:, None] + np.arange(b)[None, :]) % n
+    return r[idx.ravel()[:n]]
+
+
+def block_bootstrap(r: np.ndarray, stat, rng: np.random.Generator) -> np.ndarray:
+    return np.array(
+        [stat(circular_block_bootstrap_sample(r, BLOCK, rng)) for _ in range(N_BOOT)]
+    )
+
+
+def ci95(v: np.ndarray) -> list[float]:
+    return [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))]
+
+
+def lo_mertens_se(r: np.ndarray) -> dict:
+    """SE del Sharpe semanal: Lo (2002) iid y Mertens (2002) con skew/kurtosis."""
+    n = len(r)
+    mu, sd = r.mean(), r.std(ddof=1)
+    sr = mu / sd
+    m3 = ((r - mu) ** 3).mean() / sd**3  # skew
+    m4 = ((r - mu) ** 4).mean() / sd**4  # kurtosis (no exceso)
+    se_lo = math.sqrt((1 + 0.5 * sr**2) / n)
+    se_mertens = math.sqrt((1 - m3 * sr + (m4 - 1) / 4 * sr**2) / n)
+    return {
+        "sharpe_weekly": float(sr),
+        "n": n,
+        "skew": float(m3),
+        "kurtosis": float(m4),
+        "se_lo_2002": float(se_lo),
+        "se_mertens_2002": float(se_mertens),
+        "sr_half_in_se_units_mertens": float((sr - sr / 2) / se_mertens),
+    }
+
+
+def maxdd_of_path(r: np.ndarray) -> float:
+    eq = np.cumprod(1 + r)
+    peak = np.maximum.accumulate(eq)
+    return float((eq / peak - 1).min())
+
+
+def dd_forward_sim(r: np.ndarray, mult: float, rng: np.random.Generator) -> dict:
+    """MaxDD de 52 semanas forward a multiplicador de libro `mult` (block b=4).
+
+    Semanas flat NO estan en la serie (los flat son 0 y no cambian el DD compuesto
+    mas alla de estirar el calendario); 52 trades-semana es el escenario DENSO
+    (conservador: mas apuestas por aÃ±o que las ~28/aÃ±o observadas).
+    """
+    dds = np.empty(N_BOOT)
+    for i in range(N_BOOT):
+        path = circular_block_bootstrap_sample(
+            np.tile(r, 2)[: max(52, len(r))], BLOCK, rng
+        )[:52]
+        dds[i] = maxdd_of_path(mult * path)
+    return {
+        "book_multiplier": mult,
+        "maxdd_p50_pct": float(np.percentile(dds, 50) * 100),
+        "maxdd_p75_pct": float(np.percentile(dds, 25) * 100),  # mas profundo = peor
+        "maxdd_p95_pct": float(np.percentile(dds, 5) * 100),
+        "prob_dd_worse_than_7pct": float((dds < -0.07).mean()),
+        "prob_dd_worse_than_10pct": float((dds < -0.10).mean()),
+        "prob_dd_worse_than_12pct": float((dds < -0.12).mean()),
+        "prob_dd_worse_than_15pct": float((dds < -0.15).mean()),
+    }
+
+
+# ------------------------------------------------------------------------ sanitizado
+def sanitize(obj):
+    """JSON safety: Infinity/NaN -> null (regla strategy-contract)."""
+    if isinstance(obj, dict):
+        return {k: sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize(v) for v in obj]
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, (np.floating, np.integer)):
+        v = float(obj)
+        return v if math.isfinite(v) else None
+    return obj
+
+
+# ------------------------------------------------------------------------------ main
+def main() -> None:
+    rng = np.random.default_rng(SEED)
+    data = load_honest_series()
+    r = data["combined"]
+    n = len(r)
+
+    mu, sd = float(r.mean()), float(r.std(ddof=1))
+    f_cont = kelly_continuous(r)
+    f_disc = kelly_discrete(r)
+
+    # IC95 de f* (continuo y discreto), iid y block b=4
+    boot_cont_iid = iid_bootstrap(r, kelly_continuous, rng)
+    boot_cont_blk = block_bootstrap(r, kelly_continuous, rng)
+    boot_disc_blk = block_bootstrap(r, kelly_discrete, rng)
+
+    # Shrinkage: media real = mitad de la observada (incertidumbre Lo-Mertens)
+    lm = lo_mertens_se(r)
+    f_cont_half = 0.5 * mu / r.var(ddof=1)
+    r_half = r - mu / 2.0  # serie con la mitad de la media, misma dispersion
+    f_disc_half = kelly_discrete(r_half)
+
+    # Variante flat-as-zero (invariancia aproximada del f*)
+    weeks_live = count_mondays(date(2025, 1, 6), date(2026, 7, 13))
+    zeros = np.zeros(weeks_live - n)
+    r_full = np.concatenate([r, zeros])
+    f_cont_full = kelly_continuous(r_full)
+
+    # Escalones: distribucion de maxDD forward por multiplicador de libro
+    dd_sims = [dd_forward_sim(r, m, rng) for m in (0.5, 1.0, 1.5, 2.0)]
+
+    frac_band = {
+        "kelly_0.25x_observado": 0.25 * f_cont,
+        "kelly_0.50x_observado": 0.50 * f_cont,
+        "kelly_0.25x_shrunk_half": 0.25 * f_cont_half,
+        "kelly_0.50x_shrunk_half": 0.50 * f_cont_half,
+    }
+
+    result = {
+        "task": "A2 â€” gobernador de leverage fraccional-Kelly a nivel LIBRO",
+        "trials_consumed": 0,
+        "trials_note": (
+            "0 trials: no se evalua ninguna hipotesis ni se selecciona ninguna "
+            "variante; se computa un guard-rail sobre la serie ya pagada para "
+            "sellarlo ANTES del veredicto forward (quant-constitution Â§1)."
+        ),
+        "inputs": {
+            "trades_2025": str(TRADES_2025.relative_to(REPO)),
+            "trades_2026": str(MONITOR_2026.relative_to(REPO)) + " (v11_produccion.2026)",
+            "verified": {
+                "2025": {"n_trades": 32, "compounded_pct": data["comp25_pct"]},
+                "2026_ytd": {
+                    "n_trades": 11,
+                    "compounded_pct": data["comp26_pct"],
+                    "nota": "N=11 < 20: solo conteo y PnL (constitucion Â§6)",
+                },
+            },
+            "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)",
+        },
+        "series": {
+            "definition": (
+                "retorno semanal del libro por trade-semana (pnl_pct/100, ya neto "
+                "de costos y del leverage INTERNO 0.5-2.0x de la estrategia). "
+                "f* es el MULTIPLICADOR DE LIBRO sobre la config congelada, "
+                "no leverage absoluto de exchange."
+            ),
+            "n_trade_weeks": n,
+            "weekly_returns": [float(x) for x in r],
+            "mu_weekly": mu,
+            "sigma_weekly": sd,
+            "worst_week": float(r.min()),
+            "weeks_live_calendar": weeks_live,
+        },
+        "kelly": {
+            "f_star_continuous_mu_over_var": f_cont,
+            "f_star_discrete_empirical": f_disc,
+            "f_star_continuous_flat_as_zero_variant": f_cont_full,
+            "flat_variant_note": (
+                "aÃ±adir semanas flat=0 deja f* casi invariante "
+                "(mu y E[r^2] escalan igual); se reporta por transparencia."
+            ),
+            "ci95_f_cont_bootstrap_iid": ci95(boot_cont_iid),
+            "ci95_f_cont_block_b4": ci95(boot_cont_blk),
+            "ci95_f_disc_block_b4": ci95(boot_disc_blk),
+            "prob_f_cont_leq_0_block_b4": float((boot_cont_blk <= 0).mean()),
+        },
+        "shrinkage_lo_mertens": {
+            **lm,
+            "reading": (
+                "con N=43 semanas el SE del Sharpe semanal es del orden del "
+                "Sharpe mismo: una media real = mitad de la observada esta a "
+                "menos de 1 SE â€” indistinguible. El sizing usa el f* SHRUNK."
+            ),
+            "f_star_cont_half_mean": f_cont_half,
+            "f_star_disc_half_mean": f_disc_half,
+        },
+        "recommended_fraction_band": frac_band,
+        "dd_forward_simulation_52w": dd_sims,
+        "governor_recommendation": {
+            "pre_graduation": 1.0,
+            "post_graduation_rule": "min(1.5, 0.25 x f*_shrunk computado con datos FORWARD)",
+            "rationale": (
+                "el IC95 block-b4 del f* INCLUYE CERO â€” esta serie ni siquiera "
+                "prueba que el Kelly optimo sea positivo; ademas el tramo 2025 "
+                "esta contaminado por seleccion (DSR 0.72<0.95). Por eso "
+                "pre-graduacion = 1.0x sin excepciones. Post-graduacion la banda "
+                "0.25x Kelly-shrunk (~1.2 con estos datos) queda por debajo del "
+                "cap 1.5x y la 0.25x sin shrink (~2.3) por encima: el cap 1.5x "
+                "es el techo duro y la fraccion se recomputa SOLO con trades "
+                "forward, nunca con el backtest."
+            ),
+        },
+    }
+
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    out = EVIDENCE_DIR / "book_kelly.json"
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump(sanitize(result), f, indent=2, ensure_ascii=False, allow_nan=False)
+    shutil.copy2(__file__, EVIDENCE_DIR / "generator_script.py")
+
+    print(f"OK -> {out}")
+    print(f"N = {n} trade-semanas | mu = {mu*100:.3f}%/sem | sigma = {sd*100:.3f}%/sem")
+    print(f"f* continuo = {f_cont:.2f} | f* discreto = {f_disc:.2f}")
+    print(f"IC95 f* (block b=4) = {ci95(boot_cont_blk)}")
+    print(f"f* shrunk (media/2) = {f_cont_half:.2f} | discreto = {f_disc_half:.2f}")
+    print(f"Banda 0.25-0.5 Kelly shrunk = "
+          f"[{0.25*f_cont_half:.2f}, {0.50*f_cont_half:.2f}]")
+    for s in dd_sims:
+        print(
+            f"  mult {s['book_multiplier']:.1f}x: maxDD p50 {s['maxdd_p50_pct']:.1f}% "
+            f"p95 {s['maxdd_p95_pct']:.1f}% | P(DD>12%) "
+            f"{s['prob_dd_worse_than_12pct']:.3f}"
+        )
+
+
+if __name__ == "__main__":
+    main()
+--- .claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md
+---
+kind: protocol
+status: DRAFT_AWAITING_OPERATOR_SIGNATURE
+contract: CTR-QUANT-CONSTITUTION-001
+version: 0.1.0
+date: 2026-07-22
+trials_consumed: 0
+supersedes: []
+code_anchors:
+  - scripts/analysis/book_kelly_governor.py
+  - .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+---
+# BOOK-LEVERAGE-GOVERNOR â€” Gobernador de leverage fraccional-Kelly del LIBRO (pre-firmado)
+
+> **TAREA A2 Â· 0 trials.** Este documento NO prueba una hipÃ³tesis: sella una regla de
+> apalancamiento del libro ANTES de que el forward gradÃºe, para eliminar la tentaciÃ³n de
+> ajustarla ex-post (quant-constitution Â§1 y Â§5). Es un BORRADOR que espera la firma del
+> operador; hasta la firma, la regla vigente es implÃ­citamente 1.0x (no hay leverage de
+> libro en producciÃ³n).
+>
+> **"Leverage del libro" = multiplicador GLOBAL sobre la configuraciÃ³n congelada**, por
+> encima del leverage interno de la estrategia (v11 ya usa 0.5â€“2.0x por trade). f* aquÃ­
+> siempre es multiplicador de libro, jamÃ¡s leverage absoluto de exchange.
+
+---
+
+## 0. Evidencia (Ãºnica fuente vÃ¡lida: la serie honesta)
+
+Datos: v11 2025 **purgado** (+7.35%, 32 trades, `trades/smart_simple_v11_2025.json`) +
+2026 YTD forward (+3.36%, 11 trades, `cop_monitor_2025_2026/2026-07-21/monitor.json`).
+Los nÃºmeros pre-reparaciÃ³n (+26.05/+13.05) estÃ¡n invalidados y el script generador
+**aborta** si el bundle no coincide con la serie purgada. 2026 solo: N=11 < 20 â‡’ se cita
+Ãºnicamente conteo y PnL. Serie combinada N=43 trade-semanas (â‰¥20: los ratios se permiten).
+
+Computado por `scripts/analysis/book_kelly_governor.py` (seed 42, B=10.000, block
+bootstrap circular b=4 â€” el mismo prior del juez sellado de v12). Artefacto:
+`.claude/evidence/book_kelly/2026-07-22/book_kelly.json` (+ `generator_script.py`).
+
+| Cantidad | Valor |
+|---|---|
+| N (trade-semanas 2025+2026) | 43 |
+| Î¼ semanal / Ïƒ semanal | +0.255% / 1.649% |
+| **f\* Kelly continuo** (Î¼/ÏƒÂ²) | **9.39** |
+| **f\* Kelly discreto** (argmax E[log(1+fÂ·r)] sobre la empÃ­rica) | **7.99** |
+| IC95 de f\* (block bootstrap b=4) | **[âˆ’6.14, +48.71]** â€” **INCLUYE CERO** |
+| IC95 de f\* (iid, referencia) | [âˆ’7.15, +50.62] |
+| IC95 f\* discreto (block b=4) | [0.00, 21.79] |
+| P(f\* â‰¤ 0) (block b=4) | **14.5%** |
+| f\* con media real = mitad de la observada (shrinkage) | 4.69 (continuo) / 4.36 (discreto) |
+| Banda 0.25â€“0.5 Ã— Kelly (observado) | [2.35, 4.69] |
+| **Banda 0.25â€“0.5 Ã— Kelly (shrunk Ã—Â½)** | **[1.17, 2.35]** |
+
+**Shrinkage justificado por Lo (2002) / Mertens (2002)**: con N=43 el SE del Sharpe
+semanal (0.155) es 0.153 iid (Lo) y 0.168 con el ajuste skew/kurtosis (Mertens; skew
+âˆ’1.4). Una media real igual a la MITAD de la observada estÃ¡ a **0.46 SE** â€” estadÃ­stica-
+mente indistinguible del dato. Por eso ningÃºn cÃ¡lculo de este protocolo usa el Kelly sin
+shrink: la fracciÃ³n operable se toma de la banda shrunk, y aun asÃ­ el IC95 del f\*
+incluye cero â€” **esta serie no puede probar ni siquiera que el Kelly Ã³ptimo sea
+positivo**. AdemÃ¡s el tramo 2025 estÃ¡ contaminado por selecciÃ³n (DSR 0.72 < 0.95,
+`HYPOTHESIS-REGISTRY.md` Â§2/Ïƒ_trials): motivo adicional para que el f\* de decisiÃ³n se
+recompute con datos forward, nunca con el backtest.
+
+DistribuciÃ³n de maxDD forward simulada (52 trade-semanas densas â€” conservador: ~28
+trades/aÃ±o observados â€” block b=4, por multiplicador de libro):
+
+| Mult. libro | maxDD p50 | maxDD p95 | P(DD>7%) | P(DD>10%) | P(DD>12%) |
+|---|---|---|---|---|---|
+| 0.5x | âˆ’4.2% | âˆ’8.0% | 9.3% | 1.2% | 0.3% |
+| 1.0x | âˆ’8.4% | âˆ’15.6% | 67.0% | 33.1% | 17.5% |
+| 1.5x | âˆ’12.5% | âˆ’22.6% | â€” | â€” | 55.4% |
+| 2.0x | âˆ’16.5% | âˆ’29.7% | â€” | â€” | 82.7% |
+
+(SimulaciÃ³n estÃ¡tica, SIN la escalera de Â§3; con la escalera activa la cola real es
+menor porque el multiplicador cae antes de llegar a ella. Cifras exactas en el JSON.)
+
+---
+
+## 1. Regla (a) â€” Pre-graduaciÃ³n: leverage del libro = **1.0x**, sin excepciones
+
+- Mientras el forward NO haya graduado, el libro opera a **1.0x** (la config congelada
+  tal cual, con su leverage interno; ningÃºn multiplicador global).
+- **Criterio de graduaciÃ³n: el ya firmado â€” NO se duplica aquÃ­.** GradÃºa quien cumpla:
+  - v11: Corte B de `WITHDRAWAL-PROTOCOL.md` Â§4 (52 semanas desde 2026-03-18; retorno,
+    Calmar, MaxDD y N mÃ­nimos definidos ALLÃ; retiros Â§3 intactos).
+  - v12/v14: el **juez sellado** del panel Codex (`HYPOTHESIS-REGISTRY.md`, "PANEL CODEX
+    (4Âº auditor, 2026-07-21)"): reloj propio desde su freeze 2026-07-27, corte-52 Ãºnico
+    test confirmatorio, gates econÃ³micos conjuntos, N_bind â‰¥ 12.
+- Si esos documentos cambian (vÃ­a ADR), este protocolo hereda el cambio sin editarse:
+  la referencia es normativa, el nÃºmero vive allÃ­.
+
+## 2. Regla (b) â€” Post-graduaciÃ³n: **leverage = min(1.5x, fracciÃ³n-Kelly forward)**
+
+- Al graduar una configuraciÃ³n, el leverage del libro puede subir a
+  **min(1.5x, 0.25 Ã— f\*_shrunk_forward)**, donde:
+  - `f*_shrunk_forward` = Â½ Ã— (Î¼_fwd/ÏƒÂ²_fwd) computado **EXCLUSIVAMENTE con las
+    trade-semanas del perÃ­odo forward** (post-freeze de la config graduada). El
+    backtest 2025 queda prohibido en este cÃ¡lculo para siempre (doblemente
+    contaminado: selecciÃ³n + este mismo anÃ¡lisis lo mirÃ³).
+  - Requiere **N_fwd â‰¥ 20 trade-semanas forward**; con menos, el libro permanece en
+    1.0x aunque haya graduado (constituciÃ³n Â§6: sin N no hay ratios).
+  - La fracciÃ³n es **0.25 de Kelly** (borde inferior de la banda 0.25â€“0.5). Subir a
+    0.5Ã—Kelly requiere ADR + â‰¥52 trade-semanas forward. Nunca mÃ¡s de 0.5Ã—Kelly.
+- **El cap 1.5x es techo duro** aunque el Kelly forward diga mÃ¡s. Contexto de por quÃ©:
+  con los datos actuales 0.25Ã—Kelly sin shrink (2.35) lo excede, pero la celda
+  S7-MOTOR (registry, trials 68â†’69) ya demostrÃ³ que el leverage alto sobre esta
+  familia amplifica la parte sin edge; y a 1.5x estÃ¡tico la simulaciÃ³n pone
+  P(DD>12%) â‰ˆ 55% en un aÃ±o denso. 1.5x es lo mÃ¡ximo defendible.
+- Recompute trimestral (calendario, no discrecional): cada recompute usa TODAS las
+  trade-semanas forward acumuladas. Si el f\* recomputado cae por debajo del
+  multiplicador vigente, se baja al nuevo valor en la siguiente semana operativa
+  (bajar nunca requiere ADR; subir solo en el recompute trimestral).
+
+## 3. Regla (c) â€” Presupuesto de DD del libro y escalera de des-apalancamiento â€” **PROPUESTA**
+
+Presupuesto de drawdown del libro: **12%** (coherente con W1 del
+`WITHDRAWAL-PROTOCOL.md`: a ese daÃ±o el sleeve Ãºnico actual dispara retiro; el libro
+no debe seguir apalancado camino a ese evento). DD medido sobre la equity del LIBRO,
+peak-to-trough, marcada al cierre semanal (viernes 12:55 COT).
+
+| EscalÃ³n (DD del libro desde el pico) | Multiplicador mÃ¡ximo | DerivaciÃ³n (PROPUESTA) |
+|---|---|---|
+| DD â‰¤ 7% | el de Â§1/Â§2 (1.0x o min(1.5x, Kelly)) | zona normal: 7.84% fue el maxDD observado 2025 a 1.0x; p50 del aÃ±o denso simulado = 8.4% |
+| **DD > 7%** | **1.0x** | a 1.5x la p50 simulada (12.5%) ya invade el presupuesto; volver a 1.0x corta la amplificaciÃ³n antes de eso |
+| **DD > 10%** | **0.5x** | p(DD>10%) a 1.0x â‰ˆ 33% denso: zona de cola; a 0.5x la P(DD>12%) residual â‰ˆ 0.3% â€” frena la sangrÃ­a casi con certeza |
+| **DD > 12%** | **0 (flat) + revisiÃ³n formal** | presupuesto agotado = umbral W1; la revisiÃ³n decide retiro/continuaciÃ³n por los protocolos de cada sleeve, jamÃ¡s re-tunea este documento en caliente |
+
+- Nota: la tarea sugerÃ­a 15% para el escalÃ³n flat; se propone **12%** porque es el
+  nÃºmero ya firmado en W1 â€” un libro apalancado no puede tener un presupuesto de DD
+  mÃ¡s laxo que el retiro de su Ãºnico sleeve. (Si el operador prefiere 15%, es una
+  ediciÃ³n legÃ­tima ANTES de firmar; despuÃ©s, solo por ADR fuera de drawdown.)
+- **Re-armado (histÃ©resis)**: se recupera el escalÃ³n superior solo cuando la equity
+  del libro cierra â‰¥ 4 semanas consecutivas con DD < (umbral del escalÃ³n âˆ’ 2pp)
+  (p.ej. vuelve de 1.0xâ†’1.5x cuando DD < 5% durante 4 semanas). Sin re-armado
+  intradÃ­a/intra-semana.
+- La escalera gobierna el MULTIPLICADOR DE LIBRO; no toca el sizing interno de la
+  estrategia (congelado) ni sustituye los criterios de retiro W1â€“W6, que siguen
+  vigentes y dominan.
+
+## 4. Regla (d) â€” Anti-relajaciÃ³n
+
+- **NingÃºn umbral de este protocolo se relaja estando el libro en drawdown**
+  (quant-constitution Â§5). Cambios solo por **ADR**, con el libro en DD < 7%, y
+  nunca en la misma semana en que un escalÃ³n haya disparado.
+- Endurecer (bajar leverage, bajar umbrales) estÃ¡ siempre permitido sin ADR.
+- El multiplicador aplicado cada semana se registra en el ledger append-only junto
+  al `strategy_id` y la semana ISO (mismo mecanismo del juez v12, punto 5).
+
+## 5. Firma
+
+- **Operador**: ____________________ Fecha: ____________
+- Al firmar, el estado pasa a `SIGNED` y los nÃºmeros de Â§3 dejan de ser PROPUESTA.
+
+---
+
+## REGISTRY-PROPOSAL (evento 0-trials â€” texto listo para que el OPERADOR lo pegue en `HYPOTHESIS-REGISTRY.md`; este task NO edita el registro)
+
+> ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials â€” N sigue en 72)
+>
+> Regla de capital sellada ANTES del veredicto forward (`BOOK-LEVERAGE-GOVERNOR.md`,
+> borrador esperando firma). No es un trial: no se evaluÃ³ ninguna variante ni se
+> seleccionÃ³ nada â€” se computÃ³ el guard-rail sobre la serie honesta ya pagada
+> (2025 purgado +7.35%/32 tr + 2026 YTD +3.36%/11 tr; N=43 trade-semanas).
+> NÃºmeros (evidencia `.claude/evidence/book_kelly/2026-07-22/`): f\* continuo 9.39,
+> discreto 7.99, **IC95 block-b4 [âˆ’6.14, +48.71] INCLUYE CERO** (P(f\*â‰¤0)=14.5%);
+> shrunk Ã—Â½ (Lo-Mertens, media/2 = 0.46 SE): 4.69; banda 0.25â€“0.5Ã—Kelly shrunk
+> [1.17, 2.35]. Regla: 1.0x hasta graduaciÃ³n (criterios de WITHDRAWAL-PROTOCOL Â§4 /
+> juez v12 sellado, por referencia); despuÃ©s min(1.5x, 0.25Ã—f\*_shrunk **forward-only**,
+> N_fwdâ‰¥20); escalera DD 7%â†’1.0x / 10%â†’0.5x / 12%â†’flat+revisiÃ³n (PROPUESTA, alineada
+> con W1); umbrales no se relajan en drawdown (constituciÃ³n Â§5). Consistente con el
+> Kelly-guard del auditor fin-math (riesgo actual 0.23Ã—Kelly): no hay upside legal en
+> subir tamaÃ±o hoy â€” la decisiÃ³n de capital queda pre-firmada para DESPUÃ‰S del forward.
+--- .claude\evidence\book_kelly\2026-07-22\book_kelly.json
+{
+  "task": "A2 â€” gobernador de leverage fraccional-Kelly a nivel LIBRO",
+  "trials_consumed": 0,
+  "trials_note": "0 trials: no se evalua ninguna hipotesis ni se selecciona ninguna variante; se computa un guard-rail sobre la serie ya pagada para sellarlo ANTES del veredicto forward (quant-constitution Â§1).",
+  "inputs": {
+    "trades_2025": "usdcop-trading-dashboard\\public\\data\\production\\trades\\smart_simple_v11_2025.json",
+    "trades_2026": ".claude\\evidence\\cop_monitor_2025_2026\\2026-07-21\\monitor.json (v11_produccion.2026)",
+    "verified": {
+      "2025": {
+        "n_trades": 32,
+        "compounded_pct": 7.3460634723933715
+      },
+      "2026_ytd": {
+        "n_trades": 11,
+        "compounded_pct": 3.358221325672739,
+        "nota": "N=11 < 20: solo conteo y PnL (constitucion Â§6)"
+      }
+    },
+    "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)"
+  },
+  "series": {
+    "definition": "retorno semanal del libro por trade-semana (pnl_pct/100, ya neto de costos y del leverage INTERNO 0.5-2.0x de la estrategia). f* es el MULTIPLICADOR DE LIBRO sobre la config congelada, no leverage absoluto de exchange.",
+    "n_trade_weeks": 43,
+    "weekly_returns": [
+      0.0175,
+      0.0175,
+      -0.013883000000000001,
+      0.0012230000000000001,
+      -0.037846000000000005,
+      0.0175,
+      0.0075,
+      0.015969999999999998,
+      0.008712,
+      -0.002409,
+      0.0175,
+      0.002549,
+      0.0175,
+      0.0175,
+      0.0175,
+      0.008693,
+      -0.00869,
+      -0.035,
+      0.0175,
+      0.0175,
+      0.004679,
+      0.012,
+      0.0175,
+      0.0175,
+      -0.035,
+      -0.035,
+      0.011701,
+      -0.0014910000000000001,
+      0.00035099999999999997,
+      0.004531,
+      0.010291999999999999,
+      -0.035,
+      0.006104000000000001,
+      -0.0063490000000000005,
+      -0.001789,
+      0.005272,
+      0.003121,
+      0.0175,
+      0.010564,
+      0.005168000000000001,
+      0.00445,
+      -0.015,
+      0.004402
+    ],
+    "mu_weekly": 0.0025540697674418605,
+    "sigma_weekly": 0.01649244086066813,
+    "worst_week": -0.037846000000000005,
+    "weeks_live_calendar": 80
+  },
+  "kelly": {
+    "f_star_continuous_mu_over_var": 9.389941475852757,
+    "f_star_discrete_empirical": 7.987105638640807,
+    "f_star_continuous_flat_as_zero_variant": 9.386746439759726,
+    "flat_variant_note": "aÃ±adir semanas flat=0 deja f* casi invariante (mu y E[r^2] escalan igual); se reporta por transparencia.",
+    "ci95_f_cont_bootstrap_iid": [
+      -7.150791714300027,
+      50.62112785639327
+    ],
+    "ci95_f_cont_block_b4": [
+      -6.13875128321413,
+      48.70766493474508
+    ],
+    "ci95_f_disc_block_b4": [
+      0.0,
+      21.790149553453467
+    ],
+    "prob_f_cont_leq_0_block_b4": 0.1449
+  },
+  "shrinkage_lo_mertens": {
+    "sharpe_weekly": 0.1548630544756364,
+    "n": 43,
+    "skew": -1.2664277497741003,
+    "kurtosis": 3.60508071155173,
+    "se_lo_2002": 0.15341017240011065,
+    "se_mertens_2002": 0.16786913503542453,
+    "sr_half_in_se_units_mertens": 0.46126125104223736,
+    "reading": "con N=43 semanas el SE del Sharpe semanal es del orden del Sharpe mismo: una media real = mitad de la observada esta a menos de 1 SE â€” indistinguible. El sizing usa el f* SHRUNK.",
+    "f_star_cont_half_mean": 4.694970737926378,
+    "f_star_disc_half_mean": 4.3608580087684015
+  },
+  "recommended_fraction_band": {
+    "kelly_0.25x_observado": 2.347485368963189,
+    "kelly_0.50x_observado": 4.694970737926378,
+    "kelly_0.25x_shrunk_half": 1.1737426844815946,
+    "kelly_0.50x_shrunk_half": 2.347485368963189
+  },
+  "dd_forward_simulation_52w": [
+    {
+      "book_multiplier": 0.5,
+      "maxdd_p50_pct": -4.234610099309711,
+      "maxdd_p75_pct": -5.45311605048433,
+      "maxdd_p95_pct": -7.9637645261886965,
+      "prob_dd_worse_than_7pct": 0.0931,
+      "prob_dd_worse_than_10pct": 0.0119,
+      "prob_dd_worse_than_12pct": 0.003,
+      "prob_dd_worse_than_15pct": 0.0001
+    },
+    {
+      "book_multiplier": 1.0,
+      "maxdd_p50_pct": -8.362276197756746,
+      "maxdd_p75_pct": -10.868271281868628,
+      "maxdd_p95_pct": -15.594604559953357,
+      "prob_dd_worse_than_7pct": 0.6705,
+      "prob_dd_worse_than_10pct": 0.3312,
+      "prob_dd_worse_than_12pct": 0.1753,
+      "prob_dd_worse_than_15pct": 0.0617
+    },
+    {
+      "book_multiplier": 1.5,
+      "maxdd_p50_pct": -12.549941439754491,
+      "maxdd_p75_pct": -16.11288686488589,
+      "maxdd_p95_pct": -22.62276332301661,
+      "prob_dd_worse_than_7pct": 0.9467,
+      "prob_dd_worse_than_10pct": 0.7855,
+      "prob_dd_worse_than_12pct": 0.5537,
+      "prob_dd_worse_than_15pct": 0.3224
+    },
+    {
+      "book_multiplier": 2.0,
+      "maxdd_p50_pct": -16.536786753507194,
+      "maxdd_p75_pct": -21.23476615220307,
+      "maxdd_p95_pct": -29.737214613823415,
+      "prob_dd_worse_than_7pct": 0.9975,
+      "prob_dd_worse_than_10pct": 0.8866,
+      "prob_dd_worse_than_12pct": 0.8273,
+      "prob_dd_worse_than_15pct": 0.602
+    }
+  ],
+  "governor_recommendation": {
+    "pre_graduation": 1.0,
+    "post_graduation_rule": "min(1.5, 0.25 x f*_shrunk computado con datos FORWARD)",
+    "rationale": "el IC95 block-b4 del f* INCLUYE CERO â€” esta serie ni siquiera prueba que el Kelly optimo sea positivo; ademas el tramo 2025 esta contaminado por seleccion (DSR 0.72<0.95). Por eso pre-graduacion = 1.0x sin excepciones. Post-graduacion la banda 0.25x Kelly-shrunk (~1.2 con estos datos) queda por debajo del cap 1.5x y la 0.25x sin shrink (~2.3) por encima: el cap 1.5x es el techo duro y la fraccion se recomputa SOLO con trades forward, nunca con el backtest."
+  }
+}
+
+codex
+Ya aparece un punto que merece comprobación adicional: el script denomina cada observación “trade-semana”, pero carga una observación por trade. Voy a verificar fechas, posibles semanas duplicadas y la definición exacta del PnL antes de aceptar que sea una serie semanal. También contrastaré las fórmulas atribuidas a Lo/Mertens con fuentes académicas.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference='"'Stop'; Write-Output 'AGENTS'; rg --files -uu -g 'AGENTS.md'; Write-Output '2025 STRUCTURE'; "'$b25 = Get-Content -Raw -LiteralPath '"'usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json' | ConvertFrom-Json; "'$b25.summary | ConvertTo-Json -Depth 5; $b25.trades | Select-Object -First 5 | ConvertTo-Json -Depth 5; Write-Output '"'2026 STRUCTURE'; "'$mon = Get-Content -Raw -LiteralPath '"'.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json' | ConvertFrom-Json; "'$y26 = $mon.results.v11_produccion.'"'2026'; "'$y26 | Select-Object -Property n_trades,ret_pct | ConvertTo-Json; $y26.trades | Select-Object -First 5 | ConvertTo-Json -Depth 5; Write-Output '"'DATE KEYS'; ("'$b25.trades[0].PSObject.Properties.Name -join '"','); ("'$y26.trades[0].PSObject.Properties.Name -join '"',')" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 3277ms:
+AGENTS
+2025 STRUCTURE
+{
+    "total_trades":  32,
+    "winning_trades":  23,
+    "losing_trades":  9,
+    "win_rate":  71.9,
+    "total_pnl":  734.62,
+    "total_return_pct":  7.35,
+    "max_drawdown_pct":  7.84,
+    "sharpe_ratio":  0.942,
+    "direction_accuracy_pct":  71.9,
+    "profit_factor":  1.327,
+    "p_value":  0.2277,
+    "insufficient_trades":  false,
+    "n_long":  2,
+    "n_short":  30
+}
+[
+    {
+        "trade_id":  1,
+        "timestamp":  "2025-02-03T09:00:00-05:00",
+        "exit_timestamp":  "2025-02-07T12:50:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  4160.75,
+        "exit_price":  4124.34,
+        "pnl_usd":  175.0,
+        "pnl_pct":  1.75,
+        "exit_reason":  "take_profit",
+        "equity_at_entry":  10000.0,
+        "equity_at_exit":  10175.0,
+        "leverage":  2.0,
+        "confidence_tier":  "MEDIUM",
+        "hard_stop_pct":  1.75,
+        "take_profit_pct":  0.88,
+        "regime":  "trending",
+        "hurst":  0.712
+    },
+    {
+        "trade_id":  2,
+        "timestamp":  "2025-02-17T09:00:00-05:00",
+        "exit_timestamp":  "2025-02-18T12:50:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  4131.43,
+        "exit_price":  4095.28,
+        "pnl_usd":  178.06,
+        "pnl_pct":  1.75,
+        "exit_reason":  "take_profit",
+        "equity_at_entry":  10175.0,
+        "equity_at_exit":  10353.06,
+        "leverage":  2.0,
+        "confidence_tier":  "LOW",
+        "hard_stop_pct":  1.75,
+        "take_profit_pct":  0.88,
+        "regime":  "trending",
+        "hurst":  0.863
+    },
+    {
+        "trade_id":  3,
+        "timestamp":  "2025-02-24T09:00:00-05:00",
+        "exit_timestamp":  "2025-02-28T12:50:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  4116.0,
+        "exit_price":  4144.16,
+        "pnl_usd":  -143.73,
+        "pnl_pct":  -1.3883,
+        "exit_reason":  "week_end",
+        "equity_at_entry":  10353.06,
+        "equity_at_exit":  10209.33,
+        "leverage":  2.0,
+        "confidence_tier":  "LOW",
+        "hard_stop_pct":  1.75,
+        "take_profit_pct":  0.88,
+        "regime":  "trending",
+        "hurst":  0.785
+    },
+    {
+        "trade_id":  4,
+        "timestamp":  "2025-03-03T09:00:00-05:00",
+        "exit_timestamp":  "2025-03-07T12:50:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  4132.08,
+        "exit_price":  4129.14,
+        "pnl_usd":  12.49,
+        "pnl_pct":  0.1223,
+        "exit_reason":  "week_end",
+        "equity_at_entry":  10209.33,
+        "equity_at_exit":  10221.81,
+        "leverage":  2.0,
+        "confidence_tier":  "LOW",
+        "hard_stop_pct":  1.75,
+        "take_profit_pct":  0.88,
+        "regime":  "trending",
+        "hurst":  0.828
+    },
+    {
+        "trade_id":  5,
+        "timestamp":  "2025-03-17T09:00:00-05:00",
+        "exit_timestamp":  "2025-03-20T12:50:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  4091.85,
+        "exit_price":  4169.28,
+        "pnl_usd":  -386.85,
+        "pnl_pct":  -3.7846,
+        "exit_reason":  "hard_stop",
+        "equity_at_entry":  10221.81,
+        "equity_at_exit":  9834.96,
+        "leverage":  2.0,
+        "confidence_tier":  "LOW",
+        "hard_stop_pct":  1.75,
+        "take_profit_pct":  0.88,
+        "regime":  "trending",
+        "hurst":  0.712
+    }
+]
+2026 STRUCTURE
+{
+    "n_trades":  11,
+    "ret_pct":  3.36
+}
+[
+    {
+        "timestamp":  "2026-01-05T09:00:00-05:00",
+        "side":  "SHORT",
+        "entry_price":  3743.04,
+        "exit_price":  3714.11,
+        "exit_reason":  "week_end",
+        "leverage":  0.8,
+        "pnl_pct":  0.6104
+    },
+    {
+        "timestamp":  "2026-04-06T09:00:00-05:00",
+        "side":  "LONG",
+        "entry_price":  3680.44,
+        "exit_price":  3644.39,
+        "exit_reason":  "week_end",
+        "leverage":  0.642,
+        "pnl_pct":  -0.6349
+    },
+    {
+        "timestamp":  "2026-04-20T09:00:00-05:00",
+        "side":  "LONG",
+        "entry_price":  3572.27,
+        "exit_price":  3559.85,
+        "exit_reason":  "week_end",
+        "leverage":  0.5,
+        "pnl_pct":  -0.1789
+    },
+    {
+        "timestamp":  "2026-04-27T09:00:00-05:00",
+        "side":  "LONG",
+        "entry_price":  3608.03,
+        "exit_price":  3646.08,
+        "exit_reason":  "take_profit",
+        "leverage":  0.5,
+        "pnl_pct":  0.5272
+    },
+    {
+        "timestamp":  "2026-05-04T09:00:00-05:00",
+        "side":  "LONG",
+        "entry_price":  3729.34,
+        "exit_price":  3745.27,
+        "exit_reason":  "week_end",
+        "leverage":  0.748,
+        "pnl_pct":  0.3121
+    }
+]
+DATE KEYS
+trade_id,timestamp,exit_timestamp,side,entry_price,exit_price,pnl_usd,pnl_pct,exit_reason,equity_at_entry,equity_at_exit,leverage,confidence_tier,hard_stop_pct,take_profit_pct,regime,hurst
+timestamp,side,entry_price,exit_price,exit_reason,leverage,pnl_pct
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import json, ast, math
+from pathlib import Path
+import numpy as np
+root=Path('.')
+p25=root/'usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json'
+p26=root/'.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json'
+b25=json.loads(p25.read_text(encoding='utf-8'))
+y26=json.loads(p26.read_text(encoding='utf-8'))['results']['v11_produccion']['2026']
+r=np.array([x['pnl_pct']/100 for x in b25['trades']+y26['trades']],float)
+mu=r.mean(); var=r.var(ddof=1)
+print('n mu sd var f_cont compound',len(r),mu,r.std(ddof=1),var,mu/var,(np.prod(1+r)-1)*100)
+worst=r.min(); hi=min(.99/abs(worst),30); grid=np.linspace(0,hi,3001); g=np.log1p(np.outer(grid,r)).mean(1); i=g.argmax()
+print('disc grid',grid[i], 'idx',i,'hi',hi,'adj growth',g[max(0,i-1):i+2])
+# solve first order by bisection
+lo,up=0.0,.999999/abs(worst)
+def score(f): return np.mean(r/(1+f*r))
+for _ in range(200):
+ mid=(lo+up)/2
+ if score(mid)>0: lo=mid
+ else: up=mid
+print('disc root', (lo+up)/2, 'score',score((lo+up)/2))
+# timestamps and duplicate ISO weeks
+from datetime import datetime,date,timedelta
+alltr=b25['trades']+y26['trades']
+weeks=[]
+for t in alltr:
+ d=datetime.fromisoformat(t['timestamp']).date(); weeks.append((d.isocalendar().year,d.isocalendar().week,d,t['pnl_pct']))
+from collections import Counter
+c=Counter((x[0],x[1]) for x in weeks)
+print('duplicates',[k for k,v in c.items() if v>1])
+print('range',weeks[0],weeks[-1], 'ordered',all(weeks[i][2] < weeks[i+1][2] for i in range(len(weeks)-1)))
+print('2025 last',b25['trades'][-1]['timestamp'],'2026 all dates',[t['timestamp'][:10] for t in y26['trades']])
+# strict JSON constants
+raw=(root/'.claude/evidence/book_kelly/2026-07-22/book_kelly.json').read_text(encoding='utf-8')
+json.loads(raw, parse_constant=lambda x: (_ for _ in ()).throw(ValueError(x)))
+print('json strict ok; literal NaN/Infinity tokens?', any(x in raw for x in ('NaN','Infinity','-Infinity')))
+# AST locate invalid constant numeric participation
+src=(root/'scripts/analysis/book_kelly_governor.py').read_text(encoding='utf-8')
+t=ast.parse(src)
+for node in ast.walk(t):
+ if isinstance(node,ast.Constant) and node.value in (26.05,13.05): print('invalid constant line',node.lineno)
+'@ | python -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:36:15.685804Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.8 seconds
+Output:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 44 Carácter: 6
++ '@ | python -
++      ~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+ exited 1 in 1755ms:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 44 Carácter: 6
++ '@ | python -
++      ~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Command python,py,node -ErrorAction SilentlyContinue | Select-Object Name,Source,CommandType | Format-Table -AutoSize' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1060ms:
+
+Name       Source                                                        CommandType
+----       ------                                                        -----------
+python.exe C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe Application
+py.exe     C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe  Application
+node.exe   C:\Program Files\nodejs\node.exe                              Application
+
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'py -3 --version' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:36:24.025780Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" --version': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+ exited 1 in 1124ms:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" --version': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs');
+const b25=JSON.parse(fs.readFileSync('usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json','utf8'));
+const y26=JSON.parse(fs.readFileSync('.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json','utf8')).results.v11_produccion['2026'];
+const all=b25.trades.concat(y26.trades), r=all.map(x=>x.pnl_pct/100), n=r.length;
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length; const mu=mean(r), variance=r.reduce((s,x)=>s+(x-mu)**2,0)/(n-1), sd=Math.sqrt(variance);
+console.log({n,mu,sd,variance,f_cont:mu/variance,compound_pct:(r.reduce((p,x)=>p*(1+x),1)-1)*100});
+const worst=Math.min(...r), hi=Math.min(.99/Math.abs(worst),30), N=3000; let bi=0,bg=-Infinity;
+for(let i=0;i<=N;i++){const f=hi*i/N; const g=mean(r.map(x=>Math.log1p(f*x))); if(g>bg){bg=g;bi=i}}
+console.log({disc_grid:hi*bi/N,index:bi,hi,growth:bg});
+const score=f=>mean(r.map(x=>x/(1+f*x))); let lo=0,up=.999999/Math.abs(worst); for(let i=0;i<200;i++){const m=(lo+up)/2;if(score(m)>0)lo=m;else up=m}; console.log({disc_root:(lo+up)/2,score:score((lo+up)/2)});
+function isoWeek(d){const u=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())); const day=u.getUTCDay()||7; u.setUTCDate(u.getUTCDate()+4-day); const y0=new Date(Date.UTC(u.getUTCFullYear(),0,1)); return [u.getUTCFullYear(),Math.ceil((((u-y0)/86400000)+1)/7)]}
+const weeks=all.map(t=>{const d=new Date(t.timestamp);return [...isoWeek(d),t.timestamp.slice(0,10),t.pnl_pct]}); const counts={};for(const w of weeks){const k=w[0]+'-'+w[1];counts[k]=(counts[k]||0)+1}; console.log('duplicateWeeks',Object.entries(counts).filter(x=>x[1]>1)); console.log('firstLast',weeks[0],weeks.at(-1)); console.log('2025last',b25.trades.at(-1).timestamp);console.log('2026dates',y26.trades.map(t=>t.timestamp.slice(0,10)));
+const raw=fs.readFileSync('.claude/evidence/book_kelly/2026-07-22/book_kelly.json','utf8'); JSON.parse(raw); console.log('jsonParseOk',true,'badTokens',/(?:NaN|Infinity|-Infinity)/.test(raw));
+'@ | node" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 2563ms:
+{
+  n: 43,
+  mu: 0.002554069767441861,
+  sd: 0.01649244086066813,
+  variance: 0.0002720006055426357,
+  f_cont: 9.389941475852758,
+  compound_pct: 10.95098186819341
+}
+{
+  disc_grid: 7.987105638640806,
+  index: 916,
+  hi: 26.158642921312683,
+  growth: 0.010823528876044916
+}
+{ disc_root: 7.988058556860722, score: -1.8154082888129378e-19 }
+duplicateWeeks []
+firstLast [ 2025, 6, '2025-02-03', 1.75 ] [ 2026, 29, '2026-07-13', 0.4402 ]
+2025last 2025-12-29T09:00:00-05:00
+2026dates [
+  '2026-01-05', '2026-04-06',
+  '2026-04-20', '2026-04-27',
+  '2026-05-04', '2026-05-11',
+  '2026-05-25', '2026-06-01',
+  '2026-06-22', '2026-07-06',
+  '2026-07-13'
+]
+jsonParseOk true badTokens false
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$targets = @('"'scripts/analysis/book_kelly_governor.py','.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md','.claude/evidence/book_kelly/2026-07-22/book_kelly.json'); foreach("'$f in $targets){ Write-Output "--- $f"; $i=0; Get-Content -LiteralPath $f | ForEach-Object { $i++; if(($f -like '"'*.py' -and ("'$i -ge 34 -and $i -le 178 -or $i -ge 205 -and $i -le 286)) -or ($f -like '"'*.md' -and ("'$i -le 130 -or $i -ge 150)) -or ($f -like '"'*.json' -and ("'$i -le 100 -or $i -ge 165))){ '"'{0,4}: {1}' -f "'$i,$_ } } }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1494ms:
+--- scripts/analysis/book_kelly_governor.py
+  34: from pathlib import Path
+  35: 
+  36: import numpy as np
+  37: 
+  38: REPO = Path(__file__).resolve().parents[2]
+  39: 
+  40: TRADES_2025 = (
+  41:     REPO
+  42:     / "usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json"
+  43: )
+  44: MONITOR_2026 = REPO / ".claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json"
+  45: EVIDENCE_DIR = REPO / ".claude/evidence/book_kelly/2026-07-22"
+  46: 
+  47: SEED = 42
+  48: N_BOOT = 10_000
+  49: BLOCK = 4  # block bootstrap circular b=4 â€” mismo prior que el juez sellado de v12
+  50: 
+  51: # Guardas de datos honestos (falla si alguien apunta esto a un bundle viejo)
+  52: EXPECTED_2025 = {"total_trades": 32, "total_return_pct": 7.35}
+  53: EXPECTED_2026 = {"n_trades": 11, "ret_pct": 3.36}
+  54: 
+  55: INVALIDATED_RETURNS = {26.05, 13.05}  # pre-reparacion / pre-purga: PROHIBIDOS
+  56: 
+  57: 
+  58: # ----------------------------------------------------------------------------- data
+  59: def load_honest_series() -> dict:
+  60:     with open(TRADES_2025, encoding="utf-8") as f:
+  61:         b25 = json.load(f)
+  62:     s = b25["summary"]
+  63:     if round(s["total_return_pct"], 2) in INVALIDATED_RETURNS:
+  64:         raise ValueError(
+  65:             "Bundle 2025 con numeros PRE-REPARACION (invalidados). Abortando."
+  66:         )
+  67:     if (
+  68:         s["total_trades"] != EXPECTED_2025["total_trades"]
+  69:         or round(s["total_return_pct"], 2) != EXPECTED_2025["total_return_pct"]
+  70:     ):
+  71:         raise ValueError(
+  72:             f"Bundle 2025 no coincide con la serie purgada esperada "
+  73:             f"({EXPECTED_2025}); encontrado trades={s['total_trades']}, "
+  74:             f"ret={s['total_return_pct']}"
+  75:         )
+  76:     r25 = [t["pnl_pct"] / 100.0 for t in b25["trades"]]
+  77: 
+  78:     with open(MONITOR_2026, encoding="utf-8") as f:
+  79:         mon = json.load(f)
+  80:     y26 = mon["results"]["v11_produccion"]["2026"]
+  81:     if (
+  82:         y26["n_trades"] != EXPECTED_2026["n_trades"]
+  83:         or round(y26["ret_pct"], 2) != EXPECTED_2026["ret_pct"]
+  84:     ):
+  85:         raise ValueError(
+  86:             f"Serie 2026 no coincide con lo esperado ({EXPECTED_2026}); "
+  87:             f"encontrado n={y26['n_trades']}, ret={y26['ret_pct']}"
+  88:         )
+  89:     r26 = [t["pnl_pct"] / 100.0 for t in y26["trades"]]
+  90: 
+  91:     # verificacion de composicion (tolerancia por redondeo del pnl_pct publicado)
+  92:     comp25 = (np.prod([1 + r for r in r25]) - 1) * 100
+  93:     comp26 = (np.prod([1 + r for r in r26]) - 1) * 100
+  94:     assert abs(comp25 - 7.35) < 0.15, f"composicion 2025 = {comp25:.2f} != 7.35"
+  95:     assert abs(comp26 - 3.36) < 0.15, f"composicion 2026 = {comp26:.2f} != 3.36"
+  96: 
+  97:     return {
+  98:         "r25": np.array(r25),
+  99:         "r26": np.array(r26),
+ 100:         "combined": np.array(r25 + r26),
+ 101:         "comp25_pct": float(comp25),
+ 102:         "comp26_pct": float(comp26),
+ 103:     }
+ 104: 
+ 105: 
+ 106: def count_mondays(start: date, end: date) -> int:
+ 107:     """Semanas calendario en las que la estrategia estuvo viva (lunes)."""
+ 108:     d = start
+ 109:     while d.weekday() != 0:
+ 110:         d += timedelta(days=1)
+ 111:     n = 0
+ 112:     while d <= end:
+ 113:         n += 1
+ 114:         d += timedelta(days=7)
+ 115:     return n
+ 116: 
+ 117: 
+ 118: # ----------------------------------------------------------------------- estimadores
+ 119: def kelly_continuous(r: np.ndarray) -> float:
+ 120:     mu = r.mean()
+ 121:     var = r.var(ddof=1)
+ 122:     return float(mu / var) if var > 0 else 0.0
+ 123: 
+ 124: 
+ 125: def kelly_discrete(r: np.ndarray) -> float:
+ 126:     """argmax_f E[log(1+f r)] sobre la empirica, f en [0, 0.99/|peor perdida|)."""
+ 127:     worst = r.min()
+ 128:     if worst >= 0:  # sin perdidas: Kelly no acotado -> se reporta el borde del grid
+ 129:         f_max = 30.0
+ 130:     else:
+ 131:         f_max = 0.99 / abs(worst)
+ 132:     grid = np.linspace(0.0, min(f_max, 30.0), 3001)
+ 133:     growth = np.log1p(np.outer(grid, r)).mean(axis=1)
+ 134:     return float(grid[int(np.argmax(growth))])
+ 135: 
+ 136: 
+ 137: def iid_bootstrap(r: np.ndarray, stat, rng: np.random.Generator) -> np.ndarray:
+ 138:     n = len(r)
+ 139:     return np.array([stat(r[rng.integers(0, n, n)]) for _ in range(N_BOOT)])
+ 140: 
+ 141: 
+ 142: def circular_block_bootstrap_sample(
+ 143:     r: np.ndarray, b: int, rng: np.random.Generator
+ 144: ) -> np.ndarray:
+ 145:     n = len(r)
+ 146:     n_blocks = math.ceil(n / b)
+ 147:     starts = rng.integers(0, n, n_blocks)
+ 148:     idx = (starts[:, None] + np.arange(b)[None, :]) % n
+ 149:     return r[idx.ravel()[:n]]
+ 150: 
+ 151: 
+ 152: def block_bootstrap(r: np.ndarray, stat, rng: np.random.Generator) -> np.ndarray:
+ 153:     return np.array(
+ 154:         [stat(circular_block_bootstrap_sample(r, BLOCK, rng)) for _ in range(N_BOOT)]
+ 155:     )
+ 156: 
+ 157: 
+ 158: def ci95(v: np.ndarray) -> list[float]:
+ 159:     return [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))]
+ 160: 
+ 161: 
+ 162: def lo_mertens_se(r: np.ndarray) -> dict:
+ 163:     """SE del Sharpe semanal: Lo (2002) iid y Mertens (2002) con skew/kurtosis."""
+ 164:     n = len(r)
+ 165:     mu, sd = r.mean(), r.std(ddof=1)
+ 166:     sr = mu / sd
+ 167:     m3 = ((r - mu) ** 3).mean() / sd**3  # skew
+ 168:     m4 = ((r - mu) ** 4).mean() / sd**4  # kurtosis (no exceso)
+ 169:     se_lo = math.sqrt((1 + 0.5 * sr**2) / n)
+ 170:     se_mertens = math.sqrt((1 - m3 * sr + (m4 - 1) / 4 * sr**2) / n)
+ 171:     return {
+ 172:         "sharpe_weekly": float(sr),
+ 173:         "n": n,
+ 174:         "skew": float(m3),
+ 175:         "kurtosis": float(m4),
+ 176:         "se_lo_2002": float(se_lo),
+ 177:         "se_mertens_2002": float(se_mertens),
+ 178:         "sr_half_in_se_units_mertens": float((sr - sr / 2) / se_mertens),
+ 205:         "maxdd_p95_pct": float(np.percentile(dds, 5) * 100),
+ 206:         "prob_dd_worse_than_7pct": float((dds < -0.07).mean()),
+ 207:         "prob_dd_worse_than_10pct": float((dds < -0.10).mean()),
+ 208:         "prob_dd_worse_than_12pct": float((dds < -0.12).mean()),
+ 209:         "prob_dd_worse_than_15pct": float((dds < -0.15).mean()),
+ 210:     }
+ 211: 
+ 212: 
+ 213: # ------------------------------------------------------------------------ sanitizado
+ 214: def sanitize(obj):
+ 215:     """JSON safety: Infinity/NaN -> null (regla strategy-contract)."""
+ 216:     if isinstance(obj, dict):
+ 217:         return {k: sanitize(v) for k, v in obj.items()}
+ 218:     if isinstance(obj, (list, tuple)):
+ 219:         return [sanitize(v) for v in obj]
+ 220:     if isinstance(obj, float):
+ 221:         return obj if math.isfinite(obj) else None
+ 222:     if isinstance(obj, (np.floating, np.integer)):
+ 223:         v = float(obj)
+ 224:         return v if math.isfinite(v) else None
+ 225:     return obj
+ 226: 
+ 227: 
+ 228: # ------------------------------------------------------------------------------ main
+ 229: def main() -> None:
+ 230:     rng = np.random.default_rng(SEED)
+ 231:     data = load_honest_series()
+ 232:     r = data["combined"]
+ 233:     n = len(r)
+ 234: 
+ 235:     mu, sd = float(r.mean()), float(r.std(ddof=1))
+ 236:     f_cont = kelly_continuous(r)
+ 237:     f_disc = kelly_discrete(r)
+ 238: 
+ 239:     # IC95 de f* (continuo y discreto), iid y block b=4
+ 240:     boot_cont_iid = iid_bootstrap(r, kelly_continuous, rng)
+ 241:     boot_cont_blk = block_bootstrap(r, kelly_continuous, rng)
+ 242:     boot_disc_blk = block_bootstrap(r, kelly_discrete, rng)
+ 243: 
+ 244:     # Shrinkage: media real = mitad de la observada (incertidumbre Lo-Mertens)
+ 245:     lm = lo_mertens_se(r)
+ 246:     f_cont_half = 0.5 * mu / r.var(ddof=1)
+ 247:     r_half = r - mu / 2.0  # serie con la mitad de la media, misma dispersion
+ 248:     f_disc_half = kelly_discrete(r_half)
+ 249: 
+ 250:     # Variante flat-as-zero (invariancia aproximada del f*)
+ 251:     weeks_live = count_mondays(date(2025, 1, 6), date(2026, 7, 13))
+ 252:     zeros = np.zeros(weeks_live - n)
+ 253:     r_full = np.concatenate([r, zeros])
+ 254:     f_cont_full = kelly_continuous(r_full)
+ 255: 
+ 256:     # Escalones: distribucion de maxDD forward por multiplicador de libro
+ 257:     dd_sims = [dd_forward_sim(r, m, rng) for m in (0.5, 1.0, 1.5, 2.0)]
+ 258: 
+ 259:     frac_band = {
+ 260:         "kelly_0.25x_observado": 0.25 * f_cont,
+ 261:         "kelly_0.50x_observado": 0.50 * f_cont,
+ 262:         "kelly_0.25x_shrunk_half": 0.25 * f_cont_half,
+ 263:         "kelly_0.50x_shrunk_half": 0.50 * f_cont_half,
+ 264:     }
+ 265: 
+ 266:     result = {
+ 267:         "task": "A2 â€” gobernador de leverage fraccional-Kelly a nivel LIBRO",
+ 268:         "trials_consumed": 0,
+ 269:         "trials_note": (
+ 270:             "0 trials: no se evalua ninguna hipotesis ni se selecciona ninguna "
+ 271:             "variante; se computa un guard-rail sobre la serie ya pagada para "
+ 272:             "sellarlo ANTES del veredicto forward (quant-constitution Â§1)."
+ 273:         ),
+ 274:         "inputs": {
+ 275:             "trades_2025": str(TRADES_2025.relative_to(REPO)),
+ 276:             "trades_2026": str(MONITOR_2026.relative_to(REPO)) + " (v11_produccion.2026)",
+ 277:             "verified": {
+ 278:                 "2025": {"n_trades": 32, "compounded_pct": data["comp25_pct"]},
+ 279:                 "2026_ytd": {
+ 280:                     "n_trades": 11,
+ 281:                     "compounded_pct": data["comp26_pct"],
+ 282:                     "nota": "N=11 < 20: solo conteo y PnL (constitucion Â§6)",
+ 283:                 },
+ 284:             },
+ 285:             "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)",
+ 286:         },
+--- .claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md
+   1: ---
+   2: kind: protocol
+   3: status: DRAFT_AWAITING_OPERATOR_SIGNATURE
+   4: contract: CTR-QUANT-CONSTITUTION-001
+   5: version: 0.1.0
+   6: date: 2026-07-22
+   7: trials_consumed: 0
+   8: supersedes: []
+   9: code_anchors:
+  10:   - scripts/analysis/book_kelly_governor.py
+  11:   - .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+  12: ---
+  13: # BOOK-LEVERAGE-GOVERNOR â€” Gobernador de leverage fraccional-Kelly del LIBRO (pre-firmado)
+  14: 
+  15: > **TAREA A2 Â· 0 trials.** Este documento NO prueba una hipÃ³tesis: sella una regla de
+  16: > apalancamiento del libro ANTES de que el forward gradÃºe, para eliminar la tentaciÃ³n de
+  17: > ajustarla ex-post (quant-constitution Â§1 y Â§5). Es un BORRADOR que espera la firma del
+  18: > operador; hasta la firma, la regla vigente es implÃ­citamente 1.0x (no hay leverage de
+  19: > libro en producciÃ³n).
+  20: >
+  21: > **"Leverage del libro" = multiplicador GLOBAL sobre la configuraciÃ³n congelada**, por
+  22: > encima del leverage interno de la estrategia (v11 ya usa 0.5â€“2.0x por trade). f* aquÃ­
+  23: > siempre es multiplicador de libro, jamÃ¡s leverage absoluto de exchange.
+  24: 
+  25: ---
+  26: 
+  27: ## 0. Evidencia (Ãºnica fuente vÃ¡lida: la serie honesta)
+  28: 
+  29: Datos: v11 2025 **purgado** (+7.35%, 32 trades, `trades/smart_simple_v11_2025.json`) +
+  30: 2026 YTD forward (+3.36%, 11 trades, `cop_monitor_2025_2026/2026-07-21/monitor.json`).
+  31: Los nÃºmeros pre-reparaciÃ³n (+26.05/+13.05) estÃ¡n invalidados y el script generador
+  32: **aborta** si el bundle no coincide con la serie purgada. 2026 solo: N=11 < 20 â‡’ se cita
+  33: Ãºnicamente conteo y PnL. Serie combinada N=43 trade-semanas (â‰¥20: los ratios se permiten).
+  34: 
+  35: Computado por `scripts/analysis/book_kelly_governor.py` (seed 42, B=10.000, block
+  36: bootstrap circular b=4 â€” el mismo prior del juez sellado de v12). Artefacto:
+  37: `.claude/evidence/book_kelly/2026-07-22/book_kelly.json` (+ `generator_script.py`).
+  38: 
+  39: | Cantidad | Valor |
+  40: |---|---|
+  41: | N (trade-semanas 2025+2026) | 43 |
+  42: | Î¼ semanal / Ïƒ semanal | +0.255% / 1.649% |
+  43: | **f\* Kelly continuo** (Î¼/ÏƒÂ²) | **9.39** |
+  44: | **f\* Kelly discreto** (argmax E[log(1+fÂ·r)] sobre la empÃ­rica) | **7.99** |
+  45: | IC95 de f\* (block bootstrap b=4) | **[âˆ’6.14, +48.71]** â€” **INCLUYE CERO** |
+  46: | IC95 de f\* (iid, referencia) | [âˆ’7.15, +50.62] |
+  47: | IC95 f\* discreto (block b=4) | [0.00, 21.79] |
+  48: | P(f\* â‰¤ 0) (block b=4) | **14.5%** |
+  49: | f\* con media real = mitad de la observada (shrinkage) | 4.69 (continuo) / 4.36 (discreto) |
+  50: | Banda 0.25â€“0.5 Ã— Kelly (observado) | [2.35, 4.69] |
+  51: | **Banda 0.25â€“0.5 Ã— Kelly (shrunk Ã—Â½)** | **[1.17, 2.35]** |
+  52: 
+  53: **Shrinkage justificado por Lo (2002) / Mertens (2002)**: con N=43 el SE del Sharpe
+  54: semanal (0.155) es 0.153 iid (Lo) y 0.168 con el ajuste skew/kurtosis (Mertens; skew
+  55: âˆ’1.4). Una media real igual a la MITAD de la observada estÃ¡ a **0.46 SE** â€” estadÃ­stica-
+  56: mente indistinguible del dato. Por eso ningÃºn cÃ¡lculo de este protocolo usa el Kelly sin
+  57: shrink: la fracciÃ³n operable se toma de la banda shrunk, y aun asÃ­ el IC95 del f\*
+  58: incluye cero â€” **esta serie no puede probar ni siquiera que el Kelly Ã³ptimo sea
+  59: positivo**. AdemÃ¡s el tramo 2025 estÃ¡ contaminado por selecciÃ³n (DSR 0.72 < 0.95,
+  60: `HYPOTHESIS-REGISTRY.md` Â§2/Ïƒ_trials): motivo adicional para que el f\* de decisiÃ³n se
+  61: recompute con datos forward, nunca con el backtest.
+  62: 
+  63: DistribuciÃ³n de maxDD forward simulada (52 trade-semanas densas â€” conservador: ~28
+  64: trades/aÃ±o observados â€” block b=4, por multiplicador de libro):
+  65: 
+  66: | Mult. libro | maxDD p50 | maxDD p95 | P(DD>7%) | P(DD>10%) | P(DD>12%) |
+  67: |---|---|---|---|---|---|
+  68: | 0.5x | âˆ’4.2% | âˆ’8.0% | 9.3% | 1.2% | 0.3% |
+  69: | 1.0x | âˆ’8.4% | âˆ’15.6% | 67.0% | 33.1% | 17.5% |
+  70: | 1.5x | âˆ’12.5% | âˆ’22.6% | â€” | â€” | 55.4% |
+  71: | 2.0x | âˆ’16.5% | âˆ’29.7% | â€” | â€” | 82.7% |
+  72: 
+  73: (SimulaciÃ³n estÃ¡tica, SIN la escalera de Â§3; con la escalera activa la cola real es
+  74: menor porque el multiplicador cae antes de llegar a ella. Cifras exactas en el JSON.)
+  75: 
+  76: ---
+  77: 
+  78: ## 1. Regla (a) â€” Pre-graduaciÃ³n: leverage del libro = **1.0x**, sin excepciones
+  79: 
+  80: - Mientras el forward NO haya graduado, el libro opera a **1.0x** (la config congelada
+  81:   tal cual, con su leverage interno; ningÃºn multiplicador global).
+  82: - **Criterio de graduaciÃ³n: el ya firmado â€” NO se duplica aquÃ­.** GradÃºa quien cumpla:
+  83:   - v11: Corte B de `WITHDRAWAL-PROTOCOL.md` Â§4 (52 semanas desde 2026-03-18; retorno,
+  84:     Calmar, MaxDD y N mÃ­nimos definidos ALLÃ; retiros Â§3 intactos).
+  85:   - v12/v14: el **juez sellado** del panel Codex (`HYPOTHESIS-REGISTRY.md`, "PANEL CODEX
+  86:     (4Âº auditor, 2026-07-21)"): reloj propio desde su freeze 2026-07-27, corte-52 Ãºnico
+  87:     test confirmatorio, gates econÃ³micos conjuntos, N_bind â‰¥ 12.
+  88: - Si esos documentos cambian (vÃ­a ADR), este protocolo hereda el cambio sin editarse:
+  89:   la referencia es normativa, el nÃºmero vive allÃ­.
+  90: 
+  91: ## 2. Regla (b) â€” Post-graduaciÃ³n: **leverage = min(1.5x, fracciÃ³n-Kelly forward)**
+  92: 
+  93: - Al graduar una configuraciÃ³n, el leverage del libro puede subir a
+  94:   **min(1.5x, 0.25 Ã— f\*_shrunk_forward)**, donde:
+  95:   - `f*_shrunk_forward` = Â½ Ã— (Î¼_fwd/ÏƒÂ²_fwd) computado **EXCLUSIVAMENTE con las
+  96:     trade-semanas del perÃ­odo forward** (post-freeze de la config graduada). El
+  97:     backtest 2025 queda prohibido en este cÃ¡lculo para siempre (doblemente
+  98:     contaminado: selecciÃ³n + este mismo anÃ¡lisis lo mirÃ³).
+  99:   - Requiere **N_fwd â‰¥ 20 trade-semanas forward**; con menos, el libro permanece en
+ 100:     1.0x aunque haya graduado (constituciÃ³n Â§6: sin N no hay ratios).
+ 101:   - La fracciÃ³n es **0.25 de Kelly** (borde inferior de la banda 0.25â€“0.5). Subir a
+ 102:     0.5Ã—Kelly requiere ADR + â‰¥52 trade-semanas forward. Nunca mÃ¡s de 0.5Ã—Kelly.
+ 103: - **El cap 1.5x es techo duro** aunque el Kelly forward diga mÃ¡s. Contexto de por quÃ©:
+ 104:   con los datos actuales 0.25Ã—Kelly sin shrink (2.35) lo excede, pero la celda
+ 105:   S7-MOTOR (registry, trials 68â†’69) ya demostrÃ³ que el leverage alto sobre esta
+ 106:   familia amplifica la parte sin edge; y a 1.5x estÃ¡tico la simulaciÃ³n pone
+ 107:   P(DD>12%) â‰ˆ 55% en un aÃ±o denso. 1.5x es lo mÃ¡ximo defendible.
+ 108: - Recompute trimestral (calendario, no discrecional): cada recompute usa TODAS las
+ 109:   trade-semanas forward acumuladas. Si el f\* recomputado cae por debajo del
+ 110:   multiplicador vigente, se baja al nuevo valor en la siguiente semana operativa
+ 111:   (bajar nunca requiere ADR; subir solo en el recompute trimestral).
+ 112: 
+ 113: ## 3. Regla (c) â€” Presupuesto de DD del libro y escalera de des-apalancamiento â€” **PROPUESTA**
+ 114: 
+ 115: Presupuesto de drawdown del libro: **12%** (coherente con W1 del
+ 116: `WITHDRAWAL-PROTOCOL.md`: a ese daÃ±o el sleeve Ãºnico actual dispara retiro; el libro
+ 117: no debe seguir apalancado camino a ese evento). DD medido sobre la equity del LIBRO,
+ 118: peak-to-trough, marcada al cierre semanal (viernes 12:55 COT).
+ 119: 
+ 120: | EscalÃ³n (DD del libro desde el pico) | Multiplicador mÃ¡ximo | DerivaciÃ³n (PROPUESTA) |
+ 121: |---|---|---|
+ 122: | DD â‰¤ 7% | el de Â§1/Â§2 (1.0x o min(1.5x, Kelly)) | zona normal: 7.84% fue el maxDD observado 2025 a 1.0x; p50 del aÃ±o denso simulado = 8.4% |
+ 123: | **DD > 7%** | **1.0x** | a 1.5x la p50 simulada (12.5%) ya invade el presupuesto; volver a 1.0x corta la amplificaciÃ³n antes de eso |
+ 124: | **DD > 10%** | **0.5x** | p(DD>10%) a 1.0x â‰ˆ 33% denso: zona de cola; a 0.5x la P(DD>12%) residual â‰ˆ 0.3% â€” frena la sangrÃ­a casi con certeza |
+ 125: | **DD > 12%** | **0 (flat) + revisiÃ³n formal** | presupuesto agotado = umbral W1; la revisiÃ³n decide retiro/continuaciÃ³n por los protocolos de cada sleeve, jamÃ¡s re-tunea este documento en caliente |
+ 126: 
+ 127: - Nota: la tarea sugerÃ­a 15% para el escalÃ³n flat; se propone **12%** porque es el
+ 128:   nÃºmero ya firmado en W1 â€” un libro apalancado no puede tener un presupuesto de DD
+ 129:   mÃ¡s laxo que el retiro de su Ãºnico sleeve. (Si el operador prefiere 15%, es una
+ 130:   ediciÃ³n legÃ­tima ANTES de firmar; despuÃ©s, solo por ADR fuera de drawdown.)
+ 150: - **Operador**: ____________________ Fecha: ____________
+ 151: - Al firmar, el estado pasa a `SIGNED` y los nÃºmeros de Â§3 dejan de ser PROPUESTA.
+ 152: 
+ 153: ---
+ 154: 
+ 155: ## REGISTRY-PROPOSAL (evento 0-trials â€” texto listo para que el OPERADOR lo pegue en `HYPOTHESIS-REGISTRY.md`; este task NO edita el registro)
+ 156: 
+ 157: > ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials â€” N sigue en 72)
+ 158: >
+ 159: > Regla de capital sellada ANTES del veredicto forward (`BOOK-LEVERAGE-GOVERNOR.md`,
+ 160: > borrador esperando firma). No es un trial: no se evaluÃ³ ninguna variante ni se
+ 161: > seleccionÃ³ nada â€” se computÃ³ el guard-rail sobre la serie honesta ya pagada
+ 162: > (2025 purgado +7.35%/32 tr + 2026 YTD +3.36%/11 tr; N=43 trade-semanas).
+ 163: > NÃºmeros (evidencia `.claude/evidence/book_kelly/2026-07-22/`): f\* continuo 9.39,
+ 164: > discreto 7.99, **IC95 block-b4 [âˆ’6.14, +48.71] INCLUYE CERO** (P(f\*â‰¤0)=14.5%);
+ 165: > shrunk Ã—Â½ (Lo-Mertens, media/2 = 0.46 SE): 4.69; banda 0.25â€“0.5Ã—Kelly shrunk
+ 166: > [1.17, 2.35]. Regla: 1.0x hasta graduaciÃ³n (criterios de WITHDRAWAL-PROTOCOL Â§4 /
+ 167: > juez v12 sellado, por referencia); despuÃ©s min(1.5x, 0.25Ã—f\*_shrunk **forward-only**,
+ 168: > N_fwdâ‰¥20); escalera DD 7%â†’1.0x / 10%â†’0.5x / 12%â†’flat+revisiÃ³n (PROPUESTA, alineada
+ 169: > con W1); umbrales no se relajan en drawdown (constituciÃ³n Â§5). Consistente con el
+ 170: > Kelly-guard del auditor fin-math (riesgo actual 0.23Ã—Kelly): no hay upside legal en
+ 171: > subir tamaÃ±o hoy â€” la decisiÃ³n de capital queda pre-firmada para DESPUÃ‰S del forward.
+--- .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+   1: {
+   2:   "task": "A2 â€” gobernador de leverage fraccional-Kelly a nivel LIBRO",
+   3:   "trials_consumed": 0,
+   4:   "trials_note": "0 trials: no se evalua ninguna hipotesis ni se selecciona ninguna variante; se computa un guard-rail sobre la serie ya pagada para sellarlo ANTES del veredicto forward (quant-constitution Â§1).",
+   5:   "inputs": {
+   6:     "trades_2025": "usdcop-trading-dashboard\\public\\data\\production\\trades\\smart_simple_v11_2025.json",
+   7:     "trades_2026": ".claude\\evidence\\cop_monitor_2025_2026\\2026-07-21\\monitor.json (v11_produccion.2026)",
+   8:     "verified": {
+   9:       "2025": {
+  10:         "n_trades": 32,
+  11:         "compounded_pct": 7.3460634723933715
+  12:       },
+  13:       "2026_ytd": {
+  14:         "n_trades": 11,
+  15:         "compounded_pct": 3.358221325672739,
+  16:         "nota": "N=11 < 20: solo conteo y PnL (constitucion Â§6)"
+  17:       }
+  18:     },
+  19:     "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)"
+  20:   },
+  21:   "series": {
+  22:     "definition": "retorno semanal del libro por trade-semana (pnl_pct/100, ya neto de costos y del leverage INTERNO 0.5-2.0x de la estrategia). f* es el MULTIPLICADOR DE LIBRO sobre la config congelada, no leverage absoluto de exchange.",
+  23:     "n_trade_weeks": 43,
+  24:     "weekly_returns": [
+  25:       0.0175,
+  26:       0.0175,
+  27:       -0.013883000000000001,
+  28:       0.0012230000000000001,
+  29:       -0.037846000000000005,
+  30:       0.0175,
+  31:       0.0075,
+  32:       0.015969999999999998,
+  33:       0.008712,
+  34:       -0.002409,
+  35:       0.0175,
+  36:       0.002549,
+  37:       0.0175,
+  38:       0.0175,
+  39:       0.0175,
+  40:       0.008693,
+  41:       -0.00869,
+  42:       -0.035,
+  43:       0.0175,
+  44:       0.0175,
+  45:       0.004679,
+  46:       0.012,
+  47:       0.0175,
+  48:       0.0175,
+  49:       -0.035,
+  50:       -0.035,
+  51:       0.011701,
+  52:       -0.0014910000000000001,
+  53:       0.00035099999999999997,
+  54:       0.004531,
+  55:       0.010291999999999999,
+  56:       -0.035,
+  57:       0.006104000000000001,
+  58:       -0.0063490000000000005,
+  59:       -0.001789,
+  60:       0.005272,
+  61:       0.003121,
+  62:       0.0175,
+  63:       0.010564,
+  64:       0.005168000000000001,
+  65:       0.00445,
+  66:       -0.015,
+  67:       0.004402
+  68:     ],
+  69:     "mu_weekly": 0.0025540697674418605,
+  70:     "sigma_weekly": 0.01649244086066813,
+  71:     "worst_week": -0.037846000000000005,
+  72:     "weeks_live_calendar": 80
+  73:   },
+  74:   "kelly": {
+  75:     "f_star_continuous_mu_over_var": 9.389941475852757,
+  76:     "f_star_discrete_empirical": 7.987105638640807,
+  77:     "f_star_continuous_flat_as_zero_variant": 9.386746439759726,
+  78:     "flat_variant_note": "aÃ±adir semanas flat=0 deja f* casi invariante (mu y E[r^2] escalan igual); se reporta por transparencia.",
+  79:     "ci95_f_cont_bootstrap_iid": [
+  80:       -7.150791714300027,
+  81:       50.62112785639327
+  82:     ],
+  83:     "ci95_f_cont_block_b4": [
+  84:       -6.13875128321413,
+  85:       48.70766493474508
+  86:     ],
+  87:     "ci95_f_disc_block_b4": [
+  88:       0.0,
+  89:       21.790149553453467
+  90:     ],
+  91:     "prob_f_cont_leq_0_block_b4": 0.1449
+  92:   },
+  93:   "shrinkage_lo_mertens": {
+  94:     "sharpe_weekly": 0.1548630544756364,
+  95:     "n": 43,
+  96:     "skew": -1.2664277497741003,
+  97:     "kurtosis": 3.60508071155173,
+  98:     "se_lo_2002": 0.15341017240011065,
+  99:     "se_mertens_2002": 0.16786913503542453,
+ 100:     "sr_half_in_se_units_mertens": 0.46126125104223736,
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$f='"'.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md'; "'$i=0; Get-Content -LiteralPath $f | ForEach-Object {$i++; if($i -ge 127 -and $i -le 151){'"'{0,4}: {1}' -f "'$i,$_}}; Write-Output '"'PROMISE TERMS'; rg -n -i \"promet|garant|asegur|retorno|edge|rentab|beneficio|ganancia|upside|certeza|ciert\" -- '.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md'; Write-Output 'INVALIDATED TERMS'; rg -n \"26\\.05|13\\.05|INVALIDATED_RETURNS\" -- 'scripts/analysis/book_kelly_governor.py' '.claude/evidence/book_kelly/2026-07-22/book_kelly.json' '.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md'" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1410ms:
+ 127: - Nota: la tarea sugerÃ­a 15% para el escalÃ³n flat; se propone **12%** porque es el
+ 128:   nÃºmero ya firmado en W1 â€” un libro apalancado no puede tener un presupuesto de DD
+ 129:   mÃ¡s laxo que el retiro de su Ãºnico sleeve. (Si el operador prefiere 15%, es una
+ 130:   ediciÃ³n legÃ­tima ANTES de firmar; despuÃ©s, solo por ADR fuera de drawdown.)
+ 131: - **Re-armado (histÃ©resis)**: se recupera el escalÃ³n superior solo cuando la equity
+ 132:   del libro cierra â‰¥ 4 semanas consecutivas con DD < (umbral del escalÃ³n âˆ’ 2pp)
+ 133:   (p.ej. vuelve de 1.0xâ†’1.5x cuando DD < 5% durante 4 semanas). Sin re-armado
+ 134:   intradÃ­a/intra-semana.
+ 135: - La escalera gobierna el MULTIPLICADOR DE LIBRO; no toca el sizing interno de la
+ 136:   estrategia (congelado) ni sustituye los criterios de retiro W1â€“W6, que siguen
+ 137:   vigentes y dominan.
+ 138: 
+ 139: ## 4. Regla (d) â€” Anti-relajaciÃ³n
+ 140: 
+ 141: - **NingÃºn umbral de este protocolo se relaja estando el libro en drawdown**
+ 142:   (quant-constitution Â§5). Cambios solo por **ADR**, con el libro en DD < 7%, y
+ 143:   nunca en la misma semana en que un escalÃ³n haya disparado.
+ 144: - Endurecer (bajar leverage, bajar umbrales) estÃ¡ siempre permitido sin ADR.
+ 145: - El multiplicador aplicado cada semana se registra en el ledger append-only junto
+ 146:   al `strategy_id` y la semana ISO (mismo mecanismo del juez v12, punto 5).
+ 147: 
+ 148: ## 5. Firma
+ 149: 
+ 150: - **Operador**: ____________________ Fecha: ____________
+ 151: - Al firmar, el estado pasa a `SIGNED` y los nÃºmeros de Â§3 dejan de ser PROPUESTA.
+PROMISE TERMS
+83:  - v11: Corte B de `WITHDRAWAL-PROTOCOL.md` §4 (52 semanas desde 2026-03-18; retorno,
+106:  familia amplifica la parte sin edge; y a 1.5x estático la simulación pone
+124:| **DD > 10%** | **0.5x** | p(DD>10%) a 1.0x ≈ 33% denso: zona de cola; a 0.5x la P(DD>12%) residual ≈ 0.3% — frena la sangría casi con certeza |
+145:- El multiplicador aplicado cada semana se registra en el ledger append-only junto
+170:> Kelly-guard del auditor fin-math (riesgo actual 0.23×Kelly): no hay upside legal en
+INVALIDATED TERMS
+.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:31:Los números pre-reparación (+26.05/+13.05) están invalidados y el script generador
+.claude/evidence/book_kelly/2026-07-22/book_kelly.json:19:    "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)"
+scripts/analysis/book_kelly_governor.py:6:Los numeros pre-reparacion (+26.05 / +13.05) estan invalidados y este script
+scripts/analysis/book_kelly_governor.py:55:INVALIDATED_RETURNS = {26.05, 13.05}  # pre-reparacion / pre-purga: PROHIBIDOS
+scripts/analysis/book_kelly_governor.py:63:    if round(s["total_return_pct"], 2) in INVALIDATED_RETURNS:
+scripts/analysis/book_kelly_governor.py:285:            "invalidated_forbidden": "+26.05% / +13.05% (pre-reparacion/pre-purga)",
+
+web search: 
+web search: Andrew Lo 2002 statistics of Sharpe ratios formula variance iid pdf ...
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs');const b=JSON.parse(fs.readFileSync('usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json'));const y=JSON.parse(fs.readFileSync('.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json')).results.v11_produccion['2026'];const a=b.trades.concat(y.trades);const r=a.map(x=>x.pnl_pct/100);
+const start=Date.parse('2025-01-06T00:00:00Z'), end=Date.parse('2026-07-13T00:00:00Z'), wk=7*864e5;const full=Array(Math.round((end-start)/wk)+1).fill(0);for(const t of a){const d=Date.parse(t.timestamp.slice(0,10)+'T00:00:00Z');full[Math.round((d-start)/wk)]=t.pnl_pct/100}
+function stat(x){const n=x.length,m=x.reduce((s,v)=>s+v,0)/n,v=x.reduce((s,z)=>s+(z-m)**2,0)/(n-1);return v>0?m/v:0}let seed=0x12345678;function rand(){seed"'^=seed<<13;seed''^=seed>>>17;seed''^=seed<<5;return (seed>>>0)/4294967296}function boot(x,B=100000,b=4){const n=x.length,o=new Array(B);for(let k=0;k<B;k++){let z=[];for(let j=0;j<Math.ceil(n/b);j++){const s=Math.floor(rand()*n);for(let q=0;q<b&&z.length<n;q++)z.push(x[(s+q)%n])}o[k]=stat(z)}o.sort((p,q)=>p-q);const q=p=>o[Math.floor((o.length-1)*p)];return {point:stat(x),p025:q(.025),p975:q(.975),ple0:o.filter(v=>v<=0).length/B}}
+console.log('"'active n',r.length,boot(r));console.log('calendar n/nonzero',full.length,full.filter(Boolean).length,boot(full));
+'@ | node" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 3351ms:
+active n 43 {
+  point: 9.389941475852758,
+  p025: -6.108655593147167,
+  p975: 48.08423927024255,
+  ple0: 0.14139
+}
+calendar n/nonzero 80 43 {
+  point: 9.38674643975974,
+  p025: -7.129106247478204,
+  p975: 42.91727724559272,
+  ple0: 0.15543
+}
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n \"26\\.05|13\\.05\" -- 'usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json' '.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json'; if ("'$LASTEXITCODE -eq 1) { Write-Output '"'No matches in inputs' }" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1246ms:
+No matches in inputs
+
+web search: 
+web search: site:papers.ssrn.com Mertens 2002 Sharpe ratio skewness kurtosis ...
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+const fs=require('fs');const a=JSON.parse(fs.readFileSync('usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json')).trades.concat(JSON.parse(fs.readFileSync('.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json')).results.v11_produccion['2026'].trades).map(x=>x.pnl_pct/100);const n=a.length,m=a.reduce((s,x)=>s+x,0)/n;const m2=a.reduce((s,x)=>s+(x-m)**2,0)/n,m3=a.reduce((s,x)=>s+(x-m)**3,0)/n,m4=a.reduce((s,x)=>s+(x-m)**4,0)/n;const sp=Math.sqrt(m2),ss=Math.sqrt(m2*n/(n-1)),srp=m/sp,srs=m/ss;function se(sr,g3,g4,d){return Math.sqrt((1-g3*sr+(g4-1)*sr*sr/4)/d)}console.log({population:{sd:sp,sr:srp,g3:m3/sp**3,g4:m4/sp**4,se_n:se(srp,m3/sp**3,m4/sp**4,n),se_n1:se(srp,m3/sp**3,m4/sp**4,n-1)},script:{sd:ss,sr:srs,g3:m3/ss**3,g4:m4/ss**4,se_n:se(srs,m3/ss**3,m4/ss**4,n),se_n1:se(srs,m3/ss**3,m4/ss**4,n-1)}})
+'@ | node" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1995ms:
+{
+  population: {
+    sd: 0.016299540179554147,
+    sr: 0.15669581714002218,
+    g3: -1.3119254769315434,
+    g4: 3.7787949181741216,
+    se_n: 0.16862167471146727,
+    se_n1: 0.1706172669517456
+  },
+  script: {
+    sd: 0.01649244086066813,
+    sr: 0.15486305447563642,
+    g3: -1.2664277497741006,
+    g4: 3.60508071155173,
+    se_n: 0.16786913503542453,
+    se_n1: 0.16985582117071613
+  }
+}
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -i \"Mertens|Statistics of Sharpe Ratios|Comments on the.*Variance.*Lo\" --glob '"'!node_modules/**'"' --glob '"'!dist/**'"' --glob '"'!build/**'"' ." in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1424ms:
+.\vendor\quant-skills\13-cross-asset-quant\xasset-alpha-engine\scripts\xasset\validation.py:19:  Lo (2002), "The Statistics of Sharpe Ratios", Financial Analysts Journal
+.\vendor\quant-skills\13-cross-asset-quant\xasset-alpha-engine\scripts\xasset\validation.py:144:    Uses the Lo (2002) / Mertens expansion, which accounts for skew and
+.\.claude\skills\xasset-alpha-engine\scripts\xasset\validation.py:19:  Lo (2002), "The Statistics of Sharpe Ratios", Financial Analysts Journal
+.\.claude\skills\xasset-alpha-engine\scripts\xasset\validation.py:144:    Uses the Lo (2002) / Mertens expansion, which accounts for skew and
+.\.claude\skills\xasset-alpha-engine\references\em-fx.md:69:  `sharpe_ratio_stderr`, which applies the Lo/Mertens expansion and widens the
+.\vendor\quant-skills\13-cross-asset-quant\xasset-alpha-engine\references\em-fx.md:69:  `sharpe_ratio_stderr`, which applies the Lo/Mertens expansion and widens the
+.\.claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md:53:**Shrinkage justificado por Lo (2002) / Mertens (2002)**: con N=43 el SE del Sharpe
+.\.claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md:54:semanal (0.155) es 0.153 iid (Lo) y 0.168 con el ajuste skew/kurtosis (Mertens; skew
+.\.claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md:165:> shrunk ×½ (Lo-Mertens, media/2 = 0.46 SE): 4.69; banda 0.25–0.5×Kelly shrunk
+.\.claude\specs\assets\usdcop\HYPOTHESIS-REGISTRY.md:418:- **B4 — Sharpe honesto (Lo-Mertens, skew −1.29)**: 2025 = 1.48, IC95 [−1.27, +4.24]
+.\scripts\analysis\book_kelly_governor.py:19:    del Sharpe con N~43 semanas (Lo 2002; Mertens 2002 con skew/kurtosis).
+.\scripts\analysis\book_kelly_governor.py:162:def lo_mertens_se(r: np.ndarray) -> dict:
+.\scripts\analysis\book_kelly_governor.py:163:    """SE del Sharpe semanal: Lo (2002) iid y Mertens (2002) con skew/kurtosis."""
+.\scripts\analysis\book_kelly_governor.py:170:    se_mertens = math.sqrt((1 - m3 * sr + (m4 - 1) / 4 * sr**2) / n)
+.\scripts\analysis\book_kelly_governor.py:177:        "se_mertens_2002": float(se_mertens),
+.\scripts\analysis\book_kelly_governor.py:178:        "sr_half_in_se_units_mertens": float((sr - sr / 2) / se_mertens),
+.\scripts\analysis\book_kelly_governor.py:244:    # Shrinkage: media real = mitad de la observada (incertidumbre Lo-Mertens)
+.\scripts\analysis\book_kelly_governor.py:245:    lm = lo_mertens_se(r)
+.\scripts\analysis\book_kelly_governor.py:314:        "shrinkage_lo_mertens": {
+.\.claude\evidence\cop_plan_b\2026-07-21\b2_b3_b4.json:24:  "b4_sharpe_lo_mertens": {
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:19:    del Sharpe con N~43 semanas (Lo 2002; Mertens 2002 con skew/kurtosis).
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:162:def lo_mertens_se(r: np.ndarray) -> dict:
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:163:    """SE del Sharpe semanal: Lo (2002) iid y Mertens (2002) con skew/kurtosis."""
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:170:    se_mertens = math.sqrt((1 - m3 * sr + (m4 - 1) / 4 * sr**2) / n)
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:177:        "se_mertens_2002": float(se_mertens),
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:178:        "sr_half_in_se_units_mertens": float((sr - sr / 2) / se_mertens),
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:244:    # Shrinkage: media real = mitad de la observada (incertidumbre Lo-Mertens)
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:245:    lm = lo_mertens_se(r)
+.\.claude\evidence\book_kelly\2026-07-22\generator_script.py:314:        "shrinkage_lo_mertens": {
+.\.claude\evidence\book_kelly\2026-07-22\book_kelly.json:93:  "shrinkage_lo_mertens": {
+.\.claude\evidence\book_kelly\2026-07-22\book_kelly.json:99:    "se_mertens_2002": 0.16786913503542453,
+.\.claude\evidence\book_kelly\2026-07-22\book_kelly.json:100:    "sr_half_in_se_units_mertens": 0.46126125104223736,
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$f='"'.claude/skills/xasset-alpha-engine/scripts/xasset/validation.py'; "'$i=0; Get-Content -Encoding utf8 -LiteralPath $f | ForEach-Object {$i++; if($i -le 25 -or ($i -ge 135 -and $i -le 175)){'"'{0,4}: {1}' -f "'$i,$_}}' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1247ms:
+   1: """Backtest validation that can say no.
+   2: 
+   3: The audit of this collection found `evaluate_backtest.py` will return
+   4: "Score: 94/100 - Verdict: Deploy" for a purely in-sample curve fit, because
+   5: out-of-sample performance is not one of its inputs. This module implements the
+   6: measurements that make that impossible:
+   7: 
+   8: - `purged_kfold_splits`  - CV that does not leak across overlapping labels
+   9: - `probabilistic_sharpe_ratio` - Sharpe as a probability, not a point estimate
+  10: - `deflated_sharpe_ratio` - Sharpe haircut for the number of trials you ran
+  11: - `pbo_cscv`             - probability your backtest selection is overfit
+  12: - `sharpe_ratio_stderr`  - CI, autocorrelation-adjusted
+  13: 
+  14: References:
+  15:   Bailey & Lopez de Prado (2014), "The Deflated Sharpe Ratio", J. Portfolio Mgmt
+  16:   Bailey, Borwein, Lopez de Prado & Zhu (2016), "The Probability of Backtest
+  17:     Overfitting", J. Computational Finance
+  18:   Lopez de Prado (2018), "Advances in Financial Machine Learning", ch. 7
+  19:   Lo (2002), "The Statistics of Sharpe Ratios", Financial Analysts Journal
+  20: """
+  21: 
+  22: from __future__ import annotations
+  23: 
+  24: import math
+  25: from dataclasses import dataclass
+ 135:     sr = r.mean() / r.std(ddof=1)
+ 136:     if periods_per_year:
+ 137:         sr *= math.sqrt(periods_per_year)
+ 138:     return float(sr)
+ 139: 
+ 140: 
+ 141: def sharpe_ratio_stderr(returns, adjust_autocorr: bool = True) -> float:
+ 142:     """Standard error of the non-annualised Sharpe ratio.
+ 143: 
+ 144:     Uses the Lo (2002) / Mertens expansion, which accounts for skew and
+ 145:     kurtosis - the normal-iid formula understates the error badly for the
+ 146:     fat-tailed, negatively-skewed returns typical of carry strategies.
+ 147: 
+ 148:     With `adjust_autocorr`, applies a first-order autocorrelation correction.
+ 149:     Monthly-rebalanced strategies on daily returns are autocorrelated, and
+ 150:     ignoring it inflates the apparent significance.
+ 151:     """
+ 152:     r = _clean(returns)
+ 153:     n = r.size
+ 154:     sr = r.mean() / r.std(ddof=1)
+ 155:     g3 = float(stats.skew(r, bias=False))
+ 156:     g4 = float(stats.kurtosis(r, fisher=False, bias=False))  # raw, normal = 3
+ 157: 
+ 158:     var = (1.0 - g3 * sr + 0.25 * (g4 - 1.0) * sr**2) / (n - 1)
+ 159:     var = max(var, 1e-12)
+ 160:     se = math.sqrt(var)
+ 161: 
+ 162:     if adjust_autocorr and n > 3:
+ 163:         rho = float(np.corrcoef(r[:-1], r[1:])[0, 1])
+ 164:         if np.isfinite(rho) and abs(rho) < 0.999:
+ 165:             # Inflate SE when returns are positively autocorrelated.
+ 166:             se *= math.sqrt((1.0 + rho) / (1.0 - rho))
+ 167:     return se
+ 168: 
+ 169: 
+ 170: def _repo_metrics():
+ 171:     """The constitutional SSOT for PSR/DSR — `services/common/metrics.py`.
+ 172: 
+ 173:     `.claude/rules/quant-constitution.md` names that exact path as the only source for edge
+ 174:     claims, and it gates releases in production pipelines. This module therefore must NOT
+ 175:     carry its own implementation: two implementations of the gate is worse than none, because
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$f='"'.claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md'; "'$i=0; Get-Content -Encoding utf8 -LiteralPath $f | ForEach-Object {$i++; if($i -ge 402 -and $i -le 425){'"'{0,4}: {1}' -f "'$i,$_}}; $f='"'.claude/evidence/cop_plan_b/2026-07-21/b2_b3_b4.json'; "'$i=0; Get-Content -Encoding utf8 -LiteralPath $f | ForEach-Object {$i++; if($i -ge 20 -and $i -le 42){'"'{0,4}: {1}' -f "'$i,$_}}' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1075ms:
+ 402: | Año | v11 (cap 2.0) | v12 (cap 1.5) | Delta |
+ 403: |---|---|---|---|
+ 404: | 2022 | −3.78% / DD 5.88 | −3.74% / DD 5.87 | ≈0 (cap no muerde) |
+ 405: | 2023 | −1.14% / DD 7.68 | **+1.91% / DD 4.96** | v12 mejor en TODO |
+ 406: | 2024 | +7.68% / DD 6.88 | **+14.23% / DD 3.50** | v12 casi 2× retorno, ½ DD |
+ 407: | 2025* | +13.05% / DD 7.74 | +9.22% / DD 5.19 | cede retorno, Calmar ≈ igual |
+ 408: 
+ 409:   *2025 = re-medición de la misma celda con mejor instrumento, no trial nuevo. Compuesto
+ 410:   2022-2024 (años que la elección del cap JAMÁS miró): v11 +2.4% vs **v12 +12.1%**.
+ 411:   Mecanismo (el que Codex predijo en R2): menos leverage → el effective-HS salta menos →
+ 412:   más trades sobreviven hasta el TP. El motor confirma que el replay SUBESTIMABA a v12.
+ 413: - **B2 — Potencia del forward (bootstrap PAREADO por trade)**: P(Calmar v12>v11) = 97.6%
+ 414:   a 26 semanas, 99.8% a 52. (La v1 del cálculo escalaba uniforme y daba 50% — corregida.)
+ 415: - **B3 — Gap de lunes (M5 reparado, 335 lunes)**: |gap| p50 16.7 / p90 73 / p99 157 bps;
+ 416:   peor −163/+247. A lev 2.0 el p99 ≈ 3.1% de equity — el riesgo que el HS no limita;
+ 417:   a cap 1.5 ≈ 2.3%.
+ 418: - **B4 — Sharpe honesto (Lo-Mertens, skew −1.29)**: 2025 = 1.48, IC95 [−1.27, +4.24]
+ 419:   — **INCLUYE CERO**. Ningún titular de Sharpe COP debe publicarse sin este IC.
+ 420: 
+ 421: **Spec v12 respaldado por diseño**: la evidencia de v12 ya no es solo la celda 2025
+ 422: contaminada — es el delta pareado en 3 años de diseño que la elección del cap nunca vio.
+ 423: Arranque paper 2026-07-27 (A1/A2 listos). Juez: forward.
+ 424: 
+ 425: ---
+  20:     "p50": 16.1,
+  21:     "p90": 61.3,
+  22:     "p99": 132.5
+  23:   },
+  24:   "b4_sharpe_lo_mertens": {
+  25:     "sr": 1.483765878503157,
+  26:     "ic95": [
+  27:       -1.2682929618042593,
+  28:       4.235824718810574
+  29:     ],
+  30:     "skew": -1.287250118773656,
+  31:     "kurt": 3.2873920202068354
+  32:   },
+  33:   "b2_power_weeks_CORREGIDO_pareado": {
+  34:     "26": 0.976,
+  35:     "52": 0.998,
+  36:     "78": 0.999,
+  37:     "104": 1.0
+  38:   },
+  39:   "b2_nota": "v1 del calculo escalaba todos los trades por igual (anula el cap por construccion); v2 aplica el cap POR TRADE (asimetrico) y parea las semanas"
+  40: }
+
+web search: 
+web search: Elmar Mertens Comments on the correct variance of estimated Sharpe ratios PDF ...
+web search: 
+web search: 
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$f='"'.claude/evidence/book_kelly/2026-07-22/book_kelly.json'; "'$i=0; Get-Content -Encoding utf8 -LiteralPath $f | ForEach-Object {$i++; if($i -ge 90 -and $i -le 180){'"'{0,4}: {1}' -f "'$i,$_}}; $f='"'scripts/analysis/book_kelly_governor.py'; "'$i=0; Get-Content -Encoding utf8 -LiteralPath $f | ForEach-Object {$i++; if($i -ge 286 -and $i -le 340){'"'{0,4}: {1}' -f "'$i,$_}}' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1052ms:
+  90:     ],
+  91:     "prob_f_cont_leq_0_block_b4": 0.1449
+  92:   },
+  93:   "shrinkage_lo_mertens": {
+  94:     "sharpe_weekly": 0.1548630544756364,
+  95:     "n": 43,
+  96:     "skew": -1.2664277497741003,
+  97:     "kurtosis": 3.60508071155173,
+  98:     "se_lo_2002": 0.15341017240011065,
+  99:     "se_mertens_2002": 0.16786913503542453,
+ 100:     "sr_half_in_se_units_mertens": 0.46126125104223736,
+ 101:     "reading": "con N=43 semanas el SE del Sharpe semanal es del orden del Sharpe mismo: una media real = mitad de la observada esta a menos de 1 SE — indistinguible. El sizing usa el f* SHRUNK.",
+ 102:     "f_star_cont_half_mean": 4.694970737926378,
+ 103:     "f_star_disc_half_mean": 4.3608580087684015
+ 104:   },
+ 105:   "recommended_fraction_band": {
+ 106:     "kelly_0.25x_observado": 2.347485368963189,
+ 107:     "kelly_0.50x_observado": 4.694970737926378,
+ 108:     "kelly_0.25x_shrunk_half": 1.1737426844815946,
+ 109:     "kelly_0.50x_shrunk_half": 2.347485368963189
+ 110:   },
+ 111:   "dd_forward_simulation_52w": [
+ 112:     {
+ 113:       "book_multiplier": 0.5,
+ 114:       "maxdd_p50_pct": -4.234610099309711,
+ 115:       "maxdd_p75_pct": -5.45311605048433,
+ 116:       "maxdd_p95_pct": -7.9637645261886965,
+ 117:       "prob_dd_worse_than_7pct": 0.0931,
+ 118:       "prob_dd_worse_than_10pct": 0.0119,
+ 119:       "prob_dd_worse_than_12pct": 0.003,
+ 120:       "prob_dd_worse_than_15pct": 0.0001
+ 121:     },
+ 122:     {
+ 123:       "book_multiplier": 1.0,
+ 124:       "maxdd_p50_pct": -8.362276197756746,
+ 125:       "maxdd_p75_pct": -10.868271281868628,
+ 126:       "maxdd_p95_pct": -15.594604559953357,
+ 127:       "prob_dd_worse_than_7pct": 0.6705,
+ 128:       "prob_dd_worse_than_10pct": 0.3312,
+ 129:       "prob_dd_worse_than_12pct": 0.1753,
+ 130:       "prob_dd_worse_than_15pct": 0.0617
+ 131:     },
+ 132:     {
+ 133:       "book_multiplier": 1.5,
+ 134:       "maxdd_p50_pct": -12.549941439754491,
+ 135:       "maxdd_p75_pct": -16.11288686488589,
+ 136:       "maxdd_p95_pct": -22.62276332301661,
+ 137:       "prob_dd_worse_than_7pct": 0.9467,
+ 138:       "prob_dd_worse_than_10pct": 0.7855,
+ 139:       "prob_dd_worse_than_12pct": 0.5537,
+ 140:       "prob_dd_worse_than_15pct": 0.3224
+ 141:     },
+ 142:     {
+ 143:       "book_multiplier": 2.0,
+ 144:       "maxdd_p50_pct": -16.536786753507194,
+ 145:       "maxdd_p75_pct": -21.23476615220307,
+ 146:       "maxdd_p95_pct": -29.737214613823415,
+ 147:       "prob_dd_worse_than_7pct": 0.9975,
+ 148:       "prob_dd_worse_than_10pct": 0.8866,
+ 149:       "prob_dd_worse_than_12pct": 0.8273,
+ 150:       "prob_dd_worse_than_15pct": 0.602
+ 151:     }
+ 152:   ],
+ 153:   "governor_recommendation": {
+ 154:     "pre_graduation": 1.0,
+ 155:     "post_graduation_rule": "min(1.5, 0.25 x f*_shrunk computado con datos FORWARD)",
+ 156:     "rationale": "el IC95 block-b4 del f* INCLUYE CERO — esta serie ni siquiera prueba que el Kelly optimo sea positivo; ademas el tramo 2025 esta contaminado por seleccion (DSR 0.72<0.95). Por eso pre-graduacion = 1.0x sin excepciones. Post-graduacion la banda 0.25x Kelly-shrunk (~1.2 con estos datos) queda por debajo del cap 1.5x y la 0.25x sin shrink (~2.3) por encima: el cap 1.5x es el techo duro y la fraccion se recomputa SOLO con trades forward, nunca con el backtest."
+ 157:   }
+ 158: }
+ 286:         },
+ 287:         "series": {
+ 288:             "definition": (
+ 289:                 "retorno semanal del libro por trade-semana (pnl_pct/100, ya neto "
+ 290:                 "de costos y del leverage INTERNO 0.5-2.0x de la estrategia). "
+ 291:                 "f* es el MULTIPLICADOR DE LIBRO sobre la config congelada, "
+ 292:                 "no leverage absoluto de exchange."
+ 293:             ),
+ 294:             "n_trade_weeks": n,
+ 295:             "weekly_returns": [float(x) for x in r],
+ 296:             "mu_weekly": mu,
+ 297:             "sigma_weekly": sd,
+ 298:             "worst_week": float(r.min()),
+ 299:             "weeks_live_calendar": weeks_live,
+ 300:         },
+ 301:         "kelly": {
+ 302:             "f_star_continuous_mu_over_var": f_cont,
+ 303:             "f_star_discrete_empirical": f_disc,
+ 304:             "f_star_continuous_flat_as_zero_variant": f_cont_full,
+ 305:             "flat_variant_note": (
+ 306:                 "añadir semanas flat=0 deja f* casi invariante "
+ 307:                 "(mu y E[r^2] escalan igual); se reporta por transparencia."
+ 308:             ),
+ 309:             "ci95_f_cont_bootstrap_iid": ci95(boot_cont_iid),
+ 310:             "ci95_f_cont_block_b4": ci95(boot_cont_blk),
+ 311:             "ci95_f_disc_block_b4": ci95(boot_disc_blk),
+ 312:             "prob_f_cont_leq_0_block_b4": float((boot_cont_blk <= 0).mean()),
+ 313:         },
+ 314:         "shrinkage_lo_mertens": {
+ 315:             **lm,
+ 316:             "reading": (
+ 317:                 "con N=43 semanas el SE del Sharpe semanal es del orden del "
+ 318:                 "Sharpe mismo: una media real = mitad de la observada esta a "
+ 319:                 "menos de 1 SE — indistinguible. El sizing usa el f* SHRUNK."
+ 320:             ),
+ 321:             "f_star_cont_half_mean": f_cont_half,
+ 322:             "f_star_disc_half_mean": f_disc_half,
+ 323:         },
+ 324:         "recommended_fraction_band": frac_band,
+ 325:         "dd_forward_simulation_52w": dd_sims,
+ 326:         "governor_recommendation": {
+ 327:             "pre_graduation": 1.0,
+ 328:             "post_graduation_rule": "min(1.5, 0.25 x f*_shrunk computado con datos FORWARD)",
+ 329:             "rationale": (
+ 330:                 "el IC95 block-b4 del f* INCLUYE CERO — esta serie ni siquiera "
+ 331:                 "prueba que el Kelly optimo sea positivo; ademas el tramo 2025 "
+ 332:                 "esta contaminado por seleccion (DSR 0.72<0.95). Por eso "
+ 333:                 "pre-graduacion = 1.0x sin excepciones. Post-graduacion la banda "
+ 334:                 "0.25x Kelly-shrunk (~1.2 con estos datos) queda por debajo del "
+ 335:                 "cap 1.5x y la 0.25x sin shrink (~2.3) por encima: el cap 1.5x "
+ 336:                 "es el techo duro y la fraccion se recomputa SOLO con trades "
+ 337:                 "forward, nunca con el backtest."
+ 338:             ),
+ 339:         },
+ 340:     }
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n '\"total_trades\"|\"total_return_pct\"|\"n_trades\"|\"ret_pct\"' -- 'usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json' '.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json' | Select-Object -First 20" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1023ms:
+usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json:620:    "total_trades": 32,
+usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json:625:    "total_return_pct": 7.35,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:6:        "ret_pct": 7.35,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:8:        "n_trades": 32,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:16:            "ret_pct": 2.09,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:22:            "ret_pct": -1.98,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:28:            "ret_pct": 3.0,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:34:            "ret_pct": 7.46,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:40:            "ret_pct": -1.82,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:46:            "ret_pct": 2.23,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:52:            "ret_pct": 1.11,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:58:            "ret_pct": -2.52,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:64:            "ret_pct": 0.04,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:70:            "ret_pct": -2.07,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:366:        "ret_pct": 3.36,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:368:        "n_trades": 11,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:376:            "ret_pct": 0.61,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:382:            "ret_pct": -0.29,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:388:            "ret_pct": 3.15,
+.claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json:394:            "ret_pct": 0.96,
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-FileHash -Algorithm SHA256 -LiteralPath 'scripts/analysis/book_kelly_governor.py','.claude/evidence/book_kelly/2026-07-22/generator_script.py' | Select-Object Path,Hash | Format-List" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1297ms:
+
+
+Path : C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_kelly_governor.py
+Hash : 52340AC180126B1A72171A17466452EE911EAF8E6CE73A32AE41A47AD134ED83
+
+Path : C:\Users\pedro\OneDrive\Documents\ALGO 
+       TRADING\USDCOP-RL-Models\.claude\evidence\book_kelly\2026-07-22\generator_script.py
+Hash : 52340AC180126B1A72171A17466452EE911EAF8E6CE73A32AE41A47AD134ED83
+
+
+
+
+codex
+VERDICT: RECHAZADO
+
+1. El recorte ×½ no es un shrinkage derivado de Lo–Mertens. Las fórmulas del error estándar son algebraicamente correctas bajo sus supuestos, pero escoger exactamente la mitad porque está a 0.46 SE es una decisión conservadora arbitraria, no un estimador de shrinkage. Debe documentarse como haircut de política o derivarse de un prior/estimador formal. Además, Lo corresponde al caso normal-IID y Mertens extiende la varianza mediante skew/kurtosis; la cita actual es incompleta. [book_kelly_governor.py:162](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/book_kelly_governor.py:162>), [book_kelly_governor.py:244](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/book_kelly_governor.py:244>), [BOOK-LEVERAGE-GOVERNOR.md:53](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:53>). Véanse [Lo (2002)](https://traders.berkeley.edu/papers/The-Statistics-of-Sharpe-Ratios.pdf) y [Mertens (2002)](http://www.elmarmertens.com/research/discussion/soprano01.pdf).
+
+2. La regla post-graduación carece de piso cero. Si el Kelly forward resulta negativo —posibilidad coherente con el IC actual— `min(1.5, 0.25 × f*)` produce un multiplicador negativo e invierte el libro. Debe definirse, como mínimo, `max(0, min(1.5, ...))` y aclararse la conducta operativa. [BOOK-LEVERAGE-GOVERNOR.md:93](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:93>), [book_kelly.json:153](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/evidence/book_kelly/2026-07-22/book_kelly.json:153>).
+
+3. Inconsistencia documental: el spec informa skew −1.4, mientras que la evidencia generada contiene −1.2664, que redondea a −1.3. [BOOK-LEVERAGE-GOVERNOR.md:54](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:54>), [book_kelly.json:96](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/evidence/book_kelly/2026-07-22/book_kelly.json:96>).
+
+El resto de las verificaciones pasa: 43 trade-semanas honestas; compuestos 7.3461% y 3.3582%; μ=0.255407%, σ=1.649244%, Kelly continuo 9.38994 y discreto 7.98711; bootstrap circular b=4 implementado correctamente y su IC [−6.1388, 48.7077] incluye cero; +26.05/+13.05 solo aparecen como guardas/texto; JSON válido sin NaN/Infinity; estado `DRAFT_AWAITING_OPERATOR_SIGNATURE`; regla anti-relajación presente; y no hay promesas de retorno o edge.
+tokens used
+90,918
+VERDICT: RECHAZADO
+
+1. El recorte ×½ no es un shrinkage derivado de Lo–Mertens. Las fórmulas del error estándar son algebraicamente correctas bajo sus supuestos, pero escoger exactamente la mitad porque está a 0.46 SE es una decisión conservadora arbitraria, no un estimador de shrinkage. Debe documentarse como haircut de política o derivarse de un prior/estimador formal. Además, Lo corresponde al caso normal-IID y Mertens extiende la varianza mediante skew/kurtosis; la cita actual es incompleta. [book_kelly_governor.py:162](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/book_kelly_governor.py:162>), [book_kelly_governor.py:244](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/book_kelly_governor.py:244>), [BOOK-LEVERAGE-GOVERNOR.md:53](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:53>). Véanse [Lo (2002)](https://traders.berkeley.edu/papers/The-Statistics-of-Sharpe-Ratios.pdf) y [Mertens (2002)](http://www.elmarmertens.com/research/discussion/soprano01.pdf).
+
+2. La regla post-graduación carece de piso cero. Si el Kelly forward resulta negativo —posibilidad coherente con el IC actual— `min(1.5, 0.25 × f*)` produce un multiplicador negativo e invierte el libro. Debe definirse, como mínimo, `max(0, min(1.5, ...))` y aclararse la conducta operativa. [BOOK-LEVERAGE-GOVERNOR.md:93](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:93>), [book_kelly.json:153](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/evidence/book_kelly/2026-07-22/book_kelly.json:153>).
+
+3. Inconsistencia documental: el spec informa skew −1.4, mientras que la evidencia generada contiene −1.2664, que redondea a −1.3. [BOOK-LEVERAGE-GOVERNOR.md:54](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md:54>), [book_kelly.json:96](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/.claude/evidence/book_kelly/2026-07-22/book_kelly.json:96>).
+
+El resto de las verificaciones pasa: 43 trade-semanas honestas; compuestos 7.3461% y 3.3582%; μ=0.255407%, σ=1.649244%, Kelly continuo 9.38994 y discreto 7.98711; bootstrap circular b=4 implementado correctamente y su IC [−6.1388, 48.7077] incluye cero; +26.05/+13.05 solo aparecen como guardas/texto; JSON válido sin NaN/Infinity; estado `DRAFT_AWAITING_OPERATOR_SIGNATURE`; regla anti-relajación presente; y no hay promesas de retorno o edge.

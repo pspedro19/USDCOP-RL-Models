@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 72
+n_trials_total: 73
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1059,3 +1059,105 @@ diagnóstico de hoy solo genera esa hipótesis futura, jamás un re-test sobre 2
 
 Artefacto: `.claude/evidence/cop_chronos/2026-07-21/` (JSON + orígenes CSV + generator
 + review adversarial de Codex `codex_chronos_review.txt`).
+
+
+---
+
+## ENJAMBRE 2026-07-22 (9 agentes Claude + verificación Codex por agente) · trials 72→73
+
+Programa aprobado por el operador ("procede a implementar toda, usa 10 agentes y un agente
+de codex que verifique"). Cada implementación pasó `codex exec -p audit` independiente;
+5 rechazos iniciales, todos corregidos y re-verificados. QA: cero regresiones funcionales,
+motor bit-idéntico con flags OFF (2025 +7.35%/32 tr, 2026 +3.36%/11 tr, diff 0.0000pp).
+Manifest v11 re-congelado v7 (hash d7a477d51d454e36, cambio clase feature-gated).
+
+### H-V13-QRISK-01 design-run EN EL MOTOR: APRUEBA DISEÑO (+1 trial, 72→73)
+
+Instrumento corregido (el replay externo fue INVALID_INSTRUMENT): techo probabilístico
+DENTRO del motor (flag `v13_ceiling_enabled`, default False = bit-idéntico, verificación
+automática `bit_identity_v12` MATCH 2022-24). Fórmula sellada sin cambios: q90_hat =
+0.5·persistencia(q90 roll-252 rango 5d) + 0.5·QuantReg(τ=.90, {vol-of-vol, gap-cola,
+EMBI-acel, RESINT-z}, expanding <t); techo = min(1.5·clip(mediana_diseño/q90_hat, .5, 1),
+vt_max) — invariante en el motor; constructor acotado a cutoff 2024-12-31.
+DESVIACIÓN DECLARADA (fail-safe de ingeniería, una variante, no optimizado): QR <52 sem
+o feature NaN ⇒ persistencia sola; mediana <26 valores ⇒ techo inactivo. Instrumentado:
+en el design-run 2022-24 NO actuó nunca — 157/157 semanas con QR real (fallbacks solo en
+2020-21 pre-diseño). Techo vinculante 77/157 semanas (mín 1.03).
+
+| Año | v12 | v13 |
+|---|---|---|
+| 2022 | −9.22% / DD 9.38 / HS 5 | −7.46% / DD 9.38 / HS 4 |
+| 2023 | −2.53% / DD 6.92 / HS 5 | −1.24% / DD 6.19 / HS 4 |
+| 2024 | +4.60% / DD 3.50 / HS 2 | +4.58% / DD 3.50 / HS 2 |
+| Compuesto | −7.44% / DD 12.89 / Calmar −0.1975 | **−4.42% / DD 10.04 / Calmar −0.1489** |
+
+**Calmar_v13 ≥ Calmar_v12 ⇒ APRUEBA por diseño** (robusto en ret/DD). Ambos negativos en
+diseño — dominancia de riesgo, no rentabilidad; juez real = forward desde su freeze
+(protocolo sellado de v12). Codex re-verify: APROBADO sin issues.
+Evidencia: `.claude/evidence/cop_v13_engine/2026-07-22/`.
+
+### H-ENTRY-01 — PRE-REGISTRO SELLADO (0 trials hasta ejecutar)
+
+Microestructura de entrada del lunes. Prior económico (perfil descriptivo SOLO diseño
+2020-24, `.claude/evidence/cop_entry_profile/2026-07-22/`): la primera media hora es la
+ventana más cara del día — rango de closes/30min en lunes 29.2 pb (8:00-8:30) vs 13.3 pb
+(9:30-10:30), ratio 2.20x, ≥2.0x en CADA año de diseño; vol 5m 2.54x. Regla as-is del
+motor documentada: entrada al CLOSE DIARIO del lunes (~12:55 COT), pese a señal desde
+08:15 (el timestamp 09:00 de los trades es cosmético). Hallazgo de calidad: 94.5% de
+barras M5 flat (2020-22 = snapshots) — proxies con closes, válidos.
+**Hipótesis**: TWAP 9:30-10:30 (12 closes M5) mejora el precio efectivo de entrada
+(improvement_bp = dir·(entry_engine−entry_twap)/entry_engine·1e4). **Bar**: IC95 bootstrap
+por bloque semanal (10k, seed 42) pooled 2020-24 excluye 0 a favor de la TWAP y supera el
+costo incremental declarado. **Instrumento**: `scripts/analysis/cop_entry_compare.py`
+CONGELADO SIN EJECUTAR (raise duro >2024, exige --confirm-trial; hardening post-Codex:
+truncado ≤2024 tras carga). **Primera ejecución real = +1 trial**; juez de confirmación =
+forward shadow. Si el IC95 de diseño incluye 0 ⇒ REJECT sin variantes.
+
+### Eventos 0-trials (ingeniería de riesgo + infraestructura + datos; N NO cambia)
+
+**BOOK-ERC-01 (libro multi-activo)**: pesos ERC solo-covarianza (Ledoit-Wolf, semanas
+ISO-2025) sobre 3 campeonas: COP v12 0.4205 / XAU gold_trend_simple 0.3833 / BTC hodl_b1
+0.1961, RC 33.33% c/u; vol libro 7.27% → escala 1.376 a objetivo 10%. Correlaciones 2025
+≈ 0 (−0.02/+0.09/+0.05). Pesos = riesgo, no retorno; juez = forward, sin claims.
+`config/book/book_v1.yaml` · `.claude/evidence/book_construction/2026-07-22/`.
+Codex: OBSERVACIONES (3 menores) → corregidas (FAIL duro en ERC, cobertura 52w XAU/BTC).
+
+**GOBERNADOR KELLY (BOOK-LEVERAGE-GOVERNOR.md, DRAFT_AWAITING_OPERATOR_SIGNATURE)**:
+f* Kelly serie honesta (43 trade-semanas): continuo 9.39 / discreto 7.99, **IC95 block-b4
+[−6.14, +48.71] INCLUYE CERO** (P(f*≤0)=14.5%) — la serie honesta no prueba ni que el
+Kelly óptimo sea positivo ⇒ 1.0x pre-graduación es necesidad estadística, no prudencia.
+Regla post-graduación: clip(0.25·f*_forward, 0, 1.5) con piso cero (Kelly fwd ≤0 ⇒ flat +
+revisión); haircut ×½ = POLÍTICA declarada (no estimador Lo-Mertens — corrección Codex);
+escalera DD 7%→1.0x / 10%→0.5x / 12%→flat, histéresis 4w−2pp, anti-relajación §5.
+`.claude/evidence/book_kelly/2026-07-22/`. Codex: RECHAZADO → 3 issues corregidos.
+
+**STRESS MC DEL LIBRO (v2 post-Codex)**: 10k paths 52w seed 42, block b=4. Codex rechazó
+v1 (4 issues: high-water inicial, hostil no causal, runs no contiguos, etiquetado
+trigger/applied) — todos corregidos. Base (hereda régimen 2025): MaxDD p95 5.01% (1.0x) /
+7.46% (1.5x). **Escalera desde 1.5x: p95 7.40% (base) y 9.89%, p99 11.12% (hostil causal
+por runs) — contiene el p95 < 12% en ambos regímenes** (P(DD>12%) hostil 0.3% vs 3.1%
+estático). Advertencias: ES97.5 base positivo = artefacto deriva 2025; hostil causal más
+benigno que look-ahead (las semanas post-vol-alta de 2025 se recuperaron) — no es techo
+del riesgo real. Presupuesto 7/10/12 = PROPUESTA, opera el operador.
+`.claude/evidence/book_mc_stress/2026-07-22/`.
+
+**E1-XASSET-INFRA**: señales trend (TSMOM 3/6/12m) + value (reversión 5y) z-scoreadas XS,
+causales shift(1), SOLO ≤2024, universo {COP, MXN, BRL, XAU, BTC, SPX} (45y XAU … 7.4y
+BTC; USD/CLP no existe como OHLC). Carry = NULL con la lista de qué falta por asset
+(funding BTC ya en DB, gateado por S4/H-POS-01). Harness purged-CV+embargo wrappea el
+SSOT de métricas; smoke solo sintético. Ningún OOS abierto, cero métricas de performance.
+Codex: APROBADO sin issues.
+
+**DATA-EVENT C1 (forwards BanRep)**: `macro_banrep_forwards_monthly` — 2.308 filas,
+2005-01→2026-05, 9 tenores/mes, sin huecos; devaluación implícita ponderada por monto
+(outright no se publica). PIT conservador published_at = fin de mes + 60d (CHECK exacto
+en tabla). Cobertura 1997-2004 NO existe machine-readable (retirada con OBIEE) — la
+premisa "1997→" del plan queda corregida. Codex: RECHAZADO → 5 issues corregidos
+(constraint exacto, span esperado completo, FAIL duro, cross-check TOTAL bloqueante,
+validación de fila fuente) + re-ingesta limpia.
+
+**DATA-EVENT C2 (remesas)**: `macro_remesas_monthly` — 317 filas, 2000-01→2026-05, sin
+huecos, estacionalidad dic verificada (525 vs 458 USD mn). Endpoint JSON SUAMECA serie
+15363; PIT = fin de M+1 (cargue real día 24-26 de M+1). Codex: RECHAZADO → 2 issues
+corregidos (FAIL duro, span esperado) + re-ingesta limpia.
+Uso de ambos: join `published_at <= as_of`, nunca por month; ningún estudio abierto.

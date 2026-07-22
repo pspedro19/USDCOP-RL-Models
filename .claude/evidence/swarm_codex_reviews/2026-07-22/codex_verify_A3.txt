@@ -1,0 +1,1799 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f8828-bfb5-7311-a68d-89fda4bbd98c
+--------
+user
+Verificación de implementación (agente Claude A3, stress Monte Carlo del libro). Lee: scripts/analysis/book_mc_stress.py y .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json. Verifica: (1) el bootstrap por bloques circular b=4 está bien implementado (bloques contiguos, wrap circular, seed 42 reproducible); (2) la simulación de la escalera respeta EXACTAMENTE la regla de BOOK-LEVERAGE-GOVERNOR.md §3 (7%→1.0x, 10%→0.5x, 12%→flat, histéresis 4 semanas cerrando 2pp bajo el umbral, decisión al cierre con efecto t+1 — busca off-by-one en el timing de aplicación); (3) el subset hostil (tercil alto de vol rolling-4w) está definido causalmente y el re-muestreo es coherente; (4) el disclaimer del ES97.5 positivo como artefacto de la deriva 2025 está en el JSON; (5) cero Sharpe y cero claims de retorno esperado en el JSON; (6) sin Infinity/NaN; (7) los números de la tabla del reporte (p95 7.40 base escalera, 12.67 hostil escalera, 25.48 hostil estático 1.5x) coinciden con el JSON. Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues numerados con archivo:línea.
+codex
+Voy a auditar código, especificación y evidencia línea por línea, y luego contrastaré los valores y la validez numérica del JSON.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$files = @('"'scripts/analysis/book_mc_stress.py','.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json'); foreach ("'$f in $files) { Write-Output "--- $f"; $i=0; Get-Content -LiteralPath $f | ForEach-Object { $i++; '"'{0,5}: {1}' -f "'$i, $_ } }; Write-Output '"'--- governor candidates'; rg --files -g 'BOOK-LEVERAGE-GOVERNOR.md' -g '"'!*.env*'"' -g '"'!secrets/**'"'" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 2104ms:
+--- scripts/analysis/book_mc_stress.py
+    1: """TAREA A3 â€” Stress Monte Carlo del LIBRO + presupuesto de DD del gobernador (0 trials).
+    2: 
+    3: Ingenieria de riesgo pura: NO se evalua ninguna hipotesis de retorno, NO se
+    4: selecciona ninguna variante, NO se reporta Sharpe ni retorno esperado. Se
+    5: cuantifica la cola de drawdown del LIBRO ERC (book_v1) bajo bootstrap y se
+    6: valida si la escalera del gobernador (BOOK-LEVERAGE-GOVERNOR.md Â§3) acota el
+    7: p95 del MaxDD por debajo del presupuesto de 12%.
+    8: 
+    9: Insumos:
+   10:   .claude/evidence/book_construction/2026-07-22/book_erc_v1.json
+   11:     (series semanales 2025 por sleeve + pesos ERC {COP 0.4205, XAU 0.3833, BTC 0.1961})
+   12:   .claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md
+   13:     (escalones DD 7%/10%/12%, histeresis re-armado 4 semanas a umbral-2pp)
+   14: 
+   15: Salidas:
+   16:   .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json
+   17:   .claude/evidence/book_mc_stress/2026-07-22/generator_script.py (copia de este archivo)
+   18: 
+   19: Metodologia (seed 42, 10.000 paths, horizonte 52 semanas):
+   20:   1. Bootstrap por bloques circular b=4 (el prior de la casa: juez v12, A2) de la
+   21:      serie semanal del LIBRO (pesos ERC fijos => rebalanceo semanal implicito a ERC).
+   22:      MaxDD p50/p90/p95/p99, ES97.5 del retorno anual, P(MaxDD > 7/10/12%),
+   23:      a leverage 1.0x y 1.5x.
+   24:   2. Variante iid semanal (dependencia rota) como banda de comparacion; la de
+   25:      bloques MANDA.
+   26:   3. Regimen hostil: re-muestreo SOLO de las semanas cuya vol realizada rolling-4w
+   27:      del libro cae en el tercil alto. STRESS CONSERVADOR, no pronostico.
+   28:   4. Escalera del gobernador simulada dinamicamente sobre LOS MISMOS paths
+   29:      (arranque 1.5x): DD>7% => 1.0x, DD>10% => 0.5x, DD>12% => flat (absorbente:
+   30:      con equity congelada el DD no puede cerrar bajo umbral-2pp), decision al
+   31:      cierre semanal con efecto la semana SIGUIENTE (sin look-ahead), re-armado
+   32:      de un escalon tras 4 cierres consecutivos con DD < (umbral del escalon - 2pp).
+   33:   5. Cuadro PROPUESTA del presupuesto de DD (el operador firma).
+   34: 
+   35: LIMITACION ESTRUCTURAL (citada tambien en el JSON): la serie madre son 52
+   36: semanas de 2025. El MC HEREDA el regimen 2025 y NO simula regimenes no vistos
+   37: (quiebre de correlaciones entre sleeves, crash conjunto, gap de liquidez).
+   38: Ademas el sleeve COP 2025 es un backtest contaminado por seleccion
+   39: (DSR 0.72 < 0.95): estos numeros son presupuesto de riesgo, jamas evidencia
+   40: de edge. CERO claims de retorno; solo colas.
+   41: 
+   42: JSON sin Infinity/NaN (sanitizado a null, regla strategy-contract).
+   43: """
+   44: 
+   45: from __future__ import annotations
+   46: 
+   47: import json
+   48: import math
+   49: import shutil
+   50: from pathlib import Path
+   51: 
+   52: import numpy as np
+   53: 
+   54: REPO = Path(__file__).resolve().parents[2]
+   55: 
+   56: BOOK_JSON = REPO / ".claude/evidence/book_construction/2026-07-22/book_erc_v1.json"
+   57: EVIDENCE_DIR = REPO / ".claude/evidence/book_mc_stress/2026-07-22"
+   58: 
+   59: SEED = 42
+   60: N_PATHS = 10_000
+   61: HORIZON = 52
+   62: BLOCK = 4  # bootstrap por bloques circular b=4 â€” mismo prior que el juez v12 / A2
+   63: 
+   64: # Guardas: pesos ERC esperados (aborta si el JSON no coincide con book_v1)
+   65: EXPECTED_WEIGHTS = {
+   66:     "cop_smart_simple_v12": 0.420537,
+   67:     "xau_gold_trend_simple": 0.383319,
+   68:     "btc_hodl_b1": 0.196145,
+   69: }
+   70: 
+   71: # Escalera del gobernador (BOOK-LEVERAGE-GOVERNOR.md Â§3) â€” steps por indice:
+   72: #   0 = base (multiplicador de arranque), 1 = 1.0x, 2 = 0.5x, 3 = flat
+   73: LADDER_TRIGGER = (0.07, 0.10, 0.12)  # DD > umbral => step 1 / 2 / 3
+   74: REARM_HYST_PP = 0.02                 # re-armado: DD < umbral - 2pp
+   75: REARM_WEEKS = 4                      # ... durante 4 cierres consecutivos
+   76: LADDER_MULTS_TAIL = (1.0, 0.5, 0.0)  # multiplicadores de steps 1..3
+   77: 
+   78: VOL_WINDOW = 4  # ventana rolling para la vol realizada del libro (tercil hostil)
+   79: 
+   80: 
+   81: # ----------------------------------------------------------------------------- data
+   82: def load_book_series() -> dict:
+   83:     with open(BOOK_JSON, encoding="utf-8") as f:
+   84:         book = json.load(f)
+   85: 
+   86:     weights = book["erc"]["weights"]
+   87:     for sleeve, expected in EXPECTED_WEIGHTS.items():
+   88:         got = weights[sleeve]
+   89:         if abs(got - expected) > 1e-4:
+   90:             raise ValueError(
+   91:                 f"Peso ERC de {sleeve} = {got:.6f} != esperado {expected:.6f}. "
+   92:                 "El JSON no es book_v1. Abortando."
+   93:             )
+   94:     if abs(sum(weights.values()) - 1.0) > 1e-9:
+   95:         raise ValueError("Los pesos ERC no suman 1.0. Abortando.")
+   96: 
+   97:     sleeves = book["sleeves"]
+   98:     series = np.array(
+   99:         [book["weekly_returns_decimal"][s] for s in sleeves]
+  100:     )  # (3, 52)
+  101:     if series.shape != (3, HORIZON):
+  102:         raise ValueError(f"Series con shape {series.shape} != (3, {HORIZON}).")
+  103: 
+  104:     w = np.array([weights[s] for s in sleeves])
+  105:     r_book = w @ series  # retorno semanal del LIBRO a pesos ERC fijos (unit, 1.0x)
+  106: 
+  107:     # sanity vs la vol anualizada del libro publicada en A1 (LW-cov: 0.072670);
+  108:     # la vol muestral de la serie difiere un poco del w'Î£_LW w â€” tolerancia laxa
+  109:     ann_vol_sample = float(r_book.std(ddof=1) * math.sqrt(52))
+  110:     if abs(ann_vol_sample - book["vol_targeting"]["unit_book_annual_vol"]) > 0.015:
+  111:         raise ValueError(
+  112:             f"Vol anualizada muestral del libro {ann_vol_sample:.4f} demasiado "
+  113:             f"lejos de la publicada {book['vol_targeting']['unit_book_annual_vol']:.4f}."
+  114:         )
+  115: 
+  116:     return {
+  117:         "sleeves": sleeves,
+  118:         "weights": {s: float(weights[s]) for s in sleeves},
+  119:         "r_book": r_book,
+  120:         "ann_vol_sample": ann_vol_sample,
+  121:         "book_meta": {
+  122:             "book_id": "book_v1",
+  123:             "window": "2025-W01..2025-W52 (52 semanas ISO)",
+  124:             "source": str(BOOK_JSON.relative_to(REPO)),
+  125:         },
+  126:     }
+  127: 
+  128: 
+  129: # ------------------------------------------------------------------- path generation
+  130: def gen_block_paths(
+  131:     series: np.ndarray, n_paths: int, horizon: int, b: int, rng: np.random.Generator
+  132: ) -> np.ndarray:
+  133:     """Bootstrap por bloques circular: paths (n_paths, horizon)."""
+  134:     n = len(series)
+  135:     n_blocks = math.ceil(horizon / b)
+  136:     starts = rng.integers(0, n, (n_paths, n_blocks))
+  137:     idx = (starts[..., None] + np.arange(b)) % n
+  138:     return series[idx.reshape(n_paths, -1)[:, :horizon]]
+  139: 
+  140: 
+  141: def gen_iid_paths(
+  142:     series: np.ndarray, n_paths: int, horizon: int, rng: np.random.Generator
+  143: ) -> np.ndarray:
+  144:     """Bootstrap iid semanal (dependencia rota) â€” solo banda de comparacion."""
+  145:     n = len(series)
+  146:     return series[rng.integers(0, n, (n_paths, horizon))]
+  147: 
+  148: 
+  149: # ------------------------------------------------------------------------ static MC
+  150: def static_stats(paths: np.ndarray, mult: float) -> dict:
+  151:     """MaxDD y cola del retorno anual a multiplicador de libro constante.
+  152: 
+  153:     SOLO riesgo: del retorno anual se reporta exclusivamente la cola ES97.5
+  154:     (media del peor 2.5%); el centro de la distribucion NO se reporta porque
+  155:     el bootstrap hereda la media 2025 y eso seria un claim de retorno.
+  156:     """
+  157:     eq = np.cumprod(1.0 + mult * paths, axis=1)
+  158:     peak = np.maximum.accumulate(eq, axis=1)
+  159:     dd = eq / peak - 1.0
+  160:     maxdd_mag = -dd.min(axis=1)  # magnitud (positiva) del peor drawdown del path
+  161: 
+  162:     ann = eq[:, -1] - 1.0
+  163:     var_cut = np.percentile(ann, 2.5)
+  164:     es975 = float(ann[ann <= var_cut].mean())
+  165: 
+  166:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+  167:     return {
+  168:         "book_multiplier": mult,
+  169:         "maxdd_pct": {
+  170:             "p50": float(p50 * 100),
+  171:             "p90": float(p90 * 100),
+  172:             "p95": float(p95 * 100),
+  173:             "p99": float(p99 * 100),
+  174:         },
+  175:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+  176:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+  177:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+  178:         "es97_5_annual_return_pct": es975 * 100,
+  179:     }
+  180: 
+  181: 
+  182: # --------------------------------------------------------------------- ladder engine
+  183: def run_ladder(paths: np.ndarray, start_mult: float) -> dict:
+  184:     """Simula la escalera del gobernador sobre paths (n, T), arrancando en start_mult.
+  185: 
+  186:     Reglas (BOOK-LEVERAGE-GOVERNOR.md Â§3, tal cual):
+  187:       - DD medido peak-to-trough sobre la equity del LIBRO, al cierre semanal.
+  188:       - DD > 7% => 1.0x ; DD > 10% => 0.5x ; DD > 12% => 0 (flat).
+  189:       - La decision del cierre t se aplica a la semana t+1 (sin look-ahead).
+  190:       - Bajadas: inmediatas (al escalon que dicte el DD). Subidas: UN escalon
+  191:         tras REARM_WEEKS cierres consecutivos con DD < (umbral del escalon - 2pp)
+  192:         (1.0x->base con DD<5%; 0.5x->1.0x con DD<8%).
+  193:       - Flat es absorbente de facto: con equity congelada el DD queda clavado
+  194:         >12% y la condicion de re-armado (DD<10%) es inalcanzable â€” coherente
+  195:         con '0 (flat) + revision formal' del protocolo.
+  196:     """
+  197:     n, T = paths.shape
+  198:     mults = np.array([start_mult, *LADDER_MULTS_TAIL])
+  199:     # re-armado del step k -> k-1 exige DD < LADDER_TRIGGER[k-1] - 2pp
+  200:     rearm_dd = np.array([np.inf, *[t - REARM_HYST_PP for t in LADDER_TRIGGER]])
+  201: 
+  202:     eq = np.ones(n)
+  203:     peak = np.ones(n)
+  204:     step = np.zeros(n, dtype=np.int64)  # multiplicador vigente ESTA semana
+  205:     counter = np.zeros(n, dtype=np.int64)
+  206:     maxdd = np.zeros(n)
+  207:     mult_sum = np.zeros(n)
+  208:     ever = {1: np.zeros(n, bool), 2: np.zeros(n, bool), 3: np.zeros(n, bool)}
+  209: 
+  210:     for t in range(T):
+  211:         m = mults[step]
+  212:         mult_sum += m
+  213:         eq = eq * (1.0 + m * paths[:, t])
+  214:         peak = np.maximum(peak, eq)
+  215:         dd = eq / peak - 1.0
+  216:         maxdd = np.minimum(maxdd, dd)
+  217:         ddm = -dd
+  218: 
+  219:         # bajada inmediata (efectiva desde la proxima semana)
+  220:         trig = np.select(
+  221:             [ddm > LADDER_TRIGGER[2], ddm > LADDER_TRIGGER[1], ddm > LADDER_TRIGGER[0]],
+  222:             [3, 2, 1],
+  223:             default=0,
+  224:         )
+  225:         down = trig > step
+  226:         step = np.where(down, trig, step)
+  227:         counter = np.where(down, 0, counter)
+  228:         for k in (1, 2, 3):
+  229:             ever[k] |= step == k
+  230: 
+  231:         # histeresis de re-armado (solo un escalon por evento)
+  232:         cond = (step > 0) & (ddm < rearm_dd[step])
+  233:         counter = np.where(cond, counter + 1, 0)
+  234:         up = counter >= REARM_WEEKS
+  235:         step = np.where(up, step - 1, step)
+  236:         counter = np.where(up, 0, counter)
+  237: 
+  238:     maxdd_mag = -maxdd
+  239:     ann = eq - 1.0
+  240:     var_cut = np.percentile(ann, 2.5)
+  241:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+  242:     return {
+  243:         "start_multiplier": start_mult,
+  244:         "maxdd_pct": {
+  245:             "p50": float(p50 * 100),
+  246:             "p90": float(p90 * 100),
+  247:             "p95": float(p95 * 100),
+  248:             "p99": float(p99 * 100),
+  249:         },
+  250:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+  251:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+  252:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+  253:         "es97_5_annual_return_pct": float(ann[ann <= var_cut].mean() * 100),
+  254:         "prob_ever_step_1p0x": float(ever[1].mean()),
+  255:         "prob_ever_step_0p5x": float(ever[2].mean()),
+  256:         "prob_ever_flat": float(ever[3].mean()),
+  257:         "avg_multiplier_over_horizon": float((mult_sum / T).mean()),
+  258:     }
+  259: 
+  260: 
+  261: # --------------------------------------------------------------------- hostile regime
+  262: def hostile_subset(r_book: np.ndarray) -> dict:
+  263:     """Semanas del tercil ALTO de vol realizada rolling-4w del libro."""
+  264:     n = len(r_book)
+  265:     vols = np.full(n, np.nan)
+  266:     for t in range(VOL_WINDOW - 1, n):
+  267:         vols[t] = r_book[t - VOL_WINDOW + 1 : t + 1].std(ddof=1)
+  268:     valid = ~np.isnan(vols)
+  269:     cut = np.percentile(vols[valid], 100 * 2 / 3)
+  270:     mask = valid & (vols >= cut)
+  271:     idx = np.where(mask)[0]
+  272:     return {
+  273:         "indices_iso_week": [f"2025-W{int(i) + 1:02d}" for i in idx],
+  274:         "n_weeks": int(mask.sum()),
+  275:         "vol_window_weeks": VOL_WINDOW,
+  276:         "tercile_cut_weekly_vol": float(cut),
+  277:         "subset": r_book[mask],
+  278:     }
+  279: 
+  280: 
+  281: # ------------------------------------------------------------------------ sanitizado
+  282: def sanitize(obj):
+  283:     """JSON safety: Infinity/NaN -> null (regla strategy-contract)."""
+  284:     if isinstance(obj, dict):
+  285:         return {k: sanitize(v) for k, v in obj.items()}
+  286:     if isinstance(obj, (list, tuple)):
+  287:         return [sanitize(v) for v in obj]
+  288:     if isinstance(obj, float):
+  289:         return obj if math.isfinite(obj) else None
+  290:     if isinstance(obj, (np.floating, np.integer)):
+  291:         v = float(obj)
+  292:         return v if math.isfinite(v) else None
+  293:     return obj
+  294: 
+  295: 
+  296: # ------------------------------------------------------------------------------ main
+  297: def main() -> None:
+  298:     data = load_book_series()
+  299:     r_book = data["r_book"]
+  300: 
+  301:     # Un solo RNG seed=42; el orden de generacion es parte de la receta reproducible
+  302:     rng = np.random.default_rng(SEED)
+  303:     paths_block = gen_block_paths(r_book, N_PATHS, HORIZON, BLOCK, rng)
+  304:     paths_iid = gen_iid_paths(r_book, N_PATHS, HORIZON, rng)
+  305: 
+  306:     host = hostile_subset(r_book)
+  307:     paths_host = gen_block_paths(host["subset"], N_PATHS, HORIZON, BLOCK, rng)
+  308: 
+  309:     # 1-2. MC estatico: bloques (manda) + iid (banda de comparacion)
+  310:     static_block = [static_stats(paths_block, m) for m in (1.0, 1.5)]
+  311:     static_iid = [static_stats(paths_iid, m) for m in (1.0, 1.5)]
+  312: 
+  313:     # 3. Regimen hostil (tercil alto de vol) â€” stress conservador, NO pronostico
+  314:     static_host = [static_stats(paths_host, m) for m in (1.0, 1.5)]
+  315: 
+  316:     # 4. Escalera del gobernador sobre LOS MISMOS paths
+  317:     ladder_15 = run_ladder(paths_block, 1.5)   # la pregunta central
+  318:     ladder_10 = run_ladder(paths_block, 1.0)   # secundario: pre-graduacion
+  319:     ladder_host = run_ladder(paths_host, 1.5)  # escalera bajo stress hostil
+  320: 
+  321:     verdict_p95_under_12 = ladder_15["maxdd_pct"]["p95"] < 12.0
+  322: 
+  323:     result = {
+  324:         "task": "A3 â€” stress Monte Carlo del LIBRO + presupuesto de DD del gobernador",
+  325:         "trials_consumed": 0,
+  326:         "trials_note": (
+  327:             "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis "
+  328:             "de retorno, no se selecciona ninguna variante, no se reporta Sharpe "
+  329:             "ni retorno esperado â€” solo colas de drawdown y ES97.5 (perdida)."
+  330:         ),
+  331:         "inputs": {
+  332:             "book": data["book_meta"],
+  333:             "erc_weights": data["weights"],
+  334:             "governor_spec": ".claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md",
+  335:             "book_weekly_series_stats": {
+  336:                 "n_weeks": HORIZON,
+  337:                 "annualized_vol_sample": data["ann_vol_sample"],
+  338:                 "worst_week_pct": float(r_book.min() * 100),
+  339:                 "best_week_pct": float(r_book.max() * 100),
+  340:                 "realized_maxdd_2025_pct_at_1x": float(
+  341:                     -(
+  342:                         np.cumprod(1 + r_book)
+  343:                         / np.maximum.accumulate(np.cumprod(1 + r_book))
+  344:                         - 1
+  345:                     ).min()
+  346:                     * 100
+  347:                 ),
+  348:             },
+  349:         },
+  350:         "mc_config": {
+  351:             "seed": SEED,
+  352:             "n_paths": N_PATHS,
+  353:             "horizon_weeks": HORIZON,
+  354:             "block_size": BLOCK,
+  355:             "bootstrap": "circular block (b=4) â€” MANDA; iid solo banda de comparacion",
+  356:             "weights_handling": (
+  357:                 "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; "
+  358:                 "no se simula drift de pesos intra-rebalanceo"
+  359:             ),
+  360:         },
+  361:         "es97_5_disclaimer": (
+  362:             "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque "
+  363:             "el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP "
+  364:             "backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar "
+  365:             "2025, no un claim de que 'ni la peor cola pierde'. La cola honesta "
+  366:             "para presupuestar perdida es la del stress hostil (ES97.5 negativo)."
+  367:         ),
+  368:         "static_mc_block_b4": static_block,
+  369:         "static_mc_iid_reference_only": static_iid,
+  370:         "hostile_regime_stress": {
+  371:             "label": (
+  372:                 "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas "
+  373:                 "en el tercil ALTO de vol realizada rolling-4w del libro, como "
+  374:                 "proxy de regimen hostil PERSISTENTE 52 semanas (peor que "
+  375:                 "cualquier aÃ±o realista del regimen 2025)."
+  376:             ),
+  377:             "subset_weeks": host["indices_iso_week"],
+  378:             "n_weeks_in_subset": host["n_weeks"],
+  379:             "vol_window_weeks": host["vol_window_weeks"],
+  380:             "tercile_cut_weekly_vol": host["tercile_cut_weekly_vol"],
+  381:             "caveat_blocks": (
+  382:                 "los bloques b=4 sobre el subset concatenan semanas no contiguas "
+  383:                 "del calendario original; la dependencia serial dentro del subset "
+  384:                 "es aproximada"
+  385:             ),
+  386:             "static_mc": static_host,
+  387:             "ladder_from_1p5x": ladder_host,
+  388:         },
+  389:         "governor_ladder_simulation": {
+  390:             "rules_as_simulated": {
+  391:                 "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+  392:                 "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+  393:                 "rearm": (
+  394:                     f"subida de UN escalon tras {REARM_WEEKS} cierres consecutivos "
+  395:                     "con DD < (umbral del escalon - 2pp); flat es absorbente de "
+  396:                     "facto (equity congelada => DD clavado > 12%)"
+  397:                 ),
+  398:             },
+  399:             "from_1p5x_block_b4": ladder_15,
+  400:             "from_1p0x_block_b4": ladder_10,
+  401:             "comparison_same_paths": {
+  402:                 "static_1p5x_maxdd_p95_pct": static_block[1]["maxdd_pct"]["p95"],
+  403:                 "ladder_from_1p5x_maxdd_p95_pct": ladder_15["maxdd_pct"]["p95"],
+  404:                 "static_1p5x_prob_dd_gt_12pct": static_block[1]["prob_maxdd_gt_12pct"],
+  405:                 "ladder_from_1p5x_prob_dd_gt_12pct": ladder_15["prob_maxdd_gt_12pct"],
+  406:             },
+  407:             "verdict": {
+  408:                 "question": "Â¿la escalera acota el p95 del MaxDD por debajo del 12%?",
+  409:                 "ladder_p95_maxdd_pct": ladder_15["maxdd_pct"]["p95"],
+  410:                 "p95_under_12pct": bool(verdict_p95_under_12),
+  411:                 "hostile_regime_note": (
+  412:                     f"bajo el stress hostil persistente la escalera deja el p95 en "
+  413:                     f"{ladder_host['maxdd_pct']['p95']:.2f}% y el p99 en "
+  414:                     f"{ladder_host['maxdd_pct']['p99']:.2f}% (vs "
+  415:                     f"{static_host[1]['maxdd_pct']['p95']:.2f}% estatico 1.5x): el "
+  416:                     "presupuesto se respeta salvo un overshoot de ~1pp causado por "
+  417:                     "la marca semanal + efecto 1-semana de la decision â€” el escalon "
+  418:                     "flat congela el DD apenas cruzado el 12%, no antes."
+  419:                 ),
+  420:             },
+  421:         },
+  422:         "dd_budget_proposal": {
+  423:             "status": "PROPUESTA â€” el operador firma (BOOK-LEVERAGE-GOVERNOR.md Â§5)",
+  424:             "rows": [
+  425:                 {
+  426:                     "threshold": "DD 7% => bajar a 1.0x",
+  427:                     "justification": (
+  428:                         f"p50 del MaxDD del libro a 1.5x = "
+  429:                         f"{static_block[1]['maxdd_pct']['p50']:.1f}% y a 1.0x = "
+  430:                         f"{static_block[0]['maxdd_pct']['p50']:.1f}%: 7% separa la "
+  431:                         "zona normal de la cola y corta la amplificacion 1.5x antes "
+  432:                         "de que el path mediano invada el presupuesto"
+  433:                     ),
+  434:                 },
+  435:                 {
+  436:                     "threshold": "DD 10% => bajar a 0.5x",
+  437:                     "justification": (
+  438:                         f"P(MaxDD>10%) a 1.5x = "
+  439:                         f"{static_block[1]['prob_maxdd_gt_10pct']:.1%} vs "
+  440:                         f"{static_block[0]['prob_maxdd_gt_10pct']:.1%} a 1.0x: 10% "
+  441:                         "ya es cola; a 0.5x la propagacion residual hacia 12% es "
+  442:                         "minima y frena la sangria casi con certeza"
+  443:                     ),
+  444:                 },
+  445:                 {
+  446:                     "threshold": "DD 12% => flat + revision formal (presupuesto total)",
+  447:                     "justification": (
+  448:                         "12% = umbral W1 del WITHDRAWAL-PROTOCOL ya firmado; un "
+  449:                         "libro apalancado no puede tener presupuesto mas laxo que "
+  450:                         "el retiro de su sleeve principal â€” la escalera simulada "
+  451:                         f"deja P(MaxDD>12%) = "
+  452:                         f"{ladder_15['prob_maxdd_gt_12pct']:.1%} (vs "
+  453:                         f"{static_block[1]['prob_maxdd_gt_12pct']:.1%} estatico 1.5x)"
+  454:                     ),
+  455:                 },
+  456:             ],
+  457:         },
+  458:         "limitations": [
+  459:             (
+  460:                 "La serie madre son 52 semanas de 2025: el MC HEREDA el regimen "
+  461:                 "2025 y NO simula regimenes no vistos (quiebre de correlaciones "
+  462:                 "entre sleeves, crash conjunto tipo 2020, gaps de liquidez). Es "
+  463:                 "una limitacion estructural, no un parametro ajustable."
+  464:             ),
+  465:             (
+  466:                 "El sleeve COP 2025 es un backtest contaminado por seleccion "
+  467:                 "(DSR 0.72 < 0.95): estos numeros presupuestan riesgo, jamas "
+  468:                 "evidencian edge. El juez sigue siendo el forward."
+  469:             ),
+  470:             (
+  471:                 "Correlaciones 2025 entre sleeves ~0 (COP-XAU -0.02, COP-BTC 0.09, "
+  472:                 "XAU-BTC 0.05): el beneficio de diversificacion del libro esta "
+  473:                 "heredado tal cual; en crisis las correlaciones suelen subir y la "
+  474:                 "cola real seria peor que la simulada."
+  475:             ),
+  476:             (
+  477:                 "El bootstrap b=4 preserva dependencia hasta ~4 semanas; "
+  478:                 "clustering de vol mas largo no esta capturado (por eso se aÃ±ade "
+  479:                 "el stress del tercil hostil persistente)."
+  480:             ),
+  481:             "DD marcado solo al cierre semanal: drawdowns intra-semana no se miden.",
+  482:             (
+  483:                 "ES97.5 del retorno anual se reporta como mÃ©trica de COLA "
+  484:                 "(perdida); el centro de la distribucion no se reporta porque el "
+  485:                 "bootstrap hereda la media 2025 (seria un claim de retorno)."
+  486:             ),
+  487:         ],
+  488:     }
+  489: 
+  490:     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+  491:     out = EVIDENCE_DIR / "book_mc_stress.json"
+  492:     with open(out, "w", encoding="utf-8") as f:
+  493:         json.dump(sanitize(result), f, indent=2, ensure_ascii=False, allow_nan=False)
+  494:     shutil.copy2(__file__, EVIDENCE_DIR / "generator_script.py")
+  495: 
+  496:     print(f"OK -> {out}")
+  497:     print(
+  498:         f"libro: ann_vol={data['ann_vol_sample']:.4f} | "
+  499:         f"maxDD 2025 realizado (1x) = "
+  500:         f"{result['inputs']['book_weekly_series_stats']['realized_maxdd_2025_pct_at_1x']:.2f}%"
+  501:     )
+  502:     for label, rows in (("BLOCK b=4", static_block), ("IID (ref)", static_iid),
+  503:                         ("HOSTIL", static_host)):
+  504:         for s in rows:
+  505:             print(
+  506:                 f"  [{label}] {s['book_multiplier']:.1f}x: MaxDD p50 "
+  507:                 f"{s['maxdd_pct']['p50']:.2f}% p90 {s['maxdd_pct']['p90']:.2f}% "
+  508:                 f"p95 {s['maxdd_pct']['p95']:.2f}% p99 {s['maxdd_pct']['p99']:.2f}% | "
+  509:                 f"P>7 {s['prob_maxdd_gt_7pct']:.3f} P>10 "
+  510:                 f"{s['prob_maxdd_gt_10pct']:.3f} P>12 "
+  511:                 f"{s['prob_maxdd_gt_12pct']:.3f} | ES97.5 anual "
+  512:                 f"{s['es97_5_annual_return_pct']:.2f}%"
+  513:             )
+  514:     for label, lad in (("ESCALERA 1.5x", ladder_15), ("ESCALERA 1.0x", ladder_10),
+  515:                        ("ESCALERA hostil", ladder_host)):
+  516:         print(
+  517:             f"  [{label}] MaxDD p50 {lad['maxdd_pct']['p50']:.2f}% p90 "
+  518:             f"{lad['maxdd_pct']['p90']:.2f}% p95 {lad['maxdd_pct']['p95']:.2f}% "
+  519:             f"p99 {lad['maxdd_pct']['p99']:.2f}% | P>12 "
+  520:             f"{lad['prob_maxdd_gt_12pct']:.3f} | P(flat) "
+  521:             f"{lad['prob_ever_flat']:.3f} | mult medio "
+  522:             f"{lad['avg_multiplier_over_horizon']:.2f}"
+  523:         )
+  524:     print(
+  525:         f"VEREDICTO: escalera desde 1.5x => p95 MaxDD = "
+  526:         f"{ladder_15['maxdd_pct']['p95']:.2f}% "
+  527:         f"({'SI' if verdict_p95_under_12 else 'NO'} queda bajo 12%)"
+  528:     )
+  529: 
+  530: 
+  531: if __name__ == "__main__":
+  532:     main()
+--- .claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json
+    1: {
+    2:   "task": "A3 â€” stress Monte Carlo del LIBRO + presupuesto de DD del gobernador",
+    3:   "trials_consumed": 0,
+    4:   "trials_note": "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis de retorno, no se selecciona ninguna variante, no se reporta Sharpe ni retorno esperado â€” solo colas de drawdown y ES97.5 (perdida).",
+    5:   "inputs": {
+    6:     "book": {
+    7:       "book_id": "book_v1",
+    8:       "window": "2025-W01..2025-W52 (52 semanas ISO)",
+    9:       "source": ".claude\\evidence\\book_construction\\2026-07-22\\book_erc_v1.json"
+   10:     },
+   11:     "erc_weights": {
+   12:       "cop_smart_simple_v12": 0.4205366366913926,
+   13:       "xau_gold_trend_simple": 0.3833188509821214,
+   14:       "btc_hodl_b1": 0.19614451232648608
+   15:     },
+   16:     "governor_spec": ".claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md",
+   17:     "book_weekly_series_stats": {
+   18:       "n_weeks": 52,
+   19:       "annualized_vol_sample": 0.070899926913873,
+   20:       "worst_week_pct": -2.3870121836643903,
+   21:       "best_week_pct": 2.41422166869092,
+   22:       "realized_maxdd_2025_pct_at_1x": 2.6663296259829994
+   23:     }
+   24:   },
+   25:   "mc_config": {
+   26:     "seed": 42,
+   27:     "n_paths": 10000,
+   28:     "horizon_weeks": 52,
+   29:     "block_size": 4,
+   30:     "bootstrap": "circular block (b=4) â€” MANDA; iid solo banda de comparacion",
+   31:     "weights_handling": "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; no se simula drift de pesos intra-rebalanceo"
+   32:   },
+   33:   "es97_5_disclaimer": "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).",
+   34:   "static_mc_block_b4": [
+   35:     {
+   36:       "book_multiplier": 1.0,
+   37:       "maxdd_pct": {
+   38:         "p50": 2.6663296259829994,
+   39:         "p90": 4.362058441072092,
+   40:         "p95": 4.989696196618521,
+   41:         "p99": 6.448125479037562
+   42:       },
+   43:       "prob_maxdd_gt_7pct": 0.0055,
+   44:       "prob_maxdd_gt_10pct": 0.0003,
+   45:       "prob_maxdd_gt_12pct": 0.0001,
+   46:       "es97_5_annual_return_pct": 6.198456708286673
+   47:     },
+   48:     {
+   49:       "book_multiplier": 1.5,
+   50:       "maxdd_pct": {
+   51:         "p50": 3.9943716513759275,
+   52:         "p90": 6.499185342760527,
+   53:         "p95": 7.431870719903733,
+   54:         "p99": 9.591916446446227
+   55:       },
+   56:       "prob_maxdd_gt_7pct": 0.0689,
+   57:       "prob_maxdd_gt_10pct": 0.0077,
+   58:       "prob_maxdd_gt_12pct": 0.0014,
+   59:       "es97_5_annual_return_pct": 9.247601599780873
+   60:     }
+   61:   ],
+   62:   "static_mc_iid_reference_only": [
+   63:     {
+   64:       "book_multiplier": 1.0,
+   65:       "maxdd_pct": {
+   66:         "p50": 2.8352802352676623,
+   67:         "p90": 4.771770508102623,
+   68:         "p95": 5.535047463370381,
+   69:         "p99": 7.359279021230816
+   70:       },
+   71:       "prob_maxdd_gt_7pct": 0.0132,
+   72:       "prob_maxdd_gt_10pct": 0.0005,
+   73:       "prob_maxdd_gt_12pct": 0.0,
+   74:       "es97_5_annual_return_pct": 6.109284465604609
+   75:     },
+   76:     {
+   77:       "book_multiplier": 1.5,
+   78:       "maxdd_pct": {
+   79:         "p50": 4.242709062813443,
+   80:         "p90": 7.11574141113179,
+   81:         "p95": 8.226018616204616,
+   82:         "p99": 10.881735455940653
+   83:       },
+   84:       "prob_maxdd_gt_7pct": 0.1129,
+   85:       "prob_maxdd_gt_10pct": 0.0176,
+   86:       "prob_maxdd_gt_12pct": 0.0057,
+   87:       "es97_5_annual_return_pct": 9.102675035487069
+   88:     }
+   89:   ],
+   90:   "hostile_regime_stress": {
+   91:     "label": "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas en el tercil ALTO de vol realizada rolling-4w del libro, como proxy de regimen hostil PERSISTENTE 52 semanas (peor que cualquier aÃ±o realista del regimen 2025).",
+   92:     "subset_weeks": [
+   93:       "2025-W09",
+   94:       "2025-W10",
+   95:       "2025-W11",
+   96:       "2025-W12",
+   97:       "2025-W15",
+   98:       "2025-W22",
+   99:       "2025-W30",
+  100:       "2025-W31",
+  101:       "2025-W33",
+  102:       "2025-W36",
+  103:       "2025-W39",
+  104:       "2025-W40",
+  105:       "2025-W41",
+  106:       "2025-W42",
+  107:       "2025-W43",
+  108:       "2025-W44",
+  109:       "2025-W45"
+  110:     ],
+  111:     "n_weeks_in_subset": 17,
+  112:     "vol_window_weeks": 4,
+  113:     "tercile_cut_weekly_vol": 0.00963115759907673,
+  114:     "caveat_blocks": "los bloques b=4 sobre el subset concatenan semanas no contiguas del calendario original; la dependencia serial dentro del subset es aproximada",
+  115:     "static_mc": [
+  116:       {
+  117:         "book_multiplier": 1.0,
+  118:         "maxdd_pct": {
+  119:           "p50": 8.91313812377484,
+  120:           "p90": 15.615342239664656,
+  121:           "p95": 17.68205050085022,
+  122:           "p99": 21.588399105432888
+  123:         },
+  124:         "prob_maxdd_gt_7pct": 0.6915,
+  125:         "prob_maxdd_gt_10pct": 0.4045,
+  126:         "prob_maxdd_gt_12pct": 0.2626,
+  127:         "es97_5_annual_return_pct": -19.84199374577729
+  128:       },
+  129:       {
+  130:         "book_multiplier": 1.5,
+  131:         "maxdd_pct": {
+  132:           "p50": 13.18829511381066,
+  133:           "p90": 22.661564233759908,
+  134:           "p95": 25.4805968611909,
+  135:           "p99": 30.72754376295525
+  136:         },
+  137:         "prob_maxdd_gt_7pct": 0.9154,
+  138:         "prob_maxdd_gt_10pct": 0.7185,
+  139:         "prob_maxdd_gt_12pct": 0.5777,
+  140:         "es97_5_annual_return_pct": -28.43794901356722
+  141:       }
+  142:     ],
+  143:     "ladder_from_1p5x": {
+  144:       "start_multiplier": 1.5,
+  145:       "maxdd_pct": {
+  146:         "p50": 11.19067334310277,
+  147:         "p90": 12.391441578484601,
+  148:         "p95": 12.671699662307814,
+  149:         "p99": 12.974266722965671
+  150:       },
+  151:       "prob_maxdd_gt_7pct": 0.9198,
+  152:       "prob_maxdd_gt_10pct": 0.6762,
+  153:       "prob_maxdd_gt_12pct": 0.3581,
+  154:       "es97_5_annual_return_pct": -12.698803562358274,
+  155:       "prob_ever_step_1p0x": 0.9017,
+  156:       "prob_ever_step_0p5x": 0.661,
+  157:       "prob_ever_flat": 0.3581,
+  158:       "avg_multiplier_over_horizon": 1.0209413461538464
+  159:     }
+  160:   },
+  161:   "governor_ladder_simulation": {
+  162:     "rules_as_simulated": {
+  163:       "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+  164:       "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+  165:       "rearm": "subida de UN escalon tras 4 cierres consecutivos con DD < (umbral del escalon - 2pp); flat es absorbente de facto (equity congelada => DD clavado > 12%)"
+  166:     },
+  167:     "from_1p5x_block_b4": {
+  168:       "start_multiplier": 1.5,
+  169:       "maxdd_pct": {
+  170:         "p50": 3.9943716513759275,
+  171:         "p90": 6.499185342760529,
+  172:         "p95": 7.396526980011216,
+  173:         "p99": 9.067022152626041
+  174:       },
+  175:       "prob_maxdd_gt_7pct": 0.0706,
+  176:       "prob_maxdd_gt_10pct": 0.004,
+  177:       "prob_maxdd_gt_12pct": 0.0002,
+  178:       "es97_5_annual_return_pct": 7.717219098261673,
+  179:       "prob_ever_step_1p0x": 0.0706,
+  180:       "prob_ever_step_0p5x": 0.004,
+  181:       "prob_ever_flat": 0.0002,
+  182:       "avg_multiplier_over_horizon": 1.4916644230769232
+  183:     },
+  184:     "from_1p0x_block_b4": {
+  185:       "start_multiplier": 1.0,
+  186:       "maxdd_pct": {
+  187:         "p50": 2.6663296259829994,
+  188:         "p90": 4.362058441072092,
+  189:         "p95": 5.005394114408725,
+  190:         "p99": 6.458486831891186
+  191:       },
+  192:       "prob_maxdd_gt_7pct": 0.0058,
+  193:       "prob_maxdd_gt_10pct": 0.0003,
+  194:       "prob_maxdd_gt_12pct": 0.0001,
+  195:       "es97_5_annual_return_pct": 6.174860102441912,
+  196:       "prob_ever_step_1p0x": 0.0058,
+  197:       "prob_ever_step_0p5x": 0.0003,
+  198:       "prob_ever_flat": 0.0001,
+  199:       "avg_multiplier_over_horizon": 0.999951923076923
+  200:     },
+  201:     "comparison_same_paths": {
+  202:       "static_1p5x_maxdd_p95_pct": 7.431870719903733,
+  203:       "ladder_from_1p5x_maxdd_p95_pct": 7.396526980011216,
+  204:       "static_1p5x_prob_dd_gt_12pct": 0.0014,
+  205:       "ladder_from_1p5x_prob_dd_gt_12pct": 0.0002
+  206:     },
+  207:     "verdict": {
+  208:       "question": "Â¿la escalera acota el p95 del MaxDD por debajo del 12%?",
+  209:       "ladder_p95_maxdd_pct": 7.396526980011216,
+  210:       "p95_under_12pct": true,
+  211:       "hostile_regime_note": "bajo el stress hostil persistente la escalera deja el p95 en 12.67% y el p99 en 12.97% (vs 25.48% estatico 1.5x): el presupuesto se respeta salvo un overshoot de ~1pp causado por la marca semanal + efecto 1-semana de la decision â€” el escalon flat congela el DD apenas cruzado el 12%, no antes."
+  212:     }
+  213:   },
+  214:   "dd_budget_proposal": {
+  215:     "status": "PROPUESTA â€” el operador firma (BOOK-LEVERAGE-GOVERNOR.md Â§5)",
+  216:     "rows": [
+  217:       {
+  218:         "threshold": "DD 7% => bajar a 1.0x",
+  219:         "justification": "p50 del MaxDD del libro a 1.5x = 4.0% y a 1.0x = 2.7%: 7% separa la zona normal de la cola y corta la amplificacion 1.5x antes de que el path mediano invada el presupuesto"
+  220:       },
+  221:       {
+  222:         "threshold": "DD 10% => bajar a 0.5x",
+  223:         "justification": "P(MaxDD>10%) a 1.5x = 0.8% vs 0.0% a 1.0x: 10% ya es cola; a 0.5x la propagacion residual hacia 12% es minima y frena la sangria casi con certeza"
+  224:       },
+  225:       {
+  226:         "threshold": "DD 12% => flat + revision formal (presupuesto total)",
+  227:         "justification": "12% = umbral W1 del WITHDRAWAL-PROTOCOL ya firmado; un libro apalancado no puede tener presupuesto mas laxo que el retiro de su sleeve principal â€” la escalera simulada deja P(MaxDD>12%) = 0.0% (vs 0.1% estatico 1.5x)"
+  228:       }
+  229:     ]
+  230:   },
+  231:   "limitations": [
+  232:     "La serie madre son 52 semanas de 2025: el MC HEREDA el regimen 2025 y NO simula regimenes no vistos (quiebre de correlaciones entre sleeves, crash conjunto tipo 2020, gaps de liquidez). Es una limitacion estructural, no un parametro ajustable.",
+  233:     "El sleeve COP 2025 es un backtest contaminado por seleccion (DSR 0.72 < 0.95): estos numeros presupuestan riesgo, jamas evidencian edge. El juez sigue siendo el forward.",
+  234:     "Correlaciones 2025 entre sleeves ~0 (COP-XAU -0.02, COP-BTC 0.09, XAU-BTC 0.05): el beneficio de diversificacion del libro esta heredado tal cual; en crisis las correlaciones suelen subir y la cola real seria peor que la simulada.",
+  235:     "El bootstrap b=4 preserva dependencia hasta ~4 semanas; clustering de vol mas largo no esta capturado (por eso se aÃ±ade el stress del tercil hostil persistente).",
+  236:     "DD marcado solo al cierre semanal: drawdowns intra-semana no se miden.",
+  237:     "ES97.5 del retorno anual se reporta como mÃ©trica de COLA (perdida); el centro de la distribucion no se reporta porque el bootstrap hereda la media 2025 (seria un claim de retorno)."
+  238:   ]
+  239: }
+--- governor candidates
+.claude\specs\assets\usdcop\BOOK-LEVERAGE-GOVERNOR.md
+
+codex
+Ya confirmé la receta básica del bootstrap y los tres valores reportados. Ahora estoy comprobando el punto delicado: la semántica exacta del rearme y si el “hostil” conserva realmente bloques temporales válidos tras filtrar semanas.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$f='"'.claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md'; "'$i=0; Get-Content -LiteralPath $f | ForEach-Object { $i++; '"'{0,5}: {1}' -f "'$i, $_ }; Write-Output '"'--- script 182-420'; "'$i=0; Get-Content -LiteralPath '"'scripts/analysis/book_mc_stress.py' | ForEach-Object { "'$i++; if ($i -ge 182 -and $i -le 420) { '"'{0,5}: {1}' -f "'$i, $_ } }; Write-Output '"'--- JSON string/key audit'; @'
+import json, math, pathlib, re
+p=pathlib.Path(r'.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json')
+raw=p.read_text(encoding='utf-8')
+x=json.loads(raw, parse_constant=lambda s: (_ for _ in ()).throw(ValueError(s)))
+bad=[]
+def walk(v,path='"'$'"'):
+    if isinstance(v,dict):
+        for k,z in v.items(): walk(z,path+'.'+k)
+    elif isinstance(v,list):
+        for i,z in enumerate(v): walk(z,f'{path}[{i}]')
+    elif isinstance(v,float) and not math.isfinite(v): bad.append((path,v))
+walk(x)
+print('nonfinite=',bad)
+for pat in ['sharpe','retorno esperado','expected.return','infinity','nan']:
+    hits=[(i+1,l.strip()) for i,l in enumerate(raw.splitlines()) if re.search(pat,l,re.I)]
+    print(pat, hits)
+print('numbers=', x['governor_ladder_simulation']['from_1p5x_block_b4']['maxdd_pct']['p95'], x['hostile_regime_stress']['ladder_from_1p5x']['maxdd_pct']['p95'], x['hostile_regime_stress']['static_mc'][1]['maxdd_pct']['p95'])
+'@ | python -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:50:35.682343Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.1 seconds
+Output:
+    1: ---
+    2: kind: protocol
+    3: status: DRAFT_AWAITING_OPERATOR_SIGNATURE
+    4: contract: CTR-QUANT-CONSTITUTION-001
+    5: version: 0.1.0
+    6: date: 2026-07-22
+    7: last_verified: 2026-07-22
+    8: trials_consumed: 0
+    9: supersedes: []
+   10: code_anchors:
+   11:   - scripts/analysis/book_kelly_governor.py
+   12:   - .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+   13: ---
+   14: # BOOK-LEVERAGE-GOVERNOR â€” Gobernador de leverage fraccional-Kelly del LIBRO (pre-firmado)
+   15: 
+   16: > **TAREA A2 Â· 0 trials.** Este documento NO prueba una hipÃ³tesis: sella una regla de
+   17: > apalancamiento del libro ANTES de que el forward gradÃºe, para eliminar la tentaciÃ³n de
+   18: > ajustarla ex-post (quant-constitution Â§1 y Â§5). Es un BORRADOR que espera la firma del
+   19: > operador; hasta la firma, la regla vigente es implÃ­citamente 1.0x (no hay leverage de
+   20: > libro en producciÃ³n).
+   21: >
+   22: > **"Leverage del libro" = multiplicador GLOBAL sobre la configuraciÃ³n congelada**, por
+   23: > encima del leverage interno de la estrategia (v11 ya usa 0.5â€“2.0x por trade). f* aquÃ­
+   24: > siempre es multiplicador de libro, jamÃ¡s leverage absoluto de exchange.
+   25: 
+   26: ---
+   27: 
+   28: ## 0. Evidencia (Ãºnica fuente vÃ¡lida: la serie honesta)
+   29: 
+   30: Datos: v11 2025 **purgado** (+7.35%, 32 trades, `trades/smart_simple_v11_2025.json`) +
+   31: 2026 YTD forward (+3.36%, 11 trades, `cop_monitor_2025_2026/2026-07-21/monitor.json`).
+   32: Los nÃºmeros pre-reparaciÃ³n (+26.05/+13.05) estÃ¡n invalidados y el script generador
+   33: **aborta** si el bundle no coincide con la serie purgada. 2026 solo: N=11 < 20 â‡’ se cita
+   34: Ãºnicamente conteo y PnL. Serie combinada N=43 trade-semanas (â‰¥20: los ratios se permiten).
+   35: 
+   36: Computado por `scripts/analysis/book_kelly_governor.py` (seed 42, B=10.000, block
+   37: bootstrap circular b=4 â€” el mismo prior del juez sellado de v12). Artefacto:
+   38: `.claude/evidence/book_kelly/2026-07-22/book_kelly.json` (+ `generator_script.py`).
+   39: 
+   40: | Cantidad | Valor |
+   41: |---|---|
+   42: | N (trade-semanas 2025+2026) | 43 |
+   43: | Î¼ semanal / Ïƒ semanal | +0.255% / 1.649% |
+   44: | **f\* Kelly continuo** (Î¼/ÏƒÂ²) | **9.39** |
+   45: | **f\* Kelly discreto** (argmax E[log(1+fÂ·r)] sobre la empÃ­rica) | **7.99** |
+   46: | IC95 de f\* (block bootstrap b=4) | **[âˆ’6.14, +48.71]** â€” **INCLUYE CERO** |
+   47: | IC95 de f\* (iid, referencia) | [âˆ’7.15, +50.62] |
+   48: | IC95 f\* discreto (block b=4) | [0.00, 21.79] |
+   49: | P(f\* â‰¤ 0) (block b=4) | **14.5%** |
+   50: | f\* con media real = mitad de la observada (shrinkage) | 4.69 (continuo) / 4.36 (discreto) |
+   51: | Banda 0.25â€“0.5 Ã— Kelly (observado) | [2.35, 4.69] |
+   52: | **Banda 0.25â€“0.5 Ã— Kelly (shrunk Ã—Â½)** | **[1.17, 2.35]** |
+   53: 
+   54: **Haircut de POLÃTICA Ã—Â½ (no un estimador de shrinkage)**: el recorte a la mitad es una
+   55: decisiÃ³n conservadora declarada, NO un estimador formal derivado de Lo/Mertens. Lo que
+   56: Lo (2002, caso normal-iid) y Mertens (2002, extensiÃ³n de la varianza con skew/kurtosis)
+   57: aportan es la MOTIVACIÃ“N: con N=43 el SE del Sharpe semanal (0.155) es 0.153 iid (Lo) y
+   58: 0.168 con ajuste skew/kurtosis (Mertens; skew âˆ’1.27) â€” una media real igual a la MITAD
+   59: de la observada estÃ¡ a **0.46 SE**, estadÃ­sticamente indistinguible del dato, asÃ­ que
+   60: operar al Kelly observado serÃ­a fingir una precisiÃ³n que la serie no tiene (correcciÃ³n
+   61: Codex verify A2 #1). Por eso ningÃºn cÃ¡lculo de este protocolo usa el Kelly sin
+   62: shrink: la fracciÃ³n operable se toma de la banda shrunk, y aun asÃ­ el IC95 del f\*
+   63: incluye cero â€” **esta serie no puede probar ni siquiera que el Kelly Ã³ptimo sea
+   64: positivo**. AdemÃ¡s el tramo 2025 estÃ¡ contaminado por selecciÃ³n (DSR 0.72 < 0.95,
+   65: `HYPOTHESIS-REGISTRY.md` Â§2/Ïƒ_trials): motivo adicional para que el f\* de decisiÃ³n se
+   66: recompute con datos forward, nunca con el backtest.
+   67: 
+   68: DistribuciÃ³n de maxDD forward simulada (52 trade-semanas densas â€” conservador: ~28
+   69: trades/aÃ±o observados â€” block b=4, por multiplicador de libro):
+   70: 
+   71: | Mult. libro | maxDD p50 | maxDD p95 | P(DD>7%) | P(DD>10%) | P(DD>12%) |
+   72: |---|---|---|---|---|---|
+   73: | 0.5x | âˆ’4.2% | âˆ’8.0% | 9.3% | 1.2% | 0.3% |
+   74: | 1.0x | âˆ’8.4% | âˆ’15.6% | 67.0% | 33.1% | 17.5% |
+   75: | 1.5x | âˆ’12.5% | âˆ’22.6% | â€” | â€” | 55.4% |
+   76: | 2.0x | âˆ’16.5% | âˆ’29.7% | â€” | â€” | 82.7% |
+   77: 
+   78: (SimulaciÃ³n estÃ¡tica, SIN la escalera de Â§3; con la escalera activa la cola real es
+   79: menor porque el multiplicador cae antes de llegar a ella. Cifras exactas en el JSON.)
+   80: 
+   81: ---
+   82: 
+   83: ## 1. Regla (a) â€” Pre-graduaciÃ³n: leverage del libro = **1.0x**, sin excepciones
+   84: 
+   85: - Mientras el forward NO haya graduado, el libro opera a **1.0x** (la config congelada
+   86:   tal cual, con su leverage interno; ningÃºn multiplicador global).
+   87: - **Criterio de graduaciÃ³n: el ya firmado â€” NO se duplica aquÃ­.** GradÃºa quien cumpla:
+   88:   - v11: Corte B de `WITHDRAWAL-PROTOCOL.md` Â§4 (52 semanas desde 2026-03-18; retorno,
+   89:     Calmar, MaxDD y N mÃ­nimos definidos ALLÃ; retiros Â§3 intactos).
+   90:   - v12/v14: el **juez sellado** del panel Codex (`HYPOTHESIS-REGISTRY.md`, "PANEL CODEX
+   91:     (4Âº auditor, 2026-07-21)"): reloj propio desde su freeze 2026-07-27, corte-52 Ãºnico
+   92:     test confirmatorio, gates econÃ³micos conjuntos, N_bind â‰¥ 12.
+   93: - Si esos documentos cambian (vÃ­a ADR), este protocolo hereda el cambio sin editarse:
+   94:   la referencia es normativa, el nÃºmero vive allÃ­.
+   95: 
+   96: ## 2. Regla (b) â€” Post-graduaciÃ³n: **leverage = min(1.5x, fracciÃ³n-Kelly forward)**
+   97: 
+   98: - Al graduar una configuraciÃ³n, el leverage del libro puede subir a
+   99:   **clip(0.25 Ã— f\*_shrunk_forward, 0, 1.5)** â€” con piso CERO explÃ­cito (correcciÃ³n
+  100:   Codex verify A2 #2): si el Kelly forward sale â‰¤ 0 (posibilidad coherente con el IC
+  101:   actual), el multiplicador NO se vuelve negativo ni invierte el libro â€” la conducta
+  102:   operativa es **libro flat + revisiÃ³n** (un Kelly forward â‰¤ 0 significa que el forward
+  103:   no evidencia edge; nunca se "compensa" con el backtest). Si 0 < resultado < 1.0, se
+  104:   opera a esa exposiciÃ³n reducida (el Kelly manda des-riesgar). Donde:
+  105:   - `f*_shrunk_forward` = Â½ Ã— (Î¼_fwd/ÏƒÂ²_fwd) computado **EXCLUSIVAMENTE con las
+  106:     trade-semanas del perÃ­odo forward** (post-freeze de la config graduada). El
+  107:     backtest 2025 queda prohibido en este cÃ¡lculo para siempre (doblemente
+  108:     contaminado: selecciÃ³n + este mismo anÃ¡lisis lo mirÃ³).
+  109:   - Requiere **N_fwd â‰¥ 20 trade-semanas forward**; con menos, el libro permanece en
+  110:     1.0x aunque haya graduado (constituciÃ³n Â§6: sin N no hay ratios).
+  111:   - La fracciÃ³n es **0.25 de Kelly** (borde inferior de la banda 0.25â€“0.5). Subir a
+  112:     0.5Ã—Kelly requiere ADR + â‰¥52 trade-semanas forward. Nunca mÃ¡s de 0.5Ã—Kelly.
+  113: - **El cap 1.5x es techo duro** aunque el Kelly forward diga mÃ¡s. Contexto de por quÃ©:
+  114:   con los datos actuales 0.25Ã—Kelly sin shrink (2.35) lo excede, pero la celda
+  115:   S7-MOTOR (registry, trials 68â†’69) ya demostrÃ³ que el leverage alto sobre esta
+  116:   familia amplifica la parte sin edge; y a 1.5x estÃ¡tico la simulaciÃ³n pone
+  117:   P(DD>12%) â‰ˆ 55% en un aÃ±o denso. 1.5x es lo mÃ¡ximo defendible.
+  118: - Recompute trimestral (calendario, no discrecional): cada recompute usa TODAS las
+  119:   trade-semanas forward acumuladas. Si el f\* recomputado cae por debajo del
+  120:   multiplicador vigente, se baja al nuevo valor en la siguiente semana operativa
+  121:   (bajar nunca requiere ADR; subir solo en el recompute trimestral).
+  122: 
+  123: ## 3. Regla (c) â€” Presupuesto de DD del libro y escalera de des-apalancamiento â€” **PROPUESTA**
+  124: 
+  125: Presupuesto de drawdown del libro: **12%** (coherente con W1 del
+  126: `WITHDRAWAL-PROTOCOL.md`: a ese daÃ±o el sleeve Ãºnico actual dispara retiro; el libro
+  127: no debe seguir apalancado camino a ese evento). DD medido sobre la equity del LIBRO,
+  128: peak-to-trough, marcada al cierre semanal (viernes 12:55 COT).
+  129: 
+  130: | EscalÃ³n (DD del libro desde el pico) | Multiplicador mÃ¡ximo | DerivaciÃ³n (PROPUESTA) |
+  131: |---|---|---|
+  132: | DD â‰¤ 7% | el de Â§1/Â§2 (1.0x o min(1.5x, Kelly)) | zona normal: 7.84% fue el maxDD observado 2025 a 1.0x; p50 del aÃ±o denso simulado = 8.4% |
+  133: | **DD > 7%** | **1.0x** | a 1.5x la p50 simulada (12.5%) ya invade el presupuesto; volver a 1.0x corta la amplificaciÃ³n antes de eso |
+  134: | **DD > 10%** | **0.5x** | p(DD>10%) a 1.0x â‰ˆ 33% denso: zona de cola; a 0.5x la P(DD>12%) residual â‰ˆ 0.3% â€” frena la sangrÃ­a casi con certeza |
+  135: | **DD > 12%** | **0 (flat) + revisiÃ³n formal** | presupuesto agotado = umbral W1; la revisiÃ³n decide retiro/continuaciÃ³n por los protocolos de cada sleeve, jamÃ¡s re-tunea este documento en caliente |
+  136: 
+  137: - Nota: la tarea sugerÃ­a 15% para el escalÃ³n flat; se propone **12%** porque es el
+  138:   nÃºmero ya firmado en W1 â€” un libro apalancado no puede tener un presupuesto de DD
+  139:   mÃ¡s laxo que el retiro de su Ãºnico sleeve. (Si el operador prefiere 15%, es una
+  140:   ediciÃ³n legÃ­tima ANTES de firmar; despuÃ©s, solo por ADR fuera de drawdown.)
+  141: - **Re-armado (histÃ©resis)**: se recupera el escalÃ³n superior solo cuando la equity
+  142:   del libro cierra â‰¥ 4 semanas consecutivas con DD < (umbral del escalÃ³n âˆ’ 2pp)
+  143:   (p.ej. vuelve de 1.0xâ†’1.5x cuando DD < 5% durante 4 semanas). Sin re-armado
+  144:   intradÃ­a/intra-semana.
+  145: - La escalera gobierna el MULTIPLICADOR DE LIBRO; no toca el sizing interno de la
+  146:   estrategia (congelado) ni sustituye los criterios de retiro W1â€“W6, que siguen
+  147:   vigentes y dominan.
+  148: 
+  149: ## 4. Regla (d) â€” Anti-relajaciÃ³n
+  150: 
+  151: - **NingÃºn umbral de este protocolo se relaja estando el libro en drawdown**
+  152:   (quant-constitution Â§5). Cambios solo por **ADR**, con el libro en DD < 7%, y
+  153:   nunca en la misma semana en que un escalÃ³n haya disparado.
+  154: - Endurecer (bajar leverage, bajar umbrales) estÃ¡ siempre permitido sin ADR.
+  155: - El multiplicador aplicado cada semana se registra en el ledger append-only junto
+  156:   al `strategy_id` y la semana ISO (mismo mecanismo del juez v12, punto 5).
+  157: 
+  158: ## 5. Firma
+  159: 
+  160: - **Operador**: ____________________ Fecha: ____________
+  161: - Al firmar, el estado pasa a `SIGNED` y los nÃºmeros de Â§3 dejan de ser PROPUESTA.
+  162: 
+  163: ---
+  164: 
+  165: ## REGISTRY-PROPOSAL (evento 0-trials â€” texto listo para que el OPERADOR lo pegue en `HYPOTHESIS-REGISTRY.md`; este task NO edita el registro)
+  166: 
+  167: > ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials â€” N sigue en 72)
+  168: >
+  169: > Regla de capital sellada ANTES del veredicto forward (`BOOK-LEVERAGE-GOVERNOR.md`,
+  170: > borrador esperando firma). No es un trial: no se evaluÃ³ ninguna variante ni se
+  171: > seleccionÃ³ nada â€” se computÃ³ el guard-rail sobre la serie honesta ya pagada
+  172: > (2025 purgado +7.35%/32 tr + 2026 YTD +3.36%/11 tr; N=43 trade-semanas).
+  173: > NÃºmeros (evidencia `.claude/evidence/book_kelly/2026-07-22/`): f\* continuo 9.39,
+  174: > discreto 7.99, **IC95 block-b4 [âˆ’6.14, +48.71] INCLUYE CERO** (P(f\*â‰¤0)=14.5%);
+  175: > shrunk Ã—Â½ (Lo-Mertens, media/2 = 0.46 SE): 4.69; banda 0.25â€“0.5Ã—Kelly shrunk
+  176: > [1.17, 2.35]. Regla: 1.0x hasta graduaciÃ³n (criterios de WITHDRAWAL-PROTOCOL Â§4 /
+  177: > juez v12 sellado, por referencia); despuÃ©s min(1.5x, 0.25Ã—f\*_shrunk **forward-only**,
+  178: > N_fwdâ‰¥20); escalera DD 7%â†’1.0x / 10%â†’0.5x / 12%â†’flat+revisiÃ³n (PROPUESTA, alineada
+  179: > con W1); umbrales no se relajan en drawdown (constituciÃ³n Â§5). Consistente con el
+  180: > Kelly-guard del auditor fin-math (riesgo actual 0.23Ã—Kelly): no hay upside legal en
+  181: > subir tamaÃ±o hoy â€” la decisiÃ³n de capital queda pre-firmada para DESPUÃ‰S del forward.
+--- script 182-420
+  182: # --------------------------------------------------------------------- ladder engine
+  183: def run_ladder(paths: np.ndarray, start_mult: float) -> dict:
+  184:     """Simula la escalera del gobernador sobre paths (n, T), arrancando en start_mult.
+  185: 
+  186:     Reglas (BOOK-LEVERAGE-GOVERNOR.md Â§3, tal cual):
+  187:       - DD medido peak-to-trough sobre la equity del LIBRO, al cierre semanal.
+  188:       - DD > 7% => 1.0x ; DD > 10% => 0.5x ; DD > 12% => 0 (flat).
+  189:       - La decision del cierre t se aplica a la semana t+1 (sin look-ahead).
+  190:       - Bajadas: inmediatas (al escalon que dicte el DD). Subidas: UN escalon
+  191:         tras REARM_WEEKS cierres consecutivos con DD < (umbral del escalon - 2pp)
+  192:         (1.0x->base con DD<5%; 0.5x->1.0x con DD<8%).
+  193:       - Flat es absorbente de facto: con equity congelada el DD queda clavado
+  194:         >12% y la condicion de re-armado (DD<10%) es inalcanzable â€” coherente
+  195:         con '0 (flat) + revision formal' del protocolo.
+  196:     """
+  197:     n, T = paths.shape
+  198:     mults = np.array([start_mult, *LADDER_MULTS_TAIL])
+  199:     # re-armado del step k -> k-1 exige DD < LADDER_TRIGGER[k-1] - 2pp
+  200:     rearm_dd = np.array([np.inf, *[t - REARM_HYST_PP for t in LADDER_TRIGGER]])
+  201: 
+  202:     eq = np.ones(n)
+  203:     peak = np.ones(n)
+  204:     step = np.zeros(n, dtype=np.int64)  # multiplicador vigente ESTA semana
+  205:     counter = np.zeros(n, dtype=np.int64)
+  206:     maxdd = np.zeros(n)
+  207:     mult_sum = np.zeros(n)
+  208:     ever = {1: np.zeros(n, bool), 2: np.zeros(n, bool), 3: np.zeros(n, bool)}
+  209: 
+  210:     for t in range(T):
+  211:         m = mults[step]
+  212:         mult_sum += m
+  213:         eq = eq * (1.0 + m * paths[:, t])
+  214:         peak = np.maximum(peak, eq)
+  215:         dd = eq / peak - 1.0
+  216:         maxdd = np.minimum(maxdd, dd)
+  217:         ddm = -dd
+  218: 
+  219:         # bajada inmediata (efectiva desde la proxima semana)
+  220:         trig = np.select(
+  221:             [ddm > LADDER_TRIGGER[2], ddm > LADDER_TRIGGER[1], ddm > LADDER_TRIGGER[0]],
+  222:             [3, 2, 1],
+  223:             default=0,
+  224:         )
+  225:         down = trig > step
+  226:         step = np.where(down, trig, step)
+  227:         counter = np.where(down, 0, counter)
+  228:         for k in (1, 2, 3):
+  229:             ever[k] |= step == k
+  230: 
+  231:         # histeresis de re-armado (solo un escalon por evento)
+  232:         cond = (step > 0) & (ddm < rearm_dd[step])
+  233:         counter = np.where(cond, counter + 1, 0)
+  234:         up = counter >= REARM_WEEKS
+  235:         step = np.where(up, step - 1, step)
+  236:         counter = np.where(up, 0, counter)
+  237: 
+  238:     maxdd_mag = -maxdd
+  239:     ann = eq - 1.0
+  240:     var_cut = np.percentile(ann, 2.5)
+  241:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+  242:     return {
+  243:         "start_multiplier": start_mult,
+  244:         "maxdd_pct": {
+  245:             "p50": float(p50 * 100),
+  246:             "p90": float(p90 * 100),
+  247:             "p95": float(p95 * 100),
+  248:             "p99": float(p99 * 100),
+  249:         },
+  250:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+  251:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+  252:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+  253:         "es97_5_annual_return_pct": float(ann[ann <= var_cut].mean() * 100),
+  254:         "prob_ever_step_1p0x": float(ever[1].mean()),
+  255:         "prob_ever_step_0p5x": float(ever[2].mean()),
+  256:         "prob_ever_flat": float(ever[3].mean()),
+  257:         "avg_multiplier_over_horizon": float((mult_sum / T).mean()),
+  258:     }
+  259: 
+  260: 
+  261: # --------------------------------------------------------------------- hostile regime
+  262: def hostile_subset(r_book: np.ndarray) -> dict:
+  263:     """Semanas del tercil ALTO de vol realizada rolling-4w del libro."""
+  264:     n = len(r_book)
+  265:     vols = np.full(n, np.nan)
+  266:     for t in range(VOL_WINDOW - 1, n):
+  267:         vols[t] = r_book[t - VOL_WINDOW + 1 : t + 1].std(ddof=1)
+  268:     valid = ~np.isnan(vols)
+  269:     cut = np.percentile(vols[valid], 100 * 2 / 3)
+  270:     mask = valid & (vols >= cut)
+  271:     idx = np.where(mask)[0]
+  272:     return {
+  273:         "indices_iso_week": [f"2025-W{int(i) + 1:02d}" for i in idx],
+  274:         "n_weeks": int(mask.sum()),
+  275:         "vol_window_weeks": VOL_WINDOW,
+  276:         "tercile_cut_weekly_vol": float(cut),
+  277:         "subset": r_book[mask],
+  278:     }
+  279: 
+  280: 
+  281: # ------------------------------------------------------------------------ sanitizado
+  282: def sanitize(obj):
+  283:     """JSON safety: Infinity/NaN -> null (regla strategy-contract)."""
+  284:     if isinstance(obj, dict):
+  285:         return {k: sanitize(v) for k, v in obj.items()}
+  286:     if isinstance(obj, (list, tuple)):
+  287:         return [sanitize(v) for v in obj]
+  288:     if isinstance(obj, float):
+  289:         return obj if math.isfinite(obj) else None
+  290:     if isinstance(obj, (np.floating, np.integer)):
+  291:         v = float(obj)
+  292:         return v if math.isfinite(v) else None
+  293:     return obj
+  294: 
+  295: 
+  296: # ------------------------------------------------------------------------------ main
+  297: def main() -> None:
+  298:     data = load_book_series()
+  299:     r_book = data["r_book"]
+  300: 
+  301:     # Un solo RNG seed=42; el orden de generacion es parte de la receta reproducible
+  302:     rng = np.random.default_rng(SEED)
+  303:     paths_block = gen_block_paths(r_book, N_PATHS, HORIZON, BLOCK, rng)
+  304:     paths_iid = gen_iid_paths(r_book, N_PATHS, HORIZON, rng)
+  305: 
+  306:     host = hostile_subset(r_book)
+  307:     paths_host = gen_block_paths(host["subset"], N_PATHS, HORIZON, BLOCK, rng)
+  308: 
+  309:     # 1-2. MC estatico: bloques (manda) + iid (banda de comparacion)
+  310:     static_block = [static_stats(paths_block, m) for m in (1.0, 1.5)]
+  311:     static_iid = [static_stats(paths_iid, m) for m in (1.0, 1.5)]
+  312: 
+  313:     # 3. Regimen hostil (tercil alto de vol) â€” stress conservador, NO pronostico
+  314:     static_host = [static_stats(paths_host, m) for m in (1.0, 1.5)]
+  315: 
+  316:     # 4. Escalera del gobernador sobre LOS MISMOS paths
+  317:     ladder_15 = run_ladder(paths_block, 1.5)   # la pregunta central
+  318:     ladder_10 = run_ladder(paths_block, 1.0)   # secundario: pre-graduacion
+  319:     ladder_host = run_ladder(paths_host, 1.5)  # escalera bajo stress hostil
+  320: 
+  321:     verdict_p95_under_12 = ladder_15["maxdd_pct"]["p95"] < 12.0
+  322: 
+  323:     result = {
+  324:         "task": "A3 â€” stress Monte Carlo del LIBRO + presupuesto de DD del gobernador",
+  325:         "trials_consumed": 0,
+  326:         "trials_note": (
+  327:             "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis "
+  328:             "de retorno, no se selecciona ninguna variante, no se reporta Sharpe "
+  329:             "ni retorno esperado â€” solo colas de drawdown y ES97.5 (perdida)."
+  330:         ),
+  331:         "inputs": {
+  332:             "book": data["book_meta"],
+  333:             "erc_weights": data["weights"],
+  334:             "governor_spec": ".claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md",
+  335:             "book_weekly_series_stats": {
+  336:                 "n_weeks": HORIZON,
+  337:                 "annualized_vol_sample": data["ann_vol_sample"],
+  338:                 "worst_week_pct": float(r_book.min() * 100),
+  339:                 "best_week_pct": float(r_book.max() * 100),
+  340:                 "realized_maxdd_2025_pct_at_1x": float(
+  341:                     -(
+  342:                         np.cumprod(1 + r_book)
+  343:                         / np.maximum.accumulate(np.cumprod(1 + r_book))
+  344:                         - 1
+  345:                     ).min()
+  346:                     * 100
+  347:                 ),
+  348:             },
+  349:         },
+  350:         "mc_config": {
+  351:             "seed": SEED,
+  352:             "n_paths": N_PATHS,
+  353:             "horizon_weeks": HORIZON,
+  354:             "block_size": BLOCK,
+  355:             "bootstrap": "circular block (b=4) â€” MANDA; iid solo banda de comparacion",
+  356:             "weights_handling": (
+  357:                 "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; "
+  358:                 "no se simula drift de pesos intra-rebalanceo"
+  359:             ),
+  360:         },
+  361:         "es97_5_disclaimer": (
+  362:             "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque "
+  363:             "el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP "
+  364:             "backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar "
+  365:             "2025, no un claim de que 'ni la peor cola pierde'. La cola honesta "
+  366:             "para presupuestar perdida es la del stress hostil (ES97.5 negativo)."
+  367:         ),
+  368:         "static_mc_block_b4": static_block,
+  369:         "static_mc_iid_reference_only": static_iid,
+  370:         "hostile_regime_stress": {
+  371:             "label": (
+  372:                 "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas "
+  373:                 "en el tercil ALTO de vol realizada rolling-4w del libro, como "
+  374:                 "proxy de regimen hostil PERSISTENTE 52 semanas (peor que "
+  375:                 "cualquier aÃ±o realista del regimen 2025)."
+  376:             ),
+  377:             "subset_weeks": host["indices_iso_week"],
+  378:             "n_weeks_in_subset": host["n_weeks"],
+  379:             "vol_window_weeks": host["vol_window_weeks"],
+  380:             "tercile_cut_weekly_vol": host["tercile_cut_weekly_vol"],
+  381:             "caveat_blocks": (
+  382:                 "los bloques b=4 sobre el subset concatenan semanas no contiguas "
+  383:                 "del calendario original; la dependencia serial dentro del subset "
+  384:                 "es aproximada"
+  385:             ),
+  386:             "static_mc": static_host,
+  387:             "ladder_from_1p5x": ladder_host,
+  388:         },
+  389:         "governor_ladder_simulation": {
+  390:             "rules_as_simulated": {
+  391:                 "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+  392:                 "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+  393:                 "rearm": (
+  394:                     f"subida de UN escalon tras {REARM_WEEKS} cierres consecutivos "
+  395:                     "con DD < (umbral del escalon - 2pp); flat es absorbente de "
+  396:                     "facto (equity congelada => DD clavado > 12%)"
+  397:                 ),
+  398:             },
+  399:             "from_1p5x_block_b4": ladder_15,
+  400:             "from_1p0x_block_b4": ladder_10,
+  401:             "comparison_same_paths": {
+  402:                 "static_1p5x_maxdd_p95_pct": static_block[1]["maxdd_pct"]["p95"],
+  403:                 "ladder_from_1p5x_maxdd_p95_pct": ladder_15["maxdd_pct"]["p95"],
+  404:                 "static_1p5x_prob_dd_gt_12pct": static_block[1]["prob_maxdd_gt_12pct"],
+  405:                 "ladder_from_1p5x_prob_dd_gt_12pct": ladder_15["prob_maxdd_gt_12pct"],
+  406:             },
+  407:             "verdict": {
+  408:                 "question": "Â¿la escalera acota el p95 del MaxDD por debajo del 12%?",
+  409:                 "ladder_p95_maxdd_pct": ladder_15["maxdd_pct"]["p95"],
+  410:                 "p95_under_12pct": bool(verdict_p95_under_12),
+  411:                 "hostile_regime_note": (
+  412:                     f"bajo el stress hostil persistente la escalera deja el p95 en "
+  413:                     f"{ladder_host['maxdd_pct']['p95']:.2f}% y el p99 en "
+  414:                     f"{ladder_host['maxdd_pct']['p99']:.2f}% (vs "
+  415:                     f"{static_host[1]['maxdd_pct']['p95']:.2f}% estatico 1.5x): el "
+  416:                     "presupuesto se respeta salvo un overshoot de ~1pp causado por "
+  417:                     "la marca semanal + efecto 1-semana de la decision â€” el escalon "
+  418:                     "flat congela el DD apenas cruzado el 12%, no antes."
+  419:                 ),
+  420:             },
+--- JSON string/key audit
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 20 Carácter: 6
++ '@ | python -
++      ~~~~~~~~.
+En línea: 2 Carácter: 378
++ ... ,5}: {1}' -f $i, $_ } }; Write-Output '--- JSON string/key audit'; @'
++                                                                        ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+ exited 1 in 2127ms:
+    1: ---
+    2: kind: protocol
+    3: status: DRAFT_AWAITING_OPERATOR_SIGNATURE
+    4: contract: CTR-QUANT-CONSTITUTION-001
+    5: version: 0.1.0
+    6: date: 2026-07-22
+    7: last_verified: 2026-07-22
+    8: trials_consumed: 0
+    9: supersedes: []
+   10: code_anchors:
+   11:   - scripts/analysis/book_kelly_governor.py
+   12:   - .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+   13: ---
+   14: # BOOK-LEVERAGE-GOVERNOR â€” Gobernador de leverage fraccional-Kelly del LIBRO (pre-firmado)
+   15: 
+   16: > **TAREA A2 Â· 0 trials.** Este documento NO prueba una hipÃ³tesis: sella una regla de
+   17: > apalancamiento del libro ANTES de que el forward gradÃºe, para eliminar la tentaciÃ³n de
+   18: > ajustarla ex-post (quant-constitution Â§1 y Â§5). Es un BORRADOR que espera la firma del
+   19: > operador; hasta la firma, la regla vigente es implÃ­citamente 1.0x (no hay leverage de
+   20: > libro en producciÃ³n).
+   21: >
+   22: > **"Leverage del libro" = multiplicador GLOBAL sobre la configuraciÃ³n congelada**, por
+   23: > encima del leverage interno de la estrategia (v11 ya usa 0.5â€“2.0x por trade). f* aquÃ­
+   24: > siempre es multiplicador de libro, jamÃ¡s leverage absoluto de exchange.
+   25: 
+   26: ---
+   27: 
+   28: ## 0. Evidencia (Ãºnica fuente vÃ¡lida: la serie honesta)
+   29: 
+   30: Datos: v11 2025 **purgado** (+7.35%, 32 trades, `trades/smart_simple_v11_2025.json`) +
+   31: 2026 YTD forward (+3.36%, 11 trades, `cop_monitor_2025_2026/2026-07-21/monitor.json`).
+   32: Los nÃºmeros pre-reparaciÃ³n (+26.05/+13.05) estÃ¡n invalidados y el script generador
+   33: **aborta** si el bundle no coincide con la serie purgada. 2026 solo: N=11 < 20 â‡’ se cita
+   34: Ãºnicamente conteo y PnL. Serie combinada N=43 trade-semanas (â‰¥20: los ratios se permiten).
+   35: 
+   36: Computado por `scripts/analysis/book_kelly_governor.py` (seed 42, B=10.000, block
+   37: bootstrap circular b=4 â€” el mismo prior del juez sellado de v12). Artefacto:
+   38: `.claude/evidence/book_kelly/2026-07-22/book_kelly.json` (+ `generator_script.py`).
+   39: 
+   40: | Cantidad | Valor |
+   41: |---|---|
+   42: | N (trade-semanas 2025+2026) | 43 |
+   43: | Î¼ semanal / Ïƒ semanal | +0.255% / 1.649% |
+   44: | **f\* Kelly continuo** (Î¼/ÏƒÂ²) | **9.39** |
+   45: | **f\* Kelly discreto** (argmax E[log(1+fÂ·r)] sobre la empÃ­rica) | **7.99** |
+   46: | IC95 de f\* (block bootstrap b=4) | **[âˆ’6.14, +48.71]** â€” **INCLUYE CERO** |
+   47: | IC95 de f\* (iid, referencia) | [âˆ’7.15, +50.62] |
+   48: | IC95 f\* discreto (block b=4) | [0.00, 21.79] |
+   49: | P(f\* â‰¤ 0) (block b=4) | **14.5%** |
+   50: | f\* con media real = mitad de la observada (shrinkage) | 4.69 (continuo) / 4.36 (discreto) |
+   51: | Banda 0.25â€“0.5 Ã— Kelly (observado) | [2.35, 4.69] |
+   52: | **Banda 0.25â€“0.5 Ã— Kelly (shrunk Ã—Â½)** | **[1.17, 2.35]** |
+   53: 
+   54: **Haircut de POLÃTICA Ã—Â½ (no un estimador de shrinkage)**: el recorte a la mitad es una
+   55: decisiÃ³n conservadora declarada, NO un estimador formal derivado de Lo/Mertens. Lo que
+   56: Lo (2002, caso normal-iid) y Mertens (2002, extensiÃ³n de la varianza con skew/kurtosis)
+   57: aportan es la MOTIVACIÃ“N: con N=43 el SE del Sharpe semanal (0.155) es 0.153 iid (Lo) y
+   58: 0.168 con ajuste skew/kurtosis (Mertens; skew âˆ’1.27) â€” una media real igual a la MITAD
+   59: de la observada estÃ¡ a **0.46 SE**, estadÃ­sticamente indistinguible del dato, asÃ­ que
+   60: operar al Kelly observado serÃ­a fingir una precisiÃ³n que la serie no tiene (correcciÃ³n
+   61: Codex verify A2 #1). Por eso ningÃºn cÃ¡lculo de este protocolo usa el Kelly sin
+   62: shrink: la fracciÃ³n operable se toma de la banda shrunk, y aun asÃ­ el IC95 del f\*
+   63: incluye cero â€” **esta serie no puede probar ni siquiera que el Kelly Ã³ptimo sea
+   64: positivo**. AdemÃ¡s el tramo 2025 estÃ¡ contaminado por selecciÃ³n (DSR 0.72 < 0.95,
+   65: `HYPOTHESIS-REGISTRY.md` Â§2/Ïƒ_trials): motivo adicional para que el f\* de decisiÃ³n se
+   66: recompute con datos forward, nunca con el backtest.
+   67: 
+   68: DistribuciÃ³n de maxDD forward simulada (52 trade-semanas densas â€” conservador: ~28
+   69: trades/aÃ±o observados â€” block b=4, por multiplicador de libro):
+   70: 
+   71: | Mult. libro | maxDD p50 | maxDD p95 | P(DD>7%) | P(DD>10%) | P(DD>12%) |
+   72: |---|---|---|---|---|---|
+   73: | 0.5x | âˆ’4.2% | âˆ’8.0% | 9.3% | 1.2% | 0.3% |
+   74: | 1.0x | âˆ’8.4% | âˆ’15.6% | 67.0% | 33.1% | 17.5% |
+   75: | 1.5x | âˆ’12.5% | âˆ’22.6% | â€” | â€” | 55.4% |
+   76: | 2.0x | âˆ’16.5% | âˆ’29.7% | â€” | â€” | 82.7% |
+   77: 
+   78: (SimulaciÃ³n estÃ¡tica, SIN la escalera de Â§3; con la escalera activa la cola real es
+   79: menor porque el multiplicador cae antes de llegar a ella. Cifras exactas en el JSON.)
+   80: 
+   81: ---
+   82: 
+   83: ## 1. Regla (a) â€” Pre-graduaciÃ³n: leverage del libro = **1.0x**, sin excepciones
+   84: 
+   85: - Mientras el forward NO haya graduado, el libro opera a **1.0x** (la config congelada
+   86:   tal cual, con su leverage interno; ningÃºn multiplicador global).
+   87: - **Criterio de graduaciÃ³n: el ya firmado â€” NO se duplica aquÃ­.** GradÃºa quien cumpla:
+   88:   - v11: Corte B de `WITHDRAWAL-PROTOCOL.md` Â§4 (52 semanas desde 2026-03-18; retorno,
+   89:     Calmar, MaxDD y N mÃ­nimos definidos ALLÃ; retiros Â§3 intactos).
+   90:   - v12/v14: el **juez sellado** del panel Codex (`HYPOTHESIS-REGISTRY.md`, "PANEL CODEX
+   91:     (4Âº auditor, 2026-07-21)"): reloj propio desde su freeze 2026-07-27, corte-52 Ãºnico
+   92:     test confirmatorio, gates econÃ³micos conjuntos, N_bind â‰¥ 12.
+   93: - Si esos documentos cambian (vÃ­a ADR), este protocolo hereda el cambio sin editarse:
+   94:   la referencia es normativa, el nÃºmero vive allÃ­.
+   95: 
+   96: ## 2. Regla (b) â€” Post-graduaciÃ³n: **leverage = min(1.5x, fracciÃ³n-Kelly forward)**
+   97: 
+   98: - Al graduar una configuraciÃ³n, el leverage del libro puede subir a
+   99:   **clip(0.25 Ã— f\*_shrunk_forward, 0, 1.5)** â€” con piso CERO explÃ­cito (correcciÃ³n
+  100:   Codex verify A2 #2): si el Kelly forward sale â‰¤ 0 (posibilidad coherente con el IC
+  101:   actual), el multiplicador NO se vuelve negativo ni invierte el libro â€” la conducta
+  102:   operativa es **libro flat + revisiÃ³n** (un Kelly forward â‰¤ 0 significa que el forward
+  103:   no evidencia edge; nunca se "compensa" con el backtest). Si 0 < resultado < 1.0, se
+  104:   opera a esa exposiciÃ³n reducida (el Kelly manda des-riesgar). Donde:
+  105:   - `f*_shrunk_forward` = Â½ Ã— (Î¼_fwd/ÏƒÂ²_fwd) computado **EXCLUSIVAMENTE con las
+  106:     trade-semanas del perÃ­odo forward** (post-freeze de la config graduada). El
+  107:     backtest 2025 queda prohibido en este cÃ¡lculo para siempre (doblemente
+  108:     contaminado: selecciÃ³n + este mismo anÃ¡lisis lo mirÃ³).
+  109:   - Requiere **N_fwd â‰¥ 20 trade-semanas forward**; con menos, el libro permanece en
+  110:     1.0x aunque haya graduado (constituciÃ³n Â§6: sin N no hay ratios).
+  111:   - La fracciÃ³n es **0.25 de Kelly** (borde inferior de la banda 0.25â€“0.5). Subir a
+  112:     0.5Ã—Kelly requiere ADR + â‰¥52 trade-semanas forward. Nunca mÃ¡s de 0.5Ã—Kelly.
+  113: - **El cap 1.5x es techo duro** aunque el Kelly forward diga mÃ¡s. Contexto de por quÃ©:
+  114:   con los datos actuales 0.25Ã—Kelly sin shrink (2.35) lo excede, pero la celda
+  115:   S7-MOTOR (registry, trials 68â†’69) ya demostrÃ³ que el leverage alto sobre esta
+  116:   familia amplifica la parte sin edge; y a 1.5x estÃ¡tico la simulaciÃ³n pone
+  117:   P(DD>12%) â‰ˆ 55% en un aÃ±o denso. 1.5x es lo mÃ¡ximo defendible.
+  118: - Recompute trimestral (calendario, no discrecional): cada recompute usa TODAS las
+  119:   trade-semanas forward acumuladas. Si el f\* recomputado cae por debajo del
+  120:   multiplicador vigente, se baja al nuevo valor en la siguiente semana operativa
+  121:   (bajar nunca requiere ADR; subir solo en el recompute trimestral).
+  122: 
+  123: ## 3. Regla (c) â€” Presupuesto de DD del libro y escalera de des-apalancamiento â€” **PROPUESTA**
+  124: 
+  125: Presupuesto de drawdown del libro: **12%** (coherente con W1 del
+  126: `WITHDRAWAL-PROTOCOL.md`: a ese daÃ±o el sleeve Ãºnico actual dispara retiro; el libro
+  127: no debe seguir apalancado camino a ese evento). DD medido sobre la equity del LIBRO,
+  128: peak-to-trough, marcada al cierre semanal (viernes 12:55 COT).
+  129: 
+  130: | EscalÃ³n (DD del libro desde el pico) | Multiplicador mÃ¡ximo | DerivaciÃ³n (PROPUESTA) |
+  131: |---|---|---|
+  132: | DD â‰¤ 7% | el de Â§1/Â§2 (1.0x o min(1.5x, Kelly)) | zona normal: 7.84% fue el maxDD observado 2025 a 1.0x; p50 del aÃ±o denso simulado = 8.4% |
+  133: | **DD > 7%** | **1.0x** | a 1.5x la p50 simulada (12.5%) ya invade el presupuesto; volver a 1.0x corta la amplificaciÃ³n antes de eso |
+  134: | **DD > 10%** | **0.5x** | p(DD>10%) a 1.0x â‰ˆ 33% denso: zona de cola; a 0.5x la P(DD>12%) residual â‰ˆ 0.3% â€” frena la sangrÃ­a casi con certeza |
+  135: | **DD > 12%** | **0 (flat) + revisiÃ³n formal** | presupuesto agotado = umbral W1; la revisiÃ³n decide retiro/continuaciÃ³n por los protocolos de cada sleeve, jamÃ¡s re-tunea este documento en caliente |
+  136: 
+  137: - Nota: la tarea sugerÃ­a 15% para el escalÃ³n flat; se propone **12%** porque es el
+  138:   nÃºmero ya firmado en W1 â€” un libro apalancado no puede tener un presupuesto de DD
+  139:   mÃ¡s laxo que el retiro de su Ãºnico sleeve. (Si el operador prefiere 15%, es una
+  140:   ediciÃ³n legÃ­tima ANTES de firmar; despuÃ©s, solo por ADR fuera de drawdown.)
+  141: - **Re-armado (histÃ©resis)**: se recupera el escalÃ³n superior solo cuando la equity
+  142:   del libro cierra â‰¥ 4 semanas consecutivas con DD < (umbral del escalÃ³n âˆ’ 2pp)
+  143:   (p.ej. vuelve de 1.0xâ†’1.5x cuando DD < 5% durante 4 semanas). Sin re-armado
+  144:   intradÃ­a/intra-semana.
+  145: - La escalera gobierna el MULTIPLICADOR DE LIBRO; no toca el sizing interno de la
+  146:   estrategia (congelado) ni sustituye los criterios de retiro W1â€“W6, que siguen
+  147:   vigentes y dominan.
+  148: 
+  149: ## 4. Regla (d) â€” Anti-relajaciÃ³n
+  150: 
+  151: - **NingÃºn umbral de este protocolo se relaja estando el libro en drawdown**
+  152:   (quant-constitution Â§5). Cambios solo por **ADR**, con el libro en DD < 7%, y
+  153:   nunca en la misma semana en que un escalÃ³n haya disparado.
+  154: - Endurecer (bajar leverage, bajar umbrales) estÃ¡ siempre permitido sin ADR.
+  155: - El multiplicador aplicado cada semana se registra en el ledger append-only junto
+  156:   al `strategy_id` y la semana ISO (mismo mecanismo del juez v12, punto 5).
+  157: 
+  158: ## 5. Firma
+  159: 
+  160: - **Operador**: ____________________ Fecha: ____________
+  161: - Al firmar, el estado pasa a `SIGNED` y los nÃºmeros de Â§3 dejan de ser PROPUESTA.
+  162: 
+  163: ---
+  164: 
+  165: ## REGISTRY-PROPOSAL (evento 0-trials â€” texto listo para que el OPERADOR lo pegue en `HYPOTHESIS-REGISTRY.md`; este task NO edita el registro)
+  166: 
+  167: > ## GOBERNADOR KELLY DEL LIBRO PRE-FIRMADO (2026-07-22, 0 trials â€” N sigue en 72)
+  168: >
+  169: > Regla de capital sellada ANTES del veredicto forward (`BOOK-LEVERAGE-GOVERNOR.md`,
+  170: > borrador esperando firma). No es un trial: no se evaluÃ³ ninguna variante ni se
+  171: > seleccionÃ³ nada â€” se computÃ³ el guard-rail sobre la serie honesta ya pagada
+  172: > (2025 purgado +7.35%/32 tr + 2026 YTD +3.36%/11 tr; N=43 trade-semanas).
+  173: > NÃºmeros (evidencia `.claude/evidence/book_kelly/2026-07-22/`): f\* continuo 9.39,
+  174: > discreto 7.99, **IC95 block-b4 [âˆ’6.14, +48.71] INCLUYE CERO** (P(f\*â‰¤0)=14.5%);
+  175: > shrunk Ã—Â½ (Lo-Mertens, media/2 = 0.46 SE): 4.69; banda 0.25â€“0.5Ã—Kelly shrunk
+  176: > [1.17, 2.35]. Regla: 1.0x hasta graduaciÃ³n (criterios de WITHDRAWAL-PROTOCOL Â§4 /
+  177: > juez v12 sellado, por referencia); despuÃ©s min(1.5x, 0.25Ã—f\*_shrunk **forward-only**,
+  178: > N_fwdâ‰¥20); escalera DD 7%â†’1.0x / 10%â†’0.5x / 12%â†’flat+revisiÃ³n (PROPUESTA, alineada
+  179: > con W1); umbrales no se relajan en drawdown (constituciÃ³n Â§5). Consistente con el
+  180: > Kelly-guard del auditor fin-math (riesgo actual 0.23Ã—Kelly): no hay upside legal en
+  181: > subir tamaÃ±o hoy â€” la decisiÃ³n de capital queda pre-firmada para DESPUÃ‰S del forward.
+--- script 182-420
+  182: # --------------------------------------------------------------------- ladder engine
+  183: def run_ladder(paths: np.ndarray, start_mult: float) -> dict:
+  184:     """Simula la escalera del gobernador sobre paths (n, T), arrancando en start_mult.
+  185: 
+  186:     Reglas (BOOK-LEVERAGE-GOVERNOR.md Â§3, tal cual):
+  187:       - DD medido peak-to-trough sobre la equity del LIBRO, al cierre semanal.
+  188:       - DD > 7% => 1.0x ; DD > 10% => 0.5x ; DD > 12% => 0 (flat).
+  189:       - La decision del cierre t se aplica a la semana t+1 (sin look-ahead).
+  190:       - Bajadas: inmediatas (al escalon que dicte el DD). Subidas: UN escalon
+  191:         tras REARM_WEEKS cierres consecutivos con DD < (umbral del escalon - 2pp)
+  192:         (1.0x->base con DD<5%; 0.5x->1.0x con DD<8%).
+  193:       - Flat es absorbente de facto: con equity congelada el DD queda clavado
+  194:         >12% y la condicion de re-armado (DD<10%) es inalcanzable â€” coherente
+  195:         con '0 (flat) + revision formal' del protocolo.
+  196:     """
+  197:     n, T = paths.shape
+  198:     mults = np.array([start_mult, *LADDER_MULTS_TAIL])
+  199:     # re-armado del step k -> k-1 exige DD < LADDER_TRIGGER[k-1] - 2pp
+  200:     rearm_dd = np.array([np.inf, *[t - REARM_HYST_PP for t in LADDER_TRIGGER]])
+  201: 
+  202:     eq = np.ones(n)
+  203:     peak = np.ones(n)
+  204:     step = np.zeros(n, dtype=np.int64)  # multiplicador vigente ESTA semana
+  205:     counter = np.zeros(n, dtype=np.int64)
+  206:     maxdd = np.zeros(n)
+  207:     mult_sum = np.zeros(n)
+  208:     ever = {1: np.zeros(n, bool), 2: np.zeros(n, bool), 3: np.zeros(n, bool)}
+  209: 
+  210:     for t in range(T):
+  211:         m = mults[step]
+  212:         mult_sum += m
+  213:         eq = eq * (1.0 + m * paths[:, t])
+  214:         peak = np.maximum(peak, eq)
+  215:         dd = eq / peak - 1.0
+  216:         maxdd = np.minimum(maxdd, dd)
+  217:         ddm = -dd
+  218: 
+  219:         # bajada inmediata (efectiva desde la proxima semana)
+  220:         trig = np.select(
+  221:             [ddm > LADDER_TRIGGER[2], ddm > LADDER_TRIGGER[1], ddm > LADDER_TRIGGER[0]],
+  222:             [3, 2, 1],
+  223:             default=0,
+  224:         )
+  225:         down = trig > step
+  226:         step = np.where(down, trig, step)
+  227:         counter = np.where(down, 0, counter)
+  228:         for k in (1, 2, 3):
+  229:             ever[k] |= step == k
+  230: 
+  231:         # histeresis de re-armado (solo un escalon por evento)
+  232:         cond = (step > 0) & (ddm < rearm_dd[step])
+  233:         counter = np.where(cond, counter + 1, 0)
+  234:         up = counter >= REARM_WEEKS
+  235:         step = np.where(up, step - 1, step)
+  236:         counter = np.where(up, 0, counter)
+  237: 
+  238:     maxdd_mag = -maxdd
+  239:     ann = eq - 1.0
+  240:     var_cut = np.percentile(ann, 2.5)
+  241:     p50, p90, p95, p99 = np.percentile(maxdd_mag, [50, 90, 95, 99])
+  242:     return {
+  243:         "start_multiplier": start_mult,
+  244:         "maxdd_pct": {
+  245:             "p50": float(p50 * 100),
+  246:             "p90": float(p90 * 100),
+  247:             "p95": float(p95 * 100),
+  248:             "p99": float(p99 * 100),
+  249:         },
+  250:         "prob_maxdd_gt_7pct": float((maxdd_mag > 0.07).mean()),
+  251:         "prob_maxdd_gt_10pct": float((maxdd_mag > 0.10).mean()),
+  252:         "prob_maxdd_gt_12pct": float((maxdd_mag > 0.12).mean()),
+  253:         "es97_5_annual_return_pct": float(ann[ann <= var_cut].mean() * 100),
+  254:         "prob_ever_step_1p0x": float(ever[1].mean()),
+  255:         "prob_ever_step_0p5x": float(ever[2].mean()),
+  256:         "prob_ever_flat": float(ever[3].mean()),
+  257:         "avg_multiplier_over_horizon": float((mult_sum / T).mean()),
+  258:     }
+  259: 
+  260: 
+  261: # --------------------------------------------------------------------- hostile regime
+  262: def hostile_subset(r_book: np.ndarray) -> dict:
+  263:     """Semanas del tercil ALTO de vol realizada rolling-4w del libro."""
+  264:     n = len(r_book)
+  265:     vols = np.full(n, np.nan)
+  266:     for t in range(VOL_WINDOW - 1, n):
+  267:         vols[t] = r_book[t - VOL_WINDOW + 1 : t + 1].std(ddof=1)
+  268:     valid = ~np.isnan(vols)
+  269:     cut = np.percentile(vols[valid], 100 * 2 / 3)
+  270:     mask = valid & (vols >= cut)
+  271:     idx = np.where(mask)[0]
+  272:     return {
+  273:         "indices_iso_week": [f"2025-W{int(i) + 1:02d}" for i in idx],
+  274:         "n_weeks": int(mask.sum()),
+  275:         "vol_window_weeks": VOL_WINDOW,
+  276:         "tercile_cut_weekly_vol": float(cut),
+  277:         "subset": r_book[mask],
+  278:     }
+  279: 
+  280: 
+  281: # ------------------------------------------------------------------------ sanitizado
+  282: def sanitize(obj):
+  283:     """JSON safety: Infinity/NaN -> null (regla strategy-contract)."""
+  284:     if isinstance(obj, dict):
+  285:         return {k: sanitize(v) for k, v in obj.items()}
+  286:     if isinstance(obj, (list, tuple)):
+  287:         return [sanitize(v) for v in obj]
+  288:     if isinstance(obj, float):
+  289:         return obj if math.isfinite(obj) else None
+  290:     if isinstance(obj, (np.floating, np.integer)):
+  291:         v = float(obj)
+  292:         return v if math.isfinite(v) else None
+  293:     return obj
+  294: 
+  295: 
+  296: # ------------------------------------------------------------------------------ main
+  297: def main() -> None:
+  298:     data = load_book_series()
+  299:     r_book = data["r_book"]
+  300: 
+  301:     # Un solo RNG seed=42; el orden de generacion es parte de la receta reproducible
+  302:     rng = np.random.default_rng(SEED)
+  303:     paths_block = gen_block_paths(r_book, N_PATHS, HORIZON, BLOCK, rng)
+  304:     paths_iid = gen_iid_paths(r_book, N_PATHS, HORIZON, rng)
+  305: 
+  306:     host = hostile_subset(r_book)
+  307:     paths_host = gen_block_paths(host["subset"], N_PATHS, HORIZON, BLOCK, rng)
+  308: 
+  309:     # 1-2. MC estatico: bloques (manda) + iid (banda de comparacion)
+  310:     static_block = [static_stats(paths_block, m) for m in (1.0, 1.5)]
+  311:     static_iid = [static_stats(paths_iid, m) for m in (1.0, 1.5)]
+  312: 
+  313:     # 3. Regimen hostil (tercil alto de vol) â€” stress conservador, NO pronostico
+  314:     static_host = [static_stats(paths_host, m) for m in (1.0, 1.5)]
+  315: 
+  316:     # 4. Escalera del gobernador sobre LOS MISMOS paths
+  317:     ladder_15 = run_ladder(paths_block, 1.5)   # la pregunta central
+  318:     ladder_10 = run_ladder(paths_block, 1.0)   # secundario: pre-graduacion
+  319:     ladder_host = run_ladder(paths_host, 1.5)  # escalera bajo stress hostil
+  320: 
+  321:     verdict_p95_under_12 = ladder_15["maxdd_pct"]["p95"] < 12.0
+  322: 
+  323:     result = {
+  324:         "task": "A3 â€” stress Monte Carlo del LIBRO + presupuesto de DD del gobernador",
+  325:         "trials_consumed": 0,
+  326:         "trials_note": (
+  327:             "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis "
+  328:             "de retorno, no se selecciona ninguna variante, no se reporta Sharpe "
+  329:             "ni retorno esperado â€” solo colas de drawdown y ES97.5 (perdida)."
+  330:         ),
+  331:         "inputs": {
+  332:             "book": data["book_meta"],
+  333:             "erc_weights": data["weights"],
+  334:             "governor_spec": ".claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md",
+  335:             "book_weekly_series_stats": {
+  336:                 "n_weeks": HORIZON,
+  337:                 "annualized_vol_sample": data["ann_vol_sample"],
+  338:                 "worst_week_pct": float(r_book.min() * 100),
+  339:                 "best_week_pct": float(r_book.max() * 100),
+  340:                 "realized_maxdd_2025_pct_at_1x": float(
+  341:                     -(
+  342:                         np.cumprod(1 + r_book)
+  343:                         / np.maximum.accumulate(np.cumprod(1 + r_book))
+  344:                         - 1
+  345:                     ).min()
+  346:                     * 100
+  347:                 ),
+  348:             },
+  349:         },
+  350:         "mc_config": {
+  351:             "seed": SEED,
+  352:             "n_paths": N_PATHS,
+  353:             "horizon_weeks": HORIZON,
+  354:             "block_size": BLOCK,
+  355:             "bootstrap": "circular block (b=4) â€” MANDA; iid solo banda de comparacion",
+  356:             "weights_handling": (
+  357:                 "pesos ERC fijos cada semana = rebalanceo semanal implicito a ERC; "
+  358:                 "no se simula drift de pesos intra-rebalanceo"
+  359:             ),
+  360:         },
+  361:         "es97_5_disclaimer": (
+  362:             "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque "
+  363:             "el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP "
+  364:             "backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar "
+  365:             "2025, no un claim de que 'ni la peor cola pierde'. La cola honesta "
+  366:             "para presupuestar perdida es la del stress hostil (ES97.5 negativo)."
+  367:         ),
+  368:         "static_mc_block_b4": static_block,
+  369:         "static_mc_iid_reference_only": static_iid,
+  370:         "hostile_regime_stress": {
+  371:             "label": (
+  372:                 "STRESS CONSERVADOR â€” NO PRONOSTICO: re-muestreo solo de semanas "
+  373:                 "en el tercil ALTO de vol realizada rolling-4w del libro, como "
+  374:                 "proxy de regimen hostil PERSISTENTE 52 semanas (peor que "
+  375:                 "cualquier aÃ±o realista del regimen 2025)."
+  376:             ),
+  377:             "subset_weeks": host["indices_iso_week"],
+  378:             "n_weeks_in_subset": host["n_weeks"],
+  379:             "vol_window_weeks": host["vol_window_weeks"],
+  380:             "tercile_cut_weekly_vol": host["tercile_cut_weekly_vol"],
+  381:             "caveat_blocks": (
+  382:                 "los bloques b=4 sobre el subset concatenan semanas no contiguas "
+  383:                 "del calendario original; la dependencia serial dentro del subset "
+  384:                 "es aproximada"
+  385:             ),
+  386:             "static_mc": static_host,
+  387:             "ladder_from_1p5x": ladder_host,
+  388:         },
+  389:         "governor_ladder_simulation": {
+  390:             "rules_as_simulated": {
+  391:                 "steps": "DD>7% => 1.0x ; DD>10% => 0.5x ; DD>12% => flat",
+  392:                 "timing": "decision al cierre semanal, efectiva la semana siguiente (sin look-ahead)",
+  393:                 "rearm": (
+  394:                     f"subida de UN escalon tras {REARM_WEEKS} cierres consecutivos "
+  395:                     "con DD < (umbral del escalon - 2pp); flat es absorbente de "
+  396:                     "facto (equity congelada => DD clavado > 12%)"
+  397:                 ),
+  398:             },
+  399:             "from_1p5x_block_b4": ladder_15,
+  400:             "from_1p0x_block_b4": ladder_10,
+  401:             "comparison_same_paths": {
+  402:                 "static_1p5x_maxdd_p95_pct": static_block[1]["maxdd_pct"]["p95"],
+  403:                 "ladder_from_1p5x_maxdd_p95_pct": ladder_15["maxdd_pct"]["p95"],
+  404:                 "static_1p5x_prob_dd_gt_12pct": static_block[1]["prob_maxdd_gt_12pct"],
+  405:                 "ladder_from_1p5x_prob_dd_gt_12pct": ladder_15["prob_maxdd_gt_12pct"],
+  406:             },
+  407:             "verdict": {
+  408:                 "question": "Â¿la escalera acota el p95 del MaxDD por debajo del 12%?",
+  409:                 "ladder_p95_maxdd_pct": ladder_15["maxdd_pct"]["p95"],
+  410:                 "p95_under_12pct": bool(verdict_p95_under_12),
+  411:                 "hostile_regime_note": (
+  412:                     f"bajo el stress hostil persistente la escalera deja el p95 en "
+  413:                     f"{ladder_host['maxdd_pct']['p95']:.2f}% y el p99 en "
+  414:                     f"{ladder_host['maxdd_pct']['p99']:.2f}% (vs "
+  415:                     f"{static_host[1]['maxdd_pct']['p95']:.2f}% estatico 1.5x): el "
+  416:                     "presupuesto se respeta salvo un overshoot de ~1pp causado por "
+  417:                     "la marca semanal + efecto 1-semana de la decision â€” el escalon "
+  418:                     "flat congela el DD apenas cruzado el 12%, no antes."
+  419:                 ),
+  420:             },
+--- JSON string/key audit
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 20 Carácter: 6
++ '@ | python -
++      ~~~~~~~~.
+En línea: 2 Carácter: 378
++ ... ,5}: {1}' -f $i, $_ } }; Write-Output '--- JSON string/key audit'; @'
++                                                                        ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Write-Output '--- toolchain'; Get-Command python,python3,py,uv -ErrorAction SilentlyContinue | Select-Object Name,Source; Write-Output '--- hashes'; Get-FileHash -Algorithm SHA256 -LiteralPath 'scripts/analysis/book_mc_stress.py','.claude/evidence/book_mc_stress/2026-07-22/generator_script.py','.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json' | Format-Table -AutoSize; Write-Output '--- strict JSON + content audit'; "'$raw = Get-Content -LiteralPath '"'.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json' -Raw; try { "'$j=$raw | ConvertFrom-Json; '"'json_parse=OK' } catch { 'json_parse=FAIL ' + "'$_.Exception.Message }; '"'literal_nonfinite_tokens=' + ([regex]::Matches("'$raw,'"'(?<"'![A-Za-z0-9_])(NaN|Infinity|-Infinity)(?![A-Za-z0-9_])'"').Count); 'sharpe_occurrences=' + ([regex]::Matches("'$raw,'"'Sharpe','IgnoreCase').Count); 'retorno_esperado_occurrences=' + ([regex]::Matches("'$raw,'"'retorno esperado','IgnoreCase').Count); 'disclaimer=' + "'$j.es97_5_disclaimer; '"'base_ladder_p95=' + "'$j.governor_ladder_simulation.from_1p5x_block_b4.maxdd_pct.p95; '"'hostile_ladder_p95=' + "'$j.hostile_regime_stress.ladder_from_1p5x.maxdd_pct.p95; '"'hostile_static15_p95=' + "'$j.hostile_regime_stress.static_mc[1].maxdd_pct.p95; Write-Output '"'--- relevant literal lines'; Select-String -LiteralPath '.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json' -Pattern 'Sharpe|retorno esperado|Infinity|NaN|es97_5_disclaimer|\"p95\": 7.396|\"p95\": 12.671|\"p95\": 25.480' | ForEach-Object { '{0}: {1}' -f "'$_.LineNumber,$_.Line.Trim() }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1559ms:
+--- toolchain
+
+Name        Source                                                                                                     
+----        ------                                                                                                     
+python.exe  C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe                                              
+python3.exe C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python3.exe                                             
+py.exe      C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe                                               
+uv.exe      C:\Users\pedro\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\loca...
+--- hashes
+
+
+
+Algorithm Hash                                                             Path                                        
+--------- ----                                                             ----                                        
+SHA256    DB85777C0B770DAC4C9BD0AA0968A62D3CDE98331A3BFAC787E2C4A06495A152 C:\Users\pedro\OneDrive\Documents\ALGO TR...
+SHA256    DB85777C0B770DAC4C9BD0AA0968A62D3CDE98331A3BFAC787E2C4A06495A152 C:\Users\pedro\OneDrive\Documents\ALGO TR...
+SHA256    7A3FE7F9990E466AE4D9AA6B2AC3D2EAEDCD2FDDEB09FF6FFEFF5AD7430B8290 C:\Users\pedro\OneDrive\Documents\ALGO TR...
+
+
+--- strict JSON + content audit
+json_parse=OK
+literal_nonfinite_tokens=0
+sharpe_occurrences=1
+retorno_esperado_occurrences=1
+disclaimer=ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).
+base_ladder_p95=7.396526980011216
+hostile_ladder_p95=12.671699662307814
+hostile_static15_p95=25.4805968611909
+--- relevant literal lines
+4: "trials_note": "0 trials: ingenieria de riesgo pura. No se evalua ninguna hipotesis de retorno, no se selecciona ninguna variante, no se reporta Sharpe ni retorno esperado — solo colas de drawdown y ES97.5 (perdida).",
+33: "es97_5_disclaimer": "ATENCION: bajo el regimen base el ES97.5 anual sale POSITIVO porque el bootstrap hereda la deriva 2025 del libro (Gold/BTC alcistas + COP backtest contaminado por seleccion). Eso es un ARTEFACTO de heredar 2025, no un claim de que 'ni la peor cola pierde'. La cola honesta para presupuestar perdida es la del stress hostil (ES97.5 negativo).",
+114: "caveat_blocks": "los bloques b=4 sobre el subset concatenan semanas no contiguas del calendario original; la dependencia serial dentro del subset es aproximada",
+134: "p95": 25.4805968611909,
+148: "p95": 12.671699662307814,
+172: "p95": 7.396526980011216,
+
+codex
+La escalera sí aplica la decisión con efecto t+1: calcula el retorno semanal con el multiplicador vigente y solo después actualiza el estado. Detecté, no obstante, una inconsistencia material en el stress hostil: filtra semanas aisladas y luego las trata como adyacentes dentro de bloques de cuatro; el propio JSON lo reconoce. Estoy cuantificando si además afecta la tabla estática.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import runpy, json, pathlib, numpy as np
+ns=runpy.run_path(r'scripts/analysis/book_mc_stress.py')
+data=ns['load_book_series'](); r=data['r_book']
+rng=np.random.default_rng(ns['SEED'])
+pb=ns['gen_block_paths'](r,ns['N_PATHS'],ns['HORIZON'],ns['BLOCK'],rng)
+pi=ns['gen_iid_paths'](r,ns['N_PATHS'],ns['HORIZON'],rng)
+h=ns['hostile_subset'](r)
+ph=ns['gen_block_paths'](h['subset'],ns['N_PATHS'],ns['HORIZON'],ns['BLOCK'],rng)
+out=json.loads(pathlib.Path(r'.claude/evidence/book_mc_stress/2026-07-22/book_mc_stress.json').read_text(encoding='utf-8'))
+checks={
+'base_static_15_p95': (ns['static_stats'](pb,1.5)['maxdd_pct']['p95'], out['static_mc_block_b4'][1]['maxdd_pct']['p95']),
+'base_ladder_15_p95': (ns['run_ladder'](pb,1.5)['maxdd_pct']['p95'], out['governor_ladder_simulation']['from_1p5x_block_b4']['maxdd_pct']['p95']),
+'host_static_15_p95': (ns['static_stats'](ph,1.5)['maxdd_pct']['p95'], out['hostile_regime_stress']['static_mc'][1]['maxdd_pct']['p95']),
+'host_ladder_15_p95': (ns['run_ladder'](ph,1.5)['maxdd_pct']['p95'], out['hostile_regime_stress']['ladder_from_1p5x']['maxdd_pct']['p95']),
+}
+for k,(a,b) in checks.items(): print(k,a,b,'exact=',a==b)
+# Correct static drawdown by including initial equity 1.0 in the running peak.
+def corrected_p95(paths,m):
+    eq=np.cumprod(1+m*paths,axis=1)
+    peak=np.maximum.accumulate(np.concatenate([np.ones((len(paths),1)),eq],axis=1),axis=1)[:,1:]
+    return np.percentile(-(eq/peak-1).min(axis=1),95)*100
+print('corrected_base_static_15_p95',corrected_p95(pb,1.5))
+print('corrected_host_static_15_p95',corrected_p95(ph,1.5))
+# Timing sentinel: trigger on week 1; next week should use 1.0x, average=(1.5+1.0)/2.
+s=ns['run_ladder'](np.array([[-0.05,0.10]]),1.5)
+print('timing_sentinel_avg_mult',s['avg_multiplier_over_horizon'],'maxdd',s['maxdd_pct']['p95'])
+# Demonstrate hostile pseudo-block calendar gaps from first subset block.
+print('hostile_weeks',h['indices_iso_week'])
+print('first_filtered_block',h['indices_iso_week'][:4], 'next_filtered_block',h['indices_iso_week'][3:7])
+# base block contiguity sentinel over labels 0..7 including circular wrap
+q=np.random.default_rng(42)
+lab=ns['gen_block_paths'](np.arange(8),3,12,4,q)
+print('block_label_paths',lab.tolist())
+'@ | py -3.12 -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:51:44.943629Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+ exited 1 in 1101ms:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+codex
+VERDICT: RECHAZADO
+
+1. El subset hostil no es estrictamente causal. La volatilidad usada para seleccionar el retorno de la semana `t` incluye ese mismo retorno; además, el corte del tercil se calcula con todo 2025. Para una clasificación disponible antes de observar `r[t]`, la ventana debe terminar en `t-1` y el umbral debe estar previamente fijado o estimado expansivamente. [scripts/analysis/book_mc_stress.py:267](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:267>), [scripts/analysis/book_mc_stress.py:269](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:269>)
+
+2. El bootstrap hostil no preserva bloques semanales contiguos. Después de filtrar, se compactan semanas aisladas y se aplica el bootstrap b=4 sobre ese vector: por ejemplo, W12 puede quedar contigua a W15, W22 y W30, y el wrap une W45 con W09. El propio JSON admite esta aproximación. Los p95 hostiles de 12.67% y 25.48% dependen de este re-muestreo incoherente. [scripts/analysis/book_mc_stress.py:270](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:270>), [scripts/analysis/book_mc_stress.py:307](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:307>), [book_mc_stress.json:114](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\.claude\evidence\book_mc_stress\2026-07-22\book_mc_stress.json:114>)
+
+3. El MaxDD estático omite el NAV inicial `1.0` como primer high-water mark. Si el path comienza perdiendo, `maximum.accumulate(eq)` subestima el drawdown desde el inicio. Esto compromete, entre otros, el 25.48% estático hostil aunque coincida formalmente con el JSON. [scripts/analysis/book_mc_stress.py:157](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:157>)
+
+4. No hay off-by-one en el multiplicador aplicado al PnL: la decisión del cierre `t` sí entra en `t+1`. Sin embargo, `prob_ever_step_*` marca como alcanzado el nuevo escalón inmediatamente al cierre; un disparo en la última semana se cuenta como “ever flat” aunque nunca exista una semana operada flat. Debe renombrarse como probabilidad de disparo o registrarse cuando el multiplicador se aplica. [scripts/analysis/book_mc_stress.py:211](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:211>), [scripts/analysis/book_mc_stress.py:225](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:225>)
+
+Sí pasan: bootstrap base circular b=4 y seed 42; umbrales e histéresis de la escalera; disclaimer del ES97.5; ausencia de métricas Sharpe o claims de retorno esperado; JSON válido sin Infinity/NaN. Los valores redondean correctamente a 7.40%, 12.67% y 25.48%, pero los dos hostiles no son aprobables por los issues 1–3.
+tokens used
+48,321
+VERDICT: RECHAZADO
+
+1. El subset hostil no es estrictamente causal. La volatilidad usada para seleccionar el retorno de la semana `t` incluye ese mismo retorno; además, el corte del tercil se calcula con todo 2025. Para una clasificación disponible antes de observar `r[t]`, la ventana debe terminar en `t-1` y el umbral debe estar previamente fijado o estimado expansivamente. [scripts/analysis/book_mc_stress.py:267](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:267>), [scripts/analysis/book_mc_stress.py:269](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:269>)
+
+2. El bootstrap hostil no preserva bloques semanales contiguos. Después de filtrar, se compactan semanas aisladas y se aplica el bootstrap b=4 sobre ese vector: por ejemplo, W12 puede quedar contigua a W15, W22 y W30, y el wrap une W45 con W09. El propio JSON admite esta aproximación. Los p95 hostiles de 12.67% y 25.48% dependen de este re-muestreo incoherente. [scripts/analysis/book_mc_stress.py:270](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:270>), [scripts/analysis/book_mc_stress.py:307](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:307>), [book_mc_stress.json:114](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\.claude\evidence\book_mc_stress\2026-07-22\book_mc_stress.json:114>)
+
+3. El MaxDD estático omite el NAV inicial `1.0` como primer high-water mark. Si el path comienza perdiendo, `maximum.accumulate(eq)` subestima el drawdown desde el inicio. Esto compromete, entre otros, el 25.48% estático hostil aunque coincida formalmente con el JSON. [scripts/analysis/book_mc_stress.py:157](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:157>)
+
+4. No hay off-by-one en el multiplicador aplicado al PnL: la decisión del cierre `t` sí entra en `t+1`. Sin embargo, `prob_ever_step_*` marca como alcanzado el nuevo escalón inmediatamente al cierre; un disparo en la última semana se cuenta como “ever flat” aunque nunca exista una semana operada flat. Debe renombrarse como probabilidad de disparo o registrarse cuando el multiplicador se aplica. [scripts/analysis/book_mc_stress.py:211](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:211>), [scripts/analysis/book_mc_stress.py:225](<C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\book_mc_stress.py:225>)
+
+Sí pasan: bootstrap base circular b=4 y seed 42; umbrales e histéresis de la escalera; disclaimer del ES97.5; ausencia de métricas Sharpe o claims de retorno esperado; JSON válido sin Infinity/NaN. Los valores redondean correctamente a 7.40%, 12.67% y 25.48%, pero los dos hostiles no son aprobables por los issues 1–3.

@@ -1,0 +1,2164 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f881c-cff5-7223-8d82-dd51fc004282
+--------
+user
+Verificación de implementación (agente Claude C2, ingesta remesas BanRep PIT). Lee: database/migrations/066_banrep_remesas_monthly.sql y scripts/data/ingest_banrep_remesas.py. Luego valida contra la DB si puedes leerla (SELECT count(*), min(month), max(month) FROM macro_remesas_monthly — si tu sandbox no permite DB, dilo y audita solo el código). Verifica: (1) la fecha PIT es conservadora y coherente (published_at = fin de M+1; constraint published_at > month); (2) el parser NO localiza a COT una serie mensual instant-based (regla data-governance: carve-out multi-activo/mensual); (3) UPSERT ON CONFLICT, re-ejecutable, validaciones de huecos/negativos con FAIL duro; (4) la migración es nueva (no modifica existentes) y sigue el patrón del repo (mira database/migrations/06x anteriores); (5) sin credenciales hardcodeadas. Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues numerados con archivo:línea.
+codex
+Haré una auditoría de solo lectura: revisaré la migración, el ingestor y los patrones de las migraciones 06x; después intentaré la consulta únicamente si existe una vía de conexión ya configurada que no implique leer archivos de secretos. No modificaré el repositorio.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Location; rg --files database/migrations scripts/data | Sort-Object; git status --short; git log -8 --oneline -- database/migrations scripts/data/ingest_banrep_remesas.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:37:15.127947Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 6.7 seconds
+Output:
+
+Path                                                           
+----                                                           
+C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+database/migrations\001_add_macro_table.sql
+database/migrations\001_initial_setup.sql
+database/migrations\002_add_foreign_keys.sql
+database/migrations\002_rename_usdmxn_column.sql
+database/migrations\003_add_model_hash_and_constraints.sql
+database/migrations\004_model_metadata.sql
+database/migrations\005_model_registry.sql
+database/migrations\006_model_auto_register.sql
+database/migrations\007_add_builder_type.sql
+database/migrations\008_ffill_tracking_and_readiness.sql
+database/migrations\010_api_keys.sql
+database/migrations\012_mlflow_database.sql
+database/migrations\013_trades_audit.sql
+database/migrations\014_kill_switch_audit.sql
+database/migrations\020_feature_snapshot_improvements.sql
+database/migrations\021_drift_audit.sql
+database/migrations\022_experiment_registry.sql
+database/migrations\025_forecast_experiments.sql
+database/migrations\025_lineage_tables.sql
+database/migrations\026_v_macro_unified.sql
+database/migrations\033_event_triggers.sql
+database/migrations\034_promotion_proposals.sql
+database/migrations\035_approval_audit_log.sql
+database/migrations\036_model_registry_enhanced.sql
+database/migrations\037_experiment_contracts.sql
+database/migrations\038_nrt_tables.sql
+database/migrations\039_backtest_trades.sql
+database/migrations\040_multi_pair_support.sql
+database/migrations\041_forecast_vol_targeting.sql
+database/migrations\042_forecast_executions.sql
+database/migrations\043_forecast_h5_tables.sql
+database/migrations\044_smart_simple_columns.sql
+database/migrations\045_newsengine_initial.sql
+database/migrations\046_weekly_analysis_tables.sql
+database/migrations\047_pgvector_embeddings.sql
+database/migrations\048_reconciliation_tables.sql
+database/migrations\049_regime_gate_columns.sql
+database/migrations\050_consolidated_h5_ddl.sql
+database/migrations\051_asset_daily_ohlcv.sql
+database/migrations\052_crypto_native_data.sql
+database/migrations\053_sb_user_approval.sql
+database/migrations\054_h5_subtrades_unique.sql
+database/migrations\055_rbac_monetization.sql
+database/migrations\056_admin_console_is_test.sql
+database/migrations\056_rbac_dynamic_roles.sql
+database/migrations\057_catalog_watchlist_cart.sql
+database/migrations\058_billing_webhook_idempotency.sql
+database/migrations\059_checkout_order_ledger.sql
+database/migrations\060_market_canonical_views.sql
+database/migrations\061_market_wide_views.sql
+database/migrations\062_macro_monthly_views.sql
+database/migrations\063_native_multiframe_ohlcv.sql
+database/migrations\064_h5_strategy_id.sql
+database/migrations\066_banrep_remesas_monthly.sql
+database/migrations\rollback_033_event_triggers.sql
+scripts/data\__init__.py
+scripts/data\acquire_public_snapshots.py
+scripts/data\build_2025_features.py
+scripts/data\build_backtest_features.py
+scripts/data\build_forecasting_dataset_aligned.py
+scripts/data\build_unified_fx_seed.py
+scripts/data\download_usdbrl_twelvedata.py
+scripts/data\export_chart_ohlcv.py
+scripts/data\extract_gdelt_full.py
+scripts/data\generate_consolidated_complete.py
+scripts/data\generate_dataset_variants.py
+scripts/data\generate_drift_reference.py
+scripts/data\generate_historical_forecast_signals.py
+scripts/data\generate_validation_datasets.py
+scripts/data\ingest_asset_ohlcv.py
+scripts/data\ingest_banrep_remesas.py
+scripts/data\ingest_btc_derivatives.py
+scripts/data\ingest_btc_ohlcv.py
+scripts/data\prepare_training_data.py
+scripts/data\regenerate_consolidated_datasets.py
+scripts/data\regenerate_datasets_with_audit.py
+scripts/data\resample_1h_to_daily.py
+scripts/data\resample_5m_to_1h.py
+scripts/data\scrape_colombia_news_historical.py
+scripts/data\scrape_suameca_simple.py
+scripts/data\scrape_usdcop_forward_macro.py
+scripts/data\seed_database.py
+scripts/data\seed_fact_forecasts.py
+scripts/data\seed_fx_pairs.py
+scripts/data\test_banrep_bop_scraper.py
+
+
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+ exited 1 in 6747ms:
+
+Path                                                           
+----                                                           
+C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+database/migrations\001_add_macro_table.sql
+database/migrations\001_initial_setup.sql
+database/migrations\002_add_foreign_keys.sql
+database/migrations\002_rename_usdmxn_column.sql
+database/migrations\003_add_model_hash_and_constraints.sql
+database/migrations\004_model_metadata.sql
+database/migrations\005_model_registry.sql
+database/migrations\006_model_auto_register.sql
+database/migrations\007_add_builder_type.sql
+database/migrations\008_ffill_tracking_and_readiness.sql
+database/migrations\010_api_keys.sql
+database/migrations\012_mlflow_database.sql
+database/migrations\013_trades_audit.sql
+database/migrations\014_kill_switch_audit.sql
+database/migrations\020_feature_snapshot_improvements.sql
+database/migrations\021_drift_audit.sql
+database/migrations\022_experiment_registry.sql
+database/migrations\025_forecast_experiments.sql
+database/migrations\025_lineage_tables.sql
+database/migrations\026_v_macro_unified.sql
+database/migrations\033_event_triggers.sql
+database/migrations\034_promotion_proposals.sql
+database/migrations\035_approval_audit_log.sql
+database/migrations\036_model_registry_enhanced.sql
+database/migrations\037_experiment_contracts.sql
+database/migrations\038_nrt_tables.sql
+database/migrations\039_backtest_trades.sql
+database/migrations\040_multi_pair_support.sql
+database/migrations\041_forecast_vol_targeting.sql
+database/migrations\042_forecast_executions.sql
+database/migrations\043_forecast_h5_tables.sql
+database/migrations\044_smart_simple_columns.sql
+database/migrations\045_newsengine_initial.sql
+database/migrations\046_weekly_analysis_tables.sql
+database/migrations\047_pgvector_embeddings.sql
+database/migrations\048_reconciliation_tables.sql
+database/migrations\049_regime_gate_columns.sql
+database/migrations\050_consolidated_h5_ddl.sql
+database/migrations\051_asset_daily_ohlcv.sql
+database/migrations\052_crypto_native_data.sql
+database/migrations\053_sb_user_approval.sql
+database/migrations\054_h5_subtrades_unique.sql
+database/migrations\055_rbac_monetization.sql
+database/migrations\056_admin_console_is_test.sql
+database/migrations\056_rbac_dynamic_roles.sql
+database/migrations\057_catalog_watchlist_cart.sql
+database/migrations\058_billing_webhook_idempotency.sql
+database/migrations\059_checkout_order_ledger.sql
+database/migrations\060_market_canonical_views.sql
+database/migrations\061_market_wide_views.sql
+database/migrations\062_macro_monthly_views.sql
+database/migrations\063_native_multiframe_ohlcv.sql
+database/migrations\064_h5_strategy_id.sql
+database/migrations\066_banrep_remesas_monthly.sql
+database/migrations\rollback_033_event_triggers.sql
+scripts/data\__init__.py
+scripts/data\acquire_public_snapshots.py
+scripts/data\build_2025_features.py
+scripts/data\build_backtest_features.py
+scripts/data\build_forecasting_dataset_aligned.py
+scripts/data\build_unified_fx_seed.py
+scripts/data\download_usdbrl_twelvedata.py
+scripts/data\export_chart_ohlcv.py
+scripts/data\extract_gdelt_full.py
+scripts/data\generate_consolidated_complete.py
+scripts/data\generate_dataset_variants.py
+scripts/data\generate_drift_reference.py
+scripts/data\generate_historical_forecast_signals.py
+scripts/data\generate_validation_datasets.py
+scripts/data\ingest_asset_ohlcv.py
+scripts/data\ingest_banrep_remesas.py
+scripts/data\ingest_btc_derivatives.py
+scripts/data\ingest_btc_ohlcv.py
+scripts/data\prepare_training_data.py
+scripts/data\regenerate_consolidated_datasets.py
+scripts/data\regenerate_datasets_with_audit.py
+scripts/data\resample_1h_to_daily.py
+scripts/data\resample_5m_to_1h.py
+scripts/data\scrape_colombia_news_historical.py
+scripts/data\scrape_suameca_simple.py
+scripts/data\scrape_usdcop_forward_macro.py
+scripts/data\seed_database.py
+scripts/data\seed_fact_forecasts.py
+scripts/data\seed_fx_pairs.py
+scripts/data\test_banrep_bop_scraper.py
+
+
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+codex
+El repositorio es legible, pero Git rechazó las consultas por la política de “dubious ownership”; no cambiaré la configuración global. La numeración muestra que `066` es un archivo separado y no sustituye a una migración 06x existente, pero confirmaré el patrón directamente desde los archivos y revisaré la conexión por mecanismos no secretos.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$files = @('"'AGENTS.md','database/migrations/060_market_canonical_views.sql','database/migrations/061_market_wide_views.sql','database/migrations/062_macro_monthly_views.sql','database/migrations/063_native_multiframe_ohlcv.sql','database/migrations/064_h5_strategy_id.sql','database/migrations/066_banrep_remesas_monthly.sql','scripts/data/ingest_banrep_remesas.py'); foreach ("'$f in $files) { if (Test-Path -LiteralPath $f) { Write-Output "===== $f ====="; $n=0; Get-Content -LiteralPath $f | ForEach-Object { $n++; '"'{0,5}: {1}' -f "'$n, $_ } } }' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1817ms:
+===== database/migrations/060_market_canonical_views.sql =====
+    1: -- ============================================================================
+    2: -- Migration 060: canonical market-data contract â€” dims, calendar, PIT column,
+    3: --                ingestion manifests, and the long/wide view layer
+    4: -- Contract: CTR-MKT-CANON-001 (plan 2026-07-21, operator-approved; merged with
+    5: --           Codex's canonical-contract plan)
+    6: -- ============================================================================
+    7: -- Design decisions this migration encodes (and why):
+    8: --
+    9: --  * The physical SSOT stays where it is (usdcop_m5_ohlcv, asset_daily_ohlcv).
+   10: --    Codex proposed parallel market_ohlcv_* physical tables; two homes for the
+   11: --    same M5 bar is guaranteed drift, so the canonical contract is a LONG VIEW
+   12: --    over the existing tables instead. Renaming is forbidden by governance.
+   13: --
+   14: --  * available_at is added as a nullable column and stamped by ingestion from
+   15: --    now on. Historical rows keep NULL â€” "unknown" is the honest value; a
+   16: --    reconstructed availability time is fabricated PIT evidence, which is the
+   17: --    exact thing the constitution forbids. PIT lineage accrues forward for free.
+   18: --
+   19: --  * closed != missing is decided by market_session_calendar, not by the
+   20: --    consumer's memory of holidays. The row that motivated all of this:
+   21: --    2026-07-20 (Colombian Independence Day) must read usdcop=closed while
+   22: --    btcusdt=ok, instead of costing a morning of diagnosis.
+   23: -- ============================================================================
+   24: 
+   25: -- ---------------------------------------------------------------------------
+   26: -- 1. dim_asset: one row per tradeable asset, seeded from config/assets/*.yaml
+   27: -- ---------------------------------------------------------------------------
+   28: CREATE TABLE IF NOT EXISTS dim_asset (
+   29:     asset_id        TEXT PRIMARY KEY,          -- usdcop | xauusd | btcusdt | spx500
+   30:     symbol          TEXT NOT NULL UNIQUE,      -- provider symbol in the long tables
+   31:     display_name    TEXT NOT NULL,
+   32:     session_tz      TEXT NOT NULL,             -- IANA
+   33:     calendar_kind   TEXT NOT NULL CHECK (calendar_kind IN
+   34:                         ('colombia','nyse','utc_24_7','metals_23h')),
+   35:     annualization   INT  NOT NULL              -- declared clock (manifest F0 mirror)
+   36: );
+   37: 
+   38: INSERT INTO dim_asset (asset_id, symbol, display_name, session_tz, calendar_kind, annualization)
+   39: VALUES
+   40:   ('usdcop',  'USD/COP',  'USD/COP',  'America/Bogota',   'colombia',  52),
+   41:   ('xauusd',  'XAU/USD',  'Gold',     'UTC',              'metals_23h', 252),
+   42:   ('btcusdt', 'BTC/USDT', 'Bitcoin',  'UTC',              'utc_24_7',  365),
+   43:   ('spx500',  'SPX500',   'S&P 500',  'America/New_York', 'nyse',      252)
+   44: ON CONFLICT (asset_id) DO UPDATE SET
+   45:   symbol = EXCLUDED.symbol, session_tz = EXCLUDED.session_tz,
+   46:   calendar_kind = EXCLUDED.calendar_kind, annualization = EXCLUDED.annualization;
+   47: 
+   48: -- ---------------------------------------------------------------------------
+   49: -- 2. Session calendar: THE arbiter of closed vs missing. Seeded 2020-2027 by
+   50: --    scripts/ops/seed_session_calendar.py (TradingCalendar for Colombia, the
+   51: --    `holidays` package for NYSE with DST-aware open/close, trivial for 24/7).
+   52: -- ---------------------------------------------------------------------------
+   53: CREATE TABLE IF NOT EXISTS market_session_calendar (
+   54:     asset_id          TEXT NOT NULL REFERENCES dim_asset(asset_id),
+   55:     session_date      DATE NOT NULL,           -- date in the asset's LOCAL tz
+   56:     is_trading_day    BOOLEAN NOT NULL,
+   57:     session_open_utc  TIMESTAMPTZ,             -- NULL on non-trading days
+   58:     session_close_utc TIMESTAMPTZ,             -- DST folds into these instants
+   59:     PRIMARY KEY (asset_id, session_date)
+   60: );
+   61: 
+   62: -- ---------------------------------------------------------------------------
+   63: -- 3. PIT column + per-run ingestion manifests (Codex plan items 2 and 5)
+   64: -- ---------------------------------------------------------------------------
+   65: ALTER TABLE usdcop_m5_ohlcv   ADD COLUMN IF NOT EXISTS available_at TIMESTAMPTZ;
+   66: ALTER TABLE asset_daily_ohlcv ADD COLUMN IF NOT EXISTS available_at TIMESTAMPTZ;
+   67: -- Historic rows stay NULL on purpose. See header.
+   68: 
+   69: CREATE TABLE IF NOT EXISTS market_ingestion_manifest (
+   70:     id              BIGSERIAL PRIMARY KEY,
+   71:     run_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+   72:     provider        TEXT NOT NULL,
+   73:     asset_id        TEXT,
+   74:     timeframe       TEXT NOT NULL,             -- 5m | 1h | 4h | daily
+   75:     window_start    TIMESTAMPTZ,
+   76:     window_end      TIMESTAMPTZ,
+   77:     rows_received   INT,
+   78:     rows_new        INT,
+   79:     latency_ms      INT,
+   80:     source_tz       TEXT,                      -- timezone the provider was ASKED for
+   81:     checksum_sha256 TEXT,                      -- of the normalized payload (per run, not per row)
+   82:     error           TEXT
+   83: );
+   84: 
+   85: -- ---------------------------------------------------------------------------
+   86: -- 4. Canonical LONG views (the contract; storage untouched)
+   87: --    quality_status is computed, not stored: a stored verdict goes stale.
+   88: -- ---------------------------------------------------------------------------
+   89: CREATE OR REPLACE VIEW market_ohlcv_5m AS
+   90: SELECT
+   91:     da.asset_id,
+   92:     m.time                                   AS bar_start_utc,
+   93:     m.time + interval '5 minutes'            AS bar_end_utc,
+   94:     m.time AT TIME ZONE 'America/Bogota'     AS timestamp_cot,
+   95:     (m.time AT TIME ZONE da.session_tz)::date AS session_date_local,
+   96:     da.session_tz                            AS market_timezone,
+   97:     m.open, m.high, m.low, m.close, m.volume,
+   98:     m.source,
+   99:     CASE WHEN m.source LIKE '%backfill%'  THEN 'backfill'
+  100:          WHEN m.source LIKE '%gap_fill%'  THEN 'gap_fill'
+  101:          ELSE 'native' END                   AS bar_origin,
+  102:     m.available_at,
+  103:     CASE WHEN m.high >= GREATEST(m.open, m.close)
+  104:           AND m.low  <= LEAST(m.open, m.close)
+  105:           AND m.high >= m.low               THEN 'ok'
+  106:          ELSE 'incoherent_ohlc' END          AS quality_status
+  107: FROM usdcop_m5_ohlcv m
+  108: JOIN dim_asset da ON da.symbol = m.symbol;
+  109: 
+  110: CREATE OR REPLACE VIEW market_ohlcv_daily AS
+  111: SELECT
+  112:     da.asset_id,
+  113:     d.time                                   AS bar_start_utc,
+  114:     d.time + interval '1 day'                AS bar_end_utc,
+  115:     d.time AT TIME ZONE 'America/Bogota'     AS timestamp_cot,
+  116:     -- Daily bars are stored at 00:00 UTC of the trading date (XAU at 21:00 UTC, same UTC
+  117:     -- date). Anchor the session date in UTC â€” data-governance invariant #1: converting a
+  118:     -- 00:00-UTC daily stamp to the closing tz shifts EVERY bar one day back (Sunday
+  119:     -- pile-up bug). Verified live: SPX 2026-07-20 read as 07-19 under the NY conversion.
+  120:     (d.time AT TIME ZONE 'UTC')::date        AS session_date_local,
+  121:     da.session_tz                            AS market_timezone,
+  122:     d.open, d.high, d.low, d.close, d.volume,
+  123:     d.source,
+  124:     CASE WHEN d.source LIKE '%snapshot%' THEN 'snapshot' ELSE 'native' END AS bar_origin,
+  125:     d.available_at,
+  126:     CASE WHEN d.high >= GREATEST(d.open, d.close)
+  127:           AND d.low  <= LEAST(d.open, d.close)
+  128:           AND d.high >= d.low               THEN 'ok'
+  129:          ELSE 'incoherent_ohlc' END          AS quality_status
+  130: FROM asset_daily_ohlcv d
+  131: JOIN dim_asset da ON da.symbol = d.symbol;
+  132: 
+  133: -- ---------------------------------------------------------------------------
+  134: -- 5. 1h / 4h aggregates from M5 (plain matviews: the M5 base is a plain table
+  135: --    here, not a hypertable in every environment â€” a nightly/hourly REFRESH via
+  136: --    the existing DAGs is sufficient at this volume; continuous aggregates can
+  137: --    replace these transparently if the base is converted to a hypertable).
+  138: --    bar_origin='derived_m5' per the native-first rule: if a provider ever
+  139: --    delivers native 1h, it lands in its own table and WINS in the contract
+  140: --    view; these aggregates are the declared fallback, never silently mixed.
+  141: -- ---------------------------------------------------------------------------
+  142: -- Expression index for the wide views' joins on the COMPUTED session_date_local:
+  143: -- without it every daily-wide LEFT JOIN degenerates into a quadratic seq scan.
+  144: CREATE INDEX IF NOT EXISTS ix_asset_daily_utc_date
+  145:     ON asset_daily_ohlcv (((time AT TIME ZONE 'UTC')::date), symbol);
+  146: 
+  147: CREATE MATERIALIZED VIEW IF NOT EXISTS market_ohlcv_1h_agg AS
+  148: SELECT date_trunc('hour', m.time) AS bar_start_utc, m.symbol,
+  149:        (array_agg(m.open  ORDER BY m.time ASC ))[1] AS open,
+  150:        max(m.high) AS high, min(m.low) AS low,
+  151:        (array_agg(m.close ORDER BY m.time DESC))[1] AS close,
+  152:        sum(m.volume) AS volume,
+  153:        (array_agg(m.source ORDER BY m.time DESC))[1] AS source,
+  154:        count(*) AS n_m5_bars
+  155: FROM usdcop_m5_ohlcv m GROUP BY 1, 2;
+  156: CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_1h ON market_ohlcv_1h_agg (bar_start_utc, symbol);
+  157: 
+  158: CREATE MATERIALIZED VIEW IF NOT EXISTS market_ohlcv_4h_agg AS
+  159: SELECT to_timestamp(floor(extract(epoch FROM m.time) / 14400) * 14400) AS bar_start_utc,
+  160:        m.symbol,
+  161:        (array_agg(m.open  ORDER BY m.time ASC ))[1] AS open,
+  162:        max(m.high) AS high, min(m.low) AS low,
+  163:        (array_agg(m.close ORDER BY m.time DESC))[1] AS close,
+  164:        sum(m.volume) AS volume,
+  165:        (array_agg(m.source ORDER BY m.time DESC))[1] AS source,
+  166:        count(*) AS n_m5_bars
+  167: FROM usdcop_m5_ohlcv m GROUP BY 1, 2;
+  168: CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_4h ON market_ohlcv_4h_agg (bar_start_utc, symbol);
+===== database/migrations/061_market_wide_views.sql =====
+    1: -- ============================================================================
+    2: -- Migration 061: the four wide consumption views (5m / 1h / 4h / daily)
+    3: -- Contract: CTR-MKT-CANON-001 â€” wide is a VIEW, never a table: closed-market
+    4: -- NULLs are not stored, staleness is never frozen, and adding an asset is an
+    5: -- ALTER VIEW instead of a backfill.
+    6: -- ============================================================================
+    7: -- status_<asset> semantics (the whole point of this layer):
+    8: --   closed    calendar says no session -> NULL is legitimate
+    9: --   ok        bar present and coherent
+   10: --   partial   aggregate built from fewer M5 bars than the session implies
+   11: --   missing   calendar says the session was OPEN and the bar is absent  << incident
+   12: --   no_native_data  the asset has no data at this granularity at all (SPX intraday)
+   13: -- staleness_seconds is computed at read time; a materialized staleness lies by
+   14: -- construction.
+   15: -- ============================================================================
+   16: 
+   17: -- ---------------------------------------------------------------------------
+   18: -- DAILY (the one the operator asked to see spelled out), with the 17 verified
+   19: -- CLEAN macros â€” each in TWO forms: as-of (reporting) and _t1 (the ONLY form a
+   20: -- model may consume; T-1 rule). USDMXN/USDCLP were excluded while corrupted x10^4;
+   21: -- REINSTATED 2026-07-22 after the twelvedata repair (guard is now a hard test).
+   22: -- ---------------------------------------------------------------------------
+   23: CREATE OR REPLACE VIEW market_ohlcv_daily_wide AS
+   24: WITH grid AS (
+   25:     -- session_date_local is UTC-anchored in the long view (governance inv. #1);
+   26:     -- never cast bar_start_utc::date here â€” that cast obeys the CLIENT's TimeZone GUC.
+   27:     SELECT DISTINCT session_date_local AS d FROM market_ohlcv_daily
+   28: ), px AS (
+   29:     SELECT * FROM market_ohlcv_daily
+   30: ), cal AS (
+   31:     SELECT * FROM market_session_calendar
+   32: ), firsts AS (
+   33:     -- Before an asset's first ingested bar there is no incident to report:
+   34:     -- BTC in 2004 is 'no_native_data' (the grid reaches 2004 via XAU), not 'missing'.
+   35:     SELECT asset_id, min(session_date_local) AS first_bar FROM market_ohlcv_daily GROUP BY asset_id
+   36: ), macro AS (
+   37:     SELECT fecha,
+   38:            fxrt_index_dxy_usa_d_dxy          AS dxy,
+   39:            volt_vix_usa_d_vix                AS vix,
+   40:            crsk_spread_embi_col_d_embi       AS embi,
+   41:            comm_oil_brent_glb_d_brent        AS brent,
+   42:            comm_oil_wti_glb_d_wti            AS wti,
+   43:            comm_metal_gold_glb_d_gold        AS gold,
+   44:            comm_agri_coffee_glb_d_coffee     AS coffee,
+   45:            eqty_index_colcap_col_d_colcap    AS colcap,
+   46:            finc_bond_yield10y_usa_d_ust10y   AS ust10y,
+   47:            finc_bond_yield2y_usa_d_dgs2      AS dgs2,
+   48:            finc_bond_yield5y_col_d_col5y     AS col5y,
+   49:            finc_bond_yield10y_col_d_col10y   AS col10y,
+   50:            finc_rate_ibr_overnight_col_d_ibr AS ibr,
+   51:            polr_policy_rate_col_d_tpm        AS tpm,
+   52:            polr_prime_rate_usa_d_prime       AS prime,
+   53:            fxrt_spot_usdcop_col_d_usdcop     AS usdcop_spot,
+   54:            -- reincorporadas 2026-07-22: corrupcion x10^4 reparada (twelvedata primaria,
+   55:            -- 111 filas corregidas + 147 gaps rellenados; guard duro test_macro_clean_fx_scale)
+   56:            fxrt_spot_usdmxn_mex_d_usdmxn     AS usdmxn,
+   57:            fxrt_spot_usdclp_chl_d_usdclp     AS usdclp
+   58:     FROM macro_indicators_daily
+   59: )
+   60: SELECT
+   61:     -- Pin midnight-UTC instants explicitly: date::timestamptz obeys the session
+   62:     -- TimeZone GUC and would move the key per client.
+   63:     (g.d::timestamp AT TIME ZONE 'UTC')                AS bar_start_utc,
+   64:     ((g.d + 1)::timestamp AT TIME ZONE 'UTC')          AS bar_end_utc,
+   65:     g.d::timestamp                                     AS timestamp_cot,
+   66:     g.d                                                AS session_date_cot,
+   67:     -- row-level status: worst per-asset status among assets whose market was open.
+   68:     -- 'pending' = the session date is today-or-future in UTC; the daily bar cannot
+   69:     -- exist yet, so its absence is NOT an incident (BTC 07-21 before 00:00 UTC+1).
+   70:     (SELECT CASE
+   71:         WHEN bool_or(s.st = 'missing') THEN 'missing'
+   72:         WHEN bool_or(s.st = 'pending') THEN 'pending'
+   73:         WHEN bool_or(s.st = 'partial') THEN 'partial'
+   74:         ELSE 'ok' END
+   75:      FROM (VALUES
+   76:         (CASE WHEN g.d < f1.first_bar THEN 'closed'
+   77:               WHEN c1.is_trading_day IS NOT TRUE THEN 'closed'
+   78:               WHEN p1.close IS NOT NULL THEN 'ok'
+   79:               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
+   80:               ELSE 'missing' END),
+   81:         (CASE WHEN g.d < f2.first_bar THEN 'closed'
+   82:               WHEN extract(dow FROM g.d) = 6 THEN 'closed'
+   83:               WHEN p2.close IS NOT NULL THEN 'ok'
+   84:               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
+   85:               ELSE 'missing' END),
+   86:         (CASE WHEN g.d < f3.first_bar THEN 'closed'
+   87:               WHEN p3.close IS NOT NULL THEN 'ok'
+   88:               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
+   89:               ELSE 'missing' END),
+   90:         (CASE WHEN g.d < f4.first_bar THEN 'closed'
+   91:               WHEN c4.is_trading_day IS NOT TRUE THEN 'closed'
+   92:               WHEN p4.close IS NOT NULL THEN 'ok'
+   93:               WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending'
+   94:               ELSE 'missing' END)
+   95:      ) AS s(st) WHERE s.st <> 'closed')                AS availability_status,
+   96: 
+   97:     -- USDCOP -----------------------------------------------------------------
+   98:     p1.open  AS open_usdcop,  p1.high AS high_usdcop, p1.low AS low_usdcop,
+   99:     p1.close AS close_usdcop, p1.volume AS volume_usdcop,
+  100:     p1.source AS source_usdcop, p1.bar_origin AS bar_origin_usdcop,
+  101:     COALESCE(c1.is_trading_day, false) AS is_session_bar_usdcop,
+  102:     EXTRACT(epoch FROM now() - p1.bar_end_utc)::bigint AS staleness_seconds_usdcop,
+  103:     CASE WHEN g.d < f1.first_bar THEN 'no_native_data'
+  104:          WHEN c1.is_trading_day IS NOT TRUE THEN
+  105:               CASE WHEN p1.close IS NULL THEN 'closed' ELSE 'off_session' END
+  106:          WHEN p1.close IS NULL THEN
+  107:               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
+  108:          WHEN p1.quality_status <> 'ok' THEN 'incoherent'
+  109:          ELSE 'ok' END AS status_usdcop,
+  110: 
+  111:     -- XAUUSD -----------------------------------------------------------------
+  112:     p2.open  AS open_xauusd,  p2.high AS high_xauusd, p2.low AS low_xauusd,
+  113:     p2.close AS close_xauusd, p2.volume AS volume_xauusd,
+  114:     p2.source AS source_xauusd, p2.bar_origin AS bar_origin_xauusd,
+  115:     (p2.close IS NOT NULL) AS is_session_bar_xauusd,
+  116:     EXTRACT(epoch FROM now() - p2.bar_end_utc)::bigint AS staleness_seconds_xauusd,
+  117:     CASE WHEN g.d < f2.first_bar THEN 'no_native_data'
+  118:          WHEN extract(dow FROM g.d) = 6 THEN
+  119:               CASE WHEN p2.close IS NULL THEN 'closed' ELSE 'off_session' END
+  120:          WHEN p2.close IS NULL THEN
+  121:               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
+  122:          WHEN p2.quality_status <> 'ok' THEN 'incoherent'
+  123:          ELSE 'ok' END AS status_xauusd,
+  124: 
+  125:     -- BTCUSDT (24/7: never 'closed') ------------------------------------------
+  126:     p3.open  AS open_btcusdt,  p3.high AS high_btcusdt, p3.low AS low_btcusdt,
+  127:     p3.close AS close_btcusdt, p3.volume AS volume_btcusdt,
+  128:     p3.source AS source_btcusdt, p3.bar_origin AS bar_origin_btcusdt,
+  129:     true AS is_session_bar_btcusdt,
+  130:     EXTRACT(epoch FROM now() - p3.bar_end_utc)::bigint AS staleness_seconds_btcusdt,
+  131:     CASE WHEN g.d < f3.first_bar THEN 'no_native_data'
+  132:          WHEN p3.close IS NULL THEN
+  133:               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
+  134:          WHEN p3.quality_status <> 'ok' THEN 'incoherent'
+  135:          ELSE 'ok' END AS status_btcusdt,
+  136: 
+  137:     -- SP500 (NYSE calendar; close = adj_close total-return, SDD-000 Â§4) --------
+  138:     p4.open  AS open_spx500,  p4.high AS high_spx500, p4.low AS low_spx500,
+  139:     p4.close AS close_spx500, p4.volume AS volume_spx500,
+  140:     p4.source AS source_spx500, p4.bar_origin AS bar_origin_spx500,
+  141:     COALESCE(c4.is_trading_day, false) AS is_session_bar_spx500,
+  142:     EXTRACT(epoch FROM now() - p4.bar_end_utc)::bigint AS staleness_seconds_spx500,
+  143:     CASE WHEN g.d < f4.first_bar THEN 'no_native_data'
+  144:          WHEN c4.is_trading_day IS NOT TRUE THEN
+  145:               CASE WHEN p4.close IS NULL THEN 'closed' ELSE 'off_session' END
+  146:          WHEN p4.close IS NULL THEN
+  147:               CASE WHEN g.d >= (now() AT TIME ZONE 'UTC')::date THEN 'pending' ELSE 'missing' END
+  148:          WHEN p4.quality_status <> 'ok' THEN 'incoherent'
+  149:          ELSE 'ok' END AS status_spx500,
+  150: 
+  151:     -- MACROS: as-of for reporting, _t1 (LAG) for models â€” the only legal model input
+  152:     ma.dxy AS macro_dxy,   LAG(ma.dxy)   OVER w AS macro_dxy_t1,
+  153:     ma.vix AS macro_vix,   LAG(ma.vix)   OVER w AS macro_vix_t1,
+  154:     ma.embi AS macro_embi, LAG(ma.embi)  OVER w AS macro_embi_t1,
+  155:     ma.brent AS macro_brent, LAG(ma.brent) OVER w AS macro_brent_t1,
+  156:     ma.wti AS macro_wti,   LAG(ma.wti)   OVER w AS macro_wti_t1,
+  157:     ma.gold AS macro_gold, LAG(ma.gold)  OVER w AS macro_gold_t1,
+  158:     ma.coffee AS macro_coffee, LAG(ma.coffee) OVER w AS macro_coffee_t1,
+  159:     ma.colcap AS macro_colcap, LAG(ma.colcap) OVER w AS macro_colcap_t1,
+  160:     ma.ust10y AS macro_ust10y, LAG(ma.ust10y) OVER w AS macro_ust10y_t1,
+  161:     ma.dgs2 AS macro_dgs2, LAG(ma.dgs2)  OVER w AS macro_dgs2_t1,
+  162:     ma.col5y AS macro_col5y, LAG(ma.col5y) OVER w AS macro_col5y_t1,
+  163:     ma.col10y AS macro_col10y, LAG(ma.col10y) OVER w AS macro_col10y_t1,
+  164:     ma.ibr AS macro_ibr,   LAG(ma.ibr)   OVER w AS macro_ibr_t1,
+  165:     ma.tpm AS macro_tpm,   LAG(ma.tpm)   OVER w AS macro_tpm_t1,
+  166:     ma.prime AS macro_prime, LAG(ma.prime) OVER w AS macro_prime_t1,
+  167:     ma.usdcop_spot AS macro_usdcop_spot, LAG(ma.usdcop_spot) OVER w AS macro_usdcop_spot_t1,
+  168:     ma.usdmxn AS macro_usdmxn, LAG(ma.usdmxn) OVER w AS macro_usdmxn_t1,
+  169:     ma.usdclp AS macro_usdclp, LAG(ma.usdclp) OVER w AS macro_usdclp_t1
+  170: 
+  171: FROM grid g
+  172: LEFT JOIN px p1 ON p1.asset_id='usdcop'  AND p1.session_date_local = g.d
+  173: LEFT JOIN px p2 ON p2.asset_id='xauusd'  AND p2.session_date_local = g.d
+  174: LEFT JOIN px p3 ON p3.asset_id='btcusdt' AND p3.session_date_local = g.d
+  175: LEFT JOIN px p4 ON p4.asset_id='spx500'  AND p4.session_date_local = g.d
+  176: LEFT JOIN cal c1 ON c1.asset_id='usdcop' AND c1.session_date = g.d
+  177: LEFT JOIN cal c4 ON c4.asset_id='spx500' AND c4.session_date = g.d
+  178: LEFT JOIN firsts f1 ON f1.asset_id='usdcop'
+  179: LEFT JOIN firsts f2 ON f2.asset_id='xauusd'
+  180: LEFT JOIN firsts f3 ON f3.asset_id='btcusdt'
+  181: LEFT JOIN firsts f4 ON f4.asset_id='spx500'
+  182: LEFT JOIN macro ma ON ma.fecha = g.d
+  183: WINDOW w AS (ORDER BY g.d);
+  184: 
+  185: -- ---------------------------------------------------------------------------
+  186: -- 5m wide: session pairs only (SPX has no native intraday -> status fixed at
+  187: -- 'no_native_data'; fabricating intraday bars from a daily close would invent
+  188: -- microstructure). Same 10-column block per asset.
+  189: -- ---------------------------------------------------------------------------
+  190: CREATE OR REPLACE VIEW market_ohlcv_5m_wide AS
+  191: WITH grid AS (SELECT DISTINCT bar_start_utc FROM market_ohlcv_5m)
+  192: SELECT
+  193:     g.bar_start_utc,
+  194:     g.bar_start_utc + interval '5 minutes'          AS bar_end_utc,
+  195:     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
+  196:     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
+  197:     CASE WHEN p1.close IS NULL AND c1.is_trading_day IS TRUE
+  198:               AND g.bar_start_utc >= c1.session_open_utc
+  199:               AND g.bar_start_utc < c1.session_close_utc
+  200:          THEN 'missing' ELSE 'ok' END               AS availability_status,
+  201: 
+  202:     p1.open AS open_usdcop, p1.high AS high_usdcop, p1.low AS low_usdcop,
+  203:     p1.close AS close_usdcop, p1.volume AS volume_usdcop,
+  204:     p1.source AS source_usdcop, p1.bar_origin AS bar_origin_usdcop,
+  205:     (c1.is_trading_day IS TRUE AND g.bar_start_utc >= c1.session_open_utc
+  206:        AND g.bar_start_utc < c1.session_close_utc)  AS is_session_bar_usdcop,
+  207:     EXTRACT(epoch FROM now() - (g.bar_start_utc + interval '5 minutes'))::bigint
+  208:                                                     AS staleness_seconds_usdcop,
+  209:     -- closed = non-trading day OR out-of-session hour on a trading day: a BTC bar at
+  210:     -- 03:00 UTC creates a grid row where COP's NULL is legitimate, not an incident.
+  211:     -- The 12:55 closing bar is IN session (8:00-12:55 inclusive, 60 bars) â€” hence
+  212:     -- strictly-greater on session_close_utc.
+  213:     -- off_session = bar PRESENT while the calendar says closed (provider quotes
+  214:     -- USD/COP offshore on Colombian holidays, ~12 days/yr): real data, but the
+  215:     -- session-calendar arbiter says the local market did not trade â€” surfaced
+  216:     -- distinctly instead of a contradictory 'closed'-with-a-price.
+  217:     CASE WHEN c1.is_trading_day IS NOT TRUE
+  218:            OR g.bar_start_utc < c1.session_open_utc
+  219:            OR g.bar_start_utc > c1.session_close_utc THEN
+  220:               CASE WHEN p1.close IS NULL THEN 'closed' ELSE 'off_session' END
+  221:          WHEN p1.close IS NULL THEN 'missing'
+  222:          WHEN p1.quality_status <> 'ok' THEN 'incoherent' ELSE 'ok' END AS status_usdcop,
+  223: 
+  224:     p3.open AS open_btcusdt, p3.high AS high_btcusdt, p3.low AS low_btcusdt,
+  225:     p3.close AS close_btcusdt, p3.volume AS volume_btcusdt,
+  226:     p3.source AS source_btcusdt, p3.bar_origin AS bar_origin_btcusdt,
+  227:     true AS is_session_bar_btcusdt,
+  228:     EXTRACT(epoch FROM now() - (g.bar_start_utc + interval '5 minutes'))::bigint
+  229:                                                     AS staleness_seconds_btcusdt,
+  230:     CASE WHEN p3.close IS NULL THEN 'missing'
+  231:          WHEN p3.quality_status <> 'ok' THEN 'incoherent' ELSE 'ok' END AS status_btcusdt,
+  232: 
+  233:     p2.open AS open_xauusd, p2.close AS close_xauusd, p2.volume AS volume_xauusd,
+  234:     p2.source AS source_xauusd, p2.bar_origin AS bar_origin_xauusd,
+  235:     (p2.close IS NOT NULL) AS is_session_bar_xauusd,
+  236:     EXTRACT(epoch FROM now() - (g.bar_start_utc + interval '5 minutes'))::bigint
+  237:                                                     AS staleness_seconds_xauusd,
+  238:     CASE WHEN p2.close IS NULL THEN 'closed_or_missing' ELSE 'ok' END AS status_xauusd,
+  239: 
+  240:     NULL::numeric AS open_spx500, NULL::numeric AS close_spx500,
+  241:     'no_native_data'::text AS status_spx500
+  242: 
+  243: FROM grid g
+  244: LEFT JOIN market_ohlcv_5m p1 ON p1.asset_id='usdcop'  AND p1.bar_start_utc=g.bar_start_utc
+  245: LEFT JOIN market_ohlcv_5m p2 ON p2.asset_id='xauusd'  AND p2.bar_start_utc=g.bar_start_utc
+  246: LEFT JOIN market_ohlcv_5m p3 ON p3.asset_id='btcusdt' AND p3.bar_start_utc=g.bar_start_utc
+  247: LEFT JOIN market_session_calendar c1
+  248:        ON c1.asset_id='usdcop'
+  249:       AND c1.session_date=(g.bar_start_utc AT TIME ZONE 'America/Bogota')::date;
+  250: 
+  251: -- ---------------------------------------------------------------------------
+  252: -- 1h / 4h wide over the aggregates. partial = fewer M5 bars than the bucket
+  253: -- implies for an in-session hour (COP: 12 per full hour).
+  254: -- ---------------------------------------------------------------------------
+  255: CREATE OR REPLACE VIEW market_ohlcv_1h_wide AS
+  256: WITH grid AS (SELECT DISTINCT bar_start_utc FROM market_ohlcv_1h_agg)
+  257: SELECT
+  258:     g.bar_start_utc,
+  259:     g.bar_start_utc + interval '1 hour'             AS bar_end_utc,
+  260:     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
+  261:     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
+  262:     a1.open AS open_usdcop, a1.high AS high_usdcop, a1.low AS low_usdcop,
+  263:     a1.close AS close_usdcop, a1.volume AS volume_usdcop,
+  264:     a1.source AS source_usdcop, 'derived_m5'::text AS bar_origin_usdcop,
+  265:     a1.n_m5_bars AS n_m5_bars_usdcop,
+  266:     CASE WHEN a1.close IS NULL THEN 'closed_or_missing'
+  267:          WHEN a1.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_usdcop,
+  268:     a3.open AS open_btcusdt, a3.close AS close_btcusdt, a3.volume AS volume_btcusdt,
+  269:     'derived_m5'::text AS bar_origin_btcusdt, a3.n_m5_bars AS n_m5_bars_btcusdt,
+  270:     CASE WHEN a3.close IS NULL THEN 'missing'
+  271:          WHEN a3.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_btcusdt,
+  272:     a2.open AS open_xauusd, a2.close AS close_xauusd,
+  273:     'derived_m5'::text AS bar_origin_xauusd, a2.n_m5_bars AS n_m5_bars_xauusd,
+  274:     CASE WHEN a2.close IS NULL THEN 'closed_or_missing'
+  275:          WHEN a2.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_xauusd,
+  276:     'no_native_data'::text AS status_spx500
+  277: FROM grid g
+  278: LEFT JOIN market_ohlcv_1h_agg a1 ON a1.symbol='USD/COP'  AND a1.bar_start_utc=g.bar_start_utc
+  279: LEFT JOIN market_ohlcv_1h_agg a2 ON a2.symbol='XAU/USD'  AND a2.bar_start_utc=g.bar_start_utc
+  280: LEFT JOIN market_ohlcv_1h_agg a3 ON a3.symbol='BTC/USDT' AND a3.bar_start_utc=g.bar_start_utc;
+  281: 
+  282: CREATE OR REPLACE VIEW market_ohlcv_4h_wide AS
+  283: WITH grid AS (SELECT DISTINCT bar_start_utc FROM market_ohlcv_4h_agg)
+  284: SELECT
+  285:     g.bar_start_utc,
+  286:     g.bar_start_utc + interval '4 hours'            AS bar_end_utc,
+  287:     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
+  288:     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
+  289:     a1.open AS open_usdcop, a1.close AS close_usdcop, a1.n_m5_bars AS n_m5_bars_usdcop,
+  290:     'derived_m5'::text AS bar_origin_usdcop,
+  291:     CASE WHEN a1.close IS NULL THEN 'closed_or_missing'
+  292:          WHEN a1.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_usdcop,
+  293:     a3.open AS open_btcusdt, a3.close AS close_btcusdt, a3.n_m5_bars AS n_m5_bars_btcusdt,
+  294:     'derived_m5'::text AS bar_origin_btcusdt,
+  295:     CASE WHEN a3.close IS NULL THEN 'missing'
+  296:          WHEN a3.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_btcusdt,
+  297:     a2.open AS open_xauusd, a2.close AS close_xauusd, a2.n_m5_bars AS n_m5_bars_xauusd,
+  298:     'derived_m5'::text AS bar_origin_xauusd,
+  299:     CASE WHEN a2.close IS NULL THEN 'closed_or_missing'
+  300:          WHEN a2.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_xauusd,
+  301:     'no_native_data'::text AS status_spx500
+  302: FROM grid g
+  303: LEFT JOIN market_ohlcv_4h_agg a1 ON a1.symbol='USD/COP'  AND a1.bar_start_utc=g.bar_start_utc
+  304: LEFT JOIN market_ohlcv_4h_agg a2 ON a2.symbol='XAU/USD'  AND a2.bar_start_utc=g.bar_start_utc
+  305: LEFT JOIN market_ohlcv_4h_agg a3 ON a3.symbol='BTC/USDT' AND a3.bar_start_utc=g.bar_start_utc;
+===== database/migrations/062_macro_monthly_views.sql =====
+    1: -- ============================================================================
+    2: -- Migration 062: monthly + quarterly macro wide views
+    3: -- Contract: CTR-MKT-CANON-001 (extends 060/061; operator request 2026-07-21:
+    4: --           "si hay datos macro mensuales entonces necesitamos una tabla mensual")
+    5: -- ============================================================================
+    6: -- Why monthly gets its OWN view instead of columns in the daily wide:
+    7: --
+    8: --  * Frequency routing is a governance invariant (FrequencyRoutedUpsertService):
+    9: --    one wide view per native frequency, never resampled/ffilled across
+   10: --    frequencies inside the contract layer. The daily-ffilled projection of a
+   11: --    monthly series erases the line between "the January print" and "January
+   12: --    smeared across February" â€” exactly the ambiguity these views exist to kill.
+   13: --
+   14: --  * Monthly is where the PIT problem BITES HARDEST: the June CPI is not
+   15: --    knowable on June 30 (DANE publishes ~July 5); Colombian trade balance
+   16: --    arrives ~7 weeks after month end. A naive month-anchor join leaks future.
+   17: --    Rule for any model-side join:
+   18: --
+   19: --        available_from = COALESCE(publication_date, conservative bound)
+   20: --
+   21: --    publication_date is stamped by ingestion going forward; historic rows are
+   22: --    NULL (unknown is honest â€” reconstructing it would fabricate PIT evidence),
+   23: --    so the view computes available_from_conservative as an UPPER bound on
+   24: --    knowability. Over-waiting can only cost signal freshness; under-waiting
+   25: --    fabricates alpha. Bounds (documented worst publishers):
+   26: --      monthly   fecha (month START) + 3 months   -- covers trade/ToT ~7 weeks post month-end
+   27: --      quarterly fecha (quarter END) + 3 months   -- covers COL current account
+   28: --
+   29: --  * Anchors as found in the MASTERs: monthly fecha = month START;
+   30: --    quarterly fecha = quarter END. Documented here, not silently normalized.
+   31: --
+   32: --  * _t1 = previous PERIOD's value (LAG over the native frequency), the
+   33: --    reporting-safe lag form. For model consumption at daily resolution the
+   34: --    asof-join on available_from is the rule; _t1 alone does NOT guarantee
+   35: --    availability for slow publishers.
+   36: -- ============================================================================
+   37: 
+   38: CREATE OR REPLACE VIEW market_macro_monthly_wide AS
+   39: SELECT
+   40:     m.fecha                                        AS month_start,
+   41:     (m.fecha + interval '1 month')::date           AS month_end,
+   42:     m.publication_date,
+   43:     COALESCE(m.publication_date,
+   44:              (m.fecha + interval '3 months')::date) AS available_from_conservative,
+   45:     m.is_complete,
+   46:     m.ffill_count,
+   47: 
+   48:     -- USA ---------------------------------------------------------------
+   49:     m.polr_fed_funds_usa_m_fedfunds  AS macro_fedfunds,
+   50:     LAG(m.polr_fed_funds_usa_m_fedfunds)  OVER w AS macro_fedfunds_t1,
+   51:     m.infl_cpi_all_usa_m_cpiaucsl    AS macro_cpi_usa,
+   52:     LAG(m.infl_cpi_all_usa_m_cpiaucsl)    OVER w AS macro_cpi_usa_t1,
+   53:     m.infl_pce_usa_m_pcepi           AS macro_pce_usa,
+   54:     LAG(m.infl_pce_usa_m_pcepi)           OVER w AS macro_pce_usa_t1,
+   55:     m.labr_unemployment_usa_m_unrate AS macro_unrate,
+   56:     LAG(m.labr_unemployment_usa_m_unrate) OVER w AS macro_unrate_t1,
+   57:     m.prod_industrial_usa_m_indpro   AS macro_indpro,
+   58:     LAG(m.prod_industrial_usa_m_indpro)   OVER w AS macro_indpro_t1,
+   59:     m.mnys_m2_supply_usa_m_m2sl      AS macro_m2_usa,
+   60:     LAG(m.mnys_m2_supply_usa_m_m2sl)      OVER w AS macro_m2_usa_t1,
+   61:     m.sent_consumer_usa_m_umcsent    AS macro_umcsent,
+   62:     LAG(m.sent_consumer_usa_m_umcsent)    OVER w AS macro_umcsent_t1,
+   63: 
+   64:     -- Colombia ------------------------------------------------------------
+   65:     m.infl_cpi_total_col_m_ipccol    AS macro_ipc_col,
+   66:     LAG(m.infl_cpi_total_col_m_ipccol)    OVER w AS macro_ipc_col_t1,
+   67:     m.fxrt_reer_bilateral_col_m_itcr AS macro_itcr,
+   68:     LAG(m.fxrt_reer_bilateral_col_m_itcr) OVER w AS macro_itcr_t1,
+   69:     m.rsbp_reserves_international_col_m_resint AS macro_resint,
+   70:     LAG(m.rsbp_reserves_international_col_m_resint) OVER w AS macro_resint_t1,
+   71:     m.ftrd_terms_trade_col_m_tot     AS macro_tot,
+   72:     LAG(m.ftrd_terms_trade_col_m_tot)     OVER w AS macro_tot_t1,
+   73:     m.ftrd_exports_total_col_m_expusd AS macro_expusd,
+   74:     LAG(m.ftrd_exports_total_col_m_expusd) OVER w AS macro_expusd_t1,
+   75:     m.ftrd_imports_total_col_m_impusd AS macro_impusd,
+   76:     LAG(m.ftrd_imports_total_col_m_impusd) OVER w AS macro_impusd_t1,
+   77:     m.crsk_sentiment_cci_col_m_cci   AS macro_cci,
+   78:     LAG(m.crsk_sentiment_cci_col_m_cci)   OVER w AS macro_cci_t1,
+   79:     m.crsk_sentiment_ici_col_m_ici   AS macro_ici,
+   80:     LAG(m.crsk_sentiment_ici_col_m_ici)   OVER w AS macro_ici_t1
+   81: 
+   82: FROM macro_indicators_monthly m
+   83: WINDOW w AS (ORDER BY m.fecha);
+   84: 
+   85: CREATE OR REPLACE VIEW market_macro_quarterly_wide AS
+   86: SELECT
+   87:     m.fecha                                        AS quarter_end,
+   88:     m.publication_date,
+   89:     COALESCE(m.publication_date,
+   90:              (m.fecha + interval '3 months')::date) AS available_from_conservative,
+   91:     m.is_complete,
+   92:     m.ffill_count,
+   93:     m.gdpp_real_gdp_usa_q_gdp_q          AS macro_gdp_usa,
+   94:     LAG(m.gdpp_real_gdp_usa_q_gdp_q)          OVER w AS macro_gdp_usa_t1,
+   95:     m.rsbp_fdi_inflow_col_q_fdiin        AS macro_fdi_in,
+   96:     LAG(m.rsbp_fdi_inflow_col_q_fdiin)        OVER w AS macro_fdi_in_t1,
+   97:     m.rsbp_fdi_outflow_col_q_fdiout      AS macro_fdi_out,
+   98:     LAG(m.rsbp_fdi_outflow_col_q_fdiout)      OVER w AS macro_fdi_out_t1,
+   99:     m.rsbp_current_account_col_q_cacct   AS macro_cacct,
+  100:     LAG(m.rsbp_current_account_col_q_cacct)   OVER w AS macro_cacct_t1
+  101: FROM macro_indicators_quarterly m
+  102: WINDOW w AS (ORDER BY m.fecha);
+===== database/migrations/063_native_multiframe_ohlcv.sql =====
+    1: -- ============================================================================
+    2: -- Migration 063: native multi-timeframe OHLCV + native-first 1h/4h wide views
+    3: -- Contract: CTR-MKT-CANON-001 (operator 2026-07-22: "cobertura total desde la
+    4: --           maxima cantidad de dias posibles con TwelveData")
+    5: -- ============================================================================
+    6: -- 060 declared the rule: "if a provider ever delivers native 1h, it lands in
+    7: -- its own table and WINS in the contract view; the aggregates are the declared
+    8: -- fallback, never silently mixed". This migration is that table arriving.
+    9: --
+   10: --   tf IN ('1h','4h','1month') â€” daily stays in asset_daily_ohlcv, M5 stays in
+   11: --   usdcop_m5_ohlcv; one bar has exactly ONE home per timeframe.
+   12: --
+   13: -- Provenance probed live against the API (earliest_timestamp, 2026-07-21):
+   14: --   USD/COP 1h/4h desde 2019-09 Â· XAU 2020-01 Â· SPY 2020-02 Â· monthly decadas.
+   15: -- available_at is stamped at ingestion: for a historic backfill "now" is the
+   16: -- honest availability bound â€” it is when the bar became knowable to THIS system.
+   17: -- ============================================================================
+   18: 
+   19: CREATE TABLE IF NOT EXISTS asset_native_ohlcv (
+   20:     time         TIMESTAMPTZ NOT NULL,
+   21:     symbol       TEXT        NOT NULL,
+   22:     tf           TEXT        NOT NULL CHECK (tf IN ('1h', '4h', '1month')),
+   23:     open         NUMERIC, high NUMERIC, low NUMERIC, close NUMERIC,
+   24:     volume       NUMERIC,
+   25:     source       TEXT        NOT NULL,
+   26:     available_at TIMESTAMPTZ,
+   27:     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+   28:     PRIMARY KEY (time, symbol, tf)
+   29: );
+   30: 
+   31: -- ---------------------------------------------------------------------------
+   32: -- Native-first 1h wide: native bar wins, M5 aggregate is the declared fallback.
+   33: -- bar_origin says WHICH one you are reading â€” never silently mixed.
+   34: -- ---------------------------------------------------------------------------
+   35: CREATE OR REPLACE VIEW market_ohlcv_1h_wide AS
+   36: WITH grid AS (
+   37:     SELECT bar_start_utc FROM market_ohlcv_1h_agg
+   38:     UNION SELECT time FROM asset_native_ohlcv WHERE tf = '1h'
+   39: )
+   40: SELECT
+   41:     g.bar_start_utc,
+   42:     g.bar_start_utc + interval '1 hour'             AS bar_end_utc,
+   43:     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
+   44:     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
+   45: 
+   46:     COALESCE(n1.open,  a1.open)  AS open_usdcop,
+   47:     COALESCE(n1.high,  a1.high)  AS high_usdcop,
+   48:     COALESCE(n1.low,   a1.low)   AS low_usdcop,
+   49:     COALESCE(n1.close, a1.close) AS close_usdcop,
+   50:     COALESCE(n1.volume, a1.volume) AS volume_usdcop,
+   51:     COALESCE(n1.source, a1.source) AS source_usdcop,
+   52:     CASE WHEN n1.close IS NOT NULL THEN 'native'
+   53:          WHEN a1.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_usdcop,
+   54:     a1.n_m5_bars AS n_m5_bars_usdcop,
+   55:     CASE WHEN n1.close IS NOT NULL THEN 'ok'
+   56:          WHEN a1.close IS NULL THEN 'closed_or_missing'
+   57:          WHEN a1.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_usdcop,
+   58: 
+   59:     COALESCE(n3.open,  a3.open)  AS open_btcusdt,
+   60:     COALESCE(n3.close, a3.close) AS close_btcusdt,
+   61:     COALESCE(n3.volume, a3.volume) AS volume_btcusdt,
+   62:     CASE WHEN n3.close IS NOT NULL THEN 'native'
+   63:          WHEN a3.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_btcusdt,
+   64:     a3.n_m5_bars AS n_m5_bars_btcusdt,
+   65:     CASE WHEN n3.close IS NOT NULL THEN 'ok'
+   66:          WHEN a3.close IS NULL THEN 'missing'
+   67:          WHEN a3.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_btcusdt,
+   68: 
+   69:     COALESCE(n2.open,  a2.open)  AS open_xauusd,
+   70:     COALESCE(n2.close, a2.close) AS close_xauusd,
+   71:     CASE WHEN n2.close IS NOT NULL THEN 'native'
+   72:          WHEN a2.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_xauusd,
+   73:     a2.n_m5_bars AS n_m5_bars_xauusd,
+   74:     CASE WHEN n2.close IS NOT NULL THEN 'ok'
+   75:          WHEN a2.close IS NULL THEN 'closed_or_missing'
+   76:          WHEN a2.n_m5_bars < 12 THEN 'partial' ELSE 'ok' END AS status_xauusd,
+   77: 
+   78:     'no_native_data'::text AS status_spx500
+   79: 
+   80: FROM grid g
+   81: LEFT JOIN market_ohlcv_1h_agg a1 ON a1.symbol='USD/COP'  AND a1.bar_start_utc=g.bar_start_utc
+   82: LEFT JOIN market_ohlcv_1h_agg a2 ON a2.symbol='XAU/USD'  AND a2.bar_start_utc=g.bar_start_utc
+   83: LEFT JOIN market_ohlcv_1h_agg a3 ON a3.symbol='BTC/USDT' AND a3.bar_start_utc=g.bar_start_utc
+   84: LEFT JOIN asset_native_ohlcv n1 ON n1.tf='1h' AND n1.symbol='USD/COP'  AND n1.time=g.bar_start_utc
+   85: LEFT JOIN asset_native_ohlcv n2 ON n2.tf='1h' AND n2.symbol='XAU/USD'  AND n2.time=g.bar_start_utc
+   86: LEFT JOIN asset_native_ohlcv n3 ON n3.tf='1h' AND n3.symbol='BTC/USDT' AND n3.time=g.bar_start_utc;
+   87: 
+   88: CREATE OR REPLACE VIEW market_ohlcv_4h_wide AS
+   89: WITH grid AS (
+   90:     SELECT bar_start_utc FROM market_ohlcv_4h_agg
+   91:     UNION SELECT time FROM asset_native_ohlcv WHERE tf = '4h'
+   92: )
+   93: SELECT
+   94:     g.bar_start_utc,
+   95:     g.bar_start_utc + interval '4 hours'            AS bar_end_utc,
+   96:     g.bar_start_utc AT TIME ZONE 'America/Bogota'   AS timestamp_cot,
+   97:     (g.bar_start_utc AT TIME ZONE 'America/Bogota')::date AS session_date_cot,
+   98:     COALESCE(n1.open,  a1.open)  AS open_usdcop,
+   99:     COALESCE(n1.close, a1.close) AS close_usdcop,
+  100:     a1.n_m5_bars AS n_m5_bars_usdcop,
+  101:     CASE WHEN n1.close IS NOT NULL THEN 'native'
+  102:          WHEN a1.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_usdcop,
+  103:     CASE WHEN n1.close IS NOT NULL THEN 'ok'
+  104:          WHEN a1.close IS NULL THEN 'closed_or_missing'
+  105:          WHEN a1.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_usdcop,
+  106:     COALESCE(n3.open,  a3.open)  AS open_btcusdt,
+  107:     COALESCE(n3.close, a3.close) AS close_btcusdt,
+  108:     a3.n_m5_bars AS n_m5_bars_btcusdt,
+  109:     CASE WHEN n3.close IS NOT NULL THEN 'native'
+  110:          WHEN a3.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_btcusdt,
+  111:     CASE WHEN n3.close IS NOT NULL THEN 'ok'
+  112:          WHEN a3.close IS NULL THEN 'missing'
+  113:          WHEN a3.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_btcusdt,
+  114:     COALESCE(n2.open,  a2.open)  AS open_xauusd,
+  115:     COALESCE(n2.close, a2.close) AS close_xauusd,
+  116:     a2.n_m5_bars AS n_m5_bars_xauusd,
+  117:     CASE WHEN n2.close IS NOT NULL THEN 'native'
+  118:          WHEN a2.close IS NOT NULL THEN 'derived_m5' END AS bar_origin_xauusd,
+  119:     CASE WHEN n2.close IS NOT NULL THEN 'ok'
+  120:          WHEN a2.close IS NULL THEN 'closed_or_missing'
+  121:          WHEN a2.n_m5_bars < 48 THEN 'partial' ELSE 'ok' END AS status_xauusd,
+  122:     'no_native_data'::text AS status_spx500
+  123: FROM grid g
+  124: LEFT JOIN market_ohlcv_4h_agg a1 ON a1.symbol='USD/COP'  AND a1.bar_start_utc=g.bar_start_utc
+  125: LEFT JOIN market_ohlcv_4h_agg a2 ON a2.symbol='XAU/USD'  AND a2.bar_start_utc=g.bar_start_utc
+  126: LEFT JOIN market_ohlcv_4h_agg a3 ON a3.symbol='BTC/USDT' AND a3.bar_start_utc=g.bar_start_utc
+  127: LEFT JOIN asset_native_ohlcv n1 ON n1.tf='4h' AND n1.symbol='USD/COP'  AND n1.time=g.bar_start_utc
+  128: LEFT JOIN asset_native_ohlcv n2 ON n2.tf='4h' AND n2.symbol='XAU/USD'  AND n2.time=g.bar_start_utc
+  129: LEFT JOIN asset_native_ohlcv n3 ON n3.tf='4h' AND n3.symbol='BTC/USDT' AND n3.time=g.bar_start_utc;
+===== database/migrations/064_h5_strategy_id.sql =====
+    1: -- ============================================================================
+    2: -- Migration 064: strategy_id en las tablas H5 (bloqueador R5a, plan COP Fase A1)
+    3: -- Contract: CTR-STRAT-REGISTRY-001 (extiende) Â· encontrado por la revision
+    4: -- adversarial de Codex 2026-07-21: la unicidad por signal_date sola hace que dos
+    5: -- estrategias (v11 y la candidata v12) COLISIONEN el mismo lunes.
+    6: -- ============================================================================
+    7: -- Diseno:
+    8: --   * DEFAULT 'smart_simple_v11' -> los writers actuales de v11 no cambian
+    9: --     (backfill implicito de todo el historico, que ES de v11).
+   10: --   * forecast_h5_predictions NO recibe strategy_id: las predicciones son output
+   11: --     de MODELOS (ridge/br), compartidas entre estrategias; v12 consume las mismas.
+   12: --   * forecast_h5_subtrades hereda via execution_id.
+   13: 
+   14: ALTER TABLE forecast_h5_signals
+   15:     ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+   16: ALTER TABLE forecast_h5_executions
+   17:     ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+   18: ALTER TABLE forecast_h5_paper_trading
+   19:     ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+   20: 
+   21: -- unicidad: (signal_date) -> (signal_date, strategy_id)
+   22: ALTER TABLE forecast_h5_signals
+   23:     DROP CONSTRAINT IF EXISTS forecast_h5_signals_signal_date_key;
+   24: ALTER TABLE forecast_h5_signals
+   25:     ADD CONSTRAINT uq_h5_signal_date_strategy UNIQUE (signal_date, strategy_id);
+   26: 
+   27: ALTER TABLE forecast_h5_executions
+   28:     DROP CONSTRAINT IF EXISTS forecast_h5_executions_signal_date_key;
+   29: ALTER TABLE forecast_h5_executions
+   30:     ADD CONSTRAINT uq_h5_exec_date_strategy UNIQUE (signal_date, strategy_id);
+   31: 
+   32: ALTER TABLE forecast_h5_paper_trading
+   33:     DROP CONSTRAINT IF EXISTS forecast_h5_paper_trading_signal_date_key;
+   34: ALTER TABLE forecast_h5_paper_trading
+   35:     ADD CONSTRAINT uq_h5_paper_date_strategy UNIQUE (signal_date, strategy_id);
+   36: 
+   37: CREATE INDEX IF NOT EXISTS ix_h5_signals_strategy ON forecast_h5_signals (strategy_id);
+   38: CREATE INDEX IF NOT EXISTS ix_h5_exec_strategy ON forecast_h5_executions (strategy_id);
+   39: CREATE INDEX IF NOT EXISTS ix_h5_paper_strategy ON forecast_h5_paper_trading (strategy_id);
+===== database/migrations/066_banrep_remesas_monthly.sql =====
+    1: -- ============================================================================
+    2: -- Migration 066: BanRep workers' remittances (remesas) monthly series
+    3: -- ============================================================================
+    4: -- TAREA C2 (2026-07-21) â€” point-in-time monthly ingestion, 0 trials (data only).
+    5: --
+    6: -- Source: Banco de la RepÃºblica â€” "Ingresos de Remesas de trabajadores, mensual"
+    7: --   SUAMECA serie id 15363 (idCargue REMESAS_MENSUAL), unidad: Millones de USD.
+    8: --   Catalog page : https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4150/remesas_trabajadores/
+    9: --   REST endpoint: https://suameca.banrep.gov.co/buscador-de-series/rest/buscadorSeriesRestService/consultaDatosSeries
+   10: --
+   11: -- PIT convention:
+   12: --   BanRep loads month M near the end of M+1 (observed: May-2026 loaded 2026-06-26,
+   13: --   June-2026 scheduled 2026-07-24). `published_at` stores the conservative rule
+   14: --   "last calendar day of M+1"; any consumer joining on published_at <= as_of_date
+   15: --   never sees the value earlier than the market could have.
+   16: --
+   17: -- Grain: monthly, instant-based (NOT COT session-bound). `month` = first day of month.
+   18: -- ============================================================================
+   19: 
+   20: CREATE TABLE IF NOT EXISTS macro_remesas_monthly (
+   21:     month           DATE PRIMARY KEY,
+   22:     remesas_usd_mn  NUMERIC NOT NULL,
+   23:     published_at    DATE NOT NULL,
+   24:     source          TEXT,
+   25:     ingested_at     TIMESTAMPTZ DEFAULT now(),
+   26:     CONSTRAINT macro_remesas_monthly_month_first_day
+   27:         CHECK (month = date_trunc('month', month)::date),
+   28:     CONSTRAINT macro_remesas_monthly_non_negative
+   29:         CHECK (remesas_usd_mn >= 0),
+   30:     CONSTRAINT macro_remesas_monthly_pit_after_month
+   31:         CHECK (published_at > month)
+   32: );
+   33: 
+   34: CREATE INDEX IF NOT EXISTS idx_macro_remesas_monthly_published_at
+   35:     ON macro_remesas_monthly (published_at);
+   36: 
+   37: COMMENT ON TABLE macro_remesas_monthly IS
+   38:     'BanRep workers'' remittances to Colombia, monthly, USD millions (SUAMECA serie 15363). Point-in-time: join on published_at <= as_of.';
+   39: COMMENT ON COLUMN macro_remesas_monthly.month IS
+   40:     'Reference month (first calendar day). Instant-based monthly grain, not COT session-bound.';
+   41: COMMENT ON COLUMN macro_remesas_monthly.remesas_usd_mn IS
+   42:     'Ingresos de remesas de trabajadores, millones de USD corrientes.';
+   43: COMMENT ON COLUMN macro_remesas_monthly.published_at IS
+   44:     'Conservative PIT date: last calendar day of month+1 (BanRep loads ~day 24-26 of month+1).';
+===== scripts/data/ingest_banrep_remesas.py =====
+    1: #!/usr/bin/env python3
+    2: """
+    3: Ingest BanRep workers' remittances (remesas) monthly series â€” TAREA C2
+    4: ======================================================================
+    5: 
+    6: Point-in-time monthly ingestion of "Ingresos de Remesas de trabajadores,
+    7: mensual" (USD millions) from Banco de la RepÃºblica, 2000-01 -> today.
+    8: 0 trials: data only, no study is opened here.
+    9: 
+   10: Source (documented 2026-07-21)
+   11: ------------------------------
+   12: - Human catalog page:
+   13:   https://suameca.banrep.gov.co/estadisticas-economicas/informacionSerie/4150/remesas_trabajadores/
+   14: - Machine endpoint (JSON REST used by the SUAMECA Angular app):
+   15:   POST https://suameca.banrep.gov.co/buscador-de-series/rest/buscadorSeriesRestService/consultaDatosSeries
+   16:   body: {"series":[{"idSerie":15363,"idPeriodicidades":[9]}],
+   17:          "fechaInicio":20000101,"fechaFin":<yyyymmdd today>}
+   18:   -> [{"data": [[epoch_ms_bogota_midnight_eom, value_usd_mn], ...], ...}]
+   19: - Series: id=15363, idCargue=REMESAS_MENSUAL, unit "Millones de USD",
+   20:   tipoDato 9 = "Dato fin de mes".
+   21: 
+   22: Publication lag (defines the PIT date)
+   23: --------------------------------------
+   24: BanRep loads month M near the end of M+1. Observed from series metadata on
+   25: 2026-07-21: May-2026 value loaded 2026-06-26 (fechaUltimoCargue); June-2026
+   26: scheduled 2026-07-24 (fechaProximoCargue). We store the conservative rule
+   27:     published_at = last calendar day of (month + 1)
+   28: so a PIT join on published_at <= as_of never sees a value before the market
+   29: could have.
+   30: 
+   31: Usage
+   32: -----
+   33:     set -a; . ./.env; set +a          # load POSTGRES_* credentials
+   34:     python scripts/data/ingest_banrep_remesas.py                 # full ingest
+   35:     python scripts/data/ingest_banrep_remesas.py --dry-run       # no DB writes
+   36:     python scripts/data/ingest_banrep_remesas.py --from-json f.json  # offline parse
+   37: 
+   38: Applies migration database/migrations/066_banrep_remesas_monthly.sql
+   39: automatically if the table does not exist (psql-style: executes the SQL file).
+   40: """
+   41: 
+   42: from __future__ import annotations
+   43: 
+   44: import argparse
+   45: import calendar
+   46: import json
+   47: import os
+   48: import sys
+   49: from datetime import date, datetime, timedelta, timezone
+   50: from pathlib import Path
+   51: 
+   52: PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root
+   53: MIGRATION_FILE = PROJECT_ROOT / "database" / "migrations" / "066_banrep_remesas_monthly.sql"
+   54: 
+   55: SERIES_ID = 15363
+   56: TIPO_DATO_EOM = 9  # "Dato fin de mes"
+   57: API_URL = (
+   58:     "https://suameca.banrep.gov.co/buscador-de-series/rest/"
+   59:     "buscadorSeriesRestService/consultaDatosSeries"
+   60: )
+   61: CATALOG_URL = (
+   62:     "https://suameca.banrep.gov.co/estadisticas-economicas/"
+   63:     "informacionSerie/4150/remesas_trabajadores/"
+   64: )
+   65: SOURCE_TAG = f"banrep_suameca_{SERIES_ID}"
+   66: 
+   67: # Gaps documented as legitimate (none known as of 2026-07: series is complete
+   68: # Jan-2000 onward). Add (year, month) tuples here if BanRep ever skips a month.
+   69: DOCUMENTED_MISSING_MONTHS: set[tuple[int, int]] = set()
+   70: 
+   71: MAX_UNDOCUMENTED_GAP_MONTHS = 2
+   72: 
+   73: 
+   74: # ---------------------------------------------------------------------------
+   75: # Env / DB helpers
+   76: # ---------------------------------------------------------------------------
+   77: 
+   78: def _load_dotenv_fallback() -> None:
+   79:     """Populate POSTGRES_* from repo .env if not already in the environment."""
+   80:     if os.environ.get("POSTGRES_PASSWORD"):
+   81:         return
+   82:     env_path = PROJECT_ROOT / ".env"
+   83:     if not env_path.exists():
+   84:         return
+   85:     for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+   86:         line = line.strip()
+   87:         if not line or line.startswith("#") or "=" not in line:
+   88:             continue
+   89:         key, _, value = line.partition("=")
+   90:         key, value = key.strip(), value.strip().strip('"').strip("'")
+   91:         if key.startswith("POSTGRES") and key not in os.environ:
+   92:             os.environ[key] = value
+   93: 
+   94: 
+   95: def get_connection():
+   96:     import psycopg2
+   97: 
+   98:     return psycopg2.connect(
+   99:         host=os.environ.get("POSTGRES_HOST", "localhost"),
+  100:         port=int(os.environ.get("POSTGRES_PORT", "5432")),
+  101:         dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+  102:         user=os.environ.get("POSTGRES_USER", "admin"),
+  103:         password=os.environ.get("POSTGRES_PASSWORD", ""),
+  104:     )
+  105: 
+  106: 
+  107: def ensure_table(conn) -> None:
+  108:     """Apply migration 066 if macro_remesas_monthly does not exist."""
+  109:     with conn.cursor() as cur:
+  110:         cur.execute(
+  111:             """
+  112:             SELECT EXISTS (
+  113:                 SELECT FROM information_schema.tables
+  114:                 WHERE table_schema = 'public' AND table_name = 'macro_remesas_monthly'
+  115:             )
+  116:             """
+  117:         )
+  118:         exists = cur.fetchone()[0]
+  119:     if exists:
+  120:         return
+  121:     print(f"[MIGRATE] applying {MIGRATION_FILE.name}")
+  122:     sql = MIGRATION_FILE.read_text(encoding="utf-8")
+  123:     with conn.cursor() as cur:
+  124:         cur.execute(sql)
+  125:     conn.commit()
+  126:     print("[MIGRATE] macro_remesas_monthly created")
+  127: 
+  128: 
+  129: # ---------------------------------------------------------------------------
+  130: # Download + parse
+  131: # ---------------------------------------------------------------------------
+  132: 
+  133: def fetch_series(start: date, end: date, retries: int = 3) -> list:
+  134:     """POST to the SUAMECA REST endpoint; return raw JSON list."""
+  135:     import requests
+  136: 
+  137:     payload = {
+  138:         "series": [{"idSerie": SERIES_ID, "idPeriodicidades": [TIPO_DATO_EOM]}],
+  139:         "fechaInicio": int(start.strftime("%Y%m%d")),
+  140:         "fechaFin": int(end.strftime("%Y%m%d")),
+  141:     }
+  142:     headers = {
+  143:         "Content-Type": "application/json",
+  144:         "Accept": "application/json",
+  145:         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+  146:     }
+  147:     last_err: Exception | None = None
+  148:     for attempt in range(1, retries + 1):
+  149:         try:
+  150:             resp = requests.post(API_URL, json=payload, headers=headers, timeout=90)
+  151:             resp.raise_for_status()
+  152:             body = resp.json()
+  153:             if not isinstance(body, list) or not body or "data" not in body[0]:
+  154:                 raise ValueError(f"Unexpected API response shape: {str(body)[:200]}")
+  155:             return body
+  156:         except Exception as exc:  # noqa: BLE001 â€” retry then surface
+  157:             last_err = exc
+  158:             print(f"[WARN] fetch attempt {attempt}/{retries} failed: {exc}")
+  159:     raise RuntimeError(
+  160:         f"Could not download series {SERIES_ID} from {API_URL}: {last_err}\n"
+  161:         f"BLOCKED fallback: download manually from {CATALOG_URL} "
+  162:         f"(Exportar), save the JSON of consultaDatosSeries and re-run with "
+  163:         f"--from-json <file>."
+  164:     )
+  165: 
+  166: 
+  167: def epoch_ms_to_month(ms: int) -> date:
+  168:     """SUAMECA stamps = Bogota-midnight of the month's last day (UTC-5).
+  169: 
+  170:     Converting the instant to UTC yields e.g. 2000-01-31T05:00Z, whose UTC
+  171:     calendar date is still inside the reference month, so year/month of the
+  172:     UTC date identify the month unambiguously. Instant-based, no COT localize.
+  173:     """
+  174:     ts = datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc)
+  175:     return date(ts.year, ts.month, 1)
+  176: 
+  177: 
+  178: def published_at_for(month: date) -> date:
+  179:     """Conservative PIT date: last calendar day of month+1."""
+  180:     y, m = (month.year, month.month + 1) if month.month < 12 else (month.year + 1, 1)
+  181:     return date(y, m, calendar.monthrange(y, m)[1])
+  182: 
+  183: 
+  184: def parse_rows(raw: list) -> list[dict]:
+  185:     serie = raw[0]
+  186:     rows = []
+  187:     for ms, value in serie["data"]:
+  188:         month = epoch_ms_to_month(int(ms))
+  189:         rows.append(
+  190:             {
+  191:                 "month": month,
+  192:                 "remesas_usd_mn": float(value),
+  193:                 "published_at": published_at_for(month),
+  194:                 "source": SOURCE_TAG,
+  195:             }
+  196:         )
+  197:     rows.sort(key=lambda r: r["month"])
+  198:     return rows
+  199: 
+  200: 
+  201: # ---------------------------------------------------------------------------
+  202: # Validation (descriptive â€” hard-fails only on data integrity)
+  203: # ---------------------------------------------------------------------------
+  204: 
+  205: def _month_iter(start: date, end: date):
+  206:     y, m = start.year, start.month
+  207:     while (y, m) <= (end.year, end.month):
+  208:         yield date(y, m, 1)
+  209:         y, m = (y, m + 1) if m < 12 else (y + 1, 1)
+  210: 
+  211: 
+  212: def validate(rows: list[dict]) -> None:
+  213:     if not rows:
+  214:         raise SystemExit("[FAIL] no rows parsed")
+  215: 
+  216:     # 1) no negatives
+  217:     negatives = [r for r in rows if r["remesas_usd_mn"] < 0]
+  218:     if negatives:
+  219:         raise SystemExit(f"[FAIL] {len(negatives)} negative values, e.g. {negatives[:3]}")
+  220: 
+  221:     # 2) no duplicated months
+  222:     months = [r["month"] for r in rows]
+  223:     if len(months) != len(set(months)):
+  224:         raise SystemExit("[FAIL] duplicated months in parsed data")
+  225: 
+  226:     # 3) gaps: no undocumented hole > MAX_UNDOCUMENTED_GAP_MONTHS
+  227:     have = set(months)
+  228:     missing = [
+  229:         mo for mo in _month_iter(months[0], months[-1])
+  230:         if mo not in have and (mo.year, mo.month) not in DOCUMENTED_MISSING_MONTHS
+  231:     ]
+  232:     if missing:
+  233:         # longest consecutive run of missing months
+  234:         runs, run = [], [missing[0]]
+  235:         for prev, cur in zip(missing, missing[1:]):
+  236:             expected = date(prev.year + (prev.month == 12), prev.month % 12 + 1, 1)
+  237:             if cur == expected:
+  238:                 run.append(cur)
+  239:             else:
+  240:                 runs.append(run)
+  241:                 run = [cur]
+  242:         runs.append(run)
+  243:         longest = max(runs, key=len)
+  244:         print(f"[WARN] {len(missing)} undocumented missing months: {missing[:12]}")
+  245:         if len(longest) > MAX_UNDOCUMENTED_GAP_MONTHS:
+  246:             raise SystemExit(
+  247:                 f"[FAIL] undocumented gap of {len(longest)} months starting "
+  248:                 f"{longest[0]} (max allowed {MAX_UNDOCUMENTED_GAP_MONTHS}). "
+  249:                 f"If legitimate, add to DOCUMENTED_MISSING_MONTHS."
+  250:             )
+  251:     else:
+  252:         print("[OK] no missing months in range")
+  253: 
+  254:     # 4) seasonality sanity check (descriptive only, never blocks):
+  255:     #    December remittances are expected to run above the overall mean.
+  256:     full_years = {r["month"].year for r in rows if r["month"].month == 12}
+  257:     dec_vals = [r["remesas_usd_mn"] for r in rows if r["month"].month == 12]
+  258:     all_vals = [r["remesas_usd_mn"] for r in rows if r["month"].year in full_years]
+  259:     if dec_vals and all_vals:
+  260:         dec_mean = sum(dec_vals) / len(dec_vals)
+  261:         overall = sum(all_vals) / len(all_vals)
+  262:         verdict = "as expected (dic alto)" if dec_mean > overall else "UNEXPECTED"
+  263:         print(
+  264:             f"[SEASONALITY] mean Dec = {dec_mean:,.1f} vs overall mean = "
+  265:             f"{overall:,.1f} USD mn -> {verdict}"
+  266:         )
+  267: 
+  268:     print(f"[OK] validation passed: {len(rows)} rows, "
+  269:           f"{months[0]} -> {months[-1]}")
+  270: 
+  271: 
+  272: def report_by_decade(rows: list[dict]) -> None:
+  273:     decades: dict[int, int] = {}
+  274:     for r in rows:
+  275:         decades[r["month"].year // 10 * 10] = decades.get(r["month"].year // 10 * 10, 0) + 1
+  276:     print("[REPORT] rows per decade:")
+  277:     for dec in sorted(decades):
+  278:         print(f"    {dec}s : {decades[dec]} months")
+  279: 
+  280: 
+  281: # ---------------------------------------------------------------------------
+  282: # Upsert
+  283: # ---------------------------------------------------------------------------
+  284: 
+  285: UPSERT_SQL = """
+  286: INSERT INTO macro_remesas_monthly (month, remesas_usd_mn, published_at, source)
+  287: VALUES (%(month)s, %(remesas_usd_mn)s, %(published_at)s, %(source)s)
+  288: ON CONFLICT (month) DO UPDATE SET
+  289:     remesas_usd_mn = EXCLUDED.remesas_usd_mn,
+  290:     published_at   = EXCLUDED.published_at,
+  291:     source         = EXCLUDED.source,
+  292:     ingested_at    = now()
+  293: """
+  294: 
+  295: 
+  296: def upsert(conn, rows: list[dict]) -> None:
+  297:     from psycopg2.extras import execute_batch
+  298: 
+  299:     with conn.cursor() as cur:
+  300:         execute_batch(cur, UPSERT_SQL, rows, page_size=500)
+  301:     conn.commit()
+  302:     with conn.cursor() as cur:
+  303:         cur.execute(
+  304:             "SELECT count(*), min(month), max(month) FROM macro_remesas_monthly"
+  305:         )
+  306:         n, lo, hi = cur.fetchone()
+  307:     print(f"[DB] macro_remesas_monthly now holds {n} rows, {lo} -> {hi}")
+  308: 
+  309: 
+  310: # ---------------------------------------------------------------------------
+  311: # Main
+  312: # ---------------------------------------------------------------------------
+  313: 
+  314: def main() -> int:
+  315:     parser = argparse.ArgumentParser(
+  316:         description="Ingest BanRep monthly workers' remittances (PIT, USD mn)."
+  317:     )
+  318:     parser.add_argument("--start", default="2000-01-01", help="range start (default 2000-01-01)")
+  319:     parser.add_argument("--dry-run", action="store_true", help="parse+validate only, no DB writes")
+  320:     parser.add_argument(
+  321:         "--from-json", default=None,
+  322:         help="offline mode: parse a saved consultaDatosSeries JSON instead of downloading",
+  323:     )
+  324:     args = parser.parse_args()
+  325: 
+  326:     start = date.fromisoformat(args.start)
+  327:     end = date.today() + timedelta(days=31)  # inclusive of any freshly loaded month
+  328: 
+  329:     print("=" * 70)
+  330:     print("BanRep remesas mensuales -> macro_remesas_monthly (TAREA C2)")
+  331:     print(f"  serie   : {SERIES_ID} (Ingresos de Remesas de trabajadores, mensual)")
+  332:     print(f"  range   : {start} -> {end}")
+  333:     print(f"  source  : {API_URL}")
+  334:     print("=" * 70)
+  335: 
+  336:     if args.from_json:
+  337:         raw = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
+  338:         print(f"[OFFLINE] parsed {args.from_json}")
+  339:     else:
+  340:         raw = fetch_series(start, end)
+  341: 
+  342:     rows = parse_rows(raw)
+  343:     rows = [r for r in rows if r["month"] >= date(start.year, start.month, 1)]
+  344: 
+  345:     validate(rows)
+  346:     report_by_decade(rows)
+  347: 
+  348:     if args.dry_run:
+  349:         print("[DRY-RUN] skipping DB writes")
+  350:         return 0
+  351: 
+  352:     _load_dotenv_fallback()
+  353:     conn = get_connection()
+  354:     try:
+  355:         ensure_table(conn)
+  356:         upsert(conn, rows)
+  357:     finally:
+  358:         conn.close()
+  359: 
+  360:     print("[DONE] ingest complete (0 trials: data only, no study opened)")
+  361:     return 0
+  362: 
+  363: 
+  364: if __name__ == "__main__":
+  365:     sys.exit(main())
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$safe = '"'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'; git -c safe.directory="'$safe status --short; git -c safe.directory=$safe log -10 --oneline -- database/migrations; git -c safe.directory=$safe diff --name-status; git -c safe.directory=$safe diff --cached --name-status; Write-Output '"'===== 06x DDL patterns ====='; rg -n \""'^(CREATE|ALTER|DROP|INSERT|COMMENT)|IF NOT EXISTS|ON CONFLICT|CONSTRAINT" database/migrations/060_market_canonical_views.sql database/migrations/061_market_wide_views.sql database/migrations/062_macro_monthly_views.sql database/migrations/063_native_multiframe_ohlcv.sql database/migrations/064_h5_strategy_id.sql database/migrations/066_banrep_remesas_monthly.sql; Write-Output '"'===== DB env presence (values hidden) ====='; @('DATABASE_URL','POSTGRES_HOST','POSTGRES_PORT','POSTGRES_DB','POSTGRES_USER','POSTGRES_PASSWORD') | ForEach-Object { "'$v = [Environment]::GetEnvironmentVariable($_); '"'{0}={1}' -f "'$_, [bool]$v }; Write-Output '"'===== credential-literal scan in reviewed files ====='; rg -n -i \"(password|passwd|api[_-]?key|secret|token|postgres(?:ql)?://|supabase|credential)\" database/migrations/066_banrep_remesas_monthly.sql scripts/data/ingest_banrep_remesas.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 4852ms:
+ M .claude/README.md
+ M .claude/codex/README.md
+ M .claude/evidence/directional_unlock/2026-07-21/results.json
+ M .gitignore
+ M CLAUDE.md
+ M airflow/requirements.txt
+ M config/analysis/analysis_assets.yaml
+ M config/assets/btcusdt_forecasting.yaml
+ M config/assets/pipelines.yaml
+ M config/assets/xauusd_forecasting.yaml
+ M data/backups/features/asset_daily_ohlcv.parquet
+ M data/backups/features/asset_native_ohlcv.parquet
+ M data/backups/features/feature_backup_manifest.json
+ M data/backups/features/market_ingestion_manifest.parquet
+ M data/backups/features/usdcop_m5_ohlcv.parquet
+ M data/backups/seeds/backup_manifest.json
+ M data/backups/seeds/macro_indicators_daily_backup.parquet
+ M data/backups/seeds/usdcop_m5_ohlcv_backup.parquet
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.csv
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.parquet
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.xlsx
+ M pyproject.toml
+ M scripts/data/ingest_asset_ohlcv.py
+ M scripts/ops/db_migrate.py
+ M scripts/pipeline/generate_weekly_forecasts.py
+ M scripts/pipeline/train_and_export_smart_simple.py
+ M seeds/latest/btcusdt_daily_ohlcv.parquet
+ M seeds/latest/btcusdt_derivatives_daily.parquet
+ M seeds/latest/btcusdt_m5_ohlcv.parquet
+ M seeds/latest/fx_multi_m5_ohlcv.parquet
+ M seeds/latest/usdbrl_m5_ohlcv.parquet
+ M seeds/latest/usdcop_daily_ohlcv.parquet
+ M seeds/latest/usdcop_m5_ohlcv.parquet
+ M seeds/latest/usdmxn_m5_ohlcv.parquet
+ M seeds/latest/xauusd_daily_ohlcv.parquet
+ M src/analysis/news_intelligence.py
+ M src/news_engine/cross_reference/engine.py
+ M src/news_engine/enrichment/sentiment.py
+ M usdcop-trading-dashboard/app/api/admin/impersonate/route.ts
+ M usdcop-trading-dashboard/app/api/billing/webhook/route.ts
+ M usdcop-trading-dashboard/app/api/cart/checkout/route.ts
+ M usdcop-trading-dashboard/app/api/catalog/route.ts
+ M usdcop-trading-dashboard/app/api/data/[...path]/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/approve/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/reject/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/trades/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/by-model/[modelId]/route.ts
+ M usdcop-trading-dashboard/app/api/forecasting/[...path]/route.ts
+ M usdcop-trading-dashboard/app/api/strategies/[strategyId]/manifest/route.ts
+ M usdcop-trading-dashboard/components/analysis/NewsClusterCard.tsx
+ M usdcop-trading-dashboard/components/analysis/ReferencesSection.tsx
+ M usdcop-trading-dashboard/components/forecasting/ForecastingDashboard.tsx
+ M usdcop-trading-dashboard/components/forecasting/types.ts
+ M usdcop-trading-dashboard/lib/admin/revenue.ts
+ M usdcop-trading-dashboard/lib/api/relay.ts
+ M usdcop-trading-dashboard/lib/auth/entitlements.ts
+ M usdcop-trading-dashboard/lib/billing/prices.ts
+ M usdcop-trading-dashboard/lib/billing/provider.ts
+ M usdcop-trading-dashboard/lib/billing/wompi.ts
+ M usdcop-trading-dashboard/lib/contracts/analysis-assets.ts
+ M usdcop-trading-dashboard/package-lock.json
+ M usdcop-trading-dashboard/package.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W01.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W02.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W03.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W04.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W05.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W06.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W07.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W08.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W09.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W10.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W11.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W12.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W13.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W14.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W15.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W16.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W17.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W18.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W19.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W20.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W21.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W22.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W23.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W24.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W25.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W26.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W27.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W28.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W29.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W30.json
+ M usdcop-trading-dashboard/public/data/analysis/charts/macro_embi_col_2026-W30.png
+ M usdcop-trading-dashboard/public/data/registry.json
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/bi_dashboard_unified.csv
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/index.json
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/weekly_inference_2025.json
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/weekly_inference_2026.json
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/xauusd/index.json
+ M usdcop-trading-dashboard/public/forecasting/xauusd/weekly_inference_2025.json
+ M usdcop-trading-dashboard/public/forecasting/xauusd/weekly_inference_2026.json
+ M usdcop-trading-dashboard/tests/accessibility/a11y.test.tsx
+ M usdcop-trading-dashboard/types/generated/schemas.ts
+ M usdcop-trading-dashboard/types/generated/types.ts
+?? .claude/codex/ACQUISITION-BACKUP-BACKFILL-AUDIT-2026-07-20.md
+?? .claude/codex/ACQUISITION-BACKUPS-AUDIT-2026-07-20.md
+?? .claude/codex/ADMIN-OPERATIONS-AUDIT.md
+?? .claude/codex/ADR-PROHIBITIONS-VERIFICATION-2026-07-21.md
+?? .claude/codex/AI-SECURITY-AUDIT.md
+?? .claude/codex/BACKLOG.md
+?? .claude/codex/BILLING-RBAC-VALIDATION-LOG.md
+?? .claude/codex/BLOCKER-RECONCILIATION-PLAN.md
+?? .claude/codex/BLOCKER-REMEDIATION-REGISTER-2026-07-21.md
+?? .claude/codex/CANONICAL-MARKET-DEEP-AUDIT-2026-07-21.md
+?? .claude/codex/CHECKPOINT-VALIDATION-LIFECYCLE.md
+?? .claude/codex/COMMERCE-BLOCKERS-RESOLVED.md
+?? .claude/codex/COMMERCE-IDENTITY-BILLING-AUDIT.md
+?? .claude/codex/COMMERCE-RBAC-HARNESS-LOG.md
+?? .claude/codex/DATA-DESCRIPTIVE-MACRO-AUDIT.md
+?? .claude/codex/DATA-FEATURE-STATISTICS-AUDIT.md
+?? .claude/codex/DATA-GRANULARITY-INVENTORY-2026-07-21.md
+?? .claude/codex/DEFINITIVE-BLOCKER-RESOLUTION-PLAN.md
+?? .claude/codex/EVIDENCE-QUANT-REPORT-2026-07-20.md
+?? .claude/codex/EVIDENCE-REPORT-2026-07-20.md
+?? .claude/codex/FINAL-RELEASE-STATUS-2026-07-21.md
+?? .claude/codex/FINAL-VERIFICATION-2026-07-20.md
+?? .claude/codex/FRONTEND-DEPENDENCY-AUDIT-2026-07-21.md
+?? .claude/codex/FRONTEND-NEWS-CART-AUDIT.md
+?? .claude/codex/FUNCTIONAL-COMMERCE-RBAC-LOG.md
+?? .claude/codex/HARNESS-ENGINEERING-STATUS.md
+?? .claude/codex/MARKET-DATA-AUDIT-STATUS-2026-07-20.md
+?? .claude/codex/MASTER-VALIDATION-GAP-MATRIX-2026-07-20.md
+?? .claude/codex/MODEL-MARKETPLACE-SPEC.md
+?? .claude/codex/NEWS-SOURCE-INVENTORY-2026-07-21.md
+?? .claude/codex/NEWS-WEEKLY-CLOSE-EVIDENCE-2026-07-21.md
+?? .claude/codex/PERFORMANCE-SLO-SPEC.md
+?? .claude/codex/PRODUCTION-HARNESS.md
+?? .claude/codex/PRODUCTION-UNBLOCK-PLAN.md
+?? .claude/codex/PUBLIC-SNAPSHOT-STATISTICAL-AUDIT.md
+?? .claude/codex/QUALITY-HARNESS-SPEC.md
+?? .claude/codex/QUANTITATIVE-UNBLOCK-LOG.md
+?? .claude/codex/RBAC-CART-AUDIT-2026-07-20.md
+?? .claude/codex/RELEASE-REHEARSAL-LOG.md
+?? .claude/codex/ROBUST-FORECASTING-STRATEGY-PLAN-2026-07-21.md
+?? .claude/codex/SECURITY-ASSURANCE-SPEC.md
+?? .claude/codex/SECURITY-PENTEST-RESULT-2026-07-21.md
+?? .claude/codex/SEED-BACKUP-RECONCILIATION-2026-07-20.md
+?? .claude/codex/SKILLS-CATALOG-AUDIT-2026-07-21.md
+?? .claude/codex/SKILLS-EXPANSION-2026-07-21.md
+?? .claude/codex/SKILLS-GOVERNANCE.md
+?? .claude/codex/SKILLS-INSTALLED-2026-07-21.md
+?? .claude/codex/SP500-INTEGRATION-LOG.md
+?? .claude/codex/SP500-OOS-GATE.md
+?? .claude/codex/TRACEABILITY-MATRIX.md
+?? .claude/codex/UX-MOBILE-AUDIT.md
+?? .claude/codex/VOLATILITY-FIRST-DATA-UNLOCK-2026-07-21.md
+?? .claude/codex/WEEKLY-NEWS-AGENTS-STATUS-2026-07-21.md
+?? .claude/codex/analyze_public_snapshots.py
+?? .claude/codex/evidence/
+?? .claude/codex/harness/
+?? .claude/codex/public_snapshot_stats.json
+?? .claude/evidence/book_construction/
+?? .claude/evidence/book_kelly/
+?? .claude/evidence/cop_entry_profile/
+?? .claude/skills/browser-use/
+?? .claude/skills/security-testing/
+?? .claude/skills/webapp-testing/
+?? .claude/specs/adr/ADR-0021-volatility-first-data-unlock.md
+?? .claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md
+?? Microsoft/
+?? airflow/dags/l0_usdcop_forward_macro.py
+?? config/assets/spx500.yaml
+?? config/book/
+?? config/data_acquisition/
+?? config/forecast_experiments/spx500_regime_gated_v1.yaml
+?? config/quant_evidence/
+?? config/usdcop_forward_macro_sources.yaml
+?? data/backups/features/spx500_intraday_asset_native_20260721.manifest.json
+?? data/backups/features/spx500_intraday_asset_native_20260721.parquet
+?? data/pipeline/04_cleaning/output/USDCOP_FORWARD_MACRO_PIT.parquet
+?? data/snapshots/
+?? database/migrations/058_billing_webhook_idempotency.sql
+?? database/migrations/059_checkout_order_ledger.sql
+?? database/migrations/066_banrep_remesas_monthly.sql
+?? design-system/
+?? init-scripts/27-forward-macro-pit.sql
+?? scripts/analysis/audit_usdcop_regime_shift.py
+?? scripts/analysis/backtest_weekly_regime_gate.py
+?? scripts/analysis/book_construction.py
+?? scripts/analysis/book_kelly_governor.py
+?? scripts/analysis/cop_entry_compare.py
+?? scripts/analysis/cop_entry_profile.py
+?? scripts/analysis/cop_v13_design_run.py
+?? scripts/analysis/evaluate_2025_feature_selection_2026.py
+?? scripts/analysis/evaluate_colombia_macro_candidates.py
+?? scripts/analysis/evaluate_directional_classifier.py
+?? scripts/analysis/export_usdcop_forecasting_audit.py
+?? scripts/analysis/weekly_direction_regime_detector.py
+?? scripts/analysis/weekly_dynamic_prior_generalization.py
+?? scripts/analysis/weekly_forecasting_nested_generalization.py
+?? scripts/analysis/weekly_forecasting_oos_canonical.py
+?? scripts/analysis/weekly_hmm_regime_states.py
+?? scripts/analysis/weekly_macrofeatures_backtest.py
+?? scripts/analysis/weekly_regime_conditioned_backtest.py
+?? scripts/analysis/weekly_selective_direction_generalization.py
+?? scripts/analysis/xasset_cv_harness.py
+?? scripts/analysis/xasset_signals.py
+?? scripts/data/acquire_public_snapshots.py
+?? scripts/data/ingest_banrep_remesas.py
+?? scripts/data/scrape_usdcop_forward_macro.py
+?? scripts/validation/build_harness_evidence.py
+?? scripts/validation/commerce_rbac_harness.py
+?? scripts/validation/retraining_readiness.py
+?? scripts/validation/run_production_harness.py
+?? scripts/validation/run_quant_harness.py
+?? scripts/validation/validate_acquisition_manifests.py
+?? seeds/latest/spx500_daily_ohlcv.manifest.json
+?? seeds/latest/spx500_daily_ohlcv.parquet
+?? src/data/usdcop_forward_macro.py
+?? src/strategies/spx500_regime_gated_v1/README.md
+?? src/strategies/spx500_regime_gated_v1/benchmarks.py
+?? src/strategies/spx500_regime_gated_v1/costs.py
+?? src/strategies/spx500_regime_gated_v1/datagen.py
+?? src/strategies/spx500_regime_gated_v1/deflated_sharpe.py
+?? src/strategies/spx500_regime_gated_v1/economic_metrics.py
+?? src/strategies/spx500_regime_gated_v1/engine.py
+?? src/strategies/spx500_regime_gated_v1/gates.py
+?? src/strategies/spx500_regime_gated_v1/kernels.py
+?? src/strategies/spx500_regime_gated_v1/metrics.py
+?? src/strategies/spx500_regime_gated_v1/pbo.py
+?? src/strategies/spx500_regime_gated_v1/policies.py
+?? src/strategies/spx500_regime_gated_v1/purged_kfold.py
+?? src/strategies/spx500_regime_gated_v1/pytest.ini
+?? src/strategies/spx500_regime_gated_v1/regime.py
+?? src/strategies/spx500_regime_gated_v1/run_strategy.py
+?? src/strategies/spx500_regime_gated_v1/test_strategy.py
+?? src/validation/production_harness.py
+?? src/validation/quant_harness.py
+?? src/validation/release_harness.py
+?? src/validation/sp500_oos_gate.py
+?? tests/integration/test_spx500_pipeline_config.py
+?? tests/regression/test_directional_forecast_is_diagnostic.py
+?? tests/regression/test_news_weekly_rollup_contract.py
+?? tests/regression/test_spx500_integration.py
+?? tests/regression/test_usdcop_ensemble_consistency.py
+?? tests/unit/test_acquisition_backups_audit.py
+?? tests/unit/test_commerce_rbac_harness.py
+?? tests/unit/test_cross_reference_persistence_contract.py
+?? tests/unit/test_forecast_regime_gate.py
+?? tests/unit/test_harness_engine.py
+?? tests/unit/test_market_data_statistics.py
+?? tests/unit/test_production_harness.py
+?? tests/unit/test_public_snapshot_acquisition.py
+?? tests/unit/test_quant_harness.py
+?? tests/unit/test_retraining_readiness.py
+?? tests/unit/test_seed_backup_reconciliation.py
+?? tests/unit/test_sp500_oos_gate.py
+?? tests/unit/test_spx500_investing_ingestion.py
+?? tests/unit/test_usdcop_forward_macro.py
+?? usdcop-trading-dashboard/audit-current.json
+?? usdcop-trading-dashboard/audit-fix-plan.json
+?? usdcop-trading-dashboard/audit.json
+?? usdcop-trading-dashboard/lib/security/
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W30.png
+?? usdcop-trading-dashboard/tests/integration/billing-cart-contract.test.ts
+b99827d feat(cop): Fases A+B del plan consolidado — strategy_id H5 (064), artefactos solo-campeona, test PIT fila-a-fila, y el paquete matematico completo
+d1617d5 feat: close every data-quality root cause — monthly macro revived, MXN/CLP repaired, live feeds, quality ratchet
+5242181 feat: max-history backfill (TwelveData+Binance) + native 1h/4h/monthly + quality scorecard
+55b87c1 chore: persist ix_asset_daily_utc_date in migration 060 (was created ad-hoc)
+46fccc0 fix: wide-view semantics hardened by their own descriptive stats (CTR-MKT-CANON-001)
+127414b feat: canonical market views — long SSOT + wide 5m/1h/4h/daily/monthly with closed!=missing (CTR-MKT-CANON-001)
+4e72bb2 feat: session work — GM Terminal migration, RBAC dynamic roles, multi-asset forecasting parity, news intelligence wiring
+f093229 feat: session work — RBAC+admin console, multi-asset stacks (gold/btc), champions pipeline, QA harnesses
+4609878 feat: Smart Simple v2.0 — regime gate, effective HS, dynamic leverage, watchdog
+66ba8b9 feat: project cleanup, disaster recovery, README v3
+===== 06x DDL patterns =====
+database/migrations/066_banrep_remesas_monthly.sql:20:CREATE TABLE IF NOT EXISTS macro_remesas_monthly (
+database/migrations/066_banrep_remesas_monthly.sql:26:    CONSTRAINT macro_remesas_monthly_month_first_day
+database/migrations/066_banrep_remesas_monthly.sql:28:    CONSTRAINT macro_remesas_monthly_non_negative
+database/migrations/066_banrep_remesas_monthly.sql:30:    CONSTRAINT macro_remesas_monthly_pit_after_month
+database/migrations/066_banrep_remesas_monthly.sql:34:CREATE INDEX IF NOT EXISTS idx_macro_remesas_monthly_published_at
+database/migrations/066_banrep_remesas_monthly.sql:37:COMMENT ON TABLE macro_remesas_monthly IS
+database/migrations/066_banrep_remesas_monthly.sql:39:COMMENT ON COLUMN macro_remesas_monthly.month IS
+database/migrations/066_banrep_remesas_monthly.sql:41:COMMENT ON COLUMN macro_remesas_monthly.remesas_usd_mn IS
+database/migrations/066_banrep_remesas_monthly.sql:43:COMMENT ON COLUMN macro_remesas_monthly.published_at IS
+database/migrations/061_market_wide_views.sql:23:CREATE OR REPLACE VIEW market_ohlcv_daily_wide AS
+database/migrations/061_market_wide_views.sql:190:CREATE OR REPLACE VIEW market_ohlcv_5m_wide AS
+database/migrations/061_market_wide_views.sql:255:CREATE OR REPLACE VIEW market_ohlcv_1h_wide AS
+database/migrations/061_market_wide_views.sql:282:CREATE OR REPLACE VIEW market_ohlcv_4h_wide AS
+database/migrations/063_native_multiframe_ohlcv.sql:19:CREATE TABLE IF NOT EXISTS asset_native_ohlcv (
+database/migrations/063_native_multiframe_ohlcv.sql:35:CREATE OR REPLACE VIEW market_ohlcv_1h_wide AS
+database/migrations/063_native_multiframe_ohlcv.sql:88:CREATE OR REPLACE VIEW market_ohlcv_4h_wide AS
+database/migrations/064_h5_strategy_id.sql:14:ALTER TABLE forecast_h5_signals
+database/migrations/064_h5_strategy_id.sql:15:    ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+database/migrations/064_h5_strategy_id.sql:16:ALTER TABLE forecast_h5_executions
+database/migrations/064_h5_strategy_id.sql:17:    ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+database/migrations/064_h5_strategy_id.sql:18:ALTER TABLE forecast_h5_paper_trading
+database/migrations/064_h5_strategy_id.sql:19:    ADD COLUMN IF NOT EXISTS strategy_id TEXT NOT NULL DEFAULT 'smart_simple_v11';
+database/migrations/064_h5_strategy_id.sql:22:ALTER TABLE forecast_h5_signals
+database/migrations/064_h5_strategy_id.sql:23:    DROP CONSTRAINT IF EXISTS forecast_h5_signals_signal_date_key;
+database/migrations/064_h5_strategy_id.sql:24:ALTER TABLE forecast_h5_signals
+database/migrations/064_h5_strategy_id.sql:25:    ADD CONSTRAINT uq_h5_signal_date_strategy UNIQUE (signal_date, strategy_id);
+database/migrations/064_h5_strategy_id.sql:27:ALTER TABLE forecast_h5_executions
+database/migrations/064_h5_strategy_id.sql:28:    DROP CONSTRAINT IF EXISTS forecast_h5_executions_signal_date_key;
+database/migrations/064_h5_strategy_id.sql:29:ALTER TABLE forecast_h5_executions
+database/migrations/064_h5_strategy_id.sql:30:    ADD CONSTRAINT uq_h5_exec_date_strategy UNIQUE (signal_date, strategy_id);
+database/migrations/064_h5_strategy_id.sql:32:ALTER TABLE forecast_h5_paper_trading
+database/migrations/064_h5_strategy_id.sql:33:    DROP CONSTRAINT IF EXISTS forecast_h5_paper_trading_signal_date_key;
+database/migrations/064_h5_strategy_id.sql:34:ALTER TABLE forecast_h5_paper_trading
+database/migrations/064_h5_strategy_id.sql:35:    ADD CONSTRAINT uq_h5_paper_date_strategy UNIQUE (signal_date, strategy_id);
+database/migrations/064_h5_strategy_id.sql:37:CREATE INDEX IF NOT EXISTS ix_h5_signals_strategy ON forecast_h5_signals (strategy_id);
+database/migrations/064_h5_strategy_id.sql:38:CREATE INDEX IF NOT EXISTS ix_h5_exec_strategy ON forecast_h5_executions (strategy_id);
+database/migrations/064_h5_strategy_id.sql:39:CREATE INDEX IF NOT EXISTS ix_h5_paper_strategy ON forecast_h5_paper_trading (strategy_id);
+database/migrations/060_market_canonical_views.sql:28:CREATE TABLE IF NOT EXISTS dim_asset (
+database/migrations/060_market_canonical_views.sql:38:INSERT INTO dim_asset (asset_id, symbol, display_name, session_tz, calendar_kind, annualization)
+database/migrations/060_market_canonical_views.sql:44:ON CONFLICT (asset_id) DO UPDATE SET
+database/migrations/060_market_canonical_views.sql:53:CREATE TABLE IF NOT EXISTS market_session_calendar (
+database/migrations/060_market_canonical_views.sql:65:ALTER TABLE usdcop_m5_ohlcv   ADD COLUMN IF NOT EXISTS available_at TIMESTAMPTZ;
+database/migrations/060_market_canonical_views.sql:66:ALTER TABLE asset_daily_ohlcv ADD COLUMN IF NOT EXISTS available_at TIMESTAMPTZ;
+database/migrations/060_market_canonical_views.sql:69:CREATE TABLE IF NOT EXISTS market_ingestion_manifest (
+database/migrations/060_market_canonical_views.sql:89:CREATE OR REPLACE VIEW market_ohlcv_5m AS
+database/migrations/060_market_canonical_views.sql:110:CREATE OR REPLACE VIEW market_ohlcv_daily AS
+database/migrations/060_market_canonical_views.sql:144:CREATE INDEX IF NOT EXISTS ix_asset_daily_utc_date
+database/migrations/060_market_canonical_views.sql:147:CREATE MATERIALIZED VIEW IF NOT EXISTS market_ohlcv_1h_agg AS
+database/migrations/060_market_canonical_views.sql:156:CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_1h ON market_ohlcv_1h_agg (bar_start_utc, symbol);
+database/migrations/060_market_canonical_views.sql:158:CREATE MATERIALIZED VIEW IF NOT EXISTS market_ohlcv_4h_agg AS
+database/migrations/060_market_canonical_views.sql:168:CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_4h ON market_ohlcv_4h_agg (bar_start_utc, symbol);
+database/migrations/062_macro_monthly_views.sql:38:CREATE OR REPLACE VIEW market_macro_monthly_wide AS
+database/migrations/062_macro_monthly_views.sql:85:CREATE OR REPLACE VIEW market_macro_quarterly_wide AS
+===== DB env presence (values hidden) =====
+DATABASE_URL=False
+POSTGRES_HOST=False
+POSTGRES_PORT=False
+POSTGRES_DB=False
+POSTGRES_USER=False
+POSTGRES_PASSWORD=False
+===== credential-literal scan in reviewed files =====
+scripts/data/ingest_banrep_remesas.py:33:    set -a; . ./.env; set +a          # load POSTGRES_* credentials
+scripts/data/ingest_banrep_remesas.py:80:    if os.environ.get("POSTGRES_PASSWORD"):
+scripts/data/ingest_banrep_remesas.py:103:        password=os.environ.get("POSTGRES_PASSWORD", ""),
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: in the working copy of '.claude/README.md', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of '.claude/evidence/directional_unlock/2026-07-21/results.json', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'CLAUDE.md', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'config/assets/pipelines.yaml', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'data/backups/features/feature_backup_manifest.json', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'scripts/pipeline/train_and_export_smart_simple.py', CRLF will be replaced by LF the next time Git touches it
+Error cleaning Git LFS object: open C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\.git\lfs\tmp\1407611719: Access is denied.
+error: packet write failed: Broken pipe
+error: external filter 'git-lfs filter-process' failed
+fatal: seeds/latest/btcusdt_daily_ohlcv.parquet: clean filter 'lfs' failed
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+codex
+La revisión estática ya identifica un incumplimiento material: los negativos sí abortan, pero uno o dos meses faltantes solo generan `WARN` y la ingesta continúa. Voy a demostrar ese comportamiento con un caso sintético y a intentar la consulta DB con la conexión local por defecto, sin cargar `.env` ni exponer credenciales.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import runpy
+from datetime import date, datetime, timezone
+
+m = runpy.run_path('scripts/data/ingest_banrep_remesas.py', run_name='audit_only')
+print('PIT_2024_01=', m['published_at_for'](date(2024, 1, 1)))
+epoch_ms = int(datetime(2000, 1, 31, 5, 0, tzinfo=timezone.utc).timestamp() * 1000)
+print('MONTH_FROM_EPOCH=', m['epoch_ms_to_month'](epoch_ms))
+rows_one_gap = [
+    {'month': date(2024, 1, 1), 'remesas_usd_mn': 1.0, 'published_at': date(2024, 2, 29), 'source': 'audit'},
+    {'month': date(2024, 3, 1), 'remesas_usd_mn': 2.0, 'published_at': date(2024, 4, 30), 'source': 'audit'},
+]
+try:
+    m['validate'](rows_one_gap)
+    print('ONE_GAP_RESULT=PASSED_WITHOUT_FAIL')
+except SystemExit as exc:
+    print('ONE_GAP_RESULT=FAILED', exc)
+rows_negative = [
+    {'month': date(2024, 1, 1), 'remesas_usd_mn': -1.0, 'published_at': date(2024, 2, 29), 'source': 'audit'},
+]
+try:
+    m['validate'](rows_negative)
+    print('NEGATIVE_RESULT=PASSED_WITHOUT_FAIL')
+except SystemExit as exc:
+    print('NEGATIVE_RESULT=FAILED', exc)
+'@ | python -B -; @'
+import os
+try:
+    import psycopg2
+except Exception as exc:
+    print(f'DB_RESULT=UNAVAILABLE_DRIVER: {type(exc).__name__}: {exc}')
+    raise SystemExit(0)
+try:
+    conn = psycopg2.connect(
+        host=os.environ.get('POSTGRES_HOST', 'localhost'),
+        port=int(os.environ.get('POSTGRES_PORT', '5432')),
+        dbname=os.environ.get('POSTGRES_DB', 'usdcop_trading'),
+        user=os.environ.get('POSTGRES_USER', 'admin'),
+        password=os.environ.get('POSTGRES_PASSWORD', ''),
+        connect_timeout=3,
+    )
+    conn.set_session(readonly=True, autocommit=True)
+    with conn.cursor() as cur:
+        cur.execute('SELECT count(*), min(month), max(month) FROM macro_remesas_monthly')
+        print('DB_RESULT=', cur.fetchone())
+    conn.close()
+except Exception as exc:
+    print(f'DB_RESULT=UNAVAILABLE: {type(exc).__name__}: {exc}')
+'@ | python -B -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:38:15.782671Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2 seconds
+Output:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 27 Carácter: 6
++ '@ | python -B -; @'
++      ~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 50 Carácter: 6
++ '@ | python -B -
++      ~~~~~~~~~~~.
+En línea: 27 Carácter: 19
++ '@ | python -B -; @'
++                   ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+ exited 1 in 2036ms:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 27 Carácter: 6
++ '@ | python -B -; @'
++      ~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 50 Carácter: 6
++ '@ | python -B -
++      ~~~~~~~~~~~.
+En línea: 27 Carácter: 19
++ '@ | python -B -; @'
++                   ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+codex
+El runtime `python.exe` no puede iniciarse en esta sesión del sandbox (“sesión de inicio especificada no existe”), así que la prueba dinámica del parser no fue posible por esa vía. Comprobaré si hay un cliente PostgreSQL o un intérprete alternativo disponible; si no, cerraré la parte DB como no verificable y basaré el veredicto en el flujo de control observable del código.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$names = @('"'python','py','python3','psql','docker'); foreach ("'$name in $names) { $cmd = Get-Command $name -ErrorAction SilentlyContinue; if ($cmd) { "$name=$($cmd.Source)" } else { "$name=NOT_FOUND" } }; Write-Output '"'===== local postgres port ====='; Test-NetConnection -ComputerName localhost -Port 5432 -InformationLevel Detailed -WarningAction SilentlyContinue | Select-Object ComputerName,RemotePort,TcpTestSucceeded; Write-Output '===== target git state ====='; "'$safe = '"'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'; git -c safe.directory="'$safe status --short -- database/migrations/060_market_canonical_views.sql database/migrations/061_market_wide_views.sql database/migrations/062_macro_monthly_views.sql database/migrations/063_native_multiframe_ohlcv.sql database/migrations/064_h5_strategy_id.sql database/migrations/066_banrep_remesas_monthly.sql scripts/data/ingest_banrep_remesas.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:38:39.042921Z ERROR codex_core::tools::router: error=Exit code: 124
+Wall time: 12.4 seconds
+Output:
+command timed out after 12372 milliseconds
+python=C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe
+py=C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe
+python3=C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python3.exe
+psql=NOT_FOUND
+docker=C:\Program Files\Docker\Docker\resources\bin\docker.exe
+===== local postgres port =====
+
+ exited 124 in 12372ms:
+python=C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe
+py=C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe
+python3=C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python3.exe
+psql=NOT_FOUND
+docker=C:\Program Files\Docker\Docker\resources\bin\docker.exe
+===== local postgres port =====
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'docker ps --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Ports}}"' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'py -0p' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$safe = '"'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'; git -c safe.directory="'$safe status --short -- database/migrations/060_market_canonical_views.sql database/migrations/061_market_wide_views.sql database/migrations/062_macro_monthly_views.sql database/migrations/063_native_multiframe_ohlcv.sql database/migrations/064_h5_strategy_id.sql database/migrations/066_banrep_remesas_monthly.sql scripts/data/ingest_banrep_remesas.py' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 998ms:
+ -V:3.12 *        C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe
+
+ succeeded in 1074ms:
+?? database/migrations/066_banrep_remesas_monthly.sql
+?? scripts/data/ingest_banrep_remesas.py
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+2026-07-22T04:38:56.012118Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.3 seconds
+Output:
+WARNING: Error loading config file: open C:\Users\pedro\.docker\config.json: Access is denied.
+error during connect: in the default daemon configuration on Windows, the docker client must be run with elevated privileges to connect: Get "http://%2F%2F.%2Fpipe%2Fdocker_engine/v1.47/containers/json": open //./pipe/docker_engine: Access is denied.
+
+ exited 1 in 1306ms:
+WARNING: Error loading config file: open C:\Users\pedro\.docker\config.json: Access is denied.
+error during connect: in the default daemon configuration on Windows, the docker client must be run with elevated privileges to connect: Get "http://%2F%2F.%2Fpipe%2Fdocker_engine/v1.47/containers/json": open //./pipe/docker_engine: Access is denied.
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$safe = '"'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'; git -c safe.directory="'$safe status --short -- database/migrations/060_market_canonical_views.sql database/migrations/061_market_wide_views.sql database/migrations/062_macro_monthly_views.sql database/migrations/063_native_multiframe_ohlcv.sql database/migrations/064_h5_strategy_id.sql database/migrations/066_banrep_remesas_monthly.sql scripts/data/ingest_banrep_remesas.py; Write-Output '"'===== Python launcher ====='; py -0p 2>&1" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1261ms:
+?? database/migrations/066_banrep_remesas_monthly.sql
+?? scripts/data/ingest_banrep_remesas.py
+===== Python launcher =====
+ -V:3.12 *        C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import runpy
+from datetime import date, datetime, timezone
+m = runpy.run_path('scripts/data/ingest_banrep_remesas.py', run_name='audit_only')
+print('PIT_2024_01=', m['published_at_for'](date(2024, 1, 1)))
+epoch_ms = int(datetime(2000, 1, 31, 5, 0, tzinfo=timezone.utc).timestamp() * 1000)
+print('MONTH_FROM_EPOCH=', m['epoch_ms_to_month'](epoch_ms))
+rows = [
+ {'month': date(2024,1,1), 'remesas_usd_mn': 1.0, 'published_at': date(2024,2,29), 'source':'audit'},
+ {'month': date(2024,3,1), 'remesas_usd_mn': 2.0, 'published_at': date(2024,4,30), 'source':'audit'},
+]
+try:
+ m['validate'](rows)
+ print('ONE_GAP_RESULT=PASSED_WITHOUT_FAIL')
+except SystemExit as exc:
+ print('ONE_GAP_RESULT=FAILED', exc)
+try:
+ m['validate']([{'month':date(2024,1,1),'remesas_usd_mn':-1.0,'published_at':date(2024,2,29),'source':'audit'}])
+ print('NEGATIVE_RESULT=PASSED_WITHOUT_FAIL')
+except SystemExit as exc:
+ print('NEGATIVE_RESULT=FAILED', exc)
+'@ | py -3.12 -B -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:39:14.294047Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -B -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+ exited 1 in 1055ms:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -B -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+codex
+VERDICT: RECHAZADO
+
+1. `scripts/data/ingest_banrep_remesas.py:71,226-250` — los huecos no tienen FAIL duro: permite hasta 2 meses faltantes, emite únicamente `[WARN]` y continúa. Incumple explícitamente el requisito; cualquier hueco no documentado debe abortar.
+
+2. `scripts/data/ingest_banrep_remesas.py:228-230,343-345` — la validación busca huecos solo entre el primer y último mes recibidos. Si la fuente omite meses al inicio o al final del rango solicitado, no se detectan.
+
+El resto cumple:
+
+- PIT conservador: fin de M+1 en `:178-181`; constraint `published_at > month` en `database/migrations/066_banrep_remesas_monthly.sql:30-31`.
+- Sin localización COT: convierte el epoch a UTC y extrae año/mes en `:167-175`.
+- Negativos abortan en `:216-219`.
+- UPSERT idempotente con `ON CONFLICT (month)` en `:285-301`.
+- Migración 066 nueva y separada — ambos archivos están actualmente sin seguimiento—, siguiendo el patrón 060–064 (`IF NOT EXISTS`, índice y comentarios).
+- Sin credenciales hardcodeadas; usa variables `POSTGRES_*`.
+
+DB no validada: no había variables de conexión disponibles, `psql` no está instalado y el acceso al daemon Docker está bloqueado por el sandbox. No leí `.env`.
+tokens used
+44,662
+VERDICT: RECHAZADO
+
+1. `scripts/data/ingest_banrep_remesas.py:71,226-250` — los huecos no tienen FAIL duro: permite hasta 2 meses faltantes, emite únicamente `[WARN]` y continúa. Incumple explícitamente el requisito; cualquier hueco no documentado debe abortar.
+
+2. `scripts/data/ingest_banrep_remesas.py:228-230,343-345` — la validación busca huecos solo entre el primer y último mes recibidos. Si la fuente omite meses al inicio o al final del rango solicitado, no se detectan.
+
+El resto cumple:
+
+- PIT conservador: fin de M+1 en `:178-181`; constraint `published_at > month` en `database/migrations/066_banrep_remesas_monthly.sql:30-31`.
+- Sin localización COT: convierte el epoch a UTC y extrae año/mes en `:167-175`.
+- Negativos abortan en `:216-219`.
+- UPSERT idempotente con `ON CONFLICT (month)` en `:285-301`.
+- Migración 066 nueva y separada — ambos archivos están actualmente sin seguimiento—, siguiendo el patrón 060–064 (`IF NOT EXISTS`, índice y comentarios).
+- Sin credenciales hardcodeadas; usa variables `POSTGRES_*`.
+
+DB no validada: no había variables de conexión disponibles, `psql` no está instalado y el acceso al daemon Docker está bloqueado por el sandbox. No leí `.env`.

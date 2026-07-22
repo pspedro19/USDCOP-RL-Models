@@ -33,9 +33,17 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: a308ee93ac890b67
-manifest_frozen_at: '2026-07-21'
-manifest_version: 6
+code_hash_sha256_16: d7a477d51d454e36
+manifest_frozen_at: '2026-07-22'
+manifest_version: 7
+refreeze_note_v7: >-
+  Re-freeze v7 (2026-07-22): dos features de candidatas anadidas al motor con flag
+  default-OFF — ladder_enabled (v14, 2026-07-21) y v13_ceiling_enabled (H-V13-QRISK-01,
+  instrumentado + invariante min(techo, vt_max) + cutoff, Codex re-verify APROBADO).
+  Con ambos flags OFF el brazo v11/v12 es BIT-IDENTICO: verificado por QA (2025 +7.35%/32
+  trades, 2026 +3.36%/11, diff 0.0000pp) y por bit_identity_v12 MATCH 2022-24 en
+  .claude/evidence/cop_v13_engine/2026-07-22/. La senal v11 no cambia; cambio de clase
+  bugfix/feature-gated, no de estrategia.
 refreeze_note_v6: >-
   Re-freeze v6 (2026-07-21, goal 'implementarla apropiadamente'): plumbing de carry
   bidireccional en compute_pnl (APAGADO por default — swap_annual_pp: null en yaml;

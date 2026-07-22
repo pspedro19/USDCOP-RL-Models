@@ -1,0 +1,1891 @@
+Reading additional input from stdin...
+OpenAI Codex v0.144.6
+--------
+workdir: C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 019f8823-372e-73c2-99b3-c7941e55e798
+--------
+user
+Verificación de implementación (agente Claude C1, ingesta forwards BanRep PIT). Lee: database/migrations/065_banrep_forwards_monthly.sql y scripts/data/ingest_banrep_forwards.py. Verifica: (1) PIT conservador published_at = fin de mes + 60 días con constraint en la tabla; (2) parser mensual instant-based sin COT-localize; (3) UPSERT idempotente, validaciones con FAIL duro (huecos, negativos, rango de devaluación implícita); (4) que la validación de huecos cubra el span esperado completo (2005-01 hasta el último mes que el rezago dice que debería existir), no solo entre primera y última fila recibida — este fue el error que hundió a C2; (5) el cross-check bucket-weighted vs fila TOTAL de BanRep existe y falla si la divergencia es grande; (6) sin credenciales hardcodeadas; migración nueva sin tocar existentes. Responde: VERDICT: APROBADO | OBSERVACIONES | RECHAZADO + issues numerados con archivo:línea.
+codex
+Voy a auditar ambos archivos y el historial/diff de la migración, sin modificar nada. Me centraré especialmente en el horizonte esperado de huecos y en que los fallos sean realmente bloqueantes.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$files = @('"'database/migrations/065_banrep_forwards_monthly.sql','scripts/data/ingest_banrep_forwards.py'); foreach ("'$f in $files) { Write-Output "FILE $f"; $n=0; Get-Content -LiteralPath $f | ForEach-Object { $n++; '"'{0,5}: {1}' -f "'$n, $_ } }; Write-Output '"'GIT STATUS'; git status --short; Write-Output 'MIGRATIONS'; rg --files database/migrations | Sort-Object | Select-Object -Last 12; Write-Output 'HISTORY'; git log --oneline --all -- database/migrations/065_banrep_forwards_monthly.sql scripts/data/ingest_banrep_forwards.py | Select-Object -First 20" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:44:12.002847Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.1 seconds
+Output:
+FILE database/migrations/065_banrep_forwards_monthly.sql
+    1: -- ============================================================================
+    2: -- Migration 065: BanRep USD/COP forward market â€” monthly point-in-time series
+    3: -- TAREA C1 (2026-07-21). 0 trials: data ingestion only, no study is opened.
+    4: -- ============================================================================
+    5: -- Source (documented 2026-07-21):
+    6: --   "Informe mensual de otras series histÃ³ricas del mercado de derivados",
+    7: --   Banco de la RepÃºblica (DOAM), sheet "2. FwdUSDCOP":
+    8: --   https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/mercado_derivados/series_historico_otros_derivados.xlsx
+    9: --   Catalog entry: SUAMECA > CatÃ¡logo > Sector externo, tasas de cambio y
+   10: --   derivados > Mercado de derivados > "Otras series del Mercado de forwards"
+   11: --   (menu 430502, dashboard 4160203). BanRep labels the series
+   12: --   "Disponible desde 2005" â€” the pre-2005 (1997-2004) monthly forward series
+   13: --   was retired together with the legacy OBIEE portal
+   14: --   (totoro.banrep.gov.co/analytics responde "Sitio en Mantenimiento") and is
+   15: --   NOT machine-readable anywhere on the current BanRep web. Coverage here is
+   16: --   therefore 2005-01 -> present (official maximum).
+   17: --
+   18: -- Grain: one row per (month, tenor bucket). Tenor buckets are BanRep's
+   19: --   "Rango" in days: '0', '1 a 3', '4 a 14', '15 a 35', '36 a 60', '61 a 90',
+   20: --   '91 a 180', 'mayor a 180', plus BanRep's own monthly aggregate 'TOTAL'.
+   21: --
+   22: -- forward_rate: BanRep does NOT publish the outright forward COP rate in this
+   23: --   series â€” it publishes the *implied annualized devaluation*
+   24: --   [(F/S)^(365/plazo) - 1]. forward_rate stays NULL unless a future source
+   25: --   provides the outright; the column is kept for schema compatibility.
+   26: --
+   27: -- implied_dev: MontoNegociado-weighted mean of DevaluacionImplicita across
+   28: --   Contraparte rows within (month, tenor), decimal (0.05 = 5% annualized).
+   29: --
+   30: -- published_at (PIT date, conservative): last day of month M + 60 calendar
+   31: --   days. Evidence (2026-07-21): latest month in the file = 2026-05 (present
+   32: --   at month_end+51d) while 2026-06 is absent (+21d) -> the file refreshes
+   33: --   ~mid-M+2. Repo precedent (config/usdcop_forward_macro_sources.yaml,
+   34: --   banrep_monthly_derivatives) uses observation_plus_45_calendar_days; we
+   35: --   take 60d to over-wait, never under-wait (same doctrine as migration 062:
+   36: --   under-waiting fabricates alpha, over-waiting only costs freshness).
+   37: -- ============================================================================
+   38: 
+   39: CREATE TABLE IF NOT EXISTS macro_banrep_forwards_monthly (
+   40:     month                   DATE        NOT NULL,   -- first day of reference month
+   41:     tenor                   TEXT        NOT NULL,   -- BanRep Rango bucket or 'TOTAL'
+   42:     forward_rate            NUMERIC,                -- outright COP forward: not published in this series (NULL)
+   43:     implied_dev             NUMERIC,                -- annualized implied devaluation, decimal, monto-weighted
+   44:     monto_negociado_usd_mn  NUMERIC,                -- traded amount in the bucket, USD millions (context for the weight)
+   45:     published_at            DATE        NOT NULL,   -- conservative PIT availability: month_end + 60d
+   46:     source                  TEXT,
+   47:     ingested_at             TIMESTAMPTZ DEFAULT now(),
+   48:     PRIMARY KEY (month, tenor),
+   49:     CONSTRAINT chk_bfm_month_first_day  CHECK (month = date_trunc('month', month)::date),
+   50:     CONSTRAINT chk_bfm_monto_nonneg     CHECK (monto_negociado_usd_mn IS NULL OR monto_negociado_usd_mn >= 0),
+   51:     CONSTRAINT chk_bfm_dev_sane         CHECK (implied_dev IS NULL OR (implied_dev > -1 AND implied_dev < 2)),
+   52:     CONSTRAINT chk_bfm_pit_after_month  CHECK (published_at > month)
+   53: );
+   54: 
+   55: COMMENT ON TABLE macro_banrep_forwards_monthly IS
+   56:     'BanRep USD/COP forward market, monthly PIT (TAREA C1). Source: SUAMECA series_historico_otros_derivados.xlsx sheet 2. FwdUSDCOP. Coverage 2005-01+ (1997-2004 retired with OBIEE portal). published_at = month_end + 60d (conservative).';
+   57: COMMENT ON COLUMN macro_banrep_forwards_monthly.tenor IS
+   58:     'BanRep Rango in days: 0 | 1 a 3 | 4 a 14 | 15 a 35 | 36 a 60 | 61 a 90 | 91 a 180 | mayor a 180 | TOTAL (BanRep''s own monthly aggregate row)';
+   59: COMMENT ON COLUMN macro_banrep_forwards_monthly.implied_dev IS
+   60:     'Annualized implied devaluation [(F/S)^(365/plazo)-1], decimal, MontoNegociado-weighted across counterparties';
+   61: COMMENT ON COLUMN macro_banrep_forwards_monthly.forward_rate IS
+   62:     'Outright forward COP rate â€” NULL: not published in this BanRep series (only implied devaluation is)';
+   63: COMMENT ON COLUMN macro_banrep_forwards_monthly.published_at IS
+   64:     'Conservative PIT date = last day of month + 60 calendar days (observed refresh ~mid-M+2; never join on month alone)';
+   65: 
+   66: CREATE INDEX IF NOT EXISTS idx_bfm_published_at
+   67:     ON macro_banrep_forwards_monthly (published_at);
+FILE scripts/data/ingest_banrep_forwards.py
+    1: #!/usr/bin/env python3
+    2: """
+    3: Ingest BanRep USD/COP forward market monthly series (PIT) â€” TAREA C1
+    4: ====================================================================
+    5: 
+    6: Point-in-time monthly ingestion of the official Banco de la RepÃºblica
+    7: USD/COP forward market series (montos negociados + devaluaciÃ³n implÃ­cita
+    8: anualizada, by tenor bucket) into ``macro_banrep_forwards_monthly``.
+    9: 0 trials: data only, no study is opened here.
+   10: 
+   11: Source (documented 2026-07-21)
+   12: ------------------------------
+   13: - Human catalog: SUAMECA > CatÃ¡logo > Sector externo, tasas de cambio y
+   14:   derivados > Mercado de derivados > "Otras series del Mercado de forwards"
+   15:   (menu id 430502 in
+   16:   https://suameca.banrep.gov.co/estadisticas-economicas-back/rest/estadisticaEconomicaRestService/consultaMenuXopcion?opcion=CATALOGO_DATOS,
+   17:   dashboard id 4160203 in ...?opcion=DASHBOARD).
+   18: - Machine endpoint (direct Excel, no auth):
+   19:   https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/mercado_derivados/series_historico_otros_derivados.xlsx
+   20:   Sheet "2. FwdUSDCOP": Fecha (month) | Reportante | Contraparte | Rango |
+   21:   MontoNegociado (USD mn) | DevaluacionImplicita (annualized, decimal).
+   22: - The BanRep SDMX web service (totoro.banrep.gov.co/nsi-jax-ws/rest/data)
+   23:   only exposes IBR/DTF/TRM/TPM/TIB/COLCAP/M-aggregates/UVR â€” no forwards â€”
+   24:   so the Excel above is the authoritative machine-readable endpoint.
+   25: 
+   26: Coverage honesty (task premise said 1997->)
+   27: -------------------------------------------
+   28: BanRep labels this series "Disponible desde 2005"; the file holds 2005-01
+   29: onward, complete. The 1997-2004 monthly forward series existed only on the
+   30: legacy OBIEE portal (totoro.banrep.gov.co/analytics), which now answers
+   31: "Sitio en Mantenimiento" â€” it is not machine-readable anywhere on the
+   32: current BanRep web. We load the full official series: 2005-01 -> present.
+   33: 
+   34: Publication lag (defines the PIT date)
+   35: --------------------------------------
+   36: Observed 2026-07-21: latest month in the file = 2026-05 (present at
+   37: month_end + 51 calendar days) while 2026-06 is absent (month_end + 21d):
+   38: the file refreshes roughly mid-M+2. Repo precedent for the sibling PDF
+   39: bulletin (config/usdcop_forward_macro_sources.yaml,
+   40: banrep_monthly_derivatives) is observation + 45 calendar days. We store the
+   41: more conservative
+   42:     published_at = last calendar day of month M + 60 days
+   43: so a PIT join on published_at <= as_of over-waits rather than under-waits.
+   44: 
+   45: Usage
+   46: -----
+   47:     set -a; . ./.env; set +a            # load POSTGRES_* credentials
+   48:     python scripts/data/ingest_banrep_forwards.py                # full ingest
+   49:     python scripts/data/ingest_banrep_forwards.py --dry-run      # no DB writes
+   50:     python scripts/data/ingest_banrep_forwards.py --from-xlsx f.xlsx  # offline
+   51: 
+   52: Applies migration database/migrations/065_banrep_forwards_monthly.sql
+   53: automatically if the table does not exist (psql-style: executes the SQL file).
+   54: """
+   55: 
+   56: from __future__ import annotations
+   57: 
+   58: import argparse
+   59: import calendar
+   60: import os
+   61: import sys
+   62: import tempfile
+   63: from collections import defaultdict
+   64: from datetime import date, datetime, timedelta
+   65: from pathlib import Path
+   66: 
+   67: PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root
+   68: MIGRATION_FILE = PROJECT_ROOT / "database" / "migrations" / "065_banrep_forwards_monthly.sql"
+   69: 
+   70: XLSX_URL = (
+   71:     "https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/"
+   72:     "mercado_derivados/series_historico_otros_derivados.xlsx"
+   73: )
+   74: SHEET_NAME = "2. FwdUSDCOP"
+   75: CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "banrep_forwards"  # gitignored, regenerable
+   76: SOURCE_TAG = "banrep_suameca_otros_derivados_xlsx"
+   77: PUBLICATION_LAG_DAYS = 60  # conservative: observed ~51d worst case, precedent 45d
+   78: 
+   79: TENOR_BUCKETS = [
+   80:     "0", "1 a 3", "4 a 14", "15 a 35", "36 a 60", "61 a 90", "91 a 180", "mayor a 180",
+   81: ]
+   82: 
+   83: # Gaps documented as legitimate (none known as of 2026-07: the series is
+   84: # complete 2005-01 onward). Add (year, month) tuples if BanRep ever skips one.
+   85: DOCUMENTED_MISSING_MONTHS: set[tuple[int, int]] = set()
+   86: 
+   87: MAX_UNDOCUMENTED_GAP_MONTHS = 3
+   88: 
+   89: 
+   90: # ---------------------------------------------------------------------------
+   91: # Env / DB helpers
+   92: # ---------------------------------------------------------------------------
+   93: 
+   94: def _load_dotenv_fallback() -> None:
+   95:     """Populate POSTGRES_* from repo .env if not already in the environment."""
+   96:     if os.environ.get("POSTGRES_PASSWORD"):
+   97:         return
+   98:     env_path = PROJECT_ROOT / ".env"
+   99:     if not env_path.exists():
+  100:         return
+  101:     for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+  102:         line = line.strip()
+  103:         if not line or line.startswith("#") or "=" not in line:
+  104:             continue
+  105:         key, _, value = line.partition("=")
+  106:         key, value = key.strip(), value.strip().strip('"').strip("'")
+  107:         if key.startswith("POSTGRES") and key not in os.environ:
+  108:             os.environ[key] = value
+  109: 
+  110: 
+  111: def get_connection():
+  112:     import psycopg2
+  113: 
+  114:     return psycopg2.connect(
+  115:         host=os.environ.get("POSTGRES_HOST", "localhost"),
+  116:         port=int(os.environ.get("POSTGRES_PORT", "5432")),
+  117:         dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+  118:         user=os.environ.get("POSTGRES_USER", "admin"),
+  119:         password=os.environ.get("POSTGRES_PASSWORD", ""),
+  120:     )
+  121: 
+  122: 
+  123: def ensure_table(conn) -> None:
+  124:     """Apply migration 065 if macro_banrep_forwards_monthly does not exist."""
+  125:     with conn.cursor() as cur:
+  126:         cur.execute(
+  127:             """
+  128:             SELECT EXISTS (
+  129:                 SELECT FROM information_schema.tables
+  130:                 WHERE table_schema = 'public'
+  131:                   AND table_name = 'macro_banrep_forwards_monthly'
+  132:             )
+  133:             """
+  134:         )
+  135:         exists = cur.fetchone()[0]
+  136:     if exists:
+  137:         return
+  138:     print(f"[MIGRATE] applying {MIGRATION_FILE.name}")
+  139:     sql = MIGRATION_FILE.read_text(encoding="utf-8")
+  140:     with conn.cursor() as cur:
+  141:         cur.execute(sql)
+  142:     conn.commit()
+  143:     print("[MIGRATE] macro_banrep_forwards_monthly created")
+  144: 
+  145: 
+  146: # ---------------------------------------------------------------------------
+  147: # Download + parse
+  148: # ---------------------------------------------------------------------------
+  149: 
+  150: def download_xlsx(retries: int = 3) -> Path:
+  151:     """Download the official Excel to the (gitignored) cache dir."""
+  152:     import requests
+  153: 
+  154:     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+  155:     dest = CACHE_DIR / "series_historico_otros_derivados.xlsx"
+  156:     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+  157:     last_err: Exception | None = None
+  158:     for attempt in range(1, retries + 1):
+  159:         try:
+  160:             resp = requests.get(XLSX_URL, headers=headers, timeout=180)
+  161:             resp.raise_for_status()
+  162:             if len(resp.content) < 100_000:
+  163:                 raise ValueError(f"Suspiciously small download ({len(resp.content)} bytes)")
+  164:             fd, tmpname = tempfile.mkstemp(dir=CACHE_DIR, suffix=".part")
+  165:             os.close(fd)  # Windows: keep no open handle or replace() fails (WinError 32)
+  166:             tmp = Path(tmpname)
+  167:             tmp.write_bytes(resp.content)
+  168:             tmp.replace(dest)
+  169:             print(f"[DOWNLOAD] {dest} ({dest.stat().st_size:,} bytes)")
+  170:             return dest
+  171:         except Exception as exc:  # noqa: BLE001 â€” retry then surface
+  172:             last_err = exc
+  173:             print(f"[WARN] download attempt {attempt}/{retries} failed: {exc}")
+  174:     raise RuntimeError(
+  175:         f"Could not download {XLSX_URL}: {last_err}\n"
+  176:         f"BLOCKED fallback: open https://suameca.banrep.gov.co/estadisticas-economicas/catalogo"
+  177:         f" > Sector externo... > Mercado de derivados > 'Otras series del Mercado de forwards',"
+  178:         f" download the Excel manually and re-run with --from-xlsx <file>."
+  179:     )
+  180: 
+  181: 
+  182: def _month_of(value) -> date:
+  183:     """Normalize the sheet's Fecha cell (datetime, first of month) to a month DATE."""
+  184:     if isinstance(value, datetime):
+  185:         return date(value.year, value.month, 1)
+  186:     if isinstance(value, date):
+  187:         return date(value.year, value.month, 1)
+  188:     # string fallback e.g. '2005-01-01'
+  189:     d = date.fromisoformat(str(value)[:10])
+  190:     return date(d.year, d.month, 1)
+  191: 
+  192: 
+  193: def published_at_for(month: date) -> date:
+  194:     """Conservative PIT date: last day of month + PUBLICATION_LAG_DAYS."""
+  195:     month_end = date(month.year, month.month, calendar.monthrange(month.year, month.month)[1])
+  196:     return month_end + timedelta(days=PUBLICATION_LAG_DAYS)
+  197: 
+  198: 
+  199: def parse_xlsx(path: Path) -> list[dict]:
+  200:     """Parse sheet '2. FwdUSDCOP' -> aggregated (month, tenor) rows.
+  201: 
+  202:     Raw grain is (month, Reportante=IMC, Contraparte, Rango). We aggregate to
+  203:     (month, tenor): monto = sum(MontoNegociado); implied_dev = monto-weighted
+  204:     mean of DevaluacionImplicita over rows where it is present. BanRep's own
+  205:     'Total' rows (Contraparte='Total', Rango='Total') are ingested verbatim
+  206:     as tenor='TOTAL'.
+  207:     """
+  208:     import openpyxl
+  209: 
+  210:     wb = openpyxl.load_workbook(path, read_only=True)
+  211:     if SHEET_NAME not in wb.sheetnames:
+  212:         raise SystemExit(f"[FAIL] sheet {SHEET_NAME!r} not found; sheets: {wb.sheetnames}")
+  213:     ws = wb[SHEET_NAME]
+  214: 
+  215:     header_seen = False
+  216:     # (month, tenor) -> [sum_monto, sum_monto_dev_weighted, sum_weight_with_dev]
+  217:     agg: dict[tuple[date, str], list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0])
+  218:     totals: dict[date, tuple[float, float | None]] = {}
+  219: 
+  220:     for row in ws.iter_rows(values_only=True):
+  221:         if not header_seen:
+  222:             if row and row[0] == "Fecha":
+  223:                 expected = ("Fecha", "Reportante", "Contraparte", "Rango",
+  224:                             "MontoNegociado", "DevaluacionImplicita")
+  225:                 got = tuple(str(c) for c in row[:6])
+  226:                 if got != expected:
+  227:                     raise SystemExit(f"[FAIL] header drift: {got} != {expected}")
+  228:                 header_seen = True
+  229:             continue
+  230:         if not row or row[0] is None:
+  231:             continue
+  232:         month = _month_of(row[0])
+  233:         rango = str(row[3]).strip()
+  234:         monto = float(row[4]) if row[4] is not None else 0.0
+  235:         dev = float(row[5]) if row[5] is not None else None
+  236: 
+  237:         if rango == "Total":
+  238:             totals[month] = (monto, dev)
+  239:             continue
+  240:         if rango not in TENOR_BUCKETS:
+  241:             raise SystemExit(f"[FAIL] unknown Rango bucket {rango!r} at {month} â€” "
+  242:                              f"update TENOR_BUCKETS after verifying the source")
+  243:         acc = agg[(month, rango)]
+  244:         acc[0] += monto
+  245:         if dev is not None:
+  246:             acc[1] += monto * dev
+  247:             acc[2] += monto
+  248:     wb.close()
+  249: 
+  250:     if not header_seen:
+  251:         raise SystemExit(f"[FAIL] header row not found in sheet {SHEET_NAME!r}")
+  252: 
+  253:     rows: list[dict] = []
+  254:     for (month, tenor), (monto, wsum, w) in agg.items():
+  255:         rows.append({
+  256:             "month": month,
+  257:             "tenor": tenor,
+  258:             "forward_rate": None,  # not published in this series (see migration 065)
+  259:             "implied_dev": (wsum / w) if w > 0 else None,
+  260:             "monto_negociado_usd_mn": monto,
+  261:             "published_at": published_at_for(month),
+  262:             "source": SOURCE_TAG,
+  263:         })
+  264:     for month, (monto, dev) in totals.items():
+  265:         rows.append({
+  266:             "month": month,
+  267:             "tenor": "TOTAL",
+  268:             "forward_rate": None,
+  269:             "implied_dev": dev,
+  270:             "monto_negociado_usd_mn": monto,
+  271:             "published_at": published_at_for(month),
+  272:             "source": SOURCE_TAG,
+  273:         })
+  274:     rows.sort(key=lambda r: (r["month"], r["tenor"]))
+  275:     return rows
+  276: 
+  277: 
+  278: # ---------------------------------------------------------------------------
+  279: # Validation (hard-fails only on data integrity)
+  280: # ---------------------------------------------------------------------------
+  281: 
+  282: def _month_iter(start: date, end: date):
+  283:     y, m = start.year, start.month
+  284:     while (y, m) <= (end.year, end.month):
+  285:         yield date(y, m, 1)
+  286:         y, m = (y, m + 1) if m < 12 else (y + 1, 1)
+  287: 
+  288: 
+  289: def validate(rows: list[dict]) -> None:
+  290:     if not rows:
+  291:         raise SystemExit("[FAIL] no rows parsed")
+  292: 
+  293:     # 1) key uniqueness
+  294:     keys = [(r["month"], r["tenor"]) for r in rows]
+  295:     if len(keys) != len(set(keys)):
+  296:         raise SystemExit("[FAIL] duplicated (month, tenor) keys in parsed data")
+  297: 
+  298:     # 2) value sanity: montos >= 0, dev inside (-1, 2)
+  299:     bad_monto = [r for r in rows if r["monto_negociado_usd_mn"] is not None
+  300:                  and r["monto_negociado_usd_mn"] < 0]
+  301:     if bad_monto:
+  302:         raise SystemExit(f"[FAIL] negative montos, e.g. {bad_monto[:3]}")
+  303:     bad_dev = [r for r in rows if r["implied_dev"] is not None
+  304:                and not (-1.0 < r["implied_dev"] < 2.0)]
+  305:     if bad_dev:
+  306:         raise SystemExit(f"[FAIL] implausible implied_dev, e.g. {bad_dev[:3]}")
+  307: 
+  308:     # 3) date monotonicity / gaps on the monthly axis (any tenor counts)
+  309:     months = sorted({r["month"] for r in rows})
+  310:     have = set(months)
+  311:     missing = [
+  312:         mo for mo in _month_iter(months[0], months[-1])
+  313:         if mo not in have and (mo.year, mo.month) not in DOCUMENTED_MISSING_MONTHS
+  314:     ]
+  315:     if missing:
+  316:         runs, run = [], [missing[0]]
+  317:         for prev, cur in zip(missing, missing[1:]):
+  318:             expected = date(prev.year + (prev.month == 12), prev.month % 12 + 1, 1)
+  319:             if cur == expected:
+  320:                 run.append(cur)
+  321:             else:
+  322:                 runs.append(run)
+  323:                 run = [cur]
+  324:         runs.append(run)
+  325:         longest = max(runs, key=len)
+  326:         print(f"[WARN] {len(missing)} undocumented missing months: {missing[:12]}")
+  327:         if len(longest) > MAX_UNDOCUMENTED_GAP_MONTHS:
+  328:             raise SystemExit(
+  329:                 f"[FAIL] undocumented gap of {len(longest)} months starting "
+  330:                 f"{longest[0]} (max allowed {MAX_UNDOCUMENTED_GAP_MONTHS}). "
+  331:                 f"If legitimate, add to DOCUMENTED_MISSING_MONTHS."
+  332:             )
+  333:     else:
+  334:         print("[OK] no missing months in range")
+  335: 
+  336:     # 4) TOTAL cross-check (descriptive only): our bucket-weighted dev vs
+  337:     #    BanRep's own Total row, per month.
+  338:     by_month: dict[date, dict[str, dict]] = defaultdict(dict)
+  339:     for r in rows:
+  340:         by_month[r["month"]][r["tenor"]] = r
+  341:     worst = 0.0
+  342:     n_cmp = 0
+  343:     for month, tenors in by_month.items():
+  344:         tot = tenors.get("TOTAL")
+  345:         buckets = [t for k, t in tenors.items() if k != "TOTAL"]
+  346:         if not tot or tot["implied_dev"] is None or not buckets:
+  347:             continue
+  348:         w = sum(b["monto_negociado_usd_mn"] or 0.0 for b in buckets
+  349:                 if b["implied_dev"] is not None)
+  350:         if w <= 0:
+  351:             continue
+  352:         ours = sum((b["monto_negociado_usd_mn"] or 0.0) * b["implied_dev"]
+  353:                    for b in buckets if b["implied_dev"] is not None) / w
+  354:         diff = abs(ours - tot["implied_dev"])
+  355:         n_cmp += 1
+  356:         worst = max(worst, diff)
+  357:     print(f"[XCHECK] bucket-weighted dev vs BanRep TOTAL: {n_cmp} months, "
+  358:           f"worst |diff| = {worst:.4f} "
+  359:           f"({'OK' if worst < 0.01 else 'REVIEW â€” aggregation may differ'})")
+  360: 
+  361:     print(f"[OK] validation passed: {len(rows)} rows, {months[0]} -> {months[-1]}")
+  362: 
+  363: 
+  364: def report_by_decade(rows: list[dict]) -> None:
+  365:     decades: dict[int, set] = defaultdict(set)
+  366:     tenor_counts: dict[int, int] = defaultdict(int)
+  367:     for r in rows:
+  368:         dec = r["month"].year // 10 * 10
+  369:         decades[dec].add(r["month"])
+  370:         tenor_counts[dec] += 1
+  371:     print("[REPORT] coverage per decade:")
+  372:     for dec in sorted(decades):
+  373:         print(f"    {dec}s : {len(decades[dec])} months, {tenor_counts[dec]} (month,tenor) rows")
+  374: 
+  375: 
+  376: # ---------------------------------------------------------------------------
+  377: # Upsert
+  378: # ---------------------------------------------------------------------------
+  379: 
+  380: UPSERT_SQL = """
+  381: INSERT INTO macro_banrep_forwards_monthly
+  382:     (month, tenor, forward_rate, implied_dev, monto_negociado_usd_mn,
+  383:      published_at, source)
+  384: VALUES
+  385:     (%(month)s, %(tenor)s, %(forward_rate)s, %(implied_dev)s,
+  386:      %(monto_negociado_usd_mn)s, %(published_at)s, %(source)s)
+  387: ON CONFLICT (month, tenor) DO UPDATE SET
+  388:     forward_rate           = EXCLUDED.forward_rate,
+  389:     implied_dev            = EXCLUDED.implied_dev,
+  390:     monto_negociado_usd_mn = EXCLUDED.monto_negociado_usd_mn,
+  391:     published_at           = EXCLUDED.published_at,
+  392:     source                 = EXCLUDED.source,
+  393:     ingested_at            = now()
+  394: """
+  395: 
+  396: 
+  397: def upsert(conn, rows: list[dict]) -> None:
+  398:     from psycopg2.extras import execute_batch
+  399: 
+  400:     with conn.cursor() as cur:
+  401:         execute_batch(cur, UPSERT_SQL, rows, page_size=500)
+  402:     conn.commit()
+  403:     with conn.cursor() as cur:
+  404:         cur.execute(
+  405:             "SELECT count(*), count(DISTINCT month), min(month), max(month) "
+  406:             "FROM macro_banrep_forwards_monthly"
+  407:         )
+  408:         n, nm, lo, hi = cur.fetchone()
+  409:     print(f"[DB] macro_banrep_forwards_monthly now holds {n} rows "
+  410:           f"({nm} months), {lo} -> {hi}")
+  411: 
+  412: 
+  413: # ---------------------------------------------------------------------------
+  414: # Main
+  415: # ---------------------------------------------------------------------------
+  416: 
+  417: def main() -> int:
+  418:     parser = argparse.ArgumentParser(
+  419:         description="Ingest BanRep USD/COP forward market monthly series (PIT)."
+  420:     )
+  421:     parser.add_argument("--dry-run", action="store_true",
+  422:                         help="download+parse+validate only, no DB writes")
+  423:     parser.add_argument("--from-xlsx", default=None,
+  424:                         help="offline mode: parse a manually downloaded Excel")
+  425:     args = parser.parse_args()
+  426: 
+  427:     print("=" * 70)
+  428:     print("BanRep forwards USD/COP mensual -> macro_banrep_forwards_monthly (TAREA C1)")
+  429:     print(f"  sheet   : {SHEET_NAME} of series_historico_otros_derivados.xlsx")
+  430:     print(f"  source  : {XLSX_URL}")
+  431:     print(f"  PIT     : published_at = month_end + {PUBLICATION_LAG_DAYS}d (conservative)")
+  432:     print("=" * 70)
+  433: 
+  434:     if args.from_xlsx:
+  435:         path = Path(args.from_xlsx)
+  436:         print(f"[OFFLINE] parsing {path}")
+  437:     else:
+  438:         path = download_xlsx()
+  439: 
+  440:     rows = parse_xlsx(path)
+  441:     validate(rows)
+  442:     report_by_decade(rows)
+  443: 
+  444:     if args.dry_run:
+  445:         print("[DRY-RUN] skipping DB writes")
+  446:         return 0
+  447: 
+  448:     _load_dotenv_fallback()
+  449:     conn = get_connection()
+  450:     try:
+  451:         ensure_table(conn)
+  452:         upsert(conn, rows)
+  453:     finally:
+  454:         conn.close()
+  455: 
+  456:     print("[DONE] ingest complete (0 trials: data only, no study opened)")
+  457:     return 0
+  458: 
+  459: 
+  460: if __name__ == "__main__":
+  461:     sys.exit(main())
+GIT STATUS
+MIGRATIONS
+database/migrations\056_rbac_dynamic_roles.sql
+database/migrations\057_catalog_watchlist_cart.sql
+database/migrations\058_billing_webhook_idempotency.sql
+database/migrations\059_checkout_order_ledger.sql
+database/migrations\060_market_canonical_views.sql
+database/migrations\061_market_wide_views.sql
+database/migrations\062_macro_monthly_views.sql
+database/migrations\063_native_multiframe_ohlcv.sql
+database/migrations\064_h5_strategy_id.sql
+database/migrations\065_banrep_forwards_monthly.sql
+database/migrations\066_banrep_remesas_monthly.sql
+database/migrations\rollback_033_event_triggers.sql
+HISTORY
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+ exited 1 in 2129ms:
+FILE database/migrations/065_banrep_forwards_monthly.sql
+    1: -- ============================================================================
+    2: -- Migration 065: BanRep USD/COP forward market â€” monthly point-in-time series
+    3: -- TAREA C1 (2026-07-21). 0 trials: data ingestion only, no study is opened.
+    4: -- ============================================================================
+    5: -- Source (documented 2026-07-21):
+    6: --   "Informe mensual de otras series histÃ³ricas del mercado de derivados",
+    7: --   Banco de la RepÃºblica (DOAM), sheet "2. FwdUSDCOP":
+    8: --   https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/mercado_derivados/series_historico_otros_derivados.xlsx
+    9: --   Catalog entry: SUAMECA > CatÃ¡logo > Sector externo, tasas de cambio y
+   10: --   derivados > Mercado de derivados > "Otras series del Mercado de forwards"
+   11: --   (menu 430502, dashboard 4160203). BanRep labels the series
+   12: --   "Disponible desde 2005" â€” the pre-2005 (1997-2004) monthly forward series
+   13: --   was retired together with the legacy OBIEE portal
+   14: --   (totoro.banrep.gov.co/analytics responde "Sitio en Mantenimiento") and is
+   15: --   NOT machine-readable anywhere on the current BanRep web. Coverage here is
+   16: --   therefore 2005-01 -> present (official maximum).
+   17: --
+   18: -- Grain: one row per (month, tenor bucket). Tenor buckets are BanRep's
+   19: --   "Rango" in days: '0', '1 a 3', '4 a 14', '15 a 35', '36 a 60', '61 a 90',
+   20: --   '91 a 180', 'mayor a 180', plus BanRep's own monthly aggregate 'TOTAL'.
+   21: --
+   22: -- forward_rate: BanRep does NOT publish the outright forward COP rate in this
+   23: --   series â€” it publishes the *implied annualized devaluation*
+   24: --   [(F/S)^(365/plazo) - 1]. forward_rate stays NULL unless a future source
+   25: --   provides the outright; the column is kept for schema compatibility.
+   26: --
+   27: -- implied_dev: MontoNegociado-weighted mean of DevaluacionImplicita across
+   28: --   Contraparte rows within (month, tenor), decimal (0.05 = 5% annualized).
+   29: --
+   30: -- published_at (PIT date, conservative): last day of month M + 60 calendar
+   31: --   days. Evidence (2026-07-21): latest month in the file = 2026-05 (present
+   32: --   at month_end+51d) while 2026-06 is absent (+21d) -> the file refreshes
+   33: --   ~mid-M+2. Repo precedent (config/usdcop_forward_macro_sources.yaml,
+   34: --   banrep_monthly_derivatives) uses observation_plus_45_calendar_days; we
+   35: --   take 60d to over-wait, never under-wait (same doctrine as migration 062:
+   36: --   under-waiting fabricates alpha, over-waiting only costs freshness).
+   37: -- ============================================================================
+   38: 
+   39: CREATE TABLE IF NOT EXISTS macro_banrep_forwards_monthly (
+   40:     month                   DATE        NOT NULL,   -- first day of reference month
+   41:     tenor                   TEXT        NOT NULL,   -- BanRep Rango bucket or 'TOTAL'
+   42:     forward_rate            NUMERIC,                -- outright COP forward: not published in this series (NULL)
+   43:     implied_dev             NUMERIC,                -- annualized implied devaluation, decimal, monto-weighted
+   44:     monto_negociado_usd_mn  NUMERIC,                -- traded amount in the bucket, USD millions (context for the weight)
+   45:     published_at            DATE        NOT NULL,   -- conservative PIT availability: month_end + 60d
+   46:     source                  TEXT,
+   47:     ingested_at             TIMESTAMPTZ DEFAULT now(),
+   48:     PRIMARY KEY (month, tenor),
+   49:     CONSTRAINT chk_bfm_month_first_day  CHECK (month = date_trunc('month', month)::date),
+   50:     CONSTRAINT chk_bfm_monto_nonneg     CHECK (monto_negociado_usd_mn IS NULL OR monto_negociado_usd_mn >= 0),
+   51:     CONSTRAINT chk_bfm_dev_sane         CHECK (implied_dev IS NULL OR (implied_dev > -1 AND implied_dev < 2)),
+   52:     CONSTRAINT chk_bfm_pit_after_month  CHECK (published_at > month)
+   53: );
+   54: 
+   55: COMMENT ON TABLE macro_banrep_forwards_monthly IS
+   56:     'BanRep USD/COP forward market, monthly PIT (TAREA C1). Source: SUAMECA series_historico_otros_derivados.xlsx sheet 2. FwdUSDCOP. Coverage 2005-01+ (1997-2004 retired with OBIEE portal). published_at = month_end + 60d (conservative).';
+   57: COMMENT ON COLUMN macro_banrep_forwards_monthly.tenor IS
+   58:     'BanRep Rango in days: 0 | 1 a 3 | 4 a 14 | 15 a 35 | 36 a 60 | 61 a 90 | 91 a 180 | mayor a 180 | TOTAL (BanRep''s own monthly aggregate row)';
+   59: COMMENT ON COLUMN macro_banrep_forwards_monthly.implied_dev IS
+   60:     'Annualized implied devaluation [(F/S)^(365/plazo)-1], decimal, MontoNegociado-weighted across counterparties';
+   61: COMMENT ON COLUMN macro_banrep_forwards_monthly.forward_rate IS
+   62:     'Outright forward COP rate â€” NULL: not published in this BanRep series (only implied devaluation is)';
+   63: COMMENT ON COLUMN macro_banrep_forwards_monthly.published_at IS
+   64:     'Conservative PIT date = last day of month + 60 calendar days (observed refresh ~mid-M+2; never join on month alone)';
+   65: 
+   66: CREATE INDEX IF NOT EXISTS idx_bfm_published_at
+   67:     ON macro_banrep_forwards_monthly (published_at);
+FILE scripts/data/ingest_banrep_forwards.py
+    1: #!/usr/bin/env python3
+    2: """
+    3: Ingest BanRep USD/COP forward market monthly series (PIT) â€” TAREA C1
+    4: ====================================================================
+    5: 
+    6: Point-in-time monthly ingestion of the official Banco de la RepÃºblica
+    7: USD/COP forward market series (montos negociados + devaluaciÃ³n implÃ­cita
+    8: anualizada, by tenor bucket) into ``macro_banrep_forwards_monthly``.
+    9: 0 trials: data only, no study is opened here.
+   10: 
+   11: Source (documented 2026-07-21)
+   12: ------------------------------
+   13: - Human catalog: SUAMECA > CatÃ¡logo > Sector externo, tasas de cambio y
+   14:   derivados > Mercado de derivados > "Otras series del Mercado de forwards"
+   15:   (menu id 430502 in
+   16:   https://suameca.banrep.gov.co/estadisticas-economicas-back/rest/estadisticaEconomicaRestService/consultaMenuXopcion?opcion=CATALOGO_DATOS,
+   17:   dashboard id 4160203 in ...?opcion=DASHBOARD).
+   18: - Machine endpoint (direct Excel, no auth):
+   19:   https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/mercado_derivados/series_historico_otros_derivados.xlsx
+   20:   Sheet "2. FwdUSDCOP": Fecha (month) | Reportante | Contraparte | Rango |
+   21:   MontoNegociado (USD mn) | DevaluacionImplicita (annualized, decimal).
+   22: - The BanRep SDMX web service (totoro.banrep.gov.co/nsi-jax-ws/rest/data)
+   23:   only exposes IBR/DTF/TRM/TPM/TIB/COLCAP/M-aggregates/UVR â€” no forwards â€”
+   24:   so the Excel above is the authoritative machine-readable endpoint.
+   25: 
+   26: Coverage honesty (task premise said 1997->)
+   27: -------------------------------------------
+   28: BanRep labels this series "Disponible desde 2005"; the file holds 2005-01
+   29: onward, complete. The 1997-2004 monthly forward series existed only on the
+   30: legacy OBIEE portal (totoro.banrep.gov.co/analytics), which now answers
+   31: "Sitio en Mantenimiento" â€” it is not machine-readable anywhere on the
+   32: current BanRep web. We load the full official series: 2005-01 -> present.
+   33: 
+   34: Publication lag (defines the PIT date)
+   35: --------------------------------------
+   36: Observed 2026-07-21: latest month in the file = 2026-05 (present at
+   37: month_end + 51 calendar days) while 2026-06 is absent (month_end + 21d):
+   38: the file refreshes roughly mid-M+2. Repo precedent for the sibling PDF
+   39: bulletin (config/usdcop_forward_macro_sources.yaml,
+   40: banrep_monthly_derivatives) is observation + 45 calendar days. We store the
+   41: more conservative
+   42:     published_at = last calendar day of month M + 60 days
+   43: so a PIT join on published_at <= as_of over-waits rather than under-waits.
+   44: 
+   45: Usage
+   46: -----
+   47:     set -a; . ./.env; set +a            # load POSTGRES_* credentials
+   48:     python scripts/data/ingest_banrep_forwards.py                # full ingest
+   49:     python scripts/data/ingest_banrep_forwards.py --dry-run      # no DB writes
+   50:     python scripts/data/ingest_banrep_forwards.py --from-xlsx f.xlsx  # offline
+   51: 
+   52: Applies migration database/migrations/065_banrep_forwards_monthly.sql
+   53: automatically if the table does not exist (psql-style: executes the SQL file).
+   54: """
+   55: 
+   56: from __future__ import annotations
+   57: 
+   58: import argparse
+   59: import calendar
+   60: import os
+   61: import sys
+   62: import tempfile
+   63: from collections import defaultdict
+   64: from datetime import date, datetime, timedelta
+   65: from pathlib import Path
+   66: 
+   67: PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/data/<this> -> repo root
+   68: MIGRATION_FILE = PROJECT_ROOT / "database" / "migrations" / "065_banrep_forwards_monthly.sql"
+   69: 
+   70: XLSX_URL = (
+   71:     "https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/"
+   72:     "mercado_derivados/series_historico_otros_derivados.xlsx"
+   73: )
+   74: SHEET_NAME = "2. FwdUSDCOP"
+   75: CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "banrep_forwards"  # gitignored, regenerable
+   76: SOURCE_TAG = "banrep_suameca_otros_derivados_xlsx"
+   77: PUBLICATION_LAG_DAYS = 60  # conservative: observed ~51d worst case, precedent 45d
+   78: 
+   79: TENOR_BUCKETS = [
+   80:     "0", "1 a 3", "4 a 14", "15 a 35", "36 a 60", "61 a 90", "91 a 180", "mayor a 180",
+   81: ]
+   82: 
+   83: # Gaps documented as legitimate (none known as of 2026-07: the series is
+   84: # complete 2005-01 onward). Add (year, month) tuples if BanRep ever skips one.
+   85: DOCUMENTED_MISSING_MONTHS: set[tuple[int, int]] = set()
+   86: 
+   87: MAX_UNDOCUMENTED_GAP_MONTHS = 3
+   88: 
+   89: 
+   90: # ---------------------------------------------------------------------------
+   91: # Env / DB helpers
+   92: # ---------------------------------------------------------------------------
+   93: 
+   94: def _load_dotenv_fallback() -> None:
+   95:     """Populate POSTGRES_* from repo .env if not already in the environment."""
+   96:     if os.environ.get("POSTGRES_PASSWORD"):
+   97:         return
+   98:     env_path = PROJECT_ROOT / ".env"
+   99:     if not env_path.exists():
+  100:         return
+  101:     for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+  102:         line = line.strip()
+  103:         if not line or line.startswith("#") or "=" not in line:
+  104:             continue
+  105:         key, _, value = line.partition("=")
+  106:         key, value = key.strip(), value.strip().strip('"').strip("'")
+  107:         if key.startswith("POSTGRES") and key not in os.environ:
+  108:             os.environ[key] = value
+  109: 
+  110: 
+  111: def get_connection():
+  112:     import psycopg2
+  113: 
+  114:     return psycopg2.connect(
+  115:         host=os.environ.get("POSTGRES_HOST", "localhost"),
+  116:         port=int(os.environ.get("POSTGRES_PORT", "5432")),
+  117:         dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+  118:         user=os.environ.get("POSTGRES_USER", "admin"),
+  119:         password=os.environ.get("POSTGRES_PASSWORD", ""),
+  120:     )
+  121: 
+  122: 
+  123: def ensure_table(conn) -> None:
+  124:     """Apply migration 065 if macro_banrep_forwards_monthly does not exist."""
+  125:     with conn.cursor() as cur:
+  126:         cur.execute(
+  127:             """
+  128:             SELECT EXISTS (
+  129:                 SELECT FROM information_schema.tables
+  130:                 WHERE table_schema = 'public'
+  131:                   AND table_name = 'macro_banrep_forwards_monthly'
+  132:             )
+  133:             """
+  134:         )
+  135:         exists = cur.fetchone()[0]
+  136:     if exists:
+  137:         return
+  138:     print(f"[MIGRATE] applying {MIGRATION_FILE.name}")
+  139:     sql = MIGRATION_FILE.read_text(encoding="utf-8")
+  140:     with conn.cursor() as cur:
+  141:         cur.execute(sql)
+  142:     conn.commit()
+  143:     print("[MIGRATE] macro_banrep_forwards_monthly created")
+  144: 
+  145: 
+  146: # ---------------------------------------------------------------------------
+  147: # Download + parse
+  148: # ---------------------------------------------------------------------------
+  149: 
+  150: def download_xlsx(retries: int = 3) -> Path:
+  151:     """Download the official Excel to the (gitignored) cache dir."""
+  152:     import requests
+  153: 
+  154:     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+  155:     dest = CACHE_DIR / "series_historico_otros_derivados.xlsx"
+  156:     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+  157:     last_err: Exception | None = None
+  158:     for attempt in range(1, retries + 1):
+  159:         try:
+  160:             resp = requests.get(XLSX_URL, headers=headers, timeout=180)
+  161:             resp.raise_for_status()
+  162:             if len(resp.content) < 100_000:
+  163:                 raise ValueError(f"Suspiciously small download ({len(resp.content)} bytes)")
+  164:             fd, tmpname = tempfile.mkstemp(dir=CACHE_DIR, suffix=".part")
+  165:             os.close(fd)  # Windows: keep no open handle or replace() fails (WinError 32)
+  166:             tmp = Path(tmpname)
+  167:             tmp.write_bytes(resp.content)
+  168:             tmp.replace(dest)
+  169:             print(f"[DOWNLOAD] {dest} ({dest.stat().st_size:,} bytes)")
+  170:             return dest
+  171:         except Exception as exc:  # noqa: BLE001 â€” retry then surface
+  172:             last_err = exc
+  173:             print(f"[WARN] download attempt {attempt}/{retries} failed: {exc}")
+  174:     raise RuntimeError(
+  175:         f"Could not download {XLSX_URL}: {last_err}\n"
+  176:         f"BLOCKED fallback: open https://suameca.banrep.gov.co/estadisticas-economicas/catalogo"
+  177:         f" > Sector externo... > Mercado de derivados > 'Otras series del Mercado de forwards',"
+  178:         f" download the Excel manually and re-run with --from-xlsx <file>."
+  179:     )
+  180: 
+  181: 
+  182: def _month_of(value) -> date:
+  183:     """Normalize the sheet's Fecha cell (datetime, first of month) to a month DATE."""
+  184:     if isinstance(value, datetime):
+  185:         return date(value.year, value.month, 1)
+  186:     if isinstance(value, date):
+  187:         return date(value.year, value.month, 1)
+  188:     # string fallback e.g. '2005-01-01'
+  189:     d = date.fromisoformat(str(value)[:10])
+  190:     return date(d.year, d.month, 1)
+  191: 
+  192: 
+  193: def published_at_for(month: date) -> date:
+  194:     """Conservative PIT date: last day of month + PUBLICATION_LAG_DAYS."""
+  195:     month_end = date(month.year, month.month, calendar.monthrange(month.year, month.month)[1])
+  196:     return month_end + timedelta(days=PUBLICATION_LAG_DAYS)
+  197: 
+  198: 
+  199: def parse_xlsx(path: Path) -> list[dict]:
+  200:     """Parse sheet '2. FwdUSDCOP' -> aggregated (month, tenor) rows.
+  201: 
+  202:     Raw grain is (month, Reportante=IMC, Contraparte, Rango). We aggregate to
+  203:     (month, tenor): monto = sum(MontoNegociado); implied_dev = monto-weighted
+  204:     mean of DevaluacionImplicita over rows where it is present. BanRep's own
+  205:     'Total' rows (Contraparte='Total', Rango='Total') are ingested verbatim
+  206:     as tenor='TOTAL'.
+  207:     """
+  208:     import openpyxl
+  209: 
+  210:     wb = openpyxl.load_workbook(path, read_only=True)
+  211:     if SHEET_NAME not in wb.sheetnames:
+  212:         raise SystemExit(f"[FAIL] sheet {SHEET_NAME!r} not found; sheets: {wb.sheetnames}")
+  213:     ws = wb[SHEET_NAME]
+  214: 
+  215:     header_seen = False
+  216:     # (month, tenor) -> [sum_monto, sum_monto_dev_weighted, sum_weight_with_dev]
+  217:     agg: dict[tuple[date, str], list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0])
+  218:     totals: dict[date, tuple[float, float | None]] = {}
+  219: 
+  220:     for row in ws.iter_rows(values_only=True):
+  221:         if not header_seen:
+  222:             if row and row[0] == "Fecha":
+  223:                 expected = ("Fecha", "Reportante", "Contraparte", "Rango",
+  224:                             "MontoNegociado", "DevaluacionImplicita")
+  225:                 got = tuple(str(c) for c in row[:6])
+  226:                 if got != expected:
+  227:                     raise SystemExit(f"[FAIL] header drift: {got} != {expected}")
+  228:                 header_seen = True
+  229:             continue
+  230:         if not row or row[0] is None:
+  231:             continue
+  232:         month = _month_of(row[0])
+  233:         rango = str(row[3]).strip()
+  234:         monto = float(row[4]) if row[4] is not None else 0.0
+  235:         dev = float(row[5]) if row[5] is not None else None
+  236: 
+  237:         if rango == "Total":
+  238:             totals[month] = (monto, dev)
+  239:             continue
+  240:         if rango not in TENOR_BUCKETS:
+  241:             raise SystemExit(f"[FAIL] unknown Rango bucket {rango!r} at {month} â€” "
+  242:                              f"update TENOR_BUCKETS after verifying the source")
+  243:         acc = agg[(month, rango)]
+  244:         acc[0] += monto
+  245:         if dev is not None:
+  246:             acc[1] += monto * dev
+  247:             acc[2] += monto
+  248:     wb.close()
+  249: 
+  250:     if not header_seen:
+  251:         raise SystemExit(f"[FAIL] header row not found in sheet {SHEET_NAME!r}")
+  252: 
+  253:     rows: list[dict] = []
+  254:     for (month, tenor), (monto, wsum, w) in agg.items():
+  255:         rows.append({
+  256:             "month": month,
+  257:             "tenor": tenor,
+  258:             "forward_rate": None,  # not published in this series (see migration 065)
+  259:             "implied_dev": (wsum / w) if w > 0 else None,
+  260:             "monto_negociado_usd_mn": monto,
+  261:             "published_at": published_at_for(month),
+  262:             "source": SOURCE_TAG,
+  263:         })
+  264:     for month, (monto, dev) in totals.items():
+  265:         rows.append({
+  266:             "month": month,
+  267:             "tenor": "TOTAL",
+  268:             "forward_rate": None,
+  269:             "implied_dev": dev,
+  270:             "monto_negociado_usd_mn": monto,
+  271:             "published_at": published_at_for(month),
+  272:             "source": SOURCE_TAG,
+  273:         })
+  274:     rows.sort(key=lambda r: (r["month"], r["tenor"]))
+  275:     return rows
+  276: 
+  277: 
+  278: # ---------------------------------------------------------------------------
+  279: # Validation (hard-fails only on data integrity)
+  280: # ---------------------------------------------------------------------------
+  281: 
+  282: def _month_iter(start: date, end: date):
+  283:     y, m = start.year, start.month
+  284:     while (y, m) <= (end.year, end.month):
+  285:         yield date(y, m, 1)
+  286:         y, m = (y, m + 1) if m < 12 else (y + 1, 1)
+  287: 
+  288: 
+  289: def validate(rows: list[dict]) -> None:
+  290:     if not rows:
+  291:         raise SystemExit("[FAIL] no rows parsed")
+  292: 
+  293:     # 1) key uniqueness
+  294:     keys = [(r["month"], r["tenor"]) for r in rows]
+  295:     if len(keys) != len(set(keys)):
+  296:         raise SystemExit("[FAIL] duplicated (month, tenor) keys in parsed data")
+  297: 
+  298:     # 2) value sanity: montos >= 0, dev inside (-1, 2)
+  299:     bad_monto = [r for r in rows if r["monto_negociado_usd_mn"] is not None
+  300:                  and r["monto_negociado_usd_mn"] < 0]
+  301:     if bad_monto:
+  302:         raise SystemExit(f"[FAIL] negative montos, e.g. {bad_monto[:3]}")
+  303:     bad_dev = [r for r in rows if r["implied_dev"] is not None
+  304:                and not (-1.0 < r["implied_dev"] < 2.0)]
+  305:     if bad_dev:
+  306:         raise SystemExit(f"[FAIL] implausible implied_dev, e.g. {bad_dev[:3]}")
+  307: 
+  308:     # 3) date monotonicity / gaps on the monthly axis (any tenor counts)
+  309:     months = sorted({r["month"] for r in rows})
+  310:     have = set(months)
+  311:     missing = [
+  312:         mo for mo in _month_iter(months[0], months[-1])
+  313:         if mo not in have and (mo.year, mo.month) not in DOCUMENTED_MISSING_MONTHS
+  314:     ]
+  315:     if missing:
+  316:         runs, run = [], [missing[0]]
+  317:         for prev, cur in zip(missing, missing[1:]):
+  318:             expected = date(prev.year + (prev.month == 12), prev.month % 12 + 1, 1)
+  319:             if cur == expected:
+  320:                 run.append(cur)
+  321:             else:
+  322:                 runs.append(run)
+  323:                 run = [cur]
+  324:         runs.append(run)
+  325:         longest = max(runs, key=len)
+  326:         print(f"[WARN] {len(missing)} undocumented missing months: {missing[:12]}")
+  327:         if len(longest) > MAX_UNDOCUMENTED_GAP_MONTHS:
+  328:             raise SystemExit(
+  329:                 f"[FAIL] undocumented gap of {len(longest)} months starting "
+  330:                 f"{longest[0]} (max allowed {MAX_UNDOCUMENTED_GAP_MONTHS}). "
+  331:                 f"If legitimate, add to DOCUMENTED_MISSING_MONTHS."
+  332:             )
+  333:     else:
+  334:         print("[OK] no missing months in range")
+  335: 
+  336:     # 4) TOTAL cross-check (descriptive only): our bucket-weighted dev vs
+  337:     #    BanRep's own Total row, per month.
+  338:     by_month: dict[date, dict[str, dict]] = defaultdict(dict)
+  339:     for r in rows:
+  340:         by_month[r["month"]][r["tenor"]] = r
+  341:     worst = 0.0
+  342:     n_cmp = 0
+  343:     for month, tenors in by_month.items():
+  344:         tot = tenors.get("TOTAL")
+  345:         buckets = [t for k, t in tenors.items() if k != "TOTAL"]
+  346:         if not tot or tot["implied_dev"] is None or not buckets:
+  347:             continue
+  348:         w = sum(b["monto_negociado_usd_mn"] or 0.0 for b in buckets
+  349:                 if b["implied_dev"] is not None)
+  350:         if w <= 0:
+  351:             continue
+  352:         ours = sum((b["monto_negociado_usd_mn"] or 0.0) * b["implied_dev"]
+  353:                    for b in buckets if b["implied_dev"] is not None) / w
+  354:         diff = abs(ours - tot["implied_dev"])
+  355:         n_cmp += 1
+  356:         worst = max(worst, diff)
+  357:     print(f"[XCHECK] bucket-weighted dev vs BanRep TOTAL: {n_cmp} months, "
+  358:           f"worst |diff| = {worst:.4f} "
+  359:           f"({'OK' if worst < 0.01 else 'REVIEW â€” aggregation may differ'})")
+  360: 
+  361:     print(f"[OK] validation passed: {len(rows)} rows, {months[0]} -> {months[-1]}")
+  362: 
+  363: 
+  364: def report_by_decade(rows: list[dict]) -> None:
+  365:     decades: dict[int, set] = defaultdict(set)
+  366:     tenor_counts: dict[int, int] = defaultdict(int)
+  367:     for r in rows:
+  368:         dec = r["month"].year // 10 * 10
+  369:         decades[dec].add(r["month"])
+  370:         tenor_counts[dec] += 1
+  371:     print("[REPORT] coverage per decade:")
+  372:     for dec in sorted(decades):
+  373:         print(f"    {dec}s : {len(decades[dec])} months, {tenor_counts[dec]} (month,tenor) rows")
+  374: 
+  375: 
+  376: # ---------------------------------------------------------------------------
+  377: # Upsert
+  378: # ---------------------------------------------------------------------------
+  379: 
+  380: UPSERT_SQL = """
+  381: INSERT INTO macro_banrep_forwards_monthly
+  382:     (month, tenor, forward_rate, implied_dev, monto_negociado_usd_mn,
+  383:      published_at, source)
+  384: VALUES
+  385:     (%(month)s, %(tenor)s, %(forward_rate)s, %(implied_dev)s,
+  386:      %(monto_negociado_usd_mn)s, %(published_at)s, %(source)s)
+  387: ON CONFLICT (month, tenor) DO UPDATE SET
+  388:     forward_rate           = EXCLUDED.forward_rate,
+  389:     implied_dev            = EXCLUDED.implied_dev,
+  390:     monto_negociado_usd_mn = EXCLUDED.monto_negociado_usd_mn,
+  391:     published_at           = EXCLUDED.published_at,
+  392:     source                 = EXCLUDED.source,
+  393:     ingested_at            = now()
+  394: """
+  395: 
+  396: 
+  397: def upsert(conn, rows: list[dict]) -> None:
+  398:     from psycopg2.extras import execute_batch
+  399: 
+  400:     with conn.cursor() as cur:
+  401:         execute_batch(cur, UPSERT_SQL, rows, page_size=500)
+  402:     conn.commit()
+  403:     with conn.cursor() as cur:
+  404:         cur.execute(
+  405:             "SELECT count(*), count(DISTINCT month), min(month), max(month) "
+  406:             "FROM macro_banrep_forwards_monthly"
+  407:         )
+  408:         n, nm, lo, hi = cur.fetchone()
+  409:     print(f"[DB] macro_banrep_forwards_monthly now holds {n} rows "
+  410:           f"({nm} months), {lo} -> {hi}")
+  411: 
+  412: 
+  413: # ---------------------------------------------------------------------------
+  414: # Main
+  415: # ---------------------------------------------------------------------------
+  416: 
+  417: def main() -> int:
+  418:     parser = argparse.ArgumentParser(
+  419:         description="Ingest BanRep USD/COP forward market monthly series (PIT)."
+  420:     )
+  421:     parser.add_argument("--dry-run", action="store_true",
+  422:                         help="download+parse+validate only, no DB writes")
+  423:     parser.add_argument("--from-xlsx", default=None,
+  424:                         help="offline mode: parse a manually downloaded Excel")
+  425:     args = parser.parse_args()
+  426: 
+  427:     print("=" * 70)
+  428:     print("BanRep forwards USD/COP mensual -> macro_banrep_forwards_monthly (TAREA C1)")
+  429:     print(f"  sheet   : {SHEET_NAME} of series_historico_otros_derivados.xlsx")
+  430:     print(f"  source  : {XLSX_URL}")
+  431:     print(f"  PIT     : published_at = month_end + {PUBLICATION_LAG_DAYS}d (conservative)")
+  432:     print("=" * 70)
+  433: 
+  434:     if args.from_xlsx:
+  435:         path = Path(args.from_xlsx)
+  436:         print(f"[OFFLINE] parsing {path}")
+  437:     else:
+  438:         path = download_xlsx()
+  439: 
+  440:     rows = parse_xlsx(path)
+  441:     validate(rows)
+  442:     report_by_decade(rows)
+  443: 
+  444:     if args.dry_run:
+  445:         print("[DRY-RUN] skipping DB writes")
+  446:         return 0
+  447: 
+  448:     _load_dotenv_fallback()
+  449:     conn = get_connection()
+  450:     try:
+  451:         ensure_table(conn)
+  452:         upsert(conn, rows)
+  453:     finally:
+  454:         conn.close()
+  455: 
+  456:     print("[DONE] ingest complete (0 trials: data only, no study opened)")
+  457:     return 0
+  458: 
+  459: 
+  460: if __name__ == "__main__":
+  461:     sys.exit(main())
+GIT STATUS
+MIGRATIONS
+database/migrations\056_rbac_dynamic_roles.sql
+database/migrations\057_catalog_watchlist_cart.sql
+database/migrations\058_billing_webhook_idempotency.sql
+database/migrations\059_checkout_order_ledger.sql
+database/migrations\060_market_canonical_views.sql
+database/migrations\061_market_wide_views.sql
+database/migrations\062_macro_monthly_views.sql
+database/migrations\063_native_multiframe_ohlcv.sql
+database/migrations\064_h5_strategy_id.sql
+database/migrations\065_banrep_forwards_monthly.sql
+database/migrations\066_banrep_remesas_monthly.sql
+database/migrations\rollback_033_event_triggers.sql
+HISTORY
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+fatal: detected dubious ownership in repository at 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' is owned by:
+	'S-1-5-21-3926936062-2187484334-1972577768-1001'
+but the current user is:
+	'S-1-5-21-3926936062-2187484334-1972577768-1011'
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory 'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'
+
+codex
+Ya aparecen tres incumplimientos críticos: el constraint PIT no fija la fórmula exacta, los huecos se calculan sólo entre extremos recibidos (y hasta tres ni siquiera fallan), y el cross-check TOTAL sólo imprime “REVIEW”. Estoy comprobando ahora el estado Git y algunos casos límite de las validaciones para cerrar el veredicto con líneas precisas.
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -c safe.directory='C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' status --short --untracked-files=all" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1039ms:
+ M .claude/README.md
+ M .claude/codex/README.md
+ M .claude/evidence/directional_unlock/2026-07-21/results.json
+ M .gitignore
+ M CLAUDE.md
+ M airflow/requirements.txt
+ M config/analysis/analysis_assets.yaml
+ M config/assets/btcusdt_forecasting.yaml
+ M config/assets/pipelines.yaml
+ M config/assets/xauusd_forecasting.yaml
+ M data/backups/features/asset_daily_ohlcv.parquet
+ M data/backups/features/asset_native_ohlcv.parquet
+ M data/backups/features/feature_backup_manifest.json
+ M data/backups/features/market_ingestion_manifest.parquet
+ M data/backups/features/usdcop_m5_ohlcv.parquet
+ M data/backups/seeds/backup_manifest.json
+ M data/backups/seeds/macro_indicators_daily_backup.parquet
+ M data/backups/seeds/usdcop_m5_ohlcv_backup.parquet
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.csv
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.parquet
+ M data/pipeline/04_cleaning/output/MACRO_DAILY_MASTER.xlsx
+ M pyproject.toml
+ M scripts/data/ingest_asset_ohlcv.py
+ M scripts/ops/db_migrate.py
+ M scripts/pipeline/generate_weekly_forecasts.py
+ M scripts/pipeline/train_and_export_smart_simple.py
+ M seeds/latest/btcusdt_daily_ohlcv.parquet
+ M seeds/latest/btcusdt_derivatives_daily.parquet
+ M seeds/latest/btcusdt_m5_ohlcv.parquet
+ M seeds/latest/fx_multi_m5_ohlcv.parquet
+ M seeds/latest/usdbrl_m5_ohlcv.parquet
+ M seeds/latest/usdcop_daily_ohlcv.parquet
+ M seeds/latest/usdcop_m5_ohlcv.parquet
+ M seeds/latest/usdmxn_m5_ohlcv.parquet
+ M seeds/latest/xauusd_daily_ohlcv.parquet
+ M src/analysis/news_intelligence.py
+ M src/news_engine/cross_reference/engine.py
+ M src/news_engine/enrichment/sentiment.py
+ M usdcop-trading-dashboard/app/api/admin/impersonate/route.ts
+ M usdcop-trading-dashboard/app/api/billing/webhook/route.ts
+ M usdcop-trading-dashboard/app/api/cart/checkout/route.ts
+ M usdcop-trading-dashboard/app/api/catalog/route.ts
+ M usdcop-trading-dashboard/app/api/data/[...path]/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/approve/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/reject/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/[id]/trades/route.ts
+ M usdcop-trading-dashboard/app/api/experiments/by-model/[modelId]/route.ts
+ M usdcop-trading-dashboard/app/api/forecasting/[...path]/route.ts
+ M usdcop-trading-dashboard/app/api/strategies/[strategyId]/manifest/route.ts
+ M usdcop-trading-dashboard/components/analysis/NewsClusterCard.tsx
+ M usdcop-trading-dashboard/components/analysis/ReferencesSection.tsx
+ M usdcop-trading-dashboard/components/forecasting/ForecastingDashboard.tsx
+ M usdcop-trading-dashboard/components/forecasting/types.ts
+ M usdcop-trading-dashboard/lib/admin/revenue.ts
+ M usdcop-trading-dashboard/lib/api/relay.ts
+ M usdcop-trading-dashboard/lib/auth/entitlements.ts
+ M usdcop-trading-dashboard/lib/billing/prices.ts
+ M usdcop-trading-dashboard/lib/billing/provider.ts
+ M usdcop-trading-dashboard/lib/billing/wompi.ts
+ M usdcop-trading-dashboard/lib/contracts/analysis-assets.ts
+ M usdcop-trading-dashboard/package-lock.json
+ M usdcop-trading-dashboard/package.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W01.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W02.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W03.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W04.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W05.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W06.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W07.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W08.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W09.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W10.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W11.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W12.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W13.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W14.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W15.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W16.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W17.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W18.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W19.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W20.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W21.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W22.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W23.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W24.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W25.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W26.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W27.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W28.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W29.json
+ M usdcop-trading-dashboard/public/data/analysis/btcusdt/weekly_2026_W30.json
+ M usdcop-trading-dashboard/public/data/analysis/charts/macro_embi_col_2026-W30.png
+ M usdcop-trading-dashboard/public/data/registry.json
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ard_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_bayesian_ridge_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_catboost_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_catboost_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_lightgbm_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_hybrid_xgboost_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_lightgbm_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_ridge_h5.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h1.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h10.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h15.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h20.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h25.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h30.png
+ M usdcop-trading-dashboard/public/forecasting/backtest_xgboost_pure_h5.png
+ M usdcop-trading-dashboard/public/forecasting/bi_dashboard_unified.csv
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/index.json
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/weekly_inference_2025.json
+ M usdcop-trading-dashboard/public/forecasting/btcusdt/weekly_inference_2026.json
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W22.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W23.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W24.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W25.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W26.png
+ M usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W27.png
+ M usdcop-trading-dashboard/public/forecasting/xauusd/index.json
+ M usdcop-trading-dashboard/public/forecasting/xauusd/weekly_inference_2025.json
+ M usdcop-trading-dashboard/public/forecasting/xauusd/weekly_inference_2026.json
+ M usdcop-trading-dashboard/tests/accessibility/a11y.test.tsx
+ M usdcop-trading-dashboard/types/generated/schemas.ts
+ M usdcop-trading-dashboard/types/generated/types.ts
+?? .claude/codex/ACQUISITION-BACKUP-BACKFILL-AUDIT-2026-07-20.md
+?? .claude/codex/ACQUISITION-BACKUPS-AUDIT-2026-07-20.md
+?? .claude/codex/ADMIN-OPERATIONS-AUDIT.md
+?? .claude/codex/ADR-PROHIBITIONS-VERIFICATION-2026-07-21.md
+?? .claude/codex/AI-SECURITY-AUDIT.md
+?? .claude/codex/BACKLOG.md
+?? .claude/codex/BILLING-RBAC-VALIDATION-LOG.md
+?? .claude/codex/BLOCKER-RECONCILIATION-PLAN.md
+?? .claude/codex/BLOCKER-REMEDIATION-REGISTER-2026-07-21.md
+?? .claude/codex/CANONICAL-MARKET-DEEP-AUDIT-2026-07-21.md
+?? .claude/codex/CHECKPOINT-VALIDATION-LIFECYCLE.md
+?? .claude/codex/COMMERCE-BLOCKERS-RESOLVED.md
+?? .claude/codex/COMMERCE-IDENTITY-BILLING-AUDIT.md
+?? .claude/codex/COMMERCE-RBAC-HARNESS-LOG.md
+?? .claude/codex/DATA-DESCRIPTIVE-MACRO-AUDIT.md
+?? .claude/codex/DATA-FEATURE-STATISTICS-AUDIT.md
+?? .claude/codex/DATA-GRANULARITY-INVENTORY-2026-07-21.md
+?? .claude/codex/DEFINITIVE-BLOCKER-RESOLUTION-PLAN.md
+?? .claude/codex/EVIDENCE-QUANT-REPORT-2026-07-20.md
+?? .claude/codex/EVIDENCE-REPORT-2026-07-20.md
+?? .claude/codex/FINAL-RELEASE-STATUS-2026-07-21.md
+?? .claude/codex/FINAL-VERIFICATION-2026-07-20.md
+?? .claude/codex/FRONTEND-DEPENDENCY-AUDIT-2026-07-21.md
+?? .claude/codex/FRONTEND-NEWS-CART-AUDIT.md
+?? .claude/codex/FUNCTIONAL-COMMERCE-RBAC-LOG.md
+?? .claude/codex/HARNESS-ENGINEERING-STATUS.md
+?? .claude/codex/MARKET-DATA-AUDIT-STATUS-2026-07-20.md
+?? .claude/codex/MASTER-VALIDATION-GAP-MATRIX-2026-07-20.md
+?? .claude/codex/MODEL-MARKETPLACE-SPEC.md
+?? .claude/codex/NEWS-SOURCE-INVENTORY-2026-07-21.md
+?? .claude/codex/NEWS-WEEKLY-CLOSE-EVIDENCE-2026-07-21.md
+?? .claude/codex/PERFORMANCE-SLO-SPEC.md
+?? .claude/codex/PRODUCTION-HARNESS.md
+?? .claude/codex/PRODUCTION-UNBLOCK-PLAN.md
+?? .claude/codex/PUBLIC-SNAPSHOT-STATISTICAL-AUDIT.md
+?? .claude/codex/QUALITY-HARNESS-SPEC.md
+?? .claude/codex/QUANTITATIVE-UNBLOCK-LOG.md
+?? .claude/codex/RBAC-CART-AUDIT-2026-07-20.md
+?? .claude/codex/RELEASE-REHEARSAL-LOG.md
+?? .claude/codex/ROBUST-FORECASTING-STRATEGY-PLAN-2026-07-21.md
+?? .claude/codex/SECURITY-ASSURANCE-SPEC.md
+?? .claude/codex/SECURITY-PENTEST-RESULT-2026-07-21.md
+?? .claude/codex/SEED-BACKUP-RECONCILIATION-2026-07-20.md
+?? .claude/codex/SKILLS-CATALOG-AUDIT-2026-07-21.md
+?? .claude/codex/SKILLS-EXPANSION-2026-07-21.md
+?? .claude/codex/SKILLS-GOVERNANCE.md
+?? .claude/codex/SKILLS-INSTALLED-2026-07-21.md
+?? .claude/codex/SP500-INTEGRATION-LOG.md
+?? .claude/codex/SP500-OOS-GATE.md
+?? .claude/codex/TRACEABILITY-MATRIX.md
+?? .claude/codex/UX-MOBILE-AUDIT.md
+?? .claude/codex/VOLATILITY-FIRST-DATA-UNLOCK-2026-07-21.md
+?? .claude/codex/WEEKLY-NEWS-AGENTS-STATUS-2026-07-21.md
+?? .claude/codex/analyze_public_snapshots.py
+?? .claude/codex/evidence/acquisition-assets-audit.json
+?? .claude/codex/evidence/acquisition-backups-audit.json
+?? .claude/codex/evidence/acquisition-manifest-validation.json
+?? .claude/codex/evidence/harness-latest.json
+?? .claude/codex/evidence/harness_bundle/README.md
+?? .claude/codex/evidence/harness_bundle/acquisition_assets.stderr.log
+?? .claude/codex/evidence/harness_bundle/acquisition_assets.stdout.log
+?? .claude/codex/evidence/harness_bundle/harness.stderr.log
+?? .claude/codex/evidence/harness_bundle/harness.stdout.log
+?? .claude/codex/evidence/harness_bundle/index.json
+?? .claude/codex/evidence/harness_bundle/manifest_validation.stderr.log
+?? .claude/codex/evidence/harness_bundle/manifest_validation.stdout.log
+?? .claude/codex/evidence/harness_bundle/market_statistics.stderr.log
+?? .claude/codex/evidence/harness_bundle/market_statistics.stdout.log
+?? .claude/codex/evidence/harness_bundle/reconciliation.stderr.log
+?? .claude/codex/evidence/harness_bundle/reconciliation.stdout.log
+?? .claude/codex/evidence/market-data-statistics.json
+?? .claude/codex/evidence/playwright/artifacts/.last-run.json
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-desktop-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-desktop-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-desktop-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-desktop-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-desktop-chromium/video.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-mobile-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-mobile-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-mobile-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-mobile-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--login-ren-365d6-ibility-or-console-failures-mobile-chromium/video.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-desktop-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-desktop-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-desktop-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-desktop-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-desktop-chromium/video.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-mobile-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-mobile-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-mobile-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-mobile-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--pricing-r-a752b-ibility-or-console-failures-mobile-chromium/video.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-desktop-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-desktop-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-desktop-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-desktop-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-desktop-chromium/video.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-mobile-chromium/error-context.md
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-mobile-chromium/test-failed-1.png
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-mobile-chromium/trace.zip
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-mobile-chromium/video-1.webm
+?? .claude/codex/evidence/playwright/artifacts/visual-evidence--register--f276f-ibility-or-console-failures-mobile-chromium/video.webm
+?? .claude/codex/evidence/playwright/html/data/0d8a3054db2e9e7eb1d11c4d4b605175921f87a3.webm
+?? .claude/codex/evidence/playwright/html/data/13084d70507bc0ac80d5b202d56d5cd41d1063e1.webm
+?? .claude/codex/evidence/playwright/html/data/18ac0ee601efddb4980c57bd320138b2536af7ad.zip
+?? .claude/codex/evidence/playwright/html/data/19fab1ce2e06916235056db5005d7864259a280d.png
+?? .claude/codex/evidence/playwright/html/data/22834a60fd4d196d30e55b26432e94bca708c018.zip
+?? .claude/codex/evidence/playwright/html/data/2326496d2b0d6fb38fa9d0f941fea82cf6fe965f.webm
+?? .claude/codex/evidence/playwright/html/data/30113a05c95a5302ec707834d219942d6866b38d.md
+?? .claude/codex/evidence/playwright/html/data/3b3feae6bc52b830c33085b1d0cf8ac6a312d4de.webm
+?? .claude/codex/evidence/playwright/html/data/4215b887b9d7d85ff98257edbe7d29e003cd83b9.webm
+?? .claude/codex/evidence/playwright/html/data/464a729d4dbad02e9415a2d330c4632b0b9be62d.webm
+?? .claude/codex/evidence/playwright/html/data/4869a1be3ba47739107a817e6762a70683d256e4.png
+?? .claude/codex/evidence/playwright/html/data/4b99f5a5011c222cf3d1e2393b835555dba5e24a.webm
+?? .claude/codex/evidence/playwright/html/data/4eec922684f6ad3dd46cfe37e289b2858e25849e.webm
+?? .claude/codex/evidence/playwright/html/data/508ad2f00143560dcb1c9b17e6b501f3d16b292b.zip
+?? .claude/codex/evidence/playwright/html/data/5a381ed954bd385767a08f1edb52f13b1a891fec.png
+?? .claude/codex/evidence/playwright/html/data/63d951711e5b208cbbe57171add5ed60e7bc3d6c.md
+?? .claude/codex/evidence/playwright/html/data/6cf273eff949e4e751c47f8831ce035db7d06342.zip
+?? .claude/codex/evidence/playwright/html/data/74f30b5de39f072f4e07487713cc620fbc0b09b7.md
+?? .claude/codex/evidence/playwright/html/data/90aa3feddaa1489b2b17979f02e920f1c2ac8ff6.md
+?? .claude/codex/evidence/playwright/html/data/a49d36f43ed2225c2d291918b3fc48c5de4ee36f.md
+?? .claude/codex/evidence/playwright/html/data/ad77e54127e0de0bf7e5937acb08a3cb4582a9aa.png
+?? .claude/codex/evidence/playwright/html/data/ca3faaaac03a7e0a39920ed9bc350fef0f3ea79a.zip
+?? .claude/codex/evidence/playwright/html/data/d4455bfe1e98a24df44fad67611f9e472786972f.png
+?? .claude/codex/evidence/playwright/html/data/d58b5ff4043df82e3199a03d02b0d5b5719f3488.png
+?? .claude/codex/evidence/playwright/html/data/d6d15dfc8db82f74d9942b45e7928a7835ecb12d.webm
+?? .claude/codex/evidence/playwright/html/data/dbaf12e412d380b99fa431940f3a72ab6ed23d80.md
+?? .claude/codex/evidence/playwright/html/data/dce9d31eeb0e317faae5070f1f8d2e91abab7507.webm
+?? .claude/codex/evidence/playwright/html/data/dd87c88c1349c3e1c137e8f3978bd0c975ebd0e3.webm
+?? .claude/codex/evidence/playwright/html/data/e13cd0a4d7408d46a24166194d3fbfb3b3146cd3.zip
+?? .claude/codex/evidence/playwright/html/data/eca58c649b82869fd763281af361e1527246671d.webm
+?? .claude/codex/evidence/playwright/html/index.html
+?? .claude/codex/evidence/playwright/html/trace/assets/codeMirrorModule-eyVcHN77.js
+?? .claude/codex/evidence/playwright/html/trace/assets/defaultSettingsView-w0zYjHsW.js
+?? .claude/codex/evidence/playwright/html/trace/codeMirrorModule.C3UTv-Ge.css
+?? .claude/codex/evidence/playwright/html/trace/codicon.DCmgc-ay.ttf
+?? .claude/codex/evidence/playwright/html/trace/defaultSettingsView.TQ8_7ybu.css
+?? .claude/codex/evidence/playwright/html/trace/index.Bx16ehp1.js
+?? .claude/codex/evidence/playwright/html/trace/index.I8N9v4jT.css
+?? .claude/codex/evidence/playwright/html/trace/index.html
+?? .claude/codex/evidence/playwright/html/trace/playwright-logo.svg
+?? .claude/codex/evidence/playwright/html/trace/snapshot.html
+?? .claude/codex/evidence/playwright/html/trace/sw.bundle.js
+?? .claude/codex/evidence/playwright/html/trace/uiMode.Btcz36p_.css
+?? .claude/codex/evidence/playwright/html/trace/uiMode.DRQ310U5.js
+?? .claude/codex/evidence/playwright/html/trace/uiMode.html
+?? .claude/codex/evidence/playwright/html/trace/xtermModule.DYP7pi_n.css
+?? .claude/codex/evidence/playwright/results.json
+?? .claude/codex/evidence/retraining-readiness-2026.json
+?? .claude/codex/evidence/seed-backup-reconciliation.json
+?? .claude/codex/harness/QUANT-HARNESS-LOG.md
+?? .claude/codex/harness/QUANT-HARNESS.md
+?? .claude/codex/harness/__pycache__/harness_engine.cpython-312.pyc
+?? .claude/codex/harness/harness_engine.py
+?? .claude/codex/harness/normalize_evidence_frontmatter.py
+?? .claude/codex/harness/playwright.codex.config.ts
+?? .claude/codex/harness/run-quality-gates.ps1
+?? .claude/codex/harness/tests/__pycache__/test_assurance_contracts.cpython-312-pytest-8.3.4.pyc
+?? .claude/codex/harness/tests/test_assurance_contracts.py
+?? .claude/codex/harness/visual-evidence.spec.ts
+?? .claude/codex/public_snapshot_stats.json
+?? .claude/evidence/book_construction/2026-07-22/book_erc_v1.json
+?? .claude/evidence/book_construction/2026-07-22/generator_script.py
+?? .claude/evidence/book_kelly/2026-07-22/book_kelly.json
+?? .claude/evidence/book_kelly/2026-07-22/generator_script.py
+?? .claude/evidence/cop_entry_profile/2026-07-22/cop_entry_profile.json
+?? .claude/evidence/cop_entry_profile/2026-07-22/cop_entry_profile.txt
+?? .claude/evidence/cop_entry_profile/2026-07-22/generator_script.py
+?? .claude/evidence/cop_v13_engine/2026-07-22/generator_cop_v13_design_run.py
+?? .claude/evidence/cop_v13_engine/2026-07-22/v13_engine_design_run.json
+?? .claude/skills/browser-use/SKILL.md
+?? .claude/skills/security-testing/SKILL.md
+?? .claude/skills/webapp-testing/LICENSE.txt
+?? .claude/skills/webapp-testing/README.md
+?? .claude/skills/webapp-testing/SKILL.md
+?? .claude/skills/webapp-testing/examples/console_logging.py
+?? .claude/skills/webapp-testing/examples/element_discovery.py
+?? .claude/skills/webapp-testing/examples/static_html_automation.py
+?? .claude/skills/webapp-testing/scripts/with_server.py
+?? .claude/specs/adr/ADR-0021-volatility-first-data-unlock.md
+?? .claude/specs/assets/usdcop/BOOK-LEVERAGE-GOVERNOR.md
+?? Microsoft/Windows/PowerShell/ModuleAnalysisCache
+?? airflow/dags/l0_usdcop_forward_macro.py
+?? config/assets/spx500.yaml
+?? config/book/book_v1.yaml
+?? config/data_acquisition/manifest.schema.json
+?? config/forecast_experiments/spx500_regime_gated_v1.yaml
+?? config/quant_evidence/assets.json
+?? config/usdcop_forward_macro_sources.yaml
+?? data/backups/features/spx500_intraday_asset_native_20260721.manifest.json
+?? data/backups/features/spx500_intraday_asset_native_20260721.parquet
+?? data/pipeline/04_cleaning/output/USDCOP_FORWARD_MACRO_PIT.parquet
+?? data/snapshots/public_daily/btcusdt_daily.parquet
+?? data/snapshots/public_daily/btcusdt_manifest.json
+?? data/snapshots/public_daily/spx500_daily.parquet
+?? data/snapshots/public_daily/spx500_manifest.json
+?? data/snapshots/public_daily/usdcop_daily.parquet
+?? data/snapshots/public_daily/usdcop_manifest.json
+?? data/snapshots/public_daily/xauusd_daily.parquet
+?? data/snapshots/public_daily/xauusd_manifest.json
+?? database/migrations/058_billing_webhook_idempotency.sql
+?? database/migrations/059_checkout_order_ledger.sql
+?? database/migrations/065_banrep_forwards_monthly.sql
+?? database/migrations/066_banrep_remesas_monthly.sql
+?? design-system/usdcop-trading-platform/MASTER.md
+?? init-scripts/27-forward-macro-pit.sql
+?? scripts/analysis/audit_usdcop_regime_shift.py
+?? scripts/analysis/backtest_weekly_regime_gate.py
+?? scripts/analysis/book_construction.py
+?? scripts/analysis/book_kelly_governor.py
+?? scripts/analysis/cop_entry_compare.py
+?? scripts/analysis/cop_entry_profile.py
+?? scripts/analysis/cop_v13_design_run.py
+?? scripts/analysis/evaluate_2025_feature_selection_2026.py
+?? scripts/analysis/evaluate_colombia_macro_candidates.py
+?? scripts/analysis/evaluate_directional_classifier.py
+?? scripts/analysis/export_usdcop_forecasting_audit.py
+?? scripts/analysis/weekly_direction_regime_detector.py
+?? scripts/analysis/weekly_dynamic_prior_generalization.py
+?? scripts/analysis/weekly_forecasting_nested_generalization.py
+?? scripts/analysis/weekly_forecasting_oos_canonical.py
+?? scripts/analysis/weekly_hmm_regime_states.py
+?? scripts/analysis/weekly_macrofeatures_backtest.py
+?? scripts/analysis/weekly_regime_conditioned_backtest.py
+?? scripts/analysis/weekly_selective_direction_generalization.py
+?? scripts/analysis/xasset_cv_harness.py
+?? scripts/analysis/xasset_signals.py
+?? scripts/data/acquire_public_snapshots.py
+?? scripts/data/ingest_banrep_forwards.py
+?? scripts/data/ingest_banrep_remesas.py
+?? scripts/data/scrape_usdcop_forward_macro.py
+?? scripts/validation/build_harness_evidence.py
+?? scripts/validation/commerce_rbac_harness.py
+?? scripts/validation/retraining_readiness.py
+?? scripts/validation/run_production_harness.py
+?? scripts/validation/run_quant_harness.py
+?? scripts/validation/validate_acquisition_manifests.py
+?? seeds/latest/spx500_daily_ohlcv.manifest.json
+?? seeds/latest/spx500_daily_ohlcv.parquet
+?? src/data/usdcop_forward_macro.py
+?? src/strategies/spx500_regime_gated_v1/README.md
+?? src/strategies/spx500_regime_gated_v1/benchmarks.py
+?? src/strategies/spx500_regime_gated_v1/costs.py
+?? src/strategies/spx500_regime_gated_v1/datagen.py
+?? src/strategies/spx500_regime_gated_v1/deflated_sharpe.py
+?? src/strategies/spx500_regime_gated_v1/economic_metrics.py
+?? src/strategies/spx500_regime_gated_v1/engine.py
+?? src/strategies/spx500_regime_gated_v1/gates.py
+?? src/strategies/spx500_regime_gated_v1/kernels.py
+?? src/strategies/spx500_regime_gated_v1/metrics.py
+?? src/strategies/spx500_regime_gated_v1/pbo.py
+?? src/strategies/spx500_regime_gated_v1/policies.py
+?? src/strategies/spx500_regime_gated_v1/purged_kfold.py
+?? src/strategies/spx500_regime_gated_v1/pytest.ini
+?? src/strategies/spx500_regime_gated_v1/regime.py
+?? src/strategies/spx500_regime_gated_v1/run_strategy.py
+?? src/strategies/spx500_regime_gated_v1/test_strategy.py
+?? src/validation/production_harness.py
+?? src/validation/quant_harness.py
+?? src/validation/release_harness.py
+?? src/validation/sp500_oos_gate.py
+?? tests/integration/test_spx500_pipeline_config.py
+?? tests/regression/test_directional_forecast_is_diagnostic.py
+?? tests/regression/test_news_weekly_rollup_contract.py
+?? tests/regression/test_spx500_integration.py
+?? tests/regression/test_usdcop_ensemble_consistency.py
+?? tests/unit/test_acquisition_backups_audit.py
+?? tests/unit/test_commerce_rbac_harness.py
+?? tests/unit/test_cross_reference_persistence_contract.py
+?? tests/unit/test_forecast_regime_gate.py
+?? tests/unit/test_harness_engine.py
+?? tests/unit/test_market_data_statistics.py
+?? tests/unit/test_production_harness.py
+?? tests/unit/test_public_snapshot_acquisition.py
+?? tests/unit/test_quant_harness.py
+?? tests/unit/test_retraining_readiness.py
+?? tests/unit/test_seed_backup_reconciliation.py
+?? tests/unit/test_sp500_oos_gate.py
+?? tests/unit/test_spx500_investing_ingestion.py
+?? tests/unit/test_usdcop_forward_macro.py
+?? usdcop-trading-dashboard/audit-current.json
+?? usdcop-trading-dashboard/audit-fix-plan.json
+?? usdcop-trading-dashboard/audit.json
+?? usdcop-trading-dashboard/lib/security/safe-url.ts
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ard_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_bayesian_ridge_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_catboost_pure_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_consensus_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_best_of_breed_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_3_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ensemble_top_6_mean_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_catboost_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_lightgbm_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_hybrid_xgboost_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_lightgbm_pure_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_ridge_2026_W30.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W28.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W29.png
+?? usdcop-trading-dashboard/public/forecasting/forward_xgboost_pure_2026_W30.png
+?? usdcop-trading-dashboard/tests/integration/billing-cart-contract.test.ts
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -c safe.directory='C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models' ls-files --error-unmatch database/migrations/065_banrep_forwards_monthly.sql" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:44:35.199241Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.3 seconds
+Output:
+error: pathspec 'database/migrations/065_banrep_forwards_monthly.sql' did not match any file(s) known to git
+Did you forget to 'git add'?
+
+ exited 1 in 1348ms:
+error: pathspec 'database/migrations/065_banrep_forwards_monthly.sql' did not match any file(s) known to git
+Did you forget to 'git add'?
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import contextlib
+import importlib.util
+import io
+from datetime import date
+from pathlib import Path
+
+p = Path('scripts/data/ingest_banrep_forwards.py')
+spec = importlib.util.spec_from_file_location('bfm', p)
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+
+def row(month, tenor='0', dev=0.05, monto=1.0):
+    return {'month': month, 'tenor': tenor, 'forward_rate': None,
+            'implied_dev': dev, 'monto_negociado_usd_mn': monto,
+            'published_at': m.published_at_for(month), 'source': m.SOURCE_TAG}
+
+def trial(name, rows):
+    out = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            m.validate(rows)
+        status = 'PASSED'
+    except SystemExit as exc:
+        status = f'FAILED: {exc}'
+    print(f'{name}: {status}')
+    print(out.getvalue().strip())
+
+trial('truncated_single_month_2026_01', [row(date(2026,1,1))])
+trial('one_internal_gap_2026_02', [row(date(2026,1,1)), row(date(2026,3,1))])
+trial('large_TOTAL_divergence', [row(date(2026,1,1), '0', 0.00, 1.0), row(date(2026,1,1), 'TOTAL', 1.00, 1.0)])
+
+# Exact PIT examples
+for mo in (date(2024,2,1), date(2026,4,1), date(2026,5,1)):
+    print('PIT', mo, '=>', m.published_at_for(mo))
+'@ | python -B -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:44:58.156352Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.9 seconds
+Output:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 37 Carácter: 6
++ '@ | python -B -
++      ~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+ exited 1 in 1870ms:
+Error al ejecutar el programa 'python.exe': Una sesión de inicio especificada no existe. Es posible que haya 
+finalizadoEn línea: 37 Carácter: 6
++ '@ | python -B -
++      ~~~~~~~~~~~.
+En línea: 2 Carácter: 1
++ @'
++ ~~
+    + CategoryInfo          : ResourceUnavailable: (:) [], ApplicationFailedException
+    + FullyQualifiedErrorId : NativeCommandFailed
+ 
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Command python, py -ErrorAction SilentlyContinue | Select-Object Name, Source; $safe='"'C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models'; git -c safe.directory="'$safe status --short -- database/migrations/065_banrep_forwards_monthly.sql scripts/data/ingest_banrep_forwards.py; git -c safe.directory=$safe log --all --format='"'%h %s' -- database/migrations/065_banrep_forwards_monthly.sql scripts/data/ingest_banrep_forwards.py; rg -n \"POSTGRES|password|secret|token|key|tz_localize|localize|America/Bogota|COT|pytz|zoneinfo|to_datetime\" database/migrations/065_banrep_forwards_monthly.sql scripts/data/ingest_banrep_forwards.py" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+ succeeded in 1629ms:
+
+?? database/migrations/065_banrep_forwards_monthly.sql
+?? scripts/data/ingest_banrep_forwards.py
+scripts/data/ingest_banrep_forwards.py:47:    set -a; . ./.env; set +a            # load POSTGRES_* credentials
+scripts/data/ingest_banrep_forwards.py:95:    """Populate POSTGRES_* from repo .env if not already in the environment."""
+scripts/data/ingest_banrep_forwards.py:96:    if os.environ.get("POSTGRES_PASSWORD"):
+scripts/data/ingest_banrep_forwards.py:105:        key, _, value = line.partition("=")
+scripts/data/ingest_banrep_forwards.py:106:        key, value = key.strip(), value.strip().strip('"').strip("'")
+scripts/data/ingest_banrep_forwards.py:107:        if key.startswith("POSTGRES") and key not in os.environ:
+scripts/data/ingest_banrep_forwards.py:108:            os.environ[key] = value
+scripts/data/ingest_banrep_forwards.py:115:        host=os.environ.get("POSTGRES_HOST", "localhost"),
+scripts/data/ingest_banrep_forwards.py:116:        port=int(os.environ.get("POSTGRES_PORT", "5432")),
+scripts/data/ingest_banrep_forwards.py:117:        dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+scripts/data/ingest_banrep_forwards.py:118:        user=os.environ.get("POSTGRES_USER", "admin"),
+scripts/data/ingest_banrep_forwards.py:119:        password=os.environ.get("POSTGRES_PASSWORD", ""),
+scripts/data/ingest_banrep_forwards.py:274:    rows.sort(key=lambda r: (r["month"], r["tenor"]))
+scripts/data/ingest_banrep_forwards.py:293:    # 1) key uniqueness
+scripts/data/ingest_banrep_forwards.py:294:    keys = [(r["month"], r["tenor"]) for r in rows]
+scripts/data/ingest_banrep_forwards.py:295:    if len(keys) != len(set(keys)):
+scripts/data/ingest_banrep_forwards.py:296:        raise SystemExit("[FAIL] duplicated (month, tenor) keys in parsed data")
+scripts/data/ingest_banrep_forwards.py:325:        longest = max(runs, key=len)
+Name       Source                                                       
+----       ------                                                       
+python.exe C:\Users\pedro\AppData\Local\Microsoft\WindowsApps\python.exe
+py.exe     C:\Users\pedro\AppData\Local\Programs\Python\Launcher\py.exe 
+
+
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+warning: unable to access 'C:\Users\pedro/.config/git/ignore': Permission denied
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import contextlib, importlib.util, io
+from datetime import date
+from pathlib import Path
+p=Path('scripts/data/ingest_banrep_forwards.py')
+s=importlib.util.spec_from_file_location('bfm',p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m)
+def row(month,tenor='0',dev=.05,monto=1.): return {'month':month,'tenor':tenor,'forward_rate':None,'implied_dev':dev,'monto_negociado_usd_mn':monto,'published_at':m.published_at_for(month),'source':m.SOURCE_TAG}
+def trial(name, rows):
+ out=io.StringIO()
+ try:
+  with contextlib.redirect_stdout(out): m.validate(rows)
+  status='PASSED'
+ except SystemExit as e: status=f'FAILED: {e}'
+ print(name+': '+status); print(out.getvalue().strip())
+trial('truncated_single_month_2026_01',[row(date(2026,1,1))])
+trial('one_internal_gap_2026_02',[row(date(2026,1,1)),row(date(2026,3,1))])
+trial('large_TOTAL_divergence',[row(date(2026,1,1),'0',0.,1.),row(date(2026,1,1),'TOTAL',1.,1.)])
+'@ | py -3 -B -" in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-22T04:45:16.752727Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -B -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+ exited 1 in 1137ms:
+Unable to create process using '"C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\python3.12.exe" -B -': Una sesión de inicio especificada no existe. Es posible que haya finalizado.
+
+
+codex
+VERDICT: RECHAZADO
+
+1. El constraint PIT no impone la fórmula exacta. Sólo exige `published_at > month`, por lo que acepta fechas incorrectas. Debe validar `published_at = fin_de_mes(month) + 60 días`. [065_banrep_forwards_monthly.sql:52](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/database/migrations/065_banrep_forwards_monthly.sql:52>)
+
+2. La detección de huecos reproduce el error de C2: examina únicamente `months[0]..months[-1]`. No fija inicio `2005-01` ni calcula el último mes exigible según `as_of` y el rezago de 60 días; un archivo truncado pero continuo pasa. [ingest_banrep_forwards.py:308](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:308>) [ingest_banrep_forwards.py:312](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:312>)
+
+3. Los huecos no producen siempre FAIL duro: hasta tres meses consecutivos no documentados sólo generan `WARN`; el `SystemExit` ocurre a partir de cuatro. [ingest_banrep_forwards.py:87](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:87>) [ingest_banrep_forwards.py:326](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:326>)
+
+4. El cross-check bucket-weighted contra `TOTAL` es sólo descriptivo. Una divergencia ≥ `0.01` imprime `REVIEW` pero la validación continúa como exitosa; además omite silenciosamente meses sin TOTAL, buckets o peso comparable. [ingest_banrep_forwards.py:343](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:343>) [ingest_banrep_forwards.py:357](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:357>)
+
+5. Negativos y devaluaciones fuera de rango se validan después de agregar. Valores inválidos de filas fuente pueden cancelarse/promediarse y producir un agregado aparentemente válido. [ingest_banrep_forwards.py:232](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:232>) [ingest_banrep_forwards.py:298](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:298>)
+
+Sí cumplen: cálculo PIT en Python, parser mensual sin localización COT, UPSERT sin duplicados mediante `ON CONFLICT`, ausencia de secretos hardcodeados y migración 065 nueva sin modificación de migraciones rastreadas existentes.
+tokens used
+43,526
+VERDICT: RECHAZADO
+
+1. El constraint PIT no impone la fórmula exacta. Sólo exige `published_at > month`, por lo que acepta fechas incorrectas. Debe validar `published_at = fin_de_mes(month) + 60 días`. [065_banrep_forwards_monthly.sql:52](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/database/migrations/065_banrep_forwards_monthly.sql:52>)
+
+2. La detección de huecos reproduce el error de C2: examina únicamente `months[0]..months[-1]`. No fija inicio `2005-01` ni calcula el último mes exigible según `as_of` y el rezago de 60 días; un archivo truncado pero continuo pasa. [ingest_banrep_forwards.py:308](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:308>) [ingest_banrep_forwards.py:312](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:312>)
+
+3. Los huecos no producen siempre FAIL duro: hasta tres meses consecutivos no documentados sólo generan `WARN`; el `SystemExit` ocurre a partir de cuatro. [ingest_banrep_forwards.py:87](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:87>) [ingest_banrep_forwards.py:326](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:326>)
+
+4. El cross-check bucket-weighted contra `TOTAL` es sólo descriptivo. Una divergencia ≥ `0.01` imprime `REVIEW` pero la validación continúa como exitosa; además omite silenciosamente meses sin TOTAL, buckets o peso comparable. [ingest_banrep_forwards.py:343](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:343>) [ingest_banrep_forwards.py:357](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:357>)
+
+5. Negativos y devaluaciones fuera de rango se validan después de agregar. Valores inválidos de filas fuente pueden cancelarse/promediarse y producir un agregado aparentemente válido. [ingest_banrep_forwards.py:232](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:232>) [ingest_banrep_forwards.py:298](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/data/ingest_banrep_forwards.py:298>)
+
+Sí cumplen: cálculo PIT en Python, parser mensual sin localización COT, UPSERT sin duplicados mediante `ON CONFLICT`, ausencia de secretos hardcodeados y migración 065 nueva sin modificación de migraciones rastreadas existentes.

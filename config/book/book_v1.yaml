@@ -1,0 +1,44 @@
+# book_v1.yaml — LIBRO multi-activo ERC (TAREA A1)
+# Generado por scripts/analysis/book_construction.py — NO editar a mano.
+# Nota: Pesos = riesgo, no retorno. Construccion 0-trials: solo covarianza (Ledoit-Wolf) sobre series semanales 2025; ninguna media de retorno entra en la optimizacion ni se reporta. Sin claims de edge; el juez es el forward.
+
+book_id: book_v1
+method: equal_risk_contribution
+trials_consumed: 0  # solo covarianza; ningun retorno esperado ni grid
+computed_at: '2026-07-21T23:32:08-05:00'
+window:
+  iso_year: 2025
+  weeks: 52
+  frequency: weekly_iso
+  annualization_weeks: 52
+covariance_estimator: ledoit_wolf
+covariance_shrinkage: 0.144124
+target_annual_vol: 0.1
+unit_book_annual_vol: 0.072670
+vol_scale_factor: 1.376083
+sleeves:
+  - sleeve_id: cop_smart_simple_v12
+    source: .claude/evidence/cop_monitor_2025_2026/2026-07-21/monitor.json
+    erc_weight: 0.420537
+    risk_contribution_pct: 0.333333
+    scaled_weight: 0.578694
+    annualized_vol_2025: 0.096427
+  - sleeve_id: xau_gold_trend_simple
+    source: usdcop-trading-dashboard/public/data/strategies/gold_trend_simple/backtests/1.0.0/signals_2026.json
+    erc_weight: 0.383319
+    risk_contribution_pct: 0.333333
+    scaled_weight: 0.527479
+    annualized_vol_2025: 0.108008
+  - sleeve_id: btc_hodl_b1
+    source: usdcop-trading-dashboard/public/data/strategies/btc_hodl_b1/backtests/1.2.1/signals_2026.json
+    erc_weight: 0.196145
+    risk_contribution_pct: 0.333333
+    scaled_weight: 0.269911
+    annualized_vol_2025: 0.200054
+notes: >-
+  Pesos = riesgo, no retorno; juez = forward; sin claims de edge.
+  Series semanales 2025 (ISO). COP: pnl_pct por trade (semana de entrada,
+  semanas sin trade = 0). XAU/BTC: daily_equity del bundle publicado
+  (posiciones multi-semana). No se compara performance entre activos;
+  se combinan solo en riesgo.
+evidence: .claude/evidence/book_construction/2026-07-22/book_erc_v1.json

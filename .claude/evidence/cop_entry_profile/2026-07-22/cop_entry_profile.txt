@@ -1,0 +1,201 @@
+H-ENTRY-01 — Perfil intradia descriptivo USD/COP (M5, DESIGN 2020-2024 ONLY)
+Generado: 2026-07-21T23:32:44.605722-05:00   Sesion: 8:00-12:55 COT
+
+CAVEAT: 2020-2022 M5 bars are 100% flat (high=low=open=close, price snapshots); 2023 ~90% flat, 2024 ~84% flat. Per-bar (high-low)/close is degenerate as a spread proxy pre-2023 — primary cost proxies here are the intra-block close-range and 5m close-to-close return volatility.
+
+TODOS LOS DIAS (Lun-Vie)
+=============================================================================================
+ block | n_bars | n_days | barRng_bp |  flat% | closeRng_bp | medRng_bp | vol5m_bp | |r5m|_bp
+---------------------------------------------------------------------------------------------
+ 08:00 |   7366 |   1275 |      0.72 |  94.6% |       29.43 |     22.49 |    15.35 |     8.79
+ 08:30 |   7538 |   1284 |      0.49 |  94.5% |       21.41 |     16.57 |    13.41 |     6.88
+ 09:00 |   7516 |   1272 |      0.45 |  94.5% |       17.47 |     14.16 |    11.97 |     5.55
+ 09:30 |   7505 |   1276 |      0.37 |  94.4% |       16.79 |     13.60 |     9.01 |     5.29
+ 10:00 |   7513 |   1276 |      0.31 |  94.4% |       15.57 |     12.60 |     8.17 |     5.02
+ 10:30 |   7481 |   1270 |      0.32 |  94.5% |       15.80 |     12.05 |     9.01 |     5.03
+ 11:00 |   7511 |   1276 |      0.30 |  94.5% |       14.57 |     11.46 |     8.27 |     4.74
+ 11:30 |   7484 |   1265 |      0.30 |  94.5% |       14.85 |     11.63 |     8.01 |     4.69
+ 12:00 |   7489 |   1271 |      0.32 |  94.6% |       14.12 |     11.17 |     7.51 |     4.50
+ 12:30 |   7486 |   1268 |      0.37 |  94.6% |       14.90 |     11.93 |     8.42 |     4.69
+
+SOLO LUNES (dia de entrada H5) — 259 lunes
+=============================================================================================
+ block | n_bars | n_days | barRng_bp |  flat% | closeRng_bp | medRng_bp | vol5m_bp | |r5m|_bp
+---------------------------------------------------------------------------------------------
+ 08:00 |   1395 |    251 |      0.93 |  93.4% |       29.22 |     19.09 |    19.85 |     8.94
+ 08:30 |   1458 |    257 |      0.50 |  93.8% |       17.48 |     14.26 |    11.40 |     6.17
+ 09:00 |   1466 |    254 |      0.52 |  93.9% |       14.68 |     12.43 |    19.56 |     5.31
+ 09:30 |   1464 |    256 |      0.40 |  93.6% |       14.08 |     11.29 |     8.63 |     4.49
+ 10:00 |   1460 |    255 |      0.39 |  93.4% |       12.49 |     10.20 |     6.92 |     4.19
+ 10:30 |   1448 |    249 |      0.50 |  93.5% |       13.40 |      9.86 |     7.41 |     4.25
+ 11:00 |   1467 |    256 |      0.38 |  93.5% |       10.69 |      8.50 |     7.04 |     3.79
+ 11:30 |   1450 |    249 |      0.33 |  93.6% |       12.08 |      8.42 |     6.71 |     3.81
+ 12:00 |   1462 |    253 |      0.36 |  93.5% |       11.54 |      7.93 |     7.12 |     3.72
+ 12:30 |   1461 |    250 |      0.71 |  93.5% |       12.79 |      9.21 |    10.10 |     4.11
+
+PRIMERA MEDIA HORA (8:00-8:30) vs VENTANA TWAP (9:30-10:30):
+{
+  "all_days": {
+    "first_0800_0830": {
+      "close_range_bp_mean_per_30min": 29.425918,
+      "ret5m_vol_bp": 15.345718,
+      "n_days": 1275,
+      "blocks": [
+        "08:00"
+      ]
+    },
+    "twap_0930_1030": {
+      "close_range_bp_mean_per_30min": 16.181268,
+      "ret5m_vol_bp": 8.603931,
+      "n_days": 1282,
+      "blocks": [
+        "09:30",
+        "10:00"
+      ]
+    },
+    "ratios": {
+      "close_range_bp_mean_per_30min_ratio_first_over_twap": 1.818517,
+      "ret5m_vol_bp_ratio_first_over_twap": 1.783571
+    }
+  },
+  "mondays": {
+    "first_0800_0830": {
+      "close_range_bp_mean_per_30min": 29.223309,
+      "ret5m_vol_bp": 19.851715,
+      "n_days": 251,
+      "blocks": [
+        "08:00"
+      ]
+    },
+    "twap_0930_1030": {
+      "close_range_bp_mean_per_30min": 13.284711,
+      "ret5m_vol_bp": 7.821845,
+      "n_days": 258,
+      "blocks": [
+        "09:30",
+        "10:00"
+      ]
+    },
+    "ratios": {
+      "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.19977,
+      "ret5m_vol_bp_ratio_first_over_twap": 2.537984
+    }
+  },
+  "mondays_by_year": {
+    "2020": {
+      "first_0800_0830": {
+        "close_range_bp_mean_per_30min": 34.274285,
+        "ret5m_vol_bp": 24.182268,
+        "n_days": 48,
+        "blocks": [
+          "08:00"
+        ]
+      },
+      "twap_0930_1030": {
+        "close_range_bp_mean_per_30min": 13.2487,
+        "ret5m_vol_bp": 6.825017,
+        "n_days": 50,
+        "blocks": [
+          "09:30",
+          "10:00"
+        ]
+      },
+      "ratios": {
+        "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.586992,
+        "ret5m_vol_bp_ratio_first_over_twap": 3.543181
+      }
+    },
+    "2021": {
+      "first_0800_0830": {
+        "close_range_bp_mean_per_30min": 29.286435,
+        "ret5m_vol_bp": 17.451472,
+        "n_days": 50,
+        "blocks": [
+          "08:00"
+        ]
+      },
+      "twap_0930_1030": {
+        "close_range_bp_mean_per_30min": 13.333842,
+        "ret5m_vol_bp": 7.575298,
+        "n_days": 52,
+        "blocks": [
+          "09:30",
+          "10:00"
+        ]
+      },
+      "ratios": {
+        "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.196399,
+        "ret5m_vol_bp_ratio_first_over_twap": 2.303734
+      }
+    },
+    "2022": {
+      "first_0800_0830": {
+        "close_range_bp_mean_per_30min": 31.611198,
+        "ret5m_vol_bp": 20.497981,
+        "n_days": 48,
+        "blocks": [
+          "08:00"
+        ]
+      },
+      "twap_0930_1030": {
+        "close_range_bp_mean_per_30min": 15.66078,
+        "ret5m_vol_bp": 8.411348,
+        "n_days": 51,
+        "blocks": [
+          "09:30",
+          "10:00"
+        ]
+      },
+      "ratios": {
+        "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.018494,
+        "ret5m_vol_bp_ratio_first_over_twap": 2.436944
+      }
+    },
+    "2023": {
+      "first_0800_0830": {
+        "close_range_bp_mean_per_30min": 30.631787,
+        "ret5m_vol_bp": 23.169912,
+        "n_days": 52,
+        "blocks": [
+          "08:00"
+        ]
+      },
+      "twap_0930_1030": {
+        "close_range_bp_mean_per_30min": 14.321699,
+        "ret5m_vol_bp": 8.682609,
+        "n_days": 52,
+        "blocks": [
+          "09:30",
+          "10:00"
+        ]
+      },
+      "ratios": {
+        "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.138837,
+        "ret5m_vol_bp_ratio_first_over_twap": 2.668543
+      }
+    },
+    "2024": {
+      "first_0800_0830": {
+        "close_range_bp_mean_per_30min": 21.044769,
+        "ret5m_vol_bp": 11.766921,
+        "n_days": 53,
+        "blocks": [
+          "08:00"
+        ]
+      },
+      "twap_0930_1030": {
+        "close_range_bp_mean_per_30min": 10.03402,
+        "ret5m_vol_bp": 7.39893,
+        "n_days": 53,
+        "blocks": [
+          "09:30",
+          "10:00"
+        ]
+      },
+      "ratios": {
+        "close_range_bp_mean_per_30min_ratio_first_over_twap": 2.097342,
+        "ret5m_vol_bp_ratio_first_over_twap": 1.590354
+      }
+    }
+  }
+}
