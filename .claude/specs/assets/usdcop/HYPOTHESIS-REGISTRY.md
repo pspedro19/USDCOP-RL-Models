@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 68
+n_trials_total: 69
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -936,3 +936,32 @@ mejora estructural genuina: mejora los años MALOS y cede en el año seleccionad
 lo inverso del overfitting. Magnitudes modestas (0.2-1.6pp/año): se dice claro.
 Congelada `smart_simple_v14_ladder` (SSOT + manifest); juez = forward desde freeze,
 mismo protocolo sellado de v12. Entra a paper junto a v11/v12 (strategy_id propio, 064).
+
+
+---
+
+## CELDA S7-MOTOR (2026-07-21): el "escenario 20%" NO replica en ejecución honesta · trials 68→69
+
+La config del +20.11% del contrafactual (ladder + cap 3.0) corrida en el MOTOR real:
+
+| Año | S7-motor | (v14 cap 1.5) | HS |
+|---|---|---|---|
+| 2021 | −3.10% | −2.71% | 0 |
+| 2022 | −7.64% | −7.98% | 5 |
+| 2023 | −1.26% | −0.93% | 5 |
+| 2024 | **−2.66%** (la sim decía +4.6 a lev bajo) | +4.61% | **4** |
+| **Compuesto 21-24** | **−14.0%** | −6.3% | |
+| 2025 | **+12.77%** (la sim prometía +20.11%) | +6.59% | 5 |
+
+**Dos razones por las que el 20% era espejismo:**
+1. **El simulador crudo ignoraba la dinámica del HS efectivo**: a lev 3 el buffer de
+   precio se comprime a 3.5%/3 ≈ 1.17% — semanas que a lev 1.5 sobrevivían hasta el TP
+   mueren en −3.5% de equity. 2024 VOLTEA de +4.6% a −2.66% (4 hard stops nuevos). El
+   +20.11% de la sim vale +12.77% en ejecución honesta.
+2. **El diseño paga −14% compuesto** — peor que v14 en la ventana limpia. El leverage
+   sobre ESTA estrategia amplifica la parte que no tiene edge junto con la que sí.
+
+**Conclusión sellada**: el apalancamiento no es una variable de diseño de la pata — es
+una decisión de CAPITAL sobre lo graduado (a nivel libro, post-forward, con guard
+fraccional-Kelly). La escalera (v14) se queda; el lev alto en la pata queda cerrado con
+evidencia de motor. Celda reportada completa, no desplegable.

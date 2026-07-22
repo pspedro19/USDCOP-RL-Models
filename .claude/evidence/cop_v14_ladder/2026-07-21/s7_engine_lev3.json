@@ -1,0 +1,37 @@
+{
+  "celda": "ladder2 + cap 3.0 (la config del '20%' del contrafactual)",
+  "years": {
+    "2021": {
+      "ret": -3.1,
+      "dd": 4.19,
+      "n": 7,
+      "hs": 0
+    },
+    "2022": {
+      "ret": -7.64,
+      "dd": 9.54,
+      "n": 27,
+      "hs": 5
+    },
+    "2023": {
+      "ret": -1.26,
+      "dd": 6.25,
+      "n": 22,
+      "hs": 5
+    },
+    "2024": {
+      "ret": -2.66,
+      "dd": 9.23,
+      "n": 24,
+      "hs": 4
+    },
+    "2025": {
+      "ret": 12.77,
+      "dd": 7.4,
+      "n": 32,
+      "hs": 5
+    }
+  },
+  "compuesto_diseno_21_24_pct": -14.0,
+  "proposito": "documentar el precio del 20% \u2014 no desplegable"
+}
