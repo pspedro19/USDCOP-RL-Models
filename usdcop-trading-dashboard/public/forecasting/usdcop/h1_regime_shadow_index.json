@@ -1,0 +1,56 @@
+{
+  "schema_version": "2.0.0",
+  "experiment_id": "usdcop_h1_regime_shadow_v2",
+  "supersedes": "usdcop_h1_regime_shadow_v1",
+  "generated_at": "2026-07-27T08:47:49.388622-05:00",
+  "data_cutoff": "2026-07-22",
+  "first_eligible_iso_week": "2026-W31",
+  "status": "awaiting_first_commit",
+  "registration_valid": true,
+  "contract_sha256": "ea1b48885607376c3b5bdd5467fc5578b0ac76d768d41be2702eef5219ff6047",
+  "code_bundle_sha256": "618b9cc13ee2952336574cd72366691b4cb1f3c775b1e4dbdb3476d7fb0ec5a7",
+  "prediction_chain_head": "0000000000000000000000000000000000000000000000000000000000000000",
+  "outcome_chain_head": "0000000000000000000000000000000000000000000000000000000000000000",
+  "signal_authorized": false,
+  "capital_authorized": false,
+  "sample_review_eligible": false,
+  "promotion_review_eligible": false,
+  "summary": {
+    "committed_weeks": 0,
+    "matured_weeks": 0,
+    "matured_signals": 0,
+    "coverage": null,
+    "directional_accuracy": null,
+    "selective_risk": null,
+    "balanced_accuracy": null,
+    "up_recall": null,
+    "down_recall": null,
+    "prediction_up_rate": null,
+    "lift_vs_causal_majority": null,
+    "brier_all_committed_predictions": null
+  },
+  "provenance": {
+    "baseline": {
+      "rows": 6879,
+      "start": "2000-01-03",
+      "end": "2026-07-21",
+      "source_rows": {
+        "twelvedata_daily_deep": 5180,
+        "current_daily_seed": 1699
+      },
+      "duplicate_dates": 0,
+      "maximum_absolute_daily_log_return": 0.0634422301452586,
+      "deep_sha256": "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438",
+      "current_sha256": "3d528ee39197fa6536d7c73820f415ee6aa1f5a1cfded2ae3c85474ae592149d",
+      "join_date": "2019-12-18"
+    },
+    "baseline_cutoff": "2026-07-21",
+    "live_source_path": "seeds/latest/usdcop_daily_ohlcv.parquet",
+    "live_source_sha256": "04c33106173b129ee3239a76854d21c2f6f6bcfec523b5679c7f7497340f831e",
+    "live_rows_after_cutoff": 1,
+    "frame_rows": 6880,
+    "frame_start": "2000-01-03",
+    "frame_end": "2026-07-22"
+  },
+  "records": []
+}

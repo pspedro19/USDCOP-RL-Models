@@ -16,7 +16,13 @@ API discovered via browser inspection:
     GET https://api.investing.com/api/financialdata/historical/{instrument_id}
     Params: start-date, end-date, time-frame=Daily
 
-Uses cloudscraper for Cloudflare bypass.
+Uses curl_cffi (real-Chrome TLS fingerprint) for Cloudflare bypass; falls back
+to cloudscraper if curl_cffi is unavailable.
+
+2026-07-27: Cloudflare began blocking cloudscraper/python-requests at the TLS
+fingerprint level (403 on ALL endpoints, even the HTML pages, regardless of
+headers/cookies/warm-up). curl_cffi with impersonate="chrome" verified 200 on
+the same /financialdata/historical/{id} endpoint with same-day data.
 """
 
 import logging
@@ -30,6 +36,13 @@ import pandas as pd
 from .base import BaseExtractor, ExtractionResult
 
 logger = logging.getLogger(__name__)
+
+try:
+    from curl_cffi import requests as cffi_requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
+    logger.warning("curl_cffi not installed - falling back to cloudscraper (likely 403)")
 
 try:
     import cloudscraper
@@ -68,27 +81,41 @@ class InvestingExtractor(BaseExtractor):
         return list(self._variables_config.keys())
 
     def _get_session(self):
-        """Create or return cached cloudscraper session."""
-        if not HAS_CLOUDSCRAPER:
-            raise ImportError("cloudscraper required: pip install cloudscraper")
+        """Create or return cached HTTP session.
 
+        Preference order:
+        1. curl_cffi with real-Chrome TLS impersonation (defeats Cloudflare's
+           TLS-fingerprint block that 403s cloudscraper since 2026-07).
+        2. cloudscraper (legacy fallback).
+        """
         if self._session is None:
-            self._session = cloudscraper.create_scraper(
-                browser={
-                    "browser": "chrome",
-                    "platform": "windows",
-                    "desktop": True,
-                }
-            )
-            self._session.headers.update({
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                ),
-                "Accept": "application/json",
-                "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
-            })
+            if HAS_CURL_CFFI:
+                self._session = cffi_requests.Session(impersonate="chrome")
+                self._session.headers.update({
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+                })
+                logger.info("[Investing] Session backend: curl_cffi (chrome impersonation)")
+            elif HAS_CLOUDSCRAPER:
+                self._session = cloudscraper.create_scraper(
+                    browser={
+                        "browser": "chrome",
+                        "platform": "windows",
+                        "desktop": True,
+                    }
+                )
+                self._session.headers.update({
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/120.0.0.0 Safari/537.36"
+                    ),
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+                })
+                logger.warning("[Investing] Session backend: cloudscraper (curl_cffi missing)")
+            else:
+                raise ImportError("curl_cffi or cloudscraper required for Investing extractor")
         return self._session
 
     def _get_variable_config(self, variable: str) -> dict:

@@ -244,18 +244,31 @@ class InvestingExtractionStrategy(ConfigurableExtractor):
         errors: List[str] = []
 
         try:
-            import cloudscraper
             from bs4 import BeautifulSoup
         except ImportError:
-            errors.append("cloudscraper/beautifulsoup4 not installed")
+            errors.append("beautifulsoup4 not installed")
             return self._create_result(results, errors, start_time)
 
-        scraper = cloudscraper.create_scraper()
-        user_agent = self.config.get(
-            'user_agent',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        )
-        headers = {'User-Agent': user_agent}
+        # 2026-07-27: Cloudflare blocks cloudscraper at TLS-fingerprint level
+        # (403 on every page). curl_cffi impersonates real Chrome TLS and passes.
+        headers = {}
+        try:
+            from curl_cffi import requests as cffi_requests
+            scraper = cffi_requests.Session(impersonate="chrome")
+            logger.info("[Investing] Session backend: curl_cffi (chrome impersonation)")
+        except ImportError:
+            try:
+                import cloudscraper
+            except ImportError:
+                errors.append("curl_cffi/cloudscraper not installed")
+                return self._create_result(results, errors, start_time)
+            scraper = cloudscraper.create_scraper()
+            user_agent = self.config.get(
+                'user_agent',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            )
+            headers = {'User-Agent': user_agent}
+            logger.warning("[Investing] Session backend: cloudscraper (curl_cffi missing)")
         max_rows = self.config.get('max_rows', 65)
         delay = self.config.get('request_delay_seconds', 2)
 

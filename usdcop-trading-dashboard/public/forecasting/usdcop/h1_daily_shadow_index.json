@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "usdcop_h1_daily_shadow_v1",
+  "parent_rule": "usdcop_h1_regime_shadow_v2",
+  "generated_at": "2026-07-27T08:47:49.722984-05:00",
+  "data_cutoff": "2026-07-22",
+  "first_eligible_date": "2026-07-27",
+  "status": "awaiting_first_commit",
+  "registration_valid": true,
+  "contract_sha256": "6d9ed2b31bbdb15083be9c4b96055d6b60d39bd68455f4bcb5d2ae1322b732a9",
+  "code_bundle_sha256": "43c729729c902262d5ba6d2394d187365b746984a71ac41460f0bfa5c6843a73",
+  "prediction_chain_head": "0000000000000000000000000000000000000000000000000000000000000000",
+  "outcome_chain_head": "0000000000000000000000000000000000000000000000000000000000000000",
+  "signal_authorized": false,
+  "capital_authorized": false,
+  "promotion_review_eligible": false,
+  "summary": {
+    "committed_sessions": 0,
+    "matured_base_predictions": 0,
+    "matured_selective_signals": 0,
+    "selective_coverage": null,
+    "base": {
+      "n": 0,
+      "directional_accuracy": null,
+      "balanced_accuracy": null,
+      "up_recall": null,
+      "down_recall": null,
+      "prediction_up_rate": null
+    },
+    "selective": {
+      "n": 0,
+      "directional_accuracy": null,
+      "balanced_accuracy": null,
+      "up_recall": null,
+      "down_recall": null,
+      "prediction_up_rate": null
+    },
+    "base_lift_vs_causal_majority": null,
+    "brier_model": null,
+    "brier_causal_prior": null
+  },
+  "provenance": {
+    "baseline": {
+      "rows": 6880,
+      "start": "2000-01-03",
+      "end": "2026-07-22",
+      "source_rows": {
+        "twelvedata_daily_deep": 5180,
+        "current_daily_seed": 1700
+      },
+      "duplicate_dates": 0,
+      "maximum_absolute_daily_log_return": 0.0634422301452586,
+      "deep_sha256": "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438",
+      "current_sha256": "d4ee969a072535502dab0dfd2b7646e4ef5dfb221f5e1a1fdd7e7f496825a54d",
+      "join_date": "2019-12-18"
+    },
+    "baseline_cutoff": "2026-07-22",
+    "live_source_path": "seeds/latest/usdcop_daily_ohlcv.parquet",
+    "live_source_sha256": "04c33106173b129ee3239a76854d21c2f6f6bcfec523b5679c7f7497340f831e",
+    "live_rows_after_cutoff": 0,
+    "frame_rows": 6880,
+    "frame_start": "2000-01-03",
+    "frame_end": "2026-07-22"
+  },
+  "records": []
+}

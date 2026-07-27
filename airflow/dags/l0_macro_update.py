@@ -345,6 +345,46 @@ def check_market_hours(**context) -> bool:
 # TASK 3: EXTRACT ALL SOURCES (WITH CIRCUIT BREAKERS)
 # =============================================================================
 
+def _get_upsert_service_cls():
+    """Resolve FrequencyRoutedUpsertService robustly.
+
+    ``PYTHONPATH=/opt/airflow:/opt/airflow/dags`` puts the repo-root ``services``
+    package first, which shadows ``dags/services`` and makes
+    ``from services.upsert_service import ...`` raise ModuleNotFoundError at task
+    runtime (the second reason macro was frozen). Load the real module by its
+    path next to this DAG; it imports only stdlib + pandas, so this is safe.
+    """
+    try:
+        from services.upsert_service import FrequencyRoutedUpsertService
+        return FrequencyRoutedUpsertService
+    except ModuleNotFoundError:
+        import importlib.util
+        module_path = Path(__file__).resolve().parent / "services" / "upsert_service.py"
+        spec = importlib.util.spec_from_file_location(
+            "dags_services_upsert_service", module_path
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.FrequencyRoutedUpsertService
+
+
+def _df_to_records(df: pd.DataFrame) -> list:
+    """Serialize an extraction DataFrame to a JSON-safe list of records.
+
+    XCom uses JSON, which cannot serialize pandas ``Timestamp`` (the crash that
+    left ``extract_all_sources`` failing every run and macro frozen). We move a
+    named date index into a ``fecha`` column and ISO-stringify any datetime
+    columns so ``upsert_all`` can rebuild the frame with ``fecha`` intact.
+    """
+    frame = df.copy()
+    if frame.index.name is not None and frame.index.name not in frame.columns:
+        frame = frame.reset_index()
+    for column in frame.columns:
+        if pd.api.types.is_datetime64_any_dtype(frame[column]):
+            frame[column] = frame[column].dt.strftime('%Y-%m-%d')
+    return frame.to_dict(orient='records')
+
+
 def extract_all_sources(**context) -> Dict[str, Any]:
     """
     Extract last N records from ALL sources with circuit breaker protection.
@@ -494,7 +534,7 @@ def extract_all_sources(**context) -> Dict[str, Any]:
     # Push results to XCom
     context['ti'].xcom_push(key='extraction_results', value=extraction_results)
     context['ti'].xcom_push(key='extraction_data', value={
-        v: df.to_dict() for v, df in extraction_data.items()
+        v: _df_to_records(df) for v, df in extraction_data.items()
     })
     context['ti'].xcom_push(key='extraction_report', value=report.to_dict())
 
@@ -521,7 +561,7 @@ def upsert_all(**context) -> Dict[str, Any]:
 
     Contract: CTR-L0-4TABLE-001
     """
-    from services.upsert_service import FrequencyRoutedUpsertService
+    FrequencyRoutedUpsertService = _get_upsert_service_cls()
 
     logger.info("=" * 60)
     logger.info("L0 MACRO UPDATE v2.1 - UPSERT Phase (4-Table Architecture)")
@@ -535,11 +575,13 @@ def upsert_all(**context) -> Dict[str, Any]:
         logger.warning("[UPSERT] No extraction data available")
         return {'success': 0, 'failed': 0, 'total_rows': 0}
 
-    # Reconstruct DataFrames
+    # Reconstruct DataFrames (records serialized JSON-safe by _df_to_records)
     extraction_data = {}
-    for var, data_dict in extraction_data_raw.items():
+    for var, data_records in extraction_data_raw.items():
         try:
-            df = pd.DataFrame.from_dict(data_dict)
+            df = pd.DataFrame(data_records)
+            if 'fecha' in df.columns:
+                df['fecha'] = pd.to_datetime(df['fecha'])
             extraction_data[var] = df
         except Exception as e:
             logger.warning(f"[UPSERT] Could not reconstruct {var}: {e}")
