@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PLANNED
-version: 1.0.0
-last_verified: 2026-07-21
+version: 1.1.0
+last_verified: 2026-07-27
 supersedes: []
 code_anchors:
   - config/assets/spx500.yaml
@@ -89,6 +89,22 @@ conservador y no selecciona parámetros. Si se cambia MA/window/target, sí es o
 
 **Gate S1:** 100% de barras usadas provienen de Investing, `available_at <= decision_at`,
 price-return declarado y cero mezcla/fallback. La ausencia de intradía no bloquea v1.
+
+### S1b — Variables reales de régimen: ENTREGADO 2026-07-27 (0 trials)
+
+El "contrato separado" de variables que S1.7 exigía ya existe: **9 series FRED** ingresadas
+al L0 (migración `067_spx500_regime_macro_vars.sql`, SSOT + `extractors/config.yaml`,
+backfill completo 44,749 obs, mantenimiento automático vía `core_l0_04_macro_update`):
+HY-OAS, curvas 10y-2y/10y-3m, breakeven 10y, real yield 10y (DFII10 — también frontera de
+Oro), NFCI, STLFSI4, initial claims, regla de Sahm. VIX ya vivo vía investing (curl_cffi,
+2026-07-27). Detalle, priors e historia por serie: evento de datos en
+`HYPOTHESIS-REGISTRY.md` (spx500).
+
+**Esto NO reabre el regime-gated por sí solo.** La secuencia legal sigue siendo: cerrar
+S0 (evidencia real) → pre-registrar la familia de features de régimen COMPLETA (cada
+celda = +1 trial), screening SOLO ≤2024 con purged K-fold, bar = batir al MA200 causal en
+Calmar con costos propios → si una celda gana, UNA variante económica con juez forward.
+Dirección/DA no se toca: sin lift vs baseline en ningún activo (constitución §1).
 
 ### S2 — Separar los ciclos operativos (0 trials)
 

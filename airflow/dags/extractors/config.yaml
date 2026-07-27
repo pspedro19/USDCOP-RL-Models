@@ -44,6 +44,56 @@ sources:
         frequency: "D"
         intraday: false
 
+      # --- SPX500 regime variables (migracion 067, 2026-07-27, 0 trials) ---
+      # Desbloqueo de datos del PLAN-RENTABILIDAD spx500 ("regime-gated pausado
+      # hasta variables reales"). Semanales guardadas sparse en tabla diaria.
+      # Espejo en config/macro_variables_ssot.yaml (el registry cae a ESTE
+      # fallback en contenedor: _get_ssot parents[4] no resuelve — ver spec).
+      - name: "FINC_SPREAD_HYOAS_USA_D_HYOAS"
+        series_id: "BAMLH0A0HYM2"
+        frequency: "D"
+        intraday: false
+
+      - name: "FINC_CURVE_T10Y2Y_USA_D_T10Y2Y"
+        series_id: "T10Y2Y"
+        frequency: "D"
+        intraday: false
+
+      - name: "FINC_CURVE_T10Y3M_USA_D_T10Y3M"
+        series_id: "T10Y3M"
+        frequency: "D"
+        intraday: false
+
+      - name: "INFL_BREAKEVEN10Y_USA_D_T10YIE"
+        series_id: "T10YIE"
+        frequency: "D"
+        intraday: false
+
+      - name: "FINC_REALYIELD10Y_USA_D_DFII10"
+        series_id: "DFII10"
+        frequency: "D"
+        intraday: false
+
+      - name: "VOLT_NFCI_USA_D_NFCI"
+        series_id: "NFCI"
+        frequency: "D"
+        intraday: false
+
+      - name: "VOLT_STRESS_STLFSI_USA_D_STLFSI4"
+        series_id: "STLFSI4"
+        frequency: "D"
+        intraday: false
+
+      - name: "LABR_CLAIMS_ICSA_USA_D_ICSA"
+        series_id: "ICSA"
+        frequency: "D"
+        intraday: false
+
+      - name: "LABR_SAHM_USA_M_SAHMRT"
+        series_id: "SAHMREALTIME"
+        frequency: "M"
+        intraday: false
+
       - name: "POLR_PRIME_RATE_USA_D_PRIME"
         series_id: "DPRIME"
         frequency: "D"

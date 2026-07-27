@@ -183,3 +183,33 @@ los corregidos viven en `2026-07-21/`.
   `research_only`. Esta corrección NO es una hipótesis nueva ni consume trial
   (medición defectuosa de un gate ya registrado; conteo se conserva). H-SIMP-SPX-02 sigue
   viva con el forward como juez, ahora contra el baseline BIEN medido.
+
+---
+
+## EVENTO DE DATOS 2026-07-27 — variables de régimen ingresadas (0 trials)
+
+**Qué**: el contrato de DATOS que S1 dejaba pendiente ("regime-gated pausado hasta tener
+variables reales") queda entregado. 9 series FRED verificadas en vivo e ingresadas al L0
+(migración 067; `config/macro_variables_ssot.yaml` + `airflow/dags/extractors/config.yaml`;
+backfill histórico completo = 44,749 obs):
+
+| Columna | FRED | Historia | Prior económico |
+|---|---|---|---|
+| `finc_spread_hyoas_usa_d_hyoas` | BAMLH0A0HYM2 | 2023-07→ (licencia ICE) | stress de crédito lidera drawdowns |
+| `finc_curve_t10y2y_usa_d_t10y2y` | T10Y2Y | 1976→ | ciclo (inversión/steepening) |
+| `finc_curve_t10y3m_usa_d_t10y3m` | T10Y3M | 1982→ | señal recesiva líder |
+| `infl_breakeven10y_usa_d_t10yie` | T10YIE | 2003→ | régimen inflacionario |
+| `finc_realyield10y_usa_d_dfii10` | DFII10 | 2003→ | tasas reales (también frontera Oro) |
+| `volt_nfci_usa_d_nfci` | NFCI | 1971→ | condiciones financieras (semanal) |
+| `volt_stress_stlfsi_usa_d_stlfsi4` | STLFSI4 | 1993→ | stress compuesto (semanal) |
+| `labr_claims_icsa_usa_d_icsa` | ICSA | 1967→ | deterioro laboral (semanal) |
+| `labr_sahm_usa_m_sahmrt` | SAHMREALTIME | 1959→ | trigger recesivo (mensual) |
+
+**Contabilidad**: 0 trials — ingesta de datos, ninguna celda mirada contra retornos de SPX.
+**Regla de gasto**: cualquier screening usa SOLO ≤2024, purged K-fold, familia COMPLETA
+pre-registrada ANTES de mirar (patrón H-RISK-FAM), bar contra baseline tonto pre-firmado;
+cada celda = +1 trial aquí. El VIX (ya vivo vía investing/curl_cffi) pertenece al mismo
+contrato de consumo.
+**Nota de drift**: el registry de extractores en contenedor cae al fallback
+`extractors/config.yaml` (el `_get_ssot()` usa `parents[4]`, layout de host); por eso las
+variables viven en AMBOS archivos. Unificar cuando se arregle `_get_ssot` layout-aware.
