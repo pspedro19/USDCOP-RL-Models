@@ -1,0 +1,92 @@
+{
+  "strategy_id": "spx500_regime_gated_v1",
+  "strategy_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "asset": "SPX500",
+  "n_trading_days": 250,
+  "n_trades": 5,
+  "insufficient_trades": true,
+  "strategies": {
+    "spx500_regime_gated_v1": {
+      "final_equity": 10767.63,
+      "total_return_pct": 7.68,
+      "sharpe": null,
+      "sortino": null,
+      "calmar": null,
+      "max_dd_pct": 6.19,
+      "win_rate_pct": 40.0,
+      "profit_factor": 2.813,
+      "n_long": 5,
+      "n_short": 0,
+      "trading_days": 250,
+      "exit_reasons": {
+        "exposure_zero": 4,
+        "year_end_open": 1
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 11634.23,
+      "total_return_pct": 16.34
+    }
+  },
+  "statistical_tests": {
+    "p_value": null,
+    "significant": false,
+    "insufficient_trades": true,
+    "min_trades_for_stats": 20,
+    "note": "N<20 segmentos => solo conteo y PnL (quant-constitution \u00a76)"
+  },
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": null,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno minimo",
+      "value": 7.68,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown",
+      "label": "MaxDD < 20%",
+      "value": 6.19,
+      "threshold": 20.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades >= 10",
+      "value": 5,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "dsr_trial_aware",
+      "label": "DSR > 0.95 (full-window)",
+      "value": 0.873,
+      "threshold": 0.95,
+      "passed": false
+    }
+  ],
+  "honest_gate": {
+    "scope": "full-window (evidencia profitability, no el anio suelto)",
+    "evidence_dir": "2026-07-27",
+    "verdict": "FAIL",
+    "deflated_sharpe": 0.873,
+    "failed_gates": [
+      "dsr_min_over_grid_gt_0.95",
+      "pbo_lt_0.50",
+      "net_return_gt_b1"
+    ],
+    "window": {
+      "start": "2020-01-02 00:00:00+00:00",
+      "end": "2026-07-24 00:00:00+00:00",
+      "n_periods": 1648
+    }
+  },
+  "data_source": {
+    "series": "SPY total-return snapshot (load_real, adj_close)",
+    "nota": "price-index de Investing NO se mezcla en esta corrida (PLAN-RENTABILIDAD \u00a71); research_only hasta DSR>0.95 + forward"
+  }
+}

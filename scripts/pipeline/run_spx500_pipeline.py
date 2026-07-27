@@ -45,6 +45,17 @@ def main() -> int:
     w = spx_regime_gated_v1(df)
     print(f"SPX500 REAL run: {len(df)} filas {df['timestamp'].iloc[0]} -> "
           f"{df['timestamp'].iloc[-1]}, pesos no-nulos={int((w.abs() > 1e-9).sum())}")
+    # S3 (plan SPX, 2026-07-27): publicar bundles reales 2025/2026 con el motor
+    # corregido del ERRATUM (gated + baseline ma200_v1). La publicacion es
+    # inmutable por (version, anio): re-runs del DAG dan immutable_hit y no
+    # reescriben — idempotente por diseno. El anio vivo crece via S4 (L5/L6),
+    # no re-publicando aqui.
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts.pipeline.publish_spx500_bundles import main as publish_bundles
+    rc = publish_bundles([])
+    if rc != 0:
+        raise RuntimeError("publish_spx500_bundles fallo — bundle no publicado")
     return 0
 
 

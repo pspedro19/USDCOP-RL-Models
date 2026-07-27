@@ -58,6 +58,13 @@ assets:
         script: "scripts/pipeline/run_gold_pipeline.py"
         args: []
         graceful: false
+      - id: l4b_normalize_champions
+        name: "Champion-per-asset normalization (idempotent; fails if any asset orphaned)"
+        script: "scripts/pipeline/normalize_champions.py"
+        # After the family publish above: keeps exactly one visible strategy per asset so the
+        # weekly cycle can never resurrect a dethroned strategy or retire another asset's only
+        # tool (both happened on 2026-07-21). Champions live in that script, chosen by OOS
+        # evidence, changed only alongside the evidence artifact that justifies it.
       - id: l5_weekly_forecast
         name: "Weekly inference (rule-based positioning) -> /forecasting JSON"
         script: "scripts/pipeline/generate_asset_weekly_forecast.py"
@@ -103,6 +110,13 @@ assets:
         script: "scripts/pipeline/run_btc_pipeline.py"
         args: []
         graceful: false
+      - id: l4b_normalize_champions
+        name: "Champion-per-asset normalization (idempotent; fails if any asset orphaned)"
+        script: "scripts/pipeline/normalize_champions.py"
+        # After the family publish above: keeps exactly one visible strategy per asset so the
+        # weekly cycle can never resurrect a dethroned strategy or retire another asset's only
+        # tool (both happened on 2026-07-21). Champions live in that script, chosen by OOS
+        # evidence, changed only alongside the evidence artifact that justifies it.
       - id: l5_weekly_forecast
         name: "Weekly inference (rule-based positioning) -> /forecasting JSON"
         script: "scripts/pipeline/generate_asset_weekly_forecast.py"
@@ -112,3 +126,34 @@ assets:
     verify:
       registry_asset: "btcusdt"
       strategy_ids: ["btc_hodl_b1", "btc_trend_b2", "btc_exposure_s3"]
+
+  # ---------------------------------------------------------------------------
+    # S&P 500 cash index — Investing.com daily authoritative track.
+  # Profile-driven ingestion and deterministic science gates; promotion stays
+  # closed until a point-in-time real seed is available.
+  # ---------------------------------------------------------------------------
+  spx500:
+    display_name: "S&P 500"
+    enabled: true
+    schedule: "30 7 * * 1-5"
+    stages:
+      - id: l0_ingest
+        name: "Data ingestion (Investing SPX daily, fail-closed)"
+        script: "scripts/data/ingest_asset_ohlcv.py"
+        args: ["--asset", "spx500", "--skip-intraday", "--daily-start", "1995-01-01"]
+        graceful: true
+      - id: l0b_export_chart_ohlcv
+        name: "Export daily OHLCV -> dashboard chart"
+        script: "scripts/data/export_chart_ohlcv.py"
+        args: ["--asset", "spx500"]
+        graceful: true
+      - id: l4_backtest_publish
+        name: "Features -> regime -> backtest -> statistical gates"
+        script: "scripts/pipeline/run_spx500_pipeline.py"
+        args: []
+        graceful: false
+    verify:
+      registry_asset: "spx500"
+      # S3 (2026-07-27): las dos estrategias se congelan y publican JUNTAS —
+      # el baseline ma200_v1 es candidato operativo Y vara de medir del gated.
+      strategy_ids: ["spx500_regime_gated_v1", "spx500_daily_ma200_v1"]

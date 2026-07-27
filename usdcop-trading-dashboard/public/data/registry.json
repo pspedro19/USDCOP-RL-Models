@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-21T01:53:13.496217+00:00",
+  "generated_at": "2026-07-27T19:51:08.318175+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -321,6 +321,25 @@
       "p_value": 0.0722
     },
     {
+      "strategy_id": "spx500_daily_ma200_v1",
+      "asset_id": "spx500",
+      "status": "experimental",
+      "display_name": "S&P 500 \u00b7 MA200 causal (baseline)",
+      "pipeline_type": "forecasting",
+      "timeframe": "daily",
+      "manifest": "strategies/spx500_daily_ma200_v1/manifest.json",
+      "backtest_years": [
+        2025,
+        2026
+      ],
+      "has_production": false,
+      "has_replay": true,
+      "active_version": "1.0.0",
+      "return_pct": null,
+      "sharpe": null,
+      "p_value": null
+    },
+    {
       "strategy_id": "spx500_regime_gated_v1",
       "asset_id": "spx500",
       "status": "experimental",
@@ -328,10 +347,13 @@
       "pipeline_type": "forecasting",
       "timeframe": "daily",
       "manifest": "strategies/spx500_regime_gated_v1/manifest.json",
-      "backtest_years": [],
+      "backtest_years": [
+        2025,
+        2026
+      ],
       "has_production": false,
-      "has_replay": false,
-      "active_version": "0.1.0-scaffold",
+      "has_replay": true,
+      "active_version": "1.0.0",
       "return_pct": null,
       "sharpe": null,
       "p_value": null

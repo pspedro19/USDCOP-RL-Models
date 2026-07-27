@@ -56,15 +56,19 @@ feriado de SPX con un retorno BTC ni se usa COT como calendario del activo.
 
 ## 3. Plan por dependencias
 
-### S0 — Reparar evidencia y runner (P0, 0 trials nuevos)
+### S0 — Reparar evidencia y runner (P0, 0 trials nuevos) — **DONE 2026-07-27**
 
-| ID | Acción | PASS |
-|---|---|---|
-| S0.1 | Hacer que el entrypoint cargue `load_real()` | test monkeypatch demuestra que `datagen.generate()` no se invoca; falta de snapshot falla cerrado |
-| S0.2 | Unificar engine de candidato y baselines | todos pasan por `BacktestEngine`, shift exactamente una vez, turnover/costos propios |
-| S0.3 | Recomputar MA200 causal | posición de decisión → `weights_exec`; 3 bps propios ×1/×2/×3; B1 y B1′ en la misma ventana |
-| S0.4 | Emitir erratum de evidencia | artefacto anterior marcado inválido, no sobrescrito; nuevo hash, código, datos y motivo |
-| S0.5 | Reconciliar 17 trials | front matter, cuerpo y evidencia coinciden; no se reduce por descubrir un bug |
+| ID | Acción | PASS | Estado |
+|---|---|---|---|
+| S0.1 | Hacer que el entrypoint cargue `load_real()` | test monkeypatch demuestra que `datagen.generate()` no se invoca; falta de snapshot falla cerrado | ✅ (default real fail-closed; `--synthetic` es opt-in explícito) |
+| S0.2 | Unificar engine de candidato y baselines | todos pasan por `BacktestEngine`, shift exactamente una vez, turnover/costos propios | ✅ (runner delega al motor de `profitability_evidence`; bit-check Calmar 0.6482/0.5393 MATCH exacto vs artefacto 2026-07-21) |
+| S0.3 | Recomputar MA200 causal | posición de decisión → `weights_exec`; 3 bps propios ×1/×2/×3; B1 y B1′ en la misma ventana | ✅ (ERRATUM 2026-07-21 + re-verificado hoy) |
+| S0.4 | Emitir erratum de evidencia | artefacto anterior marcado inválido, no sobrescrito; nuevo hash, código, datos y motivo | ✅ (2026-07-21) |
+| S0.5 | Reconciliar 17 trials | front matter, cuerpo y evidencia coinciden; no se reduce por descubrir un bug | pendiente (contable, no bloquea S3) |
+
+Snapshot SPY refrescado 2026-07-27 (1,648 filas, 2020-01-02→2026-07-24, sha `816448b4`;
+el anterior respaldado). Evidencia full-window regenerada: DSR 0.873 (antes 0.8813 —
+solo creció la ventana), mismo veredicto **research_only**, mismos gates fallados.
 
 Corregir una medición defectuosa de una hipótesis ya registrada no crea licencia para una
 hipótesis nueva. El resultado corregido pertenece a `H-SIMP-SPX-02`, conserva el conteo
@@ -120,7 +124,25 @@ El DAG actual ejecuta L4 diariamente bajo un ID “weekly” y no tiene L5 de se
 `normalize_champions.py` no debe llamar campeón de producción a algo con bundle sintético.
 Hasta cerrar S0/S1, SPX queda visible como experimental con `promotion_eligible: false`.
 
-### S3 — Baseline contra gated, sin trial nuevo
+### S3 — Baseline contra gated, sin trial nuevo — **DONE 2026-07-27**
+
+**Publicado**: `scripts/pipeline/publish_spx500_bundles.py` (invocado por el default real
+de `run_spx500_pipeline.py` → el stage l4 del DAG factory publica end-to-end; inmutable
+por (version, año) ⇒ re-runs = `immutable_hit`, idempotente). Bundles v1.0.0 con
+`summary/trades/signals_{2025,2026}.json` para ambas estrategias + registry refresh;
+`pipelines.yaml` verify exige las dos. Tests 31/31. Números (SPY total-return, motor
+del ERRATUM; N<20 ⇒ solo conteo y PnL):
+
+| Estrategia | 2025 | 2026 YTD | Lectura |
+|---|---|---|---|
+| `spx500_regime_gated_v1` | +7.68% (DD 6.19%, 5 seg.) | −0.57% (DD 5.44%, 3 seg.) | el gate pagó prima en años toro |
+| `spx500_daily_ma200_v1` | +9.85% (DD 11.07%, 3 seg.) | +4.96% (DD 5.82%, 2 seg.) | **el baseline va ganando el forward-context** |
+| B1 buy&hold | +16.34% | +7.70% | el listón real de SPX |
+
+El histórico corregido es contexto; el forward decide (S4). Si el baseline no es batido,
+el baseline ES la estrategia. `research_only` se mantiene (DSR 0.873 < 0.95).
+
+Diseño original de la sección (referencia):
 
 Después de S0, se publican dos bundles explícitos ya cubiertos por el registro:
 

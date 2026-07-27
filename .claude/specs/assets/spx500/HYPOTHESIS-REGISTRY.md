@@ -213,3 +213,24 @@ contrato de consumo.
 **Nota de drift**: el registry de extractores en contenedor cae al fallback
 `extractors/config.yaml` (el `_get_ssot()` usa `parents[4]`, layout de host); por eso las
 variables viven en AMBOS archivos. Unificar cuando se arregle `_get_ssot` layout-aware.
+
+---
+
+## RE-MEDICIÓN 2026-07-27 — replay real 2025/2026 publicado (S0+S3, 0 trials)
+
+**Qué**: los cortes por año de las hipótesis YA registradas (H-SIMP-SPX-01/02, patrón
+B1/B2/S3) quedan publicados como bundles inmutables v1.0.0 (gated + ma200_v1), sobre el
+snapshot SPY total-return refrescado (1,648 filas → 2026-07-24) y el motor corregido del
+ERRATUM. Bit-check previo: el motor reproduce EXACTO el artefacto congelado 2026-07-21
+(Calmar 0.6482 / 0.5393) antes de rebanar. Ninguna variante nueva, ningún parámetro
+tocado ⇒ **el conteo de trials se conserva (17)**.
+
+**Números por año** (N<20 segmentos ⇒ solo conteo y PnL): gated 2025 +7.68%/DD 6.19%/5;
+gated 2026 −0.57%/DD 5.44%/3; ma200 2025 +9.85%/DD 11.07%/3; ma200 2026 +4.96%/DD 5.82%/2;
+B1 2025 +16.34%, 2026 +7.70%. Evidencia full-window re-generada: DSR 0.873, verdict FAIL
+(research_only), gates fallados idénticos.
+
+**Lectura sin selección**: en el tramo mirado el baseline tonto va DELANTE del gated —
+exactamente el escenario "el baseline ES la estrategia" que S3 pre-firmó. Nada de esto
+habilita promoción ni un challenger de rescate; el juez sigue siendo el forward (S4,
+protocolo firmado ex-ante).

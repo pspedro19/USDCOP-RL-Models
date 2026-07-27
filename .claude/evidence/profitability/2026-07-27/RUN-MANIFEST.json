@@ -1,0 +1,23 @@
+{
+  "generated": "2026-07-27",
+  "git_sha": "fb620be8b19047236039b17ddd16aa702e120480",
+  "assets": {
+    "spx500": {
+      "params_hash": "1fb2113683e21214",
+      "n_trials_total": 17,
+      "trials_source": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+      "published_bundle_floor": 0,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "net_return_gt_b1"
+      ]
+    }
+  },
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "note": "A FAIL verdict is a successful measurement. This harness has no tuning knobs; if a params_hash changes, the registry trial count must be incremented before the result may be cited."
+}

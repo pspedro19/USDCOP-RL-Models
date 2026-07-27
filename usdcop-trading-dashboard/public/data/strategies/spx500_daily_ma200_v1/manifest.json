@@ -1,0 +1,77 @@
+{
+  "strategy_id": "spx500_daily_ma200_v1",
+  "asset_id": "spx500",
+  "symbol": "SPX500",
+  "chart_symbol": "SPX500",
+  "display_name": "S&P 500 \u00b7 MA200 causal (baseline)",
+  "pipeline_type": "forecasting",
+  "timeframe": "daily",
+  "status": "experimental",
+  "schema_version": "1.0.0",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": true
+  },
+  "produced_by": {
+    "source": "BundlePublisher",
+    "version": "1.0.0",
+    "year": 2026,
+    "generated_at": "2026-07-27T19:51:08.318175+00:00"
+  },
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2025,
+      "immutable_id": "spx500_daily_ma200_v1__1.0.0__2025",
+      "summary": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/summary_2025.json",
+      "trades": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/trades_2025.json",
+      "signals": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/signals_2025.json",
+      "replayable": true,
+      "gates": {
+        "passed": 2,
+        "of": 4,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "total_return_pct": 9.85,
+        "max_dd_pct": 11.07,
+        "n_trades": 3,
+        "year": 2025
+      }
+    },
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "spx500_daily_ma200_v1__1.0.0__2026",
+      "summary": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/trades_2026.json",
+      "signals": "strategies/spx500_daily_ma200_v1/backtests/1.0.0/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 2,
+        "of": 4,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "total_return_pct": 4.96,
+        "max_dd_pct": 5.82,
+        "n_trades": 2,
+        "year": 2026
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": true,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    }
+  ]
+}

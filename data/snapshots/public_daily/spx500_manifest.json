@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "asset_id": "spx500",
+  "ticker": "SPY",
+  "source": "yahoo_finance_public_adapter",
+  "retrieved_at": "2026-07-27T19:26:34.067776+00:00",
+  "start": "2020-01-01",
+  "end": "2026-07-27",
+  "rows": 1648,
+  "data_path": "data\\snapshots\\public_daily\\spx500_daily.parquet",
+  "sha256": "816448b4a40b392f8083258f12c733c2b0a13884d28b568e1636f01f6a6cb68f",
+  "availability_policy": "reconstructed_close_plus_conservative_lag",
+  "pit_vintage": false,
+  "promotion_eligible": false,
+  "reason": "Public adapter lacks historical provider revision vintages."
+}

@@ -1,0 +1,237 @@
+{
+  "asset": "spx500",
+  "strategy_id": "spx500_regime_gated_v1",
+  "clock": {
+    "periods_per_year": 252,
+    "label": "daily/252"
+  },
+  "window": {
+    "start": "2020-01-02 00:00:00+00:00",
+    "end": "2026-07-24 00:00:00+00:00",
+    "n_periods": 1648
+  },
+  "n_trades": 927,
+  "strategy": {
+    "net_return_pct": 42.7494,
+    "ann_return_pct": null,
+    "calmar": 0.6321,
+    "sortino": 1.1002,
+    "sharpe": 0.749,
+    "max_dd_pct": 0.0885,
+    "volatility": 0.0766,
+    "cvar_95_pct": 1.3053,
+    "sharpe_stderr": 0.0238
+  },
+  "turnover": 0.0328,
+  "exposure_profile": {
+    "mean_abs": 0.4687,
+    "p50": 0.3891,
+    "p95": 1.2032,
+    "pct_time_flat": 43.81,
+    "pct_time_long": 56.19,
+    "pct_time_short": 0.0
+  },
+  "shape": {
+    "omega": 1.1905,
+    "up_capture_pct": 32.13,
+    "down_capture_pct": 31.02,
+    "capture_ratio": 1.036
+  },
+  "baselines": {
+    "B1_buy_and_hold": {
+      "net_return_pct": 128.2593,
+      "ann_return_pct": null,
+      "calmar": 0.4146,
+      "sortino": 1.1524,
+      "sharpe": 0.7497,
+      "max_dd_pct": 0.3245,
+      "volatility": 0.1934,
+      "cvar_95_pct": 2.996
+    },
+    "B1_prime_exposure_matched": {
+      "mean_exposure": 0.4687,
+      "ann_return_pct": 6.59,
+      "max_dd_pct": -16.4,
+      "calmar": 0.402,
+      "sharpe": 0.75
+    },
+    "dumb_ma200_always_on": {
+      "net_return_pct": 88.139,
+      "ann_return_pct": null,
+      "calmar": 0.5278,
+      "sortino": 1.4086,
+      "sharpe": 0.9216,
+      "max_dd_pct": 0.1922,
+      "volatility": 0.1117,
+      "cvar_95_pct": 1.8098
+    },
+    "flat_zero": {
+      "net_return_pct": 0.0,
+      "ann_return_pct": null,
+      "calmar": 0.0,
+      "sortino": 0.0,
+      "sharpe": 0.0,
+      "max_dd_pct": 0.0,
+      "volatility": 0.0,
+      "cvar_95_pct": -0.0
+    }
+  },
+  "cost_stress": {
+    "x1": {
+      "ann_return_pct": 5.59,
+      "max_dd_pct": -8.85,
+      "calmar": 0.632,
+      "sharpe": 0.749
+    },
+    "x2": {
+      "ann_return_pct": 5.33,
+      "max_dd_pct": -8.92,
+      "calmar": 0.598,
+      "sharpe": 0.716
+    },
+    "x3": {
+      "ann_return_pct": 5.07,
+      "max_dd_pct": -8.99,
+      "calmar": 0.564,
+      "sharpe": 0.684
+    },
+    "survives_2x": true,
+    "survives_3x": true
+  },
+  "deflated_sharpe": {
+    "sharpe_per_period": 0.047184,
+    "sharpe_annualized": 0.749,
+    "n_obs": 1648,
+    "cells": [
+      {
+        "n_trials": 13,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0054,
+        "dsr": 0.952,
+        "significant": true
+      },
+      {
+        "n_trials": 13,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0107,
+        "dsr": 0.9266,
+        "significant": false
+      },
+      {
+        "n_trials": 13,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0161,
+        "dsr": 0.8921,
+        "significant": false
+      },
+      {
+        "n_trials": 17,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0058,
+        "dsr": 0.9504,
+        "significant": true
+      },
+      {
+        "n_trials": 17,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0115,
+        "dsr": 0.9222,
+        "significant": false
+      },
+      {
+        "n_trials": 17,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0173,
+        "dsr": 0.8831,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.00315,
+        "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
+        "sr0": 0.0062,
+        "dsr": 0.9487,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.006299,
+        "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
+        "sr0": 0.0124,
+        "dsr": 0.9172,
+        "significant": false
+      },
+      {
+        "n_trials": 23,
+        "sigma_trials_pp": 0.009449,
+        "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+        "sr0": 0.0185,
+        "dsr": 0.873,
+        "significant": false
+      }
+    ],
+    "headline_dsr": 0.873,
+    "headline_cell": {
+      "n_trials": 23,
+      "sigma_trials_pp": 0.009449,
+      "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
+      "sr0": 0.0185
+    },
+    "worst_cell_dsr": 0.873,
+    "bar": 0.95,
+    "passes": false
+  },
+  "pbo": {
+    "pbo": null,
+    "n_variants": 0,
+    "reason": "insufficient published variants; PBO needs a selection to evaluate"
+  },
+  "trials": {
+    "n_trials_total": 17,
+    "n_trials_scenarios": [
+      13,
+      17,
+      23
+    ],
+    "sigma_trials": null,
+    "sigma_trials_grid": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "source_registry": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+    "published_bundle_floor": 0,
+    "sources": [
+      "_config_family(): 4 vol targets x 3 MA windows = 12 celdas, todas evaluadas",
+      "B1/B2/S3: 3 variantes de pol\u00edtica declaradas en el patr\u00f3n",
+      "H-SIMP-SPX-01 + H-SIMP-SPX-02 (registradas 2026-07-21, prospectivas): +2",
+      "sin bundles publicados todav\u00eda (piso = 0): la estrategia no ha pasado a `available`"
+    ]
+  },
+  "gates": {
+    "dsr_min_over_grid_gt_0.95": false,
+    "pbo_lt_0.50": false,
+    "n_trades_ge_20": true,
+    "calmar_gt_b1_prime": true,
+    "calmar_gt_dumb_baseline": true,
+    "net_return_gt_b1": false,
+    "survives_cost_x2": true
+  },
+  "failed_gates": [
+    "dsr_min_over_grid_gt_0.95",
+    "pbo_lt_0.50",
+    "net_return_gt_b1"
+  ],
+  "verdict": "FAIL",
+  "evidence_class": "research_only",
+  "point_in_time": false,
+  "pit_blocker": "no available_at vintages in any seed (quant_harness pit.available_at fails)",
+  "promotion_eligible": false,
+  "params_hash": "1fb2113683e21214"
+}

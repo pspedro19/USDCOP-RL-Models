@@ -1,0 +1,36 @@
+{
+  "table_a_clock_free": [
+    {
+      "asset": "spx500",
+      "strategy_id": "spx500_regime_gated_v1",
+      "net_return_pct": 42.7494,
+      "max_dd_pct": 0.0885,
+      "cvar_95_pct": 1.3053,
+      "n_trades": 927,
+      "turnover": 0.0328,
+      "mean_exposure": 0.4687,
+      "verdict": "FAIL",
+      "failed_gates": [
+        "dsr_min_over_grid_gt_0.95",
+        "pbo_lt_0.50",
+        "net_return_gt_b1"
+      ]
+    }
+  ],
+  "table_b_by_clock": {
+    "daily/252": [
+      {
+        "asset": "spx500",
+        "strategy_id": "spx500_regime_gated_v1",
+        "ann_return_pct": null,
+        "calmar": 0.6321,
+        "sortino": 1.1002,
+        "sharpe": 0.749,
+        "sharpe_stderr": 0.0238,
+        "dsr_headline": 0.873,
+        "pbo": null
+      }
+    ]
+  },
+  "warning": "Table B is grouped by clock and must NOT be ranked across groups. A weekly/52 Calmar and a daily/365 Calmar are different statistics. With COP weekly and gold/BTC daily, no cross-asset risk-adjusted ranking is possible at all \u2014 that is a property of the data, not a gap to be filled by resampling."
+}
