@@ -6,8 +6,9 @@ Publica DOS estrategias congeladas juntas (S3 del PLAN-RENTABILIDAD spx500):
   target ni gate), con el MISMO convenio corregido del ERRATUM 2026-07-21:
   lag exactamente 1 barra + costo |dW| x costo-unitario PROPIO.
 
-Datos: snapshot SPY total-return (``load_real``), la misma serie de la evidencia
-congelada. El motor es el MISMO de ``profitability_evidence.py`` (adapter
+Datos: índice S&P 500 OFICIAL de Investing (``load_real`` v2, seed 1995→,
+price-return declarado; SPY retirado por directiva 2026-07-27). El motor es el
+MISMO de ``profitability_evidence.py`` (adapter
 ``ADAPTERS['spx500']`` -> BacktestEngine); este script solo REBANA por anio y
 publica via ``BundlePublisher`` (contrato StrategySummary, safe_json_dump,
 inmutable por version/anio, registry refresh aditivo).
