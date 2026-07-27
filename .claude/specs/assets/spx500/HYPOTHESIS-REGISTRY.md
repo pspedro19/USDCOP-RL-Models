@@ -260,3 +260,30 @@ evidencia en el mismo commit que este artefacto, no automática.
 **Contrato de alineación** (directiva mismo día): dataset de variantes con series
 externas = intersección de las series ELEGIDAS (tabla de mínimos por serie en
 PLAN-RENTABILIDAD §S1b): elegir series ES elegir ventana; se declara antes del screening.
+
+---
+
+## EVENTO DE DATOS 2026-07-27b — profundidad macro completa (~116k obs, 0 trials)
+
+**Directiva**: "VIX de investing toda la historia posible... tasas de la Fed, WTI, oro,
+petróleo — variables que realmente impactan". Migración 068 + backfill:
+
+| Serie | Ampliado a | Fuente | Obs nuevas |
+|---|---|---|---|
+| VIX | 1990→ (era 2020→) | investing 44336 | 7,560 |
+| DXY | 1986→ (era 2020→) | investing 8827 | 8,664 |
+| Oro | 1980→ (era 2020→) | investing 8830 | 9,921 |
+| WTI | 1985→ (era 2000→) | investing 8849 | 3,768 |
+| Brent | 1990→ (era 2020→) | investing 8833 | 7,658 |
+| **Baa−10y spread** (NUEVA) | 1986→ | FRED BAA10Y | 10,140 |
+| **Fed funds diaria** (NUEVA) | 1954→ | FRED DFF | 26,322 |
+| UST10Y | 1962→ (era 2020→) | FRED DGS10 pre-2020 | 14,484 |
+| DGS2 | 1976→ (era 2020→) | FRED DGS2 pre-2020 | 10,892 |
+| Prime | 1955→ (era 2020→) | FRED DPRIME pre-2020 | 16,421 |
+| Fed funds mensual | 1954→ (era 2015→) | FRED | 726 |
+
+BAA10Y es el sustituto profundo declarado del HY-OAS capado por ICE (mismo eje: stress
+de crédito corporativo). Ambas series nuevas cableadas al DAG horario (SSOT +
+extractors/config.yaml). **0 trials**: ninguna celda mirada contra retornos; la regla de
+gasto del evento 2026-07-27 aplica idéntica. Con esto, la familia completa de drivers
+cubre ≥1995 (piso SPX) — la ventana de screening futura ya no sacrifica ningún oso.

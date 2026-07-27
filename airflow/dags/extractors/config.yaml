@@ -94,6 +94,17 @@ sources:
         frequency: "M"
         intraday: false
 
+      # --- profundidad macro (migracion 068, 2026-07-27, 0 trials) ---
+      - name: "FINC_SPREAD_BAA10Y_USA_D_BAA10Y"
+        series_id: "BAA10Y"
+        frequency: "D"
+        intraday: false
+
+      - name: "POLR_FED_FUNDS_USA_D_DFF"
+        series_id: "DFF"
+        frequency: "D"
+        intraday: false
+
       - name: "POLR_PRIME_RATE_USA_D_PRIME"
         series_id: "DPRIME"
         frequency: "D"

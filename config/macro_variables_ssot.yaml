@@ -352,6 +352,50 @@ variables:
     ffill:
       max_days: 40
 
+  finc_spread_baa10y_usa_d_baa10y:
+    identity:
+      canonical_name: finc_spread_baa10y_usa_d_baa10y
+      display_name: "Moody's Baa - UST10Y Spread"
+      category: fixed_income
+      country: USA
+      frequency: daily
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: BAA10Y
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: US/Eastern
+    validation:
+      expected_range: [0, 8]
+      leakage_risk: LOW
+      priority: MEDIUM
+    ffill:
+      max_days: 5
+
+  polr_fed_funds_usa_d_dff:
+    identity:
+      canonical_name: polr_fed_funds_usa_d_dff
+      display_name: "Fed Funds Effective (diaria)"
+      category: policy_rates
+      country: USA
+      frequency: daily
+    extraction:
+      primary_source: fred
+      fred:
+        series_id: DFF
+    schedule:
+      publication:
+        delay_days: 1
+        timezone: US/Eastern
+    validation:
+      expected_range: [0, 22]
+      leakage_risk: LOW
+      priority: MEDIUM
+    ffill:
+      max_days: 5
+
   finc_bond_yield10y_usa_d_ust10y:
     identity:
       canonical_name: finc_bond_yield10y_usa_d_ust10y

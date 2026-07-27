@@ -120,19 +120,30 @@ en DB (2026-07-27):
 
 | Serie | Desde | Costo de incluirla |
 |---|---|---|
-| claims (ICSA) | 1967 | ninguno (pre-data SPX) |
+| fed funds diaria (DFF) | 1954 | ninguno (pre-data SPX) |
+| prime | 1955 | ninguno |
+| UST10Y | 1962 | ninguno |
+| claims (ICSA) | 1967 | ninguno |
 | NFCI | 1971 | ninguno |
-| curva 10y-2y | 1976 | ninguno |
+| curva 10y-2y / DGS2 | 1976 | ninguno |
+| oro | 1980 | ninguno |
 | curva 10y-3m | 1982 | ninguno |
+| WTI | 1985 | ninguno |
+| **crédito Baa−10y (BAA10Y)** | **1986** | ninguno — sustituto profundo de HY-OAS |
+| DXY | 1986 | ninguno |
+| BRENT / **VIX real** | 1990 | ninguno |
 | STLFSI4 | 1993 | ninguno |
 | **SPX oficial** | **1995-01-03** | — (el piso del activo) |
 | real yield 10y / breakeven 10y | 2003 | pierde 1995-2002 (dot-com parcial) |
-| DXY / VIX (investing en DB) | 2020 | **pierde los 3 osos** (backfill investing pendiente, 0 trials) |
-| HY-OAS (licencia ICE) | 2023-07 | **mata la ventana** — solo forward-going |
+| HY-OAS (licencia ICE) | 2023-07 | **mata la ventana** — solo monitoreo forward; su eje lo cubre BAA10Y |
 
-La estrategia congelada actual consume SOLO precio (proxies derivados, shift(1)) ⇒ su
-ventana alineada es el rango completo 1995→. VIX/DXY profundos vía backfill investing
-es la pre-tarea de datos (0 trials) si la familia los quiere sin sacrificar osos.
+**Actualización 2026-07-27 (backfill profundo, migración 068, ~116k obs):** VIX/DXY/WTI/
+oro/Brent profundizados vía investing (curl_cffi, chunks 1980-2019); BAA10Y y DFF diaria
+añadidos (FRED); UST10Y/DGS2/PRIME extendidos pre-2020 (FRED); FEDFUNDS mensual pre-2015.
+**Toda la familia de drivers "que realmente impactan" cubre ahora ≥ el piso del SPX
+(1995)** — cero costo de ventana salvo breakeven/real-yield (2003) y HY-OAS (monitoreo).
+La estrategia congelada sigue consumiendo SOLO precio; cablear cualquiera = +1 trial
+pre-registrado.
 
 ### S2 — Separar los ciclos operativos (0 trials)
 
