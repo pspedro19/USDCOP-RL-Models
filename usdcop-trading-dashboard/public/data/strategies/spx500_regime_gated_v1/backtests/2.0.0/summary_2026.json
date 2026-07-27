@@ -1,0 +1,95 @@
+{
+  "strategy_id": "spx500_regime_gated_v1",
+  "strategy_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "asset": "SPX500",
+  "n_trading_days": 141,
+  "n_trades": 3,
+  "insufficient_trades": true,
+  "strategies": {
+    "spx500_regime_gated_v1": {
+      "final_equity": 9899.25,
+      "total_return_pct": -1.01,
+      "sharpe": null,
+      "sortino": null,
+      "calmar": null,
+      "max_dd_pct": 5.55,
+      "win_rate_pct": 33.3,
+      "profit_factor": 0.803,
+      "n_long": 3,
+      "n_short": 0,
+      "trading_days": 141,
+      "exit_reasons": {
+        "exposure_zero": 2,
+        "year_end_open": 1
+      }
+    },
+    "buy_and_hold": {
+      "final_equity": 10869.13,
+      "total_return_pct": 8.69
+    }
+  },
+  "statistical_tests": {
+    "p_value": null,
+    "significant": false,
+    "insufficient_trades": true,
+    "min_trades_for_stats": 20,
+    "note": "N<20 segmentos => solo conteo y PnL (quant-constitution \u00a76)"
+  },
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": null,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno minimo",
+      "value": -1.01,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown",
+      "label": "MaxDD < 20%",
+      "value": 5.55,
+      "threshold": 20.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades >= 10",
+      "value": 3,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "dsr_trial_aware",
+      "label": "DSR > 0.95 (full-window)",
+      "value": 0.7831,
+      "threshold": 0.95,
+      "passed": false
+    }
+  ],
+  "honest_gate": {
+    "scope": "full-window (evidencia profitability, no el anio suelto)",
+    "evidence_dir": "2026-07-27",
+    "verdict": "FAIL",
+    "deflated_sharpe": 0.7831,
+    "failed_gates": [
+      "dsr_min_over_grid_gt_0.95",
+      "pbo_lt_0.50",
+      "calmar_gt_b1_prime",
+      "calmar_gt_dumb_baseline",
+      "net_return_gt_b1"
+    ],
+    "window": {
+      "start": "1995-01-03 21:00:00+00:00",
+      "end": "2026-07-27 20:00:00+00:00",
+      "n_periods": 7943
+    }
+  },
+  "data_source": {
+    "series": "indice S&P 500 OFICIAL (Investing id 166), 1995-> via seed/DAG",
+    "price_convention": "PRICE-RETURN declarado (sin dividendos, plan \u00a71)",
+    "nota": "directiva operador 2026-07-27: SPY retirado; una sola serie por corrida; research_only hasta DSR>0.95 + forward"
+  }
+}

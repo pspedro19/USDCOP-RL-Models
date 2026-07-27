@@ -3,16 +3,18 @@
     {
       "asset": "spx500",
       "strategy_id": "spx500_regime_gated_v1",
-      "net_return_pct": 42.7494,
-      "max_dd_pct": 0.0885,
-      "cvar_95_pct": 1.3053,
-      "n_trades": 927,
-      "turnover": 0.0328,
-      "mean_exposure": 0.4687,
+      "net_return_pct": 150.4797,
+      "max_dd_pct": 0.2054,
+      "cvar_95_pct": 1.2485,
+      "n_trades": 4479,
+      "turnover": 0.0374,
+      "mean_exposure": 0.4729,
       "verdict": "FAIL",
       "failed_gates": [
         "dsr_min_over_grid_gt_0.95",
         "pbo_lt_0.50",
+        "calmar_gt_b1_prime",
+        "calmar_gt_dumb_baseline",
         "net_return_gt_b1"
       ]
     }
@@ -23,11 +25,11 @@
         "asset": "spx500",
         "strategy_id": "spx500_regime_gated_v1",
         "ann_return_pct": null,
-        "calmar": 0.6321,
-        "sortino": 1.1002,
-        "sharpe": 0.749,
-        "sharpe_stderr": 0.0238,
-        "dsr_headline": 0.873,
+        "calmar": 0.1439,
+        "sortino": 0.6277,
+        "sharpe": 0.4357,
+        "sharpe_stderr": 0.0112,
+        "dsr_headline": 0.7831,
         "pbo": null
       }
     ]

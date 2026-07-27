@@ -234,3 +234,29 @@ B1 2025 +16.34%, 2026 +7.70%. Evidencia full-window re-generada: DSR 0.873, verd
 exactamente el escenario "el baseline ES la estrategia" que S3 pre-firmó. Nada de esto
 habilita promoción ni un challenger de rescate; el juez sigue siendo el forward (S4,
 protocolo firmado ex-ante).
+
+---
+
+## RE-MEDICIÓN v2 2026-07-27 — autoridad de datos: índice OFICIAL (SPY retirado, 0 trials)
+
+**Directiva del operador**: "borrar SPY y usar solo el S&P 500 oficial". `load_real` v2 lee
+el seed de Investing (id 166, 1995-01-03→, fail-closed, PRICE-RETURN declarado); snapshot
+SPY eliminado del repo y del adquiridor. Historia 1995-2003 recuperada por chunks tras el
+replace destructivo del ingest (DB 7,943 filas). Fórmula INTACTA (cero parámetros) ⇒
+**conteo se conserva (17)**. Manifest re-freeze v2 (hash ea76413e60621521).
+
+**Full-window 31 años (3 osos)**: gated net +150.5% / Calmar 0.1439 / DD 20.5% / DSR
+0.7831 — **PIERDE contra el ma200 tonto (Calmar 0.2115, net +567.6%), contra B1′ y
+contra B1 (0.1635, +1,528%)**; 5 gates fallados. La ventana SPY 2020→ lo favorecía.
+**Conclusión pre-firmada S3: el baseline ES la estrategia.** Bundles v2.0.0 publicados
+(2025: gated +8.18% vs ma200 +9.85% vs B1 +16.51% · 2026 YTD: −1.01% vs +5.60% vs
++8.69%; N<20 ⇒ solo conteo y PnL). v1.0.0 (SPY) inmutable como contexto.
+
+**Decisión pendiente del operador**: `CHAMPION_BY_ASSET[spx500]` sigue en la gated
+("only thing measured on real data" — nota ya desactualizada); la evidencia de 31 años
+apunta a `spx500_daily_ma200_v1` como campeona visible. Cambiarla = decisión de
+evidencia en el mismo commit que este artefacto, no automática.
+
+**Contrato de alineación** (directiva mismo día): dataset de variantes con series
+externas = intersección de las series ELEGIDAS (tabla de mínimos por serie en
+PLAN-RENTABILIDAD §S1b): elegir series ES elegir ventana; se declara antes del screening.

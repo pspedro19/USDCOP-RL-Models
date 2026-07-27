@@ -1,16 +1,18 @@
 {
   "generated": "2026-07-27",
-  "git_sha": "fb620be8b19047236039b17ddd16aa702e120480",
+  "git_sha": "c8ae4d4b54bbe0d2e4cfe90f9627cb1b36db4050",
   "assets": {
     "spx500": {
-      "params_hash": "1fb2113683e21214",
+      "params_hash": "c94b82cf7d863bad",
       "n_trials_total": 17,
       "trials_source": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
-      "published_bundle_floor": 0,
+      "published_bundle_floor": 1,
       "verdict": "FAIL",
       "failed_gates": [
         "dsr_min_over_grid_gt_0.95",
         "pbo_lt_0.50",
+        "calmar_gt_b1_prime",
+        "calmar_gt_dumb_baseline",
         "net_return_gt_b1"
       ]
     }

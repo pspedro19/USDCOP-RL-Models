@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "provider": "investing.com",
+  "authoritative": true,
+  "fallback_policy": "fail_closed_no_fallback",
+  "instrument_id": 166,
+  "source_url": "https://www.investing.com/indices/us-spx-500-historical-data",
+  "retrieved_at": "2026-07-27T20:14:23.983265+00:00",
+  "rows": 5676,
+  "earliest": "2004-01-02 21:00:00+00:00",
+  "latest": "2026-07-27 20:00:00+00:00",
+  "sha256": "47b680ee32dbe5189941abb37936b43429a6b19d30b9b001a025651be8fbae41",
+  "data_path": "seeds/latest/spx500_daily_ohlcv.parquet"
+}

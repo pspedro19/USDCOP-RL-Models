@@ -1,35 +1,36 @@
-"""Real-data loader for the SPX500 engine — replaces the synthetic scaffold.
+"""Real-data loader for the SPX500 engine — official S&P 500 index (Investing).
 
-Contract: CTR-SPX500-REALDATA-001
+Contract: CTR-SPX500-REALDATA-001 (v2, 2026-07-27)
 
-The engine was wired against `datagen.generate()`, which its own docstring labels
-"SINTÉTICO ... NO evidencia de alfa". Meanwhile a real SPY snapshot already existed at
-`data/snapshots/public_daily/spx500_daily.parquet` (1,643 rows, 2020-01-01 → 2026-07-17, with
-an `available_at` column). Nothing joined the two, so every metric the strategy produced
-measured the wiring, not the market.
+**Directiva del operador (2026-07-27): "borrar SPY y usar solo el S&P 500 oficial".**
+La fuente es el índice S&P 500 de Investing.com (id 166) — la SSOT canónica que el
+PLAN-RENTABILIDAD §1 ya declaraba — ingerido a diario por el DAG
+``asset_spx500_pipeline_weekly`` (stage l0_ingest, fail-closed) y persistido en
+``seeds/latest/spx500_daily_ohlcv.parquet`` + ``asset_daily_ohlcv`` (1995-01-03 →).
+El snapshot SPY (Yahoo, adj_close) queda RETIRADO de este track.
 
-This module produces the SAME column contract the engine expects (SDD-006), so the rest of the
-pipeline — regimes, policies, gates — is untouched:
+Column contract (SDD-006) — sin cambios para regimes/policies/gates:
 
     open_to_open_return : realized return open_t → open_{t+1}   (PnL)
-    close               : total-return price level              (signals)
-    vix                 : risk state
-    macro_stress        : exogenous macro driver
+    close               : price level                            (signals)
+    vix                 : risk state (proxy declarado)
+    macro_stress        : exogenous macro driver (proxy declarado)
 
-## What is honest here and what is not
+## Qué es honesto aquí y qué no
 
-**Honest:** the price. `adj_close` is dividend-adjusted, which is the total-return series
-SDD-000 §4 requires — using `^GSPC` price-only would inflate alpha by ~1.8%/yr.
+**Honesto:** la serie es el índice OFICIAL con 31 años de historia — incluye los osos
+2000-02 y 2008 que el snapshot SPY (2020→) no tenía.
 
-**NOT honest, and marked as such:** `vix` and `macro_stress`. FRED:VIXCLS, NFCI and HY-OAS are
-not in this snapshot. Rather than silently substituting a synthetic driver — which would let a
-"real data" run quietly keep a fabricated regime signal — this loader DERIVES a volatility
-proxy from the price itself and flags it. A regime classifier fed realized vol instead of
-implied vol is a different, weaker model, and the artifact says so.
+**Declarado y NO negociable:** es un **price index SIN dividendos** (plan §1: "no
+llamar total-return"). El PnL publicado es price-return; subestima el retorno total de
+equity en ~1.8-2 pp/año. La señal (MA200/TSMOM sobre precio) no se ve afectada.
 
-**`available_at` is present but reconstructed** (the public adapter stamps `close + 1 day`),
-so it is not a true point-in-time vintage. Per the constitution the maximum status this can
-reach is `research_validated`, never `production`.
+**Proxies (sin cambio, declarados):** `vix` = vol realizada 21d shift(1);
+`macro_stress` = z252 del proxy. Las variables reales (VIX/NFCI/HY-OAS, migración 067)
+existen en DB pero cablearlas al modelo = variante nueva = +1 trial pre-registrado.
+
+**`available_at` reconstruido** (cierre + 1 día), no vintage del proveedor: el status
+máximo alcanzable sigue siendo `research_validated`, nunca `production`.
 """
 from __future__ import annotations
 
@@ -39,7 +40,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[3]
-SNAPSHOT = ROOT / "data" / "snapshots" / "public_daily" / "spx500_daily.parquet"
+SEED = ROOT / "seeds" / "latest" / "spx500_daily_ohlcv.parquet"
 
 # Realized-vol window used for the VIX proxy. 21 trading days ~ one month, matching VIX's
 # 30-calendar-day horizon. Declared here as a prior, not tuned.
@@ -54,26 +55,33 @@ class RealDataUnavailable(RuntimeError):
     """
 
 
-def load_real(*, snapshot: Path | None = None) -> pd.DataFrame:
-    path = snapshot or SNAPSHOT
+def load_real(*, seed: Path | None = None) -> pd.DataFrame:
+    path = seed or SEED
     if not path.is_file():
         raise RealDataUnavailable(
-            f"No SPY snapshot at {path}. Refusing to fall back to datagen.generate(): the "
-            "engine would run and report metrics that describe a synthetic series. Acquire "
-            "the snapshot first (scripts/data/acquire_public_snapshots.py --asset spx500)."
+            f"No official S&P 500 seed at {path}. Refusing to fall back to synthetic "
+            "data or any other source (operator directive 2026-07-27: official index "
+            "only). Run the ingest first: "
+            "python scripts/data/ingest_asset_ohlcv.py --asset spx500 --skip-intraday"
         )
 
-    d = pd.read_parquet(path).sort_values("timestamp").reset_index(drop=True)
-    for col in ("open", "adj_close"):
+    d = pd.read_parquet(path).sort_values("time").reset_index(drop=True)
+    for col in ("time", "open", "close"):
         if col not in d.columns:
-            raise RealDataUnavailable(f"snapshot lacks required column `{col}`")
+            raise RealDataUnavailable(f"seed lacks required column `{col}`")
+    if len(d) < 2500:
+        raise RealDataUnavailable(
+            f"seed has only {len(d)} rows — the official series carries 1995->; a "
+            "short seed means the ingest lost history (fail-closed, do not publish)"
+        )
 
     out = pd.DataFrame(index=range(len(d)))
-    out["timestamp"] = pd.to_datetime(d["timestamp"])
-    out["available_at"] = pd.to_datetime(d["available_at"]) if "available_at" in d else pd.NaT
+    out["timestamp"] = pd.to_datetime(d["time"])
+    # available_at reconstruido: cierre + 1 dia (conservador, NO vintage)
+    out["available_at"] = out["timestamp"] + pd.Timedelta(days=1)
 
-    # Total-return level drives the signals (SDD-000 §4).
-    out["close"] = d["adj_close"].astype(float).to_numpy()
+    # Price level drives the signals. PRICE-RETURN declarado (sin dividendos).
+    out["close"] = d["close"].astype(float).to_numpy()
 
     # PnL is open-to-open: enter at tomorrow's open on today's close signal. Computing it any
     # other way would let a signal act on a price it could not have traded at.
@@ -82,7 +90,7 @@ def load_real(*, snapshot: Path | None = None) -> pd.DataFrame:
         o2o = np.append(op[1:] / op[:-1] - 1.0, np.nan)
     out["open_to_open_return"] = np.nan_to_num(o2o, nan=0.0)
 
-    # PROXY, not VIX. Realized vol of total-return closes, annualized, shifted one day so a
+    # PROXY, not VIX. Realized vol of closes, annualized, shifted one day so a
     # bar never sees its own volatility.
     ret = pd.Series(out["close"]).pct_change()
     out["vix"] = (ret.rolling(VOL_WINDOW).std() * ANNUALIZER * 100.0).shift(1).bfill().to_numpy()
@@ -92,15 +100,17 @@ def load_real(*, snapshot: Path | None = None) -> pd.DataFrame:
     out["macro_stress"] = ((v - v.rolling(252).mean()) / v.rolling(252).std()).shift(1) \
         .fillna(0.0).to_numpy()
 
-    out.attrs["data_class"] = "real_price_proxy_drivers"
+    out.attrs["data_class"] = "real_official_index_price_return"
+    out.attrs["source"] = "investing.com S&P 500 index (id 166) via asset ingest, seed parquet"
+    out.attrs["price_convention"] = "PRICE-RETURN (sin dividendos; plan SPX §1)"
     out.attrs["proxies"] = {
-        "vix": f"realized vol {VOL_WINDOW}d annualized (FRED:VIXCLS absent from snapshot)",
-        "macro_stress": "252d z-score of the vol proxy (FRED:NFCI / HY-OAS absent)",
+        "vix": f"realized vol {VOL_WINDOW}d annualized (VIX real en DB, no cableado: seria +1 trial)",
+        "macro_stress": "252d z-score of the vol proxy (NFCI/HY-OAS reales en DB, idem)",
     }
     out.attrs["point_in_time"] = False
     out.attrs["pit_note"] = (
-        "available_at is reconstructed by the public adapter (close + 1d), not a provider "
-        "vintage; max attainable status is research_validated"
+        "available_at reconstruido (cierre + 1d), no vintage del proveedor; "
+        "max status: research_validated"
     )
     return out
 

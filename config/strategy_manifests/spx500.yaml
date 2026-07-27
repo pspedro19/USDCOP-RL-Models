@@ -5,8 +5,9 @@
 # incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
 # metrica puede citarse sin la suya.
 strategy_id: spx500_regime_gated_v1
-frozen: 2026-07-21 (sobre datos SPY reales; techo research_validated)
-tz_storage: daily; snapshot SPY adj_close (total-return, SDD-000.4)
+frozen: 2026-07-21 (techo research_validated); re-freeze v2 2026-07-27 (autoridad de datos)
+tz_storage: daily; indice S&P 500 OFICIAL Investing id 166 (PRICE-RETURN declarado,
+  sin dividendos — plan SPX §1), seed 1995-> mantenido por asset_spx500_pipeline_weekly
 session: 09:30-16:00 America/New_York
 freq:
   data: daily
@@ -29,5 +30,16 @@ files:
 - src/strategies/spx500_regime_gated_v1/engine.py
 - src/strategies/spx500_regime_gated_v1/load_real.py
 asset_id: spx500
-code_hash_sha256_16: 8edb8c264c4108c4
-manifest_frozen_at: '2026-07-21'
+code_hash_sha256_16: ea76413e60621521
+manifest_frozen_at: '2026-07-27'
+manifest_version: 2
+refreeze_note_v2: >-
+  Re-freeze v2 (2026-07-27, directiva del operador "borrar SPY y usar solo el S&P 500
+  oficial"): load_real.py cambia su FUENTE al indice oficial de Investing (id 166,
+  seed 1995->, fail-closed, price-return declarado); el snapshot SPY (Yahoo TR) queda
+  RETIRADO y eliminado del repo. Formula de la estrategia INTACTA (MA200 x TSMOM x
+  techo de regimen; proxies vix/macro_stress identicos). Re-medicion 31 anios
+  (1995-2026, 3 osos): gated Calmar 0.1439 PIERDE contra ma200 tonto 0.2115, B1'
+  y B1 0.1635; DSR 0.7831; 5 gates fallados — el escenario "el baseline ES la
+  estrategia" pre-firmado en S3. 0 trials (misma formula, cero parametros tocados);
+  bundles v2.0.0 publicados 2025+2026; v1.0.0 (SPY 2020->) inmutable como contexto.

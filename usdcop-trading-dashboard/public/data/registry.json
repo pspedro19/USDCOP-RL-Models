@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-27T19:51:08.318175+00:00",
+  "generated_at": "2026-07-27T20:50:43.322552+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -40,6 +40,7 @@
       "timeframe": "daily",
       "manifest": "strategies/btc_exposure_s3/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -58,6 +59,7 @@
       "timeframe": "daily",
       "manifest": "strategies/btc_hodl_b1/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -76,6 +78,7 @@
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_b2/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -94,6 +97,7 @@
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_funding_s4/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -112,6 +116,7 @@
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_volbrk_s5/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -130,12 +135,13 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
-      "return_pct": 204.03,
+      "active_version": "1.3.0",
+      "return_pct": 204.36,
       "sharpe": 0.535,
       "p_value": 0.0068
     },
@@ -148,14 +154,15 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt_s05/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
-      "return_pct": 208.89,
-      "sharpe": 0.543,
-      "p_value": 0.0066
+      "active_version": "1.3.0",
+      "return_pct": 209.31,
+      "sharpe": 0.544,
+      "p_value": 0.0064
     },
     {
       "strategy_id": "gold_dxy_tilt_s07",
@@ -166,13 +173,14 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt_s07/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
-      "return_pct": 199.19,
-      "sharpe": 0.526,
+      "active_version": "1.3.0",
+      "return_pct": 199.43,
+      "sharpe": 0.527,
       "p_value": 0.0078
     },
     {
@@ -184,6 +192,7 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_dynamic_exit/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
@@ -202,11 +211,12 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_long_only_b1/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.3.0",
       "return_pct": 184.75,
       "sharpe": 0.499,
       "p_value": 0.012
@@ -220,11 +230,12 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_regime_gated_v1/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.3.0",
       "return_pct": 120.29,
       "sharpe": 0.464,
       "p_value": 0.0146
@@ -238,11 +249,12 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_b2/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.3.0",
       "return_pct": 56.22,
       "sharpe": 0.366,
       "p_value": 0.0388
@@ -256,11 +268,12 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_ens/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "1.3.0",
       "return_pct": 162.99,
       "sharpe": 0.591,
       "p_value": 0.0042
@@ -274,13 +287,14 @@
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_simple/manifest.json",
       "backtest_years": [
+        2025,
         2026
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
-      "return_pct": 225.26,
-      "sharpe": 0.634,
+      "active_version": "1.3.0",
+      "return_pct": 192.62,
+      "sharpe": 0.619,
       "p_value": 0.0024
     },
     {
@@ -323,7 +337,7 @@
     {
       "strategy_id": "spx500_daily_ma200_v1",
       "asset_id": "spx500",
-      "status": "experimental",
+      "status": "archived",
       "display_name": "S&P 500 \u00b7 MA200 causal (baseline)",
       "pipeline_type": "forecasting",
       "timeframe": "daily",
@@ -334,7 +348,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "2.0.0",
       "return_pct": null,
       "sharpe": null,
       "p_value": null
@@ -353,7 +367,7 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.0.0",
+      "active_version": "2.0.0",
       "return_pct": null,
       "sharpe": null,
       "p_value": null

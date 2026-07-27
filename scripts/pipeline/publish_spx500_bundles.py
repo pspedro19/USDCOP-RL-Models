@@ -251,9 +251,10 @@ def _year_doc(sid: str, name: str, arms: dict, prices: pd.DataFrame,
             "window": evidence.get("window"),
         },
         "data_source": {
-            "series": "SPY total-return snapshot (load_real, adj_close)",
-            "nota": ("price-index de Investing NO se mezcla en esta corrida "
-                     "(PLAN-RENTABILIDAD §1); research_only hasta DSR>0.95 + forward"),
+            "series": "indice S&P 500 OFICIAL (Investing id 166), 1995-> via seed/DAG",
+            "price_convention": "PRICE-RETURN declarado (sin dividendos, plan §1)",
+            "nota": ("directiva operador 2026-07-27: SPY retirado; una sola serie por "
+                     "corrida; research_only hasta DSR>0.95 + forward"),
         },
     }
 
@@ -281,7 +282,11 @@ def _year_doc(sid: str, name: str, arms: dict, prices: pd.DataFrame,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--version", default="1.0.0")
+    # v2.0.0 (2026-07-27): cambio de AUTORIDAD DE DATOS por directiva del operador —
+    # snapshot SPY (Yahoo TR) RETIRADO; serie = indice S&P 500 OFICIAL de Investing
+    # 1995->, price-return declarado. v1.0.0 (SPY, ventana 2020->) queda inmutable
+    # como contexto historico.
+    ap.add_argument("--version", default="2.0.0")
     ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
     ap.add_argument("--no-publish", action="store_true")
     a = ap.parse_args(argv)

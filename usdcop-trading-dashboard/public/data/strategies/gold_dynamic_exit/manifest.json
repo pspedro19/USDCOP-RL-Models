@@ -16,8 +16,8 @@
   "produced_by": {
     "source": "BundlePublisher",
     "version": "1.0.0",
-    "year": 2026,
-    "generated_at": "2026-07-20T20:27:23.485520+00:00"
+    "year": 2025,
+    "generated_at": "2026-07-27T20:46:08.713494+00:00"
   },
   "backtests": [
     {
@@ -37,6 +37,25 @@
         "return_pct": 253.93,
         "sharpe": 0.694,
         "p_value": 0.0008
+      }
+    },
+    {
+      "model_version": "1.0.0",
+      "year": 2025,
+      "immutable_id": "gold_dynamic_exit__1.0.0__2025",
+      "summary": "strategies/gold_dynamic_exit/backtests/1.0.0/summary_2025.json",
+      "trades": "strategies/gold_dynamic_exit/backtests/1.0.0/trades_2025.json",
+      "signals": "strategies/gold_dynamic_exit/backtests/1.0.0/signals_2025.json",
+      "replayable": true,
+      "gates": {
+        "passed": 4,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 255.49,
+        "sharpe": 0.696,
+        "p_value": 0.001
       }
     }
   ],

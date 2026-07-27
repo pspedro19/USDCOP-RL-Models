@@ -1,0 +1,123 @@
+{
+  "strategy_id": "gold_trend_simple",
+  "strategy_name": "Gold \u00b7 Trend simple (voto SMA, sin trailing exit)",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "n_trading_days": 5619,
+  "strategies": {
+    "gold_trend_simple": {
+      "final_equity": 32466.3,
+      "total_return_pct": 225.26,
+      "sharpe": 0.634,
+      "sortino": 0.73,
+      "calmar": 0.242,
+      "max_dd_pct": -22.43,
+      "win_rate_pct": 19.2,
+      "profit_factor": 2.969,
+      "n_long": 125,
+      "n_short": 0,
+      "trading_days": 5619,
+      "exit_reasons": {
+        "signal_died": 125
+      },
+      "median_hold_days": 4
+    },
+    "buy_and_hold": {
+      "final_equity": 90713.82,
+      "total_return_pct": 807.14
+    }
+  },
+  "statistical_tests": {
+    "p_value": 0.0024,
+    "significant": true,
+    "bootstrap_95ci_ann": [
+      1.88,
+      9.77
+    ],
+    "deflated_sharpe": {
+      "sr0": 0.0765,
+      "dsr": 0.0033,
+      "significant": false
+    }
+  },
+  "backtest_recommendation": "REVIEW",
+  "backtest_confidence": 0.8,
+  "gates": [
+    {
+      "gate": "min_return_pct",
+      "label": "Retorno Minimo",
+      "value": 45.4,
+      "threshold": -15.0,
+      "passed": true
+    },
+    {
+      "gate": "min_sharpe_ratio",
+      "label": "Sharpe Minimo",
+      "value": 3.185,
+      "threshold": 0.0,
+      "passed": true
+    },
+    {
+      "gate": "max_drawdown_pct",
+      "label": "Max Drawdown",
+      "value": 4.11,
+      "threshold": 20.0,
+      "passed": true
+    },
+    {
+      "gate": "min_trades",
+      "label": "Trades Minimos",
+      "value": 0,
+      "threshold": 10,
+      "passed": false
+    },
+    {
+      "gate": "statistical_significance",
+      "label": "Significancia (p<0.05)",
+      "value": 0.0,
+      "threshold": 0.05,
+      "passed": true
+    }
+  ],
+  "verdict_notes": [
+    "DSR 0.0033 < 0.95 (trial-aware, N=75) \u2014 sin claim de alfa"
+  ],
+  "honest_gate": {
+    "b1_prime": {
+      "mean_exposure": 0.4692,
+      "ann_return_pct": 5.15,
+      "max_dd_pct": -23.01,
+      "calmar": 0.224,
+      "sharpe": 0.652
+    },
+    "beats_b1_prime_calmar": true,
+    "cost_stress": {
+      "calmar_x2": 0.142,
+      "calmar_x3": 0.07,
+      "survives_2x": true
+    }
+  },
+  "oos": {
+    "year": 2025,
+    "n_trading_days": 258,
+    "metrics": {
+      "cagr": 44.14,
+      "sharpe": 3.185,
+      "sortino": 4.309,
+      "max_dd": -4.11,
+      "calmar": 10.751,
+      "total_return_pct": 45.4,
+      "vol_ann": 11.71
+    },
+    "statistical_tests": {
+      "p_value": 0.0,
+      "significant": true,
+      "bootstrap_95ci_ann": [
+        16.9,
+        59.66
+      ]
+    }
+  },
+  "methodology": "Entrada: votos SMA{63,126,252} >= 2/3 (causal t-1). Salida: SOLO cuando la senal muere. SIN trailing stop -- esa ausencia ES la hipotesis H-SIMP-GOLD-01. Vol-target 10%, cap 1.5. Diseno <=2024, OOS=2025. El backtest es CONTEXTO: la observacion que motivo esta variante se hizo sobre el mismo historial, asi que el juez es el forward (constitucion 1)."
+}

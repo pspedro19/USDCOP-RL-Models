@@ -110,6 +110,30 @@ celda = +1 trial), screening SOLO ≤2024 con purged K-fold, bar = batir al MA20
 Calmar con costos propios → si una celda gana, UNA variante económica con juez forward.
 Dirección/DA no se toca: sin lift vs baseline en ningún activo (constitución §1).
 
+#### Contrato de ALINEACIÓN del dataset (directiva operador 2026-07-27)
+
+**Regla**: el dataset de cualquier variante que consuma series externas empieza en
+`max(min_fecha de las series ELEGIDAS)` y termina en `min(max_fecha)` — todas las filas
+con TODAS sus series pobladas (las semanales/mensuales entran ffill-acotado + shift T-1).
+Elegir series ES elegir ventana; se declara ANTES del screening. Disponibilidad medida
+en DB (2026-07-27):
+
+| Serie | Desde | Costo de incluirla |
+|---|---|---|
+| claims (ICSA) | 1967 | ninguno (pre-data SPX) |
+| NFCI | 1971 | ninguno |
+| curva 10y-2y | 1976 | ninguno |
+| curva 10y-3m | 1982 | ninguno |
+| STLFSI4 | 1993 | ninguno |
+| **SPX oficial** | **1995-01-03** | — (el piso del activo) |
+| real yield 10y / breakeven 10y | 2003 | pierde 1995-2002 (dot-com parcial) |
+| DXY / VIX (investing en DB) | 2020 | **pierde los 3 osos** (backfill investing pendiente, 0 trials) |
+| HY-OAS (licencia ICE) | 2023-07 | **mata la ventana** — solo forward-going |
+
+La estrategia congelada actual consume SOLO precio (proxies derivados, shift(1)) ⇒ su
+ventana alineada es el rango completo 1995→. VIX/DXY profundos vía backfill investing
+es la pre-tarea de datos (0 trials) si la familia los quiere sin sacrificar osos.
+
 ### S2 — Separar los ciclos operativos (0 trials)
 
 El DAG actual ejecuta L4 diariamente bajo un ID “weekly” y no tiene L5 de señal. El objetivo:

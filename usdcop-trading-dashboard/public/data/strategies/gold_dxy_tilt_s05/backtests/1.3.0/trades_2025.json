@@ -1,0 +1,37 @@
+{
+  "strategy_id": "gold_dxy_tilt_s05",
+  "strategy_name": "Gold \u00b7 tilt DXY sens 0.5",
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2004-12-21",
+    "end": "2026-07-21"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2004-12-22T22:00:00+00:00",
+      "exit_timestamp": "2026-07-21T21:00:00+00:00",
+      "side": "LONG",
+      "entry_price": 439.68,
+      "exit_price": 4008.46,
+      "pnl_pct": 209.3059,
+      "pnl_usd": 20930.59,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 30930.59,
+      "leverage": 0.685,
+      "exit_reason": "week_end",
+      "regime": "compression"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "win_rate": 100.0,
+    "total_return_pct": 209.31,
+    "sharpe_ratio": 0.544,
+    "max_drawdown_pct": -45.49,
+    "profit_factor": null,
+    "p_value": 0.0064,
+    "n_long": 1,
+    "n_short": 0
+  }
+}

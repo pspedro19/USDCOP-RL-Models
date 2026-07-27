@@ -3,7 +3,7 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin \u00b7 Trend-follower Daily (B2)",
+  "display_name": "Bitcoin · Trend-follower Daily (B2)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
   "status": "archived",
@@ -16,8 +16,8 @@
   "produced_by": {
     "source": "BundlePublisher",
     "version": "1.2.1",
-    "year": 2026,
-    "generated_at": "2026-07-21T01:53:13.496217+00:00"
+    "year": 2025,
+    "generated_at": "2026-07-27T20:45:11.666204+00:00"
   },
   "backtests": [
     {
@@ -84,6 +84,25 @@
       "summary": "strategies/btc_trend_b2/backtests/1.2.1/summary_2026.json",
       "trades": "strategies/btc_trend_b2/backtests/1.2.1/trades_2026.json",
       "signals": "strategies/btc_trend_b2/backtests/1.2.1/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "PROMOTE"
+      },
+      "headline": {
+        "return_pct": 351.16,
+        "sharpe": 1.396,
+        "p_value": 0.0
+      }
+    },
+    {
+      "model_version": "1.2.1",
+      "year": 2025,
+      "immutable_id": "btc_trend_b2__1.2.1__2025",
+      "summary": "strategies/btc_trend_b2/backtests/1.2.1/summary_2025.json",
+      "trades": "strategies/btc_trend_b2/backtests/1.2.1/trades_2025.json",
+      "signals": "strategies/btc_trend_b2/backtests/1.2.1/signals_2025.json",
       "replayable": true,
       "gates": {
         "passed": 5,

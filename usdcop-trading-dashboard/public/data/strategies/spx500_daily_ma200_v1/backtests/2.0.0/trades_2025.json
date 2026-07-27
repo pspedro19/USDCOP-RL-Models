@@ -1,0 +1,59 @@
+{
+  "strategy_id": "spx500_daily_ma200_v1",
+  "strategy_name": "S&P 500 \u00b7 MA200 causal (baseline)",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2025-01-02",
+    "end": "2025-12-31"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2025-01-02 21:00:00",
+      "exit_timestamp": "2025-03-10 20:00:00",
+      "side": "LONG",
+      "entry_price": 5868.55,
+      "exit_price": 5572.07,
+      "pnl_pct": -5.0753,
+      "pnl_usd": -507.53,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 9492.47,
+      "leverage": 1.0,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 2,
+      "timestamp": "2025-03-25 20:00:00",
+      "exit_timestamp": "2025-03-26 20:00:00",
+      "side": "LONG",
+      "entry_price": 5776.65,
+      "exit_price": 5693.31,
+      "pnl_pct": -1.4202,
+      "pnl_usd": -134.81,
+      "equity_at_entry": 9492.47,
+      "equity_at_exit": 9357.66,
+      "leverage": 1.0,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 3,
+      "timestamp": "2025-05-13 20:00:00",
+      "exit_timestamp": "2025-12-31 21:00:00",
+      "side": "LONG",
+      "entry_price": 5886.55,
+      "exit_price": 6858.47,
+      "pnl_pct": 17.4562,
+      "pnl_usd": 1633.49,
+      "equity_at_entry": 9357.66,
+      "equity_at_exit": 10991.15,
+      "leverage": 1.0,
+      "exit_reason": "year_end_open"
+    }
+  ],
+  "summary": {
+    "n_trades": 3,
+    "total_return_pct": 9.85,
+    "note_n": "N<20 => solo conteo y PnL"
+  }
+}
