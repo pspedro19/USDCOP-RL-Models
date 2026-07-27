@@ -10,7 +10,7 @@ code_anchors:
 
 # Backlog gobernado — planes ACTION/DIAGNOSTIC (CTR-QLAB-FABRIC-004)
 
-> 35 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
+> 36 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
 > cruzadas con el as-built verificado el 2026-07-27 (frontend incluido). Un MD por
 > tarea; cada uno con estado actual, anclas reales, impacto frontend y verificación.
 > **Todas 0 trials salvo indicación en el propio BL.**
@@ -68,12 +68,14 @@ code_anchors:
 | [BL-33](BL-33-readiness-matrix.md) | Institutional Readiness Matrix con evidencias | T | M | —(vive de evidencias de todos los demás). |
 | [BL-34](BL-34-ruta-replay.md) | Ruta /replay (alias de la sección de /dashboard) | T | S | Al final (cosmético); tras BL-05. |
 | [BL-35](BL-35-dataset-uris-arista-prohibida.md) | URIs de datasets + arista prohibida forecast→allocator en parseo | 3 | M | BL-13; base para BL-28. |
+| [BL-36](BL-36-racionalizacion-inventario-db.md) | Racionalización del inventario DB (59 tablas → matriz de verdad) | 2-3 | M | antes de BL-15/18/19/21/22 |
 
 ## Grafo mínimo de dependencias
 
 ```text
 BL-08 (.env) ── bloquea push de TODO
 BL-09/10/11 ─→ BL-12 ─→ BL-29 (qlab exige ledger+familias)
+BL-36 ─→ BL-15/18/19/21/22 (decidir destino antes de crear esquemas)
 BL-13 ─→ BL-06/BL-15/BL-16/BL-35 (surface antes de candados por tipo)
 BL-17 ─→ BL-21/22/24/28 (identidad antes de hechos — E2→E3)
 BL-07 ─→ BL-20 (atribución de reglas) ─→ BL-22 (persistencia timing_ratio)
