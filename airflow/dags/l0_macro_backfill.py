@@ -66,6 +66,26 @@ for path in [str(DAGS_DIR), str(SRC_PATH), str(PROJECT_ROOT)]:
         sys.path.append(path)
 
 
+def _ensure_dags_services() -> None:
+    """Make ``services.<mod>`` resolve to dags/services despite root shadowing.
+
+    PYTHONPATH=/opt/airflow:/opt/airflow/dags puts the repo-root ``services``
+    package (bi_api, common, ...) FIRST, so ``from services.macro_extraction_service
+    import ...`` raised ModuleNotFoundError at task runtime (health_check failure,
+    2026-07-27 — same root cause fixed in l0_macro_update). Extending the root
+    package's ``__path__`` lets both trees resolve; root submodules keep priority
+    and there are zero name collisions between the two (verified).
+    """
+    import services  # the repo-root package that wins the name
+
+    local_services = str(DAGS_DIR / 'services')
+    if local_services not in services.__path__:
+        services.__path__.append(local_services)
+
+
+_ensure_dags_services()
+
+
 # =============================================================================
 # DEFAULT ARGS
 # =============================================================================
