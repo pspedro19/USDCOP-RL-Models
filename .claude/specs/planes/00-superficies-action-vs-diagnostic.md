@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PLANNED
+status: SUPERSEDED
 version: 1.0.0
 last_verified: 2026-07-27
 supersedes: []
@@ -12,6 +12,9 @@ code_anchors:
 ---
 
 # PLAN — Dos superficies en un Control Plane: ACTION (replay/acción) vs DIAGNOSTIC (forecasting)
+
+> **SUPERSEDED 2026-07-27**: absorbido por `04-CTR-QLAB-FABRIC-004.md` (§3). Se
+> conserva como detalle de referencia; las tareas pendientes viven en `backlog/`.
 
 > Directiva del operador (2026-07-27). Los dos casos se manejan como **dos superficies
 > independientes dentro del mismo Control Plane**:

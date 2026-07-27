@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PLANNED
+status: SUPERSEDED
 version: 1.0.0
 supersedes: []
 last_verified: 2026-07-27
@@ -13,6 +13,9 @@ code_anchors:
 ---
 
 # PLAN — Muralla contractual: contratos separados, permisos de DB y reglas de CI
+
+> **SUPERSEDED 2026-07-27**: absorbido por `04-CTR-QLAB-FABRIC-004.md` (§15, §25). Se
+> conserva como detalle de referencia; las tareas pendientes viven en `backlog/`.
 
 > Segunda pieza del plan de superficies (ver `00-superficies-action-vs-diagnostic.md`).
 > Objetivo: que la separación ACTION/DIAGNOSTIC **no dependa de que el programador

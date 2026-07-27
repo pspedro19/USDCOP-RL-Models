@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PLANNED
+status: SUPERSEDED
 version: 1.0.0
 supersedes: []
 last_verified: 2026-07-27
@@ -12,6 +12,9 @@ code_anchors:
 ---
 
 # PLAN — El doble rol de USD/COP y la contabilidad de trials por superficie
+
+> **SUPERSEDED 2026-07-27**: absorbido por `04-CTR-QLAB-FABRIC-004.md` (§10, §16). Se
+> conserva como detalle de referencia; las tareas pendientes viven en `backlog/`.
 
 > Tercera pieza del plan de superficies. El caso más importante: en USD/COP el MISMO
 > tipo de modelo (Ridge/BR) vive en AMBAS superficies — como componente interno de la

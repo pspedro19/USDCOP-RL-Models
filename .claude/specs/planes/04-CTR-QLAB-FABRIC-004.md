@@ -2,7 +2,10 @@
 kind: roadmap
 status: PLANNED
 version: 4.0.0
-supersedes: []
+supersedes:
+  - .claude/specs/planes/00-superficies-action-vs-diagnostic.md
+  - .claude/specs/planes/01-contratos-permisos-ci.md
+  - .claude/specs/planes/02-usdcop-doble-rol-y-trials.md
 last_verified: 2026-07-27
 code_anchors:
   - config/assets/pipelines.yaml
@@ -371,7 +374,7 @@ costs:
 data:
   price:
     provider: investing
-    symbol: "^GSPC"
+    symbol: "^GSPC"                   # fuente real as-built: investing id 166 (SPX/500)
     return_type: price_return       # ≠ total_return — declarado, no asumido
     history_floor: "1995-01-03"
   macro_bundle: us_core             # → config/macro/us_core.yaml, nunca lista inline
