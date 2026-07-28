@@ -456,6 +456,69 @@ export interface InterpLinearSummary extends InterpSummaryBase {
   kill_flags_sign_change_by_year: string[];
 }
 
+/**
+ * TreeSHAP EXACTO nativo del booster (xgboost/lightgbm/catboost), BL-20 fase 2.
+ * Sin `coef` (un árbol no lo tiene) y con `by_regime` (gate Hurst congelado).
+ * Atribución SOLO sobre filas OOS de folds anuales expanding (una fila jamás se
+ * atribuye con el modelo que la vio en su train).
+ */
+export interface InterpTreeFeatureRow {
+  rank: number;
+  feature: string;
+  mean_abs_shap: number;
+  mean_shap: number;
+}
+
+export interface InterpTreeFold {
+  year: number;
+  n_train: number;
+  n_test: number;
+  train_end: string;
+  base_value: number;
+}
+
+export interface InterpTreeSummary extends InterpSummaryBase {
+  model_type: 'tree';
+  method: 'tree_shap';
+  attribution_not_shap: false;
+  /** Implementación TreeSHAP concreta usada (no el paquete `shap`, sino el booster). */
+  shap_backend: string;
+  /** ¿Importaba el paquete `shap` en la corrida? Informativo — el backend es el nativo. */
+  shap_package_available: boolean;
+  /** max |sum(φ) + base − pred_cruda| sobre todas las filas: TreeSHAP es exacto ⇒ ~0. */
+  additivity_max_abs_err: number;
+  fit: {
+    scheme: string;
+    origin: string;
+    n_train: number;
+    horizon: number;
+    purge_days: number;
+    scaler: string;
+    params: Record<string, number | string | boolean | null>;
+  };
+  folds: InterpTreeFold[];
+  base_value: number;
+  n_rows: number;
+  n_features: number;
+  n_folds: number;
+  top_features: InterpTreeFeatureRow[];
+  by_year: Record<string, InterpYearFeatureRow[]>;
+  by_regime: Record<string, InterpYearFeatureRow[]>;
+  regime_gate: string;
+  kill_flags_sign_change_by_year: string[];
+  kill_flags_sign_change_by_regime: string[];
+}
+
+/** Degradación HONESTA: sin backend TreeSHAP no se emite ni un valor de atribución. */
+export interface InterpTreeUnavailableSummary extends InterpSummaryBase {
+  model_type: 'tree';
+  method: 'tree_shap_unavailable';
+  attribution_not_shap: false;
+  status: 'tree_shap_unavailable';
+  reason: 'backend_import_failed' | 'shap_computation_failed' | 'model_artifact_missing';
+  detail: string;
+}
+
 export interface InterpRuleYear {
   n_days: number;
   pnl_gross: number;
@@ -484,7 +547,11 @@ export interface InterpRuleSummary extends InterpSummaryBase {
   by_year: Record<string, InterpRuleYear>;
 }
 
-export type InterpSummary = InterpLinearSummary | InterpRuleSummary;
+export type InterpSummary =
+  | InterpLinearSummary
+  | InterpTreeSummary
+  | InterpTreeUnavailableSummary
+  | InterpRuleSummary;
 
 // ─────────────────────────────────────────────────────────── riesgo (GET /api/admin/risk)
 

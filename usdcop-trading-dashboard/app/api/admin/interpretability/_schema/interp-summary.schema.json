@@ -5,6 +5,8 @@
   "description": "Schema COMPARTIDO (C-006/CXD-040) de los artefactos summary.json de interpretabilidad. Lo valida en runtime la API TS (app/api/admin/interpretability/_lib/artifact-schema.ts, con STRIP de campos desconocidos) y en CI un test Python contra los artefactos del generador (usdcop-trading-dashboard/tests/test_interpretability_schema.py, estricto). Espejo de los tipos InterpSummary en lib/contracts/admin-console.contract.ts. Nota: JSON Schema no puede expresar finitud numerica; ambos lados la imponen por codigo ademas de este schema.",
   "oneOf": [
     { "$ref": "#/definitions/linearSummary" },
+    { "$ref": "#/definitions/treeSummary" },
+    { "$ref": "#/definitions/treeUnavailableSummary" },
     { "$ref": "#/definitions/ruleSummary" }
   ],
   "definitions": {
@@ -28,6 +30,29 @@
         "feature": { "type": "string" },
         "mean_abs_shap": { "type": "number" },
         "mean_shap": { "type": "number" }
+      }
+    },
+    "treeFeatureRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rank", "feature", "mean_abs_shap", "mean_shap"],
+      "properties": {
+        "rank": { "type": "number" },
+        "feature": { "type": "string" },
+        "mean_abs_shap": { "type": "number" },
+        "mean_shap": { "type": "number" }
+      }
+    },
+    "treeFold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["year", "n_train", "n_test", "train_end", "base_value"],
+      "properties": {
+        "year": { "type": "number" },
+        "n_train": { "type": "number" },
+        "n_test": { "type": "number" },
+        "train_end": { "type": "string" },
+        "base_value": { "type": "number" }
       }
     },
     "ruleYear": {
@@ -101,6 +126,101 @@
           "type": "array",
           "items": { "type": "string" }
         }
+      }
+    },
+    "treeSummary": {
+      "description": "TreeSHAP EXACTO nativo del booster (xgboost/lightgbm/catboost) sobre filas OOS de folds anuales expanding. Sin `coef` (los arboles no lo tienen) y CON `by_regime` (corte por el gate Hurst congelado).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nota", "surface", "asset", "model_id", "model_type", "method",
+        "attribution_not_shap", "version", "generated_at", "shap_backend",
+        "shap_package_available", "additivity_max_abs_err", "fit", "folds", "scope",
+        "base_value", "n_rows", "n_features", "n_folds", "top_features", "by_year",
+        "by_regime", "regime_gate", "kill_flags_sign_change_by_year",
+        "kill_flags_sign_change_by_regime"
+      ],
+      "properties": {
+        "nota": { "type": "string" },
+        "surface": { "type": "string" },
+        "asset": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_type": { "const": "tree" },
+        "method": { "const": "tree_shap" },
+        "attribution_not_shap": { "const": false },
+        "version": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "shap_backend": { "type": "string" },
+        "shap_package_available": { "type": "boolean" },
+        "additivity_max_abs_err": { "type": "number" },
+        "scope": { "type": "string" },
+        "regime_gate": { "type": "string" },
+        "fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scheme", "origin", "n_train", "horizon", "purge_days", "scaler", "params"],
+          "properties": {
+            "scheme": { "type": "string" },
+            "origin": { "type": "string" },
+            "n_train": { "type": "number" },
+            "horizon": { "type": "number" },
+            "purge_days": { "type": "number" },
+            "scaler": { "type": "string" },
+            "params": {
+              "type": "object",
+              "additionalProperties": { "type": ["number", "string", "boolean", "null"] }
+            }
+          }
+        },
+        "folds": { "type": "array", "items": { "$ref": "#/definitions/treeFold" } },
+        "base_value": { "type": "number" },
+        "n_rows": { "type": "number" },
+        "n_features": { "type": "number" },
+        "n_folds": { "type": "number" },
+        "top_features": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/treeFeatureRow" }
+        },
+        "by_year": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/yearFeatureRow" }
+          }
+        },
+        "by_regime": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/yearFeatureRow" }
+          }
+        },
+        "kill_flags_sign_change_by_year": { "type": "array", "items": { "type": "string" } },
+        "kill_flags_sign_change_by_regime": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "treeUnavailableSummary": {
+      "description": "Degradacion HONESTA: el backend TreeSHAP no estuvo disponible. Cero valores de atribucion — un artefacto inventado es peor que un hueco declarado.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nota", "surface", "asset", "model_id", "model_type", "method",
+        "attribution_not_shap", "version", "generated_at", "scope", "status", "reason", "detail"
+      ],
+      "properties": {
+        "nota": { "type": "string" },
+        "surface": { "type": "string" },
+        "asset": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_type": { "const": "tree" },
+        "method": { "const": "tree_shap_unavailable" },
+        "attribution_not_shap": { "const": false },
+        "version": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "scope": { "type": "string" },
+        "status": { "const": "tree_shap_unavailable" },
+        "reason": { "enum": ["backend_import_failed", "shap_computation_failed", "model_artifact_missing"] },
+        "detail": { "type": "string" }
       }
     },
     "ruleSummary": {

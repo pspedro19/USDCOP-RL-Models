@@ -20,7 +20,7 @@ import { Microscope, ScanSearch } from 'lucide-react';
 
 import type {
   InterpIndexEntry, InterpIndexResponse, InterpLinearSummary, InterpRuleSummary,
-  InterpRuleYear, InterpSummary,
+  InterpRuleYear, InterpSummary, InterpTreeSummary, InterpTreeUnavailableSummary,
 } from '@/lib/contracts/admin-console.contract';
 import { COLOR, CTA, SURFACE, TYPE } from '@/lib/ui/tokens';
 
@@ -29,7 +29,10 @@ import { useMemo, useState } from 'react';
 import { REFRESH, useAdminWidget } from './useAdminWidget';
 import { Badge, Card, EmptyState, SkeletonRows, fmtRelative, useNow } from './ui';
 
-export type { InterpLinearSummary, InterpRuleSummary, InterpSummary };
+export type {
+  InterpLinearSummary, InterpRuleSummary, InterpSummary, InterpTreeSummary,
+  InterpTreeUnavailableSummary,
+};
 
 const DASH = '—';
 /** Signo tipográfico (U+2212) — consistente con tabular-nums, sin tono semántico. */
@@ -209,6 +212,222 @@ export function LinearShapPanel({ summary }: { summary: InterpLinearSummary }) {
   );
 }
 
+// ─────────────────────────────────────────────── panel TreeSHAP (xgb / lgbm / catboost)
+
+/** Matriz de signos genérica sobre cualquier corte (`by_year` o `by_regime`) del artefacto. */
+export function buildTreeSignMatrix(
+  summary: InterpTreeSummary,
+  cut: 'by_year' | 'by_regime',
+  topN = 12,
+): SignMatrix {
+  const groups = summary[cut];
+  const years = Object.keys(groups).sort();
+  const flagged = new Set(
+    cut === 'by_year'
+      ? summary.kill_flags_sign_change_by_year
+      : summary.kill_flags_sign_change_by_regime,
+  );
+  const rows = summary.top_features.slice(0, topN).map((f) => ({
+    feature: f.feature,
+    flagged: flagged.has(f.feature),
+    signs: years.map<-1 | 0 | 1>((y) => {
+      const v = (groups[y] ?? []).find((r) => r.feature === f.feature)?.mean_shap ?? 0;
+      if (!Number.isFinite(v) || v === 0) return 0;
+      return v > 0 ? 1 : -1;
+    }),
+  }));
+  return { years, rows };
+}
+
+function SignTable({ matrix, label }: { matrix: SignMatrix; label: string }) {
+  return (
+    <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto">
+      <table className="w-full min-w-[480px] text-xs" aria-label={label}>
+        <caption className="sr-only">{label}</caption>
+        <thead>
+          <tr className={`text-left ${COLOR.textSecondary} border-b border-[var(--gm-border)]`}>
+            <th scope="col" className="py-2 pr-3">Feature</th>
+            {matrix.years.map((y) => (
+              <th key={y} scope="col" className={`pr-2 text-center ${TYPE.mono}`}>{y}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {matrix.rows.map((r) => (
+            <tr key={r.feature} className="h-8 border-b border-[rgba(148,163,184,.08)]">
+              <td className={`pr-3 font-medium ${r.flagged ? COLOR.warn.text : COLOR.textPrimary}`}>
+                {r.feature}
+              </td>
+              {r.signs.map((s, i) => (
+                <td key={matrix.years[i]} className={`pr-2 text-center ${TYPE.mono} ${COLOR.textSecondary}`}>
+                  {s > 0 ? '+' : s < 0 ? MINUS : '·'}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function TreeShapPanel({ summary }: { summary: InterpTreeSummary }) {
+  const nFlags = summary.kill_flags_sign_change_by_year.length;
+  const maxAbs = Math.max(...summary.top_features.map((f) => f.mean_abs_shap), 1e-12);
+
+  return (
+    <div className="space-y-4" data-testid="interp-tree-panel">
+      <ConstitutionBanner nota={summary.nota} />
+
+      <Card
+        title={`Kill-flags A.7 — ${summary.model_id} · ${summary.asset}`}
+        icon={<ScanSearch className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="Flags calculados por el generador (signo del aporte medio que cambia entre años / entre regímenes con magnitud material). La UI no recomputa nada."
+        badge={<Badge tone={nFlags > 0 ? 'warn' : 'neutral'}>{nFlags}/{summary.n_features}</Badge>}
+      >
+        <p className={`${TYPE.body} ${COLOR.textPrimary}`}>
+          TreeSHAP exacto sobre <strong>{summary.n_rows} filas OOS</strong> en {summary.n_folds}{' '}
+          folds anuales expanding: ninguna fila fue vista por el modelo que la atribuye.{' '}
+          {nFlags} de {summary.n_features} features cambian el signo de su aporte medio entre
+          años. Esto <strong>no es importancia para operar</strong> — sirve para rechazar
+          modelos absurdos, no para probar verdades.
+        </p>
+        {nFlags > 0 && (
+          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="features con signo inestable entre años">
+            {summary.kill_flags_sign_change_by_year.map((f) => (
+              <li key={f}><Badge tone="warn">{f}</Badge></li>
+            ))}
+          </ul>
+        )}
+        <p className={`mt-3 ${TYPE.meta}`}>
+          {summary.scope}
+        </p>
+        <p className={`mt-2 ${TYPE.meta}`}>
+          backend: <span className={TYPE.mono}>{summary.shap_backend}</span> · paquete `shap`
+          importable: {summary.shap_package_available ? 'sí' : 'no (se usa el TreeSHAP nativo del booster)'}
+          {' '}· error máx. de aditividad: <span className={TYPE.mono}>{summary.additivity_max_abs_err.toExponential(1)}</span>
+          {' '}· {summary.fit.scheme} · {summary.fit.scaler} · H={summary.fit.horizon}
+        </p>
+      </Card>
+
+      <Card
+        title="Aporte por feature (φ, TreeSHAP exacto)"
+        icon={<Microscope className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="mean|φ| sobre las filas OOS, en pp del retorno 5d predicho (salida cruda del booster). Un árbol no tiene coeficiente: solo magnitud y signo medio. Sin colores direccionales."
+      >
+        <div role="region" aria-label="aporte por feature" tabIndex={0} className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-xs">
+            <caption className="sr-only">Aporte por feature (φ, TreeSHAP exacto)</caption>
+            <thead>
+              <tr className={`text-left ${COLOR.textSecondary} border-b border-[var(--gm-border)]`}>
+                <th scope="col" className="py-2 pr-3">#</th>
+                <th scope="col" className="pr-3">Feature</th>
+                <th scope="col" className="pr-3 text-right">mean |φ|</th>
+                <th scope="col" className="pr-3 text-right">mean φ</th>
+                <th scope="col" className="pr-3 w-[30%]">magnitud relativa</th>
+                <th scope="col" className="pr-3">estabilidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.top_features.map((f) => (
+                <tr key={f.feature} className="h-9 border-b border-[rgba(148,163,184,.08)]">
+                  <td className={`pr-3 ${COLOR.textSecondary}`}>{f.rank}</td>
+                  <td className={`pr-3 font-medium ${COLOR.textPrimary}`}>{f.feature}</td>
+                  <td className={`pr-3 text-right ${TYPE.mono} ${COLOR.textPrimary}`}>{fmtPp(f.mean_abs_shap)}</td>
+                  <td className={`pr-3 text-right ${TYPE.mono} ${COLOR.textSecondary}`}>{fmtPp(f.mean_shap)}</td>
+                  <td className="pr-3">
+                    <div className="h-1.5 w-full rounded-full bg-[rgba(148,163,184,.12)] overflow-hidden" aria-hidden>
+                      <div
+                        className="h-full rounded-full bg-[rgba(148,163,184,.55)]"
+                        style={{ width: `${Math.min(100, (f.mean_abs_shap / maxAbs) * 100)}%` }}
+                      />
+                    </div>
+                  </td>
+                  <td className="pr-3">
+                    {summary.kill_flags_sign_change_by_year.includes(f.feature)
+                      ? <Badge tone="warn">signo inestable</Badge>
+                      : <span className={COLOR.textSecondary}>{DASH}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card
+        title="Signo del aporte medio por año (corte temporal)"
+        icon={<ScanSearch className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="Signo de mean(φ) por año del artefacto. Tinta neutra: un signo no es una señal de trading."
+      >
+        <SignTable matrix={buildTreeSignMatrix(summary, 'by_year')} label="signo del aporte medio por año" />
+      </Card>
+
+      <Card
+        title="Signo del aporte medio por régimen (corte por régimen)"
+        icon={<ScanSearch className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="Corte por el gate Hurst congelado de smart_simple_v1.yaml, evaluado con retornos anteriores o iguales a la propia fila (sin look-ahead)."
+        badge={<Badge tone={summary.kill_flags_sign_change_by_regime.length > 0 ? 'warn' : 'neutral'}>
+          {summary.kill_flags_sign_change_by_regime.length}
+        </Badge>}
+      >
+        <SignTable matrix={buildTreeSignMatrix(summary, 'by_regime')} label="signo del aporte medio por régimen" />
+        <p className={`mt-3 ${TYPE.meta}`}>{summary.regime_gate}</p>
+      </Card>
+
+      <Card
+        title="Folds (train → test)"
+        icon={<Microscope className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="Walk-forward expanding anual con purga de 5 días. La atribución solo cubre las filas de test."
+      >
+        <div role="region" aria-label="folds" tabIndex={0} className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-xs">
+            <caption className="sr-only">Folds del walk-forward</caption>
+            <thead>
+              <tr className={`text-left ${COLOR.textSecondary} border-b border-[var(--gm-border)]`}>
+                <th scope="col" className="py-2 pr-3">Año (test)</th>
+                <th scope="col" className="pr-3 text-right">n_train</th>
+                <th scope="col" className="pr-3 text-right">n_test</th>
+                <th scope="col" className="pr-3">fin del train</th>
+                <th scope="col" className="pr-3 text-right">base value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.folds.map((f) => (
+                <tr key={f.year} className="h-8 border-b border-[rgba(148,163,184,.08)]">
+                  <td className={`pr-3 ${TYPE.mono} ${COLOR.textPrimary}`}>{f.year}</td>
+                  <td className={`pr-3 text-right ${TYPE.mono} ${COLOR.textSecondary}`}>{f.n_train}</td>
+                  <td className={`pr-3 text-right ${TYPE.mono} ${COLOR.textSecondary}`}>{f.n_test}</td>
+                  <td className={`pr-3 ${TYPE.mono} ${COLOR.textSecondary}`}>{f.train_end}</td>
+                  <td className={`pr-3 text-right ${TYPE.mono} ${COLOR.textSecondary}`}>{fmtPp(f.base_value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/** Degradación honesta: se declara el hueco, jamás se rellena con valores fabricados. */
+export function TreeUnavailablePanel({ summary }: { summary: InterpTreeUnavailableSummary }) {
+  return (
+    <div className="space-y-4" data-testid="interp-tree-unavailable-panel">
+      <ConstitutionBanner nota={summary.nota} />
+      <Card
+        title={`TreeSHAP no disponible — ${summary.model_id} · ${summary.asset}`}
+        icon={<Microscope className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
+        info="Estado tipado del generador. No hay atribuciones que mostrar: un artefacto inventado sería peor que un hueco declarado."
+        badge={<Badge tone="warn">{summary.reason}</Badge>}
+      >
+        <p className={`${TYPE.body} ${COLOR.textPrimary}`}>{summary.scope}</p>
+        <p className={`mt-3 ${TYPE.meta} ${TYPE.mono}`}>{summary.detail}</p>
+      </Card>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────── panel atribución de reglas (NO SHAP)
 
 function RuleYearCells({ d }: { d: InterpRuleYear }) {
@@ -350,10 +569,12 @@ function SummaryLoader({ surface, asset, modelId, version }: {
 
   if (w.data.attribution_not_shap === true) return <RuleAttributionPanel summary={w.data} />;
   if (w.data.method === 'linear_shap_closed_form') return <LinearShapPanel summary={w.data} />;
+  if (w.data.method === 'tree_shap') return <TreeShapPanel summary={w.data} />;
+  if (w.data.method === 'tree_shap_unavailable') return <TreeUnavailablePanel summary={w.data} />;
   return (
     <EmptyState
       icon={<Microscope className="w-8 h-8" aria-hidden />}
-      cause={`Método "${(w.data as { method?: string }).method}" aún sin renderer (fase 2: TreeSHAP).`}
+      cause={`Método "${(w.data as { method?: string }).method}" aún sin renderer.`}
     />
   );
 }

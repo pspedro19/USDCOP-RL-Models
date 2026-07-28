@@ -13,7 +13,8 @@
  *    puede expresarlo; se impone aquí por código).
  *
  * Intérprete mínimo del subconjunto draft-07 usado por el schema ($ref a
- * #/definitions, oneOf, type, const, properties/required/additionalProperties, items).
+ * #/definitions, oneOf, type, const, enum, properties/required/additionalProperties,
+ * items).
  * Sin dependencias nuevas (ajv no está declarado en package.json).
  */
 import rawSchema from '../_schema/interp-summary.schema.json';
@@ -23,6 +24,7 @@ type SchemaNode = {
   oneOf?: SchemaNode[];
   type?: string | string[];
   const?: unknown;
+  enum?: unknown[];
   properties?: Record<string, SchemaNode>;
   required?: string[];
   additionalProperties?: boolean | SchemaNode;
@@ -60,6 +62,10 @@ function walk(value: unknown, node: SchemaNode): unknown | null {
 
   if (s.const !== undefined) {
     return Object.is(value, s.const) ? value : null;
+  }
+
+  if (s.enum !== undefined) {
+    return s.enum.some((e) => Object.is(value, e)) ? value : null;
   }
 
   const t = typeOf(value);

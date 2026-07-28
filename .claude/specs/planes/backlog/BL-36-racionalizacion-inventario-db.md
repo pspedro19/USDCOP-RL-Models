@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
 last_verified: 2026-07-27
 supersedes: []
@@ -83,6 +83,20 @@ Decide ANTES de ejecutar BL-15/18/19/21/22 (los destinos nuevos absorben, no con
 - `SELECT` de disponibilidad: 0 lectores rotos tras cada drop (grep de cada tabla en
   airflow/ services/ scripts/ dashboard antes de tocar).
 - available_at: % NULL → 0 en daily/m5 con etiqueta de reconstrucción.
+
+## Entrega parcial 2026-07-28 (matriz producida, decisiones NO ejecutadas)
+
+La **matriz de verdad** vive en `.claude/specs/platform/db-truth-matrix.md`
+(CTR-DB-TRUTH-MATRIX-001), generada desde el repo por
+`scripts/diagnostics/db_inventory_matrix.py` → `.claude/generated/db-inventory.json`.
+**Sin acceso a la DB** (Docker parado; orden de no arrancar nada): filas/freshness solo
+para las 18 tablas de los manifiestos de backup commiteados; todo lo demás marcado
+`NO VERIFICADO`. Añade `staging_contract` (§7) y la semántica de 5 timestamps con el
+mapeo del legado (§8). **12 decisiones D-01..D-12 quedan pendientes del operador** (§10);
+ninguna se ejecutó, cero DDL. Correcciones al estado declarado arriba: `bi.fact_*` SÍ
+tiene escritores/lectores en código; hay **dos** `model_registry` y **tres** tablas de
+credenciales; las migraciones 070-073 ya crearon los esquemas destino, por lo que el gate
+"decidir antes de crear" se convierte en un problema de convivencia (D-08).
 
 ## Notas constitución
 

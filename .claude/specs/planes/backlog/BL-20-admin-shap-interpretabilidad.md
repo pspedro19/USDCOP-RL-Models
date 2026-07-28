@@ -1,11 +1,12 @@
 ---
 kind: roadmap
-status: PLANNED
-version: 1.0.0
-last_verified: 2026-07-27
+status: PARTIAL
+version: 1.1.0
+last_verified: 2026-07-28
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/app/admin
+  - scripts/analysis/generate_interpretability.py
   - src/forecasting/models/factory.py
   - scripts/analysis/profitability_adapters.py
   - usdcop-trading-dashboard/lib/contracts/rbac.contract.ts
@@ -27,8 +28,44 @@ Sección nueva en `/admin`; `npm run rbac:check` verde; header fijo: 'SHAP expli
 ## Dependencias
 BL-07 (atribución reglas); opcional BL-14 (versionado del componente).
 
+## Estado real (2026-07-28, cierre del hueco TreeSHAP)
+
+**COMPLETE**
+- SHAP lineal cerrado: `ridge`, `bayesian_ridge` (cortes global + por año).
+- **TreeSHAP EXACTO: `xgboost`, `lightgbm`, `catboost`** — backend NATIVO de cada booster
+  (`pred_contribs=True` / `pred_contrib=True` / `type='ShapValues'`), que es el mismo
+  algoritmo Lundberg et al. El paquete `shap` (0.51.0) está instalado pero **NO importa**
+  en este entorno (su `_tree.py` arrastra `pyspark`, roto en py3.12) — no se instaló nada:
+  el generador registra `shap_package_available: false` y el backend usado.
+  Aditividad verificada y persistida (`additivity_max_abs_err` ≈ 1e-17 lgbm/catboost,
+  2.4e-9 xgboost) ⇒ sum(φ)+base = predicción cruda.
+- **Solo test-folds**: walk-forward EXPANDING ANUAL (fit < 1-ene-Y con purga 5d; atribución
+  únicamente sobre filas del año Y). 5 folds, 1176 filas OOS. Ninguna fila se atribuye con
+  un modelo que la vio en su train.
+- Cortes árbol: **global + temporal (por año) + por régimen** (gate Hurst CONGELADO de
+  `smart_simple_v1.yaml`, evaluado con retornos ≤ la propia fila).
+- Kill-rules árbol: `kill_flags_sign_change_by_year` + `kill_flags_sign_change_by_regime`.
+- Degradación tipada `tree_shap_unavailable` (`reason` + `detail`) si falta backend o falla
+  el cómputo: cero valores fabricados.
+- Contrato: rama `treeSummary` + `treeUnavailableSummary` en el JSON Schema compartido y
+  espejo TS (`InterpTreeSummary`, `InterpTreeUnavailableSummary`); el validador runtime TS
+  aprendió `enum`. Renderers `TreeShapPanel` / `TreeUnavailablePanel` en la sección admin.
+- Atribución de reglas (`spx500`), etiquetada 'atribución, no SHAP'.
+
+**PARTIAL / pendiente**
+- La ruta **lineal** sigue con el esquema viejo (un único fit y φ sobre todo el histórico,
+  incluidas filas de train) y **sin corte por régimen**. Alinearla al walk-forward anual y
+  añadirle `by_regime` es trabajo pendiente (no se tocó para no romper el artefacto vivo).
+- Kill-rule "contradice el prior" no está implementada en ninguna ruta: exige una tabla de
+  priors por feature ⇒ **DECISIÓN PENDIENTE DEL OPERADOR** (declararlos es modelado).
+- `ard` y los tres híbridos del zoo no tienen artefacto (los híbridos mezclan lineal+árbol:
+  su atribución correcta no es TreeSHAP puro).
+- Superficies distintas de `zoo`/`rule_based` (v11 composite, Gold/BTC) sin cubrir.
+
 ## Verificación
 Artefactos para ≥1 modelo de cada clase (lineal/árbol/regla); vista renderiza; rbac:check; 0 trials (diagnóstico declarado sobre congelados §10.1).
+Ejecutado 2026-07-28: `pytest usdcop-trading-dashboard/tests/test_interpretability_schema.py -q`
+⇒ **11 passed** (6 artefactos: 2 lineales + 3 árbol + 1 regla).
 
 ## Notas constitución
 A.7: solo test-folds; sirve para RECHAZAR modelos absurdos, no para probar verdades.
