@@ -87,13 +87,23 @@ def ensure_json_safe(value: Any, path: str = "value") -> None:
 
 @dataclass(frozen=True)
 class RuleTraceEntry:
-    """One evaluated condition inside a policy run."""
+    """
+    One evaluated condition inside a policy run.
+
+    ``threshold`` (BL-46 R5, additive/optional) carries the RIGHT-hand values
+    the condition was compared against (``between`` contributes ``lower`` and
+    ``upper``). The §9 table is ``Condición | Observado | Umbral | Resultado``:
+    without a backend-emitted threshold the frontend would have to infer which
+    observed value plays the threshold role — that is re-evaluating the rule
+    (invariant 7). Absent/empty => the UI renders "—", never a guess.
+    """
 
     rule_id: str
     label: str
     observed: dict[str, Any] = field(default_factory=dict)
     result: bool = False
     reason_code: str = ""
+    threshold: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         # Type-strict: str()/bool() coercions are forbidden (C-004 remedy-3).
@@ -116,6 +126,11 @@ class RuleTraceEntry:
             raise ValueError(
                 f"rule_trace entry reason_code must be a string, got {self.reason_code!r}"
             )
+        if not isinstance(self.threshold, Mapping):
+            raise ValueError(
+                f"rule_trace entry threshold must be a mapping, got {self.threshold!r}"
+            )
+        ensure_json_safe(self.threshold, f"rule_trace[{self.rule_id}].threshold")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -124,15 +139,31 @@ class RuleTraceEntry:
             "observed": dict(self.observed),
             "result": self.result,
             "reason_code": self.reason_code,
+            "threshold": dict(self.threshold),
         }
 
 
 @dataclass(frozen=True)
 class RuleTrace:
-    """Full trace of one policy evaluation (rule_trace_v1)."""
+    """
+    Full trace of one policy evaluation (rule_trace_v1).
+
+    ``winning_rule_id`` / ``fallback_applied`` (BL-46 R5, additive/optional)
+    are the RESOLUTION facts. The §9 panel shows "Regla ganadora" and
+    "Fallback aplicado": deriving them in React ("the first entry with
+    result=true") would re-implement the policy's resolution mode in the
+    frontend — invariant 7 forbids it, so the backend states them.
+
+    Fail-closed invariants (identical in the TS mirror):
+    - ``winning_rule_id``, when set, must name a rule PRESENT in ``rules``
+      whose ``result`` is True.
+    - a fallback and a winner are mutually exclusive.
+    """
 
     rules: tuple[RuleTraceEntry, ...] = ()
     trace_schema: str = RULE_TRACE_SCHEMA_V1
+    winning_rule_id: str | None = None
+    fallback_applied: bool = False
 
     def __post_init__(self) -> None:
         # Fail-closed: an unsupported schema is a typed error at construction
@@ -146,11 +177,41 @@ class RuleTrace:
             isinstance(r, RuleTraceEntry) for r in self.rules
         ):
             raise ValueError("rules must be a sequence of RuleTraceEntry")
+        if not isinstance(self.fallback_applied, bool):
+            raise ValueError(
+                f"rule_trace fallback_applied must be a bool, got {self.fallback_applied!r}"
+            )
+        if self.winning_rule_id is not None:
+            if isinstance(self.winning_rule_id, bool) or not isinstance(
+                self.winning_rule_id, str
+            ) or not self.winning_rule_id:
+                raise ValueError(
+                    "rule_trace winning_rule_id must be a non-empty string or None, "
+                    f"got {self.winning_rule_id!r}"
+                )
+            matches = [r for r in self.rules if r.rule_id == self.winning_rule_id]
+            if not matches:
+                raise ValueError(
+                    f"rule_trace winning_rule_id {self.winning_rule_id!r} is not among "
+                    "the traced rules — the winner must be an evaluated rule"
+                )
+            if not matches[0].result:
+                raise ValueError(
+                    f"rule_trace winning_rule_id {self.winning_rule_id!r} points at a "
+                    "rule whose result is False — a losing rule cannot win"
+                )
+            if self.fallback_applied:
+                raise ValueError(
+                    "rule_trace cannot declare BOTH a winning_rule_id and "
+                    "fallback_applied=True (mutually exclusive resolutions)"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "trace_schema": self.trace_schema,
             "rules": [r.to_dict() for r in self.rules],
+            "winning_rule_id": self.winning_rule_id,
+            "fallback_applied": self.fallback_applied,
         }
 
     def to_json(self) -> str:
@@ -187,6 +248,14 @@ class RuleTrace:
         for i, r in enumerate(rules_raw):
             if not isinstance(r, Mapping) or "rule_id" not in r:
                 raise ValueError(f"rule_trace rules[{i}] must be a mapping with rule_id")
+            # observed/threshold must be OBJECTS, not scalars: ``dict(5)`` would
+            # raise TypeError while the TS mirror's JSON sweep would let a bare
+            # number through — the exact asymmetry class C-004 was rejected for.
+            for key in ("observed", "threshold"):
+                if key in r and not isinstance(r[key], Mapping):
+                    raise ValueError(
+                        f"rule_trace rules[{i}].{key} must be a mapping, got {r[key]!r}"
+                    )
             entries.append(
                 RuleTraceEntry(
                     rule_id=r["rule_id"],
@@ -194,6 +263,14 @@ class RuleTrace:
                     observed=dict(r.get("observed", {})),
                     result=r.get("result", False),
                     reason_code=r.get("reason_code", ""),
+                    threshold=dict(r.get("threshold", {})),
                 )
             )
-        return cls(rules=tuple(entries))
+        # Resolution facts are OPTIONAL (legacy traces predate them) but never
+        # invented: absent => no winner / no fallback, and the constructor
+        # re-validates the pair.
+        return cls(
+            rules=tuple(entries),
+            winning_rule_id=payload.get("winning_rule_id"),
+            fallback_applied=payload.get("fallback_applied", False),
+        )

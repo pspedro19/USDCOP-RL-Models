@@ -497,7 +497,10 @@ class TestTsMirrorParity:
     def test_engine_ref_is_a_discriminated_union(self):
         text = _ts_text()
         assert re.search(
-            r"export type EngineRef =\s*RuleBasedEngineRef \| MlEngineRef \| CompositeEngineRef",
+            # BL-46: the union carries the FOUR engines of invariant 1
+            # (rl added bilaterally with ENGINE_TYPES).
+            r"export type EngineRef =\s*\|?\s*RuleBasedEngineRef\s*\|\s*MlEngineRef"
+            r"\s*\|\s*RlEngineRef\s*\|\s*CompositeEngineRef",
             text,
         ), "EngineRef must be the discriminated union of the three engine refs"
 

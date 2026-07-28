@@ -165,6 +165,64 @@ def _resolve(operand: Any, snapshot: Mapping[str, Any]) -> float:
     return float(operand)
 
 
+def threshold_values(
+    node: Any, snapshot: Mapping[str, Any]
+) -> dict[str, float]:
+    """
+    Collect the RIGHT-hand (threshold) values a condition compares against —
+    the "Umbral" column of the §9 table. Emitted by the BACKEND so the
+    frontend never has to infer which observed value is the threshold
+    (invariant 7: the UI renders, it does not re-evaluate).
+
+    Keys: the feature name when the threshold is a feature reference,
+    ``limit`` for a numeric literal, ``lower``/``upper`` for ``between``.
+    Collisions inside ``all``/``any`` are suffixed (``key#2``) so the map is
+    lossless and deterministic.
+    """
+    out: dict[str, float] = {}
+    _collect_thresholds(node, snapshot, out)
+    return out
+
+
+def _put_threshold(out: dict[str, float], key: str, value: float) -> None:
+    if key not in out:
+        out[key] = value
+        return
+    i = 2
+    while f"{key}#{i}" in out:
+        i += 1
+    out[f"{key}#{i}"] = value
+
+
+def _threshold_key(operand: Any, fallback: str) -> str:
+    name = _feature_name(operand)
+    return name if name is not None else fallback
+
+
+def _collect_thresholds(
+    node: Any, snapshot: Mapping[str, Any], out: dict[str, float]
+) -> None:
+    validate_condition(node)
+    operator = node["operator"]
+    if operator in COMPARISON_OPERATORS:
+        _put_threshold(
+            out,
+            _threshold_key(node["right"], "limit"),
+            _resolve(node["right"], snapshot),
+        )
+        return
+    if operator == "between":
+        _put_threshold(out, "lower", _resolve(node["lower"], snapshot))
+        _put_threshold(out, "upper", _resolve(node["upper"], snapshot))
+        return
+    if operator == "not":
+        _collect_thresholds(node["condition"], snapshot, out)
+        return
+    if operator in ("all", "any"):
+        for child in node["conditions"]:
+            _collect_thresholds(child, snapshot, out)
+
+
 def referenced_features(node: Any) -> set[str]:
     """Collect every feature name referenced inside a condition AST."""
     features: set[str] = set()
@@ -473,6 +531,7 @@ class DeclarativePolicy:
                     observed=observed,
                     result=fired,
                     reason_code=str(rule["output"].get("reason_code", "")),
+                    threshold=dict(threshold_values(rule["when"], snapshot)),
                 )
             )
             if fired and winner is None:
@@ -502,5 +561,12 @@ class DeclarativePolicy:
             target_exposure=exposure,
             reason_codes=reason_codes,
             decision_components=components,
-            rule_trace=RuleTrace(rules=tuple(trace_entries)),
+            # Resolution facts stated by the ENGINE (BL-46 R5): which rule won
+            # under first_match, or that the declared fallback applied. The
+            # frontend renders these; it never re-derives them.
+            rule_trace=RuleTrace(
+                rules=tuple(trace_entries),
+                winning_rule_id=str(winner["id"]) if winner is not None else None,
+                fallback_applied=winner is None,
+            ),
         )

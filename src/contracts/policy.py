@@ -44,7 +44,12 @@ from src.contracts.rule_trace import RuleTrace, ensure_json_safe
 # Engine discriminator
 # ---------------------------------------------------------------------------
 
-ENGINE_TYPES = ("rule_based", "ml", "composite")
+#: The FOUR engines of invariant 1 (`.claude/rules/strategy-engines.md`):
+#: rule_based | ml | rl | composite. ``rl`` was missing in the R1 cut while the
+#: always-loaded rule and spec §2/§12 (PPO USD/COP) list it, and BL-46 R5
+#: requires an RLPolicyPanel — an engine the contract rejects can never reach
+#: the renderer. Added bilaterally (mirrored in policy.contract.ts).
+ENGINE_TYPES = ("rule_based", "ml", "rl", "composite")
 
 VALID_DIRECTIONS = ("LONG", "SHORT", "FLAT")
 
@@ -152,6 +157,8 @@ class EngineRef:
 
     - ``rule_based``: policy_hash required, model snapshots forbidden.
     - ``ml``: model_snapshot_id required.
+    - ``rl``: model_snapshot_id required (the learned policy artifact has
+      trained weights, exactly like ``ml``); policy_hash optional.
     - ``composite``: policy_hash + model_snapshot_ids (predictor components).
     """
 
@@ -189,9 +196,11 @@ class EngineRef:
                     "rule_based engine_ref must NOT carry model snapshots "
                     "(a rules policy has no trained weights)"
                 )
-        elif self.type == "ml":
+        elif self.type in ("ml", "rl"):
             if not self.model_snapshot_id:
-                raise ValueError("ml engine_ref requires model_snapshot_id")
+                raise ValueError(
+                    f"{self.type} engine_ref requires model_snapshot_id"
+                )
         elif self.type == "composite":
             if not self.policy_hash:
                 raise ValueError("composite engine_ref requires policy_hash")

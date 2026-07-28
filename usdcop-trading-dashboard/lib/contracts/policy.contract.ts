@@ -21,7 +21,14 @@
 // Constants (mirrored in policy.py / policy_dsl.py — change BOTH sides)
 // -----------------------------------------------------------------------------
 
-export const ENGINE_TYPES = ['rule_based', 'ml', 'composite'] as const;
+/**
+ * The FOUR engines of invariant 1 (`.claude/rules/strategy-engines.md`):
+ * rule_based | ml | rl | composite. `rl` was missing in the R1 cut although
+ * the rule and spec §2/§12 (PPO USD/COP) list it and BL-46 R5 requires an
+ * RLPolicyPanel — an engine the contract rejects can never reach the renderer.
+ * Added bilaterally (mirror: src/contracts/policy.py::ENGINE_TYPES).
+ */
+export const ENGINE_TYPES = ['rule_based', 'ml', 'rl', 'composite'] as const;
 
 export type EngineType = (typeof ENGINE_TYPES)[number];
 
@@ -161,7 +168,24 @@ export interface CompositeEngineRef {
   model_snapshot_ids?: string[];    // predictor components
 }
 
-export type EngineRef = RuleBasedEngineRef | MlEngineRef | CompositeEngineRef;
+/**
+ * rl: model_snapshot_id required (the learned policy artifact HAS trained
+ * weights, exactly like ml); policy_hash optional. Mirrors the Python branch
+ * `elif self.type in ("ml", "rl")`.
+ */
+export interface RlEngineRef {
+  type: 'rl';
+  policy_version_id?: string | null;
+  policy_hash?: string | null;
+  model_snapshot_id: string;        // required
+  model_snapshot_ids?: string[];
+}
+
+export type EngineRef =
+  | RuleBasedEngineRef
+  | MlEngineRef
+  | RlEngineRef
+  | CompositeEngineRef;
 
 // -----------------------------------------------------------------------------
 // Rule trace (rule_trace_v1 — mirrors rule_trace.py)
@@ -177,22 +201,36 @@ export const SUPPORTED_TRACE_SCHEMAS = [RULE_TRACE_SCHEMA_V1] as const;
 
 export type TraceSchema = (typeof SUPPORTED_TRACE_SCHEMAS)[number];
 
-/** One evaluated condition inside a policy run. */
+/**
+ * One evaluated condition inside a policy run.
+ *
+ * `threshold` (BL-46 R5, additive/optional) carries the RIGHT-hand values the
+ * condition was compared against — the "Umbral" column of §9. Without it the
+ * UI would have to infer which observed value is the threshold, i.e. re-derive
+ * the rule (invariant 7). Absent/empty ⇒ render "—", never a guess.
+ */
 export interface RuleTraceEntry {
   rule_id: string;
   label: string;
   observed: Record<string, unknown>;
   result: boolean;
   reason_code: string;
+  threshold?: Record<string, unknown>;
 }
 
 /**
  * Full trace of one policy evaluation. The backend produces it; the
  * frontend only renders it (never re-evaluates conditions).
+ *
+ * `winning_rule_id` / `fallback_applied` (BL-46 R5, additive/optional) are the
+ * RESOLUTION facts: picking "the first entry with result=true" in React would
+ * re-implement the policy's resolution mode.
  */
 export interface RuleTrace {
   trace_schema: typeof RULE_TRACE_SCHEMA_V1;   // literal 'rule_trace_v1'
   rules: RuleTraceEntry[];
+  winning_rule_id?: string | null;
+  fallback_applied?: boolean;
 }
 
 // -----------------------------------------------------------------------------
@@ -296,11 +334,11 @@ export const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
 export const ISO_TIMESTAMP_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
 
-function validHash(v: unknown): v is string {
+export function validHash(v: unknown): v is string {
   return typeof v === 'string' && HASH_PATTERN.test(v);
 }
 
-function validId(v: unknown): v is string {
+export function validId(v: unknown): v is string {
   return typeof v === 'string' && ID_PATTERN.test(v);
 }
 
@@ -312,7 +350,7 @@ function daysInMonth(year: number, month: number): number {
   return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }
 
-function validIsoTimestamp(v: unknown): v is string {
+export function validIsoTimestamp(v: unknown): v is string {
   if (typeof v !== 'string') return false;
   const m = ISO_TIMESTAMP_PATTERN.exec(v);
   if (!m) return false;
@@ -504,8 +542,8 @@ export function validateEngineRef(raw: unknown): string[] {
     if (o.model_snapshot_id || (Array.isArray(o.model_snapshot_ids) && o.model_snapshot_ids.length > 0)) {
       errors.push('rule_based engine_ref must NOT carry model snapshots');
     }
-  } else if (o.type === 'ml') {
-    if (!validId(o.model_snapshot_id)) errors.push('ml engine_ref requires model_snapshot_id');
+  } else if (o.type === 'ml' || o.type === 'rl') {
+    if (!validId(o.model_snapshot_id)) errors.push(`${o.type} engine_ref requires model_snapshot_id`);
   } else if (o.type === 'composite') {
     if (!validHash(o.policy_hash)) errors.push('composite engine_ref requires policy_hash');
   }
@@ -552,10 +590,44 @@ export function validateRuleTrace(raw: unknown): string[] {
       if (e.result !== undefined && typeof e.result !== 'boolean') {
         errors.push(`rule_trace entry ${String(e.rule_id)} result must be a boolean`);
       }
-      // observed values ride into JSON exports — closed JSON only
-      // (no NaN/Infinity, no non-JSON types)
-      if (e.observed !== undefined) {
-        collectNonFinite(e.observed, `rule_trace.${String(e.rule_id)}.observed`, errors);
+      // observed/threshold values ride into JSON exports — closed JSON only
+      // (no NaN/Infinity, no non-JSON types) AND they must be OBJECTS: a bare
+      // scalar would blow up `dict(...)` in Python, so both sides reject it.
+      for (const key of ['observed', 'threshold'] as const) {
+        const v = e[key];
+        if (v === undefined) continue;
+        if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+          errors.push(`rule_trace entry ${String(e.rule_id)} ${key} must be an object`);
+          continue;
+        }
+        collectNonFinite(v, `rule_trace.${String(e.rule_id)}.${key}`, errors);
+      }
+    }
+  }
+  // Resolution facts (mirror RuleTrace.__post_init__): a winner must be a
+  // traced rule that actually fired, and it excludes the fallback.
+  if (o.fallback_applied !== undefined && typeof o.fallback_applied !== 'boolean') {
+    errors.push('rule_trace fallback_applied must be a boolean');
+  }
+  if (o.winning_rule_id !== undefined && o.winning_rule_id !== null) {
+    if (!nonEmptyString(o.winning_rule_id)) {
+      errors.push('rule_trace winning_rule_id must be a non-empty string or null');
+    } else if (Array.isArray(o.rules)) {
+      const match = (o.rules as unknown[]).find(
+        (r) => typeof r === 'object' && r !== null
+          && (r as Record<string, unknown>).rule_id === o.winning_rule_id,
+      ) as Record<string, unknown> | undefined;
+      if (!match) {
+        errors.push(
+          `rule_trace winning_rule_id ${JSON.stringify(o.winning_rule_id)} is not among the traced rules`,
+        );
+      } else if (match.result !== true) {
+        errors.push(
+          `rule_trace winning_rule_id ${JSON.stringify(o.winning_rule_id)} points at a rule whose result is False`,
+        );
+      }
+      if (o.fallback_applied === true) {
+        errors.push('rule_trace cannot declare BOTH a winning_rule_id and fallback_applied=true');
       }
     }
   }

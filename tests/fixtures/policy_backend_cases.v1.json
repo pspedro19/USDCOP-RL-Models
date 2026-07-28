@@ -1,0 +1,2175 @@
+{
+  "fixture": "policy_backend_cases",
+  "version": "v1",
+  "content_sha256": "12ba3f940a3de85661f3e52edaf05d9ad96caeb5a98ef9432d56a3211f8f0c77",
+  "sha_scheme": "sha256 over this file's text (CRLF normalized to LF) with the 64-hex value of content_sha256 removed; both runners recompute and refuse to run on mismatch",
+  "encoding": {
+    "$nonfinite": "NaN | Infinity | -Infinity - decoded to the native non-finite number in BOTH runtimes",
+    "$pytype": "decimal - Python decodes to the real type; TS decodes to a non-plain marker object (both must reject: closed JSON world)"
+  },
+  "targets": [
+    "policy_version",
+    "strategy_signal",
+    "trace",
+    "engine_ref",
+    "presentation",
+    "config_field",
+    "config_values"
+  ],
+  "cases": [
+    {
+      "id": "pv_valid_declarative",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "pv_valid_coded",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "coded_policy",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "module_reference": "src.strategies.spx500_regime_gated_v1.policies:MA200Policy",
+        "code_hash": "sha256:abababababababababababababababababababababababababababababababab"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "pv_coded_without_module",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "coded_policy",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "code_hash": "sha256:abababababababababababababababababababababababababababababababab"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_coded_without_code_hash",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "coded_policy",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "module_reference": "src.strategies.spx:MA200Policy"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_declarative_with_module",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "module_reference": "src.strategies.spx:MA200Policy"
+      },
+      "expect": "invalid",
+      "note": "a declarative policy that points at code is a hidden code path"
+    },
+    {
+      "id": "pv_module_ref_injection",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "coded_policy",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "code_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "module_reference": "os;rm -rf /:X"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_module_ref_newline",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "coded_policy",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "code_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "module_reference": "src.strategies.spx:MA200Policy\n"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_engine_rl_valid",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rl",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "pv_engine_unknown",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "dropdb",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_engine_bool",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": true,
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_hash_bool",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": true,
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_hash_uppercase",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:DEADBEEF",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_hash_no_prefix",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_frozen_at_date_only",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_frozen_at_no_offset",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_frozen_at_impossible_day",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-02-30T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_frozen_at_impossible_offset",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00+25:00",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_frozen_at_trailing_newline",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z\n",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_manifest_uri_relative",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "manifests/spx500.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_manifest_uri_ftp",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "ftp://host/x.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_manifest_uri_space",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx 500/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_manifest_uri_newline",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/x.json\n"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_manifest_uri_too_long",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_unknown_field",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "retrain": "never"
+      },
+      "expect": "invalid",
+      "note": "closed schema: an unknown column is never silently ignored"
+    },
+    {
+      "id": "pv_missing_policy_hash",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_schema_version_v2",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "declarative",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json",
+        "schema_version": "policy_version_v2"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pv_implementation_mode_unknown",
+      "target": "policy_version",
+      "payload": {
+        "policy_version_id": "pv_ma200_001",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "engine_type": "rule_based",
+        "implementation_mode": "eval",
+        "params_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "policy_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "feature_set_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "resample_policy_hash": "sha256:abababababababababababababababababababababababababababababababab",
+        "frozen_at": "2026-07-27T00:00:00Z",
+        "manifest_uri": "s3://bundles/spx500/ma200/manifest.json"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_valid",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "sig_window_equal",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T13:30:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "sig_window_inverted",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T20:00:00Z",
+        "valid_until": "2026-07-28T13:30:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_window_inverted_across_offsets",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T10:00:00-05:00",
+        "valid_until": "2026-07-28T14:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid",
+      "note": "10:00-05:00 == 15:00Z > 14:00Z — offsets must be resolved, not string-compared"
+    },
+    {
+      "id": "sig_window_ordered_across_offsets",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T10:00:00-05:00",
+        "valid_until": "2026-07-28T16:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "sig_valid_from_date_only",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_valid_from_no_offset",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_created_at_missing",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_signal_id_mismatch",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "other:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_signal_id_wrong_fingerprint",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:0123456789abcdef",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_exposure_bool",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": true,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_exposure_string",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": "1.0",
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_exposure_infinity",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": {
+          "$nonfinite": "Infinity"
+        },
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_components_nan",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": {
+            "$nonfinite": "NaN"
+          }
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_components_decimal",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": {
+            "$pytype": "decimal",
+            "value": "1.5"
+          }
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid",
+      "note": "closed JSON world: Decimal is never silently stringified"
+    },
+    {
+      "id": "sig_components_scalar",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": 1.0,
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_direction_lowercase",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "long",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_unknown_field",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1",
+        "tp_price": 4300.0
+      },
+      "expect": "invalid",
+      "note": "a new rule adds decision_components entries, never a column"
+    },
+    {
+      "id": "sig_decision_schema_v2",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v2",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_rule_trace_uri_relative",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "bundles/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_rule_trace_uri_null",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": null,
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "sig_instrument_id_empty",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          "CLOSE_ABOVE_MA200"
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "sig_reason_codes_not_strings",
+      "target": "strategy_signal",
+      "payload": {
+        "signal_id": "spx500_daily_ma200_v1:2026-07-27:dededededededede",
+        "sleeve_id": "spx500_daily_ma200_v1",
+        "strategy_version": "2.0.0",
+        "policy_version_id": "pv_ma200_001",
+        "instrument_id": "spx500_index",
+        "as_of": "2026-07-27",
+        "valid_from": "2026-07-28T13:30:00Z",
+        "valid_until": "2026-07-28T20:00:00Z",
+        "direction": "LONG",
+        "target_exposure": 1.0,
+        "decision_fingerprint": "sha256:dededededededededededededededededededededededededededededededede",
+        "created_at": "2026-07-27T20:05:00Z",
+        "feature_snapshot_id": "fs_spx500_20260727",
+        "reason_codes": [
+          1
+        ],
+        "decision_components": {
+          "close": 6412.8,
+          "ma_200": 5984.2
+        },
+        "decision_schema_version": "decision_components_v1",
+        "rule_trace_uri": "s3://bundles/spx500/2026-07-27/rule_trace.json",
+        "schema_version": "strategy_signal_v1"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_threshold_valid",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          },
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ]
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "trace_threshold_scalar",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": 5984.2,
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_threshold_array",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": [
+              5984.2
+            ],
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_threshold_nonfinite",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": {
+                "$nonfinite": "Infinity"
+              }
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_observed_scalar",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": 1.0,
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_winner_valid",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          },
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ],
+        "winning_rule_id": "trend_on",
+        "fallback_applied": false
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "trace_winner_not_traced",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          },
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ],
+        "winning_rule_id": "ghost_rule"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_winner_result_false",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          },
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ],
+        "winning_rule_id": "trend_off"
+      },
+      "expect": "invalid",
+      "note": "a losing rule cannot win"
+    },
+    {
+      "id": "trace_winner_and_fallback",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ],
+        "winning_rule_id": "trend_on",
+        "fallback_applied": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_fallback_only",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ],
+        "fallback_applied": true
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "trace_fallback_not_bool",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_off",
+            "label": "Precio bajo MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": false,
+            "reason_code": "CLOSE_BELOW_MA200"
+          }
+        ],
+        "fallback_applied": "yes"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_winner_bool",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "trend_on",
+            "label": "Precio sobre MA200",
+            "observed": {
+              "close": 6412.8,
+              "ma_200": 5984.2
+            },
+            "threshold": {
+              "ma_200": 5984.2
+            },
+            "result": true,
+            "reason_code": "CLOSE_ABOVE_MA200"
+          }
+        ],
+        "winning_rule_id": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_rl_valid",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rl",
+        "model_snapshot_id": "ppo_v215b_seed42"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "engine_rl_missing_snapshot",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rl"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_rl_snapshot_bool",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rl",
+        "model_snapshot_id": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_rl_with_policy_hash",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rl",
+        "model_snapshot_id": "ppo_v215b_seed42",
+        "policy_hash": "sha256:abababababababababababababababababababababababababababababababab"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "pres_valid",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas MA200",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "ma_200",
+            "label": "Media movil 200",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "pres_key_uppercase",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas MA200",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "Close",
+            "label": "Cierre",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_duplicate_keys",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas MA200",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "close",
+            "label": "Cierre bis",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_format_unknown",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas MA200",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "html"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_label_multiline",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas\nMA200",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "ma_200",
+            "label": "Media movil 200",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_label_too_long",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "ma_200",
+            "label": "Media movil 200",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_label_bool",
+      "target": "presentation",
+      "payload": {
+        "engine_label": true,
+        "description": "Exposicion cuando el cierre supera la media de 200 sesiones",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "ma_200",
+            "label": "Media movil 200",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "pres_empty_description",
+      "target": "presentation",
+      "payload": {
+        "engine_label": "Reglas MA200",
+        "description": "",
+        "components": [
+          {
+            "key": "close",
+            "label": "Cierre",
+            "format": "price"
+          },
+          {
+            "key": "ma_200",
+            "label": "Media movil 200",
+            "format": "price"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_number_valid",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional maximo",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 10000,
+        "step": 100,
+        "default": 1000,
+        "unit": "USD"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "cfg_number_min_gt_max",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "minimum": 10,
+        "maximum": 1
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_number_step_zero",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "step": 0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_number_with_options",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "options": [
+          "a",
+          "b"
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_number_default_out_of_range",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 10,
+        "default": 99
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_number_default_bool",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "default": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_bool_valid",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_enabled",
+        "label": "Trading activo",
+        "type": "boolean",
+        "default": false
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "cfg_bool_with_minimum",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_enabled",
+        "label": "Trading",
+        "type": "boolean",
+        "minimum": 0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_enum_valid",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "enum",
+        "options": [
+          "PAPER",
+          "LIVE"
+        ],
+        "default": "PAPER"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "cfg_enum_empty_options",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "enum",
+        "options": []
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_enum_duplicate_options",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "enum",
+        "options": [
+          "PAPER",
+          "PAPER"
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_enum_default_outside",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "enum",
+        "options": [
+          "PAPER"
+        ],
+        "default": "LIVE"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_type_unknown",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "sql"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_key_uppercase",
+      "target": "config_field",
+      "payload": {
+        "key": "TradingMode",
+        "label": "Modo",
+        "type": "boolean"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_unknown_key",
+      "target": "config_field",
+      "payload": {
+        "key": "trading_mode",
+        "label": "Modo",
+        "type": "boolean",
+        "widget": "toggle"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfg_nonfinite_minimum",
+      "target": "config_field",
+      "payload": {
+        "key": "max_notional",
+        "label": "Notional",
+        "type": "number",
+        "minimum": {
+          "$nonfinite": "-Infinity"
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfgvals_valid",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "max_notional": 500,
+          "trading_enabled": true,
+          "trading_mode": "PAPER"
+        }
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "cfgvals_unknown_key",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "leverage": 3
+        }
+      },
+      "expect": "invalid",
+      "note": "unknown config keys are errors, never silently dropped"
+    },
+    {
+      "id": "cfgvals_out_of_range",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "max_notional": 99999
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfgvals_bool_for_number",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "max_notional": true
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfgvals_nonfinite",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "max_notional": {
+            "$nonfinite": "NaN"
+          }
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfgvals_enum_outside",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "trading_mode": "REAL"
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "cfgvals_partial",
+      "target": "config_values",
+      "payload": {
+        "fields": [
+          {
+            "key": "max_notional",
+            "label": "Notional maximo",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          {
+            "key": "trading_enabled",
+            "label": "Trading activo",
+            "type": "boolean"
+          },
+          {
+            "key": "trading_mode",
+            "label": "Modo",
+            "type": "enum",
+            "options": [
+              "PAPER",
+              "LIVE"
+            ]
+          }
+        ],
+        "values": {
+          "trading_enabled": false
+        }
+      },
+      "expect": "valid"
+    }
+  ]
+}
