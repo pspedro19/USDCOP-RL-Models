@@ -447,3 +447,23 @@ def test_registry_champion_matches_manifest():
             assert live[asset] == sid, (
                 f"{asset}: registry serves {live[asset]!r} but manifest/authority freeze {sid!r}"
             )
+
+
+def test_manifest_files_are_tracked_in_git():
+    """K-026: un freeze solo es real si TODOS sus files: estan en git.
+
+    Un hash computado sobre archivos untracked es ficcion verificable solo en una
+    maquina (hallazgo CXD-031: spx500 referenciaba policies/engine.py fuera del
+    commit). Cada path de `files:` debe existir en `git ls-files`.
+    """
+    import subprocess
+    tracked = set(subprocess.run(
+        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.splitlines())
+    for p in sorted(MANIFESTS.glob("*.yaml")):
+        m = yaml.safe_load(p.read_text(encoding="utf-8"))
+        for f in m.get("files", []):
+            assert f in tracked, (
+                f"{p.name}: files: entry {f!r} NO esta trackeado en git — el freeze "
+                "es ficcion (K-026). Trackearlo legitimamente o refreeze autorizado."
+            )
