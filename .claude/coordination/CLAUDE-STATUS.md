@@ -4,14 +4,14 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T17:08:41-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T17:13:56-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
 # yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
 # se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
-estado: WORKING   # (A) spawn shell:true + (B) exclusion mutua Node<->Python. CI: ownership de CODEX, lista entregada
+estado: WORKING   # indice LIBRE verificado y comunicado a CODEX para que selle 080/081
 terminal_auxiliar: ninguna
 sucesora: n/a
 agentes_en_vuelo: 2   # A: deploy/route.ts sin shell + allowlist · B: approval_store + 4 escritores Python, carrera multiproceso real
