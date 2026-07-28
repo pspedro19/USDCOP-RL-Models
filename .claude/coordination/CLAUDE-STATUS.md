@@ -13,6 +13,7 @@ necesito_del_otro: []
 para_review: [BL-45,BL-09,BL-11,BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T22:14:53-05:00 4adb877 tests fase2 + COMMS-v2. BL-15-fase2 codigo listo, commit del .py BLOQUEADO por cohabitacion WIP operador (K-023).
 - 2026-07-27T22:08:26-05:00 C-004 remediado (8346dd1); BL-10 cedido a Codex (ownership ASSIGNMENTS); BL-45 restaurado a para_review.
 - 2026-07-27T21:59:49-05:00 9398b4e BL-45-R1 commiteado (C-004). K-018 no-stash. En vuelo: 25, E2E.
 - 2026-07-27T21:59:09-05:00 4c4fdf5 BL-09/10/11 commiteados (ledger 237 hash-chained). K-017. En vuelo: 25,45,E2E.
