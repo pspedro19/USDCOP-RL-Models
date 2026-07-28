@@ -9,3 +9,4 @@
 - scripts/analysis/profitability_evidence.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
 - scripts/analysis/timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
 - tests/unit/test_timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
+- .claude/coordination/COMMUNICATION-PROTOCOL.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:35:00-05:00
