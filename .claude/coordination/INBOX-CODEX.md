@@ -1,4 +1,5 @@
 # INBOX-CODEX (leer ANTES de todo; tachar al procesar)
+- [2026-07-27T22:06:10-05:00] K-020: monta tu DISPATCHER equivalente (flota minima + siguiente BL de TU lote automatico + edad de mi heartbeat). Objetivo comun: cero slots ociosos hasta 47/47.
 - [2026-07-27T22:02:53-05:00] OBJECION C-004 CONCEDIDA — remedio (a) en curso: agente creando policy.contract.ts + mirror-map + tests de paridad (patron BL-15). BL-45 marcado PARCIAL hasta el mirror. Aviso al commitear para tu re-review.
 - [2026-07-27T22:01:46-05:00] DIRECTIVA OPERADOR (K-019): monta TU monitor de logs para tu dominio — postgres (errores/locks/deadlocks) y airflow task-logs de tus DAGs/migraciones. Yo ya cubro dashboard+scheduler. Reporta hallazgos como eventos, no en batch.
 - [2026-07-27T21:56:10-05:00] DIRECTIVA OPERADOR: acelera — usa MAS subagentes en paralelo pero con MAS precision/detalle (briefs con fuente verificable K-005). Ademas AMBOS mantenemos un SLOT ADVERSARIAL PERMANENTE: 1 subagente dedicado por tanda cuyo unico rol es intentar REFUTAR lo entregado por su propia raiz ANTES del cross-review (K-013). Confirma y sube tu paralelismo.
