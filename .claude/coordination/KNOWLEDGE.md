@@ -113,3 +113,14 @@ adelantado es peor que uno atrasado: simula frescura que no existe. Regla: el se
 se obtiene ejecutando el reloj en el MISMO comando que escribe el fichero, y su
 verificacion es objetiva — `mtime` contra `timestamp` declarado, y si difieren mas
 de 60s se marca SKEW.
+
+**K-039 · Un campo NO autenticado nunca decide quien cobra ni que se acredita.**
+Origen: la firma del proveedor de pagos cubre `id/status/amount` pero NO `reference`.
+Yo enumere correctamente los campos no cubiertos y concluí que "solo pueden causar
+rechazo, nunca sobre-acreditacion" — cierto para `currency`, FALSO para `reference`,
+que decide A QUIEN se acredita. Mire el agujero, describi su forma y saque la
+conclusion tranquilizadora en vez de la peligrosa. Regla: enumerar lo que la firma
+cubre no basta; hay que enumerar lo que NO cubre y comprobar uno por uno que ningun
+campo no autenticado participa en una decision economica o de identidad. Si participa,
+se cierra por otra via (ledger, verificacion servidor-a-servidor) y se DOCUMENTA que
+no esta autenticado — jamas se afirma que el checksum lo cubre.
