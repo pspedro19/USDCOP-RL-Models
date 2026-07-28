@@ -54,6 +54,7 @@ class C:
             "reset": "0", "dim": "2", "bold": "1",
             "claude": "38;5;39",    # azul
             "codex": "38;5;208",    # naranja
+            "pedro": "38;5;213",    # magenta — el operador
             "p0": "38;5;203",       # rojo suave
             "p1": "38;5;179",       # ambar
             "ok": "38;5;78",        # verde
@@ -77,13 +78,13 @@ class Msg:
     pri: str
     tag: str
     body: str
-    who: str   # CLAUDE | CODEX
+    who: str   # CLAUDE | CODEX | PEDRO
     seq: int   # orden de aparicion dentro de su fichero
     ts: str    # sello extraido del cuerpo, "" si no lo declara
 
     @property
     def color(self) -> str:
-        return c.claude if self.who == "CLAUDE" else c.codex
+        return {"CLAUDE": c.claude, "CODEX": c.codex}.get(self.who, c.pedro)
 
     @property
     def when(self) -> str:
@@ -105,9 +106,14 @@ def parse(path: Path, who: str) -> list[Msg]:
         if m:
             if cur:
                 out.append(cur)
+            mid = m.group("id")
+            # Los mensajes del operador (`--send`) se appendean al inbox del
+            # destinatario, asi que el fichero NO dice quien los escribio: hay
+            # que reconocerlos por su prefijo o saldrian atribuidos al agente.
+            autor = "PEDRO" if mid.startswith("MSG-OPERATOR") else who
             cur = Msg(
-                mid=m.group("id"), num=_num(m.group("id")), pri=m.group("pri"),
-                tag=m.group("tag"), body=line[m.end():].strip(), who=who,
+                mid=mid, num=_num(mid), pri=m.group("pri"),
+                tag=m.group("tag"), body=line[m.end():].strip(), who=autor,
                 seq=len(out), ts="",
             )
         elif cur and line.strip():
@@ -187,7 +193,7 @@ def send_message(target: str, body: str, priority: str, tag: str) -> str:
 
 def render(m: Msg, width: int, full: bool) -> str:
     pri = c.p0 if m.pri == "P0" else (c.p1 if m.pri == "P1" else c.meta)
-    arrow = "->" if m.who == "CLAUDE" else "<-"
+    arrow = {"CLAUDE": "->", "CODEX": "<-"}.get(m.who, "**")
     head = (f"{c.meta}{m.when}{c.reset} {m.color}{c.bold}{m.who} {arrow}{c.reset} "
             f"{m.color}{m.mid}{c.reset} {pri}{m.pri}{c.reset} {c.meta}{m.tag}{c.reset}")
     body = re.sub(r"\s+", " ", m.body)
@@ -202,7 +208,7 @@ def render(m: Msg, width: int, full: bool) -> str:
             cur = f"{cur} {word}".strip()
     if cur:
         lines.append(cur)
-    ind = "    " if m.who == "CLAUDE" else "  "
+    ind = {"CLAUDE": "    ", "CODEX": "  "}.get(m.who, "      ")
     return head + "\n" + "\n".join(f"{ind}{c.dim}|{c.reset} {ln}" for ln in lines)
 
 
@@ -256,8 +262,8 @@ def main() -> int:
 
         os.system("cls" if os.name == "nt" else "clear") if a.follow else None
         print(f"\n{c.bold}CANAL DE COORDINACION{c.reset}  {c.meta}"
-              f"{len(msgs)} mensajes | {c.claude}CLAUDE ->{c.reset}{c.meta} envia | "
-              f"{c.codex}<- CODEX{c.reset}{c.meta} recibe{c.reset}")
+              f"{len(msgs)} mensajes | {c.claude}CLAUDE{c.reset}{c.meta} · "
+              f"{c.codex}CODEX{c.reset}{c.meta} · {c.pedro}PEDRO{c.reset}{c.meta} (operador){c.reset}")
         print(f"{c.meta}{'-' * width}{c.reset}")
         for row in heartbeats():
             print(row)
