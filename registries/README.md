@@ -10,7 +10,7 @@
 |---|---|
 | `ledger.jsonl` | **Append-only, hasheado.** Una línea por trial (FT-#### predictivo / AT-#### económico) con familia, cluster, asset, cutoff, result y contadores N_family/N_cluster/N_global corrientes. |
 | `families/trend_regime.yaml` | **Piloto BL-11**: familia ACTION transversal (SPX/Oro/BTC), bar pre-firmado, celdas reales con status/result de los registries. |
-| `families/usdcop_direction.yaml` | Familia FORECAST por activo (§9.5): la dirección COP, **cerrada por escrito** (48 FT). |
+| `families/usdcop_direction.yaml` | Familia FORECAST por activo (§9.5): 50 FT; búsqueda retrospectiva cerrada y un shadow diario prospectivo activo. |
 
 ## Reglas duras
 
@@ -34,17 +34,20 @@
 
 ## Backfill `legacy_estimate` 2026-07-27 (BL-10) — derivación
 
-Los conteos vienen de los front-matter **reales** leídos ese día:
-`usdcop=109, xauusd=77, btcusdt=34, spx500=17` (total 237 = 53 FT + 184 AT).
+El backfill inicial leyó `usdcop=109, xauusd=77, btcusdt=34, spx500=17`
+(237 = 53 FT + 184 AT). La reconciliación BL-12-r2 demostró que dos trials ya
+registrados en el cuerpo del SSOT no estaban reflejados en aquel header: H1 daily shadow
+y H1 LatAm transport. BL-10 los añade al final, sin reescribir historia:
+`usdcop=111` y total `239 = 55 FT + 184 AT`.
 Regla de clasificación aplicada: **direccional/predictivo = FT, económico = AT; ambiguo →
 AT (conservador)**. La predicción de volatilidad (H-VOLF-01, QLIKE) es FT sin ambigüedad:
 es la pregunta predictiva del ADR-0022 (calibración), no una hipótesis económica.
 
 | Asset | Familia (cluster) | Linaje | n | IDs | Fuente |
 |---|---|---|---|---|---|
-| usdcop | `usdcop_direction` (ml_meta) | FT | 48 | FT-0001..0048 | EXP-DIR-001: 27 previos + 14 forward-flow + 7 intraday-LatAm ("48 direccionales / 109 globales") |
+| usdcop | `usdcop_direction` (ml_meta) | FT | 50 | FT-0001..0048, FT-0054..0055 | 48 del programa histórico + H1 daily shadow (pending forward) + H1 LatAm transport (fail) |
 | usdcop | `usdcop_vol` (vol) | FT | 1 | FT-0049 | H-VOLF-01 NO_RECHAZA |
-| usdcop | `smart_simple` (ml_meta) | AT | 60 | AT-0001..0060 | Residuo exacto 109−49: grid 42 hs/tp, sizing, NULL suite, portfolio, XLEAD, H-META-01… |
+| usdcop | `smart_simple` (ml_meta) | AT | 60 | AT-0001..0060 | Residuo exacto 111−51: grid 42 hs/tp, sizing, NULL suite, portfolio, XLEAD, H-META-01… |
 | xauusd | `trend_regime` (trend) | AT | 74+1 | AT-0061..0135 | TRIALS_PROGRAM=74 heredado (sin procedencia, conservador) + H-SIMP-GOLD-01 |
 | xauusd | `xauusd_vol` (vol) | FT | 1 | FT-0050 | H-VOLF-01 **RECHAZA_H0** (único de 4 activos) |
 | xauusd | `vol_sizing` (vol) | AT | 1 | AT-0136 | H-VOLE-01 NO_RECHAZA |
@@ -58,16 +61,18 @@ es la pregunta predictiva del ADR-0022 (calibración), no una hipótesis económ
 
 Notas de honestidad del backfill:
 
-- **El zoo COP 9×7≈63 celdas queda subsumido** en los 27 "previos" de EXP-DIR-001: el total
-  del activo (109) no admite 63 sin romper la suma, y BL-10 prohíbe cambiar el conteo. Es
+- **El zoo COP 9×7≈63 celdas queda subsumido** en los 27 "previos" de EXP-DIR-001: ni el
+  total original 109 ni el reconciliado 111 admite 63 sin romper la suma. Es
   la "estimación honesta por escrito" que FABRIC §10.2 exige — un N estimado documentado
   vale infinitamente más que un N=0 falso.
 - Las líneas `label: legacy_estimate` son bloques estimados (no mapean 1:1 a una hipótesis);
   las `label: documented` mapean a una hipótesis registrada con nombre en su registry.
-- `code_hash`/`data_hash` son `null` en el backfill: no son reconstruibles. Los trials
-  nuevos DEBEN llenarlos.
-- Los conteos citados en prompts/planes viejos (COP 88, BTC 33) estaban desactualizados; el
-  front-matter real del día del backfill manda (109/77/34/17).
+- `code_hash`/`data_hash` son `null` cuando el backfill histórico no permite
+  reconstruirlos. FT-0054/55 sí conservan bundles SHA-256 verificables de código/datos;
+  los trials nuevos DEBEN llenarlos.
+- Los conteos citados en prompts/planes viejos (COP 88, BTC 33) estaban desactualizados.
+  El SSOT vigente manda: 111/77/34/17; los dos asientos reconciliados preservan la
+  progresión documentada 109→110→111.
 
 ## Cómo se añade un trial nuevo
 

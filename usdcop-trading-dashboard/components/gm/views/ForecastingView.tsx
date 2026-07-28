@@ -33,11 +33,7 @@ import {
 import { ClientApiError } from '@/lib/api/gm-client';
 import { defineGmDict, useGmT } from '@/lib/i18n/gm-core';
 import { GM, GMT, toneOf, GM_HEX, type GmTone } from '@/lib/ui/gm-tokens';
-import {
-  FORECAST_DISCLAIMER_TESTID, FORECAST_DISCLAIMER_HEADLINE,
-  FORECAST_DISCLAIMER_DIRECTIONAL_TITLE, FORECAST_DISCLAIMER_DIRECTIONAL_BODY,
-  FORECAST_DISCLAIMER_ZOO_TITLE, FORECAST_DISCLAIMER_ZOO_BODY,
-} from '@/lib/ui/forecast-disclaimer';
+import { ForecastDisclaimer } from '@/components/forecasting/ForecastDisclaimer';
 import { ANALYSIS_ASSETS, resolveAnalysisAsset } from '@/lib/contracts/analysis-assets';
 import type {
   AssetWeeklyInference, DirectionalReplayIndex, DirectionalReplayWeek,
@@ -774,7 +770,18 @@ function DirectionalReplayPanel({ week, document }: {
   );
 }
 
-function AssetWeeklyBody({ data, strategyId, forward }: {
+/**
+ * BL-03 (CXD-032): `confidence` del JSON semanal es CONVICCIÓN de la regla / régimen
+ * (0..1), NO una probabilidad — no existe `probability_up` en el contrato weekly y no
+ * se inventa. La etiqueta lo dice explícitamente en todas las superficies.
+ */
+const WEEKLY_CONVICTION_LABEL = 'Convicción de regla (proxy; no probabilidad)';
+const WEEKLY_CONVICTION_TITLE =
+  'Convicción de la regla en la dirección tomada (0–100%). Proxy no calibrado: '
+  + 'NO es una probabilidad ni una señal.';
+
+// Exportado para cobertura de render (Vitest) — CXD-032 §6: packs con render real.
+export function AssetWeeklyBody({ data, strategyId, forward }: {
   data: AssetWeeklyInference;
   strategyId: string;
   forward: ForwardDoc | null;
@@ -890,19 +897,31 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
 
       {/* Tabla semanal */}
       <GmPanel title={`Inferencia semanal — ${data.display_name} ${data.year}`} meta={strategy.strategy_name}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11.5px]">
+        {/* BL-03 a11y (patrón PaperCandidatesPanel 624465c): región de scroll focusable,
+            caption sr-only, th scope=col/row — la tabla scrollea dentro, no la página. */}
+        <div
+          role="region"
+          aria-label={`Inferencia semanal ${data.display_name} ${data.year} — tabla`}
+          tabIndex={0}
+          className={`overflow-x-auto ${GM.focus}`}
+        >
+          <table className="w-full min-w-[900px] text-[11.5px]">
+            <caption className="sr-only">
+              Inferencia semanal {data.display_name} {data.year}: posicionamiento causal por
+              semana (dirección, convicción proxy, exposición, régimen) frente al resultado
+              real. Superficie diagnóstica — no es una señal de inversión.
+            </caption>
             <thead>
               <tr className={`${GMT.micro} ${GM.textMuted} uppercase tracking-[.4px]`}>
-                <th className="text-left py-2 px-2 font-bold">Semana</th>
-                <th className="text-left py-2 px-2 font-bold">Dirección</th>
-                <th className="text-right py-2 px-2 font-bold">Prob. (proxy)</th>
-                <th className="text-left py-2 px-2 font-bold">Exposición</th>
-                <th className="text-left py-2 px-2 font-bold">Régimen</th>
-                <th className="text-right py-2 px-2 font-bold">Esperado</th>
-                <th className="text-right py-2 px-2 font-bold">Estrategia</th>
-                <th className="text-right py-2 px-2 font-bold">Buy&amp;Hold</th>
-                <th className="text-center py-2 px-2 font-bold">✓</th>
+                <th scope="col" className="text-left py-2 px-2 font-bold">Semana</th>
+                <th scope="col" className="text-left py-2 px-2 font-bold">Dirección</th>
+                <th scope="col" className="text-right py-2 px-2 font-bold">{WEEKLY_CONVICTION_LABEL}</th>
+                <th scope="col" className="text-left py-2 px-2 font-bold">Exposición</th>
+                <th scope="col" className="text-left py-2 px-2 font-bold">Régimen</th>
+                <th scope="col" className="text-right py-2 px-2 font-bold">Esperado</th>
+                <th scope="col" className="text-right py-2 px-2 font-bold">Estrategia</th>
+                <th scope="col" className="text-right py-2 px-2 font-bold">Buy&amp;Hold</th>
+                <th scope="col" className="text-center py-2 px-2 font-bold">✓</th>
               </tr>
             </thead>
             <tbody>
@@ -910,17 +929,17 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
                 const exp = Math.round((w.exposure ?? 0) * 100);
                 return (
                   <tr key={w.iso_week} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
-                    <td className={`py-2 px-2 whitespace-nowrap font-mono ${GM.textSec}`}>{w.iso_week}</td>
+                    <th scope="row" className={`py-2 px-2 text-left font-normal whitespace-nowrap font-mono ${GM.textSec}`}>{w.iso_week}</th>
                     <td className="py-2 px-2">
                       <GmBadge tone={PREDICTION_TONE}>{directionGlyph(w.direction)} {w.direction}</GmBadge>
                     </td>
-                    {/* BL-03: wording probabilístico también en weekly inference. La única
-                        fuente honesta aquí es `confidence` (proxy de convicción de la regla,
-                        0..1, NO una probabilidad calibrada) — se etiqueta como tal. */}
+                    {/* BL-03 (CXD-032): `confidence` = convicción de la regla (0..1) — se
+                        etiqueta como proxy NO probabilístico; llamarla probabilidad sería
+                        fabricar una calibración que el motor de reglas no tiene. */}
                     <td
                       className={`py-2 px-2 text-right font-mono tabular-nums ${GM.textSec}`}
                       title={w.confidence != null
-                        ? `probabilidad estimada de la dirección tomada: ${num(w.confidence * 100, 0)}% — proxy de convicción de la regla, no calibrada`
+                        ? WEEKLY_CONVICTION_TITLE
                         : 'sin proxy de convicción para esta semana'}
                     >
                       {w.confidence != null ? `${num(w.confidence * 100, 0)}%` : '—'}
@@ -951,9 +970,9 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
           </table>
         </div>
         <p className={`mt-3 mb-0 ${GMT.micro} ${GM.textMuted} leading-relaxed`}>
-          “Prob. (proxy)” es la probabilidad estimada de la dirección tomada según la convicción
-          de la regla (0–100%). No es una probabilidad calibrada ni una señal: superficie
-          diagnóstica (ver banner).
+          “{WEEKLY_CONVICTION_LABEL}” mide cuánta convicción tiene la regla en la dirección
+          tomada (0–100%). NO es una probabilidad calibrada ni una señal — no existe una
+          probabilidad real en el contrato weekly: superficie diagnóstica (ver banner).
         </p>
       </GmPanel>
     </div>
@@ -1102,30 +1121,16 @@ export function ForecastingView() {
 
   return (
     <div data-testid="forecasting-view">
-      {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001, BL-02/BL-04): la muralla es por
-          SUPERFICIE, no por asset ni por modo de render — el banner renderiza SIEMPRE en
-          /forecasting (model zoo, replay direccional y weekly inference de Gold incluidos).
-          Textos desde lib/ui/forecast-disclaimer.ts (SSOT); decirlo junto a las métricas es
-          lo que impide que un 52% sin contexto se lea como "funciona". */}
-      <div
-        data-testid={FORECAST_DISCLAIMER_TESTID}
-        className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs leading-relaxed text-amber-200/90"
-      >
-        <div className="font-bold tracking-wide text-amber-200 mb-1">
-          {FORECAST_DISCLAIMER_HEADLINE}
-        </div>
-        {isModelZoo && directionalSelected ? (
-          <>
-            <span className="font-semibold">{FORECAST_DISCLAIMER_DIRECTIONAL_TITLE} </span>
-            {FORECAST_DISCLAIMER_DIRECTIONAL_BODY}
-          </>
-        ) : (
-          <>
-            <span className="font-semibold">{FORECAST_DISCLAIMER_ZOO_TITLE} </span>
-            {FORECAST_DISCLAIMER_ZOO_BODY}
-          </>
-        )}
-      </div>
+      {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001, BL-02/BL-04, CXD-032): la muralla
+          es por SUPERFICIE, no por asset ni por modo de render — el componente COMPARTIDO
+          <ForecastDisclaimer/> (SSOT lib/ui/forecast-disclaimer.ts) se monta INCONDICIONAL
+          en /forecasting (model zoo, replay direccional y weekly inference incluidos); la
+          variante solo elige entre las dos ramas honestas del SSOT. Decirlo junto a las
+          métricas es lo que impide que un 52% sin contexto se lea como "funciona". */}
+      <ForecastDisclaimer
+        variant={isModelZoo && directionalSelected ? 'directional' : 'zoo'}
+        className="mb-4"
+      />
       <GmPageHeader
         kicker="Predicción semanal"
         title="Forecasting"

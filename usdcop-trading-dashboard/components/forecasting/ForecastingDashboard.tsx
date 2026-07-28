@@ -21,10 +21,7 @@ import { ForecastingImageViewer } from './ForecastingImageViewer';
 import { MetricsRankingPanel } from './MetricsRankingPanel';
 import { ForecastRecord, ViewType, EnsembleVariant } from './types';
 import { cn } from '@/lib/utils';
-import {
-  FORECAST_DISCLAIMER_TESTID,
-  FORECAST_DISCLAIMER_ZOO_TITLE,
-} from '@/lib/ui/forecast-disclaimer';
+import { ForecastDisclaimer } from './ForecastDisclaimer';
 
 // ============================================================================
 // Data Processing Utilities
@@ -105,8 +102,15 @@ function SectionHeader({ title, subtitle, icon }: SectionHeaderProps) {
 // Contract: CTR-QUANT-CONSTITUTION-001 ("no dejar que un numero sin significancia se presente
 // con solemnidad"). This surface exists for transparency into model behaviour, NOT as a signal
 // source, and it must say so where the DA is shown — a ~52% displayed without context reads as
-// "the models work". The mean is computed from the loaded rows so the banner stays true if the
-// data ever changes; the verdict text only flips once DA clears the project's own 55% bar.
+// "the models work".
+//
+// BL-04 / CXD-032: titular Y cuerpo vienen SIEMPRE del componente compartido
+// <ForecastDisclaimer/> (SSOT lib/ui/forecast-disclaimer.ts) y el banner se monta
+// INCONDICIONAL — sin stats sigue renderizando el contrato completo (nada de
+// `return null`: un caveat que depende de que haya datos es una rama de ocultamiento).
+// La frase DERIVADA de los rows cargados se suma como línea extra (useMemo, nunca un
+// número hardcodeado); el antiguo branch verde "Direccion con senal" queda prohibido:
+// aunque el DA supere el umbral del 55%, la superficie sigue siendo diagnostica.
 function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
   const stats = useMemo(() => {
     const das = data
@@ -119,25 +123,19 @@ function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
     return { mean: m, n: das.length };
   }, [data]);
 
-  if (!stats) return null;
-  const beatsBar = stats.mean >= 0.55; // the project's own DA bar (CLAUDE.md forecasting rules)
+  const beatsBar = stats != null && stats.mean >= 0.55; // the project's own DA bar
 
-  // BL-04 (regla 6 FABRIC + CTR-QUANT-CONSTITUTION-001): el titular viene SIEMPRE de la
-  // SSOT (lib/ui/forecast-disclaimer.ts). El antiguo branch verde "Direccion con senal"
-  // convertia una metrica debil en claim de senal sobre una superficie diagnostica; aunque
-  // el DA supere el umbral, esta superficie sigue siendo diagnostica y el banner sigue
-  // siendo ambar. beatsBar solo ajusta la frase factual derivada de los datos.
   return (
-    <div
-      data-testid={FORECAST_DISCLAIMER_TESTID}
-      className="rounded-xl border px-4 py-3 text-sm leading-relaxed border-amber-500/30 bg-amber-500/5 text-amber-200/90"
-    >
-      <span className="font-semibold">{FORECAST_DISCLAIMER_ZOO_TITLE} </span>
-      la precision direccional media es {(stats.mean * 100).toFixed(1)}% sobre {stats.n}{' '}
-      mediciones{beatsBar
-        ? ', por encima del umbral del 55% del proyecto — aun asi esta superficie es diagnostica y ninguna decision de trading debe basarse en estas predicciones.'
-        : ' — estadisticamente indistinguible de una moneda al aire (el mejor modelo no supera p<0.05 tras ajustar por los 9 modelos probados). Ninguna decision de trading debe basarse en estas predicciones.'}
-    </div>
+    <ForecastDisclaimer variant="zoo">
+      {stats != null && (
+        <span>
+          En esta carga: la precision direccional media es {(stats.mean * 100).toFixed(1)}% sobre{' '}
+          {stats.n} mediciones{beatsBar
+            ? ', por encima del umbral del 55% del proyecto — aun asi esta superficie es diagnostica y ninguna decision de trading debe basarse en estas predicciones.'
+            : ' — el mejor modelo no supera p<0.05 tras ajustar por los 9 modelos probados. Ninguna decision de trading debe basarse en estas predicciones.'}
+        </span>
+      )}
+    </ForecastDisclaimer>
   );
 }
 

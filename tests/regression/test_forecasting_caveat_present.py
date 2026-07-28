@@ -30,17 +30,27 @@ DASH = ROOT / "usdcop-trading-dashboard" / "components"
 
 FORECASTING_VIEW = DASH / "gm" / "views" / "ForecastingView.tsx"
 LEGACY_DASHBOARD = DASH / "forecasting" / "ForecastingDashboard.tsx"
+LEGACY_WEEKLY = DASH / "forecasting" / "WeeklyInferenceView.tsx"
 
-# BL-04 moved the caveat copy/testid to a shared SSOT constant; surfaces may carry the
-# marker either literally or via the imported constant name.
+# BL-04 moved the caveat copy/testid to a shared SSOT constant; CXD-032 moved the
+# BANNER itself to a shared component consuming that SSOT.
 DISCLAIMER_SSOT = (
     ROOT / "usdcop-trading-dashboard" / "lib" / "ui" / "forecast-disclaimer.ts"
 )
+DISCLAIMER_COMPONENT = DASH / "forecasting" / "ForecastDisclaimer.tsx"
 
+# Every surface that shows a forecast/DA number must reference the SHARED banner
+# (CXD-032: "componente compartido ForecastDisclaimer montado en cada superficie").
+# The legacy dashboard wraps it in DiagnosticCaveat to append the derived-DA line.
 SURFACES = {
-    "forecasting/ForecastingDashboard.tsx": ("DiagnosticCaveat",),
-    "gm/views/ForecastingView.tsx": ("da-caveat", "FORECAST_DISCLAIMER_TESTID"),
+    "forecasting/ForecastingDashboard.tsx": ("DiagnosticCaveat", "ForecastDisclaimer"),
+    "forecasting/WeeklyInferenceView.tsx": ("ForecastDisclaimer",),
+    "gm/views/ForecastingView.tsx": ("ForecastDisclaimer",),
 }
+
+# Tokens that mean "this file renders a forecast-quality number" (DA in any of its
+# spellings, incl. the weekly-inference DA 2025 tiles).
+_DA_PRESENCE_TOKENS = ("direction_accuracy", "Direction Accuracy", "da_2025_pct", "DA 2025")
 
 
 @pytest.mark.parametrize("rel,markers", SURFACES.items(), ids=list(SURFACES))
@@ -49,12 +59,12 @@ def test_da_surface_carries_caveat(rel: str, markers: tuple):
     if not p.is_file():
         pytest.skip(f"{rel} absent")
     src = p.read_text(encoding="utf-8", errors="replace")
-    if "direction_accuracy" not in src and "Direction Accuracy" not in src:
+    if not any(t in src for t in _DA_PRESENCE_TOKENS):
         pytest.skip(f"{rel} no longer shows DA")
-    assert any(m in src for m in markers), (
-        f"{rel} displays Direction Accuracy but the caveat ({markers!r}) is gone. A ~52% DA "
-        "shown without context reads as 'the models work'; the statistics say coin flip "
-        "(p_adj 0.66 across models, 1.0 across model-by-horizon cells)."
+    assert all(m in src for m in markers), (
+        f"{rel} displays Direction Accuracy but the shared caveat ({markers!r}) is gone. "
+        "A ~52% DA shown without context reads as 'the models work'; the statistics say "
+        "coin flip (p_adj 0.66 across models, 1.0 across model-by-horizon cells)."
     )
 
 
@@ -207,28 +217,81 @@ def _disclaimer_constants() -> dict[str, str]:
     return consts
 
 
+def test_shared_disclaimer_component_is_ssot_and_unconditional():
+    """CXD-032: the shared <ForecastDisclaimer/> component exists, consumes the SSOT
+    (testid + headline + BOTH title/body pairs) and renders unconditionally — no
+    `return null`, no hidden/aria-hidden attributes, no display:none, and the testid
+    sits at brace-depth 0 of its JSX return (no `{cond && ...}` wrapper)."""
+    assert DISCLAIMER_COMPONENT.is_file(), (
+        "components/forecasting/ForecastDisclaimer.tsx disappeared — the shared banner "
+        "is the root fix for CXD-032 (BL-02/BL-04); surfaces must not re-inline copy."
+    )
+    src = DISCLAIMER_COMPONENT.read_text(encoding="utf-8", errors="replace")
+    for const in (
+        "FORECAST_DISCLAIMER_TESTID",
+        "FORECAST_DISCLAIMER_HEADLINE",
+        "FORECAST_DISCLAIMER_ZOO_TITLE",
+        "FORECAST_DISCLAIMER_ZOO_BODY",
+        "FORECAST_DISCLAIMER_DIRECTIONAL_TITLE",
+        "FORECAST_DISCLAIMER_DIRECTIONAL_BODY",
+    ):
+        assert const in src, (
+            f"ForecastDisclaimer.tsx no longer consumes {const} — headline AND body must "
+            "come from lib/ui/forecast-disclaimer.ts (BL-04: no hardcoded copy)."
+        )
+    assert "forecast-disclaimer" in src, "ForecastDisclaimer.tsx must import the SSOT module"
+    assert "return null" not in src, (
+        "ForecastDisclaimer.tsx grew a `return null` branch — the shared banner must be "
+        "impossible to suppress from inside (BL-02: 'hidden por rama' is the rejected bug)."
+    )
+    for tok in (" hidden", "aria-hidden", "display:none", "display: 'none'", "visibility"):
+        assert tok not in src, (
+            f"ForecastDisclaimer.tsx contains {tok!r} — the shared banner must not ship "
+            "its own hiding mechanism (CXD-032 mutation: hidden/CSS => rojo)."
+        )
+    m = re.search(r"data-testid=\{FORECAST_DISCLAIMER_TESTID\}", src)
+    assert m, "ForecastDisclaimer.tsx lost the SSOT testid attribute"
+    ret = src.rfind("return (", 0, m.start())
+    assert ret != -1, "testid appears outside the component's JSX return"
+    prefix = src[ret + len("return ("): m.start()]
+    assert prefix.count("{") - prefix.count("}") <= 1, (
+        # depth 1 = inside the banner's own opening tag attribute braces; anything
+        # deeper means a conditional JSX expression wraps the banner.
+        "The banner markup inside ForecastDisclaimer.tsx is nested in a JSX conditional."
+    )
+
+
 def test_caveat_banner_present():
-    """BL-01: the GM forecasting view carries the da-caveat banner AND the SSOT
-    still carries the complete no-signal clauses (not just their prefixes)."""
+    """BL-01: the GM forecasting view carries the da-caveat banner (now via the
+    shared component) AND the SSOT still carries the complete no-signal clauses
+    (not just their prefixes)."""
     src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
-    has_testid = (
+    has_banner = (
         'data-testid="da-caveat"' in src
         or "FORECAST_DISCLAIMER_TESTID" in src
+        or "ForecastDisclaimer" in src
     )
-    assert has_testid, (
-        "ForecastingView.tsx lost the da-caveat banner (neither the literal testid nor "
-        "the FORECAST_DISCLAIMER_TESTID constant is referenced). The DA surface must "
-        "not render without its diagnostic disclaimer (BL-01)."
+    assert has_banner, (
+        "ForecastingView.tsx lost the da-caveat banner (no literal testid, no "
+        "FORECAST_DISCLAIMER_TESTID, no shared <ForecastDisclaimer/>). The DA surface "
+        "must not render without its diagnostic disclaimer (BL-01)."
     )
-    # BL-04: the honest copy lives in the shared SSOT; the view must either carry
-    # it inline or import the SSOT module that does.
+    # BL-04: the honest copy lives in the shared SSOT; the view carries it inline,
+    # imports the SSOT module, or mounts the shared component (which the companion
+    # test pins to the SSOT).
     ssot_src = DISCLAIMER_SSOT.read_text(encoding="utf-8", errors="replace")
-    assert "Superficie de diagn" in src or (
-        "forecast-disclaimer" in src and "Superficie de diagn" in ssot_src
+    assert "Superficie de diagn" in ssot_src, (
+        "lib/ui/forecast-disclaimer.ts lost the honest phrase ('Superficie de "
+        "diagnóstico, no de señales') — the disclaimer text is part of the contract, "
+        "not decoration (BL-01/BL-04)."
+    )
+    assert (
+        "Superficie de diagn" in src
+        or "forecast-disclaimer" in src
+        or "ForecastDisclaimer" in src
     ), (
-        "The honest phrase ('Superficie de diagnóstico, no de señales') is neither "
-        "inline in ForecastingView.tsx nor provided via lib/ui/forecast-disclaimer.ts "
-        "— the disclaimer text is part of the contract, not decoration (BL-01/BL-04)."
+        "ForecastingView.tsx neither inlines the honest phrase nor references the "
+        "disclaimer SSOT/shared component (BL-01/BL-04)."
     )
     consts = _disclaimer_constants()
     # The testid indirection must still resolve to the pinned testid.
@@ -299,44 +362,87 @@ def test_caveat_copy_uses_only_whitelisted_characters():
     )
 
 
-# Banner attribute in BOTH spellings: literal testid or the shared SSOT constant.
-# (Codex review 2026-07-27 rejected the old literal-only count as "universalidad
-# sorteable por constante": once the testid was expressed through
-# FORECAST_DISCLAIMER_TESTID the old check passed vacuously — re-gating the banner
-# under `isModelZoo` would NOT have failed.)
-BANNER_ATTR = re.compile(r'data-testid=(?:\{FORECAST_DISCLAIMER_TESTID\}|"da-caveat")')
+# Banner mount in EVERY spelling: literal testid, the shared SSOT constant, or the
+# shared component (CXD-032). (Codex review 2026-07-27 rejected the old literal-only
+# count as "universalidad sorteable por constante"; CXD-032 rejected the old
+# view-only check as "hidden por rama pasa" — now every surface is pinned.)
+BANNER_ATTR = re.compile(
+    r'data-testid=(?:\{FORECAST_DISCLAIMER_TESTID\}|"da-caveat")'
+    r"|<ForecastDisclaimer\b"
+    r"|<DiagnosticCaveat\b"
+)
+
+# Surface → file. The legacy dashboard mounts the shared banner through its
+# DiagnosticCaveat wrapper (derived-DA line); the wrapper itself is pinned below.
+_BANNER_SURFACES = {
+    "gm/views/ForecastingView.tsx": lambda: FORECASTING_VIEW,
+    "forecasting/ForecastingDashboard.tsx": lambda: LEGACY_DASHBOARD,
+    "forecasting/WeeklyInferenceView.tsx": lambda: LEGACY_WEEKLY,
+}
 
 
-def test_caveat_not_gated_only_to_model_zoo():
-    """BL-02 (hardened): the caveat renders UNCONDITIONALLY in /forecasting — la
-    muralla es por superficie, no por asset ni por modo de render.
+@pytest.mark.parametrize("rel", list(_BANNER_SURFACES), ids=list(_BANNER_SURFACES))
+def test_caveat_not_gated_on_any_surface(rel: str):
+    """BL-02 (hardened, CXD-032): the caveat renders UNCONDITIONALLY on EVERY
+    forecasting surface — GM view (all assets/modes) AND legacy dashboard AND
+    legacy weekly inference (Gold/BTC). La muralla es por superficie.
 
-    Constant-proof + structural: the banner attribute is detected in literal AND
-    constant form, and at least one banner must be an unconditional direct child of
-    the enclosing `return (` JSX — the brace balance of the prefix between the
-    `return (` and the banner must be zero. Any `{isModelZoo && (...)}` / ternary
-    wrapper (regardless of how the testid is spelled) leaves an unbalanced `{` in
-    that prefix and fails.
+    Constant-proof + structural: the banner mount is detected as literal testid,
+    SSOT-constant testid, or shared-component mount, and at least one mount must be
+    an unconditional direct child of the enclosing `return (` JSX — the brace
+    balance of the prefix between the `return (` and the mount must be zero. Any
+    `{isModelZoo && (...)}` / `{data && (...)}` / ternary wrapper (however the
+    banner is spelled) leaves an unbalanced `{` in that prefix and fails. The
+    RENDER-level twin of this check (visibility, hidden attrs/classes, mutations)
+    lives in usdcop-trading-dashboard/tests/unit/components/
+    forecasting-caveat-surfaces.test.tsx.
     """
-    src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
-    matches = list(BANNER_ATTR.finditer(src))
+    src = _BANNER_SURFACES[rel]().read_text(encoding="utf-8", errors="replace")
+    matches = [
+        m for m in BANNER_ATTR.finditer(src)
+        # ignore import lines / comments mentioning the component name
+        if not _COMMENT_LINE.match(src[src.rfind("\n", 0, m.start()) + 1: m.start()])
+        and "import" not in src[src.rfind("\n", 0, m.start()) + 1: m.start()]
+    ]
     assert matches, (
-        "ForecastingView.tsx has no da-caveat banner in either literal or "
-        "FORECAST_DISCLAIMER_TESTID form (BL-02)."
+        f"{rel} has no da-caveat banner in literal, constant, or shared-component "
+        "form (BL-02/CXD-032)."
     )
     depths = []
     for m in matches:
         ret = src.rfind("return (", 0, m.start())
-        assert ret != -1, "banner appears outside any JSX return"
+        assert ret != -1, f"{rel}: banner appears outside any JSX return"
         prefix = src[ret + len("return ("): m.start()]
         depths.append(prefix.count("{") - prefix.count("}"))
     assert any(d == 0 for d in depths), (
-        "Every da-caveat banner in ForecastingView.tsx is nested inside a JSX "
-        f"expression (brace depths from enclosing return: {depths}). BL-02 requires "
-        "the banner to render unconditionally for EVERY forecast mode (model zoo, "
-        "directional replay AND weekly inference) — wrapping it in "
-        "`{isModelZoo && (...)}` or any conditional is the exact regression this "
-        "test exists to block, no matter how the testid is spelled."
+        f"Every da-caveat banner in {rel} is nested inside a JSX expression (brace "
+        f"depths from enclosing return: {depths}). BL-02 requires the banner to render "
+        "unconditionally on every surface and mode — wrapping it in a conditional is "
+        "the exact regression this test exists to block, no matter how it is spelled."
+    )
+
+
+def test_legacy_diagnostic_caveat_wrapper_cannot_hide():
+    """CXD-032: the legacy DiagnosticCaveat wrapper (derived-DA line) must not be able
+    to suppress the shared banner — no `return null` (the old `if (!stats) return null`
+    was exactly the 'hidden por rama' Codex flagged), and it must mount
+    <ForecastDisclaimer/>."""
+    src = LEGACY_DASHBOARD.read_text(encoding="utf-8", errors="replace")
+    start = src.find("function DiagnosticCaveat")
+    assert start != -1, "DiagnosticCaveat disappeared from the legacy dashboard"
+    body = src[start: src.find("\nfunction ", start + 10)]
+    assert "<ForecastDisclaimer" in body, (
+        "DiagnosticCaveat no longer mounts the shared <ForecastDisclaimer/> — the "
+        "legacy banner must come from the shared SSOT component (BL-04/CXD-032)."
+    )
+    # The stats useMemo may legitimately yield null (no DA rows); the COMPONENT may
+    # not: after the memo closes, no `return null` is allowed before the JSX return.
+    memo_end = body.find("}, [data])")
+    component_tail = body[memo_end if memo_end != -1 else 0:]
+    assert "return null" not in component_tail, (
+        "DiagnosticCaveat grew a `return null` branch again — the banner must render "
+        "even with zero DA stats (CXD-032: 'hidden por rama pasa' is the rejected bug; "
+        "only the DERIVED sentence may be conditional)."
     )
 
 
@@ -479,35 +585,55 @@ def test_caveat_is_not_hardcoded_to_a_stale_number():
 # Codex review 2026-07-27: "falta probabilidad weekly y color DA".
 # ---------------------------------------------------------------------------
 
-def test_weekly_inference_shows_probabilistic_wording():
-    """BL-03: the weekly-inference branch (Gold rule-based surface) must carry the
-    probabilistic wording, not only the USD/COP directional-replay branch.
+# CXD-032 overruled the previous version of this lock ("falta probabilidad weekly"):
+# `confidence` is rule CONVICTION / regime strength, NOT a probability — there is no
+# probability_up field in the weekly contract and none may be invented. The mandated
+# label, on EVERY weekly surface (GM AssetWeeklyBody + legacy WeeklyInferenceView):
+_CONVICTION_LABEL_NORM = "conviccion de regla (proxy; no probabilidad)"
 
-    The only honest per-week number available in weekly_inference_<year>.json is
-    `confidence` (rule-conviction proxy, 0..1) — it must be surfaced with the
-    'probabilidad estimada' wording AND labeled as a non-calibrated proxy, so the
-    surface neither hides the number nor overstates it as a calibrated probability
-    (quant-constitution: no fabricated calibration).
-    """
+
+def _weekly_segments() -> dict[str, str]:
     src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
-    start = src.find("function AssetWeeklyBody")
-    assert start != -1, "AssetWeeklyBody (weekly inference surface) disappeared"
-    end = src.find("export function ForecastingView", start)
-    seg = src[start:end if end != -1 else len(src)]
-    assert "probabilidad estimada" in seg, (
-        "AssetWeeklyBody (weekly inference) shows directional predictions with no "
-        "probabilistic wording. BL-03 requires 'probabilidad estimada ...' on every "
-        "DIAGNOSTIC forecast surface, weekly inference included."
-    )
-    assert "confidence" in seg, (
-        "The weekly probabilistic wording must be driven by the data's `confidence` "
-        "field (rule-conviction proxy), not a literal."
-    )
-    assert re.search(r"proxy[^<\n]*no calibrada|no calibrada[^<\n]*proxy", seg), (
-        "The weekly 'probabilidad estimada' must be explicitly labeled as a "
-        "non-calibrated conviction proxy — presenting it as a calibrated probability "
-        "would fabricate precision the rule engine does not have."
-    )
+    fn = src.find("function AssetWeeklyBody")
+    assert fn != -1, "AssetWeeklyBody (weekly inference surface) disappeared"
+    # The label may live in a const declared just above the function — include it.
+    const = src.find("const WEEKLY_CONVICTION_LABEL")
+    start = min(fn, const) if const != -1 else fn
+    end = src.find("export function ForecastingView", fn)
+    return {
+        "gm/AssetWeeklyBody": src[start:end if end != -1 else len(src)],
+        "forecasting/WeeklyInferenceView.tsx":
+            LEGACY_WEEKLY.read_text(encoding="utf-8", errors="replace"),
+    }
+
+
+def test_weekly_confidence_is_conviction_not_probability():
+    """BL-03 (CXD-032): every weekly-inference surface must expose the per-week
+    `confidence` number labeled as 'Convicción de regla (proxy; no probabilidad)' —
+    the number is NOT hidden, but it is NEVER sold as a probability: no
+    'probabilidad estimada' wording in the weekly segments (the directional-replay
+    panel keeps its wording because `probability_up` IS a real contract field there),
+    and the non-calibrated nature stays explicit."""
+    for name, seg in _weekly_segments().items():
+        norm = _norm(seg)
+        assert _CONVICTION_LABEL_NORM in norm, (
+            f"{name} lost the mandated conviction label "
+            f"({_CONVICTION_LABEL_NORM!r}). `confidence` must be surfaced AND labeled "
+            "as rule conviction, not probability (CXD-032)."
+        )
+        assert "confidence" in seg, (
+            f"{name}: the conviction column must be driven by the data's `confidence` "
+            "field (rule-conviction proxy), not a literal."
+        )
+        assert "probabilidad estimada" not in norm, (
+            f"{name} phrases `confidence` as 'probabilidad estimada' — there is no "
+            "probability_up in the weekly contract; calling conviction a probability "
+            "fabricates calibration the rule engine does not have (CXD-032)."
+        )
+        assert re.search(r"no calibrad|no es una probabilidad", norm), (
+            f"{name} must keep the explicit non-calibrated disclaimer on the "
+            "conviction proxy."
+        )
 
 
 # DA is a DIAGNOSTIC metric (~coin flip after adjusting for models tried): it must
@@ -614,20 +740,32 @@ def test_no_hardcoded_signal_claim_anywhere_in_dashboard():
     )
 
 
-def test_legacy_caveat_headline_comes_from_ssot():
-    """BL-04: the legacy DiagnosticCaveat must render its headline from the shared
-    SSOT constant, unconditionally — not from any local string, and never behind a
-    beats-the-bar ternary."""
+def test_legacy_caveat_headline_and_body_come_from_ssot():
+    """BL-04 (CXD-032): the legacy DiagnosticCaveat must render headline AND body
+    from the shared SSOT — via the shared <ForecastDisclaimer/> component (whose
+    SSOT wiring the companion test pins), never from local strings, and never behind
+    a beats-the-bar ternary. The old version passed with only the TITLE from SSOT
+    while the body stayed hardcoded prose next to it (split-JSX): mounting the
+    shared component is what closes that hole, so this test requires the mount, not
+    just a constant reference."""
     src = LEGACY_DASHBOARD.read_text(encoding="utf-8", errors="replace")
     body_start = src.find("function DiagnosticCaveat")
     assert body_start != -1, "DiagnosticCaveat disappeared from the legacy dashboard"
-    body = src[body_start: src.find("function ", body_start + 10)]
-    assert "FORECAST_DISCLAIMER_ZOO_TITLE" in body, (
-        "Legacy DiagnosticCaveat no longer uses the SSOT headline constant "
-        "(lib/ui/forecast-disclaimer.ts) — duplicated caveat copy drifts (BL-04)."
+    body = src[body_start: src.find("\nfunction ", body_start + 10)]
+    assert "<ForecastDisclaimer" in body, (
+        "Legacy DiagnosticCaveat no longer mounts the shared <ForecastDisclaimer/> — "
+        "headline AND body must come from the SSOT component; a locally rebuilt banner "
+        "reopens the split-JSX/hardcoded-body hole (BL-04/CXD-032)."
     )
-    assert not re.search(r"\?\s*['\"`][^'\"`]*['\"`]\s*:\s*`?\$\{FORECAST_DISCLAIMER",
-                         body), (
-        "Legacy DiagnosticCaveat gates the SSOT headline behind a ternary — the "
-        "headline must be unconditional (BL-04)."
+    assert not re.search(r"\?\s*['\"`][^'\"`]*['\"`]\s*:\s*<ForecastDisclaimer", body), (
+        "Legacy DiagnosticCaveat gates the shared banner behind a ternary — the "
+        "banner must be unconditional (BL-04)."
     )
+    # The legacy file must not re-inline any disclaimer copy next to the mount: the
+    # honest phrases live ONLY in the SSOT (drift-proof).
+    for phrase in ("Superficie de diagn", "NO ES UNA SE"):
+        assert phrase not in body, (
+            f"Legacy DiagnosticCaveat re-inlines disclaimer copy ({phrase!r}) — the "
+            "copy has ONE source: lib/ui/forecast-disclaimer.ts via ForecastDisclaimer "
+            "(BL-04)."
+        )

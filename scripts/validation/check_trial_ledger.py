@@ -232,11 +232,13 @@ def check_families(records: list[dict], families_dir: Path = FAMILIES_DIR) -> li
         for cell in family.get("cells", []):
             cell_ids, cell_errors = _expand_cell_trial_ids(cell, family_id)
             errors.extend(cell_errors)
+            cell_records: list[dict] = []
             for trial_id in cell_ids:
                 record = by_id.get(trial_id)
                 if record is None:
                     errors.append(f"{family_id}: celda referencia {trial_id} que NO existe en el ledger")
                     continue
+                cell_records.append(record)
                 if record["family"] != family_id:
                     errors.append(
                         f"{family_id}: {trial_id} pertenece a family='{record['family']}' en el ledger"
@@ -245,6 +247,12 @@ def check_families(records: list[dict], families_dir: Path = FAMILIES_DIR) -> li
                     errors.append(
                         f"{family_id}: {trial_id} es de asset='{record['asset']}' pero la "
                         f"celda declara '{cell.get('asset')}'"
+                    )
+            if any(record.get("label") == "legacy_estimate" for record in cell_records):
+                if "legacy_estimate" not in str(cell.get("note") or ""):
+                    errors.append(
+                        f"{family_id}: celda '{cell.get('variant')}' con backfill "
+                        "debe documentar 'legacy_estimate' en note"
                     )
             covered.extend(cell_ids)
         duplicates = [trial_id for trial_id, count in Counter(covered).items() if count > 1]

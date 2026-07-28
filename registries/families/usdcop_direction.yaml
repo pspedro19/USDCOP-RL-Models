@@ -30,19 +30,38 @@ cells:
     n_trials: 14
     status: EVALUATED
     result: no_lift
-    note: "14 contrastes forward-flow (búsqueda reabierta por información nueva; sin lift)."
+    note: "legacy_estimate — 14 contrastes forward-flow (búsqueda reabierta por información nueva; sin lift)."
   - asset: usdcop
     variant: intraday_latam_lead
     trial_id_range: {from: FT-0042, to: FT-0048}
     n_trials: 7
     status: EVALUATED
     result: NO_RECHAZA
-    note: "H-INTRADAY-LATAM-01 (2026-07-22): NO_RECHAZA; direccionales 41->48, globales 102->109."
+    note: "legacy_estimate — H-INTRADAY-LATAM-01 (2026-07-22): NO_RECHAZA; direccionales 41->48, globales 102->109."
+  - asset: usdcop
+    variant: h1_daily_shadow_v1
+    trial_id: FT-0054
+    n_trials: 1
+    status: ACTIVE
+    result: pending_forward
+    note: >-
+      documented — registrado 2026-07-22 antes de abrir outcomes diarios; primer
+      origen 2026-07-27; 49 direccionales / 110 globales; sin señal ni capital.
+  - asset: usdcop
+    variant: h1_latam_transport_v1
+    trial_id: FT-0055
+    n_trials: 1
+    status: EVALUATED
+    result: fail
+    note: >-
+      documented — FAIL_CLOSE_TRANSPORT_FAMILY sobre el primario 2020-2025;
+      50 direccionales / 111 globales; sin señal ni capital.
 
-trials_charged: 48   # == count(trial_ids cubiertos) == líneas del ledger con family=usdcop_direction
-closed: true
+trials_charged: 50   # == count(trial_ids cubiertos) == líneas del ledger con family=usdcop_direction
+closed: false
 closure_note: >-
-  Dirección COP cerrada (48 FT): mejor celda p_adj=1.0 sobre el programa completo;
-  XLEAD delta=0.0000 (McNemar p=1.0); intraday-LatAm NO_RECHAZA. Reabrirla = nueva celda
-  pre-registrada AQUÍ antes de mirar (p.ej. el selectivo viernes-origen ya anunciado en
-  EXP-DIR-001: 48->49 direccionales al registrarse).
+  La búsqueda retrospectiva COP permanece cerrada: mejor celda p_adj=1.0, XLEAD
+  delta=0.0000 e intraday-LatAm NO_RECHAZA; el transporte LatAm externo también
+  cerró en fail. La única celda abierta es H1 daily shadow, pre-registrada antes
+  de outcomes y pendiente de su juez forward. Cualquier otra reapertura exige
+  nueva celda registrada AQUÍ antes de mirar.

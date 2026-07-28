@@ -26,12 +26,30 @@ import {
 import type {
   AssetWeeklyInference, WeeklyInferenceIndex, WeeklyInferenceStrategy,
 } from './types';
+import { ForecastDisclaimer } from './ForecastDisclaimer';
 
+// BL-03 (CXD-032): la dirección es una PREDICCIÓN sobre una superficie diagnóstica —
+// jamás verde/rojo (eso se lee como recomendación de compra/venta). Tono neutro único;
+// la flecha ↑/↓ se conserva como glifo informativo sin semántica de color.
 const DIRECTION_STYLE: Record<string, string> = {
-  LONG: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-  SHORT: 'text-red-400 bg-red-500/10 border-red-500/30',
+  LONG: 'text-slate-300 bg-slate-500/10 border-slate-500/30',
+  SHORT: 'text-slate-300 bg-slate-500/10 border-slate-500/30',
   FLAT: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
 };
+
+/** Glifo direccional informativo (sin color compra/venta). */
+const directionGlyph = (dir: string | null | undefined): string =>
+  dir === 'UP' || dir === 'LONG' ? '↑' : dir === 'DOWN' || dir === 'SHORT' ? '↓' : '·';
+
+/**
+ * BL-03 (CXD-032): `confidence` del JSON semanal es CONVICCIÓN de la regla /
+ * régimen (0..1), NO una probabilidad — no existe `probability_up` en el contrato
+ * weekly y no se inventa. La etiqueta lo dice explícitamente.
+ */
+const CONVICTION_LABEL = 'Convicción de regla (proxy; no probabilidad)';
+const CONVICTION_TITLE =
+  'Convicción de la regla en la dirección tomada (0–100%). Proxy no calibrado: '
+  + 'NO es una probabilidad ni una señal.';
 
 // Regime → colour (Gold: compression/trend/stretched/event · BTC: accumulation/markup/distribution/markdown)
 const REGIME_STYLE: Record<string, string> = {
@@ -181,6 +199,10 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
 
   return (
     <div className="space-y-8">
+      {/* BL-02 (CXD-032): caveat de honestidad COMPARTIDO, montado INCONDICIONAL —
+          la superficie weekly Gold/BTC también es diagnóstica, no de señales. */}
+      <ForecastDisclaimer variant="zoo" />
+
       {/* Forward Forecast — mismo lenguaje que USD/COP: imagen + horizontes (honesto:
           bandas de vol realizada + posicionamiento de la campeona + DA 2025 medida) */}
       {forward && (
@@ -188,9 +210,9 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-bold text-white">Forward Forecast</h3>
             <div className="flex items-center gap-2 text-xs">
-              <span className={`px-2 py-1 rounded-lg font-bold ${forward.direction === 'LONG'
-                ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-600/30 text-slate-300'}`}>
-                {forward.direction}
+              {/* BL-03: dirección en tono neutro (predicción, no recomendación). */}
+              <span className="px-2 py-1 rounded-lg font-bold bg-slate-600/30 text-slate-300">
+                {directionGlyph(forward.direction)} {forward.direction}
               </span>
               <span className="text-slate-400">exposición {forward.exposure}x · σ diaria {forward.vol_daily_pct}%</span>
             </div>
@@ -291,18 +313,31 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
         <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
           <Activity className="w-4 h-4 text-purple-400" /> Inferencia Semanal — {data.display_name} {year}
         </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+        {/* BL-03 a11y (patrón PaperCandidatesPanel 624465c): región de scroll horizontal
+            focusable — en móvil la tabla scrollea DENTRO del contenedor, no la página. */}
+        <div
+          role="region"
+          aria-label={`Inferencia semanal ${data.display_name} ${year} — tabla`}
+          tabIndex={0}
+          className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+        >
+          <table className="w-full min-w-[860px] text-xs">
+            <caption className="sr-only">
+              Inferencia semanal {data.display_name} {year}: posicionamiento causal por semana
+              (dirección, convicción proxy, exposición, régimen) frente al resultado real.
+              Superficie diagnóstica — no es una señal de inversión.
+            </caption>
             <thead>
               <tr className="border-b border-slate-800 text-slate-500">
-                <th className="text-left py-2 px-2 font-medium">Semana</th>
-                <th className="text-left py-2 px-2 font-medium">Dirección</th>
-                <th className="text-left py-2 px-2 font-medium">Exposición</th>
-                <th className="text-left py-2 px-2 font-medium">Régimen</th>
-                <th className="text-right py-2 px-2 font-medium">Esperado</th>
-                <th className="text-right py-2 px-2 font-medium">Estrategia</th>
-                <th className="text-right py-2 px-2 font-medium">Buy&amp;Hold</th>
-                <th className="text-center py-2 px-2 font-medium">✓</th>
+                <th scope="col" className="text-left py-2 px-2 font-medium">Semana</th>
+                <th scope="col" className="text-left py-2 px-2 font-medium">Dirección</th>
+                <th scope="col" className="text-right py-2 px-2 font-medium">{CONVICTION_LABEL}</th>
+                <th scope="col" className="text-left py-2 px-2 font-medium">Exposición</th>
+                <th scope="col" className="text-left py-2 px-2 font-medium">Régimen</th>
+                <th scope="col" className="text-right py-2 px-2 font-medium">Esperado</th>
+                <th scope="col" className="text-right py-2 px-2 font-medium">Estrategia</th>
+                <th scope="col" className="text-right py-2 px-2 font-medium">Buy&amp;Hold</th>
+                <th scope="col" className="text-center py-2 px-2 font-medium">✓</th>
               </tr>
             </thead>
             <tbody>
@@ -311,11 +346,15 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
                 const rColor = REGIME_STYLE[w.regime] || 'text-slate-400 bg-slate-500/10';
                 return (
                   <tr key={w.iso_week} className="border-b border-slate-800/40 hover:bg-slate-800/20">
-                    <td className="py-2 px-2 text-slate-300 whitespace-nowrap">{w.iso_week}</td>
+                    <th scope="row" className="py-2 px-2 text-left font-normal text-slate-300 whitespace-nowrap">{w.iso_week}</th>
                     <td className="py-2 px-2">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${DIRECTION_STYLE[w.direction] || DIRECTION_STYLE.FLAT}`}>
-                        {w.direction}
+                        {directionGlyph(w.direction)} {w.direction}
                       </span>
+                    </td>
+                    {/* BL-03: convicción de la regla (proxy 0..1 del JSON) — no probabilidad. */}
+                    <td className="py-2 px-2 text-right text-slate-400 tabular-nums" title={CONVICTION_TITLE}>
+                      {w.confidence != null ? `${Math.round(w.confidence * 100)}%` : '—'}
                     </td>
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2 min-w-[90px]">
@@ -342,6 +381,11 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
             </tbody>
           </table>
         </div>
+        <p className="text-[11px] text-slate-500 mt-3 mb-0 leading-relaxed">
+          “{CONVICTION_LABEL}” mide cuánta convicción tiene la regla en la dirección tomada
+          (0–100%). NO es una probabilidad calibrada ni una señal — no existe una probabilidad
+          real en el contrato weekly: superficie diagnóstica (ver banner).
+        </p>
       </div>
     </div>
   );
