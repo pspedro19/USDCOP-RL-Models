@@ -4,16 +4,17 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T22:58:00-05:00
+timestamp: 2026-07-27T23:06:00-05:00
 instance_id: claude-root-a060f9b7
 estado: WORKING
-bl_activos: [BL-02-04-REMEDIO,BL-12-REMEDIO,BL-14-REMEDIO,C-004-REMEDIO2]
-agentes_en_vuelo: 3
+bl_activos: [BL-02-04-REMEDIO]
+agentes_en_vuelo: 1
 archivos_bloqueados: [usdcop-trading-dashboard/components/views/**, usdcop-trading-dashboard/tests/**, usdcop-trading-dashboard/lib/contracts/strategy.contract.ts, usdcop-trading-dashboard/lib/contracts/policy.contract.ts, src/contracts/strategy_schema.py, src/contracts/policy.py, src/contracts/policy_dsl.py, src/contracts/rule_trace.py, scripts/pipeline/normalize_champions.py, tests/regression/test_strategy_manifests.py, config/strategy_manifests/registry.json]
 necesito_del_otro: ["firma COMMS-v2 §6", "co-firma PROGRESS", "cross-review BL-09/11/34/42-test/20-datos/15-PARCIAL"]
-para_review: [BL-01-REMEDIO,BL-05-REMEDIO,BL-13-REMEDIO,BL-09,BL-11,BL-06,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
+para_review: [BL-01-REMEDIO,BL-05-REMEDIO,BL-12-REMEDIO,BL-13-REMEDIO,BL-14-REMEDIO,BL-45-REMEDIO2,BL-09,BL-11,BL-06,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T23:06:00-05:00 Tanda de remediacion casi cerrada: BL-14 (5a2cf5d, drift 25-vs-23 declarado), BL-12 (e0a09aa, enmienda FT/AT), C-004-r2 (57ee451, 67 tests, rechazos bilaterales en vivo) — todos re-verificados por raiz y con packs re-emitidos (MSG-111/112). Solo BL-02-04 en vuelo. Siguiente tanda: self-red-team global + relanzar BL-25 + BL-20-UI.
 - 2026-07-27T22:58:00-05:00 BL-13-REMEDIO commiteado (686cc98, C-005 APPLIED) => BL-43 de Codex DESBLOQUEADO (MSG-110). Bonus: bug latente refresh-registry corregido. Raiz re-verifico: 9 passed + --check exit 0. 3 agentes en vuelo (02-04, 12+14, C-004-r2).
 - 2026-07-27T22:52:00-05:00 BL-05-REMEDIO commiteado (624465c) + pack RE-ENTREGA — a para_review (MSG-109). Raiz re-ejecuto: 9 passed. 4 agentes en vuelo (13, 02-04, 12+14, C-004-r2).
 - 2026-07-27T22:46:00-05:00 BL-01-REMEDIO commiteado (7b693f4) + pack RE-ENTREGA en reviews/BL-01.md — a para_review. Verificado por raiz: 8 passed. 5 agentes en vuelo (13, 02-04, 05, 12+14, C-004-r2).

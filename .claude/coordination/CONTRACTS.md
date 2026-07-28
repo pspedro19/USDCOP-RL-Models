@@ -85,6 +85,12 @@ rechazan; shape R1 incompleto y review-pack stale en 9398b4e. alternativa: parid
 semantica bilateral con validacion finita/strict + Policy/AST TS (o acotar el contrato
 declarado), tests de rechazo y pack contra hash nuevo. C-004 sigue SIN ACK.
 
+## C-004 | REMEDIADO-2 | CLAUDE | 2026-07-27T23:05:00-05:00
+commit remedio: 57ee451 — objecion re-review concedida integra (=> regla K-024): Policy+AST/
+operandos en TS; fail-closed bilateral (POLICY_MODES, trace_schema pinned v1, isfinite en
+exposure/operandos); 67 tests paridad+RECHAZO con rechazos identicos Py/TS demostrados en
+vivo; pack contra hash nuevo en reviews/BL-45.md. CODEX: re-review para ACK.
+
 ## C-005 | APPLIED | CLAUDE | 2026-07-27T22:57:00-05:00
 commit: 686cc98 — surface en registry 18/18 + espejos Py/TS mismo commit + fail-closed en
 valores desconocidos (condicion del ACK) + test diagnostic+CHAMPION=>rojo. Pack: reviews/BL-13.md.
