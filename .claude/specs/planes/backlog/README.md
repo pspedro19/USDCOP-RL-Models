@@ -10,7 +10,7 @@ code_anchors:
 
 # Backlog gobernado — planes ACTION/DIAGNOSTIC (CTR-QLAB-FABRIC-004)
 
-> 36 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
+> 44 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
 > cruzadas con el as-built verificado el 2026-07-27 (frontend incluido). Un MD por
 > tarea; cada uno con estado actual, anclas reales, impacto frontend y verificación.
 > **Todas 0 trials salvo indicación en el propio BL.**
@@ -69,8 +69,22 @@ code_anchors:
 | [BL-34](BL-34-ruta-replay.md) | Ruta /replay (alias de la sección de /dashboard) | T | S | Al final (cosmético); tras BL-05. |
 | [BL-35](BL-35-dataset-uris-arista-prohibida.md) | URIs de datasets + arista prohibida forecast→allocator en parseo | 3 | M | BL-13; base para BL-28. |
 | [BL-36](BL-36-racionalizacion-inventario-db.md) | Racionalización del inventario DB (59 tablas → matriz de verdad) | 2-3 | M | antes de BL-15/18/19/21/22 |
+| [BL-37](BL-37-identidades-canonicas.md) | Identidades canónicas (reference.asset/instrument/provider_symbol/bar_ | 2-3 | M | ver BL |
+| [BL-38](BL-38-market-canonical-resampleo.md) | Mercado canónico: raw_bar/canonical_bar + caggs 1h/4h/1d + política de | 3-4 | L | ver BL |
+| [BL-39](BL-39-feature-contracts-normalizacion.md) | Feature contracts por estrategia-versión + normalización al artefacto | 2-3 | L | ver BL |
+| [BL-40](BL-40-calidad-cuarentena.md) | Calidad: cuarentena de anomalías + columnas fantasma | 1-2 | M | ver BL |
+| [BL-41](BL-41-seguridad-db-p0.md) | Seguridad DB P0: secret.*, credenciales consolidadas, timestamptz | 1 | M | ver BL |
+| [BL-42](BL-42-unidades-decimales-signal-normalizada.md) | Unidades decimales + action.strategy_signal normalizada (JSONB de polí | 3 | M | ver BL |
+| [BL-43](BL-43-demo-sintetica-aislada.md) | Aislar el modelo sintético demo (CI que lo bloquee fuera de demo) | 1 | S | ver BL |
+| [BL-44](BL-44-timescale-ops-perfil-fisico.md) | TimescaleDB ops + perfil físico ampliado | 5 | M | ver BL |
 
 ## Grafo mínimo de dependencias
+
+> Fuentes nuevas 2026-07-27: `Plan_Consolidado_usdcop_trading.md` (P0/P1/P2 de DB)
+> y `CTR-QLAB-FABRIC-004-DATA-STRATEGY.md` PARTE II §33-57 (D0-D8 de datos/features)
+> → BL-37..44. Ampliaciones derivadas: BL-24 gana `availability_quality` (solo 9.1%
+> del PIT es vintage real; `publication_date` 100% NULL en monthly/quarterly ⇒
+> BLOQUEA promotion) y BL-36 gana staging_contract + semántica de 5 timestamps.
 
 ```text
 BL-08 (.env) ── bloquea push de TODO
