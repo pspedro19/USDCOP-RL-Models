@@ -14,17 +14,19 @@ import { ROLES } from './rbac.contract';
 // ─────────────────────────────────────────────────────────── sections (portal nav)
 
 export interface AdminSectionDef {
-  id: 'overview' | 'ingresos' | 'registros' | 'usuarios' | 'roles' | 'modelos' | 'riesgo' | 'catalogo-admin' | 'sistema' | 'auditoria';
+  id: 'overview' | 'ingresos' | 'registros' | 'usuarios' | 'roles' | 'modelos' | 'interpretabilidad' | 'riesgo' | 'catalogo-admin' | 'sistema' | 'auditoria';
   label: string;
   /** Sections gated on a future phase render as disabled with the phase note. */
   phaseGate?: string;
 }
 
 /**
- * 9 pestañas en orden EXACTO del prototipo Var B (VISUAL-SPEC-CHECKLIST §Admin).
+ * Pestañas en orden del prototipo Var B (VISUAL-SPEC-CHECKLIST §Admin).
  * Ingresos absorbe la vieja "Suscripciones" (fase-gated); configuracion/comunicaciones
  * salen del tab-bar (alias abajo). Badges dinámicos: registros=queue.count,
  * modelos=candidatos PENDING, riesgo=llaves API pendientes.
+ * "Interpretabilidad" (BL-20, 2026-07-27) va tras Modelos: diagnóstico SHAP/atribución
+ * de los artefactos publicados por scripts/analysis/generate_interpretability.py.
  */
 export const ADMIN_SECTIONS: readonly AdminSectionDef[] = [
   { id: 'overview', label: 'Resumen' },
@@ -33,6 +35,7 @@ export const ADMIN_SECTIONS: readonly AdminSectionDef[] = [
   { id: 'usuarios', label: 'Usuarios' },
   { id: 'roles', label: 'Roles y vistas' },
   { id: 'modelos', label: 'Modelos' },
+  { id: 'interpretabilidad', label: 'Interpretabilidad' },
   { id: 'riesgo', label: 'Riesgo y bloqueos' },
   { id: 'catalogo-admin', label: 'Catálogo' },
   { id: 'sistema', label: 'Sistema' },
@@ -379,6 +382,106 @@ export interface AdminModelsResponse {
   /** Badge de la pestaña Modelos. */
   pending_count: number;
 }
+
+// ─────────────────────────────────── interpretabilidad (BL-20 · GET /api/admin/interpretability)
+
+/**
+ * Espejo TS de los artefactos que publica `scripts/analysis/generate_interpretability.py`
+ * en `public/data/interpretability/<surface>/<asset>/<model_id>/<version>/summary.json`.
+ * La UI SOLO renderiza estos JSON (jamás recomputa SHAP ni condiciones — regla
+ * strategy-engines I-7). FABRIC A.7: "SHAP explica el modelo, no el mercado" —
+ * diagnóstico 0 trials para RECHAZAR modelos absurdos, nunca "importancia para operar".
+ */
+export interface InterpIndexEntry {
+  /** 'zoo' (SHAP lineal) | 'rule_based' (atribución). Abierto: fase 2 añade árboles. */
+  surface: string;
+  asset: string;
+  model_id: string;
+  /** Descendente — [0] es la más reciente. */
+  versions: string[];
+}
+
+export interface InterpIndexResponse {
+  entries: InterpIndexEntry[];
+}
+
+export interface InterpFeatureRow {
+  rank: number;
+  feature: string;
+  coef: number;
+  mean_abs_shap: number;
+  mean_shap: number;
+}
+
+export interface InterpYearFeatureRow {
+  feature: string;
+  mean_abs_shap: number;
+  mean_shap: number;
+}
+
+interface InterpSummaryBase {
+  /** Header constitucional obligatorio del generador — la UI lo muestra tal cual. */
+  nota: string;
+  surface: string;
+  asset: string;
+  model_id: string;
+  version: string;
+  generated_at: string;
+  scope: string;
+}
+
+/** SHAP lineal cerrado (phi_j = coef_j·(x_j−mu_j)/sigma_j) — ridge / bayesian_ridge. */
+export interface InterpLinearSummary extends InterpSummaryBase {
+  model_type: 'linear';
+  method: 'linear_shap_closed_form';
+  attribution_not_shap: false;
+  fit: {
+    scheme: string;
+    origin: string;
+    n_train: number;
+    horizon: number;
+    purge_days: number;
+    scaler: string;
+    params: Record<string, number | string | boolean | null>;
+  };
+  base_value: number;
+  n_rows: number;
+  n_features: number;
+  top_features: InterpFeatureRow[];
+  by_year: Record<string, InterpYearFeatureRow[]>;
+  /** Kill-flag A.7 calculado por el GENERADOR: signo del aporte medio que cambia entre años. */
+  kill_flags_sign_change_by_year: string[];
+}
+
+export interface InterpRuleYear {
+  n_days: number;
+  pnl_gross: number;
+  pnl_beta: number;
+  pnl_timing_cov_pos_ret: number;
+  costs: number;
+  pnl_net: number;
+  pct_days_trend_on?: number;
+  pct_days_position_active?: number;
+  avg_exposure?: number;
+}
+
+/** Atribución de reglas (attribution_not_shap=true) — pnl_gross = beta + timing. */
+export interface InterpRuleSummary extends InterpSummaryBase {
+  model_type: 'rule_based';
+  method: 'rule_attribution';
+  attribution_not_shap: true;
+  rules: {
+    gate: string;
+    pct_days_trend_on: number;
+    pct_days_position_active: number;
+    avg_exposure: number;
+    n_trades: number;
+  };
+  pnl_decomposition: InterpRuleYear;
+  by_year: Record<string, InterpRuleYear>;
+}
+
+export type InterpSummary = InterpLinearSummary | InterpRuleSummary;
 
 // ─────────────────────────────────────────────────────────── riesgo (GET /api/admin/risk)
 

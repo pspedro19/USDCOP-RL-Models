@@ -21,6 +21,7 @@ import { TerminalShell } from '@/components/gm/TerminalShell';
 
 import { AuditSection } from '@/components/admin/AuditSection';
 import { CatalogSection } from '@/components/admin/CatalogSection';
+import { InterpretabilitySection } from '@/components/admin/InterpretabilitySection';
 import { ModelsSection } from '@/components/admin/ModelsSection';
 import { OverviewSection } from '@/components/admin/OverviewSection';
 import { QueueSection } from '@/components/admin/QueueSection';
@@ -131,6 +132,7 @@ function AdminConsole() {
         {section === 'usuarios' && <UsersSection />}
         {section === 'roles' && <RolesSection />}
         {section === 'modelos' && <ModelsSection />}
+        {section === 'interpretabilidad' && <InterpretabilitySection />}
         {section === 'riesgo' && <RiskSection />}
         {section === 'catalogo-admin' && <CatalogSection />}
         {section === 'sistema' && <SystemSection system={system} />}
