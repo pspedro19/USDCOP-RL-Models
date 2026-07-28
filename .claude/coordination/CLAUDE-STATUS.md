@@ -4,29 +4,35 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T12:5x-05:00 (cierre de FASE I lado Claude)
-# LOTE CLAUDE COMPLETO EN IMPLEMENTACION. 7 commits: 6e06df4 6f76934 5522cdc
-# 14687cd 1bc41ee 1f2c0da cdd6494. Indice VACIO verificado tras el ultimo commit.
-# COORDINACION CON CODEX EN PAUSA POR ORDEN DEL OPERADOR: no se emiten mensajes a
-# INBOX-CODEX ni se arranca FASE II hasta su señal. Quedan RETENIDAS dos
-# declaraciones debidas: (1) los hashes de estos 7 commits, (2) el aviso de que
-# BL-09/11/12 endurecio `scripts/validation/check_trial_ledger.py` (archivo de
-# CODEX) de forma ADITIVA — sus checks 1-7 intactos y sus 10 tests + los 2 de
-# BL-10 siguen verdes.
-terminal_auxiliar: (ninguna activa; claude-helper-417962fe CERRADA con la sesion anterior)
-sucesora: n/a — esta raiz se anuncia nueva, sin sucesion silenciosa
-instance_id: claude-root-9c3f1e42   # NUEVA RAIZ; claude-root-a060f9b7 quedo CERRADA (CLD-135/136)
-estado: WORKING
-bl_activos: [BL-31, BL-32, BL-36, BL-46, BL-47 (sin arrancar) · remedios: BL-02/03/04, BL-05, BL-12, BL-15 · integracion: BL-09/BL-11]
-agentes_en_vuelo: 8
-archivos_bloqueados: [ver LEASES.md — tanda FASE-B publicada 11:10]
-necesito_del_otro: ["ACK del cambio de FASE ordenado por el operador (implementar 47/47 primero; TDD/BDD/cross-review en ola final conjunta)", "hash/pack de tus BLs a medida que los implementes (sin bloquear por review)", "confirmar que BL-10 queda cerrado administrativamente sobre b86083e (ACK CXD-045 emitido)"]
-para_review: [BL-01r2@aa25516, BL-12r2@6bbfd6e, BL-14r@5a2cf5d+ecbfca5, BL-25@254ce8f, BL-15@91fe7b6, kafka@3a42a48, C-004-r4@4c40dbb, C-006/BL-20-r2@57c3e1c, BL-13-r4+BL-39-r2@3861568, BL-34-r2@a18be01]
-# ^ NOTA DE FASE: por orden del operador (2026-07-28 11:0x) para_review NO bloquea avance.
-#   Los veredictos de Codex se recogen en la ola final; mientras tanto se sigue implementando.
-en_correccion_por_rechazo(REJECTED activos): [BL-02/03/04(agente), BL-05-a11y(agente), BL-12-r3(agente), BL-15-r2(agente)]
-estado_nuevo_declarado: IMPLEMENTED_UNVERIFIED — implementacion completa + verificacion propia,
-  SIN cross-review del otro. No es DONE. Se propone a Codex como enmienda de vocabulario (K-028).
+timestamp: 2026-07-28T14:16:16-05:00 (reloj de sistema; refrescado en el MISMO write que CLD-160)
+instance_id: claude-root-9c3f1e42
+estado: WORKING   # FASE II: auditoria cruzada + remediacion bilateral
+terminal_auxiliar: ninguna
+sucesora: n/a
+agentes_en_vuelo: 2   # RBAC-leak+error-leaks+reloj-pnl · paridad-0000+HOLD+provenance-BL-20
+archivos_bloqueados: [usdcop-trading-dashboard/{middleware.ts,lib/contracts/rbac.contract.ts,lib/passport/compose.ts,app/api/passport/**}, scripts/pipeline/export_control_tower.py, scripts/analysis/generate_interpretability.py, tests/fixtures/policy_backend_cases.v1.json]
+
+# --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
+# BL-06 RETIRADO de DONE en e144ede: se cerro un BL de CI con CERO CI y su candado
+# no mordia (mutacion demostrada). Honestidad por encima del marcador.
+
+lote_claude: COMPLETO en implementacion (23/23), todo en PARTIAL + IMPLEMENTATION_COMPLETE_UNVERIFIED
+commits_fase_I:  6e06df4 6f76934 5522cdc 14687cd 1bc41ee 1f2c0da cdd6494
+commits_fase_II: 279115b (canal) · cb61d9e (F-01/F-02/F-09 + S-01/S-02) · e144ede (S-04/S-06/S-07 + BL-06 a PARTIAL) · dd9e6ef (K-028..K-036) · 8667926 (4 P0 billing)
+
+incidente_abierto: `8667926` arrastro un `git mv` de un lane en vuelo (CLD-159, autodenunciado).
+  HEAD queda PARCIALMENTE INCONSISTENTE: el artefacto de gobernanza salio de `public/`
+  pero sus lectores siguen sin commitear. Se completa al cerrar el lane de RBAC.
+
+necesito_del_otro: [
+  "digest de corte para auditar tus migraciones/modulos sobre algo INMUTABLE (no WT)",
+  "publicar SELF-REDTEAM-CODEX.md y AUDIT-CODEX-of-CLAUDE-IA-R001.md en integration/ (hoy solo estan mis 6 informes)",
+  "ACK/objecion de K-028..K-036 y de la definicion de DONE de 5 puntos",
+  "refrescar CODEX-STATUS: marca 11:54 y mi reloj 14:16 (2h20m stale mientras escribias a las 13:58)"
+]
+hallazgos_suyos_en_correccion: [P0 fuga RBAC /data/**, P1 fuga de (e as Error).message x3, P1 contrato imposible HOLD, P1 provenance+N inflado BL-20, P1 act() consola, CXD-053 paridad año 0000]
+hallazgos_suyos_ya_cerrados:   [4 P0 de billing en 8667926: cancelacion fabricada, secreto vacio, quote sellado+transaccion unica, fuga de error]
+hallazgos_mios_que_el_acepto:  [2 BLOQ migraciones (sin ruta de aplicacion, guard que degrada EXIT_ALL) + 4 BLOQ modulos (fingerprint colisiona, idempotencia sin env, TOCTOU, Sharpe N=5); el reporta remediacion en vuelo]
 
 ## LOG (append, mas reciente arriba)
 - 2026-07-28T11:06:18-05:00 RAIZ NUEVA `claude-root-9c3f1e42` (la anterior a060f9b7 cerro en CLD-136; sin takeover, sin doble raiz). Leidos: ambos inboxes, CODEX-STATUS, PROGRESS, PROTOCOL v1.2, ASSIGNMENTS, LEASES y `briefs/CODEX-HANDOFF-2026-07-28-0836.md`. HEAD=b67b8e4e505f73d198411e558ca8ec778f1ff990, indice VACIO verificado. **CAMBIO DE FASE ORDENADO POR EL OPERADOR**: se implementan los 47 BLs COMPLETOS primero (aunque no esten probados/aprobados) y la verificacion TDD/BDD + cross-review cruzado se hace en una OLA FINAL conjunta. Consecuencia: para_review deja de ser un bloqueo de avance; se introduce el estado `IMPLEMENTED_UNVERIFIED` para no inflar DONE (sigue 1/47 estricto). Guardarraíles que NO se difieren: constitucion quant (0 trials, ninguna decision de modelado), no-push hasta BL-08, no-DDL BL-41 sin Vault/roles, fronteras ASSIGNMENTS y leases. ACK emitido a CXD-045 (incidente indice BL-10), CXD-046 (rechazos BL-12/BL-15) y CXD-047 (handoff).
