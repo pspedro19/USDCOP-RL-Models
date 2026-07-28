@@ -1,4 +1,6 @@
-# PROTOCOL-COMMS v2.2 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
+# PROTOCOL-COMMS v2.3 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
+> v2.3: SOLO los 2 deltas mecánicos de CXD-033 (fila LEASES sin contradicción PROGRESS;
+> helpers CLD-HLP-/CXD-HLP- en vez de HLP- genérico). Nada más cambió.
 
 > Documento-prompt REUTILIZABLE para bootstrapear cualquier sesión dual futura.
 > v2.0: destilado de K-001..K-022 (2026-07-27). v2.1: incorpora ÍNTEGRAS las 10
@@ -36,7 +38,7 @@
 | `{YO}-STATUS.md` | heartbeat ≤5min + LOG append | solo su dueño escribe |
 | `CONTRACTS.md` | C-NNN PROPOSED→ACK/OBJECION→APPLIED/REMEDIADO | append-only; espejo Py↔TS mismo commit; auto-ACK 15min SOLO aditivo |
 | `KNOWLEDGE.md` | K-NNN aprendizajes/propuestas por HECHOS | ambos escriben; colisión de número = orden de archivo gana, se anota sin reescribir (K-009) |
-| `LEASES.md` | ruta+dueño+instance_id+expira ≤45min | segunda instancia que ve lease vigente → STOP. **[v2.1] `CONTRACTS/KNOWLEDGE/INBOX/PROGRESS` son multiwriter append-only y NO reciben lease exclusivo** |
+| `LEASES.md` | ruta+dueño+instance_id+expira ≤45min | segunda instancia que ve lease vigente → STOP. **[v2.3] `CONTRACTS/KNOWLEDGE/INBOX` son multiwriter APPEND-ONLY; `PROGRESS` es multiwriter COFIRMADO/no-append (se reescribe con doble firma); ninguno de los cuatro recibe lease exclusivo** |
 | `briefs/BL-XX.md` | contexto pre-masticado con FUENTE verificable (path:line/query+timestamp) | conteos sin fuente envejecen (K-005). **[v2.1] antes de lanzar, el brief COMPRUEBA ownership (cita ASSIGNMENTS), leases vigentes y WIP preexistente en los archivos objetivo, y declara el plan de integración/commit (K-023)** |
 | `reviews/BL-XX.md` | pack INMUTABLE: hash+paths+C-NNN+comandos+resultados+delta-vs-BASELINE | **[v2.1] `APROBADO` SOLO contra hash inmutable con pack apuntando a ese hash; working tree admite review PRELIMINAR etiquetado, jamás cross-approval.** `para_review` se publica atómicamente tras liberar leases y crear el pack con hash real |
 | `PROGRESS.md` | tablero conjunto co-firmado | métrica = BLs APROBADOS/tiempo, no commits (K-015). **[v2.2] NO es append-only: se reescribe co-firmado. Solo CONTRACTS/KNOWLEDGE/INBOX son append-only. Cada firma de PROGRESS es verificable contra hash de commit o mtime del archivo** |
@@ -51,10 +53,12 @@ IMPACTO: a quién bloquea · PROPUESTA: acción concreta
 DONE-WHEN: prueba/veredicto verificable que cierra el ítem
 ```
 - **[v2.2] IDs namespaced monotónicos por emisor**: `CLD-NNN` (Claude) / `CXD-NNN`
-  (Codex) / `HLP-NNN` (helpers subordinados). El `MSG-NNN` global de v2.1 queda
-  DEROGADO: K-004/K-010/K-013 probaron que un contador global compartido colisiona.
-  Cada emisor incrementa solo su propio contador; sin ID no hay ACK idempotente ni
-  SLA medible.
+  (Codex). **[v2.3] Helpers: `CLD-HLP-NNN` / `CXD-HLP-NNN` según su dueño (como ya
+  operan) — el `HLP-NNN` genérico de v2.2 queda DEROGADO: dos helpers de dueños
+  distintos emitirían HLP-001, recreando la colisión global.** El `MSG-NNN` global
+  de v2.1 queda DEROGADO: K-004/K-010/K-013 probaron que un contador global
+  compartido colisiona. Cada emisor incrementa solo su propio contador; sin ID no
+  hay ACK idempotente ni SLA medible.
 - **SLA**: P0 = ACK ≤2min / respuesta ≤10min · P1 = ≤1 ciclo · P2 = ≤15min.
 - **Un veto SIEMPRE incluye alternativa técnica y criterio verificable de cierre.**
 - **[v2.2] Timestamps SIEMPRE de reloj de sistema** (nunca estimados ni "redondeados
@@ -117,9 +121,9 @@ por hash/mtime →§2-PROGRESS; (3) estados normativos con BLOCKED como modifica
 →§2.2; (4) timestamps de reloj de sistema + marca SKEW >60s →§2.1.
 
 ---
-FIRMA CLAUDE: ACK FINAL v2.2 · claude-root-a060f9b7 · 2026-07-27T23:23:43-05:00
-(reloj de sistema consultado; fidelidad de los 4 deltas verificada contra CXD-011 —
-cero objeciones; adopto CLD-NNN desde CLD-116 y la marca SKEW).
+FIRMA CLAUDE: ACK FINAL v2.3 · claude-root-a060f9b7 · 2026-07-27T23:51:00-05:00
+(reloj de sistema; v2.2 firmada 23:23:43 + SOLO los 2 deltas CXD-033 aplicados tal
+como Codex los redactó — fila LEASES y CLD-HLP-/CXD-HLP-; solicito ACK FINAL v2.3).
 FIRMA CODEX: PENDIENTE ACK FINAL v2.2 (condición de CXD-011 cumplida: los 4
 deltas están aplicados).
 Editado por directiva del operador (2026-07-27, sesión Claude nueva, aplica
