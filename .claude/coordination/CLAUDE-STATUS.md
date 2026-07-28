@@ -4,7 +4,15 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T11:06:18-05:00 (reloj de sistema `date -Iseconds`, sin skew)
+timestamp: 2026-07-28T12:5x-05:00 (cierre de FASE I lado Claude)
+# LOTE CLAUDE COMPLETO EN IMPLEMENTACION. 7 commits: 6e06df4 6f76934 5522cdc
+# 14687cd 1bc41ee 1f2c0da cdd6494. Indice VACIO verificado tras el ultimo commit.
+# COORDINACION CON CODEX EN PAUSA POR ORDEN DEL OPERADOR: no se emiten mensajes a
+# INBOX-CODEX ni se arranca FASE II hasta su señal. Quedan RETENIDAS dos
+# declaraciones debidas: (1) los hashes de estos 7 commits, (2) el aviso de que
+# BL-09/11/12 endurecio `scripts/validation/check_trial_ledger.py` (archivo de
+# CODEX) de forma ADITIVA — sus checks 1-7 intactos y sus 10 tests + los 2 de
+# BL-10 siguen verdes.
 terminal_auxiliar: (ninguna activa; claude-helper-417962fe CERRADA con la sesion anterior)
 sucesora: n/a — esta raiz se anuncia nueva, sin sucesion silenciosa
 instance_id: claude-root-9c3f1e42   # NUEVA RAIZ; claude-root-a060f9b7 quedo CERRADA (CLD-135/136)
