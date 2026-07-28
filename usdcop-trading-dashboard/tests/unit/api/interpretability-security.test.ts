@@ -30,8 +30,11 @@ vi.mock('fs/promises', async (importOriginal) => {
   return { ...actual, ...wrapped, default: wrapped };
 });
 
+import { validateAndStrip } from '@/app/api/admin/interpretability/_lib/artifact-schema';
 import { GET as indexGET } from '@/app/api/admin/interpretability/route';
 import { GET as summaryGET } from '@/app/api/admin/interpretability/summary/route';
+
+import { REAL_LINEAR } from '../../support/interp-fixtures';
 
 const ADMIN = { 'x-user-role': 'admin' };
 const FREE = { 'x-user-role': 'free' };
@@ -41,34 +44,15 @@ const sumUrl = (qs: string) => `http://t/api/admin/interpretability/summary?${qs
 const q = (surface: string, asset: string, model: string, version: string) =>
   `surface=${surface}&asset=${asset}&model_id=${model}&version=${version}`;
 
-// Artefacto lineal mínimo VÁLIDO según el schema compartido.
-const VALID_LINEAR = {
-  nota: 'SHAP explica el modelo, no el mercado; solo test-folds; diagnostico 0 trials',
-  surface: 'zoo',
-  asset: 'usdcop',
-  model_id: 'ridge',
-  model_type: 'linear',
-  method: 'linear_shap_closed_form',
-  attribution_not_shap: false,
-  version: '2026-07-27',
-  generated_at: '2026-07-28T00:00:00+00:00',
-  scope: 'diagnostico del modelo congelado',
-  fit: {
-    scheme: 'walk-forward',
-    origin: '2026-07-27',
-    n_train: 100,
-    horizon: 5,
-    purge_days: 5,
-    scaler: 'StandardScaler train-only',
-    params: { alpha: 1.0, fit_intercept: true },
-  },
-  base_value: -0.0001,
-  n_rows: 105,
-  n_features: 1,
-  top_features: [{ rank: 1, feature: 'return_10d', coef: 0.007, mean_abs_shap: 0.005, mean_shap: -0.00001 }],
-  by_year: { '2026': [{ feature: 'return_10d', mean_abs_shap: 0.005, mean_shap: -0.00001 }] },
-  kill_flags_sign_change_by_year: ['return_10d'],
-};
+/**
+ * Artefacto lineal VÁLIDO — leído del artefacto REAL trackeado en
+ * `<repo>/data/interpretability/zoo/usdcop/ridge/**` (tests/support/interp-fixtures.ts).
+ *
+ * NO es una copia a mano: la copia a mano se quedó sin `artifact_id`/`provenance` cuando
+ * BL-20 los añadió al schema, dejó la ruta feliz en 500 y — lo grave — convirtió los casos
+ * fail-closed de abajo en verdes por el fixture rancio en vez de por su defensa.
+ */
+const VALID_LINEAR: Record<string, unknown> = JSON.parse(JSON.stringify(REAL_LINEAR));
 
 let base: string; // raíz temporal de artefactos (INTERPRETABILITY_DATA_DIR)
 let outside: string; // directorio HERMANO fuera del base (target de symlinks)
@@ -78,6 +62,14 @@ function writeArtifact(segs: string[], content: string) {
   const dir = path.join(base, ...segs);
   realFs.mkdirSync(dir, { recursive: true });
   realFs.writeFileSync(path.join(dir, 'summary.json'), content);
+}
+
+/** Serializa `obj` con `field` = `1e999` (⇒ Infinity al parsear). Falla ruidosamente si no muta nada. */
+function nonFiniteJson(obj: Record<string, unknown>, field: string): string {
+  const SENTINEL = '__NON_FINITE__';
+  const json = JSON.stringify({ ...obj, [field]: SENTINEL }).replace(`"${SENTINEL}"`, '1e999');
+  if (!json.includes('1e999')) throw new Error(`no se pudo inyectar el no-finito en ${field}`);
+  return json;
 }
 
 beforeAll(() => {
@@ -93,12 +85,15 @@ beforeAll(() => {
   writeArtifact(
     ['zoo', 'usdcop', 'nonfinite', '2026-07-27'],
     // 1e999 parsea a Infinity — JSON.parse NO lo rechaza; el schema runtime sí debe.
-    JSON.stringify({ ...VALID_LINEAR, model_id: 'nonfinite' }).replace('"base_value":-0.0001', '"base_value":1e999'),
+    // El centinela se sustituye por token, no por el literal del valor: así el caso no
+    // se vuelve un no-op silencioso cuando el artefacto real cambie de `base_value`.
+    nonFiniteJson({ ...VALID_LINEAR, model_id: 'nonfinite' }, 'base_value'),
   );
-  writeArtifact(
-    ['zoo', 'usdcop', 'badschema', '2026-07-27'],
-    JSON.stringify({ surface: 'zoo', asset: 'usdcop' }), // faltan required
-  );
+  // Fixture válido MENOS exactamente un campo required: el rechazo solo puede
+  // atribuirse a `required`, no a un fixture incompleto por otro motivo.
+  const missingRequired: Record<string, unknown> = { ...VALID_LINEAR, model_id: 'badschema' };
+  delete missingRequired.base_value;
+  writeArtifact(['zoo', 'usdcop', 'badschema', '2026-07-27'], JSON.stringify(missingRequired));
   writeArtifact(['zoo', 'usdcop', 'corrupt', '2026-07-27'], '{not json{{{');
   writeArtifact(
     ['zoo', 'usdcop', 'big', '2026-07-27'],
@@ -192,6 +187,33 @@ describe('#4 — traversal bloqueado (whitelist + realpath-prefix)', () => {
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { message: string } };
     expect(body.error.message).toBe('artifact not found');
+  });
+});
+
+// ─────────────────────────────────── control de atribución de los casos fail-closed
+/**
+ * Los casos de #2 son "el artefacto VÁLIDO + UNA mutación". Eso solo prueba la defensa
+ * si el artefacto base es realmente válido: con un fixture rancio, todos devuelven 500
+ * por el fixture y la suite queda verde sin ejercitar nada (fue exactamente lo que pasó
+ * cuando el schema ganó `artifact_id`/`provenance` y el fixture no se actualizó).
+ * Este control ata el rojo al lugar correcto — el fixture — en vez de disfrazarlo de
+ * defensa que funciona.
+ */
+describe('#0 — control: el fixture base es válido, así los fail-closed son atribuibles', () => {
+  it('el artefacto REAL pasa el schema COMPARTIDO sin mutar (y sobrevive el STRIP intacto)', () => {
+    expect(validateAndStrip(VALID_LINEAR)).toEqual(VALID_LINEAR);
+  });
+
+  it('cada mutación de #2 es rechazada por SU defensa y solo por ella', () => {
+    // no-finito: único cambio respecto del fixture válido.
+    expect(validateAndStrip(JSON.parse(nonFiniteJson(VALID_LINEAR, 'base_value')))).toBeNull();
+    // required ausente: único cambio respecto del fixture válido.
+    const missing: Record<string, unknown> = { ...VALID_LINEAR };
+    delete missing.base_value;
+    expect(validateAndStrip(missing)).toBeNull();
+    // campo desconocido: NO es rechazo — se stripea y el resto llega intacto.
+    const stripped = validateAndStrip({ ...VALID_LINEAR, ___evil_extra: '<script>alert(1)</script>' });
+    expect(stripped).toEqual(VALID_LINEAR);
   });
 });
 
