@@ -4,17 +4,18 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T23:25:00-05:00
-terminal_auxiliar: claude-helper-fleet-a060f9b7 (subagentes CLD-HLP: reporte-a-raiz, sin STATUS/commits/canales salvo orden directa del operador anotada)
-sucesora: (pre-firmada) proxima terminal Claude del operador SOLO por acta CLD-HLP-002 en este LOG
+timestamp: 2026-07-27T23:36:00-05:00
+terminal_auxiliar: claude-helper-417962fe (terminal real del operador, CLD-HLP-001; encargos via briefs/HELPER-*.md; los subagentes internos de la raiz NO tienen identidad de canal)
+sucesora: claude-helper-417962fe SOLO por briefs/CLD-HLP-002-sucesion.md (acta pre-firmada)
 instance_id: claude-root-a060f9b7
 estado: WORKING
-bl_activos: [BL-25,BL-20-UI,BL-13-REMEDIO2]
-agentes_en_vuelo: 4
-# ^ BL-25 + BL-20-UI + BL-13-remedio2 (objecion C-005 concedida) + self-red-team K-013 (read-only)
-archivos_bloqueados: [usdcop-trading-dashboard/components/views/**, usdcop-trading-dashboard/tests/**, usdcop-trading-dashboard/lib/contracts/strategy.contract.ts, usdcop-trading-dashboard/lib/contracts/policy.contract.ts, src/contracts/strategy_schema.py, src/contracts/policy.py, src/contracts/policy_dsl.py, src/contracts/rule_trace.py, scripts/pipeline/normalize_champions.py, tests/regression/test_strategy_manifests.py, config/strategy_manifests/registry.json]
-necesito_del_otro: ["firma COMMS-v2 §6", "co-firma PROGRESS", "cross-review BL-09/11/34/42-test/20-datos/15-PARCIAL"]
-para_review: [BL-01-REMEDIO,BL-02-REMEDIO,BL-03-REMEDIO,BL-04-REMEDIO,BL-05-REMEDIO,BL-12-REMEDIO,BL-13-REMEDIO,BL-14-REMEDIO,BL-45-REMEDIO2,BL-09,BL-11,BL-06,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
+bl_activos: [C-004-R3, KAFKA-HONESTIDAD, HLP:BL-42, HLP-cola:BL-05-a11y]
+agentes_en_vuelo: 2
+# ^ raiz: C-004-r3 + kafka(verificador deploy); helper 417962fe: BL-42 (GO dado), luego BL-05-a11y
+archivos_bloqueados: [ver LEASES.md — raiz: policy*{.py,.contract.ts}+test_policy_contract+parity.test.ts+kafka_bridge/*; helper: test_return_units.py+PaperCandidatesPanel*]
+necesito_del_otro: ["ACK FINAL v2.2 + re-firma PROGRESS", "re-review C-005/BL-13@3056ef6 (ya asignada CXD-027)", "ACK/OBJECION C-006 (compensacion publicada)", "veredictos BL-02-04r/12r2/14r/25/20-datos", "plan commit coordinado dag_registry (tu WIP forward-macro cohabita con mi registro BL-25)"]
+para_review: [BL-01r2@aa25516, BL-02-04r@8f1f8b9, BL-12r2@6bbfd6e, BL-13r2@3056ef6, BL-14r@5a2cf5d+ecbfca5, BL-25@254ce8f, BL-20-UI@2c5bd3c]
+en_correccion_por_rechazo: [BL-05(helper), BL-09, BL-11, BL-34, BL-42(helper), BL-45(C-004-r3), BL-15-PARTIAL(bloqueo operador)]
 
 ## LOG (append, mas reciente arriba)
 - 2026-07-27T23:38:00-05:00 review BL-07: **APROBADO** contra d0427d6 (reproduccion exacta 10 decimales, 5 checks adversariales OK, delta BASELINE=0; 2 observaciones no-bloqueantes en CLD-118). BL-12-r2 commiteado (6bbfd6e, sub-deflacion DSR corregida 109->111). En vuelo: C-004-r3, BL-14-hashes, BL-01-bypasses, kafka(verificador), BL-25.

@@ -1,12 +1,22 @@
 # LEASES — dueño exclusivo de rutas (expira ≤45min; renovar o liberar)
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>
-- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- .claude/coordination/briefs/BL-41.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- .claude/coordination/briefs/BL-43.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- .claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- scripts/analysis/profitability_types.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- scripts/analysis/profitability_adapters.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- scripts/analysis/profitability_evidence.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- scripts/analysis/timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
-- tests/unit/test_timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:50:00-05:00
+- tests/regression/test_bl10_legacy_estimate_contract.py | CODEX | codex-helper-7f9f3b832dd1 | expira 2026-07-27T23:45:00-05:00
+- scripts/validation/check_trial_ledger.py | CODEX | codex-helper-7f9f3b832dd1 | expira 2026-07-27T23:45:00-05:00
+- .claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:50:00-05:00
+- .git/index | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:38:00-05:00
 # (CLAUDE 23:12) tanda de remediacion COMMITEADA (8f1f8b9 y anteriores) — todos los leases CLAUDE liberados; red-team en curso es read-only.
+- tests/regression/test_return_units.py | CLAUDE | claude-helper-417962fe | expira 2026-07-28T00:16:47-0500 (orden operador 2026-07-27T23:31:46-0500; entrega via briefs/HELPER-BL-42.md, raiz integra)
+- src/contracts/policy.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3)
+- src/contracts/policy_dsl.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3)
+- src/contracts/rule_trace.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3)
+- usdcop-trading-dashboard/lib/contracts/policy.contract.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3)
+- tests/unit/test_policy_contract.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3)
+- usdcop-trading-dashboard/tests/unit/contracts/policy-contract-parity.test.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (C-004-r3, nuevo)
+- services/kafka_bridge/producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (kafka-honestidad)
+- services/kafka_bridge/README.md | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (kafka-honestidad)
+- tests/unit/test_kafka_bridge_producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-28T00:20:00-05:00 (kafka-honestidad)
+- tests/regression/test_return_units.py | CLAUDE-HLP | claude-helper-417962fe | expira 2026-07-28T00:20:00-05:00 (encargo BL-42, raiz integra)
+- .claude/coordination/briefs/HELPER-BL-42.md | CLAUDE-HLP | claude-helper-417962fe | expira 2026-07-28T00:20:00-05:00
+- usdcop-trading-dashboard/components/gm/views/PaperCandidatesPanel.tsx | CLAUDE-HLP | claude-helper-417962fe | expira 2026-07-28T00:50:00-05:00 (encargo BL-05-a11y, en cola)
+- usdcop-trading-dashboard/tests/unit/components/PaperCandidatesPanel.test.tsx | CLAUDE-HLP | claude-helper-417962fe | expira 2026-07-28T00:50:00-05:00
