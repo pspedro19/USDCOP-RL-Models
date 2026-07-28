@@ -147,3 +147,16 @@ terminaban ambos en `success`. Regla: la propiedad se verifica recomputandola de
 el contenido (con comparacion en tiempo constante) o reclamandola atomicamente del
 sistema (`O_EXCL`, `os.link`, lock interproceso). Es K-031 un nivel mas sutil: aqui
 la garantia SI vivia en codigo, y aun asi no se imponia.
+
+**K-042 · La autorizacion de ESCRITURA se prueba invocando el handler con el rol mas bajo que tenga sesion.**
+Origen: el handler del Voto 2 llamaba a `protectApiRoute` SIN `requiredPermission`, asi
+que un `subscriber` autenticado invocandolo directo podia PROMOVER A PRODUCCION. El
+middleware si exigia el permiso, pero la regla 4 de `approval-gates.md` dice
+literalmente que el deploy re-valida server-side y que la UI no es la autoridad: yo
+confiaba justo en la capa que la regla declara insuficiente. Mis tests probaron el
+middleware y un handler MOCKEADO COMO ADMIN — nunca un subscriber llamando directo.
+Regla: probar el middleware, o un handler mockeado con el rol correcto, no es
+cobertura sino tautologia. El test valido invoca el handler SIN middleware, con el rol
+mas bajo que tenga sesion, y exige rechazo. Corolario del dia: se auditaron tres fugas
+de LECTURA mientras la ESCRITURA del gate que separa un backtest de dinero real
+quedaba abierta.
