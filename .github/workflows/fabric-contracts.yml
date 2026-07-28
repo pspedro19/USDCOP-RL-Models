@@ -1,0 +1,63 @@
+name: fabric-contracts
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: usdcop-trading-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: usdcop-trading-dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run rbac:check
+      - run: npm run rbac:test
+      - run: npx tsc --noEmit
+      - run: npx vitest run tests/unit/api tests/unit/contracts tests/unit/components tests/integration
+
+  python-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest tests/regression/test_knowledge_frontmatter.py tests/regression/test_strategy_manifests.py tests/regression/test_scripts_layout.py -q
+      - run: python -m pytest tests/regression/test_repo_self_contained.py tests/regression/test_approval_mutual_exclusion.py tests/unit/test_codex_phase2_backlog.py -q
+      - run: python scripts/validation/check_trial_ledger.py
+      - run: python scripts/validation/report_ledger_dsr.py
+      - run: python scripts/validation/validate_policy_specs.py
+
+  migration-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pytest tests/unit/test_codex_phase2_backlog.py -q
+      - name: Require explicitly planned migration files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            database/migrations/059_checkout_order_ledger.sql \
+            database/migrations/080_market_physical_profile.sql \
+            database/migrations/081_synthetic_demo_isolation.sql \
+            database/migrations/082_checkout_order_retry_transition.sql; do
+            test -f "$f"
+            git ls-files --error-unmatch "$f" >/dev/null
+          done
