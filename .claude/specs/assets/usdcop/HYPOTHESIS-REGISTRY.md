@@ -12,11 +12,11 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 88
+n_trials_total: 109
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
-  - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (27 trials direccionales)"
+  - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (48 trials direccionales; 27 previos + 14 forward-flow + 7 intraday-LatAm)"
   - "public/data/strategies/{smart_simple_v11,smart_simple_aggr}/backtests/* (5 bundles = suelo)"
 sigma_trials: 0.0473   # MEDIDA 2026-07-21 (42 celdas re-sim, motor purgado; N_eff=10 clusters)                 # nunca se persistió la dispersión de Sharpe entre trials
 sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
@@ -1485,3 +1485,140 @@ semanas frescas maduras (~2027); P2 monitor descriptivo intervalo-zoo vs persist
 (0 trials, bandera de régimen); P3 stack direccional = superficie de producto
 (signal_authorized:false, gate por plan tras fix #3). H20-DIR-SHADOW RETIRADA (la
 tabla de lift mató su premisa antes de sellarla).
+
+
+---
+
+## RESULTADO H-INTRADAY-LATAM-01 (2026-07-22) — NO_RECHAZA · trials 102→109
+
+Información realmente nueva frente a `H-COP-XLEAD-01`: no usa cierres diarios T−1.
+Compara precio-only contra exactamente seis variables reconstruidas as-of 13:30
+Bogotá desde velas horarias USD/MXN y USD/BRL ya cerradas: retornos pre-open por par,
+retornos de sesión por par, dispersión de sesión y volatilidad realizada conjunta 24h.
+
+- Snapshot fijo: `data/backups/features/asset_native_ohlcv.parquet`.
+- Disponibilidad reconstruida conservadora: apertura + 1h + 5m; toda captura registrada
+  antes de ese límite se excluye.
+- Un modelo fijo (logit L2 C=0.1, balanced), umbral 0.50, siete horizontes
+  H1/H5/H10/H15/H20/H25/H30, mismas semanas y labels maduros en ambos brazos.
+- Primario retrospectivo 2023–2024; 2025 pseudo-OOS ya contaminado por investigación
+  previa; 2026 replay diagnóstico. Ningún resultado histórico puede autorizar capital.
+- Se pagaron **+7 trials** (direccionales 41→48; globales 102→109),
+  independientemente de cuántas celdas ganaran.
+
+Resultado primario 2023–24: H1 fue la única mejora (+2.9pp; DA 63.5%, BDA 64.4%),
+pero McNemar crudo p=0.607, p familia=1.0 e IC95 por bloques [−4.8,+10.6]pp. H5–H30
+empeoraron precio-only. H1 no confirmó: DA 50.0% en 2025 y 27.6% en 2026. Ningún
+horizonte pasó el gate; 0 shadow candidates, 0 capital autorizado. Familia cerrada sin
+reformulación post-resultado. Evidencia: `reports/usdcop_intraday_latam_lead_v1/`.
+
+
+---
+
+## CORRECCIÓN OPERATIVA H1 REGIME SHADOW V2 (2026-07-22, 0 outcomes, 0 trials nuevos)
+
+La auditoría previa al primer commit encontró que `usdcop_h1_regime_shadow_v1` no
+reproducía el modelo investigado (`class_weight=None` en vivo frente a `balanced`),
+consumía historia mutable, no fijaba hashes de código/runtime y permitía reconstruir una
+semana anterior. V1 se retiró con **0 predicciones y 0 outcomes**; no se borró ni
+transfirió evidencia.
+
+Su reemplazo `usdcop_h1_regime_shadow_v2` queda activo desde `2026-W31` con:
+
+- baseline inmutable hasta 2026-07-21 y filas live aceptadas sólo después del cutoff;
+- paridad exacta investigación/vivo (`pUP=0.5327702437214819`, delta 0);
+- logit balanced exacto, runtime y dependencias ligados por SHA-256;
+- commit sólo el viernes corriente después de 15:30 Bogotá, sin override de reloj ni
+  backfill de semanas perdidas;
+- snapshots semanales y cadenas append-only separadas para predicciones/outcomes;
+- mínimo conjunto de 104 semanas comprometidas y 100 señales maduras antes de review;
+- evaluador fail-closed (DA/BDA, PT, Brier, block bootstrap y risk-coverage), siempre
+  `signal_authorized=false` y `capital_authorized=false`.
+
+Esto corrige integridad de implementación; **no mejora las métricas históricas ni abre un
+nuevo resultado**. Contabilidad permanece en 48 trials direccionales / 109 globales.
+Expediente: `reports/usdcop_h1_regime_shadow_v2/`.
+
+
+---
+
+## APERTURA H1 DAILY SHADOW V1 (2026-07-22, +1 trial, sin backtest diario)
+
+Para no esperar años por una muestra semanal suficiente se abrió un transporte
+prospectivo mecánico del H1 v2 a todos los cierres diarios. Conserva exactamente el
+estimador, features, threshold y gate de régimen; el modelo se reentrena una sola vez por
+semana con anchor en la última sesión de la semana ISO anterior. La regla exacta **no se
+evaluó sobre outcomes diarios históricos antes del registro**.
+
+Primer origen elegible: 2026-07-27. Cada commit exige fecha corriente después de 15:30
+Bogotá, seed post-cierre y snapshot exacto de 60 barras M5 (08:00–12:55). Predicciones y
+outcomes quedan en cadenas SHA-256 separadas; no existe override de reloj ni backfill.
+
+Primario: dirección base en todos los orígenes diarios. Selectivo regime-gated es
+secundario y no puede rescatar un primario fallido. Review sólo después de 12 meses,
+252 predicciones maduras y 100 señales selectivas, con PT, lift pareado, Brier y
+e-process time-uniform. Siempre `signal_authorized=false`, `capital_authorized=false`.
+
+Contabilidad: **49 trials direccionales / 110 globales**. Expediente:
+`reports/usdcop_h1_daily_shadow_v1/`.
+
+
+---
+
+## RESULTADO H1 LATAM TRANSPORT V1 (2026-07-22) — RECHAZADA · trials 110→111
+
+Se transportó una sola vez, sin retuning, la regla H1 v2 exacta de USD/COP a
+USD/MXN y USD/BRL. Antes de abrir outcomes quedaron bloqueados por SHA-256 el
+contrato, la fuente histórica, cinco archivos de código y el runtime completo.
+Primario: todos los asset-semana 2020–2025; ambos pares eran restricciones de un
+solo test combinado, no ganadores seleccionables.
+
+| Scope | señales | cobertura | DA | BDA | baseline causal | lift |
+|---|---:|---:|---:|---:|---:|---:|
+| combinado | 240 | 38.34% | **45.42%** | **45.35%** | 45.83% | **−0.42 pp** |
+| USD/MXN | 126 | 40.26% | 45.24% | 45.98% | 46.83% | −1.59 pp |
+| USD/BRL | 114 | 36.42% | 45.61% | 44.07% | 44.74% | +0.88 pp |
+
+Bootstrap circular por clusters ISO-semana b=4, 10.000 draws, preservando peso
+asset-semana: lift −0.42 pp, IC95 [−10.00,+9.45] pp, p unilateral=0.5295.
+Fallaron 7 gates: DA, BDA, restricciones por activo, lift positivo, límite
+inferior del bootstrap, p bootstrap y estabilidad anual. 2022 fue especialmente
+adverso (DA/BDA 28.13%).
+
+El diagnóstico 2026 dio 75.0% DA sobre apenas 16 señales y **no puede rescatar**
+el primario. USD/MXN logró 87.5% prediciendo ocho veces DOWN, con 0% recall UP y
+0 lift frente a la mayoría causal: evidencia de tamaño/clase, no generalización.
+
+Veredicto pre-firmado: `FAIL_CLOSE_TRANSPORT_FAMILY`; no reformular esta familia
+después de ver el resultado. `signal_authorized=false`,
+`capital_authorized=false`. Contabilidad final: **50 trials direccionales / 111
+globales**. Expediente: `reports/usdcop_h1_latam_transport_v1/`.
+
+
+---
+
+## ENMIENDA ADR-0022 (2026-07-27, BL-12 — 0 miradas, 0 trials nuevos): doble linaje FT/AT
+
+Autorizada por `.claude/specs/adr/ADR-0022-doble-linaje-trials-ft-at.md` (requisito formal
+para tocar la constitución; `quant-constitution.md` sube a 1.1.0). **El conteo NO cambia**:
+`n_trials_total` sigue siendo la suma de ambos linajes y la partición jamás resetea N.
+
+1. **Etiquetado retroactivo POR FAMILIA** (granularidad que fija el ADR §Decisión-1; los
+   trials existentes NO se renumeran):
+   - **AT (económicos — ¿gana dinero la política completa?)**: reconstrucción v1.0→v11
+     (grid 42 TP/HS + sizing + versiones, §1), H-COP-V11-01, celda cap-1.5, H-ENTRY-01,
+     H-TP-LADDER-01/v14, celda S7-motor, H-V13-QRISK-01 (design-run + motor), H-V15
+     design-run, replay v13/v15, monitoreo v11/v12/v14, **H-META-01** (el precedente del
+     cruce FT→AT: consenso del zoo probado como sizing = +2 AT, no reuso gratis).
+   - **FT (predictivos — ¿predice el artefacto?)**: EXP-DIR-001 (50 direccionales),
+     H-COP-XLEAD-01, H-VOLF-01, H-RISK-FAM-01, H-RISK-FAM-02, H-VOLT-01, H-CHRONOS-01,
+     H-MONTHLY-01, H-LATAM-02, H-INTRADAY-LATAM-01, H1 daily/regime shadows,
+     H1 LATAM transport.
+   - Familias PENDIENTES sin correr (H-COP-CARRY-*, H-COP-TREND-01, H-TP-LADDER
+     variantes no abiertas) se etiquetan al sellar su pre-registro.
+2. **Regla prospectiva (dura)**: todo pre-registro nuevo que convierta un artefacto
+   predictivo en señal económica cobra **+1 AT** y DEBE declarar `provenance:`
+   (`forecast_trial_ids`, `action_trial_id`, `research_cluster`). Un pre-registro que
+   herede forecasts sin `provenance` es **INVÁLIDO** (ADR-0022 §Decisión-4).
+3. El DSR se deflacta SIEMPRE con `n_trials_total` (suma de linajes) — mirar una celda
+   FT sigue quemando presupuesto del activo (constitución §2, DO NOT).
