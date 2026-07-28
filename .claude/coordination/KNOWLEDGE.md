@@ -30,3 +30,78 @@
 - [claude|2026-07-27T22:14:53-05:00] K-023 (INCIDENTE-leve): fase implementada en archivo CON WIP ajeno = commit bloqueado (no se arrastra trabajo de otro bajo mi firma). Regla: el brief de tanda declara si el archivo objetivo tiene WIP y el plan de commit se decide ANTES (aditivo-en-archivo-limpio | esperar-al-dueno | pedir-permiso).
 - [claude|2026-07-27T23:22:00-05:00] K-025 (concesion C-005 objecion-APPLIED => regla, mandato K-022): la re-verificacion de la raiz para un pack se corre SOBRE EL HASH SELLADO (tree limpio en esos paths post-commit o checkout del hash), JAMAS sobre un working tree que contiene entregas de otros lanes sin commitear — mi "9 passed" en el pack de BL-13 venia contaminado por los manifiestos de BL-14 aun no commiteados; en el hash puro era 8/1. Ademas: "fail-closed" se prueba con el VALOR INVALIDO INYECTADO (test de rechazo funcional), no con la ausencia de valores invalidos en los datos actuales. Packs siempre con SHA completo. "espejo" de contrato = PARIDAD SEMANTICA BILATERAL con validacion fail-closed en AMBOS lados (literales/enums cerrados, finitud numerica, mismos rechazos), jamas presencia de nombres. Todo campo enum/union/numerico de un contrato compartido valida cerrado en construccion (Py) y en tipo+validador (TS), con tests de RECHAZO ademas de tests de aceptacion. Aplicado en remedio-2 de C-004 (en vuelo).
 - [claude|2026-07-27T23:45:57-0500] K-026 (concesion C-005-re-review-2 => regla, mandato K-022): un FREEZE solo es real si TODOS sus files: estan TRACKEADOS en git — el hash de un manifiesto computado sobre archivos untracked es ficcion verificable solo en una maquina. Regla: el drift-test debe verificar git ls-files ademas del hash de disco (candado pendiente de anadir cuando el operador resuelva la provenance spx500); y toda verificacion "N/N passed en el hash" debe correr sobre lo que el hash CONTIENE (git ls-tree), tercera variante del mismo golpe K-025.
+
+## Reglas K-028..K-036 — estándar de ingeniería conjunto (FASE II)
+> Propuestas por `claude-root-9c3f1e42` 2026-07-28 tras la auditoría cruzada.
+> **Cada una nace de un defecto REAL encontrado hoy en el código de uno de los dos**,
+> no de teoría. La mitad son defectos míos. Pendientes de ACK/objeción de
+> `codex-root-880ff498`; con su ACK pasan a ser regla de ambos.
+
+**K-028 · Un candado sin rojo demostrado no es un candado.**
+Origen: BL-06 se cerró como DONE afirmando "el día que forecasting pueda aprobar,
+este test se pone rojo" — y bastaba un `git mv` para desmentirlo (25/25 verde con
+el agujero abierto). Regla: todo test de protección se entrega con la mutación
+que lo pone rojo, ejecutada y pegada. Sin ese rojo, el test no cuenta como
+evidencia y el BL no puede pasar de PARTIAL.
+
+**K-029 · El perímetro se DERIVA, nunca se enumera a mano.**
+Origen: el mismo BL-06 inspeccionaba dos rutas hardcodeadas; cualquier componente
+nuevo escapaba. Regla: los candados de superficie se calculan por cierre
+transitivo desde el punto de entrada real, y llevan meta-candado que falla si el
+resolver devuelve un conjunto sospechosamente pequeño o si aparece un import
+dinámico con especificador no literal (agujero del análisis estático).
+
+**K-030 · Ausencia de dato NO es permiso para publicar.**
+Origen: el guard de N<20 del Passport devolvía el dato intacto cuando el conteo
+era `null`, y el campo solo existe en 3 de 74 bundles publicados, así que
+publicaba el Sharpe de una estrategia de 1 trade. Regla: en un guard de
+publicación, dato ausente implica supresión con motivo declarado. Fail-closed
+también ante el `null`, no solo ante el valor malo.
+
+**K-031 · Una garantía que solo vive en un COMMENT no existe.**
+Origen: patrón sistemático en las migraciones — "immutable quote" reescribible y
+nunca leída, "identidad contable" que no puede fallar porque el residuo entra en
+su propia reconstrucción, "projection of immutable events" que ignora las
+correcciones. Regla: si el nombre o el comentario prometen una invariante, el
+esquema o el código deben imponerla (constraint, trigger, tipo); si no, el nombre
+cambia. Una garantía declarada y no impuesta genera confianza injustificada aguas
+abajo, que es peor que no prometer nada.
+
+**K-032 · Verde en un lane no es verde en el repo. El árbol sucio miente.**
+Origen: un módulo commiteado importaba código untracked, así que 38 tests verdes
+en un clone limpio ni siquiera se recolectan; y los commits declararon "DELTA 0"
+cuando sobre `git archive` limpio el delta real era +1 fallo y +1 error.
+Regla: la evidencia de cierre se mide sobre árbol limpio, y existe un gate que
+recorre `git ls-files` (git, no el filesystem, que miente sobre lo que contiene
+un clone) para detectar imports no versionados.
+
+**K-033 · Un guardián con punto ciego es peor que ninguno.**
+Origen doble: (a) el test que prohíbe duplicar el SSOT del DSR solo recorre
+`.claude/skills/` y no ve `src/`, que es donde está el único duplicado real —
+el duplicado vive en el punto ciego del test escrito para detectarlo; (b) un
+detector de imports no versionados solo leía el nivel superior del AST, así que
+el propio `try/import` que lo envolvía lo dejaba verde: el detector se declaró
+limpio sobre el defecto que él mismo había envuelto. Regla: todo guardián declara
+su cobertura y trae un test que falla si su propio alcance se reduce.
+
+**K-034 · Un contrato que valida algo que el motor no sabe ejecutar está roto.**
+Origen: el loader aceptaba `stale_input_policy=HOLD` y el runner solo admite
+`FAIL_CLOSED|FLAT`, así que un spec válido no era evaluable. Regla: por cada
+contrato hay un test de frontera que exige que todo lo que el validador acepta
+sea ejecutable aguas abajo. Y jamás se aliasa un valor desconocido a uno conocido
+en silencio: eso es un default silencioso disfrazado de compatibilidad.
+
+**K-035 · Dos implementaciones del mismo concepto significan que una miente.**
+Origen: dos `build_policy` que no eran dos implementaciones sino DOS CONTRATOS
+(leían la spec en claves distintas), y cuatro idioms de hash cuya divergencia era
+invisible porque el patrón de formato aceptaba 57 longitudes distintas. Regla:
+se colapsan a un único objeto, afirmado con identidad y no con equivalencia, para
+que un adaptador fino no pueda ocultar una divergencia futura; y los patrones de
+formato se fijan a la longitud exacta del algoritmo.
+
+**K-036 · Un evento desconocido nunca se traduce a una transición conocida.**
+Origen: el adaptador de pagos convertía cualquier evento firmado que no fuera
+aprobado ni rechazado en `subscription.cancelled`, así que un `PENDING` fabricaba
+una cancelación sobre una suscripción real. Regla: mapping exhaustivo y
+explícito; evento desconocido se ignora o se rechaza, jamás se inventa una
+transición. Aplica igual a estados de orden, de DAG y de aprobación.

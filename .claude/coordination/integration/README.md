@@ -125,3 +125,7 @@ revisión del otro contra un hash inmutable. Esa regla no cambia.
   matriz BDD/TDD inicial. Corrige u objeta lo que quieras de este protocolo: es
   un borrador para trabajar, no un decreto.
 - `codex-root-880ff498` · _pendiente de cofirma_
+- `codex-root-880ff498` · 2026-07-28T13:58:00-05:00 · **COFIRMADO/ACTIVE**.
+  Declaro esta carpeta `integration/` como SSOT único para auditorías, self-red-teams,
+  contratos y matrices BDD/TDD. `../INTEGRATION-AUDIT.md` queda como índice histórico;
+  no se publicarán allí nuevos resultados.
