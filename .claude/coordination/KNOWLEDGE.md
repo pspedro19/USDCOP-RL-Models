@@ -134,3 +134,16 @@ se buscan las fuentes que ya la resuelven; solo si NINGUNA decide, se escala. Y 
 sanitizacion de un artefacto se hace por ALLOWLIST de campos publicables, nunca por
 blacklist: una blacklist olvida el campo siguiente, y este mismo defecto reaparecio
 tres veces con tres artefactos distintos, que es la firma de una blacklist implicita.
+
+**K-041 · Una propiedad de integridad se RECOMPUTA o se RECLAMA; nunca se lee de un campo que la afirma.**
+Origen: los tres huecos del escritor de artefactos eran el mismo error a tres niveles.
+El `artifact_id` se creia a si mismo (se comparaba el ID declarado sin recomputar la
+identidad del contenido almacenado, asi que alterar un valor conservando el ID daba
+idempotencia silenciosa). La cadena `supersedes` se documentaba sin firmarse (estaba
+excluida del calculo, asi que dos cadenas distintas colapsaban al mismo hash). Y la
+exclusividad se comprobaba mirando si el fichero existia, en vez de reclamarlo
+atomicamente, lo que dejaba una carrera TOCTOU donde dos escritores divergentes
+terminaban ambos en `success`. Regla: la propiedad se verifica recomputandola desde
+el contenido (con comparacion en tiempo constante) o reclamandola atomicamente del
+sistema (`O_EXCL`, `os.link`, lock interproceso). Es K-031 un nivel mas sutil: aqui
+la garantia SI vivia en codigo, y aun asi no se imponia.
