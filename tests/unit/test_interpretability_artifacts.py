@@ -234,6 +234,129 @@ def test_write_never_overwrites_a_published_artifact_mid_failure(tmp_path, monke
     assert first.read_bytes() == original
 
 
+# ---------------------------------------------------------------------------
+# BL-20 remedio-2 (sonda de integridad CODEX): el escritor no puede CONFIAR en el
+# artifact_id declarado, el eslabon `supersedes` tiene que estar ligado
+# criptograficamente, y dos primeros publicadores divergentes no pueden ganar ambos.
+# ---------------------------------------------------------------------------
+
+def test_tampered_payload_that_keeps_its_artifact_id_is_detected(tmp_path, monkeypatch):
+    """Rojo CODEX #1: `_write` comparaba SOLO el artifact_id declarado.
+
+    Alterar un `value` conservando el id daba `detected:false` — la inmutabilidad
+    se apoyaba justo en el campo que un manipulador controla. La identidad del
+    contenido ALMACENADO tiene que recomputarse antes de cualquier early-return.
+    """
+    import scripts.analysis.generate_interpretability as gi
+
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)
+    payload = {"nota": gi.NOTA, "value": 1}
+    path = gi._write("zoo", "usdcop", "probe", "v1", dict(payload))
+
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    stored["value"] = 999                       # contenido alterado…
+    path.write_text(json.dumps(stored), encoding="utf-8")   # …con el MISMO artifact_id
+
+    with pytest.raises(gi.ArtifactConflictError, match="(?i)fallo de integridad"):
+        gi._write("zoo", "usdcop", "probe", "v1", dict(payload))
+
+
+def test_supersedes_is_bound_to_the_artifact_identity():
+    """Rojo CODEX #2: `supersedes` estaba en VOLATILE_FIELDS.
+
+    Dos cadenas de sustitucion distintas producian exactamente el mismo
+    artifact_id: el eslabon era texto decorativo, no una ligadura verificable.
+    """
+    from scripts.analysis.generate_interpretability import _artifact_identity
+
+    a = _artifact_identity({"value": 2, "supersedes": "sha256:" + "a" * 64})
+    b = _artifact_identity({"value": 2, "supersedes": "sha256:" + "b" * 64})
+    assert a != b, "cambiar solo `supersedes` no cambio el artifact_id"
+
+
+def test_two_divergent_first_publishers_cannot_both_succeed(tmp_path, monkeypatch):
+    """Rojo CODEX #3: TOCTOU — ambos veian ausencia, ambos `success`, el ultimo pisaba.
+
+    Con una barrera en `os.replace` los dos escritores llegan a la publicacion a la
+    vez. Exactamente uno debe ganar; el divergente recibe ArtifactConflictError y
+    los bytes del ganador quedan intactos.
+    """
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    import scripts.analysis.generate_interpretability as gi
+
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)
+    barrier = threading.Barrier(2)
+    real_replace = gi.os.replace
+
+    def racing_replace(src, dst):
+        barrier.wait(timeout=10)
+        real_replace(src, dst)
+
+    monkeypatch.setattr(gi.os, "replace", racing_replace)
+
+    def publish(value: int) -> str:
+        try:
+            gi._write("zoo", "usdcop", "probe", "v1", {"nota": gi.NOTA, "value": value})
+            return "success"
+        except gi.ArtifactConflictError:
+            return "conflict"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = sorted(pool.map(publish, (1, 2)))
+
+    assert outcomes == ["conflict", "success"], f"carrera no serializada: {outcomes}"
+
+    monkeypatch.setattr(gi.os, "replace", real_replace)
+    published = tmp_path / "zoo" / "usdcop" / "probe" / "v1" / "summary.json"
+    doc = json.loads(published.read_text(encoding="utf-8"))
+    # el ganador quedo INTACTO: su artifact_id sigue siendo el de su propio contenido
+    assert doc["artifact_id"] == gi._artifact_identity(doc)
+    assert doc["value"] in (1, 2)
+    assert not list(tmp_path.rglob("*.tmp")), "quedo un temporal huerfano tras la carrera"
+    assert not list(tmp_path.rglob("*.staged")), "quedo un staging huerfano tras la carrera"
+
+
+def test_identity_migration_only_rewrites_the_id_and_refuses_tampered_files(
+        tmp_path, monkeypatch):
+    """La migracion de esquema es una re-derivacion PURA y fail-closed.
+
+    Incluir `supersedes` en el hash deja a los artefactos ya publicados con un id
+    del esquema viejo. La migracion solo puede tocar ficheros de los que se puede
+    DEMOSTRAR que no fueron alterados (id almacenado == identidad de contenido);
+    ante cualquier otra cosa aborta sin escribir.
+    """
+    import scripts.analysis.generate_interpretability as gi
+
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)
+    first = gi._write("zoo", "usdcop", "probe", "v1", {"nota": gi.NOTA, "v": 1})
+    gi._write("zoo", "usdcop", "probe", "v1", {"nota": gi.NOTA, "v": 2}, supersede=True)
+    doc = json.loads(first.read_text(encoding="utf-8"))
+    assert doc["supersedes"], "el fixture necesita un artefacto con eslabon"
+
+    # Se le devuelve el id del esquema VIEJO (hash del contenido sin el eslabon).
+    legacy = dict(doc, artifact_id=gi._content_identity(doc))
+    first.write_text(json.dumps(legacy, indent=2), encoding="utf-8")
+
+    report = gi.migrate_identity(tmp_path, apply=True)
+    assert [r["status"] for r in report] == ["migrated"]
+    migrated = json.loads(first.read_text(encoding="utf-8"))
+    assert migrated["artifact_id"] == gi._artifact_identity(migrated)
+    # UNICO campo que cambia: todo lo demas queda igual que antes de migrar
+    assert {k: v for k, v in migrated.items() if k != "artifact_id"} == \
+           {k: v for k, v in legacy.items() if k != "artifact_id"}
+    # idempotente
+    assert [r["status"] for r in gi.migrate_identity(tmp_path, apply=True)] == \
+           ["already_current"]
+
+    # Fichero realmente alterado => aborta, no lo "migra"
+    tampered = dict(migrated, v=999)
+    first.write_text(json.dumps(tampered, indent=2), encoding="utf-8")
+    with pytest.raises(gi.ArtifactConflictError):
+        gi.migrate_identity(tmp_path, apply=True)
+
+
 def test_expanding_folds_never_publish_a_summed_n_train():
     """`sum(n_train por fold)` cuenta las MISMAS filas varias veces en expanding.
 

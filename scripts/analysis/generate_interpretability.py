@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 import sys
@@ -79,7 +80,15 @@ def _rel(path: Path) -> str:
 
 
 #: Campos que NO forman parte de la identidad del artefacto (solo bitácora).
-VOLATILE_FIELDS = ("generated_at", "artifact_id", "supersedes")
+#: ``supersedes`` SÍ forma parte: si el eslabón de sustitución quedara fuera del
+#: hash, dos cadenas A/B distintas producirían el MISMO artifact_id y la
+#: sustitución sería texto decorativo en vez de una ligadura verificable.
+VOLATILE_FIELDS = ("generated_at", "artifact_id")
+
+#: Eslabón de la cadena: entra en la IDENTIDAD (``artifact_id``) pero no en la
+#: comparación de CONTENIDO. Regenerar la misma evidencia sobre un artefacto que
+#: ya sustituyó a otro sigue siendo un no-op (la cadena es historia, no ciencia).
+CHAIN_FIELDS = ("supersedes",)
 
 
 class ArtifactConflictError(RuntimeError):
@@ -171,71 +180,238 @@ def _train_size_summary(fold_meta: list[dict], distinct_train_rows: int) -> dict
 
 
 def _artifact_identity(payload: dict) -> str:
-    """sha256 de TODO el contenido no volátil (incluidas las cuatro huellas)."""
+    """sha256 de TODO el contenido no volátil (huellas + eslabón ``supersedes``).
+
+    Es el ``artifact_id``: cambiar UN valor, UNA huella o el eslabón de
+    sustitución cambia la identidad.
+    """
     core = {k: v for k, v in payload.items() if k not in VOLATILE_FIELDS}
     return _canonical_sha(core)
 
 
+def _content_identity(payload: dict) -> str:
+    """sha256 de la EVIDENCIA (identidad sin el eslabón de la cadena).
+
+    Responde "¿es la misma ciencia?", que es la pregunta de la idempotencia:
+    regenerar el mismo resultado sobre un artefacto que sustituyó a otro no
+    puede ser un conflicto eterno solo porque el publicado lleva ``supersedes``.
+    """
+    core = {k: v for k, v in payload.items()
+            if k not in VOLATILE_FIELDS and k not in CHAIN_FIELDS}
+    return _canonical_sha(core)
+
+
+def _read_published(out: Path) -> dict:
+    """Lee el artefacto publicado y VERIFICA su integridad antes de usarlo.
+
+    El defecto que esto cierra: ``_write`` comparaba el ``artifact_id``
+    *declarado* por el fichero almacenado, es decir, confiaba en el mismo campo
+    que un manipulador controlaría. Alterar un valor conservando el id se
+    reportaba como idempotencia silenciosa. Aquí la identidad se RECOMPUTA sobre
+    el contenido realmente almacenado y se compara en tiempo constante.
+    """
+    try:
+        previous = json.loads(out.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ArtifactConflictError(
+            f"{out}: existe pero no es JSON legible ({exc}) — se rehusa a pisarlo"
+        ) from exc
+    if not isinstance(previous, dict):
+        raise ArtifactConflictError(f"{out}: el artefacto publicado no es un objeto JSON")
+
+    stored = previous.get("artifact_id")
+    if not isinstance(stored, str) or not stored:
+        # Era del pre-artifact_id: no hay identidad que verificar. Fail-closed;
+        # solo un --supersede humano explícito puede seguir adelante.
+        raise ArtifactConflictError(
+            f"{out}: el artefacto publicado no declara artifact_id (formato previo al "
+            "remedio de identidad). No se puede verificar su integridad — usa "
+            "--supersede para sustituirlo de forma explicita."
+        )
+    recomputed = _artifact_identity(previous)
+    if not hmac.compare_digest(stored, recomputed):
+        raise ArtifactConflictError(
+            f"{out}: FALLO DE INTEGRIDAD — el artefacto declara artifact_id={stored!r} "
+            f"pero el hash de su contenido almacenado es {recomputed!r}. El fichero fue "
+            "modificado despues de publicarse (o se escribio con otro esquema de "
+            "identidad: ejecuta --migrate-identity). No se publica nada ni se reporta "
+            "idempotencia: la identidad se recomputa, no se cree lo que el fichero dice "
+            "de si mismo."
+        )
+    return previous
+
+
+def _publish_cas(staged: Path, out: Path) -> bool:
+    """Publica ``staged`` en ``out`` SOLO si ``out`` no existe (compare-and-swap).
+
+    ``os.replace`` es atómico pero NO exclusivo: dos primeros publicadores
+    divergentes lo llaman ambos y el último pisa al primero — ambos creían haber
+    ganado. La creación por enlace duro es atómica **y** falla si el destino ya
+    existe, así que exactamente un escritor gana la carrera y el otro se entera.
+
+    Devuelve ``True`` si ganó, ``False`` si otro publicó primero.
+    """
+    try:
+        os.link(staged, out)
+        return True
+    except FileExistsError:
+        return False
+    except (OSError, NotImplementedError, AttributeError):
+        # Sistema de ficheros sin enlaces duros: se degrada a una creación
+        # exclusiva O_EXCL, que sigue dando exactamente-un-ganador. Ventana
+        # declarada: entre el create y el write un lector podría ver el fichero
+        # vacío (con enlace duro no existe esa ventana).
+        try:
+            fd = os.open(str(out), os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0))
+        except FileExistsError:
+            return False
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(staged.read_bytes())
+                fh.flush()
+                os.fsync(fh.fileno())
+        except BaseException:
+            out.unlink(missing_ok=True)
+            raise
+        return True
+
+
+def _decide_against_published(out: Path, payload: dict, *, supersede: bool) -> dict | None:
+    """Compara el payload nuevo contra el artefacto YA publicado en ``out``.
+
+    Devuelve ``None`` si es idempotente (no hay nada que escribir) o el
+    ``previous`` verificado cuando toca sustituir. Lanza si hay conflicto.
+    """
+    previous = _read_published(out)          # verifica integridad ANTES de decidir
+    if hmac.compare_digest(_content_identity(previous), _content_identity(payload)):
+        return None                          # misma evidencia: NADA se reescribe
+    if not supersede:
+        raise ArtifactConflictError(
+            f"{out}: ya hay un artefacto publicado con artifact_id="
+            f"{previous['artifact_id']!r} y el nuevo es {payload['artifact_id']!r}. "
+            "Misma (surface/asset/model/version), contenido DISTINTO: datos corregidos, "
+            "codigo cambiado, config o modelo distintos, o el calculo no es reproducible. "
+            "La evidencia publicada no se sobrescribe — usa --supersede (queda anotado en "
+            "'supersedes') o publica bajo otra version."
+        )
+    return previous
+
+
 def _write(surface: str, asset: str, model_id: str, version: str, payload: dict,
            *, supersede: bool = False) -> Path:
-    """Escritura ATÓMICA e INMUTABLE del artefacto.
+    """Escritura ATÓMICA, EXCLUSIVA e INMUTABLE del artefacto.
 
-    - **Identidad**: ``artifact_id`` = sha256 del contenido no volátil (incluye
-      las huellas de datos/código/config/modelo), así que la ``version`` deja de
-      ser la única clave.
-    - **Inmutable**: si ya existe un artefacto con el MISMO ``artifact_id`` no se
-      reescribe nada (``generated_at`` conserva el de la primera publicación:
-      regenerar no muta la evidencia). Si difiere, se lanza
-      :class:`ArtifactConflictError` — salvo ``supersede=True``, que es un acto
-      humano explícito y queda anotado en ``supersedes``.
-    - **Atómica**: se serializa a un temporal en el MISMO directorio y se
-      publica con ``os.replace`` (precedente BL-15 ``write_csv``); un fallo de
-      serialización no deja un ``summary.json`` a medias ni temporales huérfanos.
+    - **Identidad**: ``artifact_id`` = sha256 del contenido no volátil (huellas
+      de datos/código/config/modelo **y** el eslabón ``supersedes``), así que la
+      ``version`` deja de ser la única clave y la cadena de sustitución queda
+      criptográficamente ligada.
+    - **Verificada**: la identidad del artefacto ya publicado se RECOMPUTA sobre
+      sus bytes (comparación en tiempo constante) antes de decidir nada. Un
+      fichero alterado que conserve su ``artifact_id`` es un fallo de integridad,
+      nunca una idempotencia silenciosa.
+    - **Inmutable**: si la evidencia publicada es la misma no se reescribe nada
+      (``generated_at`` conserva el de la primera publicación). Si difiere, se
+      lanza :class:`ArtifactConflictError` — salvo ``supersede=True``, acto humano
+      explícito que queda anotado en ``supersedes``.
+    - **Atómica + exclusiva**: se materializa en un temporal del MISMO directorio
+      (``os.replace``, precedente BL-15 ``write_csv``) y la publicación es un
+      compare-and-swap por enlace duro: **exactamente un** escritor concurrente
+      gana; el divergente recibe ``ArtifactConflictError`` y los bytes del ganador
+      quedan intactos.
     """
     out = OUT_ROOT / surface / asset / model_id / version / "summary.json"
     payload = {k: v for k, v in payload.items() if k != "artifact_id"}
     payload["artifact_id"] = _artifact_identity(payload)
 
     if out.exists():
-        try:
-            previous = json.loads(out.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            raise ArtifactConflictError(
-                f"{out}: existe pero no es JSON legible ({exc}) — se rehusa a pisarlo"
-            ) from exc
-        prev_id = previous.get("artifact_id")
-        if prev_id == payload["artifact_id"]:
-            return out                      # idempotente: NADA se reescribe
-        if not supersede:
-            raise ArtifactConflictError(
-                f"{out}: ya hay un artefacto publicado con artifact_id={prev_id!r} y el "
-                f"nuevo es {payload['artifact_id']!r}. Misma (surface/asset/model/version), "
-                "contenido DISTINTO: datos corregidos, codigo cambiado, config o modelo "
-                "distintos, o el calculo no es reproducible. La evidencia publicada no se "
-                "sobrescribe — usa --supersede (queda anotado en 'supersedes') o publica "
-                "bajo otra version."
-            )
-        # Qué se sustituye queda EN el artefacto nuevo. Los artefactos anteriores a
-        # este remedio no tienen artifact_id (esa era justamente la falla), así que
-        # se anota la huella de sus bytes: sustituir algo sin dejar rastro de QUÉ
-        # se sustituyó volvería a ser una mutación silenciosa.
-        payload["supersedes"] = prev_id or _sha(
-            out.read_bytes().replace(b"\r\n", b"\n"))
+        previous = _decide_against_published(out, payload, supersede=supersede)
+        if previous is None:
+            return out                       # idempotente: NADA se reescribe
+        # Qué se sustituye queda EN el artefacto nuevo: sustituir sin dejar rastro
+        # de QUÉ se sustituyó volvería a ser una mutación silenciosa.
+        payload["supersedes"] = previous["artifact_id"]
         payload["artifact_id"] = _artifact_identity(payload)
 
     out.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=str(out.parent), prefix=".summary-", suffix=".tmp")
-    tmp = Path(tmp_name)
+    tmp, staged = Path(tmp_name), None
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             safe_json_dump(payload, f)      # sin NaN/Inf (A.7)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, out)                # publicación atómica
+        # Materialización atómica: los bytes COMPLETOS bajo un nombre estable.
+        staged_fd, staged_name = tempfile.mkstemp(
+            dir=str(out.parent), prefix=".publish-", suffix=".staged")
+        os.close(staged_fd)
+        staged = Path(staged_name)
+        os.replace(tmp, staged)
+        if supersede:
+            os.replace(staged, out)          # sustitución deliberada (acto humano)
+            staged = None
+        elif not _publish_cas(staged, out):
+            # Perdimos la carrera: otro publicó primero. Se decide contra SU
+            # contenido (verificado), jamás pisándolo.
+            if _decide_against_published(out, payload, supersede=False) is not None:
+                raise AssertionError("unreachable: sin supersede el conflicto siempre lanza")
     except BaseException:
         tmp.unlink(missing_ok=True)         # ni parcial ni temporal huérfano
+        if staged is not None:
+            staged.unlink(missing_ok=True)
         raise
+    if staged is not None:
+        staged.unlink(missing_ok=True)      # el contenido ya vive en `out`
     return out
+
+
+def migrate_identity(root: Path | None = None, *, apply: bool = False) -> list[dict]:
+    """Migración DELIBERADA del esquema de identidad (``supersedes`` entra al hash).
+
+    Antes el ``artifact_id`` era el hash del contenido EXCLUYENDO ``supersedes``;
+    ahora lo incluye. Los artefactos ya publicados que llevan un eslabón traen,
+    por tanto, un id del esquema viejo: sin migrarlos, la verificación de
+    integridad los marcaría (con razón) como no verificables.
+
+    Es una re-derivación PURA: el único campo que cambia es ``artifact_id``, y
+    solo se toca un fichero cuyo id almacenado coincide EXACTAMENTE con su
+    identidad de contenido bajo el esquema viejo — es decir, del que se puede
+    demostrar que no fue manipulado. Cualquier otra cosa aborta (fail-closed).
+    """
+    root = Path(root) if root is not None else OUT_ROOT
+    report: list[dict] = []
+    for path in sorted(root.glob("*/*/*/*/summary.json")):
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        stored = doc.get("artifact_id")
+        target = _artifact_identity(doc)
+        if isinstance(stored, str) and hmac.compare_digest(stored, target):
+            report.append({"path": _rel(path), "status": "already_current"})
+            continue
+        if not (isinstance(stored, str) and stored
+                and hmac.compare_digest(stored, _content_identity(doc))):
+            raise ArtifactConflictError(
+                f"{path}: su artifact_id no coincide ni con el esquema nuevo ni con el "
+                "viejo — no es una migracion de esquema, es un fichero alterado. Abortada "
+                "la migracion completa sin tocar nada."
+            )
+        entry = {"path": _rel(path), "status": "migrated" if apply else "would_migrate",
+                 "artifact_id_before": stored, "artifact_id_after": target,
+                 "content_identity": _content_identity(doc)}
+        if apply:
+            doc["artifact_id"] = target      # ÚNICO campo que cambia
+            fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=".migrate-",
+                                            suffix=".tmp")
+            tmp = Path(tmp_name)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+                    safe_json_dump(doc, f)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, path)
+            except BaseException:
+                tmp.unlink(missing_ok=True)
+                raise
+        report.append(entry)
+    return report
 
 
 # ---------------------------------------------------------------------------
@@ -850,7 +1026,24 @@ def main(argv: list[str] | None = None) -> int:
                          "(surface/asset/model/version) es ERROR, no overwrite. El "
                          "artefacto nuevo anota el artifact_id que sustituye "
                          "('supersedes'), asi que la sustitucion queda en el registro.")
+    ap.add_argument("--migrate-identity", action="store_true",
+                    help="MIGRACION DE ESQUEMA (no publica ciencia): re-deriva el "
+                         "artifact_id de los artefactos ya publicados ahora que "
+                         "'supersedes' entra en el hash. Solo toca ficheros cuyo id "
+                         "coincide exactamente con el esquema viejo (prueba de que no "
+                         "fueron alterados); cualquier otra cosa aborta. Dry-run salvo "
+                         "que se pase --apply.")
+    ap.add_argument("--apply", action="store_true",
+                    help="ejecuta de verdad la migracion de --migrate-identity")
     args = ap.parse_args(argv)
+
+    if args.migrate_identity:
+        report = migrate_identity(apply=args.apply)
+        for row in report:
+            print(json.dumps(row, ensure_ascii=False))
+        pend = sum(1 for r in report if r["status"] != "already_current")
+        print(f"{'MIGRADOS' if args.apply else 'PENDIENTES (dry-run)'}: {pend}/{len(report)}")
+        return 0
 
     paths: list[Path] = []
     if not args.skip_zoo:

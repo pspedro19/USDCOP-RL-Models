@@ -1100,6 +1100,6 @@
   "kill_flags_sign_change_by_regime": [
     "open"
   ],
-  "artifact_id": "sha256:73913b2f2cd30d386969b6b772c1e4cc80b3d9a9010c95633c61f38816c47f4b",
+  "artifact_id": "sha256:e1c7d4daf83d773ea21343f66d571fc1c174e40b675a86ca4c3efbe485b2bab2",
   "supersedes": "sha256:7c021438ff5f4927e17e40eb035fd5daabb6d20f6b073d1ce8ab1ab64d7d2b15"
 }

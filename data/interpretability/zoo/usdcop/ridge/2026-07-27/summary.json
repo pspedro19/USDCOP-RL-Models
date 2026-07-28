@@ -954,6 +954,6 @@
     "volatility_20d",
     "volatility_5d"
   ],
-  "artifact_id": "sha256:1012c314b67476204c46bb22a8715931b965bc76b6aa0f1d5826ebea1b51de63",
+  "artifact_id": "sha256:92a1d597ad70a93a79e962ed750a61ad3d8f3b03dc079c3003c71d26ffad2c72",
   "supersedes": "sha256:bdc46903c89e987813e64381345dbef7c7236b4fd713dac24ae5de0a35e8ee8e"
 }

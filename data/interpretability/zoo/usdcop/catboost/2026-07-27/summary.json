@@ -1101,6 +1101,6 @@
     "volatility_20d"
   ],
   "kill_flags_sign_change_by_regime": [],
-  "artifact_id": "sha256:2461e1477bec4177329a4da027241d26fa202b3646fbf9f247fe5557a1ada629",
+  "artifact_id": "sha256:41ee712734a92643cd79b6497fb1eaf7fc267860fcedfc300fdb3f8fafb5a1a3",
   "supersedes": "sha256:5e0a5d8fe34adb63d37b1d1a4e4c5b063bece7c1fc867f720b5810f2c29d6d86"
 }
