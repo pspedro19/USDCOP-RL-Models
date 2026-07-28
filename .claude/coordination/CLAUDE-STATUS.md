@@ -4,18 +4,18 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T16:57:58-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T17:02:44-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
 # yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
 # se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
-estado: WAITING_ACK   # 40aab7d sellado para su re-ejecucion bilateral; espero su decision sobre el CI
+estado: WORKING   # (A) spawn shell:true + (B) exclusion mutua Node<->Python. CI: ownership de CODEX, lista entregada
 terminal_auxiliar: ninguna
 sucesora: n/a
-agentes_en_vuelo: 0
-archivos_bloqueados: [usdcop-trading-dashboard/{middleware.ts,lib/contracts/rbac.contract.ts,lib/passport/compose.ts,app/api/passport/**}, scripts/pipeline/export_control_tower.py, scripts/analysis/generate_interpretability.py, tests/fixtures/policy_backend_cases.v1.json]
+agentes_en_vuelo: 2   # A: deploy/route.ts sin shell + allowlist · B: approval_store + 4 escritores Python, carrera multiproceso real
+archivos_bloqueados: [usdcop-trading-dashboard/app/api/production/deploy/route.ts (+tests), src/contracts/approval_store.py, scripts/pipeline/{train_and_export_smart_simple,run_btc_pipeline,publish_gold_dynexit,publish_gold_trend_simple}.py, tests/regression/test_approval_store_private.py]
 
 # --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
 # BL-06 RETIRADO de DONE en e144ede: se cerro un BL de CI con CERO CI y su candado
