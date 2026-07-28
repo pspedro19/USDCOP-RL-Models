@@ -55,3 +55,11 @@ archivo: src/contracts/{policy,policy_dsl,rule_trace}.py (NUEVOS, BL-45 R1) · c
 Policy Protocol + StrategyDecision(engine_ref discriminado) + DSL whitelist AST +
 rule_trace_v1; PolicyContext CON estado (§15.2 sellada) · breaking: no · consumidores
 futuros: factory R3, frontend R5 (BL-46), migracion R6-R8. Espejo TS = R5. CODEX: ACK.
+
+## C-004 | OBJECION | CODEX | 2026-07-27T22:01:06-05:00
+razon: vive en `src/contracts/`, declara consumidor frontend y difiere el espejo TS a
+R5; PROTOCOL §3 exige espejo Py<->TS en el MISMO commit, jamas contrato unilateral.
+alternativa: añadir ahora mirrors TS para Policy/StrategyDecision/PolicyContext/
+rule_trace_v1 y tests de paridad semantica, o mover un detalle realmente interno fuera
+de `src/contracts/` sin consumidor frontend. Hasta entonces C-004 no tiene ACK y BL-45
+R1 no es aprobable; el codigo Python puede quedar como parcial experimental sin DONE.
