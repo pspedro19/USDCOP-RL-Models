@@ -71,6 +71,14 @@ const DIRECTIONAL_REPLAY_MODEL = 'DIRECTIONAL_CAUSAL_REPLAY';
  */
 const PREDICTION_TONE: GmTone = 'neutral';
 
+/**
+ * BL-03 (FABRIC §24.3, quant-constitution): la Direction Accuracy es una métrica
+ * DIAGNÓSTICA (~52% media, indistinguible de una moneda al aire tras ajustar por los
+ * modelos probados). NUNCA se colorea verde/rojo — un DA en verde se lee como "el
+ * modelo funciona". Tono único neutro; el contexto lo pone el banner del caveat.
+ */
+const DA_TONE: GmTone = 'neutral';
+
 /** Glifo direccional informativo (sin semántica de color). */
 const directionGlyph = (dir: string | null | undefined): string =>
   dir === 'UP' || dir === 'LONG' ? '↑' : dir === 'DOWN' || dir === 'SHORT' ? '↓' : '·';
@@ -346,7 +354,7 @@ function AssetModelZoo({ rows, view, week, model, horizon, pngBase, forecastLabe
     if (filtered.length > 0) {
       const row = filtered[0];
       kpis = [
-        { label: 'DA promedio', value: `${num(row.model_avg_direction_accuracy)}%`, tone: (row.model_avg_direction_accuracy ?? 0) >= 55 ? 'pos' : 'warn' },
+        { label: 'DA promedio', value: `${num(row.model_avg_direction_accuracy)}%`, tone: DA_TONE },
         { label: 'RMSE promedio', value: num(row.model_avg_rmse, 4), tone: 'neutral' },
         { label: 'Semana', value: week || '—', tone: 'accent' },
         { label: 'Registros', value: String(filtered.length), tone: 'neutral' },
@@ -369,7 +377,7 @@ function AssetModelZoo({ rows, view, week, model, horizon, pngBase, forecastLabe
       imageFile = row.image_backtest;
       caption = `${row.model_name} — Backtest (H=${row.horizon_days})`;
       kpis = [
-        { label: 'Direction Accuracy', value: `${num(row.direction_accuracy)}%`, tone: (row.direction_accuracy ?? 0) >= 55 ? 'pos' : 'warn' },
+        { label: 'Direction Accuracy', value: `${num(row.direction_accuracy)}%`, tone: DA_TONE },
         { label: 'RMSE', value: num(row.rmse, 4), tone: 'neutral' },
         { label: 'MAE', value: num(row.mae, 4), tone: 'info' },
         { label: 'R²', value: num(row.r2, 4), tone: (row.r2 ?? 0) > 0 ? 'pos' : 'neg' },
@@ -378,7 +386,7 @@ function AssetModelZoo({ rows, view, week, model, horizon, pngBase, forecastLabe
       imageFile = row.image_forecast || row.image_path;
       caption = `${row.model_name} — Forecast (H=${row.horizon_days})`;
       kpis = [
-        { label: 'WF Direction Accuracy', value: `${num(row.wf_direction_accuracy)}%`, tone: (row.wf_direction_accuracy ?? 0) >= 55 ? 'pos' : 'warn' },
+        { label: 'WF Direction Accuracy', value: `${num(row.wf_direction_accuracy)}%`, tone: DA_TONE },
         { label: 'Sharpe', value: num(row.sharpe, 2), tone: toneOf(row.sharpe) },
         { label: 'Profit Factor', value: num(row.profit_factor, 2), tone: (row.profit_factor ?? 0) >= 1 ? 'pos' : 'neg' },
         { label: 'Max Drawdown', value: `${num(row.max_drawdown != null ? row.max_drawdown * 100 : null, 1)}%`, tone: 'neg' },
@@ -474,7 +482,8 @@ function AssetModelZoo({ rows, view, week, model, horizon, pngBase, forecastLabe
                           <td className={`py-2 pr-2 font-semibold ${selected ? GM.accent : GM.textStrong}`}>
                             {prettyModel(m.model_id)}
                           </td>
-                          <td className={`py-2 pr-2 text-right font-mono font-bold ${((m.da ?? 0) > 55 || ((m.da ?? 0) < 1 && (m.da ?? 0) > 0.55)) ? GM.pos : GM.warn}`}>
+                          {/* BL-03: DA sin verde/rojo — tono neutro único (DA_TONE). */}
+                          <td className={`py-2 pr-2 text-right font-mono font-bold ${GM.textSec}`}>
                             {fmtDa(m.da)}
                           </td>
                           <td className={`py-2 pr-2 text-right font-mono ${(m.sharpe ?? 0) >= 0 ? GM.textSec : GM.neg}`}>{num(m.sharpe)}</td>
@@ -660,9 +669,12 @@ function DirectionalReplayPanel({ week, document }: {
                   && (metric.balanced_accuracy ?? 0) >= 0.52
                   && (metric.minimum_class_recall ?? 0) >= 0.30
                 );
-                const metricCell = (value: number | null | undefined, threshold = 0.5) => (
+                // BL-03: métricas DA/BDA/recall en tono neutro — sin verde/rojo por
+                // celda; el único veredicto coloreado es el badge "Generaliza", cuyo
+                // criterio pre-declarado se explica en el pie de la tabla.
+                const metricCell = (value: number | null | undefined) => (
                   <td className={`py-2 px-2 text-right font-mono ${
-                    value == null ? GM.textMuted : value >= threshold ? GM.pos : GM.warn
+                    value == null ? GM.textMuted : GM.textSec
                   }`}>
                     {value == null ? '—' : `${num(value * 100, 1)}%`}
                   </td>
@@ -670,16 +682,16 @@ function DirectionalReplayPanel({ week, document }: {
                 return (
                   <tr key={horizon} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
                     <td className={`py-2 px-2 font-mono font-bold ${GM.textStrong}`}>H{horizon}</td>
-                    {metricCell(y25?.directional_accuracy, 0.55)}
-                    {metricCell(y25?.balanced_accuracy, 0.52)}
-                    {metricCell(y25?.up_recall, 0.30)}
-                    {metricCell(y25?.down_recall, 0.30)}
-                    {metricCell(y26?.directional_accuracy, 0.55)}
-                    {metricCell(y26?.balanced_accuracy, 0.52)}
-                    {metricCell(y26?.up_recall, 0.30)}
-                    {metricCell(y26?.down_recall, 0.30)}
-                    {metricCell(y25?.point_forecast.mae_skill_vs_spot, 0)}
-                    {metricCell(y26?.point_forecast.mae_skill_vs_spot, 0)}
+                    {metricCell(y25?.directional_accuracy)}
+                    {metricCell(y25?.balanced_accuracy)}
+                    {metricCell(y25?.up_recall)}
+                    {metricCell(y25?.down_recall)}
+                    {metricCell(y26?.directional_accuracy)}
+                    {metricCell(y26?.balanced_accuracy)}
+                    {metricCell(y26?.up_recall)}
+                    {metricCell(y26?.down_recall)}
+                    {metricCell(y25?.point_forecast.mae_skill_vs_spot)}
+                    {metricCell(y26?.point_forecast.mae_skill_vs_spot)}
                     <td className="py-2 px-2 text-center">
                       <GmBadge tone={robust ? 'pos' : 'warn'}>{robust ? 'SÍ' : 'NO'}</GmBadge>
                     </td>
@@ -734,12 +746,11 @@ function DirectionalReplayPanel({ week, document }: {
                   <td className={`py-2 px-2 text-right font-mono ${GM.textSec}`}>
                     {h.evidence.directional_accuracy == null ? '—' : `${num(h.evidence.directional_accuracy * 100, 1)}%`}
                   </td>
-                  <td className={`py-2 px-2 text-right font-mono ${
-                    (h.evidence.balanced_accuracy ?? 0) >= 0.5 ? GM.pos : GM.warn
-                  }`}>
+                  {/* BL-03: DA/BDA/score en neutro — el estado elegible ya lo dice el badge. */}
+                  <td className={`py-2 px-2 text-right font-mono ${GM.textSec}`}>
                     {h.evidence.balanced_accuracy == null ? '—' : `${num(h.evidence.balanced_accuracy * 100, 1)}%`}
                   </td>
-                  <td className={`py-2 px-2 text-right font-mono ${h.eligible_for_direction ? GM.pos : GM.textMuted}`}>
+                  <td className={`py-2 px-2 text-right font-mono ${h.eligible_for_direction ? GM.textSec : GM.textMuted}`}>
                     {h.evidence.shrunk_score == null ? '—' : `${num(h.evidence.shrunk_score * 100, 1)}%`}
                   </td>
                   <td className={`py-2 px-2 text-right font-mono ${GM.textMuted}`}>{h.evidence.n}</td>
@@ -813,9 +824,12 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
                 <div className={`${GMT.micro} ${GM.textMuted} font-bold font-mono`}>H = {h.h_days}d</div>
                 <div className={`text-[14px] font-bold font-mono ${GM.accent}`}>±{h.exp_move_pct}%</div>
                 <div className={`${GMT.micro} ${GM.textMuted} font-mono`}>IC95 {h.ci95_pct[0]}% / +{h.ci95_pct[1]}%</div>
-                <div className={`text-[11px] font-bold mt-1 ${
-                  (h.da_2025_pct ?? 0) >= 55 ? GM.pos : (h.da_2025_pct ?? 0) >= 50 ? GM.warn : GM.neg}`}>
-                  DA 2025: {h.da_2025_pct ?? '—'}%
+                {/* BL-03: DA en tono neutro (métrica diagnóstica, nunca verde/rojo). */}
+                <div
+                  className={`text-[11px] font-bold mt-1 ${GM.textSec}`}
+                  title={`DA 2025 sobre n=${h.n_2025} — métrica diagnóstica, no una señal`}
+                >
+                  DA 2025: {h.da_2025_pct ?? '—'}% · n={h.n_2025}
                 </div>
               </div>
             ))}
@@ -882,6 +896,7 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
               <tr className={`${GMT.micro} ${GM.textMuted} uppercase tracking-[.4px]`}>
                 <th className="text-left py-2 px-2 font-bold">Semana</th>
                 <th className="text-left py-2 px-2 font-bold">Dirección</th>
+                <th className="text-right py-2 px-2 font-bold">Prob. (proxy)</th>
                 <th className="text-left py-2 px-2 font-bold">Exposición</th>
                 <th className="text-left py-2 px-2 font-bold">Régimen</th>
                 <th className="text-right py-2 px-2 font-bold">Esperado</th>
@@ -898,6 +913,17 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
                     <td className={`py-2 px-2 whitespace-nowrap font-mono ${GM.textSec}`}>{w.iso_week}</td>
                     <td className="py-2 px-2">
                       <GmBadge tone={PREDICTION_TONE}>{directionGlyph(w.direction)} {w.direction}</GmBadge>
+                    </td>
+                    {/* BL-03: wording probabilístico también en weekly inference. La única
+                        fuente honesta aquí es `confidence` (proxy de convicción de la regla,
+                        0..1, NO una probabilidad calibrada) — se etiqueta como tal. */}
+                    <td
+                      className={`py-2 px-2 text-right font-mono tabular-nums ${GM.textSec}`}
+                      title={w.confidence != null
+                        ? `probabilidad estimada de la dirección tomada: ${num(w.confidence * 100, 0)}% — proxy de convicción de la regla, no calibrada`
+                        : 'sin proxy de convicción para esta semana'}
+                    >
+                      {w.confidence != null ? `${num(w.confidence * 100, 0)}%` : '—'}
                     </td>
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2 min-w-[90px]">
@@ -924,6 +950,11 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
             </tbody>
           </table>
         </div>
+        <p className={`mt-3 mb-0 ${GMT.micro} ${GM.textMuted} leading-relaxed`}>
+          “Prob. (proxy)” es la probabilidad estimada de la dirección tomada según la convicción
+          de la regla (0–100%). No es una probabilidad calibrada ni una señal: superficie
+          diagnóstica (ver banner).
+        </p>
       </GmPanel>
     </div>
   );

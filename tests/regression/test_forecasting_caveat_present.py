@@ -201,23 +201,44 @@ def test_caveat_copy_resists_deceptive_mutation():
     )
 
 
-def test_caveat_not_gated_only_to_model_zoo():
-    """BL-02 (expected green after it lands): the caveat must also render for
-    weekly_inference mode, not only under `isModelZoo`.
+# Banner attribute in BOTH spellings: literal testid or the shared SSOT constant.
+# (Codex review 2026-07-27 rejected the old literal-only count as "universalidad
+# sorteable por constante": once the testid was expressed through
+# FORECAST_DISCLAIMER_TESTID the old check passed vacuously — re-gating the banner
+# under `isModelZoo` would NOT have failed.)
+BANNER_ATTR = re.compile(r'data-testid=(?:\{FORECAST_DISCLAIMER_TESTID\}|"da-caveat")')
 
-    Passes when either (a) the testid appears more than once (a second render path /
-    shared component for the rule-based mode), or (b) the single banner is no longer
-    wrapped exclusively in `{isModelZoo && (...)}`.
+
+def test_caveat_not_gated_only_to_model_zoo():
+    """BL-02 (hardened): the caveat renders UNCONDITIONALLY in /forecasting — la
+    muralla es por superficie, no por asset ni por modo de render.
+
+    Constant-proof + structural: the banner attribute is detected in literal AND
+    constant form, and at least one banner must be an unconditional direct child of
+    the enclosing `return (` JSX — the brace balance of the prefix between the
+    `return (` and the banner must be zero. Any `{isModelZoo && (...)}` / ternary
+    wrapper (regardless of how the testid is spelled) leaves an unbalanced `{` in
+    that prefix and fails.
     """
     src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
-    occurrences = src.count('data-testid="da-caveat"')
-    gated_only = re.search(
-        r"\{isModelZoo\s*&&\s*\(\s*<div\s+data-testid=\"da-caveat\"", src
+    matches = list(BANNER_ATTR.finditer(src))
+    assert matches, (
+        "ForecastingView.tsx has no da-caveat banner in either literal or "
+        "FORECAST_DISCLAIMER_TESTID form (BL-02)."
     )
-    assert occurrences >= 2 or gated_only is None, (
-        "The da-caveat banner renders only under isModelZoo — the weekly_inference "
-        "(rule-based) surface shows results with no diagnostic caveat. BL-02 must "
-        "render the caveat for both forecast modes."
+    depths = []
+    for m in matches:
+        ret = src.rfind("return (", 0, m.start())
+        assert ret != -1, "banner appears outside any JSX return"
+        prefix = src[ret + len("return ("): m.start()]
+        depths.append(prefix.count("{") - prefix.count("}"))
+    assert any(d == 0 for d in depths), (
+        "Every da-caveat banner in ForecastingView.tsx is nested inside a JSX "
+        f"expression (brace depths from enclosing return: {depths}). BL-02 requires "
+        "the banner to render unconditionally for EVERY forecast mode (model zoo, "
+        "directional replay AND weekly inference) — wrapping it in "
+        "`{isModelZoo && (...)}` or any conditional is the exact regression this "
+        "test exists to block, no matter how the testid is spelled."
     )
 
 
@@ -302,4 +323,163 @@ def test_caveat_is_not_hardcoded_to_a_stale_number():
                                                                     errors="replace")
     assert "useMemo" in src.split("function DiagnosticCaveat")[1].split("function ")[0], (
         "DiagnosticCaveat must derive its statistics from the data prop, not a literal"
+    )
+
+
+# ---------------------------------------------------------------------------
+# BL-03 — probabilistic wording + neutral DA colors on diagnostic surfaces.
+# Codex review 2026-07-27: "falta probabilidad weekly y color DA".
+# ---------------------------------------------------------------------------
+
+def test_weekly_inference_shows_probabilistic_wording():
+    """BL-03: the weekly-inference branch (Gold rule-based surface) must carry the
+    probabilistic wording, not only the USD/COP directional-replay branch.
+
+    The only honest per-week number available in weekly_inference_<year>.json is
+    `confidence` (rule-conviction proxy, 0..1) — it must be surfaced with the
+    'probabilidad estimada' wording AND labeled as a non-calibrated proxy, so the
+    surface neither hides the number nor overstates it as a calibrated probability
+    (quant-constitution: no fabricated calibration).
+    """
+    src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+    start = src.find("function AssetWeeklyBody")
+    assert start != -1, "AssetWeeklyBody (weekly inference surface) disappeared"
+    end = src.find("export function ForecastingView", start)
+    seg = src[start:end if end != -1 else len(src)]
+    assert "probabilidad estimada" in seg, (
+        "AssetWeeklyBody (weekly inference) shows directional predictions with no "
+        "probabilistic wording. BL-03 requires 'probabilidad estimada ...' on every "
+        "DIAGNOSTIC forecast surface, weekly inference included."
+    )
+    assert "confidence" in seg, (
+        "The weekly probabilistic wording must be driven by the data's `confidence` "
+        "field (rule-conviction proxy), not a literal."
+    )
+    assert re.search(r"proxy[^<\n]*no calibrada|no calibrada[^<\n]*proxy", seg), (
+        "The weekly 'probabilidad estimada' must be explicitly labeled as a "
+        "non-calibrated conviction proxy — presenting it as a calibrated probability "
+        "would fabricate precision the rule engine does not have."
+    )
+
+
+# DA is a DIAGNOSTIC metric (~coin flip after adjusting for models tried): it must
+# never be painted green/red ("works/doesn't") on the forecasting surfaces. One
+# neutral tone; the caveat banner provides the context.
+_DA_LINE_TOKENS = (
+    "direction_accuracy",          # covers model_avg_/wf_ prefixed fields too
+    "da_2025_pct",
+    "balanced_accuracy",
+    "fmtDa(",
+    "formatDA(",
+    "DA 2025",
+)
+_FORBIDDEN_DA_COLORS = (
+    "GM.pos", "GM.neg", "GM.warn",
+    "'pos'", "'neg'", "'warn'",
+    "emerald", "text-red", "text-amber",
+    "#10B981", "#10b981", "#EF4444", "#ef4444", "#22C55E", "#22c55e",
+)
+
+
+def _da_color_offenders(path: Path) -> list[str]:
+    offenders: list[str] = []
+    rel = path.relative_to(ROOT).as_posix()
+    for lineno, line in enumerate(
+        path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
+    ):
+        if _COMMENT_LINE.match(line):
+            continue
+        if not any(tok in line for tok in _DA_LINE_TOKENS):
+            continue
+        for color in _FORBIDDEN_DA_COLORS:
+            if color in line:
+                offenders.append(f"{rel}:{lineno}: {color} :: {line.strip()[:110]}")
+    return offenders
+
+
+def test_da_is_never_colored_pos_neg():
+    """BL-03: no DA/BDA rendering on any forecasting surface may carry green/red
+    (or threshold-warn) color semantics — a DA painted green reads as 'the model
+    works' while the statistics say coin flip. Applies to the GM view AND the
+    legacy components (still served under /legacy, admin-only)."""
+    offenders: list[str] = []
+    for f in _forecasting_component_files():
+        offenders.extend(_da_color_offenders(f))
+    assert not offenders, (
+        "Direction-accuracy values are still color-coded pos/neg/warn on a "
+        "diagnostic surface (BL-03 'color DA'):\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_directional_replay_metric_cells_are_neutral():
+    """BL-03 (companion to the line-scan): the shared `metricCell` renderer of the
+    'DA OOS por horizonte' table colors its value on a *different* line than the DA
+    tokens, so the line-scan alone cannot see it. Pin the whole helper body: no
+    pos/neg/warn tones. The only colored verdict in that table is the pre-declared
+    'Generaliza' badge, whose criterion is stated in the table footer."""
+    src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+    start = src.find("const metricCell")
+    if start == -1:
+        pytest.skip("metricCell helper no longer exists")
+    body = src[start: src.find(");", start) + 2]
+    hits = [c for c in ("GM.pos", "GM.neg", "GM.warn") if c in body]
+    assert not hits, (
+        f"metricCell colors DA/BDA/recall cells with {hits} — diagnostic metrics "
+        "must render in a neutral tone (BL-03)."
+    )
+
+
+# ---------------------------------------------------------------------------
+# BL-04 — the caveat copy has ONE source. Codex review 2026-07-27: "legacy
+# conserva hardcode 'Direccion con senal'".
+# ---------------------------------------------------------------------------
+
+# Accent/case-proof: matches 'Direccion con senal', 'Dirección con señal', etc.
+_SIGNAL_CLAIM = re.compile(r"direcci[oó]n\s+con\s+se[nñ]al", re.IGNORECASE)
+
+
+def test_no_hardcoded_signal_claim_anywhere_in_dashboard():
+    """BL-04: no forecasting surface — GM or legacy — may hardcode a 'Direccion con
+    senal' headline. That branch flipped the diagnostic caveat into a green signal
+    claim the day mean DA crosses 55%, converting a weak metric into an implied
+    recommendation outside the 2-vote gate (quant-constitution). The caveat headline
+    comes ONLY from lib/ui/forecast-disclaimer.ts."""
+    dash_root = ROOT / "usdcop-trading-dashboard"
+    offenders: list[str] = []
+    for sub in ("components", "app", "lib"):
+        for f in (dash_root / sub).rglob("*.ts*"):
+            if "node_modules" in f.parts:
+                continue
+            src = f.read_text(encoding="utf-8", errors="replace")
+            for lineno, line in enumerate(src.splitlines(), start=1):
+                # Comment-only lines are tolerated (explanatory prose about the
+                # removed claim is not a rendered claim — same rule as BL-06).
+                if _COMMENT_LINE.match(line):
+                    continue
+                if _SIGNAL_CLAIM.search(line):
+                    offenders.append(
+                        f"{f.relative_to(ROOT).as_posix()}:{lineno}: {line.strip()[:110]}"
+                    )
+    assert not offenders, (
+        "Hardcoded 'Direccion con senal' claim found (BL-04):\n  "
+        + "\n  ".join(offenders)
+    )
+
+
+def test_legacy_caveat_headline_comes_from_ssot():
+    """BL-04: the legacy DiagnosticCaveat must render its headline from the shared
+    SSOT constant, unconditionally — not from any local string, and never behind a
+    beats-the-bar ternary."""
+    src = LEGACY_DASHBOARD.read_text(encoding="utf-8", errors="replace")
+    body_start = src.find("function DiagnosticCaveat")
+    assert body_start != -1, "DiagnosticCaveat disappeared from the legacy dashboard"
+    body = src[body_start: src.find("function ", body_start + 10)]
+    assert "FORECAST_DISCLAIMER_ZOO_TITLE" in body, (
+        "Legacy DiagnosticCaveat no longer uses the SSOT headline constant "
+        "(lib/ui/forecast-disclaimer.ts) — duplicated caveat copy drifts (BL-04)."
+    )
+    assert not re.search(r"\?\s*['\"`][^'\"`]*['\"`]\s*:\s*`?\$\{FORECAST_DISCLAIMER",
+                         body), (
+        "Legacy DiagnosticCaveat gates the SSOT headline behind a ternary — the "
+        "headline must be unconditional (BL-04)."
     )

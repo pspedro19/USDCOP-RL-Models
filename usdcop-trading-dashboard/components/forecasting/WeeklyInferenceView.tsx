@@ -205,9 +205,8 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
                 <div className="text-[10px] text-slate-400 font-semibold">H = {h.h_days}d</div>
                 <div className="text-sm font-bold text-cyan-300">±{h.exp_move_pct}%</div>
                 <div className="text-[10px] text-slate-500">IC95 {h.ci95_pct[0]}% / +{h.ci95_pct[1]}%</div>
-                <div className={`text-[11px] font-semibold mt-1 ${
-                  (h.da_2025_pct ?? 0) >= 55 ? 'text-emerald-400'
-                    : (h.da_2025_pct ?? 0) >= 50 ? 'text-amber-300' : 'text-red-400'}`}>
+                {/* BL-03: DA nunca verde/rojo — métrica diagnóstica, tono neutro. */}
+                <div className="text-[11px] font-semibold mt-1 text-slate-300">
                   DA 2025: {h.da_2025_pct ?? '—'}%
                 </div>
               </div>

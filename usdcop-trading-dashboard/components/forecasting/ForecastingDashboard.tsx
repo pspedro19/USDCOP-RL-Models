@@ -122,22 +122,20 @@ function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
   if (!stats) return null;
   const beatsBar = stats.mean >= 0.55; // the project's own DA bar (CLAUDE.md forecasting rules)
 
+  // BL-04 (regla 6 FABRIC + CTR-QUANT-CONSTITUTION-001): el titular viene SIEMPRE de la
+  // SSOT (lib/ui/forecast-disclaimer.ts). El antiguo branch verde "Direccion con senal"
+  // convertia una metrica debil en claim de senal sobre una superficie diagnostica; aunque
+  // el DA supere el umbral, esta superficie sigue siendo diagnostica y el banner sigue
+  // siendo ambar. beatsBar solo ajusta la frase factual derivada de los datos.
   return (
     <div
       data-testid={FORECAST_DISCLAIMER_TESTID}
-      className={cn(
-        'rounded-xl border px-4 py-3 text-sm leading-relaxed',
-        beatsBar
-          ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-200'
-          : 'border-amber-500/30 bg-amber-500/5 text-amber-200/90',
-      )}
+      className="rounded-xl border px-4 py-3 text-sm leading-relaxed border-amber-500/30 bg-amber-500/5 text-amber-200/90"
     >
-      <span className="font-semibold">
-        {beatsBar ? 'Direccion con senal: ' : `${FORECAST_DISCLAIMER_ZOO_TITLE} `}
-      </span>
+      <span className="font-semibold">{FORECAST_DISCLAIMER_ZOO_TITLE} </span>
       la precision direccional media es {(stats.mean * 100).toFixed(1)}% sobre {stats.n}{' '}
       mediciones{beatsBar
-        ? ', por encima del umbral del 55% del proyecto.'
+        ? ', por encima del umbral del 55% del proyecto — aun asi esta superficie es diagnostica y ninguna decision de trading debe basarse en estas predicciones.'
         : ' — estadisticamente indistinguible de una moneda al aire (el mejor modelo no supera p<0.05 tras ajustar por los 9 modelos probados). Ninguna decision de trading debe basarse en estas predicciones.'}
     </div>
   );
@@ -283,7 +281,8 @@ export function ForecastingDashboard() {
       if (filteredData.length > 0) {
         const row = filteredData[0];
         metrics = [
-          { title: "Avg Direction Accuracy", value: `${formatNum(row.model_avg_direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#10B981' },
+          // BL-03/BL-04: DA nunca en verde — métrica diagnóstica (slate neutro).
+          { title: "Avg Direction Accuracy", value: `${formatNum(row.model_avg_direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#94A3B8' },
           { title: "Avg RMSE", value: formatNum(row.model_avg_rmse, 4), icon: <Activity className="w-5 h-5" />, color: '#F59E0B' }
         ];
       }
@@ -312,7 +311,8 @@ export function ForecastingDashboard() {
           imageSrc = row.image_backtest;
           imageCaption = `${row.model_name} Backtest (H=${row.horizon_days})`;
           metrics = [
-            { title: "Direction Accuracy", value: `${formatNum(row.direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#10B981' },
+            // BL-03/BL-04: DA nunca en verde — métrica diagnóstica (slate neutro).
+            { title: "Direction Accuracy", value: `${formatNum(row.direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#94A3B8' },
             { title: "RMSE", value: formatNum(row.rmse, 4), icon: <Activity className="w-5 h-5" />, color: '#F59E0B' },
             { title: "MAE", value: formatNum(row.mae, 4), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6' },
             { title: "R2 Score", value: formatNum(row.r2, 4), icon: <Percent className="w-5 h-5" />, color: '#8B5CF6' }
@@ -322,7 +322,8 @@ export function ForecastingDashboard() {
           imageSrc = row.image_forecast;
           imageCaption = `${row.model_name} Forecast (H=${row.horizon_days})`;
           metrics = [
-            { title: "WF Direction Accuracy", value: `${formatNum(row.wf_direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#10B981' },
+            // BL-03/BL-04: DA nunca en verde — métrica diagnóstica (slate neutro).
+            { title: "WF Direction Accuracy", value: `${formatNum(row.wf_direction_accuracy)}%`, icon: <Target className="w-5 h-5" />, color: '#94A3B8' },
             { title: "Sharpe Ratio", value: formatNum(row.sharpe, 2), icon: <TrendingUp className="w-5 h-5" />, color: '#3B82F6' },
             { title: "Profit Factor", value: formatNum(row.profit_factor, 2), icon: <BarChart3 className="w-5 h-5" />, color: '#F59E0B' },
             { title: "Max Drawdown", value: `${formatNum(row.max_drawdown ? row.max_drawdown * 100 : null, 1)}%`, icon: <Activity className="w-5 h-5" />, color: '#EF4444' }

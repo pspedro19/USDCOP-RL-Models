@@ -177,9 +177,8 @@ export function MetricsRankingPanel({ data, selectedHorizon, selectedModel }: Me
                   <td className={`px-3 py-2 ${isSelected ? 'text-cyan-400 font-semibold' : 'text-gray-300'}`}>
                     {formatModelName(m.model_id)}
                   </td>
-                  <td className={`px-3 py-2 text-right font-semibold ${
-                    m.da && (m.da > 0.55 || m.da > 55) ? 'text-emerald-400' : 'text-amber-400'
-                  }`}>
+                  {/* BL-03: DA nunca verde/rojo — métrica diagnóstica, tono neutro. */}
+                  <td className="px-3 py-2 text-right font-semibold text-slate-300">
                     {formatDA(m.da)}
                   </td>
                   {hasTradeMetrics && (
