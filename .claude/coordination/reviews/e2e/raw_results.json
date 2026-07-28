@@ -2,13 +2,13 @@
   "xauusd": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:5000/login?callbackUrl=%2Fforecasting",
+    "final_url": "http://localhost:5000/forecasting?asset=xauusd",
     "banner_diagnostico": false
   },
   "usdcop": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:5000/login?callbackUrl=%2Fforecasting",
+    "final_url": "http://localhost:5000/forecasting",
     "banner_diagnostico": false,
     "prob_subida_text": false,
     "glyph_badges": []
@@ -16,23 +16,27 @@
   "production": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:5000/login?callbackUrl=%2Fproduction",
+    "final_url": "http://localhost:5000/production",
     "candidatas_panel": false,
-    "v11": false,
+    "v11": true,
     "v12": false,
     "v14": false,
     "n20_note": false
   },
   "replay": {
-    "console_errors": [],
-    "http_failures": [],
-    "final_url": "http://localhost:5000/login?callbackUrl=%2Freplay",
-    "redirected_to_login": true,
+    "console_errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "http_failures": [
+      "404 http://localhost:5000/replay"
+    ],
+    "final_url": "http://localhost:5000/replay",
+    "redirected_to_login": false,
     "shows_404": false,
     "has_select": 0,
     "mentions_equity": false,
     "mentions_estrategia": false,
-    "has_svg_chart": 8,
-    "body_head": "GlobalMarkets\nPlanes\nES\nIniciar sesión\nCrear cuenta\nInicia sesión\n\nTerminal de trading cuantitativo · acceso para cuentas aprobadas\n\nUSUARIO O CORREO\nCONTRASEÑA\nVERIFICACIÓN\n¿Cuánto es 4 × 6?\nEntrar a la terminal\n\n¿No tienes cuenta? Solicitar acceso\n\nExplorar como invitado\n\nSesión protegida · actividad registrada en audit log\n\nContenido informativo y educativo; no constituye asesoría financiera. Rendimientos pasados no garantizan resultados futuros. Operar divisas y criptoactivos implica riesgo de pérdida total del capital.\n\nMetodología\n·\nTérminos\n·\nPlanes\n\n© 2026 GlobalMarkets Terminal"
+    "has_svg_chart": 0,
+    "body_head": "404\nThis page could not be found."
   }
 }
