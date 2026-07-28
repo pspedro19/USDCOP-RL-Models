@@ -42,6 +42,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # production glob: adding a file does not make it deployable.
 MIGRATION_PLANS = {
     "legacy-init": tuple(sorted((PROJECT_ROOT / "init-scripts").glob("*.sql"))),
+    "commerce-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "059_checkout_order_ledger.sql",
+            "082_checkout_order_retry_transition.sql",
+        )
+    ),
     "fabric-v1": tuple(
         PROJECT_ROOT / "database" / "migrations" / name
         for name in (
@@ -55,10 +62,12 @@ MIGRATION_PLANS = {
             "077_portfolio_control.sql",
             "078_exec_reconciliation.sql",
             "079_fabric_integrity_remediation.sql",
+            "080_market_physical_profile.sql",
+            "081_synthetic_demo_isolation.sql",
         )
     ),
 }
-REVIEW_GATED_PLANS = frozenset({"fabric-v1"})
+REVIEW_GATED_PLANS = frozenset({"commerce-v1", "fabric-v1"})
 
 LEGACY_REQUIRED_TABLES = {
     # Core OHLCV data
@@ -131,10 +140,16 @@ FABRIC_REQUIRED_TABLES = {
     "portfolio.kill_switch_event": "Kill-switch event ledger",
     "portfolio.kill_switch_action": "Fenced kill-switch effects",
     "portfolio.kill_switch_action_event": "Kill-switch attempt events",
+    "market.resample_policy": "Session-aware resampling policy",
+    "demo.synthetic_model": "Synthetic models isolated from real performance",
 }
 
 REQUIRED_TABLES_BY_PLAN = {
     "legacy-init": LEGACY_REQUIRED_TABLES,
+    "commerce-v1": {
+        "public.checkout_orders": "Immutable sealed checkout quotes",
+        "public.billing_events": "Provider-event idempotency ledger",
+    },
     "fabric-v1": FABRIC_REQUIRED_TABLES,
 }
 # Compatibility alias for old importers. CLI callers must select a plan.
@@ -143,6 +158,12 @@ REQUIRED_TABLES = LEGACY_REQUIRED_TABLES
 
 class MigrationDriftError(RuntimeError):
     """An applied migration no longer matches its immutable reviewed bytes."""
+
+
+def migration_lock_id(name: str) -> int:
+    """Return a stable signed bigint for PostgreSQL advisory locks."""
+    digest = hashlib.sha256(f"usdcop-migration:{name}".encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], byteorder="big", signed=True)
 
 
 async def get_connection():
@@ -260,35 +281,22 @@ async def run_migration(conn, filepath: Path, checksum: str) -> Tuple[bool, Opti
 
     start_time = datetime.now()
     try:
-        recorded = await conn.fetchval(
-            "SELECT checksum FROM _migrations WHERE filename = $1 AND success = TRUE",
-            filepath.name,
-        )
-        if recorded is not None:
-            if recorded != checksum:
-                return False, (
-                    f"immutable migration checksum drift for {filepath.name}: "
-                    f"recorded={recorded}, current={checksum}"
-                )
-            return True, None
-
         async with conn.transaction():
+            should_execute = await claim_migration_attempt(
+                conn, filepath.name, checksum
+            )
+            if not should_execute:
+                return True, None
             await conn.execute(sql)
             execution_time = int(
                 (datetime.now() - start_time).total_seconds() * 1000
             )
-            inserted = await conn.fetchval("""
+            await conn.execute("""
                 INSERT INTO _migrations (
                     filename, checksum, execution_time_ms, success
                 )
                 VALUES ($1, $2, $3, TRUE)
-                ON CONFLICT (filename) DO NOTHING
-                RETURNING filename
             """, filepath.name, checksum, execution_time)
-            if inserted is None:
-                raise MigrationDriftError(
-                    f"concurrent migration claim for {filepath.name}; rerun status"
-                )
 
         return True, None
 
@@ -301,12 +309,57 @@ async def run_migration(conn, filepath: Path, checksum: str) -> Tuple[bool, Opti
             await conn.execute("""
                 INSERT INTO _migrations (filename, checksum, execution_time_ms, success, error_message)
                 VALUES ($1, $2, $3, FALSE, $4)
-                ON CONFLICT (filename) DO NOTHING
+                ON CONFLICT (filename) DO UPDATE SET
+                    checksum = EXCLUDED.checksum,
+                    executed_at = NOW(),
+                    execution_time_ms = EXCLUDED.execution_time_ms,
+                    success = FALSE,
+                    error_message = EXCLUDED.error_message
+                WHERE _migrations.success = FALSE
             """, filepath.name, checksum, execution_time, error_msg)
         except Exception:
             pass
 
         return False, error_msg
+
+
+async def claim_migration_attempt(
+    conn, filename: str, checksum: str
+) -> bool:
+    """Fence one filename and recover a prior failed attempt.
+
+    The lock is transaction-scoped, so two callers cannot both execute DDL for
+    the same file.  A successful row is immutable.  A failed row is diagnostic
+    history, not a permanent tombstone: it is removed inside the retry
+    transaction and recreated as either SUCCESS or the latest FAILED record.
+    """
+    await conn.fetchval(
+        "SELECT pg_advisory_xact_lock($1::bigint)",
+        migration_lock_id(filename),
+    )
+    row = await conn.fetchrow(
+        """
+        SELECT checksum, success
+        FROM _migrations
+        WHERE filename = $1
+        FOR UPDATE
+        """,
+        filename,
+    )
+    if row is None:
+        return True
+    if bool(row["success"]):
+        if row["checksum"] != checksum:
+            raise MigrationDriftError(
+                f"immutable migration checksum drift for {filename}: "
+                f"recorded={row['checksum']}, current={checksum}"
+            )
+        return False
+    await conn.execute(
+        "DELETE FROM _migrations WHERE filename = $1 AND success = FALSE",
+        filename,
+    )
+    return True
 
 
 async def table_exists(conn, full_table_name: str) -> bool:
@@ -341,9 +394,15 @@ async def run_migrations(
         logger.error(f"Could not connect to database: {e}")
         return False
 
+    plan_lock_acquired = False
     try:
         # Ensure migrations table exists
         await ensure_migrations_table(conn)
+        await conn.fetchval(
+            "SELECT pg_advisory_lock($1::bigint)",
+            migration_lock_id(f"plan:{plan}"),
+        )
+        plan_lock_acquired = True
 
         # Get already executed migrations
         executed = await get_executed_migrations(conn)
@@ -387,6 +446,14 @@ async def run_migrations(
         return error_count == 0
 
     finally:
+        if plan_lock_acquired:
+            try:
+                await conn.fetchval(
+                    "SELECT pg_advisory_unlock($1::bigint)",
+                    migration_lock_id(f"plan:{plan}"),
+                )
+            except Exception as exc:
+                logger.warning("Could not explicitly release migration plan lock: %s", exc)
         await conn.close()
 
 
