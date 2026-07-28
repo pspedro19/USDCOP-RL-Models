@@ -16,3 +16,7 @@
 - scripts/pipeline/normalize_champions.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
 - tests/regression/test_strategy_manifests.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
 - config/strategy_manifests/registry.json | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- src/contracts/policy.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- src/contracts/policy_dsl.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- src/contracts/rule_trace.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- usdcop-trading-dashboard/lib/contracts/policy.contract.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
