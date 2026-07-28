@@ -30,22 +30,28 @@ DASH = ROOT / "usdcop-trading-dashboard" / "components"
 FORECASTING_VIEW = DASH / "gm" / "views" / "ForecastingView.tsx"
 LEGACY_DASHBOARD = DASH / "forecasting" / "ForecastingDashboard.tsx"
 
+# BL-04 moved the caveat copy/testid to a shared SSOT constant; surfaces may carry the
+# marker either literally or via the imported constant name.
+DISCLAIMER_SSOT = (
+    ROOT / "usdcop-trading-dashboard" / "lib" / "ui" / "forecast-disclaimer.ts"
+)
+
 SURFACES = {
-    "forecasting/ForecastingDashboard.tsx": "DiagnosticCaveat",
-    "gm/views/ForecastingView.tsx": "da-caveat",
+    "forecasting/ForecastingDashboard.tsx": ("DiagnosticCaveat",),
+    "gm/views/ForecastingView.tsx": ("da-caveat", "FORECAST_DISCLAIMER_TESTID"),
 }
 
 
-@pytest.mark.parametrize("rel,marker", SURFACES.items(), ids=list(SURFACES))
-def test_da_surface_carries_caveat(rel: str, marker: str):
+@pytest.mark.parametrize("rel,markers", SURFACES.items(), ids=list(SURFACES))
+def test_da_surface_carries_caveat(rel: str, markers: tuple):
     p = DASH / rel
     if not p.is_file():
         pytest.skip(f"{rel} absent")
     src = p.read_text(encoding="utf-8", errors="replace")
     if "direction_accuracy" not in src and "Direction Accuracy" not in src:
         pytest.skip(f"{rel} no longer shows DA")
-    assert marker in src, (
-        f"{rel} displays Direction Accuracy but the caveat ({marker!r}) is gone. A ~52% DA "
+    assert any(m in src for m in markers), (
+        f"{rel} displays Direction Accuracy but the caveat ({markers!r}) is gone. A ~52% DA "
         "shown without context reads as 'the models work'; the statistics say coin flip "
         "(p_adj 0.66 across models, 1.0 across model-by-horizon cells)."
     )
@@ -63,18 +69,31 @@ def test_caveat_banner_present():
     ('Superficie de diagnóstico, no de señales.').
     """
     src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
-    assert 'data-testid="da-caveat"' in src, (
-        "ForecastingView.tsx lost the da-caveat banner (data-testid=\"da-caveat\"). "
-        "The DA surface must not render without its diagnostic disclaimer (BL-01)."
+    has_testid = (
+        'data-testid="da-caveat"' in src
+        or "FORECAST_DISCLAIMER_TESTID" in src
     )
-    assert "Superficie de diagn" in src, (
-        "ForecastingView.tsx still has the da-caveat testid but the honest phrase "
-        "('Superficie de diagnóstico, no de señales') is gone — the disclaimer text "
-        "is part of the contract, not decoration (BL-01)."
+    assert has_testid, (
+        "ForecastingView.tsx lost the da-caveat banner (neither the literal testid nor "
+        "the FORECAST_DISCLAIMER_TESTID constant is referenced). The DA surface must "
+        "not render without its diagnostic disclaimer (BL-01)."
+    )
+    # BL-04: the honest phrase now lives in the shared SSOT constant; the view must
+    # import from it and the SSOT must still carry the real copy.
+    ssot = DISCLAIMER_SSOT.read_text(encoding="utf-8", errors="replace")
+    assert "Superficie de diagn" in src or (
+        "forecast-disclaimer" in src and "Superficie de diagn" in ssot
+    ), (
+        "The honest phrase ('Superficie de diagnóstico, no de señales') is neither "
+        "inline in ForecastingView.tsx nor provided via lib/ui/forecast-disclaimer.ts "
+        "— the disclaimer text is part of the contract, not decoration (BL-01/BL-04)."
+    )
+    assert "NO ES UNA SE" in ssot, (
+        "forecast-disclaimer.ts lost the headline 'DIAGNÓSTICO — NO ES UNA SEÑAL DE "
+        "INVERSIÓN' (BL-02)."
     )
 
 
-@pytest.mark.xfail(reason="BL-02 pendiente", strict=False)
 def test_caveat_not_gated_only_to_model_zoo():
     """BL-02 (expected green after it lands): the caveat must also render for
     weekly_inference mode, not only under `isModelZoo`.

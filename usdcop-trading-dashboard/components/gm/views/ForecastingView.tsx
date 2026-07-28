@@ -33,9 +33,15 @@ import {
 import { ClientApiError } from '@/lib/api/gm-client';
 import { defineGmDict, useGmT } from '@/lib/i18n/gm-core';
 import { GM, GMT, toneOf, GM_HEX, type GmTone } from '@/lib/ui/gm-tokens';
+import {
+  FORECAST_DISCLAIMER_TESTID, FORECAST_DISCLAIMER_HEADLINE,
+  FORECAST_DISCLAIMER_DIRECTIONAL_TITLE, FORECAST_DISCLAIMER_DIRECTIONAL_BODY,
+  FORECAST_DISCLAIMER_ZOO_TITLE, FORECAST_DISCLAIMER_ZOO_BODY,
+} from '@/lib/ui/forecast-disclaimer';
 import { ANALYSIS_ASSETS, resolveAnalysisAsset } from '@/lib/contracts/analysis-assets';
 import type {
-  AssetWeeklyInference, EnsembleVariant, ForecastRecord, ViewType,
+  AssetWeeklyInference, DirectionalReplayIndex, DirectionalReplayWeek,
+  EnsembleVariant, ForecastRecord, ViewType,
   WeeklyInferenceIndex, WeeklyInferenceStrategy,
 } from '@/components/forecasting/types';
 
@@ -55,7 +61,19 @@ const ENSEMBLE_VARIANTS: EnsembleVariant[] = [
   { value: 'ENSEMBLE_TOP_6_MEAN', label: 'Top 6 Average', imageKey: 'top_6_mean' },
 ];
 
-const DIRECTION_TONE: Record<string, GmTone> = { LONG: 'pos', SHORT: 'neg', FLAT: 'neutral' };
+const DIRECTIONAL_REPLAY_MODEL = 'DIRECTIONAL_CAUSAL_REPLAY';
+
+/**
+ * BL-03 (FABRIC §24.3): las PREDICCIONES se muestran en tono NEUTRO — los tonos pos/neg
+ * quedan reservados a superficies ACTION (replay/production) donde LONG/SHORT son
+ * decisiones auditables. La flecha ↑/↓ se conserva como glifo informativo, sin color
+ * compra/venta. (Sustituye al antiguo DIRECTION_TONE UP→pos/DOWN→neg de esta vista.)
+ */
+const PREDICTION_TONE: GmTone = 'neutral';
+
+/** Glifo direccional informativo (sin semántica de color). */
+const directionGlyph = (dir: string | null | undefined): string =>
+  dir === 'UP' || dir === 'LONG' ? '↑' : dir === 'DOWN' || dir === 'SHORT' ? '↓' : '·';
 
 // Régimen → tono (Oro: compression/trend/stretched/event · BTC: accumulation/markup/distribution/markdown)
 const REGIME_TONE: Record<string, GmTone> = {
@@ -484,6 +502,267 @@ function AssetModelZoo({ rows, view, week, model, horizon, pngBase, forecastLabe
 
 // ───────────────────────────────────────────────────────────── Oro/BTC · weekly inference
 
+function DirectionalReplayPanel({ week, document }: {
+  week: DirectionalReplayWeek;
+  document: DirectionalReplayIndex;
+}) {
+  const decision = week.decision;
+  const selected = decision.selected_horizons.length
+    ? decision.selected_horizons.map((h) => `H${h}`).join(' + ')
+    : 'Ninguno';
+  const trainingLabel = week.year === document.methodology.frozen_replay_year
+    ? 'Congelado hasta 2024'
+    : 'Reentreno semanal causal';
+  const primaryForward = week.horizons.find((h) => h.horizon_days === decision.primary_horizon) ?? null;
+  const yearly = new Map(document.summaries.map((summary) => [summary.year, summary]));
+  const actionLabel = decision.direction === 'UP'
+    ? 'USD ↑ / COP ↓'
+    : decision.direction === 'DOWN' ? 'USD ↓ / COP ↑' : 'Sin posición';
+
+  return (
+    <div className="flex flex-col gap-4" data-testid="forecasting-directional-replay">
+      <div className={`${GM.panelSoft} flex items-start gap-2.5 px-4 py-3`}>
+        <Info className={`w-4 h-4 shrink-0 mt-0.5 ${GM.accent}`} aria-hidden />
+        <p className={`m-0 ${GMT.meta} ${GM.textSec} leading-relaxed`}>
+          Replay causal por horizonte: features fijadas antes de 2022 y política calibrada en 2022–2024.
+          En 2025 el modelo permanece congelado; en 2026 solo incorpora etiquetas maduras. La decisión
+          mostrada es <span className={GM.warn}>shadow</span> y no está autorizada para ejecución.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <GmKpi
+          label="Decisión direccional"
+          value={actionLabel}
+          tone={PREDICTION_TONE}
+          sub={primaryForward
+            ? `probabilidad estimada de subida: ${num(primaryForward.probability_up * 100, 1)}% · ${decision.status} · gate ${decision.promotion_gate_passed ? 'PASS' : 'FAIL'}`
+            : `${decision.status} · gate ${decision.promotion_gate_passed ? 'PASS' : 'FAIL'}`}
+        />
+        <GmKpi label="Horizontes seleccionados" value={selected} tone="accent" />
+        <GmKpi
+          label="Confianza proxy"
+          value={`${num(decision.confidence_proxy * 100, 1)}%`}
+          tone={decision.direction === 'FLAT' ? 'neutral' : 'info'}
+        />
+        <GmKpi
+          label={primaryForward ? `Forward H${primaryForward.horizon_days}` : 'Forward principal'}
+          value={primaryForward
+            ? `${directionGlyph(primaryForward.point_forecast_direction)} ${num(primaryForward.forecast_price, 2)}`
+            : '—'}
+          tone={PREDICTION_TONE}
+          sub={primaryForward
+            ? `${primaryForward.forecast_return_pct >= 0 ? '+' : ''}${num(primaryForward.forecast_return_pct, 2)}% · ${primaryForward.target_date} · probabilidad estimada de subida: ${num(primaryForward.probability_up * 100, 1)}%`
+            : 'Sin horizonte principal'}
+        />
+        <GmKpi
+          label="Entrenamiento"
+          value={trainingLabel}
+          tone="neutral"
+          sub={`Contrato ${document.contract_hash}`}
+        />
+      </div>
+
+      <GmPanel
+        title={`Replay direccional · ${week.iso_week}`}
+        meta={`${week.origin_date}${week.origin_is_partial_week ? ' · semana parcial' : ''}`}
+        actions={<GmBadge tone={PREDICTION_TONE}>{decision.status}</GmBadge>}
+      >
+        <GmForecastImage
+          src={`/api/forecasting/${week.image_path}`}
+          alt={`Replay direccional USD/COP ${week.iso_week}`}
+        />
+        <p className={`mt-3 mb-0 ${GMT.micro} ${GM.textMuted} leading-relaxed`}>
+          {decision.rationale} El score se contrae hacia 50% y usa únicamente resultados cuyo target
+          ya había ocurrido al origen. H1 se conserva como timing y no vota dirección.
+        </p>
+      </GmPanel>
+
+      <GmPanel
+        title="Forward price points"
+        meta={`Spot ${num(week.base_price, 2)} · Ridge causal · intervalo residual 80%`}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2.5">
+          {week.horizons.map((h) => {
+            const rising = h.forecast_return_pct >= 0;
+            return (
+              <div
+                key={h.horizon_days}
+                className={`${GM.panelInner} p-3 ${h.selected ? GM.navActive : ''}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`${GMT.micro} ${h.selected ? GM.accent : GM.textMuted} font-bold font-mono`}>
+                    H{h.horizon_days}
+                  </span>
+                  <GmBadge tone={h.direction_price_agree ? 'pos' : 'warn'}>
+                    {h.direction_price_agree ? 'COINCIDE' : 'DISCREPA'}
+                  </GmBadge>
+                </div>
+                {/* Predicción: tono neutro; la flecha ↑/↓ es glifo informativo (BL-03). */}
+                <div className={`mt-2 text-[16px] font-bold font-mono ${GM.textStrong}`}>
+                  {rising ? '↑' : '↓'} {num(h.forecast_price, 2)}
+                </div>
+                <div className={`${GMT.micro} font-mono ${GM.textSec}`}>
+                  {rising ? '+' : ''}{num(h.forecast_return_pct, 2)}%
+                </div>
+                <div className={`mt-1 ${GMT.micro} ${GM.textMuted} font-mono leading-relaxed`}>
+                  {num(h.forecast_interval_lower, 0)}–{num(h.forecast_interval_upper, 0)}
+                  <br />{h.target_date}{h.target_date_estimated ? ' est.' : ''}
+                </div>
+                {h.actual_price != null && (
+                  <div className={`mt-1 ${GMT.micro} ${GM.textSec} font-mono`}>
+                    Real {num(h.actual_price, 2)} · error {num(h.point_abs_error_pct, 2)}%
+                  </div>
+                )}
+                {!h.point_forecast_validation_eligible && (
+                  <div className={`mt-1 ${GMT.micro} ${GM.warn}`}>sin skill vs spot</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className={`mt-3 mb-0 ${GMT.micro} ${GM.textMuted} leading-relaxed`}>
+          El punto numérico estima el retorno continuo; la dirección principal sigue viniendo del clasificador.
+          “Discrepa” indica signos opuestos y debe tratarse como alerta, no ocultarse ni forzarse.
+        </p>
+      </GmPanel>
+
+      <GmPanel title="DA OOS por horizonte" meta="2025 congelado vs 2026 expanding · métricas maduras">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11.5px] min-w-[980px]">
+            <thead>
+              <tr className={`${GMT.micro} ${GM.textMuted} uppercase tracking-[.4px]`}>
+                <th className="text-left py-2 px-2 font-bold" rowSpan={2}>H</th>
+                <th className="text-center py-2 px-2 font-bold" colSpan={4}>2025 OOS congelado</th>
+                <th className="text-center py-2 px-2 font-bold" colSpan={4}>2026 retrain semanal</th>
+                <th className="text-center py-2 px-2 font-bold" colSpan={2}>Skill punto vs spot</th>
+                <th className="text-center py-2 px-2 font-bold" rowSpan={2}>Generaliza</th>
+              </tr>
+              <tr className={`${GMT.micro} ${GM.textMuted} uppercase tracking-[.4px]`}>
+                <th className="text-right py-2 px-2 font-bold">DA</th>
+                <th className="text-right py-2 px-2 font-bold">BDA</th>
+                <th className="text-right py-2 px-2 font-bold">R↑</th>
+                <th className="text-right py-2 px-2 font-bold">R↓</th>
+                <th className="text-right py-2 px-2 font-bold">DA</th>
+                <th className="text-right py-2 px-2 font-bold">BDA</th>
+                <th className="text-right py-2 px-2 font-bold">R↑</th>
+                <th className="text-right py-2 px-2 font-bold">R↓</th>
+                <th className="text-right py-2 px-2 font-bold">2025</th>
+                <th className="text-right py-2 px-2 font-bold">2026</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 5, 10, 15, 20, 25, 30].map((horizon) => {
+                const y25 = yearly.get(2025)?.horizon_metrics.find((m) => m.horizon_days === horizon);
+                const y26 = yearly.get(2026)?.horizon_metrics.find((m) => m.horizon_days === horizon);
+                const robust = [y25, y26].every((metric) =>
+                  metric != null
+                  && (metric.balanced_accuracy ?? 0) >= 0.52
+                  && (metric.minimum_class_recall ?? 0) >= 0.30
+                );
+                const metricCell = (value: number | null | undefined, threshold = 0.5) => (
+                  <td className={`py-2 px-2 text-right font-mono ${
+                    value == null ? GM.textMuted : value >= threshold ? GM.pos : GM.warn
+                  }`}>
+                    {value == null ? '—' : `${num(value * 100, 1)}%`}
+                  </td>
+                );
+                return (
+                  <tr key={horizon} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
+                    <td className={`py-2 px-2 font-mono font-bold ${GM.textStrong}`}>H{horizon}</td>
+                    {metricCell(y25?.directional_accuracy, 0.55)}
+                    {metricCell(y25?.balanced_accuracy, 0.52)}
+                    {metricCell(y25?.up_recall, 0.30)}
+                    {metricCell(y25?.down_recall, 0.30)}
+                    {metricCell(y26?.directional_accuracy, 0.55)}
+                    {metricCell(y26?.balanced_accuracy, 0.52)}
+                    {metricCell(y26?.up_recall, 0.30)}
+                    {metricCell(y26?.down_recall, 0.30)}
+                    {metricCell(y25?.point_forecast.mae_skill_vs_spot, 0)}
+                    {metricCell(y26?.point_forecast.mae_skill_vs_spot, 0)}
+                    <td className="py-2 px-2 text-center">
+                      <GmBadge tone={robust ? 'pos' : 'warn'}>{robust ? 'SÍ' : 'NO'}</GmBadge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className={`mt-3 mb-0 ${GMT.micro} ${GM.textMuted} leading-relaxed`}>
+          DA mide acierto total; BDA promedia recall UP/DOWN. “Generaliza” exige BDA ≥52% y recall de ambas
+          clases ≥30% en los dos años. Skill del punto positivo significa menor MAE que mantener el spot.
+        </p>
+      </GmPanel>
+
+      <GmPanel title="Auditoría de horizontes" meta={`${week.iso_week} · spot ${num(week.base_price, 2)}`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11.5px]">
+            <thead>
+              <tr className={`${GMT.micro} ${GM.textMuted} uppercase tracking-[.4px]`}>
+                <th className="text-left py-2 px-2 font-bold">H</th>
+                <th className="text-left py-2 px-2 font-bold">Rol</th>
+                <th className="text-left py-2 px-2 font-bold">Predicción</th>
+                <th className="text-right py-2 px-2 font-bold">P(↑)</th>
+                <th className="text-right py-2 px-2 font-bold">Umbral</th>
+                <th className="text-right py-2 px-2 font-bold">DA causal</th>
+                <th className="text-right py-2 px-2 font-bold">Balanced DA</th>
+                <th className="text-right py-2 px-2 font-bold">Score</th>
+                <th className="text-right py-2 px-2 font-bold">n</th>
+                <th className="text-left py-2 px-2 font-bold">Target</th>
+                <th className="text-center py-2 px-2 font-bold">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {week.horizons.map((h) => (
+                <tr
+                  key={h.horizon_days}
+                  className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover} ${h.selected ? GM.navActive : ''}`}
+                >
+                  <td className={`py-2 px-2 font-mono font-bold ${h.selected ? GM.accent : GM.textStrong}`}>
+                    H{h.horizon_days}
+                  </td>
+                  <td className={`py-2 px-2 ${GM.textMuted}`}>{h.role}</td>
+                  <td className="py-2 px-2">
+                    <GmBadge tone={PREDICTION_TONE}>{directionGlyph(h.prediction)} {h.prediction}</GmBadge>
+                  </td>
+                  <td
+                    className={`py-2 px-2 text-right font-mono ${GM.textSec}`}
+                    title={`probabilidad estimada de subida: ${num(h.probability_up * 100, 1)}%`}
+                  >{num(h.probability_up * 100, 1)}%</td>
+                  <td className={`py-2 px-2 text-right font-mono ${GM.textMuted}`}>{num(h.threshold * 100, 0)}%</td>
+                  <td className={`py-2 px-2 text-right font-mono ${GM.textSec}`}>
+                    {h.evidence.directional_accuracy == null ? '—' : `${num(h.evidence.directional_accuracy * 100, 1)}%`}
+                  </td>
+                  <td className={`py-2 px-2 text-right font-mono ${
+                    (h.evidence.balanced_accuracy ?? 0) >= 0.5 ? GM.pos : GM.warn
+                  }`}>
+                    {h.evidence.balanced_accuracy == null ? '—' : `${num(h.evidence.balanced_accuracy * 100, 1)}%`}
+                  </td>
+                  <td className={`py-2 px-2 text-right font-mono ${h.eligible_for_direction ? GM.pos : GM.textMuted}`}>
+                    {h.evidence.shrunk_score == null ? '—' : `${num(h.evidence.shrunk_score * 100, 1)}%`}
+                  </td>
+                  <td className={`py-2 px-2 text-right font-mono ${GM.textMuted}`}>{h.evidence.n}</td>
+                  <td className={`py-2 px-2 whitespace-nowrap font-mono ${GM.textMuted}`}>
+                    {h.target_date}{h.target_date_estimated ? ' est.' : ''}
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    <GmBadge tone={h.selected ? 'accent' : h.eligible_for_direction ? 'pos' : 'neutral'}>
+                      {h.selected
+                        ? h.eligible_for_direction ? 'SELECCIONADO' : 'CANDIDATO'
+                        : h.eligible_for_direction ? 'ELEGIBLE' : 'SHADOW'}
+                    </GmBadge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GmPanel>
+    </div>
+  );
+}
+
 function AssetWeeklyBody({ data, strategyId, forward }: {
   data: AssetWeeklyInference;
   strategyId: string;
@@ -520,7 +799,7 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
           meta={forward.generated_at?.slice(0, 10)}
           actions={
             <span className="flex items-center gap-2">
-              <GmBadge tone={DIRECTION_TONE[forward.direction] ?? 'neutral'}>{forward.direction}</GmBadge>
+              <GmBadge tone={PREDICTION_TONE}>{directionGlyph(forward.direction)} {forward.direction}</GmBadge>
               <span className={`${GMT.micro} ${GM.textSec} font-mono`}>
                 exposición {forward.exposure}x · σ diaria {forward.vol_daily_pct}%
               </span>
@@ -618,7 +897,7 @@ function AssetWeeklyBody({ data, strategyId, forward }: {
                   <tr key={w.iso_week} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
                     <td className={`py-2 px-2 whitespace-nowrap font-mono ${GM.textSec}`}>{w.iso_week}</td>
                     <td className="py-2 px-2">
-                      <GmBadge tone={DIRECTION_TONE[w.direction] ?? 'neutral'}>{w.direction}</GmBadge>
+                      <GmBadge tone={PREDICTION_TONE}>{directionGlyph(w.direction)} {w.direction}</GmBadge>
                     </td>
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2 min-w-[90px]">
@@ -686,23 +965,36 @@ export function ForecastingView() {
   const csv = useForecastCsv(csvPath);
   const index = useGmQuery<WeeklyInferenceIndex>(!isModelZoo ? `/api/forecasting/${asset}/index.json` : null);
   const forward = useGmQuery<ForwardDoc>(!isModelZoo ? `/api/forecasting/${asset}/forward.json` : null);
+  const directional = useGmQuery<DirectionalReplayIndex>(
+    asset === 'usdcop' ? '/api/forecasting/usdcop/directional_replay_index.json' : null,
+  );
 
   // ── model zoo: derivar opciones del CSV ──
   const rows = useMemo(() => csv.data ?? [], [csv.data]);
-  const weeks = useMemo(
+  const zooWeeks = useMemo(
     () => uniq(rows.filter((r) => r.view_type === 'forward_forecast'), 'inference_week'),
     [rows],
   );
   const models = useMemo(() => uniq(rows, 'model_name'), [rows]);
+  const directionalWeeks = useMemo(
+    () => (directional.data?.weeks ?? []).map((record) => record.iso_week),
+    [directional.data],
+  );
+
+  const modelParam = sp.get('model') ?? (asset === 'usdcop' ? DIRECTIONAL_REPLAY_MODEL : 'ALL');
+  const directionalSelected = asset === 'usdcop' && modelParam === DIRECTIONAL_REPLAY_MODEL;
+  const weeks = directionalSelected ? directionalWeeks : zooWeeks;
 
   const periodParam = sp.get('period');
-  const copView: ViewType = periodParam === 'backtest' ? 'backtest' : 'forward_forecast';
+  const copView: ViewType = !directionalSelected && periodParam === 'backtest'
+    ? 'backtest' : 'forward_forecast';
   const copWeek = copView === 'forward_forecast'
     ? (periodParam && weeks.includes(periodParam) ? periodParam : weeks[weeks.length - 1] ?? '')
     : '';
 
-  const modelParam = sp.get('model') ?? 'ALL';
-  const copModel = modelParam !== 'ALL'
+  const copModel = directionalSelected
+    ? DIRECTIONAL_REPLAY_MODEL
+    : modelParam !== 'ALL'
     && (models.includes(modelParam) || ENSEMBLE_VARIANTS.some((v) => v.value === modelParam))
     ? modelParam : 'ALL';
   const copHorizons = useMemo(() => {
@@ -711,7 +1003,7 @@ export function ForecastingView() {
   }, [rows, copView]);
   const hParam = sp.get('h') ?? 'ALL';
   const copHorizon = hParam !== 'ALL' && copHorizons.includes(hParam) ? hParam : 'ALL';
-  const horizonEnabled = isModelZoo && copView === 'backtest' && copModel !== 'ALL';
+  const horizonEnabled = isModelZoo && !directionalSelected && copView === 'backtest' && copModel !== 'ALL';
 
   // ── Oro/BTC: derivar opciones del index ──
   const yearsAvail = useMemo(
@@ -736,7 +1028,7 @@ export function ForecastingView() {
   const periodOptions = isModelZoo
     ? [
       ...[...weeks].reverse().map((w) => ({ value: w, label: `Semana ${w}` })),
-      { value: 'backtest', label: 'Backtest 2025 (OOS)' },
+      ...(!directionalSelected ? [{ value: 'backtest', label: 'Backtest 2025 (OOS)' }] : []),
     ]
     : yearsAvail.map((y) => ({
       value: String(y),
@@ -745,6 +1037,10 @@ export function ForecastingView() {
 
   const modelOptions = isModelZoo
     ? [
+      ...(asset === 'usdcop' ? [{
+        value: DIRECTIONAL_REPLAY_MODEL,
+        label: 'Direccional causal · macro PIT',
+      }] : []),
       { value: 'ALL', label: 'Consensus (todos)' },
       ...models
         .filter((m) => !m.includes('ENSEMBLE') && m !== 'CONSENSUS')
@@ -775,31 +1071,42 @@ export function ForecastingView() {
 
   return (
     <div data-testid="forecasting-view">
-      {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001): la DA media del zoo es ~0.52 y el
-          mejor modelo no supera p<0.05 tras ajustar por los 9 probados. Esta superficie
-          diagnostica el comportamiento de los modelos; NO emite señales de trading, y decirlo
-          junto a las métricas es lo que impide que un 52% sin contexto se lea como "funciona". */}
-      {isModelZoo && (
-        <div
-          data-testid="da-caveat"
-          className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs leading-relaxed text-amber-200/90"
-        >
-          <span className="font-semibold">Superficie de diagnóstico, no de señales. </span>
-          La precisión direccional media de estos modelos es ≈52% — estadísticamente
-          indistinguible de una moneda al aire tras ajustar por los 9 modelos probados. Ninguna
-          decisión de trading debe basarse en estas predicciones.
+      {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001, BL-02/BL-04): la muralla es por
+          SUPERFICIE, no por asset ni por modo de render — el banner renderiza SIEMPRE en
+          /forecasting (model zoo, replay direccional y weekly inference de Gold incluidos).
+          Textos desde lib/ui/forecast-disclaimer.ts (SSOT); decirlo junto a las métricas es
+          lo que impide que un 52% sin contexto se lea como "funciona". */}
+      <div
+        data-testid={FORECAST_DISCLAIMER_TESTID}
+        className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5 text-xs leading-relaxed text-amber-200/90"
+      >
+        <div className="font-bold tracking-wide text-amber-200 mb-1">
+          {FORECAST_DISCLAIMER_HEADLINE}
         </div>
-      )}
+        {isModelZoo && directionalSelected ? (
+          <>
+            <span className="font-semibold">{FORECAST_DISCLAIMER_DIRECTIONAL_TITLE} </span>
+            {FORECAST_DISCLAIMER_DIRECTIONAL_BODY}
+          </>
+        ) : (
+          <>
+            <span className="font-semibold">{FORECAST_DISCLAIMER_ZOO_TITLE} </span>
+            {FORECAST_DISCLAIMER_ZOO_BODY}
+          </>
+        )}
+      </div>
       <GmPageHeader
         kicker="Predicción semanal"
         title="Forecasting"
-        subtitle={isModelZoo
+        subtitle={directionalSelected
+          ? `${assetMeta.display_name} · replay causal congelado 2025 + reentrenamiento semanal 2026`
+          : isModelZoo
           ? `${assetMeta.display_name} · 9 modelos de Machine Learning (walk-forward) con consensus y ensembles`
           : `${assetMeta.display_name} · inferencia semanal basada en reglas: dirección, exposición y régimen para todo el año`}
         actions={
           <span className="flex items-center gap-2">
             {isFree && <GmBadge tone="warn">T-1 semana · plan free</GmBadge>}
-            <GmBadge tone="accent">{isModelZoo ? 'ML Model Zoo' : 'Weekly Inference'}</GmBadge>
+            <GmBadge tone="accent">{directionalSelected ? 'Causal Replay' : isModelZoo ? 'ML Model Zoo' : 'Weekly Inference'}</GmBadge>
           </span>
         }
       />
@@ -828,7 +1135,7 @@ export function ForecastingView() {
           minW={200}
           mono={isModelZoo}
           disabled={modelOptions.length === 0}
-          onChange={(v) => setParams({ model: v === 'ALL' ? null : v, ...(v === 'ALL' ? { h: null } : {}) })}
+          onChange={(v) => setParams({ model: v, h: null })}
         />
         <GmDropdown
           label="Horizonte"
@@ -845,6 +1152,26 @@ export function ForecastingView() {
       {locked ? (
         <LockedAsset assetName={assetMeta.display_name} />
       ) : isModelZoo ? (
+        directionalSelected ? (
+          <AsyncBoundary
+            state={directional}
+            empty={(data) => !data.weeks?.length}
+            emptyProps={{
+              title: 'Sin replay direccional',
+              body: isInternal
+                ? 'Regenera con: python scripts/pipeline/generate_usdcop_directional_replay.py'
+                : 'El replay direccional USD/COP aún no ha sido publicado.',
+            }}
+          >
+            {(data) => {
+              const selectedWeek = data.weeks.find((record) => record.iso_week === copWeek)
+                ?? data.weeks[data.weeks.length - 1];
+              return selectedWeek
+                ? <DirectionalReplayPanel week={selectedWeek} document={data} />
+                : null;
+            }}
+          </AsyncBoundary>
+        ) : (
         <AsyncBoundary
           state={csv}
           empty={(d) => d.length === 0}
@@ -862,6 +1189,7 @@ export function ForecastingView() {
             />
           )}
         </AsyncBoundary>
+        )
       ) : (
         <AsyncBoundary
           state={{

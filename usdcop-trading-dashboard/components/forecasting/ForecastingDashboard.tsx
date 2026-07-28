@@ -21,6 +21,10 @@ import { ForecastingImageViewer } from './ForecastingImageViewer';
 import { MetricsRankingPanel } from './MetricsRankingPanel';
 import { ForecastRecord, ViewType, EnsembleVariant } from './types';
 import { cn } from '@/lib/utils';
+import {
+  FORECAST_DISCLAIMER_TESTID,
+  FORECAST_DISCLAIMER_ZOO_TITLE,
+} from '@/lib/ui/forecast-disclaimer';
 
 // ============================================================================
 // Data Processing Utilities
@@ -120,7 +124,7 @@ function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
 
   return (
     <div
-      data-testid="da-caveat"
+      data-testid={FORECAST_DISCLAIMER_TESTID}
       className={cn(
         'rounded-xl border px-4 py-3 text-sm leading-relaxed',
         beatsBar
@@ -129,7 +133,7 @@ function DiagnosticCaveat({ data }: { data: ForecastRecord[] }) {
       )}
     >
       <span className="font-semibold">
-        {beatsBar ? 'Direccion con senal: ' : 'Superficie de diagnostico, no de senales: '}
+        {beatsBar ? 'Direccion con senal: ' : `${FORECAST_DISCLAIMER_ZOO_TITLE} `}
       </span>
       la precision direccional media es {(stats.mean * 100).toFixed(1)}% sobre {stats.n}{' '}
       mediciones{beatsBar
@@ -312,6 +316,7 @@ export function ForecastingDashboard() {
             { title: "RMSE", value: formatNum(row.rmse, 4), icon: <Activity className="w-5 h-5" />, color: '#F59E0B' },
             { title: "MAE", value: formatNum(row.mae, 4), icon: <BarChart3 className="w-5 h-5" />, color: '#3B82F6' },
             { title: "R2 Score", value: formatNum(row.r2, 4), icon: <Percent className="w-5 h-5" />, color: '#8B5CF6' }
+            ,{ title: "Signal Gate", value: row.eligible_for_signal === false ? "RETRAIN" : "ELIGIBLE", icon: <AlertCircle className="w-5 h-5" />, color: row.eligible_for_signal === false ? '#EF4444' : '#10B981' }
           ];
         } else {
           imageSrc = row.image_forecast;
@@ -321,6 +326,7 @@ export function ForecastingDashboard() {
             { title: "Sharpe Ratio", value: formatNum(row.sharpe, 2), icon: <TrendingUp className="w-5 h-5" />, color: '#3B82F6' },
             { title: "Profit Factor", value: formatNum(row.profit_factor, 2), icon: <BarChart3 className="w-5 h-5" />, color: '#F59E0B' },
             { title: "Max Drawdown", value: `${formatNum(row.max_drawdown ? row.max_drawdown * 100 : null, 1)}%`, icon: <Activity className="w-5 h-5" />, color: '#EF4444' }
+            ,{ title: "Signal Gate", value: row.eligible_for_signal === false ? "RETRAIN" : "ELIGIBLE", icon: <AlertCircle className="w-5 h-5" />, color: row.eligible_for_signal === false ? '#EF4444' : '#10B981' }
           ];
         }
       } else {
