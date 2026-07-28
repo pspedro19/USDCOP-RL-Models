@@ -1,0 +1,21 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39)
+# §46: la campeona BTC es exposicion beta con vol targeting — su set minimo es
+# close; returns/vol realizada se derivan dentro de la politica congelada
+# (manifiesto btcusdt.yaml, code_hash 3b9b3c6dd1b9a70d). Funding/basis/on-chain
+# NO entran aqui: añadirlos = nueva familia + trials (§46.2).
+feature_set_id: btcusdt_hodl_b1_action_v1
+strategy_id: btc_hodl_b1
+manifest_version: 2
+asset_id: btcusdt
+surface: action
+resample_policy: P1D boundary UTC congelado, 24/7, anualizacion 365 (§46.4)
+macro_bundle: []
+
+ordered_features:
+- {feature_id: close, order: 0, required: true}
+
+derived_in_policy:
+- return_1d (serie de retornos)                    # src/btc_strategy/strategies.py
+- realized_vol_20d (vol_target 0.30 / rv20, clip[0.30, 1.0] spot ADR-0008)
+retrain: never
+normalization_snapshot_id: null

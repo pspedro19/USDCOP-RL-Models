@@ -1,0 +1,20 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39)
+# §45: la rule-based declara su set MINIMO de inputs — los indicadores (votos
+# SMA{63,126,252}, rv20 para vol targeting) se derivan DENTRO del codigo de la
+# politica congelada (manifiesto xauusd.yaml, code_hash 4fd3574fbfbe615f).
+feature_set_id: xauusd_gold_trend_simple_action_v1
+strategy_id: gold_trend_simple
+manifest_version: 2
+asset_id: xauusd
+surface: action
+resample_policy: P1D provider_official (daily UTC-anclado; JAMAS tz_convert(ET).normalize())
+macro_bundle: []              # ninguna macro en ACTION actual (§45.1)
+
+ordered_features:
+- {feature_id: close, order: 0, required: true}
+
+derived_in_policy:
+- sma_63 / sma_126 / sma_252 (voto binario >=2)   # src/gold_rl/strategies.py
+- realized_vol_20d (vol_target 0.10 / rv20, clip[0.06, 1.5])
+retrain: never
+normalization_snapshot_id: null   # sin scaler: constantes fijas, retrain NUNCA

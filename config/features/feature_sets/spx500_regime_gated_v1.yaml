@@ -1,0 +1,23 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39)
+# §47: MA200 solo close — el set minimo del indice es close; MA200, TSMOM 12-1
+# y los proxies de regimen (vix=vol realizada 21d shift(1), macro_stress=z252
+# del proxy) se derivan DENTRO de la politica congelada (manifiesto
+# spx500.yaml, code_hash ea76413e60621521). Sin macro externa (§47.3).
+feature_set_id: spx500_regime_gated_v1_action_v1
+strategy_id: spx500_regime_gated_v1
+manifest_version: 3
+asset_id: spx500
+surface: action
+resample_policy: P1D indice oficial (Investing id 166, price-return declarado); no resample intradia
+macro_bundle: []              # proxies derivados de precio, ninguna macro externa
+
+ordered_features:
+- {feature_id: close, order: 0, required: true}
+
+derived_in_policy:
+- ma200 (SMA close 200 sesiones)                   # src/strategies/spx500_regime_gated_v1/policies.py
+- tsmom_12_1
+- vix_proxy (vol realizada 21d shift(1)) + macro_stress (z252 del proxy)
+- open_to_open_return (ejecucion next-open, NO feature de decision)
+retrain: never
+normalization_snapshot_id: null

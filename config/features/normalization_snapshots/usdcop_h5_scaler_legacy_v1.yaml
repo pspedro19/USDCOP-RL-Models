@@ -1,0 +1,41 @@
+# NORMALIZATION SNAPSHOT (CTR-FEATURE-CATALOG-001, BL-39 — DATA-STRATEGY §40.3)
+# ============================================================================
+# `normalization_mean`/`normalization_std` DEJAN de vivir como valores globales
+# en config.feature_definitions: pertenecen al ARTEFACTO del modelo, versionado
+# con su training_cutoff. Este registro apunta al artefacto AS-IS del pipeline
+# congelado v11 (legacy_v1, bit-identico) — no re-deriva ni re-ajusta nada.
+#
+# Los valores mean/std viven en el .pkl (y en MLflow); aqui solo identidad,
+# linaje y hashes. Duplicar las constantes en config seria recrear el
+# anti-patron (vix-21.16)/7.89 que este BL elimina.
+normalization_snapshot_id: usdcop_h5_scaler_legacy_v1
+feature_set_id: usdcop_smart_simple_v11_action_legacy_v1
+strategy_id: smart_simple_v11
+surface: action
+kind: sklearn.preprocessing.StandardScaler   # mean/std por columna
+
+artifact:
+  path: outputs/forecasting/h5_weekly_models/latest/scaler_h5.pkl
+  sha256_16: '3302221e2b9dee39'   # == manifest artifacts_sha256_16 (as-of 2026-07-06)
+  registered_in: MLflow run de forecast_h5_l3_weekly_training (artifact_path=models)
+  sklearn_version_at_fit: 1.9.0   # contenedor Airflow; local puede diferir (warning benigno)
+
+training:
+  fitted_by: airflow/dags/forecast_h5_l3_weekly_training.py (scaler train-only)
+  window: expanding semanal (2020 -> ultimo viernes)
+  as_of: '2026-07-06'             # ultima corrida H5-L3 local (manifiesto v11)
+  data_through: '2026-07-02'      # ultima fila del feature frame (pred features temp)
+  fit_rows: 1632                  # n_samples_seen_ (filas con target_return_5d no nulo)
+
+n_features: 23                    # ajustado sobre el SNAPSHOT del DAG (23), no la
+                                  # receta (25) — drift declarado en el feature set
+ordered_feature_hash_sha256_16: c3393242ef998896   # sha256(feature_cols_h5.json)
+semantic_hash_sha256_16: c70136c4b16252cf
+semantic_hash_formula: sha256(json.dumps(ordered_features) + mean_.float64.tobytes() + scale_.float64.tobytes())[:16]
+
+rotation_policy: >-
+  El path del artefacto es un puntero ROTATIVO (H5-L3 lo reescribe cada
+  domingo). Lo congelado es la RECETA; cada re-fit legitimo debe registrarse
+  como snapshot NUEVO (id nuevo con su training_cutoff), jamas mutando este
+  legacy_v1. Si los hashes en disco dejan de coincidir con este registro, el
+  test de regresion exige registrar el snapshot nuevo — no editar este.

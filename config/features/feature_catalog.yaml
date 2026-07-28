@@ -1,0 +1,378 @@
+# CATALOGO ESTABLE DE FEATURES (CTR-FEATURE-CATALOG-001, BL-39)
+# ============================================================================
+# DATA-STRATEGY §40.1 + Plan Consolidado §1.4: el catalogo define QUE es cada
+# feature (definicion, causalidad, fuente, transformacion, lookback, codigo);
+# JAMAS contiene constantes de normalizacion (mean/std) — esas viven en el
+# artefacto versionado (config/features/normalization_snapshots/*, §40.3).
+# Cambiar UNA constante de normalizacion tras reentrenar sin snapshot versionado
+# = leakage silencioso; ese anti-patron (`(vix-21.16)/7.89` en
+# config.feature_definitions) es exactamente lo que este catalogo elimina.
+#
+# REGLAS (test: tests/regression/test_feature_contracts.py + validador
+# scripts/validation/validate_feature_catalog.py — CI fail-closed):
+#   - causality_policy OBLIGATORIA: point_in_time | same_bar | lagged_1
+#   - sign_prior OBLIGATORIO (Anexo A.4): positive | negative | ambiguous.
+#     'ambiguous' exige sign_prior_note. Features NUEVAS declaran su prior ANTES
+#     de mirar datos (sin prior no entran al store); los priors de legacy_v1 de
+#     abajo estan declarados EX-POST como DOCUMENTACION de la intuicion
+#     economica (0 trials) — no son evidencia ni seleccion.
+#   - code_reference + sha256_16 del archivo que computa la feature: editar ese
+#     codigo sin re-registrar el hash = drift (test rojo). Re-registrar con
+#     cambio SEMANTICO = feature nueva (version nueva), no una edicion.
+#   - source_contract usa los nombres canonicos objetivo (market.canonical_bar,
+#     macro.observation); `asbuilt_source` documenta la tabla/archivo actual
+#     (§1.3 problema 3: no anclarse a tablas por renombrar).
+#
+# Version: 1.0.0 · Date: 2026-07-27 · Frozen scope: v11 legacy_v1 (25 features)
+contract_id: CTR-FEATURE-CATALOG-001
+version: 1.0.0
+causality_policies: [point_in_time, same_bar, lagged_1]
+sign_priors: [positive, negative, ambiguous]
+legacy_note: >-
+  Los 25 features de smart_simple_v11 se registran AS-BUILT (legacy_v1,
+  bit-identicos al pipeline congelado). Este registro no cambia v11 en runtime
+  y no gasta trials.
+
+features:
+
+# ── Precio crudo (4) — niveles que Ridge consume directamente ──────────────
+- feature_id: close
+  unit: cop_per_usd
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar   # P1D provider_official
+  asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo como input del modelo lineal; sin prior direccional (legacy ex-post)
+  is_active: true
+
+- feature_id: open
+  unit: cop_per_usd
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo; sin prior direccional (legacy ex-post)
+  is_active: true
+
+- feature_id: high
+  unit: cop_per_usd
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo; sin prior direccional (legacy ex-post)
+  is_active: true
+
+- feature_id: low
+  unit: cop_per_usd
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo; sin prior direccional (legacy ex-post)
+  is_active: true
+
+# ── Retornos (4) — dataset_loader._build_features ──────────────────────────
+- feature_id: return_1d
+  unit: decimal
+  feature_group: returns
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: pct_change
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+- feature_id: return_5d
+  unit: decimal
+  feature_group: returns
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: pct_change
+  lookback: P5D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+- feature_id: return_10d
+  unit: decimal
+  feature_group: returns
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: pct_change
+  lookback: P10D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+- feature_id: return_20d
+  unit: decimal
+  feature_group: returns
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: pct_change
+  lookback: P20D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+# ── Volatilidad (3) ────────────────────────────────────────────────────────
+- feature_id: volatility_5d
+  unit: decimal_daily
+  feature_group: volatility
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: rolling_std(return_1d)
+  lookback: P5D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
+  is_active: true
+
+- feature_id: volatility_10d
+  unit: decimal_daily
+  feature_group: volatility
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: rolling_std(return_1d)
+  lookback: P10D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
+  is_active: true
+
+- feature_id: volatility_20d
+  unit: decimal_daily
+  feature_group: volatility
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: rolling_std(return_1d)
+  lookback: P20D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
+  is_active: true
+
+# ── Tecnicos (3) ───────────────────────────────────────────────────────────
+- feature_id: rsi_14d
+  unit: index_0_100
+  feature_group: momentum
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: rsi_wilder_ema   # alpha=1/14, JAMAS pandas ewm default (DO-NOT)
+  lookback: P14D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: sobrecompra/sobreventa con canal mixto en EM FX (legacy ex-post)
+  is_active: true
+
+- feature_id: ma_ratio_20d
+  unit: ratio
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: close/sma
+  lookback: P20D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: tendencia vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+- feature_id: ma_ratio_50d
+  unit: ratio
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: close/sma
+  lookback: P50D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: tendencia vs reversion no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+# ── Calendario (3) ─────────────────────────────────────────────────────────
+- feature_id: day_of_week
+  unit: categorical_0_6
+  feature_group: calendar
+  causality_policy: point_in_time
+  source_contract: market.canonical_bar
+  transformation: calendar_extract
+  lookback: P0D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: estacionalidad intra-semana sin direccion declarada (legacy ex-post)
+  is_active: true
+
+- feature_id: month
+  unit: categorical_1_12
+  feature_group: calendar
+  causality_policy: point_in_time
+  source_contract: market.canonical_bar
+  transformation: calendar_extract
+  lookback: P0D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: estacionalidad anual sin direccion declarada (legacy ex-post)
+  is_active: true
+
+- feature_id: is_month_end
+  unit: binary
+  feature_group: calendar
+  causality_policy: point_in_time
+  source_contract: market.canonical_bar
+  transformation: calendar_extract
+  lookback: P0D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  sign_prior: ambiguous
+  sign_prior_note: flujos de fin de mes (rebalanceo) sin direccion neta declarada (legacy ex-post)
+  is_active: true
+
+# ── Macro T-1 (4) — shift(1) + merge_asof(backward), anti-leakage ──────────
+- feature_id: dxy_close_lag1
+  unit: index_level
+  feature_group: macro
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: macro_indicators_daily / MACRO_DAILY_CLEAN.parquet
+  transformation: level_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  sign_prior: positive
+  sign_prior_note: DXY fuerte = USD fuerte => USDCOP sube (documentado ex-post, legacy_v1)
+  is_active: true
+
+- feature_id: oil_close_lag1
+  unit: usd_per_barrel
+  feature_group: macro
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: macro_indicators_daily / MACRO_DAILY_CLEAN.parquet
+  transformation: level_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  sign_prior: negative
+  sign_prior_note: petroleo alto fortalece al COP (exportador) => USDCOP baja (ex-post, legacy_v1)
+  is_active: true
+
+- feature_id: vix_close_lag1
+  unit: index_level
+  feature_group: macro
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: macro_indicators_daily / MACRO_DAILY_CLEAN.parquet
+  transformation: level_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  sign_prior: positive
+  sign_prior_note: risk-off deprecia EM FX => USDCOP sube (ex-post, legacy_v1)
+  is_active: true
+
+- feature_id: embi_close_lag1
+  unit: basis_points
+  feature_group: macro
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: macro_indicators_daily / MACRO_DAILY_CLEAN.parquet
+  transformation: level_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  sign_prior: positive
+  sign_prior_note: riesgo pais alto => COP debil => USDCOP sube (ex-post, legacy_v1)
+  is_active: true
+
+# ── Enhancement v2 (4) — src/forecasting/enhance_v2.py (SSOT compartido) ───
+- feature_id: vol_regime_ratio
+  unit: ratio
+  feature_group: regime
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: vol5/vol20 clip[-5,5] fillna(1.0)
+  lookback: P20D
+  compute_location: python
+  code_reference: {file: src/forecasting/enhance_v2.py, symbol: enhance_features_v2, sha256_16: 13fc9f7864f0cc7a}
+  sign_prior: ambiguous
+  sign_prior_note: regimen de vol condiciona el gate, no la direccion (legacy ex-post)
+  is_active: true
+
+- feature_id: trend_slope_60d
+  unit: decimal_per_bar_normalized
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar
+  transformation: polyfit_slope/mean sobre ventana
+  lookback: P60D
+  compute_location: python
+  code_reference: {file: src/forecasting/enhance_v2.py, symbol: enhance_features_v2, sha256_16: 13fc9f7864f0cc7a}
+  sign_prior: ambiguous
+  sign_prior_note: continuacion vs agotamiento de tendencia no declarado ex-ante (legacy ex-post)
+  is_active: true
+
+- feature_id: rate_diff_ibr_ust2y
+  unit: percentage_points
+  feature_group: macro_derived
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: MACRO_DAILY_CLEAN.parquet (IBR overnight - UST2Y, shift(1))
+  transformation: spread_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/enhance_v2.py, symbol: enhance_features_v2, sha256_16: 13fc9f7864f0cc7a}
+  sign_prior: negative
+  sign_prior_note: carry alto atrae flujos => COP fuerte => USDCOP baja (ex-post, legacy_v1)
+  is_active: true
+
+- feature_id: term_spread
+  unit: percentage_points
+  feature_group: macro_derived
+  causality_policy: lagged_1
+  source_contract: macro.observation
+  asbuilt_source: MACRO_DAILY_CLEAN.parquet (UST10Y - UST2Y, shift(1))
+  transformation: spread_lag1
+  lookback: P1D
+  compute_location: python
+  code_reference: {file: src/forecasting/enhance_v2.py, symbol: enhance_features_v2, sha256_16: 13fc9f7864f0cc7a}
+  sign_prior: ambiguous
+  sign_prior_note: curva US con canal mixto (crecimiento vs risk appetite) sobre EM FX (legacy ex-post)
+  is_active: true
