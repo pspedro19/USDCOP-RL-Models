@@ -5,6 +5,7 @@
 # incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
 # metrica puede citarse sin la suya.
 strategy_id: btc_hodl_b1
+surface: action
 frozen: '2026-07-21 (campeona por OOS: +4.70% vs -1.37% de toda variante)'
 tz_storage: TIMESTAMPTZ instantes; barra diaria cierre UTC-00 (carve-out A1-01, 24/7)
 session: 24/7
@@ -32,3 +33,7 @@ files:
 asset_id: btcusdt
 code_hash_sha256_16: 3b9b3c6dd1b9a70d
 manifest_frozen_at: '2026-07-21'
+manifest_version: 2
+refreeze_note_v2: >-
+  Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
+  señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

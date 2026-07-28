@@ -1,4 +1,5 @@
 strategy_id: smart_simple_v14_ladder
+surface: action
 asset_id: usdcop
 frozen: '2026-07-21'
 variable_unica: salida escalonada 50/50 al TP y 2xTP (vs v12)
@@ -11,3 +12,7 @@ files:
 code_hash_sha256_16: 095c3e0b5c31f824
 generalizacion_diseno: '3/4 años (mejora 2022/2023/2024, cede 2025: perfil anti-overfit)'
 juez: forward desde freeze, mismo protocolo sellado de v12
+manifest_version: 2
+refreeze_note_v2: >-
+  Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
+  señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

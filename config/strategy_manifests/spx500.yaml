@@ -5,6 +5,7 @@
 # incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
 # metrica puede citarse sin la suya.
 strategy_id: spx500_regime_gated_v1
+surface: action
 frozen: 2026-07-21 (techo research_validated); re-freeze v2 2026-07-27 (autoridad de datos)
 tz_storage: daily; indice S&P 500 OFICIAL Investing id 166 (PRICE-RETURN declarado,
   sin dividendos — plan SPX §1), seed 1995-> mantenido por asset_spx500_pipeline_weekly
@@ -32,7 +33,10 @@ files:
 asset_id: spx500
 code_hash_sha256_16: ea76413e60621521
 manifest_frozen_at: '2026-07-27'
-manifest_version: 2
+manifest_version: 3
+refreeze_note_v3: >-
+  Re-freeze v3 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
+  señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).
 refreeze_note_v2: >-
   Re-freeze v2 (2026-07-27, directiva del operador "borrar SPY y usar solo el S&P 500
   oficial"): load_real.py cambia su FUENTE al indice oficial de Investing (id 166,

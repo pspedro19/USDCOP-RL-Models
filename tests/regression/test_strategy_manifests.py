@@ -75,6 +75,31 @@ def test_code_hash_detects_strategy_drift():
         )
 
 
+def test_manifests_declare_action_surface():
+    """BL-13: every frozen manifest declares its surface, and diagnostic never champions.
+
+    `surface` is the discriminator between tradeable strategies (action) and
+    look-only research surfaces (diagnostic). A diagnostic surface must never be
+    the champion the registry serves — normalize_champions enforces it at runtime;
+    this test enforces it at freeze time.
+    """
+    champions = set(_champions().values())
+    manifests = sorted(MANIFESTS.glob("*.yaml"))
+    assert manifests, f"no frozen manifests found under {MANIFESTS}"
+    for p in manifests:
+        m = yaml.safe_load(p.read_text(encoding="utf-8"))
+        surface = m.get("surface")
+        assert surface in {"action", "diagnostic"}, (
+            f"{p.name}: surface is {surface!r} — every frozen manifest must declare "
+            "surface: action|diagnostic (BL-13)"
+        )
+        if surface == "diagnostic":
+            assert m["strategy_id"] not in champions, (
+                f"{p.name}: {m['strategy_id']!r} declares surface=diagnostic but is a "
+                "champion in CHAMPION_BY_ASSET — diagnostic surfaces can never be champions"
+            )
+
+
 def test_registry_champion_matches_manifest():
     reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
                      .read_text(encoding="utf-8"))

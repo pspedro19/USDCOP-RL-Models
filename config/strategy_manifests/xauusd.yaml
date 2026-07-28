@@ -5,6 +5,7 @@
 # incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
 # metrica puede citarse sin la suya.
 strategy_id: gold_trend_simple
+surface: action
 frozen: 2026-07-21 (H-SIMP-GOLD-01; historico=contexto, juez=forward)
 tz_storage: 'daily UTC-anclado (bug Sunday pile-up: JAMAS tz_convert(ET).normalize())'
 session: ~24h metales; barra diaria
@@ -30,3 +31,7 @@ files:
 asset_id: xauusd
 code_hash_sha256_16: 4fd3574fbfbe615f
 manifest_frozen_at: '2026-07-21'
+manifest_version: 2
+refreeze_note_v2: >-
+  Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
+  señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

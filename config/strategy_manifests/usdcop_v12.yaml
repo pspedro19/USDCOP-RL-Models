@@ -1,4 +1,5 @@
 strategy_id: smart_simple_v12_lev_cap
+surface: action
 asset_id: usdcop
 frozen: 2026-07-21 (paper desde 2026-07-27)
 variable_unica: max_leverage 2.0 -> 1.5 (todo lo demas identico a v11 manifest v6)
@@ -13,3 +14,7 @@ code_hash_sha256_16: 3bc28b36448892a1
 juez: registry COP seccion 'juez SELLADO' — corte-52 unico test; e-process descriptivo
 evidencia_diseno: .claude/evidence/cop_v12_design/2026-07-21/ (+12.1% vs +2.4% compuesto
   22-24)
+manifest_version: 2
+refreeze_note_v2: >-
+  Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
+  señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

@@ -28,6 +28,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PUBLIC_DATA = REPO / "usdcop-trading-dashboard" / "public" / "data"
+FROZEN_MANIFESTS = REPO / "config" / "strategy_manifests"
 
 # The single writable champion authority. Changing a champion is an evidence decision:
 # update this mapping in the same commit as the evidence artifact that justifies it.
@@ -46,16 +47,44 @@ CHAMPION_BY_ASSET: dict[str, str] = {
 _CHAMPION_KEEP = {"experimental", "paper", "production"}
 
 
+def _diagnostic_ids() -> set[str]:
+    """strategy_ids whose frozen manifest declares `surface: diagnostic` (BL-13).
+
+    Diagnostic surfaces exist to be looked at, never traded: they can NEVER be visible
+    as champion nor hold an experimental/paper/production status.
+    """
+    import yaml
+    ids: set[str] = set()
+    for p in sorted(FROZEN_MANIFESTS.glob("*.yaml")):
+        m = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        if m.get("surface") == "diagnostic" and m.get("strategy_id"):
+            ids.add(m["strategy_id"])
+    return ids
+
+
 def normalize(check_only: bool = False) -> int:
     strat_root = PUBLIC_DATA / "strategies"
     champions = set(CHAMPION_BY_ASSET.values())
-    changed, drift = [], []
+    diagnostic = _diagnostic_ids()
+    changed, drift, surface_errors = [], [], []
 
     for man_path in sorted(strat_root.glob("*/manifest.json")):
         man = json.loads(man_path.read_text(encoding="utf-8"))
         sid, status = man.get("strategy_id"), man.get("status")
-        want = status if sid in champions and status in _CHAMPION_KEEP else (
-            "experimental" if sid in champions else "archived")
+        if sid in diagnostic or man.get("surface") == "diagnostic":
+            # BL-13: a diagnostic surface is forced to archived, no matter what the
+            # champion authority or its bundle claims — and that contradiction is an error.
+            want = "archived"
+            if sid in champions:
+                surface_errors.append(
+                    f"{sid}: surface=diagnostic pero figura en CHAMPION_BY_ASSET — "
+                    "una superficie diagnostica JAMAS puede ser campeona")
+            elif status in _CHAMPION_KEEP:
+                surface_errors.append(
+                    f"{sid}: surface=diagnostic con status visible {status!r} — forzado a archived")
+        else:
+            want = status if sid in champions and status in _CHAMPION_KEEP else (
+                "experimental" if sid in champions else "archived")
         if status != want:
             drift.append(f"{sid}: {status} -> {want}")
             if not check_only:
@@ -63,6 +92,9 @@ def normalize(check_only: bool = False) -> int:
                 man_path.write_text(json.dumps(man, indent=2, ensure_ascii=False),
                                     encoding="utf-8")
                 changed.append(sid)
+
+    for err in surface_errors:
+        print(f"[champions] ERROR: {err}")
 
     # Refresh the registry from manifests so the dashboard sees the normalized truth.
     if changed:
@@ -93,6 +125,8 @@ def normalize(check_only: bool = False) -> int:
                         if s.get("asset_id") == a and s.get("status") != "archived"]]
     if orphaned:
         print(f"[champions] ERROR: activos sin estrategia visible: {orphaned}")
+        return 1
+    if surface_errors:
         return 1
     print(f"[champions] OK: {len(CHAMPION_BY_ASSET)} activos con campeona visible")
     return 0

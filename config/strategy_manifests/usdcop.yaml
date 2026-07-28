@@ -5,6 +5,7 @@
 # incompatibles (onboard-asset: BTC sqrt365 | motor xasset: 252 tras intersect) y ninguna
 # metrica puede citarse sin la suya.
 strategy_id: smart_simple_v11
+surface: action
 frozen: 2026-03-18 (v11 FROZEN; juez=forward 2026)
 tz_storage: TIMESTAMPTZ instantes verdaderos (CTR-DQ-TZ-001); lectura AT TIME ZONE
   America/Bogota
@@ -35,7 +36,10 @@ files:
 asset_id: usdcop
 code_hash_sha256_16: 3b54d02435658b7f
 manifest_frozen_at: '2026-07-22'
-manifest_version: 8
+manifest_version: 9
+refreeze_note_v9: >-
+  Re-freeze v9 (2026-07-27, BL-13): discriminador surface:action añadido al manifiesto
+  (aditivo, señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).
 refreeze_note_v8: >-
   Re-freeze v8 (2026-07-22): parametro eme_dispersion (default False) en
   compute_v13_leverage_ceilings para el design-run de v15 (H-RISK-FAM-02). Solo afecta
