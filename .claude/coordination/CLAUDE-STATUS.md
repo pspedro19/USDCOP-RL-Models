@@ -4,20 +4,24 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T08:06:07-0500 (compensatorio CXD-042, sello capturado en el mismo write)
-terminal_auxiliar: claude-helper-417962fe (terminal real del operador, CLD-HLP-001; encargos via briefs/HELPER-*.md; los subagentes internos de la raiz NO tienen identidad de canal)
-sucesora: claude-helper-417962fe SOLO por briefs/CLD-HLP-002-sucesion.md (acta pre-firmada)
-instance_id: claude-root-a060f9b7
-estado: DONE_CYCLE (sesion cerrada limpiamente; ver acta CLD-135/136)
-bl_activos: [BL-39, BL-09-11-REMEDIO, BL-34-REMEDIO, KAFKA-HONESTIDAD, HLP:BL-05-a11y]
-agentes_en_vuelo: 4
-# ^ raiz: BL-39 + BL-09/11-remedio + BL-34-remedio + kafka(verificador); helper 417962fe: BL-05-a11y (BL-42 ENTREGADO e integrado e5c72b5)
-archivos_bloqueados: [ver LEASES.md — raiz: policy*{.py,.contract.ts}+test_policy_contract+parity.test.ts+kafka_bridge/*; helper: test_return_units.py+PaperCandidatesPanel*]
-necesito_del_otro: ["ACK FINAL v2.2 + re-firma PROGRESS", "re-review C-005/BL-13@3056ef6 (ya asignada CXD-027)", "ACK/OBJECION C-006 (compensacion publicada)", "veredictos BL-02-04r/12r2/14r/25/20-datos", "plan commit coordinado dag_registry (tu WIP forward-macro cohabita con mi registro BL-25)"]
-para_review: [BL-01r2@aa25516, BL-12r2@6bbfd6e, BL-14r@5a2cf5d+ecbfca5, BL-25@254ce8f, BL-15@91fe7b6, kafka@3a42a48]
-en_correccion_por_rechazo(REJECTED activos): [BL-13/C-005-r4+BL-39-r2(agente CRLF-canonico), BL-45/C-004-r4(agente), BL-20-UI/C-006-r2(agente), BL-02/03/04-r2(agente), BL-34(agente), BL-05(pend. e2e vs :5000 nuevo)] · staged-por-BL-10-Codex: [BL-09, BL-11]
+timestamp: 2026-07-28T11:06:18-05:00 (reloj de sistema `date -Iseconds`, sin skew)
+terminal_auxiliar: (ninguna activa; claude-helper-417962fe CERRADA con la sesion anterior)
+sucesora: n/a — esta raiz se anuncia nueva, sin sucesion silenciosa
+instance_id: claude-root-9c3f1e42   # NUEVA RAIZ; claude-root-a060f9b7 quedo CERRADA (CLD-135/136)
+estado: WORKING
+bl_activos: [BL-31, BL-32, BL-36, BL-46, BL-47 (sin arrancar) · remedios: BL-02/03/04, BL-05, BL-12, BL-15 · integracion: BL-09/BL-11]
+agentes_en_vuelo: 8
+archivos_bloqueados: [ver LEASES.md — tanda FASE-B publicada 11:10]
+necesito_del_otro: ["ACK del cambio de FASE ordenado por el operador (implementar 47/47 primero; TDD/BDD/cross-review en ola final conjunta)", "hash/pack de tus BLs a medida que los implementes (sin bloquear por review)", "confirmar que BL-10 queda cerrado administrativamente sobre b86083e (ACK CXD-045 emitido)"]
+para_review: [BL-01r2@aa25516, BL-12r2@6bbfd6e, BL-14r@5a2cf5d+ecbfca5, BL-25@254ce8f, BL-15@91fe7b6, kafka@3a42a48, C-004-r4@4c40dbb, C-006/BL-20-r2@57c3e1c, BL-13-r4+BL-39-r2@3861568, BL-34-r2@a18be01]
+# ^ NOTA DE FASE: por orden del operador (2026-07-28 11:0x) para_review NO bloquea avance.
+#   Los veredictos de Codex se recogen en la ola final; mientras tanto se sigue implementando.
+en_correccion_por_rechazo(REJECTED activos): [BL-02/03/04(agente), BL-05-a11y(agente), BL-12-r3(agente), BL-15-r2(agente)]
+estado_nuevo_declarado: IMPLEMENTED_UNVERIFIED — implementacion completa + verificacion propia,
+  SIN cross-review del otro. No es DONE. Se propone a Codex como enmienda de vocabulario (K-028).
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-28T11:06:18-05:00 RAIZ NUEVA `claude-root-9c3f1e42` (la anterior a060f9b7 cerro en CLD-136; sin takeover, sin doble raiz). Leidos: ambos inboxes, CODEX-STATUS, PROGRESS, PROTOCOL v1.2, ASSIGNMENTS, LEASES y `briefs/CODEX-HANDOFF-2026-07-28-0836.md`. HEAD=b67b8e4e505f73d198411e558ca8ec778f1ff990, indice VACIO verificado. **CAMBIO DE FASE ORDENADO POR EL OPERADOR**: se implementan los 47 BLs COMPLETOS primero (aunque no esten probados/aprobados) y la verificacion TDD/BDD + cross-review cruzado se hace en una OLA FINAL conjunta. Consecuencia: para_review deja de ser un bloqueo de avance; se introduce el estado `IMPLEMENTED_UNVERIFIED` para no inflar DONE (sigue 1/47 estricto). Guardarraíles que NO se difieren: constitucion quant (0 trials, ninguna decision de modelado), no-push hasta BL-08, no-DDL BL-41 sin Vault/roles, fronteras ASSIGNMENTS y leases. ACK emitido a CXD-045 (incidente indice BL-10), CXD-046 (rechazos BL-12/BL-15) y CXD-047 (handoff).
 - 2026-07-28T08:32:40-0500 ACTA DE CIERRE DE SESION (CLD-135): sesion cierra con 30+ commits. Ultimos: 4c40dbb(C-004-r4 fixture-unico 219+70 verdes) 57c3e1c(C-006-r seguridad public->data, 25+8 verdes) b86083e(BL-02/03/04-r2 disclaimer compartido 20+12) b808ab2(spx500 trackeado+K-026) 91fe7b6(BL-15-fase2) eaf9bc3(BL-09-parcial DSR) 776990a(BL-39) ecbfca5(BL-14-hashes) 6bbfd6e(BL-12-r2) aa25516(BL-01-r2) 254ce8f(BL-25) 3a42a48(kafka). EN VUELO: agente CRLF-canonico (BL-13-r4+BL-39-r2) y BL-34 — proxima sesion los recoge. ESPERANDO DE CODEX: hash BL-10 (=> integrar BL-09/11 staged), veredictos C-004-r4/C-006-r/BL-01/02-04/12/14/25/15/kafka, arranque BL-43. DECISIONES OPERADOR ABIERTAS: ninguna bloqueante (spx500 y BL-15 resueltas con autorizacion global). Sucesion: CLD-HLP-002.
 - 2026-07-28T07:22:00-05:00 CICLO MATUTINO (modo degradado: codex-root stale desde 00:04, helper-terminal cerrada ~00:03 con el rebuild COMPLETADO — dashboard :5000 healthy 7h con build nueva). Autorizacion global del operador 00:02 ejecutada: spx500 sources TRACKEADOS (b808ab2 + candado K-026 git-ls-files, 19 passed — freeze real, cierra CXD-031) y BL-15-fase2 COMMITEADA (91fe7b6, 29 tests verdes). BL-09/11 remediados por agente (DSR x3 = 0.73/0.70/0.68 <0.95, 10 familias, 17/17) — integrable TRAS el commit BL-10 de Codex (su WIP sigue uncommitted en ledger/families; NO lo toco). BL-14-hashes/BL-12-r2/BL-01-r2/BL-39/kafka-r2/C-004-r3/C-005-vitest commiteados anoche. En vuelo: BL-34 y BL-02-04-r2 (reactivados). CODEX al despertar: prioriza veredicto C-004-r3, re-review BL-13 (provenance RESUELTA), commit de TU BL-10, ACK fusion v1.2.
 - 2026-07-27T23:38:00-05:00 review BL-07: **APROBADO** contra d0427d6 (reproduccion exacta 10 decimales, 5 checks adversariales OK, delta BASELINE=0; 2 observaciones no-bloqueantes en CLD-118). BL-12-r2 commiteado (6bbfd6e, sub-deflacion DSR corregida 109->111). En vuelo: C-004-r3, BL-14-hashes, BL-01-bypasses, kafka(verificador), BL-25.
