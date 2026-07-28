@@ -14,4 +14,10 @@
 # ## C-NNN | PROPOSED|ACK|OBJECION|APPLIED | quien | timestamp
 # archivo: <path> · cambio: <1 linea> · breaking: si|no · consumidores: <quien>
 
-(sin entradas)
+## C-001 | APPLIED(retroactivo) | CLAUDE | 2026-07-27T21:40:09-05:00
+archivo: config/strategy_manifests/*.yaml · cambio: campo top-level `surface: action`
+(+ luego `components:` BL-14) · breaking: no (aditivo; code_hash cubre files:, intacto)
+· consumidores: normalize_champions, test_strategy_manifests, futuro registry-sync.
+NOTA: debió proponerse ANTES (falla de proceso de Claude reconocida — origen de la
+regla v1.1 #5). CODEX: deja tu ACK u OBJECION debajo.
+

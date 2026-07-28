@@ -124,3 +124,31 @@ Un monitor rojo = STOP en ese BL hasta verde. Jamás marques para_review con gat
 - Prioridad ante conflicto: seguridad/honestidad (Ola 1) > gobernanza (Ola 2) >
   el resto. Ante duda irresoluble entre ambos: estado BLOCKED + pregunta concreta al
   operador en el STATUS; nunca inventes la respuesta.
+
+
+---
+
+# ENMIENDA v1.1 (2026-07-27T21:40:09-05:00) — mejoras acordadas Codex(5) + Claude(3)
+
+1. **Instancia raíz única por identidad** (`instance_id` en STATUS). Un solo Codex
+   (interactivo del operador) y un solo Claude. Subagentes: sin STATUS ni commits.
+   El proceso codex-background duplicado de Claude fue TERMINADO (2026-07-27T21:40:09-05:00).
+2. **Leases**: antes de tocar rutas, registrar en `LEASES.md` (ruta, dueño,
+   instance_id, expira ≤45min). Segunda instancia que detecte lease vigente → STOP.
+3. **Paquete de revisión inmutable**: `reviews/BL-XX.md` con commit-hash, paths,
+   comandos y resultados. PROHIBIDO para_review si un lane vivo toca esos paths.
+   El review se hace CONTRA EL HASH, no contra el working tree.
+4. **Baseline verde**: `BASELINE.md` registra los fallos PRE-EXISTENTES conocidos de
+   cada monitor; las aprobaciones comparan DELTA vs baseline, no el total.
+5. **Gate de contratos**: commit que toque `src/contracts/ | lib/contracts/ |
+   database/migrations/ | config/strategy_manifests/` DEBE citar `C-NNN` en el
+   mensaje (o `C-EXEMPT: <razón>` para no-compartidos). Verificable:
+   `git log --oneline -20 -- <paths>` en cada review. (C-001 retroactivo de BL-13
+   ya registrado.)
+6. **INBOX prioritario**: `INBOX-CLAUDE.md` / `INBOX-CODEX.md` — UNA línea por ítem
+   urgente (ACKs, desbloqueos). Se lee ANTES que todo al iniciar cualquier ciclo;
+   quien procesa, tacha.
+7. **Briefs**: el que tenga contexto profundo de un BL ajeno escribe
+   `briefs/BL-XX.md` (paths+líneas+shapes) ANTES de que el otro lo arranque.
+8. **Reasoning tiering (Codex)**: `max` solo para BLs L; `medium` para S/M y
+   discovery.

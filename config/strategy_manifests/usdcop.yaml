@@ -30,13 +30,26 @@ costs:
   maker_bps: 0.0
   weekend_exit_slippage_bps: 1.0
 execution_lag: entrada lunes al cierre; HS/TP gestionados intra-semana
+components:
+- component_id: usdcop_ridge_br
+  role: decision_input
+  engine: ml_batch
+  retrain_policy: weekly_expanding    # domingo, scaler train-only, ventana 2020->
+  recipe_frozen: true                 # lo congelado es la RECETA, no los pesos
+  recipe_note: >-
+    cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
+    es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
+  forecast_trial_ids_legacy: pending-BL-10   # herencia FT se puebla con el backfill
 files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
 code_hash_sha256_16: 3b54d02435658b7f
 manifest_frozen_at: '2026-07-22'
-manifest_version: 9
+manifest_version: 10
+refreeze_note_v10: >-
+  Re-freeze v10 (2026-07-27, BL-14): components: receta del predictor declarada
+  (BL-14, aditivo, code_hash intacto).
 refreeze_note_v9: >-
   Re-freeze v9 (2026-07-27, BL-13): discriminador surface:action añadido al manifiesto
   (aditivo, señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

@@ -6,6 +6,16 @@ variable_unica: max_leverage 2.0 -> 1.5 (todo lo demas identico a v11 manifest v
 clock:
   periods_per_year: 52
   label: weekly/52
+components:   # predictor compartido con v11
+- component_id: usdcop_ridge_br
+  role: decision_input
+  engine: ml_batch
+  retrain_policy: weekly_expanding    # domingo, scaler train-only, ventana 2020->
+  recipe_frozen: true                 # lo congelado es la RECETA, no los pesos
+  recipe_note: >-
+    cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
+    es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
+  forecast_trial_ids_legacy: pending-BL-10   # herencia FT se puebla con el backfill
 files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
@@ -14,7 +24,10 @@ code_hash_sha256_16: 3bc28b36448892a1
 juez: registry COP seccion 'juez SELLADO' — corte-52 unico test; e-process descriptivo
 evidencia_diseno: .claude/evidence/cop_v12_design/2026-07-21/ (+12.1% vs +2.4% compuesto
   22-24)
-manifest_version: 2
+manifest_version: 3
+refreeze_note_v3: >-
+  Re-freeze v3 (2026-07-27, BL-14): components: receta del predictor declarada
+  (BL-14, aditivo, code_hash intacto; predictor compartido con v11).
 refreeze_note_v2: >-
   Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
   señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

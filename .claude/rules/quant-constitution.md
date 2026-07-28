@@ -2,8 +2,8 @@
 kind: rule
 status: IMPLEMENTED
 contract: CTR-QUANT-CONSTITUTION-001
-version: 1.0.0
-last_verified: 2026-07-20
+version: 1.1.0
+last_verified: 2026-07-27
 supersedes: []
 code_anchors: []
 ---
@@ -17,7 +17,8 @@ code_anchors: []
 > Ante conflicto entre una spec, el código o una opinión, **gana esta regla**. Cambiarla
 > requiere un ADR.
 >
-> Contract: CTR-QUANT-CONSTITUTION-001 · Version: 1.0.0 · Date: 2026-07-06
+> Contract: CTR-QUANT-CONSTITUTION-001 · Version: 1.1.0 · Date: 2026-07-27
+> (1.1.0: doble linaje FT/AT + provenance, `../specs/adr/ADR-0022-doble-linaje-trials-ft-at.md`)
 
 ---
 
@@ -36,6 +37,9 @@ code_anchors: []
 - **Cada versión, cada grid, cada gate mirado = 1 trial.** Se registra en el
   `HYPOTHESIS-REGISTRY` del activo (BTC: `specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md`;
   COP: `specs/assets/usdcop/HYPOTHESIS-REGISTRY.md`).
+- **Cada trial se etiqueta FT- (predictivo) o AT- (económico); convertir un forecast en señal
+  económica = +1 AT con provenance de sus FT** (`forecast_trial_ids`, `action_trial_id`,
+  `research_cluster`). `n_trials_total` del activo = suma de ambos linajes (ADR-0022).
 - **Ningún claim de edge sin Deflated Sharpe** (`services/common/metrics.py::deflated_sharpe_ratio`)
   recomputado con el conteo de trials actualizado. Bar por defecto: **DSR > 0.95**; cambiarlo
   requiere ADR. p<0.05 entre varios intentos es fácil; el DSR es el bar real.
@@ -83,6 +87,7 @@ code_anchors: []
 - Do NOT grid-search sobre el test/OOS — priors ex-ante, sensibilidades reportadas completas.
 - Do NOT evaluar en el mismo OOS que motivó el cambio — el juez es el período siguiente.
 - Do NOT reclamar edge sin DSR trial-aware recomputado (bar 0.95 salvo ADR).
+- Do NOT tratar una mirada predictiva como gratis: FT también deflacta el N del activo.
 - Do NOT promover sin B1′ + baseline tonto + stress de costos ×2.
 - Do NOT reportar Sharpe/p-value con N<20 trades.
 - Do NOT relajar umbrales de retiro estando en drawdown.
