@@ -20,6 +20,7 @@ code_anchors: []
 | `experiment-protocol.md` | Experiment discipline: 1 variable, 5 seeds, statistical validation | `../templates/experiment-config-template.md`, `../experiments/` |
 | `quant-constitution.md` | **Transversal anti-selección** (todos los tracks): no grid-search sobre test, trials+DSR, baselines B1′/tonto/costos, anti-look-ahead 3 capas, retiro pre-firmado | `../specs/assets/btcusdt/design/constitution-modeling.md`, `../specs/audit/PLAN-completar-sistema-2026-07.md` |
 | `rbac.md` | **RBAC + monetización** (CTR-RBAC-001): deny-by-default, rol≠plan, entitlements server-side, PreTradeGate paper-first, billing por webhook, audit append-only | `../specs/platform/rbac-monetization.md` |
+| `strategy-engines.md` | **Motores de estrategia** (rule_based/ml/rl/composite): un contrato, un motor de evaluación, DSL whitelist, trace no-recalculado, reglas también cobran trials | `../specs/planes/05-rule-based-strategies.md` |
 | `ssot-versioning.md` | Frozen experiment SSOT configs, versioning lifecycle | `experiment-protocol.md` |
 
 ## SSOT ownership (do not duplicate across docs)

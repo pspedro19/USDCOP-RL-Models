@@ -10,7 +10,7 @@ code_anchors:
 
 # Backlog gobernado — planes ACTION/DIAGNOSTIC (CTR-QLAB-FABRIC-004)
 
-> 44 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
+> 47 tareas pendientes derivadas de los planes 00-04 + requisito SHAP del operador,
 > cruzadas con el as-built verificado el 2026-07-27 (frontend incluido). Un MD por
 > tarea; cada uno con estado actual, anclas reales, impacto frontend y verificación.
 > **Todas 0 trials salvo indicación en el propio BL.**
@@ -77,12 +77,16 @@ code_anchors:
 | [BL-42](BL-42-unidades-decimales-signal-normalizada.md) | Unidades decimales + action.strategy_signal normalizada (JSONB de polí | 3 | M | ver BL |
 | [BL-43](BL-43-demo-sintetica-aislada.md) | Aislar el modelo sintético demo (CI que lo bloquee fuera de demo) | 1 | S | ver BL |
 | [BL-44](BL-44-timescale-ops-perfil-fisico.md) | TimescaleDB ops + perfil físico ampliado | 5 | M | ver BL |
+| [BL-45](BL-45-policy-engine-contrato.md) | Motor de políticas: contrato + registry + factory (R1-R3) | 3 | L | ver BL |
+| [BL-46](BL-46-policy-backend-frontend.md) | Políticas: backend (policy_version/signal) + frontend schema-driven (R | 3-4 | L | ver BL |
+| [BL-47](BL-47-policy-migracion-r6-r8.md) | Migración de estrategias al motor de políticas (R6-R8) | 5 | L | ver BL |
 
 ## Grafo mínimo de dependencias
 
 > Fuentes nuevas 2026-07-27: `Plan_Consolidado_usdcop_trading.md` (P0/P1/P2 de DB)
 > y `CTR-QLAB-FABRIC-004-DATA-STRATEGY.md` PARTE II §33-57 (D0-D8 de datos/features)
-> → BL-37..44. Ampliaciones derivadas: BL-24 gana `availability_quality` (solo 9.1%
+> → BL-37..44. `05-rule-based-strategies.md` (motor de políticas R1-R8,
+> invariantes promovidas a `.claude/rules/strategy-engines.md`) → BL-45..47. Ampliaciones derivadas: BL-24 gana `availability_quality` (solo 9.1%
 > del PIT es vintage real; `publication_date` 100% NULL en monthly/quarterly ⇒
 > BLOQUEA promotion) y BL-36 gana staging_contract + semántica de 5 timestamps.
 
