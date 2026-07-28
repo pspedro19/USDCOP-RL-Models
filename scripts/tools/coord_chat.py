@@ -26,6 +26,7 @@ import os
 import re
 import shutil
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -138,12 +139,20 @@ def thread() -> list[Msg]:
     msgs: list[Msg] = []
     for path, who in ((INBOX_FROM_CODEX, "CODEX"), (INBOX_FROM_CLAUDE, "CLAUDE")):
         parsed = parse(path, who)
-        heredado = ""
-        for m in parsed:
+        if not parsed:
+            continue
+        # Los ficheros son APPEND-ONLY, asi que su orden ya es cronologico. Un
+        # mensaje sin sello se escribio ANTES que el siguiente que si lo trae:
+        # rellenar hacia ATRAS (con el siguiente fechado) lo coloca bien, mientras
+        # que rellenar hacia adelante lo mandaba al pasado — por eso un mensaje
+        # de las 18:36 salia fechado a las 14:41.
+        mtime = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(path.stat().st_mtime))
+        siguiente = mtime
+        for m in reversed(parsed):
             if m.ts:
-                heredado = m.ts
+                siguiente = m.ts
             else:
-                m.ts = heredado
+                m.ts = siguiente
         msgs += parsed
     return sorted(msgs, key=lambda x: (x.ts or "0000", x.seq))
 
@@ -245,15 +254,35 @@ def interactive(width: int, full: bool, last: int, show_all: bool) -> int:
           f"  /buscar <texto>        filtra el hilo entero\n"
           f"  /salir{c.reset}\n")
 
-    while True:
-        nuevos = [m for m in thread() if m.mid not in seen]
-        for m in nuevos:
-            print(render(m, width, full) + "\n")
-            seen.add(m.mid)
+    # Vigilante en segundo plano: pinta lo que llegue MIENTRAS escribes, sin que
+    # tengas que pulsar Enter. Sin esto, un mensaje nuestro se quedaba invisible
+    # hasta tu siguiente turno, que es justo lo contrario de un chat.
+    lock = threading.Lock()
+    parar = threading.Event()
 
+    def vigilar() -> None:
+        while not parar.wait(3):
+            try:
+                nuevos = [m for m in thread() if m.mid not in seen]
+            except OSError:
+                continue
+            if not nuevos:
+                continue
+            with lock:
+                print()
+                for m in nuevos:
+                    print(render(m, width, full) + "\n")
+                    seen.add(m.mid)
+                print(f"{c.pedro}{destino}/{prioridad} >{c.reset} ", end="", flush=True)
+
+    hilo = threading.Thread(target=vigilar, daemon=True)
+    hilo.start()
+
+    while True:
         try:
             linea = input(f"{c.pedro}{destino}/{prioridad} >{c.reset} ").strip()
         except EOFError:
+            parar.set()
             return 0
 
         if not linea:
