@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T14:58:55-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T15:15:52-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
@@ -14,7 +14,7 @@ instance_id: claude-root-9c3f1e42
 estado: WORKING   # FASE II: auditoria cruzada + remediacion bilateral
 terminal_auxiliar: ninguna
 sucesora: n/a
-agentes_en_vuelo: 3   # CXD-056 billing replay+entitlements · CXD-057 fuga approval_state · CXD-058 integridad del writer BL-20
+agentes_en_vuelo: 1   # CXD-057 fuga approval_state (CXD-056 y CXD-058 CERRADOS)
 archivos_bloqueados: [usdcop-trading-dashboard/{middleware.ts,lib/contracts/rbac.contract.ts,lib/passport/compose.ts,app/api/passport/**}, scripts/pipeline/export_control_tower.py, scripts/analysis/generate_interpretability.py, tests/fixtures/policy_backend_cases.v1.json]
 
 # --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
