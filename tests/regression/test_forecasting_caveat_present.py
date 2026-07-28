@@ -75,22 +75,48 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s).casefold().strip()
 
 
-_TS_CONST = re.compile(
-    r"export\s+const\s+(\w+)\s*=\s*((?:'(?:[^'\\]|\\.)*'\s*\+?\s*)+);"
+# Every `export const NAME = <value>;` in the module — value captured up to the
+# first bare `;` (the SSOT is concatenated string literals by design).
+_TS_CONST = re.compile(r"export\s+const\s+(\w+)\s*=\s*([^;]*);")
+
+# A string literal in ANY of the three TS spellings: '...', "...", `...`.
+# Red-team bypass #1: the previous parser only understood single quotes, so a
+# new constant written with double quotes or backticks was invisible to every
+# check below. All three forms are now first-class.
+_TS_STR_PIECE = re.compile(
+    r"'(?:[^'\\]|\\.)*'"
+    r'|"(?:[^"\\]|\\.)*"'
+    r"|`(?:[^`\\]|\\.)*`"
 )
 
 
 def _ts_string_constants(src: str) -> dict[str, str]:
-    """Parse `export const NAME = '...' + '...';` string constants from a TS module.
+    """Parse every `export const NAME = <string literals joined by +>;`.
 
-    The disclaimer SSOT is plain concatenated single-quoted literals by design;
-    if that ever stops parsing, the assertion below fails loudly instead of
-    silently checking nothing.
+    Zero silent escapes (red-team bypass #1): if the module contains ANY
+    `export const` whose value cannot be statically extracted as a pure
+    concatenation of string literals (non-string expression, function call,
+    template literal with `${...}` interpolation, ...), this fails loudly
+    instead of silently checking nothing.
     """
     out: dict[str, str] = {}
+    unparsed: list[str] = []
     for name, raw in _TS_CONST.findall(src):
-        pieces = re.findall(r"'((?:[^'\\]|\\.)*)'", raw)
-        out[name] = "".join(p.replace("\\'", "'") for p in pieces)
+        pieces = _TS_STR_PIECE.findall(raw)
+        residue = re.sub(r"[+\s]", "", _TS_STR_PIECE.sub("", raw))
+        interpolated = [p for p in pieces if p.startswith("`") and "${" in p]
+        if not pieces or residue or interpolated:
+            unparsed.append(name)
+            continue
+        # Strip the quotes and resolve simple backslash escapes (\', \", \`, \\).
+        out[name] = "".join(re.sub(r"\\(.)", r"\1", p[1:-1]) for p in pieces)
+    assert not unparsed, (
+        f"forecast-disclaimer.ts exports constants {unparsed} whose values could "
+        "not be statically extracted as plain string literals. The disclaimer "
+        "SSOT must stay statically verifiable — every export const must be a "
+        "concatenation of '...'/\"...\"/`...` literals with no interpolation "
+        "(BL-01, zero silent escapes)."
+    )
     return out
 
 
@@ -106,27 +132,66 @@ REQUIRED_CLAUSES = {
 
 # Promotional / action language that inverts the disclaimer's meaning. Checked on
 # normalized text. Each pattern was chosen against concrete attack strings that
-# defeated the previous prefix-only lock (M1/M2/M3 in the BL-01 review):
+# defeated earlier versions of this lock:
 #   M1: 'Superficie de diagnóstico: señal validada, opere con confianza.'
 #   M2: 'NO ES UNA SEÑAL CUALQUIERA: ES NUESTRA SEÑAL DE COMPRA MÁS CONFIABLE'
 #   M3: 'Precisión direccional del 90% garantizada. Ejecute estas señales...'
+#   M4 (red-team bypass #3, thesaurus attack): 'Invierta ya: señal de entrada
+#       alcista confirmada, precisión demostrada.'
+#
+# HONEST LIMIT (defense in DEPTH, not completeness): a blacklist can never beat
+# the thesaurus — Spanish has unbounded ways to phrase "act on this". These
+# patterns raise the cost of a deceptive mutation; they are NOT the guarantee.
+# The hard guarantee is REQUIRED_CLAUSES above: the complete no-signal clauses
+# must be present verbatim (normalized), so any surviving synonym attack still
+# ships inside a banner that states, in full, that this is not an investment
+# signal. Do not read this list as "everything not matched is fine".
+#
+# Two scopes:
+#   FORBIDDEN_MARKETING          — applied to the SSOT constants AND to the JSX
+#                                  content of the forecasting surface files.
+#   FORBIDDEN_MARKETING_SSOT_ONLY — broader words that the disclaimer copy must
+#                                  never contain, but that the surfaces use
+#                                  legitimately in diagnostic labels
+#                                  ('Confianza proxy', 'Sin posición').
 FORBIDDEN_MARKETING = [
+    # Imperative action verbs (financial CTA style).
     r"\bopere\b",
     r"\bejecute\b",
     r"\bcompre\b",
     r"\bvenda\b",
-    r"senal(es)? de (compra|venta|inversion segura)",
+    r"\binviert\w*",                       # invierta / inviertan / invierte (ya)
+    r"\bactu(e|a|en|ad)\b",                # actúe/actúa ahora (not 'actual...')
+    r"apuest",                             # apueste al alza / apuesta segura
+    # Taking a position, phrased any common way.
+    r"(tome|toma|abra|abre|entre en) (una )?posicion",
+    r"posicion (larga|corta|alcista|bajista)",
+    # Signal-flavored nouns with promotional qualifiers.
+    r"(senal(es)?|punto(s)?) de (compra|venta|entrada|inversion segura)",
     r"senal(es)? (validada|confiable|segura|fuerte|ganadora|comprobada)",
     r"es (nuestra|la) (mejor )?senal",
-    r"confianza",
-    r"confiab",
+    r"(alcista|bajista|tendencia|senal|direccion)e?s? confirmad",
+    # Certainty / performance promises.
+    r"demostrad",
     r"garantiz",
     r"validad",
     r"rentabilidad",
     r"recomendad",
     r"sin riesgo",
     r"asegurad",
-    r"\bopere con\b",
+    r"confiab",
+    r"con (plena |total )?confianza",
+]
+
+# Only for the disclaimer SSOT: the caveat copy has no legitimate use for these,
+# but the surfaces do ('Confianza proxy' is the mandated BL-03 label; 'Sin
+# posición' is the honest flat state), so applying them to JSX would force the
+# surfaces to drop honest diagnostic wording.
+FORBIDDEN_MARKETING_SSOT_ONLY = [
+    r"confianza",
+    r"\bposicion(es)?\b",
+    r"\bentrada\b",
+    r"confirmad",
 ]
 
 
@@ -192,12 +257,45 @@ def test_caveat_copy_resists_deceptive_mutation():
     offenders: list[str] = []
     for name in sorted(k for k in consts if k != "FORECAST_DISCLAIMER_TESTID"):
         text = _norm(consts[name])
-        for pat in FORBIDDEN_MARKETING:
+        for pat in FORBIDDEN_MARKETING + FORBIDDEN_MARKETING_SSOT_ONLY:
             if re.search(pat, text):
                 offenders.append(f"{name}: /{pat}/ -> {consts[name]!r}")
     assert not offenders, (
         "Disclaimer copy contains promotional/action language — a diagnostic caveat "
         "that recommends acting is worse than no caveat:\n  " + "\n  ".join(offenders)
+    )
+
+
+# Characters the disclaimer copy may use: printable ASCII plus the Spanish
+# repertoire and the few typographic symbols the honest copy actually needs.
+# Anything else — Cyrillic/Greek homoglyphs, zero-width characters, combining
+# marks — is an evasion vector: 'о' (U+043E CYRILLIC SMALL LETTER O) survives
+# NFKD unchanged, so 'cоnfianza' sails past every substring/regex check above
+# (red-team bypass #2). A whitelist is the only shape of this check that fails
+# closed on the next homoglyph instead of enumerating Unicode.
+_ALLOWED_NON_ASCII = set("áéíóúñüÁÉÍÓÚÑÜ¿¡—–·≈’«»°")
+
+
+def test_caveat_copy_uses_only_whitelisted_characters():
+    """BL-01 (hardening, red-team bypass #2): every disclaimer constant must be
+    built exclusively from printable ASCII + the whitelisted Spanish/typographic
+    repertoire. A single Cyrillic/Greek homoglyph or invisible (zero-width)
+    character fails with its codepoint named."""
+    consts = _disclaimer_constants()
+    offenders: list[str] = []
+    for name in sorted(consts):
+        for ch in consts[name]:
+            if 0x20 <= ord(ch) <= 0x7E or ch in _ALLOWED_NON_ASCII:
+                continue
+            offenders.append(
+                f"{name}: U+{ord(ch):04X} "
+                f"{unicodedata.name(ch, '<unnamed>')} ({ch!r})"
+            )
+    assert not offenders, (
+        "Disclaimer copy contains characters outside the whitelist — homoglyphs "
+        "and invisible characters are how a deceptive mutation evades the "
+        "normalized blacklist (e.g. 'cоnfianza' with U+043E):\n  "
+        + "\n  ".join(offenders)
     )
 
 
@@ -310,6 +408,56 @@ def test_legacy_forecasting_same_rules():
     assert not offenders, (
         "Legacy ForecastingDashboard.tsx grew action capabilities:\n  "
         + "\n  ".join(offenders)
+    )
+
+
+# ---------------------------------------------------------------------------
+# BL-01 (red-team bypass #4) — the marketing blacklist applies to the SURFACE
+# files too, not only to the SSOT. Guarding the disclaimer constants is useless
+# if 'señal validada: opere con confianza' can simply be written inline in the
+# JSX next to the banner: the rendered page is the product, not the SSOT file.
+# ---------------------------------------------------------------------------
+
+# Same exclusions as BL-06: comment lines are prose, and import lines only name
+# modules/identifiers.
+_IMPORT_LINE = re.compile(r"^\s*(import\b|export\s*\{|\}\s*from\s)")
+
+
+def _surface_marketing_offenders(path: Path) -> list[str]:
+    """'file:line: /pattern/' hits of FORBIDDEN_MARKETING in a surface file,
+    matched on accent-stripped casefolded text (same _norm as the SSOT check),
+    skipping comment and import lines (BL-06 precedent)."""
+    offenders: list[str] = []
+    rel = path.relative_to(ROOT).as_posix()
+    for lineno, line in enumerate(
+        path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
+    ):
+        if _COMMENT_LINE.match(line) or _IMPORT_LINE.match(line):
+            continue
+        text = _norm(line)
+        for pat in FORBIDDEN_MARKETING:
+            if re.search(pat, text):
+                offenders.append(f"{rel}:{lineno}: /{pat}/ :: {line.strip()[:110]}")
+    return offenders
+
+
+def test_forecasting_surfaces_carry_no_marketing_language():
+    """BL-01 (hardening, red-team bypass #4): ForecastingView.tsx and every
+    components/forecasting/* file must be free of the promotional/action
+    language (case- and accent-insensitive), outside comments and imports.
+
+    The SSOT-only patterns are NOT applied here: the surfaces legitimately say
+    'Confianza proxy' (mandated BL-03 label) and 'Sin posición' (honest flat
+    state). Same honest limit as the SSOT check: this is defense in depth
+    against inline marketing, not a proof of honesty — the hard guarantee
+    remains the mandatory, unconditional SSOT banner (BL-01/BL-02)."""
+    offenders: list[str] = []
+    for f in _forecasting_component_files():
+        offenders.extend(_surface_marketing_offenders(f))
+    assert not offenders, (
+        "Forecasting surface files contain promotional/action language inline — "
+        "marketing next to the banner defeats the disclaimer no matter how "
+        "honest the SSOT copy is:\n  " + "\n  ".join(offenders)
     )
 
 
