@@ -54,8 +54,9 @@ DASHBOARD_DATA_DIR = PROJECT_ROOT / 'usdcop-trading-dashboard' / 'public' / 'dat
 APPROVALS_DIR = Path(os.getenv('APPROVALS_DATA_DIR') or (PROJECT_ROOT / 'data' / 'approvals'))
 APPROVAL_FILE = APPROVALS_DIR / 'approval_state.json'
 DEPLOY_STATUS_FILE = DASHBOARD_DATA_DIR / 'deploy_status.json'
-DEFAULT_SCRIPT = PROJECT_ROOT / 'scripts' / 'pipeline' / 'train_and_export_smart_simple.py'
-DEFAULT_ARGS_CLI = ['--phase', 'production', '--no-png', '--seed-db']
+# El comando por defecto (fallback sin manifiesto) y la allowlist de script/args viven en
+# `src/contracts/deploy_manifest.py` (CTR-DEPLOY-CMD-001), espejo de
+# `usdcop-trading-dashboard/lib/security/deploy-command.ts`. No se duplican aquí.
 
 
 def _write_deploy_status(patch: Dict[str, Any]) -> None:
@@ -125,14 +126,38 @@ def guard_approved(**context) -> Dict[str, Any]:
             f"[H5-L4b] Deploy REFUSED — approval status is '{status}', requires APPROVED "
             f"(Vote 2/2 on /dashboard first)."
         )
+    # GATE DE EJECUCIÓN (CTR-DEPLOY-CMD-001): el manifiesto NO elige qué programa corre.
+    # Antes, `run_production` unía PROJECT_ROOT con el script del plan, y pathlib DESCARTA
+    # la raíz si el operando derecho es absoluto (`Path('/opt/airflow') / '/etc/x.py'` →
+    # `/etc/x.py`): un manifiesto manipulado ejecutaba cualquier fichero del contenedor.
+    # Ahora `script`/`args` pasan por la misma allowlist que el dashboard
+    # (`lib/security/deploy-command.ts` ↔ `src/contracts/deploy_manifest.py`), y el
+    # rechazo ocurre ANTES de tocar nada: fail-closed.
+    from src.contracts.deploy_manifest import (
+        DeployManifestRejected,
+        describe_rejection,
+        resolve_deploy_command,
+    )
+
     manifest = state.get('deploy_manifest') or {}
+    try:
+        command = resolve_deploy_command(PROJECT_ROOT, manifest or None)
+    except DeployManifestRejected as exc:
+        logger.error(f"[H5-L4b] SECURITY — manifiesto RECHAZADO: {describe_rejection(exc, manifest)}")
+        _write_deploy_status({
+            'status': 'failed', 'phase': None, 'runner': 'airflow', 'dag_id': DAG_ID,
+            'error': f"Deploy manifest rejected ({exc.field}): {exc.reason}",
+            'completed_at': datetime.utcnow().isoformat() + 'Z',
+        })
+        raise ValueError(f"[H5-L4b] Deploy REFUSED — {exc}") from exc
+
     result = {
         'strategy': state.get('strategy'),
         'is_default': approval_file == APPROVAL_FILE,
         'approved_by': state.get('approved_by'),
         'approved_at': state.get('approved_at'),
-        'script': manifest.get('script') or str(DEFAULT_SCRIPT.relative_to(PROJECT_ROOT)),
-        'args': manifest.get('args') or DEFAULT_ARGS_CLI,
+        'script': command.script_rel,
+        'args': list(command.args),
     }
     logger.info(f"[H5-L4b] APPROVED by {result['approved_by']} at {result['approved_at']} — "
                 f"deploying {result['strategy']} via {result['script']} {' '.join(result['args'])}")
@@ -149,12 +174,29 @@ def guard_approved(**context) -> Dict[str, Any]:
 
 def run_production(**context) -> Dict[str, Any]:
     """Execute the manifest deploy command (retrain full window + export + seed DB)."""
-    plan = context['ti'].xcom_pull(key='deploy_plan', task_ids='guard_approved')
-    script = PROJECT_ROOT / plan['script']
-    if not script.exists():
-        raise FileNotFoundError(f"[H5-L4b] deploy script not found: {script}")
+    from src.contracts.deploy_manifest import (
+        DeployManifestRejected,
+        describe_rejection,
+        resolve_deploy_command,
+    )
 
-    cmd = [sys.executable, str(script), *plan['args']]
+    plan = context['ti'].xcom_pull(key='deploy_plan', task_ids='guard_approved')
+    # Se RE-RESUELVE aquí (no se confía en la XCom, que es estado mutable entre tareas):
+    # misma allowlist, mismo fail-closed. El argv es explícito y jamás pasa por un shell.
+    proposed = {'script': plan.get('script'), 'args': plan.get('args') or []}
+    try:
+        command = resolve_deploy_command(PROJECT_ROOT, proposed, interpreter=sys.executable)
+    except DeployManifestRejected as exc:
+        logger.error(f"[H5-L4b] SECURITY — manifiesto RECHAZADO en ejecución: "
+                     f"{describe_rejection(exc, proposed)}")
+        _write_deploy_status({
+            'status': 'failed',
+            'error': f"Deploy manifest rejected ({exc.field}): {exc.reason}",
+            'completed_at': datetime.utcnow().isoformat() + 'Z',
+        })
+        raise ValueError(f"[H5-L4b] Deploy REFUSED — {exc}") from exc
+
+    cmd = command.argv()
     logger.info(f"[H5-L4b] Running: {' '.join(cmd)}")
 
     result = subprocess.run(

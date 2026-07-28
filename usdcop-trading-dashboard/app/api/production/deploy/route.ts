@@ -12,9 +12,10 @@ import path from 'path';
 import { spawn } from 'child_process';
 import { requireApprovalVote } from '@/lib/auth/approval-authz';
 import { readApprovalState } from '@/lib/approvals/store';
+import { query } from '@/lib/db/postgres-client';
+import { resolveDeployCommand, type DeployCommandResolution } from '@/lib/security/deploy-command';
 import type {
   ApprovalState,
-  DeployManifest,
   DeployStatus,
   DeployResponse,
 } from '@/lib/contracts/production-approval.contract';
@@ -27,8 +28,6 @@ const DEPLOY_FILE = path.join(DATA_DIR, 'deploy_status.json');
 
 // Project root is one level above the dashboard
 const PROJECT_ROOT = path.resolve(process.cwd(), '..');
-// Legacy fallback script (used when no deploy_manifest is present)
-const LEGACY_SCRIPT = path.join(PROJECT_ROOT, 'scripts', 'pipeline', 'train_and_export_smart_simple.py');
 
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
   try {
@@ -52,6 +51,46 @@ const AIRFLOW_URL = process.env.AIRFLOW_API_URL ?? '';
 const AIRFLOW_API_USER = process.env.AIRFLOW_API_USER ?? '';
 const AIRFLOW_API_PASSWORD = process.env.AIRFLOW_API_PASSWORD ?? '';
 const DEPLOY_DAG_ID = process.env.DEPLOY_DAG_ID ?? 'forecast_h5_l4b_production_deploy';
+
+/**
+ * Incidente de seguridad: el manifiesto APROBADO pide algo que no se puede ejecutar.
+ *
+ * Es append-only en `audit_log` (best-effort: la DB puede estar caída) + un `console.error`
+ * que SIEMPRE queda, porque este evento significa una de dos cosas y ambas se investigan:
+ * el artefacto de aprobación fue manipulado, o el pipeline empezó a escribir un manifiesto
+ * que ya no cumple el contrato. En ninguno de los dos casos se ejecuta nada.
+ */
+async function auditManifestRejection(
+  userId: string | null,
+  strategy: string,
+  denial: Extract<DeployCommandResolution, { ok: false }>,
+  manifest: unknown,
+  req: NextRequest,
+): Promise<void> {
+  const detail = {
+    field: denial.field,
+    reason: denial.reason,
+    manifest_script: (manifest as { script?: unknown } | undefined)?.script ?? null,
+    manifest_args: (manifest as { args?: unknown } | undefined)?.args ?? null,
+    via: '/api/production/deploy',
+    executed: false,
+  };
+  console.error(`[Deploy] SECURITY — deploy manifest REJECTED (${denial.field}): ${denial.reason}`, detail);
+  try {
+    await query(
+      `INSERT INTO audit_log (user_id, action, object_type, object_id, detail, ip)
+       VALUES ($1, 'deploy_manifest_rejected', 'deploy', $2, $3::jsonb, $4)`,
+      [
+        userId,
+        strategy,
+        JSON.stringify(detail),
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
+      ],
+    );
+  } catch (e) {
+    console.error('[Deploy] audit_log row failed for rejected manifest (console trail stands):', e);
+  }
+}
 
 async function triggerAirflowDeploy(strategyId: string | null): Promise<{ ok: boolean; detail: string }> {
   if (!AIRFLOW_URL || !AIRFLOW_API_USER || !AIRFLOW_API_PASSWORD) {
@@ -147,7 +186,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Write initial deploy status
+    // 3. Resolver el COMANDO antes de cualquier efecto (fail-closed, K-040).
+    //
+    // El manifiesto viaja dentro del artefacto de aprobación; antes se pasaba tal cual a
+    // `spawn(..., { shell: true })`, así que un `;`/`&&`/`$( )` en el JSON ejecutaba
+    // comandos arbitrarios. Ahora `script` y `args` pasan por allowlist y el proceso se
+    // lanza con argv explícito y SIN shell.
+    //
+    // Se valida ANTES de tocar `deploy_status.json` y ANTES de disparar Airflow **a
+    // propósito**: el DAG H5-L4b ejecuta ESTE MISMO manifiesto, así que delegar un
+    // manifiesto inválido sería mover el problema de contenedor, no cerrarlo.
+    const resolution = await resolveDeployCommand(PROJECT_ROOT, approval.deploy_manifest);
+    if (!resolution.ok) {
+      const at = new Date().toISOString();
+      await writeDeployStatus({
+        status: 'failed',
+        strategy_id: approval.strategy,
+        strategy_name: approval.strategy_name,
+        started_at: at,
+        completed_at: at,
+        error: `Deploy manifest rejected (${resolution.field}): ${resolution.reason}`,
+      });
+      await auditManifestRejection(gate.userId, approval.strategy, resolution, approval.deploy_manifest, request);
+      return NextResponse.json(
+        {
+          success: false,
+          status: 'failed',
+          message: `Deploy manifest rejected (${resolution.field}): ${resolution.reason}. Nothing was executed.`,
+        } as DeployResponse,
+        { status: 400 }
+      );
+    }
+    const command = resolution.command;
+
+    // 3b. Write initial deploy status
     const deployStatus: DeployStatus = {
       status: 'running',
       strategy_id: approval.strategy,
@@ -172,29 +244,20 @@ export async function POST(request: NextRequest) {
     }
     console.warn(`[Deploy] Airflow path unavailable (${airflow.detail}) — falling back to local spawn`);
 
-    // 4b. Resolve deploy command from manifest (or legacy fallback)
-    const manifest: DeployManifest | undefined = approval.deploy_manifest;
-    let scriptPath: string;
-    let scriptArgs: string[];
-
-    if (manifest) {
-      scriptPath = path.join(PROJECT_ROOT, manifest.script);
-      scriptArgs = [...manifest.args];
-    } else {
-      // Legacy fallback: hardcoded Smart Simple deploy
-      scriptPath = LEGACY_SCRIPT;
-      scriptArgs = ['--phase', 'production', '--no-png', '--seed-db'];
-    }
-
-    // Spawn detached Python process (python3 on Debian/Ubuntu)
+    // 4b. Lanzamiento local: argv EXPLÍCITO, SIN shell.
+    //
+    // `shell: true` estaba aquí "para resolver el PATH en Windows"; el precio era que la
+    // línea de comandos la interpretaba `cmd.exe`. La resolución del ejecutable ahora es
+    // explícita (`DEPLOY_PYTHON_BIN`/`PYTHON_BIN`, o `python` en Windows y `python3` en
+    // el resto — `spawn` sin shell ya busca en el PATH), y `script`/`args` vienen ya
+    // validados por allowlist en `lib/security/deploy-command.ts`.
     const child = spawn(
-      'python3',
-      [scriptPath, ...scriptArgs],
+      command.interpreter,
+      [command.scriptPath, ...command.args],
       {
         cwd: PROJECT_ROOT,
         detached: true,
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: true, // Required on Windows for PATH resolution
       }
     );
 
