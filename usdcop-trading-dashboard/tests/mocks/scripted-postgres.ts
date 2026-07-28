@@ -76,25 +76,72 @@ function findOrderLedgerMigration(): { dir: string; file: string } {
   }
 }
 
-function loadOrderLifecycle(): { file: string; table: Record<string, string[]> } {
-  const { dir, file } = findOrderLedgerMigration();
-  const sql = readFileSync(join(dir, file), 'utf8');
+/**
+ * `status -> statuses it may become`, read out of ANY piece of DDL that declares the
+ * `enforce_checkout_order_transition` body.
+ *
+ * Exported because the lifecycle is declared in TWO places for two different audiences
+ * (see `billing-payment-retry.test.ts`): the baseline ledger migration, which only ever
+ * runs on a BRAND-NEW database, and a versioned `CREATE OR REPLACE FUNCTION` migration,
+ * which is what an ALREADY DEPLOYED database gets. Both must be judged by the SAME
+ * parser, or "the baseline says X and the compensation says Y" becomes invisible again.
+ *
+ * It reads SEMANTICS, NOT SPELLING. The first version of this parser only understood
+ * `IN (...)`, and CODEX's migration — which said `= 'paid'`, an exactly equivalent
+ * predicate — was reported as "does not permit failed -> paid". A lock that forces
+ * somebody else's SQL into the shape its author happened to choose is a false alarm
+ * waiting to happen and pressure to write worse DDL, so every equivalent spelling of
+ * "the set of statuses NEW.status may take" is accepted:
+ *
+ *   NEW.status IN ('paid')            NEW.status IN ( 'paid' , 'refunded' )
+ *   NEW.status = 'paid'               NEW.status = ANY(ARRAY['paid','refunded'])
+ *   NEW.status = ANY('{paid}'::text[])
+ *
+ * with arbitrary whitespace/newlines throughout. What it must keep saying NO to is the
+ * transition being genuinely absent — that is the only thing it is allowed to be red about.
+ */
+export function parseOrderTransitions(sql: string): Record<string, string[]> {
   const table: Record<string, string[]> = {};
-  const rule = /OLD\.status\s*=\s*'(\w+)'\s+AND\s+NEW\.status\s+IN\s*\(([^)]*)\)/gi;
+  const rule = new RegExp(
+    String.raw`OLD\.status\s*=\s*'(\w+)'\s+AND\s+NEW\.status\s*(?:` +
+      String.raw`IN\s*\(([^)]*)\)` +                              // IN ('a','b')
+      String.raw`|=\s*ANY\s*\(\s*ARRAY\s*\[([^\]]*)\]` +          // = ANY(ARRAY['a','b'])
+      String.raw`|=\s*ANY\s*\(\s*'\{([^}]*)\}'` +                 // = ANY('{a,b}'::text[])
+      String.raw`|=\s*'([^']*)'` +                                // = 'a'
+      String.raw`)`,
+    'gi',
+  );
   for (let m = rule.exec(sql); m !== null; m = rule.exec(sql)) {
-    const targets = m[2].split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean);
+    const set = m[2] ?? m[3] ?? m[4] ?? m[5] ?? '';
+    const targets = set.split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean);
     table[m[1]] = [...new Set([...(table[m[1]] ?? []), ...targets])];
   }
+  return table;
+}
+
+function loadOrderLifecycle(): { dir: string; file: string; table: Record<string, string[]> } {
+  const { dir, file } = findOrderLedgerMigration();
+  const table = parseOrderTransitions(readFileSync(join(dir, file), 'utf8'));
   if (Object.keys(table).length === 0) {
     throw new Error(`billing fake: could not parse the transition trigger out of ${file}`);
   }
-  return { file, table };
+  return { dir, file, table };
 }
 
+/**
+ * The fake enforces the BASELINE lifecycle only. That is deliberate: the baseline is the
+ * complete DDL of the table, whereas a compensating migration is a delta aimed at
+ * already-deployed databases. Folding the delta in here would let a fix that landed ONLY
+ * as a compensation turn the baseline assertion green, i.e. it would hide exactly the
+ * asymmetry between a fresh install and a deployed one that CXD-063 is about.
+ */
 const lifecycle = loadOrderLifecycle();
 
 /** Name of the migration the lifecycle below was read from (for failure messages). */
 export const ORDER_LEDGER_MIGRATION = lifecycle.file;
+
+/** Directory the billing DDL lives in — resolved by walking up, never hardcoded. */
+export const ORDER_MIGRATIONS_DIR = lifecycle.dir;
 
 /** `status -> statuses it may legally become`, exactly as the trigger enforces it. */
 export const LEGAL_ORDER_TRANSITIONS: Readonly<Record<string, readonly string[]>> = lifecycle.table;
