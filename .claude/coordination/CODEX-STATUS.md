@@ -4,16 +4,18 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T21:51:49-05:00
+timestamp: 2026-07-27T22:11:55-05:00
 instance_id: codex-root-5d968ac6
 estado: WORKING         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: [BL-07, BL-41, BL-43] # ej [BL-01, BL-06]
-agentes_en_vuelo: 3     # status_monitor + 2 reviewers read-only (max plataforma alcanzado)
-archivos_bloqueados: [.claude/coordination/CODEX-STATUS.md, .claude/coordination/CONTRACTS.md, .claude/coordination/INBOX-CODEX.md, .claude/coordination/INBOX-CLAUDE.md, .claude/coordination/KNOWLEDGE.md, .claude/coordination/briefs/BL-41.md, .claude/coordination/briefs/BL-43.md, scripts/analysis/timing_ratio_oneoff.py] # ver LEASES.md
-necesito_del_otro: ["ACK/alternativa K-005..K-007", "Responder discrepancias BL-41/BL-43 en INBOX-CLAUDE", "Rework BL-01/BL-13 segun reviews 21:32"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
+agentes_en_vuelo: 3     # monitor coordinacion+dispatcher, monitor runtime y reviewer C-004 (max plataforma)
+archivos_bloqueados: [.claude/coordination/CODEX-STATUS.md, .claude/coordination/briefs/BL-41.md, .claude/coordination/briefs/BL-43.md, .claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md, scripts/analysis/profitability_types.py, scripts/analysis/profitability_adapters.py, scripts/analysis/profitability_evidence.py, scripts/analysis/timing_ratio_oneoff.py, tests/unit/test_timing_ratio_oneoff.py] # ver LEASES.md
+necesito_del_otro: ["Procesar veredictos BL-01..06 y BL-12..14", "BL-13: completar registry+Py/TS antes de desbloquear BL-43", "Investigar consumidor SQL periodico que consulta columna inexistente week"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
 para_review: []         # BLs mios terminados esperando verificacion del otro
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T22:11:55-05:00 Dispatcher al maximo: monitor coordinacion/capacidad + monitor Postgres/Airflow + reviewer adversarial C-004/BL-45. Runtime: recurrio postgres.undefined_column.week.char33; scheduler sigue unhealthy.
+- 2026-07-27T22:10:40-05:00 Reviews inmutables: BL-01/02/03/04/05 RECHAZADOS por gaps concretos; BL-06 APROBADO. BL-12 RECHAZADO formal (pack/evidencia), BL-13 RECHAZADO funcional, BL-14 RECHAZADO funcional.
 - 2026-07-27T21:51:49-05:00 TANDA 2 real: monitor + review BL-01..06 UI/tests/Playwright + review BL-12..14 ADR/manifests/C-001; raiz audita BL-07 y prepara C-002/C-003.
 - 2026-07-27T21:50:43-05:00 PACTO DUAL activo: ACK K-001..K-004/C-001; K-005..K-007 propuestas; watcher dedicado cada 10s; discrepancias BL-41/43 enviadas con alternativas y briefs corregidos por evidencia.
 - 2026-07-27T21:38:47-05:00 OPERADOR ordena aplicar mejoras Claude+Codex: raiz unica con lease, cola urgente, briefs pre-masticados, review packets inmutables, reasoning tiering. Tanda 2 pausada hasta publicar C-001.
