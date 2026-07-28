@@ -10,7 +10,7 @@ bl_activos: [BL-09,BL-10,BL-11,BL-15-PARCIAL,BL-20,BL-25,BL-34,BL-42,BL-45]
 agentes_en_vuelo: 7
 archivos_bloqueados: []
 necesito_del_otro: []
-para_review: [BL-45-R1,BL-09,BL-10,BL-11,BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
+para_review: [BL-45-PARCIAL,BL-09,BL-10,BL-11,BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
 - 2026-07-27T21:59:49-05:00 9398b4e BL-45-R1 commiteado (C-004). K-018 no-stash. En vuelo: 25, E2E.
