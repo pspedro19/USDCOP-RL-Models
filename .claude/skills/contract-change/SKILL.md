@@ -29,6 +29,7 @@ contract semantics.
 | `src/contracts/strategy_schema.py` | `usdcop-trading-dashboard/lib/contracts/strategy.contract.ts` |
 | `src/contracts/strategy_manifest.py` | `usdcop-trading-dashboard/lib/contracts/strategy-manifest.contract.ts` |
 | `src/contracts/forecast_output.py` | `usdcop-trading-dashboard/lib/contracts/forecast-output.contract.ts` |
+| `src/contracts/policy.py` + `src/contracts/rule_trace.py` (whitelist: `src/contracts/policy_dsl.py`) | `usdcop-trading-dashboard/lib/contracts/policy.contract.ts` |
 | `src/contracts/analysis_schema.py` | `usdcop-trading-dashboard/lib/contracts/weekly-analysis.contract.ts` |
 | `src/config/backtest_ssot.py` | `usdcop-trading-dashboard/lib/contracts/backtest-ssot.contract.ts` |
 | `config/analysis/analysis_assets.yaml` | `usdcop-trading-dashboard/lib/contracts/analysis-assets.ts` |

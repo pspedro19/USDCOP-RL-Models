@@ -8,20 +8,38 @@ Covers:
 - eval/code in spec => rejected (never executed)
 - EngineRef discriminated invariants
 - Stateful context (decision §15.2) and crossing operators
+- TS mirror parity (policy.contract.ts — fields + whitelist identical)
 """
 
 from __future__ import annotations
 
+import re
+from dataclasses import fields
+from pathlib import Path
+
 import pytest
 
-from src.contracts.policy import EngineRef, Policy, PolicyContext, StrategyDecision
+from src.contracts.policy import (
+    ENGINE_TYPES,
+    VALID_DIRECTIONS,
+    EngineRef,
+    Policy,
+    PolicyContext,
+    StrategyDecision,
+)
 from src.contracts.policy_dsl import (
     ALLOWED_OPERATORS,
+    COMPARISON_OPERATORS,
+    LOGICAL_OPERATORS,
+    RANGE_OPERATORS,
     DeclarativePolicy,
     evaluate_condition,
     validate_condition,
 )
-from src.contracts.rule_trace import RULE_TRACE_SCHEMA_V1, RuleTrace
+from src.contracts.rule_trace import RULE_TRACE_SCHEMA_V1, RuleTrace, RuleTraceEntry
+
+ROOT = Path(__file__).resolve().parents[2]
+TS_MIRROR = ROOT / "usdcop-trading-dashboard" / "lib" / "contracts" / "policy.contract.ts"
 
 
 def ma200_spec() -> dict:
@@ -296,3 +314,144 @@ class TestDecisionInvariants:
         del spec["resolution"]["default_target_exposure"]
         with pytest.raises(ValueError, match="default_target_exposure"):
             DeclarativePolicy(spec)
+
+
+# ---------------------------------------------------------------------------
+# TS mirror parity (contract-change skill step 6 — same pattern as
+# test_forecast_output_contract.py: read the .ts as text, assert identical
+# fields and whitelist, not string vibes)
+# ---------------------------------------------------------------------------
+
+def _ts_text() -> str:
+    return TS_MIRROR.read_text(encoding="utf-8")
+
+
+def _ts_const_literals(text: str, name: str, pattern: str = r"'([a-z_]+)'") -> set[str]:
+    """Extract the string literals of an `export const NAME = [ ... ] as const`."""
+    m = re.search(rf"export const {name} = \[(.*?)\]", text, re.S)
+    assert m, f"const {name} missing from TS mirror"
+    return set(re.findall(pattern, m.group(1)))
+
+
+def _ts_interface(text: str, name: str) -> str:
+    m = re.search(rf"export interface {name} \{{(.*?)\n\}}", text, re.S)
+    assert m, f"interface {name} missing from TS mirror"
+    return m.group(1)
+
+
+class TestTsMirrorParity:
+    def test_mirror_exists(self):
+        assert TS_MIRROR.is_file(), "TS mirror missing — contracts change in pairs"
+
+    # --- Whitelist: IDENTICAL sets, per operator family -------------------
+
+    def test_operator_whitelist_identical(self):
+        text = _ts_text()
+        assert _ts_const_literals(text, "COMPARISON_OPERATORS") == set(COMPARISON_OPERATORS)
+        assert _ts_const_literals(text, "LOGICAL_OPERATORS") == set(LOGICAL_OPERATORS)
+        assert _ts_const_literals(text, "RANGE_OPERATORS") == set(RANGE_OPERATORS)
+
+    def test_allowed_operators_is_union_of_families(self):
+        text = _ts_text()
+        m = re.search(r"export const ALLOWED_OPERATORS = \[(.*?)\]", text, re.S)
+        assert m, "ALLOWED_OPERATORS missing from TS mirror"
+        body = m.group(1)
+        for family in ("COMPARISON_OPERATORS", "LOGICAL_OPERATORS", "RANGE_OPERATORS"):
+            assert f"...{family}" in body, f"ALLOWED_OPERATORS must spread {family}"
+        # no extra literal smuggled into the union
+        assert not re.findall(r"'([a-z_]+)'", body)
+        union = (
+            _ts_const_literals(text, "COMPARISON_OPERATORS")
+            | _ts_const_literals(text, "LOGICAL_OPERATORS")
+            | _ts_const_literals(text, "RANGE_OPERATORS")
+        )
+        assert union == set(ALLOWED_OPERATORS)
+
+    # --- Discriminator constants ------------------------------------------
+
+    def test_engine_types_and_directions_identical(self):
+        text = _ts_text()
+        assert _ts_const_literals(text, "ENGINE_TYPES") == set(ENGINE_TYPES)
+        assert _ts_const_literals(
+            text, "VALID_DIRECTIONS", pattern=r"'([A-Z_]+)'"
+        ) == set(VALID_DIRECTIONS)
+
+    def test_policy_modes_match_python_context(self):
+        text = _ts_text()
+        assert _ts_const_literals(text, "POLICY_MODES", pattern=r"'([A-Z_]+)'") == {
+            "DECISION", "FREEZE", "REVALIDATE", "BACKFILL",
+        }
+        assert PolicyContext().mode == "DECISION"
+
+    # --- EngineRef invariants encoded as TYPES ----------------------------
+
+    def test_engine_ref_is_a_discriminated_union(self):
+        text = _ts_text()
+        assert re.search(
+            r"export type EngineRef =\s*RuleBasedEngineRef \| MlEngineRef \| CompositeEngineRef",
+            text,
+        ), "EngineRef must be the discriminated union of the three engine refs"
+
+    def test_rule_based_requires_hash_and_forbids_snapshots(self):
+        block = _ts_interface(_ts_text(), "RuleBasedEngineRef")
+        assert "type: 'rule_based';" in block
+        assert re.search(r"policy_hash: string;", block), "policy_hash must be required"
+        assert "model_snapshot_id?: never;" in block, (
+            "rule_based must forbid model_snapshot_id at the type level"
+        )
+        assert "model_snapshot_ids?: never;" in block, (
+            "rule_based must forbid model_snapshot_ids at the type level"
+        )
+
+    def test_ml_requires_model_snapshot_id(self):
+        block = _ts_interface(_ts_text(), "MlEngineRef")
+        assert "type: 'ml';" in block
+        assert re.search(r"model_snapshot_id: string;", block), (
+            "ml must require model_snapshot_id (no `?`)"
+        )
+
+    def test_composite_requires_hash_and_carries_model_ids(self):
+        block = _ts_interface(_ts_text(), "CompositeEngineRef")
+        assert "type: 'composite';" in block
+        assert re.search(r"policy_hash: string;", block), "policy_hash must be required"
+        assert "model_snapshot_ids" in block
+
+    def test_every_engine_ref_field_declared_in_ts(self):
+        text = _ts_text()
+        for f in fields(EngineRef):
+            assert f.name in text, f"EngineRef field {f.name!r} missing from TS mirror"
+
+    # --- StrategyDecision / PolicyContext / RuleTrace fields --------------
+
+    def test_every_strategy_decision_field_declared_in_ts(self):
+        block = _ts_interface(_ts_text(), "StrategyDecision")
+        for f in fields(StrategyDecision):
+            assert f.name in block, (
+                f"StrategyDecision field {f.name!r} missing from TS mirror"
+            )
+
+    def test_every_policy_context_field_declared_in_ts(self):
+        block = _ts_interface(_ts_text(), "PolicyContext")
+        for f in fields(PolicyContext):
+            assert f.name in block, (
+                f"PolicyContext field {f.name!r} missing from TS mirror"
+            )
+
+    def test_rule_trace_v1_schema_and_fields(self):
+        text = _ts_text()
+        assert f"RULE_TRACE_SCHEMA_V1 = '{RULE_TRACE_SCHEMA_V1}'" in text, (
+            "TS mirror must pin the rule_trace_v1 schema literal"
+        )
+        trace_block = _ts_interface(text, "RuleTrace")
+        assert "trace_schema: typeof RULE_TRACE_SCHEMA_V1;" in trace_block, (
+            "trace_schema must be the LITERAL 'rule_trace_v1' type, not string"
+        )
+        for f in fields(RuleTrace):
+            assert f.name in trace_block, (
+                f"RuleTrace field {f.name!r} missing from TS mirror"
+            )
+        entry_block = _ts_interface(text, "RuleTraceEntry")
+        for f in fields(RuleTraceEntry):
+            assert f.name in entry_block, (
+                f"RuleTraceEntry field {f.name!r} missing from TS mirror"
+            )
