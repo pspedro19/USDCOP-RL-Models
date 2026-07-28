@@ -9,6 +9,17 @@
  */
 
 // -----------------------------------------------------------------------------
+// Surface discriminator (BL-13 / C-005)
+// -----------------------------------------------------------------------------
+
+/**
+ * "action" = tradeable strategy; "diagnostic" = look-only research surface.
+ * A diagnostic surface can never be champion nor hold a visible status.
+ * Python mirror: strategy_schema.StrategySummary.surface / strategy_manifest.SURFACES.
+ */
+export type StrategySurface = 'action' | 'diagnostic';
+
+// -----------------------------------------------------------------------------
 // Universal Trade Record
 // -----------------------------------------------------------------------------
 
@@ -73,6 +84,8 @@ export interface StrategySummary {
     trades?: number[];
     pnl_pct?: number[];
   };
+  /** BL-13/C-005 (optional, additive): action|diagnostic; diagnostic never visible. */
+  surface?: StrategySurface;
 }
 
 // -----------------------------------------------------------------------------

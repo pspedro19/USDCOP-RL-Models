@@ -56,5 +56,6 @@
       "artifact_uri": null
     }
   ],
-  "archived_reason": "poda operador 2026-07-07: solo campeonas en Backtest"
+  "archived_reason": "poda operador 2026-07-07: solo campeonas en Backtest",
+  "surface": "action"
 }

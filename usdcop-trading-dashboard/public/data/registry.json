@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-27T20:50:43.322552+00:00",
+  "generated_at": "2026-07-28T03:35:32.739965+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -39,6 +39,7 @@
       "pipeline_type": "hybrid",
       "timeframe": "daily",
       "manifest": "strategies/btc_exposure_s3/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -58,6 +59,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/btc_hodl_b1/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -77,6 +79,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_b2/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -96,6 +99,7 @@
       "pipeline_type": "hybrid",
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_funding_s4/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -115,6 +119,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/btc_trend_volbrk_s5/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -134,6 +139,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -153,6 +159,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt_s05/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -172,6 +179,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_dxy_tilt_s07/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -191,6 +199,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_dynamic_exit/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -210,6 +219,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_long_only_b1/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -229,6 +239,7 @@
       "pipeline_type": "hybrid",
       "timeframe": "daily",
       "manifest": "strategies/gold_regime_gated_v1/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -248,6 +259,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_b2/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -267,6 +279,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_ens/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -286,6 +299,7 @@
       "pipeline_type": "rule_based",
       "timeframe": "daily",
       "manifest": "strategies/gold_trend_simple/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -305,6 +319,7 @@
       "pipeline_type": "ml_forecasting",
       "timeframe": "weekly",
       "manifest": "strategies/smart_simple_aggr/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025
       ],
@@ -323,6 +338,7 @@
       "pipeline_type": "ml_forecasting",
       "timeframe": "weekly",
       "manifest": "strategies/smart_simple_v11/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -342,6 +358,7 @@
       "pipeline_type": "forecasting",
       "timeframe": "daily",
       "manifest": "strategies/spx500_daily_ma200_v1/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026
@@ -361,6 +378,7 @@
       "pipeline_type": "forecasting",
       "timeframe": "daily",
       "manifest": "strategies/spx500_regime_gated_v1/manifest.json",
+      "surface": "action",
       "backtest_years": [
         2025,
         2026

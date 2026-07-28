@@ -132,6 +132,119 @@ def test_composite_declares_components():
         )
 
 
+def test_registry_carries_surface_and_diagnostic_never_visible():
+    """BL-13 / C-005: `surface` must reach the registry the dashboard serves.
+
+    The frozen YAMLs declaring surface is necessary but not sufficient — the registry
+    (public/data/registry.json) is what the frontend actually reads, and a wall that
+    exists only in files the frontend never opens is a wall by convention (the exact
+    gap Codex rejected: strategies=18, surface_present=0). Every registry entry must
+    declare surface, and a diagnostic entry may never be visible nor champion.
+    """
+    reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
+                     .read_text(encoding="utf-8"))
+    champions = set(_champions().values())
+    assert reg["strategies"], "registry lists no strategies"
+    for s in reg["strategies"]:
+        sid = s.get("strategy_id")
+        assert s.get("surface") in {"action", "diagnostic"}, (
+            f"registry entry {sid!r}: surface is {s.get('surface')!r} — every registry "
+            "entry must declare surface: action|diagnostic (BL-13/C-005). "
+            "Run scripts/pipeline/normalize_champions.py to stamp+refresh."
+        )
+        if s["surface"] == "diagnostic":
+            assert s.get("status") == "archived", (
+                f"registry entry {sid!r}: surface=diagnostic with visible status "
+                f"{s.get('status')!r} — diagnostic surfaces exist to be looked at, never traded"
+            )
+            assert sid not in champions, (
+                f"registry entry {sid!r}: surface=diagnostic but champion in "
+                "CHAMPION_BY_ASSET — a diagnostic surface can never be the champion served"
+            )
+
+
+def test_diagnostic_champion_forces_red_exit_and_archival(tmp_path, monkeypatch):
+    """BL-13 verificación: entrada diagnostic con status CHAMPION => exit rojo, REAL.
+
+    Runs normalize_champions end-to-end in a sandbox where the champion authority
+    names a strategy whose frozen manifest declares surface: diagnostic. Both modes
+    must exit red, the bundle manifest must be forced to archived, and the refreshed
+    registry must carry surface=diagnostic + status=archived — i.e. the contradiction
+    is not just printed, it is neutralized in the artifact the dashboard serves.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "normalize_champions_sandbox",
+        ROOT / "scripts" / "pipeline" / "normalize_champions.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    frozen = tmp_path / "frozen"
+    frozen.mkdir()
+    (frozen / "aaa.yaml").write_text(
+        yaml.safe_dump({"strategy_id": "diag_x", "surface": "diagnostic"}),
+        encoding="utf-8")
+
+    public = tmp_path / "public"
+    bundle = public / "strategies" / "diag_x"
+    bundle.mkdir(parents=True)
+    manifest = {
+        "strategy_id": "diag_x", "asset_id": "aaa", "symbol": "AAA/USD",
+        "chart_symbol": "AAAUSD", "display_name": "Diagnostic X",
+        "pipeline_type": "rule_based", "timeframe": "weekly",
+        "status": "experimental", "backtests": [], "model_versions": [],
+    }
+    (bundle / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (public / "registry.json").write_text(json.dumps({
+        "generated_at": "sandbox", "assets": [],
+        "strategies": [{"strategy_id": "diag_x", "asset_id": "aaa",
+                        "status": "experimental"}],
+        "default": {"asset_id": "aaa", "strategy_id": "diag_x"},
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(mod, "FROZEN_MANIFESTS", frozen)
+    monkeypatch.setattr(mod, "PUBLIC_DATA", public)
+    monkeypatch.setattr(mod, "CHAMPION_BY_ASSET", {"aaa": "diag_x"})
+
+    assert mod.normalize(check_only=True) != 0, (
+        "check mode must exit red when a diagnostic surface is champion")
+    assert mod.normalize(check_only=False) != 0, (
+        "enforce mode must still exit red: a diagnostic champion is a contradiction "
+        "to surface, not a state to normalize into silence")
+
+    after = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+    assert after["status"] == "archived", "diagnostic surface must be forced to archived"
+    assert after.get("surface") == "diagnostic", (
+        "enforce must stamp the frozen surface into the bundle manifest")
+
+    reg = json.loads((public / "registry.json").read_text(encoding="utf-8"))
+    entry = next(s for s in reg["strategies"] if s["strategy_id"] == "diag_x")
+    assert entry.get("surface") == "diagnostic" and entry.get("status") == "archived", (
+        f"registry must be refreshed with the neutralized truth, got {entry!r} — "
+        "the dashboard reads registry.json, not the frozen YAMLs"
+    )
+
+
+def test_surface_contract_is_mirrored_in_typescript():
+    """C-005 mirror rule: the TS contracts must carry the same optional surface field.
+
+    Mirror map (contract-change skill): strategy_schema.py ↔ strategy.contract.ts and
+    strategy_manifest.py ↔ strategy-manifest.contract.ts — same commit, both sides.
+    """
+    import re
+
+    dash = ROOT / "usdcop-trading-dashboard" / "lib" / "contracts"
+    union = re.compile(r"StrategySurface\s*=\s*'action'\s*\|\s*'diagnostic'")
+    field = re.compile(r"^\s*surface\?\s*:\s*StrategySurface", re.M)
+    for name in ("strategy.contract.ts", "strategy-manifest.contract.ts"):
+        src = (dash / name).read_text(encoding="utf-8")
+        assert union.search(src), (
+            f"{name}: missing `type StrategySurface = 'action' | 'diagnostic'` (C-005)")
+        assert field.search(src), (
+            f"{name}: missing optional `surface?: StrategySurface` field (C-005)")
+
+
 def test_registry_champion_matches_manifest():
     reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
                      .read_text(encoding="utf-8"))

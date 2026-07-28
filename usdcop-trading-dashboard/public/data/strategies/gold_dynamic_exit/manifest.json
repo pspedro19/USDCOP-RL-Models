@@ -71,5 +71,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

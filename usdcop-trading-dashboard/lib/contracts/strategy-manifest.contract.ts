@@ -15,6 +15,12 @@ export const MANIFEST_SCHEMA_VERSION = '1.0.0';
 export type PipelineType = 'ml_forecasting' | 'rl' | 'rule_based' | 'hybrid';
 export type StrategyTimeframe = 'weekly' | 'daily' | 'intraday_5m';
 export type LifecycleStatus = 'experimental' | 'paper' | 'production' | 'archived';
+/**
+ * BL-13 / C-005: "action" = tradeable strategy, "diagnostic" = look-only research
+ * surface. Diagnostic may never be visible (non-archived) nor champion.
+ * Python mirror: strategy_manifest.SURFACES (default "action" — additive).
+ */
+export type StrategySurface = 'action' | 'diagnostic';
 
 /** One immutable backtest, keyed by (model_version, year). NEVER overwritten (spec §5). */
 export interface BacktestEntry {
@@ -68,6 +74,8 @@ export interface StrategyBundleManifest {
   pipeline_type: PipelineType | string;
   timeframe: StrategyTimeframe | string;
   status: LifecycleStatus | string;
+  /** BL-13/C-005 — producer default "action"; optional here for legacy manifests. */
+  surface?: StrategySurface;
   schema_version?: string;
   capabilities?: { replay?: boolean; live?: boolean; approval?: boolean } & Record<string, boolean>;
   produced_by?: Record<string, unknown>;
@@ -86,6 +94,8 @@ export interface RegistryStrategyEntry {
   timeframe: StrategyTimeframe | string;
   /** Path to the manifest, relative to public/data/ */
   manifest: string;
+  /** BL-13/C-005 — producer default "action"; optional here for legacy registries. */
+  surface?: StrategySurface;
   backtest_years?: number[];
   has_production?: boolean;
   has_replay?: boolean;

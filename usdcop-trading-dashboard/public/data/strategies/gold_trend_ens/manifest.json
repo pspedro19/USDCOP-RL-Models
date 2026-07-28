@@ -3,7 +3,7 @@
   "asset_id": "xauusd",
   "symbol": "XAU/USD",
   "chart_symbol": "XAUUSD",
-  "display_name": "Gold \u00b7 Trend ensemble 3/6/12m (ENS)",
+  "display_name": "Gold · Trend ensemble 3/6/12m (ENS)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
   "status": "archived",
@@ -99,5 +99,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

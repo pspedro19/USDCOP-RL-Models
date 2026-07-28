@@ -3,7 +3,7 @@
   "asset_id": "xauusd",
   "symbol": "XAU/USD",
   "chart_symbol": "XAUUSD",
-  "display_name": "Gold \u00b7 Regime-gated vol-targeted",
+  "display_name": "Gold · Regime-gated vol-targeted",
   "pipeline_type": "hybrid",
   "timeframe": "daily",
   "status": "archived",
@@ -155,5 +155,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

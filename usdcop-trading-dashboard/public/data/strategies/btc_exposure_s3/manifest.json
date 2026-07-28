@@ -3,7 +3,7 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin \u00b7 Regime-gated exposure (S3)",
+  "display_name": "Bitcoin · Regime-gated exposure (S3)",
   "pipeline_type": "hybrid",
   "timeframe": "daily",
   "status": "archived",
@@ -155,5 +155,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

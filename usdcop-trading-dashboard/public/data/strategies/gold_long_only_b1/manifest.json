@@ -3,7 +3,7 @@
   "asset_id": "xauusd",
   "symbol": "XAU/USD",
   "chart_symbol": "XAUUSD",
-  "display_name": "Gold \u00b7 Long-only vol-targeted (B1)",
+  "display_name": "Gold · Long-only vol-targeted (B1)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
   "status": "archived",
@@ -155,5 +155,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

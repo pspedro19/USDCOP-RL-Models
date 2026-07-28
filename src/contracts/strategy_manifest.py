@@ -50,6 +50,12 @@ def safe_json_dump(data: Any, fp: Any, **kwargs: Any) -> None:
 
 SCHEMA_VERSION = "1.0.0"
 
+# BL-13 / C-005: discriminator between tradeable strategies and look-only research
+# surfaces. Additive with default "action" so every pre-existing manifest keeps parsing;
+# `diagnostic` may never be visible (non-archived) nor champion — normalize_champions
+# enforces it at runtime, tests/regression/test_strategy_manifests.py at freeze time.
+SURFACES = ("action", "diagnostic")
+
 # Asset display metadata. USD/COP is the only tradeable asset today; new assets (XAU, BTC)
 # arrive via config/assets/<asset_id>.yaml (AssetProfile) — see sdd-multi-asset-onboarding.md.
 # chart_symbol is what TradingChartWithSignals must render (no slash).
@@ -139,6 +145,7 @@ class StrategyBundleManifest:
     pipeline_type: str  # ml_forecasting | rl | rule_based | hybrid
     timeframe: str  # weekly | daily | intraday_5m
     status: str  # experimental | paper | production | archived
+    surface: str = "action"  # action | diagnostic (BL-13/C-005; diagnostic never visible)
     schema_version: str = SCHEMA_VERSION
     capabilities: dict[str, bool] = field(default_factory=lambda: {"replay": False, "live": False, "approval": True})
     produced_by: dict[str, Any] = field(default_factory=dict)
@@ -193,6 +200,7 @@ class RegistryStrategyEntry:
     pipeline_type: str
     timeframe: str
     manifest: str  # path relative to public/data/
+    surface: str = "action"  # action | diagnostic (BL-13/C-005)
     backtest_years: list[int] = field(default_factory=list)
     has_production: bool = False
     has_replay: bool = False
@@ -401,6 +409,7 @@ class RegistryBuilder:
                 pipeline_type=m.pipeline_type,
                 timeframe=m.timeframe,
                 manifest=f"strategies/{m.strategy_id}/manifest.json",
+                surface=m.surface if m.surface in SURFACES else "action",
                 backtest_years=m.backtest_years,
                 has_production=m.production is not None,
                 has_replay=m.capabilities.get("replay", False),

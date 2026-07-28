@@ -3,7 +3,7 @@
   "asset_id": "xauusd",
   "symbol": "XAU/USD",
   "chart_symbol": "XAUUSD",
-  "display_name": "Gold \u00b7 Trend simple (voto SMA, sin trailing exit)",
+  "display_name": "Gold · Trend simple (voto SMA, sin trailing exit)",
   "pipeline_type": "rule_based",
   "timeframe": "daily",
   "status": "experimental",
@@ -118,5 +118,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

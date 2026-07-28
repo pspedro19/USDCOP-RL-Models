@@ -46,32 +46,68 @@ CHAMPION_BY_ASSET: dict[str, str] = {
 # Statuses a champion may hold; anything else visible gets archived.
 _CHAMPION_KEEP = {"experimental", "paper", "production"}
 
+# BL-13/C-005 surface discriminator. Mirrors src/contracts/strategy_manifest.SURFACES
+# (this script loads that module by path only when refreshing the registry, so the
+# constant is repeated here — keep the two in lockstep).
+_SURFACES = ("action", "diagnostic")
 
-def _diagnostic_ids() -> set[str]:
-    """strategy_ids whose frozen manifest declares `surface: diagnostic` (BL-13).
 
-    Diagnostic surfaces exist to be looked at, never traded: they can NEVER be visible
+def _frozen_surfaces() -> dict[str, str]:
+    """strategy_id -> `surface` declared by its frozen YAML manifest (BL-13).
+
+    The frozen manifests are the surface authority for the strategies they cover;
+    diagnostic surfaces exist to be looked at, never traded: they can NEVER be visible
     as champion nor hold an experimental/paper/production status.
     """
     import yaml
-    ids: set[str] = set()
+    out: dict[str, str] = {}
     for p in sorted(FROZEN_MANIFESTS.glob("*.yaml")):
         m = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-        if m.get("surface") == "diagnostic" and m.get("strategy_id"):
-            ids.add(m["strategy_id"])
-    return ids
+        if m.get("strategy_id") and m.get("surface") in _SURFACES:
+            out[m["strategy_id"]] = m["surface"]
+    return out
+
+
+def _diagnostic_ids() -> set[str]:
+    """strategy_ids whose frozen manifest declares `surface: diagnostic` (BL-13)."""
+    return {sid for sid, surf in _frozen_surfaces().items() if surf == "diagnostic"}
+
+
+def _load_strategy_manifest_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "strategy_manifest", REPO / "src" / "contracts" / "strategy_manifest.py")
+    sm = importlib.util.module_from_spec(spec)
+    sys.modules["strategy_manifest"] = sm
+    spec.loader.exec_module(sm)
+    return sm
+
+
+def _registry_missing_surface() -> list[str]:
+    """Registry entries whose `surface` is absent/invalid (C-005 divergence guard)."""
+    try:
+        reg = json.loads((PUBLIC_DATA / "registry.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ["<registry.json ilegible>"]
+    return [str(s.get("strategy_id")) for s in reg.get("strategies", [])
+            if s.get("surface") not in _SURFACES]
 
 
 def normalize(check_only: bool = False) -> int:
     strat_root = PUBLIC_DATA / "strategies"
     champions = set(CHAMPION_BY_ASSET.values())
-    diagnostic = _diagnostic_ids()
+    frozen_surface = _frozen_surfaces()
     changed, drift, surface_errors = [], [], []
 
     for man_path in sorted(strat_root.glob("*/manifest.json")):
         man = json.loads(man_path.read_text(encoding="utf-8"))
         sid, status = man.get("strategy_id"), man.get("status")
-        if sid in diagnostic or man.get("surface") == "diagnostic":
+        # C-005: every bundle manifest carries surface. The frozen YAML is authoritative
+        # where one exists; otherwise the bundle's own declaration; otherwise "action"
+        # (every published bundle was a tradeable candidate — diagnostic is opt-in).
+        want_surface = frozen_surface.get(
+            sid, man.get("surface") if man.get("surface") in _SURFACES else "action")
+        if want_surface == "diagnostic":
             # BL-13: a diagnostic surface is forced to archived, no matter what the
             # champion authority or its bundle claims — and that contradiction is an error.
             want = "archived"
@@ -87,31 +123,36 @@ def normalize(check_only: bool = False) -> int:
                 "experimental" if sid in champions else "archived")
         if status != want:
             drift.append(f"{sid}: {status} -> {want}")
-            if not check_only:
-                man["status"] = want
-                man_path.write_text(json.dumps(man, indent=2, ensure_ascii=False),
-                                    encoding="utf-8")
-                changed.append(sid)
+        if man.get("surface") != want_surface:
+            drift.append(f"{sid}: surface {man.get('surface')} -> {want_surface}")
+        if (status != want or man.get("surface") != want_surface) and not check_only:
+            man["status"] = want
+            man["surface"] = want_surface
+            man_path.write_text(json.dumps(man, indent=2, ensure_ascii=False),
+                                encoding="utf-8")
+            changed.append(sid)
 
     for err in surface_errors:
         print(f"[champions] ERROR: {err}")
 
-    # Refresh the registry from manifests so the dashboard sees the normalized truth.
-    if changed:
+    # Refresh the registry from manifests so the dashboard sees the normalized truth —
+    # also when the manifests were already right but registry.json predates C-005
+    # (surface_present=0 was exactly the shipped-but-not-served gap Codex rejected).
+    registry_stale = bool(_registry_missing_surface())
+    if not check_only and (changed or registry_stale):
         try:
-            import importlib.util
-            spec = importlib.util.spec_from_file_location(
-                "strategy_manifest", REPO / "src" / "contracts" / "strategy_manifest.py")
-            sm = importlib.util.module_from_spec(spec)
-            sys.modules["strategy_manifest"] = sm
-            spec.loader.exec_module(sm)
-            sm.BundlePublisher(PUBLIC_DATA).refresh_registry()
-            print(f"[champions] normalizados: {drift}")
+            sm = _load_strategy_manifest_module()
+            from datetime import datetime, timezone
+            builder = sm.RegistryBuilder(
+                PUBLIC_DATA, generated_at=datetime.now(timezone.utc).isoformat())
+            builder.write(builder.build(write_manifests=False))
+            print(f"[champions] normalizados: {drift or ['registry: surface backfill']}")
         except Exception as e:  # noqa: BLE001
             print(f"[champions] manifests escritos pero registry NO refrescado: {e}")
             return 1
-    elif drift:
-        print(f"[champions] DRIFT detectado (check-only): {drift}")
+    elif drift or (check_only and registry_stale):
+        print(f"[champions] DRIFT detectado (check-only): "
+              f"{drift or ['registry.json sin surface — corre normalize']}")
         return 1
     else:
         print("[champions] sin cambios")
@@ -120,6 +161,18 @@ def normalize(check_only: bool = False) -> int:
     # on 2026-07-21 -- publishing gold archived SPX500's only strategy and the publisher
     # exited 0. A normalizer that can empty an asset must refuse to finish well.
     reg = json.loads((PUBLIC_DATA / "registry.json").read_text(encoding="utf-8"))
+    # C-005 fail-closed per row: the registry the dashboard serves must carry surface,
+    # and a diagnostic row may never be visible. Checked on the ARTIFACT, not the YAMLs.
+    no_surface = [str(s.get("strategy_id")) for s in reg.get("strategies", [])
+                  if s.get("surface") not in _SURFACES]
+    if no_surface:
+        print(f"[champions] ERROR: entradas de registry sin surface valido: {no_surface}")
+        return 1
+    visible_diag = [s["strategy_id"] for s in reg["strategies"]
+                    if s.get("surface") == "diagnostic" and s.get("status") != "archived"]
+    if visible_diag:
+        print(f"[champions] ERROR: superficies diagnostic visibles en registry: {visible_diag}")
+        return 1
     orphaned = [a for a in CHAMPION_BY_ASSET
                 if not [s for s in reg["strategies"]
                         if s.get("asset_id") == a and s.get("status") != "archived"]]

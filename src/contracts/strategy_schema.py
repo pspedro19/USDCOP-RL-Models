@@ -73,6 +73,9 @@ class StrategySummary:
     statistical_tests: dict
     direction_accuracy_pct: float | None = None
     monthly: dict | None = None
+    # BL-13/C-005 (optional, additive): "action" = tradeable strategy, "diagnostic" =
+    # look-only research surface. A diagnostic surface can never be champion/visible.
+    surface: str | None = None           # "action" | "diagnostic"
 
     def to_dict(self) -> dict:
         d = asdict(self)
