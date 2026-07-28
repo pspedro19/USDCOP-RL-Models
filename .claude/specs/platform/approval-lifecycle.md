@@ -96,7 +96,22 @@ retorno o drawdown). `backtest_confidence` = fracción de gates aprobados.
 
 ---
 
-## 4. `approval_state.json`
+## 4. `approval_state.json` — artefacto **PRIVADO** (CXD-057)
+
+> **Ubicación: `<repo>/data/approvals/`, NUNCA `public/`.** Lleva `gates`, el gate
+> `deflated_sharpe` (DSR trial-aware) y `backtest_metrics`: INTERNALS que el SSOT
+> reserva a `research:read` (`frontend-backend-contract.md` §6, `ux-navigation.md` P3,
+> `docs/rbac/VISUAL-SPEC-CHECKLIST.md` §B). Bajo `public/` el estático `/data/**` solo
+> exige sesión, así que un `free`/`subscriber` lo leía saltándose el gate.
+> SSOT de la ruta: `src/contracts/approval_store.py` +
+> `usdcop-trading-dashboard/lib/approvals/store.ts` (mismo fallback scoped→singleton
+> que el DAG H5-L4b). Vías de lectura:
+> * `GET /api/production/approval` (`research:read`) — documento ÍNTEGRO.
+> * `GET /api/production/status` (`signals:read`) — proyección **sanitizada por
+>   allowlist** (`status`, `strategy`, `strategy_name`, `approved_at`, `created_at`,
+>   `last_updated`). Sin gates, sin DSR, sin métricas, sin `deploy_manifest`.
+> Fail-closed: sin artefacto ⇒ 404 con motivo declarado, jamás un estado por defecto.
+
 
 ```json
 {

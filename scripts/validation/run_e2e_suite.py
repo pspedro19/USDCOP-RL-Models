@@ -34,6 +34,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PUBLIC = REPO / "usdcop-trading-dashboard" / "public" / "data"
+sys.path.insert(0, str(REPO))
+
+from src.contracts.approval_store import approval_path as _approval_path
 OUT_DIR = REPO / "results" / "e2e"
 SCHED = "usdcop-airflow-scheduler"
 
@@ -125,7 +128,8 @@ def check_feature_backup() -> dict:
 
 
 def check_promotion_state() -> dict:
-    ap = PUBLIC / "production" / "approval_state.json"
+    # CXD-057: el artefacto ya no vive bajo public/ — se lee del store privado.
+    ap = _approval_path()
     if not ap.exists():
         return {"passed": False, "detail": "approval_state.json absent"}
     try:

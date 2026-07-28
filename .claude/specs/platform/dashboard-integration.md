@@ -91,11 +91,15 @@ chmod -R 777 usdcop-trading-dashboard/public/data/analysis/ usdcop-trading-dashb
 
 ### Production Data (`public/data/production/`)
 
+> **`approval_state*.json` ya NO vive aquí (CXD-057)**: se movió a `<repo>/data/approvals/`
+> porque publica gates/DSR/`backtest_metrics` bajo un estático que solo exige sesión.
+> Se sirve por `/api/production/approval` (`research:read`) o, sanitizado por allowlist,
+> por `/api/production/status`. Ver `approval-lifecycle.md` §4.
+
 ```
 public/data/production/
 ├── summary.json                          <- Production metrics (2026 YTD)
 ├── summary_2025.json                     <- Backtest metrics (2025 OOS)
-├── approval_state.json                   <- Gate results + approval status
 ├── trades/
 │   ├── smart_simple_v11.json             <- Production trades (2026)
 │   └── smart_simple_v11_2025.json        <- Backtest trades (2025)

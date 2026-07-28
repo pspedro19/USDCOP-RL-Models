@@ -143,9 +143,12 @@ export function useLiveProduction(
     const summaryUrl = nonDefault
       ? `/api/data/production/summary_${selected!.sid}.json`
       : '/data/production/summary.json';
-    const approvalUrl = nonDefault
-      ? `/api/data/production/approval_state_${selected!.sid}.json`
-      : '/api/production/status';
+    // CXD-057 — el approval_state salió de `public/`. Este hook alimenta la vista
+    // /legacy/production, que es `admin:all`, así que lee la proyección ÍNTEGRA por
+    // `/api/production/approval` (`research:read`, envelope ok/data). El estático
+    // `/api/data/production/approval_state_<sid>.json` ya no existe.
+    const approvalUrl = '/api/production/approval'
+      + (nonDefault ? `?strategy_id=${encodeURIComponent(selected!.sid)}` : '');
     const [summaryRes, approvalRes] = await Promise.all([
       fetch(summaryUrl),
       fetch(approvalUrl),
@@ -155,7 +158,10 @@ export function useLiveProduction(
     let approvalData: ApprovalState | null = null;
 
     if (summaryRes.ok) summaryData = await summaryRes.json();
-    if (approvalRes.ok) approvalData = await approvalRes.json();
+    if (approvalRes.ok) {
+      const env = await approvalRes.json();
+      approvalData = (env && typeof env === 'object' && 'ok' in env ? env.data : env) ?? null;
+    }
 
     const sid = summaryData?.strategy_id || selected?.sid || 'smart_simple_v11';
     const tradesRes = await fetch(

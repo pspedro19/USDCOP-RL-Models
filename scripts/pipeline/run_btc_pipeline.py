@@ -40,6 +40,7 @@ try:
     from services.common.metrics import deflated_sharpe_ratio
 except ModuleNotFoundError:  # Airflow container without services/ mount
     deflated_sharpe_ratio = None
+from src.contracts.approval_store import approval_path as _approval_path
 from src.btc_strategy import backtest as bt
 from src.btc_strategy import strategies as st
 from src.btc_strategy.indicators import (build_daily_features, classify_regime, merge_funding_features,
@@ -313,7 +314,9 @@ def main() -> int:
             print(f"  [production] wrote {path}")
 
         _dump(prod_dir / f"summary_{sid}.json", _suppress(summary_doc))
-        _dump(prod_dir / f"approval_state_{sid}.json", approval_doc)
+        # CXD-057: el approval_state va al store PRIVADO, nunca a public/.
+        _approval_path(sid).parent.mkdir(parents=True, exist_ok=True)
+        _dump(_approval_path(sid), approval_doc)
         _dump(prod_dir / "trades" / f"{sid}.json", trades_doc)
         print(f"\n[production] {sid} exported (PAPER). 2026 YTD: ret={ret26}% "
               f"sharpe={m26.get('sharpe')} trades={len(trades26)}. "

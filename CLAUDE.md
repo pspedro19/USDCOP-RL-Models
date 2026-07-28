@@ -158,7 +158,7 @@ Layer 3: IMPLEMENTATION           -> scripts/, pages, DAGs             (conform 
 | `ssot.contract.ts` | SSOT configuration types |
 
 > **Approval workflow**: 2-vote system (Vote 1 auto via Python gates, Vote 2 human on `/dashboard`). See `approval-gates.md`.
-> **Dashboard file layout**: `public/data/production/{summary,approval_state,trades/}.json`. See `dashboard-integration.md`.
+> **Dashboard file layout**: `public/data/production/{summary,trades/}.json` + estado de aprobación **privado** en `data/approvals/` (gates/DSR = `research:read`, CXD-057). See `dashboard-integration.md`, `approval-lifecycle.md` §4.
 > **Pipeline CLI**: `--phase backtest|production|both`, `--reset-approval`, `--no-png`. See `mlops-lifecycle.md`.
 
 ---
@@ -222,7 +222,7 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 ### Dashboard (Next.js 15 App Router)
 
 <!-- inv:frontend -->
-**22 páginas activas** (8 en `/legacy`) · **93 rutas API**
+**23 páginas activas** (8 en `/legacy`) · **95 rutas API**
 <!-- /inv -->
 
 Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
@@ -289,7 +289,7 @@ state — must also stay OUT of the docker build context: its NTFS mode breaks `
 ## DAG SCHEDULE
 
 <!-- inv:dags -->
-**49 DAGs** (46 declarados en 46 módulos + 3 generados por factory)
+**53 DAGs** (50 declarados en 50 módulos + 3 generados por factory)
 <!-- /inv -->
 
 

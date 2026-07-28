@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+import { approvalsRoot } from '@/lib/approvals/store';
+
 interface HealthCheck {
   name: string;
   status: 'ok' | 'error';
@@ -55,7 +57,8 @@ export async function GET() {
   // Check critical data files exist
   const dataDir = path.join(process.cwd(), 'public', 'data', 'production');
   const summaryExists = fs.existsSync(path.join(dataDir, 'summary.json'));
-  const approvalExists = fs.existsSync(path.join(dataDir, 'approval_state.json'));
+  // CXD-057: approval_state lives OUTSIDE public/ (gates/DSR are research:read).
+  const approvalExists = fs.existsSync(path.join(approvalsRoot(), 'approval_state.json'));
   checks.push({
     name: 'data_files',
     status: summaryExists || approvalExists ? 'ok' : 'error',

@@ -33,6 +33,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.contracts.approval_store import approval_path as _approval_path
 from src.contracts.signal_contract import SignalStore, UniversalSignalRecord
 from src.contracts.signal_adapters import (
     ADAPTER_REGISTRY,
@@ -268,7 +269,9 @@ def export_dashboard(strategy_id, year, result: ReplayResult):
         last_updated=now,
     )
 
-    approval_path = dashboard_dir / "approval_state.json"
+    # CXD-057: fuera de public/ — gates + DSR + backtest_metrics son research:read.
+    approval_path = _approval_path(strategy_id if strategy_id != "smart_simple_v11" else None)
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
     with open(approval_path, "w") as f:
         safe_json_dump(approval.to_dict(), f)
     logger.info("  Wrote: %s", approval_path)

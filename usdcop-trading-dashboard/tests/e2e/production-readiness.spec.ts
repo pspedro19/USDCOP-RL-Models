@@ -58,9 +58,11 @@ test.describe('0 — Infrastructure Health', () => {
   });
 
   test('Production status API returns APPROVED', async ({ request }) => {
-    const res = await request.get(`${BASE}/api/production/status`);
+    // CXD-057: gates/recomendación solo por la vía research:read.
+    const res = await request.get(`${BASE}/api/production/approval`);
     expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    const env = await res.json();
+    const body = env?.ok ? env.data : env;
     expect(body.status).toBe('APPROVED');
     expect(body.strategy).toBe('smart_simple_v11');
     expect(body.backtest_recommendation).toBe('PROMOTE');
@@ -538,9 +540,12 @@ test.describe('8 — Data Contract Compliance', () => {
     }
   });
 
-  test('approval_state.json conforms to ApprovalState contract', async ({ request }) => {
-    const res = await request.get(`${BASE}/data/production/approval_state.json`);
-    const body = await res.json();
+  test('approval_state conforms to ApprovalState contract (vía privada, CXD-057)', async ({ request }) => {
+    // El artefacto vive en <repo>/data/approvals y solo sale por /api/production/approval
+    // con research:read (envelope {ok,data}). El estático /data/** ya no lo sirve.
+    const res = await request.get(`${BASE}/api/production/approval`);
+    const env = await res.json();
+    const body = env?.ok ? env.data : env;
 
     expect(body.status).toBe('APPROVED');
     expect(body.strategy).toBe('smart_simple_v11');
@@ -566,7 +571,6 @@ test.describe('8 — Data Contract Compliance', () => {
     const files = [
       '/data/production/summary.json',
       '/data/production/summary_2025.json',
-      '/data/production/approval_state.json',
       '/data/production/trades/smart_simple_v11_2025.json',
       '/data/production/trades/smart_simple_v11.json',
     ];

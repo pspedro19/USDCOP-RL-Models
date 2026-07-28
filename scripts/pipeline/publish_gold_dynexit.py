@@ -40,6 +40,7 @@ from services.common.metrics import (deflated_sharpe_ratio,  # noqa: E402
                                      paired_exposure_baseline)
 from src.gold_rl import backtest as bt  # noqa: E402
 from src.gold_rl.indicators import build_daily_features  # noqa: E402
+from src.contracts.approval_store import approval_path as _approval_path  # noqa: E402
 
 PUBLIC_DATA = REPO / "usdcop-trading-dashboard" / "public" / "data"
 SID = "gold_dynamic_exit"
@@ -235,7 +236,10 @@ def main() -> int:
     # ── Paquete Vote-2 (patrón BTC): approval_state_<sid>.json PENDING + summary/trades 2026 ──
     prod = PUBLIC_DATA / "production"
     prod.mkdir(exist_ok=True)
-    ap_path = prod / f"approval_state_{SID}.json"
+    # CXD-057: el approval_state NO puede vivir bajo public/ (gates + DSR +
+    # backtest_metrics = research:read). SSOT de la ruta: src/contracts/approval_store.py.
+    ap_path = _approval_path(SID)
+    ap_path.parent.mkdir(parents=True, exist_ok=True)
     existing = json.loads(ap_path.read_text(encoding="utf-8")) if ap_path.exists() else {}
     if existing.get("status") not in ("APPROVED", "LIVE"):  # nunca clobberear un voto ya emitido
         now = str(pd.Timestamp.utcnow().isoformat())

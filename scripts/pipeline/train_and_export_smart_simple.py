@@ -27,7 +27,7 @@ Output files (dashboard format):
     public/data/production/summary.json
     public/data/production/trades/smart_simple_v11_2025.json
     public/data/production/trades/smart_simple_v11.json
-    public/data/production/approval_state.json
+    data/approvals/approval_state.json   (PRIVADO — fuera de public/, CXD-057)
 """
 
 import sys
@@ -57,6 +57,7 @@ from src.forecasting.adaptive_stops import (
     AdaptiveStopsConfig, compute_adaptive_stops,
     check_hard_stop, check_take_profit, get_exit_price,
 )
+from src.contracts.approval_store import approval_path as _approval_path
 from src.contracts.strategy_schema import safe_json_dump
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
@@ -69,6 +70,10 @@ from src.forecasting.enhance_v2 import enhance_features_v2
 
 DASHBOARD_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "data" / "production"
 TRADES_DIR = DASHBOARD_DIR / "trades"
+# CXD-057: approval_state.json vive FUERA de public/ — lleva gates, el gate
+# deflated_sharpe y backtest_metrics, que el SSOT reserva a research:read. SSOT de la
+# ruta: src/contracts/approval_store.py.
+APPROVAL_PATH = _approval_path()
 COT = timezone(timedelta(hours=-5))
 
 
@@ -1861,7 +1866,7 @@ def main():
 
     # Handle --reset-approval
     if args.reset_approval:
-        approval_path = DASHBOARD_DIR / "approval_state.json"
+        approval_path = APPROVAL_PATH
         if approval_path.exists():
             with open(approval_path) as f:
                 state = json.load(f)
@@ -1942,7 +1947,8 @@ def main():
 
         approval = export_approval_state(result_2025, cfg)
         if is_champ:
-            with open(DASHBOARD_DIR / "approval_state.json", "w") as f:
+            APPROVAL_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with open(APPROVAL_PATH, "w") as f:
                 safe_json_dump(approval, f)
         print(f"    -> approval_state.json (recommendation: {approval.get('backtest_recommendation', 'N/A')})")
 

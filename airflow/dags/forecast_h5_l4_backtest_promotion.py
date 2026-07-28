@@ -25,7 +25,8 @@ Architecture:
     notify              — Log that strategy is ready for review on /dashboard
 
 Schedule: None (manual trigger)
-Output: Dashboard files in public/data/production/ (summary, approval_state, trades)
+Output: dashboard files in public/data/production/ (summary, trades) + the PRIVATE
+approval state in data/approvals/ (CXD-057: gates/DSR/backtest_metrics = research:read)
 Downstream: Operator reviews on /dashboard -> clicks Approve (Vote 2/2)
 
 Author: Trading Team
@@ -39,6 +40,7 @@ from pathlib import Path
 from typing import Any, Dict
 import json
 import logging
+import os
 import subprocess
 import sys
 
@@ -61,6 +63,9 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path('/opt/airflow')
 DASHBOARD_DATA_DIR = PROJECT_ROOT / 'usdcop-trading-dashboard' / 'public' / 'data' / 'production'
+# CXD-057: approval_state vive FUERA de public/ (gates + DSR + backtest_metrics =
+# research:read). SSOT de la ruta: src/contracts/approval_store.py.
+APPROVALS_DIR = Path(os.getenv('APPROVALS_DATA_DIR') or (PROJECT_ROOT / 'data' / 'approvals'))
 BACKTEST_SCRIPT = PROJECT_ROOT / 'scripts' / 'pipeline' / 'train_and_export_smart_simple.py'
 CONFIG_PATH = PROJECT_ROOT / 'config' / 'execution' / 'smart_simple_v1.yaml'
 OHLCV_PATH = PROJECT_ROOT / 'seeds' / 'latest' / 'usdcop_daily_ohlcv.parquet'
@@ -210,7 +215,7 @@ def validate_output(**context) -> Dict[str, Any]:
             logger.info(f"[H5-L4] summary_2025.json: strategy={summary.get('strategy_id')}")
 
     # Check approval_state.json
-    approval_path = DASHBOARD_DATA_DIR / 'approval_state.json'
+    approval_path = APPROVALS_DIR / 'approval_state.json'
     if not approval_path.exists():
         errors.append(f"approval_state.json not found: {approval_path}")
     else:
@@ -258,7 +263,7 @@ def report_metrics(**context) -> Dict[str, Any]:
     Push to XCom for downstream use.
     """
     summary_path = DASHBOARD_DATA_DIR / 'summary_2025.json'
-    approval_path = DASHBOARD_DATA_DIR / 'approval_state.json'
+    approval_path = APPROVALS_DIR / 'approval_state.json'
 
     with open(summary_path) as f:
         summary = json.loads(f.read())

@@ -44,6 +44,8 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.contracts.approval_store import approval_path as _approval_path
+
 load_dotenv(PROJECT_ROOT / ".env")
 
 logging.basicConfig(
@@ -69,7 +71,8 @@ OUTPUT_DIR = (
 SIGNAL_PATH = OUTPUT_DIR / "latest_signal.json"
 TRADES_PATH = OUTPUT_DIR / "trades" / "forecast_vt_trailing.json"
 SUMMARY_PATH = OUTPUT_DIR / "summary.json"
-APPROVAL_PATH = OUTPUT_DIR / "approval_state.json"
+# CXD-057: approval_state fuera de public/ — SSOT src/contracts/approval_store.py
+APPROVAL_PATH = _approval_path()
 EXECUTOR_CONFIG_PATH = PROJECT_ROOT / "config" / "execution" / "smart_executor_v1.yaml"
 
 # =============================================================================

@@ -1,48 +1,21 @@
 /**
  * POST /api/production/approve — Approve or reject the production strategy
  *
- * File-based: reads + writes public/data/production/approval_state.json
- * This is the human "second vote" in the 2-vote promotion system.
+ * File-based: reads + writes `<repo>/data/approvals/approval_state*.json` (CXD-057 —
+ * the artifact moved OUT of `public/` because it carries gates / DSR / backtest metrics,
+ * which the SSOT reserves to `research:read`; under `public/` the static `/data/**`
+ * path served it to any session). Store SSOT: `lib/approvals/store.ts`.
+ *
+ * This is the human "second vote" in the 2-vote promotion system and it is UNCHANGED:
+ * same surface (`/dashboard`), same permission (`approval:vote`), same semantics —
+ * only the file location moved.
  *
  * Body: { action: 'APPROVE' | 'REJECT', notes?: string, reviewer?: string }
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { protectApiRoute } from '@/lib/auth/api-auth';
+import { readApprovalState, writeApprovalState } from '@/lib/approvals/store';
 import type { ApprovalState, ApproveRequest, ApproveResponse } from '@/lib/contracts/production-approval.contract';
-
-const PROD_DIR = path.join(process.cwd(), 'public', 'data', 'production');
-const APPROVAL_FILE = path.join(PROD_DIR, 'approval_state.json');
-
-/** Per-strategy approval files (multi-strategy production): approval_state_<sid>.json.
- *  The singleton stays the ACTIVE/default strategy's file (COP).
- *
- *  The fallback is load-bearing, not defensive: the export pipeline writes the ACTIVE
- *  strategy to the unsuffixed `approval_state.json`, while the dashboard always posts a
- *  `strategy_id`. Without it, `smart_simple_v11` resolved to a file that is never written
- *  and Vote 2 returned 404 — the production strategy could not be approved from the UI at
- *  all, while Gold and BTC (which do have suffixed files) worked.
- *
- *  It only falls back when the singleton actually belongs to the requested strategy, so a
- *  stale or mismatched id can never approve somebody else's bundle.
- */
-async function approvalFileFor(strategyId?: string | null): Promise<string> {
-  if (!strategyId || !/^[A-Za-z0-9_-]+$/.test(strategyId)) return APPROVAL_FILE;
-  const scoped = path.join(PROD_DIR, `approval_state_${strategyId}.json`);
-  try {
-    await fs.access(scoped);
-    return scoped;
-  } catch {
-    // No per-strategy file: use the singleton only if it IS this strategy.
-    try {
-      const raw = await fs.readFile(APPROVAL_FILE, 'utf-8');
-      const singleton = JSON.parse(raw) as { strategy?: string };
-      if (singleton.strategy === strategyId) return APPROVAL_FILE;
-    } catch { /* singleton unreadable — fall through to the scoped path so the 404 is honest */ }
-    return scoped;
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +31,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ApproveRequest & { strategy_id?: string } = await request.json();
-    const approvalFile = await approvalFileFor(body.strategy_id);
 
     if (!body.action || !['APPROVE', 'REJECT'].includes(body.action)) {
       return NextResponse.json(
@@ -67,17 +39,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read current state
-    let state: ApprovalState;
-    try {
-      const raw = await fs.readFile(approvalFile, 'utf-8');
-      state = JSON.parse(raw);
-    } catch {
+    // Read current state from the PRIVATE store. The per-strategy → singleton fallback
+    // (load-bearing: the export pipeline writes the ACTIVE strategy unsuffixed while the
+    // dashboard always posts a strategy_id) lives in `readApprovalState` and is shared
+    // verbatim with the H5-L4b deploy DAG — they must agree or approval succeeds and
+    // deploy 404s.
+    const record = await readApprovalState(body.strategy_id ?? null);
+    if (!record) {
       return NextResponse.json(
         { success: false, status: 'PENDING_APPROVAL', message: 'No approval state file found. Run backtest first.' } as ApproveResponse,
         { status: 404 }
       );
     }
+    const approvalFile = record.file;
+    const state: ApprovalState = record.state;
 
     // Can only approve/reject from PENDING_APPROVAL
     if (state.status !== 'PENDING_APPROVAL') {
@@ -106,7 +81,7 @@ export async function POST(request: NextRequest) {
     state.last_updated = now;
 
     // Write back
-    await fs.writeFile(approvalFile, JSON.stringify(state, null, 2), 'utf-8');
+    await writeApprovalState(approvalFile, state);
 
     const response: ApproveResponse = {
       success: true,

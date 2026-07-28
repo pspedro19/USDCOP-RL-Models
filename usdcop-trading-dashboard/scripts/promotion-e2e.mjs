@@ -50,8 +50,12 @@ const page = await ctx.newPage();
 check('admin login', await login(page, ADMIN.u, ADMIN.p), page.url().replace(BASE, ''));
 
 // 1. status BEFORE via API (authenticated session cookie carried by ctx)
+// CXD-057: gates/recomendación viven en la proyección ÍNTEGRA (research:read);
+// /api/production/status es la allowlist sanitizada de cliente.
 let before = await page.evaluate(async (base) => {
-  const r = await fetch(`${base}/api/production/status`); return r.ok ? r.json() : { error: r.status };
+  const r = await fetch(`${base}/api/production/approval`);
+  if (!r.ok) return { error: r.status };
+  const e = await r.json(); return e && e.ok ? e.data : e;
 }, BASE);
 check('pre-state PENDING_APPROVAL', before.status === 'PENDING_APPROVAL', `status=${before.status}`);
 check('gates 5/5 in bundle', Array.isArray(before.gates) && before.gates.filter(g => g.passed).length === 5,
@@ -85,7 +89,9 @@ if (approveVisible) {
 
 // 4. status AFTER
 let after = await page.evaluate(async (base) => {
-  const r = await fetch(`${base}/api/production/status`); return r.ok ? r.json() : { error: r.status };
+  const r = await fetch(`${base}/api/production/approval`);
+  if (!r.ok) return { error: r.status };
+  const e = await r.json(); return e && e.ok ? e.data : e;
 }, BASE);
 check('post-state APPROVED', after.status === 'APPROVED', `status=${after.status}`);
 check('approved_by = authenticated principal (not client string)',

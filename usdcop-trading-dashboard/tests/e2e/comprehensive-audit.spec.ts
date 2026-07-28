@@ -502,9 +502,11 @@ test.describe('Comprehensive Feature Audit — All Pages', () => {
     test('9.1 Production status API', async ({ request }) => {
       const resp = await request.get('/api/production/status');
       expect(resp.status()).toBe(200);
-      const data = await resp.json();
+      const env = await resp.json();               // CXD-057: envelope {ok,data} sanitizado
+      const data = env?.ok ? env.data : env;
       console.log(`Production status: ${data.status}, strategy: ${data.strategy}`);
       expect(data.status).toBeTruthy();
+      expect(data.gates).toBeUndefined();          // la superficie de cliente NO lleva gates
     });
 
     test('9.2 Analysis weeks API', async ({ request }) => {
@@ -548,10 +550,12 @@ test.describe('Comprehensive Feature Audit — All Pages', () => {
     });
 
     test('9.5 Production summary data files', async ({ request }) => {
+      // CXD-057: approval_state ya NO se sirve desde /data/** (gates/DSR/backtest_metrics
+      // = research:read). Su vía es /api/production/approval, cubierta en el test unitario
+      // tests/unit/api/approval-state-security.test.ts.
       const files = [
         '/data/production/summary.json',
         '/data/production/summary_2025.json',
-        '/data/production/approval_state.json',
       ];
       for (const f of files) {
         const resp = await request.get(f);

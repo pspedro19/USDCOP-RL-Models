@@ -555,7 +555,7 @@ services:
       # Shared demo account for "Explorar como invitado" (rol free, is_test=true).
       # bootstrap_guest() re-ensures it (and its password) on every startup; the
       # dashboard's POST /api/auth/guest logs in with these same credentials.
-      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.usdcop.ai}
       - GUEST_BOOTSTRAP_PASSWORD=${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       - GUEST_BOOTSTRAP_NAME=${GUEST_BOOTSTRAP_NAME:-Invitado}
     volumes:
@@ -607,7 +607,7 @@ services:
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
       # Guest demo login (POST /api/auth/guest) — must match signalbridge-api's
       # GUEST_BOOTSTRAP_* values (bootstrap_guest re-ensures the account+password).
-      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.usdcop.ai}
       GUEST_BOOTSTRAP_PASSWORD: ${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       BACKTEST_API_URL: http://usdcop-backtest-api:8000
       BACKTEST_SERVICE_URL: http://usdcop-backtest-api:8000
@@ -635,11 +635,18 @@ services:
       WOMPI_EVENTS_SECRET: ${WOMPI_EVENTS_SECRET:-}
       # Optional: JSON {"signals":<cents>,"auto":<cents>} to override placeholder prices.
       BILLING_PRICES_COP: ${BILLING_PRICES_COP:-}
+      # CXD-057 — approval_state (gates + DSR trial-aware + backtest_metrics) fuera del
+      # web root: bajo public/ el estático /data/** solo exige sesión y un free/subscriber
+      # se saltaba el research:read que el SSOT reserva a Backtest/Experimentos.
+      APPROVALS_DATA_DIR: /app/data/approvals
     volumes:
-      # public/data is READ-WRITE: approval (Vote 2), registry promote and deploy API routes
-      # fs.writeFile into it (approval_state.json, manifest.json). :ro silently 500s those (EROFS).
+      # public/data is READ-WRITE: registry promote and deploy API routes fs.writeFile
+      # into it (manifest.json, deploy_status.json). :ro silently 500s those (EROFS).
       - ./usdcop-trading-dashboard/public/data:/app/public/data:rw
       - ./usdcop-trading-dashboard/public/forecasting:/app/public/forecasting:ro
+      # Approval state (CXD-057): INTERNALS fuera del web root, READ-WRITE porque el
+      # Voto 2 (/api/production/approve) escribe el artefacto.
+      - ./data/approvals:/app/data/approvals:rw
     ports:
       - "5000:3000"
     networks:

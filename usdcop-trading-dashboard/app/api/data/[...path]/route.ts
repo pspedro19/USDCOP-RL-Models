@@ -23,9 +23,10 @@ const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 
 export async function GET(
   _req: Request,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const segments = params.path ?? [];
+  const { path: routePath } = await params;
+  const segments = routePath ?? [];
 
   // ── Monetization gate (CTR-RBAC-001 R3). Middleware guarantees a session and stamps
   // x-user-id on the request; here we apply the PLAN: asset scoping + freshness delay
@@ -34,7 +35,7 @@ export async function GET(
     const userId = _req.headers.get('x-user-id');
     const ent = await getEntitlements(userId);
     const asset = segments.length > 2 ? segments[1] : 'usdcop'; // analysis/<asset>/... or legacy root
-    const knownAsset = /^(usdcop|xauusd|btcusdt)$/.test(asset) ? asset : 'usdcop';
+    const knownAsset = /^(usdcop|xauusd|btcusdt|spx500)$/.test(asset) ? asset : 'usdcop';
     if (!ent.assets.includes(knownAsset)) {
       return NextResponse.json(
         { error: 'asset not in plan', asset: knownAsset, plan: ent.plan, upgrade: true },
@@ -53,6 +54,16 @@ export async function GET(
   // Only JSON is served; reject anything else up front.
   if (!segments.length || !segments[segments.length - 1].endsWith('.json')) {
     return NextResponse.json({ error: 'only .json files are served' }, { status: 400 });
+  }
+  // CXD-057 — belt and braces: the approval artifacts moved to `<repo>/data/approvals/`
+  // and are served ONLY by `/api/production/approval` (research:read) or, sanitized, by
+  // `/api/production/status`. If a future writer ever re-drops one under `public/`, this
+  // generic fs route must NOT hand it to an `authenticated`-only caller.
+  if (/^approval_state.*\.json$/.test(segments[segments.length - 1])) {
+    return NextResponse.json(
+      { error: 'approval state is not served here — use /api/production/approval (research:read)' },
+      { status: 403 },
+    );
   }
   // Reject traversal / absolute segments before resolving.
   if (segments.some((s) => s.includes('..') || s.includes('\0') || path.isAbsolute(s))) {

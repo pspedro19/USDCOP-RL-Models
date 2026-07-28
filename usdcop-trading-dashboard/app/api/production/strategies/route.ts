@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { readApprovalState } from '@/lib/approvals/store';
+
 const PROD_DIR = path.join(process.cwd(), 'public', 'data', 'production');
 
 interface StrategyOption {
@@ -34,16 +36,13 @@ export async function GET() {
     strategy_id?: string; strategy_name?: string; year?: number; mode?: string;
     strategies?: Record<string, { total_return_pct?: number | null }>;
   };
-  type Approval = { status?: string };
-
   const push = async (summaryFile: string, isDefault: boolean) => {
     const s = await readJson<Summary>(path.join(PROD_DIR, summaryFile));
     if (!s?.strategy_id || seen.has(s.strategy_id)) return;
     seen.add(s.strategy_id);
-    const approvalFile = isDefault
-      ? 'approval_state.json'
-      : `approval_state_${s.strategy_id}.json`;
-    const a = await readJson<Approval>(path.join(PROD_DIR, approvalFile));
+    // Approval state lives OUTSIDE public/ (CXD-057) — only `status` is used here,
+    // which IS in the public allowlist; the rest of the document never leaves the server.
+    const a = (await readApprovalState(isDefault ? null : s.strategy_id))?.state ?? null;
     // Production lists ONLY operator-approved strategies; a PENDING per-sid export
     // stays out until the human Vote-2 on /dashboard moves it here (operator directive).
     if (!isDefault && a?.status !== 'APPROVED' && a?.status !== 'LIVE') return;

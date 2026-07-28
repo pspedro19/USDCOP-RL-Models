@@ -732,6 +732,10 @@ services:
       # The default (`<cwd>/../data/control-tower`) resolves to `/data/...` in this image,
       # whose cwd is /app; the explicit path is what makes the container find it.
       CONTROL_TOWER_DATA_DIR: /app/data/control-tower
+      # CXD-057 — approval_state (gates + DSR trial-aware + backtest_metrics) fuera del
+      # web root: bajo public/ el estático /data/** solo exige sesión y un free/subscriber
+      # se saltaba el research:read. Debe ser :rw — el Voto 2 escribe aquí.
+      APPROVALS_DATA_DIR: /app/data/approvals
     volumes:
       # Serve pipeline/DAG-regenerated data LIVE (SSOT = host files) instead of the
       # copy baked into the image at build time. Without this, scheduled DAG
@@ -746,6 +750,9 @@ services:
       # requires a session, so a free/subscriber would bypass the `research:read` of
       # /api/passport (rbac.md §8). Read-only: only the exporter writes it, from Airflow.
       - ./data/control-tower:/app/data/control-tower:ro
+      # Approval state (CXD-057): INTERNALS. Fuera del web root, READ-WRITE porque el
+      # Voto 2 (/api/production/approve) hace fs.writeFile sobre el artefacto.
+      - ./data/approvals:/app/data/approvals:rw
     ports:
       - "5000:3000"
     networks:

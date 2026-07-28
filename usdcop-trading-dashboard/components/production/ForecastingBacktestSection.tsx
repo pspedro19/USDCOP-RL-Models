@@ -50,6 +50,29 @@ import type {
   DeployResponse,
 } from '@/lib/contracts/production-approval.contract';
 
+/**
+ * CXD-057 — lectura del estado de aprobación ÍNTEGRO.
+ *
+ * El artefacto salió de `public/` (llevaba `gates`, el gate `deflated_sharpe` y
+ * `backtest_metrics`, que el SSOT reserva a `research:read` mientras el estático
+ * `/data/**` solo exigía sesión). La única vía es ahora `/api/production/approval`,
+ * que devuelve el envelope `{ok,data}` y resuelve scoped→singleton con la MISMA regla
+ * que el approve y el DAG H5-L4b. Fail-closed: 404/403 ⇒ `null` (sin panel), nunca un
+ * estado fabricado.
+ */
+async function fetchApproval(sid: string | null | undefined): Promise<ApprovalState | null> {
+  try {
+    const res = await fetch(
+      '/api/production/approval' + (sid ? `?strategy_id=${encodeURIComponent(sid)}` : ''),
+    );
+    if (!res.ok) return null;
+    const env = await res.json();
+    return (env && typeof env === 'object' && 'ok' in env ? env.data : env) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Colores de recharts (props SVG no aceptan clases Tailwind) desde GM_HEX —
 //    único lugar con hex (CTR-GM-UI-001). Mismo patrón que ProductionView.tsx.
 const HEX = {
@@ -1345,24 +1368,12 @@ export function ForecastingBacktestSection({
       // (an on-mount version load would otherwise skip approval → no ApprovalPanel).
       if (summaryData && seq === loadSeqRef.current) setSummary(summaryData);
 
-      // Try per-strategy approval first, fall back to generic
-      let approvalData: ApprovalState | null = null;
-      const approvalPaths = [
-        // singleton (ACTIVE strategy) first — its `strategy` field must match this sid;
-        // else fall through to the per-strategy file (multi-strategy production, fs-backed).
-        '/api/production/status',
-        `/api/data/production/approval_state_${sid}.json`,
-      ];
-      for (const path of approvalPaths) {
-        const res = await fetch(path);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.strategy === sid || path === approvalPaths[approvalPaths.length - 1]) {
-            approvalData = data;
-            break;
-          }
-        }
-      }
+      // CXD-057 — el documento ÍNTEGRO (gates + DSR + backtest_metrics) se pide a
+      // `/api/production/approval` (`research:read`), que ya resuelve la estrategia con
+      // el mismo fallback singleton→scoped que el approve y el DAG H5-L4b. Esta sección
+      // vive en /dashboard y /replay, ambas research:read. El estático
+      // `/api/data/production/approval_state_<sid>.json` ya no existe.
+      const approvalData: ApprovalState | null = await fetchApproval(sid);
       // Approval uses its own strategy-level sequence (version loads must not void it).
       if (sseq === stratSeqRef.current) setApproval(approvalData);
       if (seq !== loadSeqRef.current) return; // superseded (A5-07) — summary/trades only
@@ -1580,10 +1591,7 @@ export function ForecastingBacktestSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'APPROVE', notes, reviewer: 'dashboard_user', strategy_id: strategyId }),
       });
-      if (res.ok) {
-        const approvalRes = await fetch('/api/production/status');
-        if (approvalRes.ok) setApproval(await approvalRes.json());
-      }
+      if (res.ok) setApproval(await fetchApproval(strategyId));
     } finally {
       setIsSubmitting(false);
     }
@@ -1597,10 +1605,7 @@ export function ForecastingBacktestSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'REJECT', notes: reason, reviewer: 'dashboard_user', strategy_id: strategyId }),
       });
-      if (res.ok) {
-        const approvalRes = await fetch('/api/production/status');
-        if (approvalRes.ok) setApproval(await approvalRes.json());
-      }
+      if (res.ok) setApproval(await fetchApproval(strategyId));
     } finally {
       setIsSubmitting(false);
     }

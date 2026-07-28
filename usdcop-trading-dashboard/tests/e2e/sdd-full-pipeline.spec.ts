@@ -41,7 +41,8 @@ test.use({ baseURL: 'http://localhost:5000' });
  */
 function dataIsFresh(): boolean {
   const summaryPath = path.join(DATA_DIR, 'summary.json');
-  const approvalPath = path.join(DATA_DIR, 'approval_state.json');
+  // CXD-057: el approval_state vive fuera de public/ (<repo>/data/approvals).
+  const approvalPath = path.join(DATA_DIR, '..', '..', '..', '..', 'data', 'approvals', 'approval_state.json');
   const tradesPath = path.join(DATA_DIR, 'trades', 'smart_simple_v11.json');
 
   for (const p of [summaryPath, approvalPath, tradesPath]) {
@@ -183,8 +184,8 @@ test.describe.serial('SDD Full Pipeline — E2E Integration', () => {
       expect(parsed).toBeDefined();
     }
 
-    // Also check approval_state via API
-    const approvalResp = await request.get('/api/production/status');
+    // Also check approval_state via the PRIVATE API (CXD-057)
+    const approvalResp = await request.get('/api/production/approval');
     expect(approvalResp.ok()).toBeTruthy();
     const approvalText = await approvalResp.text();
     expect(approvalText).not.toContain('Infinity');
@@ -197,7 +198,8 @@ test.describe.serial('SDD Full Pipeline — E2E Integration', () => {
     const summary = await summaryResp.json();
 
     const approvalResp = await request.get('/api/production/status');
-    const approval = await approvalResp.json();
+    const approvalEnv = await approvalResp.json();
+    const approval = approvalEnv?.ok ? approvalEnv.data : approvalEnv;
 
     expect(summary.strategy_id).toBe('smart_simple_v11');
     expect(approval.strategy).toBe('smart_simple_v11');
@@ -256,11 +258,12 @@ test.describe.serial('SDD Full Pipeline — E2E Integration', () => {
     }
   });
 
-  test('1.6 approval_state.json has 5 gates, PENDING status', async ({ request }) => {
-    const resp = await request.get('/api/production/status');
+  test('1.6 approval_state has 5 gates, PENDING status (vía research:read, CXD-057)', async ({ request }) => {
+    const resp = await request.get('/api/production/approval');
     expect(resp.ok()).toBeTruthy();
 
-    const state = await resp.json();
+    const env = await resp.json();
+    const state = env?.ok ? env.data : env;
     expect(state.status).toBe('PENDING_APPROVAL');
     expect(state.strategy).toBe('smart_simple_v11');
     expect(state.gates).toBeDefined();
@@ -453,10 +456,11 @@ test.describe.serial('SDD Full Pipeline — E2E Integration', () => {
   });
 
   test('3.3 API confirms APPROVED state', async ({ request }) => {
-    const resp = await request.get('/api/production/status');
+    const resp = await request.get('/api/production/approval');   // CXD-057
     expect(resp.ok()).toBeTruthy();
 
-    const state = await resp.json();
+    const env = await resp.json();
+    const state = env?.ok ? env.data : env;
     expect(state.status).toBe('APPROVED');
     expect(state.approved_by).toBe('dashboard_user');
     expect(state.reviewer_notes).toBe('E2E pipeline test — Playwright');

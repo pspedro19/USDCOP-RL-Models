@@ -312,7 +312,8 @@ def check_backups(**context):
     # --- T3: Dashboard JSON freshness ---
     dash_files = {
         "production_summary": DASHBOARD_DIR / "data" / "production" / "summary.json",
-        "production_approval": DASHBOARD_DIR / "data" / "production" / "approval_state.json",
+        # CXD-057: approval_state salió de public/ → <repo>/data/approvals (research:read).
+        "production_approval": PROJECT_ROOT / "data" / "approvals" / "approval_state.json",
         "analysis_index": DASHBOARD_DIR / "data" / "analysis" / "analysis_index.json",
         "forecasting_csv": DASHBOARD_DIR / "forecasting" / "bi_dashboard_unified.csv",
     }

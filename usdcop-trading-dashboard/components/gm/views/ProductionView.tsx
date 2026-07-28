@@ -716,8 +716,16 @@ export function ProductionView() {
       : '/data/production/summary_2025.json',
     { refreshMs: 300_000 },
   );
+  // CXD-057 — el estado de aprobación tiene DOS proyecciones y esta vista elige por rol:
+  //   · cliente (subscriber/free): `/api/production/status` = allowlist sanitizada
+  //     (status/estrategia/fechas). Sin gates, sin DSR, sin backtest_metrics — el SSOT
+  //     lo prohíbe (ux-navigation P3, VISUAL-SPEC-CHECKLIST §B).
+  //   · research (admin/developer): `/api/production/approval` = documento íntegro,
+  //     gateado a `research:read`, que es lo que alimenta el ApprovalPanel.
+  // El fichero estático `/api/data/production/approval_state_<sid>.json` ya NO existe.
   const approvalQ = useGmQuery<ApprovalState>(
-    sidNonDefault ? `/api/data/production/approval_state_${sidNonDefault}.json` : '/api/production/status',
+    (isClientView ? '/api/production/status' : '/api/production/approval')
+      + (sidNonDefault ? `?strategy_id=${encodeURIComponent(sidNonDefault)}` : ''),
   );
   const liveQ = useGmQuery<LiveProductionResponse>(
     isDefault ? '/api/production/live' : null,

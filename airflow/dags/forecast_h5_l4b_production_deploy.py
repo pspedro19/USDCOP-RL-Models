@@ -26,6 +26,7 @@ from typing import Any, Dict
 
 import json
 import logging
+import os
 import subprocess
 import sys
 
@@ -46,7 +47,12 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path('/opt/airflow')
 DASHBOARD_DATA_DIR = PROJECT_ROOT / 'usdcop-trading-dashboard' / 'public' / 'data' / 'production'
-APPROVAL_FILE = DASHBOARD_DATA_DIR / 'approval_state.json'
+# CXD-057: el approval_state salió de `public/` (gates + DSR + backtest_metrics son
+# research:read; bajo `public/` el estático /data/** los servía a cualquier sesión).
+# SSOT de la ruta: `src/contracts/approval_store.py` (`./data` está montado en el
+# contenedor de Airflow como /opt/airflow/data, ver docker-compose).
+APPROVALS_DIR = Path(os.getenv('APPROVALS_DATA_DIR') or (PROJECT_ROOT / 'data' / 'approvals'))
+APPROVAL_FILE = APPROVALS_DIR / 'approval_state.json'
 DEPLOY_STATUS_FILE = DASHBOARD_DATA_DIR / 'deploy_status.json'
 DEFAULT_SCRIPT = PROJECT_ROOT / 'scripts' / 'pipeline' / 'train_and_export_smart_simple.py'
 DEFAULT_ARGS_CLI = ['--phase', 'production', '--no-png', '--seed-db']
@@ -80,7 +86,7 @@ def _approval_file(context) -> Path:
     sid = ((context.get('dag_run') and context['dag_run'].conf) or {}).get('strategy_id')
     if not (sid and str(sid).replace('_', '').replace('-', '').isalnum()):
         return APPROVAL_FILE
-    scoped = DASHBOARD_DATA_DIR / f"approval_state_{sid}.json"
+    scoped = APPROVALS_DIR / f"approval_state_{sid}.json"
     if scoped.is_file():
         return scoped
     try:

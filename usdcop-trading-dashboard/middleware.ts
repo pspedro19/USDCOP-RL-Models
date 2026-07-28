@@ -40,6 +40,13 @@ const PUBLIC_PREFIXES = [
 // Monetized static artifact roots: session required at the edge (R3 edge-gate).
 const GATED_STATIC_PREFIXES = ['/data/', '/forecasting/'];
 
+// CXD-057 — static artifact roots that carry RESEARCH internals (gates, DSR, backtest
+// metrics). A session is not enough: the SSOT reserves them to `research:read`
+// (frontend-backend-contract §6). `approval_state*` no longer lives under `public/` at
+// all (it moved to `<repo>/data/approvals/`); the immutable bundle tree still does, so
+// it is gated here instead of moved. Checked BEFORE the session-only static branch.
+const RESEARCH_STATIC_PREFIXES = ['/data/strategies/'];
+
 // ── R7: per-user rate limit (fixed window, in-memory per edge instance — adequate
 // single-node; move to Redis when horizontally scaled). Applies to data-heavy APIs.
 const RATE_LIMITED_PREFIXES = ['/api/market', '/api/data', '/api/analysis', '/api/forecasting',
@@ -80,6 +87,21 @@ export async function middleware(request: NextRequest) {
     cookieName: 'next-auth.session-token',
   });
   const role = (token?.role as string | undefined) ?? null;
+
+  // ---- research-only static artifacts (CXD-057): session AND research:read.
+  if (RESEARCH_STATIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+    if (!token) return deny(request, pathname);
+    const perms: string[] = Array.isArray((token as { permissions?: unknown }).permissions)
+      ? ((token as { permissions?: string[] }).permissions as string[])
+      : (isRole(role) ? [...ROLE_PERMISSIONS[role]] : []);
+    if (!permsHave(perms, 'research:read')) {
+      return NextResponse.json(
+        { error: 'Forbidden', required: 'research:read', timestamp: new Date().toISOString() },
+        { status: 403 },
+      );
+    }
+    return withSecurityHeaders(NextResponse.next());
+  }
 
   // ---- monetized static artifacts: any session required (delay tiering lives in /api/data)
   if (GATED_STATIC_PREFIXES.some((p) => pathname.startsWith(p))) {

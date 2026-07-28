@@ -280,6 +280,31 @@ class LegacyBundleAdapter:
         except (json.JSONDecodeError, OSError):
             return None
 
+    def _load_approval(self, strategy_id: str) -> dict[str, Any] | None:
+        """Read the PRIVATE approval artifact (CXD-057).
+
+        Path resolution mirrors `src/contracts/approval_store.py` EXACTLY (scoped file,
+        else the singleton only when it belongs to this strategy). It is inlined for the
+        same reason `safe_json_dump` is: this module is a JSON-only leaf that must run
+        without `src.contracts.__init__` eager-importing the ML stack. Keep in lockstep.
+        """
+        import os
+        env = os.getenv("APPROVALS_DATA_DIR", "").strip()
+        root = Path(env).resolve() if env else Path(__file__).resolve().parents[2] / "data" / "approvals"
+        scoped = root / f"approval_state_{strategy_id}.json"
+        singleton = root / "approval_state.json"
+        for cand in (scoped, singleton):
+            if not cand.is_file():
+                continue
+            try:
+                data = json.loads(cand.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                return None
+            if cand is singleton and data.get("strategy") != strategy_id:
+                return None  # el singleton NO es de esta estrategia
+            return data
+        return None
+
     def _discover_backtest_years(self, strategy_id: str) -> list[int]:
         years: set[int] = set()
         for f in self.prod_dir.glob("summary_*.json"):
@@ -295,7 +320,11 @@ class LegacyBundleAdapter:
         asset = _DEFAULT_ASSETS.get(asset_id, _DEFAULT_ASSETS["usdcop"])
         symbol = entry.get("symbol", asset["symbol"])
 
-        approval = self._load_json("production/approval_state.json") or {}
+        # CXD-057: el approval_state vive FUERA de public/ (gates + DSR +
+        # backtest_metrics = research:read). `approval.file` deja de ser una ruta
+        # relativa a public/data y pasa a nombrar el artefacto privado; el frontend
+        # ya NO la usa para construir URLs (resuelve por strategy_id en el store).
+        approval = self._load_approval(strategy_id) or {}
         model_version = entry.get("version") or "1.0.0"
 
         backtests: list[BacktestEntry] = []
@@ -356,7 +385,7 @@ class LegacyBundleAdapter:
             produced_by={"source": "legacy_shim", "adapter": "LegacyBundleAdapter"},
             backtests=backtests,
             production=production,
-            approval={"file": "production/approval_state.json", "status": approval.get("status", "PENDING_APPROVAL")},
+            approval={"file": "data/approvals/approval_state.json", "status": approval.get("status", "PENDING_APPROVAL")},
             model_versions=[ModelVersionEntry(version=model_version, active=True)],
         )
 

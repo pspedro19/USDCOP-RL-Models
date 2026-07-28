@@ -46,6 +46,8 @@ from scipy import stats
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/analysis/<this> -> repo root (reorg fix)
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.contracts.approval_store import approval_path as _approval_path
+
 from src.forecasting.data_contracts import FEATURE_COLUMNS
 from src.forecasting.models.factory import ModelFactory
 from src.forecasting.contracts import MODEL_IDS, get_horizon_config, MODEL_DEFINITIONS
@@ -914,7 +916,9 @@ def evaluate_gates(results: Dict) -> List[Dict]:
 
 def update_approval_state(gate_results: List[Dict]) -> None:
     """Create or update approval_state.json preserving existing approval status."""
-    approval_path = OUTPUT_DIR / "approval_state.json"
+    # CXD-057: fuera de public/ (gates + DSR + backtest_metrics = research:read).
+    approval_path = _approval_path()
+    approval_path.parent.mkdir(parents=True, exist_ok=True)
 
     passed = sum(1 for g in gate_results if g["passed"])
     total = len(gate_results)

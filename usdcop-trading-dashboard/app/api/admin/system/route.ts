@@ -12,6 +12,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { requireAdminRole } from '@/lib/admin/guard';
+import { readApprovalState } from '@/lib/approvals/store';
 import {
   FRESHNESS_THRESHOLDS_HOURS,
   type ActiveAlertRow, type FreshnessSource, type FreshnessStatus, type PipelineStageChip,
@@ -173,8 +174,13 @@ async function checkService(name: string, url: string, timeoutMs = 3000): Promis
   }
 }
 
+/** Vote-2 widget (admin:all). El approval_state vive FUERA de public/ (CXD-057);
+ *  fail-closed: sin artefacto, `readApprovalState` devuelve null y el caller degrada
+ *  el widget declarando el motivo, no fabricando un estado. */
 async function readVote2(): Promise<Vote2Summary | null> {
-  const raw = JSON.parse(await fs.readFile(path.join(PROD_DIR, 'approval_state.json'), 'utf-8'));
+  const record = await readApprovalState(null);
+  if (!record) throw new Error('approval artifact missing');
+  const raw = record.state as unknown as Record<string, never>;
   const gates: Array<{ passed: boolean }> = raw.gates ?? [];
   return {
     status: raw.status ?? 'UNKNOWN',

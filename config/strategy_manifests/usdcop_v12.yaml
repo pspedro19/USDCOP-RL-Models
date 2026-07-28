@@ -15,7 +15,7 @@ components:   # predictor compartido con v11
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: 7bd7899e959195ba   # IDENTICO a v11 (predictor compartido):
+  spec_fingerprint_sha256_16: 758456c8fcc51834   # IDENTICO a v11 (predictor compartido):
     # sha256 canonico LF (CRLF->LF, == blob git)[:16] sobre spec_fingerprint_inputs
   spec_fingerprint_inputs:
   - scripts/pipeline/train_and_export_smart_simple.py
@@ -24,7 +24,7 @@ components:   # predictor compartido con v11
   code_reference:
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
-  code_hash_sha256_16: fe9b26f24779d9a9   # mismo metodo que el hash del manifiesto (LF)
+  code_hash_sha256_16: 60663704514cbec2   # mismo metodo que el hash del manifiesto (LF)
   feature_set:
     builder: src/forecasting/enhance_v2.py::enhance_features_v2
     recipe_feature_set_id: usdcop_smart_simple_v11_recipe25
@@ -46,11 +46,24 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 - config/execution/smart_simple_v12_lev_cap.yaml
-code_hash_sha256_16: 1dde815d6225784c
+code_hash_sha256_16: da6aa0690e13d80c
 juez: registry COP seccion 'juez SELLADO' — corte-52 unico test; e-process descriptivo
 evidencia_diseno: .claude/evidence/cop_v12_design/2026-07-21/ (+12.1% vs +2.4% compuesto
   22-24)
-manifest_version: 6
+manifest_version: 7
+refreeze_note_v7: >-
+  Re-freeze v7 (2026-07-28, CXD-057 — fuga RBAC del approval_state): en
+  train_and_export_smart_simple.py la RUTA de escritura de approval_state.json pasa de
+  usdcop-trading-dashboard/public/data/production/ a <repo>/data/approvals/ (SSOT
+  src/contracts/approval_store.py). Motivo: el artefacto lleva gates, el gate
+  deflated_sharpe y backtest_metrics — INTERNALS que el SSOT reserva a research:read
+  (frontend-backend-contract §6, ux-navigation P3, VISUAL-SPEC-CHECKLIST §B) — y bajo
+  public/ el estático /data/** solo exige sesión, de modo que un free/subscriber los
+  leía saltándose el gate. Cambio de UBICACIÓN DE ARTEFACTO, no de estrategia: 0 líneas
+  de generación de señal, 0 líneas de gates/métricas, backtest NO re-ejecutado, ningún
+  número observado ⇒ **0 trials** (quant-constitution §2, strategy-engines §8).
+  Hash del manifiesto 1dde815d6225784c -> da6aa0690e13d80c; componente fe9b26f24779d9a9 -> 60663704514cbec2; spec_fingerprint
+  7bd7899e959195ba -> 758456c8fcc51834. Señal v11 bit-idéntica; v11 sigue FROZEN, juez = forward 2026.
 refreeze_note_v6: >-
   Re-freeze v6 (2026-07-28, CXD-041/043): canonicalizacion LF, 0 cambios de contenido.
   Hashes anteriores (manifiesto 0cfa0eca071c63bf, componente 3b54d02435658b7f,

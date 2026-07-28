@@ -31,6 +31,9 @@ from typing import Any, Optional
 
 # Root of the repository. The script is expected to live in ``scripts/``.
 REPO_ROOT = Path(__file__).resolve().parents[2]  # scripts/ops/<this> -> repo root (reorg fix)
+sys.path.insert(0, str(REPO_ROOT))
+
+from src.contracts.approval_store import approval_path as _approval_path
 PRODUCTION_DIR = REPO_ROOT / "usdcop-trading-dashboard" / "public" / "data" / "production"
 TRADES_DIR = PRODUCTION_DIR / "trades"
 
@@ -126,7 +129,8 @@ def _build_artifact_record(
         else:
             logger.warning("Trades file missing, skipping artifact: %s", trades_path)
 
-    approval_path = PRODUCTION_DIR / "approval_state.json"
+    # CXD-057: el artefacto vive en <repo>/data/approvals (fuera de public/).
+    approval_path = _approval_path()
     if approval_path.exists():
         extra_artifacts.append(approval_path)
 

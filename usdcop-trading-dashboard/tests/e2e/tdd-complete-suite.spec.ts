@@ -77,8 +77,10 @@ test.describe('1. Health & Infrastructure', () => {
   test('1.2 Production status API returns valid JSON', async ({ request }) => {
     const response = await request.get('/api/production/status')
     expect(response.status()).toBe(200)
-    const data = await response.json()
+    const env = await response.json()                 // CXD-057: envelope sanitizado
+    const data = env?.ok ? env.data : env
     expect(data).toHaveProperty('status')
+    expect(data.gates).toBeUndefined()
   })
 
   test('1.3 Analysis weeks API returns array', async ({ request }) => {
@@ -593,10 +595,11 @@ test.describe('10. Data Integrity', () => {
     }
   })
 
-  test('10.3 approval_state.json has valid gates', async ({ request }) => {
-    const response = await request.get('/data/production/approval_state.json')
+  test('10.3 approval_state has valid gates (vía privada, CXD-057)', async ({ request }) => {
+    const response = await request.get('/api/production/approval')
     if (response.status() === 200) {
-      const data = await response.json()
+      const env = await response.json()
+      const data = env?.ok ? env.data : env
       expect(data).toHaveProperty('status')
       expect(data).toHaveProperty('gates')
       expect(Array.isArray(data.gates)).toBe(true)

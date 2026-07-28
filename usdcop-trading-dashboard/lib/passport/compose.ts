@@ -57,6 +57,7 @@ import {
   type TowerPairedTest,
   type TowerSleeve,
 } from '@/lib/contracts/passport.contract';
+import { readApprovalState } from '@/lib/approvals/store';
 
 // ────────────────────────────────────────────────────────────── fs plumbing
 
@@ -471,18 +472,19 @@ function envFromPaperLedger(
 
 // ────────────────────────────────────────────────────────────── passport (per id)
 
-/** Locate the approval artifact a manifest points at, with the legacy fallback. */
-async function readApproval(manifest: StrategyManifest | null, strategyId: string) {
-  const candidates = [
-    manifest?.approval?.file,
-    `production/approval_state_${strategyId}.json`,
-    strategyId === 'smart_simple_v11' ? 'production/approval_state.json' : null,
-  ].filter((x): x is string => !!x);
-  for (const rel of candidates) {
-    const data = await readData<ApprovalStateFile>(rel);
-    if (data) return { data, path: src(rel) };
-  }
-  return { data: null, path: null };
+/** Locate the approval artifact for a strategy.
+ *
+ *  CXD-057: the artifact no longer lives under `public/data/production/` — it moved to
+ *  the private `<repo>/data/approvals/` root because it carries gates, the DSR gate and
+ *  backtest metrics, which the SSOT reserves to `research:read` (and `/data/**` is
+ *  session-only at the edge). The Passport is already `research:read`, so it may read
+ *  the full document; it just reads it through the private store now. The manifest's
+ *  `approval.file` pointer is deliberately NOT followed as a `public/data` relative
+ *  path anymore — the store resolves by strategy id, whitelisted and realpath-checked. */
+async function readApproval(_manifest: StrategyManifest | null, strategyId: string) {
+  const record = await readApprovalState(strategyId);
+  if (!record) return { data: null, path: null };
+  return { data: record.state as unknown as ApprovalStateFile, path: record.repoPath };
 }
 
 /** The DSR the published approval gate carries — the ONLY DSR with a source today. */

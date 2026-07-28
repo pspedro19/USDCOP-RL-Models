@@ -174,11 +174,22 @@ export const API_ROUTES: readonly RouteRule[] = [
   { prefix: '/api/production/approve', permission: 'approval:vote' },
   { prefix: '/api/production/deploy', permission: 'approval:vote' },
   { prefix: '/api/registry/promote', permission: 'approval:vote' },
-  // signals / production data
+  // CXD-057: proyección ÍNTEGRA del approval_state (gates + DSR + backtest_metrics).
+  // READ-ONLY y reservada a research:read — el SSOT prohíbe gates a cliente
+  // (frontend-backend-contract §6, ux-navigation P3, VISUAL-SPEC-CHECKLIST §B).
+  // El prefijo es más largo que '/api/production' ⇒ gana por longest-prefix.
+  { prefix: '/api/production/approval', permission: 'research:read' },
+  // signals / production data (incl. /api/production/status = proyección SANITIZADA)
   { prefix: '/api/production', permission: 'signals:read' },
   { prefix: '/api/trading', permission: 'signals:read' },
   // gated content (server applies entitlement delay inside the handler)
   { prefix: '/api/data/analysis', permission: 'analysis:read' },
+  // CXD-057 (residuo declarado): los bundles inmutables `public/data/strategies/**`
+  // publican gates/dsr como los approval_state. NO se mueven (los escribe
+  // BundlePublisher y los leen replay/registry/passport, todos research:read), pero
+  // el bypass se cierra por ACCESO: la ruta fs-backed exige research:read igual que
+  // /api/backtest y /api/replay, sus únicos consumidores.
+  { prefix: '/api/data/strategies', permission: 'research:read' },
   { prefix: '/api/data', permission: 'authenticated' },
   { prefix: '/api/analysis', permission: 'analysis:read' },
   { prefix: '/api/forecasting', permission: 'forecast:read' },
