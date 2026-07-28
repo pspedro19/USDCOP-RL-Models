@@ -13,10 +13,18 @@ Two layers, test-first (data migration is BL-42 phase 2):
    exporter regresses to decimals. Heuristic: |value| <= 100, plus a coherence check
    equity_final/initial - 1 ~= total_return_pct/100 whenever both fields are present.
 
-2. DB tables ``forecast_h5_*`` (xfail until BL-42 phase 2): the future convention demands
-   no ``_pct`` column whose |median| < 0.5 — a return/stop column with a sub-0.5 median is
-   a decimal in disguise (verified live 2026-07-27: week_pnl_pct median_abs=0.0045,
-   hard_stop_pct=0.027, take_profit_pct=0.013). Skips cleanly when postgres is down.
+2. DB tables ``forecast_h5_*`` (xfail STRICT until BL-42 phase 2): the future convention
+   demands no ``_pct`` column whose |median| < 0.5 — a return/stop column with a sub-0.5
+   median is a decimal in disguise (verified live 2026-07-27: week_pnl_pct
+   median_abs=0.0045, hard_stop_pct=0.027, take_profit_pct=0.013). When phase 2 lands the
+   XPASS turns red (strict) and the marker must be deleted in the same commit. Postgres
+   down ⇒ skip, unless ``BL42_REQUIRE_DB=1`` (stack environments) makes that a failure —
+   a silent skip must never read as green where the DB is supposed to exist.
+
+Remediation CXD-012: xfail strict + BL42_REQUIRE_DB, decimal-disguise family detector on
+the published JSONs (0.01606 under a ``_pct`` family now fails), and strategy_signal
+coverage: the signal table's suffixless return columns are pinned to DECIMAL scale so
+``ensemble_return`` can't silently flip to pct points while ``*_pct`` migrates.
 """
 from __future__ import annotations
 
@@ -121,6 +129,67 @@ def test_summary_equity_coheres_with_total_return_pct(path: Path):
                     "total_return_pct")
 
 
+def _pct_families(data) -> dict:
+    """Group finite non-zero ``*_pct`` values by their terminal key name.
+
+    week_pnl_pct appearing 30 times across trades forms one family — unit bugs are
+    per-exporter-column, so the family (not the lone value) is the honest unit witness.
+    """
+    families: dict[str, list[float]] = {}
+    for field, value in _iter_pct_fields(data):
+        if value is None or isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        if not math.isfinite(value) or value == 0:
+            continue
+        key = field.rsplit(".", 1)[-1].split("[")[0]
+        families.setdefault(key, []).append(float(value))
+    return families
+
+
+def _decimal_disguise_offenders(families: dict) -> list[str]:
+    """A ``*_pct`` family whose |median| < 0.5 AND |max| < 1.0 is a decimal in disguise.
+
+    Same 0.5 prior as the DB layer (declared ex-ante in BL-42, not tuned on outcomes);
+    the |max| < 1.0 guard keeps genuinely-small pct families (one +1.6% week among
+    noise) out: a real pct return column crosses 1 somewhere, a decimal one does not.
+    """
+    offenders = []
+    for key, values in families.items():
+        if len(values) < MIN_ROWS_FOR_MEDIAN:
+            continue
+        ordered = sorted(abs(v) for v in values)
+        median_abs = ordered[len(ordered) // 2]
+        if median_abs < 0.5 and ordered[-1] < 1.0:
+            offenders.append(
+                f"{key}: median_abs={median_abs:.4g} max_abs={ordered[-1]:.4g} "
+                f"(n={len(values)})")
+    return offenders
+
+
+@pytest.mark.parametrize(
+    "path", SUMMARY_FILES + [LEDGER_FILE], ids=lambda p: p.name)
+def test_pct_families_are_not_decimals_in_disguise(path: Path):
+    """CXD-012: |v| <= 100 alone accepts 0.01606 under ``_pct``. The family-median
+    detector closes that hole for every published bundle."""
+    offenders = _decimal_disguise_offenders(_pct_families(_load(path)))
+    assert not offenders, (
+        f"{path.name}: *_pct families that are decimals in disguise: {offenders}")
+
+
+def test_decimal_disguise_detector_catches_live_db_signature():
+    """Fail-first witness: the exact values Codex caught live (ensemble_return=0.01606,
+    week_pnl_pct median 0.0045) MUST trip the detector; an honest pct family must not."""
+    red = {"trades": [{"week_pnl_pct": v} for v in (0.01606, 0.0045, -0.027, 0.013)]}
+    offenders = _decimal_disguise_offenders(_pct_families(red))
+    assert offenders and offenders[0].startswith("week_pnl_pct"), (
+        "detector failed to flag the live decimal-in-disguise signature — the BL-42 "
+        f"candado is vacuous: {offenders}")
+
+    green = {"trades": [{"week_pnl_pct": v} for v in (1.606, 0.45, -2.7, 1.3)]}
+    assert not _decimal_disguise_offenders(_pct_families(green)), (
+        "detector flags genuine percentage points — false positive")
+
+
 def test_ledger_trade_equity_coheres_with_ytd_pct():
     """candidates_ledger: the last trade's running equity must reproduce ret_2026_ytd_pct
     (same $10K base as the summaries). Guards the paper ledger the operator reads for
@@ -151,9 +220,22 @@ def test_ledger_trade_equity_coheres_with_ytd_pct():
 
 MIN_ROWS_FOR_MEDIAN = 3  # below this a median says nothing (constitution §6 spirit)
 
+# CXD-012: a silent skip must never read as green where the DB is supposed to exist.
+# Stack/CI environments with postgres set BL42_REQUIRE_DB=1 to turn unavailability red.
+REQUIRE_DB = os.environ.get("BL42_REQUIRE_DB") == "1"
+
+
+def _db_unavailable(msg: str):
+    if REQUIRE_DB:
+        pytest.fail(f"BL42_REQUIRE_DB=1 but {msg}")
+    pytest.skip(f"{msg} — DB unit-convention check runs only where the stack is up")
+
 
 def _conn():
-    psycopg2 = pytest.importorskip("psycopg2")
+    try:
+        import psycopg2
+    except ImportError:
+        _db_unavailable("psycopg2 not installed")
     try:
         return psycopg2.connect(
             host=os.environ.get("POSTGRES_HOST", "localhost"),
@@ -163,13 +245,23 @@ def _conn():
             password=os.environ.get("POSTGRES_PASSWORD", ""),
             connect_timeout=3)
     except Exception as e:  # noqa: BLE001
-        pytest.skip(f"postgres unreachable ({e.__class__.__name__}) — DB unit-convention "
-                    "check runs only where the stack is up")
+        _db_unavailable(f"postgres unreachable ({e.__class__.__name__})")
 
 
-@pytest.mark.xfail(strict=False,
+def test_db_available_when_required():
+    """BL42_REQUIRE_DB=1 canary. The strict-xfail test below swallows ANY failure
+    (including our _db_unavailable fail) as 'expected' — so unavailability must turn
+    red HERE, outside the xfail, or the requirement is vacuous."""
+    if not REQUIRE_DB:
+        pytest.skip("BL42_REQUIRE_DB not set — advisory mode, DB tests may skip")
+    _conn().close()
+
+
+@pytest.mark.xfail(strict=True,
                    reason="BL-42 fase 2: DB usa mezcla decimal/pct (week_pnl_pct, "
-                          "hard_stop_pct, take_profit_pct almacenan decimales)")
+                          "hard_stop_pct, take_profit_pct almacenan decimales). "
+                          "strict: cuando fase 2 migre, el XPASS rompe y este marker "
+                          "se borra en el mismo commit")
 def test_forecast_h5_pct_columns_hold_percentage_points():
     """Future convention (BL-42): no ``_pct`` column in forecast_h5_* may have
     |median| < 0.5 over its non-null non-zero rows — a return/stop stored as 0.0269
@@ -211,5 +303,56 @@ def test_forecast_h5_pct_columns_hold_percentage_points():
         assert not offenders, (
             "decimal-in-disguise *_pct columns (|median|<0.5): " + "; ".join(offenders)
             + " — BL-42 phase 2 must migrate these to *_decimal or true pct points")
+    finally:
+        conn.close()
+
+
+# Suffixless return/stop columns on the SIGNAL surface (BL-42: strategy_signal). These
+# store decimals TODAY (ensemble_return=0.01606 = 1.606%) and the target convention is
+# also decimal — so this passes now and pins the scale: an exporter flipping
+# ensemble_return to pct points would corrupt sizing silently while all *_pct gates look.
+SIGNAL_RETURN_COLUMN_HINTS = ("return", "ret_", "pnl", "stop", "profit", "drawdown")
+
+
+def test_signal_suffixless_return_columns_stay_decimal():
+    """strategy_signal coverage (CXD-012): numeric return-like columns WITHOUT ``_pct``
+    in forecast_h5_signals must hold decimal scale (|median| < 0.5 over non-null
+    non-zero rows) — the mirror invariant of the ``*_pct`` check."""
+    conn = _conn()
+    try:
+        from psycopg2 import sql
+
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'forecast_h5_signals'
+              AND column_name NOT LIKE '%\\_pct'
+              AND data_type IN ('numeric', 'double precision', 'real')
+            ORDER BY column_name""")
+        candidates = [
+            c for (c,) in cur.fetchall()
+            if any(h in c for h in SIGNAL_RETURN_COLUMN_HINTS)]
+        if not candidates:
+            pytest.skip("forecast_h5_signals has no suffixless return-like numeric "
+                        "columns (renamed to *_decimal already?)")
+
+        offenders = []
+        for column in candidates:
+            cur.execute(sql.SQL(
+                "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs({col})), "
+                "count(*) FROM forecast_h5_signals "
+                "WHERE {col} IS NOT NULL AND {col} <> 0"
+            ).format(col=sql.Identifier(column)))
+            median_abs, n = cur.fetchone()
+            if n < MIN_ROWS_FOR_MEDIAN or median_abs is None:
+                continue
+            if median_abs >= 0.5:
+                offenders.append(
+                    f"forecast_h5_signals.{column} median_abs={median_abs:.4g} (n={n}) "
+                    "— pct points in a suffixless column")
+        assert not offenders, (
+            "signal surface broke the decimal convention: " + "; ".join(offenders))
     finally:
         conn.close()
