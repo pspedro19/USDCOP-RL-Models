@@ -81,6 +81,31 @@ interface RealtimePriceData {
   isMarketOpen?: boolean;
 }
 
+/** Paper ledger A/B (BL-05) — shape de
+ *  public/data/production/paper/candidates_ledger_2026.json (read-only). */
+interface PaperJudgeWindow {
+  starts_after: string;
+  n_trades: number | null;
+  pnl_pct_compound: number | null;
+  note?: string | null;
+}
+
+interface PaperCandidate {
+  ret_2026_ytd_pct: number | null;
+  n_trades: number | null;
+  note_n?: string | null;
+  judge_window: PaperJudgeWindow | null;
+}
+
+interface PaperCandidatesLedger {
+  contract: string;
+  anchor: string;
+  labels: Record<string, string>;
+  judge_note: string;
+  generated_at: string;
+  strategies: Record<string, PaperCandidate>;
+}
+
 // ─────────────────────────────────────────────────────────── helpers
 
 function formatTsCOT(iso: string | undefined | null): string {
@@ -94,6 +119,12 @@ function formatTsCOT(iso: string | undefined | null): string {
 function fmtPrice(n: number | null | undefined, digits = 1): string {
   if (n == null) return '—';
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}
+
+/** null/NaN-safe % con signo (nunca renderiza Infinity/NaN — strategy-contract §2). */
+function fmtSignedPct(n: number | null | undefined, digits = 2): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  return `${n >= 0 ? '+' : ''}${n.toFixed(digits)}%`;
 }
 
 function unwrapPrice(d: unknown): RealtimePriceData | null {
@@ -516,6 +547,93 @@ function ApprovalPanel({ approval }: { approval: ApprovalState }) {
   );
 }
 
+/** BL-05 — Panel READ-ONLY del paper ledger A/B (v11 producción vs v12/v14 paper).
+ *  Solo números del JSON publicado; cero botones/acciones (mismo patrón display-only
+ *  que ApprovalPanel). Con N<20 el ledger manda note_n/note y SIEMPRE se muestran
+ *  (quant-constitution §6: solo conteo y PnL). */
+function PaperCandidatesPanel({ ledger }: { ledger: PaperCandidatesLedger }) {
+  const rows = Object.entries(ledger.strategies);
+  // Etiquetas sin fila de datos (p.ej. v13 EXCLUIDA hasta freeze) — se listan como nota.
+  const labelOnly = Object.entries(ledger.labels).filter(([key]) => !(key in ledger.strategies));
+  const th = `px-3 py-2.5 text-left ${GMT.label} ${GM.textMuted}`;
+  return (
+    <GmPanel
+      title="Candidatas A/B (paper, ancla ene-2026)"
+      meta={`Ancla ${ledger.anchor} · generado ${ledger.generated_at}`}
+      className="mb-4"
+    >
+      <p className={`${GMT.micro} ${GM.textMuted} m-0 mb-3`}>{ledger.judge_note}</p>
+      <div className="overflow-x-auto -mx-[18px]">
+        <table className="w-full text-[12.5px]">
+          <thead>
+            <tr className="border-b border-[rgba(148,163,184,.1)]">
+              <th className={th}>Estrategia</th>
+              <th className={`${th} text-right`}>Ret. 2026 YTD</th>
+              <th className={`${th} text-right`}>Trades</th>
+              <th className={th}>Juez desde</th>
+              <th className={`${th} text-right`}>Trades juez</th>
+              <th className={`${th} text-right`}>PnL juez (comp.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([sid, c]) => {
+              const isProd = c.judge_window == null;
+              return (
+                <tr key={sid} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`${GMT.mono} font-bold ${GM.textStrong}`}>{sid}</span>
+                      <GmBadge tone={isProd ? 'accent' : 'neutral'}>
+                        {isProd ? 'PRODUCCIÓN' : 'PAPER · JUEZ SELLADO'}
+                      </GmBadge>
+                    </div>
+                    {ledger.labels[sid] && (
+                      <span className={`block ${GMT.micro} ${GM.textMuted} mt-0.5`}>{ledger.labels[sid]}</span>
+                    )}
+                  </td>
+                  <td className={`px-3 py-2.5 ${GMT.mono} font-bold text-right ${
+                    c.ret_2026_ytd_pct == null ? GM.textMuted : c.ret_2026_ytd_pct >= 0 ? GM.pos : GM.neg
+                  }`}>
+                    {fmtSignedPct(c.ret_2026_ytd_pct)}
+                  </td>
+                  <td className={`px-3 py-2.5 text-right`}>
+                    <span className={`${GMT.mono} ${GM.textStrong}`}>{c.n_trades ?? '—'}</span>
+                    {c.note_n && (
+                      <span className={`block ${GMT.micro} ${GM.textMuted}`}>{c.note_n}</span>
+                    )}
+                  </td>
+                  <td className={`px-3 py-2.5 ${GMT.mono} ${GM.textSec} whitespace-nowrap`}>
+                    {c.judge_window ? c.judge_window.starts_after : '—'}
+                  </td>
+                  <td className={`px-3 py-2.5 ${GMT.mono} ${GM.textStrong} text-right`}>
+                    {c.judge_window ? c.judge_window.n_trades ?? '—' : '—'}
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <span className={`${GMT.mono} ${
+                      c.judge_window?.pnl_pct_compound == null ? GM.textMuted
+                        : c.judge_window.pnl_pct_compound >= 0 ? GM.pos : GM.neg
+                    }`}>
+                      {c.judge_window ? fmtSignedPct(c.judge_window.pnl_pct_compound) : '—'}
+                    </span>
+                    {c.judge_window?.note && (
+                      <span className={`block ${GMT.micro} ${GM.textMuted}`}>{c.judge_window.note}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {labelOnly.length > 0 && (
+        <p className={`${GMT.micro} ${GM.textMuted} m-0 mt-3 pt-3 border-t border-dashed border-[rgba(148,163,184,.16)]`}>
+          {labelOnly.map(([key, label]) => `${key}: ${label}`).join(' · ')}
+        </p>
+      )}
+    </GmPanel>
+  );
+}
+
 function TradesTable({ trades }: { trades: StrategyTrade[] }) {
   const [showAll, setShowAll] = useState(false);
   const sorted = useMemo(
@@ -671,6 +789,13 @@ export function ProductionView() {
   );
   const priceQ = useGmQuery<unknown>(isDefault ? '/api/market/realtime-price' : null, { refreshMs: 300_000 });
   const priceData = unwrapPrice(priceQ.data);
+  // BL-05: paper ledger A/B USD/COP (fs-backed, refrescado por L6 los viernes).
+  // Graceful degradation: si el JSON no existe (404) el panel simplemente no se
+  // renderiza. Internals del juez sellado → oculto en la vista cliente (RBAC §8).
+  const paperLedgerQ = useGmQuery<PaperCandidatesLedger>(
+    isClientView ? null : '/api/data/production/paper/candidates_ledger_2026.json',
+  );
+  const paperLedger = paperLedgerQ.data ?? null;
 
   // ── merge live/archivo (misma lógica que useLiveProduction) ───────────────
   const live = liveQ.data;
@@ -892,6 +1017,9 @@ export function ProductionView() {
                   </div>
                 </GmPanel>
               )}
+
+              {/* BL-05: A/B paper ledger (read-only) — solo si el JSON publicado existe */}
+              {paperLedger && <PaperCandidatesPanel ledger={paperLedger} />}
 
               {/* Gráfico de velas con señales (mismo framework que Backtest) */}
               {!isDefault && !chartSymbol ? (
