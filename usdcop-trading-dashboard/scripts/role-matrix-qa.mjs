@@ -78,6 +78,26 @@ async function probeNav(role, page) {
   }
 }
 
+// BL-34: páginas de research probadas con sesión REAL y sin seguir redirects.
+// 'ok' = 200 servida; 'login' = redirect a /login (anon); 'hub' = rebote a /hub (sin permiso).
+const PAGE_CELLS = [
+  ['/replay', { anon: 'login', free: 'hub', subscriber: 'hub', developer: 'ok', admin: 'ok' }],
+  ['/dashboard', { anon: 'login', free: 'hub', subscriber: 'hub', developer: 'ok', admin: 'ok' }],
+];
+
+async function probePageCells(role, page) {
+  for (const [url, expects] of PAGE_CELLS) {
+    const want = expects[role];
+    const r = await page.request.get(`${BASE}${url}`, { maxRedirects: 0 }).catch(() => null);
+    const status = r?.status() ?? -1;
+    const loc = r?.headers()['location'] ?? '';
+    const ok = want === 'ok'
+      ? status === 200
+      : [302, 307].includes(status) && loc.includes(want === 'login' ? '/login' : '/hub');
+    if (ok) pass++; else { fail++; failures.push(`${role} GET ${url}: got ${status} → "${loc}", want ${want}`); }
+  }
+}
+
 async function probeAll(role, page) {
   for (const [method, url, expects, body] of CELLS) {
     const want = expects[role];
@@ -98,6 +118,7 @@ async function probeAll(role, page) {
   await page.goto(`${BASE}/login`, { waitUntil: 'commit', timeout: 90000 });
   await page.waitForTimeout(2000);
   await probeAll('anon', page);
+  await probePageCells('anon', page);
   // page-level: /admin must not be reachable
   const r = await page.request.get(`${BASE}/admin`, { maxRedirects: 0 }).catch(() => null);
   if (r && [307, 302, 401].includes(r.status())) pass++; else { fail++; failures.push(`anon /admin page: ${r?.status()}`); }
@@ -115,6 +136,7 @@ for (const [role, [u, p]] of Object.entries(USERS)) {
   await page.waitForTimeout(6000);
   if (page.url().includes('/login')) { fail++; failures.push(`${role}: login failed`); await ctx.close(); continue; }
   await probeAll(role, page);
+  await probePageCells(role, page);
   await probeNav(role, page);
   await ctx.close();
 }

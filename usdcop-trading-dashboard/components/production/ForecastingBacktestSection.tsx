@@ -140,6 +140,7 @@ const DICT = defineGmDict({
     stepRetrain: 'Reentrenar',
     stepExport: 'Exportar',
     stepReady: 'Listo',
+    readOnlyNote: 'Vista de investigación SOLO LECTURA — el Voto 2 (aprobación humana) vive únicamente en /dashboard y decide sobre los números del bundle publicado. Las cifras del replay son PREVIEW.',
   },
   en: {
     loading: 'Loading backtest…',
@@ -221,6 +222,7 @@ const DICT = defineGmDict({
     stepRetrain: 'Retrain',
     stepExport: 'Export',
     stepReady: 'Ready',
+    readOnlyNote: 'READ-ONLY research view — Vote 2 (human approval) lives exclusively in /dashboard and decides on the published bundle numbers. Replay figures are a PREVIEW.',
   },
 });
 
@@ -1146,6 +1148,7 @@ interface StrategyManifestLite {
 export function ForecastingBacktestSection({
   controlledStrategyId,
   onStrategyChange,
+  readOnly = false,
 }: {
   /** Controlled selection from a parent (e.g. the header Backtest selector). Optional —
    *  when omitted the section manages selection entirely on its own (backward compatible).
@@ -1153,6 +1156,10 @@ export function ForecastingBacktestSection({
   controlledStrategyId?: string;
   /** Notifies the parent when the in-card selector changes, keeping both in sync. */
   onStrategyChange?: (id: string) => void;
+  /** READ-ONLY research surface (BL-34 /replay, approval-gates.md invariante 3): NUNCA
+   *  renderiza la superficie de Vote-2 (Aprobar/Rechazar/Deploy) — ni siquiera para admin.
+   *  Los botones de aprobación viven exclusivamente en /dashboard. */
+  readOnly?: boolean;
 } = {}) {
   const t = useGmT(DICT);
   const [registry, setRegistry] = useState<StrategyRegistry | null>(null);
@@ -1600,9 +1607,11 @@ export function ForecastingBacktestSection({
   };
 
   // Role gating (ux-navigation §3.4): developer sees everything EXCEPT promote (admin-only).
+  // En superficie readOnly (/replay) NADIE promueve — ni admin (approval-gates.md inv. 3:
+  // los botones de aprobación viven solo en /dashboard; el deploy re-valida server-side).
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string } | undefined)?.role ?? 'free';
-  const canPromote = userRole === 'admin';
+  const canPromote = userRole === 'admin' && !readOnly;
 
   // Dynamic strategy lookup
   const strategyId = summary?.strategy_id || 'smart_simple_v11';
@@ -2003,7 +2012,8 @@ export function ForecastingBacktestSection({
               )}
 
               {/* Interactive approval + deploy — ADMIN ONLY (Vote 2 / promote / deploy).
-                  Developers propose and review but never approve or promote (RBAC §4). */}
+                  Developers propose and review but never approve or promote (RBAC §4).
+                  readOnly (/replay) fuerza canPromote=false: cero superficie de Vote-2. */}
               {canPromote && (
                 <>
                   <ApprovalPanel
@@ -2014,6 +2024,19 @@ export function ForecastingBacktestSection({
                   />
                   <DeployPanel approval={approval} />
                 </>
+              )}
+
+              {/* BL-34: nota explícita de solo-lectura en /replay — el Voto 2 vive en
+                  /dashboard y decide sobre el bundle publicado, nunca sobre el preview. */}
+              {readOnly && (
+                <section
+                  data-testid="replay-readonly-note"
+                  className={`${GM.panel} gm-contain p-[18px]`}
+                >
+                  <p className={`${GMT.meta} ${GM.textSec} leading-relaxed m-0`}>
+                    {t('readOnlyNote')}
+                  </p>
+                </section>
               )}
 
               {/* Approved/Rejected status display */}

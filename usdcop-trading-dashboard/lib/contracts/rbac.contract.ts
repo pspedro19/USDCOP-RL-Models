@@ -129,8 +129,8 @@ export const PAGE_ROUTES: readonly RouteRule[] = [
   { prefix: '/metodologia', permission: 'public' }, // transparency page — the sales weapon
   { prefix: '/legal', permission: 'public' },       // terminos / riesgo / privacidad
   { prefix: '/hub', permission: 'authenticated' },
-  { prefix: '/dashboard', permission: 'research:read' },   // Backtest (replay/versions/gates)
-  { prefix: '/replay', permission: 'research:read' },      // BL-34: alias de /dashboard (lectura; Vote-2 queda en /dashboard)
+  { prefix: '/dashboard', permission: 'research:read' },   // Superficie de APROBACIÓN (Voto 2/2 admin-only en el componente + API approval:vote)
+  { prefix: '/replay', permission: 'research:read' },      // BL-34: replay READ-ONLY (variante readOnly, SIN superficie de Vote-2; botones solo en /dashboard)
   { prefix: '/forecasting', permission: 'forecast:read' },
   { prefix: '/analysis', permission: 'analysis:read' },
   { prefix: '/production', permission: 'signals:read' },   // "Señales" for clients
@@ -205,9 +205,13 @@ export interface NavEntry {
   permission: Permission | 'authenticated';
 }
 
-/** Hub/nav entries derive from this — never hardcode role checks in components. */
+/** Hub/nav entries derive from this — never hardcode role checks in components.
+ *  BL-34: la entrada de investigación "Backtest" enlaza /replay (read-only, sin
+ *  Vote-2); /dashboard es la superficie de aprobación y solo aparece con
+ *  `approval:vote` (admin). Espejo render: components/gm/TerminalShell.tsx. */
 export const NAV_ENTRIES: readonly NavEntry[] = [
-  { href: '/dashboard', label: 'Backtest', permission: 'research:read' },
+  { href: '/replay', label: 'Backtest', permission: 'research:read' },
+  { href: '/dashboard', label: 'Aprobación', permission: 'approval:vote' },
   { href: '/production', label: 'Producción', subscriberLabel: 'Señales', permission: 'signals:read' },
   { href: '/forecasting', label: 'Forecasting', permission: 'forecast:read' },
   { href: '/analysis', label: 'Análisis', permission: 'analysis:read' },

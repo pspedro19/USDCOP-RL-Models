@@ -45,6 +45,22 @@ const t = (name, cond) => {
   const devNav = c.navFor('developer');
   t('developer nav keeps Producción label', devNav.some((e) => e.label === 'Producción'));
 
+  // BL-34: /replay = investigación READ-ONLY; /dashboard = superficie de aprobación
+  t('/replay page needs research:read', c.requiredPermissionFor('/replay', c.PAGE_ROUTES) === 'research:read');
+  t('/replay subpaths inherit research:read', c.requiredPermissionFor('/replay/x', c.PAGE_ROUTES) === 'research:read');
+  t('replay APIs all research:read', ['/api/registry', '/api/backtest', '/api/replay', '/api/strategies']
+    .every((p) => c.requiredPermissionFor(p, c.API_ROUTES) === 'research:read'));
+  t('subscriber/free NEVER research:read (cannot reach /replay)',
+    !c.roleHasPermission('subscriber', 'research:read') && !c.roleHasPermission('free', 'research:read'));
+  t('developer nav: Backtest → /replay (read-only research)',
+    devNav.some((e) => e.href === '/replay' && e.label === 'Backtest'));
+  t('developer nav: NO /dashboard (aprobación es admin-only)', !devNav.some((e) => e.href === '/dashboard'));
+  const admNav = c.navFor('admin');
+  t('admin nav: /replay AND /dashboard (Aprobación)',
+    admNav.some((e) => e.href === '/replay')
+    && admNav.some((e) => e.href === '/dashboard' && e.label === 'Aprobación'));
+  t('subscriber nav: no /replay', !subNav.some((e) => e.href === '/replay'));
+
   // entitlements
   const expired = { ...c.PLAN_DEFAULTS.auto, expires_at: '2020-01-01T00:00:00Z' };
   t('expired plan degrades to free', c.effectiveEntitlements(expired).plan === 'free');
