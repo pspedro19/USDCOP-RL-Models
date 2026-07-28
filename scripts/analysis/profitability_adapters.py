@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.analysis.profitability_evidence import Sleeve  # noqa: E402
+from scripts.analysis.profitability_types import Sleeve  # noqa: E402
 
 
 def _load_script(path: Path, name: str):

@@ -66,6 +66,7 @@ from src.contracts.strategy_schema import (  # noqa: E402
     MIN_TRADES_FOR_STATS,
     suppress_small_sample_stats,
 )
+from scripts.analysis.profitability_types import Sleeve  # noqa: E402
 
 log = logging.getLogger("profitability")
 
@@ -154,37 +155,6 @@ def trial_count(asset: str) -> dict:
         "published_bundle_floor": floor,
         "sources": fm.get("n_trials_sources") or [],
     }
-
-
-# ---------------------------------------------------------------------------
-# Sleeve — the uniform shape every adapter must return
-# ---------------------------------------------------------------------------
-
-class Sleeve:
-    """One strategy's realized series, on its own clock."""
-
-    def __init__(self, asset: str, strategy_id: str, index, position, asset_ret,
-                 cost, swap, n_trades: int, clock: int, clock_label: str,
-                 dumb_name: str, dumb_position, invalid_baselines: tuple = ()):
-        self.asset = asset
-        self.strategy_id = strategy_id
-        self.index = pd.Index(index)
-        self.position = np.asarray(position, dtype=float)
-        self.asset_ret = np.asarray(asset_ret, dtype=float)
-        self.cost = np.asarray(cost, dtype=float)
-        self.swap = np.asarray(swap, dtype=float) if swap is not None else np.zeros_like(self.cost)
-        self.n_trades = int(n_trades)
-        self.clock = int(clock)
-        self.clock_label = clock_label
-        self.dumb_name = dumb_name
-        self.dumb_position = np.asarray(dumb_position, dtype=float)
-        # Baselines this data source cannot support. Marking one invalid nulls it AND fails
-        # its gate: a comparison we cannot make is never a comparison we passed.
-        self.invalid_baselines = tuple(invalid_baselines)
-
-    @property
-    def strat_ret(self) -> np.ndarray:
-        return self.position * self.asset_ret - self.cost - self.swap
 
 
 # ---------------------------------------------------------------------------
