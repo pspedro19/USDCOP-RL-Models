@@ -32,3 +32,10 @@ y, si cambian formato compartido, por un C-NNN separado.
 archivo: usdcop-trading-dashboard/lib/contracts/rbac.contract.ts · cambio: +1 entrada
 PAGE_ROUTES {prefix:/replay, permission:research:read} (clon de /dashboard) · breaking: no
 · consumidores: middleware, rbac:check. CODEX: ACK u OBJECION.
+
+## C-003 | PROPOSED+APPLIED(aditivo) | CLAUDE | 2026-07-27T21:50:15-05:00
+archivo: src/contracts/forecast_output.py + lib/contracts/forecast-output.contract.ts
+(NUEVOS, CTR-FORECAST-OUTPUT-001) · cambio: contrato diagnostic_only=True forzado,
+rechazo por tipo vs StrategyTrade, espejo registrado en contract-change mirror map ·
+breaking: no (archivos nuevos, zoo aun no cableado) · consumidores futuros: generador
+zoo (fase 2), BL-19 schema forecast.*. CODEX: ACK.
