@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T23:17:00-05:00
+timestamp: 2026-07-27T23:25:00-05:00
+terminal_auxiliar: claude-helper-fleet-a060f9b7 (subagentes CLD-HLP: reporte-a-raiz, sin STATUS/commits/canales salvo orden directa del operador anotada)
+sucesora: (pre-firmada) proxima terminal Claude del operador SOLO por acta CLD-HLP-002 en este LOG
 instance_id: claude-root-a060f9b7
 estado: WORKING
-bl_activos: [BL-25,BL-20-UI]
-agentes_en_vuelo: 3
-# ^ BL-25 (relanzado, el anterior murio con la sesion) + BL-20-UI + self-red-team K-013 (read-only)
+bl_activos: [BL-25,BL-20-UI,BL-13-REMEDIO2]
+agentes_en_vuelo: 4
+# ^ BL-25 + BL-20-UI + BL-13-remedio2 (objecion C-005 concedida) + self-red-team K-013 (read-only)
 archivos_bloqueados: [usdcop-trading-dashboard/components/views/**, usdcop-trading-dashboard/tests/**, usdcop-trading-dashboard/lib/contracts/strategy.contract.ts, usdcop-trading-dashboard/lib/contracts/policy.contract.ts, src/contracts/strategy_schema.py, src/contracts/policy.py, src/contracts/policy_dsl.py, src/contracts/rule_trace.py, scripts/pipeline/normalize_champions.py, tests/regression/test_strategy_manifests.py, config/strategy_manifests/registry.json]
 necesito_del_otro: ["firma COMMS-v2 §6", "co-firma PROGRESS", "cross-review BL-09/11/34/42-test/20-datos/15-PARCIAL"]
 para_review: [BL-01-REMEDIO,BL-02-REMEDIO,BL-03-REMEDIO,BL-04-REMEDIO,BL-05-REMEDIO,BL-12-REMEDIO,BL-13-REMEDIO,BL-14-REMEDIO,BL-45-REMEDIO2,BL-09,BL-11,BL-06,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T23:28:00-05:00 (reloj real) RAIZ DE VUELTA: firmado ACK FINAL v2.2 (23:23:43); PROGRESS refrescado sobre base Codex 22:20; commits d7cfd67(retraccion muralla)+3056ef6(BL-13-r2, C-005 REMEDIADO-2)+2c5bd3c(BL-20-UI, C-006). Ayudante formalizada (terminal_auxiliar+sucesora). 7 helpers en vuelo: cross-review-BL-07, C-004-r3, BL-14-hashes, BL-12-conteo, BL-01-bypasses, kafka-honestidad+deploy, BL-25. CLD-116/117 a Codex.
 - 2026-07-27T23:14:00-05:00 TANDA DE REMEDIACION COMPLETA: BL-02/03/04 commiteados (8f1f8b9; check de universalidad era VACUO — cerrado con brace-balance; prob weekly proxy honesto; DA neutralizado x17; hardcode legacy muerto) + candado muralla adicional test_forecasting_muralla.py (8 passed, inyeccion->rojo verificada). Los 8 rechazos de Codex re-entregados con packs. Leases liberados. Self-red-team en vuelo. WIP del operador intacto (K-023: types.ts/News*/Hub*/Landing* excluidos del commit).
 - 2026-07-27T23:06:00-05:00 Tanda de remediacion casi cerrada: BL-14 (5a2cf5d, drift 25-vs-23 declarado), BL-12 (e0a09aa, enmienda FT/AT), C-004-r2 (57ee451, 67 tests, rechazos bilaterales en vivo) — todos re-verificados por raiz y con packs re-emitidos (MSG-111/112). Solo BL-02-04 en vuelo. Siguiente tanda: self-red-team global + relanzar BL-25 + BL-20-UI.
 - 2026-07-27T22:58:00-05:00 BL-13-REMEDIO commiteado (686cc98, C-005 APPLIED) => BL-43 de Codex DESBLOQUEADO (MSG-110). Bonus: bug latente refresh-registry corregido. Raiz re-verifico: 9 passed + --check exit 0. 3 agentes en vuelo (02-04, 12+14, C-004-r2).

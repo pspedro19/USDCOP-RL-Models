@@ -1,8 +1,10 @@
-# PROTOCOL-COMMS v2.1 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
+# PROTOCOL-COMMS v2.2 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
 
 > Documento-prompt REUTILIZABLE para bootstrapear cualquier sesión dual futura.
 > v2.0: destilado de K-001..K-022 (2026-07-27). v2.1: incorpora ÍNTEGRAS las 10
 > objeciones de la verificación CODEX (§6 histórico) — cambios marcados [v2.1].
+> v2.2 (2026-07-27, por directiva del operador): incorpora los 4 deltas de la
+> auditoría final CODEX (CXD-011) — cambios marcados [v2.2].
 > Al doble ACK FINAL: este contenido se fusiona a PROTOCOL.md como enmienda y este
 > archivo queda como referencia. Hasta entonces no reemplaza a PROTOCOL v1.1.
 
@@ -37,20 +39,38 @@
 | `LEASES.md` | ruta+dueño+instance_id+expira ≤45min | segunda instancia que ve lease vigente → STOP. **[v2.1] `CONTRACTS/KNOWLEDGE/INBOX/PROGRESS` son multiwriter append-only y NO reciben lease exclusivo** |
 | `briefs/BL-XX.md` | contexto pre-masticado con FUENTE verificable (path:line/query+timestamp) | conteos sin fuente envejecen (K-005). **[v2.1] antes de lanzar, el brief COMPRUEBA ownership (cita ASSIGNMENTS), leases vigentes y WIP preexistente en los archivos objetivo, y declara el plan de integración/commit (K-023)** |
 | `reviews/BL-XX.md` | pack INMUTABLE: hash+paths+C-NNN+comandos+resultados+delta-vs-BASELINE | **[v2.1] `APROBADO` SOLO contra hash inmutable con pack apuntando a ese hash; working tree admite review PRELIMINAR etiquetado, jamás cross-approval.** `para_review` se publica atómicamente tras liberar leases y crear el pack con hash real |
-| `PROGRESS.md` | tablero conjunto co-firmado | métrica = BLs APROBADOS/tiempo, no commits (K-015) |
+| `PROGRESS.md` | tablero conjunto co-firmado | métrica = BLs APROBADOS/tiempo, no commits (K-015). **[v2.2] NO es append-only: se reescribe co-firmado. Solo CONTRACTS/KNOWLEDGE/INBOX son append-only. Cada firma de PROGRESS es verificable contra hash de commit o mtime del archivo** |
 | `BASELINE.md` | fallos pre-existentes conocidos por monitor | aprobar por DELTA, no por total |
 
 ## 2.1 [v2.1] Formato de mensaje INBOX + SLA
 
 ```
-[MSG-NNN][P0|P1|P2][BL-XX|C-NNN|GEN][ACK<=SLA]
-HECHO: qué pasó (1 línea) · EVIDENCIA: path:línea | hash | query+timestamp
+[CLD-NNN|CXD-NNN][P0|P1|P2][BL-XX|C-NNN|GEN][ACK<=SLA]
+HECHO: qué pasó (1 línea) · EVIDENCIA: path:línea | hash COMPLETO | query+timestamp
 IMPACTO: a quién bloquea · PROPUESTA: acción concreta
 DONE-WHEN: prueba/veredicto verificable que cierra el ítem
 ```
-- MSG-NNN global por orden de archivo (regla K-009). Sin ID no hay ACK idempotente ni SLA medible.
+- **[v2.2] IDs namespaced monotónicos por emisor**: `CLD-NNN` (Claude) / `CXD-NNN`
+  (Codex) / `HLP-NNN` (helpers subordinados). El `MSG-NNN` global de v2.1 queda
+  DEROGADO: K-004/K-010/K-013 probaron que un contador global compartido colisiona.
+  Cada emisor incrementa solo su propio contador; sin ID no hay ACK idempotente ni
+  SLA medible.
 - **SLA**: P0 = ACK ≤2min / respuesta ≤10min · P1 = ≤1 ciclo · P2 = ≤15min.
 - **Un veto SIEMPRE incluye alternativa técnica y criterio verificable de cierre.**
+- **[v2.2] Timestamps SIEMPRE de reloj de sistema** (nunca estimados ni "redondeados
+  hacia adelante"): un sello semántico que difiera >60s del mtime del archivo se
+  marca `SKEW` en el propio canal y no cuenta como heartbeat válido. (Incidente:
+  sellos Claude 22:46/22:52 escritos con mtime real ~22:38/22:40.)
+
+## 2.2 [v2.2] Estados normativos de un BL (vocabulario cerrado)
+
+`PENDING → ACTIVE → PARA_REVIEW → (REJECTED → ACTIVE …) → APPROVED_PENDING_CLOSE → DONE`
+- `PARTIAL` califica una entrega declarada por fases ANTES en el review-pack (K-012).
+- `BLOCKED` es un MODIFICADOR (se añade a cualquier estado con la causa y qué se
+  espera de quién), no un estado terminal.
+- `DONE` exige: verificación propia verde + cross-review APROBADO contra hash + MD
+  del BL actualizado por su dueño. Ningún otro término (hecho, listo, cerrado,
+  entregado) tiene valor de estado en los canales.
 
 ## 3. El ciclo con adversarialidad integrada
 
@@ -83,15 +103,28 @@ derivada (K-022: el golpe se codifica para matar la clase entera de error)
 - >60min: estado BLOCKED + pregunta CONCRETA al operador en STATUS. Jamás inventar.
 - Decisión de MODELADO detectada: PARA ambos — el operador pre-registra (0 trials).
 
-## 6. Verificación (histórico v2.0 → resuelto en v2.1)
+## 6. Verificación (histórico v2.0 → v2.1 → v2.2)
 
 Checklist §1-§5 verificado por CODEX 2026-07-27T22:20 con 10 objeciones numeradas;
-TODAS incorporadas arriba con marca [v2.1] (1→§2.1, 2→§2-INBOX, 3→§2.1-SLA,
+TODAS incorporadas con marca [v2.1] (1→§2.1, 2→§2-INBOX, 3→§2.1-SLA,
 4→§1.2-roles, 5→§1.3-degradado, 6→§2-LEASES, 7→§2-reviews, 8→§1.2-logs,
 9→§1.2-freshness, 10→§2-briefs). Detalle original en git (4adb877..este commit).
 
+Auditoría final CODEX (CXD-011) encontró 4 defectos en v2.1; TODOS incorporados
+con marca [v2.2]: (1) IDs namespaced CLD-/CXD- en vez de MSG-NNN global →§2.1;
+(2) PROGRESS no es append-only, solo CONTRACTS/KNOWLEDGE/INBOX; firma verificable
+por hash/mtime →§2-PROGRESS; (3) estados normativos con BLOCKED como modificador
+→§2.2; (4) timestamps de reloj de sistema + marca SKEW >60s →§2.1.
+
 ---
-FIRMA CLAUDE: ACK FINAL v2.1 · claude-root-a060f9b7 · 2026-07-27T22:40:00-05:00
-FIRMA CODEX: REVISADO CON OBJECIONES (v2.0) · codex-root-5d968ac6 · 2026-07-27T22:20:00-05:00
-→ CODEX: verifica que las 10 quedaron fieles y cambia tu firma a `ACK FINAL v2.1`;
-con doble ACK FINAL se fusiona a PROTOCOL.md (enmienda v1.2) y este archivo se archiva.
+FIRMA CLAUDE: ACK FINAL v2.2 · claude-root-a060f9b7 · 2026-07-27T23:23:43-05:00
+(reloj de sistema consultado; fidelidad de los 4 deltas verificada contra CXD-011 —
+cero objeciones; adopto CLD-NNN desde CLD-116 y la marca SKEW).
+FIRMA CODEX: PENDIENTE ACK FINAL v2.2 (condición de CXD-011 cumplida: los 4
+deltas están aplicados).
+Editado por directiva del operador (2026-07-27, sesión Claude nueva, aplica
+CXD-011 tal como Codex lo redactó — cero contenido nuevo fuera de los 4 deltas
+y la regla HLP-NNN ya operante vía CXD-019/021).
+→ AMBAS raíces: verificar fidelidad de los 4 deltas y firmar `ACK FINAL v2.2`
+con timestamp de reloj de sistema; con doble ACK FINAL se fusiona a PROTOCOL.md
+(enmienda v1.2) y este archivo se archiva como referencia.
