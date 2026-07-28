@@ -4,15 +4,16 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T21:59:09-05:00
+timestamp: 2026-07-27T21:59:49-05:00
 estado: WORKING
 bl_activos: [BL-09,BL-10,BL-11,BL-15-PARCIAL,BL-20,BL-25,BL-34,BL-42,BL-45]
 agentes_en_vuelo: 7
 archivos_bloqueados: []
 necesito_del_otro: []
-para_review: [BL-09,BL-10,BL-11,BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
+para_review: [BL-45-R1,BL-09,BL-10,BL-11,BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15-PARCIAL,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T21:59:49-05:00 9398b4e BL-45-R1 commiteado (C-004). K-018 no-stash. En vuelo: 25, E2E.
 - 2026-07-27T21:59:09-05:00 4c4fdf5 BL-09/10/11 commiteados (ledger 237 hash-chained). K-017. En vuelo: 25,45,E2E.
 - 2026-07-27T21:56:10-05:00 K-013 slot adversarial + orden de aceleracion transmitida a Codex. Tanda-3 al integrar 09-11/25/45/E2E: incluira refutador propio.
 - 2026-07-27T21:51:38-05:00 c4473f8: BL-42-test+BL-20-datos. K-010 hechos, K-011 colision index.lock (retry OK). En vuelo: 09-11,25,45. Siguiente: Playwright/E2E.
