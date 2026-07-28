@@ -77,6 +77,138 @@ def test_da_surface_carries_caveat(rel: str, markers: tuple):
 # FULL no-signal clauses, and (c) rejects promotional/action language outright.
 # ---------------------------------------------------------------------------
 
+def _mask_code(src: str) -> str:
+    """Return `src` with comments and string bodies blanked out, same length.
+
+    S-07: every structural check below reasons about JSX brace balance
+    (`prefix.count("{") - prefix.count("}")`). Counting braces that live inside a
+    comment or a string literal makes the check trivially defeatable — the
+    demonstrated attack was one comment character:
+
+        {__isInternal && (
+          /* } el candado cuenta llaves literales, tambien en comentarios */
+          <ForecastDisclaimer variant="weekly" />
+        )}
+
+    which rebalances the count to 0 while the banner is invisible to everyone who
+    is not an admin. Blanking (rather than deleting) keeps every character index
+    identical, so the callers can keep using positions from the original source.
+
+    Template literals keep their `${...}` interpolations visible (they are real
+    code, with real braces) and are masked recursively.
+    """
+    out = list(src)
+    n = len(src)
+
+    def blank(a: int, b: int) -> None:
+        for k in range(a, min(b, n)):
+            if out[k] not in "\r\n":
+                out[k] = " "
+
+    i = 0
+    while i < n:
+        c = src[i]
+        if c == "/" and i + 1 < n and src[i + 1] == "/":
+            j = src.find("\n", i)
+            j = n if j == -1 else j
+            blank(i, j)
+            i = j
+            continue
+        if c == "/" and i + 1 < n and src[i + 1] == "*":
+            j = src.find("*/", i + 2)
+            j = n if j == -1 else j + 2
+            blank(i, j)
+            i = j
+            continue
+        if c in "\"'":
+            j = i + 1
+            while j < n:
+                if src[j] == "\\":
+                    j += 2
+                    continue
+                if src[j] == c:
+                    j += 1
+                    break
+                if src[j] == "\n":       # unterminated literal — stop at EOL
+                    break
+                j += 1
+            blank(i, j)
+            i = j
+            continue
+        if c == "`":
+            blank(i, i + 1)
+            j = i + 1
+            while j < n:
+                if src[j] == "\\":
+                    blank(j, j + 2)
+                    j += 2
+                    continue
+                if src[j] == "`":
+                    blank(j, j + 1)
+                    j += 1
+                    break
+                if src[j] == "$" and j + 1 < n and src[j + 1] == "{":
+                    blank(j, j + 1)      # the '$' is text; '{...}' is code
+                    depth = 0
+                    k = j + 1
+                    while k < n:
+                        if src[k] == "{":
+                            depth += 1
+                        elif src[k] == "}":
+                            depth -= 1
+                            if depth == 0:
+                                k += 1
+                                break
+                        k += 1
+                    out[j + 1:k] = list(_mask_code(src[j + 1:k]))
+                    j = k
+                    continue
+                blank(j, j + 1)
+                j += 1
+            i = j
+            continue
+        i += 1
+    return "".join(out)
+
+
+def _jsx_depth_from_enclosing_return(src: str, pos: int) -> int | None:
+    """Brace depth of `pos` relative to its enclosing `return (`, comments and
+    strings excluded. `None` when there is no enclosing JSX return."""
+    masked = _mask_code(src)
+    ret = masked.rfind("return (", 0, pos)
+    if ret == -1:
+        return None
+    prefix = masked[ret + len("return ("): pos]
+    return prefix.count("{") - prefix.count("}")
+
+
+def test_brace_depth_ignores_comments_and_strings():
+    """Self-test of the structural primitive (S-07). A lock whose measuring tape
+    can be bent by a comment is not a lock — this pins the tape."""
+    honest = 'function C(){\n  return (\n    <div>\n      <Banner />\n    </div>\n  );\n}'
+    assert _jsx_depth_from_enclosing_return(honest, honest.index("<Banner")) == 0
+    # The exact demonstrated attack: a conditional wrapper rebalanced by a `}`
+    # written inside a comment.
+    attacked = (
+        'function C(){\n  return (\n    <div>\n      {isInternal && (\n'
+        '        /* } rebalanceo */\n        <Banner />\n      )}\n    </div>\n  );\n}'
+    )
+    assert _jsx_depth_from_enclosing_return(attacked, attacked.index("<Banner")) == 1
+    # Same trick with a string literal instead of a comment.
+    via_string = (
+        'function C(){\n  return (\n    <div>\n      {isInternal && (\n'
+        '        <Banner title="}" />\n      )}\n    </div>\n  );\n}'
+    )
+    assert _jsx_depth_from_enclosing_return(via_string, via_string.index("<Banner")) == 1
+    # Template interpolation is CODE: its braces must still count.
+    tmpl = (
+        'function C(){\n  return (\n    <div>\n'
+        '      {list.map((x) => (\n        <Banner k={`a${x.b}`} />\n      ))}\n'
+        '    </div>\n  );\n}'
+    )
+    assert _jsx_depth_from_enclosing_return(tmpl, tmpl.index("<Banner")) == 1
+
+
 def _norm(s: str) -> str:
     """Accent-stripped, casefolded, whitespace-collapsed — so 'SEÑAL'/'señal'/'senal'
     all compare equal and a mutation cannot hide behind diacritics or case."""
@@ -288,13 +420,15 @@ def test_shared_disclaimer_component_is_ssot_and_unconditional():
         )
     m = re.search(r"data-testid=\{FORECAST_DISCLAIMER_TESTID\}", src)
     assert m, "ForecastDisclaimer.tsx lost the SSOT testid attribute"
-    ret = src.rfind("return (", 0, m.start())
-    assert ret != -1, "testid appears outside the component's JSX return"
-    prefix = src[ret + len("return ("): m.start()]
-    assert prefix.count("{") - prefix.count("}") <= 1, (
+    # Depth measured with comments and strings masked (S-07): counting literal
+    # braces let a single `/* } */` rebalance any conditional wrapper.
+    depth = _jsx_depth_from_enclosing_return(src, m.start())
+    assert depth is not None, "testid appears outside the component's JSX return"
+    assert depth <= 1, (
         # depth 1 = inside the banner's own opening tag attribute braces; anything
         # deeper means a conditional JSX expression wraps the banner.
-        "The banner markup inside ForecastDisclaimer.tsx is nested in a JSX conditional."
+        f"The banner markup inside ForecastDisclaimer.tsx is nested in a JSX "
+        f"conditional (depth {depth})."
     )
 
 
@@ -435,11 +569,13 @@ def test_caveat_not_gated_on_any_surface(rel: str):
     forecasting-caveat-surfaces.test.tsx.
     """
     src = _BANNER_SURFACES[rel]().read_text(encoding="utf-8", errors="replace")
+    # Mount sites are searched in the MASKED source: a `<ForecastDisclaimer` named
+    # inside a comment or a string is prose, not a mount (S-07).
+    masked = _mask_code(src)
     matches = [
-        m for m in BANNER_ATTR.finditer(src)
-        # ignore import lines / comments mentioning the component name
-        if not _COMMENT_LINE.match(src[src.rfind("\n", 0, m.start()) + 1: m.start()])
-        and "import" not in src[src.rfind("\n", 0, m.start()) + 1: m.start()]
+        m for m in BANNER_ATTR.finditer(masked)
+        # ignore import lines mentioning the component name
+        if "import" not in src[src.rfind("\n", 0, m.start()) + 1: m.start()]
     ]
     assert matches, (
         f"{rel} has no da-caveat banner in literal, constant, or shared-component "
@@ -447,10 +583,9 @@ def test_caveat_not_gated_on_any_surface(rel: str):
     )
     depths = []
     for m in matches:
-        ret = src.rfind("return (", 0, m.start())
-        assert ret != -1, f"{rel}: banner appears outside any JSX return"
-        prefix = src[ret + len("return ("): m.start()]
-        depths.append(prefix.count("{") - prefix.count("}"))
+        depth = _jsx_depth_from_enclosing_return(src, m.start())
+        assert depth is not None, f"{rel}: banner appears outside any JSX return"
+        depths.append(depth)
     assert any(d == 0 for d in depths), (
         f"Every da-caveat banner in {rel} is nested inside a JSX expression (brace "
         f"depths from enclosing return: {depths}). BL-02 requires the banner to render "
@@ -681,22 +816,171 @@ def _non_comment_offenders(path: Path) -> list[str]:
     return offenders
 
 
+# ---------------------------------------------------------------------------
+# The SURFACE is whatever the /forecasting routes reach — not a hand-written list.
+#
+# S-06 (auto-red-team, 2026-07-28): the previous perimeter was exactly two paths
+# (`components/gm/views/ForecastingView.tsx` + `components/forecasting/*`). Mounting
+# a new component from ANY other directory escaped it completely: a
+# `components/gm/views/ForecastingApprovePanel.tsx` with
+# `fetch('/api/production/approve')`, `fetch('/api/execution/orders')` and a
+# `COMPRAR` button, imported by ForecastingView and rendered inside its JSX, left
+# the suite at 25/25 green. The BL-06 doc claimed "el día que forecasting pueda
+# aprobar o ejecutar, este test se pone rojo"; it was false for any file the author
+# of the mutation chose to put elsewhere.
+#
+# The perimeter is now DERIVED: start at the route entry points that Next.js
+# serves for /forecasting and /legacy/forecasting, and follow every statically
+# resolvable local import transitively. A new component is inside the muralla the
+# moment the surface imports it, wherever it lives — which is the only definition
+# of "the forecasting surface" that a mutation cannot side-step by choosing a
+# directory.
+# ---------------------------------------------------------------------------
+
+DASHBOARD = ROOT / "usdcop-trading-dashboard"
+
+#: Route entry points. `app/**/page.tsx` IS the surface as far as a user is
+#: concerned; anything they reach is served under /forecasting.
+FORECASTING_ROUTES = (
+    DASHBOARD / "app" / "forecasting" / "page.tsx",
+    DASHBOARD / "app" / "legacy" / "forecasting" / "page.tsx",
+)
+
+#: Files that MUST end up in the derived closure. Without this, a resolver that
+#: silently stops resolving (a rename, a new path alias, an `index.ts` barrel that
+#: moves) would shrink the perimeter back to nothing and every lock below would go
+#: green by covering zero files — the exact failure mode S-06 documents.
+_SURFACE_ANCHORS = (
+    "usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx",
+    "usdcop-trading-dashboard/components/forecasting/ForecastingDashboard.tsx",
+    "usdcop-trading-dashboard/components/forecasting/WeeklyInferenceView.tsx",
+    "usdcop-trading-dashboard/components/forecasting/ForecastDisclaimer.tsx",
+    "usdcop-trading-dashboard/components/gm/TerminalShell.tsx",
+    "usdcop-trading-dashboard/lib/ui/forecast-disclaimer.ts",
+)
+
+_MIN_SURFACE_FILES = 20
+
+# `from '<spec>'`, `import('<spec>')`, `require('<spec>')` — the three spellings
+# that pull another module into the surface.
+_IMPORT_SPEC = re.compile(
+    r"""(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]"""
+)
+# A dynamic import whose specifier is NOT a literal: `import(name)`,
+# `import(`${base}/x`)`. Static analysis cannot follow it, so it is a hole in the
+# muralla and is rejected outright rather than silently skipped.
+_OPAQUE_DYNAMIC_IMPORT = re.compile(r"\bimport\s*\(\s*(?!['\"])(?!/\*\s*@vite-ignore)")
+
+_TS_SUFFIXES = (".tsx", ".ts", ".jsx", ".js")
+
+
+def _resolve_import(spec: str, importer: Path) -> Path | None:
+    """Resolve a local module specifier to a file, or None for a package import."""
+    if spec.startswith("@/"):
+        base = DASHBOARD / spec[2:]
+    elif spec.startswith("./") or spec.startswith("../"):
+        base = importer.parent / spec
+    else:
+        return None                      # bare specifier ⇒ node_modules, not ours
+    try:
+        base = base.resolve()
+    except OSError:                      # pragma: no cover — malformed path
+        return None
+    candidates = [base.with_suffix(s) for s in _TS_SUFFIXES]
+    candidates += [base / f"index{s}" for s in _TS_SUFFIXES]
+    if base.suffix in _TS_SUFFIXES:
+        candidates.insert(0, base)
+    for c in candidates:
+        if c.is_file():
+            return c
+    return None
+
+
+def _forecasting_surface_files() -> list[Path]:
+    """Every source file the /forecasting routes reach, transitively.
+
+    Deterministic (sorted) so failure output is stable. Files outside the
+    dashboard are ignored; `node_modules` is never entered (bare specifiers are
+    not resolved at all).
+    """
+    seen: set[Path] = set()
+    stack: list[Path] = [r.resolve() for r in FORECASTING_ROUTES if r.is_file()]
+    while stack:
+        current = stack.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        text = current.read_text(encoding="utf-8", errors="replace")
+        for spec in _IMPORT_SPEC.findall(text):
+            target = _resolve_import(spec, current)
+            if target and target not in seen and DASHBOARD.resolve() in target.parents:
+                stack.append(target)
+    return sorted(seen)
+
+
+# Kept as the name the older tests used; it now returns the DERIVED surface.
 def _forecasting_component_files() -> list[Path]:
-    files = [FORECASTING_VIEW]
-    files.extend(sorted((DASH / "forecasting").glob("*.ts*")))
-    return [f for f in files if f.is_file()]
+    return _forecasting_surface_files()
+
+
+def test_forecasting_surface_is_derived_not_hardcoded():
+    """S-06 meta-lock: the perimeter must actually be the import closure.
+
+    A lock over an empty (or truncated) file set is green by vacuity — that is
+    precisely how BL-06 shipped. This pins that the closure is discovered, that it
+    contains the known surface anchors, and that no file inside it hides a module
+    behind a non-literal dynamic import (which static analysis cannot follow, so
+    it would reopen the same hole).
+    """
+    for route in FORECASTING_ROUTES:
+        assert route.is_file(), (
+            f"{route.relative_to(ROOT).as_posix()} disappeared — if the route moved, "
+            "FORECASTING_ROUTES must move with it, or the muralla covers nothing."
+        )
+    files = _forecasting_surface_files()
+    rels = {f.resolve().relative_to(ROOT).as_posix() for f in files}
+    missing = [a for a in _SURFACE_ANCHORS if a not in rels]
+    assert not missing, (
+        f"The derived forecasting surface lost {missing}. The import resolver is "
+        "broken or a surface file moved; every BL-06 lock below would silently stop "
+        "covering it (S-06)."
+    )
+    assert len(files) >= _MIN_SURFACE_FILES, (
+        f"The derived surface collapsed to {len(files)} files (expected >= "
+        f"{_MIN_SURFACE_FILES}): {sorted(rels)}"
+    )
+    opaque: list[str] = []
+    for f in files:
+        rel = f.relative_to(ROOT).as_posix()
+        for lineno, line in enumerate(
+            f.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
+        ):
+            if _COMMENT_LINE.match(line):
+                continue
+            if _OPAQUE_DYNAMIC_IMPORT.search(line):
+                opaque.append(f"{rel}:{lineno}: {line.strip()[:110]}")
+    assert not opaque, (
+        "A forecasting surface file imports a module through a non-literal "
+        "specifier. The perimeter is computed statically, so such an import is an "
+        "unauditable back door into the surface (S-06):\n  " + "\n  ".join(opaque)
+    )
 
 
 def test_forecasting_has_no_action_capabilities():
-    """BL-06: ForecastingView + every components/forecasting/* file must stay free of
+    """BL-06: EVERY file the /forecasting routes reach must stay free of
     approval/deploy/execution endpoints, approval callbacks and BUY/SELL order verbs.
 
     Forecasting is a diagnostic surface (quant-constitution): the day it can approve,
     deploy or phrase an order, it stops being disclosure and becomes a signal product
     that bypassed the 2-vote gate.
+
+    S-06: the perimeter is the import closure of the routes, not two hardcoded
+    paths. The mutation that used to pass — a new `ForecastingApprovePanel.tsx`
+    under `components/gm/views/` mounted inside ForecastingView's JSX — now fails
+    here, because importing it is what puts it inside the muralla.
     """
     offenders: list[str] = []
-    for f in _forecasting_component_files():
+    for f in _forecasting_surface_files():
         offenders.extend(_non_comment_offenders(f))
     assert not offenders, (
         "Forecasting surfaces grew action capabilities (forbidden outside comments):\n  "
@@ -726,7 +1010,7 @@ def test_legacy_forecasting_same_rules():
 _IMPORT_LINE = re.compile(r"^\s*(import\b|export\s*\{|\}\s*from\s)")
 
 
-def _surface_marketing_offenders(path: Path) -> list[str]:
+def _surface_marketing_offenders(path: Path, *, apply_exemptions: bool = True) -> list[str]:
     """'file:line: /pattern/' hits of FORBIDDEN_MARKETING in a surface file,
     matched on accent-stripped casefolded text (same _norm as the SSOT check),
     skipping comment and import lines (BL-06 precedent)."""
@@ -739,15 +1023,47 @@ def _surface_marketing_offenders(path: Path) -> list[str]:
             continue
         text = _norm(line)
         for pat in FORBIDDEN_MARKETING:
-            if re.search(pat, text):
-                offenders.append(f"{rel}:{lineno}: /{pat}/ :: {line.strip()[:110]}")
+            if not re.search(pat, text):
+                continue
+            if apply_exemptions and (rel, pat) in MARKETING_EXEMPTIONS:
+                continue
+            offenders.append(f"{rel}:{lineno}: /{pat}/ :: {line.strip()[:110]}")
     return offenders
 
 
+# Declared, reasoned exemptions to the marketing scan on the WIDER surface (S-06:
+# the closure now includes shared chrome and i18n). An exemption names the exact
+# file AND the exact pattern — never a whole file, never a whole pattern — and is
+# itself checked: an exemption that stops matching fails the test, so a stale
+# waiver cannot quietly cover a future offender.
+MARKETING_EXEMPTIONS: dict[tuple[str, str], str] = {
+    ("usdcop-trading-dashboard/lib/i18n/gm.ts", r"garantiz"):
+        "disclaimer legal del pie: 'los resultados pasados NO garantizan resultados "
+        "futuros'. Es la negación de una promesa — el opuesto exacto de lo que el "
+        "patrón persigue.",
+}
+
+
+def test_marketing_exemptions_are_all_still_needed():
+    """A waiver that no longer matches anything is a waiver nobody re-reads. Each
+    declared exemption must correspond to a real, current hit."""
+    stale = []
+    for (rel, pat), _reason in MARKETING_EXEMPTIONS.items():
+        path = ROOT / rel
+        hits = [o for o in _surface_marketing_offenders(path, apply_exemptions=False)
+                if f"/{pat}/" in o] if path.is_file() else []
+        if not hits:
+            stale.append(f"{rel} :: /{pat}/")
+    assert not stale, (
+        "Marketing exemptions that no longer match anything (delete them; a stale "
+        "waiver silently covers the next real offender):\n  " + "\n  ".join(stale)
+    )
+
+
 def test_forecasting_surfaces_carry_no_marketing_language():
-    """BL-01 (hardening, red-team bypass #4): ForecastingView.tsx and every
-    components/forecasting/* file must be free of the promotional/action
-    language (case- and accent-insensitive), outside comments and imports.
+    """BL-01 (hardening, red-team bypass #4): every file the /forecasting routes
+    reach must be free of the promotional/action language (case- and
+    accent-insensitive), outside comments and imports.
 
     The SSOT-only patterns are NOT applied here: the surfaces legitimately say
     'Confianza proxy' (mandated BL-03 label) and 'Sin posición' (honest flat

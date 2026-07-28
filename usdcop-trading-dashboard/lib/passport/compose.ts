@@ -30,11 +30,13 @@ import path from 'path';
 import {
   BOOK_STATES,
   HEALTH_CLOCKS,
+  MIN_TRADES_FOR_RATIOS,
   N_MAX_TRIALS,
   PASSPORT_CONTRACT_ID,
   PASSPORT_CONTRACT_VERSION,
   PASSPORT_ENVS,
   DSR_BAR,
+  smallSampleReason,
   sourced,
   suppressSmallSample,
   unavailable,
@@ -296,6 +298,12 @@ export const PENDING_INTERFACES: PendingInterface[] = [
 
 // ─────────────────────────────────────────────────────────────── env performance
 
+/** Why a trade count is missing. Its presence in `pending` is what turns "we do
+ *  not know N" into a visible fact instead of a silent licence to publish. */
+const NO_TRADE_COUNT_PENDING =
+  'BL-18 — ningún artefacto publicado de esta estrategia declara el conteo de trades '
+  + '(sin N no se publica Sharpe/p-value/DSR: quant-constitution §6, fail-closed)';
+
 /** An env with no published artifact at all — all fields unavailable, never zeros. */
 function emptyEnv(env: PassportEnv, pending: string): EnvPerformance {
   const u = <T = number>() => unavailable<T>(pending);
@@ -319,13 +327,14 @@ function envFromSummary(
   note?: string,
 ): EnvPerformance {
   const block = summary.strategies?.[strategyId] ?? {};
-  const nTrades = summary.n_trades
-    ?? ((block.n_long ?? 0) + (block.n_short ?? 0) || null);
+  const nTrades = nTradesFromSummary(summary, strategyId);
   const perf: EnvPerformance = {
     env,
     period_label: sourced<string>(periodLabel, artifactPath, note),
     return_pct: sourced(block.total_return_pct ?? null, artifactPath, note),
-    n_trades: sourced(nTrades ?? null, artifactPath, note),
+    n_trades: nTrades != null
+      ? sourced(nTrades, artifactPath, note)
+      : unavailable(NO_TRADE_COUNT_PENDING),
     max_dd_pct: sourced(block.max_dd_pct ?? null, artifactPath, note),
     win_rate_pct: sourced(block.win_rate_pct ?? null, artifactPath, note),
     profit_factor: sourced(block.profit_factor ?? null, artifactPath, note),
@@ -341,15 +350,51 @@ function envFromSummary(
   return suppressSmallSample(perf);
 }
 
-/** Build the backtest env from the manifest headline (published, immutable bundle). */
-function envFromManifestBacktest(entry: ManifestBacktest, manifestPath: string): EnvPerformance {
+/**
+ * The trade count of a published bundle summary. `n_trades` when the exporter
+ * wrote it, else `n_long + n_short` from the strategy block — the fallback that
+ * already existed for the live env and was NOT used for the backtest one (S-04).
+ */
+function nTradesFromSummary(summary: SummaryFile | null, strategyId: string): number | null {
+  if (!summary) return null;
+  if (typeof summary.n_trades === 'number') return summary.n_trades;
+  const block = summary.strategies?.[strategyId];
+  if (!block) return null;
+  const long = block.n_long;
+  const short = block.n_short;
+  if (typeof long !== 'number' && typeof short !== 'number') return null;
+  return (typeof long === 'number' ? long : 0) + (typeof short === 'number' ? short : 0);
+}
+
+/** Build the backtest env from the manifest headline (published, immutable bundle).
+ *
+ *  S-04: `headline.trades` exists in exactly THREE manifests (`smart_simple_*`).
+ *  Every Gold/BTC bundle omits it and `spx500_*` spells it `n_trades`, so the
+ *  count silently became `null` — and the §6 guard, which keyed off that null,
+ *  did nothing precisely where N was smallest (`btc_hodl_b1` = 1 trade). The
+ *  count is now taken from the headline in either spelling, else from the
+ *  bundle's own `summary_*.json` (an artifact the manifest itself points at),
+ *  and when neither yields a number the env is `unavailable` — never published
+ *  with a null that reads as "no small-sample problem here". */
+async function envFromManifestBacktest(
+  entry: ManifestBacktest,
+  manifestPath: string,
+): Promise<EnvPerformance> {
   const h = entry.headline ?? {};
-  const nTrades = (h.trades ?? null) as number | null;
+  const headlineN = (h.trades ?? h.n_trades ?? null) as number | null;
+  const summary = entry.summary ? await readData<SummaryFile>(entry.summary) : null;
+  const summaryN = nTradesFromSummary(summary, summary?.strategy_id ?? '');
+  const nTrades = typeof headlineN === 'number' ? headlineN : summaryN;
+  const nPath = typeof headlineN === 'number' || !entry.summary
+    ? manifestPath
+    : src(entry.summary);
   const perf: EnvPerformance = {
     env: 'backtest',
     period_label: sourced<string>(`${entry.model_version} · ${entry.year}`, manifestPath),
     return_pct: sourced(h.return_pct ?? null, manifestPath),
-    n_trades: sourced(nTrades, manifestPath),
+    n_trades: nTrades != null
+      ? sourced(nTrades, nPath, nPath === manifestPath ? undefined : 'conteo del summary del bundle')
+      : unavailable(NO_TRADE_COUNT_PENDING),
     max_dd_pct: sourced(h.max_dd_pct ?? null, manifestPath),
     win_rate_pct: sourced(h.win_rate_pct ?? null, manifestPath),
     profit_factor: unavailable('BL-18 (profit_factor no está en el headline del manifiesto)'),
@@ -445,7 +490,7 @@ export async function composeStrategyPassport(strategyId: string): Promise<Strat
     .filter((b) => !activeVersion || b.model_version === activeVersion)
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))[0]
     ?? [...backtests].sort((a, b) => (b.year ?? 0) - (a.year ?? 0))[0];
-  if (chosen) performance.backtest = envFromManifestBacktest(chosen, manifestPath);
+  if (chosen) performance.backtest = await envFromManifestBacktest(chosen, manifestPath);
 
   // live ← the published production/forward bundle. Labelled honestly: it is a
   // forward from the pipeline, NOT reconciled against exchange fills (BL-21/22).
@@ -625,9 +670,26 @@ async function composeSleeve(
 
   // Headline figures: registry.json publishes them per strategy (it is itself a
   // published projection built by the Python RegistryBuilder).
-  const nTrades = manifest?.backtests?.find(
-    (b) => b.model_version === entry.active_version)?.headline?.trades ?? null;
-  const insufficient = nTrades != null && nTrades < 20;
+  //
+  // S-04: the count is resolved the same way as the backtest env — headline in
+  // either spelling, else the bundle summary the manifest points at — and an
+  // UNRESOLVED count is treated as insufficient (fail-closed), because the rows
+  // that hid their N were the 1-trade ones.
+  const chosenBacktest = manifest?.backtests?.find(
+    (b) => b.model_version === entry.active_version)
+    ?? [...(manifest?.backtests ?? [])].sort((a, b) => (b.year ?? 0) - (a.year ?? 0))[0];
+  const headlineN = (chosenBacktest?.headline?.trades
+    ?? chosenBacktest?.headline?.n_trades ?? null) as number | null;
+  const backtestSummary = chosenBacktest?.summary
+    ? await readData<SummaryFile>(chosenBacktest.summary)
+    : null;
+  const nTrades = typeof headlineN === 'number'
+    ? headlineN
+    : nTradesFromSummary(backtestSummary, backtestSummary?.strategy_id ?? '');
+  const nTradesPath = typeof headlineN === 'number' || !chosenBacktest?.summary
+    ? src(P.manifest(entry.strategy_id))
+    : src(chosenBacktest.summary);
+  const insufficient = nTrades == null || nTrades < MIN_TRADES_FOR_RATIOS;
 
   const sleeve: TowerSleeve = {
     strategy_id: entry.strategy_id,
@@ -642,8 +704,8 @@ async function composeSleeve(
       ? sourced(entry.sharpe, registryPath, 'headline del registry (bundle publicado)')
       : unavailable('sin Sharpe publicado en el registry'),
     n_trades: nTrades != null
-      ? sourced(nTrades as number, src(P.manifest(entry.strategy_id)))
-      : unavailable('el manifiesto no publica el conteo de trades del headline'),
+      ? sourced(nTrades as number, nTradesPath)
+      : unavailable(NO_TRADE_COUNT_PENDING),
     return_pct: entry.return_pct != null
       ? sourced(entry.return_pct, registryPath, 'headline del registry (bundle publicado)')
       : unavailable('sin retorno publicado en el registry'),
@@ -686,10 +748,11 @@ async function composeSleeve(
       : unavailable('ancla no parseable');
   }
 
-  // §6: with N<20 the sleeve row must not carry Sharpe.
+  // §6: without a published N >= 20 the sleeve row must not carry Sharpe or DSR.
   if (insufficient) {
-    sleeve.sharpe = unavailable(`N=${nTrades} < 20 (quant-constitution §6: solo conteo y PnL)`);
-    sleeve.dsr_family = unavailable(`N=${nTrades} < 20 (quant-constitution §6: solo conteo y PnL)`);
+    const reason = smallSampleReason(nTrades ?? null);
+    sleeve.sharpe = unavailable(reason);
+    sleeve.dsr_family = unavailable(reason);
   }
   return sleeve;
 }

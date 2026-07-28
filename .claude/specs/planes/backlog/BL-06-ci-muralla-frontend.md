@@ -1,7 +1,7 @@
 ---
 kind: roadmap
-status: IMPLEMENTED
-version: 1.1.0
+status: PARTIAL
+version: 1.2.0
 last_verified: 2026-07-28
 supersedes: []
 code_anchors:

@@ -51,9 +51,25 @@ import {
 
 // ────────────────────────────────────────────────────────────── mocks de entorno
 
-// Sesión admin (las vistas solo la usan para hints internos / free-badge).
+// ─────────────────────────────────────────────────────────── sesión por ROL
+//
+// S-07 (auto-red-team 2026-07-28): este mock era una constante `role:'admin'`, así que
+// NINGÚN test ejercía jamás una sesión no-admin. Combinado con el candado estático —que
+// contaba llaves literales, también las de los comentarios— el disclaimer se podía
+// esconder tras `{isInternal && (...)}` con las DOS suites en verde: invisible
+// exactamente para free/subscriber/anon, la población a la que protege.
+//
+// Ahora la sesión es una variable de test y CADA superficie se renderiza con los cuatro
+// roles relevantes. `null` = anónimo (`useSession()` sin data).
+type TestRole = 'admin' | 'subscriber' | 'free' | null;
+const RENDER_ROLES: TestRole[] = [null, 'free', 'subscriber', 'admin'];
+const roleLabel = (r: TestRole) => r ?? 'anon';
+
+let currentRole: TestRole = 'admin';
 vi.mock('next-auth/react', () => ({
-  useSession: () => ({ data: { user: { role: 'admin' } }, status: 'authenticated' }),
+  useSession: () => (currentRole === null
+    ? { data: null, status: 'unauthenticated' }
+    : { data: { user: { role: currentRole } }, status: 'authenticated' }),
 }));
 
 // next/navigation para la vista GM (estado en la URL).
@@ -361,6 +377,7 @@ afterEach(() => {
   // OJO: NO vi.restoreAllMocks() — resetearía el mock global de ResizeObserver del
   // setup (recharts crashearía en el siguiente mount y React desmontaría el árbol).
   routerReplace.mockClear();
+  currentRole = 'admin';   // el resto de la suite asume sesión interna
 });
 
 // ═══════════════════════════════════════════════ 1 · componente compartido
@@ -640,4 +657,75 @@ describe('AssetWeeklyBody (GM weekly inference)', () => {
     await screen.findByText('2025-W01');
     assertHitColumnAccessible(container, GOLD_WEEKLY_2025.strategies[0].weeks);
   });
+});
+
+// ═══════════════════════ 6 · EL CAVEAT NO DEPENDE DEL ROL (S-07)
+//
+// El caveat existe para el usuario que PAGA por ver la superficie y no carga las tablas
+// de significancia en la cabeza. Esconderlo tras una condición de rol —`{isInternal &&
+// (...)}`— lo deja visible solo para quien menos lo necesita. Esa mutación pasaba con las
+// dos suites verdes: el candado estático contaba llaves de comentarios y ESTOS tests solo
+// simulaban `role:'admin'`.
+//
+// Cada superficie se renderiza con anon / free / subscriber / admin. La afirmación es la
+// misma para los cuatro: el banner está montado y es DURAMENTE visible.
+
+describe('el caveat es incondicional respecto al ROL (S-07)', () => {
+  for (const role of RENDER_ROLES) {
+    describe(`rol=${roleLabel(role)}`, () => {
+      beforeEach(() => { currentRole = role; });
+
+      it('GM ForecastingView · modo replay direccional', async () => {
+        mockFetch([[/bi_dashboard_unified\.csv$/, { ok: false, status: 404 }]]);
+        currentQs = 'asset=usdcop';
+        const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
+        render(<ForecastingView />);
+        const banner = screen.getByTestId(FORECAST_DISCLAIMER_TESTID);
+        assertHardVisible(banner);
+        expect(banner.textContent).toContain(FORECAST_DISCLAIMER_HEADLINE);
+      });
+
+      it('GM ForecastingView · modo model zoo', async () => {
+        mockFetch([[/bi_dashboard_unified\.csv$/, { ok: true, text: CSV_WITH_DA }]]);
+        currentQs = 'asset=usdcop&model=ALL';
+        const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
+        render(<ForecastingView />);
+        assertZooBannerVisible();
+      });
+
+      // Otro activo y, además, TODO fetch en 403 (el caso "activo fuera del plan"):
+      // el caveat no puede depender ni del activo ni de que los datos carguen.
+      // (La variante concreta —zoo/weekly/directional— la fijan los tests de arriba;
+      // aquí lo que se afirma es que el banner existe y es visible para el rol.)
+      it('GM ForecastingView · otro activo con todo en 403', async () => {
+        mockFetch([[/./, { ok: false, status: 403 }]]);
+        currentQs = 'asset=xauusd';
+        const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
+        render(<ForecastingView />);
+        const banner = screen.getByTestId(FORECAST_DISCLAIMER_TESTID);
+        assertHardVisible(banner);
+        expect(banner.textContent).toContain(FORECAST_DISCLAIMER_HEADLINE);
+      });
+
+      it('legacy WeeklyInferenceView (Gold)', async () => {
+        mockFetch([
+          [/\/index\.json$/, { ok: true, body: GOLD_INDEX }],
+          [/weekly_inference_2025\.json$/, { ok: true, body: GOLD_WEEKLY_2025 }],
+          [/forward\.json$/, { ok: false }],
+        ]);
+        const { WeeklyInferenceView } = await import('@/components/forecasting/WeeklyInferenceView');
+        render(<WeeklyInferenceView assetId="xauusd" />);
+        await screen.findByText('2025-W01');
+        assertWeeklyBannerVisible();
+      });
+
+      it('legacy ForecastingDashboard (model zoo USD/COP)', async () => {
+        mockFetch([[/bi_dashboard_unified\.csv$/, { ok: true, text: CSV_WITH_DA }]]);
+        const { ForecastingDashboard } = await import('@/components/forecasting/ForecastingDashboard');
+        render(<ForecastingDashboard />);
+        await waitFor(() => expect(screen.queryByText(/Cargando datos del Forecasting/)).toBeNull());
+        assertZooBannerVisible();
+      });
+    });
+  }
 });
