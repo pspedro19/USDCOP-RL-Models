@@ -20,6 +20,7 @@ silently deleted is decoration, not disclosure.
 from __future__ import annotations
 
 import re
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -58,16 +59,92 @@ def test_da_surface_carries_caveat(rel: str, markers: tuple):
 
 
 # ---------------------------------------------------------------------------
-# BL-01 — the caveat banner itself (testid + honest phrase), and its gating.
+# BL-01 — the caveat banner itself (testid + honest NO-SIGNAL clause), and its
+# gating. Hardened after Codex review: the first version pinned only the prefix
+# "Superficie de diagn", so a deceptive mutation like
+#   'Superficie de diagnóstico: señal validada, opere con confianza.'
+# passed. The lock now (a) parses the SSOT string constants, (b) requires the
+# FULL no-signal clauses, and (c) rejects promotional/action language outright.
 # ---------------------------------------------------------------------------
 
-def test_caveat_banner_present():
-    """BL-01: the GM forecasting view carries the da-caveat banner AND its honest phrase.
+def _norm(s: str) -> str:
+    """Accent-stripped, casefolded, whitespace-collapsed — so 'SEÑAL'/'señal'/'senal'
+    all compare equal and a mutation cannot hide behind diacritics or case."""
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", s).casefold().strip()
 
-    The testid alone is not enough — the banner could keep its markup while the text
-    mutates into marketing. Pin a stable fragment of the real copy
-    ('Superficie de diagnóstico, no de señales.').
+
+_TS_CONST = re.compile(
+    r"export\s+const\s+(\w+)\s*=\s*((?:'(?:[^'\\]|\\.)*'\s*\+?\s*)+);"
+)
+
+
+def _ts_string_constants(src: str) -> dict[str, str]:
+    """Parse `export const NAME = '...' + '...';` string constants from a TS module.
+
+    The disclaimer SSOT is plain concatenated single-quoted literals by design;
+    if that ever stops parsing, the assertion below fails loudly instead of
+    silently checking nothing.
     """
+    out: dict[str, str] = {}
+    for name, raw in _TS_CONST.findall(src):
+        pieces = re.findall(r"'((?:[^'\\]|\\.)*)'", raw)
+        out[name] = "".join(p.replace("\\'", "'") for p in pieces)
+    return out
+
+
+# The complete honest clauses (normalized). Full sentences, NOT prefixes — the
+# entire point is that 'Superficie de diagnóstico' + marketing tail must fail.
+REQUIRED_CLAUSES = {
+    "FORECAST_DISCLAIMER_HEADLINE": ["no es una senal de inversion"],
+    "FORECAST_DISCLAIMER_ZOO_TITLE": ["superficie de diagnostico, no de senales"],
+    "FORECAST_DISCLAIMER_DIRECTIONAL_TITLE": ["no senal ejecutable"],
+    # The body must keep the coin-flip honesty, not just any statistics-sounding prose.
+    "FORECAST_DISCLAIMER_ZOO_BODY": ["indistinguible de una moneda al aire"],
+}
+
+# Promotional / action language that inverts the disclaimer's meaning. Checked on
+# normalized text. Each pattern was chosen against concrete attack strings that
+# defeated the previous prefix-only lock (M1/M2/M3 in the BL-01 review):
+#   M1: 'Superficie de diagnóstico: señal validada, opere con confianza.'
+#   M2: 'NO ES UNA SEÑAL CUALQUIERA: ES NUESTRA SEÑAL DE COMPRA MÁS CONFIABLE'
+#   M3: 'Precisión direccional del 90% garantizada. Ejecute estas señales...'
+FORBIDDEN_MARKETING = [
+    r"\bopere\b",
+    r"\bejecute\b",
+    r"\bcompre\b",
+    r"\bvenda\b",
+    r"senal(es)? de (compra|venta|inversion segura)",
+    r"senal(es)? (validada|confiable|segura|fuerte|ganadora|comprobada)",
+    r"es (nuestra|la) (mejor )?senal",
+    r"confianza",
+    r"confiab",
+    r"garantiz",
+    r"validad",
+    r"rentabilidad",
+    r"recomendad",
+    r"sin riesgo",
+    r"asegurad",
+    r"\bopere con\b",
+]
+
+
+def _disclaimer_constants() -> dict[str, str]:
+    consts = _ts_string_constants(
+        DISCLAIMER_SSOT.read_text(encoding="utf-8", errors="replace")
+    )
+    missing = [k for k in REQUIRED_CLAUSES if k not in consts]
+    assert not missing, (
+        f"forecast-disclaimer.ts no longer exports {missing} as plain string "
+        "constants — the disclaimer SSOT must stay statically verifiable (BL-01)."
+    )
+    return consts
+
+
+def test_caveat_banner_present():
+    """BL-01: the GM forecasting view carries the da-caveat banner AND the SSOT
+    still carries the complete no-signal clauses (not just their prefixes)."""
     src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
     has_testid = (
         'data-testid="da-caveat"' in src
@@ -78,19 +155,49 @@ def test_caveat_banner_present():
         "the FORECAST_DISCLAIMER_TESTID constant is referenced). The DA surface must "
         "not render without its diagnostic disclaimer (BL-01)."
     )
-    # BL-04: the honest phrase now lives in the shared SSOT constant; the view must
-    # import from it and the SSOT must still carry the real copy.
-    ssot = DISCLAIMER_SSOT.read_text(encoding="utf-8", errors="replace")
+    # BL-04: the honest copy lives in the shared SSOT; the view must either carry
+    # it inline or import the SSOT module that does.
+    ssot_src = DISCLAIMER_SSOT.read_text(encoding="utf-8", errors="replace")
     assert "Superficie de diagn" in src or (
-        "forecast-disclaimer" in src and "Superficie de diagn" in ssot
+        "forecast-disclaimer" in src and "Superficie de diagn" in ssot_src
     ), (
         "The honest phrase ('Superficie de diagnóstico, no de señales') is neither "
         "inline in ForecastingView.tsx nor provided via lib/ui/forecast-disclaimer.ts "
         "— the disclaimer text is part of the contract, not decoration (BL-01/BL-04)."
     )
-    assert "NO ES UNA SE" in ssot, (
-        "forecast-disclaimer.ts lost the headline 'DIAGNÓSTICO — NO ES UNA SEÑAL DE "
-        "INVERSIÓN' (BL-02)."
+    consts = _disclaimer_constants()
+    # The testid indirection must still resolve to the pinned testid.
+    assert consts.get("FORECAST_DISCLAIMER_TESTID") == "da-caveat", (
+        "FORECAST_DISCLAIMER_TESTID no longer resolves to 'da-caveat' — the e2e/DOM "
+        "anchor of the disclaimer would silently detach (BL-01)."
+    )
+    # Full no-signal clauses, normalized — a prefix plus a marketing tail fails here.
+    for name, clauses in REQUIRED_CLAUSES.items():
+        text = _norm(consts[name])
+        for clause in clauses:
+            assert clause in text, (
+                f"{name} lost the required clause {clause!r}. The disclaimer must state "
+                "the complete no-signal meaning; a truncated or reworded version is a "
+                "different contract (BL-01, Codex review: prefix-only pin rejected)."
+            )
+
+
+def test_caveat_copy_resists_deceptive_mutation():
+    """BL-01 (hardening): the disclaimer copy must not contain promotional or
+    action language. Guards against mutations that keep the pinned honest prefix
+    but invert the meaning ('señal validada, opere con confianza', 'garantizada',
+    'ejecute', 'señal de compra', ...). Attack strings M1/M2/M3 that defeated the
+    prefix-only lock all fail here."""
+    consts = _disclaimer_constants()
+    offenders: list[str] = []
+    for name in sorted(k for k in consts if k != "FORECAST_DISCLAIMER_TESTID"):
+        text = _norm(consts[name])
+        for pat in FORBIDDEN_MARKETING:
+            if re.search(pat, text):
+                offenders.append(f"{name}: /{pat}/ -> {consts[name]!r}")
+    assert not offenders, (
+        "Disclaimer copy contains promotional/action language — a diagnostic caveat "
+        "that recommends acting is worse than no caveat:\n  " + "\n  ".join(offenders)
     )
 
 
