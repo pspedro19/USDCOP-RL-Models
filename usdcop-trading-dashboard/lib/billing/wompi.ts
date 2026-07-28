@@ -12,7 +12,8 @@ import { createHash } from 'node:crypto';
 
 import { planPricesCents, addonPricesCop } from './prices';
 import type {
-  BillingEventType, BillingProvider, CheckoutRequest, CheckoutSession, WebhookVerification,
+  BillingEventType, BillingProvider, CheckoutRequest, CheckoutSession, TransactionLookup,
+  WebhookVerification,
 } from './provider';
 import { encodeReference } from './provider';
 
@@ -68,8 +69,109 @@ function unauthenticatedFieldsOf(properties: readonly string[]): readonly string
     .map(([field]) => field);
 }
 
+/**
+ * The outbound HTTP port (CXD-059). Injected so the confirmation logic is exercised
+ * end-to-end in tests with zero network, and so the transport can be swapped
+ * (instrumented client, proxy) without touching the decision.
+ */
+export type HttpFetch = (url: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * Base URL of the query API. Wompi splits sandbox/production, and the key prefix is
+ * what tells them apart (`pub_prod_…` vs `pub_test_…`). Deriving it from the key that
+ * is ALREADY configured avoids a second, silently-divergent setting: pointing at
+ * sandbox with production keys would make every real payment "not found" and reject
+ * legitimate money. `WOMPI_API_URL` overrides for self-hosted/proxied setups.
+ */
+function apiBaseUrl(): string {
+  const override = process.env.WOMPI_API_URL?.trim();
+  if (override) return override.replace(/\/+$/, '');
+  return process.env.WOMPI_PUBLIC_KEY?.trim().startsWith('pub_prod_')
+    ? 'https://production.wompi.co/v1'
+    : 'https://sandbox.wompi.co/v1';
+}
+
+/** Milliseconds before an unanswered confirmation counts as `unavailable` (⇒ 503, retry). */
+function confirmTimeoutMs(): number {
+  const raw = Number(process.env.BILLING_CONFIRM_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 5_000;
+}
+
 export class WompiProvider implements BillingProvider {
   readonly name = 'wompi';
+
+  /**
+   * `globalThis.fetch` is resolved LAZILY (not captured as a default parameter value)
+   * so a test that stubs the global still routes through this provider.
+   */
+  constructor(private readonly http: HttpFetch = (url, init) => globalThis.fetch(url, init)) {}
+
+  /**
+   * `GET /v1/transactions/:id` — the authoritative account of the payment.
+   *
+   * NEVER throws and NEVER returns `found` on doubt: a timeout, a 5xx, a transport
+   * error or a body we cannot parse all yield `unavailable`, which the route turns
+   * into a retryable 503 with zero mutations. Only a 200 whose `data` we fully parsed
+   * can confirm anything.
+   */
+  async fetchTransaction(providerTransactionId: string): Promise<TransactionLookup> {
+    const id = providerTransactionId?.trim();
+    if (!id) return { kind: 'not_found', reason: 'empty transaction id' };
+
+    // The query endpoint is read-only and keyed by an unguessable id; the public key
+    // is sent when configured because some Wompi environments expect it. It is PUBLIC
+    // by definition (it also ships in the checkout URL), so this is not a secret
+    // crossing a new boundary — and a 401/403 is treated as "cannot tell" below
+    // rather than as a verdict, so a wrong key can never reject a real payment.
+    const publicKey = process.env.WOMPI_PUBLIC_KEY?.trim();
+    let res: Response;
+    try {
+      res = await this.http(`${apiBaseUrl()}/transactions/${encodeURIComponent(id)}`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          ...(publicKey ? { authorization: `Bearer ${publicKey}` } : {}),
+        },
+        signal: AbortSignal.timeout(confirmTimeoutMs()),
+        cache: 'no-store',
+      });
+    } catch (e) {
+      // Transport error / abort. We do NOT know the truth ⇒ retryable, never a verdict.
+      return { kind: 'unavailable', reason: `transport: ${(e as Error)?.name ?? 'error'}` };
+    }
+
+    // ONLY an explicit 404 is the provider DENYING the transaction. Every other
+    // non-2xx (401/403 misconfigured key, 429 throttling, 5xx, a proxy's 502) means we
+    // could not ask — which is `unavailable` ⇒ 503 ⇒ the provider retries. Classifying
+    // those as `not_found` would let a bad key or a rate limit permanently REJECT
+    // payments that really happened; fail-closed must never become fail-destructive.
+    if (res.status === 404) return { kind: 'not_found', reason: 'provider has no such transaction' };
+    if (!res.ok) return { kind: 'unavailable', reason: `provider http ${res.status}` };
+
+    let body: WompiTransactionResponse;
+    try {
+      body = JSON.parse(await res.text());
+    } catch {
+      return { kind: 'unavailable', reason: 'unparseable provider response' };
+    }
+    const tx = body?.data;
+    if (!tx || typeof tx !== 'object' || typeof tx.id !== 'string') {
+      return { kind: 'unavailable', reason: 'provider response missing transaction' };
+    }
+
+    const rawAmount = tx.amount_in_cents;
+    const amountInCents = typeof rawAmount === 'string' ? Number(rawAmount) : rawAmount;
+    return {
+      kind: 'found',
+      transaction: {
+        id: tx.id,
+        reference: typeof tx.reference === 'string' ? tx.reference : '',
+        status: typeof tx.status === 'string' ? tx.status : '',
+        amountInCents: Number.isFinite(amountInCents as number) ? (amountInCents as number) : undefined,
+        currency: typeof tx.currency === 'string' ? tx.currency : undefined,
+      },
+    };
+  }
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutSession> {
     // Fail CLOSED on incomplete configuration: an incomplete config must never
@@ -183,6 +285,10 @@ export class WompiProvider implements BillingProvider {
         amountInCents: Number.isFinite(amountInCents as number) ? (amountInCents as number) : undefined,
         currency: typeof tx?.currency === 'string' ? tx.currency : undefined,
         providerEventId,
+        // The provider's own id + raw status, so the route can confirm this event
+        // against `GET /transactions/:id` before mutating anything (CXD-059).
+        providerTransactionId: typeof tx?.id === 'string' ? tx.id : undefined,
+        providerStatus: status || undefined,
         unauthenticatedFields: unauthenticatedFieldsOf(signature.properties),
         raw: body,
       },
@@ -196,6 +302,12 @@ interface WompiEvent {
                            amount_in_cents?: number | string; currency?: string } };
   signature?: { checksum: string; properties: string[] };
   timestamp?: number;
+}
+
+/** `GET /v1/transactions/:id` response (only the fields we cross-check). */
+interface WompiTransactionResponse {
+  data?: { id?: string; status?: string; reference?: string;
+           amount_in_cents?: number | string; currency?: string };
 }
 
 function getPath(obj: unknown, path: string): unknown {

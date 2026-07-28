@@ -40,6 +40,14 @@ export interface NormalizedBillingEvent {
   /** Stable provider-side id (idempotency key of the append-only event ledger). */
   providerEventId: string;
   /**
+   * The provider's OWN transaction id — the key of `fetchTransaction`. Distinct from
+   * `providerEventId`, which is our composite ledger key. Absent ⇒ the event cannot be
+   * confirmed server-to-server and therefore must NOT mutate anything (CXD-059).
+   */
+  providerTransactionId?: string;
+  /** Raw provider status string, compared against the authoritative record as-is. */
+  providerStatus?: string;
+  /**
    * Fields of THIS event that the provider's signature does NOT cover, and which are
    * therefore attacker-mutable on a replay of an otherwise valid event (CODEX CXD-056).
    * Wompi signs only `transaction.id|status|amount_in_cents`, so `reference` — the
@@ -66,11 +74,46 @@ export interface WebhookVerification {
   error?: string;
 }
 
+/**
+ * The transaction AS THE PROVIDER REPORTS IT over its own authenticated API — the only
+ * account of a payment that an attacker cannot author (CXD-059). Every field here is
+ * cross-checked against the webhook body before a single row is mutated.
+ */
+export interface AuthoritativeTransaction {
+  id: string;
+  /** The field the webhook checksum does NOT cover. This copy is the authority. */
+  reference: string;
+  /** Raw provider status, NOT normalized: compared verbatim with the event's. */
+  status: string;
+  amountInCents?: number;
+  currency?: string;
+}
+
+/**
+ * Outcome of a server-to-server lookup. Three outcomes, never two: "cannot tell"
+ * (`unavailable`) MUST be distinguishable from "the provider denies it" (`not_found`),
+ * because they get opposite HTTP answers — 503 so the provider retries, versus a 4xx
+ * that ends the attempt. Collapsing them either loses a real payment or accepts a
+ * forgery during an outage.
+ */
+export type TransactionLookup =
+  | { kind: 'found'; transaction: AuthoritativeTransaction }
+  /** The provider answered and has no such transaction (404), or the id is unusable. */
+  | { kind: 'not_found'; reason: string }
+  /** Timeout, 5xx, transport error, unparseable body — we simply do not know. */
+  | { kind: 'unavailable'; reason: string };
+
 export interface BillingProvider {
   readonly name: string;
   createCheckout(req: CheckoutRequest): Promise<CheckoutSession>;
   /** MUST verify the provider's signature; invalid ⇒ {valid:false}. */
   verifyWebhook(rawBody: string, headers: Headers): Promise<WebhookVerification>;
+  /**
+   * Confirm a transaction against the provider's API (the injectable port of
+   * CXD-059). MUST NOT throw: transport failures are returned as `unavailable`, so a
+   * provider outage can never be mistaken for a rejection — or for an approval.
+   */
+  fetchTransaction(providerTransactionId: string): Promise<TransactionLookup>;
 }
 
 /**

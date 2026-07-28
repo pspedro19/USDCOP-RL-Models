@@ -32,7 +32,7 @@
  *  B3  `jsonb_set(entitlements,'{assets}','[]')` on refund → other assets vanish
  */
 import { createHash } from 'node:crypto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/db/postgres-client', async () => {
   const { scriptedPg } = await import('../../mocks/scripted-postgres');
@@ -45,6 +45,7 @@ vi.mock('@/lib/db/postgres-client', async () => {
 });
 
 import { scriptedPg as pg } from '../../mocks/scripted-postgres';
+import { createWompiTransactionsApi } from '../../mocks/wompi-transactions-api';
 import { POST as webhookPOST } from '@/app/api/billing/webhook/route';
 
 const EVENTS_SECRET = 'events-secret';
@@ -52,6 +53,19 @@ const USER_A = '11111111-1111-4111-8111-111111111111';
 const USER_B = '22222222-2222-4222-8222-222222222222';
 
 const PLAN_PRICE = 9_900_000;
+
+/**
+ * DEFENCE IN DEPTH (CXD-059). The webhook now also confirms every event against the
+ * provider's query API, and that check alone would refuse the forgeries below — which
+ * would make this suite pass without the LEDGER doing any work, and a regression in
+ * the ledger would go unnoticed.
+ *
+ * So here the fake provider MIRRORS whatever the event claims (`forceRecord`): the
+ * confirmation is deliberately neutralised, and what is under test is the second
+ * layer — `billing_events.provider_event_id` (CXD-056). The first layer is tested on
+ * its own in `billing-authoritative-confirmation.test.ts`. Both must hold alone.
+ */
+const providerApi = createWompiTransactionsApi();
 
 /**
  * A genuinely signed Wompi event. The checksum covers ONLY id/status/amount — pass a
@@ -68,6 +82,7 @@ function signedEvent(opts: {
     amount_in_cents: opts.amountInCents ?? PLAN_PRICE,
     currency: opts.currency ?? 'COP',
   };
+  providerApi.forceRecord(tx);
   const timestamp = 1_700_000_000;
   const properties = ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'];
   const checksum = createHash('sha256')
@@ -106,13 +121,18 @@ const ent = (u: string) => pg.state.users.get(u)!.entitlements as { plan: string
 
 beforeEach(() => {
   pg.reset();
+  providerApi.reset();
   vi.restoreAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.stubGlobal('fetch', providerApi.fetch);
   process.env.WOMPI_EVENTS_SECRET = EVENTS_SECRET;
+  process.env.WOMPI_PUBLIC_KEY = 'pub_test_key';
   delete process.env.BILLING_PRICES_COP;
   delete process.env.BILLING_ADDON_PRICES_COP;
 });
+
+afterEach(() => { vi.unstubAllGlobals(); });
 
 // ══════════════════════════════════════════════════ P0-A · replay cross-reference
 describe('P0-A the same provider event id can never credit a second reference (CODEX CXD-056)', () => {

@@ -25,11 +25,20 @@
  *                     identical  ⇒ provider retry, no-op, credit NOTHING again
  *                     different  ⇒ SECURITY INCIDENT, reject; NEVER continue.
  *
- * A stronger option exists and is deliberately not taken here: confirming the
- * transaction server-to-server against the provider's API (`GET /v1/transactions/:id`)
- * would authenticate the reference at the source. That needs an outbound call on the
- * webhook path and an operator decision on its failure mode (fail-closed would let a
- * provider outage block legitimate payments). Recorded as OPERATOR DECISION.
+ * ── WHAT THIS DOES *NOT* ENFORCE (CXD-059) ──────────────────────────────────────
+ * This ledger stops the SECOND use of a provider event. It cannot stop the FIRST: an
+ * attacker who opens his own checkout for the same plan (same amount, same currency)
+ * and replays a signed body under HIS reference collides with nothing — the id has
+ * never been seen. Every local check agrees and he is credited.
+ *
+ * That gap is closed one layer earlier, by `lib/billing/confirmation.ts`: the route
+ * confirms the transaction server-to-server (`BillingProvider.fetchTransaction` →
+ * `GET /v1/transactions/:id`) BEFORE any mutation, and requires the authoritative
+ * reference to match. An earlier round recorded that as an OPERATOR DECISION because
+ * failing closed would let a provider outage block payments; CODEX rejected the
+ * framing and was right — an outage postpones a legitimate credit (the retry applies
+ * it), while failing open gives money away. The two layers are independent and each
+ * is tested alone.
  */
 
 export interface LedgerRow {

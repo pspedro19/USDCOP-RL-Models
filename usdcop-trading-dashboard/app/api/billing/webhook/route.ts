@@ -17,6 +17,17 @@
  *  3. Order transitions are applied only from states migration 059 declares legal;
  *     a cancellation NEVER mutates an already-paid order.
  *
+ * MONEY INVARIANTS (CODEX P0 round 3 — CXD-059):
+ *  0. **The event is confirmed SERVER-TO-SERVER before anything is mutated.** The
+ *     ledger of invariant 4 stops the SECOND use of a provider event; it cannot stop
+ *     the FIRST. An attacker with any validly-signed APPROVED body opens his own
+ *     checkout for the same plan (same amount, same currency) and replays that body
+ *     under HIS reference: signature valid, ledger clean, sealed quote matching —
+ *     because it is his own quote. `GET /transactions/:id` is the only account of the
+ *     payment he cannot author. Timeout/5xx ⇒ 503 and NOTHING written (a postponed
+ *     credit is recovered by the retry); contradiction ⇒ 4xx + incident.
+ *     See `lib/billing/confirmation.ts`.
+ *
  * MONEY INVARIANTS (CODEX P0 round 2 — CXD-056):
  *  4. `billing_events.provider_event_id` is the AUTHORITATIVE global idempotency key,
  *     asserted inside the same transaction with `ON CONFLICT DO NOTHING RETURNING`.
@@ -38,8 +49,11 @@ import type { PoolClient } from 'pg';
 
 import { getClient } from '@/lib/db/postgres-client';
 import { getBillingProvider, decodeReference } from '@/lib/billing';
-import type { BillingEventType, NormalizedBillingEvent } from '@/lib/billing';
+import type {
+  BillingEventType, BillingProvider, NormalizedBillingEvent, TransactionLookup,
+} from '@/lib/billing';
 import { classifyLedgerConflict, type LedgerRow } from '@/lib/billing/event-ledger';
+import { confirmAgainstProvider, type ConfirmationVerdict } from '@/lib/billing/confirmation';
 import { PLAN_DEFAULTS, effectiveEntitlements } from '@/lib/contracts/rbac.contract';
 import type { Entitlements } from '@/lib/contracts/rbac.contract';
 import { addonPricesCop } from '@/lib/billing/prices';
@@ -108,6 +122,41 @@ export async function POST(req: Request) {
   }
 
   try {
+    // ── STEP 0 (CXD-059): confirm the event against the provider's OWN API, BEFORE
+    // `BEGIN` and before a single row moves. Deliberately outside the transaction: it
+    // is a network call (no lock may be held across it) and, on doubt, it must leave
+    // the database — INCLUDING the idempotency ledger — completely untouched, so the
+    // provider's retry is a fresh attempt and not a swallowed "duplicate".
+    const verdict = await confirmWithProvider(provider, event);
+    if (verdict.kind === 'unavailable') {
+      // We could not reach a verdict. 503 ⇒ the provider retries and the legitimate
+      // payment is credited then (proven by test "THE RETRY AFTER THE OUTAGE
+      // CREDITS"). An outage postpones money; it never grants it.
+      logServerError('billing/webhook confirm', new Error(verdict.reason));
+      return NextResponse.json({ error: 'temporarily unavailable' }, { status: 503 });
+    }
+    if (verdict.kind === 'mismatch') {
+      // The provider's record contradicts the body. Never retryable, never credited.
+      // The authoritative snapshot names ANOTHER customer's reference, so it goes to
+      // the audit row only — never to the response (that would confirm to the attacker
+      // whose payment he just tried to steal).
+      throw new WebhookReject('transaction not confirmed by provider', 409, {
+        userId: decodeReference(verdict.authoritative.reference ?? '')?.userId ?? null,
+        detail: {
+          reason: 'authoritative confirmation mismatch',
+          mismatched_field: verdict.field,
+          provider_event_id: event.providerEventId,
+          claimed_reference: event.reference,
+          claimed_user_id: decodeReference(event.reference)?.userId ?? null,
+          authoritative_reference: verdict.authoritative.reference ?? null,
+          authoritative_status: verdict.authoritative.status ?? null,
+          authoritative_amount_cents: verdict.authoritative.amountInCents ?? null,
+          authoritative_currency: verdict.authoritative.currency ?? null,
+          unauthenticated_fields: event.unauthenticatedFields ?? [],
+        },
+      });
+    }
+
     await client.query('BEGIN');
     // ── AUTHORITATIVE idempotency: the provider event id, INSIDE the transaction.
     // It binds this provider event to the reference it first arrived with. The
@@ -164,6 +213,41 @@ export async function POST(req: Request) {
   } finally {
     client.release();
   }
+}
+
+/**
+ * Ask the provider what it actually recorded, then compare (CXD-059).
+ *
+ * Two fail-closed guarantees live here:
+ *  - a provider that VIOLATES its contract by throwing is still only `unavailable`;
+ *    an exception must never become an approval;
+ *  - an event carrying NO provider transaction id cannot be confirmed at all. If it
+ *    could CREATE value it is refused outright. Non-crediting events (declines,
+ *    cancellations, refunds) are allowed through — they cannot grant anything, and
+ *    Wompi's query API has no vocabulary for a refund, so demanding a confirmation it
+ *    cannot express would reject legitimate revocations. Every event Wompi actually
+ *    emits carries an id and IS confirmed; this branch is only reachable for a future
+ *    provider (see the residual-risk note in the handover report).
+ */
+async function confirmWithProvider(
+  provider: BillingProvider, event: NormalizedBillingEvent,
+): Promise<ConfirmationVerdict> {
+  if (!event.providerTransactionId) {
+    if (event.type === 'payment.approved') {
+      return { kind: 'mismatch', field: 'transaction_id', authoritative: {} };
+    }
+    console.warn('[billing/webhook] unconfirmable non-crediting event:', event.type, event.providerEventId);
+    return { kind: 'confirmed' };
+  }
+
+  let lookup: TransactionLookup;
+  try {
+    lookup = await provider.fetchTransaction(event.providerTransactionId);
+  } catch (e) {
+    logServerError('billing/webhook fetchTransaction', e);
+    lookup = { kind: 'unavailable', reason: 'confirmation port threw' };
+  }
+  return confirmAgainstProvider(event, lookup);
 }
 
 /**

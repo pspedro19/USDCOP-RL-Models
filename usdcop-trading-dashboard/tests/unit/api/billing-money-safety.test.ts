@@ -18,7 +18,7 @@
  * checkout_orders (paid -> cancelled/failed raises).
  */
 import { createHash } from 'node:crypto';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/db/postgres-client', async () => {
   const { scriptedPg } = await import('../../mocks/scripted-postgres');
@@ -31,6 +31,7 @@ vi.mock('@/lib/db/postgres-client', async () => {
 });
 
 import { scriptedPg as pg } from '../../mocks/scripted-postgres';
+import { createWompiTransactionsApi } from '../../mocks/wompi-transactions-api';
 import { POST as webhookPOST } from '@/app/api/billing/webhook/route';
 import { POST as cartCheckoutPOST } from '@/app/api/cart/checkout/route';
 import { POST as billingCheckoutPOST } from '@/app/api/billing/checkout/route';
@@ -40,6 +41,17 @@ import { encodeReference, decodeReference } from '@/lib/billing/provider';
 const EVENTS_SECRET = 'events-secret';
 const USER = '11111111-1111-4111-8111-111111111111';
 const REF = `sub_signals_${USER}_base_1700000000000`;
+
+/**
+ * The provider's authoritative query API (CXD-059). Since the webhook now confirms
+ * server-to-server before mutating anything, every event in THIS suite describes a
+ * payment the provider really has — that is the precondition these P0-1..P0-5 tests
+ * were always written under. `forceRecord` mirrors the event verbatim so the
+ * confirmation is a no-op here and each test keeps exercising its OWN subject (sealed
+ * quote, atomicity, status mapping). The confirmation itself is the subject of
+ * `billing-authoritative-confirmation.test.ts`.
+ */
+const providerApi = createWompiTransactionsApi();
 
 function signedEvent(opts: {
   status?: string;
@@ -56,6 +68,7 @@ function signedEvent(opts: {
     amount_in_cents: opts.amountInCents ?? 9_900_000,
     currency: opts.currency ?? 'COP',
   };
+  providerApi.forceRecord(tx);
   const timestamp = 1_700_000_000;
   const properties = ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'];
   const concatenated = [tx.id, tx.status, tx.amount_in_cents].join('');
@@ -87,9 +100,11 @@ function seedPaidPath(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   pg.reset();
+  providerApi.reset();
   vi.restoreAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.stubGlobal('fetch', providerApi.fetch);
   process.env.WOMPI_EVENTS_SECRET = EVENTS_SECRET;
   process.env.WOMPI_PUBLIC_KEY = 'pub_test_key';
   process.env.WOMPI_INTEGRITY_SECRET = 'integrity-secret';
@@ -97,6 +112,8 @@ beforeEach(() => {
   delete process.env.BILLING_PRICES_COP;
   delete process.env.BILLING_ADDON_PRICES_COP;
 });
+
+afterEach(() => { vi.unstubAllGlobals(); });
 
 // ───────────────────────────────────────────────────────── P0-3 (a) sealed quote
 describe('P0-3(a) the webhook credits the SEALED quote, not the current price', () => {
