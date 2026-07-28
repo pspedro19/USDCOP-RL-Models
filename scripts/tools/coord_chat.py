@@ -212,23 +212,37 @@ def render(m: Msg, width: int, full: bool) -> str:
     return head + "\n" + "\n".join(f"{ind}{c.dim}|{c.reset} {ln}" for ln in lines)
 
 
-def interactive(width: int, full: bool) -> int:
+def interactive(width: int, full: bool, last: int, show_all: bool) -> int:
     """Chat a tres bandas: escribes, se envia, y ves lo que responden.
 
-    Un solo bucle: pinta lo nuevo desde la ultima vuelta, y espera tu linea.
+    Al entrar pinta el historial (por defecto los ultimos `last`; todo con
+    `--all`), y luego un bucle: lo nuevo desde la ultima vuelta + tu linea.
     Enter vacio = solo refrescar (util para ver si ya contestaron).
     """
-    seen = {m.mid for m in thread()}
     destino, prioridad = "both", "P1"
 
     print(f"\n{c.bold}CHAT DE COORDINACION{c.reset}  "
           f"{c.claude}CLAUDE{c.reset} · {c.codex}CODEX{c.reset} · {c.pedro}PEDRO{c.reset}")
     for row in heartbeats():
         print(row)
-    print(f"\n{c.meta}  Escribe y pulsa Enter para enviar.  Enter vacio = refrescar.\n"
+
+    historial = thread()
+    seen = {m.mid for m in historial}
+    visibles = historial if show_all else historial[-last:]
+    omitidos = len(historial) - len(visibles)
+    print(f"{c.meta}{'-' * width}{c.reset}")
+    if omitidos:
+        print(f"{c.meta}  ... {omitidos} mensajes anteriores "
+              f"(/todo para verlos, o arranca con --all){c.reset}\n")
+    for m in visibles:
+        print(render(m, width, full) + "\n")
+
+    print(f"{c.meta}{'-' * width}\n  Escribe y pulsa Enter para enviar.  Enter vacio = refrescar.\n"
           f"  /claude /codex /both   cambia destinatario (ahora: {destino})\n"
           f"  /p0 /p1 /p2            cambia prioridad     (ahora: {prioridad})\n"
-          f"  /ver [n]               repinta los ultimos n\n"
+          f"  /ver [n]               repinta los ultimos n (por defecto 10)\n"
+          f"  /todo                  historial COMPLETO\n"
+          f"  /buscar <texto>        filtra el hilo entero\n"
           f"  /salir{c.reset}\n")
 
     while True:
@@ -259,6 +273,23 @@ def interactive(width: int, full: bool) -> int:
             partes = low.split()
             n = int(partes[1]) if len(partes) > 1 and partes[1].isdigit() else 10
             for m in thread()[-n:]:
+                print(render(m, width, full) + "\n")
+            continue
+        if low in ("/todo", "/all", "/historial"):
+            todos = thread()
+            print(f"{c.meta}  historial completo: {len(todos)} mensajes{c.reset}\n")
+            for m in todos:
+                print(render(m, width, full) + "\n")
+            continue
+        if low.startswith(("/buscar", "/grep")):
+            partes = linea.split(maxsplit=1)
+            if len(partes) < 2:
+                print(f"{c.p0}  uso: /buscar <texto>{c.reset}")
+                continue
+            q = partes[1].lower()
+            hits = [m for m in thread() if q in m.body.lower() or q in m.tag.lower()]
+            print(f"{c.meta}  {len(hits)} mensajes mencionan '{partes[1]}'{c.reset}\n")
+            for m in hits:
                 print(render(m, width, full) + "\n")
             continue
         if linea.startswith("/"):
@@ -309,7 +340,7 @@ def main() -> int:
     width = min(shutil.get_terminal_size((100, 24)).columns, 110)
 
     if a.chat:
-        return interactive(width, a.full)
+        return interactive(width, a.full, a.last, a.all)
 
     seen: set[str] = set()
 
