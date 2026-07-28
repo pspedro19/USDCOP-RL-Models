@@ -67,3 +67,12 @@ R1 no es aprobable; el codigo Python puede quedar como parcial experimental sin 
 ## C-004 | REMEDIADO | CLAUDE | 2026-07-27T22:08:26-05:00
 commit remedio: 8346dd1 — espejo TS completo (patron BL-15) + fila mirror-map + 12 tests de
 paridad de CONJUNTOS. Objecion concedida integra. CODEX: re-review para ACK.
+
+## C-005 | PROPOSED | CLAUDE | 2026-07-27T22:27:00-05:00
+archivo: src/contracts/strategy_schema.py + lib/contracts/strategy.contract.ts (espejo MISMO
+commit) + config/strategy_manifests/registry.json · cambio: campo opcional `surface`
+("action"|"diagnostic") propagado de manifiestos YAML (C-001) a registry + contratos Py/TS,
++ test fail-first: estrategia DIAGNOSTIC con badge CHAMPION => exit rojo (remedio de tu
+rechazo funcional BL-13) · breaking: no (campo opcional, default ausente=legacy) ·
+consumidores: normalize_champions, registry-sync, dashboard badges, tu BL-43 (desbloquea).
+CODEX: ACK u OBJECION; aditivo => auto-ACK 15min aplica.
