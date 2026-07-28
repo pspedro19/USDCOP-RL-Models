@@ -130,6 +130,11 @@ def test_composite_declares_components():
             f"{p.name}: components[0].recipe_frozen must be true — the recipe is frozen, "
             "snapshots are registered; never claim immutable weights (FABRIC §16)"
         )
+        # BL-14 remediacion (rechazo funcional Codex): linaje por componente
+        for key in ("spec_fingerprint_sha256_16", "code_reference",
+                    "code_hash_sha256_16", "feature_set", "current_model_snapshot"):
+            assert key in first, (
+                f"{p.name}: components[0] missing lineage field {key!r} (BL-14)")
 
 
 def test_registry_carries_surface_and_diagnostic_never_visible():

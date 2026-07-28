@@ -39,14 +39,47 @@ components:
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  forecast_trial_ids_legacy: pending-BL-10   # herencia FT se puebla con el backfill
+  spec_fingerprint_sha256_16: f74996a646b3527a   # sha256(concat bytes)[:16] sobre
+    # code_reference (en orden) + config/execution/smart_simple_v1.yaml (hiperparams
+    # ridge alpha=1.0 / bayesian_ridge max_iter=300, ensemble mean — la RECETA)
+  code_reference:
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - src/forecasting/enhance_v2.py
+  code_hash_sha256_16: 3b54d02435658b7f   # mismo metodo que el hash del manifiesto
+  feature_set:
+    builder: src/forecasting/enhance_v2.py::enhance_features_v2
+    recipe_n_features: 25    # 21 base + regime/carry/term (export/backtest, v2)
+    snapshot_n_features: 23  # lista persistida por el DAG H5-L3 (feature_cols_h5.json)
+    drift_note: >-
+      divergencia AS-BUILT declarada, no resuelta aqui: el DAG semanal
+      forecast_h5_l3_weekly_training persiste 23 columnas mientras la receta del
+      export usa 25 (enhance_v2) — pendiente de reconciliacion en un BL propio
+  current_model_snapshot:   # puntero ROTATIVO (lo reescribe H5-L3 cada domingo);
+    # lo congelado es la receta (spec_fingerprint), JAMAS estos pesos
+    pointer: outputs/forecasting/h5_weekly_models/latest/
+    registered_in: MLflow run de forecast_h5_l3_weekly_training (tags git_commit,
+      iso_week, contract FC-H5-L3-001)
+    as_of: '2026-07-06'     # ultima corrida L3 local al sellar este re-freeze
+    artifacts_sha256_16:
+      ridge_h5.pkl: 8e4618c4d26d3af9
+      bayesian_ridge_h5.pkl: 0c206dc55908c71a
+      scaler_h5.pkl: 3302221e2b9dee39
+      feature_cols_h5.json: c3393242ef998896
+  forecast_trial_ids_legacy: pending-BL-10   # herencia FT se puebla con el backfill;
+    # provenance FT->AT prospectivo: ADR-0022 (pre-registros nuevos lo declaran)
 files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
 code_hash_sha256_16: 3b54d02435658b7f
 manifest_frozen_at: '2026-07-22'
-manifest_version: 10
+manifest_version: 11
+refreeze_note_v11: >-
+  Re-freeze v11 (2026-07-27, BL-14 remediacion post-rechazo Codex): linaje completo del
+  componente — spec_fingerprint de la RECETA (code_reference + smart_simple_v1.yaml),
+  code_reference+code_hash por componente, feature_set (25 receta / 23 snapshot DAG,
+  drift declarado) y current_model_snapshot rotativo con hashes reales (as-of
+  2026-07-06). Aditivo; code_hash del manifiesto intacto (cubre files:, no el yaml).
 refreeze_note_v10: >-
   Re-freeze v10 (2026-07-27, BL-14): components: receta del predictor declarada
   (BL-14, aditivo, code_hash intacto).
