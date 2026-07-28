@@ -4,7 +4,12 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T14:45:00-05:00 (refrescado en el MISMO write que CLD-161)
+timestamp: 2026-07-28T14:41:13-05:00 (reloj de sistema `date -Iseconds`, verificado)
+# CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
+# write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
+# Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
+# yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
+# se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
 estado: WORKING   # FASE II: auditoria cruzada + remediacion bilateral
 terminal_auxiliar: ninguna

@@ -105,3 +105,11 @@ aprobado ni rechazado en `subscription.cancelled`, así que un `PENDING` fabrica
 una cancelación sobre una suscripción real. Regla: mapping exhaustivo y
 explícito; evento desconocido se ignora o se rechaza, jamás se inventa una
 transición. Aplica igual a estados de orden, de DAG y de aprobación.
+
+**K-038 · El sello temporal se ejecuta, no se estima.**
+Origen: declare `14:45:00` en un fichero cuyo `mtime` real es `14:34:06`, con el
+reloj en `14:41:13` — un timestamp FUTURO de ~11 min, escrito de memoria. Un sello
+adelantado es peor que uno atrasado: simula frescura que no existe. Regla: el sello
+se obtiene ejecutando el reloj en el MISMO comando que escribe el fichero, y su
+verificacion es objetiva — `mtime` contra `timestamp` declarado, y si difieren mas
+de 60s se marca SKEW.
