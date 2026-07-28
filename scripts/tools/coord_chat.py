@@ -15,7 +15,9 @@ estado del monitor.
 `--follow` refresca cada 5s y solo pinta lo nuevo: es la vista util mientras los
 dos agentes trabajan.
 
-Solo lectura. No escribe en los canales.
+También puede emitir mensajes de operador append-only con ``--send``. El envío
+requiere ``--message`` (o lo solicita de forma interactiva) y nunca sobrescribe
+un inbox.
 """
 from __future__ import annotations
 
@@ -159,6 +161,30 @@ def heartbeats() -> list[str]:
     return rows
 
 
+def send_message(target: str, body: str, priority: str, tag: str) -> str:
+    """Append one operator message to the selected inbox and return its ID."""
+    if not body.strip():
+        raise ValueError("message cannot be empty")
+    if priority not in {"P0", "P1", "P2", "P3"}:
+        raise ValueError("priority must be P0, P1, P2 or P3")
+    destinations = {
+        "claude": INBOX_FROM_CODEX,
+        "codex": INBOX_FROM_CLAUDE,
+    }
+    if target not in destinations:
+        raise ValueError("target must be claude or codex")
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+    iso = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+    mid = f"MSG-OPERATOR-{stamp}"
+    line = f"- [{mid}][{priority}][{tag}][ACK<=10m] [{iso}] {body.strip()}\n"
+    path = destinations[target]
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+    return mid
+
+
 def render(m: Msg, width: int, full: bool) -> str:
     pri = c.p0 if m.pri == "P0" else (c.p1 if m.pri == "P1" else c.meta)
     arrow = "->" if m.who == "CLAUDE" else "<-"
@@ -194,7 +220,20 @@ def main() -> int:
     ap.add_argument("--full", action="store_true", help="cuerpo completo")
     ap.add_argument("--grep", metavar="TXT", help="filtra por texto")
     ap.add_argument("--follow", action="store_true", help="modo vivo, refresca 5s")
+    ap.add_argument("--send", choices=("claude", "codex", "both"),
+                    help="envia un mensaje de operador al inbox indicado")
+    ap.add_argument("--message", help="texto del mensaje; si falta, se solicita")
+    ap.add_argument("--priority", choices=("P0", "P1", "P2", "P3"), default="P1")
+    ap.add_argument("--tag", default="OPERATOR", help="etiqueta de coordinación")
     a = ap.parse_args()
+
+    if a.send:
+        body = a.message or input("Mensaje para {}: ".format(a.send)).strip()
+        targets = ("claude", "codex") if a.send == "both" else (a.send,)
+        for target in targets:
+            mid = send_message(target, body, a.priority, a.tag)
+            print(f"sent {mid} -> {target}")
+        return 0
 
     width = min(shutil.get_terminal_size((100, 24)).columns, 110)
     seen: set[str] = set()
