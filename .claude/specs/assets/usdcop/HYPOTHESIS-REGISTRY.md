@@ -12,11 +12,11 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 109
+n_trials_total: 111   # reconciliación BL-12-r2 (2026-07-27): 109→111 para igualar el ledger interno (líneas H1 DAILY SHADOW V1 "110 globales" y H1 LATAM TRANSPORT V1 "Contabilidad final: 111 globales"); 0 trials nuevos
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
-  - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (48 trials direccionales; 27 previos + 14 forward-flow + 7 intraday-LatAm)"
+  - ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md (50 trials direccionales; 27 previos + 14 forward-flow + 7 intraday-LatAm + 1 EXP-DIR-FWD-H1-DAILY-V1 + 1 EXP-DIR-010 LatAm-transport)"
   - "public/data/strategies/{smart_simple_v11,smart_simple_aggr}/backtests/* (5 bundles = suelo)"
 sigma_trials: 0.0473   # MEDIDA 2026-07-21 (42 celdas re-sim, motor purgado; N_eff=10 clusters)                 # nunca se persistió la dispersión de Sharpe entre trials
 sigma_trials_grid: [0.05, 0.10, 0.15]   # titular = el DSR MÍNIMO de la rejilla
@@ -1622,3 +1622,23 @@ para tocar la constitución; `quant-constitution.md` sube a 1.1.0). **El conteo 
    herede forecasts sin `provenance` es **INVÁLIDO** (ADR-0022 §Decisión-4).
 3. El DSR se deflacta SIEMPRE con `n_trials_total` (suma de linajes) — mirar una celda
    FT sigue quemando presupuesto del activo (constitución §2, DO NOT).
+
+
+---
+
+## RECONCILIACIÓN BL-12-r2 (2026-07-27, contable — 0 miradas, 0 trials nuevos): header 109→111
+
+Hallazgo #2 del red-team sobre BL-12 (commit e0a09aa): el front-matter declaraba
+`n_trials_total: 109` (fuente "EXP-DIR-001, 48 direccionales") mientras el ledger interno
+de ESTE archivo ya había registrado **49/110** (APERTURA H1 DAILY SHADOW V1, 2026-07-22) y
+**50/111** (RESULTADO H1 LATAM TRANSPORT V1, "Contabilidad final"), progresión confirmada en
+`EXP-DIR-001-directional-trials.md` (48→49→50 direccionales / 109→110→111 globales).
+Como `scripts/analysis/profitability_evidence.py::trial_count` lee `n_trials_total` del
+front-matter, el header stale **SUB-deflactaba** el DSR (violación constitución §2).
+
+Remedio: header actualizado a `n_trials_total: 111` y fuente EXP-DIR-001 a "50 trials
+direccionales". Ningún pre-registro, hipótesis, umbral ni asiento histórico fue alterado
+(la línea "48/109" del shadow v2 era correcta en su fecha y permanece). Candado
+anti-regresión: `tests/regression/test_hypothesis_registry_consistency.py` (falla si el
+header queda por debajo del máximo "N globales" del cuerpo o difiere de la última
+"Contabilidad final").
