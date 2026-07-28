@@ -14,14 +14,20 @@ components:   # predictor compartido con v11
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: f74996a646b3527a   # IDENTICO a v11 (predictor compartido):
-    # sha256(concat)[:16] sobre code_reference + config/execution/smart_simple_v1.yaml
+  spec_fingerprint_sha256_16: 7bd7899e959195ba   # IDENTICO a v11 (predictor compartido):
+    # sha256 canonico LF (CRLF->LF, == blob git)[:16] sobre spec_fingerprint_inputs
+  spec_fingerprint_inputs:
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - src/forecasting/enhance_v2.py
+  - config/execution/smart_simple_v1.yaml
   code_reference:
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
-  code_hash_sha256_16: 3b54d02435658b7f   # mismo metodo que el hash del manifiesto
+  code_hash_sha256_16: fe9b26f24779d9a9   # mismo metodo que el hash del manifiesto (LF)
   feature_set:
     builder: src/forecasting/enhance_v2.py::enhance_features_v2
+    recipe_feature_set_id: usdcop_smart_simple_v11_recipe25
+    dag_snapshot_feature_set_id: usdcop_smart_simple_v11_dag_legacy23
     recipe_n_features: 25    # 21 base + regime/carry/term (export/backtest, v2)
     snapshot_n_features: 23  # lista persistida por el DAG H5-L3 (feature_cols_h5.json)
     drift_note: divergencia as-built declarada en usdcop.yaml (manifest v11 de la campeona)
@@ -39,10 +45,17 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 - config/execution/smart_simple_v14_ladder.yaml
-code_hash_sha256_16: 8d8c0e1668ab7501
+code_hash_sha256_16: cfea4afaaef07914
 generalizacion_diseno: '3/4 años (mejora 2022/2023/2024, cede 2025: perfil anti-overfit)'
 juez: forward desde freeze, mismo protocolo sellado de v12
-manifest_version: 5
+manifest_version: 6
+refreeze_note_v6: >-
+  Re-freeze v6 (2026-07-28, CXD-041/043): canonicalizacion LF, 0 cambios de contenido.
+  Hashes anteriores (manifiesto 8d8c0e1668ab7501, componente 3b54d02435658b7f,
+  spec_fingerprint f74996a646b3527a) computados sobre bytes CRLF de Windows; un
+  checkout limpio (LF, blob git) no los reproducia. Metodo nuevo: sha256 sobre bytes
+  CRLF->LF (== git show :path). + feature_set ids explicitos (recipe25/dag_legacy23)
+  y spec_fingerprint_inputs declarados (BL-39-r2). Señal intacta, 0 trials.
 refreeze_note_v5: >-
   Re-freeze v5 (2026-07-27, red-team BL-14 hallazgo #1): el code_hash de manifiesto
   (095c3e0b5c31f824, estado exacto del freeze ccd5ac9 2026-07-21 19:17, reproducido)

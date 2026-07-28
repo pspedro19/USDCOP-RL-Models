@@ -39,21 +39,29 @@ components:
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: f74996a646b3527a   # sha256(concat bytes)[:16] sobre
-    # code_reference (en orden) + config/execution/smart_simple_v1.yaml (hiperparams
+  spec_fingerprint_sha256_16: 7bd7899e959195ba   # sha256 canonico LF (CRLF->LF,
+    # == blob git)[:16] sobre spec_fingerprint_inputs en orden (hiperparams
     # ridge alpha=1.0 / bayesian_ridge max_iter=300, ensemble mean — la RECETA)
+  spec_fingerprint_inputs:    # declarados para que el fingerprint sea recomputable
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - src/forecasting/enhance_v2.py
+  - config/execution/smart_simple_v1.yaml
   code_reference:
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
-  code_hash_sha256_16: 3b54d02435658b7f   # mismo metodo que el hash del manifiesto
+  code_hash_sha256_16: fe9b26f24779d9a9   # mismo metodo que el hash del manifiesto (LF)
   feature_set:
     builder: src/forecasting/enhance_v2.py::enhance_features_v2
+    recipe_feature_set_id: usdcop_smart_simple_v11_recipe25       # la RECETA (25)
+    dag_snapshot_feature_set_id: usdcop_smart_simple_v11_dag_legacy23  # lo que el DAG persiste (23)
     recipe_n_features: 25    # 21 base + regime/carry/term (export/backtest, v2)
     snapshot_n_features: 23  # lista persistida por el DAG H5-L3 (feature_cols_h5.json)
     drift_note: >-
       divergencia AS-BUILT declarada, no resuelta aqui: el DAG semanal
       forecast_h5_l3_weekly_training persiste 23 columnas mientras la receta del
-      export usa 25 (enhance_v2) — pendiente de reconciliacion en un BL propio
+      export usa 25 (enhance_v2) — la divergencia vive entre DOS contratos
+      explicitos (recipe25 vs dag_legacy23, config/features/feature_sets/) y su
+      reconciliacion exige un BL propio
   current_model_snapshot:   # puntero ROTATIVO (lo reescribe H5-L3 cada domingo);
     # lo congelado es la receta (spec_fingerprint), JAMAS estos pesos
     pointer: outputs/forecasting/h5_weekly_models/latest/
@@ -71,9 +79,18 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: 3b54d02435658b7f
-manifest_frozen_at: '2026-07-22'
-manifest_version: 11
+code_hash_sha256_16: fe9b26f24779d9a9
+manifest_frozen_at: '2026-07-28'
+manifest_version: 12
+refreeze_note_v12: >-
+  Re-freeze v12 (2026-07-28, CXD-041/043): canonicalizacion LF de TODOS los hashes de
+  codigo, 0 cambios de contenido. Los hashes anteriores (manifiesto 3b54d02435658b7f,
+  componente 3b54d02435658b7f, spec_fingerprint f74996a646b3527a) se computaron sobre
+  bytes CRLF del working tree Windows y un checkout limpio (LF, blob git) NO los
+  reproducia. Metodo nuevo: sha256 sobre bytes con CRLF->LF (== git show :path).
+  Ademas (BL-39-r2): feature_set separado en dos contratos explicitos
+  (usdcop_smart_simple_v11_recipe25 / usdcop_smart_simple_v11_dag_legacy23) y
+  spec_fingerprint_inputs declarados para recomputabilidad. Señal intacta, 0 trials.
 refreeze_note_v11: >-
   Re-freeze v11 (2026-07-27, BL-14 remediacion post-rechazo Codex): linaje completo del
   componente — spec_fingerprint de la RECETA (code_reference + smart_simple_v1.yaml),

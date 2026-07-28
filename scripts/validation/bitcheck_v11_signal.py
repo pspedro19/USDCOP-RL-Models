@@ -26,10 +26,33 @@ so cross-checking against that DB row is impossible by construction. The
 "señal de la última semana" reproduced here is the one the frozen artifacts
 produce (features through 2026-07-02, Monday signal week).
 
+THIS IS NOT A CI GATE (CXD-041 punto 7). Every required input under
+outputs/forecasting/** is gitignored, so a clean checkout (and therefore CI)
+can NEVER run this bit-check: it is a LOCAL-ONLY verification that runs where
+the frozen pipeline's artifacts live. What CI *does* verify is the declarative
+layer: scripts/validation/validate_feature_catalog.py +
+tests/regression/test_feature_contracts.py (see `ci_gates` in
+config/features/feature_catalog.yaml).
+
+HASHING NOTE (CXD-041/043): this script hashes BINARY/DATA ARTIFACTS
+(*.pkl, feature_cols_h5.json under outputs/) for bit-identity, so it hashes
+raw bytes — the canonical CRLF->LF normalization applies to SOURCE FILES
+tracked in git (manifests' code_hash, catalog code_reference), never to
+binary artifacts, where "normalizing" bytes would destroy bit-identity.
+
 Run:  python scripts/validation/bitcheck_v11_signal.py
+      python scripts/validation/bitcheck_v11_signal.py --require-artifacts
+
+Exit codes:
+  0 = bit-check OK (or artifacts absent WITHOUT --require-artifacts: declared
+      SKIP, local-only gate)
+  1 = bit-check FAILED (hash wall or bit mismatch)
+  2 = artifacts absent WITH --require-artifacts (clean, distinct failure:
+      "artefactos locales requeridos; verificación local-only")
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import sys
@@ -41,7 +64,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = ROOT / "outputs" / "forecasting" / "h5_weekly_models" / "latest"
 PRED_PATH = ROOT / "outputs" / "forecasting" / "h5_l5a_pred_features_temp.parquet"
-FEATURE_SET = ROOT / "config" / "features" / "feature_sets" / "usdcop_smart_simple_v11.yaml"
+# CXD-041 split: the scaler was fit on what the DAG persisted (23) — PATH B is
+# driven by the dag_legacy23 contract, not the recipe25 one.
+FEATURE_SET = (ROOT / "config" / "features" / "feature_sets"
+               / "usdcop_smart_simple_v11_dag_legacy23.yaml")
 NORM_SNAP = (ROOT / "config" / "features" / "normalization_snapshots"
              / "usdcop_h5_scaler_legacy_v1.yaml")
 MANIFEST = ROOT / "config" / "strategy_manifests" / "usdcop.yaml"
@@ -67,12 +93,19 @@ def run_bitcheck(root: Path = ROOT) -> dict:
     models_dir = root / "outputs" / "forecasting" / "h5_weekly_models" / "latest"
     pred_path = root / "outputs" / "forecasting" / "h5_l5a_pred_features_temp.parquet"
     errors: list[str] = []
-    report: dict = {"ok": False, "errors": errors}
+    report: dict = {"ok": False, "errors": errors, "missing_artifacts": False}
 
+    # Gitignored local artifacts (outputs/**): their absence is the declared
+    # local-only condition, distinct from a real bit-check failure.
     for p in (pred_path, models_dir / "feature_cols_h5.json",
-              models_dir / "scaler_h5.pkl", FEATURE_SET, NORM_SNAP):
+              models_dir / "scaler_h5.pkl"):
         if not p.is_file():
-            errors.append(f"missing required input: {p}")
+            report["missing_artifacts"] = True
+            errors.append(f"missing local artifact (gitignored): {p}")
+    # Tracked contracts: their absence is always a hard failure.
+    for p in (FEATURE_SET, NORM_SNAP):
+        if not p.is_file():
+            errors.append(f"missing required contract: {p}")
     if errors:
         return report
 
@@ -108,16 +141,24 @@ def run_bitcheck(root: Path = ROOT) -> dict:
     # ── PATH B: from the DECLARED feature_set + normalization snapshot ──────
     fs = yaml.safe_load(FEATURE_SET.read_text(encoding="utf-8"))
     snap = yaml.safe_load(NORM_SNAP.read_text(encoding="utf-8"))
-    cols_b = list(fs["dag_snapshot"]["ordered_features"])
+    cols_b = [f["feature_id"] for f in fs["ordered_features"]]
 
     # The declared list must serialize to the EXACT bytes of the frozen file.
     declared_bytes_hash = hashlib.sha256(json.dumps(cols_b).encode()).hexdigest()[:16]
-    if declared_bytes_hash != fs["dag_snapshot"]["file_sha256_16"]:
+    if declared_bytes_hash != fs["file_sha256_16"]:
         errors.append(
-            f"declared dag_snapshot list hashes to {declared_bytes_hash}, "
-            f"pinned file_sha256_16 is {fs['dag_snapshot']['file_sha256_16']}")
+            f"declared dag_legacy23 list hashes to {declared_bytes_hash}, "
+            f"pinned file_sha256_16 is {fs['file_sha256_16']}")
     if cols_b != cols_a:
         errors.append("declared ordered_features != feature_cols_h5.json content")
+
+    # The snapshot must reference the SAME feature-set contract that drives
+    # PATH B (the scaler was fit on the DAG's 23, split CXD-041).
+    if snap["feature_set_id"] != fs["feature_set_id"]:
+        errors.append(
+            f"normalization snapshot references feature_set "
+            f"{snap['feature_set_id']!r} but PATH B is driven by "
+            f"{fs['feature_set_id']!r}")
 
     scaler_path = root / snap["artifact"]["path"]
     if _sha16(scaler_path) != snap["artifact"]["sha256_16"]:
@@ -178,8 +219,33 @@ def run_bitcheck(root: Path = ROOT) -> dict:
     return report
 
 
-def main() -> int:
-    report = run_bitcheck(ROOT)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="v11 bit-check (LOCAL-ONLY gate: requires gitignored "
+                    "outputs/** artifacts; NOT runnable in CI — see ci_gates "
+                    "in config/features/feature_catalog.yaml)")
+    parser.add_argument(
+        "--require-artifacts", action="store_true",
+        help="fail with exit code 2 (clean, distinct) if the gitignored local "
+             "artifacts are absent instead of declaring a SKIP")
+    parser.add_argument(
+        "--root", type=Path, default=ROOT,
+        help="repo root holding outputs/ artifacts (default: this repo)")
+    args = parser.parse_args(argv)
+
+    report = run_bitcheck(args.root)
+    if report.get("missing_artifacts"):
+        if args.require_artifacts:
+            print("[MISSING-ARTIFACTS] artefactos locales requeridos; "
+                  "verificación local-only (outputs/** esta gitignored — este "
+                  "bit-check NO es un gate de CI):")
+            for e in report["errors"]:
+                print(f"  - {e}")
+            return 2
+        print("[SKIP] v11 bit-check: artefactos locales ausentes (outputs/** "
+              "gitignored) — gate local-only, no aplica en este checkout. "
+              "Use --require-artifacts para exigirlos (exit 2).")
+        return 0
     if not report["ok"]:
         print("[FAIL] v11 bit-check:")
         for e in report["errors"]:

@@ -31,7 +31,8 @@ files:
 - src/btc_strategy/strategies.py
 - src/btc_strategy/indicators.py
 asset_id: btcusdt
-code_hash_sha256_16: 3b9b3c6dd1b9a70d
+code_hash_sha256_16: 3b9b3c6dd1b9a70d  # verificado 2026-07-28 metodo canonico LF (CXD-041):
+  # fuentes ya LF en working tree => hash identico al blob git; sin cambio
 manifest_frozen_at: '2026-07-21'
 manifest_version: 2
 refreeze_note_v2: >-

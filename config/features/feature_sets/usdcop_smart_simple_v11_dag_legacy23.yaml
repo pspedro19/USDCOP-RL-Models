@@ -1,0 +1,73 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39 / BL-39-r2)
+# Lo que el DAG H5-L3 (forecast_h5_l3_weekly_training) PERSISTE de verdad hoy:
+# 23 columnas (feature_cols_h5.json). El modelo y el scaler en produccion estan
+# ajustados sobre ESTAS 23 — eso es lo bit-identico.
+#
+# CXD-041 (BL-39-r2): contrato hermano de usdcop_smart_simple_v11_recipe25 (25).
+# La divergencia AS-BUILT (declarada por BL-14, drift_note del manifiesto v11)
+# queda entre DOS contratos explicitos, no dentro de uno. Causa: en el entorno
+# del DAG el enhancement macro fallo (MACRO_DAILY_CLEAN no resuelto =>
+# rate_diff_ibr_ust2y/term_spread ausentes) y la lista persistida quedo en 23.
+#
+# v11 esta FROZEN: este archivo DECLARA el estado as-built (legacy_v1,
+# bit-identico); no cambia runtime y no gasta trials (BL-39).
+feature_set_id: usdcop_smart_simple_v11_dag_legacy23
+supersedes: usdcop_smart_simple_v11_action_legacy_v1   # (era el bloque dag_snapshot)
+strategy_id: smart_simple_v11
+manifest_version: 12          # config/strategy_manifests/usdcop.yaml
+asset_id: usdcop
+surface: action
+builder: src/forecasting/enhance_v2.py::enhance_features_v2  # macro merge FALLIDO en el DAG
+resample_policy: P1D provider_official (bi.dim_daily_usdcop); PT5M solo ejecucion TP/HS (§42.4)
+macro_bundle: [dxy, wti, vix, embi]   # T-1, merge_asof(backward), stale => bloquea señal
+
+# ── Lo persistido (feature_cols_h5.json, as-of 2026-07-06): 23 features ────
+source_file: outputs/forecasting/h5_weekly_models/latest/feature_cols_h5.json
+as_of: '2026-07-06'                # ultima corrida H5-L3 local (manifiesto v11)
+file_sha256_16: c3393242ef998896   # == manifest artifacts_sha256_16; hash del
+  # ARTEFACTO DE DATOS tal cual (json de una linea, sin CRLF) — la
+  # canonicalizacion LF de CXD-041 aplica a fuentes de codigo, no a artefactos.
+ordered_features:
+- {feature_id: close,            order: 0,  required: true}
+- {feature_id: open,             order: 1,  required: true}
+- {feature_id: high,             order: 2,  required: true}
+- {feature_id: low,              order: 3,  required: true}
+- {feature_id: return_1d,        order: 4,  required: true}
+- {feature_id: return_5d,        order: 5,  required: true}
+- {feature_id: return_10d,       order: 6,  required: true}
+- {feature_id: return_20d,       order: 7,  required: true}
+- {feature_id: volatility_5d,    order: 8,  required: true}
+- {feature_id: volatility_10d,   order: 9,  required: true}
+- {feature_id: volatility_20d,   order: 10, required: true}
+- {feature_id: rsi_14d,          order: 11, required: true}
+- {feature_id: ma_ratio_20d,     order: 12, required: true}
+- {feature_id: ma_ratio_50d,     order: 13, required: true}
+- {feature_id: day_of_week,      order: 14, required: true}
+- {feature_id: month,            order: 15, required: true}
+- {feature_id: is_month_end,     order: 16, required: true}
+- {feature_id: dxy_close_lag1,   order: 17, required: true}
+- {feature_id: oil_close_lag1,   order: 18, required: true}
+- {feature_id: vix_close_lag1,   order: 19, required: true}
+- {feature_id: embi_close_lag1,  order: 20, required: true}
+- {feature_id: vol_regime_ratio, order: 21, required: true}
+- {feature_id: trend_slope_60d,  order: 22, required: true}
+
+# ── Divergencia con la receta (contrato hermano) ───────────────────────────
+drift:
+  status: declared_not_resolved
+  counterpart_feature_set_id: usdcop_smart_simple_v11_recipe25
+  missing_vs_recipe: [rate_diff_ibr_ust2y, term_spread]
+  cause: >-
+    enhance_features_v2 en el contenedor del DAG no resolvio las columnas SSOT
+    de MACRO_DAILY_CLEAN => las 2 features derivadas no se crearon y la lista
+    persistida quedo en 23. El export/backtest (macro OK) usa 25.
+  resolution: >-
+    Reconciliar 25 vs 23 exige su propio BL + re-freeze consciente del
+    manifiesto (decidir que features valen = decision de MODELADO, 0 trials
+    aqui). Mientras tanto el test de regresion exige que el snapshot en disco
+    siga siendo EXACTAMENTE esta lista de 23 (bit-check).
+
+# ── Normalizacion → artefacto versionado (JAMAS en el catalogo, §40.3) ─────
+# El scaler legacy_v1 se ajusto sobre ESTAS 23 columnas: por eso el snapshot
+# referencia ESTE contrato, no la receta de 25.
+normalization_snapshot_id: usdcop_h5_scaler_legacy_v1

@@ -9,15 +9,30 @@
 # linaje y hashes. Duplicar las constantes en config seria recrear el
 # anti-patron (vix-21.16)/7.89 que este BL elimina.
 normalization_snapshot_id: usdcop_h5_scaler_legacy_v1
-feature_set_id: usdcop_smart_simple_v11_action_legacy_v1
+feature_set_id: usdcop_smart_simple_v11_dag_legacy23   # el scaler se ajusto sobre las 23
+  # del DAG, no sobre la receta de 25 (split CXD-041: dos contratos explicitos)
 strategy_id: smart_simple_v11
 surface: action
 kind: sklearn.preprocessing.StandardScaler   # mean/std por columna
 
 artifact:
-  path: outputs/forecasting/h5_weekly_models/latest/scaler_h5.pkl
+  path: outputs/forecasting/h5_weekly_models/latest/scaler_h5.pkl   # puntero MUTABLE
+  run_uri: null                   # NO existe URI inmutable local: solo el puntero
+    # `latest/` (H5-L3 lo reescribe cada domingo); no hay directorio por-fecha en
+    # outputs/ ni mlruns/ local, y el manifiesto cita el run de MLflow sin run_id
+    # resoluble desde este repo. Honesto: null, no un URI inventado (CXD-041).
+  mutable_pointer_caveat: >-
+    El path es un puntero rotativo: los BYTES del artefacto son la identidad,
+    no el path. Identidad = sha256_16 3302221e2b9dee39 (scaler) +
+    ordered_feature_hash c3393242ef998896 + semantic_hash c70136c4b16252cf.
+    Si el contenido de `latest/` deja de matchear estos hashes, este snapshot
+    ya NO esta en disco y debe registrarse uno NUEVO con run_uri inmutable
+    (idealmente el run de MLflow de la corrida H5-L3 que lo produjo).
   sha256_16: '3302221e2b9dee39'   # == manifest artifacts_sha256_16 (as-of 2026-07-06)
-  registered_in: MLflow run de forecast_h5_l3_weekly_training (artifact_path=models)
+    # hash del ARTEFACTO BINARIO tal cual (bit-identidad): la canonicalizacion
+    # LF de CXD-041 aplica a fuentes de codigo, no a binarios.
+  registered_in: MLflow run de forecast_h5_l3_weekly_training (artifact_path=models,
+    run_id no registrado al sellar legacy_v1 — ver run_uri)
   sklearn_version_at_fit: 1.9.0   # contenedor Airflow; local puede diferir (warning benigno)
 
 training:

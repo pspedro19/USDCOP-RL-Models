@@ -28,6 +28,19 @@ MANIFESTS = ROOT / "config" / "strategy_manifests"
 EXPECTED_CLOCKS = {"usdcop": 52, "xauusd": 252, "btcusdt": 365, "spx500": 252}
 
 
+def _canonical_lf(data: bytes) -> bytes:
+    """CRLF -> LF normalization — the canonical byte stream for code hashing.
+
+    Hash canónico LF, reproducible desde el blob git en cualquier OS: hashing
+    the raw working-tree bytes baked Windows CRLF into every declared
+    code_hash_sha256_16, so a clean checkout on Linux (LF blobs, per
+    .gitattributes `* text=auto eol=lf`) could NOT reproduce the freeze
+    (CXD-041/043). Normalizing CRLF->LF makes the hash equal to hashing
+    `git show :<path>` regardless of the OS that checked the file out.
+    """
+    return data.replace(b"\r\n", b"\n")
+
+
 def _champions() -> dict[str, str]:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
@@ -69,6 +82,12 @@ def test_code_hash_detects_strategy_drift(manifest_path):
     277a072/878be51 edited their frozen execution YAMLs post-freeze. The freeze
     wall must cover EVERY manifest that declares `files:` — champion or not —
     hence the parametrization over the manifest glob (each file is its own red X).
+
+    Hash method (CXD-041/043): hash canónico LF — each file's bytes with
+    CRLF->LF normalized, i.e. the git blob content under .gitattributes text
+    eol=lf. Reproducible from a clean checkout on any OS via
+    `git show :<path>`. Hashing raw working-tree bytes (the old method)
+    produced hashes only a Windows CRLF checkout could reproduce.
     """
     m = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     assert m.get("files") and m.get("code_hash_sha256_16"), (
@@ -77,7 +96,7 @@ def test_code_hash_detects_strategy_drift(manifest_path):
     )
     digest = hashlib.sha256()
     for f in m["files"]:
-        digest.update((ROOT / f).read_bytes())
+        digest.update(_canonical_lf((ROOT / f).read_bytes()))
     current = digest.hexdigest()[:16]
     assert current == m["code_hash_sha256_16"], (
         f"{manifest_path.name} ({m.get('strategy_id')}): strategy source drifted from "
@@ -86,6 +105,64 @@ def test_code_hash_detects_strategy_drift(manifest_path):
         "version, update the hash, add a refreeze_note, and count the look as a trial "
         "if any result was observed."
     )
+
+
+def test_code_hash_method_is_line_ending_invariant(tmp_path):
+    """CXD-041/043 regression: the SAME logical content must hash identically
+    whether the checkout produced CRLF (Windows) or LF (Linux/git blob).
+
+    Red with the old method (raw bytes): sha256(CRLF bytes) != sha256(LF bytes),
+    so the declared hashes were only reproducible on the machine that froze
+    them. Green with the canonical method: CRLF->LF normalization makes both
+    checkouts hash to the git-blob value.
+    """
+    content_lf = b"strategy = 1\nreturn strategy\n"
+    content_crlf = content_lf.replace(b"\n", b"\r\n")
+    f_lf = tmp_path / "as_linux_checkout.py"
+    f_crlf = tmp_path / "as_windows_checkout.py"
+    f_lf.write_bytes(content_lf)
+    f_crlf.write_bytes(content_crlf)
+
+    # Sanity: the OLD method (raw bytes) is OS-dependent — this is the bug.
+    old_lf = hashlib.sha256(f_lf.read_bytes()).hexdigest()[:16]
+    old_crlf = hashlib.sha256(f_crlf.read_bytes()).hexdigest()[:16]
+    assert old_lf != old_crlf, "raw-byte hashing must differ across EOLs (the CXD-041 bug)"
+
+    # The canonical method is EOL-invariant and equals the git-blob (LF) hash.
+    new_lf = hashlib.sha256(_canonical_lf(f_lf.read_bytes())).hexdigest()[:16]
+    new_crlf = hashlib.sha256(_canonical_lf(f_crlf.read_bytes())).hexdigest()[:16]
+    assert new_lf == new_crlf == old_lf, (
+        "canonical LF hash must be identical for CRLF and LF checkouts and equal "
+        "to the hash of the LF (git blob) content")
+
+
+def test_component_code_hash_and_spec_fingerprint_are_canonical():
+    """BL-14 lineage hashes use the SAME canonical LF method as the manifest hash.
+
+    components[0].code_hash_sha256_16 = canonical hash over code_reference files
+    (the manifests document 'mismo metodo que el hash del manifiesto');
+    spec_fingerprint_sha256_16 = canonical hash over the declared
+    spec_fingerprint_inputs (code_reference + the frozen hyperparams YAML).
+    """
+    for p in sorted(MANIFESTS.glob("*.yaml")):
+        m = yaml.safe_load(p.read_text(encoding="utf-8"))
+        for comp in m.get("components") or []:
+            digest = hashlib.sha256()
+            for f in comp["code_reference"]:
+                digest.update(_canonical_lf((ROOT / f).read_bytes()))
+            assert digest.hexdigest()[:16] == comp["code_hash_sha256_16"], (
+                f"{p.name}: components[0].code_hash_sha256_16 does not match the "
+                "canonical LF hash of its code_reference files")
+            inputs = comp.get("spec_fingerprint_inputs")
+            assert inputs, (
+                f"{p.name}: component must declare spec_fingerprint_inputs so the "
+                "fingerprint is recomputable (CXD-041)")
+            digest = hashlib.sha256()
+            for f in inputs:
+                digest.update(_canonical_lf((ROOT / f).read_bytes()))
+            assert digest.hexdigest()[:16] == comp["spec_fingerprint_sha256_16"], (
+                f"{p.name}: spec_fingerprint_sha256_16 does not match the canonical "
+                "LF hash of its declared inputs")
 
 
 def test_manifests_declare_action_surface():

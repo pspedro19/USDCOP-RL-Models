@@ -29,9 +29,15 @@ files:
 - src/gold_rl/strategies.py
 - src/gold_rl/indicators.py
 asset_id: xauusd
-code_hash_sha256_16: 4fd3574fbfbe615f
-manifest_frozen_at: '2026-07-21'
-manifest_version: 2
+code_hash_sha256_16: bc494207ee2916d8
+manifest_frozen_at: '2026-07-28'
+manifest_version: 3
+refreeze_note_v3: >-
+  Re-freeze v3 (2026-07-28, CXD-041/043): canonicalizacion LF, 0 cambios de contenido.
+  El hash anterior (4fd3574fbfbe615f) se computo sobre bytes CRLF de Windows
+  (strategies.py estaba CRLF en el working tree); un checkout limpio (LF, blob git)
+  no lo reproducia. Metodo nuevo: sha256 sobre bytes CRLF->LF (== git show :path).
+  Señal intacta, 0 trials.
 refreeze_note_v2: >-
   Re-freeze v2 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
   señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).

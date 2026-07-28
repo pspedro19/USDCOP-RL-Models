@@ -1,0 +1,76 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39 / BL-39-r2)
+# DATA-STRATEGY §40.2/§42 — la RECETA de smart_simple_v11: lo que el
+# export/backtest construye (enhance_features_v2 con macro OK) = 25 features.
+#
+# CXD-041 (BL-39-r2): la divergencia receta-vs-DAG ya NO vive dentro de un solo
+# contrato. Son DOS contratos explicitos:
+#   - usdcop_smart_simple_v11_recipe25      (ESTE: la receta, 25)
+#   - usdcop_smart_simple_v11_dag_legacy23  (lo que el DAG H5-L3 persiste hoy, 23)
+# El snapshot de normalizacion legacy_v1 referencia el legacy23 (su scaler se
+# ajusto sobre esas 23), no esta receta.
+#
+# v11 esta FROZEN: este archivo DECLARA el estado as-built; no cambia runtime y
+# no gasta trials (BL-39).
+feature_set_id: usdcop_smart_simple_v11_recipe25
+supersedes: usdcop_smart_simple_v11_action_legacy_v1   # contrato unico pre-split (CXD-041)
+strategy_id: smart_simple_v11
+manifest_version: 12          # config/strategy_manifests/usdcop.yaml
+asset_id: usdcop
+surface: action
+builder: src/forecasting/enhance_v2.py::enhance_features_v2  # sobre base dataset_loader (21)
+resample_policy: P1D provider_official (bi.dim_daily_usdcop); PT5M solo ejecucion TP/HS (§42.4)
+macro_bundle: [dxy, wti, vix, embi]   # T-1, merge_asof(backward), stale => bloquea señal
+
+# §42.5: v12/v14 referencian el MISMO decision input que v11 (comparacion pareada).
+shared_by: [smart_simple_v12, smart_simple_v14]
+
+# ── RECETA (export/backtest, enhance_v2 con macro OK): 25 features ─────────
+ordered_features:
+- {feature_id: close,               order: 0,  required: true}
+- {feature_id: open,                order: 1,  required: true}
+- {feature_id: high,                order: 2,  required: true}
+- {feature_id: low,                 order: 3,  required: true}
+- {feature_id: return_1d,           order: 4,  required: true}
+- {feature_id: return_5d,           order: 5,  required: true}
+- {feature_id: return_10d,          order: 6,  required: true}
+- {feature_id: return_20d,          order: 7,  required: true}
+- {feature_id: volatility_5d,       order: 8,  required: true}
+- {feature_id: volatility_10d,      order: 9,  required: true}
+- {feature_id: volatility_20d,      order: 10, required: true}
+- {feature_id: rsi_14d,             order: 11, required: true}
+- {feature_id: ma_ratio_20d,        order: 12, required: true}
+- {feature_id: ma_ratio_50d,        order: 13, required: true}
+- {feature_id: day_of_week,         order: 14, required: true}
+- {feature_id: month,               order: 15, required: true}
+- {feature_id: is_month_end,        order: 16, required: true}
+- {feature_id: dxy_close_lag1,      order: 17, required: true}
+- {feature_id: oil_close_lag1,      order: 18, required: true}
+- {feature_id: vix_close_lag1,      order: 19, required: true}
+- {feature_id: embi_close_lag1,     order: 20, required: true}
+- {feature_id: vol_regime_ratio,    order: 21, required: true}
+- {feature_id: trend_slope_60d,     order: 22, required: true}
+- {feature_id: rate_diff_ibr_ust2y, order: 23, required: true}
+- {feature_id: term_spread,         order: 24, required: true}
+ordered_feature_hash_sha256_16: 50574a81bb21a035  # sha256(json.dumps(lista))[:16]
+  # hash de CONTENIDO DE DATOS (la lista serializada), NO de un archivo:
+  # la canonicalizacion LF de CXD-041 no aplica aqui.
+
+# ── Divergencia con lo persistido por el DAG (contrato hermano) ────────────
+divergence:
+  status: declared_not_resolved
+  counterpart_feature_set_id: usdcop_smart_simple_v11_dag_legacy23
+  missing_in_counterpart: [rate_diff_ibr_ust2y, term_spread]
+  note: >-
+    El DAG H5-L3 persiste 23 columnas (ver contrato hermano); esta receta usa
+    25. Reconciliar exige su propio BL + re-freeze consciente del manifiesto.
+
+# ── Normalizacion ──────────────────────────────────────────────────────────
+# La receta NO tiene snapshot de normalizacion registrado: el scaler de
+# produccion (legacy_v1) se ajusto sobre las 23 del DAG y lo referencia el
+# contrato hermano. El path de export/backtest ajusta su propio scaler
+# train-only POR CORRIDA (walk-forward) y no persiste artefacto registrable.
+normalization_snapshot_id: null
+normalization_note: >-
+  scaler train-only por corrida en el export (no persistido); el unico scaler
+  persistido en produccion es usdcop_h5_scaler_legacy_v1, ajustado sobre el
+  feature set usdcop_smart_simple_v11_dag_legacy23 (23).

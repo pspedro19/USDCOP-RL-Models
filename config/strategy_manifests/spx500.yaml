@@ -31,7 +31,8 @@ files:
 - src/strategies/spx500_regime_gated_v1/engine.py
 - src/strategies/spx500_regime_gated_v1/load_real.py
 asset_id: spx500
-code_hash_sha256_16: ea76413e60621521
+code_hash_sha256_16: ea76413e60621521  # verificado 2026-07-28 metodo canonico LF (CXD-041):
+  # fuentes ya LF en working tree => hash identico al blob git; sin cambio
 manifest_frozen_at: '2026-07-27'
 manifest_version: 3
 refreeze_note_v3: >-
