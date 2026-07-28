@@ -93,7 +93,22 @@ def _approval_file(context) -> Path:
 
 
 def guard_approved(**context) -> Dict[str, Any]:
-    """HARD GATE: refuse to deploy unless the human Vote 2/2 is APPROVED."""
+    """HARD GATE: refuse to deploy unless the human Vote 2/2 is APPROVED.
+
+    BL-25 (FABRIC §23): además revalida que el reloj de MODELO no haya
+    congelado las promociones DESPUÉS del Vote 2 — el deploy re-valida
+    server-side, la UI no es la autoridad (approval-gates invariante 4).
+    """
+    from src.monitoring.system_health import (
+        PromotionsFrozenError,
+        assert_promotions_not_frozen,
+    )
+
+    try:
+        assert_promotions_not_frozen(DASHBOARD_DATA_DIR / 'system_health.json')
+    except PromotionsFrozenError as exc:
+        raise ValueError(f"[H5-L4b] Deploy REFUSED — BL-25 health gate: {exc}") from exc
+
     approval_file = _approval_file(context)
     if not approval_file.exists():
         raise ValueError(f"[H5-L4b] approval file not found: {approval_file}")

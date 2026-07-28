@@ -74,7 +74,25 @@ MACRO_PATH = PROJECT_ROOT / 'data' / 'pipeline' / '04_cleaning' / 'output' / 'MA
 def validate_data(**context) -> Dict[str, Any]:
     """
     Pre-flight checks: verify that all required inputs exist and are fresh.
+
+    BL-25 (FABRIC §23): si el reloj de MODELO congeló las promociones
+    (PSI > 0.25 / drift de predicción en system_health.json), este gate
+    BLOQUEA el Vote 1. Snapshot ausente = warning, no bloqueo (bootstrap).
     """
+    from src.monitoring.system_health import (
+        PromotionsFrozenError,
+        assert_promotions_not_frozen,
+    )
+
+    health_snapshot = DASHBOARD_DATA_DIR / 'system_health.json'
+    try:
+        assert_promotions_not_frozen(health_snapshot)
+    except PromotionsFrozenError as exc:
+        raise ValueError(
+            f"[H5-L4] BL-25 health gate: {exc} — resolver el drift (o esperar "
+            "un snapshot verde de control_system_health) antes de promover."
+        ) from exc
+
     errors = []
 
     # Check OHLCV seed

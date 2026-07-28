@@ -100,6 +100,9 @@ Migration:  049_regime_gate_columns.sql   # (048 is reconciliation_tables; audit
 ```
 13:00-17:00  OHLCV realtime (every 5 min) + Macro update (hourly)
 13:00-18:00  core_watchdog hourly (8-13 COT): auto-heals stale data, forecasting, analysis
+13:30-18:30  control_system_health at :30 hourly (8:30-13:30 COT, BL-25): three-clock health
+             (data=every run · model=first run of day · PnL=Fridays); publishes
+             system_health.json semáforos + freeze-promotions gate — offset :30 vs watchdog :00
 07:00,12:00,18:00  News daily pipeline (3x UTC = 02:00,07:00,13:00 COT)
 13:15 Mon     H5-L5 Signal (ExternalTaskSensor on H5-L3)
 14:00 Mon     forecast_weekly_generation: regenerates USD/COP /forecasting CSV + PNGs, whole-year window `--num-weeks 30` (retrains per week → ~30-45 min; execution_timeout 60 min)

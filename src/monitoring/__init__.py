@@ -36,6 +36,28 @@ from .multivariate_drift import (
     quick_multivariate_check,
 )
 
+# BL-25: Monitoreo en tres relojes (CTR-SYSTEM-HEALTH-001)
+from .system_health import (
+    JsonlMetricEventSink,
+    PromotionsFrozenError,
+    SystemHealthEngine,
+    assert_promotions_not_frozen,
+    check_promotions_frozen,
+    compute_psi,
+    load_snapshot,
+    write_snapshot,
+)
+from .system_health_contract import (
+    FAILURE_TABLE,
+    Clock,
+    ClockStatus,
+    DataProbe,
+    HealthAction,
+    HealthEvent,
+    HealthSignal,
+    SystemHealthSnapshot,
+)
+
 # P1: Data Readiness Score
 from .readiness_score import (
     DailyDataReadinessReport,
@@ -49,6 +71,23 @@ from .readiness_score import (
 )
 
 __all__ = [
+    # BL-25: three-clock system health (CTR-SYSTEM-HEALTH-001)
+    "SystemHealthEngine",
+    "PromotionsFrozenError",
+    "JsonlMetricEventSink",
+    "assert_promotions_not_frozen",
+    "check_promotions_frozen",
+    "compute_psi",
+    "load_snapshot",
+    "write_snapshot",
+    "Clock",
+    "ClockStatus",
+    "DataProbe",
+    "HealthAction",
+    "HealthEvent",
+    "HealthSignal",
+    "SystemHealthSnapshot",
+    "FAILURE_TABLE",
     # Action/Model drift monitoring
     "ModelMonitor",
     "create_model_monitor",

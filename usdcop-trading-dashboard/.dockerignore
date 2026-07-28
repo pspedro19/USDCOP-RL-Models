@@ -122,3 +122,4 @@ playwright-report/
 # NTFS files can carry modes archive/tar cannot map (breaks `docker build` on Windows), and
 # deploy state must never be baked into an image anyway.
 public/data/production/deploy_status.json
+public/data/production/system_health.json

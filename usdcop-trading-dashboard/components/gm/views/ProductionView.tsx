@@ -627,6 +627,63 @@ function ExitReasonsPanel({ reasons }: { reasons: Record<string, number> }) {
   );
 }
 
+// ─────────────────────────────── semáforos BL-25 (tres relojes, FABRIC §23)
+
+// Tipos locales del snapshot CTR-SYSTEM-HEALTH-001 (runtime-written por el DAG
+// control_system_health; NO vive en lib/contracts hasta el C-NNN correspondiente).
+interface HealthClockStatus {
+  clock: 'data' | 'model' | 'pnl';
+  signal: 'green' | 'yellow' | 'orange' | 'red' | 'n_a';
+  actions: string[];
+  evaluated_at: string | null;
+}
+
+interface SystemHealthSnapshot {
+  contract: string;
+  generated_at: string;
+  clocks: Partial<Record<'data' | 'model' | 'pnl', HealthClockStatus>>;
+  promotions_frozen: boolean;
+  withdrawal_triggered: boolean;
+}
+
+const HEALTH_TONE: Record<HealthClockStatus['signal'], GmTone> = {
+  green: 'pos', yellow: 'warn', orange: 'warn', red: 'neg', n_a: 'neutral',
+};
+
+const HEALTH_CLOCK_LABEL: Record<HealthClockStatus['clock'], string> = {
+  data: 'Datos', model: 'Modelo', pnl: 'PnL',
+};
+
+/** Semáforos de los tres relojes (BL-25). El frontend solo RENDERIZA el
+ * snapshot publicado — jamás recalcula salud (regla §24.1 "el frontend no
+ * calcula"). Ausente (404) ⇒ no se renderiza nada (degradación elegante). */
+function SystemHealthStrip({ snapshot }: { snapshot: SystemHealthSnapshot | null }) {
+  if (!snapshot?.clocks) return null;
+  const order: Array<'data' | 'model' | 'pnl'> = ['data', 'model', 'pnl'];
+  const clocks = order.map((k) => snapshot.clocks[k]).filter(Boolean) as HealthClockStatus[];
+  if (clocks.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="system-health-strip">
+      <span className={`${GMT.micro} ${GM.textSec} uppercase tracking-wider`}>Salud (3 relojes)</span>
+      {clocks.map((c) => (
+        <GmBadge key={c.clock} tone={HEALTH_TONE[c.signal]}>
+          {HEALTH_CLOCK_LABEL[c.clock]}: {c.signal === 'n_a' ? 'N/A' : c.signal.toUpperCase()}
+        </GmBadge>
+      ))}
+      {snapshot.promotions_frozen && (
+        <GmBadge tone="warn">
+          <AlertTriangle className="w-3 h-3" aria-hidden /> Promociones congeladas
+        </GmBadge>
+      )}
+      {snapshot.withdrawal_triggered && (
+        <GmBadge tone="neg">
+          <XCircle className="w-3 h-3" aria-hidden /> Withdrawal protocol
+        </GmBadge>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────── vista principal
 
 export function ProductionView() {
@@ -682,6 +739,13 @@ export function ProductionView() {
     isClientView ? null : '/api/data/production/paper/candidates_ledger_2026.json',
   );
   const paperLedger = paperLedgerQ.data ?? null;
+  // BL-25: semáforos de los tres relojes (runtime-written por control_system_health;
+  // internals de gobierno → ocultos en la vista cliente, RBAC §8). 404 ⇒ null ⇒ nada.
+  const healthQ = useGmQuery<SystemHealthSnapshot>(
+    isClientView ? null : '/api/data/production/system_health.json',
+    { refreshMs: 300_000 },
+  );
+  const systemHealth = healthQ.data ?? null;
 
   // ── merge live/archivo (misma lógica que useLiveProduction) ───────────────
   const live = liveQ.data;
@@ -829,6 +893,8 @@ export function ProductionView() {
           </div>
         }
       />
+
+      {!isClientView && <SystemHealthStrip snapshot={systemHealth} />}
 
       {summaryNotFound ? (
         <GmEmpty
