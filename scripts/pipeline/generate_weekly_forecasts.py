@@ -66,7 +66,11 @@ from src.forecasting.contracts import (
 from src.forecasting.models.factory import ModelFactory
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
-from src.contracts.forecast_output import ForecastOutput, ForecastOutputError
+from src.contracts.forecast_output import (
+    CONTRACT_ID as FORECAST_CONTRACT_ID,
+    ForecastOutput,
+    ForecastOutputError,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -158,6 +162,10 @@ CSV_COLUMNS = [
     "wf_direction_accuracy", "model_avg_direction_accuracy", "model_avg_rmse",
     "is_best_overall_model", "is_best_for_this_horizon", "best_da_for_this_horizon",
     "image_path", "image_backtest", "generated_at", "image_forecast",
+    # BL-15 remedio: contract provenance of the PUBLISHED row. `prediction_point`
+    # is copied FROM the validated ForecastOutput, so the artifact the dashboard
+    # reads IS the artifact the contract validated (write_csv re-checks both).
+    "forecast_id", "prediction_point", "contract_id",
 ]
 
 
@@ -483,7 +491,9 @@ def generate_week_data(
     Train 9 models x 7 horizons for one week, run walk-forward.
 
     Returns:
-        csv_rows, raw_predictions, wf_results, base_price, inference_date
+        csv_rows, raw_predictions, wf_results, base_price, inference_date,
+        validated_records (forecast_id -> ForecastOutput; the publication wall
+        in ``write_csv`` refuses any row without one)
     """
     from sklearn.preprocessing import StandardScaler
 
@@ -516,6 +526,10 @@ def generate_week_data(
     all_metrics: Dict[str, Dict[int, Dict]] = {}
     raw_predictions: Dict[str, Dict[int, float]] = {}
     wf_results: Dict[str, Dict[int, Dict]] = {}
+    # BL-15 remedio (point 3): the validated records are KEPT, not discarded —
+    # the publication wall (write_csv) refuses any row without one.
+    validated_records: Dict[str, ForecastOutput] = {}
+    cell_forecast_id: Dict[Tuple[str, int], str] = {}
 
     for model_id in MODEL_IDS:
         all_metrics[model_id] = {}
@@ -582,7 +596,12 @@ def generate_week_data(
                     wf_results[model_id].pop(horizon, None)
                     continue
 
-                raw_predictions[model_id][horizon] = pred_return
+                # Everything downstream (CSV rows + PNGs) reads the VALIDATED
+                # record, never the raw float: the published artifact IS the
+                # validated one (BL-15 remedio, point 3).
+                validated_records[validated.forecast_id] = validated
+                cell_forecast_id[(model_id, horizon)] = validated.forecast_id
+                raw_predictions[model_id][horizon] = validated.prediction.point
 
             except Exception as e:
                 logger.warning(f"    {model_id} H={horizon}: {e}")
@@ -618,6 +637,16 @@ def generate_week_data(
 
             m = all_metrics[model_id][horizon]
             h_cat = HORIZON_CATEGORIES.get(horizon, "short")
+            # Contract provenance of this (model, horizon) cell. A cell with no
+            # validated record never reaches this loop (it was popped above);
+            # publishing it anyway is blocked at the wall in write_csv().
+            fid = cell_forecast_id.get((model_id, horizon))
+            fo = validated_records.get(fid) if fid else None
+            contract_cols = {
+                "forecast_id": fid,
+                "prediction_point": fo.prediction.point if fo else None,
+                "contract_id": FORECAST_CONTRACT_ID,
+            }
             is_best = model_id == best_overall
             is_best_h = best_per_horizon.get(horizon, (None, 0))[0] == model_id
             best_da_h = best_per_horizon.get(horizon, (None, 0))[1]
@@ -663,6 +692,7 @@ def generate_week_data(
                 "image_backtest": f"backtest_{model_id}_h{horizon}.png",
                 "generated_at": now_str,
                 "image_forecast": f"forward_{model_id}_{week_suffix}.png",
+                **contract_cols,
             })
 
             # Persist backtest metrics for every generated week.  Plots remain latest-week-only,
@@ -710,9 +740,11 @@ def generate_week_data(
                     "image_backtest": f"backtest_{model_id}_h{horizon}.png",
                     "generated_at": now_str,
                     "image_forecast": f"forward_{model_id}_{week_suffix}.png",
+                    **contract_cols,
                 })
 
-    return csv_rows, raw_predictions, wf_results, base_price, inference_date
+    return (csv_rows, raw_predictions, wf_results, base_price, inference_date,
+            validated_records)
 
 
 # =============================================================================
@@ -1028,12 +1060,66 @@ def generate_consensus_image(
 # CSV WRITING
 # =============================================================================
 
-def write_csv(rows: List[Dict], output_path: Path):
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+def write_csv(rows: List[Dict], output_path: Path,
+              validated: Dict[str, ForecastOutput]):
+    """PUBLICATION WALL (BL-15 remedio, point 3) — publishing without a validated
+    contract record is impossible.
+
+    ``validated`` is REQUIRED (there is no 2-argument call): every row must carry
+    a ``forecast_id`` present in the index, the referenced ``ForecastOutput`` is
+    re-validated HERE (not merely at production time), and the published
+    ``prediction_point`` / ``contract_id`` must equal the validated record's own
+    values — so the CSV the dashboard reads IS the artifact the contract
+    validated, not a parallel construction.
+
+    Fail-closed and atomic: on ANY violation nothing is written (the previous
+    artifact stays untouched); the file appears only after the whole batch is
+    serialized to a temp file and renamed.
+    """
+    if not isinstance(validated, dict):
+        raise ForecastOutputError(
+            f"write_csv requires the validated {FORECAST_CONTRACT_ID} index "
+            "(publishing unvalidated rows is not a supported path)"
+        )
+
+    for i, row in enumerate(rows):
+        fid = row.get("forecast_id")
+        if not isinstance(fid, str) or not fid.strip():
+            raise ForecastOutputError(
+                f"row[{i}] {row.get('record_id')!r} has no forecast_id — refusing "
+                f"to publish a row with no {FORECAST_CONTRACT_ID} provenance"
+            )
+        fo = validated.get(fid)
+        if fo is None:
+            raise ForecastOutputError(
+                f"row[{i}] {row.get('record_id')!r} references forecast_id {fid!r} "
+                f"which was never validated against {FORECAST_CONTRACT_ID} — "
+                "refusing to publish"
+            )
+        fo.validate()  # re-validated at the wall, not trusted from earlier
+        if row.get("contract_id") != FORECAST_CONTRACT_ID:
+            raise ForecastOutputError(
+                f"row[{i}] {row.get('record_id')!r} declares contract_id "
+                f"{row.get('contract_id')!r} != {FORECAST_CONTRACT_ID}"
+            )
+        if row.get("prediction_point") != fo.prediction.point:
+            raise ForecastOutputError(
+                f"row[{i}] {row.get('record_id')!r} publishes prediction_point "
+                f"{row.get('prediction_point')!r} but the validated record holds "
+                f"{fo.prediction.point!r} — the published artifact must BE the "
+                "validated one"
+            )
+
+    tmp_path = output_path.with_name(output_path.name + ".tmp")
+    with open(tmp_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)  # extra keys => ValueError
         writer.writeheader()
         writer.writerows(rows)
-    logger.info(f"CSV written: {output_path} ({len(rows)} rows)")
+    os.replace(tmp_path, output_path)
+    logger.info(
+        f"CSV written: {output_path} ({len(rows)} rows, all validated against "
+        f"{FORECAST_CONTRACT_ID})"
+    )
 
 
 # =============================================================================
@@ -1093,6 +1179,7 @@ def main():
     logger.info(f"Generating {len(weeks)} weeks: {weeks[0][0]} to {weeks[-1][0]}")
 
     all_csv_rows = []
+    all_validated: Dict[str, ForecastOutput] = {}
     total_images = 0
 
     for i, (week_label, cutoff_date) in enumerate(weeks):
@@ -1100,13 +1187,15 @@ def main():
         week_suffix = week_label.replace("-", "_")
 
         t1 = time.time()
-        csv_rows, raw_preds, wf_results, base_price, inf_date = generate_week_data(
+        (csv_rows, raw_preds, wf_results, base_price, inf_date,
+         validated_records) = generate_week_data(
             df_full, cutoff_date, week_label, is_latest_week=is_latest,
             feature_cols=feature_cols, annualization_days=annualization_days,
             asset=args.asset,
         )
         logger.info(f"  Models trained in {time.time()-t1:.1f}s ({len(csv_rows)} CSV rows)")
         all_csv_rows.extend(csv_rows)
+        all_validated.update(validated_records)
 
         # Target dates and actuals for this week
         target_info = get_target_dates_and_actuals(df_full, inf_date, base_price)
@@ -1185,7 +1274,7 @@ def main():
 
     # Write combined CSV
     csv_path = OUTPUT_DIR / "bi_dashboard_unified.csv"
-    write_csv(all_csv_rows, csv_path)
+    write_csv(all_csv_rows, csv_path, all_validated)
 
     # Summary
     bt_rows = sum(1 for r in all_csv_rows if r["view_type"] == "backtest")

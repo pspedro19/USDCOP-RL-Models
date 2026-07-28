@@ -75,3 +75,98 @@ class TestInvalidRowFailClosed:
 
     def test_available_at_before_as_of_is_excluded(self):
         assert _call(available_at="2026-07-10T00:00:00") is None
+
+
+# ---------------------------------------------------------------------------
+# (3) The PUBLISHED artifact must BE the validated one — publishing a row with
+#     no validated contract record behind it must be impossible (fail-closed).
+# ---------------------------------------------------------------------------
+
+import csv as _csv
+
+import pytest
+
+from scripts.pipeline.generate_weekly_forecasts import write_csv
+from src.contracts.forecast_output import (
+    CONTRACT_ID,
+    ForecastOutputError,
+    ingest_forecast_outputs,
+)
+
+
+def _row(fo=None, **over):
+    """A published row, carrying the provenance of the validated record."""
+    row = {
+        "record_id": "FF_ridge_h5_2026_W30",
+        "view_type": "forward_forecast",
+        "model_id": "ridge",
+        "horizon_days": 5,
+        "inference_date": "2026-07-17",
+        "forecast_id": fo.forecast_id if fo else "usdcop_forecast_zoo:ridge:h5:2026-07-17",
+        "prediction_point": fo.prediction.point if fo else 0.0042,
+        "contract_id": CONTRACT_ID,
+    }
+    row.update(over)
+    return row
+
+
+class TestPublicationWall:
+    def test_write_csv_refuses_rows_without_validated_provenance(self, tmp_path):
+        out = tmp_path / "bi_dashboard_unified.csv"
+        with pytest.raises(ForecastOutputError, match="never validated"):
+            write_csv([_row()], out, validated={})
+        assert not out.exists(), "nothing may be published when the gate rejects"
+
+    def test_write_csv_refuses_a_row_with_no_forecast_id(self, tmp_path):
+        out = tmp_path / "bi_dashboard_unified.csv"
+        with pytest.raises(ForecastOutputError, match="no forecast_id"):
+            write_csv([_row(forecast_id=None)], out, validated={})
+        assert not out.exists()
+
+    def test_write_csv_refuses_a_tampered_prediction(self, tmp_path):
+        """The published number must BE the validated number."""
+        fo = _call()
+        out = tmp_path / "bi_dashboard_unified.csv"
+        with pytest.raises(ForecastOutputError, match="must BE the"):
+            write_csv([_row(fo, prediction_point=9.99)], out,
+                      validated={fo.forecast_id: fo})
+        assert not out.exists()
+
+    def test_write_csv_is_all_or_nothing(self, tmp_path):
+        """One bad row publishes NOTHING (no partial artifact on disk)."""
+        fo = _call()
+        out = tmp_path / "bi_dashboard_unified.csv"
+        with pytest.raises(ForecastOutputError):
+            write_csv([_row(fo), _row(fo, record_id="FF_bad", forecast_id="ghost")],
+                      out, validated={fo.forecast_id: fo})
+        assert not out.exists()
+        assert not (tmp_path / "bi_dashboard_unified.csv.tmp").exists()
+
+    def test_write_csv_publishes_the_validated_record(self, tmp_path):
+        fo = _call()
+        assert fo is not None
+        out = tmp_path / "bi_dashboard_unified.csv"
+        write_csv([_row(fo)], out, validated={fo.forecast_id: fo})
+        published = list(_csv.DictReader(out.read_text(encoding="utf-8").splitlines()))
+        assert len(published) == 1
+        assert published[0]["forecast_id"] == fo.forecast_id
+        assert published[0]["contract_id"] == CONTRACT_ID
+        assert float(published[0]["prediction_point"]) == fo.prediction.point
+
+
+class TestPublishedArtifactSurvivesTheIngestWall:
+    """The artifact we publish must be re-ingestable by the contract itself:
+    what leaves the generator is exactly what the wall accepts."""
+
+    def test_round_trip_through_the_ingest_wall(self, tmp_path):
+        fo = _call()
+        out = tmp_path / "bi_dashboard_unified.csv"
+        write_csv([_row(fo)], out, validated={fo.forecast_id: fo})
+        published = list(_csv.DictReader(out.read_text(encoding="utf-8").splitlines()))
+        # Rebuild the contract record from the published provenance columns.
+        rebuilt = fo.to_dict()
+        rebuilt["prediction"] = dict(
+            rebuilt["prediction"], point=float(published[0]["prediction_point"])
+        )
+        assert published[0]["forecast_id"] == rebuilt["forecast_id"]
+        assert ingest_forecast_outputs([rebuilt])[0].prediction.point == fo.prediction.point

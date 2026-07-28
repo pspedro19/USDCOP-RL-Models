@@ -1,0 +1,50 @@
+# BL-11-r2 - familia FORECAST de volatilidad, celda del activo btcusdt (FABRIC 9.4/9.5).
+# H-VOLF-01 es LA MISMA mecanica (HAR-RV 5d vs EWMA, QLIKE) replicada en 4 activos. El campo
+# `family` del ledger ya esta escrito por activo y es append-only: NO se reescribe. El lavado
+# de multiplicidad se cierra declarando el `hypothesis_key` comun + siblings + deflacion a
+# nivel CLUSTER (N_cluster=6 > N_family=1). Solo puede ENDURECER el gate, nunca relajarlo.
+family_id: btcusdt_vol
+kind: forecast
+cluster_id: vol
+hypothesis_key: har_rv_5d_vs_ewma_vol_forecast
+sibling_families:
+  - spx500_vol
+  - usdcop_vol
+  - xauusd_vol
+deflation_scope: cluster
+declared_at: "2026-07-28"
+declared_by: claude-bl11-r2   # operador Pedro, protocolo .claude/coordination
+question: "Predice la volatilidad realizada mejor un HAR-RV(5d) que un EWMA (QLIKE, IC95 bootstrap)?"
+bar: >-
+  Rechazar H0 (HAR no mejora a EWMA) con IC95 que excluya 0; cualquier claim de edge exige
+  DSR_cluster > 0.95 (quant-constitution 2) - la deflacion se hace con el cluster porque
+  la misma mecanica se probo en 4 activos.
+label: documented
+
+governance:
+  gate: "DSR_cluster > 0.95 (familia replicada en 4 activos; el N de familia subestima)"
+  claims_edge: false
+  claims_edge_note: >-
+    Ninguna celda de esta mecanica reclama edge economico: es una pregunta PREDICTIVA (FT).
+    btcusdt: NO_RECHAZA. Convertirla en sizing costaria un AT nuevo (ADR-0022 2) -
+    exactamente lo que hace la familia `vol_sizing`.
+  candidates: []
+
+cells:
+  - asset: btcusdt
+    variant: har_rv_5d_h_volf_01
+    cell_kind: atomic
+    trial_id: FT-0051
+    n_trials: 1
+    hypothesis_id: H-VOLF-01
+    status: EVALUATED
+    result: NO_RECHAZA
+    note: "documented - H-VOLF-01: HAR peor que EWMA con significancia."
+
+provenance:
+  crosses_wall: false
+  note: "Pregunta predictiva pura (FT); no convierte ningun forecast en senal economica."
+
+trials_charged: 1
+closed: false
+closure_note: null

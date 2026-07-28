@@ -134,6 +134,10 @@ export const PAGE_ROUTES: readonly RouteRule[] = [
   { prefix: '/forecasting', permission: 'forecast:read' },
   { prefix: '/analysis', permission: 'analysis:read' },
   { prefix: '/production', permission: 'signals:read' },   // "Señales" for clients
+  // BL-32: Control Tower + Strategy Passport — superficie DIAGNÓSTICA read-only
+  // (muestra gobierno/linaje/desempeño; jamás aprueba ni ejecuta). Research surface:
+  // expone trials, DSR y gates internos ⇒ nunca roles cliente (rbac.md §8).
+  { prefix: '/passport', permission: 'research:read' },
   { prefix: '/execution', permission: 'execution:self' },
   { prefix: '/admin', permission: 'admin:all' },
   // Archived pre-GlobalMarkets UI (CTR-GM-UI-001 migration) — admin-only reference copies.
@@ -163,6 +167,9 @@ export const API_ROUTES: readonly RouteRule[] = [
   { prefix: '/api/experiments', permission: 'research:read' },
   { prefix: '/api/models', permission: 'research:read' },
   { prefix: '/api/strategies', permission: 'research:read' },
+  // BL-32 Passport/Control Tower: solo lectura de artefactos publicados. Nunca
+  // 'approval:vote' — esta superficie no puede ganar capacidades de acción.
+  { prefix: '/api/passport', permission: 'research:read' },
   // approval — admin only (audited)
   { prefix: '/api/production/approve', permission: 'approval:vote' },
   { prefix: '/api/production/deploy', permission: 'approval:vote' },
@@ -212,6 +219,7 @@ export interface NavEntry {
 export const NAV_ENTRIES: readonly NavEntry[] = [
   { href: '/replay', label: 'Backtest', permission: 'research:read' },
   { href: '/dashboard', label: 'Aprobación', permission: 'approval:vote' },
+  { href: '/passport', label: 'Torre', permission: 'research:read' }, // BL-32 (diagnóstica)
   { href: '/production', label: 'Producción', subscriberLabel: 'Señales', permission: 'signals:read' },
   { href: '/forecasting', label: 'Forecasting', permission: 'forecast:read' },
   { href: '/analysis', label: 'Análisis', permission: 'analysis:read' },

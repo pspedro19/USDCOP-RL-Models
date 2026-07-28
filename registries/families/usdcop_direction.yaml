@@ -11,12 +11,33 @@ bar: >-
   sin lift no se paga ningún trial económico aguas abajo (la muralla FT->AT cobra
   su propio AT — ADR-0022).
 label: legacy_estimate
+hypothesis_key: usdcop_supervised_direction_forecast
+sibling_families: []
+deflation_scope: family
+
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false
+  claims_edge_note: >-
+    Busqueda cerrada por escrito: mejor celda p_adj=1.0, XLEAD delta=0.0000, intraday-LatAm
+    NO_RECHAZA y transporte LatAm en fail. Sin lift no hay claim que deflactar.
+  candidates: []
 
 cells:
   - asset: usdcop
     variant: zoo_y_previos_exp_dir_001
+    cell_kind: estimated_block
     trial_id_range: {from: FT-0001, to: FT-0027}
     n_trials: 27
+    decomposable: false
+    granularity_note: >-
+      El zoo 9x7~=63 celdas queda SUBSUMIDO: el n_trials_total del activo no admite 63 sin
+      romper la suma exacta y BL-10 prohibe cambiar el conteo. De EXP-DIR-001 solo sobrevive
+      el agregado (mejor celda p_adj=1.0), no el resultado por celda: desagregar seria
+      fabricar. Bloque estimado por escrito (FABRIC 10.2).
+    provenance_source: ".claude/specs/assets/usdcop/EXP-DIR-001-directional-trials.md"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
     status: EVALUATED
     result: no_lift
     note: >-
@@ -26,22 +47,40 @@ cells:
       prohíbe cambiar el conteo. Estimación honesta por escrito (FABRIC §10.2).
   - asset: usdcop
     variant: forward_flow
+    cell_kind: estimated_block
     trial_id_range: {from: FT-0028, to: FT-0041}
     n_trials: 14
+    decomposable: false
+    granularity_note: >-
+      14 contrastes forward-flow contabilizados en agregado por el registry del activo; el
+      detalle por contraste no se persistio. Bloque estimado por escrito.
+    provenance_source: ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
     status: EVALUATED
     result: no_lift
     note: "legacy_estimate — 14 contrastes forward-flow (búsqueda reabierta por información nueva; sin lift)."
   - asset: usdcop
     variant: intraday_latam_lead
+    cell_kind: estimated_block
     trial_id_range: {from: FT-0042, to: FT-0048}
     n_trials: 7
+    decomposable: false
+    granularity_note: >-
+      H-INTRADAY-LATAM-01 movio el contador direccional 41->48 en bloque; el registry no
+      desglosa los 7 contrastes. Bloque estimado por escrito.
+    provenance_source: ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
     status: EVALUATED
     result: NO_RECHAZA
     note: "legacy_estimate — H-INTRADAY-LATAM-01 (2026-07-22): NO_RECHAZA; direccionales 41->48, globales 102->109."
   - asset: usdcop
     variant: h1_daily_shadow_v1
+    cell_kind: atomic
     trial_id: FT-0054
     n_trials: 1
+    hypothesis_id: H1 DAILY SHADOW V1
     status: ACTIVE
     result: pending_forward
     note: >-
@@ -49,13 +88,21 @@ cells:
       origen 2026-07-27; 49 direccionales / 110 globales; sin señal ni capital.
   - asset: usdcop
     variant: h1_latam_transport_v1
+    cell_kind: atomic
     trial_id: FT-0055
     n_trials: 1
+    hypothesis_id: H1 LATAM TRANSPORT V1
     status: EVALUATED
     result: fail
     note: >-
       documented — FAIL_CLOSE_TRANSPORT_FAMILY sobre el primario 2020-2025;
       50 direccionales / 111 globales; sin señal ni capital.
+
+provenance:
+  crosses_wall: false
+  note: >-
+    Familia FORECAST pura: produce artefactos predictivos, no senales economicas. Quien los
+    consuma aguas abajo paga su propio AT (ver `smart_simple.provenance`, ADR-0022 2).
 
 trials_charged: 50   # == count(trial_ids cubiertos) == líneas del ledger con family=usdcop_direction
 closed: false

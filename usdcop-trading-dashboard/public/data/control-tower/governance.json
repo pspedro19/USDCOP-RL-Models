@@ -1,0 +1,224 @@
+{
+  "contract": "CTR-PASSPORT-001",
+  "contract_version": "1.0.0",
+  "kind": "governance_projection",
+  "generated_at": "2026-07-28T16:28:57.456841+00:00",
+  "sources": {
+    "ledger": "registries/ledger.jsonl",
+    "families_dir": "registries/families"
+  },
+  "ledger_available": true,
+  "n_global": 239,
+  "n_max_trials": 989,
+  "assets": {
+    "usdcop": {
+      "n_trials_total": 111,
+      "n_trials_scenarios": [
+        46,
+        58,
+        72
+      ],
+      "sigma_trials": 0.0473,
+      "sigma_trials_grid": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "hypothesis_registry": ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
+      "ledger_forecast_trials": 51,
+      "ledger_action_trials": 60,
+      "ledger_total": 111,
+      "n_family": 60,
+      "n_cluster": 138,
+      "n_global": 239,
+      "withdrawal_protocol": ".claude/specs/assets/usdcop/WITHDRAWAL-PROTOCOL.md",
+      "withdrawal_protocol_signed": true
+    },
+    "xauusd": {
+      "n_trials_total": 77,
+      "n_trials_scenarios": [
+        23,
+        77,
+        93
+      ],
+      "sigma_trials": null,
+      "sigma_trials_grid": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "hypothesis_registry": ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+      "ledger_forecast_trials": 1,
+      "ledger_action_trials": 76,
+      "ledger_total": 77,
+      "n_family": 75,
+      "n_cluster": 75,
+      "n_global": 186,
+      "withdrawal_protocol": ".claude/specs/assets/xauusd/WITHDRAWAL-PROTOCOL-XAU.md",
+      "withdrawal_protocol_signed": true
+    },
+    "btcusdt": {
+      "n_trials_total": 34,
+      "n_trials_scenarios": [
+        23,
+        34,
+        48
+      ],
+      "sigma_trials": null,
+      "sigma_trials_grid": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "hypothesis_registry": ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
+      "ledger_forecast_trials": 2,
+      "ledger_action_trials": 32,
+      "ledger_total": 34,
+      "n_family": 78,
+      "n_cluster": 136,
+      "n_global": 220,
+      "withdrawal_protocol": ".claude/specs/assets/btcusdt/WITHDRAWAL-PROTOCOL-BTC.md",
+      "withdrawal_protocol_signed": true
+    },
+    "spx500": {
+      "n_trials_total": 17,
+      "n_trials_scenarios": [
+        13,
+        17,
+        23
+      ],
+      "sigma_trials": null,
+      "sigma_trials_grid": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "hypothesis_registry": ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+      "ledger_forecast_trials": 1,
+      "ledger_action_trials": 16,
+      "ledger_total": 17,
+      "n_family": 94,
+      "n_cluster": 94,
+      "n_global": 237,
+      "withdrawal_protocol": ".claude/specs/assets/spx500/WITHDRAWAL-PROTOCOL-SPX.md",
+      "withdrawal_protocol_signed": true
+    }
+  },
+  "families": [
+    {
+      "family_id": "trend_regime",
+      "kind": "action",
+      "cluster_id": "trend",
+      "n_trials": 94,
+      "n_cells_declared": 8,
+      "closed": false,
+      "closure_note": null,
+      "declared_at": "2026-07-27",
+      "path": "registries/families/trend_regime.yaml"
+    },
+    {
+      "family_id": "usdcop_direction",
+      "kind": "forecast",
+      "cluster_id": "ml_meta",
+      "n_trials": 50,
+      "n_cells_declared": 5,
+      "closed": false,
+      "closure_note": "La búsqueda retrospectiva COP permanece cerrada: mejor celda p_adj=1.0, XLEAD delta=0.0000 e intraday-LatAm NO_RECHAZA; el transporte LatAm externo también cerró en fail. La única celda abierta es H1 daily shadow, pre-registrada antes de outcomes y pendiente de su juez forward. Cualquier otra reapertura exige nueva celda registrada AQUÍ antes de mirar.",
+      "declared_at": "2026-07-27",
+      "path": "registries/families/usdcop_direction.yaml"
+    },
+    {
+      "family_id": "btcusdt_funding_direction",
+      "kind": "forecast",
+      "cluster_id": "flow",
+      "n_trials": 1,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "btcusdt_vol",
+      "kind": "forecast",
+      "cluster_id": "vol",
+      "n_trials": 1,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "exposure_engine",
+      "kind": "action",
+      "cluster_id": "ml_meta",
+      "n_trials": 28,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "smart_simple",
+      "kind": "action",
+      "cluster_id": "ml_meta",
+      "n_trials": 60,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "spx500_vol",
+      "kind": "forecast",
+      "cluster_id": "vol",
+      "n_trials": 1,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "usdcop_vol",
+      "kind": "forecast",
+      "cluster_id": "vol",
+      "n_trials": 1,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "vol_sizing",
+      "kind": "action",
+      "cluster_id": "vol",
+      "n_trials": 2,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    },
+    {
+      "family_id": "xauusd_vol",
+      "kind": "forecast",
+      "cluster_id": "vol",
+      "n_trials": 1,
+      "n_cells_declared": null,
+      "closed": false,
+      "closure_note": "SIN ARCHIVO DE FAMILIA DECLARADO (registries/families/)",
+      "declared_at": null,
+      "path": null
+    }
+  ],
+  "notes": [
+    "Proyección regenerable (FABRIC §24.6). NO es fuente de verdad: lo son registries/ledger.jsonl y los HYPOTHESIS-REGISTRY por activo.",
+    "0 trials: este script cuenta líneas y copia contadores ya publicados; no calcula ningún estadístico.",
+    "N_MAX=989 es cota de GASTO (§9.7) y JAMÁS entra en el DSR."
+  ]
+}

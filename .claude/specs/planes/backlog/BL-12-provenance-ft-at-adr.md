@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
 last_verified: 2026-07-27
 supersedes: []

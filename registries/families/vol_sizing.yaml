@@ -1,0 +1,62 @@
+# BL-11-r2 + BL-12-r3 - familia ACTION TRANSVERSAL (Oro + BTC) y caso REAL de muralla FT->AT.
+# Es el ejemplo canonico del ADR-0022 2 dentro del ledger: convertir un pronostico de
+# volatilidad (FT) en sizing economico cobra su propio AT, y los FT heredados viajan en
+# `provenance` para entrar en el N_cluster.
+family_id: vol_sizing
+kind: action
+cluster_id: vol
+hypothesis_key: sigma_forecast_to_position_sizing
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-07-28"
+declared_by: claude-bl11-r2   # operador Pedro, protocolo .claude/coordination
+question: "Dimensionar la posicion con un sigma pronosticado mejora el Calmar neto frente al sizing fijo?"
+bar: >-
+  Batir el sizing fijo y B1-prima neto de costos con stress x1/x2/x3; claim de edge solo con
+  DSR_family > 0.95 recomputado con el N vigente. N < 20 trades => solo conteo y PnL.
+label: documented
+
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false
+  claims_edge_note: "Ambas celdas NO_RECHAZA: el sizing por sigma no mejora de forma detectable."
+  candidates: []
+
+cells:
+  - asset: xauusd
+    variant: gold_trend_simple_sigma_har_h_vole_01
+    cell_kind: atomic
+    trial_id: AT-0136
+    n_trials: 1
+    hypothesis_id: H-VOLE-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md"
+    status: EVALUATED
+    result: NO_RECHAZA
+    note: "documented - H-VOLE-01: sigma HAR como sizer de gold_trend_simple, sin mejora."
+  - asset: btcusdt
+    variant: ewma_sizer_h_vol_01
+    cell_kind: atomic
+    trial_id: AT-0168
+    n_trials: 1
+    hypothesis_id: H-VOL-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md"
+    status: EVALUATED
+    result: NO_RECHAZA
+    note: "documented - H-VOL-01: sizer EWMA, sin mejora detectable."
+
+provenance:
+  crosses_wall: true
+  inherits_from_family: xauusd_vol
+  forecast_trial_ids: [FT-0050, FT-0051]
+  note: >-
+    ADR-0022 2 aplicado LITERALMENTE: el sigma que dimensiona viene de la mecanica
+    H-VOLF-01 (FT-0050 en Oro, FT-0051 en BTC). Convertirlo en sizing es OTRA hipotesis y se
+    cobro su propio AT (AT-0136 / AT-0168). Ambos FT viven en el cluster `vol`, el mismo de
+    esta familia, luego entran de verdad en el N_cluster con el que se deflacta (3: la
+    particion no descuenta nada).
+
+trials_charged: 2
+closed: false
+closure_note: null

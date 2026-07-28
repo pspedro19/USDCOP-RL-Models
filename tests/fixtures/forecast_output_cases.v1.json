@@ -1,0 +1,2320 @@
+{
+ "fixture": "forecast_output_cases",
+ "version": "v1",
+ "content_sha256": "3f8a22ad9a4e6bd748b46aec1a7a3e47d800452afec943db9b113ceebd3130ab",
+ "sha_scheme": "sha256 over this file's text (CRLF normalized to LF) with the 64-hex value of content_sha256 removed; both runners recompute and refuse to run on mismatch",
+ "contract": "CTR-FORECAST-OUTPUT-001",
+ "runners": [
+  "tests/unit/test_forecast_output_contract.py::TestSharedCaseTable",
+  "usdcop-trading-dashboard/tests/unit/contracts/forecast-output-parity.test.ts"
+ ],
+ "encoding": {
+  "$nonfinite": "NaN | Infinity | -Infinity — decoded to the native non-finite number in BOTH runtimes"
+ },
+ "case_count": 90,
+ "cases": [
+  {
+   "id": "valid_base_aware_z",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "happy path, Z offsets"
+  },
+  {
+   "id": "valid_naive_all_three",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00",
+    "available_at": "2026-07-27T00:05:00",
+    "target_time": "2026-08-03T00:00:00",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "naive is allowed when ALL three are naive"
+  },
+  {
+   "id": "valid_heterogeneous_offsets",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+00:00",
+    "available_at": "2026-07-26T19:05:00-05:00",
+    "target_time": "2026-08-03T05:30:00+05:30",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "different offsets, same instants -> aware set"
+  },
+  {
+   "id": "valid_no_direction_probability",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "optional key absent"
+  },
+  {
+   "id": "valid_direction_probability_null",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": null,
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_no_interval",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "price",
+     "point": 4123.5
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "point-only prediction"
+  },
+  {
+   "id": "valid_interval_null",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "price",
+     "point": 4123.5,
+     "lower": null,
+     "upper": null
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_fractional_seconds",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00.123456Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_leap_day",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2024-02-29T00:00:00Z",
+    "available_at": "2024-02-29T00:05:00Z",
+    "target_time": "2024-03-07T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "2024 is a leap year"
+  },
+  {
+   "id": "valid_offset_max",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+23:59",
+    "available_at": "2026-07-27T00:05:00+23:59",
+    "target_time": "2026-08-03T00:00:00+23:59",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "±23:59 is the extreme legal offset"
+  },
+  {
+   "id": "valid_offset_negative",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00-05:00",
+    "available_at": "2026-07-27T00:05:00-05:00",
+    "target_time": "2026-08-03T00:00:00-05:00",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "America/Bogota style offset"
+  },
+  {
+   "id": "valid_type_log_return",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "log_return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_type_price",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "price",
+     "point": 4100.0,
+     "lower": 4000.0,
+     "upper": 4200.0
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_point_equals_bounds",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "log_return",
+     "point": 0.0042,
+     "lower": 0.0042,
+     "upper": 0.0042
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "zoo emits point-only: lower==point==upper"
+  },
+  {
+   "id": "valid_dp_zero",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.0
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_dp_one",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 1.0
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_available_at_equals_as_of",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:00:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "valid_negative_point",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": -0.005,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "valid"
+  },
+  {
+   "id": "tz_mixed_aware_asof_naive_available",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "Python would raise a raw TypeError comparing naive vs aware"
+  },
+  {
+   "id": "tz_mixed_naive_asof_aware_target",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00",
+    "available_at": "2026-07-27T00:05:00",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "tz_mixed_naive_target_only",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "date_feb30",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-02-30T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "Date.parse silently rolls this to 2026-03-02"
+  },
+  {
+   "id": "date_feb29_non_leap",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2025-02-29T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "2025 is not a leap year"
+  },
+  {
+   "id": "date_month13",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-13-01T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "date_month00",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-00-10T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "date_day32",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-32T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "date_day00",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-00T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "date_apr31",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-04-31T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "April has 30 days"
+  },
+  {
+   "id": "time_hour25",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T25:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "time_hour24",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T24:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "24:00:00 is not accepted by this contract"
+  },
+  {
+   "id": "time_minute60",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:60:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "time_second60",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:60Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "leap second is rejected"
+  },
+  {
+   "id": "offset_99",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+99:00",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "offset_hour24",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+24:00",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "offset_minute60",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+00:60",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_space_separator",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27 00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "accepted by fromisoformat AND Date.parse"
+  },
+  {
+   "id": "fmt_date_only",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "fromisoformat accepts it; Date.parse calls it UTC"
+  },
+  {
+   "id": "fmt_compact_basic",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "20260727T000000Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "fromisoformat 3.11+ accepts 20260727T000000"
+  },
+  {
+   "id": "fmt_week_date",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-W30-1T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "fromisoformat 3.11+ accepts week dates"
+  },
+  {
+   "id": "fmt_trailing_newline",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z\n",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_leading_space",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": " 2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_lowercase_z",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_offset_without_colon",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+0000",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_offset_hours_only",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+00",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_no_seconds",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_seven_fraction_digits",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00.1234567Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_two_digit_year",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "26-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_empty_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_not_a_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": 12345,
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_null",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": null,
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "fmt_prose",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "viernes",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "order_available_before_as_of",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-26T23:59:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "order_target_equals_as_of",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-07-27T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "order_target_before_as_of",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-07-20T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "order_target_before_as_of_via_offset",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00+00:00",
+    "available_at": "2026-07-27T00:05:00+00:00",
+    "target_time": "2026-07-27T01:00:00+05:00",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "same wall clock, offsets make it earlier"
+  },
+  {
+   "id": "num_point_nan",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": {
+      "$nonfinite": "NaN"
+     },
+     "lower": null,
+     "upper": null
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_point_inf",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": {
+      "$nonfinite": "Infinity"
+     },
+     "lower": null,
+     "upper": null
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_lower_neg_inf",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": {
+      "$nonfinite": "-Infinity"
+     },
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_upper_nan",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": {
+      "$nonfinite": "NaN"
+     }
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_point_missing",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "lower": -0.01,
+     "upper": 0.01
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_point_bool",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": true,
+     "lower": null,
+     "upper": null
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "True is not a number in either runtime"
+  },
+  {
+   "id": "num_point_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": "0.0062",
+     "lower": null,
+     "upper": null
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_lower_gt_upper",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": 0.05,
+     "upper": -0.05
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_point_outside_interval",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.5,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_dp_nan",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": {
+      "$nonfinite": "NaN"
+     }
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_dp_above_one",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 1.3
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_dp_negative",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": -0.1
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_dp_bool",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": true
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "num_dp_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": "0.58"
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_diagnostic_only_false",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": false
+   },
+   "expect": "invalid",
+   "note": "the actionable claim"
+  },
+  {
+   "id": "wall_diagnostic_only_missing",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    }
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_diagnostic_only_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": "true"
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_diagnostic_only_one",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": 1
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_unknown_top_level_key",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true,
+    "not_a_field": "smuggled"
+   },
+   "expect": "invalid",
+   "note": "no silent dropping"
+  },
+  {
+   "id": "wall_unknown_prediction_key",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024,
+     "junk": 1
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_unknown_dp_key",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58,
+     "down": 0.42
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_prediction_missing",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_prediction_not_object",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": "return",
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_prediction_is_array",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": [
+     0.0062
+    ],
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_prediction_type_unknown",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "vibes",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_dp_not_object",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": 0.58,
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_empty_model_id",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_whitespace_asset",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "   ",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_asset_not_string",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": 5,
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_missing_forecast_id",
+   "payload": {
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": true
+   },
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_payload_is_null",
+   "payload": null,
+   "expect": "invalid",
+   "note": "not an object"
+  },
+  {
+   "id": "wall_payload_is_string",
+   "payload": "forecast",
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_payload_is_array",
+   "payload": [
+    {
+     "forecast_id": "fo-2026-07-27-ridge-h5",
+     "forecast_spec_id": "usdcop_forecast_zoo_v3",
+     "asset": "usdcop",
+     "model_id": "ridge_v2",
+     "horizon": "5d",
+     "as_of": "2026-07-27T00:00:00Z",
+     "available_at": "2026-07-27T00:05:00Z",
+     "target_time": "2026-08-03T00:00:00Z",
+     "prediction": {
+      "type": "return",
+      "point": 0.0062,
+      "lower": -0.011,
+      "upper": 0.024
+     },
+     "model_fingerprint": "sha256:deadbeef",
+     "data_snapshot_id": "snap-0001",
+     "direction_probability": {
+      "up": 0.58
+     },
+     "diagnostic_only": true
+    }
+   ],
+   "expect": "invalid"
+  },
+  {
+   "id": "wall_strategy_trade_payload",
+   "payload": {
+    "trade_id": "T-1",
+    "strategy_id": "smart_simple_v11",
+    "direction": "LONG",
+    "entry_date": "2026-07-27",
+    "exit_date": "2026-08-03",
+    "pnl": 1234.5,
+    "exit_reason": "TP",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "an actionable record must never pass the forecast ingest wall"
+  },
+  {
+   "id": "wall_laundered_actionable_forecast",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "direction_probability": {
+     "up": 0.58
+    },
+    "diagnostic_only": false,
+    "pnl": 1234.5,
+    "exit_reason": "TP"
+   },
+   "expect": "invalid",
+   "note": "before the remedio, from_dict dropped pnl/exit_reason and coerced the flag to True"
+  }
+ ]
+}

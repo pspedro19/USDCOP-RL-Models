@@ -23,7 +23,7 @@ import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { JetBrains_Mono } from 'next/font/google';
 import {
-  BarChart3, Calendar, Cpu, Eye, FileText, Home, Languages, LogOut, Menu,
+  BarChart3, Calendar, Cpu, Eye, FileText, Home, Languages, LogOut, Menu, Radar,
   Settings, ShieldCheck, ShoppingCart, Sparkles, Store, Zap,
 } from 'lucide-react';
 
@@ -42,7 +42,8 @@ import { useGmQuery } from './useGmQuery';
 const jbMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-gm-mono', weight: ['400', '500', '600', '700'] });
 
 export type GmSection =
-  | 'hub' | 'catalog' | 'replay' | 'dashboard' | 'production' | 'forecasting' | 'analysis' | 'signalbridge' | 'admin';
+  | 'hub' | 'catalog' | 'replay' | 'dashboard' | 'passport' | 'production' | 'forecasting'
+  | 'analysis' | 'signalbridge' | 'admin';
 
 interface NavItem {
   id: GmSection;
@@ -204,6 +205,8 @@ export function TerminalShell({ active, children, width = 'default' }: { active:
     // /dashboard queda como superficie de APROBACIÓN (Voto 2/2) — admin-only en nav.
     { id: 'replay', label: t('navBacktest'), icon: BarChart3, href: '/replay', permission: 'research:read' },
     { id: 'dashboard', label: t('navApproval'), icon: ShieldCheck, href: '/dashboard', permission: 'approval:vote' },
+    // BL-32: torre de control DIAGNÓSTICA (research). Espejo de NAV_ENTRIES.
+    { id: 'passport', label: t('navTower'), icon: Radar, href: '/passport', permission: 'research:read' },
     { id: 'production', label: isSubscriber ? t('navSignals') : t('navProduction'), icon: Cpu, href: '/production', permission: 'signals:read' },
     { id: 'forecasting', label: t('navForecasting'), icon: Calendar, href: '/forecasting', permission: 'forecast:read' },
     { id: 'analysis', label: t('navAnalysis'), icon: FileText, href: '/analysis', permission: 'analysis:read' },

@@ -4,6 +4,35 @@
 > `legacy_estimate`. Validado por `scripts/validation/check_trial_ledger.py` y congelado por
 > `tests/regression/test_trial_ledger.py`.
 
+## Totales sellados (BL-12-r3 — coherencia ledger↔cabecera verificada por MÁQUINA)
+
+El rechazo BL-12-r2 fue exactamente esto: *"el SHA sella ledger 237 / USD-COP 109 frente a
+header 111"*. La cabecera ya no es prosa (evadible por mayúsculas u orden): es un bloque
+YAML delimitado que `scripts/validation/check_trial_ledger.py::check_declared_totals`
+compara **campo a campo** con el recomputo del ledger. Si divergen, el validador sale 1.
+
+<!-- LEDGER-TOTALS
+n_global: 239
+n_ft: 55
+n_at: 184
+per_asset:
+  usdcop: 111
+  xauusd: 77
+  btcusdt: 34
+  spx500: 17
+per_family:
+  usdcop_direction: 50
+  usdcop_vol: 1
+  smart_simple: 60
+  trend_regime: 94
+  xauusd_vol: 1
+  vol_sizing: 2
+  exposure_engine: 28
+  btcusdt_vol: 1
+  btcusdt_funding_direction: 1
+  spx500_vol: 1
+LEDGER-TOTALS -->
+
 ## Qué hay aquí
 
 | Archivo | Qué es |

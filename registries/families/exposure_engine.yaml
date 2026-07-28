@@ -1,0 +1,62 @@
+# BL-11-r2 - familia ACTION del motor de exposicion BTC/USDT (SPEC-01..11 + sensibilidades).
+family_id: exposure_engine
+kind: action
+cluster_id: ml_meta
+hypothesis_key: btcusdt_cycle_regime_exposure_engine
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-07-28"
+declared_by: claude-bl11-r2   # operador Pedro, protocolo .claude/coordination
+question: >-
+  El motor de exposicion (ciclo x regimen x liquidez, con sus sensibilidades de sigma
+  objetivo, banda y pesos) mejora el Calmar neto de BTC/USDT frente a B1 (hodl) y B1-prima?
+bar: >-
+  Batir B1 y B1-prima neto de costos con stress x1/x2/x3 y al baseline tonto del track; claim
+  de edge solo con DSR_family > 0.95. N < 20 trades => solo conteo y PnL.
+label: legacy_estimate
+
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false
+  claims_edge_note: >-
+    BTC price-only esta declarado sin edge limpio (DA aprox 0.46 = coin-flip publicado como
+    superficie de transparencia, no como claim). La familia no reclama edge.
+  candidates:
+    - id: btc_trend_b2_evidence_20260721
+      published_dsr:
+        value: 0.0403
+        n_trials_used: 48
+        source: ".claude/evidence/profitability/2026-07-21/btcusdt.json"
+        note: "Cota superior: n_trials_used <= N_family y el DSR es no-creciente en n_trials."
+
+cells:
+  - asset: btcusdt
+    variant: spec_program_y_sensibilidades
+    cell_kind: estimated_block
+    trial_id_range: {from: AT-0137, to: AT-0164}
+    n_trials: 28
+    decomposable: false
+    granularity_note: >-
+      Residuo exacto 34-6 del backfill BL-10. El registry documenta 21 filas H-xxx mas
+      sensibilidades pre-registradas (sigma objetivo x3, banda x3, pesos R x3, re-version
+      LLM >=1) pero NO persistio el resultado por celda: no existe mapeo verificable
+      AT-xxxx <-> celda concreta. Se conserva como bloque estimado por escrito (FABRIC
+      10.2) en lugar de fabricar una desagregacion.
+    provenance_source: ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
+    status: EVALUATED
+    result: mixed
+    note: "legacy_estimate - programa SPEC-01..11 + sensibilidades; el conteo NO cambia (BL-10)."
+
+provenance:
+  crosses_wall: false
+  note: >-
+    El motor es una politica de reglas (ciclo/regimen/liquidez), no la conversion de un
+    artefacto predictivo en senal: no hereda FT. La direccion por funding (FT-0052) es
+    posterior y vive en su propia familia; si alguna vez alimenta este motor, ese cruce
+    cobrara su propio AT con provenance (ADR-0022 2).
+
+trials_charged: 28
+closed: false
+closure_note: null

@@ -16,13 +16,55 @@ bar: >-
   N<20 trades => solo conteo y PnL. Cerrar la familia por escrito es un estado válido.
 screening_cutoff: null   # legacy: cada celda conserva su cutoff propio en el ledger
 label: legacy_estimate
+hypothesis_key: trend_regime_gate_vs_dumb_baseline
+sibling_families: []
+deflation_scope: family
+
+# --- BL-09-r2: gate DSR real (no informativo) ------------------------------------------
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false
+  claims_edge_note: >-
+    Ninguna celda de esta familia reclama edge: Oro DSR 0.0077-0.0511 (el +38% OOS es
+    ingenieria de riesgo sobre el beta), SPX PIERDE contra el ma200 tonto ("el baseline ES
+    la estrategia"), BTC S4 no cumple su gate pre-registrado. Se publica tal cual.
+  candidates:
+    - id: gold_dynamic_exit_evidence_20260721
+      published_dsr:
+        value: 0.0511
+        n_trials_used: 93
+        source: ".claude/evidence/profitability/2026-07-21/xauusd.json"
+        note: "Cota superior: n_trials_used(93) <= N_family(94); el DSR es no-creciente en n_trials."
+    - id: spx500_regime_gated_v1_evidence_20260727
+      published_dsr:
+        value: 0.7831
+        n_trials_used: 23
+        source: ".claude/evidence/profitability/2026-07-27/spx500.json"
+        note: "Cota superior con N por activo (23) muy inferior al N_family(94) del ledger."
+    - id: btc_trend_b2_evidence_20260721
+      published_dsr:
+        value: 0.0403
+        n_trials_used: 48
+        source: ".claude/evidence/profitability/2026-07-21/btcusdt.json"
+        note: "Cota superior: n_trials_used(48) <= N_family(94)."
 
 cells:
   # ---- XAU/USD (75 trials: 74 legacy_estimate + 1 documentado) ----
   - asset: xauusd
     variant: legacy_trials_program
+    cell_kind: estimated_block
     trial_id_range: {from: AT-0061, to: AT-0134}
     n_trials: 74
+    decomposable: false
+    granularity_note: >-
+      NO descomponible por criterio objetivo: el 74 es una CONSTANTE de codigo
+      (publish_gold_dynexit.py:48 `TRIALS_PROGRAM = 74`) heredada sin registro por celda.
+      El suelo verificable son 21 bundles publicados; se conserva el 74 por ser el mas
+      conservador. Desagregarlo exigiria inventar 74 variantes que nadie escribio: se deja
+      como bloque estimado por escrito (FABRIC 10.2), que es la exencion justificada.
+    provenance_source: "scripts/pipeline/publish_gold_dynexit.py"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
     status: EVALUATED
     result: fail
     note: >-
@@ -32,7 +74,12 @@ cells:
       Las celdas _s05/_s07 son sensibilidades publicadas como estrategias separadas.
   - asset: xauusd
     variant: gold_trend_simple_h_simp_gold_01
+    cell_kind: atomic
     trial_id: AT-0135
+    n_trials: 1
+    hypothesis_id: H-SIMP-GOLD-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md"
     status: FROZEN
     result: pending_forward
     note: "H-SIMP-GOLD-01: ¿el trailing exit resta? Juez = forward; 2004-2026 marcado NO-evidencia."
@@ -40,7 +87,12 @@ cells:
   # ---- BTC/USDT (3 trials documentados) ----
   - asset: btcusdt
     variant: btc_trend_funding_s4_h_pos_01
+    cell_kind: atomic
     trial_id: AT-0165
+    n_trials: 1
+    hypothesis_id: H-POS-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md"
     status: EVALUATED
     result: fail
     note: >-
@@ -48,13 +100,23 @@ cells:
       cumple el gate pre-registrado (OOS-2025 positivo y batir B2) => no promovida.
   - asset: btcusdt
     variant: s3_vs_b2_h_eng_01
+    cell_kind: atomic
     trial_id: AT-0166
+    n_trials: 1
+    hypothesis_id: H-ENG-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md"
     status: DECLARED
     result: null
     note: "PENDIENTE en el registry del activo; ya cargado en su n_trials_total => lleva trial_id."
   - asset: btcusdt
     variant: s3_vs_b1_h_eng_02
+    cell_kind: atomic
     trial_id: AT-0167
+    n_trials: 1
+    hypothesis_id: H-ENG-02
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md"
     status: DECLARED
     result: null
     note: "PENDIENTE en el registry del activo; ya cargado en su n_trials_total => lleva trial_id."
@@ -62,8 +124,20 @@ cells:
   # ---- SPX500 (16 trials: 14 legacy_estimate + 2 documentados) ----
   - asset: spx500
     variant: config_family_grid_12_y_b1_b2_s3
+    cell_kind: grid_block
     trial_id_range: {from: AT-0169, to: AT-0182}
     n_trials: 14
+    # BL-11-r2: granularidad REAL del bloque. Los ejes existen y estan documentados
+    # (_config_family() en el generador SPX + evidencia 2026-07-27), asi que el bloque deja
+    # de ser opaco: se declara QUE 14 cosas se miraron. NO se declara que AT-xxxx concreto
+    # corresponde a que coordenada porque ese mapeo nunca se persistio (seria fabricarlo).
+    grid_axes:
+      vol_target: [0.08, 0.10, 0.12, 0.15]
+      ma_window: [150, 200, 250]
+    extra_variants: [b1_b2_s3_policy_variants_a, b1_b2_s3_policy_variants_b]
+    grid_note: >-
+      4 vol_target x 3 ma_window = 12 celdas evaluadas + variantes de politica B1/B2/S3
+      contadas 2 (solape declarado en el registry del activo) = 14.
     status: EVALUATED
     result: fail
     note: >-
@@ -74,7 +148,12 @@ cells:
       research_only.
   - asset: spx500
     variant: gate_vs_simple_h_simp_spx_01
+    cell_kind: atomic
     trial_id: AT-0183
+    n_trials: 1
+    hypothesis_id: H-SIMP-SPX-01
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md"
     status: EVALUATED
     result: gate_beats_ungated
     note: >-
@@ -83,13 +162,33 @@ cells:
       (regime.py nunca invocado), ya corregida.
   - asset: spx500
     variant: vs_ma200_h_simp_spx_02
+    cell_kind: atomic
     trial_id: AT-0184
+    n_trials: 1
+    hypothesis_id: H-SIMP-SPX-02
+    cutoff_class: documented_in_registry
+    cutoff_evidence: ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md"
     status: FROZEN
     result: pending_forward
     note: >-
       H-SIMP-SPX-02: ¿algo bate al MA200 pelado? Viva; juez = forward (2020-2026 ya
       observado). ERRATUM aplicado: ma200_always_on 1.641 -> 0.5393 (lag + costos propios).
 
+provenance:
+  crosses_wall: false
+  note: >-
+    Familia de POLITICA de reglas (gate de tendencia/regimen sobre precio): no convierte
+    ningun artefacto predictivo en senal, luego no hereda FT. Si alguna variante futura
+    alimentara el gate con un forecast, ese cruce cobra su propio AT con provenance
+    (ADR-0022 2) y esta familia dejaria de ser crosses_wall: false.
+
 trials_charged: 94   # == count(trial_ids cubiertos) == líneas del ledger con family=trend_regime
 closed: false
 closure_note: null
+
+# --- BL-11-r2: granularidad declarada de los 94 trials -----------------------------------
+# atomic (1 trial = 1 mirada nombrada): 6  -> AT-0135, AT-0165..0167, AT-0183, AT-0184
+# grid_block (ejes reales declarados):  14 -> AT-0169..0182 (4 vol_target x 3 MA + 2)
+# estimated_block NO descomponible:     74 -> AT-0061..0134 (constante de codigo heredada)
+# Cobertura nombrada = 20/94 (21.3%). El 74 restante es la UNICA exencion, justificada por
+# criterio objetivo y verificada por el validador (provenance_source debe existir).

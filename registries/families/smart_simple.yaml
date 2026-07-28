@@ -1,0 +1,90 @@
+# BL-09-r2 / BL-11-r2 — familia ACTION del track COP en producción (FABRIC §9.4, ADR-0022).
+# Derogación de la exención legacy: esta familia YA existía en el ledger (60 líneas) sin
+# YAML, es decir sin bar pre-firmado ni gate DSR. Declararla NO cobra trials nuevos
+# (contabilidad, no modelado): el n_trials_total de usdcop sigue en 111.
+family_id: smart_simple
+kind: action
+cluster_id: ml_meta
+hypothesis_key: usdcop_h5_weekly_tp_hs_economic_policy
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-07-28"
+declared_by: claude-bl09-r2   # operador Pedro, protocolo .claude/coordination
+question: >-
+  ¿La política económica semanal COP (predictor Ridge/BR + gate de régimen + sizing +
+  TP/HS) gana dinero neto de costos contra B1, B1' y el baseline tonto (siempre-short 1x
+  con la misma mecánica de salidas)?
+bar: >-
+  Batir B1' (exposición emparejada) y el baseline tonto neto de costos con stress x1/x2/x3;
+  claim de edge SOLO con DSR_family > 0.95 recomputado con el N vigente del ledger y la
+  sigma MENOS favorable de la rejilla pre-declarada (quant-constitution §2 y
+  approval-gates.md). N < 20 trades => solo conteo y PnL.
+label: legacy_estimate
+
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false          # v11 CONGELADA: el juez es el forward 2026, no el backtest
+  claims_edge_note: >-
+    La auditoría 2026-07-06 ya retiró el claim: el p=0.006/0.0097 salió de iterar sobre el
+    MISMO OOS-2025 (rejilla 42 celdas, "#8 of 42"). Aquí se recomputa el DSR con el N del
+    ledger — sale muy por debajo del bar y se publica tal cual.
+  candidates:
+    - id: smart_simple_v11_2025_weekly
+      dsr_inputs:
+        sharpe_per_period: 0.101102     # semanal, 52 semanas 2025 (incluye semanas planas)
+        n_obs: 52
+        skew: -1.2997
+        kurtosis: 4.462
+        trials_sharpe_std_grid: [0.006934, 0.013868, 0.020801]
+        sigma_origin: "declared 0.05/0.10/0.15 anualizado / sqrt(52) — rejilla pre-declarada"
+        source: >-
+          usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json
+          via scripts/analysis/cop_trials_dsr.py::weekly_returns_from_trades
+    - id: smart_simple_v11_evidence_20260721
+      published_dsr:
+        value: 0.7235                   # headline (peor celda) del pipeline de evidencia
+        n_trials_used: 72               # N por ACTIVO, no por familia — por eso es cota
+        source: ".claude/evidence/profitability/2026-07-21/usdcop.json"
+        note: >-
+          Construcción alternativa de la serie (sharpe_per_period 0.310178, n_obs 77). Se
+          publica como COTA SUPERIOR porque n_trials_used <= N_family y el DSR es
+          no-creciente en n_trials. Qué construcción semanal es la SSOT del track COP es
+          una DECISIÓN PENDIENTE DEL OPERADOR; no altera el veredicto (ambas < 0.95).
+
+cells:
+  - asset: usdcop
+    variant: programa_economico_legacy
+    cell_kind: estimated_block
+    trial_id_range: {from: AT-0001, to: AT-0060}
+    n_trials: 60
+    decomposable: false
+    granularity_note: >-
+      Residuo exacto 111-51 del backfill BL-10. Contiene la rejilla 42 celdas hs x tp de
+      FC-H5-SIMPLE-001, la rejilla de sizing FC-SIZE-001, la suite NULL, portfolio, XLEAD y
+      H-META-01. NO es descomponible: de la rejilla 42 solo sobrevive el RANGO del ranking
+      ("#8 of 42", EXPERIMENT_LOG.md:521); las coordenadas por celda nunca se persistieron,
+      así que asignar cuál AT-xxxx es cuál (hs, tp) sería fabricar evidencia. Se deja como
+      bloque estimado por escrito (FABRIC §10.2) en vez de inventar granularidad.
+    provenance_source: ".claude/experiments/EXPERIMENT_LOG.md"
+    cutoff_class: legacy_irrecoverable
+    cutoff_evidence: null
+    status: EVALUATED
+    result: mixed
+    note: >-
+      legacy_estimate — bloque económico COP heredado; el conteo NO cambia (BL-10).
+
+provenance:
+  crosses_wall: true
+  inherits_from_family: usdcop_direction
+  forecast_trial_ids: []
+  note: >-
+    ADR-0022 §2: H-META-01 convirtió el consenso del zoo (artefacto predictivo) en input de
+    sizing — cruzar la muralla cobró su propio AT (ya dentro de AT-0001..0060). El bloque
+    legacy no admite mapeo 1:1 a FT concretos, así que la herencia se declara a nivel de
+    FAMILIA: `usdcop_direction` vive en el MISMO cluster (ml_meta), luego sus 50 FT ya
+    entran en el N_cluster=138 con el que se deflacta aquí. No hay descuento: la partición
+    FT/AT jamás resetea el N (ADR-0022 §3).
+
+trials_charged: 60   # == celdas cubiertas == líneas del ledger con family=smart_simple
+closed: false
+closure_note: null

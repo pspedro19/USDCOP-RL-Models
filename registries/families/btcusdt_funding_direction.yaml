@@ -1,0 +1,39 @@
+# BL-11-r2 - familia FORECAST direccional por flujo (funding perp) del activo BTC/USDT.
+family_id: btcusdt_funding_direction
+kind: forecast
+cluster_id: flow
+hypothesis_key: btcusdt_funding_zscore_direction
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-07-28"
+declared_by: claude-bl11-r2   # operador Pedro, protocolo .claude/coordination
+question: "El z-score del funding perpetuo predice la direccion de BTC/USDT (Ridge sobre z_funding)?"
+bar: >-
+  Lift de DA/MSE sobre persistencia con walk-forward purgado; sin lift no se paga ningun
+  trial economico aguas abajo (la muralla FT->AT cobra su propio AT - ADR-0022).
+label: documented
+
+governance:
+  gate: "DSR_family > 0.95 (sigma menos favorable de la rejilla pre-declarada)"
+  claims_edge: false
+  claims_edge_note: "H-DIR-FUND-01 NO_RECHAZA: sin lift, la familia no reclama nada."
+  candidates: []
+
+cells:
+  - asset: btcusdt
+    variant: ridge_z_funding_h_dir_fund_01
+    cell_kind: atomic
+    trial_id: FT-0052
+    n_trials: 1
+    hypothesis_id: H-DIR-FUND-01
+    status: EVALUATED
+    result: NO_RECHAZA
+    note: "documented - H-DIR-FUND-01: sin lift direccional sobre el baseline."
+
+provenance:
+  crosses_wall: false
+  note: "Pregunta predictiva pura (FT)."
+
+trials_charged: 1
+closed: false
+closure_note: null

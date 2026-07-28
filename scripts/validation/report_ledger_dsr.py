@@ -44,9 +44,21 @@ from scripts.validation.check_trial_ledger import (  # noqa: E402
 from services.common.metrics import deflated_sharpe_ratio  # noqa: E402  (SSOT del DSR)
 
 DSR_BAR = 0.95  # quant-constitution §2; cambiarlo requiere ADR
-REQUIRED_DSR_INPUTS = (
-    "sharpe_per_period", "n_obs", "skew", "kurtosis", "trials_sharpe_std", "source",
-)
+REQUIRED_DSR_INPUTS = ("sharpe_per_period", "n_obs", "skew", "kurtosis", "source")
+
+
+def _sigma_grid(inputs: dict) -> list[float]:
+    """Rejilla de sigma_trials declarada. Escalar o lista; el gate usa la MENOS favorable.
+
+    `approval-gates.md` gate 6 lo exige literalmente ("sigma menos favorable"). Como el DSR
+    es decreciente en sigma_trials (sr0 crece), la menos favorable es la sigma MAYOR — pero
+    no se asume: se evalúan TODAS y se toma el DSR mínimo.
+    """
+    grid = inputs.get("trials_sharpe_std_grid")
+    if isinstance(grid, list) and grid:
+        return [float(value) for value in grid]
+    single = inputs.get("trials_sharpe_std")
+    return [float(single)] if single is not None else []
 
 
 def load_families(families_dir: Path = FAMILIES_DIR) -> dict[str, dict]:
@@ -69,31 +81,44 @@ def final_counts(records: list[dict]) -> tuple[Counter, Counter, int, dict[str, 
 
 
 def compute_candidate_dsr(candidate: dict, n_family: int, n_cluster: int,
-                          n_global: int) -> dict:
-    """DSR×3 de un candidato. method: computed | bounded | none. Fail-closed siempre."""
+                          n_global: int, scope: str = "family") -> dict:
+    """DSR×3 de un candidato. method: computed | bounded | none. Fail-closed siempre.
+
+    `scope` (family|cluster) decide QUÉ DSR gatea: una familia que replica la misma mecánica
+    en varios activos (sibling_families) deflacta con el cluster — más estricto, nunca menos.
+    """
     result = {
         "candidate": candidate.get("id"),
         "n_x3": {"family": n_family, "cluster": n_cluster, "global": n_global},
         "method": "none",
+        "scope": scope,
         "dsr_family": None, "dsr_cluster": None, "dsr_global": None,
+        "dsr_grid": {},
         "dsr_family_upper_bound": None,
         "claim_allowed": False,
     }
     inputs = candidate.get("dsr_inputs")
-    if inputs and all(inputs.get(key) is not None for key in REQUIRED_DSR_INPUTS):
+    sigmas = _sigma_grid(inputs) if inputs else []
+    if inputs and sigmas and all(inputs.get(key) is not None for key in REQUIRED_DSR_INPUTS):
         for level, n_trials in (("family", n_family), ("cluster", n_cluster),
                                 ("global", n_global)):
-            dsr = deflated_sharpe_ratio(
-                sharpe_per_period=float(inputs["sharpe_per_period"]),
-                n_obs=int(inputs["n_obs"]),
-                n_trials=int(n_trials),
-                trials_sharpe_std=float(inputs["trials_sharpe_std"]),
-                skew=float(inputs["skew"]),
-                kurtosis=float(inputs["kurtosis"]),
-            )
-            result[f"dsr_{level}"] = dsr["dsr"]
+            per_sigma = {}
+            for sigma in sigmas:
+                dsr = deflated_sharpe_ratio(
+                    sharpe_per_period=float(inputs["sharpe_per_period"]),
+                    n_obs=int(inputs["n_obs"]),
+                    n_trials=int(n_trials),
+                    trials_sharpe_std=sigma,
+                    skew=float(inputs["skew"]),
+                    kurtosis=float(inputs["kurtosis"]),
+                )
+                per_sigma[sigma] = dsr["dsr"]
+            result["dsr_grid"][level] = per_sigma
+            # sigma MENOS favorable = el DSR mínimo de la rejilla (approval-gates.md gate 6)
+            result[f"dsr_{level}"] = min(per_sigma.values())
         result["method"] = "computed"
-        result["claim_allowed"] = bool(result["dsr_family"] > DSR_BAR)
+        gate_value = result["dsr_cluster"] if scope == "cluster" else result["dsr_family"]
+        result["claim_allowed"] = bool(gate_value > DSR_BAR)
         return result
     published = candidate.get("published_dsr")
     if published and published.get("n_trials_used") and published.get("source"):
@@ -101,6 +126,10 @@ def compute_candidate_dsr(candidate: dict, n_family: int, n_cluster: int,
             # DSR no-creciente en n_trials => el publicado (con N menor) acota por arriba.
             result["method"] = "bounded"
             result["dsr_family_upper_bound"] = float(published["value"])
+        else:
+            # publicado con MÁS trials que N_family => solo acota por abajo: no habilita nada.
+            result["method"] = "bounded_below"
+            result["dsr_family_lower_bound"] = float(published["value"])
     return result
 
 
@@ -125,11 +154,17 @@ def check_governance(families: dict[str, dict], records: list[dict]) -> list[str
         if not governance:
             errors.append(f"{family_id}: sin bloque governance (gate DSR_family obligatorio)")
             continue
-        if "DSR_family" not in str(governance.get("gate", "")):
-            errors.append(f"{family_id}: gate no referencia DSR_family")
+        scope_declared = family.get("deflation_scope", "family")
+        expected_token = "DSR_cluster" if scope_declared == "cluster" else "DSR_family"
+        if expected_token not in str(governance.get("gate", "")):
+            errors.append(
+                f"{family_id}: deflation_scope={scope_declared} pero el gate no referencia "
+                f"{expected_token}"
+            )
         if governance.get("claims_edge") is None:
             errors.append(f"{family_id}: claims_edge ausente (debe ser explícito)")
         candidates = governance.get("candidates", [])
+        scope = family.get("deflation_scope", "family")
         passing = []
         for candidate in candidates:
             result = compute_candidate_dsr(
@@ -137,6 +172,7 @@ def check_governance(families: dict[str, dict], records: list[dict]) -> list[str
                 n_family.get(family_id, 0),
                 n_cluster.get(cluster_of.get(family_id, ""), n_global),
                 n_global,
+                scope,
             )
             if result["method"] == "computed" and result["claim_allowed"]:
                 passing.append(candidate.get("id"))
@@ -157,26 +193,35 @@ def main() -> int:
         family = families[family_id]
         governance = family.get("governance") or {}
         candidates = governance.get("candidates", [])
+        scope = family.get("deflation_scope", "family")
         header = (f"  {family_id} [N_family={n_family.get(family_id, 0)} "
                   f"N_cluster={n_cluster.get(cluster_of.get(family_id, ''), 0)} "
-                  f"N_global={n_global}] claims_edge={governance.get('claims_edge')}")
+                  f"N_global={n_global}] scope={scope} "
+                  f"claims_edge={governance.get('claims_edge')}")
         print(header)
         if not candidates:
-            print("    (sin candidato => DSR nulo, claim_allowed=False — fail-closed)")
+            print("    (sin candidato => DSR nulo, claim_allowed=False - fail-closed)")
         for candidate in candidates:
             result = compute_candidate_dsr(
                 candidate, n_family.get(family_id, 0),
-                n_cluster.get(cluster_of.get(family_id, ""), n_global), n_global,
+                n_cluster.get(cluster_of.get(family_id, ""), n_global), n_global, scope,
             )
             if result["method"] == "computed":
                 print(f"    {result['candidate']}: DSR family/cluster/global = "
                       f"{result['dsr_family']}/{result['dsr_cluster']}/{result['dsr_global']} "
-                      f"-> claim_allowed={result['claim_allowed']}")
+                      f"(sigma menos favorable) -> claim_allowed={result['claim_allowed']}")
+                for level, per_sigma in result["dsr_grid"].items():
+                    grid = ", ".join(f"s={s:.6f}:{v}" for s, v in sorted(per_sigma.items()))
+                    print(f"        {level}: {grid}")
             elif result["method"] == "bounded":
                 print(f"    {result['candidate']}: DSR_family <= "
                       f"{result['dsr_family_upper_bound']} (cota publicada, "
                       f"n_used={candidate['published_dsr']['n_trials_used']} <= "
                       f"N_family) -> claim_allowed=False")
+            elif result["method"] == "bounded_below":
+                print(f"    {result['candidate']}: DSR_family >= "
+                      f"{result['dsr_family_lower_bound']} (publicado con MAS trials que "
+                      f"N_family: cota inferior, no habilita claim) -> claim_allowed=False")
             else:
                 print(f"    {result['candidate']}: sin insumos -> DSR nulo, "
                       "claim_allowed=False (fail-closed)")
