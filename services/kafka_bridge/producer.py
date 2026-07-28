@@ -11,8 +11,13 @@ Contract:
   - Broker: env KAFKA_BROKER (default redpanda:9092)
   - Topic: signals.h5
   - DB: env DATABASE_URL (fallback postgresql://admin:admin123@postgres:5432/usdcop_trading)
-  - Message: JSON { week, direction, confidence, ensemble_return, skip_trade,
-                    hard_stop_pct, take_profit_pct, adjusted_leverage, timestamp }
+  - Message: JSON { week, direction, confidence, confidence_tier, ensemble_return,
+                    skip_trade, hard_stop_pct, take_profit_pct, adjusted_leverage,
+                    timestamp }
+    NOTE: `confidence` is null on real rows — the DB column `confidence_tier` is
+    VARCHAR ('HIGH'/'MEDIUM'/'LOW'); the numeric source is pending a contract
+    decision (candidates: confidence_agreement / confidence_magnitude). The
+    textual tier is emitted as `confidence_tier`.
 """
 
 from __future__ import annotations
@@ -210,7 +215,13 @@ def row_to_message(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "week": _format_week(row.get("inference_year"), row.get("inference_week")),
         "direction": _direction_str(row.get("direction")),
+        # HONESTIDAD: confidence_tier es VARCHAR ('HIGH'/'MEDIUM'/'LOW') en la DB,
+        # asi que _as_float() devuelve None SIEMPRE en filas reales. Se mantiene la
+        # clave `confidence` (null) por compatibilidad de contrato; la fuente
+        # numerica esta pendiente de decision (C-006: confidence_agreement vs
+        # confidence_magnitude). El tier textual se emite aparte, aditivo.
         "confidence": _as_float(row.get("confidence_tier")),
+        "confidence_tier": _as_str(row.get("confidence_tier")) or None,
         "ensemble_return": _as_float(row.get("ensemble_return")),
         "skip_trade": bool(row.get("skip_trade") or False),
         "hard_stop_pct": _as_float(row.get("hard_stop_pct")),
@@ -283,13 +294,16 @@ def demo(producer: KafkaProducer) -> int:
     base_week = 17
     year = 2026
     directions = ["SHORT", "LONG", "SHORT"]
+    tiers = ["HIGH", "MEDIUM", "LOW"]
     successes = 0
 
     for i in range(3):
         payload = {
             "week": f"{year}-W{base_week + i:02d}",
             "direction": directions[i],
+            # synthetic demo values; real rows emit confidence=null (see row_to_message)
             "confidence": round(0.7 + 0.05 * i, 2),
+            "confidence_tier": tiers[i],
             "ensemble_return": round(-0.012 + 0.004 * i, 4),
             "skip_trade": False,
             "hard_stop_pct": round(2.8 - 0.1 * i, 2),
@@ -332,9 +346,19 @@ def run_loop(producer: KafkaProducer) -> int:
                 if _shutdown:
                     break
                 payload = row_to_message(row)
-                if publish(producer, payload):
-                    last_id = int(row["id"])
-                    save_last_published_id(last_id)
+                if not publish(producer, payload):
+                    # At-least-once: las filas vienen ORDER BY id ASC. Si esta
+                    # fila fallo y siguieramos con la siguiente, un exito
+                    # posterior avanzaria last_id por encima de la fallida y
+                    # esa senal se perderia para siempre (SELECT WHERE id > %s).
+                    # Cortamos el batch: se reintenta desde aqui el proximo tick.
+                    log.warning(
+                        "publish failed for id=%s; stopping batch to retry next poll",
+                        row.get("id"),
+                    )
+                    break
+                last_id = int(row["id"])
+                save_last_published_id(last_id)
         else:
             log.info("no new signals (last_id=%d)", last_id)
 

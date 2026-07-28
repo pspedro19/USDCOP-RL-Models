@@ -28,7 +28,8 @@ Message payload:
 {
   "week": "2026-W17",
   "direction": "SHORT",
-  "confidence": 0.85,
+  "confidence": null,
+  "confidence_tier": "HIGH",
   "ensemble_return": -0.012,
   "skip_trade": false,
   "hard_stop_pct": 2.8,
@@ -37,6 +38,13 @@ Message payload:
   "timestamp": "2026-04-23T14:00:00-05:00"
 }
 ```
+
+> **`confidence` es `null` en mensajes reales.** La columna de la DB es
+> `confidence_tier` VARCHAR (`'HIGH'`/`'MEDIUM'`/`'LOW'`), que no es coercible a
+> float; el tier textual se emite tal cual en `confidence_tier`. La fuente
+> numérica de `confidence` está **pendiente de decisión de contrato**
+> (candidatos: `confidence_agreement` / `confidence_magnitude`). Solo el modo
+> `--demo` emite valores numéricos sintéticos.
 
 The producer is **read-only** on `forecast_h5_signals` and never writes to the DB.
 
@@ -127,6 +135,7 @@ python producer.py --demo
 | --- | --- | --- |
 | Broker down at startup | Exponential backoff to 60s, never crashes | 30 attempts x 10s, then exits with error |
 | DB unreachable | Log warning, skip this tick, retry next poll | N/A |
+| Publish fails mid-batch | Batch stops at the failed row (cursor stays at last success); retried next poll — **at-least-once, no row skipped** | N/A |
 | Bad message payload | Logged, message skipped | Logged, message skipped |
 | SIGTERM / SIGINT | Flushes producer, exits 0 | Closes consumer, exits 0 |
 
