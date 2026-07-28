@@ -212,6 +212,69 @@ def render(m: Msg, width: int, full: bool) -> str:
     return head + "\n" + "\n".join(f"{ind}{c.dim}|{c.reset} {ln}" for ln in lines)
 
 
+def interactive(width: int, full: bool) -> int:
+    """Chat a tres bandas: escribes, se envia, y ves lo que responden.
+
+    Un solo bucle: pinta lo nuevo desde la ultima vuelta, y espera tu linea.
+    Enter vacio = solo refrescar (util para ver si ya contestaron).
+    """
+    seen = {m.mid for m in thread()}
+    destino, prioridad = "both", "P1"
+
+    print(f"\n{c.bold}CHAT DE COORDINACION{c.reset}  "
+          f"{c.claude}CLAUDE{c.reset} · {c.codex}CODEX{c.reset} · {c.pedro}PEDRO{c.reset}")
+    for row in heartbeats():
+        print(row)
+    print(f"\n{c.meta}  Escribe y pulsa Enter para enviar.  Enter vacio = refrescar.\n"
+          f"  /claude /codex /both   cambia destinatario (ahora: {destino})\n"
+          f"  /p0 /p1 /p2            cambia prioridad     (ahora: {prioridad})\n"
+          f"  /ver [n]               repinta los ultimos n\n"
+          f"  /salir{c.reset}\n")
+
+    while True:
+        nuevos = [m for m in thread() if m.mid not in seen]
+        for m in nuevos:
+            print(render(m, width, full) + "\n")
+            seen.add(m.mid)
+
+        try:
+            linea = input(f"{c.pedro}{destino}/{prioridad} >{c.reset} ").strip()
+        except EOFError:
+            return 0
+
+        if not linea:
+            continue
+        low = linea.lower()
+        if low in ("/salir", "/quit", "/exit"):
+            return 0
+        if low in ("/claude", "/codex", "/both"):
+            destino = low[1:]
+            print(f"{c.meta}  destinatario -> {destino}{c.reset}")
+            continue
+        if low in ("/p0", "/p1", "/p2", "/p3"):
+            prioridad = low[1:].upper()
+            print(f"{c.meta}  prioridad -> {prioridad}{c.reset}")
+            continue
+        if low.startswith("/ver"):
+            partes = low.split()
+            n = int(partes[1]) if len(partes) > 1 and partes[1].isdigit() else 10
+            for m in thread()[-n:]:
+                print(render(m, width, full) + "\n")
+            continue
+        if linea.startswith("/"):
+            print(f"{c.p0}  comando desconocido{c.reset}")
+            continue
+
+        objetivos = ("claude", "codex") if destino == "both" else (destino,)
+        for t in objetivos:
+            try:
+                mid = send_message(t, linea, prioridad, "OPERADOR")
+                seen.add(mid)
+                print(f"{c.ok}  -> enviado a {t.upper()} como {mid}{c.reset}")
+            except (OSError, ValueError) as exc:
+                print(f"{c.p0}  fallo el envio a {t}: {exc}{c.reset}")
+
+
 def main() -> int:
     # La consola de Windows entrega cp1252 por defecto y los mensajes traen
     # flechas y guiones largos: sin esto revienta con UnicodeEncodeError.
@@ -226,6 +289,8 @@ def main() -> int:
     ap.add_argument("--full", action="store_true", help="cuerpo completo")
     ap.add_argument("--grep", metavar="TXT", help="filtra por texto")
     ap.add_argument("--follow", action="store_true", help="modo vivo, refresca 5s")
+    ap.add_argument("--chat", action="store_true",
+                    help="modo interactivo: escribes y se envia sin salir")
     ap.add_argument("--send", choices=("claude", "codex", "both"),
                     help="envia un mensaje de operador al inbox indicado")
     ap.add_argument("--message", help="texto del mensaje; si falta, se solicita")
@@ -242,6 +307,10 @@ def main() -> int:
         return 0
 
     width = min(shutil.get_terminal_size((100, 24)).columns, 110)
+
+    if a.chat:
+        return interactive(width, a.full)
+
     seen: set[str] = set()
 
     while True:
