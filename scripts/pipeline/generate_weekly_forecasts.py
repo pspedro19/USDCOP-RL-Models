@@ -66,6 +66,7 @@ from src.forecasting.contracts import (
 from src.forecasting.models.factory import ModelFactory
 from src.forecasting.ssot_config import ForecastingSSOTConfig
 from src.forecasting.dataset_loader import ForecastingDatasetLoader
+from src.contracts.forecast_output import ForecastOutput, ForecastOutputError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -148,6 +149,11 @@ CSV_COLUMNS = [
     "horizon_days", "horizon_label", "horizon_category",
     "inference_week", "inference_year", "inference_date",
     "direction_accuracy", "rmse", "mae", "r2",
+    "selective_da_top50", "selective_coverage_top50",
+    "selective_da_top25", "selective_coverage_top25",
+    "regime_shift_score", "regime_action",
+    "eligible_for_signal",
+    "direction_regime", "direction_shift_z", "direction_regime_persistence",
     "sharpe", "profit_factor", "max_drawdown", "total_return",
     "wf_direction_accuracy", "model_avg_direction_accuracy", "model_avg_rmse",
     "is_best_overall_model", "is_best_for_this_horizon", "best_da_for_this_horizon",
@@ -213,7 +219,7 @@ def walk_forward_validate(
     model_id: str,
     params: Optional[dict],
     horizon: int,
-    n_folds: int = 3,
+    n_folds: int = 5,
     annualization_days: int = 252,
 ) -> Dict[str, Any]:
     """Walk-forward validation returning full metrics + predicted/actual arrays."""
@@ -223,6 +229,7 @@ def walk_forward_validate(
 
     all_preds = []
     all_actuals = []
+    from sklearn.preprocessing import StandardScaler
 
     for fold in range(n_folds):
         train_end = initial_train + fold * step
@@ -233,8 +240,22 @@ def walk_forward_validate(
             continue
 
         model = ModelFactory.create(model_id, params=params, horizon=horizon)
-        model.fit(X[:train_end], y[:train_end])
-        preds = model.predict(X[test_start:test_end])
+        # Purge the trailing training observations whose forward label overlaps
+        # the test block. Without this embargo, H20-H30 labels leak future test
+        # returns into the fitted sample and directional accuracy is overstated.
+        purged_train_end = max(0, train_end - horizon)
+        x_train = X[:purged_train_end]
+        x_test = X[test_start:test_end]
+        # Fit preprocessing strictly inside each fold.  Scaling on the complete frame
+        # leaks test-fold distribution statistics into training and inflates DA.
+        if model.requires_scaling:
+            fold_scaler = StandardScaler().fit(x_train)
+            x_train = fold_scaler.transform(x_train)
+            x_test = fold_scaler.transform(x_test)
+        if purged_train_end < 50:
+            continue
+        model.fit(x_train, y[:purged_train_end])
+        preds = model.predict(x_test)
         actuals = y[test_start:test_end]
 
         all_preds.extend(preds.tolist())
@@ -252,6 +273,19 @@ def walk_forward_validate(
 
     correct = np.sum(np.sign(preds_arr) == np.sign(actuals_arr))
     da = correct / len(actuals_arr)
+
+    # Confidence diagnostics: absolute predicted return is the model's natural
+    # confidence proxy. These are audit metrics, not a post-hoc promotion rule;
+    # thresholds must be selected on training data in a future deployment gate.
+    confidence = np.abs(preds_arr)
+    selective = {}
+    for fraction, suffix in ((0.50, "top50"), (0.25, "top25")):
+        k = max(1, int(np.ceil(len(confidence) * fraction)))
+        idx = np.argsort(confidence)[-k:]
+        selective[f"selective_da_{suffix}"] = float(
+            np.mean(np.sign(preds_arr[idx]) == np.sign(actuals_arr[idx]))
+        )
+        selective[f"selective_coverage_{suffix}"] = float(k / len(confidence))
 
     rmse = float(np.sqrt(np.mean((preds_arr - actuals_arr) ** 2)))
     mae = float(np.mean(np.abs(preds_arr - actuals_arr)))
@@ -282,6 +316,7 @@ def walk_forward_validate(
         "sharpe": sharpe, "pf": pf, "max_drawdown": max_drawdown,
         "total_return": total_return,
         "predicted_returns": all_preds, "actual_returns": all_actuals,
+        **selective,
     }
 
 
@@ -331,6 +366,106 @@ def get_target_dates_and_actuals(
     return result
 
 
+def compute_regime_shift_score(X: np.ndarray, recent: int = 60, reference: int = 252) -> float:
+    """Causal standardized mean shift: recent window vs prior reference window."""
+    if len(X) < recent + reference:
+        return 0.0
+    ref, cur = X[-recent-reference:-recent], X[-recent:]
+    scale = np.nanstd(ref, axis=0)
+    scale[scale < 1e-12] = 1.0
+    distance = np.abs(np.nanmean(cur, axis=0) - np.nanmean(ref, axis=0)) / scale
+    return float(np.nanmean(distance))
+
+
+def compute_direction_regime(close: pd.Series, lookback: int = 20, reference: int = 100) -> Tuple[str, float, int]:
+    """Causal directional shift with neutral hysteresis context."""
+    ret = np.log(close / close.shift(1)).dropna()
+    if len(ret) < lookback + reference:
+        return "transition", 0.0, 0
+    recent, ref = ret.iloc[-lookback:], ret.iloc[-lookback-reference:-lookback]
+    p_recent, p_ref = float((recent < 0).mean()), float((ref < 0).mean())
+    se = np.sqrt(max(p_ref * (1 - p_ref) / len(recent), 1e-6))
+    z = (p_recent - p_ref) / se
+    mr, mf = float(recent.mean()), float(ref.mean())
+    if z > 1.5 and mr < mf:
+        state = "risk_off"
+    elif z < -1.5 and mr > mf:
+        state = "risk_on"
+    else:
+        state = "transition"
+    return state, float(z), 1
+
+
+# =============================================================================
+# CONTRACT GATE (BL-15 FASE-2 — CTR-FORECAST-OUTPUT-001)
+# =============================================================================
+
+# Rows excluded by the contract gate across the whole run (reported at the end).
+# Mutable dict (not a bare global) so generate_week_data can increment it without
+# changing its return signature.
+_CONTRACT_EXCLUDED = {"count": 0}
+
+
+def _validate_row_contract(
+    asset: str,
+    model_id: str,
+    horizon: int,
+    pred_return: float,
+    as_of: str,
+    available_at: str,
+    target_time: str,
+    forecast_spec_id: Optional[str] = None,
+    prediction_type: str = "log_return",
+) -> Optional["ForecastOutput"]:
+    """Validate one (model, horizon, week) prediction against CTR-FORECAST-OUTPUT-001
+    BEFORE it reaches any publication surface (CSV / PNG).
+
+    Fail-closed PER ROW: returns the validated ForecastOutput on success, or None
+    (with a clear ERROR log) on contract violation — the caller must then exclude
+    that single row from publication without aborting the run.
+
+    NOTES (honest limitations of the zoo generator):
+    - The zoo produces point predictions only (no intervals), so lower == upper
+      == point by design.
+    - Predictions are log-returns (``y = log(future/close)``), hence
+      ``prediction_type='log_return'`` (the contract distinguishes it from
+      'return'; using 'return' here would be dishonest).
+    - ``target_time`` is the caller's estimate of the target trading date
+      (as_of + horizon business days) — the same approximation the generator
+      already uses when actuals are not yet available.
+    - No serialized model artifact exists (weekly refit in-memory), so
+      ``model_fingerprint`` records the refit lineage, not a binary hash.
+    """
+    spec_id = forecast_spec_id or f"{asset}_forecast_zoo"
+    as_of_day = as_of[:10]
+    try:
+        return ForecastOutput(
+            forecast_id=f"{spec_id}:{model_id}:h{horizon}:{as_of_day}",
+            forecast_spec_id=spec_id,
+            asset=asset,
+            model_id=model_id,
+            horizon=f"{horizon}d",
+            as_of=as_of,
+            available_at=available_at,
+            target_time=target_time,
+            prediction={
+                "type": prediction_type,
+                "point": pred_return,
+                "lower": pred_return,  # no intervals produced by the zoo (see note)
+                "upper": pred_return,
+            },
+            model_fingerprint=f"refit-weekly:{model_id}:h{horizon}:{as_of_day}",
+            data_snapshot_id=f"{asset}_daily_ohlcv:{as_of_day}",
+        ).validate()
+    except (ForecastOutputError, TypeError) as exc:
+        logger.error(
+            "CONTRACT-EXCLUDED row (CTR-FORECAST-OUTPUT-001): "
+            f"asset={asset} model={model_id} horizon={horizon}d as_of={as_of} "
+            f"-> excluded from publication: {exc}"
+        )
+        return None
+
+
 # =============================================================================
 # TRAIN MODELS + GENERATE DATA FOR ONE WEEK
 # =============================================================================
@@ -342,6 +477,7 @@ def generate_week_data(
     is_latest_week: bool,
     feature_cols: List[str],
     annualization_days: int = 252,
+    asset: str = "usdcop",
 ) -> Tuple[List[Dict], Dict[str, Dict[int, float]], Dict, float, pd.Timestamp]:
     """
     Train 9 models x 7 horizons for one week, run walk-forward.
@@ -364,10 +500,11 @@ def generate_week_data(
     base_price = float(df_clean["close"].iloc[-1])
     inference_date = df_clean["date"].iloc[-1]
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    X_latest_scaled = X_scaled[-1:].copy()
     X_latest_raw = X[-1:].copy()
+    regime_shift_score = compute_regime_shift_score(X)
+    regime_action = "RETRAIN_REQUIRED" if regime_shift_score >= 1.5 else "NORMAL"
+    eligible_for_signal = regime_action == "NORMAL"
+    direction_regime, direction_shift_z, direction_regime_persistence = compute_direction_regime(df_clean["close"])
 
     logger.info(f"  {week_label}: {len(df_clean)} rows, base={base_price:.2f}, inf_date={inference_date.date()}")
 
@@ -400,7 +537,8 @@ def generate_week_data(
 
                 model_tmp = ModelFactory.create(model_id, params=params, horizon=horizon)
                 use_scaled = model_tmp.requires_scaling
-                X_wf = X_scaled[valid_mask] if use_scaled else X[valid_mask]
+                # Keep raw features here; walk_forward_validate owns fold-local scaling.
+                X_wf = X[valid_mask]
 
                 wf = walk_forward_validate(
                     X_wf, y_valid, model_id, params, horizon,
@@ -409,17 +547,40 @@ def generate_week_data(
                 wf_results[model_id][horizon] = wf
                 all_metrics[model_id][horizon] = {
                     "da": wf["da"], "rmse": wf["rmse"], "mae": wf["mae"], "r2": wf["r2"],
+                    "selective_da_top50": wf.get("selective_da_top50", 0.0),
+                    "selective_coverage_top50": wf.get("selective_coverage_top50", 0.0),
+                    "selective_da_top25": wf.get("selective_da_top25", 0.0),
+                    "selective_coverage_top25": wf.get("selective_coverage_top25", 0.0),
                     "sharpe": wf["sharpe"], "pf": wf["pf"],
                     "max_drawdown": wf["max_drawdown"], "total_return": wf["total_return"],
                 }
 
                 model = ModelFactory.create(model_id, params=params, horizon=horizon)
                 if use_scaled:
-                    model.fit(X_scaled[valid_mask], y_valid)
-                    pred_return = float(model.predict(X_latest_scaled)[0])
+                    final_scaler = StandardScaler().fit(X[valid_mask])
+                    model.fit(final_scaler.transform(X[valid_mask]), y_valid)
+                    pred_return = float(model.predict(final_scaler.transform(X_latest_raw))[0])
                 else:
                     model.fit(X[valid_mask], y_valid)
                     pred_return = float(model.predict(X_latest_raw)[0])
+
+                # BL-15 FASE-2: contract gate BEFORE any publication surface.
+                # Fail-closed per row: an invalid prediction excludes this
+                # (model, horizon) cell from CSV + images; the run continues.
+                validated = _validate_row_contract(
+                    asset=asset,
+                    model_id=model_id,
+                    horizon=horizon,
+                    pred_return=pred_return,
+                    as_of=inference_date.isoformat(),
+                    available_at=now_str,
+                    target_time=(inference_date + pd.tseries.offsets.BDay(horizon)).isoformat(),
+                )
+                if validated is None:
+                    _CONTRACT_EXCLUDED["count"] += 1
+                    all_metrics[model_id].pop(horizon, None)
+                    wf_results[model_id].pop(horizon, None)
+                    continue
 
                 raw_predictions[model_id][horizon] = pred_return
 
@@ -475,6 +636,16 @@ def generate_week_data(
                 "inference_year": inference_year,
                 "inference_date": inf_date_str,
                 "direction_accuracy": m["da"],
+                "regime_shift_score": regime_shift_score,
+                "regime_action": regime_action,
+                "eligible_for_signal": eligible_for_signal,
+                "direction_regime": direction_regime,
+                "direction_shift_z": direction_shift_z,
+                "direction_regime_persistence": direction_regime_persistence,
+                "selective_da_top50": m["selective_da_top50"],
+                "selective_coverage_top50": m["selective_coverage_top50"],
+                "selective_da_top25": m["selective_da_top25"],
+                "selective_coverage_top25": m["selective_coverage_top25"],
                 "rmse": 0.0,
                 "mae": 0.0,
                 "r2": 0.0,
@@ -494,10 +665,13 @@ def generate_week_data(
                 "image_forecast": f"forward_{model_id}_{week_suffix}.png",
             })
 
-            # Backtest row (latest week only)
-            if is_latest_week:
+            # Persist backtest metrics for every generated week.  Plots remain latest-week-only,
+            # but hiding earlier folds made a multi-week OOS audit impossible.
+            # Persist every week's walk-forward result for OOS stability audits;
+            # forward plots remain limited to the latest week below.
+            if week_label:
                 csv_rows.append({
-                    "record_id": f"BT_{model_id}_h{horizon}",
+                    "record_id": f"BT_{model_id}_h{horizon}_{week_suffix}",
                     "view_type": "backtest",
                     "model_id": model_id,
                     "model_name": MODEL_NAMES.get(model_id, model_id),
@@ -509,6 +683,16 @@ def generate_week_data(
                     "inference_year": inference_year,
                     "inference_date": inf_date_str,
                     "direction_accuracy": m["da"],
+                    "regime_shift_score": regime_shift_score,
+                    "regime_action": regime_action,
+                    "eligible_for_signal": eligible_for_signal,
+                    "direction_regime": direction_regime,
+                    "direction_shift_z": direction_shift_z,
+                    "direction_regime_persistence": direction_regime_persistence,
+                    "selective_da_top50": m["selective_da_top50"],
+                    "selective_coverage_top50": m["selective_coverage_top50"],
+                    "selective_da_top25": m["selective_da_top25"],
+                    "selective_coverage_top25": m["selective_coverage_top25"],
                     "rmse": m["rmse"],
                     "mae": m["mae"],
                     "r2": m["r2"],
@@ -864,6 +1048,8 @@ def main():
                         help="Asset id (usdcop=default root; e.g. btcusdt -> public/forecasting/btcusdt/)")
     args = parser.parse_args()
 
+    _CONTRACT_EXCLUDED["count"] = 0  # fresh counter per run (BL-15 FASE-2)
+
     # Resolve per-asset config + profile
     config_path = resolve_asset_config_path(args.asset)
     ForecastingSSOTConfig.reset()
@@ -917,6 +1103,7 @@ def main():
         csv_rows, raw_preds, wf_results, base_price, inf_date = generate_week_data(
             df_full, cutoff_date, week_label, is_latest_week=is_latest,
             feature_cols=feature_cols, annualization_days=annualization_days,
+            asset=args.asset,
         )
         logger.info(f"  Models trained in {time.time()-t1:.1f}s ({len(csv_rows)} CSV rows)")
         all_csv_rows.extend(csv_rows)
@@ -943,10 +1130,18 @@ def main():
         total_images += 1
 
         # Ensemble images
+        # Rank ensembles by causal walk-forward quality.  Forecast magnitude is
+        # not evidence of skill and must never decide "Best of Breed".
         model_scores = {}
-        for mid, h_preds in raw_preds.items():
-            if h_preds:
-                model_scores[mid] = np.mean([abs(v) for v in h_preds.values()])
+        best_model_by_horizon = {}
+        for row in csv_rows:
+            if row.get("view_type") != "forward":
+                continue
+            model_id = row.get("model_id")
+            if model_id in raw_preds:
+                model_scores[model_id] = float(row["model_avg_direction_accuracy"])
+            if row.get("is_best_for_this_horizon"):
+                best_model_by_horizon[int(row["horizon_days"])] = model_id
         sorted_models = sorted(model_scores.keys(), key=lambda m: model_scores[m], reverse=True)
 
         ensemble_configs = [
@@ -959,13 +1154,9 @@ def main():
             ens_preds = {}
             for h in HORIZONS:
                 if ens_key == "best_of_breed":
-                    best_val, best_abs = None, -1
-                    for m in raw_preds:
-                        if h in raw_preds[m] and abs(raw_preds[m][h]) > best_abs:
-                            best_abs = abs(raw_preds[m][h])
-                            best_val = raw_preds[m][h]
-                    if best_val is not None:
-                        ens_preds[h] = best_val
+                    best_model = best_model_by_horizon.get(h)
+                    if best_model is not None and h in raw_preds.get(best_model, {}):
+                        ens_preds[h] = raw_preds[best_model][h]
                 else:
                     vals = [raw_preds[m][h] for m in model_subset if h in raw_preds.get(m, {})]
                     if vals:
@@ -1006,6 +1197,14 @@ def main():
     logger.info(f"  CSV: {bt_rows} backtest + {ff_rows} forward_forecast = {len(all_csv_rows)} rows")
     logger.info(f"  Images: {total_images} total")
     logger.info(f"  Output: {OUTPUT_DIR}")
+    # BL-15 FASE-2: contract gate summary (fail-closed per row)
+    excluded = _CONTRACT_EXCLUDED["count"]
+    if excluded > 0:
+        logger.warning(
+            f"  Contract gate (CTR-FORECAST-OUTPUT-001): {excluded} row(s) EXCLUDED from publication"
+        )
+    else:
+        logger.info("  Contract gate (CTR-FORECAST-OUTPUT-001): 0 rows excluded")
 
     # MLflow experiment tracking (optional — silent if MLflow unavailable)
     try:
