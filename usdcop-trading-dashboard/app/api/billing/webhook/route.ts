@@ -28,6 +28,15 @@
  *     credit is recovered by the retry); contradiction ⇒ 4xx + incident.
  *     See `lib/billing/confirmation.ts`.
  *
+ * AVAILABILITY INVARIANT (CODEX P1 — CXD-062):
+ *  6. **No pooled connection is held across the confirmation.** Invariant 0 is an
+ *     outbound network call with a multi-second budget; the connection is therefore
+ *     acquired only when the transaction is about to BEGIN, and released in `finally`.
+ *     Holding it across the wait made a hung provider exhaust the SHARED pool, taking
+ *     down APIs that have nothing to do with billing. The mismatch incident of
+ *     invariant 0 needs the database too, but it runs as a SHORT, SEPARATE pooled
+ *     operation (`query()`), never on a connection retained during the wait.
+ *
  * MONEY INVARIANTS (CODEX P0 round 2 — CXD-056):
  *  4. `billing_events.provider_event_id` is the AUTHORITATIVE global idempotency key,
  *     asserted inside the same transaction with `ON CONFLICT DO NOTHING RETURNING`.
@@ -47,7 +56,7 @@
 import { NextResponse } from 'next/server';
 import type { PoolClient } from 'pg';
 
-import { getClient } from '@/lib/db/postgres-client';
+import { getClient, query as poolQuery } from '@/lib/db/postgres-client';
 import { getBillingProvider, decodeReference } from '@/lib/billing';
 import type {
   BillingEventType, BillingProvider, NormalizedBillingEvent, TransactionLookup,
@@ -73,10 +82,27 @@ class WebhookReject extends Error {
   constructor(
     public code: string,
     public status = 400,
-    /** When set, an audit row is written AFTER the rollback (it must outlive it). */
+    /**
+     * When set, an audit row is written OUTSIDE the money transaction, so it survives
+     * the rollback (or, for a pre-transaction rejection, exists without one).
+     */
     public incident?: { userId: string | null; detail: Record<string, unknown> },
   ) { super(code); }
 }
+
+/**
+ * Anything that can run one statement. A held `PoolClient` satisfies it (inside the
+ * money transaction) and so does `pool.query`, which takes a connection, runs the
+ * statement and gives it straight back — the short operation demanded by invariant 6.
+ */
+interface Queryable {
+  query(text: string, params?: unknown[]): Promise<unknown>;
+}
+
+/** Self-releasing single-statement sink: it never occupies a slot across an await of ours. */
+const shortLivedConnection: Queryable = {
+  query: (text, params) => poolQuery(text, params),
+};
 
 /** A genuine provider retry: nothing to apply, nothing wrong. */
 class WebhookDuplicate extends Error {}
@@ -113,34 +139,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'missing reference' }, { status: 400 });
   }
 
-  let client: PoolClient;
-  try {
-    client = await getClient();
-  } catch (e) {
-    logServerError('billing/webhook db', e);
+  // ── STEP 0 (CXD-059): confirm the event against the provider's OWN API, BEFORE a
+  // single row moves — and (CXD-062) before a single connection is taken. It is an
+  // outbound network call: no lock and no pooled connection may be held across it, or
+  // a hung provider starves the pool shared with every other API. On doubt it must
+  // leave the database — INCLUDING the idempotency ledger — completely untouched, so
+  // the provider's retry is a fresh attempt and not a swallowed "duplicate".
+  const verdict = await confirmWithProvider(provider, event);
+  if (verdict.kind === 'unavailable') {
+    // We could not reach a verdict. 503 ⇒ the provider retries and the legitimate
+    // payment is credited then (proven by test "THE RETRY AFTER THE OUTAGE
+    // CREDITS"). An outage postpones money; it never grants it. Nothing was read,
+    // nothing was written, and no connection was ever checked out.
+    logServerError('billing/webhook confirm', new Error(verdict.reason));
     return NextResponse.json({ error: 'temporarily unavailable' }, { status: 503 });
   }
-
-  try {
-    // ── STEP 0 (CXD-059): confirm the event against the provider's OWN API, BEFORE
-    // `BEGIN` and before a single row moves. Deliberately outside the transaction: it
-    // is a network call (no lock may be held across it) and, on doubt, it must leave
-    // the database — INCLUDING the idempotency ledger — completely untouched, so the
-    // provider's retry is a fresh attempt and not a swallowed "duplicate".
-    const verdict = await confirmWithProvider(provider, event);
-    if (verdict.kind === 'unavailable') {
-      // We could not reach a verdict. 503 ⇒ the provider retries and the legitimate
-      // payment is credited then (proven by test "THE RETRY AFTER THE OUTAGE
-      // CREDITS"). An outage postpones money; it never grants it.
-      logServerError('billing/webhook confirm', new Error(verdict.reason));
-      return NextResponse.json({ error: 'temporarily unavailable' }, { status: 503 });
-    }
-    if (verdict.kind === 'mismatch') {
-      // The provider's record contradicts the body. Never retryable, never credited.
-      // The authoritative snapshot names ANOTHER customer's reference, so it goes to
-      // the audit row only — never to the response (that would confirm to the attacker
-      // whose payment he just tried to steal).
-      throw new WebhookReject('transaction not confirmed by provider', 409, {
+  if (verdict.kind === 'mismatch') {
+    // The provider's record contradicts the body. Never retryable, never credited.
+    // The authoritative snapshot names ANOTHER customer's reference, so it goes to
+    // the audit row only — never to the response (that would confirm to the attacker
+    // whose payment he just tried to steal). The incident is written on a short,
+    // self-releasing pooled operation: there is no transaction to roll back here, and
+    // a burst of forgeries must not pin connections either.
+    return respondToReject(
+      new WebhookReject('transaction not confirmed by provider', 409, {
         userId: decodeReference(verdict.authoritative.reference ?? '')?.userId ?? null,
         detail: {
           reason: 'authoritative confirmation mismatch',
@@ -154,9 +176,23 @@ export async function POST(req: Request) {
           authoritative_currency: verdict.authoritative.currency ?? null,
           unauthenticated_fields: event.unauthenticatedFields ?? [],
         },
-      });
-    }
+      }),
+      shortLivedConnection,
+      event.reference,
+    );
+  }
 
+  // Confirmed. ONLY NOW does this request cost a connection, and only for as long as
+  // the transaction below takes.
+  let client: PoolClient;
+  try {
+    client = await getClient();
+  } catch (e) {
+    logServerError('billing/webhook db', e);
+    return NextResponse.json({ error: 'temporarily unavailable' }, { status: 503 });
+  }
+
+  try {
     await client.query('BEGIN');
     // ── AUTHORITATIVE idempotency: the provider event id, INSIDE the transaction.
     // It binds this provider event to the reference it first arrived with. The
@@ -197,22 +233,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, duplicate: true });
     }
     if (e instanceof WebhookReject) {
-      if (e.incident) {
-        // The incident must OUTLIVE the rolled-back money transaction: it is written
-        // on a fresh implicit transaction on the same connection. Best effort — a
-        // failure to record must not turn a rejection into an acceptance.
-        console.warn('[billing/webhook] SECURITY', e.code, e.incident.detail);
-        await audit(client, e.incident.userId, 'billing_replay_blocked', e.incident.detail)
-          .catch((err) => logServerError('billing/webhook incident', err));
-      }
-      console.warn('[billing/webhook] rejected:', e.code, 'ref:', event.reference);
-      return NextResponse.json({ error: e.code }, { status: e.status });
+      // The incident must OUTLIVE the rolled-back money transaction: it is written on
+      // a fresh implicit transaction on the SAME connection — already held, already
+      // past every network wait, so reusing it costs nothing.
+      return await respondToReject(e, client, event.reference);
     }
     logServerError('billing/webhook apply', e);
     return NextResponse.json({ error: 'internal error' }, { status: 500 });
   } finally {
     client.release();
   }
+}
+
+/**
+ * Answer a rejection and, if it carries one, record its security incident.
+ *
+ * `sink` is where the audit row goes: the already-held connection for a rejection
+ * raised inside the (now rolled-back) transaction, and a short self-releasing pooled
+ * operation for one raised before the transaction existed. Best effort — a failure to
+ * record must never turn a rejection into an acceptance.
+ */
+async function respondToReject(e: WebhookReject, sink: Queryable, reference: string) {
+  if (e.incident) {
+    console.warn('[billing/webhook] SECURITY', e.code, e.incident.detail);
+    await audit(sink, e.incident.userId, 'billing_replay_blocked', e.incident.detail)
+      .catch((err) => logServerError('billing/webhook incident', err));
+  }
+  console.warn('[billing/webhook] rejected:', e.code, 'ref:', reference);
+  return NextResponse.json({ error: e.code }, { status: e.status });
 }
 
 /**
@@ -447,8 +495,8 @@ function parseEntitlements(value: unknown): Entitlements | null {
  * Audit is part of the money transaction: if it cannot be written, NOTHING is
  * applied (append-only audit_log, CTR-RBAC-001 rule 4). Never swallowed.
  */
-async function audit(client: PoolClient, userId: string | null, action: string, detail: Record<string, unknown>) {
-  await client.query(
+async function audit(sink: Queryable, userId: string | null, action: string, detail: Record<string, unknown>) {
+  await sink.query(
     'INSERT INTO audit_log (user_id, action, object_type, detail) VALUES ($1,$2,$3,$4::jsonb)',
     [userId, action, 'entitlements', JSON.stringify(detail)],
   );

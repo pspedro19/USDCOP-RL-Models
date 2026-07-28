@@ -14,6 +14,14 @@
  *                              ROLLBACK, so "half-applied" state is impossible to fake
  *                              accidentally and `SELECT ... FOR UPDATE` reads committed
  *                              state exactly as another connection would.
+ *  - the CONNECTION POOL       `getClient()` leases one of `state.pool.size` slots and
+ *                              BLOCKS when they are all out, exactly like `pg.Pool`
+ *                              (CXD-062). Default size is unbounded, so suites that do
+ *                              not care are unaffected; a suite that does sets
+ *                              `state.pool.size = N` and can then observe how long a
+ *                              route holds a connection. `query()` (the pool-level
+ *                              helper) is a SHORT checkout: it never occupies a slot
+ *                              across an await the caller controls.
  *
  * Shared by `tests/unit/api/billing-money-safety.test.ts` and
  * `tests/unit/api/billing-replay-entitlement.test.ts` (DRY: one fake, one set of
@@ -61,7 +69,28 @@ export function createScriptedPostgres() {
     cart: [] as string[],
     log: [] as string[],
     failOn: null as null | ((sql: string) => boolean),
+    /**
+     * Bounded connection pool (CXD-062). `size` = how many connections exist;
+     * `leased` = how many are checked out RIGHT NOW; `peak` = the high-water mark;
+     * `waiters` = callers queued because every connection is out.
+     */
+    pool: {
+      size: Number.POSITIVE_INFINITY,
+      leased: 0,
+      peak: 0,
+      waiters: [] as (() => void)[],
+      /**
+       * Bumped by `reset()`. A client leased before a reset belongs to a pool that no
+       * longer exists (a request the previous test left in flight), so releasing it
+       * must not credit the new one — otherwise `leased` drifts negative and a later
+       * test reads an exhausted pool as available.
+       */
+      gen: 0,
+    },
   };
+
+  /** Connections currently available to any caller — billing or not. */
+  const available = () => state.pool.size - state.pool.leased;
 
   function exec(text: string, params: unknown[] = [], stage: (() => void)[] | null) {
     const sql = norm(text);
@@ -176,15 +205,29 @@ export function createScriptedPostgres() {
 
   return {
     state,
+    available,
     reset() {
       state.orders.clear(); state.users.clear(); state.webhookEvents.clear();
       state.billingEvents.clear(); state.audit.length = 0; state.cart.length = 0;
       state.log.length = 0; state.failOn = null;
+      state.pool.size = Number.POSITIVE_INFINITY;
+      state.pool.leased = 0; state.pool.peak = 0; state.pool.waiters.length = 0;
+      state.pool.gen += 1;
     },
     query: (text: string, params?: unknown[]) => Promise.resolve(exec(text, params, null)),
-    getClient: () => {
+    getClient: async () => {
+      const gen = state.pool.gen;
+      // Lease a slot, or queue until someone releases one — `pg.Pool.connect()`.
+      if (state.pool.leased >= state.pool.size) {
+        await new Promise<void>((resolve) => { state.pool.waiters.push(resolve); });
+      } else {
+        state.pool.leased += 1;
+      }
+      state.pool.peak = Math.max(state.pool.peak, state.pool.leased);
+
       let pending: (() => void)[] | null = null;
-      return Promise.resolve({
+      let released = false;
+      return {
         query: (text: string, params?: unknown[]) => {
           const sql = text.replace(/\s+/g, ' ').trim().toUpperCase();
           if (sql === 'BEGIN') { pending = []; state.log.push('BEGIN'); return Promise.resolve({ rows: [], rowCount: 0 }); }
@@ -196,8 +239,16 @@ export function createScriptedPostgres() {
           if (sql === 'ROLLBACK') { state.log.push('ROLLBACK'); pending = null; return Promise.resolve({ rows: [], rowCount: 0 }); }
           return Promise.resolve(exec(text, params, pending));
         },
-        release: () => {},
-      });
+        release: () => {
+          if (released) return;
+          released = true;
+          if (gen !== state.pool.gen) return;   // stale lease from a previous test
+          // Hand the slot straight to the next waiter (no window where a late caller
+          // can jump the queue) or give it back to the pool.
+          const next = state.pool.waiters.shift();
+          if (next) next(); else state.pool.leased -= 1;
+        },
+      };
     },
   };
 }
