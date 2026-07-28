@@ -59,20 +59,33 @@ def test_clock_is_declared_and_correct():
         assert got == expect, f"{asset}: clock {got} != {expect}"
 
 
-def test_code_hash_detects_strategy_drift():
-    """Editing a frozen strategy's source without re-freezing must fail CI."""
-    for asset in _champions():
-        m = _manifest(asset)
-        digest = hashlib.sha256()
-        for f in m["files"]:
-            digest.update((ROOT / f).read_bytes())
-        current = digest.hexdigest()[:16]
-        assert current == m["code_hash_sha256_16"], (
-            f"{asset}: strategy source drifted from its frozen manifest "
-            f"(manifest={m['code_hash_sha256_16']}, current={current}). Either revert the "
-            "source change, or consciously re-freeze: bump the manifest version, update the "
-            "hash, and count the look as a trial if any result was observed."
-        )
+@pytest.mark.parametrize(
+    "manifest_path", sorted(MANIFESTS.glob("*.yaml")), ids=lambda p: p.name)
+def test_code_hash_detects_strategy_drift(manifest_path):
+    """Editing a frozen strategy's source without re-freezing must fail CI.
+
+    Red-team BL-14 hallazgo #1: this test used to iterate only over _champions(),
+    so the paper candidates (usdcop_v12/usdcop_v14) drifted silently when commits
+    277a072/878be51 edited their frozen execution YAMLs post-freeze. The freeze
+    wall must cover EVERY manifest that declares `files:` — champion or not —
+    hence the parametrization over the manifest glob (each file is its own red X).
+    """
+    m = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    assert m.get("files") and m.get("code_hash_sha256_16"), (
+        f"{manifest_path.name}: a frozen manifest must declare files: + "
+        "code_hash_sha256_16 — a manifest without a hash is not frozen"
+    )
+    digest = hashlib.sha256()
+    for f in m["files"]:
+        digest.update((ROOT / f).read_bytes())
+    current = digest.hexdigest()[:16]
+    assert current == m["code_hash_sha256_16"], (
+        f"{manifest_path.name} ({m.get('strategy_id')}): strategy source drifted from "
+        f"its frozen manifest (manifest={m['code_hash_sha256_16']}, current={current}). "
+        "Either revert the source change, or consciously re-freeze: bump the manifest "
+        "version, update the hash, add a refreeze_note, and count the look as a trial "
+        "if any result was observed."
+    )
 
 
 def test_manifests_declare_action_surface():

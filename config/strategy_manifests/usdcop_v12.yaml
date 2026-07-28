@@ -40,11 +40,27 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 - config/execution/smart_simple_v12_lev_cap.yaml
-code_hash_sha256_16: 3bc28b36448892a1
+code_hash_sha256_16: 0cfa0eca071c63bf
 juez: registry COP seccion 'juez SELLADO' — corte-52 unico test; e-process descriptivo
 evidencia_diseno: .claude/evidence/cop_v12_design/2026-07-21/ (+12.1% vs +2.4% compuesto
   22-24)
-manifest_version: 4
+manifest_version: 5
+refreeze_note_v5: >-
+  Re-freeze v5 (2026-07-27, red-team BL-14 hallazgo #1): el code_hash de manifiesto
+  (3bc28b36448892a1, estado exacto del freeze 4f17d82 2026-07-21 18:56, reproducido)
+  drifteo SIN re-freeze porque el drift-test solo vigilaba campeonas. Commits del drift
+  (todos 2026-07-22 salvo el primero, todos ingenieria/gobernanza pre-declarada, SIN
+  cambios de parametros economicos — stops/sizing/umbrales de entrada intactos):
+  ccd5ac9 (+28 motor: ladder v14, flag default-OFF) y 003270f (+239 motor: techo v13,
+  flags default-OFF) y 50207a9 (+32 motor: eme_dispersion default False) — los tres
+  con bit-identidad del brazo v11/v12 verificada por QA (refreeze v7/v8 de la campeona,
+  usdcop.yaml); 277a072 (gates.enabled:false — neutraliza el gate semana-15 que
+  CONTRADECIA al juez sellado, ajuste #2 validacion Codex del plan, umbrales quedan
+  como historicos); 878be51 (fix contractual lista de features 25vs21, audit Codex #8
+  — declara las 4 features de enhance_v2 que el builder ya computaba). Hash nuevo
+  0cfa0eca071c63bf = estado HEAD verificado igual al post-878be51. 0 trials (fix de
+  ingenieria pre-declarado; ningun parametro elegido mirando resultados). El drift-test
+  ahora cubre TODOS los manifiestos con files: (parametrizado por glob).
 refreeze_note_v4: >-
   Re-freeze v4 (2026-07-27, BL-14 remediacion post-rechazo Codex): linaje completo del
   componente compartido (spec_fingerprint, code_reference+code_hash, feature_set,
