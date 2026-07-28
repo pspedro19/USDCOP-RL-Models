@@ -2,21 +2,154 @@
   "xauusd": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:3001/login?callbackUrl=%2Fforecasting",
-    "banner_diagnostico": false
+    "final_url": "http://localhost:3001/forecasting?asset=xauusd",
+    "banner_diagnostico": true
   },
   "usdcop": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:3001/login?callbackUrl=%2Fforecasting",
-    "banner_diagnostico": false,
-    "prob_subida_text": false,
-    "glyph_badges": []
+    "final_url": "http://localhost:3001/forecasting",
+    "banner_diagnostico": true,
+    "prob_subida_text": true,
+    "glyph_badges": [
+      {
+        "text": "↑ 3233.09",
+        "color": "rgb(230, 237, 247)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "text-[1.3125rem] font-extrabold font-mono tabular-nums text-[var(--gm-text)]"
+      },
+      {
+        "text": "↓ 3225.20",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↓ 3212.40",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↓ 3203.33",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↓ 3193.98",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↑ 3227.80",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↑ 3233.09",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↓ 3224.61",
+        "color": "rgb(196, 208, 227)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "mt-2 text-[16px] font-bold font-mono text-[var(--gm-text-strong)]"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(248, 250, 252)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(248, 250, 252)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(248, 250, 252)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(34, 211, 238)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↓ DOWN",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(248, 250, 252)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(34, 211, 238)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(248, 250, 252)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "cls": "py-2 px-2"
+      },
+      {
+        "text": "↑ UP",
+        "color": "rgb(132, 148, 172)",
+        "bg": "rgba(148, 163, 184, 0.07)",
+        "cls": "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.4px] bg-[rgba(148,163"
+      }
+    ]
   },
   "production": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:3001/login?callbackUrl=%2Fproduction",
+    "final_url": "http://localhost:3001/production",
     "candidatas_panel": false,
     "v11": false,
     "v12": false,
@@ -26,13 +159,13 @@
   "replay": {
     "console_errors": [],
     "http_failures": [],
-    "final_url": "http://localhost:3001/login?callbackUrl=%2Freplay",
-    "redirected_to_login": true,
+    "final_url": "http://localhost:3001/replay",
+    "redirected_to_login": false,
     "shows_404": false,
-    "has_select": 0,
+    "has_select": 1,
     "mentions_equity": false,
-    "mentions_estrategia": false,
-    "has_svg_chart": 9,
-    "body_head": "GlobalMarkets\nPlanes\nES\nIniciar sesión\nCrear cuenta\nInicia sesión\n\nTerminal de trading cuantitativo · acceso para cuentas aprobadas\n\nUSUARIO O CORREO\nCONTRASEÑA\nVERIFICACIÓN\n¿Cuánto es 2 + 2?\nEntrar a la terminal\n\n¿No tienes cuenta? Solicitar acceso\n\nExplorar como invitado\n\nSesión protegida · actividad registrada en audit log\n\nContenido informativo y educativo; no constituye asesoría financiera. Rendimientos pasados no garantizan resultados futuros. Operar divisas y criptoactivos implica riesgo de pérdida total del capital.\n\nMetodología\n·\nTérminos\n·\nPlanes\n\n© 2026 GlobalMarkets Terminal"
+    "mentions_estrategia": true,
+    "has_svg_chart": 16,
+    "body_head": "GlobalMarkets\nTERMINAL\nACCESOS\nInicio\nActivos\nBacktest\nProducción\nForecasting\nAnálisis\nSignalBridge\nAdmin\nVER COMO\nAdmin (tú)\nDeveloper\nSuscriptor\nGratis / Invitado\nES\nAD\nadmin@trading.usdcop.com\nMIS ACTIVOS\nPlanes\nESTRATEGIAS · OOS\nBacktest\nSmart Simple v1.1.0\nUSD/COP · +1.8% · Sharpe 3.79\nAPPROVED\n$3,215.6\n+0.0 (+0.00%)\nCERRADO\nOOS 2025 · BACKTEST\nPAPER\nCargando backtest…\n\nUSDCOP Trading System\n\nModo paper trading · Última actualización: 10:09:57 p. m."
   }
 }
