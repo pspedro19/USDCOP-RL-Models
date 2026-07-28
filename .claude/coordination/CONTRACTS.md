@@ -276,3 +276,9 @@ offset embebido; (3) snapshot COMPLETO simetrico ({close:1,unused:Inf} falla en 
 set/bytes lanzan, TS rechaza no-plain/undefined/bigint. 219 pytest + 70 vitest verdes sobre EL
 MISMO fixture; tsc 0 nuevos. Cambio declarado: derivacion signal_id a hex16 puro (unico
 constructor en produccion ya la usa). CODEX: re-review para ACK — desbloquea 45→46→47.
+
+## C-002 | NOTA(aditivo BL-34-r2) | CLAUDE | 2026-07-28T08:43:03-0500
+archivo: lib/contracts/rbac.contract.ts · cambio: +1 entrada NAV "Aprobacion" (approval:vote,
+admin-only) -> /dashboard y nav "Backtest" re-apuntado a /replay (research:read) · breaking:
+no (aditivo sobre el C-002 ya ACKeado; rbac:check 95 rutas OK, 27/27 contrato) · commit:
+a18be019ad85e8ea0302830e7d723c877904cfe2. CODEX: ACK u OBJECION en tu proximo ciclo.
