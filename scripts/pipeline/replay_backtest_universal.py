@@ -22,6 +22,7 @@ Contract: CTR-REPLAY-CLI-001
 """
 
 import argparse
+import json
 import logging
 import sys
 from datetime import datetime
@@ -34,6 +35,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/pipeline/<this> ->
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.contracts.approval_store import approval_path as _approval_path
+from src.contracts.approval_store import commit_approval_transition
 from src.contracts.signal_contract import SignalStore, UniversalSignalRecord
 from src.contracts.signal_adapters import (
     ADAPTER_REGISTRY,
@@ -53,6 +55,7 @@ from src.contracts.strategy_schema import (
     GateResult,
     ApprovalState,
     safe_json_dump,
+    safe_json_dumps,
 )
 
 logging.basicConfig(
@@ -270,10 +273,19 @@ def export_dashboard(strategy_id, year, result: ReplayResult):
     )
 
     # CXD-057: fuera de public/ — gates + DSR + backtest_metrics son research:read.
-    approval_path = _approval_path(strategy_id if strategy_id != "smart_simple_v11" else None)
-    approval_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(approval_path, "w") as f:
-        safe_json_dump(approval.to_dict(), f)
+    # CTR-APPROVAL-STORE-001: publicado POR EL STORE — lock interproceso compartido con
+    # el Voto 2 (Node), validación de schema y tmp+fsync+rename. El `open(...,"w")`
+    # anterior no excluía a nadie y podía truncar el SSOT a mitad de escritura.
+    # Semántica intacta: el replay SOBRESCRIBE con un PENDING_APPROVAL nuevo.
+    # `safe_json_dumps` + `loads` reproduce EXACTAMENTE lo que escribía `safe_json_dump`
+    # (Infinity/NaN → null, datetimes → ISO) antes de que el validador del store lo vea:
+    # el artefacto no puede llevar no-finitos (strategy-contract §2) y el store los
+    # RECHAZA, así que sanear aquí mantiene la salida idéntica sin debilitar el gate.
+    sid_or_singleton = strategy_id if strategy_id != "smart_simple_v11" else None
+    approval_path = _approval_path(sid_or_singleton)
+    commit_approval_transition(
+        sid_or_singleton, create_if_absent=True,
+        mutate=lambda _cur: json.loads(safe_json_dumps(approval.to_dict())))
     logger.info("  Wrote: %s", approval_path)
 
 

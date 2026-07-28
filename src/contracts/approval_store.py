@@ -37,7 +37,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 #: Nombre del artefacto de la estrategia ACTIVA (singleton, hoy COP).
 DEFAULT_APPROVAL_FILE = "approval_state.json"
@@ -67,6 +67,26 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 class ApprovalLockTimeout(RuntimeError):
     """No se pudo adquirir el lock del artefacto — **no se escribe a ciegas**."""
+
+
+class ApprovalConflict(RuntimeError):
+    """La precondición NO se cumple sobre el estado releído bajo el lock.
+
+    Espejo de ``{ok:false, code:'CONFLICT'}`` en ``lib/approvals/store.ts`` (el 409 del
+    Voto 2). Perder la carrera no es un error del programa: es la respuesta correcta.
+    """
+
+    def __init__(self, message: str, status: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+class ApprovalMissing(RuntimeError):
+    """El artefacto no existe / no es legible y el caller NO autorizó crearlo.
+
+    Espejo de ``{ok:false, code:'MISSING'}``. Fail-closed: nunca se fabrica un estado
+    por defecto que parezca "sin gates".
+    """
 
 
 def approvals_dir() -> Path:
@@ -228,32 +248,126 @@ def acquire_approval_lock(path: Path, timeout_s: float = _LOCK_WAIT_S):
     return _Lock()
 
 
+def _publish_atomic(path: Path, state: Dict[str, Any]) -> None:
+    """Temporal en el MISMO directorio → ``fsync`` → ``os.replace``.
+
+    **Asume que el lock ya está tomado** (lo toman ``write_approval`` y
+    ``commit_approval_transition``). Un crash en cualquier punto deja el artefacto
+    anterior ÍNTEGRO: antes, un ``write_text`` a medias truncaba el SSOT y el lector
+    fail-closed lo convertía en un 404 de aprobación.
+    """
+    payload = json.dumps(state, indent=2, ensure_ascii=False, allow_nan=False)
+    tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{uuid.uuid4().hex[:8]}")
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(payload)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
 def write_approval(state: Dict[str, Any], strategy_id: Optional[str] = None) -> Path:
     """Publica el artefacto **validado y de forma atómica**. Devuelve la ruta.
 
     - ``strategy_id`` inválido ⇒ ``ValueError`` (no degrada al singleton).
     - Documento que no cumple el schema / con no-finitos ⇒ ``ValueError``, sin tocar disco.
-    - Publicación: temporal en el MISMO directorio → ``fsync`` → ``os.replace``. Un
-      crash en cualquier punto deja el artefacto anterior ÍNTEGRO (antes, un
-      ``write_text`` a medias truncaba el SSOT y el lector fail-closed lo volvía un 404).
+
+    **Escritura DIRECTA (no transaccional)**: publica lo que le den sin releer el disco.
+    Solo para el bootstrap de un artefacto que este proceso posee. Espejo de
+    ``writeApprovalState`` en ``lib/approvals/store.ts``. Si el documento nuevo depende
+    del anterior (preservar un voto, resetear a PENDING, refrescar gates), el camino
+    correcto es ``commit_approval_transition``: ahí el estado previo se relee **bajo el
+    lock**, que es lo único que impide pisar una decisión ajena.
     """
     path = approval_path(strategy_id)
     validate_approval_document(state)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(state, indent=2, ensure_ascii=False, allow_nan=False)
-
     with acquire_approval_lock(path):
-        tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}-{uuid.uuid4().hex[:8]}")
-        try:
-            with open(tmp, "w", encoding="utf-8") as fh:
-                fh.write(payload)
-                fh.flush()
-                os.fsync(fh.fileno())
-            os.replace(tmp, path)
-        except BaseException:
-            tmp.unlink(missing_ok=True)
-            raise
+        _publish_atomic(path, state)
     return path
+
+
+def _read_exact(path: Path) -> Optional[Dict[str, Any]]:
+    """Lee ESE fichero (sin resolución ni fallback). ``None`` si falta, excede el cap
+    o no parsea — mismo criterio fail-closed que ``readJson`` en TypeScript."""
+    try:
+        if path.stat().st_size > MAX_APPROVAL_BYTES:
+            return None
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def transition_target(strategy_id: Optional[str] = None) -> Path:
+    """El fichero que una transición debe bloquear y publicar.
+
+    Espejo EXACTO de lo que hace el Voto 2 en TypeScript: ``readApprovalState(sid)``
+    resuelve primero (scoped → singleton que pertenece a esa estrategia) y
+    ``commitApprovalTransition`` bloquea ``record.file``. Si Python bloqueara siempre el
+    nombre scoped mientras el artefacto real es el singleton, los dos lados tomarían
+    locks DISTINTOS sobre el MISMO fichero y la exclusión sería decorativa.
+    Cuando no hay artefacto todavía, el destino de creación es el canónico de la id.
+    """
+    resolved = resolve_approval_path(strategy_id)
+    return resolved if resolved is not None else approval_path(strategy_id)
+
+
+def commit_approval_transition(
+    strategy_id: Optional[str] = None,
+    *,
+    mutate: Callable[[Dict[str, Any]], Dict[str, Any]],
+    precondition: Optional[Callable[[Dict[str, Any]], Optional[str]]] = None,
+    create_if_absent: bool = False,
+    timeout_s: float = _LOCK_WAIT_S,
+) -> Dict[str, Any]:
+    """Transición **compare-and-set** del estado de aprobación (espejo Python de
+    ``lib/approvals/store.ts::commitApprovalTransition``).
+
+    Es el ÚNICO camino correcto para cualquier escritor que dependa del estado previo.
+    El artefacto lo mutan al menos cuatro escritores (el Voto 2 en Node, el export de
+    COP, los publishers de Gold/BTC y el DAG H5-L4b); el patrón viejo —leer, decidir
+    sobre lo leído, ``open(path,"w")``— no excluye a nadie: dos escritores leen
+    ``PENDING_APPROVAL``, ambos creen haber ganado y el último pisa al otro. Con un Voto
+    2 de por medio eso significa un deploy disparado sobre un estado que ya no existe.
+
+    Secuencia (idéntica a la de TypeScript, mismo lockfile y mismo sufijo):
+
+      1. **LOCK** ``O_CREAT|O_EXCL`` sobre ``<artefacto>.lock``. Timeout ⇒
+         ``ApprovalLockTimeout`` y **no se escribe nada** (fail-closed).
+      2. **COMPARE**: se RELEE el artefacto del disco *dentro* del lock — la verdad es
+         lo que hay ahora, no lo que el proceso leyó hace 40 minutos de backtest.
+         Ausente/ilegible ⇒ ``ApprovalMissing`` salvo ``create_if_absent``.
+         ``precondition(current) -> str | None``: un motivo ⇒ ``ApprovalConflict``.
+      3. **SET**: ``mutate(current)`` → validación de schema → publicación atómica
+         (tmp + fsync + rename). Solo entonces retorna.
+
+    El caller puede disparar efectos (deploy, prints, registry) DESPUÉS, con la garantía
+    de que el commit está en disco y de que fue el ganador.
+    """
+    path = transition_target(strategy_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with acquire_approval_lock(path, timeout_s=timeout_s):
+        current = _read_exact(path)
+        if current is None:
+            if not create_if_absent:
+                raise ApprovalMissing(
+                    f"approval artifact absent or unreadable: {path.name} "
+                    "(pass create_if_absent=True to bootstrap it deliberately)"
+                )
+            current = {}
+        if precondition is not None:
+            why = precondition(current)
+            if why:
+                raise ApprovalConflict(why, status=current.get("status"))
+        nxt = mutate(current)
+        validate_approval_document(nxt)
+        _publish_atomic(path, nxt)
+    return nxt
 
 
 #: Campos publicables a una superficie de CLIENTE — ALLOWLIST, jamás blacklist.

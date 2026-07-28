@@ -41,6 +41,7 @@ try:
 except ModuleNotFoundError:  # Airflow container without services/ mount
     deflated_sharpe_ratio = None
 from src.contracts.approval_store import approval_path as _approval_path
+from src.contracts.approval_store import commit_approval_transition
 from src.btc_strategy import backtest as bt
 from src.btc_strategy import strategies as st
 from src.btc_strategy.indicators import (build_daily_features, classify_regime, merge_funding_features,
@@ -315,8 +316,21 @@ def main() -> int:
 
         _dump(prod_dir / f"summary_{sid}.json", _suppress(summary_doc))
         # CXD-057: el approval_state va al store PRIVADO, nunca a public/.
-        _approval_path(sid).parent.mkdir(parents=True, exist_ok=True)
-        _dump(_approval_path(sid), approval_doc)
+        # CTR-APPROVAL-STORE-001: y se publica POR EL STORE, no con el `_dump` de arriba.
+        # El `_dump` no tomaba el lock interproceso, así que este publish y un Voto 2
+        # concurrente (Node) se pisaban, y un fallo a mitad de `json.dump` truncaba el
+        # SSOT. `commit_approval_transition` da lock compartido + validación de schema +
+        # tmp/fsync/rename. Semántica intacta: este publish SOBRESCRIBE (mutate ignora el
+        # estado previo), exactamente como antes.
+        # El `default=str` del `_dump` NO saneaba no-finitos (json.dump escribe `NaN`
+        # literal), y el validador del store los rechaza: se sanean igual que cualquier
+        # export del dashboard (Infinity/NaN → null, strategy-contract §2) para que la
+        # salida sea la misma y el gate no se debilite.
+        from src.contracts.strategy_schema import safe_json_dumps
+        commit_approval_transition(
+            sid, create_if_absent=True,
+            mutate=lambda _cur: _json.loads(safe_json_dumps(approval_doc)))
+        print(f"  [production] wrote {_approval_path(sid)}")
         _dump(prod_dir / "trades" / f"{sid}.json", trades_doc)
         print(f"\n[production] {sid} exported (PAPER). 2026 YTD: ret={ret26}% "
               f"sharpe={m26.get('sharpe')} trades={len(trades26)}. "

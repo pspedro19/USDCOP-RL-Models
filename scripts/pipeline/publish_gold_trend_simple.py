@@ -50,6 +50,8 @@ from services.common.metrics import (deflated_sharpe_ratio,  # noqa: E402
 from src.gold_rl import backtest as bt  # noqa: E402
 from src.gold_rl.indicators import build_daily_features  # noqa: E402
 from src.contracts.approval_store import approval_path as _approval_path  # noqa: E402
+from src.contracts.approval_store import (ApprovalConflict,  # noqa: E402
+                                          commit_approval_transition)
 
 PUBLIC_DATA = REPO / "usdcop-trading-dashboard" / "public" / "data"
 SID = "gold_trend_simple"
@@ -266,11 +268,21 @@ def main() -> int:
     # CXD-057: el approval_state NO puede vivir bajo public/ (gates + DSR +
     # backtest_metrics = research:read). SSOT de la ruta: src/contracts/approval_store.py.
     ap_path = _approval_path(SID)
-    ap_path.parent.mkdir(parents=True, exist_ok=True)
-    existing = json.loads(ap_path.read_text(encoding="utf-8")) if ap_path.exists() else {}
-    if existing.get("status") not in ("APPROVED", "LIVE"):  # nunca clobberear un voto ya emitido
-        now = str(pd.Timestamp.utcnow().isoformat())
-        ap = {
+    # CTR-APPROVAL-STORE-001: leer → decidir → write_text NO excluía a nadie. El guard
+    # "nunca clobberear un voto ya emitido" se evaluaba sobre una lectura vieja: si el
+    # Voto 2 aprobaba entre esa lectura y la escritura, este publish devolvía el
+    # artefacto a PENDING_APPROVAL y BORRABA la aprobación. Ahora el guard es la
+    # PRECONDICIÓN de una transacción: se releé bajo el lock compartido con Node y, si
+    # el estado ya está resuelto, no se escribe (ApprovalConflict).
+    now = str(pd.Timestamp.utcnow().isoformat())
+
+    def _decline_if_voted(cur):
+        if cur.get("status") in ("APPROVED", "LIVE"):
+            return f"voto ya emitido ({cur.get('status')}) — no se clobberea"
+        return None
+
+    def _pending_doc(cur):
+        return {
             "status": "PENDING_APPROVAL", "strategy": SID, "strategy_name": NAME,
             "backtest_year": 2025, "backtest_recommendation": rec,
             "backtest_confidence": conf, "gates": gates,
@@ -285,12 +297,17 @@ def main() -> int:
                                 "args": ["--version", a.version],
                                 "config_path": "config/assets/xauusd.yaml",
                                 "db_tables": [], "mode": "paper"},
-            "approved_by": existing.get("approved_by"), "approved_at": existing.get("approved_at"),
-            "reviewer_notes": existing.get("reviewer_notes"),
-            "created_at": existing.get("created_at", now), "last_updated": now,
+            "approved_by": cur.get("approved_by"), "approved_at": cur.get("approved_at"),
+            "reviewer_notes": cur.get("reviewer_notes"),
+            "created_at": cur.get("created_at", now), "last_updated": now,
         }
-        ap_path.write_text(json.dumps(ap, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    try:
+        commit_approval_transition(SID, create_if_absent=True,
+                                   precondition=_decline_if_voted, mutate=_pending_doc)
         print(f"[vote2] approval_state_{SID}.json -> PENDING_APPROVAL ({rec})")
+    except ApprovalConflict as e:
+        print(f"[vote2] approval_state_{SID}.json intacto: {e}")
 
     # summary/trades de producción 2026 (lo que /production muestra tras la aprobación)
     y26 = d[d["time"] >= "2026-01-01"].copy()

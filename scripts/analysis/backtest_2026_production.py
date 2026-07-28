@@ -47,6 +47,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]  # scripts/analysis/<this> ->
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.contracts.approval_store import approval_path as _approval_path
+from src.contracts.approval_store import commit_approval_transition
 
 from src.forecasting.data_contracts import FEATURE_COLUMNS
 from src.forecasting.models.factory import ModelFactory
@@ -933,45 +934,46 @@ def update_approval_state(gate_results: List[Dict]) -> None:
 
     now = pd.Timestamp.now().isoformat()
 
-    # Check existing state — preserve user's vote
-    existing_fields = {}
-    existing_created_at = now
-    if approval_path.exists():
-        try:
-            with open(approval_path) as f:
-                existing = json.load(f)
-            existing_created_at = existing.get("created_at", now)
-            existing_status = existing.get("status", "PENDING_APPROVAL")
-            if existing_status in ("APPROVED", "LIVE"):
-                existing_fields = {
-                    "status": existing_status,
-                    "approved_by": existing.get("approved_by"),
-                    "approved_at": existing.get("approved_at"),
-                    "reviewer_notes": existing.get("reviewer_notes"),
-                }
-            elif existing_status == "REJECTED":
-                existing_fields = {
-                    "status": existing_status,
-                    "rejected_by": existing.get("rejected_by"),
-                    "rejected_at": existing.get("rejected_at"),
-                    "rejection_reason": existing.get("rejection_reason"),
-                }
-        except (json.JSONDecodeError, OSError):
-            pass
+    # CTR-APPROVAL-STORE-001: "preserva el voto del usuario" es precisamente la clase de
+    # decisión que NO puede tomarse sobre una lectura vieja. El patrón anterior —leer,
+    # componer en memoria, `open(path,"w")`— podía perder un voto emitido entre la
+    # lectura y la escritura (y truncar el SSOT si reventaba a mitad). Ahora el
+    # `existing` que se preserva se relee DENTRO del lock compartido con el Voto 2 de
+    # Node, y la publicación es atómica. Semántica de preservación idéntica.
+    def _mutate(existing):
+        existing_created_at = existing.get("created_at", now)
+        existing_status = existing.get("status", "PENDING_APPROVAL")
+        existing_fields = {}
+        if existing_status in ("APPROVED", "LIVE"):
+            existing_fields = {
+                "status": existing_status,
+                "approved_by": existing.get("approved_by"),
+                "approved_at": existing.get("approved_at"),
+                "reviewer_notes": existing.get("reviewer_notes"),
+            }
+        elif existing_status == "REJECTED":
+            existing_fields = {
+                "status": existing_status,
+                "rejected_by": existing.get("rejected_by"),
+                "rejected_at": existing.get("rejected_at"),
+                "rejection_reason": existing.get("rejection_reason"),
+            }
+        state = {
+            "status": existing_fields.get("status", "PENDING_APPROVAL"),
+            "strategy": "forecast_vt_trailing",
+            "backtest_recommendation": recommendation,
+            "backtest_confidence": round(confidence, 2),
+            "gates": gate_results,
+            **{k: v for k, v in existing_fields.items() if k != "status"},
+            "created_at": existing_created_at,
+            "last_updated": now,
+        }
+        # `default=str` no saneaba no-finitos; el store los rechaza. Se sanean igual que
+        # cualquier export del dashboard (Infinity/NaN → null, strategy-contract §2).
+        from src.contracts.strategy_schema import safe_json_dumps
+        return json.loads(safe_json_dumps(state))
 
-    state = {
-        "status": existing_fields.get("status", "PENDING_APPROVAL"),
-        "strategy": "forecast_vt_trailing",
-        "backtest_recommendation": recommendation,
-        "backtest_confidence": round(confidence, 2),
-        "gates": gate_results,
-        **{k: v for k, v in existing_fields.items() if k != "status"},
-        "created_at": existing_created_at,
-        "last_updated": now,
-    }
-
-    with open(approval_path, "w") as f:
-        json.dump(state, f, indent=2, default=str)
+    state = commit_approval_transition(None, create_if_absent=True, mutate=_mutate)
 
     logger.info(f"  Approval state: {state['status']} (recommendation={recommendation}, confidence={confidence:.0%})")
     for g in gate_results:
