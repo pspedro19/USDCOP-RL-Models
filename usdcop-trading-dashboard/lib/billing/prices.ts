@@ -55,6 +55,7 @@ export const PAID_PLANS: PlanId[] = ['signals', 'auto'];
 export const DEFAULT_ADDON_PRICES_COP: Record<string, number> = {
   xauusd: 39_000, // Gold add-on
   btcusdt: 39_000, // Bitcoin add-on
+  spx500: 39_000, // S&P 500 add-on; final price remains a business decision
 };
 
 /** Effective add-on prices (whole COP), with env override merged over defaults. */

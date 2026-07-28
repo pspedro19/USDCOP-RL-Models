@@ -8,7 +8,7 @@
  */
 
 export {
-  ok, fail, UpstreamError, upstreamCode,
+  ok, fail, logServerError, UpstreamError, upstreamCode,
   type ApiErrorShape, type Envelope, type Meta,
 } from './envelope';
 export {

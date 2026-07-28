@@ -18,12 +18,13 @@
  * deferred until the webhook confirms (re-running checkout is safe/idempotent
  * in effect: same cart ⇒ equivalent session).
  */
-import { fail, ok } from '@/lib/api/envelope';
+import { fail, logServerError, ok } from '@/lib/api/envelope';
 import { requireSession } from '@/lib/api/relay';
 import { getEntitlements } from '@/lib/auth/entitlements';
 import { getBillingProvider } from '@/lib/billing';
 import { query } from '@/lib/db/postgres-client';
 import type { CartCheckoutResponse } from '@/lib/contracts/catalog.contract';
+import { planPriceCents, addonPricesCop } from '@/lib/billing/prices';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,20 +63,40 @@ export async function POST(req: Request) {
   const entitlements = await getEntitlements(gate.userId);
   const addOnAssets = cartAssets.filter((a) => !entitlements.assets.includes(a));
 
+  // Provider misconfiguration (missing keys / no published price) fails CLOSED:
+  // no URL is produced at all (CODEX P0-2).
+  let session;
   try {
-    const session = await getBillingProvider().createCheckout({
+    session = await getBillingProvider().createCheckout({
       userId: gate.userId, email, plan: body.plan, addOnAssets,
     });
-    const data: CartCheckoutResponse = {
-      provider: session.provider,
-      checkout_url: session.checkoutUrl,
-      reference: session.reference,
-      addon_assets: addOnAssets,
-    };
-    return ok(data);
   } catch (e) {
-    // Provider not configured (no keys): actionable 503, never a raw 500 stack.
-    return fail('BILLING_NOT_CONFIGURED', 'Pasarela de pago no configurada.', 503,
-      { detail: String(e) });
+    // Detail stays in the server log ONLY — the body never carries paths/driver text.
+    logServerError('cart/checkout provider', e);
+    return fail('BILLING_NOT_CONFIGURED', 'Pasarela de pago no configurada.', 503);
   }
+
+  try {
+    const amountCents = Math.round(planPriceCents(body.plan) +
+      addOnAssets.reduce((sum, id) => sum + Math.round((addonPricesCop()[id] ?? 0) * 100), 0));
+    // Persist the immutable server quote BEFORE handing out the URL; the webhook
+    // credits THIS row, so a checkout we could not seal must not be returned.
+    await query(
+      `INSERT INTO checkout_orders (user_id, plan, addon_assets, amount_cents, currency, reference, status)
+       VALUES ($1,$2,$3::jsonb,$4,'COP',$5,'pending')
+       ON CONFLICT (reference) DO NOTHING`,
+      [gate.userId, body.plan, JSON.stringify(addOnAssets), amountCents, session.reference],
+    );
+  } catch (e) {
+    logServerError('cart/checkout seal-quote', e);
+    return fail('UPSTREAM_UNAVAILABLE', 'No se pudo iniciar el pago. Intenta de nuevo.', 502);
+  }
+
+  const data: CartCheckoutResponse = {
+    provider: session.provider,
+    checkout_url: session.checkoutUrl,
+    reference: session.reference,
+    addon_assets: addOnAssets,
+  };
+  return ok(data);
 }

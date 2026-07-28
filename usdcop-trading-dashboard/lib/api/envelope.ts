@@ -41,6 +41,34 @@ export function fail(code: string, message: string, status = 400, details?: Reco
   return json({ ok: false, error } satisfies Envelope<never>, status);
 }
 
+/**
+ * Log an unexpected handler error SERVER-SIDE, sanitized — then answer with a generic
+ * `fail(...)`. Never put the raw message in the response body: a thrown `ENOENT`, a JSON
+ * parse error or a driver error carries absolute filesystem paths, and shipping them to
+ * the browser is information disclosure (CODEX P1 finding on `/api/passport/**` and
+ * `/api/cart/checkout`, which returned `(e as Error).message` / `String(e)`).
+ *
+ * Sanitization applied to what we log (server logs are shipped to Loki):
+ *  - only the error CLASS and message are kept — no stack, no cause chain;
+ *  - absolute paths (Windows `C:\...` and POSIX `/home/...`) are collapsed to their
+ *    basename, so the log says which file failed without publishing the tree layout;
+ *  - the message is capped, so a driver dumping a query (with values) cannot flood it;
+ *  - credential-shaped tokens (`password=…`, DSNs with userinfo) are redacted: a
+ *    Postgres/Redis driver error quotes the connection string it failed on, and those
+ *    logs are shipped to Loki (CODEX P0 billing review).
+ */
+export function logServerError(scope: string, e: unknown): void {
+  const name = e instanceof Error ? e.name : typeof e;
+  const raw = e instanceof Error ? e.message : String(e);
+  const redacted = raw
+    .replace(/(password|passwd|pwd|secret|token|api[_-]?key|authorization)\s*[=:]\s*\S+/gi, '$1=[redacted]')
+    .replace(/([a-z+]+):\/\/[^@\s]+@/gi, '$1://[redacted]@')
+    .replace(/[A-Za-z]:\\[^\s"']*/g, (m) => `<path>/${m.split(/[\\/]/).pop()}`)
+    .replace(/(?<![\w.])\/(?:[\w.@-]+\/)+[\w.@-]+/g, (m) => `<path>/${m.split('/').pop()}`)
+    .slice(0, 300);
+  console.error(`[api:${scope}] ${name}: ${redacted}`);
+}
+
 /** Upstream failure carrying the stable code — throw inside handlers, `.toResponse()` at the edge. */
 export class UpstreamError extends Error {
   constructor(public code: string, message: string, public status: number, public traceId?: string) {

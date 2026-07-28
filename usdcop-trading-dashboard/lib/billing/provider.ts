@@ -23,15 +23,36 @@ export interface CheckoutSession {
   reference: string;
 }
 
+/** Transitions the platform knows how to apply. NOTHING else may be synthesized. */
+export type BillingEventType =
+  | 'payment.approved'
+  | 'payment.declined'
+  | 'subscription.cancelled'
+  | 'payment.refunded'
+  | 'payment.charged_back';
+
+export interface NormalizedBillingEvent {
+  type: BillingEventType;
+  reference: string;
+  amountInCents?: number;
+  /** ISO-4217 code as reported by the provider; checked against the sealed quote. */
+  currency?: string;
+  /** Stable provider-side id (idempotency key of the append-only event ledger). */
+  providerEventId: string;
+  raw: unknown;
+}
+
 export interface WebhookVerification {
   valid: boolean;
-  /** Normalized event after signature verification. */
-  event?: {
-    type: 'payment.approved' | 'payment.declined' | 'subscription.cancelled';
-    reference: string;
-    amountInCents?: number;
-    raw: unknown;
-  };
+  /** Normalized event after signature verification. Absent ⇒ nothing to apply. */
+  event?: NormalizedBillingEvent;
+  /**
+   * Signature verified but the event carries NO state transition we understand
+   * (e.g. Wompi `PENDING`, or an event type added by the provider after this code
+   * was written). It is acknowledged and dropped — a provider event is NEVER
+   * translated into a transition it did not express (CODEX P0-1).
+   */
+  ignored?: { reason: string; reference?: string; providerEventId?: string; providerStatus?: string };
   error?: string;
 }
 

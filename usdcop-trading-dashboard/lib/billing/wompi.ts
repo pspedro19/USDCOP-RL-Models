@@ -10,9 +10,9 @@
  */
 import { createHash } from 'node:crypto';
 
-import { planPricesCents } from './prices';
+import { planPricesCents, addonPricesCop } from './prices';
 import type {
-  BillingProvider, CheckoutRequest, CheckoutSession, WebhookVerification,
+  BillingEventType, BillingProvider, CheckoutRequest, CheckoutSession, WebhookVerification,
 } from './provider';
 import { encodeReference } from './provider';
 
@@ -20,31 +20,70 @@ import { encodeReference } from './provider';
 // never diverge. Env override: BILLING_PRICES_COP.
 const pricesCopCents = planPricesCents;
 
+/** Currency of every Wompi checkout this integration issues. */
+const WOMPI_CURRENCY = 'COP';
+
+/**
+ * EXHAUSTIVE map `transaction.status` → normalized transition (CODEX P0-1).
+ * `null` = the status is real but carries no transition we apply (the payment is
+ * still in flight). A status NOT present here is unknown ⇒ ignored, never guessed.
+ * Wompi statuses: https://docs.wompi.co/docs/colombia/estados-y-eventos/
+ */
+const WOMPI_STATUS_MAP: Record<string, BillingEventType | null> = {
+  APPROVED: 'payment.approved',
+  DECLINED: 'payment.declined',
+  ERROR: 'payment.declined',
+  VOIDED: 'payment.declined',
+  PENDING: null,
+};
+
+/** Event names this integration understands. Anything else is ignored. */
+const WOMPI_HANDLED_EVENTS = new Set(['transaction.updated']);
+
 export class WompiProvider implements BillingProvider {
   readonly name = 'wompi';
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutSession> {
-    const publicKey = process.env.WOMPI_PUBLIC_KEY;
+    // Fail CLOSED on incomplete configuration: an incomplete config must never
+    // produce a payable URL (CODEX P0-2 — a URL signed with an empty integrity
+    // secret is a URL whose amount anyone can rewrite).
+    const publicKey = process.env.WOMPI_PUBLIC_KEY?.trim();
     if (!publicKey) throw new Error('WOMPI_PUBLIC_KEY not configured');
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET?.trim();
+    if (!integritySecret) throw new Error('WOMPI_INTEGRITY_SECRET not configured');
+    const redirect = process.env.NEXTAUTH_URL?.trim();
+    if (!redirect) throw new Error('NEXTAUTH_URL not configured');
 
     const reference = encodeReference(req.userId, req.plan, req.addOnAssets ?? []);
-    const amountInCents = Math.round(pricesCopCents()[req.plan] ?? 0);
-    const currency = 'COP';
+    const base = Math.round(pricesCopCents()[req.plan] ?? 0);
+    if (!Number.isFinite(base) || base <= 0) {
+      // No published price for a PAID plan ⇒ we do not invent one (prices are an
+      // operator decision, spec §B.5). Charging 0 would grant access for free.
+      throw new Error(`no published price for plan '${req.plan}'`);
+    }
+    let addons = 0;
+    for (const id of req.addOnAssets ?? []) {
+      const price = addonPricesCop()[id];
+      if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
+        throw new Error(`no published price for add-on '${id}'`);
+      }
+      addons += Math.round(price * 100);
+    }
+    const amountInCents = base + addons;
+    const currency = WOMPI_CURRENCY;
 
     // Integrity signature: SHA256(reference + amount + currency + integrity_secret)
-    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET ?? '';
     const signature = createHash('sha256')
       .update(`${reference}${amountInCents}${currency}${integritySecret}`)
       .digest('hex');
 
-    const redirect = `${process.env.NEXTAUTH_URL ?? ''}/account/billing`;
     const params = new URLSearchParams({
       'public-key': publicKey,
       currency,
       'amount-in-cents': String(amountInCents),
       reference,
       'signature:integrity': signature,
-      'redirect-url': redirect,
+      'redirect-url': `${redirect}/account/billing`,
       'customer-data:email': req.email,
     });
 
@@ -81,18 +120,41 @@ export class WompiProvider implements BillingProvider {
     if (expected !== signature.checksum) return { valid: false, error: 'bad checksum' };
 
     const tx = data?.transaction;
-    const approved = body.event === 'transaction.updated' && tx?.status === 'APPROVED';
-    const declined = body.event === 'transaction.updated' &&
-      ['DECLINED', 'ERROR', 'VOIDED'].includes(tx?.status ?? '');
+    const status = String(tx?.status ?? '');
+    const reference = tx?.reference ?? '';
+    const txId = tx?.id ?? (reference || 'unknown');
+    const providerEventId = `wompi:${txId}:${status || body.event}`;
+
+    // ── EXHAUSTIVE mapping. Anything not explicitly listed is ACKNOWLEDGED and
+    // DROPPED; it is never translated into a transition the provider did not send.
+    if (!WOMPI_HANDLED_EVENTS.has(body.event)) {
+      return { valid: true, ignored: { reason: `unhandled event '${body.event}'`, reference, providerEventId } };
+    }
+    if (!(status in WOMPI_STATUS_MAP)) {
+      return {
+        valid: true,
+        ignored: { reason: 'unknown transaction status', reference, providerEventId, providerStatus: status },
+      };
+    }
+    const type = WOMPI_STATUS_MAP[status];
+    if (type === null) {
+      return {
+        valid: true,
+        ignored: { reason: 'no state transition (payment still in flight)', reference, providerEventId, providerStatus: status },
+      };
+    }
+
+    const rawAmount = tx?.amount_in_cents;
+    const amountInCents = typeof rawAmount === 'string' ? Number(rawAmount) : rawAmount;
 
     return {
       valid: true,
       event: {
-        type: approved ? 'payment.approved'
-          : declined ? 'payment.declined'
-          : 'subscription.cancelled',
-        reference: tx?.reference ?? '',
-        amountInCents: tx?.amount_in_cents,
+        type,
+        reference,
+        amountInCents: Number.isFinite(amountInCents as number) ? (amountInCents as number) : undefined,
+        currency: typeof tx?.currency === 'string' ? tx.currency : undefined,
+        providerEventId,
         raw: body,
       },
     };
@@ -102,7 +164,7 @@ export class WompiProvider implements BillingProvider {
 interface WompiEvent {
   event: string;
   data?: { transaction?: { id?: string; status?: string; reference?: string;
-                           amount_in_cents?: number } };
+                           amount_in_cents?: number | string; currency?: string } };
   signature?: { checksum: string; properties: string[] };
   timestamp?: number;
 }

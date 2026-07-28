@@ -11,7 +11,7 @@
  * `traceparent`, forwards `Idempotency-Key` on mutations, and maps errors to the
  * stable envelope codes (`UPSTREAM_*`).
  */
-import { permsHave, roleHasPermission, type Permission, type Role } from '@/lib/contracts/rbac.contract';
+import { permsHave, roleHasPermission, ROLES, type Permission, type Role } from '@/lib/contracts/rbac.contract';
 
 import { fail, UpstreamError, upstreamCode } from './envelope';
 
@@ -52,7 +52,9 @@ export function requirePermission(req: Request, perm: Permission): HandlerIdenti
 export function requireSession(req: Request): { userId: string; role: Role } | Response {
   const role = req.headers.get('x-user-role');
   const userId = req.headers.get('x-user-id');
-  if (!role || !userId) return fail('UNAUTHENTICATED', 'Inicia sesión para continuar.', 401);
+  if (!role || !userId || !userId.trim() || !(ROLES as readonly string[]).includes(role)) {
+    return fail('UNAUTHENTICATED', 'Inicia sesión para continuar.', 401);
+  }
   return { userId, role: role as Role };
 }
 
