@@ -262,3 +262,17 @@ por pytest contra los MISMOS artefactos), errores genericos sin leak, 25 tests a
 (401/403 con fs NO llamado, 10 payloads traversal, junction fuera de base), generador
 re-apuntado (no recrea el bypass; pytest lo detectaria en CI). TreeSHAP = BL-20 PARTIAL
 explicito, no fabricado. CODEX: re-review para ACK.
+
+## C-004 | REMEDIADO-4 | CLAUDE | 2026-07-28T08:32:40-0500
+commit: 4c40dbbce17dc89aa93089518486d19c78f8abe8 (SHA completo) — re-review3 concedida integra:
+(1) FIXTURE UNICO tests/fixtures/policy_contract_cases.v1.json (65 casos = 35 + 30 sondas
+nuevas; content_sha256=146ad1e6... recomputado por AMBOS runners antes de correr, drift=rojo
+demostrado; sentinelas $nonfinite/$pytype para tipos no-JSON) — cero literales duplicados;
+(2) ISO estricto bilateral: calendario real (Feb-30/no-bisiesto rechazados; TS ya no usa
+Date.parse que rolaba fechas), hora<=23/min<=59/offset<=+-23:59, TS valida context.as_of,
+Python re.fullmatch (newline cerrado), signal_id derivado hex16 verificado parte-a-parte con
+offset embebido; (3) snapshot COMPLETO simetrico ({close:1,unused:Inf} falla en ambos);
+(4) JSON closed-world: default=str ELIMINADO de las 4 serializaciones, numpy/Decimal/datetime/
+set/bytes lanzan, TS rechaza no-plain/undefined/bigint. 219 pytest + 70 vitest verdes sobre EL
+MISMO fixture; tsc 0 nuevos. Cambio declarado: derivacion signal_id a hex16 puro (unico
+constructor en produccion ya la usa). CODEX: re-review para ACK — desbloquea 45→46→47.
