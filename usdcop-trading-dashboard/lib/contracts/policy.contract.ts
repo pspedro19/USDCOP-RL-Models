@@ -274,6 +274,76 @@ function nonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
 }
 
+// Strict form patterns (mirror policy.py HASH_PATTERN / ID_PATTERN /
+// ISO_TIMESTAMP_PATTERN — C-004 remedy-3 finding 4: policy_hash=true,
+// sleeve_id=null, as_of=null are typed violations, never truthiness passes).
+
+/** `sha256:<lowercase-hex>` (8..64 hex chars; full fingerprints use 64). */
+export const HASH_PATTERN = /^sha256:[0-9a-f]{8,64}$/;
+
+/** Identifier form for sleeve_id / signal_id / snapshot ids / versions. */
+export const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
+
+/** ISO-8601 date or datetime (the only accepted `as_of` form). */
+export const ISO_TIMESTAMP_PATTERN =
+  /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
+
+function validHash(v: unknown): v is string {
+  return typeof v === 'string' && HASH_PATTERN.test(v);
+}
+
+function validId(v: unknown): v is string {
+  return typeof v === 'string' && ID_PATTERN.test(v);
+}
+
+function validIsoTimestamp(v: unknown): v is string {
+  if (typeof v !== 'string' || !ISO_TIMESTAMP_PATTERN.test(v)) return false;
+  // calendar check on the date part (mirrors Python date.fromisoformat)
+  return !Number.isNaN(Date.parse(v.slice(0, 10)));
+}
+
+/**
+ * Recursive finiteness sweep: any non-finite number (NaN/±Infinity) anywhere
+ * in a serializable payload is a violation (repo rule: JSON never carries
+ * Infinity/NaN — mirrors rule_trace.py::ensure_json_safe, C-004 remedy-3
+ * findings 3/5).
+ */
+export function collectNonFinite(value: unknown, path: string, errors: string[]): void {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      errors.push(`${path} contains a non-finite number — NaN/Infinity forbidden in JSON`);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, i) => collectNonFinite(item, `${path}[${i}]`, errors));
+  } else if (typeof value === 'object' && value !== null) {
+    for (const [key, item] of Object.entries(value)) {
+      collectNonFinite(item, `${path}.${key}`, errors);
+    }
+  }
+}
+
+/**
+ * Mirrors DeclarativePolicy.validate_inputs strictness: every snapshot value
+ * must be a REAL finite number — null/bool/string/NaN/Infinity are typed
+ * violations (C-004 remedy-3 finding 3).
+ */
+export function validateFeatureSnapshot(raw: unknown): string[] {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return ['feature_snapshot must be an object'];
+  }
+  const errors: string[] = [];
+  for (const [name, value] of Object.entries(raw)) {
+    if (typeof value !== 'number') {
+      errors.push(`feature ${name} must be a real number (bool/string coercion forbidden)`);
+    } else if (!Number.isFinite(value)) {
+      errors.push(`feature ${name} is not finite — NaN/Infinity forbidden`);
+    }
+  }
+  return errors;
+}
+
 /**
  * Mirrors policy_dsl.py operand rules: `"feature.<name>"` string,
  * `{ feature: "<name>" }` mapping (single key), or a FINITE numeric literal.
@@ -281,9 +351,14 @@ function nonEmptyString(v: unknown): v is string {
  */
 export function validateOperand(raw: unknown): string[] {
   if (typeof raw === 'string') {
-    return raw.startsWith('feature.')
+    if (!raw.startsWith('feature.')) {
+      return [`invalid operand ${JSON.stringify(raw)}: strings must be 'feature.<name>' references`];
+    }
+    // "feature." with an empty name is a violation on BOTH sides
+    // (C-004 remedy-3 finding 2).
+    return raw.length > 'feature.'.length
       ? []
-      : [`invalid operand ${JSON.stringify(raw)}: strings must be 'feature.<name>' references`];
+      : [`invalid operand 'feature.': the feature name must be non-empty`];
   }
   if (typeof raw === 'number') {
     return Number.isFinite(raw)
@@ -347,15 +422,35 @@ export function validateEngineRef(raw: unknown): string[] {
     return [`engine_ref.type must be one of [${ENGINE_TYPES.join(', ')}], got ${JSON.stringify(o.type)}`];
   }
   const errors: string[] = [];
+  // Optional fields, when present, must be WELL-FORMED strings — a bool/true
+  // policy_hash is a typed violation (C-004 remedy-3 finding 4).
+  if (o.policy_hash !== undefined && o.policy_hash !== null && !validHash(o.policy_hash)) {
+    errors.push(`policy_hash must be a 'sha256:<hex>' string, got ${JSON.stringify(o.policy_hash)}`);
+  }
+  if (o.policy_version_id !== undefined && o.policy_version_id !== null && !validId(o.policy_version_id)) {
+    errors.push('policy_version_id must be a non-empty identifier string');
+  }
+  if (o.model_snapshot_id !== undefined && o.model_snapshot_id !== null && !validId(o.model_snapshot_id)) {
+    errors.push('model_snapshot_id must be a non-empty identifier string');
+  }
+  if (o.model_snapshot_ids !== undefined && o.model_snapshot_ids !== null) {
+    if (!Array.isArray(o.model_snapshot_ids)) {
+      errors.push('model_snapshot_ids must be an array of identifier strings');
+    } else {
+      for (const sid of o.model_snapshot_ids) {
+        if (!validId(sid)) errors.push('model_snapshot_ids entries must be non-empty identifier strings');
+      }
+    }
+  }
   if (o.type === 'rule_based') {
-    if (!nonEmptyString(o.policy_hash)) errors.push('rule_based engine_ref requires policy_hash');
+    if (!validHash(o.policy_hash)) errors.push('rule_based engine_ref requires policy_hash');
     if (o.model_snapshot_id || (Array.isArray(o.model_snapshot_ids) && o.model_snapshot_ids.length > 0)) {
       errors.push('rule_based engine_ref must NOT carry model snapshots');
     }
   } else if (o.type === 'ml') {
-    if (!nonEmptyString(o.model_snapshot_id)) errors.push('ml engine_ref requires model_snapshot_id');
+    if (!validId(o.model_snapshot_id)) errors.push('ml engine_ref requires model_snapshot_id');
   } else if (o.type === 'composite') {
-    if (!nonEmptyString(o.policy_hash)) errors.push('composite engine_ref requires policy_hash');
+    if (!validHash(o.policy_hash)) errors.push('composite engine_ref requires policy_hash');
   }
   return errors;
 }
@@ -385,7 +480,14 @@ export function validateRuleTrace(raw: unknown): string[] {
       if (typeof entry !== 'object' || entry === null
           || !nonEmptyString((entry as Record<string, unknown>).rule_id)) {
         errors.push('rule_trace entry requires a non-empty rule_id');
+        continue;
       }
+      const e = entry as Record<string, unknown>;
+      if (e.result !== undefined && typeof e.result !== 'boolean') {
+        errors.push(`rule_trace entry ${String(e.rule_id)} result must be a boolean`);
+      }
+      // observed values ride into JSON exports — no NaN/Infinity ever
+      collectNonFinite(e.observed, `rule_trace.${String(e.rule_id)}.observed`, errors);
     }
   }
   return errors;
@@ -400,8 +502,18 @@ export function validateStrategyDecision(raw: unknown): string[] {
   if (typeof raw !== 'object' || raw === null) return ['strategy_decision must be an object'];
   const o = raw as Record<string, unknown>;
   const errors: string[] = [];
-  for (const name of ['signal_id', 'sleeve_id', 'strategy_version', 'as_of', 'decision_fingerprint']) {
-    if (typeof o[name] !== 'string') errors.push(`${name} must be a string`);
+  // Strict identifier/timestamp/hash forms (C-004 remedy-3 finding 4):
+  // sleeve_id=null, as_of=null, fingerprint=true are typed violations.
+  for (const name of ['signal_id', 'sleeve_id', 'strategy_version'] as const) {
+    if (!validId(o[name])) {
+      errors.push(`${name} must be a non-empty identifier string, got ${JSON.stringify(o[name])}`);
+    }
+  }
+  if (!validIsoTimestamp(o.as_of)) {
+    errors.push(`as_of must be an ISO-8601 date/datetime string, got ${JSON.stringify(o.as_of)}`);
+  }
+  if (!validHash(o.decision_fingerprint)) {
+    errors.push(`decision_fingerprint must be a 'sha256:<hex>' string, got ${JSON.stringify(o.decision_fingerprint)}`);
   }
   if (!VALID_DIRECTIONS.includes(o.direction as Direction)) {
     errors.push(`direction must be one of [${VALID_DIRECTIONS.join(', ')}], got ${JSON.stringify(o.direction)}`);
@@ -409,6 +521,16 @@ export function validateStrategyDecision(raw: unknown): string[] {
   if (!finite(o.target_exposure)) {
     errors.push('target_exposure must be a finite number (NaN/Infinity forbidden)');
   }
+  if (o.reason_codes !== undefined
+      && (!Array.isArray(o.reason_codes) || o.reason_codes.some((c) => typeof c !== 'string'))) {
+    errors.push('reason_codes must be an array of strings');
+  }
+  if (o.feature_snapshot_id !== undefined && o.feature_snapshot_id !== null
+      && !validId(o.feature_snapshot_id)) {
+    errors.push('feature_snapshot_id must be a non-empty identifier string or null');
+  }
+  // No NaN/Infinity anywhere in the serialized payload (finding 5)
+  collectNonFinite(o.decision_components, 'decision_components', errors);
   errors.push(...validateEngineRef(o.engine_ref));
   if (o.rule_trace !== null && o.rule_trace !== undefined) {
     errors.push(...validateRuleTrace(o.rule_trace));

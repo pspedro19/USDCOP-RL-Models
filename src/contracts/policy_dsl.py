@@ -31,6 +31,8 @@ Contract: CTR-POLICY-001 (BL-45 R1)
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 from typing import Any, Mapping
 
@@ -39,6 +41,7 @@ from src.contracts.policy import (
     EngineRef,
     PolicyContext,
     StrategyDecision,
+    require_hash,
 )
 from src.contracts.rule_trace import RuleTrace, RuleTraceEntry
 
@@ -65,14 +68,28 @@ def _feature_name(operand: Any) -> str | None:
     """Return the feature name if the operand is a feature reference."""
     if isinstance(operand, str):
         if operand.startswith(_FEATURE_PREFIX):
-            return operand[len(_FEATURE_PREFIX):]
+            name = operand[len(_FEATURE_PREFIX):]
+            if not name:
+                raise ValueError(
+                    "Invalid operand 'feature.': the feature name must be "
+                    "non-empty (C-004 remedy-3 finding 2)"
+                )
+            return name
         raise ValueError(
             f"Invalid operand {operand!r}: strings must be 'feature.<name>' "
             "references — arbitrary expressions/code are forbidden"
         )
     if isinstance(operand, Mapping):
         if set(operand.keys()) == {"feature"}:
-            return str(operand["feature"])
+            name = operand["feature"]
+            # Type-strict: {"feature": true}/None/dict/number is a typed
+            # error — no str() coercion (C-004 remedy-3 finding 2).
+            if isinstance(name, bool) or not isinstance(name, str) or not name:
+                raise ValueError(
+                    f"Invalid operand mapping {operand!r}: 'feature' must be "
+                    f"a non-empty string, got {name!r}"
+                )
+            return name
         raise ValueError(f"Invalid operand mapping {operand!r}")
     return None
 
@@ -86,12 +103,57 @@ def _valid_literal(operand: Any) -> bool:
     )
 
 
+def _strict_exposure(value: Any, where: str) -> float:
+    """
+    Type-strict exposure: bool (isinstance FIRST — bool subclasses int) and
+    numeric strings are typed errors, never float()-coerced
+    (C-004 remedy-3 finding 1). Must also be finite.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"{where} must be a real number "
+            f"(bool/string coercion forbidden), got {value!r}"
+        )
+    if not math.isfinite(value):
+        raise ValueError(
+            f"{where} must be finite (NaN/Infinity forbidden), got {value!r}"
+        )
+    return float(value)
+
+
+def _canonical_policy_hash(spec: Mapping[str, Any]) -> str:
+    """Deterministic sha256 of the canonical spec JSON (strict: allow_nan=False)."""
+    canonical = json.dumps(
+        spec, sort_keys=True, separators=(",", ":"), default=str, allow_nan=False
+    )
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _snapshot_value(name: str, snapshot: Mapping[str, Any]) -> float:
+    """
+    Strict snapshot read: the value must be a REAL finite number — bool,
+    numeric strings, None, NaN and ±Infinity are typed errors, never
+    float()-coerced (C-004 remedy-3 findings 1/3).
+    """
+    if name not in snapshot:
+        raise ValueError(f"Feature {name!r} missing from snapshot")
+    value = snapshot[name]
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"Feature {name!r} must be a real number, got {value!r} "
+            "(bool/string coercion forbidden)"
+        )
+    if not math.isfinite(value):
+        raise ValueError(
+            f"Feature {name!r} is not finite ({value!r}) — NaN/Infinity forbidden"
+        )
+    return float(value)
+
+
 def _resolve(operand: Any, snapshot: Mapping[str, Any]) -> float:
     name = _feature_name(operand)
     if name is not None:
-        if name not in snapshot:
-            raise ValueError(f"Feature {name!r} missing from snapshot")
-        return float(snapshot[name])
+        return _snapshot_value(name, snapshot)
     if not _valid_literal(operand):
         raise ValueError(
             f"Invalid operand {operand!r}: must be a feature reference or a "
@@ -111,12 +173,16 @@ def _collect_features(node: Any, out: set[str]) -> None:
     # Lenient walk: only collects feature refs; structural validation is
     # validate_condition's job (operator names etc. are plain strings here).
     if isinstance(node, str):
-        if node.startswith(_FEATURE_PREFIX):
+        if node.startswith(_FEATURE_PREFIX) and node[len(_FEATURE_PREFIX):]:
             out.add(node[len(_FEATURE_PREFIX):])
         return
     if isinstance(node, Mapping):
         if set(node.keys()) == {"feature"}:
-            out.add(str(node["feature"]))
+            # Only collect well-formed refs; malformed ones ({"feature": true})
+            # are validate_condition's job to reject.
+            name = node["feature"]
+            if isinstance(name, str) and name and not isinstance(name, bool):
+                out.add(name)
             return
         for key, value in node.items():
             if key != "operator":
@@ -265,9 +331,24 @@ class DeclarativePolicy:
     """
 
     def __init__(self, spec: Mapping[str, Any]):
-        self.sleeve_id = str(spec["id"])
-        self.version = str(spec.get("version", "1.0.0"))
-        self.policy_hash = str(spec.get("policy_hash", "sha256:unhashed"))
+        sleeve_id = spec.get("id")
+        if isinstance(sleeve_id, bool) or not isinstance(sleeve_id, str) or not sleeve_id:
+            raise ValueError(
+                f"Declarative policy spec requires a non-empty string 'id', got {sleeve_id!r}"
+            )
+        self.sleeve_id = sleeve_id
+        version = spec.get("version", "1.0.0")
+        if not isinstance(version, str) or not version:
+            raise ValueError(f"spec 'version' must be a non-empty string, got {version!r}")
+        self.version = version
+        # policy_hash: explicit hash validated for form, or the canonical hash
+        # of the spec itself — never a str()-coerced placeholder (C-004
+        # remedy-3 finding 4).
+        policy_hash = spec.get("policy_hash")
+        if policy_hash is None:
+            policy_hash = _canonical_policy_hash(spec)
+        require_hash("policy_hash", policy_hash)
+        self.policy_hash = policy_hash
         self.policy_version_id = spec.get("policy_version_id")
 
         resolution = spec.get("resolution", {})
@@ -279,12 +360,10 @@ class DeclarativePolicy:
                 "Declarative policy requires an explicit "
                 "resolution.default_target_exposure (no implicit fallback)"
             )
-        self.default_exposure = float(resolution["default_target_exposure"])
-        if not math.isfinite(self.default_exposure):
-            raise ValueError(
-                "resolution.default_target_exposure must be finite "
-                f"(NaN/Infinity forbidden), got {self.default_exposure!r}"
-            )
+        self.default_exposure = _strict_exposure(
+            resolution["default_target_exposure"],
+            "resolution.default_target_exposure",
+        )
         self.default_direction = str(resolution.get("default_direction", "FLAT"))
         self.default_reason_code = str(
             resolution.get("default_reason_code", "NO_RULE_MATCHED")
@@ -313,11 +392,10 @@ class DeclarativePolicy:
                 raise ValueError(
                     f"Rule {rule['id']!r} output requires target_exposure"
                 )
-            if not math.isfinite(float(output["target_exposure"])):
-                raise ValueError(
-                    f"Rule {rule['id']!r} output.target_exposure must be "
-                    "finite (NaN/Infinity forbidden)"
-                )
+            _strict_exposure(
+                output["target_exposure"],
+                f"Rule {rule['id']!r} output.target_exposure",
+            )
             self.rules.append(dict(rule))
         # first_match by descending priority, stable on declaration order
         self.rules.sort(key=lambda r: -int(r.get("priority", 0)))
@@ -336,17 +414,31 @@ class DeclarativePolicy:
         for name in self._required:
             if name not in snapshot:
                 errors.append(f"Missing required feature: {name}")
-            else:
-                value = snapshot[name]
-                if value is None or (
-                    isinstance(value, float) and value != value  # NaN
-                ):
-                    errors.append(f"Feature {name} is null/NaN")
+                continue
+            value = snapshot[name]
+            if value is None:
+                errors.append(f"Feature {name} is null")
+            elif isinstance(value, bool) or not isinstance(value, (int, float)):
+                errors.append(
+                    f"Feature {name} must be a real number, "
+                    f"got {type(value).__name__} (bool/string coercion forbidden)"
+                )
+            elif not math.isfinite(value):
+                # NaN AND ±Infinity are typed errors (C-004 remedy-3 finding 3)
+                errors.append(
+                    f"Feature {name} is not finite ({value!r}) — "
+                    "NaN/Infinity forbidden"
+                )
         return errors
 
     def evaluate(
         self, snapshot: Mapping[str, Any], context: PolicyContext
     ) -> StrategyDecision:
+        if not context.as_of:
+            raise ValueError(
+                f"context.as_of is required to evaluate {self.sleeve_id} "
+                "(fail-closed: decisions never carry an empty as_of)"
+            )
         errors = self.validate_inputs(snapshot)
         if errors:
             raise ValueError(
@@ -394,7 +486,7 @@ class DeclarativePolicy:
                 policy_version_id=self.policy_version_id,
                 policy_hash=self.policy_hash,
             ),
-            as_of=context.as_of or "",
+            as_of=context.as_of,
             direction=direction,
             target_exposure=exposure,
             reason_codes=reason_codes,

@@ -30,13 +30,15 @@ Contract: CTR-POLICY-001 (BL-45 R1)
 
 from __future__ import annotations
 
+import datetime as _dt
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, runtime_checkable
 
-from src.contracts.rule_trace import RuleTrace
+from src.contracts.rule_trace import RuleTrace, ensure_json_safe
 
 # ---------------------------------------------------------------------------
 # Engine discriminator
@@ -49,6 +51,65 @@ VALID_DIRECTIONS = ("LONG", "SHORT", "FLAT")
 #: Evaluation modes a PolicyContext can run under (fail-closed whitelist —
 #: mirrored as POLICY_MODES in policy.contract.ts).
 POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
+
+
+# ---------------------------------------------------------------------------
+# Strict form validators (C-004 remedy-3 finding 4: policy_hash=True,
+# sleeve_id=None, as_of=None must be TYPED errors, never truthiness passes).
+# Mirrored as HASH_PATTERN / ID_PATTERN / ISO_TIMESTAMP_PATTERN in
+# policy.contract.ts — change BOTH sides.
+# ---------------------------------------------------------------------------
+
+#: ``sha256:<lowercase-hex>`` (8..64 hex chars; full fingerprints use 64).
+HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{8,64}$")
+
+#: Identifier form for sleeve_id / signal_id / snapshot ids / versions.
+ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
+
+#: ISO-8601 date or datetime (the only accepted ``as_of`` form).
+ISO_TIMESTAMP_PATTERN = re.compile(
+    r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$"
+)
+
+
+def is_real_number(value: Any) -> bool:
+    """True only for genuine int/float — bool is explicitly NOT a number."""
+    return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
+def require_id(field_name: str, value: Any) -> str:
+    """Non-empty identifier string; bool/None/any-other-type => ValueError."""
+    if not isinstance(value, str) or not ID_PATTERN.match(value):
+        raise ValueError(
+            f"{field_name} must be a non-empty identifier string "
+            f"(pattern {ID_PATTERN.pattern!r}), got {value!r}"
+        )
+    return value
+
+
+def require_hash(field_name: str, value: Any) -> str:
+    """'sha256:<hex>' string; bool/None/malformed => ValueError."""
+    if not isinstance(value, str) or not HASH_PATTERN.match(value):
+        raise ValueError(
+            f"{field_name} must be a 'sha256:<hex>' string "
+            f"(pattern {HASH_PATTERN.pattern!r}), got {value!r}"
+        )
+    return value
+
+
+def require_iso_timestamp(field_name: str, value: Any) -> str:
+    """ISO-8601 date/datetime string; bool/None/malformed => ValueError."""
+    if not isinstance(value, str) or not ISO_TIMESTAMP_PATTERN.match(value):
+        raise ValueError(
+            f"{field_name} must be an ISO-8601 date/datetime string, got {value!r}"
+        )
+    try:
+        _dt.date.fromisoformat(value[:10])
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name} has an invalid calendar date: {value!r}"
+        ) from exc
+    return value
 
 
 @dataclass(frozen=True)
@@ -72,6 +133,21 @@ class EngineRef:
             raise ValueError(
                 f"engine_ref.type must be one of {ENGINE_TYPES}, got {self.type!r}"
             )
+        # Type-strict field forms (C-004 remedy-3 finding 4): policy_hash=True
+        # or model_snapshot_id=True must raise, never pass a truthiness check.
+        if self.policy_version_id is not None:
+            require_id("engine_ref.policy_version_id", self.policy_version_id)
+        if self.policy_hash is not None:
+            require_hash("engine_ref.policy_hash", self.policy_hash)
+        if self.model_snapshot_id is not None:
+            require_id("engine_ref.model_snapshot_id", self.model_snapshot_id)
+        if not isinstance(self.model_snapshot_ids, (tuple, list)):
+            raise ValueError(
+                f"engine_ref.model_snapshot_ids must be a sequence of id strings, "
+                f"got {self.model_snapshot_ids!r}"
+            )
+        for i, snapshot_id in enumerate(self.model_snapshot_ids):
+            require_id(f"engine_ref.model_snapshot_ids[{i}]", snapshot_id)
         if self.type == "rule_based":
             if not self.policy_hash:
                 raise ValueError("rule_based engine_ref requires policy_hash")
@@ -131,6 +207,11 @@ class PolicyContext:
             raise ValueError(
                 f"context.mode must be one of {POLICY_MODES}, got {self.mode!r}"
             )
+        # as_of, when provided, must already be a well-formed ISO timestamp —
+        # a bool/None/garbage as_of would otherwise propagate into signal_ids
+        # (C-004 remedy-3 finding 4).
+        if self.as_of is not None:
+            require_iso_timestamp("context.as_of", self.as_of)
 
 
 # ---------------------------------------------------------------------------
@@ -161,12 +242,23 @@ class StrategyDecision:
     decision_fingerprint: str = ""      # derived if empty
 
     def __post_init__(self) -> None:
+        # Type-strict identifiers (C-004 remedy-3 finding 4): sleeve_id=None,
+        # as_of=None, policy_hash=True-style values are typed errors here.
+        require_id("sleeve_id", self.sleeve_id)
+        require_id("strategy_version", self.strategy_version)
+        if not isinstance(self.engine_ref, EngineRef):
+            raise ValueError(
+                f"engine_ref must be an EngineRef, got {type(self.engine_ref).__name__}"
+            )
+        require_iso_timestamp("as_of", self.as_of)
         if self.direction not in VALID_DIRECTIONS:
             raise ValueError(
                 f"direction must be one of {VALID_DIRECTIONS}, got {self.direction!r}"
             )
         # Fail-closed finiteness: NaN/±Infinity never enter a decision (and
         # therefore never a JSON export — strategy-contract rule, C-004 remedy 4).
+        # isinstance(bool) FIRST: bool is an int subclass and must not coerce
+        # (C-004 remedy-3 finding 1).
         if isinstance(self.target_exposure, bool) or not isinstance(
             self.target_exposure, (int, float)
         ):
@@ -178,9 +270,33 @@ class StrategyDecision:
                 f"target_exposure must be finite, got {self.target_exposure!r} "
                 "(NaN/Infinity forbidden — strategy-contract invariant 2)"
             )
-        if not self.decision_fingerprint:
+        if not isinstance(self.reason_codes, (tuple, list)) or not all(
+            isinstance(code, str) for code in self.reason_codes
+        ):
+            raise ValueError(
+                f"reason_codes must be a sequence of strings, got {self.reason_codes!r}"
+            )
+        # No NaN/Infinity anywhere in the serializable payload (finding 5).
+        ensure_json_safe(self.decision_components, "decision_components")
+        if self.rule_trace is not None and not isinstance(self.rule_trace, RuleTrace):
+            raise ValueError(
+                f"rule_trace must be a RuleTrace or None, got {type(self.rule_trace).__name__}"
+            )
+        if self.feature_snapshot_id is not None:
+            require_id("feature_snapshot_id", self.feature_snapshot_id)
+        if not isinstance(self.decision_fingerprint, str):
+            raise ValueError(
+                f"decision_fingerprint must be a string, got {self.decision_fingerprint!r}"
+            )
+        if self.decision_fingerprint:
+            require_hash("decision_fingerprint", self.decision_fingerprint)
+        else:
             object.__setattr__(self, "decision_fingerprint", self._fingerprint())
-        if not self.signal_id:
+        if not isinstance(self.signal_id, str):
+            raise ValueError(f"signal_id must be a string, got {self.signal_id!r}")
+        if self.signal_id:
+            require_id("signal_id", self.signal_id)
+        else:
             object.__setattr__(
                 self,
                 "signal_id",
@@ -198,7 +314,9 @@ class StrategyDecision:
             "reason_codes": list(self.reason_codes),
             "decision_components": self.decision_components,
         }
-        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+        canonical = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), default=str, allow_nan=False
+        )
         return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
@@ -216,6 +334,14 @@ class StrategyDecision:
             "feature_snapshot_id": self.feature_snapshot_id,
             "decision_fingerprint": self.decision_fingerprint,
         }
+
+    def to_json(self) -> str:
+        """
+        Strict JSON serialization: ``allow_nan=False`` means an Infinity/NaN
+        that somehow reached the payload RAISES instead of emitting invalid
+        JSON (repo rule: never Infinity/NaN in JSON — C-004 remedy-3 finding 5).
+        """
+        return json.dumps(self.to_dict(), allow_nan=False, default=str)
 
 
 # ---------------------------------------------------------------------------

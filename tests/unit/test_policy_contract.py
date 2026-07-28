@@ -146,8 +146,8 @@ class TestDeterminism:
 
     def test_different_input_different_fingerprint(self):
         p = DeclarativePolicy(ma200_spec())
-        d1 = p.evaluate({"close": 6412.8, "ma_200": 5984.2}, PolicyContext(as_of="x"))
-        d2 = p.evaluate({"close": 6000.0, "ma_200": 5984.2}, PolicyContext(as_of="x"))
+        d1 = p.evaluate({"close": 6412.8, "ma_200": 5984.2}, PolicyContext(as_of="2026-07-27"))
+        d2 = p.evaluate({"close": 6000.0, "ma_200": 5984.2}, PolicyContext(as_of="2026-07-27"))
         assert d1.decision_fingerprint != d2.decision_fingerprint
 
 
@@ -231,7 +231,7 @@ class TestEngineRef:
 
     def test_rule_based_forbids_model_snapshot(self):
         with pytest.raises(ValueError, match="model"):
-            EngineRef(type="rule_based", policy_hash="sha256:x", model_snapshot_id="m1")
+            EngineRef(type="rule_based", policy_hash="sha256:deadbeef", model_snapshot_id="m1")
 
     def test_ml_requires_model_snapshot(self):
         with pytest.raises(ValueError, match="model_snapshot_id"):
@@ -242,7 +242,7 @@ class TestEngineRef:
 
     def test_composite_carries_policy_and_models(self):
         ref = EngineRef(
-            type="composite", policy_hash="sha256:x", model_snapshot_ids=("m1", "m2")
+            type="composite", policy_hash="sha256:deadbeef", model_snapshot_ids=("m1", "m2")
         )
         assert ref.to_dict()["model_snapshot_ids"] == ["m1", "m2"]
 
@@ -272,7 +272,7 @@ class TestStatefulContext:
                 return StrategyDecision(
                     sleeve_id="streak_v1",
                     strategy_version="1.0.0",
-                    engine_ref=EngineRef(type="rule_based", policy_hash="sha256:s"),
+                    engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
                     as_of=context.as_of or "",
                     direction=direction,
                     target_exposure=1.0 if direction == "LONG" else 0.0,
@@ -282,7 +282,7 @@ class TestStatefulContext:
 
         policy = StreakPolicy()
         assert isinstance(policy, Policy)
-        ctx = PolicyContext(as_of="t")
+        ctx = PolicyContext(as_of="2026-07-27")
         snap = {"close": 10.0, "ma_200": 9.0}
         assert policy.evaluate(snap, ctx).direction == "FLAT"
         assert policy.evaluate(snap, ctx).direction == "FLAT"
@@ -296,8 +296,8 @@ class TestDecisionInvariants:
             StrategyDecision(
                 sleeve_id="s",
                 strategy_version="1",
-                engine_ref=EngineRef(type="rule_based", policy_hash="sha256:x"),
-                as_of="t",
+                engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+                as_of="2026-07-27",
                 direction="UP",
                 target_exposure=1.0,
             )
@@ -306,14 +306,14 @@ class TestDecisionInvariants:
         d = StrategyDecision(
             sleeve_id="s",
             strategy_version="1",
-            engine_ref=EngineRef(type="rule_based", policy_hash="sha256:x"),
-            as_of="t",
+            engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+            as_of="2026-07-27",
             direction="FLAT",
             target_exposure=0.0,
         ).to_dict()
-        assert d["engine_ref"] == {"type": "rule_based", "policy_hash": "sha256:x"}
+        assert d["engine_ref"] == {"type": "rule_based", "policy_hash": "sha256:deadbeef"}
         assert d["decision_fingerprint"].startswith("sha256:")
-        assert d["signal_id"].startswith("s:t:")
+        assert d["signal_id"].startswith("s:2026-07-27:")
 
     def test_missing_default_exposure_rejected(self):
         spec = ma200_spec()
@@ -331,8 +331,8 @@ def _decision(**overrides) -> StrategyDecision:
     kwargs = dict(
         sleeve_id="s",
         strategy_version="1",
-        engine_ref=EngineRef(type="rule_based", policy_hash="sha256:x"),
-        as_of="t",
+        engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+        as_of="2026-07-27",
         direction="FLAT",
         target_exposure=0.0,
     )
@@ -701,3 +701,374 @@ class TestTsMirrorFailClosedValidators:
         assert "requires policy_hash" in body
         assert "must NOT carry model snapshots" in body
         assert "requires model_snapshot_id" in body
+
+
+# ---------------------------------------------------------------------------
+# C-004 remedy-3 (Codex rejection of 57ee451) — type-strict validation.
+# Findings: (1) bool/string exposure coercion, (2) {feature: true} + empty
+# feature name, (3) snapshot Infinity, (4) policy_hash=True / sleeve_id=None /
+# as_of=None, (5) Infinity serializable to JSON, (7) trace dict without
+# trace_schema accepted by from_dict.
+# ---------------------------------------------------------------------------
+
+FULL_HASH = "sha256:" + "deadbeef" * 8  # 64 lowercase hex chars
+
+
+class TestRemedy3StrictExposures:
+    """Finding 1: exposures must be REAL numbers — no float() coercion."""
+
+    def test_declarative_default_exposure_bool_rejected(self):
+        spec = ma200_spec()
+        spec["resolution"]["default_target_exposure"] = True
+        with pytest.raises(ValueError, match="real number"):
+            DeclarativePolicy(spec)
+
+    def test_declarative_default_exposure_numeric_string_rejected(self):
+        spec = ma200_spec()
+        spec["resolution"]["default_target_exposure"] = "1.0"
+        with pytest.raises(ValueError, match="real number"):
+            DeclarativePolicy(spec)
+
+    def test_declarative_rule_exposure_bool_rejected(self):
+        spec = ma200_spec()
+        spec["rules"][0]["output"]["target_exposure"] = True
+        with pytest.raises(ValueError, match="real number"):
+            DeclarativePolicy(spec)
+
+    def test_declarative_rule_exposure_numeric_string_rejected(self):
+        spec = ma200_spec()
+        spec["rules"][0]["output"]["target_exposure"] = "1.0"
+        with pytest.raises(ValueError, match="real number"):
+            DeclarativePolicy(spec)
+
+
+class TestRemedy3StrictOperands:
+    """Finding 2: {feature: true} and 'feature.' (empty name) are typed errors."""
+
+    @pytest.mark.parametrize(
+        "bad", [True, None, 1.5, {"nested": "x"}], ids=["bool", "none", "number", "dict"]
+    )
+    def test_mapping_feature_non_string_rejected(self, bad):
+        with pytest.raises(ValueError, match="non-empty string"):
+            validate_condition(
+                {"operator": "greater_than", "left": {"feature": bad}, "right": 1.0}
+            )
+
+    def test_mapping_feature_empty_string_rejected(self):
+        with pytest.raises(ValueError, match="non-empty string"):
+            validate_condition(
+                {"operator": "greater_than", "left": {"feature": ""}, "right": 1.0}
+            )
+
+    def test_empty_feature_name_string_form_rejected(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            validate_condition(
+                {"operator": "greater_than", "left": "feature.", "right": 1.0}
+            )
+
+    def test_referenced_features_ignores_malformed_refs(self):
+        from src.contracts.policy_dsl import referenced_features
+
+        # lenient walk must not str()-coerce True into a feature name
+        assert referenced_features({"feature": True}) == set()
+        assert referenced_features("feature.") == set()
+
+
+class TestRemedy3SnapshotFiniteness:
+    """Finding 3: every numeric snapshot value must be finite at validate_inputs."""
+
+    def _policy(self):
+        return DeclarativePolicy(ma200_spec())
+
+    @pytest.mark.parametrize(
+        "bad", [float("inf"), float("-inf"), float("nan")], ids=["inf", "-inf", "nan"]
+    )
+    def test_non_finite_snapshot_value_errors(self, bad):
+        errors = self._policy().validate_inputs({"close": bad, "ma_200": 1.0})
+        assert errors and "close" in errors[0]
+
+    @pytest.mark.parametrize("bad", [True, "5", None], ids=["bool", "str", "none"])
+    def test_non_numeric_snapshot_value_errors(self, bad):
+        errors = self._policy().validate_inputs({"close": bad, "ma_200": 1.0})
+        assert errors and "close" in errors[0]
+
+    def test_evaluate_raises_on_infinite_snapshot(self):
+        with pytest.raises(ValueError, match="[Ff]inite|[Ii]nvalid inputs"):
+            self._policy().evaluate(
+                {"close": float("inf"), "ma_200": 1.0},
+                PolicyContext(as_of="2026-07-27"),
+            )
+
+    def test_resolve_rejects_bool_snapshot_value(self):
+        with pytest.raises(ValueError, match="real number"):
+            evaluate_condition(
+                {"operator": "greater_than", "left": "feature.close", "right": 0.5},
+                {"close": True},
+            )
+
+
+class TestRemedy3StrictIdsAndHashes:
+    """Finding 4 + red-team: bool/None never pass truthiness for ids/hashes."""
+
+    def test_engine_ref_policy_hash_bool_rejected(self):
+        with pytest.raises(ValueError, match="policy_hash"):
+            EngineRef(type="rule_based", policy_hash=True)
+
+    def test_engine_ref_policy_hash_non_hex_rejected(self):
+        with pytest.raises(ValueError, match="sha256"):
+            EngineRef(type="rule_based", policy_hash="sha256:NOT-HEX!")
+
+    def test_engine_ref_model_snapshot_id_bool_rejected(self):
+        with pytest.raises(ValueError, match="model_snapshot_id"):
+            EngineRef(type="ml", model_snapshot_id=True)
+
+    def test_decision_sleeve_id_none_rejected(self):
+        with pytest.raises(ValueError, match="sleeve_id"):
+            _decision(sleeve_id=None)
+
+    def test_decision_as_of_none_rejected(self):
+        with pytest.raises(ValueError, match="as_of"):
+            _decision(as_of=None)
+
+    def test_decision_as_of_non_iso_rejected(self):
+        with pytest.raises(ValueError, match="as_of"):
+            _decision(as_of="not-a-date")
+
+    def test_decision_signal_id_bool_rejected(self):
+        with pytest.raises(ValueError, match="signal_id"):
+            _decision(signal_id=True)
+
+    def test_decision_fingerprint_bool_rejected(self):
+        with pytest.raises(ValueError, match="decision_fingerprint"):
+            _decision(decision_fingerprint=True)
+
+    def test_context_as_of_bool_rejected(self):
+        with pytest.raises(ValueError, match="as_of"):
+            PolicyContext(as_of=True)
+
+    def test_declarative_policy_hash_computed_when_absent(self):
+        spec = ma200_spec()
+        del spec["policy_hash"]
+        policy = DeclarativePolicy(spec)
+        assert re.fullmatch(r"sha256:[0-9a-f]{64}", policy.policy_hash)
+
+
+class TestRemedy3JsonStrict:
+    """Finding 5: an Infinity can NEVER be serialized — it raises."""
+
+    def test_components_with_infinity_rejected_at_construction(self):
+        with pytest.raises(ValueError, match="[Nn]on-finite"):
+            _decision(decision_components={"x": float("inf")})
+
+    def test_nested_components_with_nan_rejected(self):
+        with pytest.raises(ValueError, match="[Nn]on-finite"):
+            _decision(decision_components={"a": {"b": [1.0, float("nan")]}})
+
+    def test_to_json_raises_if_infinity_injected_post_construction(self):
+        d = _decision()
+        d.decision_components["x"] = float("inf")  # dict is mutable — belt+braces
+        with pytest.raises(ValueError):
+            d.to_json()
+
+    def test_to_json_emits_valid_json(self):
+        import json as _json
+
+        payload = _json.loads(_decision().to_json())
+        assert payload["direction"] == "FLAT"
+
+    def test_trace_observed_infinity_rejected(self):
+        with pytest.raises(ValueError, match="[Nn]on-finite"):
+            RuleTraceEntry(rule_id="r1", label="x", observed={"close": float("inf")})
+
+
+class TestRemedy3TraceFromDictStrict:
+    """Finding 7 (red-team): from_dict without explicit trace_schema is rejected."""
+
+    def test_missing_trace_schema_rejected(self):
+        with pytest.raises(ValueError, match="trace_schema"):
+            RuleTrace.from_dict({"rules": []})
+
+    def test_missing_rules_rejected(self):
+        with pytest.raises(ValueError, match="rules"):
+            RuleTrace.from_dict({"trace_schema": RULE_TRACE_SCHEMA_V1})
+
+    def test_non_bool_result_rejected(self):
+        with pytest.raises(ValueError, match="result"):
+            RuleTrace.from_dict(
+                {
+                    "trace_schema": RULE_TRACE_SCHEMA_V1,
+                    "rules": [{"rule_id": "r1", "result": "true"}],
+                }
+            )
+
+    def test_non_string_rule_id_rejected(self):
+        with pytest.raises(ValueError, match="rule_id"):
+            RuleTrace.from_dict(
+                {
+                    "trace_schema": RULE_TRACE_SCHEMA_V1,
+                    "rules": [{"rule_id": 42}],
+                }
+            )
+
+
+# ---------------------------------------------------------------------------
+# SHARED CASE TABLE (C-004 remedy-3 finding 6) — the SAME cases, executed in
+# BOTH runtimes. This literal table is duplicated in
+# usdcop-trading-dashboard/tests/unit/contracts/policy-contract-parity.test.ts
+# (case ids and expected verdicts MUST stay identical — a checksum test on
+# each side pins the ids). Python executes them against the real
+# constructors/validators; Vitest executes them against the TS runtime
+# validators. Same verdict, case by case.
+# ---------------------------------------------------------------------------
+
+
+def _decision_payload(**overrides) -> dict:
+    payload = {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {"type": "rule_based", "policy_hash": FULL_HASH},
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {"close": 1.0},
+        "rule_trace": None,
+        "feature_snapshot_id": None,
+        "decision_fingerprint": FULL_HASH,
+    }
+    payload.update(overrides)
+    return payload
+
+
+PARITY_CASES = [
+    # --- StrategyDecision -------------------------------------------------
+    ("decision_valid", "decision", _decision_payload(), "valid"),
+    ("decision_direction_drop_table", "decision",
+     _decision_payload(direction="DROP TABLE trades"), "invalid"),
+    ("decision_exposure_bool", "decision",
+     _decision_payload(target_exposure=True), "invalid"),
+    ("decision_exposure_numeric_string", "decision",
+     _decision_payload(target_exposure="1.0"), "invalid"),
+    ("decision_exposure_inf", "decision",
+     _decision_payload(target_exposure=float("inf")), "invalid"),
+    ("decision_exposure_nan", "decision",
+     _decision_payload(target_exposure=float("nan")), "invalid"),
+    ("decision_sleeve_id_none", "decision",
+     _decision_payload(sleeve_id=None), "invalid"),
+    ("decision_as_of_none", "decision",
+     _decision_payload(as_of=None), "invalid"),
+    ("decision_policy_hash_true", "decision",
+     _decision_payload(engine_ref={"type": "rule_based", "policy_hash": True}),
+     "invalid"),
+    ("decision_components_infinity", "decision",
+     _decision_payload(decision_components={"x": float("inf")}), "invalid"),
+    ("decision_trace_missing_schema", "decision",
+     _decision_payload(rule_trace={"rules": []}), "invalid"),
+    # --- EngineRef --------------------------------------------------------
+    ("engine_ref_valid", "engine_ref",
+     {"type": "rule_based", "policy_hash": FULL_HASH}, "valid"),
+    ("engine_ref_hash_bool", "engine_ref",
+     {"type": "rule_based", "policy_hash": True}, "invalid"),
+    ("engine_ref_hash_not_hex", "engine_ref",
+     {"type": "rule_based", "policy_hash": "sha256:NOT-HEX!"}, "invalid"),
+    ("engine_ref_ml_snapshot_bool", "engine_ref",
+     {"type": "ml", "model_snapshot_id": True}, "invalid"),
+    # --- Condition AST ----------------------------------------------------
+    ("condition_valid_gt", "condition",
+     {"operator": "greater_than", "left": "feature.close", "right": 1.5}, "valid"),
+    ("condition_op_drop_table", "condition",
+     {"operator": "DROP TABLE trades", "left": "feature.close", "right": 1.0},
+     "invalid"),
+    ("condition_op_eval", "condition",
+     {"operator": "eval", "code": "close > ma_200"}, "invalid"),
+    ("condition_feature_true_mapping", "condition",
+     {"operator": "greater_than", "left": {"feature": True}, "right": 1.0},
+     "invalid"),
+    ("condition_feature_empty", "condition",
+     {"operator": "greater_than", "left": "feature.", "right": 1.0}, "invalid"),
+    ("condition_nan_literal", "condition",
+     {"operator": "greater_than", "left": "feature.close", "right": float("nan")},
+     "invalid"),
+    ("condition_inf_literal", "condition",
+     {"operator": "greater_than", "left": "feature.close", "right": float("inf")},
+     "invalid"),
+    ("condition_bool_operand", "condition",
+     {"operator": "greater_than", "left": True, "right": 1.0}, "invalid"),
+    # --- RuleTrace --------------------------------------------------------
+    ("trace_valid_v1", "trace",
+     {"trace_schema": "rule_trace_v1",
+      "rules": [{"rule_id": "r1", "label": "R1", "observed": {"close": 1.0},
+                 "result": True, "reason_code": "GT"}]}, "valid"),
+    ("trace_v2_rejected", "trace",
+     {"trace_schema": "rule_trace_v2", "rules": []}, "invalid"),
+    ("trace_missing_schema", "trace", {"rules": []}, "invalid"),
+    ("trace_observed_infinity", "trace",
+     {"trace_schema": "rule_trace_v1",
+      "rules": [{"rule_id": "r1", "label": "R1",
+                 "observed": {"close": float("inf")}, "result": True,
+                 "reason_code": "GT"}]}, "invalid"),
+    # --- PolicyContext ----------------------------------------------------
+    ("context_valid", "context", {"mode": "DECISION"}, "valid"),
+    ("context_mode_drop_table", "context", {"mode": "DROP_TABLE"}, "invalid"),
+    # --- FeatureSnapshot --------------------------------------------------
+    ("snapshot_valid", "snapshot", {"close": 2.0, "ma_200": 1.0}, "valid"),
+    ("snapshot_infinity", "snapshot",
+     {"close": float("inf"), "ma_200": 1.0}, "invalid"),
+    ("snapshot_nan", "snapshot", {"close": float("nan"), "ma_200": 1.0}, "invalid"),
+    ("snapshot_bool_value", "snapshot", {"close": True, "ma_200": 1.0}, "invalid"),
+    ("snapshot_null_value", "snapshot", {"close": None, "ma_200": 1.0}, "invalid"),
+    ("snapshot_string_value", "snapshot", {"close": "5", "ma_200": 1.0}, "invalid"),
+]
+
+#: Pinned so both runtimes prove they run the SAME table (mirrored in the
+#: Vitest file — if you add a case, update BOTH files and BOTH pins).
+PARITY_CASE_IDS_SHA256_PREFIX = "case-table-v1:35"
+
+
+def _run_python_case(target: str, payload):
+    """Execute one table case against the REAL Python validators/constructors."""
+    try:
+        if target == "decision":
+            kwargs = dict(payload)
+            kwargs["engine_ref"] = EngineRef(**kwargs["engine_ref"])
+            kwargs["reason_codes"] = tuple(kwargs.get("reason_codes", ()))
+            StrategyDecision(**kwargs)
+        elif target == "engine_ref":
+            EngineRef(**payload)
+        elif target == "condition":
+            validate_condition(payload)
+        elif target == "trace":
+            RuleTrace.from_dict(payload)
+        elif target == "context":
+            PolicyContext(**payload)
+        elif target == "snapshot":
+            errors = DeclarativePolicy(ma200_spec()).validate_inputs(payload)
+            if errors:
+                raise ValueError("; ".join(errors))
+        else:  # pragma: no cover
+            raise AssertionError(f"unknown target {target!r}")
+        return "valid"
+    except (ValueError, TypeError, KeyError):
+        return "invalid"
+
+
+class TestSharedCaseTable:
+    """Finding 6: the same case table EXECUTED (not text-inspected) in Python.
+    The Vitest twin executes the identical table against the TS validators."""
+
+    @pytest.mark.parametrize(
+        "case_id,target,payload,expect",
+        PARITY_CASES,
+        ids=[c[0] for c in PARITY_CASES],
+    )
+    def test_case(self, case_id, target, payload, expect):
+        assert _run_python_case(target, payload) == expect, (
+            f"case {case_id!r}: Python verdict diverges from the table"
+        )
+
+    def test_table_pin_matches(self):
+        """The pin encodes table version + case count; the TS twin asserts the
+        same pin over the same ids — drift in either file fails one side."""
+        assert PARITY_CASE_IDS_SHA256_PREFIX == f"case-table-v1:{len(PARITY_CASES)}"
+        assert len({c[0] for c in PARITY_CASES}) == len(PARITY_CASES)

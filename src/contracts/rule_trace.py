@@ -27,8 +27,10 @@ Contract: CTR-POLICY-001 (BL-45 R1)
 
 from __future__ import annotations
 
+import json
+import math
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Mapping
 
 RULE_TRACE_SCHEMA_V1 = "rule_trace_v1"
 
@@ -36,6 +38,26 @@ RULE_TRACE_SCHEMA_V1 = "rule_trace_v1"
 #: SUPPORTED_TRACE_SCHEMAS in policy.contract.ts). Adding a v2 means adding
 #: it HERE and in the TS mirror, never accepting unknown strings.
 SUPPORTED_TRACE_SCHEMAS = (RULE_TRACE_SCHEMA_V1,)
+
+
+def ensure_json_safe(value: Any, path: str = "value") -> None:
+    """
+    Recursive finiteness check: any non-finite float (NaN/±Infinity) anywhere
+    in a serializable payload is a typed ValueError (repo rule: JSON exports
+    NEVER contain Infinity/NaN — C-004 remedy-3 findings 3/5).
+    Mirrored as ``collectNonFinite`` in policy.contract.ts.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(
+            f"{path} contains a non-finite number ({value!r}) — "
+            "NaN/Infinity forbidden in JSON exports"
+        )
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            ensure_json_safe(item, f"{path}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for i, item in enumerate(value):
+            ensure_json_safe(item, f"{path}[{i}]")
 
 
 @dataclass(frozen=True)
@@ -47,6 +69,28 @@ class RuleTraceEntry:
     observed: dict[str, Any] = field(default_factory=dict)
     result: bool = False
     reason_code: str = ""
+
+    def __post_init__(self) -> None:
+        # Type-strict: str()/bool() coercions are forbidden (C-004 remedy-3).
+        if not isinstance(self.rule_id, str) or not self.rule_id:
+            raise ValueError(
+                f"rule_trace entry requires a non-empty string rule_id, got {self.rule_id!r}"
+            )
+        if not isinstance(self.label, str):
+            raise ValueError(f"rule_trace entry label must be a string, got {self.label!r}")
+        if not isinstance(self.observed, Mapping):
+            raise ValueError(
+                f"rule_trace entry observed must be a mapping, got {self.observed!r}"
+            )
+        ensure_json_safe(self.observed, f"rule_trace[{self.rule_id}].observed")
+        if not isinstance(self.result, bool):
+            raise ValueError(
+                f"rule_trace entry result must be a bool, got {self.result!r}"
+            )
+        if not isinstance(self.reason_code, str):
+            raise ValueError(
+                f"rule_trace entry reason_code must be a string, got {self.reason_code!r}"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -73,6 +117,10 @@ class RuleTrace:
                 f"Unsupported trace_schema: {self.trace_schema!r} "
                 f"(supported: {SUPPORTED_TRACE_SCHEMAS})"
             )
+        if not isinstance(self.rules, (tuple, list)) or not all(
+            isinstance(r, RuleTraceEntry) for r in self.rules
+        ):
+            raise ValueError("rules must be a sequence of RuleTraceEntry")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,19 +128,41 @@ class RuleTrace:
             "rules": [r.to_dict() for r in self.rules],
         }
 
+    def to_json(self) -> str:
+        """Strict JSON: an Infinity/NaN raises instead of emitting invalid JSON."""
+        return json.dumps(self.to_dict(), allow_nan=False, default=str)
+
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "RuleTrace":
-        schema = payload.get("trace_schema", RULE_TRACE_SCHEMA_V1)
-        if schema != RULE_TRACE_SCHEMA_V1:
-            raise ValueError(f"Unsupported trace_schema: {schema!r}")
-        entries = tuple(
-            RuleTraceEntry(
-                rule_id=str(r["rule_id"]),
-                label=str(r.get("label", r["rule_id"])),
-                observed=dict(r.get("observed", {})),
-                result=bool(r.get("result", False)),
-                reason_code=str(r.get("reason_code", "")),
+    def from_dict(cls, payload: Mapping[str, Any]) -> "RuleTrace":
+        if not isinstance(payload, Mapping):
+            raise ValueError(f"rule_trace payload must be a mapping, got {payload!r}")
+        # trace_schema is REQUIRED — a payload without it is rejected on BOTH
+        # sides (TS already rejected it; Python aligned in C-004 remedy-3
+        # finding 7). Never defaulted.
+        if "trace_schema" not in payload:
+            raise ValueError(
+                "rule_trace payload requires an explicit trace_schema "
+                f"(supported: {SUPPORTED_TRACE_SCHEMAS}) — implicit defaults are forbidden"
             )
-            for r in payload.get("rules", [])
-        )
-        return cls(rules=entries)
+        schema = payload["trace_schema"]
+        if schema not in SUPPORTED_TRACE_SCHEMAS:
+            raise ValueError(f"Unsupported trace_schema: {schema!r}")
+        rules_raw = payload.get("rules")
+        if not isinstance(rules_raw, (list, tuple)):
+            raise ValueError(
+                f"rule_trace payload requires a 'rules' list, got {rules_raw!r}"
+            )
+        entries = []
+        for i, r in enumerate(rules_raw):
+            if not isinstance(r, Mapping) or "rule_id" not in r:
+                raise ValueError(f"rule_trace rules[{i}] must be a mapping with rule_id")
+            entries.append(
+                RuleTraceEntry(
+                    rule_id=r["rule_id"],
+                    label=r.get("label", r["rule_id"]),
+                    observed=dict(r.get("observed", {})),
+                    result=r.get("result", False),
+                    reason_code=r.get("reason_code", ""),
+                )
+            )
+        return cls(rules=tuple(entries))
