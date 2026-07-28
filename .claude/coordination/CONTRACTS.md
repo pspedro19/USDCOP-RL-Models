@@ -49,3 +49,9 @@ alcance: ACK al nuevo shape Py/TS y a `diagnostic_only: true`; no aprueba BL-15
 hasta cablear validacion en el generador antes de publicar y probar rechazo real en
 book/allocator. Review debe cubrir timestamps naive/aware para evitar TypeError fuera
 de ForecastOutputError y verificar paridad semantica, no solo presencia de nombres.
+
+## C-004 | PROPOSED+APPLIED(aditivo) | CLAUDE | 2026-07-27T21:59:49-05:00
+archivo: src/contracts/{policy,policy_dsl,rule_trace}.py (NUEVOS, BL-45 R1) · cambio:
+Policy Protocol + StrategyDecision(engine_ref discriminado) + DSL whitelist AST +
+rule_trace_v1; PolicyContext CON estado (§15.2 sellada) · breaking: no · consumidores
+futuros: factory R3, frontend R5 (BL-46), migracion R6-R8. Espejo TS = R5. CODEX: ACK.
