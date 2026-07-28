@@ -1,0 +1,303 @@
+{
+  "asset": "usdcop",
+  "contract_id": "CTR-STRANGLER-COP-001",
+  "plan_version": "1.0.0",
+  "generated_at": "2026-07-28T16:32:30.770058Z",
+  "ab_cohort_untouched": [
+    "smart_simple_v11",
+    "smart_simple_v12",
+    "smart_simple_v14"
+  ],
+  "layers": [
+    {
+      "layer": "ingest",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "canon",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "verify",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "features",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "dataset",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'features' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "train",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'features' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'dataset' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "gate",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'features' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'dataset' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'train' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    },
+    {
+      "layer": "signal",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'features' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'dataset' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'train' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'gate' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": [
+        {
+          "sensor_ref": "airflow/dags/forecast_h5_l5_weekly_signal.py::wait_for_h5_l3_training",
+          "external_dag_id": "forecast_h5_l3_weekly_training",
+          "replacement_asset": "asset://usdcop/train"
+        }
+      ]
+    },
+    {
+      "layer": "execute",
+      "state": "NOT_STARTED",
+      "candidate_generator": null,
+      "required_hash_kind": "canonical_json",
+      "observations": 0,
+      "green_streak": 0,
+      "green_days": 0.0,
+      "min_parallel_days": 14,
+      "last_observation_at": null,
+      "may_advance": false,
+      "blockers": [
+        "predecessor 'ingest' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'canon' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'verify' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'features' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'dataset' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'train' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'gate' is NOT_STARTED, not MIGRATED (§29.2)",
+        "predecessor 'signal' is NOT_STARTED, not MIGRATED (§29.2)",
+        "no candidate generator declared (BL-28 owns it; until then there is no second path to compare against)",
+        "chain not fully migrated yet: ['ingest', 'canon', 'verify', 'features', 'dataset', 'train', 'gate', 'signal'] (§29.4)",
+        "no execution-readiness attestation on file — BL-30 (external execution service, pre-trade, idempotency, kill switch) must attest first (§29.4)",
+        "§30 acceptance criteria not PASS: #1 [PENDING] (owner BL-17), #2 [PENDING] (owner BL-17), #3 [PENDING] (owner BL-21), #4 [PENDING] (owner BL-21), #5 [PENDING] (owner BL-22), #6 [PENDING] (owner BL-26), #7 [PENDING] (owner BL-35), #8 [PENDING] (owner BL-16), #9 [PENDING] (owner BL-30), #10 [PENDING] (owner BL-30), #11 [PENDING] (owner BL-32), #12 [PENDING] (owner BL-18), #13 [PENDING] (owner BL-23), #14 [PENDING] (owner BL-24), #15 [PENDING] (owner BL-25)",
+        "the L7 rollback has not been rehearsed — the money layer migrates with a double net (§29.4 + §30.15)"
+      ],
+      "rollback_declared": true,
+      "rollback_rehearsed": false,
+      "sensor_migrations": []
+    }
+  ],
+  "layers_migrated": 0,
+  "acceptance_pending": [
+    {
+      "id": 1,
+      "status": "PENDING",
+      "owner": "BL-17"
+    },
+    {
+      "id": 2,
+      "status": "PENDING",
+      "owner": "BL-17"
+    },
+    {
+      "id": 3,
+      "status": "PENDING",
+      "owner": "BL-21"
+    },
+    {
+      "id": 4,
+      "status": "PENDING",
+      "owner": "BL-21"
+    },
+    {
+      "id": 5,
+      "status": "PENDING",
+      "owner": "BL-22"
+    },
+    {
+      "id": 6,
+      "status": "PENDING",
+      "owner": "BL-26"
+    },
+    {
+      "id": 7,
+      "status": "PENDING",
+      "owner": "BL-35"
+    },
+    {
+      "id": 8,
+      "status": "PENDING",
+      "owner": "BL-16"
+    },
+    {
+      "id": 9,
+      "status": "PENDING",
+      "owner": "BL-30"
+    },
+    {
+      "id": 10,
+      "status": "PENDING",
+      "owner": "BL-30"
+    },
+    {
+      "id": 11,
+      "status": "PENDING",
+      "owner": "BL-32"
+    },
+    {
+      "id": 12,
+      "status": "PENDING",
+      "owner": "BL-18"
+    },
+    {
+      "id": 13,
+      "status": "PENDING",
+      "owner": "BL-23"
+    },
+    {
+      "id": 14,
+      "status": "PENDING",
+      "owner": "BL-24"
+    },
+    {
+      "id": 15,
+      "status": "PENDING",
+      "owner": "BL-25"
+    }
+  ],
+  "execution_readiness": {
+    "attested": false,
+    "missing": null
+  }
+}

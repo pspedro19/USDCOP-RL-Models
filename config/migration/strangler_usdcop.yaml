@@ -1,0 +1,323 @@
+# USD/COP strangler migration plan — BL-31 (FABRIC §29)
+#
+# Contract: CTR-STRANGLER-COP-001 · loader: src/strangler/plan.py · gates: src/strangler/gates.py
+#
+# WHAT THIS IS: the declarative, auditable order in which the artisanal USD/COP chain is
+# replaced by generated pipelines, plus what must be true before each layer switches.
+# It is engineering governance only — no parameter here was fitted or chosen by looking at
+# results (0 trials).
+#
+# WHAT THIS IS NOT: it does not build the candidate path. Every `candidate_generator` is
+# `null` today because the generators are BL-28's deliverable; with a null generator the
+# gate blocks the layer by construction. The same holds for L7: the execution-readiness
+# attestation it demands is produced by BL-30, not here.
+#
+# STATE lives in the append-only ledger (`.claude/evidence/strangler_cop/parity_ledger.jsonl`),
+# never in this file: a rollback is an event, not an edit.
+
+asset: usdcop
+contract_id: CTR-STRANGLER-COP-001
+version: 1.0.0
+
+# §29.4 — the rest of the chain must hold parity this long before the money layer moves.
+execute_requires_days_after_last_migration: 30
+
+# §29.5 — the live A/B cohort is NOT touched during the migration; its ledgers are the
+# reference pattern that parity is measured against.
+ab_cohort:
+  - smart_simple_v11
+  - smart_simple_v12
+  - smart_simple_v14
+
+layers:
+
+  # ---------------------------------------------------------------- 1. ingest
+  - layer: ingest
+    legacy_anchors:
+      - airflow/dags/l0_ohlcv_realtime.py::validate_ohlcv
+      - airflow/dags/l0_macro_update.py::upsert_all
+      - airflow/dags/l0_macro_update.py::update_is_complete
+    artifacts:
+      - "table:usdcop_m5_ohlcv (upsert window of the run)"
+      - "table:macro_indicators_daily (upsert window of the run)"
+      - "parity manifest: canonical JSON digest of the written window (row count, per-column digest, bar range) — emitted by both paths"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator A (data)
+    min_parallel_days: 14
+    min_observations: 4
+    caveat: >-
+      Today neither path emits a parity manifest: the artisanal DAG writes straight to
+      Postgres. Comparing the raw Parquet/DB bytes is explicitly rejected (§31 "byte
+      parity over non-canonical external formats"), so the manifest emitter is part of
+      the candidate generator plus a legacy-side sidecar. Until it exists this layer
+      cannot produce a single valid observation — which is exactly why the gate is red.
+    rollback:
+      trigger: parity red, or any discrepancy in the written window
+      steps:
+        - "pause the generated ingest DAG (it holds no exclusive state)"
+        - "unpause core_l0_02_ohlcv_realtime / core_l0_04_macro_update"
+        - "re-run the artisanal DAG for the affected window (UPSERT is idempotent)"
+        - "record a layer_transition ROLLED_BACK with the failing observation id"
+
+  # ---------------------------------------------------------------- 2. canon
+  - layer: canon
+    legacy_anchors:
+      - scripts/data/build_unified_fx_seed.py
+      - data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet
+      - seeds/latest/usdcop_daily_ohlcv.parquet
+    artifacts:
+      - "seeds/latest/*.parquet (canonical daily/5-min bars)"
+      - "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet"
+      - "parity manifest: canonical JSON digest of the canonical bar set"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator A + BL-38 canonical_bar
+    min_parallel_days: 14
+    min_observations: 4
+    caveat: >-
+      USD/COP has no explicit `canonical_bar` layer as-built; the seed builder plus
+      MACRO_DAILY_CLEAN are the de-facto canonicalisation. BL-38 owns the real
+      raw_bar/canonical_bar split — the anchors below will move when it lands.
+    rollback:
+      trigger: canonical bar set differs from the artisanal seed
+      steps:
+        - "stop publishing the generated canonical set"
+        - "restore seeds/latest from data/backups/seeds (tracked in git)"
+        - "re-run scripts/data/build_unified_fx_seed.py"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 3. verify
+  - layer: verify
+    legacy_anchors:
+      - src/data_quality/ohlcv_validators.py
+      - airflow/dags/l0_ohlcv_realtime.py::validate_ohlcv
+      - airflow/dags/forecast_h5_l3_weekly_training.py::validate_data_freshness
+    artifacts:
+      - "validator verdicts (pass/fail + reason codes) per window"
+      - "freshness gate verdict of the training run"
+      - "parity manifest: canonical JSON of the verdict set"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator A (quality stage)
+    min_parallel_days: 14
+    min_observations: 4
+    caveat: >-
+      The freshness thresholds themselves are SSOT in .claude/rules/data-freshness.md and
+      are NOT part of this migration: parity here means both paths reach the same verdict
+      with the same thresholds, never that a threshold was re-tuned.
+    rollback:
+      trigger: verdict divergence (either direction)
+      steps:
+        - "disable the generated quality stage"
+        - "re-enable the artisanal validate_ohlcv / validate_data_freshness tasks"
+        - "quarantine the window that diverged (no training on it)"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 4. features
+  - layer: features
+    legacy_anchors:
+      - airflow/dags/forecast_h5_l3_weekly_training.py::load_and_build_features
+      - config/features/feature_catalog.yaml
+      - src/forecasting/dataset_loader.py
+    artifacts:
+      - "feature matrix for the training window"
+      - "parity manifest: canonical JSON with feature_set_id + per-feature digest"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator A (features) + BL-39 feature contracts
+    min_parallel_days: 14
+    min_observations: 2
+    caveat: >-
+      BL-39 already declared and locked a real divergence between two explicit feature
+      contracts (recipe25 vs dag_legacy23). Parity here is measured against the contract
+      the candidate declares, and reconciling the two in silence is forbidden — the
+      existing lock test fails if it happens.
+    rollback:
+      trigger: any feature digest differs from the declared contract
+      steps:
+        - "disable the generated feature stage"
+        - "re-enable load_and_build_features in forecast_h5_l3_weekly_training"
+        - "leave the divergent feature matrix in place as evidence (immutable)"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 5. dataset
+  - layer: dataset
+    legacy_anchors:
+      - scripts/data/build_forecasting_dataset_aligned.py
+      - src/forecasting/dataset_loader.py
+    artifacts:
+      - "aligned training dataset for the expanding window"
+      - "parity manifest: canonical JSON with cutoff, row count, index digest"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator A (dataset) + BL-35 dataset URIs
+    min_parallel_days: 14
+    min_observations: 2
+    caveat: >-
+      The dataset must carry an explicit cutoff (BL-35 URIs). A manifest without a cutoff
+      is not a valid observation: "last available data" is precisely the look-ahead the
+      constitution forbids.
+    rollback:
+      trigger: row count, cutoff or index digest differs
+      steps:
+        - "disable the generated dataset stage"
+        - "re-run scripts/data/build_forecasting_dataset_aligned.py"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 6. train
+  - layer: train
+    legacy_anchors:
+      - airflow/dags/forecast_h5_l3_weekly_training.py::train_h5_models
+      - airflow/dags/forecast_h5_l3_weekly_training.py::validate_models
+      - airflow/dags/forecast_h5_l3_weekly_training.py::persist_models
+    artifacts:
+      - "model artifacts for the week (Ridge/BR + regime gate)"
+      - "parity manifest: canonical JSON with predictions digest over a fixed probe set"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator B (strategy)
+    min_parallel_days: 14
+    min_observations: 2
+    caveat: >-
+      Parity is over PREDICTIONS on a fixed probe set, not over pickle bytes (a .pkl is
+      not a canonical format). Model selection is untouched: retraining the frozen v11
+      recipe is 0 trials; changing anything inside it is a modelling decision that does
+      not belong to this migration.
+    rollback:
+      trigger: prediction digest differs on the probe set
+      steps:
+        - "keep the artisanal models as the ones L5 reads"
+        - "unpause forecast_h5_l3_weekly_training"
+        - "retain the generated artifacts unpromoted for diffing"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 7. gate
+  - layer: gate
+    legacy_anchors:
+      - airflow/dags/forecast_h5_l4_backtest_promotion.py::run_backtest
+      - airflow/dags/forecast_h5_l4_backtest_promotion.py::register_bundle
+      - airflow/dags/forecast_h5_l4b_production_deploy.py
+      - scripts/pipeline/train_and_export_smart_simple.py
+    artifacts:
+      - "public/data/production/summary_*.json (published bundle)"
+      - "public/data/production/approval_state.json (Vote 1 gates)"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator B + BL-18 single metric engine
+    min_parallel_days: 14
+    min_observations: 2
+    caveat: >-
+      This layer is where the 2-vote approval lives. Migrating it never migrates the
+      human Vote 2: it stays on /dashboard and keeps being cast over the published bundle
+      numbers (approval-gates.md, constitution §7). Parity applies to the bundle and the
+      gate results, not to the decision.
+    rollback:
+      trigger: any gate result or bundle field differs
+      steps:
+        - "do not publish the generated bundle"
+        - "re-run scripts/pipeline/train_and_export_smart_simple.py --phase backtest"
+        - "leave approval_state.json untouched (never hand-edited)"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 8. signal
+  - layer: signal
+    legacy_anchors:
+      - airflow/dags/forecast_h5_l5_weekly_signal.py::generate_signal
+      - airflow/dags/forecast_h5_l5_weekly_signal.py::persist_signal
+      - airflow/dags/forecast_h5_l5_vol_targeting.py::compute_leverage
+    artifacts:
+      - "weekly UniversalSignalRecord for the week"
+      - "vol-targeted leverage record"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-28 generator B (sleeve DAG)
+    min_parallel_days: 14
+    min_observations: 2
+    sensor_migrations:
+      - sensor_ref: airflow/dags/forecast_h5_l5_weekly_signal.py::wait_for_h5_l3_training
+        external_dag_id: forecast_h5_l3_weekly_training
+        replacement_asset: asset://usdcop/train
+    caveat: >-
+      §29.3 — this is the only ExternalTaskSensor in the COP H5 chain today
+      (soft_fail=True). It is replaced by an Airflow Asset when THIS layer migrates, not
+      before and not after.
+    rollback:
+      trigger: signal or leverage differs from the artisanal record
+      steps:
+        - "the executor keeps reading the artisanal signal row"
+        - "unpause forecast_h5_l5_weekly_signal / forecast_h5_l5_vol_targeting"
+        - "restore the ExternalTaskSensor edge (the Asset is additive, not destructive)"
+        - "record a layer_transition ROLLED_BACK"
+
+  # ---------------------------------------------------------------- 9. execute (L7)
+  - layer: execute
+    legacy_anchors:
+      - airflow/dags/forecast_h5_l7_multiday_executor.py
+      - src/execution/multiday_executor.py
+      - services/signalbridge_api/app/services/pretrade.py
+    artifacts:
+      - "order/fill event ledger for the week (BL-21 exec.* event sourcing)"
+      - "position + PnL facts reconciled against the broker (BL-22)"
+    required_hash_kind: canonical_json
+    candidate_generator: null   # BL-30 external execution service
+    min_parallel_days: 14
+    min_observations: 2
+    caveat: >-
+      The money layer. It does not migrate on parity alone: §29.4 additionally demands a
+      month of green chain, an execution service outside Airflow with proven idempotency,
+      pre-trade risk and a kill switch that works with Airflow down, all first exercised
+      on ANOTHER flow's canary, plus the 15 acceptance criteria of §30. BL-31 only
+      consumes that attestation; producing it is BL-30's deliverable.
+    rollback:
+      trigger: any discrepancy against the broker, or a failed pre-trade check
+      steps:
+        - "kill switch to BLOCK_NEW (independent of Airflow)"
+        - "cancel open orders placed by the new service and reconcile"
+        - "return routing to forecast_h5_l7_multiday_executor"
+        - "confirm position and open_orders match the broker before resuming"
+        - "record a layer_transition ROLLED_BACK plus an incident"
+      rehearsed: false
+
+# §30 — the 15 production acceptance criteria, quoted. `owner` routes the evidence to the
+# backlog item that must produce it; it is not a claim that the evidence exists.
+acceptance_criteria:
+  - id: 1
+    text: El 100% de señales live tiene decision_fingerprint reproducible.
+    owner: BL-17
+  - id: 2
+    text: Un replay independiente reproduce el semantic_hash de cada señal.
+    owner: BL-17
+  - id: 3
+    text: Un retry no genera órdenes duplicadas (probado con inyección de fallos).
+    owner: BL-21
+  - id: 4
+    text: Paper y live usan el mismo ledger de eventos y esquema.
+    owner: BL-21
+  - id: 5
+    text: fact_position y fact_pnl reconcilian con fills y broker.
+    owner: BL-22
+  - id: 6
+    text: El portfolio target siempre referencia un portfolio snapshot con cutoff.
+    owner: BL-26
+  - id: 7
+    text: >-
+      No existe dependencia entre forecast diagnóstico y ejecución (verificado en
+      permisos y en grafo de DAGs).
+    owner: BL-35
+  - id: 8
+    text: Todos los estados cumplen la matriz de legalidad.
+    owner: BL-16
+  - id: 9
+    text: El proceso RETIRING fue ensayado de punta a punta.
+    owner: BL-30
+  - id: 10
+    text: El kill switch funciona con Airflow caído.
+    owner: BL-30
+  - id: 11
+    text: Las vistas live no dependen de un refresh materializado diario.
+    owner: BL-32
+  - id: 12
+    text: Todos los gates y métricas provienen del motor y catálogo únicos.
+    owner: BL-18
+  - id: 13
+    text: El backfill no presenta sesgo de supervivencia.
+    owner: BL-23
+  - id: 14
+    text: El linaje de una fila de PnL llega hasta raw snapshot.
+    owner: BL-24
+  - id: 15
+    text: Los runbooks de incidentes fueron probados mediante simulacros.
+    owner: BL-25

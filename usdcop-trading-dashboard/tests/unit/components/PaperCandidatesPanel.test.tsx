@@ -47,6 +47,17 @@ const LEDGER: PaperCandidatesLedger = {
         note: 'N<20 => solo conteo y PnL',
       },
     },
+    // Candidata recién sellada: TODAS sus métricas son null todavía. Es la fila que
+    // ejercita el render de "celda sin dato" (símbolo '—' + equivalente textual).
+    smart_simple_v14: {
+      ret_2026_ytd_pct: null,
+      n_trades: null,
+      judge_window: {
+        starts_after: '2026-07-24',
+        n_trades: null,
+        pnl_pct_compound: null,
+      },
+    },
   },
 };
 
@@ -105,6 +116,61 @@ describe('PaperCandidatesPanel (BL-05)', () => {
     for (const th of headers) {
       expect(th).toHaveAttribute('scope', 'col');
     }
+  });
+
+  it('CXD-022: la celda de nombre de cada fila es <th scope="row"> (row header)', () => {
+    render(<PaperCandidatesPanel ledger={LEDGER} />);
+
+    // Un lector de pantalla debe poder anclar cada dato a SU candidata: eso exige
+    // rowheader real, no un td con texto en negrita.
+    const rowHeaders = screen.getAllByRole('rowheader');
+    expect(rowHeaders).toHaveLength(Object.keys(LEDGER.strategies).length);
+    for (const th of rowHeaders) {
+      expect(th).toHaveAttribute('scope', 'row');
+    }
+    // El id de la estrategia vive DENTRO del rowheader (accessible name de la fila).
+    expect(rowHeaders[0]).toHaveTextContent('smart_simple_v11');
+  });
+
+  it('CXD-022: tipografía de tabla relativa (rem/clamp), jamás px fijos', () => {
+    render(<PaperCandidatesPanel ledger={LEDGER} />);
+
+    const table = screen.getByRole('table', { name: /candidatas/i });
+    // px fijo ignora la preferencia de tamaño de fuente del usuario (WCAG 1.4.4).
+    expect(table.className).not.toMatch(/text-\[\d+(\.\d+)?px\]/);
+    expect(table.className).toMatch(/text-\[(clamp\(|[\d.]+rem)/);
+  });
+
+  it('CXD-022: "sin dato" tiene texto equivalente; el guión es decorativo (aria-hidden)', () => {
+    const { container } = render(<PaperCandidatesPanel ledger={LEDGER} />);
+
+    // v14 llega con 4 celdas vacías (ret, trades, trades juez, PnL juez). Sin texto
+    // equivalente, un lector de pantalla anuncia "guión" o nada: el usuario no vidente
+    // no distingue "vacío" de "fallo de carga".
+    expect(screen.getAllByText('sin dato').length).toBeGreaterThanOrEqual(4);
+
+    // Y el símbolo visible queda fuera del árbol de accesibilidad (no se duplica el anuncio).
+    const dashes = Array.from(container.querySelectorAll('span')).filter(
+      (el) => el.textContent === '—',
+    );
+    expect(dashes.length).toBeGreaterThan(0);
+    for (const dash of dashes) {
+      expect(dash).toHaveAttribute('aria-hidden', 'true');
+    }
+  });
+
+  it('CXD-022: el estado producción/paper se anuncia con texto Sí/No, no solo por color', () => {
+    render(<PaperCandidatesPanel ledger={LEDGER} />);
+
+    // El tono del badge (accent vs neutral) es un canal cromático: sin equivalente
+    // textual, "en producción" vs "paper" se pierde sin visión del color (WCAG 1.4.1).
+    const prodRow = screen.getAllByRole('rowheader')[0];
+    expect(prodRow).toHaveTextContent(/En producción: Sí/);
+    expect(prodRow).toHaveTextContent(/Juez sellado: No/);
+
+    const paperRow = screen.getAllByRole('rowheader')[1];
+    expect(paperRow).toHaveTextContent(/En producción: No/);
+    expect(paperRow).toHaveTextContent(/Juez sellado: Sí/);
   });
 
   it('móvil: el scroll horizontal vive en una región focusable, sin romper layout', () => {

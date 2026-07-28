@@ -1,11 +1,14 @@
 ---
 kind: roadmap
-status: PLANNED
-version: 1.0.0
-last_verified: 2026-07-27
+status: PARTIAL
+version: 1.1.0
+last_verified: 2026-07-28
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/gm/views/ProductionView.tsx
+  - usdcop-trading-dashboard/components/gm/views/PaperCandidatesPanel.tsx
+  - usdcop-trading-dashboard/tests/unit/components/PaperCandidatesPanel.test.tsx
+  - usdcop-trading-dashboard/tests/e2e/paper-candidates-a11y.spec.ts
   - scripts/pipeline/candidates_paper_ledger.py
 ---
 
@@ -30,3 +33,22 @@ Panel renderiza el JSON real; N<20 muestra solo conteo/PnL.
 
 ## Notas constitución
 Vote-2/decisiones siguen sobre bundles; esto es monitoreo del juez sellado — jamás re-anclar.
+
+## Remediación del rechazo CXD-022 (2026-07-28)
+
+CXD-022 rechazó `624465c` por cuatro gaps. Estado tras el remedio:
+
+| Gap del rechazo | Estado | Dónde |
+|---|---|---|
+| Falta `<th scope="row">` (row headers) | **HECHO** | `PaperCandidatesPanel.tsx` — la celda de nombre de cada fila es `th scope="row"` (`font-normal`/`text-left` preservan el aspecto) |
+| Tipografía fija `12.5px` | **HECHO** | `text-[12.5px]` → `text-[0.78125rem]`; el resto de tokens (`GMT.*`) ya eran rem. Los únicos `px` que quedan son de layout (`min-w-[760px]`, `-mx-[18px]`), no de fuente |
+| Significado por símbolo/color sin equivalente textual | **HECHO** | `NoData()` (guión `aria-hidden` + `sr-only "sin dato"`) y texto `sr-only` **`En producción: Sí/No · Juez sellado: Sí/No`** en el row header (el tono del badge era canal cromático) |
+| Prueba real 375px / landscape / teclado / consola | **PENDIENTE DE EJECUCIÓN** | spec escrito y listo en `tests/e2e/paper-candidates-a11y.spec.ts`; **no ejecutado** por orden del operador (2026-07-28: no levantar Docker ni el dashboard). No hay evidencia E2E asociada y no debe darse por verde |
+
+**Cobertura unit actual**: `PaperCandidatesPanel.test.tsx` **13 passed** (2 asserts nuevos
+verificados fail-first: 2 failed antes del fix → 13 passed después). `tsc --noEmit`: 0 errores
+en los archivos tocados.
+
+**Para cerrar el gap E2E** hace falta un dashboard servido con este remedio y sesión `admin`
+(el panel está oculto para `free`/`subscriber` — `ProductionView::isClientView`), y luego
+`npx playwright test tests/e2e/paper-candidates-a11y.spec.ts --project=chromium`.

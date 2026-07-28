@@ -73,6 +73,21 @@ export function fmtJudgeDays(days: number | null): string {
   return days < 0 ? `faltan ${-days} d` : `${days} d`;
 }
 
+/**
+ * Celda vacía accesible (CXD-022): '—' es un SÍMBOLO. Un lector de pantalla lo
+ * anuncia como "guión" o lo salta, así que el usuario no vidente no sabe si la
+ * celda está vacía por ausencia de dato o por error. Guion visible + texto
+ * equivalente para AT (WCAG 1.1.1). El aspecto no cambia ni un píxel.
+ */
+export function NoData() {
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">sin dato</span>
+    </>
+  );
+}
+
 // ─────────────────────────────────────────────────────────── panel
 
 export function PaperCandidatesPanel({ ledger }: { ledger: PaperCandidatesLedger }) {
@@ -99,7 +114,9 @@ export function PaperCandidatesPanel({ ledger }: { ledger: PaperCandidatesLedger
         tabIndex={0}
         className={`overflow-x-auto -mx-[18px] ${GM.focus}`}
       >
-        <table className="w-full min-w-[760px] text-[12.5px]">
+        {/* 0.78125rem = 12.5px al root default, pero relativa: respeta la preferencia
+            de tamaño de fuente del usuario (WCAG 1.4.4 — rechazo CXD-022). */}
+        <table className="w-full min-w-[760px] text-[0.78125rem]">
           <caption className="sr-only">
             Candidatas A/B del paper ledger: v11 en producción (forward real 2026) frente a
             candidatas paper con juez sellado post-freeze. Solo lectura del JSON publicado.
@@ -127,48 +144,62 @@ export function PaperCandidatesPanel({ ledger }: { ledger: PaperCandidatesLedger
               );
               return (
                 <tr key={sid} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
-                  <td className="px-3 py-2.5">
+                  {/* Row header real (CXD-022): un lector de pantalla ancla cada dato a SU
+                      candidata. font-normal/text-left neutralizan los defaults de th. */}
+                  <th scope="row" className="px-3 py-2.5 text-left font-normal">
                     <div className="flex items-center gap-2">
                       <span className={`${GMT.mono} font-bold ${GM.textStrong}`}>{sid}</span>
                       <GmBadge tone={isProd ? 'accent' : 'neutral'}>
                         {isProd ? 'PRODUCCIÓN' : 'PAPER · JUEZ SELLADO'}
                       </GmBadge>
                     </div>
+                    {/* El tono del badge (accent vs neutral) es un canal de COLOR: dice
+                        "producción" o "paper" a quien lo ve. Texto Sí/No explícito para
+                        que la misma distinción exista sin color (WCAG 1.4.1). */}
+                    <span className="sr-only">
+                      {isProd
+                        ? 'En producción: Sí. Juez sellado: No (el juez es el forward 2026 completo).'
+                        : 'En producción: No (paper). Juez sellado: Sí.'}
+                    </span>
                     {ledger.labels[sid] && (
                       <span className={`block ${GMT.micro} ${GM.textMuted} mt-0.5`}>{ledger.labels[sid]}</span>
                     )}
-                  </td>
+                  </th>
                   <td className={`px-3 py-2.5 ${GMT.mono} font-bold text-right ${
                     c.ret_2026_ytd_pct == null ? GM.textMuted : c.ret_2026_ytd_pct >= 0 ? GM.pos : GM.neg
                   }`}>
-                    {fmtSignedPct(c.ret_2026_ytd_pct)}
+                    {/* El signo (+/−) es el canal NO-cromático del retorno: el color
+                        verde/rojo es redundante, nunca el único portador (WCAG 1.4.1). */}
+                    {c.ret_2026_ytd_pct == null ? <NoData /> : fmtSignedPct(c.ret_2026_ytd_pct)}
                   </td>
                   <td className={`px-3 py-2.5 text-right`}>
-                    <span className={`${GMT.mono} ${GM.textStrong}`}>{c.n_trades ?? '—'}</span>
+                    <span className={`${GMT.mono} ${GM.textStrong}`}>{c.n_trades ?? <NoData />}</span>
                     {c.note_n && (
                       <span className={`block ${GMT.micro} ${GM.textMuted}`}>{c.note_n}</span>
                     )}
                   </td>
                   <td className={`px-3 py-2.5 ${GMT.mono} ${GM.textSec} whitespace-nowrap`}>
-                    {c.judge_window ? c.judge_window.starts_after : '—'}
+                    {c.judge_window ? c.judge_window.starts_after : <NoData />}
                   </td>
                   <td className={`px-3 py-2.5 text-right whitespace-nowrap`}>
                     <span className={`${GMT.mono} ${judgeDays == null ? GM.textMuted : GM.textStrong}`}>
-                      {fmtJudgeDays(judgeDays)}
+                      {judgeDays == null ? <NoData /> : fmtJudgeDays(judgeDays)}
                     </span>
                     <span className={`block ${GMT.micro} ${GM.textMuted}`}>
                       {isProd ? 'forward 2026 (ancla)' : 'juez sellado'}
                     </span>
                   </td>
                   <td className={`px-3 py-2.5 ${GMT.mono} ${GM.textStrong} text-right`}>
-                    {c.judge_window ? c.judge_window.n_trades ?? '—' : '—'}
+                    {c.judge_window?.n_trades ?? <NoData />}
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <span className={`${GMT.mono} ${
                       c.judge_window?.pnl_pct_compound == null ? GM.textMuted
                         : c.judge_window.pnl_pct_compound >= 0 ? GM.pos : GM.neg
                     }`}>
-                      {c.judge_window ? fmtSignedPct(c.judge_window.pnl_pct_compound) : '—'}
+                      {c.judge_window?.pnl_pct_compound == null
+                        ? <NoData />
+                        : fmtSignedPct(c.judge_window.pnl_pct_compound)}
                     </span>
                     {c.judge_window?.note && (
                       <span className={`block ${GMT.micro} ${GM.textMuted}`}>{c.judge_window.note}</span>
