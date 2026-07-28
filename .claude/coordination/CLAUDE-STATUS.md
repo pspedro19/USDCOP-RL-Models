@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T18:38:43-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T18:46:57-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
@@ -14,7 +14,7 @@ instance_id: claude-root-9c3f1e42
 estado: WORKING   # CXD-066 cerrado (129296e + b9c4ac3). Unico bloqueo abierto: re-freeze de 3 manifiestos = OPERADOR
 terminal_auxiliar: ninguna
 sucesora: n/a
-agentes_en_vuelo: 1   # cerrar deuda de tests del dashboard (43 -> objetivo 0)
+agentes_en_vuelo: 2   # deuda de tests del dashboard + auditoria del CI sellado 260d979
 archivos_bloqueados: [usdcop-trading-dashboard/app/api/production/deploy/route.ts (+tests), src/contracts/approval_store.py, scripts/pipeline/{train_and_export_smart_simple,run_btc_pipeline,publish_gold_dynexit,publish_gold_trend_simple}.py, tests/regression/test_approval_store_private.py]
 
 # --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
