@@ -68,7 +68,16 @@ import type { Entitlements } from '@/lib/contracts/rbac.contract';
 import { addonPricesCop } from '@/lib/billing/prices';
 import { logServerError } from '@/lib/api/envelope';
 
-/** Terminal order status per normalized event + the states it may come FROM (mig. 059). */
+/**
+ * Terminal order status per normalized event + the states it may come FROM (mig. 059).
+ *
+ * `payment.declined` deliberately does NOT list `paid` (CXD-063). Wompi delivers the
+ * declined and the approved attempt of one retry as two independent events, and their
+ * order of arrival is not guaranteed: if a late decline could reach a `paid` order it
+ * would revoke a sale that really happened. This restriction is the exact counterpart
+ * of the `failed -> paid` opening in `applyApproval` — opening one direction without
+ * keeping the other shut just moves the hole.
+ */
 const ORDER_TRANSITION: Record<Exclude<BillingEventType, 'payment.approved'>,
   { to: string; from: string[] }> = {
   'payment.declined': { to: 'failed', from: ['created', 'pending'] },
@@ -76,6 +85,38 @@ const ORDER_TRANSITION: Record<Exclude<BillingEventType, 'payment.approved'>,
   'payment.refunded': { to: 'refunded', from: ['paid'] },
   'payment.charged_back': { to: 'charged_back', from: ['paid'] },
 };
+
+/**
+ * States an order may become `paid` FROM — the ONLY place `failed` is accepted (CXD-063).
+ *
+ * ── WHY `failed` BELONGS HERE ───────────────────────────────────────────────────
+ * Wompi documents that a retried payment produces a DECLINED transaction and an
+ * APPROVED transaction **under the same reference**, the second webhook carrying a
+ * DIFFERENT transaction id (https://docs.wompi.co/docs/colombia/reintento-de-pago/).
+ * That is not a replay, so it correctly passes both ledgers — but the decline had
+ * already parked the order in `failed`, and while `failed` was not payable the
+ * authoritative APPROVED that followed rolled back with `order not payable in its
+ * current state` on every provider retry. The customer was charged and could never be
+ * credited. A terminal `failed` is therefore wrong: the payment ATTEMPT failed, the
+ * ORDER did not.
+ *
+ * ── WHY THIS IS SAFE ────────────────────────────────────────────────────────────
+ * It is reachable only from `applyApproval`, which the route reaches only after
+ * `confirmWithProvider()` returned `confirmed` — i.e. after the provider's own API
+ * agreed on id, reference, status, amount and currency (CXD-059). The webhook body
+ * alone never opens it. The sealed-quote and amount checks above are unchanged, and
+ * the idempotency ledger still makes the second delivery of the SAME approval a no-op.
+ * The reverse transition stays closed (see `ORDER_TRANSITION` above).
+ *
+ * ── COUPLING (CODEX owns the other half) ────────────────────────────────────────
+ * `checkout_orders` is guarded by the `checkout_order_transition` trigger in
+ * `database/migrations/*_checkout_order_ledger.sql`, which must ALSO permit
+ * `failed -> paid` or this UPDATE raises instead of applying. The billing test fake
+ * parses that migration, so the coupling is asserted rather than assumed:
+ * `tests/unit/api/billing-payment-retry.test.ts` ("schema precondition") is red until
+ * the trigger allows it.
+ */
+const PAYABLE_FROM = ['created', 'pending', 'failed'];
 
 /** Rejection with a client-safe code; rolls the transaction back. */
 class WebhookReject extends Error {
@@ -392,10 +433,13 @@ async function applyApproval(
     throw new WebhookReject('amount mismatch', 400);
   }
 
-  // Only an order that is still awaiting payment may become paid (mig. 059).
+  // An order that is still awaiting payment — or whose EARLIER ATTEMPT was declined
+  // and has now been paid on retry — becomes paid. See `PAYABLE_FROM` (CXD-063) for
+  // why `failed` is in that list and why it is safe only here, after the S2S
+  // confirmation. `refunded`/`charged_back`/`cancelled` remain unreachable.
   const upd = await client.query(
     `UPDATE checkout_orders SET status='paid' WHERE reference=$1 AND status = ANY($2::text[])`,
-    [event.reference, ['created', 'pending']],
+    [event.reference, PAYABLE_FROM],
   );
   if (upd.rowCount === 0) throw new WebhookReject('order not payable in its current state', 409);
 
@@ -431,6 +475,11 @@ async function applyApproval(
     provider: providerName, plan: order.plan, addOns, reference: event.reference,
     amount_cents: sealedAmount, currency: order.currency,
     provider_event_id: event.providerEventId,
+    // The state the order was paid FROM, read under the same `FOR UPDATE` as the
+    // sealed quote. `failed` here means this credit RECOVERED a retried payment
+    // (CXD-063) — the one case where a terminal-looking order became paid, so it must
+    // be greppable in the audit trail rather than inferable.
+    previous_order_status: order.status,
     // Recoverable trail: what the user held before this purchase. A purchase of a
     // DIFFERENT plan applies the plan of the sealed quote; ranking plans (and thus
     // refusing a "downgrade") is an OPERATOR DECISION, not invented here.

@@ -28,6 +28,9 @@
  * invariants — two copies would let the two suites disagree about the schema).
  */
 
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
 export type Row = Record<string, unknown>;
 
 export interface BillingEventRow {
@@ -37,11 +40,68 @@ export interface BillingEventRow {
   payload: unknown;
 }
 
-const LEGAL: Record<string, string[]> = {
-  created: ['pending', 'paid'],
-  pending: ['paid', 'failed', 'cancelled', 'expired'],
-  paid: ['refunded', 'charged_back'],
-};
+/**
+ * The legal order lifecycle is **not restated here** — it is PARSED from the migration
+ * that owns `checkout_orders` (CXD-063).
+ *
+ * A hand-copied table is a second source of truth for a MONEY invariant: the day the
+ * trigger and the copy disagree, every billing suite goes green against a schema that
+ * would reject the write in production — which is exactly the failure mode CXD-063 is
+ * (the application said `failed -> paid` was fine and the database did not). Parsing
+ * the real DDL makes the two impossible to desynchronise, and makes a pending schema
+ * change show up as a red test instead of as a production 500.
+ *
+ * The file is located by SUFFIX, not by number, so renumbering a migration does not
+ * silently fall back to a stale default. There is deliberately no fallback at all: an
+ * unparseable lifecycle must fail loudly, never default to something permissive.
+ *
+ * The file is found by walking UP from the working directory (`import.meta.url` is not
+ * a `file:` URL once vite has transformed the module), so it resolves whether vitest is
+ * invoked from the dashboard or from the repository root. Several `database/migrations`
+ * directories exist in the tree, so the walk keeps going until one actually CONTAINS
+ * the ledger migration rather than stopping at the first directory of that name.
+ */
+function findOrderLedgerMigration(): { dir: string; file: string } {
+  const searched: string[] = [];
+  for (let dir = process.cwd(); ; dir = dirname(dir)) {
+    const candidate = join(dir, 'database', 'migrations');
+    if (existsSync(candidate)) {
+      searched.push(candidate);
+      const file = readdirSync(candidate).find((f) => /checkout_order_ledger\.sql$/i.test(f));
+      if (file) return { dir: candidate, file };
+    }
+    if (dirname(dir) === dir) {
+      throw new Error(`billing fake: no *_checkout_order_ledger.sql in ${searched.join(', ') || '(no database/migrations found)'}`);
+    }
+  }
+}
+
+function loadOrderLifecycle(): { file: string; table: Record<string, string[]> } {
+  const { dir, file } = findOrderLedgerMigration();
+  const sql = readFileSync(join(dir, file), 'utf8');
+  const table: Record<string, string[]> = {};
+  const rule = /OLD\.status\s*=\s*'(\w+)'\s+AND\s+NEW\.status\s+IN\s*\(([^)]*)\)/gi;
+  for (let m = rule.exec(sql); m !== null; m = rule.exec(sql)) {
+    const targets = m[2].split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean);
+    table[m[1]] = [...new Set([...(table[m[1]] ?? []), ...targets])];
+  }
+  if (Object.keys(table).length === 0) {
+    throw new Error(`billing fake: could not parse the transition trigger out of ${file}`);
+  }
+  return { file, table };
+}
+
+const lifecycle = loadOrderLifecycle();
+
+/** Name of the migration the lifecycle below was read from (for failure messages). */
+export const ORDER_LEDGER_MIGRATION = lifecycle.file;
+
+/** `status -> statuses it may legally become`, exactly as the trigger enforces it. */
+export const LEGAL_ORDER_TRANSITIONS: Readonly<Record<string, readonly string[]>> = lifecycle.table;
+
+/** A fresh copy, so a test that overrides `state.lifecycle` cannot corrupt the parsed truth. */
+const migrationLifecycle = () =>
+  Object.fromEntries(Object.entries(lifecycle.table).map(([k, v]) => [k, [...v]]));
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
 
@@ -69,6 +129,18 @@ export function createScriptedPostgres() {
     cart: [] as string[],
     log: [] as string[],
     failOn: null as null | ((sql: string) => boolean),
+    /**
+     * The order lifecycle this fake enforces. Initialised from the REAL migration on
+     * every `reset()`, so the default is always the schema that actually ships.
+     *
+     * It is writable for exactly one purpose: a change that needs BOTH an application
+     * edit and a migration edit is owned by two different people, so the application
+     * half must be provable while the schema half is still pending. A test that writes
+     * here is asserting behaviour against a schema THAT DOES NOT EXIST YET and must say
+     * so in its name — it is not evidence that production works
+     * (`billing-payment-retry.test.ts`, CXD-063).
+     */
+    lifecycle: migrationLifecycle() as Record<string, string[]>,
     /**
      * Bounded connection pool (CXD-062). `size` = how many connections exist;
      * `leased` = how many are checked out RIGHT NOW; `peak` = the high-water mark;
@@ -167,7 +239,7 @@ export function createScriptedPostgres() {
       const allowed = statusFilter(sql, params);
       if (allowed && !allowed.includes(String(order.status))) return res([], 0);
       const from = String(order.status);
-      if (from !== next && !(LEGAL[from] ?? []).includes(next)) {
+      if (from !== next && !(state.lifecycle[from] ?? []).includes(next)) {
         throw new Error(`illegal checkout order transition: ${from} -> ${next}`);
       }
       apply(() => { order.status = next; });
@@ -210,6 +282,7 @@ export function createScriptedPostgres() {
       state.orders.clear(); state.users.clear(); state.webhookEvents.clear();
       state.billingEvents.clear(); state.audit.length = 0; state.cart.length = 0;
       state.log.length = 0; state.failOn = null;
+      state.lifecycle = migrationLifecycle();
       state.pool.size = Number.POSITIVE_INFINITY;
       state.pool.leased = 0; state.pool.peak = 0; state.pool.waiters.length = 0;
       state.pool.gen += 1;
