@@ -350,6 +350,15 @@ export function validId(v: unknown): v is string {
   return typeof v === 'string' && ID_PATTERN.test(v);
 }
 
+/**
+ * Supported calendar-year domain, on BOTH sides. Python builds the date with
+ * `datetime.date(year, month, day)`, whose domain is `date.MINYEAR..MAXYEAR`
+ * = 0001..9999 — year 0000 is not a date it can construct, it is a raise.
+ * The 4-digit form alone therefore does NOT define the domain, and stating the
+ * bound here is what keeps the two runtimes on the same calendar.
+ */
+export const MIN_CALENDAR_YEAR = 1;
+
 function daysInMonth(year: number, month: number): number {
   if (month === 2) {
     const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -366,6 +375,13 @@ export function validIsoTimestamp(v: unknown): v is string {
   const year = Number(m[1]);
   const month = Number(m[2]);
   const day = Number(m[3]);
+  // Year 0000 matches the FORM but is outside `datetime`'s domain, so Python
+  // rejects it while this side used to accept it — the exact bilateral hole
+  // the forecast-output mirror already closed with `year < 1`
+  // (forecast-output.contract.ts, "impossible year"). Same rule, same domain:
+  // whatever `daysFromCivil`-style integer arithmetic runs downstream
+  // (`instantEpochSeconds`) never sees a year Python could not construct.
+  if (year < MIN_CALENDAR_YEAR) return false;
   if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return false;
   // Real clock: hour 25 / minute 61 / second 61 are impossible
   if (m[4] !== undefined) {

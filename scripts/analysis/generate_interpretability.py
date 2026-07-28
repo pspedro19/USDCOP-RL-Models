@@ -43,7 +43,11 @@ defaults congelados del ModelFactory, sin tuning.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -66,11 +70,171 @@ MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos tr
 NOTA = "SHAP explica el modelo, no el mercado; solo test-folds; diagnostico 0 trials"
 
 
-def _write(surface: str, asset: str, model_id: str, version: str, payload: dict) -> Path:
+def _rel(path: Path) -> str:
+    """Ruta relativa al repo cuando aplica (en tests OUT_ROOT puede ser un temporal)."""
+    try:
+        return str(path.relative_to(REPO))
+    except ValueError:
+        return str(path)
+
+
+#: Campos que NO forman parte de la identidad del artefacto (solo bitácora).
+VOLATILE_FIELDS = ("generated_at", "artifact_id", "supersedes")
+
+
+class ArtifactConflictError(RuntimeError):
+    """Se intentó publicar contenido DISTINTO bajo una identidad ya publicada.
+
+    La evidencia publicada no se pisa: o el contenido es idéntico (no-op) o el
+    operador supersede explícitamente (``--supersede``), que queda anotado en el
+    artefacto nuevo (``supersedes``). No hay tercera vía silenciosa.
+    """
+
+
+# ---------------------------------------------------------------------------
+# Provenance: la identidad del artefacto COMPROMETE datos + código + config + modelo
+# ---------------------------------------------------------------------------
+#
+# Antes, la identidad era ``<surface>/<asset>/<model_id>/<version>`` con
+# ``version`` = fecha del último dato. Esa clave NO distingue: dos corridas con
+# distinto código, distinto dataset (mismo último día) o distintos
+# hiperparámetros compartían ruta, y ``_write`` sobrescribía — la MISMA versión
+# podía mutar la evidencia en silencio (y ``generated_at`` cambiaba en cada
+# corrida, así que ni siquiera era detectable por comparación de bytes).
+#
+# Ahora cada payload declara ``provenance`` con cuatro huellas y un
+# ``artifact_id`` derivado de TODO el contenido no volátil. Misma identidad =>
+# mismos bytes; identidad distinta bajo la misma ruta => error, no overwrite.
+
+def _sha(data: bytes) -> str:
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def _canonical_bytes(obj) -> bytes:
+    """JSON canónico (claves ordenadas, sin espacios superfluos, UTF-8/LF)."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
+def _canonical_sha(obj) -> str:
+    return _sha(_canonical_bytes(obj))
+
+
+def _code_fingerprint() -> str:
+    """Huella de ESTE generador (normalizada a LF: misma huella en cualquier OS)."""
+    raw = Path(__file__).resolve().read_bytes().replace(b"\r\n", b"\n")
+    return _sha(raw)
+
+
+def _frame_fingerprint(df: pd.DataFrame, cols: list[str], date_col: str = "date") -> str:
+    """Huella de los DATOS realmente usados: fechas + matriz de features.
+
+    No es un resumen (n filas, rango): son los bytes float64 de las columnas
+    usadas, así que una corrección retroactiva de una sola barra cambia la
+    huella aunque el último día siga siendo el mismo.
+    """
+    dates = pd.to_datetime(df[date_col]).astype("int64").to_numpy()
+    values = np.ascontiguousarray(df[cols].to_numpy(dtype=float))
+    h = hashlib.sha256()
+    h.update(_canonical_bytes({"columns": list(cols), "n_rows": int(len(df))}))
+    h.update(dates.tobytes())
+    h.update(values.tobytes())
+    return "sha256:" + h.hexdigest()
+
+
+def _file_fingerprint(path: Path) -> str:
+    """Huella de un fichero de config (LF-normalizada); ``absent`` si no existe."""
+    try:
+        return _sha(path.read_bytes().replace(b"\r\n", b"\n"))
+    except OSError:
+        return _sha(b"<absent>")
+
+
+def _train_size_summary(fold_meta: list[dict], distinct_train_rows: int) -> dict:
+    """N de entrenamiento NO ambiguo para un esquema EXPANDING.
+
+    ``sum(n_train por fold)`` cuenta las MISMAS filas una vez por fold (los
+    trains son anidados), así que comunicaba un N inflado — 4959 "filas de
+    train" sobre un dataset de ~1.6k. Se publica el N del ÚLTIMO fit, el número
+    de filas DISTINTAS vistas por algún fit, y el detalle por fold. La suma no
+    se publica en ningún campo.
+    """
+    per_fold = [int(m["n_train"]) for m in fold_meta]
+    return {
+        "n_train_last_fit": per_fold[-1] if per_fold else 0,
+        "n_train_distinct_rows": int(distinct_train_rows),
+        "n_train_by_fold": per_fold,
+        "n_train_note": ("esquema expanding: los trains son ANIDADOS, la suma por folds "
+                         "contaria las mismas filas varias veces y no es un N — se publica "
+                         "el N del ultimo fit, las filas distintas y el detalle por fold"),
+    }
+
+
+def _artifact_identity(payload: dict) -> str:
+    """sha256 de TODO el contenido no volátil (incluidas las cuatro huellas)."""
+    core = {k: v for k, v in payload.items() if k not in VOLATILE_FIELDS}
+    return _canonical_sha(core)
+
+
+def _write(surface: str, asset: str, model_id: str, version: str, payload: dict,
+           *, supersede: bool = False) -> Path:
+    """Escritura ATÓMICA e INMUTABLE del artefacto.
+
+    - **Identidad**: ``artifact_id`` = sha256 del contenido no volátil (incluye
+      las huellas de datos/código/config/modelo), así que la ``version`` deja de
+      ser la única clave.
+    - **Inmutable**: si ya existe un artefacto con el MISMO ``artifact_id`` no se
+      reescribe nada (``generated_at`` conserva el de la primera publicación:
+      regenerar no muta la evidencia). Si difiere, se lanza
+      :class:`ArtifactConflictError` — salvo ``supersede=True``, que es un acto
+      humano explícito y queda anotado en ``supersedes``.
+    - **Atómica**: se serializa a un temporal en el MISMO directorio y se
+      publica con ``os.replace`` (precedente BL-15 ``write_csv``); un fallo de
+      serialización no deja un ``summary.json`` a medias ni temporales huérfanos.
+    """
     out = OUT_ROOT / surface / asset / model_id / version / "summary.json"
+    payload = {k: v for k, v in payload.items() if k != "artifact_id"}
+    payload["artifact_id"] = _artifact_identity(payload)
+
+    if out.exists():
+        try:
+            previous = json.loads(out.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ArtifactConflictError(
+                f"{out}: existe pero no es JSON legible ({exc}) — se rehusa a pisarlo"
+            ) from exc
+        prev_id = previous.get("artifact_id")
+        if prev_id == payload["artifact_id"]:
+            return out                      # idempotente: NADA se reescribe
+        if not supersede:
+            raise ArtifactConflictError(
+                f"{out}: ya hay un artefacto publicado con artifact_id={prev_id!r} y el "
+                f"nuevo es {payload['artifact_id']!r}. Misma (surface/asset/model/version), "
+                "contenido DISTINTO: datos corregidos, codigo cambiado, config o modelo "
+                "distintos, o el calculo no es reproducible. La evidencia publicada no se "
+                "sobrescribe — usa --supersede (queda anotado en 'supersedes') o publica "
+                "bajo otra version."
+            )
+        # Qué se sustituye queda EN el artefacto nuevo. Los artefactos anteriores a
+        # este remedio no tienen artifact_id (esa era justamente la falla), así que
+        # se anota la huella de sus bytes: sustituir algo sin dejar rastro de QUÉ
+        # se sustituyó volvería a ser una mutación silenciosa.
+        payload["supersedes"] = prev_id or _sha(
+            out.read_bytes().replace(b"\r\n", b"\n"))
+        payload["artifact_id"] = _artifact_identity(payload)
+
     out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", encoding="utf-8") as f:
-        safe_json_dump(payload, f)
+    fd, tmp_name = tempfile.mkstemp(dir=str(out.parent), prefix=".summary-", suffix=".tmp")
+    tmp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            safe_json_dump(payload, f)      # sin NaN/Inf (A.7)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, out)                # publicación atómica
+    except BaseException:
+        tmp.unlink(missing_ok=True)         # ni parcial ni temporal huérfano
+        raise
     return out
 
 
@@ -78,7 +242,8 @@ def _write(surface: str, asset: str, model_id: str, version: str, payload: dict)
 # (a) Zoo COP — SHAP lineal cerrado (ridge / bayesian_ridge)
 # ---------------------------------------------------------------------------
 
-def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS) -> list[Path]:
+def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
+                        *, supersede: bool = False) -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
@@ -111,6 +276,9 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS) -> list[
     years = rows["date"].dt.year
 
     version = origin.date().isoformat()
+    # Huella de los DATOS de entrada (misma para todos los modelos de esta corrida).
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
     paths: list[Path] = []
     for mid in model_ids:
         mdl = ModelFactory.create(mid)
@@ -153,6 +321,22 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS) -> list[
             if min(vals) < -eps and max(vals) > eps
         )
 
+        params = {k: v for k, v in (mdl.get_params() or {}).items()
+                  if isinstance(v, (int, float, str, bool, type(None)))}
+        config_fp = _canonical_sha({
+            "horizon": HORIZON, "purge_days": HORIZON, "min_train_rows": 200,
+            "features": feat_cols, "scaler": "StandardScaler train-only",
+            "model_id": mid, "params": params,
+            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+        })
+        # Modelo LINEAL: la huella son los coeficientes ajustados — compromete el
+        # modelo EXACTO que produjo estas atribuciones, no una receta para obtenerlo.
+        model_fp = _canonical_sha({
+            "basis": "fitted_linear_coefficients",
+            "model_id": mid, "params": params,
+            "coef": [float(c) for c in coefs], "intercept": intercept,
+        })
+
         payload = {
             "nota": NOTA,
             "surface": "zoo",
@@ -163,15 +347,28 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS) -> list[
             "attribution_not_shap": False,
             "version": version,
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": code_fp,
+                "config_fingerprint": config_fp,
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "fitted_linear_coefficients",
+                "nota": ("la 'version' (ultimo dia del dataset) NO identifica la evidencia: "
+                         "el artifact_id se deriva de estas cuatro huellas mas todo el "
+                         "contenido, y republicar contenido distinto bajo la misma version "
+                         "es un error, no un overwrite"),
+            },
             "fit": {
                 "scheme": "ultimo fit walk-forward (origen = ultima fila, purga 5d)",
                 "origin": version,
+                "n_fits": 1,
                 "n_train": int(len(Xtr)),
+                "n_train_scheme": ("single_fit: un unico fit, el N no es ambiguo "
+                                   "(no hay folds que sumar)"),
                 "horizon": HORIZON,
                 "purge_days": HORIZON,
                 "scaler": "StandardScaler train-only",
-                "params": {k: v for k, v in (mdl.get_params() or {}).items()
-                           if isinstance(v, (int, float, str, bool, type(None)))},
+                "params": params,
             },
             "scope": ("phi_j = coef_j*(x_j-mu_j)/sigma_j del ULTIMO fit aplicado a todo el "
                       "historico de features — diagnostico del modelo congelado, no evidencia "
@@ -183,9 +380,9 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS) -> list[
             "by_year": by_year,
             "kill_flags_sign_change_by_year": kill_flags,
         }
-        p = _write("zoo", "usdcop", mid, version, payload)
+        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
         paths.append(p)
-        print(f"[zoo] {mid}: {p.relative_to(REPO)}", flush=True)
+        print(f"[zoo] {mid}: {_rel(p)}", flush=True)
     return paths
 
 
@@ -286,8 +483,14 @@ def _sign_change_flags(groups: dict[str, list[dict]], feat_cols: list[str],
     return sorted(c for c, v in per_feat.items() if v and min(v) < -eps and max(v) > eps)
 
 
-def _unavailable_payload(model_id: str, version: str, reason: str, detail: str) -> dict:
-    """Estado TIPADO de degradación — jamás valores de atribución fabricados."""
+def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
+                         *, provenance: dict | None = None) -> dict:
+    """Estado TIPADO de degradación — jamás valores de atribución fabricados.
+
+    Lleva las MISMAS huellas que un artefacto con datos (el modelo se declara
+    ``unavailable``, no se omite): un hueco tambien es evidencia y tambien tiene
+    que ser identificable e inmutable.
+    """
     return {
         "nota": NOTA,
         "surface": "zoo",
@@ -298,6 +501,13 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str) 
         "attribution_not_shap": False,
         "version": version,
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "provenance": provenance or {
+            "data_fingerprint": _sha(b"<unavailable>"),
+            "code_fingerprint": _code_fingerprint(),
+            "config_fingerprint": _sha(b"<unavailable>"),
+            "model_fingerprint": _sha(b"<unavailable>"),
+            "model_fingerprint_basis": "unavailable",
+        },
         "scope": ("sin atribuciones: el backend TreeSHAP no estuvo disponible en esta "
                   "corrida. NO se emiten valores — un artefacto inventado es peor que un "
                   "hueco declarado."),
@@ -307,7 +517,8 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str) 
     }
 
 
-def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path]:
+def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
+                      *, supersede: bool = False) -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
@@ -341,19 +552,32 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
         if len(Xtr) < MIN_TRAIN or test.empty:
             continue
         folds.append({"year": yr, "Xtr": Xtr, "ytr": ytr, "test": test,
+                      "train_idx": train.loc[m_ok].index.to_numpy(),
+                      "train_start": pd.Timestamp(train.loc[m_ok, "date"].iloc[0]),
                       "train_end": pd.Timestamp(train.loc[m_ok, "date"].iloc[-1])})
     if not folds:
         raise RuntimeError("zoo tree: ningún fold anual cumple la guarda de train mínimo")
 
+    # Filas DISTINTAS que algún fit vio (los trains expanding son anidados, así que
+    # la union NO es la suma — contar la union es lo único que da un N real).
+    distinct_train_rows = len(set().union(*(set(f["train_idx"].tolist()) for f in folds)))
+
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
     paths: list[Path] = []
     for mid in model_ids:
         try:
             backend_name, shap_fn = _tree_shap_backend(mid)
         except Exception as exc:   # backend/librería ausente ⇒ degradación explícita
             p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
-                mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}"))
+                mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint_basis": "unavailable"}),
+                supersede=supersede)
             paths.append(p)
-            print(f"[tree] {mid}: DEGRADADO (backend_import_failed) -> {p.relative_to(REPO)}",
+            print(f"[tree] {mid}: DEGRADADO (backend_import_failed) -> {_rel(p)}",
                   flush=True)
             continue
 
@@ -379,17 +603,32 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
                 dates.append(f["test"][["date", "regime"]])
                 fold_meta.append({"year": int(f["year"]), "n_train": int(len(f["Xtr"])),
                                   "n_test": int(len(Xte)),
+                                  "train_start": f["train_start"].date().isoformat(),
                                   "train_end": f["train_end"].date().isoformat(),
-                                  "base_value": float(np.nanmean(bias))})
+                                  "base_value": float(np.nanmean(bias)),
+                                  # huella del train EXACTO de este fold: dos corridas
+                                  # con el mismo fold_fingerprint vieron las mismas filas
+                                  "fold_fingerprint": _canonical_sha({
+                                      "year": int(f["year"]),
+                                      "train_end": f["train_end"].date().isoformat(),
+                                      "n_train": int(len(f["Xtr"])),
+                                      "X": _sha(np.ascontiguousarray(f["Xtr"]).tobytes()),
+                                      "y": _sha(np.ascontiguousarray(f["ytr"]).tobytes()),
+                                  })})
 
             phi = np.vstack(phi_parts)
             meta = pd.concat(dates, ignore_index=True)
             base_value = float(np.nanmean(np.concatenate(base_parts)))
         except Exception as exc:   # fit/predict/SHAP falló ⇒ degradación explícita
             p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
-                mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}"))
+                mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint_basis": "unavailable"}),
+                supersede=supersede)
             paths.append(p)
-            print(f"[tree] {mid}: DEGRADADO (shap_computation_failed) -> {p.relative_to(REPO)}",
+            print(f"[tree] {mid}: DEGRADADO (shap_computation_failed) -> {_rel(p)}",
                   flush=True)
             continue
 
@@ -405,6 +644,25 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
         by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r)
                      for r in sorted(set(reg_arr))}
 
+        params = {k: v for k, v in (ModelFactory.create(mid).get_params() or {}).items()
+                  if isinstance(v, (int, float, str, bool, type(None)))}
+        config_fp = _canonical_sha({
+            "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+            "features": feat_cols, "scaler": "StandardScaler train-only por fold",
+            "model_id": mid, "params": params, "shap_backend": backend_name,
+            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+            "regime_gate_config": _file_fingerprint(
+                REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+        })
+        # Modelo de ARBOL: el booster no se serializa aqui, asi que la huella
+        # compromete la RECETA EXACTA (id + hiperparametros + el train de cada fold,
+        # huella incluida). Se declara la base para no aparentar mas de lo que cubre.
+        model_fp = _canonical_sha({
+            "basis": "frozen_recipe_plus_fold_train_fingerprints",
+            "model_id": mid, "params": params,
+            "folds": [m["fold_fingerprint"] for m in fold_meta],
+        })
+
         payload = {
             "nota": NOTA,
             "surface": "zoo",
@@ -415,6 +673,17 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
             "attribution_not_shap": False,
             "version": version,
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": code_fp,
+                "config_fingerprint": config_fp,
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+                "nota": ("la 'version' (ultimo dia del dataset) NO identifica la evidencia: "
+                         "el artifact_id se deriva de estas cuatro huellas mas todo el "
+                         "contenido, y republicar contenido distinto bajo la misma version "
+                         "es un error, no un overwrite"),
+            },
             "shap_backend": backend_name,
             "shap_package_available": _shap_package_available(),
             "additivity_max_abs_err": add_err,
@@ -422,12 +691,11 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
                 "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
                            f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
                 "origin": version,
-                "n_train": int(sum(m["n_train"] for m in fold_meta)),
+                **_train_size_summary(fold_meta, distinct_train_rows),
                 "horizon": HORIZON,
                 "purge_days": HORIZON,
                 "scaler": "StandardScaler train-only por fold",
-                "params": {k: v for k, v in (ModelFactory.create(mid).get_params() or {}).items()
-                           if isinstance(v, (int, float, str, bool, type(None)))},
+                "params": params,
             },
             "folds": fold_meta,
             "scope": ("TreeSHAP EXACTO del booster nativo sobre filas OOS (ninguna fila fue "
@@ -448,9 +716,9 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS) -> list[Path
             "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
             "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
         }
-        p = _write("zoo", "usdcop", mid, version, payload)
+        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
         paths.append(p)
-        print(f"[tree] {mid}: {p.relative_to(REPO)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
+        print(f"[tree] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
     return paths
 
@@ -479,7 +747,8 @@ def _decompose(pos: np.ndarray, ret: np.ndarray, cost: np.ndarray, swap: np.ndar
             "pnl_timing_cov_pos_ret": timing, "costs": costs, "pnl_net": gross - costs}
 
 
-def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",)) -> list[Path]:
+def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",),
+                              *, supersede: bool = False) -> list[Path]:
     from scripts.analysis.profitability_adapters import ADAPTERS
 
     paths: list[Path] = []
@@ -501,6 +770,22 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",)) -> list[P
 
         total = _decompose(pos, ret, cost, swap)
         version = idx[-1].date().isoformat()
+        # Huella de la SERIE del adapter publicado (posiciones, retornos, costes):
+        # una re-derivacion distinta del bundle cambia la identidad del artefacto.
+        series_df = pd.DataFrame({
+            "date": idx, "position": np.asarray(pos, float), "asset_ret": np.asarray(ret, float),
+            "cost": np.asarray(cost, float), "swap": np.asarray(swap, float),
+            "dumb_position": np.asarray(trend_on, float),
+        })
+        data_fp = _frame_fingerprint(
+            series_df, ["position", "asset_ret", "cost", "swap", "dumb_position"])
+        # Una politica de reglas NO tiene pesos: su "modelo" ES la receta congelada
+        # (adapter + estrategia + reloj). Se declara asi, sin aparentar un fit.
+        model_fp = _canonical_sha({
+            "basis": "rule_based_frozen_recipe",
+            "adapter": rid, "strategy_id": sleeve.strategy_id, "asset": sleeve.asset,
+            "clock_label": sleeve.clock_label, "n_trades": sleeve.n_trades,
+        })
         payload = {
             "nota": NOTA,
             "surface": "rule_based",
@@ -511,6 +796,21 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",)) -> list[P
             "attribution_not_shap": True,               # ATRIBUCION, no SHAP (BL-20 punto 2)
             "version": version,
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": _code_fingerprint(),
+                "config_fingerprint": _canonical_sha({
+                    "adapter": rid, "adapters_module": _file_fingerprint(
+                        REPO / "scripts" / "analysis" / "profitability_adapters.py"),
+                    "clock_label": sleeve.clock_label,
+                }),
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "rule_based_frozen_recipe",
+                "nota": ("la 'version' (ultimo dia de la serie) NO identifica la evidencia: "
+                         "el artifact_id se deriva de estas cuatro huellas mas todo el "
+                         "contenido, y republicar contenido distinto bajo la misma version "
+                         "es un error, no un overwrite"),
+            },
             "scope": ("atribucion de reglas sobre la misma serie del adapter publicado "
                       f"({sleeve.clock_label}); descomposicion pnl_gross = beta + timing, "
                       "timing = n*cov(pos,ret) — diagnostico, no claim de edge"),
@@ -524,9 +824,10 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",)) -> list[P
             "pnl_decomposition": total,
             "by_year": by_year,
         }
-        p = _write("rule_based", sleeve.asset, sleeve.strategy_id, version, payload)
+        p = _write("rule_based", sleeve.asset, sleeve.strategy_id, version, payload,
+                   supersede=supersede)
         paths.append(p)
-        print(f"[rule] {rid}: {p.relative_to(REPO)}", flush=True)
+        print(f"[rule] {rid}: {_rel(p)}", flush=True)
     return paths
 
 
@@ -543,6 +844,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--skip-zoo", action="store_true")
     ap.add_argument("--skip-trees", action="store_true")
     ap.add_argument("--skip-rules", action="store_true")
+    ap.add_argument("--supersede", action="store_true",
+                    help="ACTO EXPLICITO: republica sobre una identidad ya publicada. "
+                         "Sin este flag, contenido distinto bajo la misma "
+                         "(surface/asset/model/version) es ERROR, no overwrite. El "
+                         "artefacto nuevo anota el artifact_id que sustituye "
+                         "('supersedes'), asi que la sustitucion queda en el registro.")
     args = ap.parse_args(argv)
 
     paths: list[Path] = []
@@ -552,16 +859,16 @@ def main(argv: list[str] | None = None) -> int:
         if bad:
             raise SystemExit(f"--zoo-models solo admite lineales (SHAP cerrado): {bad} "
                              f"no permitido — usa --tree-models para arboles")
-        paths += generate_zoo_linear(mids)
+        paths += generate_zoo_linear(mids, supersede=args.supersede)
     if not args.skip_trees:
         tids = tuple(m.strip() for m in args.tree_models.split(",") if m.strip())
         bad = [m for m in tids if m not in ZOO_TREE_MODELS]
         if bad:
             raise SystemExit(f"--tree-models solo admite arboles del zoo: {bad} no permitido")
-        paths += generate_zoo_tree(tids)
+        paths += generate_zoo_tree(tids, supersede=args.supersede)
     if not args.skip_rules:
         rids = tuple(r.strip() for r in args.rules.split(",") if r.strip())
-        paths += generate_rule_attribution(rids)
+        paths += generate_rule_attribution(rids, supersede=args.supersede)
 
     print(f"OK: {len(paths)} artefactos")
     for p in paths:

@@ -10,6 +10,20 @@
     { "$ref": "#/definitions/ruleSummary" }
   ],
   "definitions": {
+    "provenance": {
+      "description": "BL-20 remedio: la `version` (ultimo dia del dataset) NO identifica la evidencia. Estas cuatro huellas comprometen datos/codigo/config/modelo y alimentan el `artifact_id`; republicar contenido distinto bajo la misma version es un error del generador, no un overwrite.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_fingerprint", "code_fingerprint", "config_fingerprint", "model_fingerprint", "model_fingerprint_basis"],
+      "properties": {
+        "data_fingerprint": { "type": "string" },
+        "code_fingerprint": { "type": "string" },
+        "config_fingerprint": { "type": "string" },
+        "model_fingerprint": { "type": "string" },
+        "model_fingerprint_basis": { "type": "string" },
+        "nota": { "type": "string" }
+      }
+    },
     "featureRow": {
       "type": "object",
       "additionalProperties": false,
@@ -46,13 +60,15 @@
     "treeFold": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["year", "n_train", "n_test", "train_end", "base_value"],
+      "required": ["year", "n_train", "n_test", "train_start", "train_end", "base_value", "fold_fingerprint"],
       "properties": {
         "year": { "type": "number" },
         "n_train": { "type": "number" },
         "n_test": { "type": "number" },
+        "train_start": { "type": "string" },
         "train_end": { "type": "string" },
-        "base_value": { "type": "number" }
+        "base_value": { "type": "number" },
+        "fold_fingerprint": { "type": "string" }
       }
     },
     "ruleYear": {
@@ -76,11 +92,15 @@
       "additionalProperties": false,
       "required": [
         "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "fit", "scope",
+        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "fit", "scope",
         "base_value", "n_rows", "n_features", "top_features", "by_year",
         "kill_flags_sign_change_by_year"
       ],
       "properties": {
+        "artifact_id": { "type": "string" },
+        "provenance": { "$ref": "#/definitions/provenance" },
+        "supersedes": { "type": ["string", "null"] },
         "nota": { "type": "string" },
         "surface": { "type": "string" },
         "asset": { "type": "string" },
@@ -94,11 +114,13 @@
         "fit": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["scheme", "origin", "n_train", "horizon", "purge_days", "scaler", "params"],
+          "required": ["scheme", "origin", "n_fits", "n_train", "n_train_scheme", "horizon", "purge_days", "scaler", "params"],
           "properties": {
             "scheme": { "type": "string" },
             "origin": { "type": "string" },
+            "n_fits": { "type": "number" },
             "n_train": { "type": "number" },
+            "n_train_scheme": { "type": "string" },
             "horizon": { "type": "number" },
             "purge_days": { "type": "number" },
             "scaler": { "type": "string" },
@@ -134,7 +156,8 @@
       "additionalProperties": false,
       "required": [
         "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "shap_backend",
+        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "shap_backend",
         "shap_package_available", "additivity_max_abs_err", "fit", "folds", "scope",
         "base_value", "n_rows", "n_features", "n_folds", "top_features", "by_year",
         "by_regime", "regime_gate", "kill_flags_sign_change_by_year",
@@ -145,6 +168,9 @@
         "surface": { "type": "string" },
         "asset": { "type": "string" },
         "model_id": { "type": "string" },
+        "artifact_id": { "type": "string" },
+        "provenance": { "$ref": "#/definitions/provenance" },
+        "supersedes": { "type": ["string", "null"] },
         "model_type": { "const": "tree" },
         "method": { "const": "tree_shap" },
         "attribution_not_shap": { "const": false },
@@ -158,11 +184,15 @@
         "fit": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["scheme", "origin", "n_train", "horizon", "purge_days", "scaler", "params"],
+          "description": "N de entrenamiento NO ambiguo: en expanding los trains son ANIDADOS, asi que la SUMA por folds contaria las mismas filas varias veces y no es un N. Se publica el N del ultimo fit, las filas distintas y el detalle por fold.",
+          "required": ["scheme", "origin", "n_train_last_fit", "n_train_distinct_rows", "n_train_by_fold", "n_train_note", "horizon", "purge_days", "scaler", "params"],
           "properties": {
             "scheme": { "type": "string" },
             "origin": { "type": "string" },
-            "n_train": { "type": "number" },
+            "n_train_last_fit": { "type": "number" },
+            "n_train_distinct_rows": { "type": "number" },
+            "n_train_by_fold": { "type": "array", "items": { "type": "number" } },
+            "n_train_note": { "type": "string" },
             "horizon": { "type": "number" },
             "purge_days": { "type": "number" },
             "scaler": { "type": "string" },
@@ -205,9 +235,13 @@
       "additionalProperties": false,
       "required": [
         "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "scope", "status", "reason", "detail"
+        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "scope", "status", "reason", "detail"
       ],
       "properties": {
+        "artifact_id": { "type": "string" },
+        "provenance": { "$ref": "#/definitions/provenance" },
+        "supersedes": { "type": ["string", "null"] },
         "nota": { "type": "string" },
         "surface": { "type": "string" },
         "asset": { "type": "string" },
@@ -228,10 +262,14 @@
       "additionalProperties": false,
       "required": [
         "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "scope",
+        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "scope",
         "rules", "pnl_decomposition", "by_year"
       ],
       "properties": {
+        "artifact_id": { "type": "string" },
+        "provenance": { "$ref": "#/definitions/provenance" },
+        "supersedes": { "type": ["string", "null"] },
         "nota": { "type": "string" },
         "surface": { "type": "string" },
         "asset": { "type": "string" },

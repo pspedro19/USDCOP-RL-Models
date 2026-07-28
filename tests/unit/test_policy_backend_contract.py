@@ -172,6 +172,26 @@ class TestMirrorSets:
     def test_uri_schemes(self):
         assert self._literals("URI_SCHEMES") == set(URI_SCHEMES)
 
+    def test_fallback_modes(self):
+        """The declared-fallback vocabulary is ONE set on both sides (K-034).
+
+        It was mirrored in TS but duplicated THREE ways in Python (runner,
+        loader.MISSING_INPUT_POLICIES, loader.STALE_INPUT_POLICIES — the last
+        one also accepting ``HOLD``), so the TS mirror agreed with only one of
+        them. This pins the whole family against the TS literal.
+        """
+        from src.contracts.policy import FALLBACK_MODES
+        from src.policy_engine import FALLBACK_MODES as ENGINE_FALLBACK_MODES
+        from src.strategies.policies.loader import (
+            MISSING_INPUT_POLICIES,
+            STALE_INPUT_POLICIES,
+        )
+
+        assert self._literals("FALLBACK_MODES") == set(FALLBACK_MODES)
+        assert ENGINE_FALLBACK_MODES is FALLBACK_MODES
+        assert MISSING_INPUT_POLICIES is FALLBACK_MODES
+        assert STALE_INPUT_POLICIES is FALLBACK_MODES
+
 
 class TestInstantArithmetic:
     def test_offsets_are_resolved_not_string_compared(self):

@@ -422,6 +422,25 @@ export interface InterpYearFeatureRow {
   mean_shap: number;
 }
 
+/**
+ * Huellas que COMPROMETEN las entradas del artefacto (espejo de `provenance` en
+ * interp-summary.schema.json y de `_write` en scripts/analysis/generate_interpretability.py).
+ *
+ * Por qué existe: `version` es la fecha del último dato, y esa clave NO distingue dos
+ * corridas con distinto código, distinto dataset (mismo último día) o distintos
+ * hiperparámetros — el generador sobrescribía y `generated_at` cambiaba en cada corrida,
+ * así que la MISMA versión podía mutar la evidencia en silencio.
+ */
+export interface InterpProvenance {
+  data_fingerprint: string;
+  code_fingerprint: string;
+  config_fingerprint: string;
+  model_fingerprint: string;
+  /** Qué cubre EXACTAMENTE `model_fingerprint` (coeficientes ajustados, receta congelada…). */
+  model_fingerprint_basis: string;
+  nota?: string;
+}
+
 interface InterpSummaryBase {
   /** Header constitucional obligatorio del generador — la UI lo muestra tal cual. */
   nota: string;
@@ -431,6 +450,11 @@ interface InterpSummaryBase {
   version: string;
   generated_at: string;
   scope: string;
+  /** sha256 de TODO el contenido no volátil: la identidad real de la evidencia. */
+  artifact_id: string;
+  provenance: InterpProvenance;
+  /** artifact_id sustituido por un `--supersede` explícito del operador (si hubo). */
+  supersedes?: string | null;
 }
 
 /** SHAP lineal cerrado (phi_j = coef_j·(x_j−mu_j)/sigma_j) — ridge / bayesian_ridge. */
@@ -441,7 +465,10 @@ export interface InterpLinearSummary extends InterpSummaryBase {
   fit: {
     scheme: string;
     origin: string;
+    /** Un solo fit: aquí `n_train` NO es ambiguo (no hay folds que sumar). */
+    n_fits: number;
     n_train: number;
+    n_train_scheme: string;
     horizon: number;
     purge_days: number;
     scaler: string;
@@ -473,8 +500,11 @@ export interface InterpTreeFold {
   year: number;
   n_train: number;
   n_test: number;
+  train_start: string;
   train_end: string;
   base_value: number;
+  /** Huella del train EXACTO de este fold (mismas filas ⇒ misma huella). */
+  fold_fingerprint: string;
 }
 
 export interface InterpTreeSummary extends InterpSummaryBase {
@@ -487,10 +517,18 @@ export interface InterpTreeSummary extends InterpSummaryBase {
   shap_package_available: boolean;
   /** max |sum(φ) + base − pred_cruda| sobre todas las filas: TreeSHAP es exacto ⇒ ~0. */
   additivity_max_abs_err: number;
+  /**
+   * N de entrenamiento NO ambiguo. En expanding los trains son ANIDADOS: `sum(n_train)`
+   * por folds contaba las mismas filas varias veces (4959 "filas" sobre ~1.6k reales),
+   * así que la suma no se publica en ningún campo.
+   */
   fit: {
     scheme: string;
     origin: string;
-    n_train: number;
+    n_train_last_fit: number;
+    n_train_distinct_rows: number;
+    n_train_by_fold: number[];
+    n_train_note: string;
     horizon: number;
     purge_days: number;
     scaler: string;

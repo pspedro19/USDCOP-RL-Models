@@ -7,11 +7,21 @@
   "method": "linear_shap_closed_form",
   "attribution_not_shap": false,
   "version": "2026-07-27",
-  "generated_at": "2026-07-28T02:48:23.714964+00:00",
+  "generated_at": "2026-07-28T19:21:57.112873+00:00",
+  "provenance": {
+    "data_fingerprint": "sha256:e11dc38fa8e2b0e53eadf60f97e06c6855fd7a2dd60057e00c87a5b90850eecb",
+    "code_fingerprint": "sha256:908abf76f0b79e60ed5ad71dbe67c3cd1aa4f109d00e81bfce655125b5b254ba",
+    "config_fingerprint": "sha256:4bf48d4fbaa0ef475e8e4cb21a379b3dcf6153297e3c236070995fa69f4dc486",
+    "model_fingerprint": "sha256:158b189f2e2905a50e1bcec23c7ec5e6753302f2c0d0d861e218add9c739851b",
+    "model_fingerprint_basis": "fitted_linear_coefficients",
+    "nota": "la 'version' (ultimo dia del dataset) NO identifica la evidencia: el artifact_id se deriva de estas cuatro huellas mas todo el contenido, y republicar contenido distinto bajo la misma version es un error, no un overwrite"
+  },
   "fit": {
     "scheme": "ultimo fit walk-forward (origen = ultima fila, purga 5d)",
     "origin": "2026-07-27",
+    "n_fits": 1,
     "n_train": 1649,
+    "n_train_scheme": "single_fit: un unico fit, el N no es ambiguo (no hay folds que sumar)",
     "horizon": 5,
     "purge_days": 5,
     "scaler": "StandardScaler train-only",
@@ -947,5 +957,7 @@
     "volatility_10d",
     "volatility_20d",
     "volatility_5d"
-  ]
+  ],
+  "artifact_id": "sha256:c88797b2c7a64d466df2e66de51209ce8a9f349f86ac9bda0b53066ac745a583",
+  "supersedes": "sha256:4e63c30007f22a6bcc0591e38caab319c45da4b6f329eb4d02ef91bb993ba233"
 }

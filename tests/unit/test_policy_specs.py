@@ -50,9 +50,13 @@ def test_toda_policy_referencia_feature_set_y_resample():
 
 
 def test_fallbacks_explicitos():
+    # Vocabulario tomado del SSOT, no re-escrito aqui: un tercer literal seria
+    # un tercer contrato (K-034).
+    from src.policy_engine import FALLBACK_MODES
+
     for spec in SPECS.values():
-        assert spec["policy"]["missing_input_policy"] in ("FAIL_CLOSED", "FLAT")
-        assert spec["policy"]["stale_input_policy"] in ("FAIL_CLOSED", "FLAT", "HOLD")
+        assert spec["policy"]["missing_input_policy"] in FALLBACK_MODES
+        assert spec["policy"]["stale_input_policy"] in FALLBACK_MODES
         assert "default_target_exposure" in spec["policy"]["resolution"]
 
 
@@ -295,3 +299,107 @@ def test_ninguna_puerta_importa_fuera_del_allowlist_estrecho():
     spec["governance"] = {k: v for k, v in spec["governance"].items() if k != "policy_hash"}
     with pytest.raises(PolicySpecError):
         runner.build_policy(spec)
+
+
+# --------------------------------------------------------------------------- K-034
+# Frontera loader -> runner: TODO lo que el validador acepta debe ser EVALUABLE.
+# Origen: el loader aceptaba `stale_input_policy: HOLD` y el runner solo admite
+# FAIL_CLOSED|FLAT, asi que un spec valido no era ejecutable (bomba latente:
+# ningun spec de config/policies usaba HOLD). Estos tests son el guardarrail.
+
+def _fallback_vocabulary_accepted_by_the_loader() -> set[str]:
+    from src.strategies.policies import loader
+
+    return set(loader.MISSING_INPUT_POLICIES) | set(loader.STALE_INPUT_POLICIES)
+
+
+def test_vocabulario_de_fallback_es_uno_solo_en_la_familia():
+    """Un solo SSOT del vocabulario: el loader no puede tener el suyo propio."""
+    import src.policy_engine as policy_engine
+    import src.policy_engine.runner as runner
+    from src.strategies.policies import loader
+
+    assert set(runner.FALLBACK_MODES) == _fallback_vocabulary_accepted_by_the_loader(), (
+        "el validador acepta valores que el motor no sabe ejecutar (K-034)"
+    )
+    # Identidad, no equivalencia: un adaptador fino no puede ocultar una
+    # divergencia futura (mismo criterio que build_policy).
+    assert loader.MISSING_INPUT_POLICIES is runner.FALLBACK_MODES
+    assert loader.STALE_INPUT_POLICIES is runner.FALLBACK_MODES
+    assert policy_engine.FALLBACK_MODES is runner.FALLBACK_MODES
+
+
+def _loader_vocabulary_pairs() -> list[tuple[str, str]]:
+    """(campo, modo) para CADA valor que el validador acepta en CADA campo."""
+    from src.strategies.policies import loader
+
+    return sorted(
+        [("missing_input_policy", m) for m in set(loader.MISSING_INPUT_POLICIES)]
+        + [("stale_input_policy", m) for m in set(loader.STALE_INPUT_POLICIES)]
+    )
+
+
+@pytest.mark.parametrize("field,mode", _loader_vocabulary_pairs())
+def test_todo_fallback_validable_es_evaluable_por_el_runner(field, mode):
+    """Rojo si el loader valida un modo que `evaluate_policy` rechaza.
+
+    No basta con comparar tuplas: se EJECUTA el camino completo
+    spec -> validate_policy_spec -> build_policy -> evaluate_policy, campo a
+    campo (los dos campos tenian vocabularios distintos entre si).
+    """
+    from src.policy_engine import evaluate_policy
+    from src.strategies.policies import loader
+
+    spec = {**SPECS["spx500_daily_ma200_v1"]}
+    spec["policy"] = {**spec["policy"], field: mode}
+    # cambiar los fallbacks cambia el contenido economico => el hash congelado
+    # ya no aplica (invariante 2). Se retira, no se falsea.
+    spec["governance"] = {
+        k: v for k, v in spec["governance"].items() if k != "policy_hash"
+    }
+    loader.validate_policy_spec(spec)          # el validador lo acepta...
+    policy = loader.build_policy(spec)
+
+    # snapshot marcado stale + feature ausente => ambos caminos de fallback se
+    # ejercitan con el modo bajo prueba.
+    context = PolicyContext(as_of="2026-07-28", extras={"snapshot_is_stale": True})
+    kwargs = {
+        "missing_input_policy": spec["policy"]["missing_input_policy"],
+        "stale_input_policy": spec["policy"]["stale_input_policy"],
+    }
+    try:
+        decision = evaluate_policy(
+            policy,
+            {"close": 10.0, "ma_200": 9.0},
+            context,
+            **kwargs,
+        )
+    except ValueError as exc:
+        # FAIL_CLOSED tiene un raise DECLARADO; lo prohibido es el raise de
+        # vocabulario ("must be one of ...").
+        assert "must be one of" not in str(exc), (
+            f"{mode!r} pasa el validador pero el motor no lo conoce (K-034): {exc}"
+        )
+        assert mode == "FAIL_CLOSED", f"{mode!r} solo puede bloquear si es FAIL_CLOSED"
+    else:
+        assert decision.direction in ("LONG", "SHORT", "FLAT")
+
+
+def test_hold_no_se_aliasa_en_silencio():
+    """HOLD (conservar exposicion previa) necesitaria estado anterior explicito.
+
+    Mientras `evaluate_policy` no reciba esa exposicion previa, HOLD no es
+    implementable: se RECHAZA en el validador, nunca se traduce a FLAT (eso
+    seria un default silencioso disfrazado de compatibilidad, K-034).
+    """
+    from src.policy_engine import FALLBACK_MODES
+    from src.strategies.policies import loader
+
+    assert "HOLD" not in FALLBACK_MODES
+    spec = {**SPECS["spx500_daily_ma200_v1"]}
+    spec["policy"] = {**spec["policy"], "stale_input_policy": "HOLD"}
+    spec["governance"] = {
+        k: v for k, v in spec["governance"].items() if k != "policy_hash"
+    }
+    with pytest.raises(PolicySpecError, match="stale_input_policy"):
+        loader.validate_policy_spec(spec)

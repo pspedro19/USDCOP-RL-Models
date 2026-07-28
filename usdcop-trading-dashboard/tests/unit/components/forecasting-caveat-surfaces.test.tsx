@@ -31,7 +31,10 @@
  */
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, within, cleanup, waitFor } from '@testing-library/react';
+import { act, render, screen, within, cleanup, waitFor } from '@testing-library/react';
+
+import { installConsoleGate } from '../../support/console-gate';
+import { stubChartLayout } from '../../support/chart-layout';
 
 import {
   FORECAST_DISCLAIMER_TESTID,
@@ -372,6 +375,26 @@ const CSV_NO_DA = [
 
 const CONVICTION_LABEL = 'Convicción de regla (proxy; no probabilidad)';
 
+// Layout determinista para los <ResponsiveContainer> de recharts: jsdom no hace
+// layout, así que sin esto el gráfico se monta 0×0 y NO se renderiza (el test
+// decía cubrir una vista con gráfico y cubría una sin él).
+stubChartLayout();
+
+/**
+ * Deja que React aplique los efectos pendientes DENTRO del acto.
+ *
+ * ForecastingView dispara su fetch en un effect; el `render` sincrono volvia
+ * antes de que la promesa (404/403) resolviera, asi que el estado se
+ * actualizaba FUERA de `act(...)` y React lo avisaba por consola. El aviso no
+ * era cosmetico: el assert corria sobre un arbol a medio montar.
+ */
+const settle = () => act(async () => { await Promise.resolve(); });
+
+// Consola limpia = parte del contrato de esta suite. TOLERANCIA CERO: no hay
+// allowlist, así que un `act(...)` o un aviso de recharts pone la suite en rojo
+// en vez de pasar desapercibido bajo un exit code 0.
+installConsoleGate();
+
 afterEach(() => {
   cleanup();
   // OJO: NO vi.restoreAllMocks() — resetearía el mock global de ResizeObserver del
@@ -588,7 +611,9 @@ describe('ForecastingView (GM) — banner incondicional por modo', () => {
   async function renderGm(qs: string) {
     currentQs = qs;
     const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
-    return render(<ForecastingView />);
+    const utils = render(<ForecastingView />);
+    await settle();
+    return utils;
   }
 
   it('modo replay direccional (usdcop por defecto): banner visible con rama direccional', async () => {
@@ -680,6 +705,7 @@ describe('el caveat es incondicional respecto al ROL (S-07)', () => {
         currentQs = 'asset=usdcop';
         const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
         render(<ForecastingView />);
+        await settle();
         const banner = screen.getByTestId(FORECAST_DISCLAIMER_TESTID);
         assertHardVisible(banner);
         expect(banner.textContent).toContain(FORECAST_DISCLAIMER_HEADLINE);
@@ -690,6 +716,7 @@ describe('el caveat es incondicional respecto al ROL (S-07)', () => {
         currentQs = 'asset=usdcop&model=ALL';
         const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
         render(<ForecastingView />);
+        await settle();
         assertZooBannerVisible();
       });
 
@@ -702,6 +729,7 @@ describe('el caveat es incondicional respecto al ROL (S-07)', () => {
         currentQs = 'asset=xauusd';
         const { ForecastingView } = await import('@/components/gm/views/ForecastingView');
         render(<ForecastingView />);
+        await settle();
         const banner = screen.getByTestId(FORECAST_DISCLAIMER_TESTID);
         assertHardVisible(banner);
         expect(banner.textContent).toContain(FORECAST_DISCLAIMER_HEADLINE);

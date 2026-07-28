@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from src.contracts.policy import (
+    FALLBACK_MODES,
     EngineRef,
     Policy,
     PolicyContext,
@@ -44,8 +45,15 @@ from src.strategies.policies.loader import build_policy as _loader_build_policy
 #: Bumped whenever the evaluation semantics change (travels in the index).
 POLICY_ENGINE_VERSION = "1.0.0"
 
-#: The only declared input fallbacks (mirrored in the TS contract).
-FALLBACK_MODES = ("FAIL_CLOSED", "FLAT")
+# ``FALLBACK_MODES`` is IMPORTED above, not redefined here. It used to be a
+# local tuple, and ``loader.STALE_INPUT_POLICIES`` was a second one that also
+# accepted ``HOLD``: a spec declaring it passed validation and then died with
+# ValueError inside ``evaluate_policy`` — a contract that validates what the
+# engine cannot execute (K-034). Now
+# ``policy_engine.FALLBACK_MODES is loader.STALE_INPUT_POLICIES is
+# src.contracts.policy.FALLBACK_MODES`` — ONE object (same idiom as
+# ``build_policy`` below), so the two gates cannot drift.
+# Mirrored as FALLBACK_MODES in policy-version.contract.ts.
 
 #: The coded_policy import allowlist is NOT redefined here: it is
 #: ``loader.ALLOWED_MODULE_PREFIX`` (``src.strategies.policies.``), the narrow

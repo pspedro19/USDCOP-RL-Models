@@ -29,7 +29,11 @@ from typing import Any, Mapping
 
 import yaml
 
-from src.contracts.policy import ENGINE_TYPES, policy_canonical_hash
+from src.contracts.policy import (
+    ENGINE_TYPES,
+    FALLBACK_MODES,
+    policy_canonical_hash,
+)
 from src.contracts.policy_dsl import DeclarativePolicy
 
 #: Only modules under this package may be named by a spec (no arbitrary import).
@@ -38,8 +42,20 @@ ALLOWED_MODULE_PREFIX = "src.strategies.policies."
 IMPLEMENTATION_MODES = ("declarative", "coded_policy")
 
 #: Explicit fallback vocabulary (invariant 9: sin default explícito no hay freeze).
-MISSING_INPUT_POLICIES = ("FAIL_CLOSED", "FLAT")
-STALE_INPUT_POLICIES = ("FAIL_CLOSED", "FLAT", "HOLD")
+#:
+#: NOT a local tuple: both names are THE SAME OBJECT as
+#: ``src.contracts.policy.FALLBACK_MODES`` (and therefore as
+#: ``policy_engine.FALLBACK_MODES``), so "lo que el validador acepta" and "lo
+#: que el motor sabe ejecutar" cannot drift — they are one value, asserted with
+#: identity in tests/unit/test_policy_specs.py.
+#:
+#: They used to be two tuples and ``STALE_INPUT_POLICIES`` also listed ``HOLD``,
+#: which ``evaluate_policy`` rejects: a spec declaring it PASSED validation and
+#: then died with ValueError in the engine (K-034). ``HOLD`` needs an explicit
+#: previous exposure the evaluator never receives; see the note on
+#: ``FALLBACK_MODES`` in the contract for why it is not aliased to ``FLAT``.
+MISSING_INPUT_POLICIES = FALLBACK_MODES
+STALE_INPUT_POLICIES = FALLBACK_MODES
 
 #: Migration states of BL-47. ``SPEC_ONLY`` = the spec is the documento de
 #: record but no runnable policy exists yet (fail-closed on build_policy).

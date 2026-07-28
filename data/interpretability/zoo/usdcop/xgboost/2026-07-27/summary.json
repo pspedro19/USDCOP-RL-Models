@@ -7,14 +7,31 @@
   "method": "tree_shap",
   "attribution_not_shap": false,
   "version": "2026-07-27",
-  "generated_at": "2026-07-28T16:35:16.897661+00:00",
+  "generated_at": "2026-07-28T19:22:07.693360+00:00",
+  "provenance": {
+    "data_fingerprint": "sha256:e11dc38fa8e2b0e53eadf60f97e06c6855fd7a2dd60057e00c87a5b90850eecb",
+    "code_fingerprint": "sha256:908abf76f0b79e60ed5ad71dbe67c3cd1aa4f109d00e81bfce655125b5b254ba",
+    "config_fingerprint": "sha256:2b0cac4cb4b7fc4ea480c9e16601e4bdad506094d259529d69ae6787024f9ee8",
+    "model_fingerprint": "sha256:1e3834fb5de97f3c24634ce55645c9e864b1d4277325689c58361a383a7e662a",
+    "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+    "nota": "la 'version' (ultimo dia del dataset) NO identifica la evidencia: el artifact_id se deriva de estas cuatro huellas mas todo el contenido, y republicar contenido distinto bajo la misma version es un error, no un overwrite"
+  },
   "shap_backend": "xgboost.Booster.predict(pred_contribs=True)",
   "shap_package_available": false,
   "additivity_max_abs_err": 2.3856046027503908e-09,
   "fit": {
     "scheme": "walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga de 5d; atribucion SOLO sobre filas del a\u00f1o Y (test-fold)",
     "origin": "2026-07-27",
-    "n_train": 4959,
+    "n_train_last_fit": 1510,
+    "n_train_distinct_rows": 1510,
+    "n_train_by_fold": [
+      473,
+      732,
+      992,
+      1252,
+      1510
+    ],
+    "n_train_note": "esquema expanding: los trains son ANIDADOS, la suma por folds contaria las mismas filas varias veces y no es un N \u2014 se publica el N del ultimo fit, las filas distintas y el detalle por fold",
     "horizon": 5,
     "purge_days": 5,
     "scaler": "StandardScaler train-only por fold",
@@ -34,36 +51,46 @@
       "year": 2022,
       "n_train": 473,
       "n_test": 259,
+      "train_start": "2020-02-28",
       "train_end": "2021-12-24",
-      "base_value": 0.0016105769900605083
+      "base_value": 0.0016105769900605083,
+      "fold_fingerprint": "sha256:f05c102375168fe88e6bdb5da3cb9ca2fec231ec51e441a3de6090407dd7e0b8"
     },
     {
       "year": 2023,
       "n_train": 732,
       "n_test": 260,
+      "train_start": "2020-02-28",
       "train_end": "2022-12-23",
-      "base_value": 0.002317628590390086
+      "base_value": 0.002317628590390086,
+      "fold_fingerprint": "sha256:6e8540f8a81e4dfbf55b8b664eaa652b0895a85586b4c6f319600b74958a132a"
     },
     {
       "year": 2024,
       "n_train": 992,
       "n_test": 260,
+      "train_start": "2020-02-28",
       "train_end": "2023-12-22",
-      "base_value": 0.000594237819314003
+      "base_value": 0.000594237819314003,
+      "fold_fingerprint": "sha256:4f87663db04d9ffda2134ba68e8bd0159dcdcbfe4f3ace16b871e62682bc2f98"
     },
     {
       "year": 2025,
       "n_train": 1252,
       "n_test": 258,
+      "train_start": "2020-02-28",
       "train_end": "2024-12-20",
-      "base_value": 0.0010259891860187054
+      "base_value": 0.0010259891860187054,
+      "fold_fingerprint": "sha256:ed02d683739b40475d79221cfa1c2716156c25e88dcfc07f5686b0dd193b81d3"
     },
     {
       "year": 2026,
       "n_train": 1510,
       "n_test": 139,
+      "train_start": "2020-02-28",
       "train_end": "2025-12-22",
-      "base_value": 0.00036770349834114313
+      "base_value": 0.00036770349834114313,
+      "fold_fingerprint": "sha256:c28ce04b83b380944b972512cc7c6da2928197bc8ce2ed57dd066757e9e0af3f"
     }
   ],
   "scope": "TreeSHAP EXACTO del booster nativo sobre filas OOS (ninguna fila fue vista por el modelo que la atribuye). Hiperparametros = defaults CONGELADOS del ModelFactory, sin tuning ni seleccion; ninguna metrica de acierto computada (0 trials). La atribucion es sobre la salida CRUDA del booster: el reescalado de varianza del wrapper predict() es un post-proceso afin y NO se atribuye.",
@@ -1080,5 +1107,7 @@
     "high",
     "open",
     "volatility_20d"
-  ]
+  ],
+  "artifact_id": "sha256:c4c9eecb960a88f2c7c3950e22f34d282ff157609c411a050d3518a9479d9e68",
+  "supersedes": "sha256:232b5daeb2e1cd4671d4dc5d92da6b8cd0d6582ca8c49af73c42ff1192bbb504"
 }

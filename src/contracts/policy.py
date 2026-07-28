@@ -53,6 +53,30 @@ ENGINE_TYPES = ("rule_based", "ml", "rl", "composite")
 
 VALID_DIRECTIONS = ("LONG", "SHORT", "FLAT")
 
+#: THE declared-fallback vocabulary of invariant 9 — ONE tuple for the whole
+#: family (mirrored as FALLBACK_MODES in policy-version.contract.ts):
+#:
+#:   ``FAIL_CLOSED``  invalid/missing/stale inputs raise; nothing is published.
+#:   ``FLAT``         invalid/missing/stale inputs produce an explicit FLAT
+#:                    decision with a reason code, never a silent guess.
+#:
+#: It lives in the CONTRACT, not in the loader nor in the runner, because both
+#: import this module and neither imports the other: that is what makes a
+#: divergence impossible instead of merely unlikely. It used to be duplicated —
+#: ``loader.STALE_INPUT_POLICIES`` also accepted ``HOLD`` while
+#: ``runner.FALLBACK_MODES`` did not, so a spec could VALIDATE and then be
+#: UNEVALUABLE (K-034; no shipped spec used it, so it was a latent bomb).
+#:
+#: ``HOLD`` (keep the previous exposure) is NOT here and is NOT aliased to
+#: ``FLAT``: those are different economic decisions — FLAT closes the position,
+#: HOLD keeps it — and ``evaluate_policy(policy, snapshot, context)`` receives
+#: no previous exposure at all, so the value cannot be honoured. Aliasing it
+#: would be exactly the silent default this contract exists to forbid. Adding
+#: it back means giving the engine explicit prior state, which is a MODELLING
+#: decision (it changes what a policy does with real money) and needs its own
+#: spec + ADR — not a tuple edit.
+FALLBACK_MODES = ("FAIL_CLOSED", "FLAT")
+
 #: Evaluation modes a PolicyContext can run under (fail-closed whitelist —
 #: mirrored as POLICY_MODES in policy.contract.ts).
 POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
@@ -95,6 +119,15 @@ ISO_TIMESTAMP_PATTERN = re.compile(
     r"(?:[T ]([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.[0-9]{1,6})?)?"
     r"(Z|[+-][0-9]{2}:[0-9]{2})?)?$"
 )
+
+#: Supported calendar-year domain (mirrored as MIN_CALENDAR_YEAR in
+#: policy.contract.ts). ``datetime.date`` spans ``MINYEAR..MAXYEAR`` = 0001..9999,
+#: so year 0000 matches the FORM but is a value Python cannot construct. That
+#: rejection used to be INCIDENTAL here (a caught ``date()`` raise) and absent in
+#: TypeScript, which accepted ``0000-01-01T00:00:00Z`` — the bilateral hole
+#: CODEX reproduced. Declared explicitly on both sides so the domain is a stated
+#: contract, not a side effect of the stdlib.
+MIN_CALENDAR_YEAR = 1
 
 
 def is_real_number(value: Any) -> bool:
@@ -179,6 +212,10 @@ def require_iso_timestamp(field_name: str, value: Any) -> str:
             f"{field_name} must be an ISO-8601 date/datetime string, got {value!r}"
         )
     year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if year < MIN_CALENDAR_YEAR:
+        raise ValueError(
+            f"{field_name} has an impossible year: {value!r}"
+        )
     try:
         _dt.date(year, month, day)  # real calendar incl. leap years
     except ValueError as exc:
