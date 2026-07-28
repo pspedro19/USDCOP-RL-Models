@@ -19,6 +19,19 @@
  */
 export type StrategySurface = 'action' | 'diagnostic';
 
+/**
+ * Runtime validation lives in ONE place — strategy-manifest.contract.ts (mirror of
+ * the Python SURFACES owner, strategy_manifest.py) — and is re-exported here so both
+ * contract entry points expose the same fail-closed whitelist (K-024): absence/null
+ * keeps legacy semantics ("action"); unknown values are rejected, never coerced.
+ */
+export {
+  STRATEGY_SURFACES,
+  isStrategySurface,
+  validateStrategySurface,
+  assertStrategySurface,
+} from './strategy-manifest.contract';
+
 // -----------------------------------------------------------------------------
 // Universal Trade Record
 // -----------------------------------------------------------------------------

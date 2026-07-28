@@ -250,6 +250,180 @@ def test_surface_contract_is_mirrored_in_typescript():
             f"{name}: missing optional `surface?: StrategySurface` field (C-005)")
 
 
+def _load_contract_module():
+    """Load src/contracts/strategy_manifest.py by path (the module is a JSON-only leaf;
+    importing it via `src.contracts` would eager-import the ML stack)."""
+    import importlib.util
+    import sys
+
+    spec = importlib.util.spec_from_file_location(
+        "strategy_manifest_under_test", ROOT / "src" / "contracts" / "strategy_manifest.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod  # dataclass processing requires the module registered
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _load_normalize_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "normalize_champions_sandbox2",
+        ROOT / "scripts" / "pipeline" / "normalize_champions.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_dataclasses_reject_unknown_surface_fail_closed():
+    """BL-13/C-005 remedio-2 (Codex hallazgo 1): construction is the wall.
+
+    An unknown surface must raise ValueError at CONSTRUCTION time in both
+    StrategyBundleManifest and RegistryStrategyEntry; absence/None keeps the
+    ACKed legacy semantics (-> "action"). 'banana' -> 'action' must be impossible.
+    """
+    sm = _load_contract_module()
+    base = dict(
+        strategy_id="s1", asset_id="usdcop", symbol="USD/COP", chart_symbol="USDCOP",
+        display_name="S1", pipeline_type="rule_based", timeframe="weekly", status="paper",
+    )
+    with pytest.raises(ValueError, match="surface"):
+        sm.StrategyBundleManifest(**base, surface="unknown_surface")
+    with pytest.raises(ValueError, match="surface"):
+        sm.RegistryStrategyEntry(
+            strategy_id="s1", asset_id="usdcop", status="paper", display_name="S1",
+            pipeline_type="rule_based", timeframe="weekly",
+            manifest="strategies/s1/manifest.json", surface="unknown_surface")
+    with pytest.raises(ValueError, match="surface"):
+        sm.StrategyBundleManifest.from_dict({**base, "surface": "banana"})
+
+    # ACKed legacy semantics: absence (or None) -> "action", still constructs.
+    assert sm.StrategyBundleManifest(**base).surface == "action"
+    assert sm.StrategyBundleManifest(**base, surface=None).surface == "action"
+    assert sm.RegistryStrategyEntry(
+        strategy_id="s1", asset_id="usdcop", status="paper", display_name="S1",
+        pipeline_type="rule_based", timeframe="weekly",
+        manifest="strategies/s1/manifest.json").surface == "action"
+
+
+def test_registry_builder_raises_on_invalid_surface_never_coerces(tmp_path):
+    """BL-13/C-005 remedio-2 (Codex hallazgo 1): RegistryBuilder must RAISE on an
+    invalid manifest surface — never silently coerce it to 'action' and serve the
+    strategy as tradeable."""
+    sm = _load_contract_module()
+    bundle = tmp_path / "strategies" / "bad_surface"
+    bundle.mkdir(parents=True)
+    (bundle / "manifest.json").write_text(json.dumps({
+        "strategy_id": "bad_surface", "asset_id": "usdcop", "symbol": "USD/COP",
+        "chart_symbol": "USDCOP", "display_name": "Bad", "pipeline_type": "rule_based",
+        "timeframe": "weekly", "status": "paper", "surface": "unknown_surface",
+        "backtests": [], "model_versions": [],
+    }), encoding="utf-8")
+
+    builder = sm.RegistryBuilder(tmp_path, generated_at="2026-07-27T00:00:00Z")
+    with pytest.raises(ValueError, match="surface"):
+        builder.build(write_manifests=False)
+
+    # Sanity: a valid manifest still builds and carries its surface through.
+    (bundle / "manifest.json").write_text(json.dumps({
+        "strategy_id": "bad_surface", "asset_id": "usdcop", "symbol": "USD/COP",
+        "chart_symbol": "USDCOP", "display_name": "Bad", "pipeline_type": "rule_based",
+        "timeframe": "weekly", "status": "archived", "surface": "diagnostic",
+        "backtests": [], "model_versions": [],
+    }), encoding="utf-8")
+    idx = builder.build(write_manifests=False)
+    assert idx.strategies[0].surface == "diagnostic"
+
+
+def test_frozen_yaml_invalid_surface_exits_red_in_both_modes(tmp_path, monkeypatch):
+    """BL-13/C-005 remedio-2 (Codex hallazgo 1): a frozen YAML whose surface is
+    outside {action, diagnostic} is a hard ERROR (exit 1) in BOTH modes — not a
+    row _frozen_surfaces silently skips. Enforce mode must not write anything."""
+    mod = _load_normalize_module()
+
+    frozen = tmp_path / "frozen"
+    frozen.mkdir()
+    (frozen / "bad.yaml").write_text(
+        yaml.safe_dump({"strategy_id": "x_strat", "surface": "unknown_surface"}),
+        encoding="utf-8")
+
+    public = tmp_path / "public"
+    bundle = public / "strategies" / "x_strat"
+    bundle.mkdir(parents=True)
+    manifest_body = json.dumps({
+        "strategy_id": "x_strat", "asset_id": "aaa", "symbol": "AAA/USD",
+        "chart_symbol": "AAAUSD", "display_name": "X", "pipeline_type": "rule_based",
+        "timeframe": "weekly", "status": "experimental", "surface": "action",
+        "backtests": [], "model_versions": [],
+    })
+    (bundle / "manifest.json").write_text(manifest_body, encoding="utf-8")
+    (public / "registry.json").write_text(json.dumps({
+        "generated_at": "sandbox", "assets": [],
+        "strategies": [{"strategy_id": "x_strat", "asset_id": "aaa",
+                        "status": "experimental", "surface": "action"}],
+        "default": {"asset_id": "aaa", "strategy_id": "x_strat"},
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(mod, "FROZEN_MANIFESTS", frozen)
+    monkeypatch.setattr(mod, "PUBLIC_DATA", public)
+    monkeypatch.setattr(mod, "CHAMPION_BY_ASSET", {"aaa": "x_strat"})
+
+    assert mod.normalize(check_only=True) != 0, (
+        "--check must exit red when a frozen YAML declares an unknown surface")
+    assert mod.normalize(check_only=False) != 0, (
+        "enforce must exit red too: an invalid frozen surface is fixed at the "
+        "source, never normalized into silence")
+    assert (bundle / "manifest.json").read_text(encoding="utf-8") == manifest_body, (
+        "enforce must not rewrite bundles while the frozen authority is invalid")
+
+    # Same sandbox with a VALID frozen surface: both modes go green again.
+    (frozen / "bad.yaml").write_text(
+        yaml.safe_dump({"strategy_id": "x_strat", "surface": "action"}),
+        encoding="utf-8")
+    assert mod.normalize(check_only=True) == 0
+    assert mod.normalize(check_only=False) == 0
+
+
+def test_ts_runtime_surface_validator_mirrors_python_whitelist():
+    """K-024 remedio-2 (Codex hallazgo 2): parity is SEMANTIC, not just a closed
+    union type. The TS contract must expose a RUNTIME validator (pattern of
+    policy.contract.ts / forecast-output.contract.ts) whose whitelist is the SAME
+    tuple as Python strategy_manifest.SURFACES, rejecting unknown values."""
+    import re
+
+    sm = _load_contract_module()
+    dash = ROOT / "usdcop-trading-dashboard" / "lib" / "contracts"
+    src = (dash / "strategy-manifest.contract.ts").read_text(encoding="utf-8")
+
+    m = re.search(r"STRATEGY_SURFACES\s*=\s*\[([^\]]*)\]\s*as\s*const", src)
+    assert m, (
+        "strategy-manifest.contract.ts: missing runtime whitelist "
+        "`export const STRATEGY_SURFACES = [...] as const` (K-024)")
+    ts_values = tuple(re.findall(r"'([^']+)'", m.group(1)))
+    assert ts_values == tuple(sm.SURFACES), (
+        f"TS runtime whitelist {ts_values} != Python SURFACES {tuple(sm.SURFACES)} — "
+        "same values, same order, both sides")
+
+    fn = re.search(
+        r"export function validateStrategySurface\s*\(raw: unknown\): string\[\]"
+        r"(.*?)\n\}", src, re.S)
+    assert fn, (
+        "strategy-manifest.contract.ts: missing runtime validator "
+        "`export function validateStrategySurface(raw: unknown): string[]` (K-024)")
+    assert "STRATEGY_SURFACES" in fn.group(1), (
+        "validateStrategySurface must consult the STRATEGY_SURFACES whitelist, "
+        "not a re-typed copy")
+    assert re.search(r"export function assertStrategySurface", src), (
+        "strategy-manifest.contract.ts: missing fail-closed accessor "
+        "assertStrategySurface (absence -> 'action', unknown -> throw)")
+
+    # strategy.contract.ts re-exports the SAME validator (single runtime source).
+    src2 = (dash / "strategy.contract.ts").read_text(encoding="utf-8")
+    assert "validateStrategySurface" in src2 and "strategy-manifest.contract" in src2, (
+        "strategy.contract.ts must re-export the runtime surface validator from "
+        "strategy-manifest.contract (one whitelist, two entry points)")
+
+
 def test_registry_champion_matches_manifest():
     reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
                      .read_text(encoding="utf-8"))

@@ -22,6 +22,45 @@ export type LifecycleStatus = 'experimental' | 'paper' | 'production' | 'archive
  */
 export type StrategySurface = 'action' | 'diagnostic';
 
+/**
+ * Runtime whitelist — mirror of Python `strategy_manifest.SURFACES` (same values,
+ * same order). The closed union type above exists only at compile time; untrusted
+ * JSON (registry.json, manifest.json) must be validated at RUNTIME with the same
+ * fail-closed rule as the Python producer (`validate_surface`): absence/null keeps
+ * legacy semantics ("action"); any other unknown value is REJECTED, never coerced.
+ * K-024: bilateral semantic parity with rejection tests on both sides.
+ */
+export const STRATEGY_SURFACES = ['action', 'diagnostic'] as const;
+
+/** Type guard: is this a known surface value? */
+export function isStrategySurface(raw: unknown): raw is StrategySurface {
+  return typeof raw === 'string' && (STRATEGY_SURFACES as readonly string[]).includes(raw);
+}
+
+/**
+ * Policy-contract-style validator (cf. policy.contract.ts / forecast-output.contract.ts):
+ * returns the list of violations, [] = valid. Absence (undefined/null) is legal legacy
+ * (-> "action"); a PRESENT unknown value is a contract violation.
+ */
+export function validateStrategySurface(raw: unknown): string[] {
+  if (raw === undefined || raw === null) return [];
+  if (isStrategySurface(raw)) return [];
+  return [
+    `surface ${JSON.stringify(raw)} not in [${STRATEGY_SURFACES.join(', ')}] — ` +
+      'fail-closed (BL-13/C-005): unknown surfaces are rejected, never coerced to "action"',
+  ];
+}
+
+/**
+ * Fail-closed accessor — functional mirror of Python `__post_init__`/`validate_surface`:
+ * absence/null -> legacy "action"; unknown value -> throw.
+ */
+export function assertStrategySurface(raw: unknown): StrategySurface {
+  const errors = validateStrategySurface(raw);
+  if (errors.length > 0) throw new Error(errors[0]);
+  return raw === undefined || raw === null ? 'action' : (raw as StrategySurface);
+}
+
 /** One immutable backtest, keyed by (model_version, year). NEVER overwritten (spec §5). */
 export interface BacktestEntry {
   model_version: string;

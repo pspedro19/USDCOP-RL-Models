@@ -56,6 +56,26 @@ SCHEMA_VERSION = "1.0.0"
 # enforces it at runtime, tests/regression/test_strategy_manifests.py at freeze time.
 SURFACES = ("action", "diagnostic")
 
+
+def validate_surface(surface: Any, *, owner: str) -> str:
+    """Fail-closed surface validation (BL-13/C-005 remedio-2, Codex ACK).
+
+    "Ausencia conserva semantica legacy; valores desconocidos deben fallar cerrados
+    cuando el campo exista": absence/None -> "action" (legacy, ACKed); any OTHER
+    value outside SURFACES raises ValueError — 'banana' must NEVER be coerced to a
+    tradeable 'action' surface. TS mirror: strategy-manifest.contract.ts
+    (validateStrategySurface / assertStrategySurface).
+    """
+    if surface is None:
+        return "action"
+    if surface not in SURFACES:
+        raise ValueError(
+            f"{owner}: surface {surface!r} invalido — debe ser uno de {SURFACES} "
+            "(fail-closed BL-13/C-005: ausencia/None = legacy 'action'; un valor "
+            "desconocido se RECHAZA, jamas se coacciona a 'action')"
+        )
+    return surface
+
 # Asset display metadata. USD/COP is the only tradeable asset today; new assets (XAU, BTC)
 # arrive via config/assets/<asset_id>.yaml (AssetProfile) — see sdd-multi-asset-onboarding.md.
 # chart_symbol is what TradingChartWithSignals must render (no slash).
@@ -154,6 +174,11 @@ class StrategyBundleManifest:
     approval: dict[str, Any] | None = None
     model_versions: list[ModelVersionEntry] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        # Fail-closed at construction (remedio-2): unknown surface -> ValueError.
+        self.surface = validate_surface(
+            self.surface, owner=f"StrategyBundleManifest({self.strategy_id})")
+
     def to_dict(self) -> dict[str, Any]:
         return _sanitize_for_json(asdict(self))
 
@@ -210,6 +235,11 @@ class RegistryStrategyEntry:
     return_pct: float | None = None
     sharpe: float | None = None
     p_value: float | None = None
+
+    def __post_init__(self) -> None:
+        # Fail-closed at construction (remedio-2): unknown surface -> ValueError.
+        self.surface = validate_surface(
+            self.surface, owner=f"RegistryStrategyEntry({self.strategy_id})")
 
 
 @dataclass
@@ -409,7 +439,10 @@ class RegistryBuilder:
                 pipeline_type=m.pipeline_type,
                 timeframe=m.timeframe,
                 manifest=f"strategies/{m.strategy_id}/manifest.json",
-                surface=m.surface if m.surface in SURFACES else "action",
+                # remedio-2: NO coercion here. The manifest already validated its surface
+                # at construction; RegistryStrategyEntry.__post_init__ re-validates and
+                # RAISES on anything outside SURFACES — 'banana' never becomes 'action'.
+                surface=m.surface,
                 backtest_years=m.backtest_years,
                 has_production=m.production is not None,
                 has_replay=m.capabilities.get("replay", False),

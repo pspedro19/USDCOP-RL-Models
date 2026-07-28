@@ -58,13 +58,23 @@ def _frozen_surfaces() -> dict[str, str]:
     The frozen manifests are the surface authority for the strategies they cover;
     diagnostic surfaces exist to be looked at, never traded: they can NEVER be visible
     as champion nor hold an experimental/paper/production status.
+
+    Fail-closed (remedio-2 C-005): a frozen YAML that DECLARES a surface outside
+    _SURFACES raises ValueError — normalize() turns that into exit 1 in BOTH modes.
+    Absence keeps legacy semantics (the YAML simply is not surface-authoritative).
     """
     import yaml
     out: dict[str, str] = {}
     for p in sorted(FROZEN_MANIFESTS.glob("*.yaml")):
         m = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
-        if m.get("strategy_id") and m.get("surface") in _SURFACES:
-            out[m["strategy_id"]] = m["surface"]
+        sid, surf = m.get("strategy_id"), m.get("surface")
+        if surf is not None and surf not in _SURFACES:
+            raise ValueError(
+                f"{p.name}: surface {surf!r} fuera de {_SURFACES} — un manifiesto "
+                "congelado con surface invalido es ERROR duro (fail-closed BL-13/C-005); "
+                "corrige el YAML, no se ignora ni se coacciona")
+        if sid and surf in _SURFACES:
+            out[sid] = surf
     return out
 
 
@@ -96,17 +106,31 @@ def _registry_missing_surface() -> list[str]:
 def normalize(check_only: bool = False) -> int:
     strat_root = PUBLIC_DATA / "strategies"
     champions = set(CHAMPION_BY_ASSET.values())
-    frozen_surface = _frozen_surfaces()
+    # Fail-closed (remedio-2): an invalid frozen surface aborts BOTH modes with exit 1
+    # before anything is normalized — a broken authority must not drive rewrites.
+    try:
+        frozen_surface = _frozen_surfaces()
+    except ValueError as e:
+        print(f"[champions] ERROR: {e}")
+        return 1
     changed, drift, surface_errors = [], [], []
 
     for man_path in sorted(strat_root.glob("*/manifest.json")):
         man = json.loads(man_path.read_text(encoding="utf-8"))
         sid, status = man.get("strategy_id"), man.get("status")
         # C-005: every bundle manifest carries surface. The frozen YAML is authoritative
-        # where one exists; otherwise the bundle's own declaration; otherwise "action"
+        # where one exists; otherwise the bundle's own declaration; ABSENCE -> "action"
         # (every published bundle was a tradeable candidate — diagnostic is opt-in).
+        declared = man.get("surface")
+        if declared is not None and declared not in _SURFACES and sid not in frozen_surface:
+            # remedio-2: an unknown DECLARED surface without frozen authority to repair
+            # it is an ERROR — never coerced to 'action', never normalized in silence.
+            surface_errors.append(
+                f"{sid}: bundle manifest declara surface {declared!r} fuera de "
+                f"{_SURFACES} — fail-closed, no se coacciona (BL-13/C-005)")
+            continue
         want_surface = frozen_surface.get(
-            sid, man.get("surface") if man.get("surface") in _SURFACES else "action")
+            sid, declared if declared in _SURFACES else "action")
         if want_surface == "diagnostic":
             # BL-13: a diagnostic surface is forced to archived, no matter what the
             # champion authority or its bundle claims — and that contradiction is an error.
