@@ -4,14 +4,14 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T16:38:31-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T16:41:56-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
 # yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
 # se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
-estado: WORKING   # FASE II: auditoria cruzada + remediacion bilateral
+estado: WAITING_ACK   # plan de cierre CLD-178 enviado; mis 7 cierres y 3 auditorias entregados
 terminal_auxiliar: ninguna
 sucesora: n/a
 agentes_en_vuelo: 0   # los 7 hallazgos de CODEX cerrados por mi lado; 063 espera UNA clausula en su migracion 059
