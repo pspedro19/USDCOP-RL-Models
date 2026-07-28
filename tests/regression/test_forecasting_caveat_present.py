@@ -19,12 +19,16 @@ silently deleted is decoration, not disclosure.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 DASH = ROOT / "usdcop-trading-dashboard" / "components"
+
+FORECASTING_VIEW = DASH / "gm" / "views" / "ForecastingView.tsx"
+LEGACY_DASHBOARD = DASH / "forecasting" / "ForecastingDashboard.tsx"
 
 SURFACES = {
     "forecasting/ForecastingDashboard.tsx": "DiagnosticCaveat",
@@ -44,6 +48,121 @@ def test_da_surface_carries_caveat(rel: str, marker: str):
         f"{rel} displays Direction Accuracy but the caveat ({marker!r}) is gone. A ~52% DA "
         "shown without context reads as 'the models work'; the statistics say coin flip "
         "(p_adj 0.66 across models, 1.0 across model-by-horizon cells)."
+    )
+
+
+# ---------------------------------------------------------------------------
+# BL-01 — the caveat banner itself (testid + honest phrase), and its gating.
+# ---------------------------------------------------------------------------
+
+def test_caveat_banner_present():
+    """BL-01: the GM forecasting view carries the da-caveat banner AND its honest phrase.
+
+    The testid alone is not enough — the banner could keep its markup while the text
+    mutates into marketing. Pin a stable fragment of the real copy
+    ('Superficie de diagnóstico, no de señales.').
+    """
+    src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+    assert 'data-testid="da-caveat"' in src, (
+        "ForecastingView.tsx lost the da-caveat banner (data-testid=\"da-caveat\"). "
+        "The DA surface must not render without its diagnostic disclaimer (BL-01)."
+    )
+    assert "Superficie de diagn" in src, (
+        "ForecastingView.tsx still has the da-caveat testid but the honest phrase "
+        "('Superficie de diagnóstico, no de señales') is gone — the disclaimer text "
+        "is part of the contract, not decoration (BL-01)."
+    )
+
+
+@pytest.mark.xfail(reason="BL-02 pendiente", strict=False)
+def test_caveat_not_gated_only_to_model_zoo():
+    """BL-02 (expected green after it lands): the caveat must also render for
+    weekly_inference mode, not only under `isModelZoo`.
+
+    Passes when either (a) the testid appears more than once (a second render path /
+    shared component for the rule-based mode), or (b) the single banner is no longer
+    wrapped exclusively in `{isModelZoo && (...)}`.
+    """
+    src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+    occurrences = src.count('data-testid="da-caveat"')
+    gated_only = re.search(
+        r"\{isModelZoo\s*&&\s*\(\s*<div\s+data-testid=\"da-caveat\"", src
+    )
+    assert occurrences >= 2 or gated_only is None, (
+        "The da-caveat banner renders only under isModelZoo — the weekly_inference "
+        "(rule-based) surface shows results with no diagnostic caveat. BL-02 must "
+        "render the caveat for both forecast modes."
+    )
+
+
+# ---------------------------------------------------------------------------
+# BL-06 — CI muralla: forecasting surfaces are read-only diagnostic surfaces.
+# They must never grow approve/deploy/execution wiring or order verbs.
+# ---------------------------------------------------------------------------
+
+FORBIDDEN_ACTION_TOKENS = [
+    "api/production/approve",
+    "api/production/deploy",
+    "/api/execution",
+    "onApprove",
+    "onReject",
+]
+
+# Order verbs as UI text (word-bounded, case-sensitive — Spanish uppercase CTA style).
+_ORDER_VERBS = re.compile(r"\b(COMPRAR|VENDER)\b")
+
+# Comment-only lines are tolerated (explanatory prose is not an action capability).
+_COMMENT_LINE = re.compile(r"^\s*(//|\*|/\*|\{/\*)")
+
+
+def _non_comment_offenders(path: Path) -> list[str]:
+    """Return 'file:line: token' hits for forbidden tokens outside comment lines."""
+    offenders: list[str] = []
+    rel = path.relative_to(ROOT).as_posix()
+    for lineno, line in enumerate(
+        path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
+    ):
+        if _COMMENT_LINE.match(line):
+            continue
+        for token in FORBIDDEN_ACTION_TOKENS:
+            if token in line:
+                offenders.append(f"{rel}:{lineno}: {token}")
+        m = _ORDER_VERBS.search(line)
+        if m:
+            offenders.append(f"{rel}:{lineno}: {m.group(0)}")
+    return offenders
+
+
+def _forecasting_component_files() -> list[Path]:
+    files = [FORECASTING_VIEW]
+    files.extend(sorted((DASH / "forecasting").glob("*.ts*")))
+    return [f for f in files if f.is_file()]
+
+
+def test_forecasting_has_no_action_capabilities():
+    """BL-06: ForecastingView + every components/forecasting/* file must stay free of
+    approval/deploy/execution endpoints, approval callbacks and BUY/SELL order verbs.
+
+    Forecasting is a diagnostic surface (quant-constitution): the day it can approve,
+    deploy or phrase an order, it stops being disclosure and becomes a signal product
+    that bypassed the 2-vote gate.
+    """
+    offenders: list[str] = []
+    for f in _forecasting_component_files():
+        offenders.extend(_non_comment_offenders(f))
+    assert not offenders, (
+        "Forecasting surfaces grew action capabilities (forbidden outside comments):\n  "
+        + "\n  ".join(offenders)
+    )
+
+
+def test_legacy_forecasting_same_rules():
+    """BL-06: the legacy ForecastingDashboard.tsx obeys the same muralla — legacy pages
+    are still served (admin-only /legacy) and must not be the back door."""
+    offenders = _non_comment_offenders(LEGACY_DASHBOARD)
+    assert not offenders, (
+        "Legacy ForecastingDashboard.tsx grew action capabilities:\n  "
+        + "\n  ".join(offenders)
     )
 
 
