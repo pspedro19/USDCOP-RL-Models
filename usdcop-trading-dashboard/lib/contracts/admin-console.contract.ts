@@ -387,7 +387,10 @@ export interface AdminModelsResponse {
 
 /**
  * Espejo TS de los artefactos que publica `scripts/analysis/generate_interpretability.py`
- * en `public/data/interpretability/<surface>/<asset>/<model_id>/<version>/summary.json`.
+ * en `<repo>/data/interpretability/<surface>/<asset>/<model_id>/<version>/summary.json`
+ * (FUERA de public/ — C-006/CXD-040: solo se sirven vía API con gate admin:all; el
+ * schema runtime compartido con Python vive en
+ * `app/api/admin/interpretability/_schema/interp-summary.schema.json`).
  * La UI SOLO renderiza estos JSON (jamás recomputa SHAP ni condiciones — regla
  * strategy-engines I-7). FABRIC A.7: "SHAP explica el modelo, no el mercado" —
  * diagnóstico 0 trials para RECHAZAR modelos absurdos, nunca "importancia para operar".

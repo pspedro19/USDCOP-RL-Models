@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "interp-summary.schema.json",
+  "title": "InterpSummary",
+  "description": "Schema COMPARTIDO (C-006/CXD-040) de los artefactos summary.json de interpretabilidad. Lo valida en runtime la API TS (app/api/admin/interpretability/_lib/artifact-schema.ts, con STRIP de campos desconocidos) y en CI un test Python contra los artefactos del generador (usdcop-trading-dashboard/tests/test_interpretability_schema.py, estricto). Espejo de los tipos InterpSummary en lib/contracts/admin-console.contract.ts. Nota: JSON Schema no puede expresar finitud numerica; ambos lados la imponen por codigo ademas de este schema.",
+  "oneOf": [
+    { "$ref": "#/definitions/linearSummary" },
+    { "$ref": "#/definitions/ruleSummary" }
+  ],
+  "definitions": {
+    "featureRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rank", "feature", "coef", "mean_abs_shap", "mean_shap"],
+      "properties": {
+        "rank": { "type": "number" },
+        "feature": { "type": "string" },
+        "coef": { "type": "number" },
+        "mean_abs_shap": { "type": "number" },
+        "mean_shap": { "type": "number" }
+      }
+    },
+    "yearFeatureRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "mean_abs_shap", "mean_shap"],
+      "properties": {
+        "feature": { "type": "string" },
+        "mean_abs_shap": { "type": "number" },
+        "mean_shap": { "type": "number" }
+      }
+    },
+    "ruleYear": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n_days", "pnl_gross", "pnl_beta", "pnl_timing_cov_pos_ret", "costs", "pnl_net"],
+      "properties": {
+        "n_days": { "type": "number" },
+        "pnl_gross": { "type": "number" },
+        "pnl_beta": { "type": "number" },
+        "pnl_timing_cov_pos_ret": { "type": "number" },
+        "costs": { "type": "number" },
+        "pnl_net": { "type": "number" },
+        "pct_days_trend_on": { "type": "number" },
+        "pct_days_position_active": { "type": "number" },
+        "avg_exposure": { "type": "number" }
+      }
+    },
+    "linearSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nota", "surface", "asset", "model_id", "model_type", "method",
+        "attribution_not_shap", "version", "generated_at", "fit", "scope",
+        "base_value", "n_rows", "n_features", "top_features", "by_year",
+        "kill_flags_sign_change_by_year"
+      ],
+      "properties": {
+        "nota": { "type": "string" },
+        "surface": { "type": "string" },
+        "asset": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_type": { "const": "linear" },
+        "method": { "const": "linear_shap_closed_form" },
+        "attribution_not_shap": { "const": false },
+        "version": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "scope": { "type": "string" },
+        "fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scheme", "origin", "n_train", "horizon", "purge_days", "scaler", "params"],
+          "properties": {
+            "scheme": { "type": "string" },
+            "origin": { "type": "string" },
+            "n_train": { "type": "number" },
+            "horizon": { "type": "number" },
+            "purge_days": { "type": "number" },
+            "scaler": { "type": "string" },
+            "params": {
+              "type": "object",
+              "additionalProperties": { "type": ["number", "string", "boolean", "null"] }
+            }
+          }
+        },
+        "base_value": { "type": "number" },
+        "n_rows": { "type": "number" },
+        "n_features": { "type": "number" },
+        "top_features": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/featureRow" }
+        },
+        "by_year": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/yearFeatureRow" }
+          }
+        },
+        "kill_flags_sign_change_by_year": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ruleSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nota", "surface", "asset", "model_id", "model_type", "method",
+        "attribution_not_shap", "version", "generated_at", "scope",
+        "rules", "pnl_decomposition", "by_year"
+      ],
+      "properties": {
+        "nota": { "type": "string" },
+        "surface": { "type": "string" },
+        "asset": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_type": { "const": "rule_based" },
+        "method": { "const": "rule_attribution" },
+        "attribution_not_shap": { "const": true },
+        "version": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "scope": { "type": "string" },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gate", "pct_days_trend_on", "pct_days_position_active", "avg_exposure", "n_trades"],
+          "properties": {
+            "gate": { "type": "string" },
+            "pct_days_trend_on": { "type": "number" },
+            "pct_days_position_active": { "type": "number" },
+            "avg_exposure": { "type": "number" },
+            "n_trades": { "type": "number" }
+          }
+        },
+        "pnl_decomposition": { "$ref": "#/definitions/ruleYear" },
+        "by_year": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/ruleYear" }
+        }
+      }
+    }
+  }
+}

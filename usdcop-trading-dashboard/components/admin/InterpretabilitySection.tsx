@@ -3,7 +3,8 @@
 /**
  * Interpretabilidad (BL-20 · FABRIC A.7 · CTR-ADMIN-CONSOLE-001). Selector
  * superficie → activo → modelo → versión sobre los artefactos publicados en
- * `public/data/interpretability/**` por `scripts/analysis/generate_interpretability.py`.
+ * `<repo>/data/interpretability/**` por `scripts/analysis/generate_interpretability.py`
+ * (fuera de public/ — C-006: solo accesibles vía la API con gate admin:all).
  *
  * HONESTIDAD constitucional (quant-constitution + A.7):
  *  - Header fijo: "SHAP explica el modelo, no el mercado". Diagnóstico 0 trials.

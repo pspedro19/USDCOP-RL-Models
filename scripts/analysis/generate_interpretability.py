@@ -18,7 +18,7 @@ Fase 1 (este script):
       Reusa scripts/analysis/profitability_adapters.ADAPTERS['spx500'] (mismo código
       que produce los bundles publicados — cero re-derivación).
 
-Salida: usdcop-trading-dashboard/public/data/interpretability/<surface>/<asset>/
+Salida: data/interpretability/<surface>/<asset>/ (fuera de public; servido SOLO via API admin:all)
         <model_id>/<version>/summary.json  (safe JSON: sin NaN/Inf, via safe_json_dump).
 
 Tree SHAP (xgb/lgbm/catboost) = fase 2, fuera de alcance aquí.
@@ -39,7 +39,7 @@ if str(REPO) not in sys.path:
 
 from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
 
-OUT_ROOT = REPO / "usdcop-trading-dashboard" / "public" / "data" / "interpretability"
+OUT_ROOT = REPO / "data" / "interpretability"  # FUERA de public/ (CXD-040: public bypassea admin:all)
 HORIZON = 5          # mismo H y purga que meta01_zoo_ledger.py
 ZOO_LINEAR_MODELS = ("ridge", "bayesian_ridge")   # fase 1: SOLO lineales (SHAP cerrado)
 
