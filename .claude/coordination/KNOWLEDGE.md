@@ -124,3 +124,13 @@ cubre no basta; hay que enumerar lo que NO cubre y comprobar uno por uno que nin
 campo no autenticado participa en una decision economica o de identidad. Si participa,
 se cierra por otra via (ledger, verificacion servidor-a-servidor) y se DOCUMENTA que
 no esta autenticado — jamas se afirma que el checksum lo cubre.
+
+**K-040 · Escalar al operador lo que el SSOT ya decidio es una forma de no arreglarlo.**
+Origen: clasifique la fuga de `approval_state*.json` como "decision de producto
+pendiente" cuando tres documentos del SSOT ya decian que un subscriber jamas ve
+gates. Lo escale, no por duda real, sino porque el arreglo era incomodo: tenia
+consumidores rio abajo (Vote 2 y un DAG). Regla: antes de escalar una decision,
+se buscan las fuentes que ya la resuelven; solo si NINGUNA decide, se escala. Y la
+sanitizacion de un artefacto se hace por ALLOWLIST de campos publicables, nunca por
+blacklist: una blacklist olvida el campo siguiente, y este mismo defecto reaparecio
+tres veces con tres artefactos distintos, que es la firma de una blacklist implicita.
