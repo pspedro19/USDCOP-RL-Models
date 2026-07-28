@@ -1,4 +1,4 @@
-# PROTOCOL-COMMS v2.3 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
+# PROTOCOL-COMMS v2.3 — INTEGRADO EN PROTOCOL.md (ENMIENDA v1.2, doble ACK FINAL) — ARCHIVO DE REFERENCIA, no editar
 > v2.3: SOLO los 2 deltas mecánicos de CXD-033 (fila LEASES sin contradicción PROGRESS;
 > helpers CLD-HLP-/CXD-HLP- en vez de HLP- genérico). Nada más cambió.
 
@@ -124,11 +124,11 @@ por hash/mtime →§2-PROGRESS; (3) estados normativos con BLOCKED como modifica
 FIRMA CLAUDE: ACK FINAL v2.3 · claude-root-a060f9b7 · 2026-07-27T23:51:00-05:00
 (reloj de sistema; v2.2 firmada 23:23:43 + SOLO los 2 deltas CXD-033 aplicados tal
 como Codex los redactó — fila LEASES y CLD-HLP-/CXD-HLP-; solicito ACK FINAL v2.3).
-FIRMA CODEX: PENDIENTE ACK FINAL v2.2 (condición de CXD-011 cumplida: los 4
-deltas están aplicados).
+FIRMA CODEX: ACK FINAL v2.3 · codex-root-5d968ac6 · 2026-07-27T23:58:00-05:00
+(reloj de sistema; auditados los 4 deltas v2.2 y los 2 deltas mecánicos v2.3).
 Editado por directiva del operador (2026-07-27, sesión Claude nueva, aplica
 CXD-011 tal como Codex lo redactó — cero contenido nuevo fuera de los 4 deltas
-y la regla HLP-NNN ya operante vía CXD-019/021).
-→ AMBAS raíces: verificar fidelidad de los 4 deltas y firmar `ACK FINAL v2.2`
+y los 2 deltas v2.3 de CXD-033; IDs helper namespaced operan vía CXD-019/021/035).
+→ AMBAS raíces verificaron fidelidad y firmaron `ACK FINAL v2.3`
 con timestamp de reloj de sistema; con doble ACK FINAL se fusiona a PROTOCOL.md
 (enmienda v1.2) y este archivo se archiva como referencia.

@@ -152,3 +152,23 @@ Un monitor rojo = STOP en ese BL hasta verde. Jamás marques para_review con gat
    `briefs/BL-XX.md` (paths+líneas+shapes) ANTES de que el otro lo arranque.
 8. **Reasoning tiering (Codex)**: `max` solo para BLs L; `medium` para S/M y
    discovery.
+
+---
+
+# ENMIENDA v1.2 (2026-07-28T00:01:34-0500) — Protocolo de comunicacion CONSOLIDADO (doble ACK FINAL v2.3)
+
+Por doble firma ACK FINAL v2.3 (CLAUDE claude-root-a060f9b7 23:51 · CODEX codex-root-5d968ac6
+23:58, ambas con reloj de sistema), el contenido INTEGRO de PROTOCOL-COMMS-v2.md v2.3 queda
+INCORPORADO a este protocolo como norma vigente y prevalece sobre §1-§8 y la enmienda v1.1
+en cualquier conflicto. Resumen normativo (el detalle vive en el archivo de referencia):
+- Setup raiz unica + 3 monitores como roles logicos + eco/modo degradado 60s.
+- Canales con semantica v2.3: INBOX procesado por ACK append-only; CONTRACTS/KNOWLEDGE/INBOX
+  append-only multiwriter; PROGRESS multiwriter COFIRMADO no-append; APROBADO solo contra hash.
+- Mensajeria CLD-NNN/CXD-NNN + CLD-HLP-NNN/CXD-HLP-NNN con HECHO/EVIDENCIA/IMPACTO/
+  PROPUESTA/DONE-WHEN, SLA P0/P1/P2, timestamps de reloj de sistema con marca SKEW.
+- Estados normativos: PENDING→ACTIVE→PARA_REVIEW→(REJECTED→ACTIVE)→APPROVED_PENDING_CLOSE→DONE;
+  PARTIAL declarado ex-ante; BLOCKED como modificador.
+- Ciclo con self-red-team K-013; concesion ⇒ regla K (K-022); paridad bilateral fail-closed
+  (K-024); packs sobre hash sellado (K-025); freeze solo con files trackeados (K-026).
+- Terminales auxiliares: subordinadas, manos-no-voz, sucesion pre-firmada (CLD/CXD-HLP-002).
+PROTOCOL-COMMS-v2.md queda ARCHIVADO como referencia historica (no editar salvo nueva version).
