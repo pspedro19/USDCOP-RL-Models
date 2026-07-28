@@ -12,7 +12,9 @@
  *
  * Until then this module IS the composition, over the same shape, reading only
  * PUBLISHED artifacts under `public/data/**` plus the governance projection that
- * `scripts/pipeline/export_control_tower.py` writes. Three rules govern it:
+ * `scripts/pipeline/export_control_tower.py` writes to `data/control-tower/` —
+ * deliberately OUTSIDE the web root, because it carries INTERNALS (see
+ * `controlTowerRoot` below). Three rules govern it:
  *
  *  1. It NEVER computes a performance statistic. It copies numbers other systems
  *     published and does date arithmetic over published dates. The one exception
@@ -62,12 +64,37 @@ const PUBLIC_DATA = path.join(process.cwd(), 'public', 'data');
 /** Prefix used in `source.path` so every figure is traceable from the repo root. */
 const REPO_PREFIX = 'usdcop-trading-dashboard/public/data';
 
+/**
+ * Governance projection root — deliberately OUTSIDE `public/` (CODEX P0, precedent
+ * C-006/`data/interpretability/`). The projection carries trials, DSR inputs and gate
+ * state: INTERNALS. Under `public/` it is reachable through the `/data/**` static path,
+ * which the edge middleware gates with *a session only*, so a `free`/`subscriber` could
+ * read it and bypass the `research:read` the Passport requires (`rbac.md` §8). Living
+ * here, the ONLY reader is this server-side composer behind `/api/passport/**`.
+ *
+ * Default `<repo>/data/control-tower` (the dashboard's cwd is `usdcop-trading-dashboard/`);
+ * override with `CONTROL_TOWER_DATA_DIR` for containers/tests.
+ */
+function controlTowerRoot(): string {
+  const env = process.env.CONTROL_TOWER_DATA_DIR;
+  if (env && env.trim()) return path.resolve(env.trim());
+  return path.resolve(process.cwd(), '..', 'data', 'control-tower');
+}
+
 /** Read a JSON artifact under `public/data/`. Missing/corrupt ⇒ null (never throws:
  *  a missing artifact is a DEGRADED state the contract models, not an error). */
 async function readData<T>(relPath: string): Promise<T | null> {
+  return readJsonAt(path.join(PUBLIC_DATA, relPath));
+}
+
+/** Same contract as `readData`, for artifacts that must NOT be web-servable. */
+async function readGovernance<T>(fileName: string): Promise<T | null> {
+  return readJsonAt(path.join(controlTowerRoot(), fileName));
+}
+
+async function readJsonAt<T>(absPath: string): Promise<T | null> {
   try {
-    const raw = await fs.readFile(path.join(PUBLIC_DATA, relPath), 'utf-8');
-    return JSON.parse(raw) as T;
+    return JSON.parse(await fs.readFile(absPath, 'utf-8')) as T;
   } catch {
     return null;
   }
@@ -220,12 +247,16 @@ interface GovernanceFile {
 
 const P = {
   registry: 'registry.json',
-  governance: 'control-tower/governance.json',
   systemHealth: 'production/system_health.json',
   paperLedger: 'production/paper/candidates_ledger_2026.json',
   deployStatus: 'production/deploy_status.json',
   manifest: (id: string) => `strategies/${id}/manifest.json`,
 } as const;
+
+/** Governance projection: file name + repo-root path, NOT under `public/` (see
+ *  `controlTowerRoot`). Kept apart from `P` so nobody re-adds it to the web root. */
+const GOVERNANCE_FILE = 'governance.json';
+const GOVERNANCE_PATH = `data/control-tower/${GOVERNANCE_FILE}`;
 
 // ──────────────────────────────────────────── pending interfaces (the acople map)
 
@@ -267,11 +298,13 @@ export const PENDING_INTERFACES: PendingInterface[] = [
   },
   {
     backlog_id: 'BL-25',
-    field: 'tower.data.clocks.exec · sleeves.retirement_signal',
-    produced_by: 'control__system_health (tres relojes) por estrategia',
-    note: 'system_health.json publica dos relojes (data/model) y banderas GLOBALES. No existe '
-      + 'evaluación de retiro POR ESTRATEGIA: por eso el semáforo de cada sleeve es "unknown" '
-      + 'y no se le imputa la bandera global (sería atribuir un hecho del sistema a una sleeve).',
+    field: 'tower.data.clocks.pnl · sleeves.retirement_signal',
+    produced_by: 'control__system_health (tres relojes: datos/modelo/PnL) por estrategia',
+    // Qué relojes trae hoy el artefacto NO se afirma aquí: lo dice `clocks[*].source.pending`,
+    // derivado del payload (F-07). Esta nota solo declara lo que sigue sin productor.
+    note: 'system_health.json publica relojes y banderas GLOBALES. No existe evaluación de '
+      + 'retiro POR ESTRATEGIA: por eso el semáforo de cada sleeve es "unknown" y no se le '
+      + 'imputa la bandera global (sería atribuir un hecho del sistema a una sleeve).',
   },
   {
     backlog_id: 'BL-26 / BL-27',
@@ -467,8 +500,8 @@ export async function composeStrategyPassport(strategyId: string): Promise<Strat
   const assetId = entry?.asset_id ?? manifest?.asset_id ?? 'unknown';
   const manifestPath = src(P.manifest(strategyId));
   const registryPath = src(P.registry);
-  const governance = await readData<GovernanceFile>(P.governance);
-  const governancePath = src(P.governance);
+  const governance = await readGovernance<GovernanceFile>(GOVERNANCE_FILE);
+  const governancePath = GOVERNANCE_PATH;
   const gov = governance?.assets?.[assetId];
   const approval = await readApproval(manifest, strategyId);
 
@@ -655,7 +688,7 @@ async function composeSleeve(
   now: Date,
 ): Promise<TowerSleeve> {
   const registryPath = src(P.registry);
-  const governancePath = src(P.governance);
+  const governancePath = GOVERNANCE_PATH;
   const gov = governance?.assets?.[entry.asset_id];
   const manifest = await readData<StrategyManifest>(P.manifest(entry.strategy_id));
   const approval = await readApproval(manifest, entry.strategy_id);
@@ -810,15 +843,22 @@ function composeData(
   governance: GovernanceFile | null,
 ): TowerData {
   const healthPath = src(P.systemHealth);
-  const governancePath = src(P.governance);
+  const governancePath = GOVERNANCE_PATH;
+
+  // F-07: la nota se DERIVA del payload. La versión anterior afirmaba a mano
+  // "system_health publica data y model": una aseveración sobre un artefacto que
+  // el artefacto puede desmentir (y desmiente en cuanto BL-25 publique el reloj de
+  // PnL). Lo que el usuario lee ahora es lo que el fichero trae hoy.
+  const publishedClocks = Object.entries(health?.clocks ?? {})
+    .filter(([, v]) => !!v)
+    .map(([k]) => k)
+    .sort();
 
   const clocks = Object.fromEntries(HEALTH_CLOCKS.map((c) => {
     const raw = health?.clocks?.[c];
     if (!raw) {
       return [c, unavailable(
-        c === 'exec'
-          ? 'BL-25 — el reloj de EJECUCIÓN no tiene productor (system_health publica data y model)'
-          : `system_health.json no publica el reloj ${c}`,
+        `BL-25 — system_health.json no publica el reloj ${c} (publica: ${publishedClocks.join(', ')})`,
       )];
     }
     return [c, sourced({
@@ -895,7 +935,7 @@ function composePairedTests(ledger: PaperLedgerFile | null): TowerPairedTest[] {
 export async function composeControlTower(now: Date = new Date()): Promise<ControlTowerSnapshot> {
   const [registry, governance, health, ledger] = await Promise.all([
     readData<RegistryFile>(P.registry),
-    readData<GovernanceFile>(P.governance),
+    readGovernance<GovernanceFile>(GOVERNANCE_FILE),
     readData<SystemHealthFile>(P.systemHealth),
     readData<PaperLedgerFile>(P.paperLedger),
   ]);

@@ -12,7 +12,7 @@
  *
  * RBAC: `research:read` via `/api/passport` in rbac.contract.ts (edge-enforced).
  */
-import { ok, fail } from '@/lib/api/envelope';
+import { ok, fail, logServerError } from '@/lib/api/envelope';
 import { composeStrategyPassport } from '@/lib/passport/compose';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ strategyId: st
     }
     return ok(passport, { meta: { asOf: passport.generated_at } });
   } catch (e) {
-    return fail('PASSPORT_COMPOSE_FAILED', (e as Error).message ?? 'no se pudo componer el passport', 500);
+    // NUNCA el mensaje del error al cliente (hallazgo CODEX P1): un ENOENT sobre
+    // `strategies/<id>/manifest.json` revelaba la ruta absoluta del artefacto. Log
+    // sanitizado del lado servidor; al navegador, un 500 genérico y estable.
+    logServerError(`passport.${strategyId}`, e);
+    return fail('PASSPORT_COMPOSE_FAILED', 'No se pudo componer el passport.', 500);
   }
 }

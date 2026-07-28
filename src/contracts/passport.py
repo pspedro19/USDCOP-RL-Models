@@ -64,8 +64,12 @@ BOOK_STATES: tuple[str, ...] = ("CHAMPION", "CANARY", "PAPER", "REDUCED", "QUARA
 #: value: a strategy with no signed withdrawal protocol is not "green".
 RETIREMENT_SIGNALS: tuple[str, ...] = ("green", "yellow", "red", "unknown")
 
-#: Three-clock monitoring (BL-25). ``exec`` has no producer yet.
-HEALTH_CLOCKS: tuple[str, ...] = ("data", "model", "exec")
+#: Three-clock monitoring (FABRIC §23 / BL-25): datos · modelo · **PnL**.
+#: The names belong to the PRODUCER (``src/monitoring/system_health_contract.py::Clock``),
+#: not to this consumer: calling the third one ``exec`` made the composer discard the
+#: ``pnl`` clock whenever ``system_health.json`` published it (CODEX F-07).
+#: ``tests/unit/test_passport_contract.py`` pins this tuple to the producer enum.
+HEALTH_CLOCKS: tuple[str, ...] = ("data", "model", "pnl")
 
 #: Trial lineage (ADR-0022). FT = predictive, AT = economic.
 TRIAL_KINDS: tuple[str, ...] = ("forecast", "action")

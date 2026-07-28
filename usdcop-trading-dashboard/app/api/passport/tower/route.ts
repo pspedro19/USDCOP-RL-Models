@@ -9,7 +9,7 @@
  *
  * RBAC: `research:read` via `/api/passport` in rbac.contract.ts (edge-enforced).
  */
-import { ok, fail } from '@/lib/api/envelope';
+import { ok, fail, logServerError } from '@/lib/api/envelope';
 import { composeControlTower, listPassportStrategies } from '@/lib/passport/compose';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +22,10 @@ export async function GET() {
     ]);
     return ok({ tower, strategies }, { meta: { asOf: tower.generated_at } });
   } catch (e) {
-    return fail('TOWER_COMPOSE_FAILED', (e as Error).message ?? 'no se pudo componer la torre', 500);
+    // NUNCA el mensaje del error al cliente: un ENOENT/parse error filtra rutas del
+    // filesystem al navegador (hallazgo CODEX P1). Se loguea sanitizado del lado
+    // servidor y se responde con un 500 genérico y estable.
+    logServerError('passport.tower', e);
+    return fail('TOWER_COMPOSE_FAILED', 'No se pudo componer la torre.', 500);
   }
 }

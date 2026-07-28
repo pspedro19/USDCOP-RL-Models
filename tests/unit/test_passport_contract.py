@@ -59,8 +59,19 @@ def test_unknown_is_a_first_class_retirement_signal():
     assert "unknown" in RETIREMENT_SIGNALS
 
 
-def test_three_clocks_including_the_one_without_producer():
-    assert HEALTH_CLOCKS == ("data", "model", "exec")
+def test_three_clocks_use_the_producers_vocabulary():
+    """F-07: el tercer reloj del §23 es `pnl` (datos/modelo/PnL), jamás `exec`."""
+    assert HEALTH_CLOCKS == ("data", "model", "pnl")
+
+
+def test_clock_names_match_the_producer_enum():
+    """Frontera consumidor↔productor: `control__system_health` es quien EMITE los
+    relojes (`src/monitoring/system_health_contract.py::Clock`). Si el Passport
+    nombra uno distinto, el reloj publicado se descarta en silencio — que es
+    exactamente lo que pasaba con `exec`. Este test lo hace imposible."""
+    from src.monitoring.system_health_contract import Clock
+
+    assert HEALTH_CLOCKS == tuple(c.value for c in Clock)
 
 
 def test_constitutional_constants():

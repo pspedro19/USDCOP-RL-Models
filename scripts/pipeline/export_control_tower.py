@@ -17,7 +17,19 @@ container:
                                        ``WITHDRAWAL-PROTOCOL`` files
 
 This script projects them — **verbatim, no recomputation of any statistic** — into
-``usdcop-trading-dashboard/public/data/control-tower/governance.json``.
+``data/control-tower/governance.json``.
+
+Why NOT ``public/`` (C-006 precedent, CODEX P0)
+-----------------------------------------------
+The projection carries **trials, DSR inputs and gate state: INTERNALS**. Anything under
+``usdcop-trading-dashboard/public/`` is served by the ``/data/**`` static path, which the
+edge middleware gates with *a session only* — so a ``free``/``subscriber`` could fetch it
+directly and bypass the ``research:read`` the Passport requires (``rbac.md`` §"nada
+monetizado anónimo" + §8 "subscribers ven OUTPUTS, no INTERNALS"). Same defect CODEX
+rejected in C-006 for the SHAP artifacts, same remedy: the artifact lives OUTSIDE
+``public/`` (like ``data/interpretability/``) and its only reader is the server-side
+composer behind ``/api/passport/**``. Override the location with
+``CONTROL_TOWER_DATA_DIR`` if the dashboard runs from another root.
 
 What it is NOT
 --------------
@@ -54,7 +66,9 @@ from src.contracts.strategy_schema import safe_json_dumps  # noqa: E402
 LEDGER = ROOT / "registries" / "ledger.jsonl"
 FAMILIES_DIR = ROOT / "registries" / "families"
 SPECS_ASSETS = ROOT / ".claude" / "specs" / "assets"
-OUT = ROOT / "usdcop-trading-dashboard" / "public" / "data" / "control-tower" / "governance.json"
+# FUERA de public/: la única vía de lectura es el composer server-side detrás de
+# /api/passport/** (research:read). Ver el docstring — precedente C-006.
+OUT = ROOT / "data" / "control-tower" / "governance.json"
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 

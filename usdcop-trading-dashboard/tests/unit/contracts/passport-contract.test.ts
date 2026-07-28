@@ -49,8 +49,11 @@ describe('vocabularies (mirror of src/contracts/passport.py)', () => {
   it('treats "unknown" as a first-class retirement signal', () => {
     expect(RETIREMENT_SIGNALS).toContain('unknown');
   });
-  it('declares the three clocks including the one with no producer', () => {
-    expect([...HEALTH_CLOCKS]).toEqual(['data', 'model', 'exec']);
+  // F-07: el tercer reloj del §23 se llama `pnl` (datos/modelo/PnL), NO `exec`.
+  // El productor real (`src/monitoring/system_health_contract.py::Clock`) emite
+  // `pnl`; mientras el consumidor dijo `exec`, el reloj publicado se perdía.
+  it('declares the three §23 clocks with the producer\'s vocabulary', () => {
+    expect([...HEALTH_CLOCKS]).toEqual(['data', 'model', 'pnl']);
   });
   it('pins the constitutional constants', () => {
     expect(MIN_TRADES_FOR_RATIOS).toBe(20);

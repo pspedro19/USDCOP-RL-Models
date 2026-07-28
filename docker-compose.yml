@@ -331,6 +331,7 @@ services:
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./outputs:/opt/airflow/outputs
+      - ./reports:/opt/airflow/reports
       - ./data:/opt/airflow/data
       - ./seeds:/opt/airflow/seeds   # rw: asset-pipeline + l0 backfill DAGs refresh seed parquets to host
       - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
@@ -428,6 +429,7 @@ services:
       - ./config:/opt/airflow/config
       - ./models:/opt/airflow/models
       - ./outputs:/opt/airflow/outputs
+      - ./reports:/opt/airflow/reports
       - ./data:/opt/airflow/data
       - ./seeds:/opt/airflow/seeds   # rw: asset-pipeline + l0 backfill DAGs refresh seed parquets to host
       - ./usdcop-trading-dashboard/public:/opt/airflow/usdcop-trading-dashboard/public:rw
@@ -705,7 +707,7 @@ services:
       SIGNALBRIDGE_BACKEND_URL: http://usdcop-signalbridge:8000
       # Guest demo login (POST /api/auth/guest) — must match signalbridge-api's
       # GUEST_BOOTSTRAP_* values (bootstrap_guest re-ensures the account+password).
-      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      GUEST_BOOTSTRAP_EMAIL: ${GUEST_BOOTSTRAP_EMAIL:-guest@demo.usdcop.ai}
       GUEST_BOOTSTRAP_PASSWORD: ${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       # Airflow REST (container-native deploy: Vote-2 approve → H5-L4b DAG trigger)
       AIRFLOW_API_URL: http://usdcop-airflow-webserver:8080
@@ -726,6 +728,10 @@ services:
       NEXTAUTH_URL: http://localhost:5000
       DEBUG_AUTH: "true"
       AUTH_BYPASS_ENABLED: "true"
+      # Control Tower governance projection — non-web-servable root (see the volume below).
+      # The default (`<cwd>/../data/control-tower`) resolves to `/data/...` in this image,
+      # whose cwd is /app; the explicit path is what makes the container find it.
+      CONTROL_TOWER_DATA_DIR: /app/data/control-tower
     volumes:
       # Serve pipeline/DAG-regenerated data LIVE (SSOT = host files) instead of the
       # copy baked into the image at build time. Without this, scheduled DAG
@@ -735,6 +741,11 @@ services:
       # manifest.json). A :ro mount silently 500s those writes (EROFS).
       - ./usdcop-trading-dashboard/public/data:/app/public/data:rw
       - ./usdcop-trading-dashboard/public/forecasting:/app/public/forecasting:ro
+      # Governance projection (Control Tower): INTERNALS (trials/DSR/gates). Mounted
+      # OUTSIDE the web root on purpose — under public/ the `/data/**` static path only
+      # requires a session, so a free/subscriber would bypass the `research:read` of
+      # /api/passport (rbac.md §8). Read-only: only the exporter writes it, from Airflow.
+      - ./data/control-tower:/app/data/control-tower:ro
     ports:
       - "5000:3000"
     networks:
@@ -1517,7 +1528,7 @@ services:
       # Shared demo account for "Explorar como invitado" (rol free, is_test=true).
       # bootstrap_guest() re-ensures it (and its password) on every startup; the
       # dashboard's POST /api/auth/guest logs in with these same credentials.
-      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.local}
+      - GUEST_BOOTSTRAP_EMAIL=${GUEST_BOOTSTRAP_EMAIL:-guest@demo.usdcop.ai}
       - GUEST_BOOTSTRAP_PASSWORD=${GUEST_BOOTSTRAP_PASSWORD:-Guest2026!}
       - GUEST_BOOTSTRAP_NAME=${GUEST_BOOTSTRAP_NAME:-Invitado}
     volumes:

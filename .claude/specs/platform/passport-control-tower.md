@@ -29,8 +29,17 @@ code_anchors:
 | API torre | `app/api/passport/tower/route.ts` |
 | API passport | `app/api/passport/[strategyId]/route.ts` |
 | Vista | `components/gm/views/PassportView.tsx` + `app/passport/page.tsx` |
-| Proyección de gobernanza | `scripts/pipeline/export_control_tower.py` → `public/data/control-tower/governance.json` |
+| Proyección de gobernanza | `scripts/pipeline/export_control_tower.py` → `data/control-tower/governance.json` (**fuera de `public/`**, ver abajo) |
 | RBAC | `/passport` y `/api/passport` ⇒ `research:read` en `rbac.contract.ts` |
+
+> **Por qué la proyección NO vive en `public/`** (hallazgo P0 de CODEX, precedente
+> C-006/`data/interpretability/`): lleva trials, insumos del DSR y estado de gates —
+> INTERNALS. Bajo `public/` la sirve la ruta estática `/data/**`, que el middleware
+> gatea **solo con sesión**: un `free`/`subscriber` la pedía directa y se saltaba el
+> `research:read` del Passport (`rbac.md` §"nada monetizado anónimo" y §8). Su único
+> lector es el compositor server-side detrás de `/api/passport/**`; ubicación
+> configurable con `CONTROL_TOWER_DATA_DIR` (el contenedor la monta `:ro` en
+> `/app/data/control-tower`). Tests: `tests/unit/api/passport-security.test.ts`.
 
 ## 2. La primitiva: `Sourced<T>`
 
@@ -123,7 +132,7 @@ La lista **legible por máquina** vive en `PENDING_INTERFACES`
 | BL-22 | `book.pnl_*`, `book.capital`, `timing_ratio`, `turnover`, atribución timing/beta/carry | `fact_position` / `fact_pnl` |
 | BL-23 | `performance.held_out` | backfill anti-supervivencia |
 | BL-24 | `lineage.lineage_graph`, `data.last_vintage_revision` | nodes/edges + camino dorado |
-| BL-25 | `data.clocks.exec`, semáforo de retiro **por estrategia** | `control__system_health` |
+| BL-25 | `data.clocks.pnl` (§23: datos/modelo/**PnL**), semáforo de retiro **por estrategia** | `control__system_health` |
 | BL-26/27 | vol objetivo/prevista, gross/net, CVaR, ρ, `m_forward`/`m_dd` | `portfolio_snapshot` + allocator |
 | BL-28 | `data.replay_parity` | diff semántico de bundles |
 

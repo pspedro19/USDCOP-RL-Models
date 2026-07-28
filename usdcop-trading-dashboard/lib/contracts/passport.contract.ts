@@ -51,8 +51,13 @@ export type BookState = (typeof BOOK_STATES)[number];
 export const RETIREMENT_SIGNALS = ['green', 'yellow', 'red', 'unknown'] as const;
 export type RetirementSignal = (typeof RETIREMENT_SIGNALS)[number];
 
-/** Three-clock monitoring (BL-25). `exec` has no producer yet. */
-export const HEALTH_CLOCKS = ['data', 'model', 'exec'] as const;
+/** Three-clock monitoring (FABRIC §23 / BL-25): datos · modelo · **PnL**.
+ *  The names are the PRODUCER's (`src/monitoring/system_health_contract.py::Clock`),
+ *  not ours: this consumer called the third one `exec` and therefore DISCARDED the
+ *  `pnl` clock whenever `system_health.json` published it (CODEX F-07). Mirror of
+ *  `src/contracts/passport.py::HEALTH_CLOCKS`; the Python test asserts equality with
+ *  the producer enum so the two can never drift again. */
+export const HEALTH_CLOCKS = ['data', 'model', 'pnl'] as const;
 export type HealthClock = (typeof HEALTH_CLOCKS)[number];
 
 /** Trial lineage (ADR-0022): FT = predictive, AT = economic. */
