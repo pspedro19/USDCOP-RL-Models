@@ -130,6 +130,7 @@ export const PAGE_ROUTES: readonly RouteRule[] = [
   { prefix: '/legal', permission: 'public' },       // terminos / riesgo / privacidad
   { prefix: '/hub', permission: 'authenticated' },
   { prefix: '/dashboard', permission: 'research:read' },   // Backtest (replay/versions/gates)
+  { prefix: '/replay', permission: 'research:read' },      // BL-34: alias de /dashboard (lectura; Vote-2 queda en /dashboard)
   { prefix: '/forecasting', permission: 'forecast:read' },
   { prefix: '/analysis', permission: 'analysis:read' },
   { prefix: '/production', permission: 'signals:read' },   // "Señales" for clients

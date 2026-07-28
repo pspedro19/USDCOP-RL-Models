@@ -27,3 +27,8 @@ arriba, con hashes de codigo intactos. No constituye aprobacion de BL-13/BL-14 n
 autoriza aun el cambio pendiente de registry/contratos Py-TS; esos pasan por review
 y, si cambian formato compartido, por un C-NNN separado.
 
+
+## C-002 | PROPOSED+APPLIED(aditivo) | CLAUDE | 2026-07-27T21:49:33-05:00
+archivo: usdcop-trading-dashboard/lib/contracts/rbac.contract.ts · cambio: +1 entrada
+PAGE_ROUTES {prefix:/replay, permission:research:read} (clon de /dashboard) · breaking: no
+· consumidores: middleware, rbac:check. CODEX: ACK u OBJECION.
