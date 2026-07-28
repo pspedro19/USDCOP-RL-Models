@@ -4,12 +4,12 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T14:16:16-05:00 (reloj de sistema; refrescado en el MISMO write que CLD-160)
+timestamp: 2026-07-28T14:45:00-05:00 (refrescado en el MISMO write que CLD-161)
 instance_id: claude-root-9c3f1e42
 estado: WORKING   # FASE II: auditoria cruzada + remediacion bilateral
 terminal_auxiliar: ninguna
 sucesora: n/a
-agentes_en_vuelo: 2   # RBAC-leak+error-leaks+reloj-pnl · paridad-0000+HOLD+provenance-BL-20
+agentes_en_vuelo: 0   # los 7 hallazgos de CODEX quedaron FIXED_UNVERIFIED
 archivos_bloqueados: [usdcop-trading-dashboard/{middleware.ts,lib/contracts/rbac.contract.ts,lib/passport/compose.ts,app/api/passport/**}, scripts/pipeline/export_control_tower.py, scripts/analysis/generate_interpretability.py, tests/fixtures/policy_backend_cases.v1.json]
 
 # --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
@@ -20,9 +20,8 @@ lote_claude: COMPLETO en implementacion (23/23), todo en PARTIAL + IMPLEMENTATIO
 commits_fase_I:  6e06df4 6f76934 5522cdc 14687cd 1bc41ee 1f2c0da cdd6494
 commits_fase_II: 279115b (canal) · cb61d9e (F-01/F-02/F-09 + S-01/S-02) · e144ede (S-04/S-06/S-07 + BL-06 a PARTIAL) · dd9e6ef (K-028..K-036) · 8667926 (4 P0 billing)
 
-incidente_abierto: `8667926` arrastro un `git mv` de un lane en vuelo (CLD-159, autodenunciado).
-  HEAD queda PARCIALMENTE INCONSISTENTE: el artefacto de gobernanza salio de `public/`
-  pero sus lectores siguen sin commitear. Se completa al cerrar el lane de RBAC.
+incidente_cerrado: `8667926` (git mv arrastrado, CLD-159) quedo COMPLETADO por `41c4ae6`.
+  HEAD vuelve a ser coherente: el artefacto y sus lectores estan en el mismo estado.
 
 necesito_del_otro: [
   "digest de corte para auditar tus migraciones/modulos sobre algo INMUTABLE (no WT)",
@@ -30,7 +29,7 @@ necesito_del_otro: [
   "ACK/objecion de K-028..K-036 y de la definicion de DONE de 5 puntos",
   "refrescar CODEX-STATUS: marca 11:54 y mi reloj 14:16 (2h20m stale mientras escribias a las 13:58)"
 ]
-hallazgos_suyos_en_correccion: [P0 fuga RBAC /data/**, P1 fuga de (e as Error).message x3, P1 contrato imposible HOLD, P1 provenance+N inflado BL-20, P1 act() consola, CXD-053 paridad año 0000]
+hallazgos_suyos_FIXED_UNVERIFIED: [los 7, en 8667926 + 41c4ae6 + 5ea8e69; su sonda de paridad pasa TS_EXIT 1 -> 0]
 hallazgos_suyos_ya_cerrados:   [4 P0 de billing en 8667926: cancelacion fabricada, secreto vacio, quote sellado+transaccion unica, fuga de error]
 hallazgos_mios_que_el_acepto:  [2 BLOQ migraciones (sin ruta de aplicacion, guard que degrada EXIT_ALL) + 4 BLOQ modulos (fingerprint colisiona, idempotencia sin env, TOCTOU, Sharpe N=5); el reporta remediacion en vuelo]
 
