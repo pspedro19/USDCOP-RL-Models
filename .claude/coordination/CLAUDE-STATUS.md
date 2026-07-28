@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T23:43:00-05:00
+timestamp: 2026-07-28T07:22:00-05:00
 terminal_auxiliar: claude-helper-417962fe (terminal real del operador, CLD-HLP-001; encargos via briefs/HELPER-*.md; los subagentes internos de la raiz NO tienen identidad de canal)
 sucesora: claude-helper-417962fe SOLO por briefs/CLD-HLP-002-sucesion.md (acta pre-firmada)
 instance_id: claude-root-a060f9b7
@@ -18,6 +18,7 @@ para_review: [BL-01r2@aa25516, BL-02-04r@8f1f8b9, BL-12r2@6bbfd6e, BL-13r2@3056e
 en_correccion_por_rechazo: [BL-05(helper), BL-09, BL-11, BL-34, BL-42(helper), BL-45(C-004-r3), BL-15-PARTIAL(bloqueo operador)]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-28T07:22:00-05:00 CICLO MATUTINO (modo degradado: codex-root stale desde 00:04, helper-terminal cerrada ~00:03 con el rebuild COMPLETADO — dashboard :5000 healthy 7h con build nueva). Autorizacion global del operador 00:02 ejecutada: spx500 sources TRACKEADOS (b808ab2 + candado K-026 git-ls-files, 19 passed — freeze real, cierra CXD-031) y BL-15-fase2 COMMITEADA (91fe7b6, 29 tests verdes). BL-09/11 remediados por agente (DSR x3 = 0.73/0.70/0.68 <0.95, 10 familias, 17/17) — integrable TRAS el commit BL-10 de Codex (su WIP sigue uncommitted en ledger/families; NO lo toco). BL-14-hashes/BL-12-r2/BL-01-r2/BL-39/kafka-r2/C-004-r3/C-005-vitest commiteados anoche. En vuelo: BL-34 y BL-02-04-r2 (reactivados). CODEX al despertar: prioriza veredicto C-004-r3, re-review BL-13 (provenance RESUELTA), commit de TU BL-10, ACK fusion v1.2.
 - 2026-07-27T23:38:00-05:00 review BL-07: **APROBADO** contra d0427d6 (reproduccion exacta 10 decimales, 5 checks adversariales OK, delta BASELINE=0; 2 observaciones no-bloqueantes en CLD-118). BL-12-r2 commiteado (6bbfd6e, sub-deflacion DSR corregida 109->111). En vuelo: C-004-r3, BL-14-hashes, BL-01-bypasses, kafka(verificador), BL-25.
 - 2026-07-27T23:28:00-05:00 (reloj real) RAIZ DE VUELTA: firmado ACK FINAL v2.2 (23:23:43); PROGRESS refrescado sobre base Codex 22:20; commits d7cfd67(retraccion muralla)+3056ef6(BL-13-r2, C-005 REMEDIADO-2)+2c5bd3c(BL-20-UI, C-006). Ayudante formalizada (terminal_auxiliar+sucesora). 7 helpers en vuelo: cross-review-BL-07, C-004-r3, BL-14-hashes, BL-12-conteo, BL-01-bypasses, kafka-honestidad+deploy, BL-25. CLD-116/117 a Codex.
 - 2026-07-27T23:14:00-05:00 TANDA DE REMEDIACION COMPLETA: BL-02/03/04 commiteados (8f1f8b9; check de universalidad era VACUO — cerrado con brace-balance; prob weekly proxy honesto; DA neutralizado x17; hardcode legacy muerto) + candado muralla adicional test_forecasting_muralla.py (8 passed, inyeccion->rojo verificada). Los 8 rechazos de Codex re-entregados con packs. Leases liberados. Self-red-team en vuelo. WIP del operador intacto (K-023: types.ts/News*/Hub*/Landing* excluidos del commit).
