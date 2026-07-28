@@ -1,0 +1,113 @@
+# POLICY SPEC (qlab_policy_v1) — BL-47 R6, primera migración
+# =========================================================
+# Estrategia REAL del repo: `spx500_daily_ma200_v1`, el baseline operativo simple
+# publicado junto a la gated por scripts/pipeline/publish_spx500_bundles.py.
+# Camino legacy (patrón de paridad):
+#   sleeve.dumb_position = (close > SMA200)  ->  np.roll(..., 1)  (ejecución next-open)
+# Aquí SOLO se declara la DECISIÓN (t); el lag de ejecución vive en el runner,
+# igual que en el legacy (ERRATUM 2026-07-21: shift exactamente una vez).
+#
+# 0 trials: misma ventana (200), mismo operador (>), misma exposición (1/0).
+# Cualquier cambio de umbral/ventana/orden = MODELADO = nueva versión + trial.
+id: spx500_daily_ma200_v1
+asset: spx500
+family: trend
+research_cluster: trend
+surface: action
+version: 1.0.0
+
+engine:
+  type: rule_based
+  retrain: never
+  implementation:
+    mode: declarative
+    schema: qlab_policy_v1
+
+inputs:
+  # El set del activo (BL-39, catálogo 1.1.0) ya declara "MA200 solo close":
+  # esta política consume el MISMO snapshot diario, subconjunto {close}, y la
+  # media se registra como feature derivada del mismo código congelado.
+  feature_set_id: spx500_regime_gated_v1_action_v1
+  resample_policy_id: spx500_daily_official_v1
+  required_features: [close, ma_200]
+  optional_features: []
+  decision_point: session_close
+  execution_ref: next_open
+  # 200 sesiones de calentamiento: sin MA200 no hay snapshot => no hay decisión.
+  # El legacy expresaba lo mismo con min_periods=200 -> NaN -> comparación False
+  # -> exposición 0. Misma exposición, sin inventar una decisión.
+  warmup_bars: 200
+
+policy:
+  params:
+    ma_window: 200
+    exposure_when_on: 1.0
+    exposure_when_off: 0.0
+  resolution:
+    mode: first_match
+    default_target_exposure: 0.0
+    default_direction: FLAT
+    default_reason_code: CLOSE_BELOW_MA200
+  # Resolución de conflictos: prioridad descendente, first_match. Con una sola
+  # regla + default explícito no hay ambigüedad posible (invariante 9).
+  conflict_resolution: priority_desc_first_match
+  missing_input_policy: FAIL_CLOSED
+  stale_input_policy: FLAT
+  rules:
+    - id: close_above_ma200
+      label: Cierre sobre la media de 200 sesiones
+      priority: 100
+      when:
+        operator: greater_than
+        left: feature.close
+        right: feature.ma_200
+      output:
+        direction: LONG
+        target_exposure: 1.0
+        reason_code: CLOSE_ABOVE_MA200
+
+governance:
+  data_cutoff: null            # baseline sin entrenamiento: no hay cutoff de ajuste
+  frozen_at: '2026-07-28'
+  ssot_manifest: config/strategy_manifests/spx500.yaml
+  manifest_code_hash_sha256_16: ea76413e60621521
+  feature_set_hash: null       # lo publica el catálogo de features (BL-39)
+  policy_hash: sha256:c00e63c676f2c96e0f32972f4b6c3d9f65d34cf4bbef2135774802ce41864d19
+  trials_charged: 0
+  trials_note: >-
+    Migración de representación (publisher -> motor de políticas). No cambia
+    ventana, umbral, salida ni sizing => 0 trials (§10 "no cobra trial:
+    reejecutar una política congelada").
+
+migration:
+  status: PARITY_PENDING
+  legacy_producer: scripts/pipeline/publish_spx500_bundles.py (arm MA200_ID)
+  legacy_reference: scripts/analysis/profitability_adapters.py::spx500 (dumb_position)
+  parity_harness: scripts/validation/check_policy_parity.py --policy spx500_daily_ma200_v1
+  parity_criterion: >-
+    Igualdad EXACTA de la serie de exposición en fecha de decisión (float64,
+    sin tolerancia) sobre toda la ventana del snapshot. No se apaga el camino
+    viejo hasta ≥2 semanas de paridad verde (calendario BL-28/31).
+  rollback: >-
+    Revertir a publish_spx500_bundles.py; los bundles son inmutables por
+    (version, año), así que un rollback no reescribe historia publicada.
+
+judge:
+  anchor: forward
+  criterion: >-
+    Es el baseline tonto del track SPX. Su papel es ser batido, no promoverse:
+    el re-freeze v2 documenta que la gated PIERDE contra él (Calmar 0.2115 vs
+    0.1439). Sin claim de alfa.
+
+capabilities: [backtest, signal, verify]
+
+explainability:
+  trace_schema: rule_trace_v1
+  reason_codes: [CLOSE_ABOVE_MA200, CLOSE_BELOW_MA200]
+
+presentation:
+  engine_label: Reglas MA200
+  description: Exposición 1x cuando el cierre supera la media de 200 sesiones
+  components:
+    - {key: close, label: Cierre, format: price}
+    - {key: ma_200, label: Media móvil 200, format: price}

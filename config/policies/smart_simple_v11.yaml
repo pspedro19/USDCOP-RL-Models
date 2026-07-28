@@ -1,0 +1,111 @@
+# POLICY SPEC — BL-47 R8 (USD/COP) · ESTADO: SPEC_ONLY (documento de record)
+# ==========================================================================
+# v11 está FROZEN. Este archivo declara su CLASIFICACIÓN correcta —
+# `engine.type: composite`, no ML puro (regla strategy-engines invariante 3) —
+# y NO ejecuta nada: `migration.status: SPEC_ONLY` hace que build_policy()
+# falle cerrado. Migrar COP es la ÚLTIMA etapa del strangler (R8) y exige
+# decisiones del operador listadas abajo.
+#
+# Por qué no se migró en esta tanda: reproducir la política completa (predictor
+# Ridge/BR + gate Hurst + tiers de confianza + sizing + TP/HS efectivo + salida
+# temporal) en `Policy.evaluate` obliga a fijar el ORDEN de aplicación y la
+# semántica de estado entre barras. Cualquier elección ahí puede cambiar una
+# decisión => es MODELADO, no migración (guardarraíl BL-47). Se para y se
+# reporta, en vez de resolverlo por cuenta propia.
+id: smart_simple_v11
+asset: usdcop
+family: usdcop_direction
+research_cluster: composite
+surface: action
+version: 1.1.0
+
+engine:
+  # NO es `ml`: el predictor es UN componente de una política compuesta
+  # (invariante 3). La unidad evaluable es la política, no el Ridge/BR.
+  type: composite
+  retrain: weekly            # el predictor SÍ reentrena (L3 domingo)
+  implementation:
+    mode: coded_policy
+    # Módulo objetivo cuando R8 se ejecute (aún no existe: SPEC_ONLY).
+    module: src.strategies.policies.usdcop:SmartSimpleV11Policy
+
+inputs:
+  feature_set_id: usdcop_smart_simple_v11_recipe25
+  resample_policy_id: usdcop_daily_official_v1
+  # NOMBRES SIN VERIFICAR contra src/forecasting (ver required_features_verified):
+  # son los COMPONENTES DE DECISIÓN que la política compone, no las 25 features
+  # del predictor (esas viven en el feature_set).
+  required_features: [predictor_return_5d, hurst_exponent, realized_vol_20d]
+  optional_features: []
+  decision_point: weekly_open_monday
+  execution_ref: intraweek_tp_hs
+  warmup_bars: 0
+
+policy:
+  params:
+    ssot: config/execution/smart_simple_v1.yaml   # los números viven ahí, no aquí
+    components_order: [predictor, regime_gate, confidence_tier, sizing, tp_hs, time_exit]
+  resolution:
+    mode: first_match
+    default_target_exposure: 0.0
+    default_direction: FLAT
+    default_reason_code: REGIME_GATE_BLOCKED
+  conflict_resolution: component_pipeline_declared_order
+  missing_input_policy: FAIL_CLOSED
+  stale_input_policy: FAIL_CLOSED      # macro stale bloquea señal (feature_set §42)
+
+governance:
+  data_cutoff: see config/strategy_manifests/usdcop.yaml
+  frozen_at: v11 FROZEN (ver manifiesto usdcop.yaml)
+  ssot_manifest: config/strategy_manifests/usdcop.yaml
+  feature_set_hash: null
+  policy_hash: sha256:4e0cbf83aec29983e2b63fd5f5d4a2433bad3b0576e34da0aee603b28b2a0d53
+  trials_charged: 0
+  trials_note: >-
+    Reclasificar la cáscara a composite no toca fórmula ni señal: 0 trials.
+    El bit-check del manifiesto es obligatorio ANTES de cualquier cutover.
+  required_features_verified: false
+
+migration:
+  status: SPEC_ONLY
+  legacy_producer: scripts/pipeline/train_and_export_smart_simple.py + DAGs forecast_h5_*
+  parity_harness: pendiente (R8)
+  parity_criterion: >-
+    Bit-check: señales/trades/PnL idénticos al bundle v11 publicado, en las dos
+    ventanas (2025 backtest + 2026 forward), ANTES de tocar el camino viejo.
+  rollback: no aplica todavía (nada migrado).
+
+open_decisions:
+  - id: R8-D1
+    question: >-
+      ¿La política compuesta consume el score del predictor como FEATURE del
+      snapshot (predictor como productor de features) o invoca el modelo dentro
+      de evaluate()? Lo primero mantiene evaluate() puro y auditable; lo segundo
+      replica el acoplamiento actual.
+  - id: R8-D2
+    question: >-
+      TP/HS efectivo y salida temporal son ESTADO entre barras (§15.2). ¿El
+      estado vive en PolicyContext.state (contrato ya lo soporta) o sigue en el
+      ejecutor L7? De ello depende si el motor decide salidas o solo entradas.
+  - id: R8-D3
+    question: >-
+      v12/v14 comparten predictor y cambian política de riesgo. ¿Tres specs
+      hermanas con el mismo feature_set (A/B vivo intacto) o una spec
+      parametrizada? Lo segundo arriesga que un parámetro cambie las tres.
+  - id: R8-D4
+    question: >-
+      Nombres reales de los componentes de decisión (required_features de arriba
+      están SIN verificar). Verificarlos exige leer/instrumentar el camino de
+      producción, territorio de la raíz.
+
+capabilities: [backtest, gate, signal, paper, verify]
+
+explainability:
+  trace_schema: rule_trace_v1
+  panel: CompositeDecisionPanel      # predictor + gates + sizing (§9)
+  reason_codes: [REGIME_GATE_BLOCKED, REGIME_GATE_OPEN]
+
+presentation:
+  engine_label: Composite (predictor + gate + sizing)
+  description: Predictor Ridge/BR modulado por gate de régimen y mecánica TP/HS
+  components: []

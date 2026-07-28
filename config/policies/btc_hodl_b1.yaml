@@ -1,0 +1,92 @@
+# POLICY SPEC — BL-47 R7 (BTC/USDT)
+# =================================
+# Estrategia REAL del repo: strategy_id `btc_hodl_b1` (BL-47 la llama
+# "btcusdt_hodl_b1"; el id publicado manda). Manifiesto congelado:
+# config/strategy_manifests/btcusdt.yaml, code_hash 3b9b3c6dd1b9a70d.
+# Camino legacy: scripts/pipeline/run_btc_pipeline.py ->
+# src/btc_strategy/strategies.py::build_positions(feat, intent_hodl).
+#
+# coded_policy (§3.2 A): vol targeting = aritmética; el DSL no la expresa.
+# Constitución §3: el baseline ES la estrategia (campeona OOS del activo).
+id: btc_hodl_b1
+asset: btcusdt
+family: beta_exposure
+research_cluster: beta
+surface: action
+version: 1.0.0
+
+engine:
+  type: rule_based
+  retrain: never
+  implementation:
+    mode: coded_policy
+    module: src.strategies.policies.btc:BtcHodlB1Policy
+
+inputs:
+  feature_set_id: btcusdt_hodl_b1_action_v1
+  resample_policy_id: btcusdt_daily_utc_v1
+  # HALLAZGO (verificado sobre el seed real): build_daily_features del track BTC
+  # NO emite `regime_risk_mult`, así que `vol_target_size` cae siempre en su
+  # default `df.get(..., 1.0)` y el multiplicador de régimen de
+  # src/btc_strategy/indicators.py (REGIME_RISK_MULT 0.8/0.5/0.35) NUNCA se
+  # aplica en el pipeline publicado. La política reproduce eso literalmente:
+  # feature OPCIONAL con default 1.0. Si el operador quiere que el régimen
+  # module la exposición, eso es MODELADO (nueva versión + trial), no migración.
+  required_features: [realized_vol_20]
+  optional_features: [regime_risk_mult]
+  decision_point: bar_close_utc
+  execution_ref: next_bar_shift1
+  warmup_bars: 20
+
+policy:
+  params:
+    intent: 1.0            # HODL: intención constante, no condicional
+    target_vol: 0.30
+    vol_floor: 0.30
+    max_exposure: 1.0      # spot-only (ADR-0008): jamás apalancado
+    min_exposure: 0.0
+  resolution:
+    mode: first_match
+    default_target_exposure: 0.0
+    default_direction: FLAT
+    default_reason_code: SIZE_ZERO
+  conflict_resolution: single_rule_no_conflict
+  missing_input_policy: FAIL_CLOSED
+  stale_input_policy: FLAT
+
+governance:
+  data_cutoff: null
+  frozen_at: '2026-07-28'
+  ssot_manifest: config/strategy_manifests/btcusdt.yaml
+  manifest_code_hash_sha256_16: 3b9b3c6dd1b9a70d
+  feature_set_hash: null
+  policy_hash: sha256:c7ea0277c2b120b088a999624ecbbe3b4cfb9c94428e67fbc66325136e8b8a06
+  trials_charged: 0
+  trials_note: Migración de representación; misma aritmética, 0 trials.
+
+migration:
+  status: PARITY_PENDING
+  legacy_producer: scripts/pipeline/run_btc_pipeline.py (build_positions + intent_hodl)
+  parity_harness: scripts/validation/check_policy_parity.py --policy btc_hodl_b1
+  parity_criterion: Igualdad EXACTA (float64) de la exposición en fecha de decisión.
+  rollback: run_btc_pipeline.py sigue siendo el productor hasta el cutover.
+
+judge:
+  anchor: forward
+  criterion: >-
+    Campeona por OOS (+4.70% vs -1.37% de toda variante). Es beta vol-targeted,
+    no alfa: el reloj declarado es 365 y jamás se mezcla con el 252 de cartera.
+
+capabilities: [backtest, signal, paper, verify]
+
+explainability:
+  trace_schema: rule_trace_v1
+  reason_codes: [HODL_ALWAYS_IN, VOL_TARGET_SIZED, SIZE_ZERO]
+
+presentation:
+  engine_label: HODL vol-targeted
+  description: Siempre en mercado; el tamaño lo fija la vol realizada y el régimen
+  components:
+    - {key: realized_vol_20, label: Vol realizada 20d, format: percent}
+    - {key: regime_risk_mult, label: Multiplicador de régimen, format: multiple}
+    - {key: vol_target_size, label: Exposición objetivo, format: multiple}

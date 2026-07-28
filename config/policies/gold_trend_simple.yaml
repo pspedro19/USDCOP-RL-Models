@@ -1,0 +1,128 @@
+# POLICY SPEC — BL-47 R7 (XAU/USD)
+# ================================
+# Estrategia REAL del repo: strategy_id `gold_trend_simple` (BL-47 la llama
+# "xauusd_trend_simple_v1"; el id publicado manda). Manifiesto congelado:
+# config/strategy_manifests/xauusd.yaml, code_hash bc494207ee2916d8.
+#
+# Modo coded_policy (§3.2 A) y NO declarativo: el sizing es aritmética
+# (target_vol / rv20, clips), que el DSL whitelist deliberadamente no expresa.
+#
+# *** DIVERGENCIA SEMÁNTICA DETECTADA — DECISIÓN PENDIENTE DEL OPERADOR ***
+# Hay DOS productores del mismo strategy_id y NO calculan la misma exposición:
+#   (A) scripts/analysis/gold_trend_simple.py::simulate  (usado por
+#       scripts/pipeline/publish_gold_trend_simple.py, el bundle publicado):
+#       size = clip(0.10 / clip(rv20, 0.06), upper=1.5)          SIN régimen
+#   (B) src/gold_rl/strategies.py::build_positions(direction_trend_simple)
+#       (registrado en STRATEGIES y ejecutado por run_gold_pipeline.py / el DAG
+#       semanal): size = clip(0.10 / clip(rv20,0.06) * regime_risk_mult, 0, 1.5)
+#       con REGIME_RISK_MULT = {trend:1.0, compression:1.0, stretched:0.6, event:0.35}
+# El comentario de (B) afirma ser "bit-idéntico al bundle publicado"; con
+# multiplicadores 0.6/0.35 eso NO puede ser cierto. Cuál de los dos ES la
+# estrategia es MODELADO, no migración: esta spec fija (A) —el camino que
+# produjo el bundle publicado, patrón de paridad de BL-47— y deja la
+# resolución al operador. NO se ha tocado ninguno de los dos caminos.
+id: gold_trend_simple
+asset: xauusd
+family: trend
+research_cluster: trend
+surface: action
+version: 1.0.0
+
+engine:
+  type: rule_based
+  retrain: never
+  implementation:
+    mode: coded_policy
+    module: src.strategies.policies.gold:GoldTrendSimplePolicy
+
+inputs:
+  feature_set_id: xauusd_gold_trend_simple_action_v1
+  resample_policy_id: gold_daily_official_v1
+  required_features: [close, sma_63, sma_126, sma_252, realized_vol_20]
+  optional_features: [regime_risk_mult]     # leído solo si apply_regime_multiplier
+  decision_point: session_close
+  execution_ref: next_close_shift1
+  warmup_bars: 252
+
+policy:
+  params:
+    vote_windows: [63, 126, 252]
+    min_votes: 2
+    target_vol: 0.10
+    vol_floor: 0.06
+    size_cap: 1.5
+    # false = camino (A), el del bundle publicado. Cambiar este flag es un
+    # cambio ECONÓMICO (nueva versión + trial), nunca un ajuste de migración.
+    apply_regime_multiplier: false
+  resolution:
+    mode: first_match
+    default_target_exposure: 0.0
+    default_direction: FLAT
+    default_reason_code: SMA_VOTES_LT_MIN
+  conflict_resolution: priority_desc_first_match
+  missing_input_policy: FAIL_CLOSED
+  stale_input_policy: FLAT
+
+governance:
+  data_cutoff: null
+  frozen_at: '2026-07-28'
+  ssot_manifest: config/strategy_manifests/xauusd.yaml
+  manifest_code_hash_sha256_16: bc494207ee2916d8
+  feature_set_hash: null
+  policy_hash: sha256:fb3a70749788959fe0a22b5e8994e25d1792a10e12b5349dc37bce4327169d6a
+  trials_charged: 0
+  trials_note: >-
+    Migración de representación (0 trials). El flag apply_regime_multiplier
+    NO se usa para elegir la mejor variante: se declara para exhibir una
+    divergencia preexistente entre dos productores.
+
+# *** DIVERGENCIA 2 (WARMUP) — DECISIÓN PENDIENTE DEL OPERADOR ***
+# Medida, no supuesta (tests/unit/test_policy_specs.py + check_policy_parity):
+# entre la barra ~126 y la 252 el camino congelado cuenta una SMA aún NaN como
+# "voto en contra" (NaN > x == False) y, con 2 votos de las ventanas cortas,
+# ENTRA EN MERCADO. Una política con missing_input_policy: FAIL_CLOSED no puede
+# decidir sin sus 5 features => exposición 0 en esa franja. Fuera de la ventana
+# de calentamiento (barra >= 252) la paridad es EXACTA (float64, 0 diferencias).
+# Resolver esto es modelado, no migración. Opciones para el operador:
+#   (a) warmup_bars: 252 (esta spec): la política no opera hasta tener sus 3
+#       medias. Cambia la exposición SOLO en el arranque histórico de la serie.
+#   (b) declarar el voto de una SMA ausente como 0 explícito (reproduce el
+#       legacy bit a bit, pero convierte "dato ausente" en "señal negativa").
+# Se deja (a) declarado; NO se ha tocado el código congelado.
+warmup_divergence:
+  window: bars < 252 (calentamiento SMA252)
+  legacy_behaviour: NaN cuenta como voto negativo; puede entrar con 2 votos cortos
+  policy_behaviour: sin snapshot completo no hay decisión (FAIL_CLOSED) => 0
+  parity_outside_window: EXACTA
+
+migration:
+  status: PARITY_PENDING
+  parity_scope: bars >= inputs.warmup_bars (252); ver warmup_divergence
+  legacy_producer: scripts/pipeline/publish_gold_trend_simple.py (simulate, camino A)
+  legacy_alternative: scripts/pipeline/run_gold_pipeline.py (build_positions, camino B)
+  parity_harness: scripts/validation/check_policy_parity.py --policy gold_trend_simple
+  parity_criterion: >-
+    Igualdad EXACTA (float64) de la exposición en fecha de decisión contra el
+    camino A sobre toda la ventana del seed. La comparación contra B se
+    reporta como divergencia medida, no como error de la política.
+  rollback: publish_gold_trend_simple.py sigue siendo el productor hasta el cutover.
+
+judge:
+  anchor: forward
+  criterion: >-
+    DSR 0.861 < 0.95 => experimental, sin claim de alfa. El histórico
+    2004-2026 motivó la variante, así que no puede juzgarla (constitución §1).
+
+capabilities: [backtest, signal, paper, verify]
+
+explainability:
+  trace_schema: rule_trace_v1
+  reason_codes: [CLOSE_ABOVE_SMA, CLOSE_BELOW_SMA, SMA_VOTES_GE_MIN, SMA_VOTES_LT_MIN]
+
+presentation:
+  engine_label: Votos SMA + vol targeting
+  description: Dentro cuando 2 de 3 medias (63/126/252) están por debajo del cierre
+  components:
+    - {key: sma_votes, label: Votos SMA, format: integer}
+    - {key: realized_vol_20, label: Vol realizada 20d, format: percent}
+    - {key: vol_target_size, label: Tamaño vol-target, format: multiple}
