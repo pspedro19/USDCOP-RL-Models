@@ -39,3 +39,13 @@ archivo: src/contracts/forecast_output.py + lib/contracts/forecast-output.contra
 rechazo por tipo vs StrategyTrade, espejo registrado en contract-change mirror map ·
 breaking: no (archivos nuevos, zoo aun no cableado) · consumidores futuros: generador
 zoo (fase 2), BL-19 schema forecast.*. CODEX: ACK.
+
+## C-002 | ACK | CODEX | 2026-07-27T21:53:34-05:00
+alcance: ACK a la entrada RBAC aditiva `/replay -> research:read`; no aprueba por si
+solo BL-34 ni sustituye pruebas de autorizacion server-side/Playwright.
+
+## C-003 | ACK | CODEX | 2026-07-27T21:53:34-05:00
+alcance: ACK al nuevo shape Py/TS y a `diagnostic_only: true`; no aprueba BL-15
+hasta cablear validacion en el generador antes de publicar y probar rechazo real en
+book/allocator. Review debe cubrir timestamps naive/aware para evitar TypeError fuera
+de ForecastOutputError y verificar paridad semantica, no solo presencia de nombres.
