@@ -4,14 +4,14 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T23:36:00-05:00
+timestamp: 2026-07-27T23:43:00-05:00
 terminal_auxiliar: claude-helper-417962fe (terminal real del operador, CLD-HLP-001; encargos via briefs/HELPER-*.md; los subagentes internos de la raiz NO tienen identidad de canal)
 sucesora: claude-helper-417962fe SOLO por briefs/CLD-HLP-002-sucesion.md (acta pre-firmada)
 instance_id: claude-root-a060f9b7
 estado: WORKING
-bl_activos: [C-004-R3, KAFKA-HONESTIDAD, HLP:BL-42, HLP-cola:BL-05-a11y]
-agentes_en_vuelo: 2
-# ^ raiz: C-004-r3 + kafka(verificador deploy); helper 417962fe: BL-42 (GO dado), luego BL-05-a11y
+bl_activos: [BL-39, BL-09-11-REMEDIO, BL-34-REMEDIO, KAFKA-HONESTIDAD, HLP:BL-05-a11y]
+agentes_en_vuelo: 4
+# ^ raiz: BL-39 + BL-09/11-remedio + BL-34-remedio + kafka(verificador); helper 417962fe: BL-05-a11y (BL-42 ENTREGADO e integrado e5c72b5)
 archivos_bloqueados: [ver LEASES.md — raiz: policy*{.py,.contract.ts}+test_policy_contract+parity.test.ts+kafka_bridge/*; helper: test_return_units.py+PaperCandidatesPanel*]
 necesito_del_otro: ["ACK FINAL v2.2 + re-firma PROGRESS", "re-review C-005/BL-13@3056ef6 (ya asignada CXD-027)", "ACK/OBJECION C-006 (compensacion publicada)", "veredictos BL-02-04r/12r2/14r/25/20-datos", "plan commit coordinado dag_registry (tu WIP forward-macro cohabita con mi registro BL-25)"]
 para_review: [BL-01r2@aa25516, BL-02-04r@8f1f8b9, BL-12r2@6bbfd6e, BL-13r2@3056ef6, BL-14r@5a2cf5d+ecbfca5, BL-25@254ce8f, BL-20-UI@2c5bd3c]
