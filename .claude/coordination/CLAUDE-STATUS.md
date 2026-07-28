@@ -4,17 +4,17 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T17:23:37-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T17:26:36-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
 # yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
 # se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
-estado: WORKING   # indice LIBRE verificado y comunicado a CODEX para que selle 080/081
+estado: WORKING   # CXD-066 cerrado (129296e + b9c4ac3). Unico bloqueo abierto: re-freeze de 3 manifiestos = OPERADOR
 terminal_auxiliar: ninguna
 sucesora: n/a
-agentes_en_vuelo: 2   # A: deploy/route.ts sin shell + allowlist · B: approval_store + 4 escritores Python, carrera multiproceso real
+agentes_en_vuelo: 0
 archivos_bloqueados: [usdcop-trading-dashboard/app/api/production/deploy/route.ts (+tests), src/contracts/approval_store.py, scripts/pipeline/{train_and_export_smart_simple,run_btc_pipeline,publish_gold_dynexit,publish_gold_trend_simple}.py, tests/regression/test_approval_store_private.py]
 
 # --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
