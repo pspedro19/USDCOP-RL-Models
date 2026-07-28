@@ -1,0 +1,48 @@
+# Familia FORECAST por activo (FABRIC §9.5, ADR-0022) — backfill BL-10 con legacy_estimate.
+# El bloque FT más grande del ledger: la dirección USD/COP, cerrada por escrito.
+family_id: usdcop_direction
+kind: forecast
+cluster_id: ml_meta
+declared_at: "2026-07-27"
+declared_by: claude-backfill-bl11   # operador Pedro, protocolo .claude/coordination
+question: "¿Algún modelo/feature-set supervisado predice la dirección de USD/COP con lift sobre el baseline?"
+bar: >-
+  Lift de DA sobre majority_class/persistencia, walk-forward purgado, p_adj (BH);
+  sin lift no se paga ningún trial económico aguas abajo (la muralla FT->AT cobra
+  su propio AT — ADR-0022).
+label: legacy_estimate
+
+cells:
+  - asset: usdcop
+    variant: zoo_y_previos_exp_dir_001
+    trial_id_range: {from: FT-0001, to: FT-0027}
+    n_trials: 27
+    status: EVALUATED
+    result: no_lift
+    note: >-
+      legacy_estimate — 27 trials previos de EXP-DIR-001 (mejor celda modelo x horizonte
+      p_adj=1.0). El zoo 9x7~=63 celdas queda SUBSUMIDO en esta estimación conservadora:
+      el n_trials_total del activo (109) no admite 63 sin romper la suma exacta, y BL-10
+      prohíbe cambiar el conteo. Estimación honesta por escrito (FABRIC §10.2).
+  - asset: usdcop
+    variant: forward_flow
+    trial_id_range: {from: FT-0028, to: FT-0041}
+    n_trials: 14
+    status: EVALUATED
+    result: no_lift
+    note: "14 contrastes forward-flow (búsqueda reabierta por información nueva; sin lift)."
+  - asset: usdcop
+    variant: intraday_latam_lead
+    trial_id_range: {from: FT-0042, to: FT-0048}
+    n_trials: 7
+    status: EVALUATED
+    result: NO_RECHAZA
+    note: "H-INTRADAY-LATAM-01 (2026-07-22): NO_RECHAZA; direccionales 41->48, globales 102->109."
+
+trials_charged: 48   # == count(trial_ids cubiertos) == líneas del ledger con family=usdcop_direction
+closed: true
+closure_note: >-
+  Dirección COP cerrada (48 FT): mejor celda p_adj=1.0 sobre el programa completo;
+  XLEAD delta=0.0000 (McNemar p=1.0); intraday-LatAm NO_RECHAZA. Reabrirla = nueva celda
+  pre-registrada AQUÍ antes de mirar (p.ej. el selectivo viernes-origen ya anunciado en
+  EXP-DIR-001: 48->49 direccionales al registrarse).

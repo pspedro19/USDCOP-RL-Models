@@ -1,0 +1,95 @@
+# BL-11 PILOTO — familia transversal ACTION (FABRIC §9.4, ADR-0022)
+# La misma mecánica (gate de tendencia/régimen vs baseline) probada en 3 activos = UNA
+# familia, N celdas, N trials — nunca tres registries "independientes" que subestiman la
+# deflación cruzada. Backfill 2026-07-27 con etiqueta legacy_estimate (BL-10): los conteos
+# gruesos NO cambian el n_trials_total de ningún activo (verificado por
+# scripts/validation/check_trial_ledger.py).
+family_id: trend_regime
+kind: action
+cluster_id: trend
+declared_at: "2026-07-27"
+declared_by: claude-backfill-bl11   # operador Pedro, protocolo .claude/coordination
+question: "¿Un gate de tendencia/régimen mejora el Calmar neto contra el baseline tonto del activo?"
+bar: >-
+  Batir al baseline tonto del activo y a B1' neto de costos (stress x1/x2/x3);
+  cualquier claim de edge exige DSR_family > 0.95 (quant-constitution §2);
+  N<20 trades => solo conteo y PnL. Cerrar la familia por escrito es un estado válido.
+screening_cutoff: null   # legacy: cada celda conserva su cutoff propio en el ledger
+label: legacy_estimate
+
+cells:
+  # ---- XAU/USD (75 trials: 74 legacy_estimate + 1 documentado) ----
+  - asset: xauusd
+    variant: legacy_trials_program
+    trial_id_range: {from: AT-0061, to: AT-0134}
+    n_trials: 74
+    status: EVALUATED
+    result: fail
+    note: >-
+      legacy_estimate — TRIALS_PROGRAM=74 heredado sin procedencia documentada
+      (publish_gold_dynexit.py:48); se conserva por ser el más conservador (74 > 21 bundles
+      publicados). gold_dynamic_exit DSR 0.0077 con N=74: el +55% se explica por selección.
+      Las celdas _s05/_s07 son sensibilidades publicadas como estrategias separadas.
+  - asset: xauusd
+    variant: gold_trend_simple_h_simp_gold_01
+    trial_id: AT-0135
+    status: FROZEN
+    result: pending_forward
+    note: "H-SIMP-GOLD-01: ¿el trailing exit resta? Juez = forward; 2004-2026 marcado NO-evidencia."
+
+  # ---- BTC/USDT (3 trials documentados) ----
+  - asset: btcusdt
+    variant: btc_trend_funding_s4_h_pos_01
+    trial_id: AT-0165
+    status: EVALUATED
+    result: fail
+    note: >-
+      H-POS-01 (OLA 5, 2026-07-06): S4 = B2 trend x funding-brake pasa DSR (N=4) pero NO
+      cumple el gate pre-registrado (OOS-2025 positivo y batir B2) => no promovida.
+  - asset: btcusdt
+    variant: s3_vs_b2_h_eng_01
+    trial_id: AT-0166
+    status: DECLARED
+    result: null
+    note: "PENDIENTE en el registry del activo; ya cargado en su n_trials_total => lleva trial_id."
+  - asset: btcusdt
+    variant: s3_vs_b1_h_eng_02
+    trial_id: AT-0167
+    status: DECLARED
+    result: null
+    note: "PENDIENTE en el registry del activo; ya cargado en su n_trials_total => lleva trial_id."
+
+  # ---- SPX500 (16 trials: 14 legacy_estimate + 2 documentados) ----
+  - asset: spx500
+    variant: config_family_grid_12_y_b1_b2_s3
+    trial_id_range: {from: AT-0169, to: AT-0182}
+    n_trials: 14
+    status: EVALUATED
+    result: fail
+    note: >-
+      legacy_estimate — 12 celdas vol_target {0.08,0.10,0.12,0.15} x MA {150,200,250} +
+      variantes B1/B2/S3, contadas 14 (solape declarado en el registry). Re-medición v2
+      sobre el índice OFICIAL (31 años, 3 osos): gated Calmar 0.1439 PIERDE vs ma200 0.2115
+      y vs B1 0.1635 — "el baseline ES la estrategia" (S3 pre-firmado); DSR 0.7831;
+      research_only.
+  - asset: spx500
+    variant: gate_vs_simple_h_simp_spx_01
+    trial_id: AT-0183
+    status: EVALUATED
+    result: gate_beats_ungated
+    note: >-
+      H-SIMP-SPX-01: el gate aporta vs la variante sin gate (Calmar 0.644 vs 0.577, ventana
+      SPY 2020-2026); ninguno bate al baseline tonto. Incluye la retractación del adaptador
+      (regime.py nunca invocado), ya corregida.
+  - asset: spx500
+    variant: vs_ma200_h_simp_spx_02
+    trial_id: AT-0184
+    status: FROZEN
+    result: pending_forward
+    note: >-
+      H-SIMP-SPX-02: ¿algo bate al MA200 pelado? Viva; juez = forward (2020-2026 ya
+      observado). ERRATUM aplicado: ma200_always_on 1.641 -> 0.5393 (lag + costos propios).
+
+trials_charged: 94   # == count(trial_ids cubiertos) == líneas del ledger con family=trend_regime
+closed: false
+closure_note: null
