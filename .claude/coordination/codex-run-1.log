@@ -15722,3 +15722,146 @@ index cd6c21503b2acb3cc2eeb19d9c50013957dcb3ae..3d7e60d5fe13055eb27e944879806615
  - 2026-07-27T21:21:01-05:00 CICLO 1 inicio; sin ACKs ni reviews pendientes; heartbeat Claude stale >60 min; arranca inspeccion independiente BL-07/41/43.
 
 collab: Wait
+diff --git a/.claude/coordination/CODEX-STATUS.md b/.claude/coordination/CODEX-STATUS.md
+index cd6c21503b2acb3cc2eeb19d9c50013957dcb3ae..3d7e60d5fe13055eb27e944879806615e9213464
+--- a/.claude/coordination/CODEX-STATUS.md
++++ b/.claude/coordination/CODEX-STATUS.md
+@@ -4,15 +4,18 @@
+ # la seccion ACTUAL se sobreescribe.
+ 
+ ## ACTUAL
+-timestamp: 2026-07-27T21:25:09-05:00
++timestamp: 2026-07-27T21:31:15-05:00
+ estado: WORKING         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+ bl_activos: [BL-07, BL-41, BL-43] # ej [BL-01, BL-06]
+ agentes_en_vuelo: 3     # subagentes paralelos ahora (max 10)
+ archivos_bloqueados: [.claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md, .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md, .claude/specs/planes/backlog/BL-43-demo-sintetica-aislada.md, scripts/analysis/timing_ratio_oneoff.py] # paths que NADIE mas debe tocar este ciclo
+-necesito_del_otro: ["BL-43 espera cierre/review de BL-13"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
++necesito_del_otro: ["BL-43 espera cierre/review de BL-13", "Coordinar baseline frontmatter rojo: 5 archivos coordination sin YAML; Codex no puede editar CLAUDE-STATUS"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
+ para_review: []         # BLs mios terminados esperando verificacion del otro
+ 
+ ## LOG (append, mas reciente arriba)
++- 2026-07-27T21:31:15-05:00 Heartbeat: 3 lanes activas (BL-07 implementacion aislada; BL-41/43 discovery); baseline monitor rojo documentado, sin alterar archivos fuera de propiedad.
++- 2026-07-27T21:28:11-05:00 MONITORES baseline: manifests 5 passed; scripts-layout 20 passed; frontmatter 52 failed/716 passed/84 skipped por docs preexistentes/untracked + coordination sin YAML. BL-07 no puede para_review con gate rojo.
++- 2026-07-27T21:28:20-05:00 Heartbeat: BL-07 en implementacion; discovery BL-41 confirma que requiere migracion nueva + cambios SignalBridge y propuesta contractual; BL-43 sigue esperando BL-13.
+ - 2026-07-27T21:25:09-05:00 Heartbeat Claude recuperado (21:22); respeta bloqueos frontend/manifests/normalize; BL-43 queda discovery-only hasta BL-13.
+ - 2026-07-27T21:22:32-05:00 TANDA 1; 3 subagentes: BL-07 implementacion aislada, BL-41 discovery read-only, BL-43 dependency/discovery read-only.
+ - 2026-07-27T21:21:01-05:00 CICLO 1 inicio; sin ACKs ni reviews pendientes; heartbeat Claude stale >60 min; arranca inspeccion independiente BL-07/41/43.
+
+exec
+"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Write-Output ok' in C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models
+2026-07-28T02:46:47.448486Z ERROR codex_core::exec: exec error: windows sandbox: orchestrator_helper_exit_nonzero: setup helper exited with status Some(-1073741502)
+2026-07-28T02:46:47.448784Z ERROR codex_core::tools::router: error=execution error: Io(Custom { kind: Other, error: "windows sandbox: orchestrator_helper_exit_nonzero: setup helper exited with status Some(-1073741502)" })
+ exited -1 in 0ms:
+execution error: Io(Custom { kind: Other, error: "windows sandbox: orchestrator_helper_exit_nonzero: setup helper exited with status Some(-1073741502)" })
+diff --git a/.claude/coordination/CODEX-STATUS.md b/.claude/coordination/CODEX-STATUS.md
+index cd6c21503b2acb3cc2eeb19d9c50013957dcb3ae..3d7e60d5fe13055eb27e944879806615e9213464
+--- a/.claude/coordination/CODEX-STATUS.md
++++ b/.claude/coordination/CODEX-STATUS.md
+@@ -4,15 +4,18 @@
+ # la seccion ACTUAL se sobreescribe.
+ 
+ ## ACTUAL
+-timestamp: 2026-07-27T21:25:09-05:00
++timestamp: 2026-07-27T21:31:15-05:00
+ estado: WORKING         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+ bl_activos: [BL-07, BL-41, BL-43] # ej [BL-01, BL-06]
+ agentes_en_vuelo: 3     # subagentes paralelos ahora (max 10)
+ archivos_bloqueados: [.claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md, .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md, .claude/specs/planes/backlog/BL-43-demo-sintetica-aislada.md, scripts/analysis/timing_ratio_oneoff.py] # paths que NADIE mas debe tocar este ciclo
+-necesito_del_otro: ["BL-43 espera cierre/review de BL-13"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
++necesito_del_otro: ["BL-43 espera cierre/review de BL-13", "Coordinar baseline frontmatter rojo: 5 archivos coordination sin YAML; Codex no puede editar CLAUDE-STATUS"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
+ para_review: []         # BLs mios terminados esperando verificacion del otro
+ 
+ ## LOG (append, mas reciente arriba)
++- 2026-07-27T21:31:15-05:00 Heartbeat: 3 lanes activas (BL-07 implementacion aislada; BL-41/43 discovery); baseline monitor rojo documentado, sin alterar archivos fuera de propiedad.
++- 2026-07-27T21:28:11-05:00 MONITORES baseline: manifests 5 passed; scripts-layout 20 passed; frontmatter 52 failed/716 passed/84 skipped por docs preexistentes/untracked + coordination sin YAML. BL-07 no puede para_review con gate rojo.
++- 2026-07-27T21:28:20-05:00 Heartbeat: BL-07 en implementacion; discovery BL-41 confirma que requiere migracion nueva + cambios SignalBridge y propuesta contractual; BL-43 sigue esperando BL-13.
+ - 2026-07-27T21:25:09-05:00 Heartbeat Claude recuperado (21:22); respeta bloqueos frontend/manifests/normalize; BL-43 queda discovery-only hasta BL-13.
+ - 2026-07-27T21:22:32-05:00 TANDA 1; 3 subagentes: BL-07 implementacion aislada, BL-41 discovery read-only, BL-43 dependency/discovery read-only.
+ - 2026-07-27T21:21:01-05:00 CICLO 1 inicio; sin ACKs ni reviews pendientes; heartbeat Claude stale >60 min; arranca inspeccion independiente BL-07/41/43.
+
+El host Windows dejó de iniciar procesos (0xC0000142), confirmado tanto por root como por un agente limpio. El trabajo quedó guardado, pero no se puede verificar, editar coordinación ni commitear hasta reiniciar/recuperar el runner.
+  ✓ Leer gobernanza del repo, asignaciones, estados y contratos; identificar revisiones/ACKs prioritarios
+  ✓ Revisar BL-01, BL-06 y BL-13 de CLAUDE con sus verificaciones y monitores
+  → Integrar resultados de BL-07 y discoveries BL-41/BL-43
+  • Ejecutar verificaciones propias, resolver o documentar gates basales y commitear solo archivos propios
+  • Actualizar coordinación con veredictos, contratos y siguiente tanda
+diff --git a/.claude/coordination/CODEX-STATUS.md b/.claude/coordination/CODEX-STATUS.md
+index cd6c21503b2acb3cc2eeb19d9c50013957dcb3ae..3d7e60d5fe13055eb27e944879806615e9213464
+--- a/.claude/coordination/CODEX-STATUS.md
++++ b/.claude/coordination/CODEX-STATUS.md
+@@ -4,15 +4,18 @@
+ # la seccion ACTUAL se sobreescribe.
+ 
+ ## ACTUAL
+-timestamp: 2026-07-27T21:25:09-05:00
++timestamp: 2026-07-27T21:31:15-05:00
+ estado: WORKING         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+ bl_activos: [BL-07, BL-41, BL-43] # ej [BL-01, BL-06]
+ agentes_en_vuelo: 3     # subagentes paralelos ahora (max 10)
+ archivos_bloqueados: [.claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md, .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md, .claude/specs/planes/backlog/BL-43-demo-sintetica-aislada.md, scripts/analysis/timing_ratio_oneoff.py] # paths que NADIE mas debe tocar este ciclo
+-necesito_del_otro: ["BL-43 espera cierre/review de BL-13"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
++necesito_del_otro: ["BL-43 espera cierre/review de BL-13", "Coordinar baseline frontmatter rojo: 5 archivos coordination sin YAML; Codex no puede editar CLAUDE-STATUS"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
+ para_review: []         # BLs mios terminados esperando verificacion del otro
+ 
+ ## LOG (append, mas reciente arriba)
++- 2026-07-27T21:31:15-05:00 Heartbeat: 3 lanes activas (BL-07 implementacion aislada; BL-41/43 discovery); baseline monitor rojo documentado, sin alterar archivos fuera de propiedad.
++- 2026-07-27T21:28:11-05:00 MONITORES baseline: manifests 5 passed; scripts-layout 20 passed; frontmatter 52 failed/716 passed/84 skipped por docs preexistentes/untracked + coordination sin YAML. BL-07 no puede para_review con gate rojo.
++- 2026-07-27T21:28:20-05:00 Heartbeat: BL-07 en implementacion; discovery BL-41 confirma que requiere migracion nueva + cambios SignalBridge y propuesta contractual; BL-43 sigue esperando BL-13.
+ - 2026-07-27T21:25:09-05:00 Heartbeat Claude recuperado (21:22); respeta bloqueos frontend/manifests/normalize; BL-43 queda discovery-only hasta BL-13.
+ - 2026-07-27T21:22:32-05:00 TANDA 1; 3 subagentes: BL-07 implementacion aislada, BL-41 discovery read-only, BL-43 dependency/discovery read-only.
+ - 2026-07-27T21:21:01-05:00 CICLO 1 inicio; sin ACKs ni reviews pendientes; heartbeat Claude stale >60 min; arranca inspeccion independiente BL-07/41/43.
+
+codex
+El ciclo quedó bloqueado por el host Windows, no por el código: ningún proceso puede iniciar (`0xC0000142`), confirmado también desde un agente nuevo.
+
+Avance guardado:
+
+- BL‑07 implementado sin commit en [timing_ratio_oneoff.py](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/timing_ratio_oneoff.py>). Ruff, formato y `git diff --check` pasaron; falta ejecutar el diagnóstico completo y monitores.
+- BL‑41 detenido: la spec es incorrecta. Existen 3 tablas públicas de credenciales y 16 timestamps sin zona, no 2/15. Debe actualizarse el BL antes de diseñar la migración.
+- BL‑43 bloqueado por BL‑13: `surface` no llegó a contratos Py↔TS, bundles ni registry. Requiere propuesta contractual para `action|diagnostic|synthetic`.
+- Reviews: BL‑01, BL‑03/04, BL‑05 y BL‑13 requieren rework; BL‑02 cumple focalmente; BL‑06 pasa su test focal.
+- Verificación ejecutada antes del fallo: 13 tests focales pasaron y `normalize_champions.py --check` quedó verde.
+- El monitor frontmatter sigue rojo: 46 artefactos locales sin seguimiento y un documento tracked sin metadata. No debe tratarse como verde.
+
+No hice commit CODEX ni marqué ningún BL como terminado. Es necesario reiniciar/recuperar el runner; al reanudar, la primera acción será actualizar `CODEX-STATUS`, corregir la spec BL‑41 y verificar/commitear BL‑07.
+diff --git a/.claude/coordination/CODEX-STATUS.md b/.claude/coordination/CODEX-STATUS.md
+index cd6c21503b2acb3cc2eeb19d9c50013957dcb3ae..3d7e60d5fe13055eb27e944879806615e9213464
+--- a/.claude/coordination/CODEX-STATUS.md
++++ b/.claude/coordination/CODEX-STATUS.md
+@@ -4,15 +4,18 @@
+ # la seccion ACTUAL se sobreescribe.
+ 
+ ## ACTUAL
+-timestamp: 2026-07-27T21:25:09-05:00
++timestamp: 2026-07-27T21:31:15-05:00
+ estado: WORKING         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+ bl_activos: [BL-07, BL-41, BL-43] # ej [BL-01, BL-06]
+ agentes_en_vuelo: 3     # subagentes paralelos ahora (max 10)
+ archivos_bloqueados: [.claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md, .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md, .claude/specs/planes/backlog/BL-43-demo-sintetica-aislada.md, scripts/analysis/timing_ratio_oneoff.py] # paths que NADIE mas debe tocar este ciclo
+-necesito_del_otro: ["BL-43 espera cierre/review de BL-13"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
++necesito_del_otro: ["BL-43 espera cierre/review de BL-13", "Coordinar baseline frontmatter rojo: 5 archivos coordination sin YAML; Codex no puede editar CLAUDE-STATUS"] # ej ["ACK contrato strategy_schema v2", "review BL-16"]
+ para_review: []         # BLs mios terminados esperando verificacion del otro
+ 
+ ## LOG (append, mas reciente arriba)
++- 2026-07-27T21:31:15-05:00 Heartbeat: 3 lanes activas (BL-07 implementacion aislada; BL-41/43 discovery); baseline monitor rojo documentado, sin alterar archivos fuera de propiedad.
++- 2026-07-27T21:28:11-05:00 MONITORES baseline: manifests 5 passed; scripts-layout 20 passed; frontmatter 52 failed/716 passed/84 skipped por docs preexistentes/untracked + coordination sin YAML. BL-07 no puede para_review con gate rojo.
++- 2026-07-27T21:28:20-05:00 Heartbeat: BL-07 en implementacion; discovery BL-41 confirma que requiere migracion nueva + cambios SignalBridge y propuesta contractual; BL-43 sigue esperando BL-13.
+ - 2026-07-27T21:25:09-05:00 Heartbeat Claude recuperado (21:22); respeta bloqueos frontend/manifests/normalize; BL-43 queda discovery-only hasta BL-13.
+ - 2026-07-27T21:22:32-05:00 TANDA 1; 3 subagentes: BL-07 implementacion aislada, BL-41 discovery read-only, BL-43 dependency/discovery read-only.
+ - 2026-07-27T21:21:01-05:00 CICLO 1 inicio; sin ACKs ni reviews pendientes; heartbeat Claude stale >60 min; arranca inspeccion independiente BL-07/41/43.
+
+tokens used
+271,702
+El ciclo quedó bloqueado por el host Windows, no por el código: ningún proceso puede iniciar (`0xC0000142`), confirmado también desde un agente nuevo.
+
+Avance guardado:
+
+- BL‑07 implementado sin commit en [timing_ratio_oneoff.py](</C:/Users/pedro/OneDrive/Documents/ALGO TRADING/USDCOP-RL-Models/scripts/analysis/timing_ratio_oneoff.py>). Ruff, formato y `git diff --check` pasaron; falta ejecutar el diagnóstico completo y monitores.
+- BL‑41 detenido: la spec es incorrecta. Existen 3 tablas públicas de credenciales y 16 timestamps sin zona, no 2/15. Debe actualizarse el BL antes de diseñar la migración.
+- BL‑43 bloqueado por BL‑13: `surface` no llegó a contratos Py↔TS, bundles ni registry. Requiere propuesta contractual para `action|diagnostic|synthetic`.
+- Reviews: BL‑01, BL‑03/04, BL‑05 y BL‑13 requieren rework; BL‑02 cumple focalmente; BL‑06 pasa su test focal.
+- Verificación ejecutada antes del fallo: 13 tests focales pasaron y `normalize_champions.py --check` quedó verde.
+- El monitor frontmatter sigue rojo: 46 artefactos locales sin seguimiento y un documento tracked sin metadata. No debe tratarse como verde.
+
+No hice commit CODEX ni marqué ningún BL como terminado. Es necesario reiniciar/recuperar el runner; al reanudar, la primera acción será actualizar `CODEX-STATUS`, corregir la spec BL‑41 y verificar/commitear BL‑07.
