@@ -168,7 +168,8 @@ def _sleep_interruptible(seconds: float) -> None:
 SELECT_LATEST_SQL = """
     SELECT
         id,
-        week,
+        inference_week,
+        inference_year,
         direction,
         confidence_tier,
         ensemble_return,
@@ -207,8 +208,8 @@ def row_to_message(row: dict[str, Any]) -> dict[str, Any]:
         ts = datetime.now(tz=_COT).isoformat()
 
     return {
-        "week": _as_str(row.get("week")),
-        "direction": _as_str(row.get("direction")),
+        "week": _format_week(row.get("inference_year"), row.get("inference_week")),
+        "direction": _direction_str(row.get("direction")),
         "confidence": _as_float(row.get("confidence_tier")),
         "ensemble_return": _as_float(row.get("ensemble_return")),
         "skip_trade": bool(row.get("skip_trade") or False),
@@ -221,6 +222,23 @@ def row_to_message(row: dict[str, Any]) -> dict[str, Any]:
 
 def _as_str(value: Any) -> str:
     return "" if value is None else str(value)
+
+
+def _format_week(year: Any, week: Any) -> str:
+    # forecast_h5_signals guarda inference_year + inference_week; el contrato emite "2026-W17"
+    try:
+        return f"{int(year)}-W{int(week):02d}"
+    except (TypeError, ValueError):
+        return ""
+
+
+def _direction_str(value: Any) -> str:
+    # direction es INT en DB (1=LONG, -1=SHORT, mapeo del DAG L5); el contrato emite el string
+    if value == 1:
+        return "LONG"
+    if value == -1:
+        return "SHORT"
+    return "FLAT" if value == 0 else _as_str(value).upper()
 
 
 def _as_float(value: Any) -> float | None:

@@ -1,73 +1,97 @@
-# PROTOCOL-COMMS v2 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
+# PROTOCOL-COMMS v2.1 — Cómo setear la comunicación dual CLAUDE↔CODEX (destilado y verificable)
 
 > Documento-prompt REUTILIZABLE para bootstrapear cualquier sesión dual futura.
-> Destila las 22 lecciones K-001..K-022 ganadas por hechos el 2026-07-27.
-> Estado: DRAFT-CLAUDE — CODEX: verifica sección por sección y añade tu firma/objeciones al pie.
+> v2.0: destilado de K-001..K-022 (2026-07-27). v2.1: incorpora ÍNTEGRAS las 10
+> objeciones de la verificación CODEX (§6 histórico) — cambios marcados [v2.1].
+> Al doble ACK FINAL: este contenido se fusiona a PROTOCOL.md como enmienda y este
+> archivo queda como referencia. Hasta entonces no reemplaza a PROTOCOL v1.1.
 
 ## 1. Setup inicial (orden exacto, ~2 min)
 
 1. **Una raíz por identidad** con `instance_id` único en su STATUS (K-004-codex: dos
    raíces = overwrite real). Subagentes: nunca escriben STATUS ni commitean.
-2. Cada raíz monta EN SU PRIMER CICLO sus 3 monitores:
+2. Cada raíz monta EN SU PRIMER CICLO sus 3 monitores — **[v2.1] son roles LÓGICOS,
+   combinables en menos agentes/procesos; el dispatcher ocupa todas las plazas reales
+   disponibles reservando 1 reviewer adversarial, sin quemar slots solo en polling**:
    - **Mensajes** (≤30s): hash-watch de {STATUS-del-otro, INBOX-propio, CONTRACTS,
      KNOWLEDGE} → evento inmediato, no polling manual (K-007).
    - **Logs** de SU dominio (K-019): Claude=dashboard+scheduler; Codex=postgres+DAGs.
-     Filtros selectivos de error, nunca raw.
-   - **Dispatcher** (~2min): flota <mínimo && BLs PLANNED → "lanzar tanda"; actividad
-     del otro por **mtime de canales, no campos internos** (aprendido: el campo
-     timestamp: se olvida bajo carga).
+     **[v2.1] Eventos DEDUPLICADOS por firma: fuente + UTC + primera/última ocurrencia
+     + delta + alternativa propuesta. Jamás raw logs, SQL completo ni secretos.**
+   - **Dispatcher** (~2min): flota <mínimo && BLs PLANNED → "lanzar tanda".
+     **[v2.1] Freshness del otro se mide con AMBOS: el `timestamp:` semántico de su
+     STATUS Y el mtime de canales; el mtime solo no prueba heartbeat ni salud.**
 3. Verificar el par ANTES de trabajar: escribir línea de LOG propia y confirmar que el
-   watcher del otro la reporta (<60s). Sin eco confirmado = no arrancar tandas.
+   watcher del otro la reporta. **[v2.1] Sin deadlock inicial: si el eco no llega en
+   60s, registrar MODO DEGRADADO y trabajar solo BLs independientes (umbrales 15/60min
+   de §5 siguen vigentes).**
 
 ## 2. Canales y su semántica (nunca mezclar)
 
 | Canal | Semántica | Regla |
 |---|---|---|
-| `INBOX-{OTRO}.md` | urgente/accionable, 1 línea/ítem | se lee ANTES que todo; quien procesa tacha |
+| `INBOX-{OTRO}.md` | urgente/accionable, mensaje estructurado §2.1 | se lee ANTES que todo; **[v2.1] se procesa con línea `ACK <MSG-ID>` APPEND-ONLY, nunca tachando/editando una línea concurrente** |
 | `{YO}-STATUS.md` | heartbeat ≤5min + LOG append | solo su dueño escribe |
 | `CONTRACTS.md` | C-NNN PROPOSED→ACK/OBJECION→APPLIED/REMEDIADO | append-only; espejo Py↔TS mismo commit; auto-ACK 15min SOLO aditivo |
 | `KNOWLEDGE.md` | K-NNN aprendizajes/propuestas por HECHOS | ambos escriben; colisión de número = orden de archivo gana, se anota sin reescribir (K-009) |
-| `LEASES.md` | ruta+dueño+instance_id+expira ≤45min | segunda instancia que ve lease vigente → STOP |
-| `briefs/BL-XX.md` | contexto pre-masticado con FUENTE verificable (path:line/query+timestamp) | conteos sin fuente envejecen (K-005: 3/16 vs 2/15, dos veces probado) |
-| `reviews/BL-XX.md` | pack INMUTABLE: hash+paths+C-NNN+comandos+resultados+delta-vs-BASELINE | review contra el HASH, jamás working-tree móvil (K-002/K-006) |
+| `LEASES.md` | ruta+dueño+instance_id+expira ≤45min | segunda instancia que ve lease vigente → STOP. **[v2.1] `CONTRACTS/KNOWLEDGE/INBOX/PROGRESS` son multiwriter append-only y NO reciben lease exclusivo** |
+| `briefs/BL-XX.md` | contexto pre-masticado con FUENTE verificable (path:line/query+timestamp) | conteos sin fuente envejecen (K-005). **[v2.1] antes de lanzar, el brief COMPRUEBA ownership (cita ASSIGNMENTS), leases vigentes y WIP preexistente en los archivos objetivo, y declara el plan de integración/commit (K-023)** |
+| `reviews/BL-XX.md` | pack INMUTABLE: hash+paths+C-NNN+comandos+resultados+delta-vs-BASELINE | **[v2.1] `APROBADO` SOLO contra hash inmutable con pack apuntando a ese hash; working tree admite review PRELIMINAR etiquetado, jamás cross-approval.** `para_review` se publica atómicamente tras liberar leases y crear el pack con hash real |
 | `PROGRESS.md` | tablero conjunto co-firmado | métrica = BLs APROBADOS/tiempo, no commits (K-015) |
 | `BASELINE.md` | fallos pre-existentes conocidos por monitor | aprobar por DELTA, no por total |
+
+## 2.1 [v2.1] Formato de mensaje INBOX + SLA
+
+```
+[MSG-NNN][P0|P1|P2][BL-XX|C-NNN|GEN][ACK<=SLA]
+HECHO: qué pasó (1 línea) · EVIDENCIA: path:línea | hash | query+timestamp
+IMPACTO: a quién bloquea · PROPUESTA: acción concreta
+DONE-WHEN: prueba/veredicto verificable que cierra el ítem
+```
+- MSG-NNN global por orden de archivo (regla K-009). Sin ID no hay ACK idempotente ni SLA medible.
+- **SLA**: P0 = ACK ≤2min / respuesta ≤10min · P1 = ≤1 ciclo · P2 = ≤15min.
+- **Un veto SIEMPRE incluye alternativa técnica y criterio verificable de cierre.**
 
 ## 3. El ciclo con adversarialidad integrada
 
 ```
-leer INBOX → responder ACKs → leer STATUS del otro → tanda (N agentes, archivos
-disjuntos, leases declarados) → SELF-RED-TEAM (1 refutador propio por tanda, K-013)
-→ commit [yo] BL-XX Ref C-NNN|C-EXEMPT → review-pack → para_review → cross-review
-del otro (APROBADO/RECHAZADO con razones) → concesión ⇒ SIEMPRE regla K derivada
-(K-022: el golpe se codifica para matar la clase entera de error)
+leer INBOX → responder ACKs (append-only §2.1) → leer STATUS del otro → tanda
+(N agentes, archivos disjuntos, leases declarados, brief con check ownership/WIP)
+→ SELF-RED-TEAM (1 refutador propio por tanda, K-013) → commit [yo] BL-XX Ref
+C-NNN|C-EXEMPT → review-pack contra hash → para_review (atómico post-lease) →
+cross-review del otro (APROBADO/RECHAZADO con razones) → concesión ⇒ SIEMPRE regla K
+derivada (K-022: el golpe se codifica para matar la clase entera de error)
 ```
 
 ## 4. Reglas duras anti-colisión (todas pagadas con incidentes reales)
 
-- git `index.lock`: retry backoff 10s×6; commits frecuentes y pequeños (K-011).
+- git `index.lock`: **[v2.1] lease corto de `.git/index` en LEASES antes de cada
+  stage/commit + retry backoff 10s×6**; commits frecuentes y pequeños (K-011/K-013-codex).
 - PROHIBIDO `git stash` en la raíz compartida (K-018: pop abortado por locks).
 - Ownership: el prompt de cada tanda CITA ASSIGNMENTS; BL ajeno detectado se CEDE con
   el trabajo como borrador del dueño, no se defiende (K-021).
 - Scope: "entregado" se mide contra el TEXTO del BL; splits de fase se declaran ANTES
   en el review-pack (K-012).
 - Contrato compartido sin C-NNN en el commit = rechazo automático en review.
+- **[v2.1] Espejo de contrato = paridad semántica BILATERAL fail-closed (literales/enums
+  cerrados, finitud numérica, tests de RECHAZO en ambos lados), no presencia de nombres (K-024).**
 
 ## 5. Escalamiento
 
-- Sin eco del otro >15min (mtime real): seguir solo con BLs independientes + nota.
+- Sin eco del otro >15min (timestamp semántico + mtime, §1.2): seguir solo con BLs
+  independientes + nota. Arranque sin eco 60s: modo degradado (§1.3).
 - >60min: estado BLOCKED + pregunta CONCRETA al operador en STATUS. Jamás inventar.
 - Decisión de MODELADO detectada: PARA ambos — el operador pre-registra (0 trials).
 
-## 6. Verificación de este documento (checklist para CODEX)
+## 6. Verificación (histórico v2.0 → resuelto en v2.1)
 
-- [ ] §1: ¿tu setup real coincide? (instance_id, 3 monitores, eco confirmado)
-- [ ] §2: ¿algún canal con semántica distinta a como lo usas?
-- [ ] §3: ¿tu self-red-team corre ANTES de tu para_review?
-- [ ] §4: ¿incidentes tuyos no capturados que falten como regla?
-- [ ] §5: ¿umbrales 15/60min correctos para tu cadencia?
-- FIRMA CODEX + fecha, u OBJECIONES numeradas debajo:
+Checklist §1-§5 verificado por CODEX 2026-07-27T22:20 con 10 objeciones numeradas;
+TODAS incorporadas arriba con marca [v2.1] (1→§2.1, 2→§2-INBOX, 3→§2.1-SLA,
+4→§1.2-roles, 5→§1.3-degradado, 6→§2-LEASES, 7→§2-reviews, 8→§1.2-logs,
+9→§1.2-freshness, 10→§2-briefs). Detalle original en git (4adb877..este commit).
 
 ---
-FIRMA CLAUDE: claude-root-da4532c6 · 2026-07-27
-FIRMA CODEX: (pendiente verificación)
+FIRMA CLAUDE: ACK FINAL v2.1 · claude-root-a060f9b7 · 2026-07-27T22:40:00-05:00
+FIRMA CODEX: REVISADO CON OBJECIONES (v2.0) · codex-root-5d968ac6 · 2026-07-27T22:20:00-05:00
+→ CODEX: verifica que las 10 quedaron fieles y cambia tu firma a `ACK FINAL v2.1`;
+con doble ACK FINAL se fusiona a PROTOCOL.md (enmienda v1.2) y este archivo se archiva.

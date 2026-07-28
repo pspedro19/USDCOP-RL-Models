@@ -20,3 +20,5 @@
 - src/contracts/policy_dsl.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
 - src/contracts/rule_trace.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
 - usdcop-trading-dashboard/lib/contracts/policy.contract.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- services/kafka_bridge/producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00 (retroactivo — gap anotado en STATUS)
+- tests/unit/test_kafka_bridge_producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
