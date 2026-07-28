@@ -13,9 +13,10 @@ Features:
 - Validates required tables exist after migration
 
 Usage:
-    python scripts/db_migrate.py              # Run all pending migrations
-    python scripts/db_migrate.py --status     # Show migration status
-    python scripts/db_migrate.py --validate   # Validate required tables exist
+    python scripts/ops/db_migrate.py --plan legacy-init
+    python scripts/ops/db_migrate.py --plan fabric-v1 --plan-digest
+    python scripts/ops/db_migrate.py --plan fabric-v1 --status
+    python scripts/ops/db_migrate.py --plan fabric-v1 --validate
 """
 
 import argparse
@@ -34,19 +35,38 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Project root
-PROJECT_ROOT = Path(__file__).parent.parent
+# Project root (scripts/ops/db_migrate.py -> repository root)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-# Migration scripts directory
-MIGRATIONS_DIR = PROJECT_ROOT / "init-scripts"
+# Explicit migration plans.  New migrations are never discovered by a broad
+# production glob: adding a file does not make it deployable.
+MIGRATION_PLANS = {
+    "legacy-init": tuple(sorted((PROJECT_ROOT / "init-scripts").glob("*.sql"))),
+    "fabric-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "070_fabric_control_plane.sql",
+            "071_forecast_schema_roles.sql",
+            "072_reference_identity.sql",
+            "073_market_quality.sql",
+            "074_exec_event_sourcing.sql",
+            "075_fact_position_pnl.sql",
+            "076_lineage_graph.sql",
+            "077_portfolio_control.sql",
+            "078_exec_reconciliation.sql",
+            "079_fabric_integrity_remediation.sql",
+        )
+    ),
+}
+REVIEW_GATED_PLANS = frozenset({"fabric-v1"})
 
-# Required tables (table_name -> description)
-REQUIRED_TABLES = {
+LEGACY_REQUIRED_TABLES = {
     # Core OHLCV data
     "public.usdcop_m5_ohlcv": "5-minute OHLCV price data",
 
     # Macro indicators
     "public.macro_indicators_daily": "Daily macroeconomic indicators",
+    "public.macro_indicators_pit": "Forward-looking macro publication vintages",
 
     # Trading/Paper trading
     "public.trades_history": "Historical trades for backtest/replay",
@@ -63,6 +83,66 @@ REQUIRED_TABLES = {
     # Metrics
     "metrics.model_performance": "Model performance metrics",
 }
+
+FABRIC_REQUIRED_TABLES = {
+    "control.strategy_declaration": "Constitutional strategy declarations",
+    "control.strategy_declaration_event": "Strategy transition ledger",
+    "control.strategy_sleeve": "Materialized strategy-to-sleeve mapping",
+    "control.incident": "Operational incident ledger",
+    "control.artifact_identity": "Canonical artifact identity spine",
+    "control.metric_event": "Governed metric event ledger",
+    "control.legacy_metric_observation": "Quarantined legacy metrics",
+    "forecast.forecast_output": "Diagnostic forecast output",
+    "forecast.forecast_score": "Immutable forecast score events",
+    "forecast.model_horizon_result": "Model/horizon diagnostic results",
+    "forecast.calibration_result": "Forecast calibration results",
+    "reference.calendar": "Canonical calendars",
+    "reference.asset": "Canonical assets",
+    "reference.instrument": "Canonical instruments",
+    "reference.provider": "Canonical providers",
+    "reference.provider_symbol": "Provider symbol aliases",
+    "reference.instrument_alias": "Instrument aliases",
+    "reference.bar_interval": "Canonical bar intervals",
+    "market.raw_bar": "Append-only raw market bars",
+    "market.canonical_bar": "Canonical market bars",
+    "market.canonical_bar_source": "Canonical-bar lineage",
+    "quality.quarantine_event": "Market-data quarantine events",
+    "quality.correction_event": "Market-data correction events",
+    "quality.feature_status": "Feature quality status",
+    "exec.order_header": "Canonical order headers",
+    "exec.order_status_event": "Append-only order statuses",
+    "exec.order_dispatch": "Fenced broker dispatch claims",
+    "exec.order_dispatch_event": "Immutable dispatch attempts",
+    "exec.fill_event": "Immutable broker fills",
+    "exec.fill_correction_event": "Fill correction chain",
+    "exec.reconciliation_event": "Broker reconciliation facts",
+    "fact.position": "Canonical position facts",
+    "fact.pnl": "Canonical PnL facts",
+    "lineage.node": "Lineage nodes",
+    "lineage.edge": "Lineage edges",
+    "lineage.strategy_node": "Strategy lineage projection",
+    "lineage.revision_event": "Typed revision events",
+    "portfolio.snapshot": "Point-in-time book snapshots",
+    "portfolio.snapshot_signal": "Snapshot signals",
+    "portfolio.allocation": "Materialized allocations",
+    "portfolio.target": "Aggregate portfolio targets",
+    "portfolio.target_exposure": "Target exposure children",
+    "portfolio.pretrade_decision": "Pre-trade decision ledger",
+    "portfolio.kill_switch_event": "Kill-switch event ledger",
+    "portfolio.kill_switch_action": "Fenced kill-switch effects",
+    "portfolio.kill_switch_action_event": "Kill-switch attempt events",
+}
+
+REQUIRED_TABLES_BY_PLAN = {
+    "legacy-init": LEGACY_REQUIRED_TABLES,
+    "fabric-v1": FABRIC_REQUIRED_TABLES,
+}
+# Compatibility alias for old importers. CLI callers must select a plan.
+REQUIRED_TABLES = LEGACY_REQUIRED_TABLES
+
+
+class MigrationDriftError(RuntimeError):
+    """An applied migration no longer matches its immutable reviewed bytes."""
 
 
 async def get_connection():
@@ -110,14 +190,68 @@ async def get_executed_migrations(conn) -> Dict[str, str]:
     return {row["filename"]: row["checksum"] for row in rows}
 
 
-def get_migration_files() -> List[Path]:
-    """Get all SQL migration files in order."""
-    if not MIGRATIONS_DIR.exists():
-        logger.warning(f"Migrations directory not found: {MIGRATIONS_DIR}")
-        return []
-
-    files = sorted(MIGRATIONS_DIR.glob("*.sql"))
+def get_migration_files(plan: str = "legacy-init") -> List[Path]:
+    """Return the audited allowlist for a named plan."""
+    try:
+        files = list(MIGRATION_PLANS[plan])
+    except KeyError as exc:
+        raise ValueError(f"unknown migration plan {plan!r}") from exc
+    missing = [path for path in files if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(
+            f"migration plan {plan!r} references missing files: {missing}"
+        )
     return files
+
+
+def get_plan_digest(plan: str) -> str:
+    """Content-address the ordered plan reviewed by an operator."""
+    digest = hashlib.sha256()
+    for path in get_migration_files(plan):
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return "sha256:" + digest.hexdigest()
+
+
+def classify_migrations(
+    plan: str, executed: Dict[str, str]
+) -> List[Tuple[Path, str, str]]:
+    """Return new migrations and fail closed on immutable checksum drift."""
+    pending: List[Tuple[Path, str, str]] = []
+    drift: List[Tuple[str, str, str]] = []
+    for filepath in get_migration_files(plan):
+        checksum = get_file_checksum(filepath)
+        recorded = executed.get(filepath.name)
+        if recorded is None:
+            pending.append((filepath, checksum, "new"))
+        elif recorded != checksum:
+            drift.append((filepath.name, recorded, checksum))
+    if drift:
+        details = ", ".join(
+            f"{name} recorded={recorded} current={current}"
+            for name, recorded, current in drift
+        )
+        raise MigrationDriftError(
+            f"applied migration checksum drift in plan {plan!r}: {details}"
+        )
+    return pending
+
+
+def plan_is_authorized(plan: str, reviewed_digest: str | None) -> bool:
+    if plan not in REVIEW_GATED_PLANS:
+        return True
+    expected = get_plan_digest(plan)
+    if reviewed_digest != expected:
+        logger.error(
+            "Plan %s is review-gated. Expected --reviewed-digest %s; got %r",
+            plan,
+            expected,
+            reviewed_digest,
+        )
+        return False
+    return True
 
 
 async def run_migration(conn, filepath: Path, checksum: str) -> Tuple[bool, Optional[str]]:
@@ -126,20 +260,35 @@ async def run_migration(conn, filepath: Path, checksum: str) -> Tuple[bool, Opti
 
     start_time = datetime.now()
     try:
-        await conn.execute(sql)
-        execution_time = int((datetime.now() - start_time).total_seconds() * 1000)
+        recorded = await conn.fetchval(
+            "SELECT checksum FROM _migrations WHERE filename = $1 AND success = TRUE",
+            filepath.name,
+        )
+        if recorded is not None:
+            if recorded != checksum:
+                return False, (
+                    f"immutable migration checksum drift for {filepath.name}: "
+                    f"recorded={recorded}, current={checksum}"
+                )
+            return True, None
 
-        # Record successful migration
-        await conn.execute("""
-            INSERT INTO _migrations (filename, checksum, execution_time_ms, success)
-            VALUES ($1, $2, $3, TRUE)
-            ON CONFLICT (filename) DO UPDATE SET
-                checksum = $2,
-                executed_at = NOW(),
-                execution_time_ms = $3,
-                success = TRUE,
-                error_message = NULL
-        """, filepath.name, checksum, execution_time)
+        async with conn.transaction():
+            await conn.execute(sql)
+            execution_time = int(
+                (datetime.now() - start_time).total_seconds() * 1000
+            )
+            inserted = await conn.fetchval("""
+                INSERT INTO _migrations (
+                    filename, checksum, execution_time_ms, success
+                )
+                VALUES ($1, $2, $3, TRUE)
+                ON CONFLICT (filename) DO NOTHING
+                RETURNING filename
+            """, filepath.name, checksum, execution_time)
+            if inserted is None:
+                raise MigrationDriftError(
+                    f"concurrent migration claim for {filepath.name}; rerun status"
+                )
 
         return True, None
 
@@ -152,14 +301,9 @@ async def run_migration(conn, filepath: Path, checksum: str) -> Tuple[bool, Opti
             await conn.execute("""
                 INSERT INTO _migrations (filename, checksum, execution_time_ms, success, error_message)
                 VALUES ($1, $2, $3, FALSE, $4)
-                ON CONFLICT (filename) DO UPDATE SET
-                    checksum = $2,
-                    executed_at = NOW(),
-                    execution_time_ms = $3,
-                    success = FALSE,
-                    error_message = $4
+                ON CONFLICT (filename) DO NOTHING
             """, filepath.name, checksum, execution_time, error_msg)
-        except:
+        except Exception:
             pass
 
         return False, error_msg
@@ -181,8 +325,12 @@ async def table_exists(conn, full_table_name: str) -> bool:
     return result
 
 
-async def run_migrations() -> bool:
+async def run_migrations(
+    plan: str = "legacy-init", reviewed_digest: str | None = None
+) -> bool:
     """Run all pending migrations."""
+    if not plan_is_authorized(plan, reviewed_digest):
+        return False
     logger.info("=" * 60)
     logger.info("USDCOP Database Migration System")
     logger.info("=" * 60)
@@ -202,18 +350,14 @@ async def run_migrations() -> bool:
         logger.info(f"Previously executed migrations: {len(executed)}")
 
         # Get all migration files
-        migration_files = get_migration_files()
+        migration_files = get_migration_files(plan)
         logger.info(f"Total migration files: {len(migration_files)}")
 
-        # Find pending migrations
-        pending = []
-        for filepath in migration_files:
-            checksum = get_file_checksum(filepath)
-
-            if filepath.name not in executed:
-                pending.append((filepath, checksum, "new"))
-            elif executed[filepath.name] != checksum:
-                pending.append((filepath, checksum, "modified"))
+        try:
+            pending = classify_migrations(plan, executed)
+        except MigrationDriftError as exc:
+            logger.error("%s", exc)
+            return False
 
         if not pending:
             logger.info("No pending migrations. Database is up to date.")
@@ -246,7 +390,7 @@ async def run_migrations() -> bool:
         await conn.close()
 
 
-async def show_status() -> None:
+async def show_status(plan: str = "legacy-init") -> bool:
     """Show migration status."""
     logger.info("=" * 60)
     logger.info("Migration Status")
@@ -256,7 +400,7 @@ async def show_status() -> None:
         conn = await get_connection()
     except Exception as e:
         logger.error(f"Could not connect to database: {e}")
-        return
+        return False
 
     try:
         await ensure_migrations_table(conn)
@@ -279,19 +423,31 @@ async def show_status() -> None:
 
         # Get pending
         executed = await get_executed_migrations(conn)
-        migration_files = get_migration_files()
+        migration_files = get_migration_files(plan)
 
-        pending = [f for f in migration_files if f.name not in executed]
+        try:
+            pending = [
+                filepath
+                for filepath, _checksum, _reason in classify_migrations(
+                    plan, executed
+                )
+            ]
+        except MigrationDriftError as exc:
+            logger.error("%s", exc)
+            return False
         if pending:
             logger.info(f"\nPending migrations: {len(pending)}")
             for f in pending:
                 logger.info(f"  - {f.name}")
+        else:
+            logger.info("Selected plan is up to date and checksum-clean.")
+        return True
 
     finally:
         await conn.close()
 
 
-async def validate_tables() -> bool:
+async def validate_tables(plan: str = "legacy-init") -> bool:
     """Validate all required tables exist."""
     logger.info("=" * 60)
     logger.info("Validating Required Tables")
@@ -307,7 +463,7 @@ async def validate_tables() -> bool:
         missing = []
         present = []
 
-        for table_name, description in REQUIRED_TABLES.items():
+        for table_name, description in REQUIRED_TABLES_BY_PLAN[plan].items():
             exists = await table_exists(conn, table_name)
             if exists:
                 present.append(table_name)
@@ -320,7 +476,11 @@ async def validate_tables() -> bool:
         logger.info(f"Present: {len(present)}, Missing: {len(missing)}")
 
         if missing:
-            logger.error("Run 'python scripts/db_migrate.py' to create missing tables")
+            logger.error(
+                "Run scripts/ops/db_migrate.py with --plan %s and its reviewed "
+                "digest to create missing tables",
+                plan,
+            )
             return False
 
         logger.info("All required tables exist!")
@@ -334,18 +494,36 @@ def main():
     parser = argparse.ArgumentParser(description="Database Migration System")
     parser.add_argument("--status", action="store_true", help="Show migration status")
     parser.add_argument("--validate", action="store_true", help="Validate required tables")
+    parser.add_argument(
+        "--plan",
+        choices=tuple(MIGRATION_PLANS),
+        required=True,
+        help="Explicit allowlisted migration plan",
+    )
+    parser.add_argument(
+        "--plan-digest",
+        action="store_true",
+        help="Print the ordered content digest without connecting to a database",
+    )
+    parser.add_argument(
+        "--reviewed-digest",
+        help="Required exact digest for review-gated plans",
+    )
     args = parser.parse_args()
 
-    if args.status:
-        asyncio.run(show_status())
+    if args.plan_digest:
+        print(get_plan_digest(args.plan))
+    elif args.status:
+        success = asyncio.run(show_status(args.plan))
+        sys.exit(0 if success else 1)
     elif args.validate:
-        success = asyncio.run(validate_tables())
+        success = asyncio.run(validate_tables(args.plan))
         sys.exit(0 if success else 1)
     else:
-        success = asyncio.run(run_migrations())
+        success = asyncio.run(run_migrations(args.plan, args.reviewed_digest))
         # Also validate after running migrations
         if success:
-            success = asyncio.run(validate_tables())
+            success = asyncio.run(validate_tables(args.plan))
         sys.exit(0 if success else 1)
 
 

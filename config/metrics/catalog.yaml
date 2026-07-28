@@ -1,0 +1,63 @@
+catalog_version: "1.0.0"
+metrics:
+  strategy.sharpe:
+    formula_version: "v1"
+    source: fact_pnl
+    unit: ratio
+    annualization: from_asset_registry
+    windows: [26w, 52w, since_anchor]
+    warning: 0.25
+    critical: 0.0
+    plausible_min: -5.0
+    plausible_max: 5.0
+    min_trades: 20
+    required_inputs: [returns, n_trades, window_start, window_end]
+
+  strategy.calmar:
+    formula_version: "v1"
+    source: fact_pnl
+    unit: ratio
+    annualization: from_asset_registry
+    windows: [26w, 52w, since_anchor]
+    warning: 0.10
+    critical: 0.0
+    plausible_min: -20.0
+    plausible_max: 20.0
+    required_inputs: [returns, window_start, window_end]
+
+  strategy.max_drawdown:
+    formula_version: "v1"
+    source: fact_pnl
+    unit: decimal
+    annualization: null
+    windows: [26w, 52w, since_anchor]
+    warning: 0.10
+    critical: 0.20
+    plausible_min: 0.0
+    plausible_max: 1.0
+    higher_is_better: false
+    required_inputs: [equity, window_start, window_end]
+
+  strategy.timing_ratio:
+    formula_version: "v1"
+    source: fact_pnl
+    unit: ratio
+    annualization: null
+    windows: [26w, 52w, since_anchor]
+    min_trades: 20
+    plausible_min: -1.0
+    plausible_max: 1.0
+    required_inputs: [weights, asset_returns, n_trades, window_start, window_end]
+
+  research.dsr:
+    formula_version: "v2"
+    source: trial_ledger
+    unit: probability
+    annualization: null
+    windows: [since_anchor]
+    warning: null
+    critical: 0.95
+    min_trades: 20
+    plausible_min: 0.0
+    plausible_max: 1.0
+    required_inputs: [returns, n_trials, trials_sharpe_std, n_trades, window_start, window_end]

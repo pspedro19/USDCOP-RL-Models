@@ -1,0 +1,4 @@
+version: "1.0.0"
+price_ranges:
+  usdmxn: [5, 100]
+  usdclp: [100, 5000]

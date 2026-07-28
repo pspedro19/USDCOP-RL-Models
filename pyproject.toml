@@ -57,6 +57,15 @@ forecasting = [
     "hmmlearn>=0.3.0",
     "statsmodels>=0.14.0",
 ]
+data = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "pyarrow>=12.0.0",
+    "openpyxl>=3.1.0",
+    "xlrd>=2.0.1",
+    "pypdf>=5.0.0",
+    "olefile>=0.47",
+]
 api = [
     "fastapi>=0.109.0",
     "uvicorn>=0.25.0",
@@ -68,6 +77,10 @@ database = [
     "redis>=5.0.0",
     "sqlalchemy>=2.0.0",
     "alembic>=1.13.0",
+]
+portfolio = [
+    "cvxpy>=1.5.0",
+    "clarabel>=0.9.0",
 ]
 dev = [
     "pytest>=7.4.0",
@@ -95,7 +108,7 @@ agents = [
     "mcp[cli]>=1.2.0",
 ]
 all = [
-    "usdcop-rl-models[ml,api,database,dev,agents]",
+    "usdcop-rl-models[ml,forecasting,data,api,database,portfolio,dev,agents]",
 ]
 
 [project.urls]

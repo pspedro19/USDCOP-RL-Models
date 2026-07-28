@@ -1,0 +1,31 @@
+contract: CTR-ALLOCATOR-V1
+version: "1.1.0"
+family_id: book_allocation
+baseline: inverse_volatility_with_caps
+shadow: {method: HRP, minimum_periods: 26, capital_enabled: false}
+optimization:
+  implementation: cvxpy
+  solver: CLARABEL
+  objective: squared_distance_plus_l1_turnover
+constraints:
+  gross_cap: 1.0
+  target_vol_decimal: 0.10
+  turnover_budget_decimal: 0.20
+  turnover_relaxation_limit_decimal: 0.30
+fallbacks:
+  - relax_turnover_within_declared_limit
+  - shrink_provisional_toward_zero
+  - inverse_volatility_with_caps
+  - target_zero_and_critical_incident
+multipliers:
+  forward: {min: 0.0, max: 1.0, can_increase_risk: false}
+  liquidity: {min: 0.0, max: 1.0}
+  diversification: {min: 0.70, max: 1.10}
+  operations: {allowed: [0.0, 1.0]}
+  drawdown: {min: 0.0, max: 1.0, hysteresis: required}
+novelty_gate:
+  max_correlation_lt: 0.60
+  delta_information_ratio_gt: 0.15
+prohibited:
+  - normalize_after_clip
+  - result_selected_thresholds

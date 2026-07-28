@@ -1,0 +1,89 @@
+version: 1
+
+# These DAGs coexist with the legacy asset factory until a minimum of two
+# consecutive weekly semantic hashes match.  Backfills are never declared here:
+# they are separate, unscheduled DAGs with an explicit as_of.
+data:
+  usdcop:
+    enabled: true
+    schedule: "0 5 * * 1-5"
+    external_api_pool: market_data_api
+    consumes: []
+    produces:
+      - asset://usdcop/canonical_bar/1d
+      - asset://usdcop/feature_snapshot/weekly
+    tasks:
+      - {id: l0_ingest, script: scripts/data/ingest_asset_ohlcv.py, args: [--asset, usdcop]}
+      - {id: canonicalize, script: scripts/data/build_unified_fx_seed.py, pool: db_writer}
+      - {id: quality, script: scripts/validation/audit_partial_ohlcv_bars.py, pool: db_reader}
+      - {id: data_verify, script: scripts/validation/validate_dataset_calendar.py, pool: db_reader}
+  xauusd:
+    enabled: true
+    schedule: "45 6 * * 0"
+    external_api_pool: market_data_api
+    consumes: []
+    produces:
+      - asset://xauusd/canonical_bar/1d
+    tasks:
+      - {id: l0_ingest, script: scripts/data/ingest_asset_ohlcv.py, args: [--asset, xauusd, --skip-intraday]}
+      - {id: data_verify, script: scripts/validation/validate_dataset_calendar.py, pool: db_reader}
+  btcusdt:
+    enabled: true
+    schedule: "0 7 * * 0"
+    external_api_pool: binance_public_api
+    consumes: []
+    produces:
+      - asset://btcusdt/canonical_bar/1d
+    tasks:
+      - {id: l0_ingest, script: scripts/data/ingest_btc_ohlcv.py}
+      - {id: data_verify, script: scripts/validation/validate_dataset_calendar.py, pool: db_reader}
+  spx500:
+    enabled: true
+    schedule: "30 7 * * 1-5"
+    external_api_pool: market_data_api
+    consumes: []
+    produces:
+      - asset://spx500/canonical_bar/1d
+    tasks:
+      - {id: l0_ingest, script: scripts/data/ingest_asset_ohlcv.py, args: [--asset, spx500, --skip-intraday]}
+      - {id: data_verify, script: scripts/validation/validate_dataset_calendar.py, pool: db_reader}
+
+strategies:
+  usdcop_smart_simple_v11:
+    enabled: true
+    schedule: null
+    consumes:
+      - asset://usdcop/feature_snapshot/weekly
+    produces:
+      - action://usdcop_smart_simple_v11/strategy_output/v2
+    tasks:
+      - {id: backtest_replay, script: scripts/pipeline/replay_backtest_universal.py, args: [--strategy, usdcop_smart_simple_v11]}
+      - {id: gates, script: scripts/validation/validate_h5_smart_simple.py}
+      - {id: signal, script: scripts/pipeline/generate_universal_signals.py}
+      - {id: verify, script: scripts/validation/validate_hash_reconciliation.py}
+  xauusd_trend_simple_v1:
+    enabled: true
+    schedule: null
+    consumes:
+      - asset://xauusd/canonical_bar/1d
+    produces:
+      - action://xauusd_trend_simple_v1/strategy_output/v2
+    tasks:
+      - {id: backtest_replay, script: scripts/pipeline/run_gold_pipeline.py}
+      - {id: signal, script: scripts/pipeline/generate_asset_weekly_forecast.py, args: [--asset, xauusd, --year, all]}
+      - {id: verify, script: scripts/validation/validate_hash_reconciliation.py}
+
+forecasts:
+  usdcop_forecast_zoo_v3:
+    enabled: true
+    schedule: null
+    consumes:
+      - asset://usdcop/feature_snapshot/weekly
+    produces:
+      - forecast://usdcop_forecast_zoo_v3/panel/v1
+    tasks:
+      - {id: feature_view, script: scripts/data/build_forecasting_dataset_aligned.py}
+      - {id: walk_forward_fit, script: scripts/pipeline/run_forecast_experiment.py}
+      - {id: predict, script: scripts/pipeline/generate_weekly_forecasts.py}
+      - {id: evaluate, script: scripts/validation/validate_forecasting_pipeline.py}
+      - {id: publish_panel, script: scripts/pipeline/generate_asset_analysis.py, args: [--asset, usdcop]}
