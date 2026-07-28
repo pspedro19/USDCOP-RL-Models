@@ -151,8 +151,21 @@ function validText(v: unknown, maxLength: number): v is string {
   );
 }
 
+/**
+ * Finite AND identically representable in both runtimes (mirror of
+ * `is_bilaterally_finite` in policy_version.py).
+ *
+ * JS numbers are float64, so an INTEGER-VALUED magnitude above 2**53-1 loses
+ * precision the moment `JSON.parse` reads it (9007199254740993 became ...992)
+ * while Python keeps the literal exact — the two sides then disagreed on
+ * `>= minimum` / `<= maximum`. A literal beyond the float64 range became
+ * `Infinity` here but made Python's `math.isfinite` raise `OverflowError`.
+ * Both are rejected on both sides now.
+ */
 function finiteNumber(v: unknown): v is number {
-  return typeof v === 'number' && Number.isFinite(v);
+  if (typeof v !== 'number' || !Number.isFinite(v)) return false;
+  if (Number.isInteger(v) && !Number.isSafeInteger(v)) return false;
+  return true;
 }
 
 /**
@@ -462,7 +475,7 @@ export function validateConfigFieldSpec(raw: unknown): string[] {
 export function validateConfigValue(fieldSpec: ConfigFieldSpec, value: unknown): string[] {
   if (fieldSpec.type === 'number') {
     if (typeof value !== 'number') return [`${fieldSpec.key} must be a number`];
-    if (!Number.isFinite(value)) return [`${fieldSpec.key} must be finite (NaN/Infinity forbidden)`];
+    if (!finiteNumber(value)) return [`${fieldSpec.key} must be finite (NaN/Infinity forbidden)`];
     const errors: string[] = [];
     if (finiteNumber(fieldSpec.minimum) && value < fieldSpec.minimum) {
       errors.push(`${fieldSpec.key} must be >= ${fieldSpec.minimum}`);

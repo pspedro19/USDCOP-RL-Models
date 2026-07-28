@@ -29,7 +29,6 @@ Contract: CTR-POLICY-BACKEND-001 (BL-46 R4/R5)
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import re
@@ -41,6 +40,7 @@ from src.contracts.policy import (
     VALID_DIRECTIONS,
     ISO_TIMESTAMP_PATTERN,
     StrategyDecision,
+    policy_canonical_hash,
     require_hash,
     require_id,
     require_iso_timestamp,
@@ -133,6 +133,40 @@ def require_text(field_name: str, value: Any, max_length: int) -> str:
     return value
 
 
+#: Largest integer-valued magnitude that crosses the Python <-> JSON <-> JS
+#: boundary unchanged (JS numbers are float64). See :func:`is_bilaterally_finite`.
+MAX_SAFE_INTEGER = 2**53 - 1
+
+
+def is_bilaterally_finite(value: Any) -> bool:
+    """Finite AND identically representable in both runtimes.
+
+    Mirrors ``finiteNumber()`` in policy-version.contract.ts. Two integer
+    literals used to break the mirror:
+
+    - beyond the float64 RANGE (``1`` followed by 400 zeros): ``math.isfinite``
+      raised ``OverflowError``, a raw crash escaping validators whose contract is
+      to raise ``ValueError`` / return a list — while ``JSON.parse`` produced
+      ``Infinity`` and TS rejected it cleanly;
+    - beyond the float64 PRECISION (``9007199254740993``): exact in Python but
+      silently rounded to ``...992`` by ``JSON.parse``, so the two sides
+      disagreed on ``>= minimum`` / ``<= maximum`` bound checks.
+
+    The precision rule is phrased over *integer-valued* numbers because that is
+    what TypeScript can still decide once ``JSON.parse`` has erased the int/float
+    distinction; it is deliberately over-strict for huge float64 integers.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        as_float = float(value)
+    except (OverflowError, ValueError):
+        return False                      # int outside the float64 range
+    if not math.isfinite(as_float):
+        return False
+    return not (as_float.is_integer() and abs(as_float) > MAX_SAFE_INTEGER)
+
+
 def require_finite_number(field_name: str, value: Any) -> float:
     """Real finite number — bool and numeric strings are typed errors."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -140,7 +174,7 @@ def require_finite_number(field_name: str, value: Any) -> float:
             f"{field_name} must be a real number (bool/string coercion "
             f"forbidden), got {value!r}"
         )
-    if not math.isfinite(value):
+    if not is_bilaterally_finite(value):
         raise ValueError(
             f"{field_name} must be finite (NaN/Infinity forbidden), got {value!r}"
         )
@@ -205,11 +239,12 @@ def instant_epoch_seconds(value: str) -> int:
 
 
 def _canonical_hash(payload: Any) -> str:
-    """sha256 over canonical JSON — strict (no NaN, no ``default=`` fallback)."""
-    canonical = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), allow_nan=False
-    )
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """sha256 over canonical JSON — delegates to the family SSOT.
+
+    One logical object, one hash (INTEGRATION-CONTRACT.md F-02). Strict by
+    inheritance: no NaN, no ``default=`` fallback.
+    """
+    return policy_canonical_hash(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -671,7 +706,7 @@ class ConfigFieldSpec:
         if self.type == "number":
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 return [f"{self.key} must be a number"]
-            if not math.isfinite(value):
+            if not is_bilaterally_finite(value):
                 return [f"{self.key} must be finite (NaN/Infinity forbidden)"]
             errors = []
             if self.minimum is not None and value < self.minimum:

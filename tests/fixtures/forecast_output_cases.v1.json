@@ -1,7 +1,7 @@
 {
  "fixture": "forecast_output_cases",
  "version": "v1",
- "content_sha256": "3f8a22ad9a4e6bd748b46aec1a7a3e47d800452afec943db9b113ceebd3130ab",
+ "content_sha256": "a5a044eca60a272bcde754acf9a44e14199072cf2b31e693f2412a40a048c713",
  "sha_scheme": "sha256 over this file's text (CRLF normalized to LF) with the 64-hex value of content_sha256 removed; both runners recompute and refuse to run on mismatch",
  "contract": "CTR-FORECAST-OUTPUT-001",
  "runners": [
@@ -11,7 +11,7 @@
  "encoding": {
   "$nonfinite": "NaN | Infinity | -Infinity — decoded to the native non-finite number in BOTH runtimes"
  },
- "case_count": 90,
+ "case_count": 96,
  "cases": [
   {
    "id": "valid_base_aware_z",
@@ -2315,6 +2315,148 @@
    },
    "expect": "invalid",
    "note": "before the remedio, from_dict dropped pnl/exit_reason and coerced the flag to True"
+  },
+  {
+   "id": "intl_unicode_digits_as_of",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "٢٠٢٦-٠٧-٢٧T٠٠:٠٠:٠٠Z",
+    "available_at": "٢٠٢٦-٠٧-٢٧T٠٠:٠٠:٠٠Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "Arabic-Indic digits: Python re \\d matches Unicode decimals, JS \\d is ASCII-only — both must reject"
+  },
+  {
+   "id": "intl_unicode_digits_target_time",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "٢٠٢٦-٠٧-٢٧T٠٠:٠٠:٠٠Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "same asymmetry on the third timestamp"
+  },
+  {
+   "id": "date_year_0000",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "0000-01-01T00:00:00Z",
+    "available_at": "0000-01-01T00:00:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "year 0000 is outside datetime's domain in Python (raw ValueError) and is remapped by Date.UTC in JS — rejected explicitly on both sides"
+  },
+  {
+   "id": "valid_year_0099_to_0100",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "0099-12-31T23:59:59Z",
+    "available_at": "0099-12-31T23:59:59Z",
+    "target_time": "0100-01-01T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 0.0062,
+     "lower": -0.011,
+     "upper": 0.024
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "valid",
+   "note": "Date.UTC remaps years 0-99 to 1900-1999, inverting the ordering — the TS mirror must use integer civil-date arithmetic"
+  },
+  {
+   "id": "num_point_int_beyond_double_range",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "401-digit integer: Python math.isfinite raises OverflowError, JS JSON.parse yields Infinity — both must reject cleanly"
+  },
+  {
+   "id": "num_bounds_beyond_safe_integer",
+   "payload": {
+    "forecast_id": "fo-2026-07-27-ridge-h5",
+    "forecast_spec_id": "usdcop_forecast_zoo_v3",
+    "asset": "usdcop",
+    "model_id": "ridge_v2",
+    "horizon": "5d",
+    "as_of": "2026-07-27T00:00:00Z",
+    "available_at": "2026-07-27T00:05:00Z",
+    "target_time": "2026-08-03T00:00:00Z",
+    "prediction": {
+     "type": "return",
+     "point": 9007199254740992,
+     "lower": 9007199254740993,
+     "upper": 9007199254740994
+    },
+    "model_fingerprint": "sha256:deadbeef",
+    "data_snapshot_id": "snap-0001",
+    "diagnostic_only": true
+   },
+   "expect": "invalid",
+   "note": "lower=2^53+1 is not representable as a double: JS JSON.parse collapses it onto point and accepts an interval Python rejects"
   }
  ]
 }

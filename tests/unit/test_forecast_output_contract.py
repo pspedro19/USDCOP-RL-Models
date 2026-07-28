@@ -347,8 +347,8 @@ CASES = _load_cases()
 class TestSharedCaseTable:
     def test_fixture_pin(self):
         """Anti-drift: the case table cannot grow/shrink silently."""
-        assert len(CASES) == 90, (
-            "case-table-v1:90 — update BOTH runners and the pin deliberately"
+        assert len(CASES) == 96, (
+            "case-table-v1:96 — update BOTH runners and the pin deliberately"
         )
 
     @pytest.mark.parametrize("case_id,payload,expect", CASES,

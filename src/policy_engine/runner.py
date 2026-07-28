@@ -23,7 +23,6 @@ Contract: CTR-POLICY-BACKEND-001
 
 from __future__ import annotations
 
-import importlib
 import json
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -34,15 +33,13 @@ from src.contracts.policy import (
     PolicyContext,
     StrategyDecision,
 )
-from src.contracts.policy_dsl import DeclarativePolicy
 from src.contracts.policy_version import (
     DECISION_SCHEMA_VERSIONS,
-    IMPLEMENTATION_MODES,
-    MODULE_REF_PATTERN,
     PolicyVersionRecord,
     StrategySignalRecord,
 )
 from src.contracts.rule_trace import RuleTrace, RuleTraceEntry, ensure_json_safe
+from src.strategies.policies.loader import build_policy as _loader_build_policy
 
 #: Bumped whenever the evaluation semantics change (travels in the index).
 POLICY_ENGINE_VERSION = "1.0.0"
@@ -50,66 +47,50 @@ POLICY_ENGINE_VERSION = "1.0.0"
 #: The only declared input fallbacks (mirrored in the TS contract).
 FALLBACK_MODES = ("FAIL_CLOSED", "FLAT")
 
-#: A ``coded_policy`` may only be imported from these Git-versioned roots.
-#: The module reference is data from a spec: without an allowlist it would be
-#: an arbitrary-import path (invariant 6 in spirit — YAML never executes code).
-ALLOWED_POLICY_ROOTS = ("src.strategies.", "strategies.policies.")
+#: The coded_policy import allowlist is NOT redefined here: it is
+#: ``loader.ALLOWED_MODULE_PREFIX`` (``src.strategies.policies.``), the narrow
+#: one. A second allowlist is a second policy (INTEGRATION-CONTRACT F-09).
 
 REASON_INPUT_MISSING = "INPUT_MISSING"
 REASON_INPUT_STALE = "INPUT_STALE"
 
 
 # ---------------------------------------------------------------------------
-# Policy construction
+# Policy construction — DELEGATED, not reimplemented
 # ---------------------------------------------------------------------------
+#
+# There used to be TWO ``build_policy`` functions with different semantics
+# (INTEGRATION-CONTRACT.md F-09 / TDD-GAPS.md G-13): this one, and
+# ``src/strategies/policies/loader.py::build_policy``. Invariant 4 of
+# `.claude/rules/strategy-engines.md` — "un solo motor de evaluación; dos
+# implementaciones = el backtest miente" — makes that a defect, not a
+# duplication of convenience, because the two disagreed on what is even
+# buildable.
+#
+# The loader is the SSOT. The choice is technical, not alphabetical:
+#
+#   1. It HONOURS ``migration.status``. A spec marked ``SPEC_ONLY`` (documento
+#      de record, no runnable policy) is fail-closed there; this function
+#      ignored ``migration`` entirely and happily built one.
+#   2. It VERIFIES THE FREEZE: ``governance.policy_hash`` must equal the hash
+#      derived from the spec's economic content, which is what makes "congelar
+#      la receta ES congelar la estrategia" checkable. This function never
+#      looked at it.
+#   3. Its import allowlist is the NARROW one (``src.strategies.policies.``);
+#      this one accepted all of ``src.strategies.`` plus ``strategies.policies.``.
+#   4. It runs the full structural validation, including building the
+#      declarative AST against the operator whitelist (invariant 6).
+#   5. It is the one with real callers — ``scripts/validation/
+#      {validate_policy_specs,check_policy_parity}.py`` and the spec test suite
+#      all import it. This one had ZERO callers and was exported as the public
+#      API anyway, so the LAX gate was the advertised one.
+#
+# Nothing is wrapped: rebinding the name keeps ONE function object, so
+# ``policy_engine.build_policy is loader.build_policy`` is literally true and a
+# future divergence cannot hide behind a thin adapter.
 
-def build_policy(spec: Mapping[str, Any]) -> Policy:
-    """
-    Build a ``Policy`` from a parsed spec.
-
-    ``implementation.mode``:
-    - ``declarative`` -> :class:`DeclarativePolicy` (whitelist AST, no code).
-    - ``coded_policy`` -> import ``package.module:ClassName`` from an
-      allowlisted root and instantiate it with the spec.
-    """
-    if not isinstance(spec, Mapping):
-        raise ValueError(f"policy spec must be a mapping, got {spec!r}")
-    implementation = spec.get("implementation", {})
-    if not isinstance(implementation, Mapping):
-        raise ValueError("spec.implementation must be a mapping")
-    mode = implementation.get("mode", "declarative")
-    if mode not in IMPLEMENTATION_MODES:
-        raise ValueError(
-            f"implementation.mode must be one of {IMPLEMENTATION_MODES}, got {mode!r}"
-        )
-    if mode == "declarative":
-        return DeclarativePolicy(spec)
-
-    module_reference = implementation.get("module")
-    if not isinstance(module_reference, str) or not MODULE_REF_PATTERN.fullmatch(
-        module_reference
-    ):
-        raise ValueError(
-            "coded_policy requires implementation.module "
-            f"'package.module:ClassName', got {module_reference!r}"
-        )
-    if not module_reference.startswith(ALLOWED_POLICY_ROOTS):
-        raise ValueError(
-            f"coded_policy module {module_reference!r} is outside the allowed roots "
-            f"{ALLOWED_POLICY_ROOTS}"
-        )
-    module_name, _, class_name = module_reference.partition(":")
-    module = importlib.import_module(module_name)
-    policy_cls = getattr(module, class_name, None)
-    if policy_cls is None:
-        raise ValueError(f"{module_name} has no attribute {class_name!r}")
-    policy = policy_cls(spec)
-    if not isinstance(policy, Policy):
-        raise ValueError(
-            f"{module_reference} does not implement the Policy protocol "
-            "(required_features/validate_inputs/evaluate)"
-        )
-    return policy
+#: THE constructor. Re-exported, never reimplemented — see the note above.
+build_policy = _loader_build_policy
 
 
 # ---------------------------------------------------------------------------

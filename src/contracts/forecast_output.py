@@ -92,10 +92,19 @@ TIMESTAMP_FIELDS = ("as_of", "available_at", "target_time")
 
 #: Strict ISO8601 grammar (see module docstring). Mirrored character by
 #: character in the TS contract.
+#: ``[0-9]`` is NOT ``\d`` here: in Python ``\d`` matches every Unicode decimal
+#: digit, so ``٢٠٢٦-٠١-٠١T٠٠:٠٠:٠٠Z`` (Arabic-Indic) matched, ``int()`` happily
+#: converted it and the record was ACCEPTED — while JavaScript's ``\d`` is
+#: ASCII-only and the TS mirror rejected the very same string. Pinning the class
+#: to ASCII makes the two grammars identical by construction.
 _ISO8601_RE = re.compile(
-    r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d{1,6})?"
-    r"(Z|[+-]\d{2}:\d{2})?$"
+    r"^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})"
+    r"(\.[0-9]{1,6})?(Z|[+-][0-9]{2}:[0-9]{2})?$"
 )
+
+#: Largest integer-valued magnitude that survives the Python <-> JSON <-> JS
+#: boundary unchanged (JS numbers are float64). See :func:`_is_finite`.
+MAX_SAFE_INTEGER = 2**53 - 1
 
 
 class ForecastOutputError(ValueError):
@@ -356,8 +365,35 @@ def ingest_forecast_outputs(rows: Iterable[Any]) -> list[ForecastOutput]:
 # ---------------------------------------------------------------------------
 
 def _is_finite(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) \
-        and math.isfinite(value)
+    """Finite AND bilaterally representable (mirror of ``finite()`` in TS).
+
+    Two ways a number used to break the mirror:
+
+    - an integer literal beyond the float64 RANGE (``1`` followed by 400 zeros)
+      made ``math.isfinite`` raise ``OverflowError`` — a raw crash escaping a
+      function whose contract is to RETURN violations — while ``JSON.parse``
+      turned the same literal into ``Infinity`` and the TS side rejected it
+      cleanly;
+    - an integer literal beyond the float64 PRECISION (``9007199254740993``)
+      stayed exact in Python but was silently rounded to ``...992`` by
+      ``JSON.parse``, so TS accepted an interval Python rejected.
+
+    Both are now rejected on both sides. The precision rule is phrased over
+    *integer-valued* numbers because that is what TypeScript can still decide
+    after ``JSON.parse`` has erased the int/float distinction; it is
+    deliberately over-strict for huge float64 integers like ``1e300``.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        as_float = float(value)
+    except (OverflowError, ValueError):
+        return False                      # int outside the float64 range
+    if not math.isfinite(as_float):
+        return False
+    if as_float.is_integer() and abs(as_float) > MAX_SAFE_INTEGER:
+        return False
+    return True
 
 
 def _check_finite(name: str, value: Any, errors: list[str], allow_none: bool = False) -> None:
@@ -399,6 +435,12 @@ def _parse_contract_timestamp(
     year, month, day, hour, minute, second = (int(m.group(i)) for i in range(1, 7))
     frac, offset_raw = m.group(7), m.group(8)
 
+    # Year 0000 matches the grammar but is outside ``datetime``'s domain:
+    # constructing it raised a raw ValueError out of a validator that promises to
+    # RETURN violations, and the TS mirror accepted the same string. Rejected
+    # explicitly on both sides — supported domain is 0001..9999.
+    if year < 1:
+        return None, None, f"{name} has an impossible year: {value!r}"
     if not (1 <= month <= 12):
         return None, None, f"{name} has an impossible month: {value!r}"
     if not (1 <= day <= _days_in_month(year, month)):

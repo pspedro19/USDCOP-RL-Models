@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
 import { vi } from 'vitest'
 
 // Mock window.matchMedia
@@ -115,6 +116,14 @@ global.fetch = vi.fn()
 vi.setConfig({ testTimeout: 30000 })
 
 // Setup cleanup
+//
+// `cleanup()` unmounts anything React Testing Library rendered. Without it the
+// jsdom document accumulates every previously rendered tree, so a `getByTestId`
+// that is correct in isolation throws "Found multiple elements" as soon as
+// another component file runs first — a test that is green alone and red in the
+// suite. Testing Library's auto-cleanup does not engage in this project, so it
+// is registered explicitly here (once, globally) rather than per file.
 afterEach(() => {
+  cleanup()
   vi.clearAllMocks()
 })

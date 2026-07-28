@@ -100,9 +100,9 @@ const { cases, declaredCount } = loadFixture();
 
 describe('ForecastOutput shared case table (Py <-> TS parity)', () => {
   it('pins the case count (anti-drift)', () => {
-    // case-table-v1:90 — update BOTH runners and the pin deliberately.
-    expect(cases.length).toBe(90);
-    expect(declaredCount).toBe(90);
+    // case-table-v1:96 — update BOTH runners and the pin deliberately.
+    expect(cases.length).toBe(96);
+    expect(declaredCount).toBe(96);
   });
 
   for (const c of cases) {

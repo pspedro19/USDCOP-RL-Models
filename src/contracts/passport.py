@@ -91,6 +91,17 @@ SMALL_SAMPLE_SUPPRESSED_FIELDS: tuple[str, ...] = (
     "dsr_global", "psr", "bootstrap_ci_low", "bootstrap_ci_high",
 )
 
+#: The §6 verdict when the published source does not let us determine N.
+#: **Fail-closed** (S-04): the guard used to return untouched on an unknown N
+#: ("absence of N is not evidence of N<20"), which is backwards for a
+#: *publication* guard — the manifests that omit the count are exactly the ones
+#: with 1-3 trades. ``btc_hodl_b1`` published Sharpe 0.793 and p=0.0242 off ONE
+#: trade with both guards green in both languages.
+UNDETERMINABLE_N_REASON = (
+    "N no determinable desde la fuente publicada (fail-closed, quant-constitution §6: "
+    "sin conteo de trades no se publica Sharpe/p-value/DSR)"
+)
+
 #: The Passport/Control Tower is a DIAGNOSTIC surface (approval-gates.md §3,
 #: plan 00 ACTION vs DIAGNOSTIC). Vote 2 lives ONLY on /dashboard. Any of these
 #: appearing in a Passport payload is a contract violation, not a feature.
@@ -158,22 +169,74 @@ def is_available(field: Any) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _format_n(n: int | float) -> str:
+    """Render N identically in both runtimes (TS ``String(3.0)`` is ``"3"``)."""
+    return str(int(n)) if float(n).is_integer() else repr(float(n))
+
+
+def resolve_n_trades(block: Any) -> int | float | None:
+    """The trade count of a performance/sleeve block, or ``None`` when it cannot
+    be determined **with certainty** from what was published.
+
+    ``None`` covers all three shapes the real artifacts produce: the key is
+    absent, the field is ``unavailable``, or the field is *published with value
+    null* (``sourced(None, path)`` — what the composer emits when a manifest
+    headline carries no trade count). All three mean "we do not know N".
+    """
+    if not isinstance(block, dict):
+        return None
+    field = block.get("n_trades")
+    n = field.get("value") if isinstance(field, dict) else field
+    if isinstance(n, bool) or not isinstance(n, (int, float)):
+        return None
+    return n
+
+
+def small_sample_reason(n: int | float | None) -> str:
+    """The single sentence both runtimes attach to a suppressed field."""
+    if n is None:
+        return UNDETERMINABLE_N_REASON
+    return (f"N={_format_n(n)} < {MIN_TRADES_FOR_RATIOS} "
+            f"(quant-constitution §6: solo conteo y PnL)")
+
+
+def small_sample_violations(block: Any, label: str) -> list[str]:
+    """Inferential fields published on a block whose N does not license them.
+
+    A ratio is publishable **only** when the block itself carries a published
+    trade count ``>= 20``. Unknown N is a violation, not a pass.
+    """
+    n = resolve_n_trades(block)
+    if n is not None and n >= MIN_TRADES_FOR_RATIOS:
+        return []
+    detail = (f"N={_format_n(n)} < {MIN_TRADES_FOR_RATIOS}" if n is not None
+              else "N no determinable desde la fuente publicada (fail-closed)")
+    return [
+        f"{label}.{key}: published with {detail} (quant-constitution §6)"
+        for key in SMALL_SAMPLE_SUPPRESSED_FIELDS
+        if is_available(block.get(key) if isinstance(block, dict) else None)
+    ]
+
+
 def suppress_small_sample(env_perf: dict) -> dict:
-    """Null every inferential field of an env-performance block when N < 20.
+    """Null every inferential field of an env-performance block unless a
+    published trade count of at least 20 licenses it.
 
     Descriptive quantities (return, PnL, drawdown, win rate, counts) survive —
     they describe what happened. Ratios and p-values do not: "con N < 20 trades
     se reporta solo conteo y PnL". Mutates and returns ``env_perf``.
 
-    The suppressed field keeps its Sourced shape but flips to ``unavailable``
-    with an explicit reason, so the UI can say WHY instead of rendering a blank.
+    **Fail-closed on an unknown N** (S-04): the suppressed field keeps its
+    Sourced shape but flips to ``unavailable`` with the reason, so the UI says
+    WHY. Publishing a Sharpe requires *proving* N >= 20 from the artifact; the
+    absence of the count is not a licence, it is the most common way the count
+    is missing precisely because the sample is tiny.
     """
-    n_field = env_perf.get("n_trades")
-    n = n_field.get("value") if isinstance(n_field, dict) else n_field
-    if n is None or (isinstance(n, (int, float)) and n >= MIN_TRADES_FOR_RATIOS):
+    n = resolve_n_trades(env_perf)
+    if n is not None and n >= MIN_TRADES_FOR_RATIOS:
         return env_perf
     env_perf["insufficient_trades"] = True
-    reason = f"N={int(n)} < {MIN_TRADES_FOR_RATIOS} (quant-constitution §6: solo conteo y PnL)"
+    reason = small_sample_reason(n)
     for key in SMALL_SAMPLE_SUPPRESSED_FIELDS:
         if key in env_perf:
             env_perf[key] = unavailable(reason)
@@ -252,15 +315,9 @@ def validate_strategy_passport(payload: Any) -> list[str]:
         for env, block in perf.items():
             _err(errors, env in PASSPORT_ENVS, f"passport.performance: unknown env {env!r}")
             if isinstance(block, dict):
-                n_field = block.get("n_trades")
-                n = n_field.get("value") if isinstance(n_field, dict) else None
-                if isinstance(n, (int, float)) and n < MIN_TRADES_FOR_RATIOS:
-                    for key in SMALL_SAMPLE_SUPPRESSED_FIELDS:
-                        if is_available(block.get(key)):
-                            errors.append(
-                                f"passport.performance.{env}.{key}: published with N={n} "
-                                f"< {MIN_TRADES_FOR_RATIOS} (quant-constitution §6)"
-                            )
+                errors.extend(
+                    small_sample_violations(block, f"passport.performance.{env}")
+                )
     else:
         errors.append("passport.performance: not an object")
 
@@ -303,6 +360,9 @@ def validate_control_tower(payload: Any) -> list[str]:
             signal = sleeve.get("retirement_signal")
             _err(errors, signal in RETIREMENT_SIGNALS,
                  f"tower.sleeves[{i}].retirement_signal: bad value {signal!r}")
+            # §6 applies to the SLEEVE row too: it is a decision surface, and it
+            # is where `btc_hodl_b1: sharpe=0.793 n_trades=null` was published.
+            errors.extend(small_sample_violations(sleeve, f"tower.sleeves[{i}]"))
     else:
         errors.append("tower.sleeves: not a list")
 
@@ -328,7 +388,9 @@ __all__ = [
     "HEALTH_CLOCKS", "TRIAL_KINDS",
     "MIN_TRADES_FOR_RATIOS", "N_MAX_TRIALS", "DSR_BAR",
     "SMALL_SAMPLE_SUPPRESSED_FIELDS", "FORBIDDEN_PASSPORT_ACTIONS",
+    "UNDETERMINABLE_N_REASON",
     "sanitize_number", "sourced", "unavailable", "is_available",
+    "resolve_n_trades", "small_sample_reason", "small_sample_violations",
     "suppress_small_sample", "can_show_ratios",
     "validate_sourced", "validate_strategy_passport", "validate_control_tower",
 ]

@@ -132,8 +132,27 @@ describe('suppressSmallSample (quant-constitution §6)', () => {
     expect(out.sharpe.value).toBe(1.9);
   });
 
-  it('with an unknown N leaves it alone (absence of N is not evidence of N<20)', () => {
-    expect(suppressSmallSample(envWith(null)).sharpe.value).toBe(1.9);
+  it('with an UNDETERMINABLE N fails closed (S-04)', () => {
+    // The first version returned untouched when N was unknown ("absence of N is
+    // not evidence of N<20"). Backwards for a publication guard: the manifests
+    // that omit the count are exactly the ones with 1-3 trades (btc_hodl_b1
+    // published Sharpe 0.793 / p=0.0242 off ONE trade). No N ⇒ no ratio.
+    const out = suppressSmallSample(envWith(null));
+    for (const key of ['sharpe', 'calmar', 'p_value', 'dsr_family'] as const) {
+      expect(out[key].value).toBeNull();
+      expect(out[key].source.status).toBe('unavailable');
+      expect(out[key].source.pending).toMatch(/no determinable/);
+    }
+    expect(out.insufficient_trades).toBe(true);
+    expect(out.return_pct.value).toBe(3.36);   // descriptive survives
+  });
+
+  it('with a published-but-null N also fails closed (the real artifact shape)', () => {
+    const env = envWith(11);
+    env.n_trades = sourced<number>(null, 'p');
+    const out = suppressSmallSample(env);
+    expect(out.sharpe.value).toBeNull();
+    expect(out.insufficient_trades).toBe(true);
   });
 });
 
@@ -171,6 +190,27 @@ describe('validateStrategyPassport', () => {
     const errors = validateStrategyPassport(p);
     expect(errors.join()).toMatch(/performance\.live\.sharpe: published with N=3/);
     expect(errors.join()).toMatch(/performance\.live\.p_value/);
+  });
+
+  it('rejects a Sharpe published with an UNDETERMINABLE N (S-04)', () => {
+    const p = minimalPassport();
+    const env = envWith(3);
+    env.n_trades = unavailable<number>('el manifiesto no publica el conteo de trades');
+    (p.performance as Record<string, EnvPerformance>).live = env;
+    const errors = validateStrategyPassport(p).join();
+    expect(errors).toMatch(/performance\.live\.sharpe/);
+    expect(errors).toMatch(/N no determinable/);
+    expect(errors).toMatch(/performance\.live\.p_value/);
+  });
+
+  it('rejects a Sharpe published with a published-but-null N (S-04)', () => {
+    const p = minimalPassport();
+    const env = envWith(3);
+    env.n_trades = sourced<number>(null, 'public/data/strategies/x/manifest.json');
+    (p.performance as Record<string, EnvPerformance>).live = env;
+    const errors = validateStrategyPassport(p).join();
+    expect(errors).toMatch(/performance\.live\.sharpe/);
+    expect(errors).toMatch(/N no determinable/);
   });
 
   it('rejects any action affordance — the surface is DIAGNOSTIC', () => {
@@ -213,6 +253,42 @@ describe('validateControlTower', () => {
   it('rejects a sleeve with an invented retirement signal', () => {
     const t = minimalTower({ sleeves: [{ strategy_id: 'x', retirement_signal: 'probably_fine' }] });
     expect(validateControlTower(t).join()).toMatch(/retirement_signal: bad value/);
+  });
+
+  it('rejects a sleeve Sharpe with an undeterminable N (S-04, tower half)', () => {
+    const t = minimalTower({
+      sleeves: [{
+        strategy_id: 'btc_hodl_b1',
+        retirement_signal: 'unknown',
+        n_trades: unavailable<number>('el manifiesto no publica el conteo de trades'),
+        sharpe: sourced(0.793, 'public/data/registry.json'),
+        dsr_family: sourced(0.8357, 'public/data/production/approval_state.json'),
+      }],
+    });
+    const errors = validateControlTower(t).join();
+    expect(errors).toMatch(/sleeves\[0\]\.sharpe/);
+    expect(errors).toMatch(/N no determinable/);
+    expect(errors).toMatch(/sleeves\[0\]\.dsr_family/);
+  });
+
+  it('rejects a sleeve Sharpe with N<20', () => {
+    const t = minimalTower({
+      sleeves: [{
+        strategy_id: 'x', retirement_signal: 'unknown',
+        n_trades: sourced(1, 'p'), sharpe: sourced(0.793, 'p'),
+      }],
+    });
+    expect(validateControlTower(t).join()).toMatch(/published with N=1/);
+  });
+
+  it('leaves a sleeve with enough trades intact', () => {
+    const t = minimalTower({
+      sleeves: [{
+        strategy_id: 'x', retirement_signal: 'unknown',
+        n_trades: sourced(34, 'p'), sharpe: sourced(3.35, 'p'),
+      }],
+    });
+    expect(validateControlTower(t)).toEqual([]);
   });
 
   it('rejects action affordances on the tower too', () => {

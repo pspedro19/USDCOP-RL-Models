@@ -77,6 +77,17 @@ export const SMALL_SAMPLE_SUPPRESSED_FIELDS = [
   'dsr_global', 'psr', 'bootstrap_ci_low', 'bootstrap_ci_high',
 ] as const;
 
+/** The §6 verdict when the published source does not let us determine N.
+ *  FAIL-CLOSED (S-04): the guard used to return untouched on an unknown N
+ *  ("absence of N is not evidence of N<20"), which is backwards for a
+ *  PUBLICATION guard — the manifests that omit the count are exactly the ones
+ *  with 1-3 trades. `btc_hodl_b1` published Sharpe 0.793 and p=0.0242 off ONE
+ *  trade with both guards green in both languages. Mirrors
+ *  `src/contracts/passport.py::UNDETERMINABLE_N_REASON`. */
+export const UNDETERMINABLE_N_REASON =
+  'N no determinable desde la fuente publicada (fail-closed, quant-constitution §6: '
+  + 'sin conteo de trades no se publica Sharpe/p-value/DSR)';
+
 /** The Passport/Tower is DIAGNOSTIC. Vote 2 lives ONLY on /dashboard.
  *  Any of these keys in a payload is a contract violation, not a feature. */
 export const FORBIDDEN_PASSPORT_ACTIONS = [
@@ -381,15 +392,57 @@ export interface ControlTowerSnapshot {
 // ──────────────────────────────────────────────────────────────── small sample
 
 /**
- * Null every inferential field of an env-performance block when N < 20.
- * Descriptive quantities survive; ratios and p-values do not. The suppressed
- * field keeps its Sourced shape but flips to `unavailable` with the reason, so
- * the UI says WHY instead of rendering a blank.
+ * The trade count of a performance/sleeve block, or `null` when it cannot be
+ * determined WITH CERTAINTY from what was published. `null` covers all three
+ * shapes the real artifacts produce: key absent, field `unavailable`, or field
+ * published-with-value-null (`sourced(null, path)` — what the composer emits
+ * when a manifest headline carries no trade count). All three mean "unknown".
+ * Mirror of `src/contracts/passport.py::resolve_n_trades`.
+ */
+export function resolveNTrades(block: unknown): number | null {
+  if (!block || typeof block !== 'object') return null;
+  const field = (block as Record<string, unknown>).n_trades;
+  const n = (field && typeof field === 'object' && 'value' in (field as object))
+    ? (field as Sourced<unknown>).value
+    : field;
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
+}
+
+/** The single sentence both runtimes attach to a suppressed field. */
+export function smallSampleReason(n: number | null): string {
+  if (n == null) return UNDETERMINABLE_N_REASON;
+  return `N=${n} < ${MIN_TRADES_FOR_RATIOS} (quant-constitution §6: solo conteo y PnL)`;
+}
+
+/** Inferential fields published on a block whose N does not license them.
+ *  A ratio is publishable ONLY when the block carries a published trade count
+ *  >= 20. Unknown N is a violation, not a pass. */
+export function smallSampleViolations(block: unknown, label: string): string[] {
+  const n = resolveNTrades(block);
+  if (n != null && n >= MIN_TRADES_FOR_RATIOS) return [];
+  const detail = n != null
+    ? `N=${n} < ${MIN_TRADES_FOR_RATIOS}`
+    : 'N no determinable desde la fuente publicada (fail-closed)';
+  const rec = (block ?? {}) as Record<string, Sourced<unknown>>;
+  return SMALL_SAMPLE_SUPPRESSED_FIELDS
+    .filter((key) => isAvailable(rec[key]))
+    .map((key) => `${label}.${key}: published with ${detail} (quant-constitution §6)`);
+}
+
+/**
+ * Null every inferential field of an env-performance block unless a published
+ * trade count of at least 20 licenses it. Descriptive quantities survive;
+ * ratios and p-values do not. The suppressed field keeps its Sourced shape but
+ * flips to `unavailable` with the reason, so the UI says WHY instead of
+ * rendering a blank.
+ *
+ * FAIL-CLOSED on an unknown N (S-04): publishing a Sharpe requires PROVING
+ * N >= 20 from the artifact.
  */
 export function suppressSmallSample(perf: EnvPerformance): EnvPerformance {
-  const n = perf.n_trades?.value;
-  if (n == null || n >= MIN_TRADES_FOR_RATIOS) return perf;
-  const reason = `N=${n} < ${MIN_TRADES_FOR_RATIOS} (quant-constitution §6: solo conteo y PnL)`;
+  const n = resolveNTrades(perf);
+  if (n != null && n >= MIN_TRADES_FOR_RATIOS) return perf;
+  const reason = smallSampleReason(n);
   const out = { ...perf, insufficient_trades: true } as EnvPerformance & Record<string, unknown>;
   for (const key of SMALL_SAMPLE_SUPPRESSED_FIELDS) {
     if (key in out) out[key] = unavailable(reason);
@@ -457,14 +510,7 @@ export function validateStrategyPassport(payload: unknown): string[] {
       if (!(PASSPORT_ENVS as readonly string[]).includes(env)) {
         errors.push(`passport.performance: unknown env ${JSON.stringify(env)}`);
       }
-      const n = block?.n_trades?.value;
-      if (typeof n === 'number' && n < MIN_TRADES_FOR_RATIOS) {
-        for (const key of SMALL_SAMPLE_SUPPRESSED_FIELDS) {
-          if (isAvailable((block as unknown as Record<string, Sourced<unknown>>)[key])) {
-            errors.push(`passport.performance.${env}.${key}: published with N=${n} < ${MIN_TRADES_FOR_RATIOS} (quant-constitution §6)`);
-          }
-        }
-      }
+      errors.push(...smallSampleViolations(block, `passport.performance.${env}`));
     }
   }
   for (const key of FORBIDDEN_PASSPORT_ACTIONS) {
@@ -502,6 +548,9 @@ export function validateControlTower(payload: unknown): string[] {
       if (!(RETIREMENT_SIGNALS as readonly string[]).includes(row?.retirement_signal as string)) {
         errors.push(`tower.sleeves[${i}].retirement_signal: bad value ${JSON.stringify(row?.retirement_signal)}`);
       }
+      // §6 applies to the SLEEVE row too: it is a decision surface, and it is
+      // where `btc_hodl_b1: sharpe=0.793 n_trades=null` was published.
+      errors.push(...smallSampleViolations(row, `tower.sleeves[${i}]`));
     });
   }
   const data = t.data as Record<string, unknown> | undefined;

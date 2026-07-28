@@ -51,13 +51,18 @@ from src.contracts.rule_trace import (
 ROOT = Path(__file__).resolve().parents[2]
 TS_MIRROR = ROOT / "usdcop-trading-dashboard" / "lib" / "contracts" / "policy.contract.ts"
 
+#: A REAL sha256 digest length. HASH_PATTERN is pinned to 64 hex chars, so a
+#: placeholder like "sha256:deadbeef" is now (correctly) rejected as a foreign
+#: hash rather than accepted as "a short valid one" — INTEGRATION-CONTRACT F-02.
+FULL_HASH = "sha256:" + "deadbeef" * 8  # 64 lowercase hex chars
+
 
 def ma200_spec() -> dict:
     """Declarative MA200 spec (mode B, spec §3.2) as parsed from YAML."""
     return {
         "id": "spx500_daily_ma200_v1",
         "version": "2.0.0",
-        "policy_hash": "sha256:deadbeef",
+        "policy_hash": FULL_HASH,
         "resolution": {
             "mode": "first_match",
             "default_target_exposure": 0.0,
@@ -94,7 +99,7 @@ class TestMA200Declarative:
         assert decision.target_exposure == 1.0
         assert decision.reason_codes == ("CLOSE_ABOVE_MA200",)
         assert decision.engine_ref.type == "rule_based"
-        assert decision.engine_ref.policy_hash == "sha256:deadbeef"
+        assert decision.engine_ref.policy_hash == FULL_HASH
         assert decision.decision_components == {"close": 6412.8, "ma_200": 5984.2}
 
     def test_flat_default_when_close_below_ma(self):
@@ -235,7 +240,7 @@ class TestEngineRef:
 
     def test_rule_based_forbids_model_snapshot(self):
         with pytest.raises(ValueError, match="model"):
-            EngineRef(type="rule_based", policy_hash="sha256:deadbeef", model_snapshot_id="m1")
+            EngineRef(type="rule_based", policy_hash=FULL_HASH, model_snapshot_id="m1")
 
     def test_ml_requires_model_snapshot(self):
         with pytest.raises(ValueError, match="model_snapshot_id"):
@@ -246,7 +251,7 @@ class TestEngineRef:
 
     def test_composite_carries_policy_and_models(self):
         ref = EngineRef(
-            type="composite", policy_hash="sha256:deadbeef", model_snapshot_ids=("m1", "m2")
+            type="composite", policy_hash=FULL_HASH, model_snapshot_ids=("m1", "m2")
         )
         assert ref.to_dict()["model_snapshot_ids"] == ["m1", "m2"]
 
@@ -276,7 +281,7 @@ class TestStatefulContext:
                 return StrategyDecision(
                     sleeve_id="streak_v1",
                     strategy_version="1.0.0",
-                    engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+                    engine_ref=EngineRef(type="rule_based", policy_hash=FULL_HASH),
                     as_of=context.as_of or "",
                     direction=direction,
                     target_exposure=1.0 if direction == "LONG" else 0.0,
@@ -300,7 +305,7 @@ class TestDecisionInvariants:
             StrategyDecision(
                 sleeve_id="s",
                 strategy_version="1",
-                engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+                engine_ref=EngineRef(type="rule_based", policy_hash=FULL_HASH),
                 as_of="2026-07-27",
                 direction="UP",
                 target_exposure=1.0,
@@ -310,12 +315,12 @@ class TestDecisionInvariants:
         d = StrategyDecision(
             sleeve_id="s",
             strategy_version="1",
-            engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+            engine_ref=EngineRef(type="rule_based", policy_hash=FULL_HASH),
             as_of="2026-07-27",
             direction="FLAT",
             target_exposure=0.0,
         ).to_dict()
-        assert d["engine_ref"] == {"type": "rule_based", "policy_hash": "sha256:deadbeef"}
+        assert d["engine_ref"] == {"type": "rule_based", "policy_hash": FULL_HASH}
         assert d["decision_fingerprint"].startswith("sha256:")
         assert d["signal_id"].startswith("s:2026-07-27:")
 
@@ -335,7 +340,7 @@ def _decision(**overrides) -> StrategyDecision:
     kwargs = dict(
         sleeve_id="s",
         strategy_version="1",
-        engine_ref=EngineRef(type="rule_based", policy_hash="sha256:deadbeef"),
+        engine_ref=EngineRef(type="rule_based", policy_hash=FULL_HASH),
         as_of="2026-07-27",
         direction="FLAT",
         target_exposure=0.0,
@@ -718,7 +723,6 @@ class TestTsMirrorFailClosedValidators:
 # trace_schema accepted by from_dict.
 # ---------------------------------------------------------------------------
 
-FULL_HASH = "sha256:" + "deadbeef" * 8  # 64 lowercase hex chars
 
 
 class TestRemedy3StrictExposures:

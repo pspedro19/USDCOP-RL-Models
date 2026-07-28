@@ -31,8 +31,6 @@ Contract: CTR-POLICY-001 (BL-45 R1)
 
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 from typing import Any, Mapping
 
@@ -41,6 +39,7 @@ from src.contracts.policy import (
     EngineRef,
     PolicyContext,
     StrategyDecision,
+    policy_canonical_hash,
     require_hash,
 )
 from src.contracts.rule_trace import RuleTrace, RuleTraceEntry
@@ -123,13 +122,14 @@ def _strict_exposure(value: Any, where: str) -> float:
 
 def _canonical_policy_hash(spec: Mapping[str, Any]) -> str:
     """
-    Deterministic sha256 of the canonical spec JSON. Strict on BOTH axes
-    (C-004 remedy-4 divergence 4): ``allow_nan=False`` and no ``default=``
-    fallback — a spec carrying a non-JSON type raises instead of hashing a
-    silently-stringified value.
+    Deterministic sha256 of the canonical spec JSON.
+
+    Delegates to the family SSOT ``policy.policy_canonical_hash`` — one logical
+    object, one hash (INTEGRATION-CONTRACT.md F-02). Strict on BOTH axes:
+    ``allow_nan=False`` and no ``default=`` fallback, so a spec carrying a
+    non-JSON type raises instead of hashing a silently-stringified value.
     """
-    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), allow_nan=False)
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return policy_canonical_hash(spec)
 
 
 def _snapshot_value(name: str, snapshot: Mapping[str, Any]) -> float:

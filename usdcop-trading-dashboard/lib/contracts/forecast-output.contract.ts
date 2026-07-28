@@ -151,10 +151,42 @@ export interface ForecastOutput {
 // -----------------------------------------------------------------------------
 
 interface ParsedTimestamp {
-  /** Comparable instant. Naive strings are compared against each other on the
-   *  same wall-clock reference (never the machine's local zone). */
-  value: number;
+  /** Whole seconds since the epoch for a validated instant. Naive strings are
+   *  compared against each other on the same wall-clock reference (never the
+   *  machine's local zone). Seconds and microseconds are kept APART so the
+   *  comparison stays exact: a single microsecond counter overflows the 2**53
+   *  exact-integer range past ~year 2255, which would silently make two
+   *  far-future timestamps compare equal in TS while Python distinguishes them. */
+  seconds: number;
+  micros: number;
   aware: boolean;
+}
+
+/** -1 | 0 | 1 — exact ordering of two parsed timestamps. */
+function cmpTimestamp(a: ParsedTimestamp, b: ParsedTimestamp): number {
+  if (a.seconds !== b.seconds) return a.seconds < b.seconds ? -1 : 1;
+  if (a.micros !== b.micros) return a.micros < b.micros ? -1 : 1;
+  return 0;
+}
+
+/**
+ * Howard Hinnant's days-from-civil — the same integer arithmetic Python's
+ * `datetime` performs internally, and the same helper the policy_version
+ * mirror uses.
+ *
+ * `Date.UTC` is deliberately NOT used here: it remaps years 0-99 onto
+ * 1900-1999 (a legacy `Date` quirk), so `0099-12-31` became 1999-12-31 while
+ * `0100-01-01` stayed in year 100 — inverting an ordering that Python gets
+ * right and making the two runtimes disagree on a record neither grammar
+ * rejects.
+ */
+function daysFromCivil(year: number, month: number, day: number): number {
+  const y = year - (month <= 2 ? 1 : 0);
+  const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (month + (month > 2 ? -3 : 9)) + 2) / 5) + day - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
 }
 
 function daysInMonth(year: number, month: number): number {
@@ -189,6 +221,12 @@ function parseContractTimestamp(
   const frac = m[7];
   const offsetRaw = m[8];
 
+  // Year 0000 is outside `datetime`'s domain (Python raises for year 0), so the
+  // mirror rejects it explicitly instead of one side accepting what the other
+  // cannot even construct. Supported domain on BOTH sides: 0001..9999.
+  if (year < 1) {
+    return { parsed: null, error: `${name} has an impossible year: ${JSON.stringify(value)}` };
+  }
   if (month < 1 || month > 12) {
     return { parsed: null, error: `${name} has an impossible month: ${JSON.stringify(value)}` };
   }
@@ -216,22 +254,42 @@ function parseContractTimestamp(
     }
   }
 
-  // Date.UTC is only arithmetic here (all components already validated), so the
-  // result is independent of the machine's timezone.
-  const epochMicros =
-    Date.UTC(year, month - 1, day, hour, minute, second) * 1000 +
-    micros -
-    offsetMinutes * 60 * 1_000_000;
+  // Pure integer arithmetic (all components already validated), so the result is
+  // independent of the machine's timezone AND of `Date`'s legacy year remapping.
+  const epochSeconds =
+    daysFromCivil(year, month, day) * 86400 +
+    hour * 3600 +
+    minute * 60 +
+    second -
+    offsetMinutes * 60;
 
-  return { parsed: { value: epochMicros, aware }, error: null };
+  return { parsed: { seconds: epochSeconds, micros, aware }, error: null };
 }
 
 // -----------------------------------------------------------------------------
 // Validation (exact mirror of validate_forecast_payload() in Python)
 // -----------------------------------------------------------------------------
 
+/**
+ * Finite AND bilaterally representable.
+ *
+ * JS has a single float64 numeric type, so an INTEGER-VALUED magnitude above
+ * 2**53-1 loses precision the moment `JSON.parse` reads it (9007199254740993
+ * silently became ...992) while Python keeps the literal exact — the two
+ * runtimes then disagree about whether `lower <= point`. Such values are
+ * rejected on BOTH sides.
+ *
+ * The rule is stated as "integer-valued and outside the safe range" precisely
+ * because that is decidable from TypeScript, where the int/float distinction is
+ * already gone by the time validation runs. It is deliberately over-strict for
+ * huge float64 integers such as 1e300 (rejected on both sides): a prediction of
+ * that magnitude is meaningless in every unit this contract carries, and
+ * symmetry is worth more than reach.
+ */
 function finite(v: unknown): v is number {
-  return typeof v === 'number' && Number.isFinite(v);
+  if (typeof v !== 'number' || !Number.isFinite(v)) return false;
+  if (Number.isInteger(v) && !Number.isSafeInteger(v)) return false;
+  return true;
 }
 
 /** Python's `repr()` for the values that reach these messages. */
@@ -293,13 +351,13 @@ export function validateForecastOutput(raw: unknown): string[] {
           `has no defined ordering (${detail})`,
       );
     } else {
-      const asOf = parsed.as_of!.value;
-      const availableAt = parsed.available_at!.value;
-      const targetTime = parsed.target_time!.value;
-      if (availableAt < asOf) {
+      const asOf = parsed.as_of!;
+      const availableAt = parsed.available_at!;
+      const targetTime = parsed.target_time!;
+      if (cmpTimestamp(availableAt, asOf) < 0) {
         errors.push('available_at must be >= as_of (anti-look-ahead)');
       }
-      if (targetTime <= asOf) {
+      if (cmpTimestamp(targetTime, asOf) <= 0) {
         errors.push('target_time must be > as_of');
       }
     }

@@ -12,6 +12,18 @@ of failure would be invisible without these tests:
    execution service and the 15 acceptance criteria of §30 (§29.4).
 
 Every gate is fail-closed: absent evidence blocks, it never waves through.
+
+FALSE-GREEN WARNING (INTEGRATION-CONTRACT.md F-01): this module imports
+``src.strangler.parity``, which imports ``src.identity.canonical`` — a module
+owned by CODEX (BL-17) that is **not committed**. Everything below therefore
+passes only because that untracked directory exists on this disk. Two brakes
+make that impossible to report as a clean green:
+
+* on a clean clone the import raises loudly (guard in ``src/strangler/parity.py``),
+  so this file is a collection ERROR, never a silent skip;
+* in this working copy :func:`test_strangler_dependency_is_committed` below fails,
+  so the suite can never be quoted as "N/N passed" while the dependency is
+  untracked.
 """
 
 from __future__ import annotations
@@ -51,6 +63,31 @@ from src.strangler.plan import DEFAULT_PLAN_PATH
 
 ROOT = Path(__file__).resolve().parents[2]
 T0 = datetime(2026, 1, 5, 12, 0, tzinfo=timezone.utc)
+
+
+# ------------------------------------------------------- anti-false-green brake
+
+
+def test_strangler_dependency_is_committed() -> None:
+    """This suite's result is only meaningful if its dependencies are in git.
+
+    EXPECTED RED until CODEX commits ``src/identity/`` (INTEGRATION-CONTRACT F-01,
+    TDD-GAPS G-01). Do NOT delete or skip this: without it, the 38 green tests
+    below can be quoted as evidence that code compiles in a clean clone, which
+    is false. The gate logic lives in one place —
+    ``tests/regression/test_repo_self_contained.py`` — this is the local brake.
+    """
+    from tests.regression.test_repo_self_contained import orphan_src_imports
+
+    strangler_orphans = [
+        (path, lineno, module)
+        for path, lineno, module in orphan_src_imports()
+        if path.startswith("src/strangler/")
+    ]
+    assert not strangler_orphans, (
+        "the strangler package imports modules that are NOT in git, so every "
+        f"green below is a false green: {strangler_orphans}"
+    )
 
 
 # --------------------------------------------------------------------------- helpers

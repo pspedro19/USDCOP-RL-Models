@@ -68,8 +68,15 @@ POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
 # policy.contract.ts — change BOTH sides.
 # ---------------------------------------------------------------------------
 
-#: ``sha256:<lowercase-hex>`` (8..64 hex chars; full fingerprints use 64).
-HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{8,64}$")
+#: ``sha256:<64 lowercase hex>`` — the length of the algorithm, not a range.
+#:
+#: This used to be ``{8,64}``, which accepted 57 different lengths and made the
+#: divergence between hash idioms INVISIBLE: a digest produced by a different
+#: canonicalisation, or the truncated hex16 fragment embedded in ``signal_id``,
+#: validated as if it were the canonical fingerprint (INTEGRATION-CONTRACT F-02).
+#: sha256 emits exactly 64 hex characters; anything else is a foreign value and
+#: must be rejected at the boundary rather than compared later.
+HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 #: Identifier form for sleeve_id / snapshot ids / versions.
 ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
@@ -78,16 +85,61 @@ ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
 #: Groups: 1=year 2=month 3=day 4=hour 5=minute 6=second 7=offset.
 #: The form is necessary but NOT sufficient — require_iso_timestamp also
 #: validates the real calendar/clock/offset ranges.
+#: ``[0-9]`` is NOT ``\d``: Python's ``\d`` matches every Unicode decimal digit,
+#: so ``٢٠٢٦-٠٧-٢٧T٠٠:٠٠:٠٠Z`` (Arabic-Indic) matched here, ``int()`` converted
+#: it and ``instant_epoch_seconds`` returned a real epoch — while JavaScript's
+#: ``\d`` is ASCII-only and the TS mirror rejected the identical string. Pinning
+#: the class to ASCII makes both grammars identical by construction.
 ISO_TIMESTAMP_PATTERN = re.compile(
-    r"^(\d{4})-(\d{2})-(\d{2})"
-    r"(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?"
-    r"(Z|[+-]\d{2}:\d{2})?)?$"
+    r"^([0-9]{4})-([0-9]{2})-([0-9]{2})"
+    r"(?:[T ]([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.[0-9]{1,6})?)?"
+    r"(Z|[+-][0-9]{2}:[0-9]{2})?)?$"
 )
 
 
 def is_real_number(value: Any) -> bool:
     """True only for genuine int/float — bool is explicitly NOT a number."""
     return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
+# ---------------------------------------------------------------------------
+# THE canonical hash of the policy family (SSOT — CTR-POLICY-001)
+# ---------------------------------------------------------------------------
+#
+# One logical object => one hash. Before this function existed, the identical
+# idiom was pasted in four places (policy.py::_fingerprint,
+# policy_dsl.py::_canonical_policy_hash, policy_version.py::_canonical_hash,
+# loader.py::canonical_policy_hash). Four copies of a hash rule means four
+# chances for the identity of a FROZEN strategy to drift, and the drift is
+# undetectable by inspection because the digests are all "valid sha256".
+#
+# Strict on both axes and deliberately so:
+#   * ``allow_nan=False``  -> NaN/Infinity raise (repo-wide JSON-safety rule)
+#   * no ``default=``      -> a non-JSON type (datetime, Decimal, set) is a
+#                             TypeError, never a silently stringified repr,
+#                             because ``str(x)`` would fold two different
+#                             objects onto one identity.
+#
+# NOT unified with ``src/identity/canonical.py`` (CODEX, BL-17), which uses
+# ``ensure_ascii=False`` + Decimal quantisation + NFC + datetime support. Those
+# are genuinely different bytes for the same payload, so merging the two
+# families would move every frozen ``policy_hash`` in ``config/policies/*.yaml``
+# and every published fingerprint. That is a deliberate re-freeze of published
+# evidence, i.e. an OPERATOR DECISION — see INTEGRATION-CONTRACT.md F-02.
+
+
+def policy_canonical_json(payload: Any) -> str:
+    """Canonical JSON text of ``payload`` — the only serialisation used for hashing."""
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def policy_canonical_hash(payload: Any) -> str:
+    """``sha256:<64 hex>`` over :func:`policy_canonical_json`.
+
+    The single producer of every policy-family hash: ``policy_hash``,
+    ``decision_fingerprint``, ``code_hash`` and the spec freeze digest.
+    """
+    return "sha256:" + hashlib.sha256(policy_canonical_json(payload).encode("utf-8")).hexdigest()
 
 
 def require_id(field_name: str, value: Any) -> str:
@@ -367,13 +419,10 @@ class StrategyDecision:
             "reason_codes": list(self.reason_codes),
             "decision_components": self.decision_components,
         }
-        # No ``default=`` fallback (C-004 remedy-4 divergence 4): a non-JSON
-        # type reaching the fingerprint payload is a TypeError, never a
-        # silently-stringified value.
-        canonical = json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), allow_nan=False
-        )
-        return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        # Delegates to the family SSOT: strict on NaN and on non-JSON types
+        # (C-004 remedy-4 divergence 4 — a datetime here is a TypeError, never
+        # a silently-stringified value).
+        return policy_canonical_hash(payload)
 
     def to_dict(self) -> dict[str, Any]:
         return {

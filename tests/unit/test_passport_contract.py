@@ -146,9 +146,40 @@ def test_small_sample_noop_at_or_above_twenty():
     assert suppress_small_sample(_env(20))["sharpe"]["value"] == 1.9
 
 
-def test_unknown_n_is_not_treated_as_small():
-    """Absence of N is not evidence of N<20 — do not silently blank a real figure."""
-    assert suppress_small_sample(_env(None))["sharpe"]["value"] == 1.9
+def test_unknown_n_is_fail_closed():
+    """S-04: absence of N is NOT permission to publish a ratio.
+
+    The first version of this guard returned untouched when ``n_trades`` was
+    ``None`` ("absence of N is not evidence of N<20"). That reasoning is exactly
+    backwards for a publication guard: the manifests that omit the trade count
+    are precisely the ones with 1-3 trades (btc_hodl_b1 published Sharpe 0.793 /
+    p=0.0242 off a SINGLE trade). §6 says with N<20 only count and PnL are
+    publishable; a number whose N cannot be determined from the published source
+    cannot be shown to satisfy that, so it is suppressed.
+    """
+    out = suppress_small_sample(_env(None))
+    for key in ("sharpe", "calmar", "p_value", "dsr_family"):
+        assert out[key]["value"] is None, f"{key} survived an undeterminable N"
+        assert out[key]["source"]["status"] == "unavailable"
+        assert "no determinable" in out[key]["source"]["pending"]
+    assert out["insufficient_trades"] is True
+    # Descriptive quantities still survive — they are not inferential.
+    assert out["return_pct"]["value"] == 3.36
+    assert out["max_dd_pct"]["value"] == 1.5
+
+
+def test_published_but_null_n_is_also_fail_closed():
+    """The real shape of the defect: ``n_trades`` IS published, with value null.
+
+    ``sourced(None, path)`` is what the composer emits when the manifest headline
+    has no trade count. It is ``status: published``, so a naive "is n published?"
+    check would wave it through.
+    """
+    env = _env(11)
+    env["n_trades"] = sourced(None, "p")
+    out = suppress_small_sample(env)
+    assert out["sharpe"]["value"] is None
+    assert out["insufficient_trades"] is True
 
 
 # ------------------------------------------------------------- payload shapes
@@ -184,6 +215,35 @@ def test_sharpe_published_with_small_n_is_rejected():
     errors = " ".join(validate_strategy_passport(p))
     assert "performance.live.sharpe: published with N=3" in errors
     assert "performance.live.p_value" in errors
+
+
+def test_sharpe_published_with_undeterminable_n_is_rejected():
+    """S-04: the validator must not need to KNOW N to reject a ratio.
+
+    ``btc_hodl_b1`` shipped Sharpe 0.793 and p=0.0242 with ``n_trades.value =
+    null`` and ``validate_strategy_passport(...) == []``. Absence of the count is
+    the common case (only the 3 smart_simple manifests publish `headline.trades`);
+    a guard that only fires on a known small N is dead exactly where N is smallest.
+    """
+    p = _passport()
+    env = _env(3)
+    env["n_trades"] = unavailable("el manifiesto no publica el conteo de trades")
+    p["performance"]["live"] = env
+    errors = " ".join(validate_strategy_passport(p))
+    assert "performance.live.sharpe" in errors
+    assert "N no determinable" in errors
+    assert "performance.live.p_value" in errors
+
+
+def test_sharpe_published_with_null_n_is_rejected():
+    """Same verdict when ``n_trades`` is published-but-null (the real artifact shape)."""
+    p = _passport()
+    env = _env(3)
+    env["n_trades"] = sourced(None, "public/data/strategies/x/manifest.json")
+    p["performance"]["live"] = env
+    errors = " ".join(validate_strategy_passport(p))
+    assert "performance.live.sharpe" in errors
+    assert "N no determinable" in errors
 
 
 @pytest.mark.parametrize("action", FORBIDDEN_PASSPORT_ACTIONS)
@@ -225,6 +285,41 @@ def test_unknown_book_state_rejected():
 def test_invented_retirement_signal_rejected():
     t = _tower(sleeves=[{"strategy_id": "x", "retirement_signal": "probably_fine"}])
     assert any("retirement_signal: bad value" in e for e in validate_control_tower(t))
+
+
+def test_tower_sleeve_cannot_publish_sharpe_without_a_determinable_n():
+    """S-04 (tower half): the Control Tower row is a decision surface too.
+
+    The observed defect: ``REAL sleeve btc_hodl_b1: sharpe=0.793 n_trades=null
+    insufficient=false``. A sleeve row must carry its N to carry a ratio.
+    """
+    t = _tower(sleeves=[{
+        "strategy_id": "btc_hodl_b1",
+        "retirement_signal": "unknown",
+        "n_trades": unavailable("el manifiesto no publica el conteo de trades"),
+        "sharpe": sourced(0.793, "public/data/registry.json"),
+        "dsr_family": sourced(0.8357, "public/data/production/approval_state.json"),
+    }])
+    errors = " ".join(validate_control_tower(t))
+    assert "sleeves[0].sharpe" in errors
+    assert "N no determinable" in errors
+    assert "sleeves[0].dsr_family" in errors
+
+
+def test_tower_sleeve_with_small_n_cannot_publish_sharpe():
+    t = _tower(sleeves=[{
+        "strategy_id": "x", "retirement_signal": "unknown",
+        "n_trades": sourced(1, "p"), "sharpe": sourced(0.793, "p"),
+    }])
+    assert any("published with N=1" in e for e in validate_control_tower(t))
+
+
+def test_tower_sleeve_with_enough_trades_keeps_its_sharpe():
+    t = _tower(sleeves=[{
+        "strategy_id": "x", "retirement_signal": "unknown",
+        "n_trades": sourced(34, "p"), "sharpe": sourced(3.35, "p"),
+    }])
+    assert validate_control_tower(t) == []
 
 
 @pytest.mark.parametrize("action", FORBIDDEN_PASSPORT_ACTIONS)

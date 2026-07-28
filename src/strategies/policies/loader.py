@@ -23,15 +23,13 @@ Contract: CTR-POLICY-001 (consumed, not modified — BL-46 owns it)
 
 from __future__ import annotations
 
-import hashlib
 import importlib
-import json
 from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
 
-from src.contracts.policy import ENGINE_TYPES
+from src.contracts.policy import ENGINE_TYPES, policy_canonical_hash
 from src.contracts.policy_dsl import DeclarativePolicy
 
 #: Only modules under this package may be named by a spec (no arbitrary import).
@@ -94,11 +92,13 @@ def canonical_policy_payload(spec: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def canonical_policy_hash(spec: Mapping[str, Any]) -> str:
-    payload = canonical_policy_payload(spec)
-    canonical = json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), allow_nan=False
-    )
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """Freeze digest of a spec's economic content — via the family SSOT.
+
+    The PROJECTION (which keys decide) is this module's business; the
+    SERIALISATION is not. Delegating keeps one hash idiom in the family
+    (INTEGRATION-CONTRACT.md F-02) without moving a single frozen digest.
+    """
+    return policy_canonical_hash(canonical_policy_payload(spec))
 
 
 # ---------------------------------------------------------------------------

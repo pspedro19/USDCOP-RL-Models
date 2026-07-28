@@ -17,7 +17,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence
 
-from src.identity.canonical import CanonicalizationError, canonical_json_bytes, semantic_hash
+try:
+    from src.identity.canonical import (
+        CanonicalizationError,
+        canonical_json_bytes,
+        semantic_hash,
+    )
+except ImportError as _exc:  # pragma: no cover - exercised only on a clean clone
+    # LOUD, NEVER SILENT. `src/identity/` is owned by CODEX (BL-17) and, as of
+    # 2026-07-28, is NOT committed (`git ls-files src/identity/` -> 0 files),
+    # so this module does not import in a clean clone of HEAD.
+    #
+    # The composition is deliberately kept: `semantic_hash` has exactly ONE
+    # implementation in the repo and we consume it. Copying it here would fork
+    # the identity of every artifact (DRY + ownership violation), and an
+    # `except ImportError: pass` fallback would let a DIFFERENT default hash
+    # silently stand in for canonical identity — the precise defect class the
+    # parity harness exists to detect. So: fail, and say exactly why.
+    #
+    # Gate: tests/regression/test_repo_self_contained.py::
+    #       test_committed_tree_has_no_untracked_imports  (INTEGRATION-CONTRACT F-01 / TDD-GAPS G-01)
+    raise ImportError(
+        "src.strangler.parity requires `src.identity.canonical` "
+        "(CanonicalizationError, canonical_json_bytes, semantic_hash). That module "
+        "belongs to CODEX (BL-17) and is NOT COMMITTED yet — `git ls-files "
+        "src/identity/` returns 0 files, so a clean clone of HEAD cannot import "
+        "this file. Resolution: CODEX commits src/identity/. There is deliberately "
+        "no fallback: a substitute hash inside an identity computation would make "
+        "the parity ledger attest to a comparison it never made."
+    ) from _exc
+
 from src.strangler.contracts import (
     AcceptanceAttestation,
     CriterionStatus,

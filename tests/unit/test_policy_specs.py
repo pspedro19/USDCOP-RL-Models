@@ -221,3 +221,77 @@ def test_determinismo_mismo_snapshot_misma_decision():
         a = policy.evaluate(snap, PolicyContext(as_of="2026-07-28"))
         b = policy.evaluate(dict(snap), PolicyContext(as_of="2026-07-28"))
         assert a.decision_fingerprint == b.decision_fingerprint
+
+
+# ---------------------------------------------------------------------------
+# G-13 / INTEGRATION-CONTRACT F-09 — ONE build_policy in the policy family
+# ---------------------------------------------------------------------------
+#
+# BL-46 and BL-47 shipped in parallel and each grew its own constructor:
+# ``src/policy_engine/runner.py::build_policy`` and
+# ``src/strategies/policies/loader.py::build_policy``. They did NOT agree —
+# the runner ignored ``migration.status``, skipped the frozen-hash check and
+# used a wider import allowlist — and the LAX one was the one exported as the
+# public API (``src/policy_engine/__init__.py``). That is invariant 4 of
+# `.claude/rules/strategy-engines.md` broken: "dos implementaciones = el
+# backtest miente".
+
+def test_solo_existe_un_build_policy_en_la_familia():
+    """El constructor público del motor ES el del loader, no una segunda puerta.
+
+    Mutación que lo pone rojo: reintroducir un cuerpo propio de ``build_policy``
+    en ``src/policy_engine/runner.py``.
+    """
+    import src.policy_engine as policy_engine
+    import src.policy_engine.runner as runner
+    import src.strategies.policies as policies
+    from src.strategies.policies import loader
+
+    assert runner.build_policy is loader.build_policy
+    assert policy_engine.build_policy is loader.build_policy
+    assert policies.build_policy is loader.build_policy
+
+
+def test_spec_only_policy_cannot_be_built_by_any_gate():
+    """SPEC_ONLY es fail-closed por TODAS las puertas, no solo por la estricta.
+
+    ``smart_simple_v11`` declara ``migration.status: SPEC_ONLY`` = documento de
+    record sin política ejecutable. Antes, ``runner.build_policy`` la construía
+    igualmente porque nunca miraba ``migration``.
+    """
+    import src.policy_engine as policy_engine
+    import src.policy_engine.runner as runner
+    from src.strategies.policies import loader
+
+    gates = {
+        "loader.build_policy": loader.build_policy,
+        "runner.build_policy": runner.build_policy,
+        "policy_engine.build_policy": policy_engine.build_policy,
+    }
+    for name, gate in gates.items():
+        with pytest.raises(PolicySpecError, match="SPEC_ONLY"):
+            gate(SPECS["smart_simple_v11"])
+
+
+def test_ninguna_puerta_importa_fuera_del_allowlist_estrecho():
+    """El allowlist de imports es el estrecho del loader, no el ancho del runner.
+
+    ``src.strategies.`` (runner) admitía cualquier módulo bajo ``src/strategies/``;
+    el contrato es ``src.strategies.policies.`` únicamente.
+    """
+    import src.policy_engine.runner as runner
+    from src.strategies.policies import loader
+
+    assert loader.ALLOWED_MODULE_PREFIX == "src.strategies.policies."
+    assert not hasattr(runner, "ALLOWED_POLICY_ROOTS"), (
+        "el runner ya no define su propio allowlist — el del loader es el SSOT"
+    )
+
+    spec = dict(SPECS["btc_hodl_b1"])
+    spec["engine"] = {
+        **spec["engine"],
+        "implementation": {"mode": "coded_policy", "module": "src.strategies.evil:Thing"},
+    }
+    spec["governance"] = {k: v for k, v in spec["governance"].items() if k != "policy_hash"}
+    with pytest.raises(PolicySpecError):
+        runner.build_policy(spec)

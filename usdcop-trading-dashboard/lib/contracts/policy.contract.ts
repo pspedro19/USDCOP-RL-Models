@@ -319,8 +319,16 @@ function nonEmptyString(v: unknown): v is string {
 // 2026-02-30, 25:00 and +25:00 are impossible values, never accepted;
 // JS Date.parse is NOT used because it silently rolls Feb-30 over to Mar-2).
 
-/** `sha256:<lowercase-hex>` (8..64 hex chars; full fingerprints use 64). */
-export const HASH_PATTERN = /^sha256:[0-9a-f]{8,64}$/;
+/**
+ * `sha256:<64 lowercase hex>` — the length of the algorithm, not a range.
+ *
+ * This used to be `{8,64}`, which accepted 57 different lengths and made a
+ * divergence between hash idioms INVISIBLE: a digest produced by a different
+ * canonicalisation, or the truncated hex16 fragment embedded in `signal_id`,
+ * validated as if it were the canonical fingerprint
+ * (INTEGRATION-CONTRACT.md F-02). Mirrors policy.py HASH_PATTERN verbatim.
+ */
+export const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 /** Identifier form for sleeve_id / snapshot ids / versions. */
 export const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
