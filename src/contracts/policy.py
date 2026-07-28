@@ -55,7 +55,10 @@ POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
 
 # ---------------------------------------------------------------------------
 # Strict form validators (C-004 remedy-3 finding 4: policy_hash=True,
-# sleeve_id=None, as_of=None must be TYPED errors, never truthiness passes).
+# sleeve_id=None, as_of=None must be TYPED errors, never truthiness passes;
+# remedy-4 divergence 2: re.fullmatch ONLY — ``$`` with re.match accepts a
+# trailing '\n' — and a REAL calendar/clock, not just the textual form:
+# 2026-02-30, 25:00 and +25:00 are impossible values, never accepted).
 # Mirrored as HASH_PATTERN / ID_PATTERN / ISO_TIMESTAMP_PATTERN in
 # policy.contract.ts — change BOTH sides.
 # ---------------------------------------------------------------------------
@@ -63,12 +66,17 @@ POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
 #: ``sha256:<lowercase-hex>`` (8..64 hex chars; full fingerprints use 64).
 HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{8,64}$")
 
-#: Identifier form for sleeve_id / signal_id / snapshot ids / versions.
+#: Identifier form for sleeve_id / snapshot ids / versions.
 ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
 
-#: ISO-8601 date or datetime (the only accepted ``as_of`` form).
+#: ISO-8601 date or datetime FORM (the only accepted ``as_of`` shape).
+#: Groups: 1=year 2=month 3=day 4=hour 5=minute 6=second 7=offset.
+#: The form is necessary but NOT sufficient — require_iso_timestamp also
+#: validates the real calendar/clock/offset ranges.
 ISO_TIMESTAMP_PATTERN = re.compile(
-    r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$"
+    r"^(\d{4})-(\d{2})-(\d{2})"
+    r"(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?"
+    r"(Z|[+-]\d{2}:\d{2})?)?$"
 )
 
 
@@ -79,7 +87,7 @@ def is_real_number(value: Any) -> bool:
 
 def require_id(field_name: str, value: Any) -> str:
     """Non-empty identifier string; bool/None/any-other-type => ValueError."""
-    if not isinstance(value, str) or not ID_PATTERN.match(value):
+    if not isinstance(value, str) or not ID_PATTERN.fullmatch(value):
         raise ValueError(
             f"{field_name} must be a non-empty identifier string "
             f"(pattern {ID_PATTERN.pattern!r}), got {value!r}"
@@ -89,7 +97,7 @@ def require_id(field_name: str, value: Any) -> str:
 
 def require_hash(field_name: str, value: Any) -> str:
     """'sha256:<hex>' string; bool/None/malformed => ValueError."""
-    if not isinstance(value, str) or not HASH_PATTERN.match(value):
+    if not isinstance(value, str) or not HASH_PATTERN.fullmatch(value):
         raise ValueError(
             f"{field_name} must be a 'sha256:<hex>' string "
             f"(pattern {HASH_PATTERN.pattern!r}), got {value!r}"
@@ -98,17 +106,42 @@ def require_hash(field_name: str, value: Any) -> str:
 
 
 def require_iso_timestamp(field_name: str, value: Any) -> str:
-    """ISO-8601 date/datetime string; bool/None/malformed => ValueError."""
-    if not isinstance(value, str) or not ISO_TIMESTAMP_PATTERN.match(value):
+    """
+    ISO-8601 date/datetime string validated against the REAL calendar and
+    clock (C-004 remedy-4 divergence 2): 2026-02-30, hour 25, minute 61 and
+    UTC offset +25:00 are ValueErrors even though they match the textual
+    form. bool/None/malformed => ValueError.
+    """
+    if not isinstance(value, str):
         raise ValueError(
             f"{field_name} must be an ISO-8601 date/datetime string, got {value!r}"
         )
+    m = ISO_TIMESTAMP_PATTERN.fullmatch(value)
+    if m is None:
+        raise ValueError(
+            f"{field_name} must be an ISO-8601 date/datetime string, got {value!r}"
+        )
+    year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
     try:
-        _dt.date.fromisoformat(value[:10])
+        _dt.date(year, month, day)  # real calendar incl. leap years
     except ValueError as exc:
         raise ValueError(
-            f"{field_name} has an invalid calendar date: {value!r}"
+            f"{field_name} has an impossible calendar date: {value!r}"
         ) from exc
+    if m.group(4) is not None:
+        hour, minute = int(m.group(4)), int(m.group(5))
+        second = int(m.group(6)) if m.group(6) is not None else 0
+        if hour > 23 or minute > 59 or second > 59:
+            raise ValueError(
+                f"{field_name} has an impossible time of day: {value!r}"
+            )
+    offset = m.group(7)
+    if offset is not None and offset != "Z":
+        offset_hour, offset_minute = int(offset[1:3]), int(offset[4:6])
+        if offset_hour > 23 or offset_minute > 59:
+            raise ValueError(
+                f"{field_name} has an impossible UTC offset: {value!r}"
+            )
     return value
 
 
@@ -294,14 +327,25 @@ class StrategyDecision:
             object.__setattr__(self, "decision_fingerprint", self._fingerprint())
         if not isinstance(self.signal_id, str):
             raise ValueError(f"signal_id must be a string, got {self.signal_id!r}")
+        # Derived id (C-004 remedy-4 divergence 2d): the composite form is
+        # '<sleeve_id>:<as_of>:<fingerprint-hex16>'. Every part is already
+        # validated above (sleeve_id identifier, as_of real ISO incl. offset,
+        # fingerprint sha256:<hex>), so a supplied signal_id must EQUAL its
+        # derivation — an id whose embedded timestamp carries an impossible
+        # offset, a foreign sleeve or a foreign fingerprint prefix is rejected.
+        derived_signal_id = (
+            f"{self.sleeve_id}:{self.as_of}:"
+            f"{self.decision_fingerprint.removeprefix('sha256:')[:16]}"
+        )
         if self.signal_id:
-            require_id("signal_id", self.signal_id)
+            if self.signal_id != derived_signal_id:
+                raise ValueError(
+                    "signal_id must equal its derivation "
+                    f"'<sleeve_id>:<as_of>:<fingerprint-hex16>' = "
+                    f"{derived_signal_id!r}, got {self.signal_id!r}"
+                )
         else:
-            object.__setattr__(
-                self,
-                "signal_id",
-                f"{self.sleeve_id}:{self.as_of}:{self.decision_fingerprint[:16]}",
-            )
+            object.__setattr__(self, "signal_id", derived_signal_id)
 
     def _fingerprint(self) -> str:
         payload = {
@@ -314,8 +358,11 @@ class StrategyDecision:
             "reason_codes": list(self.reason_codes),
             "decision_components": self.decision_components,
         }
+        # No ``default=`` fallback (C-004 remedy-4 divergence 4): a non-JSON
+        # type reaching the fingerprint payload is a TypeError, never a
+        # silently-stringified value.
         canonical = json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), default=str, allow_nan=False
+            payload, sort_keys=True, separators=(",", ":"), allow_nan=False
         )
         return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -340,8 +387,13 @@ class StrategyDecision:
         Strict JSON serialization: ``allow_nan=False`` means an Infinity/NaN
         that somehow reached the payload RAISES instead of emitting invalid
         JSON (repo rule: never Infinity/NaN in JSON — C-004 remedy-3 finding 5).
+        No ``default=`` fallback (remedy-4 divergence 4): numpy.inf or
+        Decimal('NaN') raise (TypeError/ValueError) — they are NEVER
+        serialized as text like '"inf"'.
         """
-        return json.dumps(self.to_dict(), allow_nan=False, default=str)
+        payload = self.to_dict()
+        ensure_json_safe(payload, "strategy_decision")
+        return json.dumps(payload, allow_nan=False)
 
 
 # ---------------------------------------------------------------------------

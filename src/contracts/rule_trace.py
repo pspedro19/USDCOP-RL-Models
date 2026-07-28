@@ -42,22 +42,47 @@ SUPPORTED_TRACE_SCHEMAS = (RULE_TRACE_SCHEMA_V1,)
 
 def ensure_json_safe(value: Any, path: str = "value") -> None:
     """
-    Recursive finiteness check: any non-finite float (NaN/±Infinity) anywhere
-    in a serializable payload is a typed ValueError (repo rule: JSON exports
-    NEVER contain Infinity/NaN — C-004 remedy-3 findings 3/5).
+    Recursive CLOSED-WORLD JSON check (C-004 remedy-4 divergence 4). The
+    allowed types are EXACTLY: dict (str keys) / list / tuple / str / int /
+    finite float / bool / None. Everything else — numpy scalars, Decimal,
+    datetime, set, bytes, ... — is a typed ValueError, INCLUDING non-finites
+    that arrive as numpy/Decimal (numpy.float64 inf is caught by the
+    finiteness branch because it subclasses float; numpy.float32 and
+    Decimal('NaN') are caught by the closed type set). Repo rule: JSON
+    exports NEVER contain Infinity/NaN, and non-JSON types are never
+    silently stringified (no ``default=`` fallback anywhere in this contract).
     Mirrored as ``collectNonFinite`` in policy.contract.ts.
     """
-    if isinstance(value, float) and not math.isfinite(value):
-        raise ValueError(
-            f"{path} contains a non-finite number ({value!r}) — "
-            "NaN/Infinity forbidden in JSON exports"
-        )
+    if value is None or isinstance(value, (str, bool)):
+        return
+    if isinstance(value, float):  # includes numpy.float64 (float subclass)
+        if not math.isfinite(value):
+            raise ValueError(
+                f"{path} contains a non-finite number ({value!r}) — "
+                "NaN/Infinity forbidden in JSON exports"
+            )
+        return
+    if isinstance(value, int):  # bool already handled above
+        return
     if isinstance(value, Mapping):
         for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError(
+                    f"{path} has a non-string key {key!r} — JSON objects "
+                    "require string keys"
+                )
             ensure_json_safe(item, f"{path}.{key}")
-    elif isinstance(value, (list, tuple)):
+        return
+    if isinstance(value, (list, tuple)):
         for i, item in enumerate(value):
             ensure_json_safe(item, f"{path}[{i}]")
+        return
+    raise ValueError(
+        f"{path} has a non-JSON-serializable type {type(value).__name__} "
+        f"({value!r}) — allowed types are exactly dict/list/str/int/"
+        "finite-float/bool/None (convert numpy/Decimal/datetime/set/bytes "
+        "at the producer)"
+    )
 
 
 @dataclass(frozen=True)
@@ -129,8 +154,14 @@ class RuleTrace:
         }
 
     def to_json(self) -> str:
-        """Strict JSON: an Infinity/NaN raises instead of emitting invalid JSON."""
-        return json.dumps(self.to_dict(), allow_nan=False, default=str)
+        """
+        Strict JSON: an Infinity/NaN raises instead of emitting invalid JSON.
+        No ``default=`` fallback (C-004 remedy-4 divergence 4): a non-JSON
+        type (numpy scalar, Decimal, ...) raises instead of serializing as text.
+        """
+        payload = self.to_dict()
+        ensure_json_safe(payload, "rule_trace")
+        return json.dumps(payload, allow_nan=False)
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "RuleTrace":

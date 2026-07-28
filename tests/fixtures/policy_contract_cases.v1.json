@@ -1,0 +1,1163 @@
+{
+  "fixture": "policy_contract_cases",
+  "version": "v1",
+  "content_sha256": "146ad1e614922439b403ddedfdb1a8b01da72d7bd977852a5d8b51d6b5af5b93",
+  "sha_scheme": "sha256 over this file's text (CRLF normalized to LF) with the 64-hex value of content_sha256 removed; both runners recompute and refuse to run on mismatch",
+  "encoding": {
+    "$nonfinite": "NaN | Infinity | -Infinity \u2014 decoded to the native non-finite number in BOTH runtimes",
+    "$pytype": "numpy.float32 | numpy.float64 | decimal | datetime | set | bytes \u2014 Python decodes to the real type; TS decodes non-finite numeric kinds to native NaN/Infinity and every other kind to a non-plain marker object (both must be rejected by the closed JSON check)"
+  },
+  "cases": [
+    {
+      "id": "decision_valid",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "decision_direction_drop_table",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "DROP TABLE trades",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_exposure_bool",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": true,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_exposure_numeric_string",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": "1.0",
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_exposure_inf",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": {
+          "$nonfinite": "Infinity"
+        },
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_exposure_nan",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": {
+          "$nonfinite": "NaN"
+        },
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_sleeve_id_none",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": null,
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_as_of_none",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": null,
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_policy_hash_true",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": true
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_components_infinity",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$nonfinite": "Infinity"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_trace_missing_schema",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": {
+          "rules": []
+        },
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_ref_valid",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rule_based",
+        "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "engine_ref_hash_bool",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rule_based",
+        "policy_hash": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_ref_hash_not_hex",
+      "target": "engine_ref",
+      "payload": {
+        "type": "rule_based",
+        "policy_hash": "sha256:NOT-HEX!"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "engine_ref_ml_snapshot_bool",
+      "target": "engine_ref",
+      "payload": {
+        "type": "ml",
+        "model_snapshot_id": true
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_valid_gt",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": "feature.close",
+        "right": 1.5
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "condition_op_drop_table",
+      "target": "condition",
+      "payload": {
+        "operator": "DROP TABLE trades",
+        "left": "feature.close",
+        "right": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_op_eval",
+      "target": "condition",
+      "payload": {
+        "operator": "eval",
+        "code": "close > ma_200"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_feature_true_mapping",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": {
+          "feature": true
+        },
+        "right": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_feature_empty",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": "feature.",
+        "right": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_nan_literal",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": "feature.close",
+        "right": {
+          "$nonfinite": "NaN"
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_inf_literal",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": "feature.close",
+        "right": {
+          "$nonfinite": "Infinity"
+        }
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "condition_bool_operand",
+      "target": "condition",
+      "payload": {
+        "operator": "greater_than",
+        "left": true,
+        "right": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_valid_v1",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "r1",
+            "label": "R1",
+            "observed": {
+              "close": 1.0
+            },
+            "result": true,
+            "reason_code": "GT"
+          }
+        ]
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "trace_v2_rejected",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v2",
+        "rules": []
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_missing_schema",
+      "target": "trace",
+      "payload": {
+        "rules": []
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "trace_observed_infinity",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "r1",
+            "label": "R1",
+            "observed": {
+              "close": {
+                "$nonfinite": "Infinity"
+              }
+            },
+            "result": true,
+            "reason_code": "GT"
+          }
+        ]
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "context_valid",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "context_mode_drop_table",
+      "target": "context",
+      "payload": {
+        "mode": "DROP_TABLE"
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "snapshot_valid",
+      "target": "snapshot",
+      "payload": {
+        "close": 2.0,
+        "ma_200": 1.0
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "snapshot_infinity",
+      "target": "snapshot",
+      "payload": {
+        "close": {
+          "$nonfinite": "Infinity"
+        },
+        "ma_200": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "snapshot_nan",
+      "target": "snapshot",
+      "payload": {
+        "close": {
+          "$nonfinite": "NaN"
+        },
+        "ma_200": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "snapshot_bool_value",
+      "target": "snapshot",
+      "payload": {
+        "close": true,
+        "ma_200": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "snapshot_null_value",
+      "target": "snapshot",
+      "payload": {
+        "close": null,
+        "ma_200": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "snapshot_string_value",
+      "target": "snapshot",
+      "payload": {
+        "close": "5",
+        "ma_200": 1.0
+      },
+      "expect": "invalid"
+    },
+    {
+      "id": "decision_as_of_feb30",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-02-30:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-02-30",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: 2026-02-30 does not exist (calendar check, not just form)"
+    },
+    {
+      "id": "decision_as_of_feb29_nonleap",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-02-29:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-02-29",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: 2026 is not a leap year"
+    },
+    {
+      "id": "decision_as_of_hour_25",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T25:00:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27T25:00",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: hour 25 is impossible"
+    },
+    {
+      "id": "decision_as_of_minute_61",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T10:61:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27T10:61",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: minute 61 is impossible"
+    },
+    {
+      "id": "decision_as_of_offset_25",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T10:00+25:00:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27T10:00+25:00",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: UTC offset +25:00 is impossible"
+    },
+    {
+      "id": "decision_as_of_offset_minute_61",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T10:00+05:61:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27T10:00+05:61",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2b: UTC offset minute 61 is impossible"
+    },
+    {
+      "id": "decision_as_of_trailing_newline",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27\n",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2c: re.match accepted a trailing newline; fullmatch must not"
+    },
+    {
+      "id": "decision_sleeve_id_trailing_newline",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1\n",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2c: identifier with trailing newline"
+    },
+    {
+      "id": "decision_as_of_datetime_offset_valid",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T10:30:00-05:00:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27T10:30:00-05:00",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "valid",
+      "note": "div2: real datetime with valid offset must still pass"
+    },
+    {
+      "id": "decision_signal_id_wrong_sleeve",
+      "target": "decision",
+      "payload": {
+        "signal_id": "other:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2d: composed signal_id sleeve part diverges from sleeve_id"
+    },
+    {
+      "id": "decision_signal_id_wrong_fingerprint_prefix",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:0123456789abcdef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2d: composed signal_id hex16 diverges from decision_fingerprint"
+    },
+    {
+      "id": "decision_signal_id_bad_embedded_offset",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27T10:00+25:00:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "close": 1.0
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div2d: impossible offset embedded in signal_id timestamp"
+    },
+    {
+      "id": "context_as_of_feb30",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2026-02-30"
+      },
+      "expect": "invalid",
+      "note": "div2a: TS must validate context.as_of (it ignored it)"
+    },
+    {
+      "id": "context_as_of_hour_25",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2026-07-27T25:00"
+      },
+      "expect": "invalid",
+      "note": "div2a+2b"
+    },
+    {
+      "id": "context_as_of_offset_25",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2026-07-27T10:00+25:00"
+      },
+      "expect": "invalid",
+      "note": "div2a+2b"
+    },
+    {
+      "id": "context_as_of_trailing_newline",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2026-07-27\n"
+      },
+      "expect": "invalid",
+      "note": "div2a+2c"
+    },
+    {
+      "id": "context_as_of_null",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": null
+      },
+      "expect": "valid",
+      "note": "as_of is optional in a context"
+    },
+    {
+      "id": "context_as_of_feb29_leap",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2028-02-29"
+      },
+      "expect": "valid",
+      "note": "2028 IS a leap year \u2014 calendar check must not over-reject"
+    },
+    {
+      "id": "context_as_of_zulu_fraction_valid",
+      "target": "context",
+      "payload": {
+        "mode": "DECISION",
+        "as_of": "2026-07-27T10:30:00.123456Z"
+      },
+      "expect": "valid"
+    },
+    {
+      "id": "snapshot_unused_infinity",
+      "target": "snapshot",
+      "payload": {
+        "close": 1.0,
+        "unused": {
+          "$nonfinite": "Infinity"
+        }
+      },
+      "expect": "invalid",
+      "note": "div3: Codex probe {close:1.0, unused:Infinity} must fail on BOTH sides"
+    },
+    {
+      "id": "snapshot_extra_key_infinity",
+      "target": "snapshot",
+      "payload": {
+        "close": 1.0,
+        "ma_200": 1.0,
+        "unused": {
+          "$nonfinite": "Infinity"
+        }
+      },
+      "expect": "invalid",
+      "note": "div3: non-required entries are validated too"
+    },
+    {
+      "id": "snapshot_extra_key_string",
+      "target": "snapshot",
+      "payload": {
+        "close": 1.0,
+        "ma_200": 1.0,
+        "note": "hello"
+      },
+      "expect": "invalid",
+      "note": "div3: every snapshot entry must be a real finite number"
+    },
+    {
+      "id": "components_numpy_float32_inf",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "numpy.float32",
+            "value": "Infinity"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: numpy.float32 inf must raise, never serialize as 'inf' text"
+    },
+    {
+      "id": "components_numpy_float64_nan",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "numpy.float64",
+            "value": "NaN"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: numpy.float64 nan must raise"
+    },
+    {
+      "id": "components_decimal_nan",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "decimal",
+            "value": "NaN"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: Decimal('NaN') must raise, never serialize as 'NaN' text"
+    },
+    {
+      "id": "components_decimal_finite",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "decimal",
+            "value": "1.5"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: closed type set \u2014 Decimal is not JSON even when finite"
+    },
+    {
+      "id": "components_datetime",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "datetime",
+            "value": "2026-07-27T10:00:00"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: datetime is not JSON \u2014 producer must convert"
+    },
+    {
+      "id": "components_set",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "set",
+            "value": [
+              1,
+              2
+            ]
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: set is not JSON"
+    },
+    {
+      "id": "components_bytes",
+      "target": "decision",
+      "payload": {
+        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
+        "sleeve_id": "s1",
+        "strategy_version": "1.0.0",
+        "engine_ref": {
+          "type": "rule_based",
+          "policy_hash": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        },
+        "as_of": "2026-07-27",
+        "direction": "FLAT",
+        "target_exposure": 0.0,
+        "reason_codes": [],
+        "decision_components": {
+          "x": {
+            "$pytype": "bytes",
+            "value": "abc"
+          }
+        },
+        "rule_trace": null,
+        "feature_snapshot_id": null,
+        "decision_fingerprint": "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+      },
+      "expect": "invalid",
+      "note": "div4: bytes is not JSON"
+    },
+    {
+      "id": "trace_observed_numpy_inf",
+      "target": "trace",
+      "payload": {
+        "trace_schema": "rule_trace_v1",
+        "rules": [
+          {
+            "rule_id": "r1",
+            "label": "R1",
+            "observed": {
+              "close": {
+                "$pytype": "numpy.float32",
+                "value": "Infinity"
+              }
+            },
+            "result": true,
+            "reason_code": "GT"
+          }
+        ]
+      },
+      "expect": "invalid",
+      "note": "div4: numpy inf inside a trace observed payload"
+    }
+  ]
+}

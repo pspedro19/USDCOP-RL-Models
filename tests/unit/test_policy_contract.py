@@ -13,6 +13,9 @@ Covers:
 
 from __future__ import annotations
 
+import datetime as _dt
+import hashlib
+import json
 import re
 from dataclasses import fields
 from pathlib import Path
@@ -42,6 +45,7 @@ from src.contracts.rule_trace import (
     SUPPORTED_TRACE_SCHEMAS,
     RuleTrace,
     RuleTraceEntry,
+    ensure_json_safe,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -912,118 +916,85 @@ class TestRemedy3TraceFromDictStrict:
 
 
 # ---------------------------------------------------------------------------
-# SHARED CASE TABLE (C-004 remedy-3 finding 6) — the SAME cases, executed in
-# BOTH runtimes. This literal table is duplicated in
-# usdcop-trading-dashboard/tests/unit/contracts/policy-contract-parity.test.ts
-# (case ids and expected verdicts MUST stay identical — a checksum test on
-# each side pins the ids). Python executes them against the real
-# constructors/validators; Vitest executes them against the TS runtime
-# validators. Same verdict, case by case.
+# SHARED FIXTURE (C-004 remedio-4 divergence 1) — ONE versioned JSON case
+# table (tests/fixtures/policy_contract_cases.v1.json) LOADED by both runners
+# (this file and usdcop-trading-dashboard/tests/unit/contracts/
+# policy-contract-parity.test.ts). Nothing is duplicated literally: each
+# runner recomputes the fixture's content SHA-256 before running and goes RED
+# on drift. Non-JSON values travel as sentinels ($nonfinite / $pytype) and
+# are decoded natively per runtime.
 # ---------------------------------------------------------------------------
 
+FIXTURE_PATH = ROOT / "tests" / "fixtures" / "policy_contract_cases.v1.json"
 
-def _decision_payload(**overrides) -> dict:
-    payload = {
-        "signal_id": "s1:2026-07-27:deadbeefdeadbeef",
-        "sleeve_id": "s1",
-        "strategy_version": "1.0.0",
-        "engine_ref": {"type": "rule_based", "policy_hash": FULL_HASH},
-        "as_of": "2026-07-27",
-        "direction": "FLAT",
-        "target_exposure": 0.0,
-        "reason_codes": [],
-        "decision_components": {"close": 1.0},
-        "rule_trace": None,
-        "feature_snapshot_id": None,
-        "decision_fingerprint": FULL_HASH,
-    }
-    payload.update(overrides)
-    return payload
+_SHA_FIELD = re.compile(r'"content_sha256":\s*"([0-9a-f]{64})"')
 
 
-PARITY_CASES = [
-    # --- StrategyDecision -------------------------------------------------
-    ("decision_valid", "decision", _decision_payload(), "valid"),
-    ("decision_direction_drop_table", "decision",
-     _decision_payload(direction="DROP TABLE trades"), "invalid"),
-    ("decision_exposure_bool", "decision",
-     _decision_payload(target_exposure=True), "invalid"),
-    ("decision_exposure_numeric_string", "decision",
-     _decision_payload(target_exposure="1.0"), "invalid"),
-    ("decision_exposure_inf", "decision",
-     _decision_payload(target_exposure=float("inf")), "invalid"),
-    ("decision_exposure_nan", "decision",
-     _decision_payload(target_exposure=float("nan")), "invalid"),
-    ("decision_sleeve_id_none", "decision",
-     _decision_payload(sleeve_id=None), "invalid"),
-    ("decision_as_of_none", "decision",
-     _decision_payload(as_of=None), "invalid"),
-    ("decision_policy_hash_true", "decision",
-     _decision_payload(engine_ref={"type": "rule_based", "policy_hash": True}),
-     "invalid"),
-    ("decision_components_infinity", "decision",
-     _decision_payload(decision_components={"x": float("inf")}), "invalid"),
-    ("decision_trace_missing_schema", "decision",
-     _decision_payload(rule_trace={"rules": []}), "invalid"),
-    # --- EngineRef --------------------------------------------------------
-    ("engine_ref_valid", "engine_ref",
-     {"type": "rule_based", "policy_hash": FULL_HASH}, "valid"),
-    ("engine_ref_hash_bool", "engine_ref",
-     {"type": "rule_based", "policy_hash": True}, "invalid"),
-    ("engine_ref_hash_not_hex", "engine_ref",
-     {"type": "rule_based", "policy_hash": "sha256:NOT-HEX!"}, "invalid"),
-    ("engine_ref_ml_snapshot_bool", "engine_ref",
-     {"type": "ml", "model_snapshot_id": True}, "invalid"),
-    # --- Condition AST ----------------------------------------------------
-    ("condition_valid_gt", "condition",
-     {"operator": "greater_than", "left": "feature.close", "right": 1.5}, "valid"),
-    ("condition_op_drop_table", "condition",
-     {"operator": "DROP TABLE trades", "left": "feature.close", "right": 1.0},
-     "invalid"),
-    ("condition_op_eval", "condition",
-     {"operator": "eval", "code": "close > ma_200"}, "invalid"),
-    ("condition_feature_true_mapping", "condition",
-     {"operator": "greater_than", "left": {"feature": True}, "right": 1.0},
-     "invalid"),
-    ("condition_feature_empty", "condition",
-     {"operator": "greater_than", "left": "feature.", "right": 1.0}, "invalid"),
-    ("condition_nan_literal", "condition",
-     {"operator": "greater_than", "left": "feature.close", "right": float("nan")},
-     "invalid"),
-    ("condition_inf_literal", "condition",
-     {"operator": "greater_than", "left": "feature.close", "right": float("inf")},
-     "invalid"),
-    ("condition_bool_operand", "condition",
-     {"operator": "greater_than", "left": True, "right": 1.0}, "invalid"),
-    # --- RuleTrace --------------------------------------------------------
-    ("trace_valid_v1", "trace",
-     {"trace_schema": "rule_trace_v1",
-      "rules": [{"rule_id": "r1", "label": "R1", "observed": {"close": 1.0},
-                 "result": True, "reason_code": "GT"}]}, "valid"),
-    ("trace_v2_rejected", "trace",
-     {"trace_schema": "rule_trace_v2", "rules": []}, "invalid"),
-    ("trace_missing_schema", "trace", {"rules": []}, "invalid"),
-    ("trace_observed_infinity", "trace",
-     {"trace_schema": "rule_trace_v1",
-      "rules": [{"rule_id": "r1", "label": "R1",
-                 "observed": {"close": float("inf")}, "result": True,
-                 "reason_code": "GT"}]}, "invalid"),
-    # --- PolicyContext ----------------------------------------------------
-    ("context_valid", "context", {"mode": "DECISION"}, "valid"),
-    ("context_mode_drop_table", "context", {"mode": "DROP_TABLE"}, "invalid"),
-    # --- FeatureSnapshot --------------------------------------------------
-    ("snapshot_valid", "snapshot", {"close": 2.0, "ma_200": 1.0}, "valid"),
-    ("snapshot_infinity", "snapshot",
-     {"close": float("inf"), "ma_200": 1.0}, "invalid"),
-    ("snapshot_nan", "snapshot", {"close": float("nan"), "ma_200": 1.0}, "invalid"),
-    ("snapshot_bool_value", "snapshot", {"close": True, "ma_200": 1.0}, "invalid"),
-    ("snapshot_null_value", "snapshot", {"close": None, "ma_200": 1.0}, "invalid"),
-    ("snapshot_string_value", "snapshot", {"close": "5", "ma_200": 1.0}, "invalid"),
-]
+def _decode_fixture_value(value):
+    """Decode fixture sentinels into native Python values/types."""
+    if isinstance(value, dict):
+        keys = set(value)
+        if keys == {"$nonfinite"}:
+            return {
+                "NaN": float("nan"),
+                "Infinity": float("inf"),
+                "-Infinity": float("-inf"),
+            }[value["$nonfinite"]]
+        if keys == {"$pytype", "value"}:
+            kind, v = value["$pytype"], value["value"]
+            if kind == "numpy.float32":
+                import numpy
 
-#: Pinned so both runtimes prove they run the SAME table (mirrored in the
-#: Vitest file — if you add a case, update BOTH files and BOTH pins).
-PARITY_CASE_IDS_SHA256_PREFIX = "case-table-v1:35"
+                return numpy.float32(v)
+            if kind == "numpy.float64":
+                import numpy
+
+                return numpy.float64(v)
+            if kind == "decimal":
+                from decimal import Decimal
+
+                return Decimal(v)
+            if kind == "datetime":
+                return _dt.datetime.fromisoformat(v)
+            if kind == "set":
+                return set(v)
+            if kind == "bytes":
+                return v.encode("utf-8")
+            raise AssertionError(f"unknown $pytype {kind!r} in fixture")
+        return {k: _decode_fixture_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_decode_fixture_value(v) for v in value]
+    return value
+
+
+def load_parity_fixture() -> tuple[dict, list[tuple[str, str, object, str]]]:
+    """Load + SHA-verify the shared fixture. Drift => AssertionError (RED)."""
+    raw = FIXTURE_PATH.read_text(encoding="utf-8").replace("\r\n", "\n")
+    m = _SHA_FIELD.search(raw)
+    if not m:
+        raise AssertionError("fixture must declare a 64-hex content_sha256")
+    declared = m.group(1)
+    actual = hashlib.sha256(raw.replace(declared, "", 1).encode("utf-8")).hexdigest()
+    if actual != declared:
+        raise AssertionError(
+            f"FIXTURE DRIFT: declared content_sha256 {declared} != recomputed "
+            f"{actual} — the case table changed without regenerating the pin "
+            "(both runners refuse to run)"
+        )
+    doc = json.loads(raw)
+    if doc.get("fixture") != "policy_contract_cases" or doc.get("version") != "v1":
+        raise AssertionError("unexpected fixture identity/version")
+    cases = [
+        (c["id"], c["target"], _decode_fixture_value(c["payload"]), c["expect"])
+        for c in doc["cases"]
+    ]
+    ids = [c[0] for c in cases]
+    if len(set(ids)) != len(ids):
+        raise AssertionError("duplicate case ids in fixture")
+    return doc, cases
+
+
+_FIXTURE_DOC, PARITY_CASES = load_parity_fixture()
 
 
 def _run_python_case(target: str, payload):
@@ -1054,8 +1025,9 @@ def _run_python_case(target: str, payload):
 
 
 class TestSharedCaseTable:
-    """Finding 6: the same case table EXECUTED (not text-inspected) in Python.
-    The Vitest twin executes the identical table against the TS validators."""
+    """Divergence 1: ONE fixture, loaded (not duplicated) and EXECUTED here
+    against the real constructors/validators; the Vitest twin loads THE SAME
+    file and executes it against the TS runtime validators."""
 
     @pytest.mark.parametrize(
         "case_id,target,payload,expect",
@@ -1064,11 +1036,254 @@ class TestSharedCaseTable:
     )
     def test_case(self, case_id, target, payload, expect):
         assert _run_python_case(target, payload) == expect, (
-            f"case {case_id!r}: Python verdict diverges from the table"
+            f"case {case_id!r}: Python verdict diverges from the fixture"
         )
 
-    def test_table_pin_matches(self):
-        """The pin encodes table version + case count; the TS twin asserts the
-        same pin over the same ids — drift in either file fails one side."""
-        assert PARITY_CASE_IDS_SHA256_PREFIX == f"case-table-v1:{len(PARITY_CASES)}"
-        assert len({c[0] for c in PARITY_CASES}) == len(PARITY_CASES)
+    def test_fixture_sha_verified_and_ids_unique(self):
+        doc, cases = load_parity_fixture()  # raises on drift
+        assert len(cases) >= 35, "fixture lost cases — never shrink the table"
+        assert len({c[0] for c in cases}) == len(cases)
+
+    def test_fixture_is_the_only_case_source(self):
+        """No literal case table may reappear in the TS runner (drift vector)."""
+        ts_twin = (
+            ROOT / "usdcop-trading-dashboard" / "tests" / "unit" / "contracts"
+            / "policy-contract-parity.test.ts"
+        ).read_text(encoding="utf-8")
+        assert "policy_contract_cases.v1.json" in ts_twin, (
+            "the Vitest twin must load the shared fixture file"
+        )
+        assert "decision_direction_drop_table" not in ts_twin, (
+            "the Vitest twin must not duplicate case literals"
+        )
+
+
+# ---------------------------------------------------------------------------
+# C-004 remedio-4 divergence 2 — ISO with a REAL calendar (2026-02-30, 25:00,
+# +25:00 impossible), re.fullmatch (no trailing-newline pass), and derived-id
+# validation (composed signal_id: parts + embedded timestamp offset).
+# ---------------------------------------------------------------------------
+
+
+class TestRemedy4IsoRealCalendar:
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            "2026-02-30",              # day does not exist
+            "2026-02-29",              # 2026 is not a leap year
+            "2026-13-01",              # month 13
+            "2026-00-10",              # month 0
+            "2026-07-27T25:00",        # hour 25
+            "2026-07-27T10:61",        # minute 61
+            "2026-07-27T10:00:61",     # second 61
+            "2026-07-27T10:00+25:00",  # offset hour 25
+            "2026-07-27T10:00+05:61",  # offset minute 61
+            "2026-07-27\n",            # trailing newline (re.match hole)
+            "2026-07-27T10:00Z\n",
+        ],
+    )
+    def test_impossible_as_of_rejected(self, bad):
+        with pytest.raises(ValueError, match="as_of"):
+            PolicyContext(as_of=bad)
+        with pytest.raises(ValueError, match="as_of"):
+            _decision(as_of=bad)
+
+    @pytest.mark.parametrize(
+        "good",
+        [
+            "2026-07-27",
+            "2028-02-29",                    # 2028 IS a leap year
+            "2026-07-27T10:30",
+            "2026-07-27 10:30:59",
+            "2026-07-27T10:30:00.123456Z",
+            "2026-07-27T10:30:00-05:00",
+            "2026-12-31T23:59:59+23:59",
+        ],
+    )
+    def test_real_timestamps_accepted(self, good):
+        assert PolicyContext(as_of=good).as_of == good
+        assert _decision(as_of=good).as_of == good
+
+
+class TestRemedy4FullmatchIds:
+    def test_sleeve_id_trailing_newline_rejected(self):
+        with pytest.raises(ValueError, match="sleeve_id"):
+            _decision(sleeve_id="s1\n")
+
+    def test_hash_trailing_newline_rejected(self):
+        with pytest.raises(ValueError, match="policy_hash"):
+            EngineRef(type="rule_based", policy_hash=FULL_HASH + "\n")
+
+    def test_model_snapshot_id_trailing_newline_rejected(self):
+        with pytest.raises(ValueError, match="model_snapshot_id"):
+            EngineRef(type="ml", model_snapshot_id="m1\n")
+
+    def test_no_bare_re_match_left_in_policy_validators(self):
+        """$ + re.match accepts a trailing '\\n'; only fullmatch is allowed."""
+        src = (ROOT / "src" / "contracts" / "policy.py").read_text(encoding="utf-8")
+        assert ".match(" not in src, (
+            "policy.py must use re.fullmatch — .match($) accepts a trailing newline"
+        )
+
+
+class TestRemedy4SignalIdComposite:
+    def test_derived_signal_id_is_sleeve_asof_hex16(self):
+        d = _decision()
+        hex16 = d.decision_fingerprint.removeprefix("sha256:")[:16]
+        assert re.fullmatch(r"[0-9a-f]{16}", hex16)
+        assert d.signal_id == f"s:2026-07-27:{hex16}"
+
+    def test_supplied_matching_signal_id_accepted(self):
+        base = _decision()
+        assert _decision(signal_id=base.signal_id).signal_id == base.signal_id
+
+    def test_supplied_signal_id_wrong_sleeve_rejected(self):
+        with pytest.raises(ValueError, match="signal_id"):
+            _decision(signal_id="other:2026-07-27:deadbeefdeadbeef")
+
+    def test_supplied_signal_id_wrong_fingerprint_prefix_rejected(self):
+        with pytest.raises(ValueError, match="signal_id"):
+            _decision(signal_id="s:2026-07-27:0123456789abcdef")
+
+    def test_supplied_signal_id_impossible_embedded_offset_rejected(self):
+        with pytest.raises(ValueError, match="signal_id"):
+            _decision(signal_id="s:2026-07-27T10:00+25:00:deadbeefdeadbeef")
+
+
+# ---------------------------------------------------------------------------
+# C-004 remedio-4 divergence 3 — the WHOLE snapshot is validated (required
+# AND extra entries), symmetric with TS validateFeatureSnapshot.
+# ---------------------------------------------------------------------------
+
+
+class TestRemedy4SnapshotSymmetric:
+    def _policy(self):
+        return DeclarativePolicy(ma200_spec())
+
+    def test_codex_probe_close_plus_unused_infinity(self):
+        """{close:1.0, unused:Infinity} must fail on BOTH sides identically."""
+        errors = self._policy().validate_inputs(
+            {"close": 1.0, "unused": float("inf")}
+        )
+        assert any("ma_200" in e for e in errors)  # required still enforced
+        assert any("unused" in e for e in errors)  # extra entry validated too
+
+    def test_extra_key_infinity_fails(self):
+        errors = self._policy().validate_inputs(
+            {"close": 1.0, "ma_200": 1.0, "unused": float("inf")}
+        )
+        assert errors and "unused" in errors[0]
+
+    def test_extra_key_string_fails(self):
+        errors = self._policy().validate_inputs(
+            {"close": 1.0, "ma_200": 1.0, "note": "hello"}
+        )
+        assert errors and "note" in errors[0]
+
+    def test_evaluate_raises_on_extra_infinity(self):
+        with pytest.raises(ValueError, match="[Ii]nvalid inputs"):
+            self._policy().evaluate(
+                {"close": 1.0, "ma_200": 1.0, "unused": float("inf")},
+                PolicyContext(as_of="2026-07-27"),
+            )
+
+    def test_non_mapping_snapshot_rejected(self):
+        assert self._policy().validate_inputs([1.0, 2.0])
+        assert self._policy().validate_inputs(None)
+
+
+# ---------------------------------------------------------------------------
+# C-004 remedio-4 divergence 4 — closed JSON: the allowed types are EXACTLY
+# dict/list/str/int/finite-float/bool/None. numpy scalars, Decimal, datetime,
+# set, bytes RAISE (non-finites included), and default=str is banned so
+# numpy.inf / Decimal('NaN') can never serialize as text.
+# ---------------------------------------------------------------------------
+
+
+def _np():
+    import numpy
+
+    return numpy
+
+
+class TestRemedy4ClosedJson:
+    def test_numpy_float32_inf_raises(self):
+        with pytest.raises(ValueError, match="non-JSON|non-finite"):
+            ensure_json_safe({"x": _np().float32("inf")})
+
+    def test_numpy_float64_nan_raises(self):
+        # np.float64 subclasses float — caught by the finiteness branch
+        with pytest.raises(ValueError, match="non-finite"):
+            ensure_json_safe({"x": _np().float64("nan")})
+
+    def test_decimal_nan_raises(self):
+        from decimal import Decimal
+
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": Decimal("NaN")})
+
+    def test_decimal_finite_raises_closed_types(self):
+        from decimal import Decimal
+
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": Decimal("1.5")})
+
+    def test_datetime_raises(self):
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": _dt.datetime(2026, 7, 27, 10, 0)})
+
+    def test_set_raises(self):
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": {1, 2}})
+
+    def test_bytes_raises(self):
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": b"abc"})
+
+    def test_numpy_int_raises_closed_types(self):
+        with pytest.raises(ValueError, match="non-JSON"):
+            ensure_json_safe({"x": _np().int64(5)})
+
+    def test_non_string_key_raises(self):
+        with pytest.raises(ValueError, match="key"):
+            ensure_json_safe({1: "x"})
+
+    def test_plain_finite_types_accepted(self):
+        ensure_json_safe(
+            {"a": 1, "b": 1.5, "c": "x", "d": True, "e": None, "f": [1, {"g": 2.0}]}
+        )
+
+    def test_components_numpy_inf_rejected_at_construction(self):
+        with pytest.raises(ValueError, match="non-JSON|non-finite"):
+            _decision(decision_components={"x": _np().float32("inf")})
+
+    def test_components_decimal_nan_rejected_at_construction(self):
+        from decimal import Decimal
+
+        with pytest.raises(ValueError, match="non-JSON"):
+            _decision(decision_components={"x": Decimal("NaN")})
+
+    def test_to_json_raises_on_injected_numpy_inf_never_text(self):
+        d = _decision()
+        d.decision_components["x"] = _np().float32("inf")  # mutable dict
+        with pytest.raises((TypeError, ValueError)):
+            d.to_json()
+
+    def test_trace_to_json_raises_on_injected_decimal_nan(self):
+        from decimal import Decimal
+
+        trace = RuleTrace(
+            rules=(RuleTraceEntry(rule_id="r1", label="R1", observed={"c": 1.0}),)
+        )
+        trace.rules[0].observed["c"] = Decimal("NaN")  # mutable dict
+        with pytest.raises((TypeError, ValueError)):
+            trace.to_json()
+
+    def test_default_str_banned_from_contract_sources(self):
+        """default=str turned numpy.inf/Decimal('NaN') into '"inf"'/'"NaN"' text."""
+        for rel in ("policy.py", "policy_dsl.py", "rule_trace.py"):
+            src = (ROOT / "src" / "contracts" / rel).read_text(encoding="utf-8")
+            assert "default=str" not in src, (
+                f"src/contracts/{rel}: default=str would serialize "
+                "numpy.inf/Decimal('NaN') as text — forbidden"
+            )

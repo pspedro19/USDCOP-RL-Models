@@ -122,10 +122,13 @@ def _strict_exposure(value: Any, where: str) -> float:
 
 
 def _canonical_policy_hash(spec: Mapping[str, Any]) -> str:
-    """Deterministic sha256 of the canonical spec JSON (strict: allow_nan=False)."""
-    canonical = json.dumps(
-        spec, sort_keys=True, separators=(",", ":"), default=str, allow_nan=False
-    )
+    """
+    Deterministic sha256 of the canonical spec JSON. Strict on BOTH axes
+    (C-004 remedy-4 divergence 4): ``allow_nan=False`` and no ``default=``
+    fallback — a spec carrying a non-JSON type raises instead of hashing a
+    silently-stringified value.
+    """
+    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -410,12 +413,20 @@ class DeclarativePolicy:
         return list(self._required)
 
     def validate_inputs(self, snapshot: Mapping[str, Any]) -> list[str]:
+        """
+        Validate the COMPLETE snapshot, symmetric with the TS mirror's
+        ``validateFeatureSnapshot`` (C-004 remedy-4 divergence 3): required
+        features must be present, and EVERY entry — required or not — must
+        be a real finite number. ``{"close": 1.0, "unused": inf}`` fails on
+        both sides identically.
+        """
+        if not isinstance(snapshot, Mapping):
+            return [f"feature_snapshot must be a mapping, got {type(snapshot).__name__}"]
         errors: list[str] = []
         for name in self._required:
             if name not in snapshot:
                 errors.append(f"Missing required feature: {name}")
-                continue
-            value = snapshot[name]
+        for name, value in snapshot.items():
             if value is None:
                 errors.append(f"Feature {name} is null")
             elif isinstance(value, bool) or not isinstance(value, (int, float)):

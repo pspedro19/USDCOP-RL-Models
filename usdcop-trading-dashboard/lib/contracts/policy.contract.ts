@@ -276,17 +276,25 @@ function nonEmptyString(v: unknown): v is string {
 
 // Strict form patterns (mirror policy.py HASH_PATTERN / ID_PATTERN /
 // ISO_TIMESTAMP_PATTERN — C-004 remedy-3 finding 4: policy_hash=true,
-// sleeve_id=null, as_of=null are typed violations, never truthiness passes).
+// sleeve_id=null, as_of=null are typed violations, never truthiness passes.
+// Remedy-4 divergence 2: the ISO check validates the REAL calendar/clock —
+// 2026-02-30, 25:00 and +25:00 are impossible values, never accepted;
+// JS Date.parse is NOT used because it silently rolls Feb-30 over to Mar-2).
 
 /** `sha256:<lowercase-hex>` (8..64 hex chars; full fingerprints use 64). */
 export const HASH_PATTERN = /^sha256:[0-9a-f]{8,64}$/;
 
-/** Identifier form for sleeve_id / signal_id / snapshot ids / versions. */
+/** Identifier form for sleeve_id / snapshot ids / versions. */
 export const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/;
 
-/** ISO-8601 date or datetime (the only accepted `as_of` form). */
+/**
+ * ISO-8601 date or datetime FORM (the only accepted `as_of` shape).
+ * Groups: 1=year 2=month 3=day 4=hour 5=minute 6=second 7=offset.
+ * Necessary but NOT sufficient — `validIsoTimestamp` also validates the
+ * real calendar/clock/offset ranges (mirrors policy.py require_iso_timestamp).
+ */
 export const ISO_TIMESTAMP_PATTERN =
-  /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
 
 function validHash(v: unknown): v is string {
   return typeof v === 'string' && HASH_PATTERN.test(v);
@@ -296,32 +304,81 @@ function validId(v: unknown): v is string {
   return typeof v === 'string' && ID_PATTERN.test(v);
 }
 
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) {
+    const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return leap ? 29 : 28;
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
 function validIsoTimestamp(v: unknown): v is string {
-  if (typeof v !== 'string' || !ISO_TIMESTAMP_PATTERN.test(v)) return false;
-  // calendar check on the date part (mirrors Python date.fromisoformat)
-  return !Number.isNaN(Date.parse(v.slice(0, 10)));
+  if (typeof v !== 'string') return false;
+  const m = ISO_TIMESTAMP_PATTERN.exec(v);
+  if (!m) return false;
+  // Real calendar (incl. leap years) — mirrors Python datetime.date()
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return false;
+  // Real clock: hour 25 / minute 61 / second 61 are impossible
+  if (m[4] !== undefined) {
+    const hour = Number(m[4]);
+    const minute = Number(m[5]);
+    const second = m[6] === undefined ? 0 : Number(m[6]);
+    if (hour > 23 || minute > 59 || second > 59) return false;
+  }
+  // Real UTC offset: +25:00 / +05:61 are impossible
+  const offset = m[7];
+  if (offset !== undefined && offset !== 'Z') {
+    const offsetHour = Number(offset.slice(1, 3));
+    const offsetMinute = Number(offset.slice(4, 6));
+    if (offsetHour > 23 || offsetMinute > 59) return false;
+  }
+  return true;
 }
 
 /**
- * Recursive finiteness sweep: any non-finite number (NaN/±Infinity) anywhere
- * in a serializable payload is a violation (repo rule: JSON never carries
- * Infinity/NaN — mirrors rule_trace.py::ensure_json_safe, C-004 remedy-3
- * findings 3/5).
+ * Recursive CLOSED-WORLD JSON sweep (mirrors rule_trace.py::ensure_json_safe,
+ * C-004 remedy-4 divergence 4). The allowed types are EXACTLY: plain object /
+ * array / string / finite number / boolean / null. Anything else — class
+ * instances (Date, Set, Map, decoded Python-only markers), undefined, bigint,
+ * function, symbol — is a violation, INCLUDING non-finite numbers whatever
+ * their origin. Repo rule: JSON never carries Infinity/NaN, and non-JSON
+ * types are never silently stringified.
  */
 export function collectNonFinite(value: unknown, path: string, errors: string[]): void {
-  if (typeof value === 'number') {
+  if (value === null) return;
+  const t = typeof value;
+  if (t === 'number') {
     if (!Number.isFinite(value)) {
       errors.push(`${path} contains a non-finite number — NaN/Infinity forbidden in JSON`);
     }
     return;
   }
+  if (t === 'string' || t === 'boolean') return;
   if (Array.isArray(value)) {
     value.forEach((item, i) => collectNonFinite(item, `${path}[${i}]`, errors));
-  } else if (typeof value === 'object' && value !== null) {
-    for (const [key, item] of Object.entries(value)) {
+    return;
+  }
+  if (t === 'object') {
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) {
+      errors.push(
+        `${path} has a non-JSON type (${value!.constructor?.name ?? 'unknown'}) — ` +
+        'allowed types are exactly plain-object/array/string/finite-number/boolean/null',
+      );
+      return;
+    }
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
       collectNonFinite(item, `${path}.${key}`, errors);
     }
+    return;
   }
+  errors.push(
+    `${path} has a non-JSON type (${t}) — ` +
+    'allowed types are exactly plain-object/array/string/finite-number/boolean/null',
+  );
 }
 
 /**
@@ -455,14 +512,23 @@ export function validateEngineRef(raw: unknown): string[] {
   return errors;
 }
 
-/** Mirrors PolicyContext.__post_init__ — mode must be in POLICY_MODES. */
+/**
+ * Mirrors PolicyContext.__post_init__ — mode must be in POLICY_MODES, and
+ * `as_of`, when present and non-null, must be a REAL ISO-8601 timestamp
+ * (C-004 remedy-4 divergence 2a: the TS side must validate context.as_of
+ * exactly like Python does, impossible calendar/clock/offset rejected).
+ */
 export function validatePolicyContext(raw: unknown): string[] {
   if (typeof raw !== 'object' || raw === null) return ['policy_context must be an object'];
   const o = raw as Record<string, unknown>;
+  const errors: string[] = [];
   if (!POLICY_MODES.includes(o.mode as PolicyMode)) {
-    return [`context.mode must be one of [${POLICY_MODES.join(', ')}], got ${JSON.stringify(o.mode)}`];
+    errors.push(`context.mode must be one of [${POLICY_MODES.join(', ')}], got ${JSON.stringify(o.mode)}`);
   }
-  return [];
+  if (o.as_of !== undefined && o.as_of !== null && !validIsoTimestamp(o.as_of)) {
+    errors.push(`context.as_of must be a real ISO-8601 date/datetime, got ${JSON.stringify(o.as_of)}`);
+  }
+  return errors;
 }
 
 /** Mirrors RuleTrace.__post_init__ — trace_schema must be a SUPPORTED schema. */
@@ -486,8 +552,11 @@ export function validateRuleTrace(raw: unknown): string[] {
       if (e.result !== undefined && typeof e.result !== 'boolean') {
         errors.push(`rule_trace entry ${String(e.rule_id)} result must be a boolean`);
       }
-      // observed values ride into JSON exports — no NaN/Infinity ever
-      collectNonFinite(e.observed, `rule_trace.${String(e.rule_id)}.observed`, errors);
+      // observed values ride into JSON exports — closed JSON only
+      // (no NaN/Infinity, no non-JSON types)
+      if (e.observed !== undefined) {
+        collectNonFinite(e.observed, `rule_trace.${String(e.rule_id)}.observed`, errors);
+      }
     }
   }
   return errors;
@@ -504,7 +573,7 @@ export function validateStrategyDecision(raw: unknown): string[] {
   const errors: string[] = [];
   // Strict identifier/timestamp/hash forms (C-004 remedy-3 finding 4):
   // sleeve_id=null, as_of=null, fingerprint=true are typed violations.
-  for (const name of ['signal_id', 'sleeve_id', 'strategy_version'] as const) {
+  for (const name of ['sleeve_id', 'strategy_version'] as const) {
     if (!validId(o[name])) {
       errors.push(`${name} must be a non-empty identifier string, got ${JSON.stringify(o[name])}`);
     }
@@ -514,6 +583,24 @@ export function validateStrategyDecision(raw: unknown): string[] {
   }
   if (!validHash(o.decision_fingerprint)) {
     errors.push(`decision_fingerprint must be a 'sha256:<hex>' string, got ${JSON.stringify(o.decision_fingerprint)}`);
+  }
+  // Derived id (C-004 remedy-4 divergence 2d, mirrors StrategyDecision
+  // __post_init__): signal_id is the composite
+  // '<sleeve_id>:<as_of>:<fingerprint-hex16>' — every part is validated
+  // above, and the composite must EQUAL its derivation, so an embedded
+  // timestamp with an impossible offset, a foreign sleeve or a foreign
+  // fingerprint prefix is rejected.
+  if (typeof o.signal_id !== 'string' || o.signal_id.length === 0) {
+    errors.push(`signal_id must be a non-empty string, got ${JSON.stringify(o.signal_id)}`);
+  } else if (validId(o.sleeve_id) && validIsoTimestamp(o.as_of) && validHash(o.decision_fingerprint)) {
+    const hex16 = (o.decision_fingerprint as string).slice('sha256:'.length).slice(0, 16);
+    const derived = `${o.sleeve_id}:${o.as_of}:${hex16}`;
+    if (o.signal_id !== derived) {
+      errors.push(
+        `signal_id must equal its derivation '<sleeve_id>:<as_of>:<fingerprint-hex16>' ` +
+        `(${derived}), got ${JSON.stringify(o.signal_id)}`,
+      );
+    }
   }
   if (!VALID_DIRECTIONS.includes(o.direction as Direction)) {
     errors.push(`direction must be one of [${VALID_DIRECTIONS.join(', ')}], got ${JSON.stringify(o.direction)}`);
@@ -529,8 +616,11 @@ export function validateStrategyDecision(raw: unknown): string[] {
       && !validId(o.feature_snapshot_id)) {
     errors.push('feature_snapshot_id must be a non-empty identifier string or null');
   }
-  // No NaN/Infinity anywhere in the serialized payload (finding 5)
-  collectNonFinite(o.decision_components, 'decision_components', errors);
+  // Closed JSON: no NaN/Infinity and no non-JSON types anywhere in the
+  // serialized payload (remedy-3 finding 5 + remedy-4 divergence 4)
+  if (o.decision_components !== undefined) {
+    collectNonFinite(o.decision_components, 'decision_components', errors);
+  }
   errors.push(...validateEngineRef(o.engine_ref));
   if (o.rule_trace !== null && o.rule_trace !== undefined) {
     errors.push(...validateRuleTrace(o.rule_trace));

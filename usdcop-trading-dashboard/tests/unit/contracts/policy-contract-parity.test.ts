@@ -1,14 +1,26 @@
 /**
- * Policy contract parity — SHARED CASE TABLE (C-004 remedy-3 finding 6).
+ * Policy contract parity — SHARED FIXTURE (C-004 remedio-4 divergence 1).
  *
  * This is the Vitest twin of tests/unit/test_policy_contract.py::
- * TestSharedCaseTable. The table below is a LITERAL duplicate of
- * PARITY_CASES (same case ids, same payloads, same expected verdicts).
- * Python EXECUTES it against the real constructors/validators; this file
- * EXECUTES it against the TS runtime validators — no text inspection.
- * If you add/change a case: update BOTH files and BOTH pins.
+ * TestSharedCaseTable. Both runners LOAD the same versioned case table
+ * (tests/fixtures/policy_contract_cases.v1.json at the repo root) — nothing
+ * is duplicated literally. Each runner recomputes the fixture's content
+ * SHA-256 before running and goes RED on drift. Python executes the cases
+ * against the real constructors/validators; this file executes them against
+ * the TS runtime validators — same verdict, case by case.
+ *
+ * Sentinel encoding (see the fixture's `encoding` block):
+ * - {"$nonfinite": "NaN"|"Infinity"|"-Infinity"} -> native non-finite number
+ * - {"$pytype": kind, "value": v} -> Python decodes to the REAL type
+ *   (numpy scalar, Decimal, datetime, set, bytes); TS decodes non-finite
+ *   numeric kinds to native NaN/Infinity and every other kind to a non-plain
+ *   marker object — both sides must reject them (closed JSON type set).
  */
 
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import {
   validateStrategyDecision,
@@ -19,7 +31,10 @@ import {
   validateFeatureSnapshot,
 } from '@/lib/contracts/policy.contract';
 
-const FULL_HASH = 'sha256:' + 'deadbeef'.repeat(8); // 64 lowercase hex chars
+const FIXTURE_PATH = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../../../tests/fixtures/policy_contract_cases.v1.json',
+);
 
 type Verdict = 'valid' | 'invalid';
 type Target = 'decision' | 'engine_ref' | 'condition' | 'trace' | 'context' | 'snapshot';
@@ -29,118 +44,78 @@ interface ParityCase {
   target: Target;
   payload: unknown;
   expect: Verdict;
+  note?: string;
 }
 
-function decisionPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    signal_id: 's1:2026-07-27:deadbeefdeadbeef',
-    sleeve_id: 's1',
-    strategy_version: '1.0.0',
-    engine_ref: { type: 'rule_based', policy_hash: FULL_HASH },
-    as_of: '2026-07-27',
-    direction: 'FLAT',
-    target_exposure: 0.0,
-    reason_codes: [],
-    decision_components: { close: 1.0 },
-    rule_trace: null,
-    feature_snapshot_id: null,
-    decision_fingerprint: FULL_HASH,
-    ...overrides,
-  };
+interface ParityFixture {
+  fixture: string;
+  version: string;
+  content_sha256: string;
+  cases: ParityCase[];
 }
 
-const PARITY_CASES: ParityCase[] = [
-  // --- StrategyDecision -----------------------------------------------------
-  { id: 'decision_valid', target: 'decision', payload: decisionPayload(), expect: 'valid' },
-  { id: 'decision_direction_drop_table', target: 'decision',
-    payload: decisionPayload({ direction: 'DROP TABLE trades' }), expect: 'invalid' },
-  { id: 'decision_exposure_bool', target: 'decision',
-    payload: decisionPayload({ target_exposure: true }), expect: 'invalid' },
-  { id: 'decision_exposure_numeric_string', target: 'decision',
-    payload: decisionPayload({ target_exposure: '1.0' }), expect: 'invalid' },
-  { id: 'decision_exposure_inf', target: 'decision',
-    payload: decisionPayload({ target_exposure: Infinity }), expect: 'invalid' },
-  { id: 'decision_exposure_nan', target: 'decision',
-    payload: decisionPayload({ target_exposure: NaN }), expect: 'invalid' },
-  { id: 'decision_sleeve_id_none', target: 'decision',
-    payload: decisionPayload({ sleeve_id: null }), expect: 'invalid' },
-  { id: 'decision_as_of_none', target: 'decision',
-    payload: decisionPayload({ as_of: null }), expect: 'invalid' },
-  { id: 'decision_policy_hash_true', target: 'decision',
-    payload: decisionPayload({ engine_ref: { type: 'rule_based', policy_hash: true } }),
-    expect: 'invalid' },
-  { id: 'decision_components_infinity', target: 'decision',
-    payload: decisionPayload({ decision_components: { x: Infinity } }), expect: 'invalid' },
-  { id: 'decision_trace_missing_schema', target: 'decision',
-    payload: decisionPayload({ rule_trace: { rules: [] } }), expect: 'invalid' },
-  // --- EngineRef ------------------------------------------------------------
-  { id: 'engine_ref_valid', target: 'engine_ref',
-    payload: { type: 'rule_based', policy_hash: FULL_HASH }, expect: 'valid' },
-  { id: 'engine_ref_hash_bool', target: 'engine_ref',
-    payload: { type: 'rule_based', policy_hash: true }, expect: 'invalid' },
-  { id: 'engine_ref_hash_not_hex', target: 'engine_ref',
-    payload: { type: 'rule_based', policy_hash: 'sha256:NOT-HEX!' }, expect: 'invalid' },
-  { id: 'engine_ref_ml_snapshot_bool', target: 'engine_ref',
-    payload: { type: 'ml', model_snapshot_id: true }, expect: 'invalid' },
-  // --- Condition AST ----------------------------------------------------------
-  { id: 'condition_valid_gt', target: 'condition',
-    payload: { operator: 'greater_than', left: 'feature.close', right: 1.5 },
-    expect: 'valid' },
-  { id: 'condition_op_drop_table', target: 'condition',
-    payload: { operator: 'DROP TABLE trades', left: 'feature.close', right: 1.0 },
-    expect: 'invalid' },
-  { id: 'condition_op_eval', target: 'condition',
-    payload: { operator: 'eval', code: 'close > ma_200' }, expect: 'invalid' },
-  { id: 'condition_feature_true_mapping', target: 'condition',
-    payload: { operator: 'greater_than', left: { feature: true }, right: 1.0 },
-    expect: 'invalid' },
-  { id: 'condition_feature_empty', target: 'condition',
-    payload: { operator: 'greater_than', left: 'feature.', right: 1.0 },
-    expect: 'invalid' },
-  { id: 'condition_nan_literal', target: 'condition',
-    payload: { operator: 'greater_than', left: 'feature.close', right: NaN },
-    expect: 'invalid' },
-  { id: 'condition_inf_literal', target: 'condition',
-    payload: { operator: 'greater_than', left: 'feature.close', right: Infinity },
-    expect: 'invalid' },
-  { id: 'condition_bool_operand', target: 'condition',
-    payload: { operator: 'greater_than', left: true, right: 1.0 }, expect: 'invalid' },
-  // --- RuleTrace --------------------------------------------------------------
-  { id: 'trace_valid_v1', target: 'trace',
-    payload: { trace_schema: 'rule_trace_v1',
-      rules: [{ rule_id: 'r1', label: 'R1', observed: { close: 1.0 },
-                result: true, reason_code: 'GT' }] },
-    expect: 'valid' },
-  { id: 'trace_v2_rejected', target: 'trace',
-    payload: { trace_schema: 'rule_trace_v2', rules: [] }, expect: 'invalid' },
-  { id: 'trace_missing_schema', target: 'trace',
-    payload: { rules: [] }, expect: 'invalid' },
-  { id: 'trace_observed_infinity', target: 'trace',
-    payload: { trace_schema: 'rule_trace_v1',
-      rules: [{ rule_id: 'r1', label: 'R1', observed: { close: Infinity },
-                result: true, reason_code: 'GT' }] },
-    expect: 'invalid' },
-  // --- PolicyContext ----------------------------------------------------------
-  { id: 'context_valid', target: 'context', payload: { mode: 'DECISION' }, expect: 'valid' },
-  { id: 'context_mode_drop_table', target: 'context',
-    payload: { mode: 'DROP_TABLE' }, expect: 'invalid' },
-  // --- FeatureSnapshot --------------------------------------------------------
-  { id: 'snapshot_valid', target: 'snapshot',
-    payload: { close: 2.0, ma_200: 1.0 }, expect: 'valid' },
-  { id: 'snapshot_infinity', target: 'snapshot',
-    payload: { close: Infinity, ma_200: 1.0 }, expect: 'invalid' },
-  { id: 'snapshot_nan', target: 'snapshot',
-    payload: { close: NaN, ma_200: 1.0 }, expect: 'invalid' },
-  { id: 'snapshot_bool_value', target: 'snapshot',
-    payload: { close: true, ma_200: 1.0 }, expect: 'invalid' },
-  { id: 'snapshot_null_value', target: 'snapshot',
-    payload: { close: null, ma_200: 1.0 }, expect: 'invalid' },
-  { id: 'snapshot_string_value', target: 'snapshot',
-    payload: { close: '5', ma_200: 1.0 }, expect: 'invalid' },
-];
+/** Marker for Python-only types (Decimal, datetime, set, ...): a non-plain
+ *  object the closed JSON check must reject, mirroring the Python raise. */
+class PyOnlyValue {
+  constructor(public readonly kind: string, public readonly value: unknown) {}
+}
 
-/** Mirrors PARITY_CASE_IDS_SHA256_PREFIX in the Python twin. */
-const PARITY_CASE_TABLE_PIN = 'case-table-v1:35';
+function decodeFixtureValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(decodeFixtureValue);
+  if (value !== null && typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const keys = Object.keys(o);
+    if (keys.length === 1 && keys[0] === '$nonfinite') {
+      const kind = o.$nonfinite;
+      if (kind === 'NaN') return NaN;
+      if (kind === 'Infinity') return Infinity;
+      if (kind === '-Infinity') return -Infinity;
+      throw new Error(`unknown $nonfinite ${String(kind)} in fixture`);
+    }
+    if (keys.length === 2 && '$pytype' in o && 'value' in o) {
+      const kind = String(o.$pytype);
+      if (kind === 'numpy.float32' || kind === 'numpy.float64') {
+        const v = o.value;
+        if (v === 'Infinity') return Infinity;
+        if (v === '-Infinity') return -Infinity;
+        if (v === 'NaN') return NaN;
+        return new PyOnlyValue(kind, v); // finite numpy scalar: still non-JSON
+      }
+      return new PyOnlyValue(kind, o.value);
+    }
+    return Object.fromEntries(
+      Object.entries(o).map(([k, v]) => [k, decodeFixtureValue(v)]),
+    );
+  }
+  return value;
+}
+
+/** Load + SHA-verify the shared fixture. Drift => throw (RED). */
+function loadParityFixture(): { doc: ParityFixture; cases: ParityCase[] } {
+  const raw = readFileSync(FIXTURE_PATH, 'utf-8').replace(/\r\n/g, '\n');
+  const m = raw.match(/"content_sha256":\s*"([0-9a-f]{64})"/);
+  if (!m) throw new Error('fixture must declare a 64-hex content_sha256');
+  const declared = m[1];
+  const actual = createHash('sha256')
+    .update(raw.replace(declared, ''), 'utf-8')
+    .digest('hex');
+  if (actual !== declared) {
+    throw new Error(
+      `FIXTURE DRIFT: declared content_sha256 ${declared} != recomputed ${actual} — ` +
+      'the case table changed without regenerating the pin (both runners refuse to run)',
+    );
+  }
+  const doc = JSON.parse(raw) as ParityFixture;
+  if (doc.fixture !== 'policy_contract_cases' || doc.version !== 'v1') {
+    throw new Error('unexpected fixture identity/version');
+  }
+  const cases = doc.cases.map((c) => ({ ...c, payload: decodeFixtureValue(c.payload) }));
+  const ids = new Set(cases.map((c) => c.id));
+  if (ids.size !== cases.length) throw new Error('duplicate case ids in fixture');
+  return { doc, cases };
+}
+
+const { doc: FIXTURE_DOC, cases: PARITY_CASES } = loadParityFixture();
 
 function runCase(target: Target, payload: unknown): Verdict {
   let errors: string[];
@@ -155,13 +130,17 @@ function runCase(target: Target, payload: unknown): Verdict {
   return errors.length === 0 ? 'valid' : 'invalid';
 }
 
-describe('policy contract parity — shared case table (EXECUTED, not text-inspected)', () => {
+describe('policy contract parity — shared fixture (LOADED + EXECUTED, not duplicated)', () => {
   it.each(PARITY_CASES.map((c) => [c.id, c] as const))('case %s', (_id, c) => {
     expect(runCase(c.target, c.payload)).toBe(c.expect);
   });
 
-  it('table pin matches the Python twin (version + case count, unique ids)', () => {
-    expect(PARITY_CASE_TABLE_PIN).toBe(`case-table-v1:${PARITY_CASES.length}`);
-    expect(new Set(PARITY_CASES.map((c) => c.id)).size).toBe(PARITY_CASES.length);
+  it('fixture content SHA is verified and case ids are unique', () => {
+    // loadParityFixture() already threw on drift; re-run explicitly so the
+    // guarantee is a named green test, not only a collection side effect.
+    const { cases } = loadParityFixture();
+    expect(cases.length).toBeGreaterThanOrEqual(35);
+    expect(new Set(cases.map((c) => c.id)).size).toBe(cases.length);
+    expect(FIXTURE_DOC.content_sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 });
