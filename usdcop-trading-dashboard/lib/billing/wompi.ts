@@ -40,6 +40,34 @@ const WOMPI_STATUS_MAP: Record<string, BillingEventType | null> = {
 /** Event names this integration understands. Anything else is ignored. */
 const WOMPI_HANDLED_EVENTS = new Set(['transaction.updated']);
 
+/**
+ * Which `data.transaction` path backs each field of the normalized event. Wompi's
+ * `signature.properties` is the EXHAUSTIVE list of paths its checksum covers; every
+ * field whose path is absent from that list arrives UNAUTHENTICATED and is mutable by
+ * anyone who can replay the event (CODEX CXD-056).
+ *
+ * In practice Wompi signs `transaction.id|status|amount_in_cents` and does NOT sign
+ * `transaction.reference` — the field that decides which order, and therefore which
+ * user, gets credited. No code here can fix that: two events differing only in the
+ * reference produce the same, genuinely valid checksum. So we do not pretend to
+ * authenticate it — we REPORT it, and the route closes the replay at the ledger
+ * (`lib/billing/event-ledger.ts`, `billing_events.provider_event_id`).
+ */
+const EVENT_FIELD_SOURCE: Readonly<Record<string, string>> = {
+  providerEventId: 'transaction.id',
+  type: 'transaction.status',
+  amountInCents: 'transaction.amount_in_cents',
+  currency: 'transaction.currency',
+  reference: 'transaction.reference',
+};
+
+function unauthenticatedFieldsOf(properties: readonly string[]): readonly string[] {
+  const signed = new Set(properties);
+  return Object.entries(EVENT_FIELD_SOURCE)
+    .filter(([, path]) => !signed.has(path))
+    .map(([field]) => field);
+}
+
 export class WompiProvider implements BillingProvider {
   readonly name = 'wompi';
 
@@ -155,6 +183,7 @@ export class WompiProvider implements BillingProvider {
         amountInCents: Number.isFinite(amountInCents as number) ? (amountInCents as number) : undefined,
         currency: typeof tx?.currency === 'string' ? tx.currency : undefined,
         providerEventId,
+        unauthenticatedFields: unauthenticatedFieldsOf(signature.properties),
         raw: body,
       },
     };

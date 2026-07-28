@@ -11,175 +11,31 @@
  *        never mutates an already-paid order.
  *  P0-4  internal errors never leak paths/stacks to the client.
  *
- * The DB is a scripted fake that honours the two invariants migration 058/059 encode:
- * UNIQUE(reference,event_type) on billing_webhook_events and the legal-transition
- * trigger on checkout_orders (paid -> cancelled/failed raises).
+ * The DB is a scripted fake (`tests/mocks/scripted-postgres.ts` — ONE copy, shared with
+ * `billing-replay-entitlement.test.ts`) that honours the invariants migrations 058/059
+ * encode: UNIQUE(reference,event_type) on billing_webhook_events, UNIQUE
+ * (provider_event_id) on billing_events, and the legal-transition trigger on
+ * checkout_orders (paid -> cancelled/failed raises).
  */
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// ── scripted postgres (shared by `query` and the transactional `getClient`) ─────
-const pg = vi.hoisted(() => {
-  type Row = Record<string, unknown>;
-  const state = {
-    orders: new Map<string, Row>(),
-    users: new Map<string, Row>(),
-    webhookEvents: new Set<string>(),
-    billingEvents: new Set<string>(),
-    audit: [] as Row[],
-    cart: [] as string[],
-    log: [] as string[],
-    failOn: null as null | ((sql: string) => boolean),
-  };
-
-  const LEGAL: Record<string, string[]> = {
-    created: ['pending', 'paid'],
-    pending: ['paid', 'failed', 'cancelled', 'expired'],
-    paid: ['refunded', 'charged_back'],
-  };
-
-  const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
-
-  function statusFilter(sql: string, params: unknown[]): string[] | null {
-    const anyM = sql.match(/status\s*=\s*ANY\(\$(\d+)(?:::text\[\])?\)/i);
-    if (anyM) return params[Number(anyM[1]) - 1] as string[];
-    const inM = sql.match(/status\s+IN\s*\(([^)]*)\)/i);
-    if (inM) return inM[1].split(',').map((s) => s.trim().replace(/'/g, ''));
-    return null;
-  }
-
-  function exec(text: string, params: unknown[] = [], stage: (() => void)[] | null) {
-    const sql = norm(text);
-    state.log.push(sql);
-    if (state.failOn?.(sql)) {
-      const e = new Error(
-        'error: relation blew up at C:\\srv\\usdcop\\lib\\db\\postgres-client.ts:117 (password=hunter2)',
-      );
-      throw e;
-    }
-    const apply = (fn: () => void) => (stage ? stage.push(fn) : fn());
-    const res = (rows: Row[] = [], rowCount = rows.length) => ({ rows, rowCount });
-
-    // ── idempotency ledger (migration 058: UNIQUE(reference,event_type))
-    if (/INSERT INTO billing_webhook_events/i.test(sql)) {
-      const key = `${params[0]}:${params[1]}`;
-      if (state.webhookEvents.has(key)) {
-        const e = new Error('duplicate key value violates unique constraint') as Error & { code?: string };
-        e.code = '23505';
-        throw e;
-      }
-      apply(() => state.webhookEvents.add(key));
-      return res([], 1);
-    }
-    // ── append-only provider event ledger
-    if (/INSERT INTO billing_events/i.test(sql)) {
-      const id = String(params[0]);
-      if (state.billingEvents.has(id)) return res([], 0);
-      apply(() => state.billingEvents.add(id));
-      return res([], 1);
-    }
-    if (/INSERT INTO audit_log/i.test(sql)) {
-      apply(() => state.audit.push({ user_id: params[0], action: params[1], detail: params[3] }));
-      return res([], 1);
-    }
-    // ── sealed quote
-    if (/FROM checkout_orders/i.test(sql)) {
-      const o = state.orders.get(String(params[0]));
-      return res(o ? [{ ...o }] : []);
-    }
-    if (/INSERT INTO checkout_orders/i.test(sql)) {
-      const reference = String(params[4]);
-      if (!state.orders.has(reference)) {
-        apply(() => state.orders.set(reference, {
-          user_id: params[0], plan: params[1],
-          addon_assets: JSON.parse(String(params[2])),
-          amount_cents: Number(params[3]), currency: 'COP',
-          reference, status: 'pending',
-        }));
-      }
-      return res([], 1);
-    }
-    if (/UPDATE checkout_orders/i.test(sql)) {
-      const setM = sql.match(/SET status\s*=\s*(?:'([a-z_]+)'|\$(\d+))/i);
-      const refM = sql.match(/reference\s*=\s*\$(\d+)/i);
-      if (!setM || !refM) throw new Error(`unparseable UPDATE in test harness: ${sql}`);
-      const next = setM[1] ?? String(params[Number(setM[2]) - 1]);
-      const reference = String(params[Number(refM[1]) - 1]);
-      const order = state.orders.get(reference);
-      if (!order) return res([], 0);
-      const allowed = statusFilter(sql, params);
-      if (allowed && !allowed.includes(String(order.status))) return res([], 0);
-      const from = String(order.status);
-      if (from !== next && !(LEGAL[from] ?? []).includes(next)) {
-        throw new Error(`illegal checkout order transition: ${from} -> ${next}`);
-      }
-      apply(() => { order.status = next; });
-      return res([], 1);
-    }
-    // ── users
-    if (/UPDATE sb_users SET entitlements/i.test(sql)) {
-      const jsonbSet = /jsonb_set/i.test(sql);
-      const userId = String(params[jsonbSet ? 0 : 1]);
-      const u = state.users.get(userId);
-      if (!u) return res([], 0);
-      apply(() => {
-        if (jsonbSet) u.entitlements = { ...(u.entitlements as Row), assets: [] };
-        else u.entitlements = JSON.parse(String(params[0]));
-      });
-      return res([], 1);
-    }
-    if (/SELECT role, entitlements FROM sb_users/i.test(sql)) {
-      const u = state.users.get(String(params[0]));
-      return res(u ? [{ role: u.role, entitlements: u.entitlements }] : []);
-    }
-    if (/SELECT email FROM sb_users/i.test(sql)) {
-      const u = state.users.get(String(params[0]));
-      return res(u ? [{ email: u.email }] : []);
-    }
-    if (/FROM user_cart/i.test(sql)) return res(state.cart.map((a) => ({ asset_id: a })));
-
-    return res([]);
-  }
-
+vi.mock('@/lib/db/postgres-client', async () => {
+  const { scriptedPg } = await import('../../mocks/scripted-postgres');
   return {
-    state,
-    reset() {
-      state.orders.clear(); state.users.clear(); state.webhookEvents.clear();
-      state.billingEvents.clear(); state.audit.length = 0; state.cart.length = 0;
-      state.log.length = 0; state.failOn = null;
-    },
-    query: (text: string, params?: unknown[]) => Promise.resolve(exec(text, params, null)),
-    getClient: () => {
-      let pending: (() => void)[] | null = null;
-      return Promise.resolve({
-        query: (text: string, params?: unknown[]) => {
-          const sql = text.replace(/\s+/g, ' ').trim().toUpperCase();
-          if (sql === 'BEGIN') { pending = []; state.log.push('BEGIN'); return Promise.resolve({ rows: [], rowCount: 0 }); }
-          if (sql === 'COMMIT') {
-            state.log.push('COMMIT');
-            (pending ?? []).forEach((fn) => fn()); pending = null;
-            return Promise.resolve({ rows: [], rowCount: 0 });
-          }
-          if (sql === 'ROLLBACK') { state.log.push('ROLLBACK'); pending = null; return Promise.resolve({ rows: [], rowCount: 0 }); }
-          return Promise.resolve(exec(text, params, pending));
-        },
-        release: () => {},
-      });
-    },
+    query: scriptedPg.query,
+    pgQuery: scriptedPg.query,
+    getClient: scriptedPg.getClient,
+    getPool: () => { throw new Error('pool disabled in tests'); },
   };
 });
 
-vi.mock('@/lib/db/postgres-client', () => ({
-  query: pg.query,
-  pgQuery: pg.query,
-  getClient: pg.getClient,
-  getPool: () => { throw new Error('pool disabled in tests'); },
-}));
-
+import { scriptedPg as pg } from '../../mocks/scripted-postgres';
 import { POST as webhookPOST } from '@/app/api/billing/webhook/route';
 import { POST as cartCheckoutPOST } from '@/app/api/cart/checkout/route';
 import { POST as billingCheckoutPOST } from '@/app/api/billing/checkout/route';
 import { WompiProvider } from '@/lib/billing/wompi';
+import { encodeReference, decodeReference } from '@/lib/billing/provider';
 
 const EVENTS_SECRET = 'events-secret';
 const USER = '11111111-1111-4111-8111-111111111111';
@@ -454,6 +310,41 @@ describe('P0-2 checkout fails closed on incomplete configuration', () => {
   it('never produces a checkout for an add-on with no published price', async () => {
     await expect(new WompiProvider().createCheckout({
       userId: USER, email: 'u@example.com', plan: 'signals', addOnAssets: ['not_a_real_asset'],
+    })).rejects.toThrow();
+  });
+});
+
+/**
+ * P0-5 (found while closing CXD-056, same frontier). `encodeReference` joins its parts
+ * with `_`, but `decodeReference` parses the add-on slot as `[^_]*`. An asset id that
+ * contains `_` therefore produces a reference NOTHING can decode: checkout succeeds and
+ * the customer is charged, then EVERY webhook for that payment dies on
+ * `assertReferenceMatchesQuote` with "unknown reference format" — money in, service
+ * never granted, and no retry can ever fix it. Asset ids are operator data
+ * (`BILLING_ADDON_PRICES_COP` is an env override), so this is one config entry away.
+ *
+ * Fail-closed rule: never issue a PAYABLE url for a purchase we could not credit.
+ * Mutation that must turn this red: drop the round-trip assertion in `encodeReference`.
+ */
+describe('P0-5 no payable URL whose confirmation we could not decode', () => {
+  it('refuses to encode a reference that does not round-trip', () => {
+    expect(() => encodeReference(USER, 'signals', ['us_tech100'])).toThrow();
+    expect(() => encodeReference(USER, 'signals', ['nas_100', 'xauusd'])).toThrow();
+  });
+
+  it('still encodes every reference shape in use today', () => {
+    for (const addOns of [[], ['xauusd'], ['xauusd', 'btcusdt'], ['spx500']]) {
+      const ref = encodeReference(USER, 'signals', addOns);
+      expect(decodeReference(ref), `${ref} must round-trip`).toMatchObject({
+        plan: 'signals', userId: USER, addOns,
+      });
+    }
+  });
+
+  it('never charges for an add-on whose id cannot round-trip', async () => {
+    process.env.BILLING_ADDON_PRICES_COP = JSON.stringify({ us_tech100: 39_000 });
+    await expect(new WompiProvider().createCheckout({
+      userId: USER, email: 'u@example.com', plan: 'signals', addOnAssets: ['us_tech100'],
     })).rejects.toThrow();
   });
 });

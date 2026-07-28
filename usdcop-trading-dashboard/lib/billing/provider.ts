@@ -39,6 +39,16 @@ export interface NormalizedBillingEvent {
   currency?: string;
   /** Stable provider-side id (idempotency key of the append-only event ledger). */
   providerEventId: string;
+  /**
+   * Fields of THIS event that the provider's signature does NOT cover, and which are
+   * therefore attacker-mutable on a replay of an otherwise valid event (CODEX CXD-056).
+   * Wompi signs only `transaction.id|status|amount_in_cents`, so `reference` — the
+   * field that decides who gets credited — arrives UNAUTHENTICATED. Consumers must
+   * confirm every listed field against something they control (the sealed quote in
+   * `checkout_orders`, or the `provider_event_id` binding in `billing_events`) before
+   * acting on it. See `lib/billing/event-ledger.ts`.
+   */
+  unauthenticatedFields: readonly string[];
   raw: unknown;
 }
 
@@ -63,9 +73,28 @@ export interface BillingProvider {
   verifyWebhook(rawBody: string, headers: Headers): Promise<WebhookVerification>;
 }
 
-/** reference = billing correlation id — encodes who paid for what. */
+/**
+ * reference = billing correlation id — encodes who paid for what.
+ *
+ * FAIL-CLOSED ROUND-TRIP (P0-5): the parts are joined with `_` but `decodeReference`
+ * parses the add-on slot as `[^_]*`, so an asset id containing `_` (asset ids are
+ * operator data — `BILLING_ADDON_PRICES_COP` is an env override) yields a reference
+ * NOTHING can decode. The checkout would still be payable, and every webhook for that
+ * payment would then die on the reference/quote cross-check: the customer is charged
+ * and can never be credited, with no retry able to fix it. So we verify the round-trip
+ * HERE, before a payable URL exists, instead of restating the grammar in a second
+ * regex that could drift from the parser.
+ */
 export function encodeReference(userId: string, plan: PlanId, addOns: string[] = []): string {
-  return `sub_${plan}_${userId}_${addOns.join('+') || 'base'}_${Date.now()}`;
+  const reference = `sub_${plan}_${userId}_${addOns.join('+') || 'base'}_${Date.now()}`;
+  const decoded = decodeReference(reference);
+  const sameAddOns = decoded
+    && decoded.addOns.length === addOns.length
+    && decoded.addOns.every((a, i) => a === addOns[i]);
+  if (!decoded || decoded.userId !== userId || decoded.plan !== plan || !sameAddOns) {
+    throw new Error('billing reference does not round-trip; refusing to issue a payable checkout');
+  }
+  return reference;
 }
 
 export function decodeReference(reference: string):
