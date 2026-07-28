@@ -32,10 +32,17 @@ STALE_AFTER_DAYS = 90
 # are validated against their own schema below rather than the spec schema.
 EXECUTABLE_DIRS = ("skills", "agents")
 
+# `coordination/` holds OPERATIONAL runtime files of the dual-LLM protocol (status
+# heartbeats rewritten every ~5 min, append-only contract log). They are machine state,
+# not knowledge documents — demanding kind/last_verified on a heartbeat would either
+# spam-invalidate the gate or force fake metadata. Same rationale as excluding Airflow's
+# own state tables from the data profile.
+OPERATIONAL_DIRS = ("coordination",)
+
 
 def _is_executable_def(path: Path) -> bool:
     rel = path.relative_to(CLAUDE)
-    return bool(rel.parts) and rel.parts[0] in EXECUTABLE_DIRS
+    return bool(rel.parts) and rel.parts[0] in (EXECUTABLE_DIRS + OPERATIONAL_DIRS)
 
 
 def _is_definition_file(path: Path) -> bool:
