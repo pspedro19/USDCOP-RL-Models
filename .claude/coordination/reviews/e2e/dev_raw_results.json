@@ -150,11 +150,11 @@
     "console_errors": [],
     "http_failures": [],
     "final_url": "http://localhost:3001/production",
-    "candidatas_panel": false,
-    "v11": false,
-    "v12": false,
-    "v14": false,
-    "n20_note": false
+    "candidatas_panel": true,
+    "v11": true,
+    "v12": true,
+    "v14": true,
+    "n20_note": true
   },
   "replay": {
     "console_errors": [],
@@ -162,10 +162,10 @@
     "final_url": "http://localhost:3001/replay",
     "redirected_to_login": false,
     "shows_404": false,
-    "has_select": 1,
-    "mentions_equity": false,
+    "has_select": 9,
+    "mentions_equity": true,
     "mentions_estrategia": true,
-    "has_svg_chart": 16,
-    "body_head": "GlobalMarkets\nTERMINAL\nACCESOS\nInicio\nActivos\nBacktest\nProducción\nForecasting\nAnálisis\nSignalBridge\nAdmin\nVER COMO\nAdmin (tú)\nDeveloper\nSuscriptor\nGratis / Invitado\nES\nAD\nadmin@trading.usdcop.com\nMIS ACTIVOS\nPlanes\nESTRATEGIAS · OOS\nBacktest\nSmart Simple v1.1.0\nUSD/COP · +1.8% · Sharpe 3.79\nAPPROVED\n$3,215.6\n+0.0 (+0.00%)\nCERRADO\nOOS 2025 · BACKTEST\nPAPER\nCargando backtest…\n\nUSDCOP Trading System\n\nModo paper trading · Última actualización: 10:09:57 p. m."
+    "has_svg_chart": 45,
+    "body_head": "GlobalMarkets\nTERMINAL\nACCESOS\nInicio\nActivos\nBacktest\nProducción\nForecasting\nAnálisis\nSignalBridge\nAdmin\nVER COMO\nAdmin (tú)\nDeveloper\nSuscriptor\nGratis / Invitado\nES\nAD\nadmin@trading.usdcop.com\nMIS ACTIVOS\nBTC/USDT\nSPX/500\nUSD/COP\nXAU/USD\n14\nPlanes\nESTRATEGIAS · OOS\nBacktest\nSmart Simple v1.1.0\nUSD/COP · +1.8% · Sharpe 3.79\nAPPROVED\n$3,215.6\n+0.0 (+0.00%)\nCERRADO\nOOS 2025 · BACKTEST\nPAPER\n◆\nBACKTEST\nSmart Simple v2.0.0\n8 trades · DA 62.5%\nPENDIENTE\nP=0.0722 · NO SIGNIFICATIVO\nVERSIÓN\nv1.0.0 (sin replay) · 2025\nv3.0.0-A · 2025\nv3.0.0-B · 2025\nv1.1.0 · 2025\nv1.1.0 · 2026\nv2.0.0 ★ · 2026\nv2.0.0"
   }
 }
