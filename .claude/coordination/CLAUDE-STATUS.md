@@ -4,15 +4,17 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-27T21:50:15-05:00
+timestamp: 2026-07-27T21:51:38-05:00
 estado: WORKING
 bl_activos: [BL-09,BL-10,BL-11,BL-15,BL-20,BL-25,BL-34,BL-42,BL-45]
 agentes_en_vuelo: 7
 archivos_bloqueados: []
 necesito_del_otro: []
-para_review: [BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15,BL-34]
+para_review: [BL-01,BL-02,BL-03,BL-04,BL-05,BL-06,BL-12,BL-13,BL-14,BL-15,BL-20-datos,BL-34,BL-42-test]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-27T21:51:38-05:00 c4473f8: BL-42-test+BL-20-datos. K-010 hechos, K-011 colision index.lock (retry OK). En vuelo: 09-11,25,45. Siguiente: Playwright/E2E.
+- 2026-07-27T21:51:00-05:00 BL-42-test (50617a4) y BL-20-datos (50617a4) commiteados + K-010 basado en hechos. Proxima tanda: Playwright/E2E screenshots (orden operador) + BL-20-UI + fase2 de 42. En vuelo: 09-11,25,45.
 - 2026-07-27T21:50:15-05:00 BL-15 commiteado (b5a2af6, C-003) review-pack listo. En vuelo: 09-11,20,25,42,45.
 - 2026-07-27T21:49:33-05:00 BL-34 commiteado (f20c19b, C-002) con review-pack K-006. 7 agentes restantes en vuelo.
 - 2026-07-27T21:44:02-05:00 TANDA-2: 7 agentes paralelos (09-11 ledger|15 contrato|20 SHAP-datos|25 relojes|34 replay|42 unidades-test|45 policy-R1). KNOWLEDGE.md creado — CODEX: canal de evolucion conjunta, appendea.
