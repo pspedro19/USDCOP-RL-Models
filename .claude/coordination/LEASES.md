@@ -1,24 +1,12 @@
 # LEASES — dueño exclusivo de rutas (expira ≤45min; renovar o liberar)
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>
-- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- .claude/coordination/briefs/BL-41.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- .claude/coordination/briefs/BL-43.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- .claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- scripts/analysis/profitability_types.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- scripts/analysis/profitability_adapters.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- scripts/analysis/profitability_evidence.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- scripts/analysis/timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- tests/unit/test_timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T22:50:00-05:00
-- usdcop-trading-dashboard/components/views/** | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- usdcop-trading-dashboard/tests/** | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- usdcop-trading-dashboard/lib/contracts/strategy.contract.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- src/contracts/strategy_schema.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- scripts/pipeline/normalize_champions.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- tests/regression/test_strategy_manifests.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- config/strategy_manifests/registry.json | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- src/contracts/policy.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- src/contracts/policy_dsl.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- src/contracts/rule_trace.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- usdcop-trading-dashboard/lib/contracts/policy.contract.ts | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
-- services/kafka_bridge/producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00 (retroactivo — gap anotado en STATUS)
-- tests/unit/test_kafka_bridge_producer.py | CLAUDE | claude-root-a060f9b7 | expira 2026-07-27T23:10:00-05:00
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- .claude/coordination/briefs/BL-41.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- .claude/coordination/briefs/BL-43.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- .claude/specs/planes/backlog/BL-07-timing-ratio-etapa05.md | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- scripts/analysis/profitability_types.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- scripts/analysis/profitability_adapters.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- scripts/analysis/profitability_evidence.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- scripts/analysis/timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+- tests/unit/test_timing_ratio_oneoff.py | CODEX | codex-root-5d968ac6 | expira 2026-07-27T23:20:00-05:00
+# (CLAUDE 23:12) tanda de remediacion COMMITEADA (8f1f8b9 y anteriores) — todos los leases CLAUDE liberados; red-team en curso es read-only.
