@@ -27,6 +27,15 @@ import type {
   AssetWeeklyInference, WeeklyInferenceIndex, WeeklyInferenceStrategy,
 } from './types';
 import { ForecastDisclaimer } from './ForecastDisclaimer';
+import {
+  FORECAST_DIRECTION_LABEL_UP,
+  FORECAST_DIRECTION_LABEL_DOWN,
+  FORECAST_DIRECTION_LABEL_FLAT,
+  FORECAST_DIRECTION_LABEL_UNKNOWN,
+  FORECAST_HIT_COLUMN_LABEL,
+  FORECAST_HIT_YES_LABEL,
+  FORECAST_HIT_NO_LABEL,
+} from '@/lib/ui/forecast-disclaimer';
 
 // BL-03 (CXD-032): la dirección es una PREDICCIÓN sobre una superficie diagnóstica —
 // jamás verde/rojo (eso se lee como recomendación de compra/venta). Tono neutro único;
@@ -40,6 +49,20 @@ const DIRECTION_STYLE: Record<string, string> = {
 /** Glifo direccional informativo (sin color compra/venta). */
 const directionGlyph = (dir: string | null | undefined): string =>
   dir === 'UP' || dir === 'LONG' ? '↑' : dir === 'DOWN' || dir === 'SHORT' ? '↓' : '·';
+
+/**
+ * BL-03 (re-remediación del rechazo Codex a b86083e): LONG/SHORT son etiquetas
+ * IMPERATIVAS de orden — describen lo que haría un ejecutor. En una superficie
+ * DIAGNOSTIC se renombran al sesgo que realmente describen (SSOT compartido). El dato
+ * crudo del contrato no se toca; solo su presentación.
+ */
+const directionLabel = (dir: string | null | undefined): string => {
+  const d = String(dir ?? '').toUpperCase();
+  if (d === 'UP' || d === 'LONG') return FORECAST_DIRECTION_LABEL_UP;
+  if (d === 'DOWN' || d === 'SHORT') return FORECAST_DIRECTION_LABEL_DOWN;
+  if (d === 'FLAT' || d === 'NEUTRAL') return FORECAST_DIRECTION_LABEL_FLAT;
+  return FORECAST_DIRECTION_LABEL_UNKNOWN;
+};
 
 /**
  * BL-03 (CXD-032): `confidence` del JSON semanal es CONVICCIÓN de la regla /
@@ -159,12 +182,19 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
     });
   }, [strategy]);
 
+  // CXD-032 (2.ª remediación): los EARLY RETURNS también son la superficie. El rechazo de
+  // Codex apuntó exactamente aquí: con BTC bloqueado por plan, o mientras carga, la vista
+  // salía por estas ramas y el usuario veía una pantalla de forecasting SIN caveat. La
+  // muralla es por superficie, no por estado de carga.
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-          <span className="text-sm">Cargando inferencia semanal…</span>
+      <div className="space-y-6">
+        <ForecastDisclaimer variant="weekly" />
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-3 text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            <span className="text-sm">Cargando inferencia semanal…</span>
+          </div>
         </div>
       </div>
     );
@@ -172,23 +202,26 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
   if (error || !data || !strategy || !index) {
     const locked = /plan superior|suscripci/i.test(error ?? '');
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center text-slate-400 max-w-md">
-          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-amber-400" />
-          <p className="text-sm">{error || 'Sin datos de inferencia semanal.'}</p>
-          {locked && (
-            <Link href="/pricing" className="inline-block mt-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-2 text-sm">
-              Ver planes
-            </Link>
-          )}
-          {/* Internal-only regeneration hint — never shown to clients (RBAC §8). */}
-          {!locked && __isInternal && (
-            <p className="text-xs text-slate-600 mt-2">
-              Ejecuta: <code className="bg-slate-800 rounded px-1.5 py-0.5 text-purple-300">
-                python -m scripts.pipeline.generate_asset_weekly_forecast --asset {assetId}
-              </code>
-            </p>
-          )}
+      <div className="space-y-6">
+        <ForecastDisclaimer variant="weekly" />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center text-slate-400 max-w-md">
+            <AlertCircle className="w-10 h-10 mx-auto mb-3 text-amber-400" />
+            <p className="text-sm">{error || 'Sin datos de inferencia semanal.'}</p>
+            {locked && (
+              <Link href="/pricing" className="inline-block mt-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-2 text-sm">
+                Ver planes
+              </Link>
+            )}
+            {/* Internal-only regeneration hint — never shown to clients (RBAC §8). */}
+            {!locked && __isInternal && (
+              <p className="text-xs text-slate-600 mt-2">
+                Ejecuta: <code className="bg-slate-800 rounded px-1.5 py-0.5 text-purple-300">
+                  python -m scripts.pipeline.generate_asset_weekly_forecast --asset {assetId}
+                </code>
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -200,8 +233,10 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
   return (
     <div className="space-y-8">
       {/* BL-02 (CXD-032): caveat de honestidad COMPARTIDO, montado INCONDICIONAL —
-          la superficie weekly Gold/BTC también es diagnóstica, no de señales. */}
-      <ForecastDisclaimer variant="zoo" />
+          la superficie weekly Gold/BTC también es diagnóstica, no de señales.
+          variant="weekly": esta vista NO corre el model zoo (Gold/BTC semanal son
+          políticas de REGLAS); afirmar aquí "9 modelos / ≈52%" era copy falso. */}
+      <ForecastDisclaimer variant="weekly" />
 
       {/* Forward Forecast — mismo lenguaje que USD/COP: imagen + horizontes (honesto:
           bandas de vol realizada + posicionamiento de la campeona + DA 2025 medida) */}
@@ -210,9 +245,10 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-bold text-white">Forward Forecast</h3>
             <div className="flex items-center gap-2 text-xs">
-              {/* BL-03: dirección en tono neutro (predicción, no recomendación). */}
+              {/* BL-03: dirección en tono neutro y con etiqueta NO imperativa
+                  (predicción, no recomendación de orden). */}
               <span className="px-2 py-1 rounded-lg font-bold bg-slate-600/30 text-slate-300">
-                {directionGlyph(forward.direction)} {forward.direction}
+                {directionGlyph(forward.direction)} {directionLabel(forward.direction)}
               </span>
               <span className="text-slate-400">exposición {forward.exposure}x · σ diaria {forward.vol_daily_pct}%</span>
             </div>
@@ -337,7 +373,12 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
                 <th scope="col" className="text-right py-2 px-2 font-medium">Esperado</th>
                 <th scope="col" className="text-right py-2 px-2 font-medium">Estrategia</th>
                 <th scope="col" className="text-right py-2 px-2 font-medium">Buy&amp;Hold</th>
-                <th scope="col" className="text-center py-2 px-2 font-medium">✓</th>
+                {/* a11y (rechazo Codex a b86083e): la columna de acierto necesita NOMBRE
+                    accesible — un glifo ✓ solo es legible para quien ve la tabla. */}
+                <th scope="col" className="text-center py-2 px-2 font-medium">
+                  <span aria-hidden="true">✓</span>
+                  <span className="sr-only">{FORECAST_HIT_COLUMN_LABEL}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -349,7 +390,7 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
                     <th scope="row" className="py-2 px-2 text-left font-normal text-slate-300 whitespace-nowrap">{w.iso_week}</th>
                     <td className="py-2 px-2">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${DIRECTION_STYLE[w.direction] || DIRECTION_STYLE.FLAT}`}>
-                        {directionGlyph(w.direction)} {w.direction}
+                        {directionGlyph(w.direction)} {directionLabel(w.direction)}
                       </span>
                     </td>
                     {/* BL-03: convicción de la regla (proxy 0..1 del JSON) — no probabilidad. */}
@@ -374,7 +415,15 @@ export function WeeklyInferenceView({ assetId }: { assetId: string }) {
                     <td className={`py-2 px-2 text-right tabular-nums ${(w.buyhold_return_pct ?? 0) >= 0 ? 'text-slate-300' : 'text-slate-500'}`}>
                       {num(w.buyhold_return_pct, 1)}%
                     </td>
-                    <td className="py-2 px-2 text-center">{w.hit ? '✅' : '·'}</td>
+                    {/* a11y: símbolo + color NO bastan — se añade el Sí/No que lee el
+                        lector de pantalla y el nombre accesible de la celda. */}
+                    <td
+                      className="py-2 px-2 text-center"
+                      aria-label={`${FORECAST_HIT_COLUMN_LABEL}: ${w.hit ? FORECAST_HIT_YES_LABEL : FORECAST_HIT_NO_LABEL}`}
+                    >
+                      <span aria-hidden="true">{w.hit ? '✅' : '·'}</span>
+                      <span className="sr-only">{w.hit ? FORECAST_HIT_YES_LABEL : FORECAST_HIT_NO_LABEL}</span>
+                    </td>
                   </tr>
                 );
               })}

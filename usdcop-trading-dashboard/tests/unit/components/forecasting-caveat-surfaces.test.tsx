@@ -38,7 +38,15 @@ import {
   FORECAST_DISCLAIMER_HEADLINE,
   FORECAST_DISCLAIMER_ZOO_TITLE,
   FORECAST_DISCLAIMER_ZOO_BODY,
+  FORECAST_DISCLAIMER_WEEKLY_TITLE,
+  FORECAST_DISCLAIMER_WEEKLY_BODY,
   FORECAST_DISCLAIMER_DIRECTIONAL_TITLE,
+  FORECAST_DIRECTION_LABEL_UP,
+  FORECAST_DIRECTION_LABEL_DOWN,
+  FORECAST_DIRECTION_LABEL_FLAT,
+  FORECAST_HIT_COLUMN_LABEL,
+  FORECAST_HIT_YES_LABEL,
+  FORECAST_HIT_NO_LABEL,
 } from '@/lib/ui/forecast-disclaimer';
 
 // ────────────────────────────────────────────────────────────── mocks de entorno
@@ -119,6 +127,122 @@ function assertZooBannerVisible(scope: HTMLElement | typeof screen = screen as a
   expect(banner.textContent).toContain(FORECAST_DISCLAIMER_ZOO_TITLE);
   expect(banner.textContent).toContain(FORECAST_DISCLAIMER_ZOO_BODY);
   return banner;
+}
+
+/**
+ * Banner de una superficie de REGLAS (weekly Gold/BTC). Rechazo Codex a b86083e: aquí se
+ * montaba la rama 'zoo', que afirma un model zoo de 9 modelos y una DA ≈52% inexistentes
+ * en una política determinista. El aserto es DOBLE — el copy correcto debe estar Y el copy
+ * del zoo NO puede estar (si alguien revierte a variant="zoo", esto se pone rojo).
+ */
+function assertWeeklyBannerVisible(scope: HTMLElement | typeof screen = screen as any) {
+  const q = scope === screen ? screen : within(scope as HTMLElement);
+  const banner = (q as any).getByTestId(FORECAST_DISCLAIMER_TESTID) as HTMLElement;
+  assertHardVisible(banner);
+  const text = banner.textContent ?? '';
+  expect(text).toContain(FORECAST_DISCLAIMER_HEADLINE);
+  expect(text).toContain(FORECAST_DISCLAIMER_WEEKLY_TITLE);
+  expect(text).toContain(FORECAST_DISCLAIMER_WEEKLY_BODY);
+  expect(text, 'una superficie de REGLAS no puede afirmar el cuerpo del model zoo')
+    .not.toContain(FORECAST_DISCLAIMER_ZOO_BODY);
+  return banner;
+}
+
+/**
+ * Copy honesto por superficie: NINGÚN banner puede afirmar una cifra de desempeño que no
+ * se derive de los datos de esta superficie. El "≈52% / 9 modelos" congelado en el SSOT era
+ * exactamente eso — verdadero para el zoo USD/COP y falso en Oro/BTC weekly.
+ */
+function assertNoFrozenPerformanceNumber(banner: HTMLElement) {
+  const ssotText = [
+    FORECAST_DISCLAIMER_HEADLINE, FORECAST_DISCLAIMER_ZOO_TITLE, FORECAST_DISCLAIMER_ZOO_BODY,
+    FORECAST_DISCLAIMER_WEEKLY_TITLE, FORECAST_DISCLAIMER_WEEKLY_BODY,
+    FORECAST_DISCLAIMER_DIRECTIONAL_TITLE,
+  ].join(' ');
+  expect(/\d/.test(ssotText), 'el copy SSOT del disclaimer contiene una cifra congelada').toBe(false);
+  // El banner solo puede llevar cifras si vienen de los datos (children derivados).
+  expect(banner.textContent ?? '').not.toMatch(/9 modelos|≈\s*52|52\s*%/);
+}
+
+/**
+ * a11y de la columna de acierto (rechazo Codex a b86083e: "comunica acierto con
+ * símbolos/color sin nombre ni Sí/No accesibles"). Exige (a) nombre accesible en el
+ * encabezado, (b) Sí/No textual en CADA celda, (c) el glifo marcado aria-hidden para que
+ * el lector no lea "marca de verificación" en lugar del valor.
+ */
+function assertHitColumnAccessible(root: HTMLElement, weeks: Array<{ iso_week: string; hit: boolean }>) {
+  const table = root.querySelector('table') as HTMLTableElement;
+  expect(table, 'no hay tabla weekly').toBeTruthy();
+  const headers = Array.from(table.querySelectorAll('thead th'));
+  const hitHeader = headers.find((h) => (h.textContent ?? '').includes(FORECAST_HIT_COLUMN_LABEL));
+  expect(
+    hitHeader,
+    `la columna de acierto no tiene nombre accesible ("${FORECAST_HIT_COLUMN_LABEL}"); `
+    + `encabezados actuales: ${headers.map((h) => JSON.stringify(h.textContent)).join(', ')}`,
+  ).toBeTruthy();
+  const hitIdx = headers.indexOf(hitHeader as Element);
+
+  for (const w of weeks) {
+    const row = (within(root).getByText(w.iso_week).closest('tr')) as HTMLElement;
+    // La celda de acierto es la última columna (th de fila + tds).
+    const cells = Array.from(row.children) as HTMLElement[];
+    const cell = cells[hitIdx];
+    expect(cell, `fila ${w.iso_week} sin celda de acierto`).toBeTruthy();
+    const expected = w.hit ? FORECAST_HIT_YES_LABEL : FORECAST_HIT_NO_LABEL;
+    const accessibleText = Array.from(cell.querySelectorAll('*'))
+      .filter((n) => n.getAttribute('aria-hidden') !== 'true')
+      .map((n) => n.textContent ?? '')
+      .join(' ');
+    expect(
+      `${accessibleText} ${cell.getAttribute('aria-label') ?? ''}`,
+      `la celda de acierto de ${w.iso_week} no expone "${expected}" a un lector de pantalla `
+      + `(solo símbolo/color: ${JSON.stringify(cell.textContent)})`,
+    ).toContain(expected);
+    // El glifo decorativo no puede quedar expuesto como si fuera el valor.
+    const glyph = Array.from(cell.querySelectorAll('[aria-hidden="true"]'))
+      .map((n) => n.textContent ?? '').join('');
+    expect(glyph, `el glifo de acierto de ${w.iso_week} debe ir aria-hidden`).toMatch(/[✓✅·]/);
+  }
+}
+
+/**
+ * BL-03 / FABRIC §24.3 — "sin colores ni etiquetas imperativas". LONG/SHORT son verbos de
+ * orden: dicen lo que un ejecutor HARÍA. En una superficie diagnóstica se muestran como el
+ * sesgo que describen. Este aserto reemplaza al de la entrega rechazada, que EXIGÍA la
+ * presencia literal de LONG/SHORT — un test que contradecía la spec que decía cumplir.
+ */
+function assertDirectionLabelsAreNotImperative(
+  root: HTMLElement,
+  weeks: Array<{ iso_week: string; direction: string }>,
+) {
+  const table = root.querySelector('table') as HTMLTableElement;
+  expect(table, 'no hay tabla weekly').toBeTruthy();
+  const body = table.querySelector('tbody') as HTMLElement;
+  const expectedFor = (d: string) =>
+    d === 'LONG' ? FORECAST_DIRECTION_LABEL_UP
+      : d === 'SHORT' ? FORECAST_DIRECTION_LABEL_DOWN
+        : FORECAST_DIRECTION_LABEL_FLAT;
+
+  for (const w of weeks) {
+    const row = within(root).getByText(w.iso_week).closest('tr') as HTMLElement;
+    // Columna 1 = Dirección (columna 0 = th scope="row" con la semana).
+    const cell = (Array.from(row.children) as HTMLElement[])[1];
+    expect(cell, `fila ${w.iso_week} sin celda de dirección`).toBeTruthy();
+    expect(
+      cell.textContent ?? '',
+      `la dirección de ${w.iso_week} no usa la etiqueta neutra esperada`,
+    ).toContain(expectedFor(w.direction));
+    const badge = (cell.querySelector('span') as HTMLElement) ?? cell;
+    const cls = typeof badge.className === 'string' ? badge.className : '';
+    expect(cls, `badge de dirección "${badge.textContent}" con color de compra/venta`)
+      .not.toMatch(/emerald|text-red|green-|bg-red/);
+    expect(badge.getAttribute('data-tone') ?? 'neutral').not.toMatch(/^(pos|neg)$/);
+  }
+
+  expect(
+    body.textContent ?? '',
+    'la tabla diagnóstica sigue renderizando etiquetas imperativas de orden (LONG/SHORT)',
+  ).not.toMatch(/\b(LONG|SHORT|COMPRAR|VENDER|BUY|SELL)\b/);
 }
 
 /** a11y de tabla weekly (patrón PaperCandidatesPanel 624465c). */
@@ -278,6 +402,28 @@ describe('ForecastDisclaimer (componente compartido, SSOT)', () => {
     const banner = assertZooBannerVisible();
     expect(banner.textContent).toContain('51.7% sobre 3 mediciones');
   });
+
+  it('tiene una rama propia para superficies de REGLAS, sin el claim del zoo', async () => {
+    const mod = await importDisclaimer();
+    const ForecastDisclaimer = (mod as any).ForecastDisclaimer;
+    render(<ForecastDisclaimer variant="weekly" />);
+    const banner = assertWeeklyBannerVisible();
+    assertNoFrozenPerformanceNumber(banner);
+  });
+
+  it('ningún copy SSOT afirma una cifra de desempeño congelada', async () => {
+    const mod = await importDisclaimer();
+    const ForecastDisclaimer = (mod as any).ForecastDisclaimer;
+    for (const variant of ['zoo', 'weekly', 'directional'] as const) {
+      const { unmount } = render(<ForecastDisclaimer variant={variant} />);
+      const banner = screen.getByTestId(FORECAST_DISCLAIMER_TESTID);
+      expect(
+        banner.textContent ?? '',
+        `la rama "${variant}" del disclaimer afirma una cifra que no deriva de esta superficie`,
+      ).not.toMatch(/\d/);
+      unmount();
+    }
+  });
 });
 
 // ═══════════════════════════════════ 2 · legacy WeeklyInferenceView (Gold/BTC)
@@ -298,19 +444,20 @@ describe('WeeklyInferenceView (legacy Gold/BTC)', () => {
     return utils;
   }
 
-  it('BL-02: monta el disclaimer compartido, visible (gap CXD-032 §1)', async () => {
+  it('BL-02: monta el disclaimer compartido, visible, con el copy de REGLAS (no el del zoo)', async () => {
     await renderWeekly();
-    assertZooBannerVisible();
+    const banner = assertWeeklyBannerVisible();
+    assertNoFrozenPerformanceNumber(banner);
   });
 
-  it('BL-03: dirección LONG/SHORT en tono NEUTRO (sin verde/rojo)', async () => {
-    await renderWeekly();
-    const badges = screen.getAllByText(/\b(LONG|SHORT)\b/);
-    expect(badges.length).toBeGreaterThanOrEqual(2);
-    for (const b of badges) {
-      expect(b.className, `badge de dirección "${b.textContent}" con color de compra/venta`)
-        .not.toMatch(/emerald|text-red|green-|bg-red/);
-    }
+  it('BL-03: la dirección NO se muestra como orden (LONG/SHORT) y sigue en tono neutro', async () => {
+    const { container } = await renderWeekly();
+    assertDirectionLabelsAreNotImperative(container, GOLD_WEEKLY_2025.strategies[0].weeks);
+  });
+
+  it('a11y: la columna de acierto tiene nombre accesible y Sí/No por fila (no solo ✓/color)', async () => {
+    const { container } = await renderWeekly();
+    assertHitColumnAccessible(container, GOLD_WEEKLY_2025.strategies[0].weeks);
   });
 
   it('BL-03: columna de convicción proxy presente, honesta y sin wording probabilístico', async () => {
@@ -330,6 +477,62 @@ describe('WeeklyInferenceView (legacy Gold/BTC)', () => {
   it('BL-03: a11y de la tabla weekly (caption sr-only, scope col/row, región focusable)', async () => {
     const { container } = await renderWeekly();
     assertWeeklyTableA11y(container);
+  });
+});
+
+// ═══════════════════ 2b · BTC — el gap exacto del rechazo Codex: EARLY RETURNS
+//
+// "BTC carece de render/mutación contra early-return". WeeklyInferenceView sale por DOS
+// ramas antes de llegar al JSX principal: `if (loading && !data)` y `if (error || !data
+// || !strategy || !index)`. Con BTC bloqueado por plan (403) o mientras carga, la pantalla
+// de forecasting se renderizaba SIN caveat: la muralla es por superficie, no por estado.
+
+describe('WeeklyInferenceView — BTC, caveat en los EARLY RETURNS (CXD-032 §2)', () => {
+  async function renderBtc(routes: Parameters<typeof mockFetch>[0]) {
+    mockFetch(routes);
+    const { WeeklyInferenceView } = await import('@/components/forecasting/WeeklyInferenceView');
+    return render(<WeeklyInferenceView assetId="btcusdt" />);
+  }
+
+  it('BTC 403 (activo fuera del plan): la rama de error CONSERVA el caveat', async () => {
+    await renderBtc([
+      [/\/index\.json$/, { ok: false, status: 403 }],
+      [/weekly_inference_\d+\.json$/, { ok: false, status: 403 }],
+      [/forward\.json$/, { ok: false, status: 403 }],
+    ]);
+    // Estado de error real (mensaje de upsell), no el árbol feliz.
+    await screen.findByText(/plan superior/i);
+    const banner = assertWeeklyBannerVisible();
+    assertNoFrozenPerformanceNumber(banner);
+  });
+
+  it('BTC sin datos publicados (404): la rama de error CONSERVA el caveat', async () => {
+    await renderBtc([[/./, { ok: false, status: 404 }]]);
+    await screen.findByText(/Sin datos de inferencia semanal/i);
+    assertWeeklyBannerVisible();
+  });
+
+  it('BTC cargando (fetch pendiente): la rama de loading CONSERVA el caveat', async () => {
+    // fetch que nunca resuelve ⇒ la vista se queda en `loading && !data`.
+    (global as any).fetch = vi.fn(() => new Promise(() => {}));
+    const { WeeklyInferenceView } = await import('@/components/forecasting/WeeklyInferenceView');
+    render(<WeeklyInferenceView assetId="btcusdt" />);
+    await screen.findByText(/Cargando inferencia semanal/i);
+    assertWeeklyBannerVisible();
+  });
+
+  it('BTC con datos: caveat de REGLAS + dirección no imperativa + acierto accesible', async () => {
+    const BTC_INDEX = { ...GOLD_INDEX, asset_id: 'btcusdt', display_name: 'Bitcoin' };
+    const BTC_WEEKLY = { ...GOLD_WEEKLY_2025, asset_id: 'btcusdt', display_name: 'Bitcoin' };
+    const { container } = await renderBtc([
+      [/\/index\.json$/, { ok: true, body: BTC_INDEX }],
+      [/weekly_inference_2025\.json$/, { ok: true, body: BTC_WEEKLY }],
+      [/forward\.json$/, { ok: false }],
+    ]);
+    await screen.findByText('2025-W01');
+    assertWeeklyBannerVisible();
+    assertDirectionLabelsAreNotImperative(container, BTC_WEEKLY.strategies[0].weeks);
+    assertHitColumnAccessible(container, BTC_WEEKLY.strategies[0].weeks);
   });
 });
 
@@ -381,7 +584,8 @@ describe('ForecastingView (GM) — banner incondicional por modo', () => {
 
   it('modo model zoo (model=ALL): banner visible con rama zoo, aun sin datos', async () => {
     await renderGm('asset=usdcop&model=ALL');
-    assertZooBannerVisible();
+    const banner = assertZooBannerVisible();
+    assertNoFrozenPerformanceNumber(banner);
   });
 });
 
@@ -417,5 +621,23 @@ describe('AssetWeeklyBody (GM weekly inference)', () => {
     expect(within(w02).getByText('62%')).toBeTruthy();
     // a11y (mismo patrón que la tabla legacy).
     assertWeeklyTableA11y(container);
+  });
+
+  it('BL-03: la dirección NO se muestra como orden (LONG/SHORT) en la piel GM', async () => {
+    const AssetWeeklyBody = await getBody();
+    const { container } = render(
+      <AssetWeeklyBody data={GOLD_WEEKLY_2025} strategyId="gold_trend_b2" forward={null} />,
+    );
+    await screen.findByText('2025-W01');
+    assertDirectionLabelsAreNotImperative(container, GOLD_WEEKLY_2025.strategies[0].weeks);
+  });
+
+  it('a11y: columna de acierto con nombre accesible y Sí/No por fila (piel GM)', async () => {
+    const AssetWeeklyBody = await getBody();
+    const { container } = render(
+      <AssetWeeklyBody data={GOLD_WEEKLY_2025} strategyId="gold_trend_b2" forward={null} />,
+    );
+    await screen.findByText('2025-W01');
+    assertHitColumnAccessible(container, GOLD_WEEKLY_2025.strategies[0].weeks);
   });
 });

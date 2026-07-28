@@ -13,10 +13,18 @@
  * decoración, no disclosure (candado: tests/regression/test_forecasting_caveat_present.py
  * + tests/unit/components/forecasting-caveat-surfaces.test.tsx).
  *
- * `variant` elige entre las DOS ramas honestas del SSOT (zoo/weekly vs replay
- * direccional causal); `children` permite añadir una línea DERIVADA de los datos
- * cargados (p.ej. la DA media real del legacy dashboard) sin sustituir el cuerpo
- * SSOT — la honestidad dinámica se suma, nunca reemplaza al contrato.
+ * `variant` elige entre las TRES ramas honestas del SSOT — y la elección es una
+ * afirmación de hecho sobre la superficie, no un estilo:
+ *   'zoo'         → model zoo ML (USD/COP, BTC): 9 familias, DA medida por modelo.
+ *   'weekly'      → inferencia semanal por REGLAS (Oro, BTC semanal): NO hay zoo.
+ *   'directional' → replay causal congelado USD/COP.
+ * Montar 'zoo' sobre una superficie de reglas fue el rechazo de Codex a b86083e: el
+ * banner afirmaba "≈52% / 9 modelos" donde no corre ningún modelo. Por eso el copy del
+ * SSOT ya no lleva cifras y cada rama describe SU superficie.
+ *
+ * `children` permite añadir una línea DERIVADA de los datos cargados (p.ej. la DA media
+ * real del legacy dashboard) sin sustituir el cuerpo SSOT — la honestidad dinámica se
+ * suma, nunca reemplaza al contrato.
  */
 
 import type { ReactNode } from 'react';
@@ -27,16 +35,18 @@ import {
   FORECAST_DISCLAIMER_DIRECTIONAL_BODY,
   FORECAST_DISCLAIMER_ZOO_TITLE,
   FORECAST_DISCLAIMER_ZOO_BODY,
+  FORECAST_DISCLAIMER_WEEKLY_TITLE,
+  FORECAST_DISCLAIMER_WEEKLY_BODY,
 } from '@/lib/ui/forecast-disclaimer';
 
-export type ForecastDisclaimerVariant = 'zoo' | 'directional';
+export type ForecastDisclaimerVariant = 'zoo' | 'weekly' | 'directional';
 
 export function ForecastDisclaimer({
   variant = 'zoo',
   className = '',
   children,
 }: {
-  /** Rama SSOT del cuerpo: 'zoo' (model zoo / weekly inference) o 'directional' (replay causal). */
+  /** Rama SSOT del cuerpo: 'zoo' (model zoo ML), 'weekly' (reglas) o 'directional' (replay causal). */
   variant?: ForecastDisclaimerVariant;
   /** Clases de layout del contenedor (márgenes); nunca de ocultamiento. */
   className?: string;
@@ -45,10 +55,14 @@ export function ForecastDisclaimer({
 }) {
   const title = variant === 'directional'
     ? FORECAST_DISCLAIMER_DIRECTIONAL_TITLE
-    : FORECAST_DISCLAIMER_ZOO_TITLE;
+    : variant === 'weekly'
+      ? FORECAST_DISCLAIMER_WEEKLY_TITLE
+      : FORECAST_DISCLAIMER_ZOO_TITLE;
   const body = variant === 'directional'
     ? FORECAST_DISCLAIMER_DIRECTIONAL_BODY
-    : FORECAST_DISCLAIMER_ZOO_BODY;
+    : variant === 'weekly'
+      ? FORECAST_DISCLAIMER_WEEKLY_BODY
+      : FORECAST_DISCLAIMER_ZOO_BODY;
 
   return (
     <div

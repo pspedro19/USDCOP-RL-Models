@@ -34,6 +34,15 @@ import { ClientApiError } from '@/lib/api/gm-client';
 import { defineGmDict, useGmT } from '@/lib/i18n/gm-core';
 import { GM, GMT, toneOf, GM_HEX, type GmTone } from '@/lib/ui/gm-tokens';
 import { ForecastDisclaimer } from '@/components/forecasting/ForecastDisclaimer';
+import {
+  FORECAST_DIRECTION_LABEL_UP,
+  FORECAST_DIRECTION_LABEL_DOWN,
+  FORECAST_DIRECTION_LABEL_FLAT,
+  FORECAST_DIRECTION_LABEL_UNKNOWN,
+  FORECAST_HIT_COLUMN_LABEL,
+  FORECAST_HIT_YES_LABEL,
+  FORECAST_HIT_NO_LABEL,
+} from '@/lib/ui/forecast-disclaimer';
 import { ANALYSIS_ASSETS, resolveAnalysisAsset } from '@/lib/contracts/analysis-assets';
 import type {
   AssetWeeklyInference, DirectionalReplayIndex, DirectionalReplayWeek,
@@ -78,6 +87,20 @@ const DA_TONE: GmTone = 'neutral';
 /** Glifo direccional informativo (sin semántica de color). */
 const directionGlyph = (dir: string | null | undefined): string =>
   dir === 'UP' || dir === 'LONG' ? '↑' : dir === 'DOWN' || dir === 'SHORT' ? '↓' : '·';
+
+/**
+ * BL-03 (re-remediación del rechazo Codex a b86083e): LONG/SHORT son etiquetas
+ * IMPERATIVAS de orden — describen lo que haría un ejecutor, no lo que sabe una
+ * superficie DIAGNOSTIC. Se renombran al sesgo que describen (SSOT compartido con la
+ * vista legacy); el dato crudo del contrato no se altera, solo su presentación.
+ */
+const directionLabel = (dir: string | null | undefined): string => {
+  const d = String(dir ?? '').toUpperCase();
+  if (d === 'UP' || d === 'LONG') return FORECAST_DIRECTION_LABEL_UP;
+  if (d === 'DOWN' || d === 'SHORT') return FORECAST_DIRECTION_LABEL_DOWN;
+  if (d === 'FLAT' || d === 'NEUTRAL') return FORECAST_DIRECTION_LABEL_FLAT;
+  return FORECAST_DIRECTION_LABEL_UNKNOWN;
+};
 
 // Régimen → tono (Oro: compression/trend/stretched/event · BTC: accumulation/markup/distribution/markdown)
 const REGIME_TONE: Record<string, GmTone> = {
@@ -817,7 +840,8 @@ export function AssetWeeklyBody({ data, strategyId, forward }: {
           meta={forward.generated_at?.slice(0, 10)}
           actions={
             <span className="flex items-center gap-2">
-              <GmBadge tone={PREDICTION_TONE}>{directionGlyph(forward.direction)} {forward.direction}</GmBadge>
+              {/* BL-03: etiqueta NO imperativa (superficie diagnóstica). */}
+              <GmBadge tone={PREDICTION_TONE}>{directionGlyph(forward.direction)} {directionLabel(forward.direction)}</GmBadge>
               <span className={`${GMT.micro} ${GM.textSec} font-mono`}>
                 exposición {forward.exposure}x · σ diaria {forward.vol_daily_pct}%
               </span>
@@ -921,7 +945,12 @@ export function AssetWeeklyBody({ data, strategyId, forward }: {
                 <th scope="col" className="text-right py-2 px-2 font-bold">Esperado</th>
                 <th scope="col" className="text-right py-2 px-2 font-bold">Estrategia</th>
                 <th scope="col" className="text-right py-2 px-2 font-bold">Buy&amp;Hold</th>
-                <th scope="col" className="text-center py-2 px-2 font-bold">✓</th>
+                {/* a11y (rechazo Codex a b86083e): la columna de acierto necesita NOMBRE
+                    accesible — un glifo ✓ solo es legible para quien ve la tabla. */}
+                <th scope="col" className="text-center py-2 px-2 font-bold">
+                  <span aria-hidden="true">✓</span>
+                  <span className="sr-only">{FORECAST_HIT_COLUMN_LABEL}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -931,7 +960,8 @@ export function AssetWeeklyBody({ data, strategyId, forward }: {
                   <tr key={w.iso_week} className={`border-t border-[rgba(148,163,184,.07)] ${GM.rowHover}`}>
                     <th scope="row" className={`py-2 px-2 text-left font-normal whitespace-nowrap font-mono ${GM.textSec}`}>{w.iso_week}</th>
                     <td className="py-2 px-2">
-                      <GmBadge tone={PREDICTION_TONE}>{directionGlyph(w.direction)} {w.direction}</GmBadge>
+                      {/* BL-03: etiqueta NO imperativa (superficie diagnóstica). */}
+                      <GmBadge tone={PREDICTION_TONE}>{directionGlyph(w.direction)} {directionLabel(w.direction)}</GmBadge>
                     </td>
                     {/* BL-03 (CXD-032): `confidence` = convicción de la regla (0..1) — se
                         etiqueta como proxy NO probabilístico; llamarla probabilidad sería
@@ -960,8 +990,14 @@ export function AssetWeeklyBody({ data, strategyId, forward }: {
                     </td>
                     <td className="py-2 px-2 text-right"><GmDelta value={w.realized_return_pct} digits={1} /></td>
                     <td className="py-2 px-2 text-right"><GmDelta value={w.buyhold_return_pct} digits={1} /></td>
-                    <td className={`py-2 px-2 text-center font-bold ${w.hit ? GM.pos : GM.textFaint}`}>
-                      {w.hit ? '✓' : '·'}
+                    {/* a11y: símbolo + color NO bastan — se añade el Sí/No que lee el
+                        lector de pantalla y el nombre accesible de la celda. */}
+                    <td
+                      className={`py-2 px-2 text-center font-bold ${w.hit ? GM.pos : GM.textFaint}`}
+                      aria-label={`${FORECAST_HIT_COLUMN_LABEL}: ${w.hit ? FORECAST_HIT_YES_LABEL : FORECAST_HIT_NO_LABEL}`}
+                    >
+                      <span aria-hidden="true">{w.hit ? '✓' : '·'}</span>
+                      <span className="sr-only">{w.hit ? FORECAST_HIT_YES_LABEL : FORECAST_HIT_NO_LABEL}</span>
                     </td>
                   </tr>
                 );
@@ -1124,11 +1160,16 @@ export function ForecastingView() {
       {/* Caveat de honestidad (CTR-QUANT-CONSTITUTION-001, BL-02/BL-04, CXD-032): la muralla
           es por SUPERFICIE, no por asset ni por modo de render — el componente COMPARTIDO
           <ForecastDisclaimer/> (SSOT lib/ui/forecast-disclaimer.ts) se monta INCONDICIONAL
-          en /forecasting (model zoo, replay direccional y weekly inference incluidos); la
-          variante solo elige entre las dos ramas honestas del SSOT. Decirlo junto a las
-          métricas es lo que impide que un 52% sin contexto se lea como "funciona". */}
+          en /forecasting (model zoo, replay direccional y weekly inference incluidos).
+          Decirlo junto a las métricas es lo que impide que un DA sin contexto se lea como
+          "funciona".
+
+          La VARIANTE no es cosmética: es una afirmación de hecho sobre esta superficie.
+          Oro/BTC en modo weekly NO corren el model zoo (son políticas de REGLAS), así que
+          montarles la rama 'zoo' era afirmar "9 modelos / ≈52%" sobre algo que no existe
+          — el rechazo de Codex a b86083e. Cada modo declara lo que realmente es. */}
       <ForecastDisclaimer
-        variant={isModelZoo && directionalSelected ? 'directional' : 'zoo'}
+        variant={!isModelZoo ? 'weekly' : directionalSelected ? 'directional' : 'zoo'}
         className="mb-4"
       />
       <GmPageHeader

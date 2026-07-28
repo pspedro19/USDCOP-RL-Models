@@ -138,6 +138,14 @@ REQUIRED_CLAUSES = {
     "FORECAST_DISCLAIMER_DIRECTIONAL_TITLE": ["no senal ejecutable"],
     # The body must keep the coin-flip honesty, not just any statistics-sounding prose.
     "FORECAST_DISCLAIMER_ZOO_BODY": ["indistinguible de una moneda al aire"],
+    # CXD-032 (2nd rejection): the rule-based weekly surface (Gold/BTC) needs its OWN
+    # branch. It does not run the model zoo, so the zoo body was a false statement about
+    # the nature of the product, not a stylistic detail.
+    "FORECAST_DISCLAIMER_WEEKLY_TITLE": ["superficie de diagnostico, no de senales"],
+    "FORECAST_DISCLAIMER_WEEKLY_BODY": [
+        "basada en reglas",
+        "no hay conjunto de modelos ml ni probabilidad calibrada",
+    ],
 }
 
 # Promotional / action language that inverts the disclaimer's meaning. Checked on
@@ -217,6 +225,33 @@ def _disclaimer_constants() -> dict[str, str]:
     return consts
 
 
+def test_disclaimer_copy_carries_no_hardcoded_numbers():
+    """CXD-032 (2nd rejection): NO disclaimer constant may contain a digit.
+
+    The rejected version froze '≈52%' and '9 modelos' into the shared zoo body. That copy
+    is (at best) true for the USD/COP model zoo and false everywhere else it was mounted:
+    BTC's measured DA is ≈0.46, and the Gold/BTC weekly surfaces are rule-based policies
+    that run no zoo at all. A performance number is only honest where it is DERIVED from
+    the data of the surface showing it (the legacy dashboard's `useMemo` line is the
+    correct pattern, and it is pinned by test_caveat_is_not_hardcoded_to_a_stale_number).
+
+    Banning digits outright is the only version of this rule that cannot be bypassed by
+    moving the stale number into a new constant or a different variant.
+    """
+    consts = _disclaimer_constants()
+    offenders = [
+        f"{name}: {value!r}"
+        for name, value in sorted(consts.items())
+        if name != "FORECAST_DISCLAIMER_TESTID" and any(ch.isdigit() for ch in value)
+    ]
+    assert not offenders, (
+        "Disclaimer copy hardcodes a performance/quantity figure. Every number shown next "
+        "to the caveat must be derived from the data of THAT surface, or not shown "
+        "(quant-constitution: ningun numero de performance sin su fuente publicada):\n  "
+        + "\n  ".join(offenders)
+    )
+
+
 def test_shared_disclaimer_component_is_ssot_and_unconditional():
     """CXD-032: the shared <ForecastDisclaimer/> component exists, consumes the SSOT
     (testid + headline + BOTH title/body pairs) and renders unconditionally — no
@@ -232,6 +267,8 @@ def test_shared_disclaimer_component_is_ssot_and_unconditional():
         "FORECAST_DISCLAIMER_HEADLINE",
         "FORECAST_DISCLAIMER_ZOO_TITLE",
         "FORECAST_DISCLAIMER_ZOO_BODY",
+        "FORECAST_DISCLAIMER_WEEKLY_TITLE",
+        "FORECAST_DISCLAIMER_WEEKLY_BODY",
         "FORECAST_DISCLAIMER_DIRECTIONAL_TITLE",
         "FORECAST_DISCLAIMER_DIRECTIONAL_BODY",
     ):
@@ -420,6 +457,166 @@ def test_caveat_not_gated_on_any_surface(rel: str):
         "unconditionally on every surface and mode — wrapping it in a conditional is "
         "the exact regression this test exists to block, no matter how it is spelled."
     )
+
+
+# ---------------------------------------------------------------------------
+# CXD-032 (2nd rejection) — the VARIANT is a factual claim about the surface,
+# the early-return branches are part of the surface, and the hit column may not
+# be communicated by glyph+colour alone.
+# ---------------------------------------------------------------------------
+
+
+def _balanced_paren_block(src: str, open_idx: int) -> str:
+    """Substring from the '(' at `open_idx` to its matching ')'."""
+    depth = 0
+    for i in range(open_idx, len(src)):
+        if src[i] == "(":
+            depth += 1
+        elif src[i] == ")":
+            depth -= 1
+            if depth == 0:
+                return src[open_idx: i + 1]
+    return src[open_idx:]
+
+
+def _weekly_surface_sources() -> dict[str, str]:
+    """The two files that render a weekly-inference table (GM AssetWeeklyBody lives inside
+    ForecastingView.tsx). Whole-file scope on purpose: the shared imports and helpers sit
+    above the component, and a mutation is just as real if it lands there."""
+    return {
+        "gm/views/ForecastingView.tsx":
+            FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace"),
+        "forecasting/WeeklyInferenceView.tsx":
+            LEGACY_WEEKLY.read_text(encoding="utf-8", errors="replace"),
+    }
+
+
+def test_rule_based_weekly_surface_does_not_claim_the_model_zoo():
+    """CXD-032 (2nd rejection, finding #1): Gold/BTC weekly is a RULE-BASED policy — it
+    runs no model zoo. Mounting `variant="zoo"` there made the banner assert '9 modelos'
+    and a ~52% mean DA about a surface where neither exists: a false statement about the
+    nature of the product, printed inside the honesty banner itself.
+
+    The legacy weekly view must mount the rule branch and never the zoo branch, and the GM
+    view must pick 'weekly' whenever the asset is not in model-zoo mode."""
+    weekly_src = LEGACY_WEEKLY.read_text(encoding="utf-8", errors="replace")
+    mounts = re.findall(r"<ForecastDisclaimer\s+variant=\"(\w+)\"", weekly_src)
+    assert mounts, (
+        "WeeklyInferenceView.tsx mounts <ForecastDisclaimer/> without an explicit variant "
+        "— the default branch is the model zoo one, which is false on a rule-based "
+        "surface (CXD-032)."
+    )
+    assert set(mounts) == {"weekly"}, (
+        f"WeeklyInferenceView.tsx mounts the disclaimer with variants {sorted(set(mounts))}. "
+        "Gold/BTC weekly inference is rule-based: only the 'weekly' branch states the truth "
+        "about it; 'zoo' claims a 9-model ML ensemble that this surface does not run."
+    )
+    gm_src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"<ForecastDisclaimer\s*\n?\s*variant=\{([^}]*)\}", gm_src)
+    assert m, "ForecastingView.tsx no longer selects the disclaimer variant explicitly"
+    expr = re.sub(r"\s+", " ", m.group(1))
+    assert "'weekly'" in expr, (
+        f"ForecastingView.tsx variant expression ({expr!r}) never yields 'weekly'. Assets "
+        "rendered through AssetWeeklyBody are rule-based; the zoo copy is false for them."
+    )
+    assert "isModelZoo" in expr, (
+        f"ForecastingView.tsx variant expression ({expr!r}) no longer branches on "
+        "isModelZoo — the branch is what keeps the claim true per surface."
+    )
+
+
+def test_weekly_early_returns_carry_the_caveat():
+    """CXD-032 (2nd rejection, finding #2 — the BTC gap): WeeklyInferenceView leaves
+    through TWO early returns before the main JSX (`loading && !data`, and the
+    error/locked branch). With BTC gated by plan (403) or still loading, the forecasting
+    surface rendered with NO caveat at all. La muralla es por superficie, no por estado de
+    carga: EVERY JSX return of the component must carry the shared banner."""
+    src = LEGACY_WEEKLY.read_text(encoding="utf-8", errors="replace")
+    fn = src.find("export function WeeklyInferenceView")
+    assert fn != -1, "WeeklyInferenceView disappeared"
+    body = src[fn:]
+    # Only JSX returns (`return (` immediately followed by `<`); `return () => ...`
+    # cleanup callbacks are not renders.
+    # Only the COMPONENT's own render paths: `return (` at indentation <= 4 (top level or
+    # inside one `if`). Nested JSX returns (the `weeks.map(w => return (<tr .../>))` row
+    # renderer) are not surfaces and are excluded by indentation. `return () => ...`
+    # cleanup callbacks are excluded by the `(?=<)` lookahead (they are not renders).
+    blocks = [
+        _balanced_paren_block(body, m.start(1))
+        for m in re.finditer(r"^ {2,4}return\s*(\()\s*(?=<)", body, re.MULTILINE)
+    ]
+    assert len(blocks) >= 3, (
+        f"WeeklyInferenceView has {len(blocks)} JSX returns; the loading and error early "
+        "returns must still exist as distinct render paths (CXD-032)."
+    )
+    naked = [i for i, b in enumerate(blocks) if "<ForecastDisclaimer" not in b]
+    assert not naked, (
+        f"WeeklyInferenceView JSX return(s) #{naked} render the forecasting surface with "
+        "no <ForecastDisclaimer/>. The loading and 403/404 branches are exactly where BTC "
+        "shipped uncovered (CXD-032 finding #2)."
+    )
+
+
+# The weekly tables' hit column: a ✓/· glyph plus a colour is invisible to a screen
+# reader. Both weekly surfaces must name the column and expose Sí/No per row.
+_HIT_A11Y_TOKENS = (
+    "FORECAST_HIT_COLUMN_LABEL",
+    "FORECAST_HIT_YES_LABEL",
+    "FORECAST_HIT_NO_LABEL",
+    'aria-hidden="true"',
+    "sr-only",
+)
+
+
+def test_weekly_hit_column_is_not_symbol_and_colour_only():
+    """CXD-032 (2nd rejection, finding #3): 'la columna ✓ comunica acierto con
+    símbolos/color sin nombre ni Sí/No accesibles'. Both weekly surfaces must import the
+    shared labels, hide the decorative glyph from assistive tech and render the Sí/No
+    text. The RENDER-level twin lives in forecasting-caveat-surfaces.test.tsx
+    (assertHitColumnAccessible)."""
+    for name, seg in _weekly_surface_sources().items():
+        missing = [t for t in _HIT_A11Y_TOKENS if t not in seg]
+        assert not missing, (
+            f"{name}: the weekly hit column lacks {missing} — success/failure communicated "
+            "only by glyph and colour is not communicated at all to a screen reader "
+            "(CXD-032 finding #3)."
+        )
+
+
+# LONG/SHORT are ORDER labels: they name what an executor would do. On a DIAGNOSTIC
+# surface the honest rendering is the bias they describe (FABRIC §24.3: "sin colores ni
+# etiquetas imperativas").
+_RAW_DIRECTION_RENDER = re.compile(r"\{\s*(?:w|forward)\.direction\s*\}")
+
+
+def test_weekly_direction_is_not_rendered_as_an_order_label():
+    """BL-03, re-remediated: the weekly surfaces must map `direction` through the shared
+    neutral labels instead of printing the raw LONG/SHORT token.
+
+    NOTE for the archaeologist: the previous delivery's Vitest test *required*
+    `getAllByText(/\\b(LONG|SHORT)\\b/)` to match — a test that demanded the exact thing
+    BL-03 forbids. It was rewritten, not deleted: a test that contradicts its spec is a
+    bug in the test."""
+    for name, seg in _weekly_surface_sources().items():
+        raw = _RAW_DIRECTION_RENDER.findall(seg)
+        assert not raw, (
+            f"{name} renders the raw direction token as JSX text ({len(raw)} site(s)). "
+            "LONG/SHORT are imperative order labels; a diagnostic surface shows the bias "
+            "(directionLabel(...) from the shared SSOT)."
+        )
+        assert "directionLabel(" in seg, (
+            f"{name} no longer maps direction through the shared neutral label helper "
+            "(BL-03 / FABRIC §24.3)."
+        )
+        for const in (
+            "FORECAST_DIRECTION_LABEL_UP",
+            "FORECAST_DIRECTION_LABEL_DOWN",
+            "FORECAST_DIRECTION_LABEL_FLAT",
+        ):
+            assert const in seg, (
+                f"{name} does not consume {const} — the neutral wording has ONE source "
+                "(lib/ui/forecast-disclaimer.ts), same rule as the caveat copy (BL-04)."
+            )
 
 
 def test_legacy_diagnostic_caveat_wrapper_cannot_hide():
