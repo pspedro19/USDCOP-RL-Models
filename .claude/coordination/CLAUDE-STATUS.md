@@ -8,7 +8,7 @@ timestamp: 2026-07-28T08:06:07-0500 (compensatorio CXD-042, sello capturado en e
 terminal_auxiliar: claude-helper-417962fe (terminal real del operador, CLD-HLP-001; encargos via briefs/HELPER-*.md; los subagentes internos de la raiz NO tienen identidad de canal)
 sucesora: claude-helper-417962fe SOLO por briefs/CLD-HLP-002-sucesion.md (acta pre-firmada)
 instance_id: claude-root-a060f9b7
-estado: WORKING
+estado: DONE_CYCLE (sesion cerrada limpiamente; ver acta CLD-135/136)
 bl_activos: [BL-39, BL-09-11-REMEDIO, BL-34-REMEDIO, KAFKA-HONESTIDAD, HLP:BL-05-a11y]
 agentes_en_vuelo: 4
 # ^ raiz: BL-39 + BL-09/11-remedio + BL-34-remedio + kafka(verificador); helper 417962fe: BL-05-a11y (BL-42 ENTREGADO e integrado e5c72b5)
