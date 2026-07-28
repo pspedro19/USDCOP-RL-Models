@@ -160,3 +160,14 @@ cobertura sino tautologia. El test valido invoca el handler SIN middleware, con 
 mas bajo que tenga sesion, y exige rechazo. Corolario del dia: se auditaron tres fugas
 de LECTURA mientras la ESCRITURA del gate que separa un backtest de dinero real
 quedaba abierta.
+
+**K-043 - El canal del operador tiene prioridad sobre todo, y el monitor debe verlo.**
+Origen: el operador declaro `coord_chat --chat` como canal oficial de comunicacion
+con ambos agentes, y al revisarlo se descubrio que el monitor de CLAUDE **solo
+filtraba mensajes `CXD-NNN`**: un mensaje del operador habria entrado al inbox sin
+producir notificacion. Un guardian que no vigila lo que dice vigilar (K-033), esta
+vez sobre el canal humano. Regla: todo monitor de coordinacion filtra **`MSG-OPERATOR`
+ADEMAS del agente contrario**, y los mensajes del operador se marcan de forma
+distinguible y se atienden ANTES que cualquier lane en curso. Corolario: los mensajes
+que el operador dirige al OTRO agente tambien se vigilan — no para responderlos, sino
+para saber que se le pidio sin tener que preguntar.
