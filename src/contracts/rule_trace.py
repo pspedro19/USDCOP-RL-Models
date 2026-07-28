@@ -32,6 +32,11 @@ from typing import Any
 
 RULE_TRACE_SCHEMA_V1 = "rule_trace_v1"
 
+#: Exact whitelist of supported trace schemas (fail-closed — mirrored as
+#: SUPPORTED_TRACE_SCHEMAS in policy.contract.ts). Adding a v2 means adding
+#: it HERE and in the TS mirror, never accepting unknown strings.
+SUPPORTED_TRACE_SCHEMAS = (RULE_TRACE_SCHEMA_V1,)
+
 
 @dataclass(frozen=True)
 class RuleTraceEntry:
@@ -59,6 +64,15 @@ class RuleTrace:
 
     rules: tuple[RuleTraceEntry, ...] = ()
     trace_schema: str = RULE_TRACE_SCHEMA_V1
+
+    def __post_init__(self) -> None:
+        # Fail-closed: an unsupported schema is a typed error at construction
+        # (C-004 remedy 3) — not only in from_dict.
+        if self.trace_schema not in SUPPORTED_TRACE_SCHEMAS:
+            raise ValueError(
+                f"Unsupported trace_schema: {self.trace_schema!r} "
+                f"(supported: {SUPPORTED_TRACE_SCHEMAS})"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {

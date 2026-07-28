@@ -31,6 +31,7 @@ Contract: CTR-POLICY-001 (BL-45 R1)
 
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping
 
 from src.contracts.policy import (
@@ -76,16 +77,25 @@ def _feature_name(operand: Any) -> str | None:
     return None
 
 
+def _valid_literal(operand: Any) -> bool:
+    """A numeric literal operand: int/float (not bool) and FINITE (no NaN/Inf)."""
+    return (
+        not isinstance(operand, bool)
+        and isinstance(operand, (int, float))
+        and math.isfinite(operand)
+    )
+
+
 def _resolve(operand: Any, snapshot: Mapping[str, Any]) -> float:
     name = _feature_name(operand)
     if name is not None:
         if name not in snapshot:
             raise ValueError(f"Feature {name!r} missing from snapshot")
         return float(snapshot[name])
-    if isinstance(operand, bool) or not isinstance(operand, (int, float)):
+    if not _valid_literal(operand):
         raise ValueError(
             f"Invalid operand {operand!r}: must be a feature reference or a "
-            "numeric literal"
+            "finite numeric literal (NaN/Infinity forbidden)"
         )
     return float(operand)
 
@@ -141,14 +151,7 @@ def validate_condition(node: Any) -> None:
         for key in ("left", "right"):
             if key not in node:
                 raise ValueError(f"Operator {operator!r} requires {key!r}")
-            operand = node[key]
-            # raises on invalid operand forms (e.g. "eval(...)")
-            if _feature_name(operand) is None and (
-                isinstance(operand, bool) or not isinstance(operand, (int, float))
-            ):
-                raise ValueError(
-                    f"Invalid operand {operand!r} for operator {operator!r}"
-                )
+            _validate_operand(node[key], operator)
     elif operator == "not":
         if "condition" not in node:
             raise ValueError("Operator 'not' requires 'condition'")
@@ -165,6 +168,17 @@ def validate_condition(node: Any) -> None:
         for key in ("value", "lower", "upper"):
             if key not in node:
                 raise ValueError(f"Operator 'between' requires {key!r}")
+            _validate_operand(node[key], operator)
+
+
+def _validate_operand(operand: Any, operator: Any) -> None:
+    """Reject any operand that is not a feature ref or finite numeric literal."""
+    # _feature_name raises on invalid string/mapping forms (e.g. "eval(...)")
+    if _feature_name(operand) is None and not _valid_literal(operand):
+        raise ValueError(
+            f"Invalid operand {operand!r} for operator {operator!r} "
+            "(feature reference or finite numeric literal only)"
+        )
 
 
 def evaluate_condition(
@@ -266,6 +280,11 @@ class DeclarativePolicy:
                 "resolution.default_target_exposure (no implicit fallback)"
             )
         self.default_exposure = float(resolution["default_target_exposure"])
+        if not math.isfinite(self.default_exposure):
+            raise ValueError(
+                "resolution.default_target_exposure must be finite "
+                f"(NaN/Infinity forbidden), got {self.default_exposure!r}"
+            )
         self.default_direction = str(resolution.get("default_direction", "FLAT"))
         self.default_reason_code = str(
             resolution.get("default_reason_code", "NO_RULE_MATCHED")
@@ -293,6 +312,11 @@ class DeclarativePolicy:
             if "target_exposure" not in output:
                 raise ValueError(
                     f"Rule {rule['id']!r} output requires target_exposure"
+                )
+            if not math.isfinite(float(output["target_exposure"])):
+                raise ValueError(
+                    f"Rule {rule['id']!r} output.target_exposure must be "
+                    "finite (NaN/Infinity forbidden)"
                 )
             self.rules.append(dict(rule))
         # first_match by descending priority, stable on declaration order

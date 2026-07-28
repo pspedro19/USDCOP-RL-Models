@@ -21,6 +21,7 @@ import pytest
 
 from src.contracts.policy import (
     ENGINE_TYPES,
+    POLICY_MODES,
     VALID_DIRECTIONS,
     EngineRef,
     Policy,
@@ -36,7 +37,12 @@ from src.contracts.policy_dsl import (
     evaluate_condition,
     validate_condition,
 )
-from src.contracts.rule_trace import RULE_TRACE_SCHEMA_V1, RuleTrace, RuleTraceEntry
+from src.contracts.rule_trace import (
+    RULE_TRACE_SCHEMA_V1,
+    SUPPORTED_TRACE_SCHEMAS,
+    RuleTrace,
+    RuleTraceEntry,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 TS_MIRROR = ROOT / "usdcop-trading-dashboard" / "lib" / "contracts" / "policy.contract.ts"
@@ -317,6 +323,105 @@ class TestDecisionInvariants:
 
 
 # ---------------------------------------------------------------------------
+# Fail-closed construction (C-004 second remedy — Codex findings 2/3/4):
+# invalid enum/literal/finiteness values RAISE at construction, never pass.
+# ---------------------------------------------------------------------------
+
+def _decision(**overrides) -> StrategyDecision:
+    kwargs = dict(
+        sleeve_id="s",
+        strategy_version="1",
+        engine_ref=EngineRef(type="rule_based", policy_hash="sha256:x"),
+        as_of="t",
+        direction="FLAT",
+        target_exposure=0.0,
+    )
+    kwargs.update(overrides)
+    return StrategyDecision(**kwargs)
+
+
+class TestFailClosedMode:
+    def test_invalid_mode_rejected(self):
+        """Codex finding 2: mode='DROP_TABLE' must raise, not pass silently."""
+        with pytest.raises(ValueError, match="context.mode"):
+            PolicyContext(mode="DROP_TABLE")
+
+    def test_all_whitelisted_modes_construct(self):
+        assert POLICY_MODES == ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
+        for mode in POLICY_MODES:
+            assert PolicyContext(mode=mode).mode == mode
+
+    def test_default_mode_is_decision(self):
+        assert PolicyContext().mode == "DECISION"
+
+
+class TestFailClosedTraceSchema:
+    def test_unsupported_schema_rejected_at_construction(self):
+        """Codex finding 3: trace_schema='rule_trace_v2' must raise."""
+        with pytest.raises(ValueError, match="trace_schema"):
+            RuleTrace(trace_schema="rule_trace_v2")
+
+    def test_unsupported_schema_rejected_in_from_dict(self):
+        with pytest.raises(ValueError, match="trace_schema"):
+            RuleTrace.from_dict({"trace_schema": "rule_trace_v2", "rules": []})
+
+    def test_supported_schema_is_exactly_v1(self):
+        assert SUPPORTED_TRACE_SCHEMAS == (RULE_TRACE_SCHEMA_V1,)
+        assert RuleTrace().trace_schema == RULE_TRACE_SCHEMA_V1
+
+
+class TestFailClosedExposure:
+    """Codex finding 4: NaN/±Infinity target_exposure must raise
+    (strategy-contract invariant 2: no NaN/Infinity, ever)."""
+
+    @pytest.mark.parametrize(
+        "bad", [float("nan"), float("inf"), float("-inf")], ids=["nan", "inf", "-inf"]
+    )
+    def test_non_finite_exposure_rejected(self, bad):
+        with pytest.raises(ValueError, match="finite"):
+            _decision(target_exposure=bad)
+
+    @pytest.mark.parametrize("bad", ["1.0", None, True], ids=["str", "none", "bool"])
+    def test_non_numeric_exposure_rejected(self, bad):
+        with pytest.raises(ValueError, match="target_exposure"):
+            _decision(target_exposure=bad)
+
+    def test_finite_exposure_accepted(self):
+        assert _decision(target_exposure=1.5).target_exposure == 1.5
+
+    def test_declarative_default_exposure_nan_rejected(self):
+        spec = ma200_spec()
+        spec["resolution"]["default_target_exposure"] = float("nan")
+        with pytest.raises(ValueError, match="finite"):
+            DeclarativePolicy(spec)
+
+    def test_declarative_rule_exposure_inf_rejected(self):
+        spec = ma200_spec()
+        spec["rules"][0]["output"]["target_exposure"] = float("inf")
+        with pytest.raises(ValueError, match="finite"):
+            DeclarativePolicy(spec)
+
+
+class TestFailClosedOperands:
+    def test_nan_literal_operand_rejected(self):
+        with pytest.raises(ValueError, match="[Oo]perand"):
+            validate_condition(
+                {"operator": "greater_than", "left": "feature.x", "right": float("nan")}
+            )
+
+    def test_between_invalid_operand_rejected(self):
+        with pytest.raises(ValueError, match="[Oo]perand"):
+            validate_condition(
+                {
+                    "operator": "between",
+                    "value": "DROP TABLE trades",
+                    "lower": 0,
+                    "upper": 1,
+                }
+            )
+
+
+# ---------------------------------------------------------------------------
 # TS mirror parity (contract-change skill step 6 — same pattern as
 # test_forecast_output_contract.py: read the .ts as text, assert identical
 # fields and whitelist, not string vibes)
@@ -378,9 +483,9 @@ class TestTsMirrorParity:
 
     def test_policy_modes_match_python_context(self):
         text = _ts_text()
-        assert _ts_const_literals(text, "POLICY_MODES", pattern=r"'([A-Z_]+)'") == {
-            "DECISION", "FREEZE", "REVALIDATE", "BACKFILL",
-        }
+        assert _ts_const_literals(
+            text, "POLICY_MODES", pattern=r"'([A-Z_]+)'"
+        ) == set(POLICY_MODES)
         assert PolicyContext().mode == "DECISION"
 
     # --- EngineRef invariants encoded as TYPES ----------------------------
@@ -455,3 +560,144 @@ class TestTsMirrorParity:
             assert f.name in entry_block, (
                 f"RuleTraceEntry field {f.name!r} missing from TS mirror"
             )
+
+
+# ---------------------------------------------------------------------------
+# TS mirror parity — Policy protocol + DSL AST/operand types + fail-closed
+# runtime validators (C-004 second remedy — Codex findings 1 and 6).
+# Bilateral SEMANTIC parity: same literals, same whitelist, same rejections.
+# ---------------------------------------------------------------------------
+
+class TestTsMirrorPolicyProtocol:
+    def test_policy_interface_mirrors_protocol_methods(self):
+        """Codex finding 1: the TS mirror must declare `Policy`."""
+        block = _ts_interface(_ts_text(), "Policy")
+        # exactly the three Protocol methods, with the protocol signatures
+        assert re.search(r"required_features\(\): string\[\];", block)
+        assert re.search(
+            r"validate_inputs\(snapshot: FeatureSnapshot\): string\[\];", block
+        )
+        assert re.search(
+            r"evaluate\(snapshot: FeatureSnapshot, context: PolicyContext\): "
+            r"StrategyDecision;",
+            block,
+        )
+
+    def test_protocol_method_names_all_present(self):
+        block = _ts_interface(_ts_text(), "Policy")
+        for name in ("required_features", "validate_inputs", "evaluate"):
+            assert name in block, f"Policy protocol method {name!r} missing from TS"
+
+
+class TestTsMirrorDslAst:
+    def test_operator_family_types_declared(self):
+        text = _ts_text()
+        for name in ("ComparisonOperator", "LogicalOperator", "RangeOperator"):
+            family = re.sub(r"(?<!^)([A-Z])", r"_\1", name).upper() + "S"
+            assert re.search(
+                rf"export type {name} = \(typeof {family}\)\[number\];", text
+            ), f"{name} must derive from the {family} whitelist const"
+
+    def test_operand_grammar_mirrored(self):
+        text = _ts_text()
+        # "feature.<name>" string form as a template-literal type
+        assert re.search(
+            r"export type FeatureRefString = `feature\.\$\{string\}`;", text
+        ), "FeatureRefString must be the `feature.${string}` template literal"
+        assert "export interface FeatureRefObject" in text
+        assert re.search(
+            r"export type FeatureRef = FeatureRefString \| FeatureRefObject;", text
+        )
+        # operand = feature ref | numeric literal (finiteness enforced runtime)
+        assert re.search(r"export type Operand = FeatureRef \| number;", text)
+
+    def test_condition_node_union_is_complete(self):
+        text = _ts_text()
+        m = re.search(r"export type ConditionNode =\s*(.*?);", text, re.S)
+        assert m, "ConditionNode union missing from TS mirror"
+        union = m.group(1)
+        for node in (
+            "ComparisonCondition", "AllAnyCondition", "NotCondition",
+            "BetweenCondition",
+        ):
+            assert node in union, f"ConditionNode must include {node}"
+
+    def test_condition_node_shapes_mirror_python_validate_condition(self):
+        text = _ts_text()
+        cmp_block = _ts_interface(text, "ComparisonCondition")
+        assert "operator: ComparisonOperator;" in cmp_block
+        assert "left: Operand;" in cmp_block and "right: Operand;" in cmp_block
+
+        allany_block = _ts_interface(text, "AllAnyCondition")
+        assert "operator: 'all' | 'any';" in allany_block
+        assert "conditions: ConditionNode[];" in allany_block
+
+        not_block = _ts_interface(text, "NotCondition")
+        assert "operator: 'not';" in not_block
+        assert "condition: ConditionNode;" in not_block
+
+        between_block = _ts_interface(text, "BetweenCondition")
+        assert "operator: 'between';" in between_block
+        for key in ("value", "lower", "upper"):
+            assert f"{key}: Operand;" in between_block
+
+
+class TestTsMirrorFailClosedValidators:
+    """The TS runtime validators must reject EXACTLY what Python rejects
+    (same pattern as forecast-output.contract.ts::validateForecastOutput)."""
+
+    def test_supported_trace_schemas_mirrored(self):
+        text = _ts_text()
+        assert re.search(
+            r"export const SUPPORTED_TRACE_SCHEMAS = \[RULE_TRACE_SCHEMA_V1\] as const;",
+            text,
+        ), "TS must pin the same fail-closed schema whitelist"
+        assert set(SUPPORTED_TRACE_SCHEMAS) == {RULE_TRACE_SCHEMA_V1}
+
+    def _fn(self, text: str, name: str) -> str:
+        m = re.search(
+            rf"export function {name}\(raw: unknown\).*?\n\}}", text, re.S
+        )
+        assert m, f"runtime validator {name} missing from TS mirror"
+        return m.group(0)
+
+    def test_mode_validator_fails_closed(self):
+        body = self._fn(_ts_text(), "validatePolicyContext")
+        assert "POLICY_MODES.includes" in body, (
+            "validatePolicyContext must whitelist-check mode (DROP_TABLE rejected)"
+        )
+
+    def test_trace_schema_validator_fails_closed(self):
+        body = self._fn(_ts_text(), "validateRuleTrace")
+        assert "SUPPORTED_TRACE_SCHEMAS.includes" in body, (
+            "validateRuleTrace must whitelist-check trace_schema (v2 rejected)"
+        )
+
+    def test_decision_validator_rejects_non_finite_exposure(self):
+        body = self._fn(_ts_text(), "validateStrategyDecision")
+        assert "finite(o.target_exposure)" in body, (
+            "validateStrategyDecision must reject NaN/Infinity target_exposure"
+        )
+        assert "VALID_DIRECTIONS.includes" in body
+        assert "validateEngineRef" in body and "validateRuleTrace" in body
+
+    def test_condition_validator_whitelists_operators(self):
+        body = self._fn(_ts_text(), "validateConditionNode")
+        assert "ALLOWED_OPERATORS.includes" in body, (
+            "validateConditionNode must reject any operator outside the whitelist"
+        )
+        assert "validateOperand" in body
+
+    def test_operand_validator_rejects_nan_and_code_strings(self):
+        body = self._fn(_ts_text(), "validateOperand")
+        assert "Number.isFinite" in body, "NaN/Infinity literals must be rejected"
+        assert "startsWith('feature.')" in body, (
+            "strings must be 'feature.<name>' refs; code/SQL strings rejected"
+        )
+
+    def test_engine_ref_validator_mirrors_invariants(self):
+        body = self._fn(_ts_text(), "validateEngineRef")
+        assert "ENGINE_TYPES.includes" in body
+        assert "requires policy_hash" in body
+        assert "must NOT carry model snapshots" in body
+        assert "requires model_snapshot_id" in body

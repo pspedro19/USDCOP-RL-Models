@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, runtime_checkable
 
@@ -44,6 +45,10 @@ from src.contracts.rule_trace import RuleTrace
 ENGINE_TYPES = ("rule_based", "ml", "composite")
 
 VALID_DIRECTIONS = ("LONG", "SHORT", "FLAT")
+
+#: Evaluation modes a PolicyContext can run under (fail-closed whitelist —
+#: mirrored as POLICY_MODES in policy.contract.ts).
+POLICY_MODES = ("DECISION", "FREEZE", "REVALIDATE", "BACKFILL")
 
 
 @dataclass(frozen=True)
@@ -119,6 +124,14 @@ class PolicyContext:
     previous_snapshot: Mapping[str, Any] | None = None
     extras: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # Fail-closed: an unknown mode is a typed error at construction,
+        # never a silently-accepted string (C-004 remedy 2).
+        if self.mode not in POLICY_MODES:
+            raise ValueError(
+                f"context.mode must be one of {POLICY_MODES}, got {self.mode!r}"
+            )
+
 
 # ---------------------------------------------------------------------------
 # StrategyDecision — the universal output of every engine
@@ -151,6 +164,19 @@ class StrategyDecision:
         if self.direction not in VALID_DIRECTIONS:
             raise ValueError(
                 f"direction must be one of {VALID_DIRECTIONS}, got {self.direction!r}"
+            )
+        # Fail-closed finiteness: NaN/±Infinity never enter a decision (and
+        # therefore never a JSON export — strategy-contract rule, C-004 remedy 4).
+        if isinstance(self.target_exposure, bool) or not isinstance(
+            self.target_exposure, (int, float)
+        ):
+            raise ValueError(
+                f"target_exposure must be a number, got {self.target_exposure!r}"
+            )
+        if not math.isfinite(self.target_exposure):
+            raise ValueError(
+                f"target_exposure must be finite, got {self.target_exposure!r} "
+                "(NaN/Infinity forbidden — strategy-contract invariant 2)"
             )
         if not self.decision_fingerprint:
             object.__setattr__(self, "decision_fingerprint", self._fingerprint())
