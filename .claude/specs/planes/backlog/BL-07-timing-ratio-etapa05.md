@@ -1,7 +1,7 @@
 ---
 kind: roadmap
-status: PLANNED
-version: 1.0.0
+status: IMPLEMENTED
+version: 1.1.0
 last_verified: 2026-07-27
 supersedes: []
 code_anchors:
@@ -42,6 +42,22 @@ Ninguno en esta etapa (la persistencia es BL-22).
 Corre en <5 min; incluye las cuatro campeonas (v11 honestamente `UNAVAILABLE`) y
 replica a mano el diagnóstico gold_dynamic_exit (timing≈0 ⇒ beta disfrazado; el IC
 bootstrap predefinido contiene cero). BTC N=1 no publica ratio ni IC.
+
+## Evidencia de implementación (2026-07-27)
+
+- Implementación inmutable:
+  `d0427d670ff50f8179a29de2b01032e0324202e7`.
+- Paquete de revisión:
+  `.claude/coordination/reviews/BL-07.md`, sellado en `ed11c9a`.
+- TDD: 7 tests unitarios verdes; el candado N<20 fue demostrado rojo antes del
+  guard y verde después.
+- Corrida real: 5.000 muestras bootstrap en 17.466 s; v11 `UNAVAILABLE`, BTC
+  `INSUFFICIENT_TRADES` con N=1 y sin ratio/IC, control Oro con
+  `timing_ratio=0.0206378474` e IC `[-0.0076845889, 0.0486331161]`.
+- Monitores: front-matter sin delta frente al baseline; manifests 9 verdes;
+  scripts-layout 20 verdes.
+- Cross-review independiente: Claude `CLD-118`, `APROBADO` contra el hash
+  completo, reproducción exacta e idempotencia byte a byte.
 
 ## Notas constitución
 §18.3: timing_ratio es atribución diagnóstica, JAMÁS prueba de alfa (el claim sigue siendo DSR forward).
