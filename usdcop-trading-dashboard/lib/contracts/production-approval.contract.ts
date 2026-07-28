@@ -72,8 +72,28 @@ export interface ApprovalState {
   rejected_at?: string;
   rejection_reason?: string;
 
+  /**
+   * Rastro APPEND-ONLY de cada transición del Voto 2, escrito dentro del MISMO commit
+   * atómico que el cambio de `status` (`commitApprovalTransition`). Existe porque
+   * `approval-gates.md` §5 exige que todo cambio de estado quede auditado, y la fila de
+   * `audit_log` en Postgres es best-effort: si la DB está caída, el rastro durable es
+   * este. Nunca se reescribe ni se poda desde la API. Interno: fuera de la allowlist
+   * pública (`PUBLIC_APPROVAL_FIELDS`).
+   */
+  audit_trail?: ApprovalAuditEntry[];
+
   created_at: string;
   last_updated: string;
+}
+
+export interface ApprovalAuditEntry {
+  at: string;                       // ISO
+  actor: string;                    // principal AUTENTICADO (nunca del body)
+  role: string;                     // rol efectivo en el momento del voto
+  action: 'APPROVE' | 'REJECT';
+  from: ProductionStatus;
+  to: ProductionStatus;
+  notes?: string;
 }
 
 // -----------------------------------------------------------------------------

@@ -77,12 +77,128 @@ def test_resolution_prefers_scoped_then_owning_singleton(tmp_path, monkeypatch):
     assert store.resolve_approval_path(None).name == "approval_state.json"
 
 
-@pytest.mark.parametrize("sid", ["../../etc/passwd", "a/b", "a\\b", ".hidden", ""])
+@pytest.mark.parametrize(
+    "sid",
+    ["../../etc/passwd", "a/b", "a\\b", ".hidden", "", "x\ny", "ok_id\n", "ok_id\n../../etc/passwd"],
+)
 def test_traversal_ids_never_escape_the_private_root(tmp_path, monkeypatch, sid):
+    """Una id INVÁLIDA no es lo mismo que 'sin id'.
+
+    RED (P1, CODEX): ``approval_path`` trataba una id inválida como ``None`` y devolvía
+    el SINGLETON, mientras TypeScript la RECHAZA (``readApprovalState`` ⇒ null). La
+    consecuencia era escritura cruzada: ``write_approval(state, '../../x')`` pisaba el
+    estado de la estrategia ACTIVA. Fail-closed: inválida ⇒ error, jamás degradación
+    silenciosa a otro artefacto.
+
+    ``ok_id\\n`` es el bypass CONCRETO de ``re.match`` sin ancla final: ``$`` casa
+    justo antes de un salto de línea terminal, así que la id pasaba la whitelist y
+    generaba un nombre de fichero con un ``\\n`` embebido (verificado en el rojo).
+    ``fullmatch`` lo cierra.
+    """
     monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
     assert not store.is_valid_strategy_id(sid)
-    # una id inválida degrada al singleton, nunca a una ruta compuesta
-    assert store.approval_path(sid) == tmp_path / "approval_state.json"
+    with pytest.raises(ValueError):
+        store.approval_path(sid)
+    with pytest.raises(ValueError):
+        store.write_approval({"status": "PENDING_APPROVAL", "strategy": "x"}, sid)
+    # y la resolución de lectura no cae al singleton de otro
+    (tmp_path / "approval_state.json").write_text(
+        json.dumps({"status": "PENDING_APPROVAL", "strategy": "smart_simple_v11"}), encoding="utf-8")
+    assert store.resolve_approval_path(sid) is None
+    assert store.read_approval(sid) is None
+
+
+def test_invalid_id_cannot_overwrite_the_singleton(tmp_path, monkeypatch):
+    """El daño concreto que causaba el P1: pisar el estado de la estrategia ACTIVA."""
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    singleton = tmp_path / "approval_state.json"
+    singleton.write_text(json.dumps(
+        {"status": "PENDING_APPROVAL", "strategy": "smart_simple_v11"}), encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        store.write_approval({"status": "APPROVED", "strategy": "atacante"}, "../../x")
+
+    assert json.loads(singleton.read_text(encoding="utf-8"))["status"] == "PENDING_APPROVAL"
+
+
+def test_none_still_means_the_singleton(tmp_path, monkeypatch):
+    """``None`` = 'la estrategia activa' y sigue siendo válido — es lo que usa el pipeline."""
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    assert store.approval_path(None) == tmp_path / "approval_state.json"
+    p = store.write_approval({"status": "PENDING_APPROVAL", "strategy": "smart_simple_v11"}, None)
+    assert p.name == "approval_state.json"
+
+
+# ───────────────────────────────── P1 · schema, tamaño, finitud y atomicidad (Python)
+
+
+def test_write_rejects_documents_that_are_not_approval_states(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    for bad in (
+        [],                                                   # no es un objeto
+        {"strategy": "x_1"},                                  # sin status
+        {"status": "MAYBE", "strategy": "x_1"},               # status fuera del contrato
+        {"status": "APPROVED", "strategy": "../../x"},        # strategy no es una id válida
+    ):
+        with pytest.raises(ValueError):
+            store.write_approval(bad, "x_1")
+    assert list(tmp_path.glob("*.json")) == []  # fail-closed: no se escribió NADA
+
+
+def test_write_rejects_non_finite_numbers(tmp_path, monkeypatch):
+    """JSON safety (strategy-contract §2): ni ``Infinity`` ni ``NaN`` salen del sistema."""
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    doc = {"status": "PENDING_APPROVAL", "strategy": "x_1",
+           "gates": [{"gate": "deflated_sharpe", "value": float("inf"), "threshold": 0.95}]}
+    with pytest.raises(ValueError):
+        store.write_approval(doc, "x_1")
+
+    doc["gates"][0]["value"] = float("nan")
+    with pytest.raises(ValueError):
+        store.write_approval(doc, "x_1")
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_read_rejects_oversized_artifacts(tmp_path, monkeypatch):
+    """Espejo del cap de 2 MiB de ``lib/approvals/store.ts::readJson``."""
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    (tmp_path / "approval_state.json").write_text(
+        json.dumps({"status": "PENDING_APPROVAL", "strategy": "x_1",
+                    "pad": "a" * (store.MAX_APPROVAL_BYTES + 1024)}), encoding="utf-8")
+    assert store.read_approval(None) is None
+
+
+def test_write_is_atomic_and_never_truncates_the_previous_state(tmp_path, monkeypatch):
+    """Un fallo a mitad de publicación deja el artefacto ANTERIOR íntegro."""
+    monkeypatch.setenv("APPROVALS_DATA_DIR", str(tmp_path))
+    target = tmp_path / "approval_state_x_1.json"
+    store.write_approval({"status": "PENDING_APPROVAL", "strategy": "x_1"}, "x_1")
+    before = target.read_text(encoding="utf-8")
+
+    # `os.replace` es el ÚLTIMO paso: si revienta, el destino no se tocó.
+    import os as _os
+    real_replace = _os.replace
+    monkeypatch.setattr(_os, "replace", lambda *a, **k: (_ for _ in ()).throw(OSError("boom")))
+    with pytest.raises(OSError):
+        store.write_approval({"status": "APPROVED", "strategy": "x_1"}, "x_1")
+    monkeypatch.setattr(_os, "replace", real_replace)
+
+    assert target.read_text(encoding="utf-8") == before
+    assert list(tmp_path.glob("*.tmp-*")) == []  # sin basura temporal
+
+
+def test_python_and_ts_agree_on_lock_and_size_constants():
+    """El lock es INTERPROCESO: si los sufijos divergen, Python y Node no se excluyen."""
+    ts = (REPO / "usdcop-trading-dashboard" / "lib" / "approvals" / "store.ts").read_text(encoding="utf-8")
+    assert f"LOCK_SUFFIX = '{store.LOCK_SUFFIX}'" in ts
+    assert "2 * 1024 * 1024" in ts and store.MAX_APPROVAL_BYTES == 2 * 1024 * 1024
+
+
+def test_real_artifacts_pass_the_validator():
+    """Los 5 artefactos REALES cumplen el schema que ahora se exige al escribir."""
+    for p in sorted(APPROVALS.glob("approval_state*.json")):
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        store.validate_approval_document(doc)  # no lanza
 
 
 def test_fail_closed_when_artifact_absent(tmp_path, monkeypatch):

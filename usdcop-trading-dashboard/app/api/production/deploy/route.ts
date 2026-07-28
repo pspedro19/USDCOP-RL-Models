@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
-import { protectApiRoute } from '@/lib/auth/api-auth';
+import { requireApprovalVote } from '@/lib/auth/approval-authz';
 import { readApprovalState } from '@/lib/approvals/store';
 import type {
   ApprovalState,
@@ -78,13 +78,17 @@ async function triggerAirflowDeploy(strategyId: string | null): Promise<{ ok: bo
 
 export async function POST(request: NextRequest) {
   try {
-    // Spawns a production retrain+deploy — must be authenticated (audit A4-13).
-    // The approve route forwards its session cookie so its auto-deploy is allowed.
-    const auth = await protectApiRoute(request);
-    if (!auth.authenticated) {
+    // Spawns a production retrain+deploy — `approval-gates.md` §4/§5: el servidor
+    // re-valida en CADA capa y **solo `admin`** promueve. Antes bastaba con estar
+    // autenticado (`protectApiRoute` sin permiso): un `subscriber` que invocara el
+    // handler sin atravesar el middleware lanzaba el deploy de producción sobre un
+    // bundle ya APPROVED. El permiso se exige aquí, no solo en el edge.
+    // La ruta approve reenvía la cookie del aprobador, así que su auto-deploy pasa.
+    const gate = await requireApprovalVote(request);
+    if (!gate.ok) {
       return NextResponse.json(
-        { success: false, message: auth.error || 'Unauthorized' } as DeployResponse,
-        { status: auth.status || 401 }
+        { success: false, message: gate.message } as DeployResponse,
+        { status: gate.status }
       );
     }
 

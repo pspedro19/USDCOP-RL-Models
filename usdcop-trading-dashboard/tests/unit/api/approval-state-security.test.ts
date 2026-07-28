@@ -330,7 +330,14 @@ describe('BDD-5 · Vote 2 (/api/production/approve) opera sobre el artefacto PRI
   });
 
   it('APPROVE escribe en el privado y /api/production/status refleja el nuevo estado', async () => {
-    authMock.protect.mockResolvedValue({ authenticated: true, user: { email: 'op@x.co' } });
+    // El principal DEBE llevar rol: `approval:vote` se exige ahora DENTRO del handler
+    // (approval-gates §4/§5). Sin rol, el Voto 2 es 403 — fail-closed. Este mock sin
+    // rol era justamente el hueco de cobertura que dejó pasar el P0 de autorización;
+    // el caso `subscriber` directo vive en `approval-vote2-authz-cas.test.ts`.
+    authMock.protect.mockResolvedValue({
+      authenticated: true,
+      user: { id: 'u-admin', email: 'op@x.co', username: 'op', role: 'admin' },
+    });
     const res = await approvePOST(
       new NextRequest('http://localhost:3001/api/production/approve', {
         method: 'POST',
