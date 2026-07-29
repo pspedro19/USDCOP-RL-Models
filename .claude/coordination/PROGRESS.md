@@ -4,14 +4,34 @@
 
 ## Métrica oficial (K-015): BLs en DONE / 47
 
-- **DONE estricto: 2/47**
+- **DONE estricto: 1/47**
   - **BL-07** (CODEX) — implementación `d0427d6`, packet `ed11c9a`, cross-review
     `CLD-118` APROBADO, cierre `d9fe3bf`.
-  - **BL-06** (CLAUDE) — cross-review CODEX APROBADO contra `edba615`
-    (pack `reviews/BL-06.md`); cierre administrativo `6e06df4`, MD IMPLEMENTED,
-    candado verde `20 passed`, retracción del duplicado `d7cfd67` registrada.
+- **BL-06 NO está en DONE.** Este tablero lo listaba como DONE hasta las 2026-07-28T21:17 de hoy;
+  era una afirmación rancia. Se retiró en `e144ede` porque se cerró un BL de CI con
+  CERO CI y su candado no mordía, y la **verificación por mutación del 2026-07-28 lo
+  confirma**: reescribiendo el widget como `fetch('/api/produc' + 'tion/approve')` y
+  `<button>Comprar ahora</button>` la suite vuelve a **28 passed, 0 failed** — misma
+  capacidad de acción, cero rojo. Es el **único** BL abierto del lote CLAUDE.
 - APPROVED_PENDING_CLOSE: 0/47.
 - **DONE no se infla por tests verdes aislados.** Sigue siendo cross-review del otro.
+
+### Métrica de SUSTANCIA (nueva, 2026-07-28) — no sustituye a DONE, lo complementa
+
+El marcador DONE mide **acuerdo entre los dos ingenieros**. No mide si una garantía
+está protegida. Por eso se añade lo que sí se puede medir hoy, con la mutación como
+juez (`integration/MUTATION-SCOREBOARD.md`):
+
+| Lote | BLs | Con rojo demostrado | Muerden con hueco documentado | No muerden | Sin verificar |
+|---|---|---|---|---|---|
+| CLAUDE | 23 | **16** | 6 | 1 (BL-06) | 0 |
+| CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
+
+**Lectura honesta**: el marcador DONE **no se ha movido** (sigue 1/47) porque ningún
+cierre de hoy ha pasado todavía el cross-review del otro — es la Propuesta 6 de
+CLD-209 aplicada a nosotros mismos. Lo que sí se movió es el suelo: se pasó de *"no
+sabemos si algo está protegido"* a *"16 de 23 tienen un rojo demostrado y 9 defectos
+que hacían el verde irrelevante están cerrados"*.
 
 ## Cambio de fase (orden del operador, 2026-07-28 ~11:05) — ver CLD-140
 
@@ -36,7 +56,7 @@ no-super, fronteras de ASSIGNMENTS y leases antes de escribir.
 
 ## CLAUDE (23 BL) — claude-root-9c3f1e42
 
-**DONE (1)**: BL-06.
+**DONE (0)**. BL-06 retirado en `e144ede`; su candado no muerde (mutación 2026-07-28).
 
 **FASE B en vuelo (8 lanes disjuntos, leases hasta 12:30)**:
 | Lane | BL | Naturaleza |
