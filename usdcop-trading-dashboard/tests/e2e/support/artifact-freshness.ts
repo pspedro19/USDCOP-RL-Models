@@ -13,9 +13,10 @@
  */
 
 import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
 
 /**
- * `generateBuildId` en next.config.js emite `build-<epoch_ms>-<sufijo>`.
+ * `generateBuildId` en next.config.ts emite `build-<epoch_ms>-<sufijo>`.
  * Se busca el literal en cualquier parte del HTML: con App Router los chunks cuelgan de
  * `/_next/static/chunks/`, NO de `/_next/static/<buildId>/` como en Pages Router, asi que
  * anclarlo a la ruta de los chunks no lo encuentra.
@@ -61,14 +62,54 @@ function git(args: string[]): string {
  * Rutas que ACABAN DENTRO de la imagen. Los tests no se compilan ni se sirven, asi que un
  * commit que solo toca `tests/` no deja el artefacto rancio — exigirselo convierte el guard
  * en ruido y el ruido termina en que alguien lo desactiva.
+ *
+ * Los ficheros sueltos se declaran SIN extension y se resuelven contra el disco: la primera
+ * version de esta lista vigilaba `next.config.js` y el fichero real es `next.config.ts`, asi
+ * que una alteracion de la config de build **no elevaba el suelo** y K-044 aceptaba un
+ * artefacto anterior a ella. Lo encontro CODEX (CXD-085). Un guardian con un punto ciego es
+ * peor que ninguno (K-033), y una lista escrita a mano es exactamente lo que K-029 prohibe;
+ * por eso ahora `assertServedPathsExist()` la obliga a corresponderse con el repo.
  */
-const SERVED_PATHS = ['app', 'components', 'lib', 'hooks', 'middleware.ts', 'next.config.js', 'public']
+const SERVED_DIRS = ['app', 'components', 'hooks', 'lib', 'public']
+const SERVED_FILE_STEMS = ['middleware', 'next.config', 'instrumentation']
+
+function resolveServedPaths(): string[] {
+  const resolved = [...SERVED_DIRS.filter((d) => fs.existsSync(d))]
+  for (const stem of SERVED_FILE_STEMS) {
+    // Se acepta cualquier extension: el build no distingue .ts de .js, y el guard tampoco debe.
+    for (const ext of ['.ts', '.js', '.mjs', '.tsx']) {
+      if (fs.existsSync(stem + ext)) resolved.push(stem + ext)
+    }
+  }
+  return resolved
+}
+
+/**
+ * Fail-closed sobre la propia lista: si un directorio declarado no existe, es que se renombro
+ * y el guard esta mirando al vacio sin saberlo. Se prefiere abortar a vigilar de mentira.
+ */
+export function assertServedPathsExist(): string[] {
+  const faltantes = SERVED_DIRS.filter((d) => !fs.existsSync(d))
+  if (faltantes.length) {
+    throw new Error(
+      `K-044: rutas servidas declaradas que NO existen: ${faltantes.join(', ')}. ` +
+        'El guard estaria vigilando el vacio; corrige SERVED_DIRS antes de medir nada.'
+    )
+  }
+  const stemsSinFichero = SERVED_FILE_STEMS.filter(
+    (stem) => !['.ts', '.js', '.mjs', '.tsx'].some((ext) => fs.existsSync(stem + ext))
+  )
+  if (stemsSinFichero.includes('next.config')) {
+    throw new Error('K-044: no se encuentra next.config.*; sin la config de build el suelo no es fiable.')
+  }
+  return resolveServedPaths()
+}
 
 /** Ultimo commit que toco codigo SERVIDO, que es el suelo minimo que el build debe cubrir. */
 export function lastDashboardCommit(): { sha: string; at: Date; subject: string } {
   // `%H %ct %s`: sha y epoch no contienen espacios, asi que un split acotado basta
   // y evita meter un caracter de control literal en el fuente.
-  const out = git(['log', '-1', '--format=%H %ct %s', '--', ...SERVED_PATHS])
+  const out = git(['log', '-1', '--format=%H %ct %s', '--', ...assertServedPathsExist()])
   const [sha, ct, ...rest] = out.split(' ')
   const subject = rest.join(' ')
   return { sha, at: new Date(Number(ct) * 1000), subject }
@@ -76,7 +117,7 @@ export function lastDashboardCommit(): { sha: string; at: Date; subject: string 
 
 /** Fuentes del dashboard modificadas y sin commitear: tampoco pueden estar en el build. */
 export function uncommittedSources(): string[] {
-  const out = git(['status', '--porcelain', '--', ...SERVED_PATHS])
+  const out = git(['status', '--porcelain', '--', ...resolveServedPaths()])
   return out ? out.split('\n').map((l) => l.slice(3).trim()).filter(Boolean) : []
 }
 
