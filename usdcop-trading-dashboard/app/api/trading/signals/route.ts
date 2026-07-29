@@ -3,6 +3,10 @@ import { pool } from '@/lib/db';
 import { createApiResponse, measureLatency } from '@/lib/types/api';
 import { withAuth } from '@/lib/auth/api-auth';
 
+// forecast_h5_executions is strategy-scoped since migration 064; without this
+// filter the chart would plot a challenger's entries as production's.
+const STRATEGY_ID = 'smart_simple_v11';
+
 interface L5Prediction {
   timestamp: string;
   prediction: number;
@@ -335,16 +339,16 @@ async function handler(request: NextRequest) {
           SELECT id, entry_timestamp AS timestamp, direction, entry_price AS price,
                  'entry' AS signal_type, confidence_tier, exit_reason
           FROM forecast_h5_executions
-          WHERE entry_timestamp IS NOT NULL
+          WHERE entry_timestamp IS NOT NULL AND strategy_id = $2
           UNION ALL
           SELECT id, exit_timestamp AS timestamp, -direction AS direction, exit_price AS price,
                  'exit' AS signal_type, confidence_tier, exit_reason
           FROM forecast_h5_executions
-          WHERE exit_timestamp IS NOT NULL
+          WHERE exit_timestamp IS NOT NULL AND strategy_id = $2
           ORDER BY timestamp DESC
           LIMIT $1
           `,
-          [limit],
+          [limit, STRATEGY_ID],
         );
         if (h5.rows.length > 0) {
           const signals: TradingSignal[] = h5.rows.map((row) => {

@@ -70,6 +70,12 @@ DATABASE_URL = os.environ.get(
 POLL_INTERVAL_SEC = int(os.environ.get("POLL_INTERVAL_SEC", "60"))
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/data"))
 STATE_FILE = STATE_DIR / "published.txt"
+# forecast_h5_signals is strategy-scoped since migration 064: without this filter
+# the bus would publish a challenger's signals as if they were production's.
+# This container's build context is ./services/kafka_bridge, so it cannot import
+# src.contracts.h5_strategy_identity — tests/regression/test_h5_strategy_identity_reads.py
+# pins this literal to that module's canonical value.
+STRATEGY_ID = os.environ.get("H5_STRATEGY_ID", "smart_simple_v11")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -184,7 +190,7 @@ SELECT_LATEST_SQL = """
         adjusted_leverage,
         created_at
     FROM forecast_h5_signals
-    WHERE id > %s
+    WHERE id > %s AND strategy_id = %s
     ORDER BY id ASC
     LIMIT 50
 """
@@ -197,7 +203,7 @@ def fetch_new_signals(last_id: int) -> list[dict[str, Any]]:
     try:
         with psycopg2.connect(DATABASE_URL, connect_timeout=10) as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(SELECT_LATEST_SQL, (last_id,))
+                cur.execute(SELECT_LATEST_SQL, (last_id, STRATEGY_ID))
                 return [dict(row) for row in cur.fetchall()]
     except Exception as exc:
         log.warning("DB query failed: %s", exc)

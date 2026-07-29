@@ -32,6 +32,8 @@ from pathlib import Path
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
+
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path("/opt/airflow")
@@ -294,10 +296,10 @@ def check_h5_signal(**context):
             """
             SELECT signal_date, direction, skip_trade, adjusted_leverage, regime
             FROM forecast_h5_signals
-            WHERE signal_date >= %s
+            WHERE signal_date >= %s AND strategy_id = %s
             ORDER BY signal_date DESC LIMIT 1
         """,
-            (monday - timedelta(days=1),),
+            (monday - timedelta(days=1), H5_PRODUCTION_STRATEGY_ID),
         )
         row = cur.fetchone()
         if row:

@@ -35,6 +35,7 @@ from contracts.dag_registry import (
 )
 from utils.dag_common import get_db_connection
 from utils.run_status import fail_if_upstream_failed
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
 
 DAG_ID = FORECAST_H5_L5_WEEKLY_SIGNAL
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -290,12 +291,12 @@ def persist_signal(**context) -> Dict[str, Any]:
         # Persist ensemble signal + confidence (vol-targeting added by L5c)
         cur.execute("""
             INSERT INTO forecast_h5_signals
-            (signal_date, inference_date, inference_week, inference_year,
+            (signal_date, strategy_id, inference_date, inference_week, inference_year,
              ensemble_return, direction,
              confidence_tier, confidence_agreement, confidence_magnitude,
              sizing_multiplier, skip_trade)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (signal_date)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (signal_date, strategy_id)
             DO UPDATE SET
                 ensemble_return = EXCLUDED.ensemble_return,
                 direction = EXCLUDED.direction,
@@ -306,6 +307,7 @@ def persist_signal(**context) -> Dict[str, Any]:
                 skip_trade = EXCLUDED.skip_trade
         """, (
             signal_data["signal_date"],
+            H5_PRODUCTION_STRATEGY_ID,
             signal_data["inference_date"],
             signal_data["inference_week"],
             signal_data["inference_year"],
@@ -434,9 +436,11 @@ def publish_signal_to_kafka(**context) -> Dict[str, Any]:
                                hard_stop_pct, take_profit_pct, adjusted_leverage,
                                regime, hurst
                         FROM forecast_h5_signals
+                        WHERE strategy_id = %s
                         ORDER BY signal_date DESC
                         LIMIT 1
-                        """
+                        """,
+                        (H5_PRODUCTION_STRATEGY_ID,),
                     )
                     row = cur.fetchone()
                     if row:

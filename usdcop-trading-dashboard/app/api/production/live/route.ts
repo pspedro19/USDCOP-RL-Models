@@ -58,9 +58,12 @@ async function fetchCurrentSignal(): Promise<CurrentSignal | null> {
            confidence_tier, adjusted_leverage,
            hard_stop_pct, take_profit_pct, skip_trade
     FROM forecast_h5_signals
-    WHERE signal_date = (SELECT MAX(signal_date) FROM forecast_h5_signals)
+    WHERE strategy_id = $1
+      AND signal_date = (
+        SELECT MAX(signal_date) FROM forecast_h5_signals WHERE strategy_id = $1
+      )
     LIMIT 1
-  `);
+  `, [STRATEGY_ID]);
   if (res.rows.length === 0) return null;
   const r = res.rows[0];
   // DB stores HS/TP as fractions (0.03 = 3%), convert to percentages for frontend
@@ -89,10 +92,10 @@ async function fetchActivePosition(currentPrice: number | null, currentBarTime: 
     FROM forecast_h5_executions e
     LEFT JOIN forecast_h5_subtrades s
       ON s.execution_id = e.id AND s.exit_timestamp IS NULL
-    WHERE e.status = 'positioned'
+    WHERE e.status = 'positioned' AND e.strategy_id = $1
     ORDER BY e.signal_date DESC
     LIMIT 1
-  `);
+  `, [STRATEGY_ID]);
   if (res.rows.length === 0) return null;
   const r = res.rows[0];
 
@@ -184,8 +187,9 @@ async function fetchExecutions(): Promise<{
     FROM forecast_h5_executions
     WHERE inference_year = 2026
       AND status IN ('closed', 'positioned')
+      AND strategy_id = $1
     ORDER BY signal_date ASC
-  `);
+  `, [STRATEGY_ID]);
 
   const trades: LiveTrade[] = [];
   const points: EquityCurvePoint[] = [];
@@ -308,9 +312,10 @@ async function fetchGuardrails(): Promise<Guardrails | null> {
            running_sharpe, running_da_short_pct,
            circuit_breaker, notes
     FROM forecast_h5_paper_trading
+    WHERE strategy_id = $1
     ORDER BY signal_date DESC
     LIMIT 1
-  `);
+  `, [STRATEGY_ID]);
   if (res.rows.length === 0) return null;
   const r = res.rows[0];
 

@@ -42,6 +42,7 @@ from contracts.dag_registry import (
     get_dag_tags,
 )
 from utils.dag_common import get_db_connection
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
 
 DAG_ID = FORECAST_H5_L6_WEEKLY_MONITOR
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -172,10 +173,10 @@ def load_results(**context) -> Dict[str, Any]:
                    direction, leverage, week_pnl_pct, week_pnl_unleveraged_pct,
                    n_subtrades, entry_price, exit_price
             FROM forecast_h5_executions
-            WHERE status = 'closed'
+            WHERE status = 'closed' AND strategy_id = %s
             ORDER BY signal_date DESC
             LIMIT 1
-        """)
+        """, (H5_PRODUCTION_STRATEGY_ID,))
         row = cur.fetchone()
 
         if not row:
@@ -187,8 +188,8 @@ def load_results(**context) -> Dict[str, Any]:
         # Check if already evaluated
         cur.execute("""
             SELECT 1 FROM forecast_h5_paper_trading
-            WHERE signal_date = %s
-        """, (signal_date,))
+            WHERE signal_date = %s AND strategy_id = %s
+        """, (signal_date, H5_PRODUCTION_STRATEGY_ID))
         if cur.fetchone():
             logger.info(f"[H5-L6] Week {signal_date} already evaluated")
             return {"found": False, "reason": "already_evaluated"}
@@ -236,9 +237,9 @@ def compute_metrics(**context) -> Dict[str, Any]:
             SELECT signal_date, direction, week_pnl_pct,
                    entry_price, exit_price, leverage
             FROM forecast_h5_executions
-            WHERE status = 'closed'
+            WHERE status = 'closed' AND strategy_id = %s
             ORDER BY signal_date ASC
-        """)
+        """, (H5_PRODUCTION_STRATEGY_ID,))
         rows = cur.fetchall()
 
         # A partir de aqui TODO en PUNTOS PORCENTUALES, la misma unidad que los umbrales
@@ -487,13 +488,13 @@ def persist_evaluation(**context) -> Dict[str, Any]:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO forecast_h5_paper_trading
-            (signal_date, inference_week, inference_year, direction, leverage,
+            (signal_date, strategy_id, inference_week, inference_year, direction, leverage,
              week_pnl_pct, n_subtrades, cumulative_pnl_pct,
              running_da_pct, running_da_short_pct, running_da_long_pct,
              running_sharpe, running_max_dd_pct, n_weeks, n_long, n_short,
              long_pct_8w, consecutive_losses, circuit_breaker, gate_status, notes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (signal_date) DO UPDATE SET
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                 week_pnl_pct = EXCLUDED.week_pnl_pct,
                 cumulative_pnl_pct = EXCLUDED.cumulative_pnl_pct,
                 running_da_pct = EXCLUDED.running_da_pct,
@@ -501,6 +502,7 @@ def persist_evaluation(**context) -> Dict[str, Any]:
                 notes = EXCLUDED.notes
         """, (
             results["signal_date"],
+            H5_PRODUCTION_STRATEGY_ID,
             results["inference_week"],
             results["inference_year"],
             results["direction"],

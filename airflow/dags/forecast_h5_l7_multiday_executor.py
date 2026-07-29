@@ -44,6 +44,7 @@ from utils.signalbridge_client import (
     is_paper_mode,
     place_order_via_bridge,
 )
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
 
 DAG_ID = FORECAST_H5_L7_MULTIDAY_EXECUTOR
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -73,10 +74,10 @@ def _get_current_week_signal(cur):
                hard_stop_pct, take_profit_pct, skip_trade,
                confidence_tier
         FROM forecast_h5_signals
-        WHERE signal_date <= CURRENT_DATE
+        WHERE signal_date <= CURRENT_DATE AND strategy_id = %s
         ORDER BY signal_date DESC
         LIMIT 1
-    """)
+    """, (H5_PRODUCTION_STRATEGY_ID,))
     return cur.fetchone()
 
 
@@ -85,8 +86,8 @@ def _get_current_week_execution(cur, signal_date):
     cur.execute("""
         SELECT id, status, direction, leverage
         FROM forecast_h5_executions
-        WHERE signal_date = %s
-    """, (signal_date,))
+        WHERE signal_date = %s AND strategy_id = %s
+    """, (signal_date, H5_PRODUCTION_STRATEGY_ID))
     return cur.fetchone()
 
 
@@ -124,9 +125,10 @@ def _check_circuit_breaker(cur, h5_config) -> bool:
     cur.execute("""
         SELECT cumulative_pnl_pct, consecutive_losses
         FROM forecast_h5_paper_trading
+        WHERE strategy_id = %s
         ORDER BY signal_date DESC
         LIMIT 1
-    """)
+    """, (H5_PRODUCTION_STRATEGY_ID,))
     row = cur.fetchone()
     if row:
         cum_pnl = row[0] or 0.0
@@ -284,12 +286,12 @@ def enter_position(**context) -> Dict[str, Any]:
         # Create execution record (UPSERT for idempotent coexistence with DB seeding)
         cur.execute("""
             INSERT INTO forecast_h5_executions
-            (signal_date, inference_week, inference_year, direction, leverage,
+            (signal_date, strategy_id, inference_week, inference_year, direction, leverage,
              entry_price, entry_timestamp, status, config_version,
              confidence_tier, hard_stop_pct, take_profit_pct)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'positioned', 'smart_simple_v1',
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'positioned', 'smart_simple_v1',
                     %s, %s, %s)
-            ON CONFLICT (signal_date) DO UPDATE SET
+            ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                 entry_price = EXCLUDED.entry_price,
                 entry_timestamp = EXCLUDED.entry_timestamp,
                 status = EXCLUDED.status,
@@ -298,7 +300,8 @@ def enter_position(**context) -> Dict[str, Any]:
                 take_profit_pct = EXCLUDED.take_profit_pct,
                 updated_at = NOW()
             RETURNING id
-        """, (signal_date, week, year, direction, leverage, entry_price, bar_time,
+        """, (signal_date, H5_PRODUCTION_STRATEGY_ID, week, year, direction, leverage,
+              entry_price, bar_time,
               confidence_tier, hard_stop_pct, take_profit_pct))
         exec_id = cur.fetchone()[0]
 

@@ -9,6 +9,8 @@ Mirrors src/forecasting/dynamic_leverage.py for DAG context.
 
 import logging
 
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,13 +36,18 @@ def compute_leverage_scaler(
     return max(0.25, min(1.0, wr_factor * dd_factor))
 
 
-def compute_dynamic_leverage_from_db(conn, lookback_weeks=8):
+def compute_dynamic_leverage_from_db(
+    conn, lookback_weeks=8, strategy_id=H5_PRODUCTION_STRATEGY_ID
+):
     """
     Compute dynamic leverage adjustment from DB execution history.
 
     Args:
         conn: psycopg2 connection
         lookback_weeks: Rolling window for WR calculation
+        strategy_id: whose history sizes the position. NOT optional in effect —
+            forecast_h5_executions is strategy-scoped since migration 064, and an
+            unfiltered read would size v11 off a challenger's losing streak.
 
     Returns:
         dict with rolling_wr, current_dd_pct, leverage_scaler
@@ -54,10 +61,11 @@ def compute_dynamic_leverage_from_db(conn, lookback_weeks=8):
             SELECT week_pnl_pct
             FROM forecast_h5_executions
             WHERE status = 'closed' AND week_pnl_pct IS NOT NULL
+              AND strategy_id = %s
             ORDER BY signal_date DESC
             LIMIT %s
         """,
-            (lookback_weeks,),
+            (strategy_id, lookback_weeks),
         )
 
         rows = cur.fetchall()

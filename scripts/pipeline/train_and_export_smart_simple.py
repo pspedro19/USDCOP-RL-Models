@@ -1453,6 +1453,12 @@ def seed_h5_db_tables(result_2026, cfg):
     days_since_monday = today.weekday()
     current_monday = today - timedelta(days=days_since_monday)
 
+    # Identity of the rows this run owns. Migration 064 made the H5 tables
+    # strategy-scoped: (signal_date, strategy_id) is the uniqueness, so an
+    # implicit DEFAULT would silently stamp a v12/v14 run as v11 and collide
+    # with production. Bind the SAME id the bundle is published under.
+    strategy_id = cfg["strategy_id"]
+
     conn = psycopg2.connect(db_url)
     try:
         cur = conn.cursor()
@@ -1507,14 +1513,14 @@ def seed_h5_db_tables(result_2026, cfg):
             # 2. forecast_h5_signals
             cur.execute("""
                 INSERT INTO forecast_h5_signals
-                (signal_date, inference_date, inference_week, inference_year,
+                (signal_date, strategy_id, inference_date, inference_week, inference_year,
                  ensemble_return, direction, realized_vol_21d,
                  raw_leverage, clipped_leverage, adjusted_leverage,
                  confidence_tier, sizing_multiplier, skip_trade,
                  hard_stop_pct, take_profit_pct, config_version)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                         'smart_simple_v1')
-                ON CONFLICT (signal_date) DO UPDATE SET
+                ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                     ensemble_return = EXCLUDED.ensemble_return,
                     direction = EXCLUDED.direction,
                     realized_vol_21d = EXCLUDED.realized_vol_21d,
@@ -1523,7 +1529,7 @@ def seed_h5_db_tables(result_2026, cfg):
                     sizing_multiplier = EXCLUDED.sizing_multiplier,
                     hard_stop_pct = EXCLUDED.hard_stop_pct,
                     take_profit_pct = EXCLUDED.take_profit_pct
-            """, (signal_date, inference_date, iso_week, iso_year,
+            """, (signal_date, strategy_id, inference_date, iso_week, iso_year,
                   wd["ensemble"], direction, wd["rv_ann"],
                   wd["base_lev"], wd["final_lev"], wd["final_lev"],
                   wd["confidence_tier"], wd["sizing_mult"],
@@ -1535,12 +1541,12 @@ def seed_h5_db_tables(result_2026, cfg):
                 # Current week: seed as 'positioned' for L7 to pick up
                 cur.execute("""
                     INSERT INTO forecast_h5_executions
-                    (signal_date, inference_week, inference_year, direction,
+                    (signal_date, strategy_id, inference_week, inference_year, direction,
                      leverage, entry_price, entry_timestamp, status,
                      config_version, confidence_tier, hard_stop_pct, take_profit_pct)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'positioned',
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'positioned',
                             'smart_simple_v1', %s, %s, %s)
-                    ON CONFLICT (signal_date) DO UPDATE SET
+                    ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                         entry_price = EXCLUDED.entry_price,
                         entry_timestamp = EXCLUDED.entry_timestamp,
                         status = EXCLUDED.status,
@@ -1549,7 +1555,7 @@ def seed_h5_db_tables(result_2026, cfg):
                         take_profit_pct = EXCLUDED.take_profit_pct,
                         updated_at = NOW()
                     RETURNING id
-                """, (signal_date, iso_week, iso_year, direction,
+                """, (signal_date, strategy_id, iso_week, iso_year, direction,
                       wd["final_lev"], trade["entry_price"],
                       trade["timestamp"],
                       wd["confidence_tier"], wd["hard_stop_pct"],
@@ -1558,14 +1564,14 @@ def seed_h5_db_tables(result_2026, cfg):
                 # Completed week
                 cur.execute("""
                     INSERT INTO forecast_h5_executions
-                    (signal_date, inference_week, inference_year, direction,
+                    (signal_date, strategy_id, inference_week, inference_year, direction,
                      leverage, entry_price, entry_timestamp,
                      exit_price, exit_timestamp, exit_reason,
                      week_pnl_pct, n_subtrades, status,
                      config_version, confidence_tier, hard_stop_pct, take_profit_pct)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'closed',
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'closed',
                             'smart_simple_v1', %s, %s, %s)
-                    ON CONFLICT (signal_date) DO UPDATE SET
+                    ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                         entry_price = EXCLUDED.entry_price,
                         exit_price = EXCLUDED.exit_price,
                         exit_timestamp = EXCLUDED.exit_timestamp,
@@ -1577,7 +1583,7 @@ def seed_h5_db_tables(result_2026, cfg):
                         take_profit_pct = EXCLUDED.take_profit_pct,
                         updated_at = NOW()
                     RETURNING id
-                """, (signal_date, iso_week, iso_year, direction,
+                """, (signal_date, strategy_id, iso_week, iso_year, direction,
                       wd["final_lev"], trade["entry_price"],
                       trade["timestamp"],
                       trade["exit_price"], trade["exit_timestamp"],
@@ -1663,13 +1669,13 @@ def seed_h5_db_tables(result_2026, cfg):
 
                 cur.execute("""
                     INSERT INTO forecast_h5_paper_trading
-                    (signal_date, inference_week, inference_year, direction,
+                    (signal_date, strategy_id, inference_week, inference_year, direction,
                      leverage, week_pnl_pct, n_subtrades, cumulative_pnl_pct,
                      running_da_pct, running_da_short_pct, running_sharpe,
                      running_max_dd_pct, n_weeks, n_long, n_short,
                      consecutive_losses, circuit_breaker)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (signal_date) DO UPDATE SET
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (signal_date, strategy_id) DO UPDATE SET
                         week_pnl_pct = EXCLUDED.week_pnl_pct,
                         cumulative_pnl_pct = EXCLUDED.cumulative_pnl_pct,
                         running_da_pct = EXCLUDED.running_da_pct,
@@ -1679,7 +1685,7 @@ def seed_h5_db_tables(result_2026, cfg):
                         n_weeks = EXCLUDED.n_weeks,
                         consecutive_losses = EXCLUDED.consecutive_losses,
                         circuit_breaker = EXCLUDED.circuit_breaker
-                """, (signal_date, iso_week, iso_year, direction,
+                """, (signal_date, strategy_id, iso_week, iso_year, direction,
                       wd["final_lev"], pnl_pct, cum_pnl * 100,
                       running_da, running_da_short, running_sharpe,
                       max_dd, n_weeks_total, n_long_total, n_short_total,

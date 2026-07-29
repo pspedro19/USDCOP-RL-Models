@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
+
 logger = logging.getLogger(__name__)
 
 SLIPPAGE_WARN_BPS = 2.0  # Flag slippage > 2 bps
@@ -184,9 +186,10 @@ class ReconciliationEngine:
                        adjusted_leverage, pnl_pct, exit_reason
                 FROM forecast_h5_executions
                 WHERE signal_date = %s AND status = 'closed'
+                  AND strategy_id = %s
                 ORDER BY signal_date
                 """,
-                (run_date,),
+                (run_date, H5_PRODUCTION_STRATEGY_ID),
             )
         elif pipeline == "h1":
             cur.execute(

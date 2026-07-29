@@ -31,6 +31,7 @@ from contracts.dag_registry import (
     get_dag_tags,
 )
 from utils.dag_common import get_db_connection
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
 
 DAG_ID = FORECAST_H5_L5_VOL_TARGETING
 DAG_TAGS_LIST = get_dag_tags(DAG_ID)
@@ -61,8 +62,8 @@ def load_signal(**context) -> Dict[str, Any]:
             SELECT id, signal_date, direction, ensemble_return,
                    sizing_multiplier, skip_trade, confidence_tier
             FROM forecast_h5_signals
-            WHERE signal_date = %s
-        """, (signal_date,))
+            WHERE signal_date = %s AND strategy_id = %s
+        """, (signal_date, H5_PRODUCTION_STRATEGY_ID))
         row = cur.fetchone()
 
         if not row:
