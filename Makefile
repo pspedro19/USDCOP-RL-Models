@@ -225,16 +225,16 @@ endif
 
 db-migrate: ## Run all pending database migrations (init-scripts)
 	@echo "$(CYAN)Running database migrations...$(RESET)"
-	$(PYTHON) scripts/ops/db_migrate.py
+	$(PYTHON) scripts/ops/db_migrate.py --plan legacy-init
 	@echo "$(GREEN)Migrations completed!$(RESET)"
 
 db-status: ## Show migration status
 	@echo "$(CYAN)Checking migration status...$(RESET)"
-	$(PYTHON) scripts/ops/db_migrate.py --status
+	$(PYTHON) scripts/ops/db_migrate.py --plan legacy-init --status
 
 db-validate: ## Validate all required tables exist
 	@echo "$(CYAN)Validating database schema...$(RESET)"
-	$(PYTHON) scripts/ops/db_migrate.py --validate
+	$(PYTHON) scripts/ops/db_migrate.py --plan legacy-init --validate
 
 db-reset: ## Reset database (DESTRUCTIVE - deletes all data)
 	@echo "$(RED)WARNING: This will delete ALL data!$(RESET)"
@@ -244,7 +244,7 @@ db-reset: ## Reset database (DESTRUCTIVE - deletes all data)
 	$(DOCKER_COMPOSE) up -d postgres
 	@echo "Waiting for PostgreSQL to start..."
 	@sleep 10
-	$(PYTHON) scripts/ops/db_migrate.py
+	$(PYTHON) scripts/ops/db_migrate.py --plan legacy-init
 
 # Legacy aliases for backwards compatibility
 migrate: db-migrate ## (Legacy) Alias for db-migrate

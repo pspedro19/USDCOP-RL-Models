@@ -54,19 +54,22 @@ echo "PostgreSQL is ready!"
 echo ""
 echo "Running database migrations..."
 if [ -f /app/scripts/ops/db_migrate.py ]; then
-    python /app/scripts/ops/db_migrate.py || {
-        echo "WARNING: Migration script failed, continuing anyway..."
+    python /app/scripts/ops/db_migrate.py --plan legacy-init || {
+        echo "ERROR: Database migration failed; refusing to start the API"
+        exit 1
     }
 else
-    echo "Migration script not found, skipping..."
+    echo "ERROR: Migration script not found; refusing to start the API"
+    exit 1
 fi
 
 # Validate schema
 echo ""
 echo "Validating database schema..."
 if [ -f /app/scripts/ops/db_migrate.py ]; then
-    python /app/scripts/ops/db_migrate.py --validate || {
-        echo "WARNING: Schema validation failed, some features may not work"
+    python /app/scripts/ops/db_migrate.py --plan legacy-init --validate || {
+        echo "ERROR: Schema validation failed; refusing to start the API"
+        exit 1
     }
 fi
 

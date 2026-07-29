@@ -281,7 +281,10 @@ def main():
         if h5_tables and int(h5_tables) >= 4:
             ok(f"Migrations 043-046 applied ({h5_tables}/4 tables)")
         else:
-            warn(f"Missing migration tables ({h5_tables or 0}/4). Run: python scripts/db_migrate.py")
+            warn(
+                f"Missing migration tables ({h5_tables or 0}/4). Run: "
+                "python scripts/ops/db_migrate.py --plan legacy-init"
+            )
             warnings += 1
 
         # 7. HTTP endpoints

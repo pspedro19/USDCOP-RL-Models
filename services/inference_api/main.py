@@ -107,9 +107,12 @@ async def lifespan(app: FastAPI):
     # Note: In Docker, migrations run via entrypoint.sh before this
     try:
         from scripts.ops.db_migrate import validate_tables
-        tables_ok = await validate_tables()
+        tables_ok = await validate_tables(plan="legacy-init")
         if not tables_ok:
-            logger.warning("Some database tables may be missing - run: python scripts/ops/db_migrate.py")
+            logger.warning(
+                "Some database tables may be missing - run: "
+                "python scripts/ops/db_migrate.py --plan legacy-init"
+            )
     except ImportError:
         # Normal when running in Docker (migrations handled by entrypoint)
         logger.debug("Migration script not in path (handled by Docker entrypoint)")

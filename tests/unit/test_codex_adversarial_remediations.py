@@ -5,6 +5,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+import ast
 import importlib.util
 import sys
 import threading
@@ -45,6 +46,67 @@ def test_fabric_validation_has_plan_specific_required_tables() -> None:
     assert "forecast.forecast_output" in required
     assert "portfolio.target" in required
     assert "exec.reconciliation_event" in required
+
+
+def test_wired_migration_callers_select_legacy_plan_and_fail_closed() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    entrypoint = Path("services/inference_api/entrypoint.sh").read_text(
+        encoding="utf-8"
+    )
+    health = Path("services/inference_api/routers/health.py").read_text(
+        encoding="utf-8"
+    )
+    main = Path("services/inference_api/main.py").read_text(encoding="utf-8")
+    fresh_install = Path(
+        "scripts/validation/validate_fresh_install.py"
+    ).read_text(encoding="utf-8")
+
+    make_callers = [
+        line.strip()
+        for line in makefile.splitlines()
+        if "$(PYTHON) scripts/ops/db_migrate.py" in line
+    ]
+    entrypoint_callers = [
+        line.strip()
+        for line in entrypoint.splitlines()
+        if "python /app/scripts/ops/db_migrate.py" in line
+    ]
+
+    assert len(make_callers) == 4
+    assert len(entrypoint_callers) == 2
+    assert all("--plan legacy-init" in line for line in make_callers)
+    assert all("--plan legacy-init" in line for line in entrypoint_callers)
+    assert "continuing anyway" not in entrypoint
+    assert "Migration script not found, skipping" not in entrypoint
+    migration_section = entrypoint.split("Running database migrations...", 1)[1]
+    migration_section = migration_section.split("# Start API", 1)[0]
+    assert migration_section.count("exit 1") == 3
+
+    expected_run = "python scripts/ops/db_migrate.py --plan legacy-init"
+    expected_validate = (
+        "python scripts/ops/db_migrate.py --plan legacy-init --validate"
+    )
+    health_strings = {
+        node.value
+        for node in ast.walk(ast.parse(health))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    main_strings = {
+        node.value
+        for node in ast.walk(ast.parse(main))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    fresh_install_strings = {
+        node.value
+        for node in ast.walk(ast.parse(fresh_install))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assert any(expected_run in value for value in health_strings)
+    assert any(expected_validate in value for value in health_strings)
+    assert "validate_tables(plan=\"legacy-init\")" in main
+    assert any(expected_run in value for value in main_strings)
+    assert any(expected_run in value for value in fresh_install_strings)
+    assert "python scripts/db_migrate.py" not in fresh_install
 
 
 def test_integrity_remediation_is_append_only_and_serializes_derivations() -> None:
