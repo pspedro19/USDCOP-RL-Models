@@ -27,6 +27,24 @@
 # task reads <registry_root>/registry.json to confirm the asset + strategies.
 registry_root: "usdcop-trading-dashboard/public/data"
 
+# Dataset graph consumed at DAG parse time.  These edges describe transport and
+# publication only; they intentionally do not classify Gold/BTC as ML versus
+# rule-based products.  A forecast:// output is diagnostic and must never feed
+# strategy://, action://, portfolio:// or exec:// directly.
+dataset_edges:
+  - source: "asset://xauusd/ohlcv/daily"
+    target: "artifact://xauusd/strategy-bundles/v1"
+  - source: "artifact://xauusd/strategy-bundles/v1"
+    target: "forecast://xauusd/weekly-inference/v1"
+  - source: "asset://btcusdt/ohlcv/daily"
+    target: "artifact://btcusdt/strategy-bundles/v1"
+  - source: "asset://btcusdt/derivatives/daily"
+    target: "artifact://btcusdt/strategy-bundles/v1"
+  - source: "artifact://btcusdt/strategy-bundles/v1"
+    target: "forecast://btcusdt/weekly-inference/v1"
+  - source: "asset://spx500/ohlcv/daily"
+    target: "artifact://spx500/strategy-bundles/v1"
+
 assets:
   # ---------------------------------------------------------------------------
   # GOLD (XAU/USD) — rule-based daily science stack (src/gold_rl), 3 strategies.

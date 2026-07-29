@@ -1,11 +1,14 @@
 ---
 kind: roadmap
-status: PLANNED
-version: 1.0.0
-last_verified: 2026-07-27
+status: PARTIAL
+version: 1.1.0
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
+  - config/assets/pipelines.yaml
+  - src/orchestration/dataset_uri.py
+  - tests/unit/test_codex_fabric_contracts.py
 ---
 
 # BL-35 — URIs de datasets + arista prohibida forecast→allocator en parseo
@@ -17,6 +20,37 @@ No existe convención de URIs (asset://, strategy://, forecast://); la prohibici
 
 ## Qué falta exactamente
 Esquema de URIs en los Assets de Airflow (shim 2/3); test de parseo: cualquier DAG que consuma forecast://*/prediction hacia book/exec ⇒ falla el parse + CI.
+
+## Remediación lista para revisión cruzada (2026-07-29)
+
+`asset_pipeline_factory._load_config()` distingue ahora indisponibilidad del
+fichero o YAML ilegible de una violación del contrato: lo primero conserva el
+warning/degradación histórica; cualquier `DatasetContractError` se propaga y
+convierte la arista prohibida en error de importación del DAG. El nombre real
+del tipo es `DatasetContractError` (la receta de remediación lo llamó
+`DatasetEdgeViolation`, clase que no existe en el repositorio).
+
+`config/assets/pipelines.yaml` declara seis aristas reales y no vacías para los
+pipelines actuales. Se limitan a transporte `asset:// → artifact:// →
+forecast://`; no deciden si Oro/BTC se comercializan como ML o reglas, decisión
+de producto aún reservada al operador.
+
+```bash
+python -m pytest -q tests/unit/test_codex_fabric_contracts.py -k dataset
+# 2 passed, 28 deselected
+```
+
+El test carga el módulo DAG real con stubs mínimos de la distribución Airflow,
+inyecta un `forecast:// → exec://` y exige el error de contrato. También prueba
+un config válido sin `dataset_edges`, para conservar compatibilidad del camino
+feliz. Mutaciones:
+
+- quitar el `except DatasetContractError: raise` ⇒ **1 failed / 1 passed**;
+- retirar `dataset_edges` del YAML productivo ⇒ **1 failed / 1 passed**.
+
+Queda pendiente, por la prioridad explícita del operador de dejar CI al final,
+la comprobación dentro del scheduler con `airflow dags list-import-errors`.
+Hasta esa evidencia y la revisión bilateral, el BL permanece `PARTIAL`.
 
 ## Impacto frontend
 Ninguno.

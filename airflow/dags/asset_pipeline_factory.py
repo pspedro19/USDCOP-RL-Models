@@ -39,6 +39,8 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.trigger_rule import TriggerRule
 
+from src.orchestration.dataset_uri import DatasetContractError, validate_dataset_edges
+
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path("/opt/airflow")
@@ -54,10 +56,14 @@ DEFAULT_ARGS = {
 
 
 def _load_config() -> dict:
-    """Load the per-asset pipeline SSOT. Never raise at DAG-parse time."""
+    """Load the SSOT, degrading only on availability/serialization failures."""
     try:
         with open(CONFIG_PATH, encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+            config = yaml.safe_load(f) or {}
+        validate_dataset_edges(config.get("dataset_edges") or [])
+        return config
+    except DatasetContractError:
+        raise
     except Exception as e:  # noqa: BLE001
         logger.warning("asset_pipeline_factory: could not read %s: %s", CONFIG_PATH, e)
         return {}

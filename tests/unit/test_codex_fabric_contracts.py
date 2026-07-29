@@ -749,6 +749,89 @@ def test_dataset_wall_rejects_forecast_to_action() -> None:
         )
 
 
+def _load_asset_pipeline_factory_with_airflow_stubs(monkeypatch):
+    """Import the real DAG module without requiring the Airflow distribution."""
+
+    import importlib.util
+
+    airflow_module = types.ModuleType("airflow")
+    airflow_module.__path__ = []
+    airflow_module.DAG = object
+    operators_module = types.ModuleType("airflow.operators")
+    operators_module.__path__ = []
+    python_module = types.ModuleType("airflow.operators.python")
+    python_module.PythonOperator = object
+    utils_module = types.ModuleType("airflow.utils")
+    utils_module.__path__ = []
+    dates_module = types.ModuleType("airflow.utils.dates")
+    dates_module.days_ago = lambda _days: datetime(2026, 1, 1, tzinfo=timezone.utc)
+    trigger_module = types.ModuleType("airflow.utils.trigger_rule")
+    trigger_module.TriggerRule = types.SimpleNamespace(
+        ALL_DONE="all_done",
+        ALL_SUCCESS="all_success",
+    )
+    for name, module in {
+        "airflow": airflow_module,
+        "airflow.operators": operators_module,
+        "airflow.operators.python": python_module,
+        "airflow.utils": utils_module,
+        "airflow.utils.dates": dates_module,
+        "airflow.utils.trigger_rule": trigger_module,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    module_name = "_bl35_asset_pipeline_factory"
+    module_path = (
+        Path(__file__).resolve().parents[2]
+        / "airflow"
+        / "dags"
+        / "asset_pipeline_factory.py"
+    )
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_asset_pipeline_config_fails_parse_on_forbidden_dataset_edge(
+    tmp_path, monkeypatch
+) -> None:
+    import yaml
+
+    from src.orchestration.dataset_uri import DatasetContractError, validate_dataset_edges
+
+    production = yaml.safe_load(
+        (Path("config") / "assets" / "pipelines.yaml").read_text(encoding="utf-8")
+    )
+    assert production["dataset_edges"]
+    validate_dataset_edges(production["dataset_edges"])
+
+    module = _load_asset_pipeline_factory_with_airflow_stubs(monkeypatch)
+    config_path = tmp_path / "pipelines.yaml"
+    module.CONFIG_PATH = config_path
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "dataset_edges": [
+                    {
+                        "source": "forecast://zoo/prediction/v1",
+                        "target": "exec://broker/orders/v1",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(DatasetContractError, match="forbidden"):
+        module._load_config()
+
+    no_edges = {"registry_root": "public/data", "assets": {}}
+    config_path.write_text(yaml.safe_dump(no_edges), encoding="utf-8")
+    assert module._load_config() == no_edges
+
+
 def test_family_projection_repairs_after_ledger_only_retry(tmp_path) -> None:
     from src.research.qlab import FamilyStore, TrialCharge, TrialLedger
 
