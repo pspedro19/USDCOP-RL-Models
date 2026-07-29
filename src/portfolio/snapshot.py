@@ -141,8 +141,134 @@ class PortfolioSnapshot:
     missing_signals: tuple[str, ...]
     fallback_applied: Mapping[str, str]
     max_age_by_sleeve: Mapping[str, timedelta]
+    missing_policy_by_sleeve: Mapping[str, MissingPolicy]
     materialized_inputs: Mapping[str, MaterializedInput]
     semantic_hash: str
+
+    def __post_init__(self) -> None:
+        from src.identity.canonical import semantic_hash
+
+        if (
+            not isinstance(self.cutoff_time, datetime)
+            or self.cutoff_time.tzinfo is None
+            or self.cutoff_time.utcoffset() is None
+        ):
+            raise SnapshotError("cutoff_time must be timezone-aware")
+        if (
+            not self.required_sleeves
+            or tuple(sorted(self.required_sleeves)) != self.required_sleeves
+            or len(set(self.required_sleeves)) != len(self.required_sleeves)
+        ):
+            raise SnapshotError("required_sleeves must be sorted, non-empty and unique")
+        required = set(self.required_sleeves)
+        if set(self.max_age_by_sleeve) != required:
+            raise SnapshotError("max_age_by_sleeve keys must exactly match required_sleeves")
+        if set(self.missing_policy_by_sleeve) != required:
+            raise SnapshotError(
+                "missing_policy_by_sleeve keys must exactly match required_sleeves"
+            )
+        if set(self.materialized_inputs) != required:
+            raise SnapshotError(
+                "materialized_inputs keys must exactly match required_sleeves"
+            )
+        if not set(self.fallback_applied).issubset(required):
+            raise SnapshotError("fallback_applied contains an undeclared sleeve")
+        for sleeve in self.required_sleeves:
+            max_age = self.max_age_by_sleeve[sleeve]
+            if not isinstance(max_age, timedelta) or max_age <= timedelta(0):
+                raise SnapshotError(f"{sleeve}: positive max_age is required")
+            try:
+                MissingPolicy(self.missing_policy_by_sleeve[sleeve])
+            except (TypeError, ValueError) as exc:
+                raise SnapshotError(f"{sleeve}: invalid missing policy") from exc
+            materialized = self.materialized_inputs[sleeve]
+            if (
+                not isinstance(materialized, MaterializedInput)
+                or materialized.sleeve_id != sleeve
+            ):
+                raise SnapshotError(f"{sleeve}: invalid materialized input")
+        if any(not isinstance(signal, AcceptedSignal) for signal in self.accepted_signals):
+            raise SnapshotError("accepted_signals must contain AcceptedSignal records")
+
+        object.__setattr__(
+            self, "cutoff_time", self.cutoff_time.astimezone(timezone.utc)
+        )
+        object.__setattr__(
+            self, "fallback_applied", MappingProxyType(dict(self.fallback_applied))
+        )
+        object.__setattr__(
+            self,
+            "max_age_by_sleeve",
+            MappingProxyType(dict(self.max_age_by_sleeve)),
+        )
+        object.__setattr__(
+            self,
+            "missing_policy_by_sleeve",
+            MappingProxyType(
+                {
+                    sleeve: MissingPolicy(self.missing_policy_by_sleeve[sleeve])
+                    for sleeve in self.required_sleeves
+                }
+            ),
+        )
+        object.__setattr__(
+            self,
+            "materialized_inputs",
+            MappingProxyType(dict(self.materialized_inputs)),
+        )
+        expected_hash = semantic_hash(self.identity_payload())
+        if self.semantic_hash != expected_hash:
+            raise SnapshotError(
+                f"semantic_hash mismatch: expected {expected_hash}, got {self.semantic_hash}"
+            )
+        expected_id = str(uuid.uuid5(uuid.NAMESPACE_URL, expected_hash))
+        if self.snapshot_id != expected_id:
+            raise SnapshotError(
+                f"snapshot_id mismatch: expected {expected_id}, got {self.snapshot_id}"
+            )
+
+    def identity_payload(self) -> dict[str, Any]:
+        return {
+            "cutoff_time": self.cutoff_time,
+            "required_sleeves": list(self.required_sleeves),
+            "accepted_signals": [
+                {
+                    "signal_id": item.signal_id,
+                    "sleeve_id": item.sleeve_id,
+                    "as_of": item.as_of,
+                    "available_at": item.available_at,
+                    "valid_until": item.valid_until,
+                    "payload": item.payload,
+                }
+                for item in self.accepted_signals
+            ],
+            "stale_signals": list(self.stale_signals),
+            "missing_signals": list(self.missing_signals),
+            "fallback_applied": dict(self.fallback_applied),
+            "max_age_by_sleeve_seconds": {
+                sleeve: str(self.max_age_by_sleeve[sleeve].total_seconds())
+                for sleeve in self.required_sleeves
+            },
+            "missing_policy_by_sleeve": {
+                sleeve: MissingPolicy(
+                    self.missing_policy_by_sleeve[sleeve]
+                ).value
+                for sleeve in self.required_sleeves
+            },
+            "materialized_inputs": {
+                sleeve: {
+                    "resolution": str(self.materialized_inputs[sleeve].resolution),
+                    "source_signal_id": self.materialized_inputs[
+                        sleeve
+                    ].source_signal_id,
+                    "as_of": self.materialized_inputs[sleeve].as_of,
+                    "available_at": self.materialized_inputs[sleeve].available_at,
+                    "valid_until": self.materialized_inputs[sleeve].valid_until,
+                    "payload": self.materialized_inputs[sleeve].payload,
+                }
+                for sleeve in self.required_sleeves
+            },
+        }
 
 
 class SnapshotBuilder:
@@ -307,6 +433,12 @@ class SnapshotBuilder:
             max_age_by_sleeve=MappingProxyType(
                 {sleeve: max_age_by_sleeve[sleeve] for sleeve in required}
             ),
+            missing_policy_by_sleeve=MappingProxyType(
+                {
+                    sleeve: missing_policy_by_sleeve[sleeve]
+                    for sleeve in required
+                }
+            ),
             materialized_inputs=MappingProxyType(
                 {sleeve: materialized[sleeve] for sleeve in required}
             ),
@@ -349,6 +481,7 @@ class SnapshotBuilder:
             if (
                 fallback_signal.as_of > cutoff
                 or fallback_signal.available_at > cutoff
+                or fallback_signal.valid_until < cutoff
                 or cutoff - fallback_signal.as_of > max_age
             ):
                 raise SnapshotError(f"{sleeve}: last valid signal exceeds cutoff/max_age")

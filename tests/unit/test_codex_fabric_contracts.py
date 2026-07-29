@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
@@ -156,7 +157,12 @@ def test_snapshot_hash_commits_policy_max_age_and_signal_payload() -> None:
 
 
 def test_snapshot_is_deeply_immutable_and_retry_identity_is_deterministic() -> None:
-    from src.portfolio.snapshot import AcceptedSignal, MissingPolicy, SnapshotBuilder
+    from src.portfolio.snapshot import (
+        AcceptedSignal,
+        MissingPolicy,
+        SnapshotBuilder,
+        SnapshotError,
+    )
 
     cutoff = datetime(2026, 1, 5, tzinfo=timezone.utc)
     mutable_payload = {"nested": {"values": [1, 2]}}
@@ -183,10 +189,24 @@ def test_snapshot_is_deeply_immutable_and_retry_identity_is_deterministic() -> N
     assert first.accepted_signals[0].payload["nested"]["values"] == (1, 2)
     with pytest.raises(TypeError):
         first.fallback_applied["sleeve-1"] = "EXIT_ONLY"
+    with pytest.raises(
+        SnapshotError,
+        match=r"snapshot_id mismatch: expected .+, got whatever-i-want",
+    ):
+        replace(first, snapshot_id="whatever-i-want")
+    with pytest.raises(SnapshotError, match="semantic_hash mismatch"):
+        replace(first, semantic_hash="sha256:" + "0" * 64)
+    with pytest.raises(SnapshotError, match="cutoff_time must be timezone-aware"):
+        replace(first, cutoff_time=cutoff.replace(tzinfo=None))
 
 
 def test_snapshot_materializes_fallbacks_instead_of_only_labelling_them() -> None:
-    from src.portfolio.snapshot import MissingPolicy, SnapshotBuilder, SnapshotError
+    from src.portfolio.snapshot import (
+        AcceptedSignal,
+        MissingPolicy,
+        SnapshotBuilder,
+        SnapshotError,
+    )
 
     cutoff = datetime(2026, 1, 5, tzinfo=timezone.utc)
     common = dict(
@@ -217,6 +237,22 @@ def test_snapshot_materializes_fallbacks_instead_of_only_labelling_them() -> Non
             missing_policy_by_sleeve={
                 "sleeve-1": MissingPolicy.USE_LAST_VALID_WITH_MAX_AGE
             },
+        )
+    expired = AcceptedSignal(
+        signal_id="expired-signal",
+        sleeve_id="sleeve-1",
+        as_of=cutoff - timedelta(days=1),
+        available_at=cutoff - timedelta(days=1),
+        valid_until=cutoff - timedelta(seconds=1),
+        payload={"decision_fingerprint": "sha256:" + "a" * 64},
+    )
+    with pytest.raises(SnapshotError, match="last valid signal exceeds cutoff/max_age"):
+        SnapshotBuilder().build(
+            **common,
+            missing_policy_by_sleeve={
+                "sleeve-1": MissingPolicy.USE_LAST_VALID_WITH_MAX_AGE
+            },
+            last_valid_signal_by_sleeve={"sleeve-1": expired},
         )
 
 
