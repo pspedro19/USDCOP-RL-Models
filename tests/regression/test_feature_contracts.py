@@ -542,3 +542,142 @@ def test_bitcheck_v11_signal_from_feature_set_plus_snapshot():
     assert report["feature_row_bit_identical"] is True
     assert report["predictions_bit_identical"] is True
     assert report["ensemble_return_bit_identical"] is True
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 5. Causality as BEHAVIOUR, not as a hash (BL-39 hueco documentado)
+#
+# Everything above detects a leak only INDIRECTLY: drop the `.shift(1)` in
+# enhance_v2 and the tests go red saying "drifted from the registered catalog
+# hash" — re-register the hash and the leak passes. Hash drift is a
+# *bookkeeping* alarm; it cannot tell a rename from a look-ahead. What follows
+# is the semantic wall: it builds a synthetic macro frame with a level jump at
+# T and asserts the feature at T CANNOT see it. It is red for a leak whether or
+# not the catalog hash was re-registered, because it never reads a hash.
+#
+# COVERED here: the two macro-derived features whose T-1 rule lives in
+# enhance_v2 — `rate_diff_ibr_ust2y` (L113) and `term_spread` (L114).
+# NOT covered (declared, not an oversight): the `include_xlead` leaders
+# (usdmxn/usdclp, L157 — default OFF, experiment-only) and the base-21
+# `*_close_lag1` macro features, whose lag lives in src/forecasting/
+# dataset_loader.py and needs its own fixture.
+# ═══════════════════════════════════════════════════════════════════════════
+
+MACRO_IBR = "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR"
+MACRO_UST10Y = "FINC_BOND_YIELD10Y_USA_D_UST10Y"
+MACRO_UST2Y = "FINC_BOND_YIELD2Y_USA_D_DGS2"
+# (feature, before-jump value, at/after-jump value) for the frame built below.
+CAUSAL_CASES = [
+    ("rate_diff_ibr_ust2y", 10.0 - 4.0, 20.0 - 4.0),
+    ("term_spread", 5.0 - 4.0, 9.0 - 4.0),
+]
+JUMP_IDX = 10
+
+
+def _synthetic_macro_root(tmp_path: Path):
+    """A MACRO_DAILY_CLEAN whose levels step ONCE, at bar `JUMP_IDX`.
+
+    Same layout as the real file: `fecha` as the DatetimeIndex, UPPERCASE SSOT
+    column names (enhance_v2 raises KeyError on anything else)."""
+    import pandas as pd
+
+    dates = pd.bdate_range("2024-01-01", periods=30)
+    ibr = pd.Series(10.0, index=dates)
+    ust10y = pd.Series(5.0, index=dates)
+    ibr.iloc[JUMP_IDX:] = 20.0
+    ust10y.iloc[JUMP_IDX:] = 9.0
+    macro = pd.DataFrame(
+        {MACRO_IBR: ibr, MACRO_UST10Y: ust10y, MACRO_UST2Y: 4.0}, index=dates)
+    macro.index.name = "fecha"
+    out = tmp_path / "data" / "pipeline" / "04_cleaning" / "output"
+    out.mkdir(parents=True, exist_ok=True)
+    macro.to_parquet(out / "MACRO_DAILY_CLEAN.parquet")
+    return dates
+
+
+def _enhanced_on_synthetic_macro(tmp_path: Path):
+    import numpy as np
+    import pandas as pd
+
+    from src.forecasting.enhance_v2 import enhance_features_v2
+
+    dates = _synthetic_macro_root(tmp_path)
+    df = pd.DataFrame({
+        "date": dates,
+        "close": np.linspace(4000.0, 4100.0, len(dates)),
+        "volatility_5d": 0.01,
+        "volatility_20d": 0.02,
+    })
+    out, feats = enhance_features_v2(df, ["close"], project_root=tmp_path)
+    for feature, _, _ in CAUSAL_CASES:
+        assert feature in feats and feature in out.columns, (
+            f"{feature} never made it into the frame — the macro merge failed, so "
+            "this test would pass vacuously. Fix the fixture, not the assertion.")
+    return dates, out.set_index("date")
+
+
+def test_macro_features_cannot_see_a_jump_that_happens_on_their_own_bar(tmp_path):
+    """A step in the macro level at bar T must be INVISIBLE to the feature at T
+    and appear at T+1 — the T-1 availability rule of data-governance, checked as
+    behaviour. Hash-independent by construction: nothing here reads the catalog.
+
+    RED con: src/forecasting/enhance_v2.py L113/L114, quitar `.shift(1)` de
+    `macro["rate_diff_ibr_ust2y"] = (macro[IBR] - macro[UST2Y]).shift(1)`
+    (sigue rojo aunque se re-registre el code_hash en feature_catalog.yaml).
+    """
+    dates, out = _enhanced_on_synthetic_macro(tmp_path)
+    t, t_plus_1 = dates[JUMP_IDX], dates[JUMP_IDX + 1]
+
+    for feature, before, after in CAUSAL_CASES:
+        series = out[feature]
+        assert series.loc[t] == pytest.approx(before), (
+            f"LOOK-AHEAD: {feature} at T={t.date()} is {series.loc[t]}, which is the "
+            f"macro level of T itself ({after}). The bar's own macro observation is "
+            f"not available when the bar is decided; it must still read {before}.")
+        assert series.loc[t_plus_1] == pytest.approx(after), (
+            f"{feature} never picks the jump up at T+1 — the feature is dead/frozen, "
+            "which is a different bug but equally disqualifying.")
+        # ...and the jump must be the ONLY discontinuity, one bar late.
+        assert series.loc[dates[1]:t].nunique() == 1
+        assert series.loc[t_plus_1:].nunique() == 1
+
+
+def test_macro_features_are_exactly_the_previous_bar_spread(tmp_path):
+    """Stronger than the jump: for EVERY bar the served value is the spread of the
+    PREVIOUS bar. Catches a leak that a single-step fixture could straddle.
+
+    RED con: src/forecasting/enhance_v2.py L113/L114, quitar `.shift(1)` (el
+    valor servido pasa a ser el del propio bar T; sigue rojo con el hash re-registrado).
+    """
+    import pandas as pd
+
+    dates, out = _enhanced_on_synthetic_macro(tmp_path)
+    raw = pd.read_parquet(
+        tmp_path / "data" / "pipeline" / "04_cleaning" / "output"
+        / "MACRO_DAILY_CLEAN.parquet")
+    spreads = {
+        "rate_diff_ibr_ust2y": raw[MACRO_IBR] - raw[MACRO_UST2Y],
+        "term_spread": raw[MACRO_UST10Y] - raw[MACRO_UST2Y],
+    }
+    for feature, _, _ in CAUSAL_CASES:
+        expected = spreads[feature].shift(1)  # T-1, by contract (causality_policy: lagged_1)
+        for i in range(1, len(dates)):
+            served = out[feature].iloc[i]
+            assert served == pytest.approx(expected.iloc[i]), (
+                f"{feature} at bar {i} ({dates[i].date()}) served {served}; the T-1 "
+                f"contract requires {expected.iloc[i]} (bar T value is "
+                f"{spreads[feature].iloc[i]}).")
+
+
+def test_causality_wall_is_independent_of_the_registered_code_hash(tmp_path):
+    """Meta-assertion (the point of section 5): the leak detector must not be a
+    hash detector. If this file's causality tests ever start depending on the
+    catalog, re-registering a hash would bury a look-ahead again."""
+    source = Path(__file__).read_text(encoding="utf-8")
+    section = (source.split("# 5. Causality as BEHAVIOUR", 1)[1]
+               .split("def test_causality_wall_is_independent", 1)[0])
+    for hash_dependency in ("_sha16_lf(", "_sha16_raw(", "sha256_16", "_catalog()"):
+        assert hash_dependency not in section, (
+            f"the causality section reads {hash_dependency!r}; it must be provable "
+            "without any registered hash (BL-39 hueco: re-registering the hash "
+            "must NOT turn a look-ahead green)")

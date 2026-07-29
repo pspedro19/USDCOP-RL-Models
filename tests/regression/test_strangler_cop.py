@@ -379,6 +379,82 @@ def test_a_mismatch_resets_the_green_streak(tmp_path):
     assert green_streak(ledger.observations(MigrationLayer.TRAIN))[0] == 0
 
 
+def test_an_invalid_observation_resets_the_streak_as_hard_as_a_mismatch(tmp_path):
+    """§29.1 — an INVALID compared NOTHING (missing artifact, non-canonicalizable
+    JSON, wrong hash kind). Letting it ride the streak would let a layer reach
+    PARITY_GREEN on observations where no comparison ever happened.
+
+    RED con: src/strangler/parity.py::green_streak
+    `if obs.verdict is ParityVerdict.MATCH:` -> `if obs.verdict is not ParityVerdict.MISMATCH:`
+    """
+    plan = _unlock_generators(_plan())
+    ledger = _ledger(tmp_path)
+    _migrate_through(ledger, MigrationLayer.CANON)
+    # 4 green probes spread over the full 14-day window (days 0, 5, 10, 15)...
+    _green_run(ledger, MigrationLayer.CANON, days=15, count=4)
+    # ...with one observation that compared nothing dropped in the MIDDLE (day 8).
+    invalid = observe_parity(
+        layer=MigrationLayer.CANON,
+        artifact_id="probe-vanished",
+        legacy_path=_LEGACY,
+        candidate_path=tmp_path / "candidate-was-never-written.json",
+        required_hash_kind=HashKind.CANONICAL_JSON,
+        observed_at=T0 + timedelta(days=8),
+    )
+    assert invalid.verdict is ParityVerdict.INVALID
+    ledger.append(invalid)
+
+    observations = ledger.observations(MigrationLayer.CANON)
+    assert len(observations) == 5
+    # Only the 2 probes AFTER the INVALID survive; the run before it is void.
+    assert green_streak(observations)[0] == 2
+
+    # And the same INVALID at the END leaves nothing standing at all.
+    ledger.append(
+        observe_parity(
+            layer=MigrationLayer.CANON,
+            artifact_id="probe-vanished-late",
+            legacy_path=_LEGACY,
+            candidate_path=tmp_path / "still-not-written.json",
+            required_hash_kind=HashKind.CANONICAL_JSON,
+            observed_at=T0 + timedelta(days=16),
+        )
+    )
+    assert green_streak(ledger.observations(MigrationLayer.CANON))[0] == 0
+
+
+def test_a_layer_cannot_reach_parity_green_over_invalid_observations(tmp_path):
+    """The gate-level consequence: with an INVALID inside the window the layer
+    must stay PARALLEL and refuse to advance — declaring parity without having
+    compared anything is the exact false-green this harness exists to prevent.
+
+    RED con: src/strangler/parity.py::green_streak
+    `if obs.verdict is ParityVerdict.MATCH:` -> `if obs.verdict is not ParityVerdict.MISMATCH:`
+    """
+    plan = _unlock_generators(_plan())
+    ledger = _ledger(tmp_path)
+    _migrate_through(ledger, MigrationLayer.CANON)
+    _green_run(ledger, MigrationLayer.CANON, days=15, count=4)
+    ledger.append(
+        observe_parity(
+            layer=MigrationLayer.CANON,
+            artifact_id="probe-vanished",
+            legacy_path=_LEGACY,
+            candidate_path=tmp_path / "candidate-was-never-written.json",
+            required_hash_kind=HashKind.CANONICAL_JSON,
+            observed_at=T0 + timedelta(days=8),
+        )
+    )
+    now = T0 + timedelta(days=16)
+    status = layer_status(plan, ledger, MigrationLayer.CANON, now=now)
+    assert status.state is not LayerState.PARITY_GREEN, (
+        "a layer reached PARITY_GREEN over an observation that compared nothing"
+    )
+    assert status.state is LayerState.PARALLEL
+    decision = evaluate_advance(plan, ledger, MigrationLayer.CANON, now=now)
+    assert not decision.allowed, decision.reasons
+
+
 # ------------------------------------------------------------------------- the gates
 
 
