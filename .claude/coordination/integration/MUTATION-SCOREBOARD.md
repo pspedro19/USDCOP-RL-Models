@@ -29,11 +29,11 @@ orden, forzar una identidad contable a no fallar nunca, o **borrar el panel A/B 
 |---|---|---|
 | **MUERDE limpio** | 7 | BL-01, BL-04, BL-12, BL-15, BL-45, BL-46, BL-47 |
 | **MUERDE con matiz** | 6 | BL-02, BL-03, BL-13, BL-14, BL-31, BL-39 |
-| **NO MUERDE / SIN TEST → CERRADO hoy** | 9 | BL-05, BL-09, BL-11, BL-20, BL-25, BL-32, BL-34, BL-36, BL-42 |
-| **NO MUERDE — abiertos** | 1 | BL-06 |
+| **NO MUERDE / SIN TEST → CERRADO hoy** | 10 | BL-05, BL-06, BL-09, BL-11, BL-20, BL-25, BL-32, BL-34, BL-36, BL-42 |
+| **NO MUERDE — abiertos** | 0 | — |
 | **SIN TEST** | 0 | — |
 
-**7 + 6 + 9 + 1 + 0 = 23.** El total debe cuadrar: un BL que cambia de fila y no aparece en ninguna es exactamente el tipo de hueco que este tablero existe para cazar.
+**7 + 6 + 10 + 0 + 0 = 23.** El total debe cuadrar: un BL que cambia de fila y no aparece en ninguna es exactamente el tipo de hueco que este tablero existe para cazar.
 
 ---
 
@@ -67,6 +67,7 @@ Cada cierre trae su rojo **re-verificado por la raíz**, no solo reportado por q
 | BL | Hueco | Cierre | Rojo verificado |
 |---|---|---|---|
 | BL-05 | anular el montaje de `PaperCandidatesPanel` borraba el A/B de `/production` y la suite seguía 13/578 verde; y la §6 era un test de **eco**, no de prohibición | monta `ProductionView` **entera** con la cadena de datos real y `fetch` enrutado por URL (muerde también si cambia la URL del ledger); + prohibición §6 real; + caso inverso rol `free` | `{false && paperLedger && …}` ⇒ 1 failed |
+| BL-06 | reescribir el widget como `fetch('/api/produc' + 'tion/approve')` y `<button>Comprar ahora</button>` ⇒ 28 passed | primitivo anti-evasión **extraído a `tests/support/js_source_scan.py`** y compartido por los dos candados (−177 líneas): plegado de concatenaciones, escapes, NFKD, minúsculas, y **sustitución conservadora de constantes** — un `${IDENT}` ligado una sola vez a un literal se sustituye; ligado dos veces se descarta en vez de adivinar | la evasión completa desde `lib/telemetry/` ⇒ 3 hits, 1 failed |
 | BL-09 | `run_all_checks` podía quedarse con **1 de 11 checks**; la cadena `prev_hash` sin cobertura (solo se detectaba edición, no supresión/inserción/reorden) | cableado parametrizado por **introspección** (un check nuevo queda cubierto solo) + tres ataques a la cadena que exigen que *todos* los errores sean `prev_hash roto` | `return errors` tras el 1er check ⇒ 10 failed |
 | BL-11 | `check_families` se apagaba entera con un `return []` | dos tests de contenido: celda a trial inexistente, `trials_charged` que subcuenta | incluido en el anterior |
 | BL-20 | se podían **fabricar** las contribuciones SHAP; `grep additivity tests/` ⇒ **0 aserciones**. La ruta TreeSHAP no la ejecutaba ningún test | **oráculo** que rehace el fit y pregunta al modelo sus predicciones crudas; identidad anclada en forma agregada (global + por año, 7 testigos) + TreeSHAP ejecutada de verdad | `phi = np.ones_like(Z)` ⇒ 3 failed |
@@ -79,7 +80,6 @@ Cada cierre trae su rojo **re-verificado por la raíz**, no solo reportado por q
 
 | BL | Mutación que pasa verde | Test que falta |
 |---|---|---|
-| **BL-06** | reescribir el widget como `fetch('/api/produc' + 'tion/approve')` y `<button>Comprar ahora</button>` ⇒ 28 passed | colapsar concatenaciones antes de buscar y normalizar mayúsculas; o prohibir todo `POST/PUT/DELETE` en la superficie sea cual sea la URL |
 
 ## BL-36 — cerrado el 2026-07-28
 

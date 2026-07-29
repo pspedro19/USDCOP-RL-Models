@@ -12,7 +12,7 @@
   CERO CI y su candado no mordía, y la **verificación por mutación del 2026-07-28 lo
   confirma**: reescribiendo el widget como `fetch('/api/produc' + 'tion/approve')` y
   `<button>Comprar ahora</button>` la suite vuelve a **28 passed, 0 failed** — misma
-  capacidad de acción, cero rojo. Es el **único** BL abierto del lote CLAUDE.
+  capacidad de acción, cero rojo. Fue el último BL abierto del lote CLAUDE; **cerrado el 2026-07-28** en `5ec84a19` con la evasión completa demostrada en rojo.
 - APPROVED_PENDING_CLOSE: 0/47.
 - **DONE no se infla por tests verdes aislados.** Sigue siendo cross-review del otro.
 
@@ -24,13 +24,13 @@ juez (`integration/MUTATION-SCOREBOARD.md`):
 
 | Lote | BLs | Con rojo demostrado | Muerden con hueco documentado | No muerden | Sin verificar |
 |---|---|---|---|---|---|
-| CLAUDE | 23 | **16** | 6 | 1 (BL-06) | 0 |
+| CLAUDE | 23 | **17** | 6 | 0 | 0 |
 | CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
 
 **Lectura honesta**: el marcador DONE **no se ha movido** (sigue 1/47) porque ningún
 cierre de hoy ha pasado todavía el cross-review del otro — es la Propuesta 6 de
 CLD-209 aplicada a nosotros mismos. Lo que sí se movió es el suelo: se pasó de *"no
-sabemos si algo está protegido"* a *"16 de 23 tienen un rojo demostrado y 9 defectos
+sabemos si algo está protegido"* a *"17 de 23 tienen un rojo demostrado y 10 defectos
 que hacían el verde irrelevante están cerrados"*.
 
 ## Cambio de fase (orden del operador, 2026-07-28 ~11:05) — ver CLD-140

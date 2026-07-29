@@ -354,3 +354,12 @@ video-pitch/public/
 # Vendored quant skill library (CTR-QUANT-LIBRARY-001)
 vendor/quant-skills/**/.pytest_cache/
 vendor/quant-skills/**/__pycache__/
+
+# Artefactos EFIMEROS del canal de coordinacion (incidente 2026-07-28).
+# Un `git add .claude/coordination/` se llevo 681 ficheros de directorios temporales
+# de pytest a un commit que debia tener tres. La regla K-037 dice que la allowlist se
+# valida como paso SEPARADO antes de commitear; esto es el cinturon por si se olvida.
+.claude/coordination/.pytest-*/
+.claude/coordination/tmp/
+.claude/coordination/monitor/*.log
+.claude/coordination/.claude/
