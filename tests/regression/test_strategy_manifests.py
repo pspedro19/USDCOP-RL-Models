@@ -452,13 +452,6 @@ def test_component_declares_forecast_lineage_key():
                 "forecast_trial_ids reales del ledger.")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="pendiente BL-10 (backfill legacy_estimate FT): hoy los componentes declaran "
-           "el placeholder 'pending-BL-10' en vez de FT-#### reales. Este test es el muro "
-           "que BL-12 ya aplica a registries/families/*.yaml, trasladado al manifiesto; "
-           "strict=True hace que se ponga ROJO el día que BL-10 cierre y el placeholder "
-           "deje de ser aceptable — pasar de xfail a xpass es una señal, no un silencio.")
 def test_component_forecast_trial_ids_resolve_in_ledger():
     """BL-14 + BL-12: los FT heredados por el componente deben EXISTIR en el ledger.
 
@@ -466,8 +459,21 @@ def test_component_forecast_trial_ids_resolve_in_ledger():
     cada trial citado existe, es kind=forecast, es del mismo activo y vive en un
     cluster que efectivamente deflacta la acción de ese activo (ADR-0022 §3).
 
-    mutación que lo pone rojo (una vez cerrado BL-10): citar un FT inexistente,
-    un AT- en vez de un FT-, o un FT de otro cluster/activo.
+    Historial: nació `xfail(strict=True)` porque BL-10 (backfill legacy_estimate FT,
+    de Codex) seguía abierto y los tres manifiestos COP declaraban el placeholder
+    `pending-BL-10`; el strict garantizaba un XPASS ruidoso el día que el linaje real
+    llegara. BL-10 cerró (status IMPLEMENTED) el 2026-07-28 y los componentes ya
+    declaran FT-0001..FT-0048 — los tres bloques legacy COMPLETOS de la familia
+    `usdcop_direction` (cluster ml_meta), derivados del ledger con la consulta
+    `asset=usdcop AND kind=forecast AND label=legacy_estimate`, nunca elegidos a mano:
+    sus celdas son `estimated_block`/`decomposable: false` y desagregarlas sería
+    fabricar granularidad. El marcador se retiró: con linaje real esto es un muro
+    normal y verde, y un xfail sobre trabajo terminado sería el mismo placeholder
+    rancio que `test_component_declares_forecast_lineage_key` persigue.
+
+    mutación que lo pone rojo: en config/strategy_manifests/usdcop.yaml sustituir
+    cualquiera de los ids por uno inexistente (p.ej. FT-9999), por un AT- en vez de un
+    FT-, o por un FT de otro cluster/activo (p.ej. FT-0049, cluster `vol`).
     """
     records = _ledger_records()
     by_id = {r["trial_id"]: r for r in records}
