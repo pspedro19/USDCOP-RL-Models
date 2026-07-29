@@ -15,30 +15,32 @@ cited without its clock is unfalsifiable.
 """
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
 import yaml
 
+# THE hashing method under test lives in PRODUCTION, not here (BL-13 red-team fix).
+# It used to be defined inside this file, so the freeze wall verified itself against its
+# own implementation: there was nothing in production to mutate and the guarantee was
+# circular. `src/identity/source_hash.py` is now the single implementation, shared with
+# the feature-catalog gate (scripts/validation/validate_feature_catalog.py) — mutating it
+# turns BOTH walls red.
+from src.identity.source_hash import canonical_lf, files_code_hash
+
 ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = ROOT / "config" / "strategy_manifests"
+LEDGER = ROOT / "registries" / "ledger.jsonl"
+FORECASTING_SSOT = ROOT / "config" / "forecasting_ssot.yaml"
+NORM_SNAPSHOTS = ROOT / "config" / "features" / "normalization_snapshots"
+DAG_REGISTRY = ROOT / "airflow" / "dags" / "contracts" / "dag_registry.py"
+BACKLOG = ROOT / ".claude" / "specs" / "planes" / "backlog"
 
 EXPECTED_CLOCKS = {"usdcop": 52, "xauusd": 252, "btcusdt": 365, "spx500": 252}
-
-
-def _canonical_lf(data: bytes) -> bytes:
-    """CRLF -> LF normalization — the canonical byte stream for code hashing.
-
-    Hash canónico LF, reproducible desde el blob git en cualquier OS: hashing
-    the raw working-tree bytes baked Windows CRLF into every declared
-    code_hash_sha256_16, so a clean checkout on Linux (LF blobs, per
-    .gitattributes `* text=auto eol=lf`) could NOT reproduce the freeze
-    (CXD-041/043). Normalizing CRLF->LF makes the hash equal to hashing
-    `git show :<path>` regardless of the OS that checked the file out.
-    """
-    return data.replace(b"\r\n", b"\n")
 
 
 def _champions() -> dict[str, str]:
@@ -94,10 +96,9 @@ def test_code_hash_detects_strategy_drift(manifest_path):
         f"{manifest_path.name}: a frozen manifest must declare files: + "
         "code_hash_sha256_16 — a manifest without a hash is not frozen"
     )
-    digest = hashlib.sha256()
-    for f in m["files"]:
-        digest.update(_canonical_lf((ROOT / f).read_bytes()))
-    current = digest.hexdigest()[:16]
+    # mutación que lo pone rojo: en src/identity/source_hash.py, `canonical_lf` devuelve
+    # `data` sin el .replace(b"\r\n", b"\n") (enhance_v2.py es CRLF en el working tree).
+    current = files_code_hash(ROOT / f for f in m["files"])
     assert current == m["code_hash_sha256_16"], (
         f"{manifest_path.name} ({m.get('strategy_id')}): strategy source drifted from "
         f"its frozen manifest (manifest={m['code_hash_sha256_16']}, current={current}). "
@@ -128,9 +129,11 @@ def test_code_hash_method_is_line_ending_invariant(tmp_path):
     old_crlf = hashlib.sha256(f_crlf.read_bytes()).hexdigest()[:16]
     assert old_lf != old_crlf, "raw-byte hashing must differ across EOLs (the CXD-041 bug)"
 
-    # The canonical method is EOL-invariant and equals the git-blob (LF) hash.
-    new_lf = hashlib.sha256(_canonical_lf(f_lf.read_bytes())).hexdigest()[:16]
-    new_crlf = hashlib.sha256(_canonical_lf(f_crlf.read_bytes())).hexdigest()[:16]
+    # The canonical PRODUCTION method is EOL-invariant and equals the git-blob (LF) hash.
+    # mutación que lo pone rojo: `canonical_lf` en src/identity/source_hash.py devuelve
+    # `data` tal cual (o cualquier constante) en vez de normalizar CRLF->LF.
+    new_lf = hashlib.sha256(canonical_lf(f_lf.read_bytes())).hexdigest()[:16]
+    new_crlf = hashlib.sha256(canonical_lf(f_crlf.read_bytes())).hexdigest()[:16]
     assert new_lf == new_crlf == old_lf, (
         "canonical LF hash must be identical for CRLF and LF checkouts and equal "
         "to the hash of the LF (git blob) content")
@@ -147,20 +150,20 @@ def test_component_code_hash_and_spec_fingerprint_are_canonical():
     for p in sorted(MANIFESTS.glob("*.yaml")):
         m = yaml.safe_load(p.read_text(encoding="utf-8"))
         for comp in m.get("components") or []:
-            digest = hashlib.sha256()
-            for f in comp["code_reference"]:
-                digest.update(_canonical_lf((ROOT / f).read_bytes()))
-            assert digest.hexdigest()[:16] == comp["code_hash_sha256_16"], (
+            # mutación que lo pone rojo: quitar la normalización CRLF->LF de
+            # src/identity/source_hash.py::canonical_lf (producción, no el test).
+            assert files_code_hash(
+                ROOT / f for f in comp["code_reference"]
+            ) == comp["code_hash_sha256_16"], (
                 f"{p.name}: components[0].code_hash_sha256_16 does not match the "
                 "canonical LF hash of its code_reference files")
             inputs = comp.get("spec_fingerprint_inputs")
             assert inputs, (
                 f"{p.name}: component must declare spec_fingerprint_inputs so the "
                 "fingerprint is recomputable (CXD-041)")
-            digest = hashlib.sha256()
-            for f in inputs:
-                digest.update(_canonical_lf((ROOT / f).read_bytes()))
-            assert digest.hexdigest()[:16] == comp["spec_fingerprint_sha256_16"], (
+            assert files_code_hash(
+                ROOT / f for f in inputs
+            ) == comp["spec_fingerprint_sha256_16"], (
                 f"{p.name}: spec_fingerprint_sha256_16 does not match the canonical "
                 "LF hash of its declared inputs")
 
@@ -225,6 +228,249 @@ def test_composite_declares_components():
                     "code_hash_sha256_16", "feature_set", "current_model_snapshot"):
             assert key in first, (
                 f"{p.name}: components[0] missing lineage field {key!r} (BL-14)")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BL-14 red-team: el bloque `components` se comprobaba EXISTENTE, no CIERTO.
+# Un `current_model_snapshot` completamente inventado (pointer "no/existe/",
+# as_of 1999-01-01, hashes "0"*16, registered_in "ninguna parte") pasaba verde
+# porque test_composite_declares_components solo verifica que la CLAVE está.
+# Lo de abajo lo hace RESOLUBLE: el puntero contra el SSOT de paths, el as_of
+# contra el reloj y el sello del manifiesto, los hashes contra el snapshot de
+# normalización registrado (otro artefacto en git), y `registered_in` contra el
+# registro real de DAGs.
+# ═══════════════════════════════════════════════════════════════════════════
+
+SHA16_RE = re.compile(r"^[0-9a-f]{16}$")
+NULL_SHA16 = "0" * 16
+ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Un snapshot no puede ser anterior al primer dato de su propia ventana de
+# entrenamiento (expanding window 2020-01-01 -> último viernes; CLAUDE.md y
+# `retrain_policy: weekly_expanding` "ventana 2020->" en los manifiestos).
+MIN_SNAPSHOT_AS_OF = dt.date(2020, 1, 1)
+PENDING_RE = re.compile(r"^pending-(BL-\d+)$")
+
+
+def _manifests_with_components() -> list[tuple[Path, dict]]:
+    out = []
+    for p in sorted(MANIFESTS.glob("*.yaml")):
+        m = yaml.safe_load(p.read_text(encoding="utf-8"))
+        if m.get("components"):
+            out.append((p, m))
+    assert out, "ningún manifiesto declara components — el bloque BL-14 desapareció"
+    return out
+
+
+def _declared_model_dirs() -> set[str]:
+    """Directorios de artefactos de modelo DECLARADOS por el SSOT de forecasting."""
+    ssot = yaml.safe_load(FORECASTING_SSOT.read_text(encoding="utf-8"))
+    return {str(v).strip("/") for k, v in (ssot.get("paths") or {}).items()
+            if k.startswith("models_")}
+
+
+def _known_dag_ids() -> set[str]:
+    return set(re.findall(r'^[A-Z0-9_]+\s*=\s*"([a-z0-9_]+)"',
+                          DAG_REGISTRY.read_text(encoding="utf-8"), re.M))
+
+
+def _norm_snapshot_for(strategy_id: str) -> dict | None:
+    """Snapshot de normalización REGISTRADO (en git) para esa estrategia, si existe."""
+    for p in sorted(NORM_SNAPSHOTS.glob("*.yaml")):
+        snap = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        if snap.get("strategy_id") == strategy_id:
+            return snap
+    return None
+
+
+def _ledger_records() -> list[dict]:
+    return [json.loads(line) for line in
+            LEDGER.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def test_current_model_snapshot_is_resolvable():
+    """BL-14 red-team: el snapshot declarado debe RESOLVER, no solo existir.
+
+    mutación que lo pone rojo: en config/strategy_manifests/usdcop.yaml,
+    `current_model_snapshot: {pointer: "no/existe/", as_of: "1999-01-01",
+    artifacts_sha256_16: {ridge_h5.pkl: "0000000000000000"},
+    registered_in: "ninguna parte"}` (cada una de las 4 claves cae por separado).
+    """
+    model_dirs = _declared_model_dirs()
+    dag_ids = _known_dag_ids()
+    champions = set(_champions().values())
+    today = dt.date.today()
+
+    for p, m in _manifests_with_components():
+        for comp in m["components"]:
+            snap = comp.get("current_model_snapshot")
+            where = f"{p.name}/{comp.get('component_id')}"
+            assert isinstance(snap, dict), (
+                f"{where}: current_model_snapshot debe ser un mapping con linaje, "
+                f"no {type(snap).__name__} (BL-14)")
+
+            # 1. pointer: ruta relativa a un directorio de modelos DECLARADO en el SSOT.
+            pointer = snap.get("pointer")
+            assert isinstance(pointer, str) and pointer.strip(), (
+                f"{where}: pointer debe ser una ruta no vacía")
+            assert not Path(pointer).is_absolute() and ":" not in pointer, (
+                f"{where}: pointer {pointer!r} debe ser relativo al repo, no absoluto")
+            assert pointer.strip("/") in model_dirs, (
+                f"{where}: pointer {pointer!r} no es ninguno de los directorios de "
+                f"modelos declarados en config/forecasting_ssot.yaml::paths "
+                f"({sorted(model_dirs)}) — un puntero que no nombra el sitio donde el "
+                "pipeline escribe no es resoluble, es prosa")
+
+            # 2. as_of: ISO, dentro del reloj del repo y no posterior al sello.
+            as_of_raw = str(snap.get("as_of"))
+            assert ISO_DATE_RE.match(as_of_raw), (
+                f"{where}: as_of {as_of_raw!r} no es una fecha ISO YYYY-MM-DD")
+            as_of = dt.date.fromisoformat(as_of_raw)
+            assert MIN_SNAPSHOT_AS_OF <= as_of <= today, (
+                f"{where}: as_of {as_of} fuera de rango — un snapshot no puede ser "
+                f"anterior a su ventana de entrenamiento ({MIN_SNAPSHOT_AS_OF}) ni "
+                f"venir del futuro ({today})")
+            frozen_at = m.get("manifest_frozen_at")
+            if frozen_at:
+                assert as_of <= dt.date.fromisoformat(str(frozen_at)), (
+                    f"{where}: as_of {as_of} es POSTERIOR al sello del manifiesto "
+                    f"{frozen_at} — el manifiesto congelado solo puede declarar un "
+                    "snapshot que ya existía al sellarlo")
+
+            # 3. artifacts_sha256_16: hex de 16, jamás el hash nulo.
+            arts = snap.get("artifacts_sha256_16")
+            assert isinstance(arts, dict) and arts, (
+                f"{where}: artifacts_sha256_16 debe declarar al menos un artefacto")
+            for name, sha in arts.items():
+                assert Path(str(name)).suffix in {".pkl", ".json"}, (
+                    f"{where}: artefacto {name!r} sin extensión de artefacto conocida")
+                assert isinstance(sha, str) and SHA16_RE.match(sha), (
+                    f"{where}: {name} declara sha {sha!r} — debe ser hex minúscula de "
+                    "16 chars (STRING, no int)")
+                assert sha != NULL_SHA16, (
+                    f"{where}: {name} declara el hash nulo {NULL_SHA16} — un placeholder "
+                    "de ceros es un artefacto inventado, no un linaje")
+
+            # 4. registered_in: donde se declare, debe nombrar un DAG del registro real.
+            registered_in = snap.get("registered_in")
+            if m["strategy_id"] in champions:
+                assert registered_in, (
+                    f"{where}: la campeona sirve estos pesos — su snapshot rotativo debe "
+                    "declarar registered_in (dónde queda registrada cada corrida)")
+            if registered_in:
+                named = [d for d in dag_ids if d in str(registered_in)]
+                assert named, (
+                    f"{where}: registered_in {str(registered_in)[:60]!r} no nombra ningún "
+                    "DAG de airflow/dags/contracts/dag_registry.py — 'registrado' en un "
+                    "sitio que no existe es exactamente lo que este muro impide")
+
+            # 5. Resolución CRUZADA contra el snapshot de normalización registrado
+            #    (config/features/normalization_snapshots/*.yaml, también en git).
+            norm = _norm_snapshot_for(m["strategy_id"])
+            if norm is None:
+                continue
+            art = norm.get("artifact") or {}
+            art_path = str(art.get("path", ""))
+            assert str(Path(art_path).parent).replace("\\", "/") == pointer.strip("/"), (
+                f"{where}: pointer {pointer!r} no coincide con el directorio del "
+                f"artefacto registrado en el snapshot de normalización ({art_path})")
+            assert arts.get(Path(art_path).name) == art.get("sha256_16"), (
+                f"{where}: {Path(art_path).name} declara {arts.get(Path(art_path).name)!r} "
+                f"pero el snapshot de normalización registrado sella "
+                f"{art.get('sha256_16')!r} — dos registros del MISMO binario que no "
+                "coinciden significa que uno miente")
+            assert str((norm.get("training") or {}).get("as_of")) == as_of_raw, (
+                f"{where}: as_of {as_of_raw} != training.as_of "
+                f"{(norm.get('training') or {}).get('as_of')} del snapshot registrado")
+            fs_id = norm.get("feature_set_id")
+            fs_path = ROOT / "config" / "features" / "feature_sets" / f"{fs_id}.yaml"
+            if fs_path.is_file():
+                fs = yaml.safe_load(fs_path.read_text(encoding="utf-8")) or {}
+                cols_name = Path(str(fs.get("source_file", ""))).name
+                if cols_name in arts:
+                    assert arts[cols_name] == norm.get("ordered_feature_hash_sha256_16"), (
+                        f"{where}: {cols_name} declara {arts[cols_name]!r} pero el "
+                        "snapshot de normalización sella ordered_feature_hash "
+                        f"{norm.get('ordered_feature_hash_sha256_16')!r}")
+
+
+def test_component_declares_forecast_lineage_key():
+    """BL-14 exige heredar el linaje FT; hoy vale un placeholder, pero NO cualquiera.
+
+    Borrar `forecast_trial_ids_legacy` no mordía. Ahora el componente debe declarar
+    su linaje predictivo, y si lo aplaza el aplazamiento tiene que apuntar a un BL
+    que EXISTA en el backlog (una excusa verificable, no prosa libre).
+
+    mutación que lo pone rojo: borrar `forecast_trial_ids_legacy` de
+    config/strategy_manifests/usdcop.yaml (o ponerle `pending-BL-99`, un BL inexistente).
+    """
+    for p, m in _manifests_with_components():
+        for comp in m["components"]:
+            where = f"{p.name}/{comp.get('component_id')}"
+            keys = [k for k in ("forecast_trial_ids", "forecast_trial_ids_legacy")
+                    if k in comp]
+            assert keys, (
+                f"{where}: el componente no declara linaje FT "
+                "(forecast_trial_ids / forecast_trial_ids_legacy) — BL-14 exige heredar "
+                "los trials predictivos que hicieron posible esta acción (ADR-0022 §2)")
+            value = comp[keys[0]]
+            if isinstance(value, list):
+                continue  # linaje real: lo resuelve el test de abajo contra el ledger
+            match = PENDING_RE.match(str(value).strip())
+            assert match, (
+                f"{where}: {keys[0]}={value!r} no es ni una lista de trial_ids ni un "
+                "aplazamiento con la forma 'pending-BL-<n>'")
+            bl = match.group(1)
+            assert list(BACKLOG.glob(f"{bl}-*.md")), (
+                f"{where}: aplaza el linaje a {bl}, que NO existe en "
+                f"{BACKLOG.relative_to(ROOT)} — un placeholder que no apunta a trabajo "
+                "real es una deuda invisible")
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="pendiente BL-10 (backfill legacy_estimate FT): hoy los componentes declaran "
+           "el placeholder 'pending-BL-10' en vez de FT-#### reales. Este test es el muro "
+           "que BL-12 ya aplica a registries/families/*.yaml, trasladado al manifiesto; "
+           "strict=True hace que se ponga ROJO el día que BL-10 cierre y el placeholder "
+           "deje de ser aceptable — pasar de xfail a xpass es una señal, no un silencio.")
+def test_component_forecast_trial_ids_resolve_in_ledger():
+    """BL-14 + BL-12: los FT heredados por el componente deben EXISTIR en el ledger.
+
+    Mismo candado que check_trial_ledger.check_provenance_wall aplica a las familias:
+    cada trial citado existe, es kind=forecast, es del mismo activo y vive en un
+    cluster que efectivamente deflacta la acción de ese activo (ADR-0022 §3).
+
+    mutación que lo pone rojo (una vez cerrado BL-10): citar un FT inexistente,
+    un AT- en vez de un FT-, o un FT de otro cluster/activo.
+    """
+    records = _ledger_records()
+    by_id = {r["trial_id"]: r for r in records}
+
+    for p, m in _manifests_with_components():
+        asset = m["asset_id"]
+        action_clusters = {r["cluster"] for r in records
+                           if r["asset"] == asset and r["kind"] == "action"}
+        for comp in m["components"]:
+            where = f"{p.name}/{comp.get('component_id')}"
+            declared = comp.get("forecast_trial_ids",
+                                comp.get("forecast_trial_ids_legacy"))
+            assert isinstance(declared, list), (
+                f"{where}: el linaje FT sigue siendo el placeholder {declared!r} — "
+                "un componente sin FT resolubles no tiene provenance (ADR-0022 §2)")
+            assert declared, f"{where}: lista de forecast_trial_ids vacía"
+            for tid in declared:
+                rec = by_id.get(tid)
+                assert rec is not None, (
+                    f"{where}: cita {tid} que NO existe en registries/ledger.jsonl")
+                assert rec["kind"] == "forecast", (
+                    f"{where}: {tid} es kind={rec['kind']!r}, no forecast — heredar un AT "
+                    "no es heredar linaje predictivo")
+                assert rec["asset"] == asset, (
+                    f"{where}: {tid} es del activo {rec['asset']!r}, no de {asset!r}")
+                assert rec["cluster"] in action_clusters, (
+                    f"{where}: {tid} vive en cluster {rec['cluster']!r} y la acción de "
+                    f"{asset} deflacta en {sorted(action_clusters)} — un FT de otro "
+                    "cluster NO entra en su N_cluster (ADR-0022 §3)")
 
 
 def test_registry_carries_surface_and_diagnostic_never_visible():

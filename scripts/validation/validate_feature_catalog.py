@@ -41,7 +41,6 @@ Used by tests/regression/test_feature_contracts.py and runnable as a CLI gate:
 """
 from __future__ import annotations
 
-import hashlib
 import re
 import sys
 from pathlib import Path
@@ -49,6 +48,13 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+# Runnable as a standalone CLI (`python scripts/validation/validate_feature_catalog.py`):
+# sys.path[0] is then this script's directory, so `src.` would not resolve without this.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.identity.source_hash import canonical_lf, file_code_hash  # noqa: E402
+
 CATALOG_PATH = ROOT / "config" / "features" / "feature_catalog.yaml"
 
 CAUSALITY_POLICIES = ("point_in_time", "same_bar", "lagged_1")
@@ -74,21 +80,23 @@ LOOKBACK_RE = re.compile(r"^P(\d+)D$")
 ZERO_LOOKBACK_TRANSFORMS = ("identity", "calendar_extract")
 
 
-def _canonical_lf(data: bytes) -> bytes:
-    """CRLF -> LF normalization: the canonical byte stream for source hashing."""
-    return data.replace(b"\r\n", b"\n")
+# El método de hashing NO se re-implementa aquí: vive en src/identity/source_hash.py,
+# la única implementación de producción (BL-13 red-team — dos implementaciones del mismo
+# concepto significan que una miente). Estos alias conservan los nombres históricos que
+# ya consumen tests/regression/test_feature_contracts.py y el CLI.
+_canonical_lf = canonical_lf
 
 
 def _sha16(path: Path) -> str:
-    """sha256[:16] of the file with CRLF->LF normalized bytes.
+    """sha256[:16] del fichero con bytes CRLF->LF normalizados (hash canónico LF).
 
-    Hash canónico LF, reproducible desde el blob git en cualquier OS
-    (equivalente a `git show :<path> | sha256sum` con .gitattributes text
-    eol=lf). CXD-041/043: hashear los bytes crudos del working tree fijaba
-    los CRLF de Windows en el hash declarado y un checkout limpio en Linux
-    no lo reproducía.
+    Delegado a `src.identity.source_hash.file_code_hash`: reproducible desde el
+    blob git en cualquier OS (equivalente a `git show :<path> | sha256sum` con
+    .gitattributes text eol=lf). CXD-041/043: hashear los bytes crudos del working
+    tree fijaba los CRLF de Windows en el hash declarado y un checkout limpio en
+    Linux no lo reproducía.
     """
-    return hashlib.sha256(_canonical_lf(path.read_bytes())).hexdigest()[:16]
+    return file_code_hash(path)
 
 
 def _validate_code_reference(fid: str, ref: object, errors: list[str]) -> None:
