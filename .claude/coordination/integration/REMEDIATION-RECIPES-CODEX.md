@@ -643,3 +643,14 @@ y es el más barato de arreglar de todo el backlog.
   palanca 1 (BL-41, no es trabajo de ingeniería).
 - Todo lo etiquetado "verificado hoy" se midió contra HEAD `278a1e46` y el working tree del
   2026-07-28. Lo demás procede literalmente de CLD-207/208/233/234/235 y no lo he re-medido.
+
+> **ERRATA 2026-07-29 — LA RECETA DE BL-22 ERA FALSA Y SE RETIRA.**
+> Afirmaba que `075_fact_position_pnl.sql` calculaba `ABS(calculated) - reported` y que el arreglo
+> era *"un parentesis"*. **Es incorrecto**: el `ABS(` de la linea 128 **cierra en la 140**, envolviendo
+> la resta entera — o sea que **ya era `ABS(calculated - reported)`**. CODEX lo refuto ejecutando la
+> expresion SQL real con `calculated=-5 / reported=-3`: produccion da **2** (correcto) y **aplicar mi
+> receta daria 8**. **Seguirla habria ROTO codigo correcto.**
+> Causa del error: se leyo `ABS(` al principio de la linea y se infirio la forma sin seguir el cierre
+> del parentesis. Yo lo 'verifique' comprobando unicamente que `ABS(` aparecia ahi — **confirme el
+> token, no la expresion**, que es la misma clase de defecto que este documento denuncia.
+
