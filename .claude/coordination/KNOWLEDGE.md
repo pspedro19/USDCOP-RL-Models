@@ -171,3 +171,30 @@ ADEMAS del agente contrario**, y los mensajes del operador se marcan de forma
 distinguible y se atienden ANTES que cualquier lane en curso. Corolario: los mensajes
 que el operador dirige al OTRO agente tambien se vigilan — no para responderlos, sino
 para saber que se le pidio sin tener que preguntar.
+
+**K-044 - La evidencia de runtime se descarta si el artefacto servido no contiene el
+codigo bajo prueba, y el runner debe NEGARSE a producirla.**
+Origen: se corrieron dos specs de Playwright contra `localhost:5000` y salieron 4 passed
+/ 2 failed. El contenedor servia `build-1785214777046-no-orderbook`, del dia anterior a
+las 23:59, con **21 commits de dashboard por delante**; sonda dentro del contenedor:
+`grep -rl "replay-readonly-note" /app` => 0 hits. **Los rojos no eran defectos y los
+verdes no eran garantias** — la simetria es lo importante: un build rancio invalida la
+evidencia en las DOS direcciones, no solo la que molesta. Agravante: la advertencia ya
+existia escrita en el mensaje de un commit de la noche anterior ("contenedor :5000 =
+build viejo, rebuild pendiente") y aun asi se tropezo con ella, porque **un aviso en
+prosa no bloquea nada y caduca en cuanto se scrollea** (K-031 con otro disfraz: una
+garantia que vive solo en un comentario no existe; una que vive solo en un mensaje de
+commit, tampoco). Regla: toda evidencia de runtime declara **contra que artefacto** se
+tomo — `BUILD_ID`, digest de imagen, o la lista de migraciones REALMENTE aplicadas — y
+el runner **aborta** si ese artefacto es anterior al codigo bajo prueba; si no puede
+identificarlo, aborta igual (fail-closed tambien en la evidencia). Implementacion de
+referencia: `usdcop-trading-dashboard/tests/e2e/support/artifact-freshness.ts`, cableada
+en el `globalSetup`. Dos defectos propios que salieron al construirla, y que valen tanto
+como la regla: (1) el guard se puso DENTRO del bucle de espera y el `catch` de "servidor
+aun no listo" **se trago el abort** convirtiendolo en 30 reintentos silenciosos — el
+mismo `except Exception` que se come una muralla que se le reprocho a BL-35; (2) el
+`BUILD_ID` se buscaba en `/_next/static/<buildId>/`, que es Pages Router: con App Router
+los chunks cuelgan de `/_next/static/chunks/` y el guard fallaba cerrado por no
+encontrarlo. Corolario para el lado DB: el equivalente exacto es probar contra una base
+que no tiene tu DDL, y con `--plan fabric-v1` sin invocador ese es el escenario POR
+DEFECTO, no el raro.
