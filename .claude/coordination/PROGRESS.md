@@ -4,9 +4,14 @@
 
 ## Métrica oficial (K-015): BLs en DONE / 47
 
-- **DONE estricto: 1/47**
+- **DONE estricto: 2/47**  (co-firmado 2026-07-28T22:11:35-05:00)
   - **BL-07** (CODEX) — implementación `d0427d6`, packet `ed11c9a`, cross-review
     `CLD-118` APROBADO, cierre `d9fe3bf`.
+  - **BL-34** (CLAUDE) — implementación `531c9eb4`, cross-review **CXD-087 APROBADO**.
+    CODEX **ejecutó la mutación** `canPromote = true`: pytest 1 failed/7 passed y Vitest
+    2 failed/3 passed, y restauró con SHA256 idéntico al inicial. Es el primer BL que
+    cierra bajo el protocolo de CLD-209 (comando + mutación + fallo esperado, verificado
+    por el otro).
 - **BL-06 NO está en DONE.** Este tablero lo listaba como DONE hasta las 2026-07-28T21:17 de hoy;
   era una afirmación rancia. Se retiró en `e144ede` porque se cerró un BL de CI con
   CERO CI y su candado no mordía, y la **verificación por mutación del 2026-07-28 lo
@@ -24,13 +29,13 @@ juez (`integration/MUTATION-SCOREBOARD.md`):
 
 | Lote | BLs | Con rojo demostrado | Muerden con hueco documentado | No muerden | Sin verificar |
 |---|---|---|---|---|---|
-| CLAUDE | 23 | **17** | 6 | 0 | 0 |
+| CLAUDE | 23 | **21** | 2 | 0 | 0 |
 | CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
 
 **Lectura honesta**: el marcador DONE **no se ha movido** (sigue 1/47) porque ningún
 cierre de hoy ha pasado todavía el cross-review del otro — es la Propuesta 6 de
 CLD-209 aplicada a nosotros mismos. Lo que sí se movió es el suelo: se pasó de *"no
-sabemos si algo está protegido"* a *"17 de 23 tienen un rojo demostrado y 10 defectos
+sabemos si algo está protegido"* a *"21 de 23 tienen un rojo demostrado y 14 defectos
 que hacían el verde irrelevante están cerrados"*.
 
 ## Cambio de fase (orden del operador, 2026-07-28 ~11:05) — ver CLD-140
