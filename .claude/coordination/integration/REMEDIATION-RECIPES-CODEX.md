@@ -654,3 +654,68 @@ y es el más barato de arreglar de todo el backlog.
 > del parentesis. Yo lo 'verifique' comprobando unicamente que `ABS(` aparecia ahi — **confirme el
 > token, no la expresion**, que es la misma clase de defecto que este documento denuncia.
 
+> **ERRATA 2026-07-29 (2) — AUDITORIA COMPLETA TRAS LA RETRACTACION DE BL-22.**
+> Auditado hecho a hecho contra `278a1e46` + base viva: ~93 afirmaciones VERIFICADAS,
+> **6 FALSAS**, 7 bloques NO COMPROBABLES. Las tres graves:
+>
+> **BL-40 — RECETA RETIRADA.** Las 59 barras van de **1990-02 a 1995-01** (1990 tiene 11), y
+> **no son peso pre-redenominacion**: la serie esta **retro-ajustada a peso nuevo** de punta a
+> punta (ratio 1992-12/1993-01 = **1.0032**, sin salto x1000). Las 59 violaciones son **todas
+> POR DEBAJO de 5**. El fix de epocas propuesto **deja las 59 en cuarentena**: las de 1990-92
+> pasarian a violar [1000,5000] y las de 1993-95 siguen violando [5,100] — **su propio test
+> fallaria contra su propio fix**. El arreglo real es **un solo numero**: rango [2.5, 100] =>
+> **0 cuarentenas** (maximo de la serie 25.76). No hace falta validez por epoca ni resolucion
+> por (instrumento, fecha). Y la ficha **subestima el problema**: **233.784 barras** caen por
+> `bar.unknown_instrument` — ese, y no las 59, es el problema de tamaño.
+>
+> **BL-43 — "cambio minimo (test)" RETIRADO.** Añadir `algorithm` al bucle parametrizado **NO
+> mata el mutante**: el bucle corre contra `relation="demo.synthetic_model"` y el guard
+> `algorithm == "SYNTHETIC"` vive en la **otra rama**, la de relaciones reales. **Verificado
+> ejecutando el mutante.** Lo que si lo mata es una asercion nueva con marcadores de produccion
+> contra `config.models` — que es lo que CODEX implemento.
+>
+> **BL-27 — DIAGNOSTICO Y RECETA CORREGIDOS; LA RECETA ERA PELIGROSA.**
+> (a) El limite declarado es `turnover_budget_decimal: **0.20**`, no 0.10 (0.10 es
+> `target_vol_decimal`, otro campo). (b) El fallback 4 **NO es silencioso**: emite
+> `ALLOCATOR_FALLBACK_4_TARGET_ZERO` con severidad **CRITICAL** (`allocator.py:519-525`),
+> expuesto por `_result` junto a `fallback_level=4` — **mi propio nombre para el fallback ya lo
+> decia**. (c) Devuelve **todo ceros**: el libro mas plano posible, no una "asignacion ilegal".
+> (d) **Enrutarlo por `_validated_solution` ROMPERIA EL KILL-PATH**: esa funcion lanza
+> `InfeasibleAllocation` si el turnover excede el presupuesto (:677) o si la exposicion
+> factorial sale de banda (:686-692), **y no hay fallback 5** — aplanar a cero desde un libro
+> con gross > 0.30 **lanzaria en vez de aplanar**, justo cuando todo lo demas ya es infactible.
+> Lo unico que sobrevive: el fallback 4 **si** esquiva `_validated_solution`.
+>
+> **MENORES.** BL-35: la clase es `DatasetContractError`; **`DatasetEdgeViolation` no existe**
+> (seguirla da `NameError`). §5/BL-28: `schedule: null` esta en **3 de 7** sleeves, no en todos
+> — los 4 `data:` tienen cron real; la conclusion sobre E7 sobrevive, **la premisa no**. BL-30:
+> `grep ExecutionService` en `services/` **no** da 0 hits (hay una clase homonima en
+> SignalBridge); lo cierto es que **no hay importador de `src.execution.service` fuera de
+> tests**. Validador BL-18 = **14** lineas, no 12. 081 = **205** en arbol / 22 commiteadas, no
+> 211 (211 era el conteo de `git diff --stat`). Los `raise` de `factories.py` empiezan en **:64
+> y :71**. `REVIEW_GATED_PLANS` exige **`--reviewed-digest`**; `--plan-digest` solo imprime.
+>
+> **NO COMPROBABLE, y hay que decirlo:** **todos** los conteos de mutacion del documento
+> ("8 failed / 53 passed", "17 passed", "7 passed", "1 failed / 28 passed", "3 failed /
+> 26 passed") se midieron contra **un working tree que ya no existe** y **no son reproducibles**.
+> Ademas `278a1e46` se commiteo a las **23:37:31**, asi que **no pudo ser HEAD** del arbol leido
+> "23:1x": el front-matter **declara una procedencia que no cuadra**.
+>
+> **CORRECCIONES A FAVOR DEL DOCUMENTO.** **BL-44 sigue siendo CORRECTA**: el 080 del baseline
+> contiene el comentario `-- Deliberately no add_retention_policy: ...` y el test del baseline
+> **no quita comentarios**, asi que estaba rojo por lo que dice la ficha (un agente la dio por
+> falsa leyendo el 080 **reescrito** del working tree — el mismo error de version que este
+> documento denuncia). Y **"26 de 96" (BL-16) es correcta**: el test itera **TRES** ejes
+> (8 x 6 x 2).
+>
+> **HALLAZGO QUE LA FICHA BL-16 NO HIZO Y DEBERIA:** `070_fabric_control_plane.sql:11-44`
+> declara `research_state` y `capital_tier` como columnas con CHECK **y reimplementa la matriz
+> 26/96 ENTERA en SQL**, sin cableado con la de Python. **Es duplicacion de SSOT** — la clase de
+> defecto que este mismo documento vigila en otras fichas.
+>
+> **CAUSA COMUN DE LAS TRES GRAVES, y es la misma de BL-22:** se leyo **un token** —el numero
+> 2.712, los nombres de los ejes del bucle, la palabra "fallback"— y **se infirio la forma sin
+> seguir la expresion, el flujo de control ni los datos hasta el final**.
+> **REGLA QUE QUEDA: ninguna receta de "una linea" se publica sin ejecutar el mutante o los
+> datos reales que dice arreglar.**
+
