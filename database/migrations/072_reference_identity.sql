@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS reference.bar_interval (
 );
 
 INSERT INTO reference.bar_interval (interval_id, seconds, calendar_aware) VALUES
+    ('PT1M', 60, FALSE),
     ('PT5M', 300, FALSE),
     ('PT1H', 3600, FALSE),
     ('PT4H', 14400, FALSE),

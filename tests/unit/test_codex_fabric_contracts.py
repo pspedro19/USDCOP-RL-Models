@@ -749,6 +749,37 @@ def test_dataset_wall_rejects_forecast_to_action() -> None:
         )
 
 
+def test_bar_interval_seed_is_bidirectionally_equal_to_python_enum() -> None:
+    import re
+
+    from src.market.identity import BarInterval
+
+    sql = (
+        Path("database") / "migrations" / "072_reference_identity.sql"
+    ).read_text(encoding="utf-8")
+    insert = re.search(
+        r"INSERT\s+INTO\s+reference\.bar_interval.*?\bVALUES\b"
+        r"(?P<rows>.*?)\bON\s+CONFLICT\b",
+        sql,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    assert insert is not None, "reference.bar_interval seed INSERT is missing"
+    rows = re.findall(
+        r"\('([^']+)'\s*,\s*(NULL|\d+)\s*,\s*(TRUE|FALSE)\s*\)",
+        insert.group("rows"),
+        flags=re.IGNORECASE,
+    )
+    ddl_intervals = {interval_id for interval_id, _seconds, _aware in rows}
+    python_intervals = {interval.value for interval in BarInterval}
+
+    assert ddl_intervals == python_intervals
+    ddl_metadata = {
+        interval_id: (seconds.upper(), calendar_aware.upper())
+        for interval_id, seconds, calendar_aware in rows
+    }
+    assert ddl_metadata[BarInterval.M1.value] == ("60", "FALSE")
+
+
 def _load_asset_pipeline_factory_with_airflow_stubs(monkeypatch):
     """Import the real DAG module without requiring the Airflow distribution."""
 
