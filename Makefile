@@ -10,8 +10,9 @@
 .PHONY: help install install-dev test test-unit test-contracts test-regression \
         test-integration coverage lint format typecheck validate validate-ssot \
         validate-contracts docker-up docker-down docker-logs compact compact-monitoring \
-        compact-down db-migrate db-status \
-        db-validate db-reset migrate migrate-status migrate-create migrate-rollback \
+        compact-down db-migrate db-status db-migrate-fabric db-digest-fabric \
+        db-status-fabric db-validate-fabric db-validate db-reset \
+        migrate migrate-status migrate-create migrate-rollback \
         clean pre-commit mlflow-log mlflow-log-dry
 
 # Default target
@@ -56,7 +57,7 @@ help: ## Show this help message
 	@grep -E '^(docker-up|docker-down|docker-logs):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(GREEN)Database:$(RESET)"
-	@grep -E '^(db-migrate|db-status|db-validate|db-reset|migrate-create):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
+	@grep -E '^(db-migrate|db-status|db-validate|db-reset|db-migrate-fabric|db-digest-fabric|db-status-fabric|db-validate-fabric|migrate-create):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(GREEN)Maintenance:$(RESET)"
 	@grep -E '^(clean|pre-commit):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
@@ -235,6 +236,19 @@ db-status: ## Show migration status
 db-validate: ## Validate all required tables exist
 	@echo "$(CYAN)Validating database schema...$(RESET)"
 	$(PYTHON) scripts/ops/db_migrate.py --plan legacy-init --validate
+
+db-digest-fabric: ## Print the current fabric-v1 digest for human review
+	$(PYTHON) scripts/ops/db_migrate.py --plan fabric-v1 --plan-digest
+
+db-migrate-fabric: ## Apply reviewed fabric-v1 migrations (requires FABRIC_REVIEWED_DIGEST)
+	@test -n "$$FABRIC_REVIEWED_DIGEST" || (echo "$(RED)FABRIC_REVIEWED_DIGEST is required; run make db-digest-fabric and compare it with the pinned reviewed digest.$(RESET)"; exit 2)
+	$(PYTHON) scripts/ops/db_migrate.py --plan fabric-v1 --reviewed-digest "$$FABRIC_REVIEWED_DIGEST"
+
+db-status-fabric: ## Show fabric-v1 migration status
+	$(PYTHON) scripts/ops/db_migrate.py --plan fabric-v1 --status
+
+db-validate-fabric: ## Validate fabric-v1 required tables
+	$(PYTHON) scripts/ops/db_migrate.py --plan fabric-v1 --validate
 
 db-reset: ## Reset database (DESTRUCTIVE - deletes all data)
 	@echo "$(RED)WARNING: This will delete ALL data!$(RESET)"

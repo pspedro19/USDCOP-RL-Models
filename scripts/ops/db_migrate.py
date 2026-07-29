@@ -15,6 +15,8 @@ Features:
 Usage:
     python scripts/ops/db_migrate.py --plan legacy-init
     python scripts/ops/db_migrate.py --plan fabric-v1 --plan-digest
+    python scripts/ops/db_migrate.py --plan fabric-v1 \
+        --reviewed-digest sha256:<reviewed-plan-digest>
     python scripts/ops/db_migrate.py --plan fabric-v1 --status
     python scripts/ops/db_migrate.py --plan fabric-v1 --validate
 """
@@ -68,6 +70,17 @@ MIGRATION_PLANS = {
     ),
 }
 REVIEW_GATED_PLANS = frozenset({"commerce-v1", "fabric-v1"})
+# These values are changed only in the same reviewed commit that changes a
+# gated migration plan.  A digest supplied by the operator is a second factor,
+# not a way for modified on-disk SQL to authorize itself.
+PINNED_PLAN_DIGESTS = {
+    "commerce-v1": (
+        "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
+    ),
+    "fabric-v1": (
+        "sha256:b83bf454e7447714b4606140164261177396f62dd2755cf4f6eab4cc86f87852"
+    ),
+}
 
 LEGACY_REQUIRED_TABLES = {
     # Core OHLCV data
@@ -263,12 +276,27 @@ def classify_migrations(
 def plan_is_authorized(plan: str, reviewed_digest: str | None) -> bool:
     if plan not in REVIEW_GATED_PLANS:
         return True
-    expected = get_plan_digest(plan)
-    if reviewed_digest != expected:
+    pinned = PINNED_PLAN_DIGESTS.get(plan)
+    current = get_plan_digest(plan)
+    if pinned is None:
+        logger.error(
+            "Plan %s is review-gated but has no pinned reviewed digest",
+            plan,
+        )
+        return False
+    if current != pinned:
+        logger.error(
+            "Plan %s differs from its pinned reviewed digest: pinned=%s current=%s",
+            plan,
+            pinned,
+            current,
+        )
+        return False
+    if reviewed_digest != pinned:
         logger.error(
             "Plan %s is review-gated. Expected --reviewed-digest %s; got %r",
             plan,
-            expected,
+            pinned,
             reviewed_digest,
         )
         return False

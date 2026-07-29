@@ -48,6 +48,39 @@ def test_fabric_validation_has_plan_specific_required_tables() -> None:
     assert "exec.reconciliation_event" in required
 
 
+def test_review_gate_cannot_self_authorize_modified_sql(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    migrator = _load_migrator()
+    migration = tmp_path / "001_reviewed.sql"
+    migration.write_text("SELECT 1;\n", encoding="utf-8")
+    monkeypatch.setitem(migrator.MIGRATION_PLANS, "fabric-v1", (migration,))
+    reviewed = migrator.get_plan_digest("fabric-v1")
+    monkeypatch.setitem(migrator.PINNED_PLAN_DIGESTS, "fabric-v1", reviewed)
+
+    assert migrator.plan_is_authorized("fabric-v1", reviewed)
+
+    migration.write_text("SELECT 2;\n", encoding="utf-8")
+    attacker_digest = migrator.get_plan_digest("fabric-v1")
+    assert attacker_digest != reviewed
+    assert not migrator.plan_is_authorized("fabric-v1", attacker_digest)
+    assert not migrator.plan_is_authorized("fabric-v1", reviewed)
+
+
+def test_makefile_exposes_explicit_review_gated_fabric_invoker() -> None:
+    makefile = Path("Makefile").read_text(encoding="utf-8")
+    target = makefile.split("db-migrate-fabric:", 1)[1]
+    target = target.split("db-status-fabric:", 1)[0]
+
+    assert "FABRIC_REVIEWED_DIGEST is required" in target
+    assert "--plan fabric-v1" in target
+    assert '--reviewed-digest "$$FABRIC_REVIEWED_DIGEST"' in target
+    assert (
+        "$(PYTHON) scripts/ops/db_migrate.py --plan fabric-v1 --plan-digest"
+        in makefile
+    )
+
+
 def test_wired_migration_callers_select_legacy_plan_and_fail_closed() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     entrypoint = Path("services/inference_api/entrypoint.sh").read_text(
@@ -65,6 +98,7 @@ def test_wired_migration_callers_select_legacy_plan_and_fail_closed() -> None:
         line.strip()
         for line in makefile.splitlines()
         if "$(PYTHON) scripts/ops/db_migrate.py" in line
+        and "--plan legacy-init" in line
     ]
     entrypoint_callers = [
         line.strip()
