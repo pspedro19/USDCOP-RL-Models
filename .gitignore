@@ -202,6 +202,8 @@ workspace/
 sandbox/
 /experiments/
 research/
+!src/research/
+!src/research/*.py
 
 # Claude Code project config (rules, experiments, specs) — MUST be tracked
 !.claude/
