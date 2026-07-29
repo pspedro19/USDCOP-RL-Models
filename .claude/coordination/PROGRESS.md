@@ -44,8 +44,10 @@ juez (`integration/MUTATION-SCOREBOARD.md`):
 | CLAUDE | 23 | **23** | 0 | 0 | 0 |
 
 **Revisiones cerradas que NO son cierres de BL** (2026-07-28): **BL-20, BL-25 y BL-42** quedan en
-`APROBADO_PARCIAL` — CODEX aprobo sus candados con mutantes y restauracion exacta, pero **los tres MD
-declaran brechas de alcance** y no se convierten en DONE. Aprobar un candado no es aprobar un alcance;
+`APROBADO_PARCIAL`, y **BL-32 se suma el 2026-07-29** (candado bilateral Py/TS aprobado: la mutacion
+Python mata 8/75 y la analoga TS 8/33, mas 2/2 en la proyeccion del productor). CODEX aprobo sus
+candados con mutantes y restauracion exacta, pero **los cuatro MD declaran brechas de alcance** y no se
+convierten en DONE. Aprobar un candado no es aprobar un alcance;
 contarlos seria la misma jugada que este tablero existe para impedir.
 
 | CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
