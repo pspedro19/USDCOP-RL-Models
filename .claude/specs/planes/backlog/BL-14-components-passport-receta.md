@@ -28,5 +28,50 @@ BL-12 (herencia FT).
 ## Verificación
 Manifest test extendido; snapshot semanal nuevo aparece con linaje.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_strategy_manifests.py -q
+verde:   23 passed, 1 xfailed
+
+muta:    config/strategy_manifests/usdcop.yaml — current_model_snapshot INVENTADO:
+           pointer: "no/existe/"
+           as_of: "1999-01-01"
+           artifacts_sha256_16: {ridge_h5.pkl: "0000000000000000"}
+           registered_in: "ninguna parte"
+espera:  rojo en test_current_model_snapshot_is_resolvable, y las CUATRO cláusulas caen
+         POR SEPARADO:
+           pointer que no es ninguno de los directorios declarados en forecasting_ssot.yaml
+           as_of fuera de su ventana de entrenamiento (< 2020-01-01 o > manifest_frozen_at)
+           hash de ceros ("un placeholder de ceros es un artefacto inventado")
+           registered_in que no nombra ningún DAG del dag_registry
+         <conteo exacto de failed sin registrar — pendiente de re-ejecutar>
+
+muta-2:  sustituir el placeholder `pending-BL-10` de forecast_trial_ids por FT-#### reales
+espera-2: 1 failed — XPASS(strict) de
+          test_component_forecast_trial_ids_resolve_in_ledger
+```
+
+**Historial honesto**: hasta el 2026-07-28 este candado **comprobaba que el bloque EXISTE, no
+que fuera CIERTO**. Un `current_model_snapshot` completamente inventado —exactamente el de
+la mutación de arriba— daba **20 passed, idéntico**, porque `test_composite_declares_components`
+solo verifica que la CLAVE está. Y borrar el linaje FT del componente tampoco mordía: su
+valor real hoy es el placeholder `pending-BL-10` y ningún candado lo detectaba.
+
+**Dos decisiones que conviene leer**: (1) resolubilidad REAL, no forma — el snapshot se cruza
+contra el snapshot de normalización (otro artefacto EN GIT) que sella independientemente el
+hash del scaler, el `ordered_feature_hash` y el directorio del puntero; dos registros del
+mismo binario que no coincidan significan que uno miente, y funciona en CI sin los `.pkl`,
+que están gitignored. (2) `as_of <= manifest_frozen_at`, **NO** `>=`: el dato real es al revés
+(`as_of 2026-07-06` es la última corrida L3 ANTES del sello `2026-07-28`), y la invariante
+honesta es que un manifiesto congelado solo puede declarar un snapshot que YA EXISTÍA al
+sellarlo.
+
+**El linaje FT vale hoy `pending-BL-10`, y BL-10 es de CODEX**, así que se entrega como
+`xfail(strict=True)` con la razón escrita: se pondrá ROJO el día que BL-10 cierre y el
+placeholder deje de ser aceptable. Va acompañado de un test NO-xfail que exige la presencia
+de la clave y que el aplazamiento apunte a un BL que exista en disco — cierra hoy el hueco de
+"borrarlo no muerde" sin forzar el rojo de un BL ajeno.
+
 ## Notas constitución
 Precisión FABRIC §16: v11 reentrena cada domingo — lo congelado es la receta.

@@ -30,5 +30,38 @@ BL-13 (surface), BL-39 (feature_set), BL-28 (converge con factories FABRIC — d
 ## Verificación
 Las 17 validaciones CI de §11 en verde; mismo input+policy ⇒ misma decisión (test de determinismo); spec MA200 declarativo evalúa idéntico al coded_policy actual.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/unit/test_policy_contract.py -q
+verde:   219 passed
+
+muta:    src/contracts/policy_dsl.py — desactivar la whitelist de operadores del DSL
+         (ALLOWED_OPERATORS deja de filtrar)
+espera:  4 failed — entre ellos `eval` y `DROP TABLE` aceptados como operadores:
+         test_operator_outside_whitelist_raises,
+         test_eval_operator_rejected  (`pytest.raises(ValueError, match="whitelist")`
+         deja de dispararse), y los casos de código-desde-YAML
+         (`when: "eval(close > ma_200 and custom_python())"`,
+          `left: "__import__('os').system('id')"`)
+
+muta-2:  spec NUEVO en config/policies/ con `operator: python_eval` y
+         `__import__('os').system(...)`, re-hasheado para colar el freeze
+espera-2: revienta igual — scripts/validation/validate_policy_specs.py hace
+         `directory.glob("*.yaml")` en vez de leer una lista a mano (K-029), así que
+         añadir un spec malicioso no lo esquiva: lo mete dentro del perímetro
+```
+
+**Historial honesto**: BL-45 es uno de los **7 que mordían de origen** (medidos contra
+`92963fa9`) — no hubo defecto que cerrar el 2026-07-28. Lo que lo hace fiable, y lo que se
+señaló expresamente en CLD-216, es la **segunda** mutación: no basta con que el validador
+rechace lo que ya está declarado; el atacante realista **añade un spec nuevo**. Que el
+validador descubra los specs por glob del directorio en vez de por lista enumerada es lo que
+convierte la whitelist en una garantía y no en una convención — K-029 bien aplicada.
+
+**Aviso de CI declarado (CLD-216)**: `fabric-contracts.yml` corre `validate_policy_specs.py`,
+pero **NO** `check_policy_parity.py` (el arnés de paridad de BL-47). La whitelist del DSL sí
+está vigilada por CI; la paridad de los motores migrados, no.
+
 ## Notas constitución
 Regla siempre-cargada nueva: .claude/rules/strategy-engines.md (invariantes 1-9). Las reglas también cobran trials — cada variante de ventana/umbral/filtro = +1 en su familia.

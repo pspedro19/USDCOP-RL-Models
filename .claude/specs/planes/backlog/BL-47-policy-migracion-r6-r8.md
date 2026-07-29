@@ -51,5 +51,30 @@ BL-45, BL-46; se ejecuta DENTRO del calendario de BL-28/31 (mismo patrón strang
 ## Verificación
 Diff semántico verde por estrategia; el A/B vivo v11/v12/v14 intocable durante la migración (sus ledgers son el patrón de paridad).
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/unit/test_policy_specs.py -q
+verde:   26 passed
+
+muta:    src/strategies/policies/gold.py:62
+         `in_market = votes >= min_votes`  ->  `votes > min_votes`
+espera:  rojo del arnés de paridad contra el PRODUCTOR CONGELADO REAL:
+         "865/5610 barras divergen, primera idx=9, legacy=0.6449 motor=0.0"
+```
+
+**Historial honesto**: BL-47 es uno de los **7 que mordían de origen** (medidos contra
+`92963fa9`) — no hubo defecto que cerrar el 2026-07-28. Y muerde por la razón correcta: el
+arnés **no compara contra un fixture escrito a mano sino contra el productor congelado real**,
+así que el mensaje del fallo no es "un assert falló" sino el conteo exacto de barras
+divergentes, la primera posición y los dos valores enfrentados. Un candado de paridad que se
+compare contra un fixture propio es el mismo defecto circular que se encontró en BL-13.
+
+**Aviso de CI declarado (CLD-216) — importante y NO resuelto**: `check_policy_parity.py`
+**no está en ningún workflow**. `fabric-contracts.yml` solo corre `validate_policy_specs.py`,
+que **quedó VERDE con la mutación de Gold dentro**. La red que hoy salva a BL-47 es
+`tests/unit` vía `ci.yml`, por rebote. Mientras el arnés no entre en CI, esta garantía depende
+de que alguien lo ejecute a mano.
+
 ## Notas constitución
 v11 FROZEN: migrar su cáscara a composite NO toca fórmula ni señal (re-freeze consciente de manifiesto, 0 trials, bit-check obligatorio).

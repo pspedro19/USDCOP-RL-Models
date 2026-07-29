@@ -66,6 +66,40 @@ generador del zoo **no puede publicar** una fila sin registro validado.
 - La corrida end-to-end del generador (dataset + 9 modelos) **no se ejecutó** en esta
   sesión por orden del operador (sin Docker/infra); lo verificado es unitario.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando:   python -m pytest tests/unit/test_forecast_output_contract.py
+                             tests/unit/test_zoo_generator_contract.py -q
+verde:     145 passed   (132 contrato + 13 gate del zoo)
+
+comando-2: npx vitest run tests/unit/contracts/forecast-output-parity.test.ts
+           (desde usdcop-trading-dashboard/)
+verde-2:   102 passed   — MISMA tabla de casos compartida
+                          (tests/fixtures/forecast_output_cases.v1.json, content_sha256
+                           recomputado por los dos runners)
+
+muta:      src/contracts/forecast_output.py — `if not math.isfinite(...)` -> `if False`
+espera:    9 failed — casos que SOLO difieren en el valor numérico
+           (num_point_nan, num_point_inf, num_lower_neg_inf, …), o sea que muerde por la
+           DEFENSA DE FINITUD y no por un `required` ausente
+
+muta-2:    muro de publicación — `raise ForecastOutputError` -> `continue`
+espera-2:  2 failed, incluido "write_csv is all or nothing"
+
+muta-3:    lib/contracts/forecast-output.contract.ts — quitar `|| !Number.isFinite(v)`
+espera-3:  5 failed sobre la MISMA tabla compartida
+```
+
+**Historial honesto**: BL-15 es uno de los **7 que mordían de origen** (medidos contra
+`92963fa9`) — no hubo defecto que cerrar el 2026-07-28. En el veredicto CLD-214 quedó
+literalmente como *"esto es lo que yo entiendo por un BL cerrable"*, y la razón es precisa:
+los 9 rojos de la primera mutación son casos que **solo se diferencian en el valor numérico**,
+lo que descarta que estén cayendo por un campo obligatorio ausente en vez de por la defensa
+que dicen proteger — que era exactamente el defecto encontrado el día anterior. Y la paridad
+TS **también** muerde sobre la misma tabla de casos, así que romper una de las dos mitades no
+puede pasar desapercibido.
+
 ## Notas constitución
 
 El allocator sólo acepta `strategy_output` — rechazo físico, no convención.

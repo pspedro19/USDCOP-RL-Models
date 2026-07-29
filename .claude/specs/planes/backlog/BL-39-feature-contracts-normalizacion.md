@@ -29,5 +29,39 @@ Coordina con BL-14 (components) y BL-16. NO toca v11 en runtime: el snapshot act
 ## Verificación
 Reproducir la señal v11 de la última semana desde feature_set+snapshot == bit-check; CI rechaza features sin causality_policy o sin prior de signo (Anexo A.4).
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_feature_contracts.py -q
+verde:   26 passed
+
+muta:    quitar el .shift(1) de un feature macro (fuga temporal T-1 pura)
+espera:  4 failed — 2 muros de hash + los 2 muros nuevos de CAUSALIDAD
+
+muta-2:  RE-REGISTRAR el hash del catálogo con la fuga dentro
+         (5 ocurrencias, b601ae271c8e2b5f -> 45b16e0da0928467)
+espera-2: 2 failed, 24 passed — los dos muros de hash VUELVEN A VERDE con la fuga dentro
+         y los dos tests de causalidad SIGUEN ROJOS.
+         Restaurado: producción y catálogo sin diff.
+```
+
+**Historial honesto**: hasta el 2026-07-28 el look-ahead **solo se detectaba por DRIFT DE
+HASH**. Quitar el `.shift(1)` de un feature macro daba rojos que decían *"drifted from the
+registered catalog hash"*; **re-registrando el hash, la suite volvía a VERDE con la fuga
+dentro**. Es decir: ningún test detectaba el look-ahead por sí mismo. El muro nuevo es
+semántico e independiente del hash: frame `MACRO_DAILY_CLEAN` sintético con UN salto de nivel
+en T, y se exige `feature[T] == spread[T-1]` (el salto es invisible), `feature[T+1] ==
+spread[T]` (la feature no está muerta) y la igualdad T-1 en TODAS las barras. Un tercer test
+es un meta-assert: la sección **no puede leer** `_sha16` / `sha256_16` / `_catalog()`, o sea
+que no puede volver a apoyarse en el hash.
+
+**Cobertura declarada, no total** (escrito en el propio fichero, no es olvido): cubre
+`rate_diff_ibr_ust2y` y `term_spread`. NO cubre `usdmxn/usdclp_ret_1d_lag`
+(`include_xlead` default `False`, experimento pre-registrado) ni los cuatro `*_close_lag1` de
+`dataset_loader.py` (el lag vive en otro módulo y necesita su propio fixture).
+
+**La otra mitad de la Verificación declarada arriba —el bit-check v11— SKIPEA SIEMPRE en CI**
+porque los `.pkl` están gitignored: es evidencia local-only, no de integración continua.
+
 ## Notas constitución
 Cambiar UNA constante de normalización tras reentrenar sin snapshot versionado = leakage silencioso — exactamente lo que este BL elimina.

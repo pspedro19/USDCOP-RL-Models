@@ -98,6 +98,42 @@ tiene escritores/lectores en código; hay **dos** `model_registry` y **tres** ta
 credenciales; las migraciones 070-073 ya crearon los esquemas destino, por lo que el gate
 "decidir antes de crear" se convierte en un problema de convivencia (D-08).
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_db_truth_matrix.py -q
+verde:   8 passed
+
+muta:    .claude/specs/platform/db-truth-matrix.md — invertir la decisión sobre bi.fact_*:
+         de "DEPRECATED / 7 ficheros la referencian"
+         a  "AUTORITATIVA (escritor único) / 0 ficheros"
+         — o sea, una afirmación de autoría exclusiva sobre un atributo que YA tiene cinco
+         escritores medidos, más un conteo de referencias errado en siete
+espera:  rojo en los muros de conteo medido y de escritor único
+         (test_prose_reference_counts_match_the_measured_inventory,
+          test_no_table_is_declared_sole_writer_of_an_attribute_it_shares,
+          test_deprecated_tables_disclose_the_readers_that_still_exist)
+         <conteo exacto de failed sin registrar — pendiente de re-ejecutar>
+```
+
+**Historial honesto**: hasta el 2026-07-28 este BL tenía **CERO cobertura**. Se podía invertir
+cualquier decisión de la matriz de verdad —incluido declarar dos escritores para el mismo
+atributo, que es justo lo que FABRIC §31 prohíbe— y **ningún gate se movía**;
+`grep db_inventory_matrix|db-truth-matrix|CTR-DB-TRUTH` encontraba solo el generador y prosa.
+Ahora 8 tests contrastan **77 claims** (50 de columnas W/R + 27 en prosa) contra
+`.claude/generated/db-inventory.json`, derivando el perímetro de lectores por glob sobre 1277
+ficheros con **las regex del propio generador** (K-029, cero listas a mano).
+
+**Dos límites declarados**: a nivel **atributo** es imposible —la matriz no tiene columna
+atributo→escritor, así que se implementó a nivel **tabla**—; y *"una DEPRECATED no puede tener
+lectores"* **saldría rojo en prístino**, porque §9 declara `bi.fact_*` DEPRECATED y a la vez
+publica que 7 ficheros la referencian: eso es el estado honesto, no el defecto. Se convirtió
+en: *un retiro propuesto sobre una tabla con lectores vivos debe DECLARAR su conteo de
+referencias*.
+
+**Incoherencias numéricas encontradas: cero.** La matriz estaba bien; lo que no había era nada
+que lo comprobara.
+
 ## Notas constitución
 
 Ningún drop toca datos con historia real irrecuperable (todas las candidatas están en

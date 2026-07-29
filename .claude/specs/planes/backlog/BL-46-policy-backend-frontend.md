@@ -29,5 +29,33 @@ BL-45, BL-42 (misma tabla de señal — implementar juntas), BL-22.
 ## Verificación
 RuleTracePanel muestra el trace real de MA200 sin recalcular (test: mock trace ⇒ render exacto); rbac de endpoints nuevos en la matriz.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando:   npx vitest run tests/unit/components/StrategyEngineExplanation.test.tsx
+           (desde usdcop-trading-dashboard/)
+verde:     5 passed
+
+comando-2: python -m pytest tests/unit/test_policy_backend_contract.py -q
+verde-2:   128 passed
+
+comando-3: npx vitest run tests/unit/contracts/policy-backend-parity.test.ts
+verde-3:   107 passed
+
+muta:      StrategyEngineExplanation — re-evaluar la condición EN REACT en vez de renderizar
+           el veredicto que el backend selló en el rule_trace
+espera:    2 failed, uno de ellos con TRAZA CONTRADICTORIA (el panel afirma un resultado
+           distinto al que trae el trace) — es la invariante 7 de
+           .claude/rules/strategy-engines.md: "el frontend renderiza el rule_trace, NUNCA
+           re-evalúa condiciones"
+```
+
+**Historial honesto**: BL-46 es uno de los **7 que mordían de origen** (medidos contra
+`92963fa9`) — no hubo defecto que cerrar el 2026-07-28. Lo que lo hace fiable no es que caiga
+un test, sino **cómo** cae: el segundo rojo es una **contradicción interna visible** —el panel
+publica un veredicto distinto del que el backend selló—, así que la mutación no se puede
+"arreglar" ajustando el fixture; habría que hacer que el frontend mienta consistentemente
+sobre su propia fuente. Es la diferencia entre proteger el render y proteger la invariante.
+
 ## Notas constitución
 El frontend presenta hechos; no decide ni recalcula (ley 12 FABRIC).

@@ -31,6 +31,37 @@ BL-28, BL-30, BL-17.
 ## Verificación
 Tabla de paridad por capa en evidencia; ninguna capa avanza sin la anterior verde sostenida.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_strangler_cop.py -q
+verde:   41 passed
+
+muta:    src/strangler/parity.py::green_streak
+         `if obs.verdict is ParityVerdict.MATCH:`
+         ->  `if obs.verdict is not ParityVerdict.MISMATCH:`
+espera:  2 failed —
+         test_an_invalid_observation_resets_the_streak_as_hard_as_a_mismatch
+         test_a_layer_cannot_reach_parity_green_over_invalid_observations
+         Escenario: capa `canon` con 4 MATCH repartidos por la ventana de 14 días
+         (días 0-5-10-15) y una observación INVALID en medio (día 8).
+         Sano:   solo sobreviven las 2 posteriores => streak=2, estado PARALLEL,
+                 avance bloqueado.
+         Mutado: la INVALID suma => streak=5, green_days=15 => PARITY_GREEN
+                 SIN HABER COMPARADO NADA.
+```
+
+**Historial honesto — y empieza con una retractación.** En CLD-226 se escribió que *"el
+docstring promete que INVALID rompe la racha y el código no lo hace"*. **Es FALSO**: el código
+prístino (`if obs.verdict is ParityVerdict.MATCH`) SÍ resetea con INVALID y cumple exactamente
+lo que promete. **No hay defecto de producción**; lo que faltaba era el test. Se afirmó que un
+código estaba mal cuando lo único demostrado era que **nadie lo protegía** — son cosas
+distintas y la diferencia importa.
+
+El hueco real: con la mutación de arriba, una observación INVALID —artefacto ausente, JSON no
+canonicalizable, hash del tipo equivocado— dejaba de romper la racha y la suite seguía en
+**39 passed**. El gate de orden y el rollback ya mordían antes; la racha verde no.
+
 ## Notas constitución
 La cadena con dinero real migra última y con red doble.
 

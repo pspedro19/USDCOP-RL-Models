@@ -32,6 +32,52 @@ BL-18, BL-22, BL-24; BL-05 es el primer ladrillo.
 ## Verificación
 El paseo Airflow→MLflow→JSONs→SQL se reemplaza por un SELECT (demo).
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando:   python -m pytest tests/unit/test_passport_contract.py -q
+verde:     83 passed   (era 65 antes del cierre)
+
+comando-2: npx vitest run tests/unit/contracts/passport-contract.test.ts
+           (desde usdcop-trading-dashboard/)
+verde-2:   41 passed
+
+muta:      src/contracts/passport.py — el bucle
+           `for block, fields in PASSPORT_BLOCK_FIELDS.items()` deja de recorrer nada
+espera:    8 failed, 75 passed
+
+muta-2:    recortar de 8 a 3 la lista de bloques obligatorios del passport
+espera-2:  5 failed, 60 passed   (medido en el cierre previo, 2a608feb)
+```
+
+**Historial honesto**: hasta el 2026-07-28 se comprobaba **PRESENCIA de 8 claves y nada más**,
+en los DOS lenguajes. Recortar los bloques obligatorios de 8 a 3 (fuera `identity`,
+`governance`, `lineage`, `risk`, `live`) dejaba la suite en **44 passed idéntico**; y en TS,
+vaciar `governance` a `{}` —cero trials, cero DSR, cero `policy_hash`— pasaba **30/30**:
+borrar la CLAVE caía, vaciarla no. **El fixture era literalmente el agujero**:
+`minimalPassport()` usaba `identity:{}`, `governance:{}`, `lineage:{}`, `live:{}`, `risk:{}` —
+un fixture más vacío que el payload real no puede detectar un payload vacío. Era un hueco de
+**PRODUCCIÓN**, no de test: ni `validate_strategy_passport` (Py) ni `validateStrategyPassport`
+(TS) tenían requisitos de contenido por bloque, así que se podía publicar una estrategia sin
+gobernanza, sin linaje y sin riesgo.
+
+**La regla aplicada, que es la parte que importa**: NO se exigen valores no-nulos.
+`policy_hash` no tiene productor hasta BL-45, `dsr_family` está `unavailable` para casi todas
+las estrategias y un activo sin trials es un estado legítimo. Lo que se exige es la forma que
+el propio contrato ya define: `Sourced` con `value: null` y un `pending` NO VACÍO. **Sin
+agujeros MUDOS, no sin agujeros.** Hay un test que protege esa frontera por los dos lados: un
+hueco declarado (`pending: 'BL-45 …'`) debe ser ACEPTADO, y convertir la regla en "sin
+agujeros" lo pone rojo y además revienta el payload real con *"quant-constitution §6 violated
+on the real published surface"*.
+
+**Payload real**: 18/18 estrategias del registry (4 activas + 14 archivadas) componen y validan
+con 0 errores.
+
+**Gaps declarados, no arreglados**: `validate_control_tower` / `validateControlTower` siguen
+con el hueco idéntico (book, data y las filas de sleeves solo se validan por presencia de
+clave); y las rutas `/api/passport/**` **NO llaman a los validadores**, solo componen — hoy el
+único gate real es la suite.
+
 ## Notas constitución
 MV de Postgres no puede sostener estado live (se reemplaza en refresh) — por eso la división.
 

@@ -61,6 +61,49 @@ del resto del archivo pertenece a esos otros BLs y no altera este cierre.
 fue retirado en `d7cfd67` (self-red-team detectó redundancia con el candado ya
 aprobado). El archivo no existe hoy y el candado aprobado es el único vigente.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_forecasting_caveat_present.py -q
+verde:   31 passed   (28 en el momento del cierre; el fichero es COMPARTIDO con
+                      BL-01/02/03/04 y creció con ellos)
+
+muta:    widget rogue montado desde un directorio inventado
+         (usdcop-trading-dashboard/lib/telemetry/RogueProbe.tsx) con la evasión completa:
+           fetch(`${P}/appro` + 've')
+           fetch('/api/exec' + 'ution/orders')
+           <button>Comprar ahora</button>
+espera:  1 failed, 27 passed — 3 hits:
+         "RogueProbe.tsx:5: 'api/production/approve' :: fetch(`${P}/appro` + 've')"
+         "RogueProbe.tsx:6: 'api/execution'          :: fetch('/api/exec' + 'ution/orders')"
+         "RogueProbe.tsx:8: verbo de orden 'comprar' :: <button>Comprar ahora</button>"
+         restaurado => 36 passed en los dos candados (caveat + /replay read-only)
+```
+
+**Historial honesto**: hasta el 2026-07-28 esa mutación —**misma capacidad de acción, cero
+rojo**— daba **28 passed, 0 failed**. El perímetro derivado por cierre de imports SÍ atrapaba
+un widget de aprobación puesto en cualquier carpeta; lo que fallaba era el **MATCHER**:
+literales exactos en mayúsculas, evadibles con una concatenación y una minúscula. Por eso
+BL-06 fue **retirado de DONE** (`e144ede`) y por eso `PROGRESS.md` estuvo declarando 2/47
+cuando eran 1/47.
+
+Y hubo **un agujero más que no se vio en el primer arreglo**: la evasión de referencia
+``fetch(`${P}/appro` + 've')`` **seguía verde**, porque el plegado unía las piezas pero
+`${P}` era opaco (`/appro` + `ve` = `/approve`, nunca `api/production/approve`). Una variable
+extra derrotaba toda la cinta. Se cerró con **sustitución conservadora de constantes**: un
+`${IDENT}` ligado EXACTAMENTE UNA VEZ a una cadena literal se sustituye; ligado dos veces a
+valores distintos se descarta en vez de adivinar, porque adivinar fabrica falsos positivos.
+El primitivo vivía duplicado dentro del candado de `/replay`, así que se extrajo a
+`tests/support/js_source_scan.py` y lo importan los dos (−177 líneas netas).
+
+**Límites declarados en el propio test**, porque un candado que se vende como total es peor
+que uno honesto: cadenas ensambladas en runtime (`atob`, `fromCharCode`, `join`),
+indirecciones que el paso de constantes no ve (identificador importado, sustitución
+recursiva, miembro de objeto), homoglifos, y el diccionario de verbos. `buy`/`sell` en inglés
+**no** son verbos a propósito: "Buy & Hold" es la etiqueta honesta del baseline en estas
+mismas superficies (6 ocurrencias reales), y un blacklist que dispara sobre código honesto es
+un blacklist que alguien borra.
+
 ## Notas constitución
 FABRIC §25 bloque Muralla: 'frontend forecasting sin verbos de orden…'.
 La superficie DIAGNOSTIC no gana capacidades de acción por accidente: el día que

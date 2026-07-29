@@ -27,5 +27,32 @@ BL-09.
 ## Verificación
 Regla publicada; próximo pre-registro la usa.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_bl09_bl11_bl12_governance.py -q
+verde:   34 passed
+
+muta:    scripts/validation/check_trial_ledger.py — check_provenance_wall neutralizada
+espera:  4 failed — la muralla FT->AT cae por CUATRO aristas distintas, cada una en su
+         propio test:
+           familia sin bloque provenance
+           heredar forecasts mientras se afirma NO cruzar la muralla
+           provenance tomada de otro cluster
+           citar un trial de acción (AT-) como si fuera un forecast (FT-)
+
+muta-2:  borrar forecast_trial_ids de una familia (mutación de DATOS, no de código)
+espera-2: 1 failed — test_ft_to_at_wall_has_a_real_provenance_case
+```
+
+**Historial honesto**: BL-12 es uno de los **7 que mordían de origen** (medidos contra
+`92963fa9`) y, en palabras del propio veredicto CLD-212, **"el único de los cinco de
+gobernanza que no tiene fisuras"** — no hubo defecto que cerrar el 2026-07-28. Lo que lo hace
+fiable es que aguantó las dos mutaciones **por vías independientes**: la de CÓDIGO
+(neutralizar el validador) y la de DATOS (vaciar el campo en una familia). Un candado que
+solo cae por una de las dos protege el validador o protege el dato, pero no la garantía. El
+mismo muro se aplica en `tests/regression/test_strategy_manifests.py:439`, trasladado del
+directorio de familias al manifiesto.
+
 ## Notas constitución
 Cambiar la constitución requiere ADR (su propia cabecera lo exige).
