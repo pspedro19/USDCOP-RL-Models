@@ -15,12 +15,16 @@ import { describe, it, expect } from 'vitest';
 import {
   BOOK_STATES,
   DSR_BAR,
+  ENV_PERFORMANCE_FIELDS,
+  ENV_PERFORMANCE_PLAIN_FIELDS,
   FORBIDDEN_PASSPORT_ACTIONS,
   HEALTH_CLOCKS,
   MIN_TRADES_FOR_RATIOS,
   N_MAX_TRIALS,
+  PASSPORT_BLOCK_FIELDS,
   PASSPORT_CONTRACT_ID,
   PASSPORT_ENVS,
+  PASSPORT_PLAIN_FIELDS,
   RETIREMENT_SIGNALS,
   SOURCE_STATUSES,
   isAvailable,
@@ -161,6 +165,93 @@ describe('suppressSmallSample (quant-constitution §6)', () => {
 
 // ────────────────────────────────────────────────────────── payload validators
 
+// Los bloques de abajo están DELIBERADAMENTE poblados. La primera versión de este
+// fixture era `identity: {}, governance: {}, lineage: {}, live: {}, risk: {}` — es
+// decir, el propio hueco que el validador no veía: un Passport con cero trials, cero
+// DSR, cero linaje y cero riesgo pasaba con 0 errores. Un fixture más vacío que el
+// payload real no puede detectar un payload vacío.
+// Los nombres son espejo 1:1 de `PASSPORT_BLOCK_FIELDS` (passport.contract.ts), que a
+// su vez el test Python ata a las `export interface`.
+
+function identityBlock(): Record<string, unknown> {
+  return {
+    strategy_id: 'smart_simple_v11',
+    asset_id: 'usdcop',
+    display_name: 'Smart Simple v11',
+    surface: 'action',
+    engine_type: 'composite',
+    status: 'production',
+    active_version: sourced<string>('v11', 'public/data/registry.json'),
+    timeframe: 'H5',
+  };
+}
+
+function governanceBlock(): Record<string, unknown> {
+  const gov = 'data/control-tower/governance.json';
+  return {
+    n_trials_total: sourced(63, gov),
+    n_trials_forecast: sourced(21, gov),
+    n_trials_action: sourced(42, gov),
+    n_family: sourced(12, gov),
+    n_cluster: sourced(30, gov),
+    n_global: sourced(63, gov),
+    dsr_family: sourced(0.83, 'data/approvals/smart_simple_v11.json'),
+    dsr_bar: DSR_BAR,
+    approval_status: sourced<string>('APPROVED', 'data/approvals/smart_simple_v11.json'),
+    gates: sourced<unknown[]>([], 'data/approvals/smart_simple_v11.json'),
+    withdrawal_protocol: sourced<string>(
+      '.claude/specs/assets/usdcop/WITHDRAWAL-PROTOCOL.md', gov),
+    retirement_signal: 'unknown',
+    retirement_reason: 'sin evaluación de retiro POR ESTRATEGIA publicada (BL-25)',
+  };
+}
+
+function lineageBlock(): Record<string, unknown> {
+  return {
+    model_versions: sourced<unknown[]>([], 'public/data/strategies/smart_simple_v11/manifest.json'),
+    spec_fingerprint: unavailable<string>('BL-17 — fingerprints canónicos'),
+    feature_set_hash: unavailable<string>('BL-39 — feature contracts por estrategia-versión'),
+    policy_hash: unavailable<string>('BL-45 — motor de políticas (policy_hash/params_hash)'),
+    lineage_graph: unavailable<unknown>('BL-24 — nodes/edges de linaje'),
+  };
+}
+
+function liveBlock(): Record<string, unknown> {
+  return {
+    open_orders: unavailable('BL-21 — event sourcing exec.*'),
+    last_fill_at: unavailable<string>('BL-21 — event sourcing exec.*'),
+    quarantined: unavailable<boolean>('BL-21 — cuarentena por reconciliación'),
+    reconciled: unavailable<boolean>('BL-21/BL-22 — reconciliación contra fills'),
+    kill_switch_engaged: unavailable<boolean>('BL-30 — kill switch independiente de Airflow'),
+    deploy_status: unavailable<string>('sin deploy_status.json publicado'),
+    last_signal_at: sourced<string>('2026-07-27T13:00:00Z',
+      'public/data/strategies/smart_simple_v11/manifest.json'),
+  };
+}
+
+function riskBlock(): Record<string, unknown> {
+  return {
+    current_exposure: unavailable('BL-26 — portfolio_snapshot'),
+    vol_target_pct: unavailable('BL-27 — allocator v1'),
+    vol_forecast_pct: unavailable('BL-27 — allocator v1'),
+    m_forward: unavailable('BL-27 — multiplicadores m_forward/m_dd'),
+    m_dd: unavailable('BL-27 — multiplicadores m_forward/m_dd'),
+    rho_max: unavailable('BL-26 — matriz de correlación entre sleeves'),
+    turnover: unavailable('BL-22 — fact_position'),
+  };
+}
+
+/** Los cinco bloques cuyo CONTENIDO exige el contrato, con el builder que produce una
+ *  instancia realista de cada uno. Los tests negativos se conducen desde este mapa: un
+ *  único test agregado se pondría verde en cuanto UNO de los bloques sobreviviese. */
+const BLOCK_BUILDERS: Record<string, () => Record<string, unknown>> = {
+  identity: identityBlock,
+  governance: governanceBlock,
+  lineage: lineageBlock,
+  live: liveBlock,
+  risk: riskBlock,
+};
+
 function minimalPassport(overrides: Record<string, unknown> = {}) {
   const performance = Object.fromEntries(
     PASSPORT_ENVS.map((e) => [e, { ...envWith(25), env: e }]),
@@ -170,8 +261,12 @@ function minimalPassport(overrides: Record<string, unknown> = {}) {
     contract_version: '1.0.0',
     strategy_id: 'smart_simple_v11',
     generated_at: '2026-07-28T00:00:00Z',
-    identity: {}, governance: {}, lineage: {},
-    performance, live: {}, risk: {},
+    identity: identityBlock(),
+    governance: governanceBlock(),
+    lineage: lineageBlock(),
+    performance,
+    live: liveBlock(),
+    risk: riskBlock(),
     ...overrides,
   };
 }
@@ -220,6 +315,104 @@ describe('validateStrategyPassport', () => {
     for (const action of FORBIDDEN_PASSPORT_ACTIONS) {
       const errors = validateStrategyPassport(minimalPassport({ [action]: true }));
       expect(errors.join()).toMatch(new RegExp(`must not expose action .${action}`));
+    }
+  });
+});
+
+// ───────────────────────────────────── contenido por bloque (BL-32, el hueco real)
+
+/**
+ * El validador comprobaba la PRESENCIA de las ocho claves de nivel superior y nada
+ * más: `governance: {}`, `lineage: {}`, `risk: {}` validaban con 0 errores, o sea que
+ * se podía publicar un Passport sin gobernanza, sin linaje y sin riesgo.
+ *
+ * Matiz honesto y motivo por el que estos tests NO exigen valores: `policy_hash` no
+ * tiene productor hasta BL-45, `dsr_family` está `unavailable` para casi todas las
+ * estrategias y un activo sin trials es un estado LEGÍTIMO. Lo que se exige es la
+ * forma alternativa que el contrato ya define — `value: null` + `status:'unavailable'`
+ * + `pending` no vacío. La regla es "sin agujeros MUDOS", no "sin agujeros".
+ */
+describe('per-block content (BL-32)', () => {
+  // Rojo con: `identity: {}` (idem governance/lineage/live/risk) en minimalPassport,
+  // que es EXACTAMENTE como estaba este fixture antes de este cambio.
+  for (const [block, build] of Object.entries(BLOCK_BUILDERS)) {
+    it(`rejects an empty ${block} block`, () => {
+      const errors = validateStrategyPassport(minimalPassport({ [block]: {} }));
+      for (const field of PASSPORT_BLOCK_FIELDS[block]) {
+        expect(errors).toContain(`passport.${block}: missing '${field}'`);
+      }
+      // …y con el bloque poblado no sobra ningún error.
+      expect(validateStrategyPassport(minimalPassport({ [block]: build() }))).toEqual([]);
+    });
+  }
+
+  it('rejects governance without n_trials_total (cero trials, DSR sin deflactar)', () => {
+    const gov = governanceBlock();
+    delete gov.n_trials_total;
+    expect(validateStrategyPassport(minimalPassport({ governance: gov })))
+      .toContain("passport.governance: missing 'n_trials_total'");
+  });
+
+  it('rejects identity without strategy_id', () => {
+    const identity = identityBlock();
+    delete identity.strategy_id;
+    expect(validateStrategyPassport(minimalPassport({ identity })))
+      .toContain("passport.identity: missing 'strategy_id'");
+  });
+
+  it('rejects an env-performance block that declares the env and nothing else', () => {
+    const performance = Object.fromEntries(PASSPORT_ENVS.map((e) => [e, { ...envWith(25), env: e }]));
+    performance.paper = { env: 'paper' } as unknown as EnvPerformance;
+    const errors = validateStrategyPassport(minimalPassport({ performance }));
+    expect(errors).toContain("passport.performance.paper: missing 'n_trades'");
+    expect(errors).toContain("passport.performance.paper: missing 'return_pct'");
+  });
+
+  it('rejects a MUTE hole: value null with an empty pending', () => {
+    const gov = governanceBlock();
+    gov.n_trials_total = { value: null, source: { path: null, status: 'unavailable', pending: '' } };
+    expect(validateStrategyPassport(minimalPassport({ governance: gov })).join())
+      .toMatch(/governance\.n_trials_total: unavailable fields MUST declare what they are pending on/);
+  });
+
+  it('rejects a field that is not Sourced at all (a bare `{}` says nothing)', () => {
+    const gov = governanceBlock();
+    gov.dsr_family = {};
+    const errors = validateStrategyPassport(minimalPassport({ governance: gov })).join();
+    expect(errors).toMatch(/governance\.dsr_family: missing 'value'/);
+    expect(errors).toMatch(/governance\.dsr_family: missing\/invalid 'source'/);
+  });
+
+  // El test que impide que la regla degenere en "sin agujeros" y rompa el estado real:
+  // `policy_hash` NO tiene productor hasta BL-45 y aun así el Passport debe validar.
+  it('ACCEPTS a declared hole: value null + pending naming a BL', () => {
+    const gov = governanceBlock();
+    gov.n_trials_total = unavailable('BL-09/BL-10 — el activo no tiene conteo de trials proyectado');
+    gov.dsr_family = unavailable('BL-18 — sin gate DSR publicado para esta estrategia');
+    const lineage = lineageBlock();
+    lineage.policy_hash = unavailable<string>('BL-45 — motor de políticas (policy_hash/params_hash)');
+    expect(validateStrategyPassport(minimalPassport({ governance: gov, lineage }))).toEqual([]);
+  });
+
+  it('pins the constitutional bar and the retirement vocabulary inside the block', () => {
+    const loose = governanceBlock();
+    loose.dsr_bar = 0.5;
+    expect(validateStrategyPassport(minimalPassport({ governance: loose })).join())
+      .toMatch(/governance\.dsr_bar must be 0\.95/);
+    const invented = governanceBlock();
+    invented.retirement_signal = 'probably_fine';
+    expect(validateStrategyPassport(minimalPassport({ governance: invented })).join())
+      .toMatch(/governance\.retirement_signal: bad value/);
+  });
+
+  it('declares the plain fields as a SUBSET of the block fields (mirror sanity)', () => {
+    for (const [block, plain] of Object.entries(PASSPORT_PLAIN_FIELDS)) {
+      for (const field of plain) {
+        expect(PASSPORT_BLOCK_FIELDS[block], `${block}.${field}`).toContain(field);
+      }
+    }
+    for (const field of ENV_PERFORMANCE_PLAIN_FIELDS) {
+      expect(ENV_PERFORMANCE_FIELDS).toContain(field);
     }
   });
 });

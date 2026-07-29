@@ -21,12 +21,16 @@ import pytest
 from src.contracts.passport import (
     BOOK_STATES,
     DSR_BAR,
+    ENV_PERFORMANCE_FIELDS,
+    ENV_PERFORMANCE_PLAIN_FIELDS,
     FORBIDDEN_PASSPORT_ACTIONS,
     HEALTH_CLOCKS,
     MIN_TRADES_FOR_RATIOS,
     N_MAX_TRIALS,
+    PASSPORT_BLOCK_FIELDS,
     PASSPORT_CONTRACT_ID,
     PASSPORT_ENVS,
+    PASSPORT_PLAIN_FIELDS,
     RETIREMENT_SIGNALS,
     SOURCE_STATUSES,
     is_available,
@@ -394,6 +398,155 @@ def test_python_fixture_mirrors_the_ts_blocks(block, interface):
     assert fixture == declared, (
         f"passport.{block} diverge del contrato TS {interface}: "
         f"faltan {sorted(declared - fixture)}, sobran {sorted(fixture - declared)}")
+
+
+def _ts_const_field_map(const_name: str) -> dict[str, set[str]]:
+    """The `{block: [field, …]}` map one `export const` of the TS mirror declares."""
+    root = Path(__file__).resolve().parents[2]
+    text = (root / TS_CONTRACT).read_text(encoding="utf-8")
+    match = re.search(rf"export const {const_name}[^=]*= \{{(.*?)\n\}};", text, re.S)
+    assert match, f"{TS_CONTRACT} no declara `export const {const_name}`"
+    return {
+        block: set(re.findall(r"'([^']+)'", body))
+        for block, body in re.findall(r"(\w+):\s*\[(.*?)\]", match.group(1), re.S)
+    }
+
+
+def _ts_const_list(const_name: str) -> set[str]:
+    """The flat `[…]` literal one `export const` of the TS mirror declares."""
+    root = Path(__file__).resolve().parents[2]
+    text = (root / TS_CONTRACT).read_text(encoding="utf-8")
+    match = re.search(rf"export const {const_name}[^=]*= \[(.*?)\];", text, re.S)
+    assert match, f"{TS_CONTRACT} no declara `export const {const_name}`"
+    return set(re.findall(r"'([^']+)'", match.group(1)))
+
+
+@pytest.mark.parametrize("block,interface", sorted(_TS_BLOCK_INTERFACES.items()))
+def test_block_fields_mirror_the_ts_contract(block, interface):
+    """Las DOS listas de campos obligatorios son espejo — y espejo de la interfaz.
+
+    Los tipos de TS se borran al compilar, así que ninguno de los dos validadores puede
+    DERIVAR la lista: cada lenguaje la lleva literal en un solo sitio
+    (`src/contracts/passport.py::PASSPORT_BLOCK_FIELDS` y
+    `passport.contract.ts::PASSPORT_BLOCK_FIELDS`). Este test ata las dos a la única
+    declaración de forma que existe, la `export interface`, para que no puedan derivar.
+
+    Rojo con: borrar `'n_trials_total',` del mapa TS `PASSPORT_BLOCK_FIELDS`, o del mapa
+    Python, o `n_trials_total: SourcedNumber;` de `export interface PassportGovernance`.
+    """
+    declared = _ts_interface_fields(interface)
+    assert set(PASSPORT_BLOCK_FIELDS[block]) == declared, (
+        f"PASSPORT_BLOCK_FIELDS['{block}'] (Python) diverge de {interface}: "
+        f"faltan {sorted(declared - set(PASSPORT_BLOCK_FIELDS[block]))}, "
+        f"sobran {sorted(set(PASSPORT_BLOCK_FIELDS[block]) - declared)}")
+    assert _ts_const_field_map("PASSPORT_BLOCK_FIELDS")[block] == declared, (
+        f"PASSPORT_BLOCK_FIELDS.{block} (TS) diverge de {interface}")
+    assert set(PASSPORT_PLAIN_FIELDS[block]) <= set(PASSPORT_BLOCK_FIELDS[block])
+    assert _ts_const_field_map("PASSPORT_PLAIN_FIELDS")[block] == set(PASSPORT_PLAIN_FIELDS[block])
+
+
+def test_env_performance_fields_mirror_the_ts_contract():
+    """Mismo espejo para la columna del §24.4: `performance.live = {}` declaraba el
+    entorno sin decir NADA de él (ni conteo, ni retorno, ni fuente).
+
+    Rojo con: borrar `'n_trades',` de `ENV_PERFORMANCE_FIELDS` en cualquiera de los dos
+    lenguajes, o `n_trades: SourcedNumber;` de `export interface EnvPerformance`.
+    """
+    declared = _ts_interface_fields("EnvPerformance")
+    assert set(ENV_PERFORMANCE_FIELDS) == declared
+    assert _ts_const_list("ENV_PERFORMANCE_FIELDS") == declared
+    assert set(ENV_PERFORMANCE_PLAIN_FIELDS) <= declared
+    assert _ts_const_list("ENV_PERFORMANCE_PLAIN_FIELDS") == set(ENV_PERFORMANCE_PLAIN_FIELDS)
+
+
+# --------------------------------- contenido por bloque (BL-32, el hueco de producción)
+#
+# `validate_strategy_passport` comprobaba la PRESENCIA de las ocho claves de nivel
+# superior y nada más: `"governance": {}`, `"lineage": {}`, `"risk": {}` validaban con
+# cero errores — se podía publicar un Passport sin gobernanza, sin linaje y sin riesgo.
+#
+# Matiz honesto, y razón por la que estos tests NO exigen valores: `policy_hash` no
+# tiene productor hasta BL-45, `dsr_family` está `unavailable` para casi todas las
+# estrategias y un activo sin trials es un estado LEGÍTIMO. Lo que se exige es la forma
+# alternativa que el contrato ya define — `value=None` + `status="unavailable"` +
+# `pending` no vacío. La regla es "sin agujeros MUDOS", no "sin agujeros".
+
+
+@pytest.mark.parametrize("block", sorted(PASSPORT_BLOCK_BUILDERS))
+def test_an_empty_block_is_rejected(block):
+    """Rojo con: quitar el bucle `for block, fields in PASSPORT_BLOCK_FIELDS.items()`
+    de `validate_strategy_passport` — que es literalmente el estado anterior."""
+    errors = validate_strategy_passport(_passport(**{block: {}}))
+    for field in PASSPORT_BLOCK_FIELDS[block]:
+        assert f"passport.{block}: missing '{field}'" in errors, (
+            f"validate_strategy_passport aceptó `{block}` sin '{field}': {errors}")
+
+
+def test_governance_without_n_trials_total_is_rejected():
+    """Sin conteo de trials no hay DSR deflactable (quant-constitution §2)."""
+    gov = _governance()
+    del gov["n_trials_total"]
+    errors = validate_strategy_passport(_passport(governance=gov))
+    assert "passport.governance: missing 'n_trials_total'" in errors
+
+
+def test_identity_without_strategy_id_is_rejected():
+    identity = _identity()
+    del identity["strategy_id"]
+    errors = validate_strategy_passport(_passport(identity=identity))
+    assert "passport.identity: missing 'strategy_id'" in errors
+
+
+def test_an_env_that_declares_only_its_name_is_rejected():
+    p = _passport()
+    p["performance"]["paper"] = {"env": "paper"}
+    errors = validate_strategy_passport(p)
+    assert "passport.performance.paper: missing 'n_trades'" in errors
+    assert "passport.performance.paper: missing 'return_pct'" in errors
+
+
+def test_a_mute_hole_is_rejected():
+    """`value=None` con `pending` vacío: un agujero que no dice quién lo debe."""
+    gov = _governance()
+    gov["n_trials_total"] = {"value": None,
+                             "source": {"path": None, "status": "unavailable", "pending": ""}}
+    errors = " ".join(validate_strategy_passport(_passport(governance=gov)))
+    assert "governance.n_trials_total: unavailable fields MUST declare what they are pending on" in errors
+
+
+def test_a_field_that_is_not_sourced_at_all_is_rejected():
+    """Un `{}` pelado no es un hueco declarado: no tiene ni valor ni fuente."""
+    gov = _governance()
+    gov["dsr_family"] = {}
+    errors = " ".join(validate_strategy_passport(_passport(governance=gov)))
+    assert "governance.dsr_family: missing 'value'" in errors
+    assert "governance.dsr_family: missing/invalid 'source'" in errors
+
+
+def test_a_declared_hole_is_accepted():
+    """El test que impide que la regla degenere en "sin agujeros" y rompa el estado real.
+
+    `policy_hash` NO tiene productor hasta BL-45 y `dsr_family` está `unavailable` para
+    casi todas las estrategias: un Passport que lo declara así es CORRECTO y tiene que
+    validar. Lo prohibido es el `{}` mudo, no el hueco.
+    """
+    gov = _governance()
+    gov["n_trials_total"] = unavailable("BL-09/BL-10 — el activo no tiene conteo de trials proyectado")
+    gov["dsr_family"] = unavailable("BL-18 — sin gate DSR publicado para esta estrategia")
+    lineage = _lineage()
+    lineage["policy_hash"] = unavailable("BL-45 — motor de políticas (policy_hash/params_hash)")
+    assert validate_strategy_passport(_passport(governance=gov, lineage=lineage)) == []
+
+
+def test_the_constitutional_bar_and_the_retirement_vocabulary_travel_with_the_block():
+    loose = _governance()
+    loose["dsr_bar"] = 0.5
+    assert any("governance.dsr_bar must be 0.95" in e
+               for e in validate_strategy_passport(_passport(governance=loose)))
+    invented = _governance()
+    invented["retirement_signal"] = "probably_fine"
+    assert any("governance.retirement_signal: bad value" in e
+               for e in validate_strategy_passport(_passport(governance=invented)))
 
 
 def test_governance_declares_trials_dsr_and_the_bar():

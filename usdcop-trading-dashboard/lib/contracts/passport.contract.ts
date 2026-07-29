@@ -262,6 +262,74 @@ export interface StrategyPassport {
   pending_interfaces: PendingInterface[];
 }
 
+// ───────────────────────────────────── contenido obligatorio por bloque (BL-32)
+
+/**
+ * Lo que CADA bloque del Passport tiene que declarar — el espejo en tiempo de
+ * ejecución de las `export interface` de arriba.
+ *
+ * Los tipos de TS se borran al compilar, así que el validador NO puede derivar esta
+ * lista de `PassportIdentity`/`PassportGovernance`/… : cada lenguaje la lleva literal
+ * en UN solo sitio y las dos son espejo la una de la otra —
+ *
+ *   - TS     -> este mapa
+ *   - Python -> `PASSPORT_BLOCK_FIELDS` en `src/contracts/passport.py`
+ *
+ * `tests/unit/test_passport_contract.py::test_block_fields_mirror_the_ts_contract`
+ * parsea las interfaces Y este mapa y se pone rojo en cuanto uno de los tres deriva.
+ *
+ * Por qué existe: `validateStrategyPassport` solo comprobaba que la CLAVE estuviera,
+ * así que `governance: {}` — cero trials, cero DSR, cero N — validaba exactamente
+ * igual que un bloque completo.
+ */
+export const PASSPORT_BLOCK_FIELDS: Record<string, readonly string[]> = {
+  identity: ['strategy_id', 'asset_id', 'display_name', 'surface', 'engine_type',
+    'status', 'active_version', 'timeframe'],
+  governance: ['n_trials_total', 'n_trials_forecast', 'n_trials_action', 'n_family',
+    'n_cluster', 'n_global', 'dsr_family', 'dsr_bar', 'approval_status', 'gates',
+    'withdrawal_protocol', 'retirement_signal', 'retirement_reason'],
+  lineage: ['model_versions', 'spec_fingerprint', 'feature_set_hash', 'policy_hash',
+    'lineage_graph'],
+  live: ['open_orders', 'last_fill_at', 'quarantined', 'reconciled',
+    'kill_switch_engaged', 'deploy_status', 'last_signal_at'],
+  risk: ['current_exposure', 'vol_target_pct', 'vol_forecast_pct', 'm_forward', 'm_dd',
+    'rho_max', 'turnover'],
+};
+
+/** De los anteriores, los que el contrato declara como valor DIRECTO (no `Sourced`):
+ *  identificadores, la barra constitucional y el semáforo de retiro. Del resto se
+ *  exige la forma `Sourced` completa. */
+export const PASSPORT_PLAIN_FIELDS: Record<string, readonly string[]> = {
+  identity: ['strategy_id', 'asset_id', 'display_name', 'surface', 'engine_type',
+    'status', 'timeframe'],
+  governance: ['dsr_bar', 'retirement_signal', 'retirement_reason'],
+  lineage: [],
+  live: [],
+  risk: [],
+};
+
+/** `EnvPerformance` — cada una de las cinco columnas del §24.4. Mismo espejo, mismo
+ *  motivo: `performance: { live: {} }` declaraba el entorno sin decir nada de él. */
+export const ENV_PERFORMANCE_FIELDS: readonly string[] = [
+  'env', 'period_label', 'return_pct', 'n_trades', 'max_dd_pct', 'win_rate_pct',
+  'profit_factor', 'sharpe', 'calmar', 'p_value', 'dsr_family', 'timing_ratio',
+  'insufficient_trades',
+];
+
+/** Los dos campos del entorno que NO son `Sourced`: la etiqueta del entorno y la
+ *  bandera que deja el guard §6. */
+export const ENV_PERFORMANCE_PLAIN_FIELDS: readonly string[] = ['env', 'insufficient_trades'];
+
+/**
+ * **Un hueco declarado no es un error.** `policy_hash` no tiene productor hasta BL-45,
+ * `dsr_family` está `unavailable` para casi todas las estrategias y un activo sin
+ * trials es un estado legítimo. Lo que se exige no es un valor: es la forma
+ * alternativa que el propio contrato ya define para un hueco — `value: null` +
+ * `status: 'unavailable'` + `pending` no vacío. La regla es **"sin agujeros MUDOS",
+ * no "sin agujeros"**: un `{}` no puede expresar quién debe el dato; `null` +
+ * `pending: 'BL-45 …'` sí.
+ */
+
 // ───────────────────────────────────────────────────── control tower (§24.5)
 
 /** A capability the Tower/Passport declares but cannot yet source. This IS the
@@ -497,6 +565,47 @@ export function validateSourced(field: unknown, label: string): string[] {
   return errors;
 }
 
+/** True when `node` at least LOOKS like a Sourced field — the same test `walkSourced`
+ *  applies, so both agree on what the tree-walk already covers. */
+function isSourcedShaped(node: unknown): boolean {
+  if (!node || typeof node !== 'object') return false;
+  const rec = node as Record<string, unknown>;
+  return 'value' in rec && !!rec.source && typeof rec.source === 'object';
+}
+
+/**
+ * Content validation of ONE declared block (identity/governance/…/an env).
+ *
+ * Every field the contract declares must be present, and every field that is not in
+ * `plainFields` must carry the full `Sourced` shape. A field may perfectly well be
+ * empty — but only as `value: null` + `status: 'unavailable'` + `pending`: a declared
+ * hole, never a mute one. Mirror of `src/contracts/passport.py::validate_block`.
+ */
+export function validateBlock(
+  block: unknown,
+  label: string,
+  fields: readonly string[],
+  plainFields: readonly string[] = [],
+): string[] {
+  if (!block || typeof block !== 'object') return [`${label}: not an object`];
+  const rec = block as Record<string, unknown>;
+  const errors: string[] = [];
+  for (const field of fields) {
+    if (!(field in rec)) {
+      errors.push(`${label}: missing '${field}'`);
+      continue;
+    }
+    if (plainFields.includes(field)) continue;
+    // Los Sourced BIEN FORMADOS los valida ya el walk sobre el payload entero; aquí
+    // solo hace falta atrapar lo que ni siquiera tiene esa forma (un `{}`, un número
+    // pelado, un `null`), que el walk no visita y por eso no veía.
+    if (!isSourcedShaped(rec[field])) {
+      errors.push(...validateSourced(rec[field], `${label}.${field}`));
+    }
+  }
+  return errors;
+}
+
 export function validateStrategyPassport(payload: unknown): string[] {
   const errors: string[] = [];
   if (!payload || typeof payload !== 'object') return ['passport: not an object'];
@@ -504,6 +613,25 @@ export function validateStrategyPassport(payload: unknown): string[] {
   if (p.contract !== PASSPORT_CONTRACT_ID) errors.push(`passport.contract must be ${PASSPORT_CONTRACT_ID}`);
   for (const key of ['strategy_id', 'generated_at', 'identity', 'governance', 'lineage', 'performance', 'live', 'risk']) {
     if (!(key in p)) errors.push(`passport: missing '${key}'`);
+  }
+  // Presencia de la clave NO es contenido: un `governance: {}` publicaba un Passport
+  // sin gobernanza, sin linaje y sin riesgo con cero errores.
+  for (const [block, fields] of Object.entries(PASSPORT_BLOCK_FIELDS)) {
+    if (block in p) {
+      errors.push(...validateBlock(p[block], `passport.${block}`, fields, PASSPORT_PLAIN_FIELDS[block] ?? []));
+    }
+  }
+  const gov = p.governance as Record<string, unknown> | undefined;
+  if (gov && typeof gov === 'object') {
+    // §2: la barra viaja CON el bloque — un DSR sin su barra es un número que nadie
+    // puede juzgar. Es una constante declarada, no una medición.
+    if ('dsr_bar' in gov && gov.dsr_bar !== DSR_BAR) {
+      errors.push(`passport.governance.dsr_bar must be ${DSR_BAR} (quant-constitution §2)`);
+    }
+    if ('retirement_signal' in gov
+      && !(RETIREMENT_SIGNALS as readonly string[]).includes(gov.retirement_signal as string)) {
+      errors.push(`passport.governance.retirement_signal: bad value ${JSON.stringify(gov.retirement_signal)}`);
+    }
   }
   const perf = p.performance as Record<string, EnvPerformance> | undefined;
   if (!perf || typeof perf !== 'object') {
@@ -515,6 +643,8 @@ export function validateStrategyPassport(payload: unknown): string[] {
       if (!(PASSPORT_ENVS as readonly string[]).includes(env)) {
         errors.push(`passport.performance: unknown env ${JSON.stringify(env)}`);
       }
+      errors.push(...validateBlock(block, `passport.performance.${env}`,
+        ENV_PERFORMANCE_FIELDS, ENV_PERFORMANCE_PLAIN_FIELDS));
       errors.push(...smallSampleViolations(block, `passport.performance.${env}`));
     }
   }

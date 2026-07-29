@@ -114,6 +114,84 @@ FORBIDDEN_PASSPORT_ACTIONS: tuple[str, ...] = (
 )
 
 # ---------------------------------------------------------------------------
+# Contenido obligatorio por bloque (espejo de las interfaces TS)
+# ---------------------------------------------------------------------------
+
+#: Lo que CADA bloque del Passport tiene que declarar.
+#:
+#: Es el espejo en tiempo de ejecución de las ``export interface`` del contrato TS
+#: (``PassportIdentity``/``PassportGovernance``/``PassportLineage``/
+#: ``PassportLiveState``/``PassportRisk``). Los tipos de TS se borran al compilar, así
+#: que **ningún runtime puede derivar esta lista**: cada lenguaje la lleva literal en
+#: UN solo sitio y las dos son espejo la una de la otra —
+#:
+#:   * Python -> este mapa
+#:   * TS     -> ``PASSPORT_BLOCK_FIELDS`` en ``passport.contract.ts``
+#:
+#: ``tests/unit/test_passport_contract.py::test_block_fields_mirror_the_ts_contract``
+#: parsea las interfaces Y el mapa TS, y se pone rojo en cuanto uno de los tres deriva.
+#:
+#: Por qué existe: ``validate_strategy_passport`` solo comprobaba que la CLAVE
+#: estuviera, así que ``"governance": {}`` — cero trials, cero DSR, cero N — validaba
+#: exactamente igual que un bloque completo.
+PASSPORT_BLOCK_FIELDS: dict[str, tuple[str, ...]] = {
+    "identity": (
+        "strategy_id", "asset_id", "display_name", "surface", "engine_type",
+        "status", "active_version", "timeframe",
+    ),
+    "governance": (
+        "n_trials_total", "n_trials_forecast", "n_trials_action",
+        "n_family", "n_cluster", "n_global", "dsr_family", "dsr_bar",
+        "approval_status", "gates", "withdrawal_protocol",
+        "retirement_signal", "retirement_reason",
+    ),
+    "lineage": (
+        "model_versions", "spec_fingerprint", "feature_set_hash", "policy_hash",
+        "lineage_graph",
+    ),
+    "live": (
+        "open_orders", "last_fill_at", "quarantined", "reconciled",
+        "kill_switch_engaged", "deploy_status", "last_signal_at",
+    ),
+    "risk": (
+        "current_exposure", "vol_target_pct", "vol_forecast_pct", "m_forward",
+        "m_dd", "rho_max", "turnover",
+    ),
+}
+
+#: De los anteriores, los que el contrato declara como valor DIRECTO (no ``Sourced``):
+#: identificadores, la barra constitucional y el semáforo de retiro. Del resto se exige
+#: la forma ``Sourced`` completa.
+PASSPORT_PLAIN_FIELDS: dict[str, tuple[str, ...]] = {
+    "identity": ("strategy_id", "asset_id", "display_name", "surface",
+                 "engine_type", "status", "timeframe"),
+    "governance": ("dsr_bar", "retirement_signal", "retirement_reason"),
+    "lineage": (),
+    "live": (),
+    "risk": (),
+}
+
+#: ``EnvPerformance`` — cada una de las cinco columnas del §24.4. Mismo espejo, mismo
+#: motivo: ``"performance": {"live": {}}`` declaraba el entorno sin decir nada de él.
+ENV_PERFORMANCE_FIELDS: tuple[str, ...] = (
+    "env", "period_label", "return_pct", "n_trades", "max_dd_pct", "win_rate_pct",
+    "profit_factor", "sharpe", "calmar", "p_value", "dsr_family", "timing_ratio",
+    "insufficient_trades",
+)
+
+#: Los dos campos del entorno que NO son ``Sourced``: la etiqueta del entorno y la
+#: bandera que deja el guard §6.
+ENV_PERFORMANCE_PLAIN_FIELDS: tuple[str, ...] = ("env", "insufficient_trades")
+
+#: **Un hueco declarado no es un error.** ``policy_hash`` no tiene productor hasta
+#: BL-45, ``dsr_family`` está ``unavailable`` para casi todas las estrategias y un
+#: activo sin trials es un estado legítimo. Lo que se exige no es un valor: es la
+#: forma alternativa que el propio contrato ya define para un hueco —
+#: ``value=None`` + ``status="unavailable"`` + ``pending`` no vacío. La regla es
+#: **"sin agujeros MUDOS", no "sin agujeros"**: un ``{}`` no puede expresar quién debe
+#: el dato; ``None`` + ``pending="BL-45 …"`` sí.
+
+# ---------------------------------------------------------------------------
 # Sourced values — the core primitive
 # ---------------------------------------------------------------------------
 
@@ -287,6 +365,44 @@ def validate_sourced(field: Any, label: str) -> list[str]:
     return errors
 
 
+def _is_sourced_shaped(node: Any) -> bool:
+    """True when ``node`` at least *looks* like a Sourced field.
+
+    Mirrors the test :func:`_walk_sourced` applies, so the two agree on what the
+    tree-walk already covers and what a block check still has to catch.
+    """
+    return (isinstance(node, dict) and "value" in node
+            and isinstance(node.get("source"), dict))
+
+
+def validate_block(field_values: Any, label: str, fields: Iterable[str],
+                   plain_fields: Iterable[str] = ()) -> list[str]:
+    """Content validation of ONE declared block (identity/governance/…/an env).
+
+    Every field the contract declares must be present, and every field that is not
+    in ``plain_fields`` must carry the full ``Sourced`` shape. A field may perfectly
+    well be empty — but only as ``value=None`` + ``status="unavailable"`` +
+    ``pending``: a declared hole, never a mute one.
+    """
+    if not isinstance(field_values, dict):
+        return [f"{label}: not an object"]
+    plain = set(plain_fields)
+    errors: list[str] = []
+    for field in fields:
+        if field not in field_values:
+            errors.append(f"{label}: missing '{field}'")
+            continue
+        if field in plain:
+            continue
+        value = field_values[field]
+        # Los Sourced BIEN FORMADOS los valida ya el walk sobre el payload entero;
+        # aquí solo hace falta atrapar lo que ni siquiera tiene esa forma (un ``{}``,
+        # un número pelado, un ``None``), que el walk no visita y por eso no veía.
+        if not _is_sourced_shaped(value):
+            errors.extend(validate_sourced(value, f"{label}.{field}"))
+    return errors
+
+
 def _walk_sourced(node: Any, prefix: str = "") -> Iterable[tuple[str, dict]]:
     """Yield every Sourced-shaped dict in a payload tree."""
     if isinstance(node, dict):
@@ -311,6 +427,27 @@ def validate_strategy_passport(payload: Any) -> list[str]:
                 "lineage", "performance", "live", "risk"):
         _err(errors, key in payload, f"passport: missing '{key}'")
 
+    # Presencia de la clave NO es contenido: un `"governance": {}` publicaba un
+    # Passport sin gobernanza, sin linaje y sin riesgo con cero errores.
+    for block, fields in PASSPORT_BLOCK_FIELDS.items():
+        if block in payload:
+            errors.extend(validate_block(
+                payload[block], f"passport.{block}", fields,
+                PASSPORT_PLAIN_FIELDS.get(block, ()),
+            ))
+
+    gov = payload.get("governance")
+    if isinstance(gov, dict):
+        # §2: la barra viaja CON el bloque — un DSR sin su barra es un número
+        # que nadie puede juzgar. Es una constante declarada, no una medición.
+        if "dsr_bar" in gov:
+            _err(errors, gov.get("dsr_bar") == DSR_BAR,
+                 f"passport.governance.dsr_bar must be {DSR_BAR} (quant-constitution §2)")
+        if "retirement_signal" in gov:
+            _err(errors, gov.get("retirement_signal") in RETIREMENT_SIGNALS,
+                 f"passport.governance.retirement_signal: bad value "
+                 f"{gov.get('retirement_signal')!r}")
+
     perf = payload.get("performance")
     if isinstance(perf, dict):
         missing = [e for e in PASSPORT_ENVS if e not in perf]
@@ -318,10 +455,11 @@ def validate_strategy_passport(payload: Any) -> list[str]:
              f"passport.performance must declare all five envs; missing {missing}")
         for env, block in perf.items():
             _err(errors, env in PASSPORT_ENVS, f"passport.performance: unknown env {env!r}")
-            if isinstance(block, dict):
-                errors.extend(
-                    small_sample_violations(block, f"passport.performance.{env}")
-                )
+            errors.extend(validate_block(
+                block, f"passport.performance.{env}",
+                ENV_PERFORMANCE_FIELDS, ENV_PERFORMANCE_PLAIN_FIELDS,
+            ))
+            errors.extend(small_sample_violations(block, f"passport.performance.{env}"))
     else:
         errors.append("passport.performance: not an object")
 
@@ -393,8 +531,11 @@ __all__ = [
     "MIN_TRADES_FOR_RATIOS", "N_MAX_TRIALS", "DSR_BAR",
     "SMALL_SAMPLE_SUPPRESSED_FIELDS", "FORBIDDEN_PASSPORT_ACTIONS",
     "UNDETERMINABLE_N_REASON",
+    "PASSPORT_BLOCK_FIELDS", "PASSPORT_PLAIN_FIELDS",
+    "ENV_PERFORMANCE_FIELDS", "ENV_PERFORMANCE_PLAIN_FIELDS",
     "sanitize_number", "sourced", "unavailable", "is_available",
     "resolve_n_trades", "small_sample_reason", "small_sample_violations",
     "suppress_small_sample", "can_show_ratios",
-    "validate_sourced", "validate_strategy_passport", "validate_control_tower",
+    "validate_sourced", "validate_block", "validate_strategy_passport",
+    "validate_control_tower",
 ]
