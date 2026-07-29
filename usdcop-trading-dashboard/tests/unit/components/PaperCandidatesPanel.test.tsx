@@ -186,9 +186,51 @@ describe('PaperCandidatesPanel (BL-05)', () => {
     expect(table.className).toMatch(/min-w-/);
   });
 
+  // OJO: este test es de ECO — comprueba que el string `note_n` del FIXTURE se
+  // renderiza. Es necesario pero NO suficiente: la nota puede aparecer con un Sharpe
+  // al lado y sigue verde. La prohibición real la impone el test siguiente.
   it('constitución §6: con N<20 muestra la nota del ledger (solo conteo y PnL)', () => {
     render(<PaperCandidatesPanel ledger={LEDGER} />);
     expect(screen.getAllByText(/N<20 => solo conteo y PnL/).length).toBeGreaterThan(0);
+  });
+
+  /**
+   * PROHIBICIÓN (no eco) de quant-constitution §6 y strategy-contract §6:
+   * «con N < 20 trades no se reportan Sharpe ni p-value — solo conteo y PnL».
+   *
+   * Hueco que cierra (verificación por mutación, 2026-07-28): se añadió una celda
+   * literal "Sharpe 3.35 · p=0.006" a las filas con n_trades: 11 y la suite salió
+   * 13 passed / 0 failed. El único test §6 que existía afirmaba que se ecoaba un
+   * string del propio fixture, no que NO hubiera un ratio junto a él.
+   *
+   * ROJO con: añadir <td>Sharpe 3.35 · p=0.006</td> (o cualquier celda Calmar /
+   * Sortino / "p<0.05") a las filas de PaperCandidatesPanel.tsx.
+   */
+  it('constitución §6: con N<20 la FILA no publica Sharpe/p-value/Calmar/Sortino', () => {
+    const { container } = render(<PaperCandidatesPanel ledger={LEDGER} />);
+
+    // Vocabulario prohibido con N insuficiente: ratios y significancia. `p\s*[=<]`
+    // captura "p=0.006", "p < 0.05", "p =0.01" — cualquier forma de publicar el p-value.
+    const FORBIDDEN = /sharpe|p\s*[=<]|p-value|calmar|sortino/i;
+
+    const sids = Object.keys(LEDGER.strategies);
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    expect(rows, 'una fila por candidata del ledger').toHaveLength(sids.length);
+
+    rows.forEach((row, i) => {
+      const sid = sids[i];
+      const n = LEDGER.strategies[sid].n_trades;
+      // Precondición del fixture: ninguna candidata tiene N suficiente (11 o sin dato).
+      expect(n == null || n < 20, `el fixture de ${sid} ya no ejercita el caso N<20`).toBe(true);
+
+      const text = row.textContent ?? '';
+      const hit = text.match(FORBIDDEN)?.[0] ?? null;
+      expect(
+        hit,
+        `la fila ${sid} (n_trades=${n ?? 'sin dato'}) publica "${hit}" con N<20 — `
+        + 'quant-constitution §6 solo permite conteo y PnL',
+      ).toBeNull();
+    });
   });
 
   it('read-only: cero botones/acciones (invariante /production)', () => {
