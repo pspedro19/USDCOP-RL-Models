@@ -28,9 +28,9 @@ orden, forzar una identidad contable a no fallar nunca, o **borrar el panel A/B 
 | Veredicto | N | BLs |
 |---|---|---|
 | **MUERDE limpio** | 7 | BL-01, BL-04, BL-12, BL-15, BL-45, BL-46, BL-47 |
-| **MUERDE con matiz** | 7 | BL-02, BL-03, BL-13, BL-14, BL-25, BL-31, BL-39 |
-| **NO MUERDE → CERRADO hoy** | 2 | BL-09, BL-11 |
-| **NO MUERDE** | 6 | BL-05, BL-06, BL-20, BL-32, BL-34, BL-42 |
+| **MUERDE con matiz** | 6 | BL-02, BL-03, BL-13, BL-14, BL-31, BL-39 |  <!-- BL-25 salio: el 3-sigma ya esta acotado -->
+| **NO MUERDE → CERRADO hoy** | 5 | BL-05, BL-09, BL-11, BL-20, BL-25*, BL-42 |
+| **NO MUERDE — abiertos** | 3 | BL-06, BL-32, BL-34 |
 | **SIN TEST** | 1 | BL-36 |
 
 ---
