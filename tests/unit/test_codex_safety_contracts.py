@@ -6,6 +6,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+import sqlite3
 import sys
 import types
 
@@ -553,6 +554,43 @@ def test_pnl_identity_requires_complete_single_currency_lineage_and_safe_toleran
     assert "p_tolerance is null" in sql
     assert "'nan'::numeric" in sql
     assert "p_tolerance > 1" in sql
+
+
+def test_pnl_identity_error_applies_abs_after_subtracting_reported_residual() -> None:
+    """Execute the production expression where the two parenthesizations diverge."""
+    sql = Path("database/migrations/075_fact_position_pnl.sql").read_text(
+        encoding="utf-8"
+    )
+    calculated_marker = ") AS calculated_residual,"
+    calculated_end = sql.index(calculated_marker)
+    expression_start = calculated_end + len(calculated_marker)
+    expression_end = sql.index(" AS identity_error", expression_start)
+    identity_error_expression = sql[expression_start:expression_end].strip()
+
+    with sqlite3.connect(":memory:") as connection:
+        connection.execute(
+            "CREATE TABLE pnl (pnl_component TEXT NOT NULL, amount NUMERIC NOT NULL)"
+        )
+
+        def identity_error(reported_residual: int) -> int:
+            connection.execute("DELETE FROM pnl")
+            connection.executemany(
+                "INSERT INTO pnl (pnl_component, amount) VALUES (?, ?)",
+                [
+                    ("gross_pnl", 10),
+                    ("pnl_beta", 15),
+                    ("pnl_residual", reported_residual),
+                ],
+            )
+            row = connection.execute(
+                f"SELECT {identity_error_expression} FROM pnl"
+            ).fetchone()
+            assert row is not None
+            return int(row[0])
+
+        # calculated_residual = -5. Correct: ABS(calculated - reported).
+        assert identity_error(-3) == 2
+        assert identity_error(3) == 8
 
 
 def test_execution_sql_fences_status_transitions_and_correction_chain() -> None:
