@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
@@ -15,10 +15,10 @@ code_anchors:
 **Fuente**: Plan Consolidado §1.4/§6 / DATA-STRATEGY §37-38 (D2) · **Ola**: 3-4 · **Esfuerzo**: L · **Trials**: 0
 
 ## Estado actual (as-built/perfil 2026-07-27)
-usdcop_m5_ohlcv (2.2M) tiene nombre engañoso (solo 4.5% es COP); asset_native_ohlcv es el raw de facto; asset_daily convive como tabla escrita (no derivada). available_at 6.4%/19.9% NULL y en native arranca 2026 (= ingesta, no disponibilidad histórica).
+Entrega parcial: las migraciones 073/080 definen `raw_bar`, `canonical_bar`, perfil físico y caggs operator-only; `src/market/resampling.py` ya está trackeado. No existen writers productivos, vistas de compatibilidad ni objetos aplicados en la base viva. `asset_native_ohlcv` y `asset_daily` siguen siendo los caminos reales.
 
 ## Qué falta exactamente
-market.raw_bar (inmutable) → market.canonical_bar 5m → continuous aggregates 1h/4h/1d; bar_method = provider_official | resampled (NUNCA mezclar en silencio: la diaria oficial del proveedor no siempre equivale al resampleo del intradía); semántica de 5 timestamps (event/provider_published/available/retrieved/ingested) con available_at(OHLCV)=cierre+latencia declarada; backfill etiquetado de NULLs. Renombres vía VISTAS de compatibilidad primero — nunca renombrar en caliente.
+Implementar writers y backfill `raw_bar → canonical_bar`, crear primero las vistas de compatibilidad y aplicar los caggs bajo preflight del operador. Falta una regresión de anclaje de sesión/UTC que impida el Sunday pile-up y una comparación provider_official frente a resampleo donde aplique.
 
 ## Impacto frontend
 Charts pasan a leer caggs; cero cambio visual.

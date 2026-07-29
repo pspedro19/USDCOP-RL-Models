@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - docker-compose.yml
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: Plan Consolidado §10 / DATA-STRATEGY §51 (D8/P2) · **Ola**: 5 · **Esfuerzo**: M · **Trials**: 0
 
 ## Estado actual (as-built/perfil 2026-07-27)
-7 hypertables; el perfil actual NO expone chunk interval, compresión, retención, índices, caggs, tamaño físico ni bloat. Hypertables VACÍAS creadas prematuramente (crypto_exposure_signals, flows, onchain).
+Entrega parcial: la migración 080 registra intención física, exige escala/evidencia de restore y ofrece funciones operator-only para convertir tablas e instalar caggs. Nada de ello está aplicado: la base viva conserva 7/7 hypertables sin compresión, cero caggs y tres hypertables vacías creadas prematuramente.
 
 ## Qué falta exactamente
-Política: chunk por event_time, segmentby instrument_id; caggs 1h/4h/1d (BL-38); histórico frío a MinIO/Parquet ANTES de cualquier retención; el próximo perfil añade tamaño físico, PK/FK, políticas, gaps, clasificación SSOT/projection/cache/deprecated; NO crear hypertables para tablas pequeñas o vacías.
+Ejecutar el preflight/operator function sobre las tablas grandes, instalar y medir compresión/caggs con catálogos TimescaleDB 2.x, y retirar las hypertables vacías sólo mediante una migración revisada. Falta un perfil v2 ejecutable con tamaño antes/después; ninguna prueba puede sustituir que la compresión exista realmente.
 
 ## Impacto frontend
 Ninguno.

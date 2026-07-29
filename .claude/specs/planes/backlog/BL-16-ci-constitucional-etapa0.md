@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - src/contracts/strategy_schema.py
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: FABRIC §8.3, §11.2, §28 E0 · **Ola**: 3 · **Esfuerzo**: M · **Trials**: 0
 
 ## Estado actual (as-built verificado 2026-07-27)
-Piezas sueltas existen (safe_json_dump sin NaN/Inf, manifest drift test). Falta la matriz de legalidad y la política canónica como validadores.
+Entrega parcial: `src/governance/declaration.py`, `src/identity/canonical.py` y la migración 070 implementan la matriz de legalidad y la serialización canónica. La mutación independiente PAPER+FULL demostró que la matriz muerde. No existe todavía una declaración real en manifests/config que consuma `research_state` y `capital_tier`, por lo que el gate constitucional end-to-end sigue sin ser falsable.
 
 ## Qué falta exactamente
-Validador de declaraciones: matriz research_state×capital_tier×operational_state; serialización canónica (UTF-8 NFC, claves ordenadas, ISO-Z, decimales cuantizados); 'el CI rechaza una declaración inválida ANTES de ejecutar un DAG'.
+Integrar al menos una declaración real, hacer que el gate lea manifests/config y rechace una combinación inválida antes de ejecutar un DAG. Falta también un candado propio para NaN/Inf dentro del lote constitucional y su invocación en CI; la tanda amplia de CI está diferida por orden del operador.
 
 ## Impacto frontend
 Ninguno.

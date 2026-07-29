@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - scripts/analysis/book_construction.py
@@ -15,10 +15,10 @@ code_anchors:
 **Fuente**: FABRIC §20 + §12 · **Ola**: 5 · **Esfuerzo**: L · **Trials**: 0/+1 por celda si se abre book_allocation
 
 ## Estado actual (as-built verificado 2026-07-27)
-ERC + Kelly governor DRAFT existen (evidencia 2026-07-22, firma del operador pendiente). Sin multiplicadores, sin gate de novedad, sin optimización restringida.
+Entrega parcial: `src/portfolio/allocator.py` contiene inverse-vol, multiplicadores, optimización restringida, cuatro niveles de fallback y la función `novelty_gate`. El allocator no carga todavía el SSOT por un constructor `from_config`, no tiene consumidor productivo y el gate de novedad no participa en una promoción real.
 
 ## Qué falta exactamente
-config/book/allocator_v1.yaml (baseline inverse-vol caps; HRP SOLO shadow con juez propio); b_prov=b_base×m_forward(solo-reduce)×m_liq×m_div×m_ops×m_dd(histéresis); cvxpy §20.3 SIN normalize(); fallback 4 peldaños; novelty_gate (ρ<0.60 ∨ ΔIR>0.15) en promociones y como m_div.
+Atar el código a `config/book/allocator_v1.yaml`, validar también el target-zero final contra las restricciones/turnover o registrar la excepción crítica de forma explícita, y cablear `novelty_gate` al flujo de promoción. Falta la corrida shadow de al menos 26 periodos y el candado que prohíbe `normalize()`.
 
 ## Impacto frontend
 Control Tower: pesos propuestos vs realizados (shadow).

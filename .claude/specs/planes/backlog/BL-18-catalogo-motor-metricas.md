@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - services/common/metrics.py
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: FABRIC §19 + §28 E4 · **Ola**: 3 · **Esfuerzo**: L · **Trials**: 0
 
 ## Estado actual (as-built verificado 2026-07-27)
-`services/common/metrics.py` es el SSOT constitucional de DSR/bootstrap, pero Sharpe/Calmar se computan además en publishers, scripts de análisis y (prohibido pero posible) frontend.
+Entrega parcial: existen `config/metrics/catalog.yaml`, `src/metrics/annualization.py`, `src/metrics/engine.py` y el DDL de `control.metric_event`. El motor y la anualización gobernada no son todavía el único camino: permanecen más de 30 cálculos independientes de Sharpe/Calmar y no hay persistencia productiva general en `metric_event`.
 
 ## Qué falta exactamente
-`config/metrics/catalog.yaml` (formula_version, annualization from_asset_registry, windows, thresholds) + metrics_engine.compute() único + tabla control.metric_event (thresholds copiados al evaluar).
+Migrar consumidores al motor, cablear la persistencia de `metric_event` y congelar un allowlist de implementaciones heredadas que sólo pueda decrecer. Añadir una implementación nueva o ampliar el allowlist sin retirar otra debe ser rojo; el objetivo final sigue siendo cero duplicados.
 
 ## Impacto frontend
 Dashboard consume metric_event/API, no recalcula.

@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - src/data_quality/ohlcv_validators.py
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: Plan Consolidado §5 / DATA-STRATEGY §50 · **Ola**: 1-2 · **Esfuerzo**: M · **Trials**: 0
 
 ## Estado actual (as-built/perfil 2026-07-27)
-Anomalías REALES del perfil: USD/MXN max 175,814 (mediana 19.65), USD/CLP max 94,890 (mediana 870) — parsing de miles o columna equivocada. Columnas fantasma: forwards.forward_rate 100 pct NULL (por diseño: declarar), crypto liquidations_usd 100 pct NULL, OI 44/2506, news sentiment_score=0 y label=neutral PARA TODOS (el motor no corre) + content/gdelt_tone/entities 100 pct NULL.
+Entrega parcial: `src/data_quality/rules.py`, su configuración y la migración 073 definen decisiones fail-closed y `quality.quarantine_event`. No hay consumidor productivo que escriba la cuarentena. El rango USD/MXN global actual clasifica erróneamente 59 barras legítimas de 1990 porque no contempla la redenominación.
 
 ## Qué falta exactamente
-Pipeline raw → quality FAIL → quarantine → comparación proveedor → correction event → canónica (jamás UPDATE a mano); reglas de rango versionadas (mxn [5,100], clp [100,5000] — amplias, no recortan movimientos reales); feature_status=UNAVAILABLE para fantasmas (no publicar ceros que parezcan medición); arreglar o apagar el motor de sentimiento de news.
+Versionar rangos por época y resolverlos por instrumento+fecha; las 59 barras de 1990 deben pasar y un 2.712 moderno debe ir a cuarentena. Después cablear raw→quality→quarantine→correction→canonical y declarar `UNAVAILABLE` para columnas fantasma/sentimiento no medido.
 
 ## Impacto frontend
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).

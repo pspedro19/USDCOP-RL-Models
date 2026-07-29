@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/public/data/registry.json
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: Plan Consolidado §7 (final) · **Ola**: 1 · **Esfuerzo**: S · **Trials**: 0
 
 ## Estado actual (as-built/perfil 2026-07-27)
-config.models contiene investor_demo con algorithm=SYNTHETIC (NOT for live trading) y status=active — una demo sintética puede colarse en métricas/superficies reales.
+Entrega parcial: `src/governance/synthetic_isolation.py` y la migración 081 implementan la frontera demo/sintética y ya viajan en checkout limpio. El test unitario no muta todavía el eje `algorithm`, el DDL sólo tiene validación estática y la base viva no tiene `demo.*`; `investor_demo` sigue en el camino de compatibilidad.
 
 ## Qué falta exactamente
-environment=demo + surface=synthetic + execution_eligible=false; mover a demo.*; CI que RECHACE algorithm=SYNTHETIC con environment distinto de demo; verificación de que ninguna vista de performance real lo lista.
+Matar explícitamente la mutación del guard `algorithm`, ejecutar 081 contra PostgreSQL y mover la fila a `demo.*` sin dejarla en superficies de performance reales. La capa visible debe conservar una etiqueta inequívoca mientras exista compatibilidad; CI/Playwright se validarán al final por orden del operador.
 
 ## Impacto frontend
 Si alguna vista lo muestra, gana badge DEMO inequívoco o desaparece.

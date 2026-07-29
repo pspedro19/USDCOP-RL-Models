@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
+status: PARTIAL
 version: 1.0.0
-last_verified: 2026-07-27
+last_verified: 2026-07-29
 supersedes: []
 code_anchors:
   - src/contracts/strategy_manifest.py
@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: FABRIC §8 + §28 E2 · **Ola**: 3 · **Esfuerzo**: L · **Trials**: 0
 
 ## Estado actual (as-built verificado 2026-07-27)
-Hoy: code_hash de manifiestos + sha16 de ledgers puntuales. No hay spec/decision/execution_fingerprint ni writer canónico.
+Entrega parcial: `src/identity/fingerprints.py` implementa fingerprints con separación de dominio y `src/identity/canonical.py` aporta el writer canónico. Las invariantes de representación (incluidas LF/CRLF y números equivalentes) tienen cobertura focal. La spine productiva y el replay independiente del ledger todavía no están cableados.
 
 ## Qué falta exactamente
-Módulo identity: los 6 conceptos (§8.1), writer canónico (semantic_hash==bytes_hash por construcción en JSON propios), spine mínimo resoluble. Gate CI: replay independiente reproduce el semantic_hash del paper ledger anclado.
+Completar la spine mínima con productores/consumidores reales y un gate que reconstruya desde cero el `semantic_hash` de un paper ledger anclado. Mutar una fila del ledger debe romper la reproducción y nombrar ambos hashes.
 
 ## Impacto frontend
 Ninguno directo.
