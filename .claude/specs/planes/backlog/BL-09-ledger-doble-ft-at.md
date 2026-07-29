@@ -28,5 +28,29 @@ Futuro: Control Tower muestra N_global vs N_MAX (BL-32).
 ## Verificación
 CI: `trials_charged` de cada familia == conteo en ledger; suma == n_trials_total de los registries actuales.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_trial_ledger.py -q
+verde:   26 passed
+
+muta:    scripts/validation/check_trial_ledger.py — `return errors` insertado en
+         run_all_checks() tras el primer check
+espera:  10 failed — un caso por cada check desconectado del gate
+         "check_hash_chain NO esta cableado en run_all_checks(): sus violaciones no
+          llegan al exit code del gate"
+
+muta-2:  scripts/validation/check_trial_ledger.py — eliminada la comparacion
+         `record["prev_hash"] != prev_hash` de check_hash_chain
+espera:  3 failed — borrar filas del medio, insertar una fila fabricada con line_hash
+         impecable pero prev_hash ajeno, y reordenar dos contiguas
+```
+
+**Historial honesto**: hasta el 2026-07-28 el agregador podía quedarse con **1 de 11 checks**
+y la suite seguía verde, porque los ~20 tests llamaban a cada `check_*` directamente y nadie
+verificaba el cableado con el `main()` que devuelve el exit 0/1. Y la cadena hash solo
+detectaba la **edición** de una fila —que el `line_hash` ya caza solo—: supresión, inserción
+y reorden pasaban en silencio.
+
 ## Notas constitución
 Etapa 'irreparable-hacia-atrás': cada activo sumado con N fragmentado es deuda estadística sin refinanciación.

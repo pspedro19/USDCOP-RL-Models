@@ -67,5 +67,27 @@ Artefactos para ≥1 modelo de cada clase (lineal/árbol/regla); vista renderiza
 Ejecutado 2026-07-28: `pytest usdcop-trading-dashboard/tests/test_interpretability_schema.py -q`
 ⇒ **11 passed** (6 artefactos: 2 lineales + 3 árbol + 1 regla).
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/unit/test_interpretability_artifacts.py -q
+verde:   20 passed
+
+muta:    scripts/analysis/generate_interpretability.py:467
+         phi = Z * coefs  ->  phi = np.ones_like(Z)
+espera:  3 failed — aditividad (sum(mean_shap)+base=21 vs mean(pred)=-1.55e-05),
+         no-degeneracion (mean_abs_shap constante en las 21 features) y
+         acoplamiento al modelo (amplificar x1e6 un coeficiente no cambia el ranking)
+
+muta-2:  misma ruta, TreeSHAP: phi = np.ones_like(phi) tras shap_fn(mdl, Xte)
+espera:  1 failed — additivity_max_abs_err=21 contra umbral 1e-06
+```
+
+**Historial honesto**: hasta el 2026-07-28 se podían **fabricar** las contribuciones SHAP
+(constantes 1.0 para toda feature y toda fila) sin mover un test: se comprobaba forma, orden
+descendente (trivial con constantes), finitud y provenance, pero **nunca** que φ tuviera
+relación con el modelo. `grep additivity tests/` daba **0 aserciones**: la aditividad se
+persistía como campo y no se recomputaba (K-041). La ruta TreeSHAP no la ejecutaba ningún test.
+
 ## Notas constitución
 A.7: solo test-folds; sirve para RECHAZAR modelos absurdos, no para probar verdades.

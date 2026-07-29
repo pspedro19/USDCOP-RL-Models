@@ -31,6 +31,28 @@ Panel en /production: tabla candidatas (v11 real vs v12/v14 paper), judge_window
 ## Verificación
 Panel renderiza el JSON real; N<20 muestra solo conteo/PnL.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: npx vitest run tests/unit/components/ProductionView.paper-ledger.test.tsx                         tests/unit/components/PaperCandidatesPanel.test.tsx
+         (desde usdcop-trading-dashboard/)
+verde:   16 passed
+
+muta:    components/gm/views/ProductionView.tsx:982
+         {paperLedger && <PaperCandidatesPanel/>}  ->  {false && paperLedger && <PaperCandidatesPanel/>}
+espera:  1 failed — "Unable to find role=table and name /candidatas/i"
+         (el A/B v11/v12/v14 desaparece de /production: el estado exacto que este BL arregla)
+
+muta-2:  components/gm/views/PaperCandidatesPanel.tsx — celda extra "Sharpe 3.35 · p=0.006"
+         en filas con n_trades=11
+espera:  1 failed — la fila publica Sharpe con N<20, prohibido por quant-constitution §6
+```
+
+**Historial honesto**: hasta el 2026-07-28 ninguna de las dos mutaciones movía un test.
+Los 13 tests existentes renderizaban `PaperCandidatesPanel` **aislado** con un fixture, así
+que el panel podía estar desconectado de la página; y el test de §6 comprobaba que se ecoa un
+string que venía **del propio fixture**, no que no hubiera un Sharpe al lado.
+
 ## Notas constitución
 Vote-2/decisiones siguen sobre bundles; esto es monitoreo del juez sellado — jamás re-anclar.
 

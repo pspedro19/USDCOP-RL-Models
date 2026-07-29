@@ -28,5 +28,23 @@ BL-15 (contratos), BL-13. Migración de las 10 señales existentes es trivial.
 ## Verificación
 Grep: ninguna columna _pct con valores decimales; la señal v11 rinde igual en UI antes/después.
 
+### Verificación ejecutable (CTR-MUTATION-SCOREBOARD-001)
+
+```
+comando: python -m pytest tests/regression/test_return_units.py -q
+verde:   28 passed, 3 skipped   (los skips son los que exigen Postgres arriba)
+
+muta:    scripts/pipeline/train_and_export_smart_simple.py:1052
+         "total_return_pct": round(total_return, 2)  ->  round(total_return / 100.0, 6)
+espera:  2 failed — "total_return_pct=0.144616 for a ledger that compounds 10_000 ->
+         11446.16: expected 14.46 PERCENTAGE POINTS" y el detector de disfraz decimal
+         sobre la salida en memoria
+```
+
+**Historial honesto**: hasta el 2026-07-28 esa mutación —**literalmente el bug que este BL
+prohíbe**, un decimal bajo un sufijo `_pct`— pasaba verde, porque la suite validaba los JSON
+**ya commiteados** en `public/data/production/` y no el código que los produce. El detector
+funcionaba, pero apuntaba al artefacto en vez de al productor.
+
 ## Notas constitución
 El sufijo _pct sobre un decimal es un bug de comunicación esperando capital.
