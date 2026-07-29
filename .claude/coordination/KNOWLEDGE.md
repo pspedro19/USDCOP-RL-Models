@@ -198,3 +198,57 @@ los chunks cuelgan de `/_next/static/chunks/` y el guard fallaba cerrado por no
 encontrarlo. Corolario para el lado DB: el equivalente exacto es probar contra una base
 que no tiene tu DDL, y con `--plan fabric-v1` sin invocador ese es el escenario POR
 DEFECTO, no el raro.
+
+**K-045 - Un fixture mas vacio que el payload real no puede detectar un payload vacio.**
+Origen: `validateStrategyPassport` aceptaba un passport con `governance: {}`, `lineage: {}`
+y `risk: {}` -o sea, publicable **sin gobernanza, sin linaje y sin riesgo**- y la suite
+seguia en 44 passed. La causa no era el validador: era que **el fixture del propio test**,
+`minimalPassport()`, usaba exactamente esos bloques vacios. Un test cuyo dato de entrada es
+mas pobre que el dato de produccion **no puede distinguir** un caso valido de uno degenerado;
+mide su propia pobreza. Lo mismo aparecio en `BL-25`, donde el fixture usaba
+`live = paper - constante`: `sd(d)` salia ~1e-18, el z-score ~1e16, y **multiplicar el umbral
+3-sigma por 1000 pasaba verde**. Regla: **el fixture se construye para poder FALLAR**, no para
+pasar. Antes de escribir la asercion, pregunta que valor de entrada la haria caer; si no
+existe ninguno, el test no prueba nada. Corolario: cuando exista un payload real en el repo,
+**el fixture se deriva de el** (ver `tests/support/interp-fixtures.ts`, `ProductionView.paper-ledger`),
+porque un fixture escrito a mano tiende a parecerse a lo que el autor espera, no a lo que llega.
+
+**K-046 - Un guardian que se auto-cura oculta exactamente lo que existe para revelar.**
+Origen: `/production` lanzaba `TypeError: Cannot read properties of undefined (reading 'filter')`
+por una carrera de sesion, y **nadie lo habia notado en meses**. Motivo: el `ErrorBoundary` de
+pagina tiene `maxRetries=1`, asi que capturaba el crash, escribia una linea en consola y
+**remontaba toda la aplicacion 2 s despues**. La pagina se veia bien. El defecto vivia en
+consola, invisible, mientras el MISMO bug -en silencio- pintaba **los KPIs de la estrategia
+anterior bajo el nombre de la recien seleccionada** (numeros publicados equivocados,
+quant-constitution §7). Regla: un mecanismo de recuperacion automatica **degrada la
+observabilidad**, y por eso solo se pone donde el fallo sea esperado y benigno; en una
+superficie de decision, un crash **debe verse**. Si se deja el auto-retry, el reintento se
+INSTRUMENTA (contador, alerta, o el test lo trata como fallo), porque de lo contrario lo unico
+que se ha automatizado es no enterarse. Es K-033 en el frontend: el guardian tenia un punto
+ciego, y encima lo fabricaba el.
+
+**K-047 - El marcador mide ACUERDO, no PROTECCION. Publicar uno sin el otro es mentir por omision.**
+Origen: `PROGRESS.md` declaraba **"DONE estricto 2/47"** listando como cerrado un BL que se
+habia retirado horas antes por tener un candado que no mordia; llevaba **10 horas rancio** y
+ninguno de los dos lo miro al citar cifras al operador. Al corregirlo a 1/47 quedo claro el
+problema de fondo: **DONE mide que el otro ingeniero firmo**, y eso NO dice si la garantia
+esta protegida. El mismo dia, el lote CLAUDE paso de **9 BLs con candado decorativo a 0**, y
+el marcador **no se movio ni un punto** porque ningun cierre habia pasado aun el cross-review.
+Las dos cifras son ciertas y **ninguna es suficiente sola**: la primera sin la segunda vende
+progreso inexistente; la segunda sin la primera se lo cree uno mismo. Regla: **se reportan
+juntas** -DONE/47 **y** el desglose de mutacion (con rojo demostrado / con hueco documentado /
+sin proteger)-, y cualquier tablero que cite una cifra declara **cuando se midio** y **contra
+que commit**. Un tablero sin fecha de medicion es prosa.
+
+**K-048 - El texto de un mensaje nunca viaja por una cadena que el shell vaya a expandir.**
+Origen: dos mensajes tecnicos del canal salieron **mutilados** porque el shell interpreto
+backticks y `${...}` DENTRO del contenido: un hallazgo sobre evasion de candados que citaba
+`fetch(`${P}/appro` + 've')` se publico como `fetch(\ + 've')`, y el mensaje de errata que lo
+corregia **volvio a romperse por lo mismo**. La ironia es el dato: backticks y `${...}` son
+sintaxis del shell **y a la vez** sintaxis de lo que documentamos, asi que **cuanto mas tecnico
+es el hallazgo, mas probable es que el canal lo corrompa** -justo al reves de lo que uno
+querria. Regla: los mensajes se escriben con la herramienta de ficheros o desde un script,
+nunca por `printf`/heredoc interpolado; y **tras publicar se releen** los fragmentos con codigo.
+Corolario general: si una capa de transporte comparte sintaxis con el contenido que transporta,
+**la corrupcion silenciosa es el caso normal, no el raro**; ahi se escapa el contenido o se
+cambia de transporte.
