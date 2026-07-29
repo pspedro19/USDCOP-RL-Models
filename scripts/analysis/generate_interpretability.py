@@ -5,13 +5,19 @@ absurdos, no para probar verdades". Este generador NO computa métricas de acier
 performance: 0 trials (diagnóstico declarado sobre congelados).
 
 Fase 1 (este script):
-  (a) Zoo COP — SHAP LINEAL cerrado para ridge / bayesian_ridge sobre el ÚLTIMO fit
-      walk-forward (mismo esquema que meta01_zoo_ledger: train = filas < último origen
-      con purga de 5 días, scaler train-only). Para un modelo lineal sobre features
-      estandarizadas, el valor SHAP exacto (features independientes) es
-      phi_j = coef_j * (x_j - mu_j) / sigma_j — forma cerrada, sin instalar `shap`.
-      Se exporta top features (mean|phi| global) + agregado por año + kill-flags A.7
-      (signo del aporte medio que cambia entre años).
+  (a) Zoo COP — SHAP LINEAL cerrado para ridge / bayesian_ridge / ard. Para un modelo
+      lineal sobre features estandarizadas, el valor SHAP exacto (features
+      independientes) es phi_j = coef_j * (x_j - mu_j) / sigma_j — forma cerrada, sin
+      instalar `shap`. SOLO TEST-FOLDS: EL MISMO walk-forward expanding anual que la
+      ruta de árbol (`_annual_expanding_folds`, maquinaria compartida). Cortes:
+      global + por año + POR RÉGIMEN (gate Hurst congelado), más kill-flags A.7.
+
+      Corrección 2026-07-28 (defecto de honestidad): hasta esta versión la ruta lineal
+      hacía UN solo fit sobre todo el histórico y atribuía sobre TODAS las filas —
+      1649 de 1654 eran filas de su propio train — mientras el artefacto llevaba el
+      header "solo test-folds". El header era falso para ridge/bayesian_ridge y un
+      test lo fijaba en los 6 artefactos. Ahora la afirmación es cierta: n_fits > 1 y
+      cada fila se atribuye con un fit que no la vio.
   (b) Rule-based SPX500 — ATRIBUCIÓN DE REGLAS (attribution_not_shap=true): % días
       trend_on (MA200), exposición, y descomposición simple de PnL bruto en
       beta (n*mean(pos)*mean(ret)) + timing (n*cov(pos,ret)), global y por año.
@@ -63,7 +69,7 @@ from src.contracts.strategy_schema import safe_json_dump  # noqa: E402
 
 OUT_ROOT = REPO / "data" / "interpretability"  # FUERA de public/ (CXD-040: public bypassea admin:all)
 HORIZON = 5          # mismo H y purga que meta01_zoo_ledger.py
-ZOO_LINEAR_MODELS = ("ridge", "bayesian_ridge")   # SHAP lineal cerrado
+ZOO_LINEAR_MODELS = ("ridge", "bayesian_ridge", "ard")   # SHAP lineal cerrado (coef_)
 ZOO_TREE_MODELS = ("xgboost", "lightgbm", "catboost")   # TreeSHAP nativo exacto
 MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos train se SALTAN)
 
@@ -415,194 +421,76 @@ def migrate_identity(root: Path | None = None, *, apply: bool = False) -> list[d
 
 
 # ---------------------------------------------------------------------------
-# (a) Zoo COP — SHAP lineal cerrado (ridge / bayesian_ridge)
+# MAQUINARIA COMPARTIDA por las dos rutas del zoo (lineal y árbol)
 # ---------------------------------------------------------------------------
+#
+# El esquema de folds vive AQUÍ, en UNA sola función, en vez de duplicado por
+# ruta. Motivo (defecto BL-20 de honestidad, 2026-07-28): la ruta de árbol hacía
+# walk-forward anual y la LINEAL atribuía con un único fit global sobre todo el
+# histórico — 1649 de 1654 filas atribuidas eran filas de su propio train — pero
+# ambos artefactos llevaban el mismo header ``solo test-folds``. Un banner
+# constitucional que contradice al campo de al lado es honestidad decorativa.
+# Con una sola implementación las dos rutas son comparables por construcción y
+# no pueden volver a divergir sin que el diff lo enseñe.
 
-def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
-                        *, supersede: bool = False) -> list[Path]:
-    from sklearn.preprocessing import StandardScaler
-    from src.forecasting.models.factory import ModelFactory
-    from src.forecasting.ssot_config import ForecastingSSOTConfig
-    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+def _annual_expanding_folds(df: pd.DataFrame, feat_cols: list[str]) -> list[dict]:
+    """Folds expanding ANUALES: train = filas < 1-ene-Y (purgadas), test = filas de Y.
 
-    cfg = ForecastingSSOTConfig.load()
-    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
-    df, _ = loader.load_dataset()
-    feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
-    df = df.sort_values("date").reset_index(drop=True)
-    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    Una fila NUNCA se atribuye con un modelo que la vio en su train (invariante A.7).
+    La purga descarta las últimas ``HORIZON`` filas del tramo previo: sus targets a 5
+    días miran DENTRO del año de test, así que entrenarlas sería look-ahead.
 
-    # ÚLTIMO fit walk-forward (esquema meta01): origen = última fila; purga de 5 días
-    # (los targets 5d de las últimas HORIZON filas no están realizados).
-    origin = pd.Timestamp(df["date"].iloc[-1])
-    train = df.iloc[:-HORIZON]
-    m_ok = train[feat_cols].notna().all(axis=1) & train["y5"].notna()
-    Xtr = train.loc[m_ok, feat_cols].to_numpy(float)
-    ytr = train.loc[m_ok, "y5"].to_numpy(float)
-    if len(Xtr) < 200:
-        raise RuntimeError(f"zoo: solo {len(Xtr)} filas de train — dataset incompleto")
-
-    scaler = StandardScaler().fit(Xtr)          # train-only, sin fuga
-    mu, sigma = scaler.mean_, scaler.scale_
-
-    # Filas donde se evalúan las contribuciones: todo el histórico con features completas.
-    full_ok = df[feat_cols].notna().all(axis=1)
-    rows = df.loc[full_ok, ["date"] + feat_cols].reset_index(drop=True)
-    Z = (rows[feat_cols].to_numpy(float) - mu) / sigma
-    years = rows["date"].dt.year
-
-    version = origin.date().isoformat()
-    # Huella de los DATOS de entrada (misma para todos los modelos de esta corrida).
-    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
-    code_fp = _code_fingerprint()
-    paths: list[Path] = []
-    for mid in model_ids:
-        mdl = ModelFactory.create(mid)
-        mdl.fit(scaler.transform(Xtr), ytr)
-        coefs = np.asarray(mdl._model.coef_, dtype=float).ravel()
-        intercept = float(np.asarray(mdl._model.intercept_).ravel()[0])
-        if len(coefs) != len(feat_cols):
-            raise RuntimeError(f"{mid}: {len(coefs)} coefs vs {len(feat_cols)} features")
-
-        phi = Z * coefs                                   # (n_rows, n_feat) SHAP lineal
-        mean_abs = np.nanmean(np.abs(phi), axis=0)
-        mean_phi = np.nanmean(phi, axis=0)
-        order = np.argsort(-mean_abs)
-        top_features = [
-            {"rank": int(r + 1), "feature": feat_cols[j], "coef": float(coefs[j]),
-             "mean_abs_shap": float(mean_abs[j]), "mean_shap": float(mean_phi[j])}
-            for r, j in enumerate(order)
-        ]
-
-        by_year: dict[str, list[dict]] = {}
-        yearly_sign: dict[str, list[float]] = {c: [] for c in feat_cols}
-        for yr in sorted(years.unique()):
-            sel = (years == yr).to_numpy()
-            ma = np.nanmean(np.abs(phi[sel]), axis=0)
-            mp = np.nanmean(phi[sel], axis=0)
-            oy = np.argsort(-ma)
-            by_year[str(int(yr))] = [
-                {"feature": feat_cols[j], "mean_abs_shap": float(ma[j]),
-                 "mean_shap": float(mp[j])}
-                for j in oy
-            ]
-            for j, c in enumerate(feat_cols):
-                yearly_sign[c].append(float(mp[j]))
-
-        # Kill-flag A.7: aporte medio que cambia de signo entre años (ambos lados
-        # con magnitud material). Solo FLAG diagnóstico — la decisión es humana.
-        eps = 0.1 * float(np.nanmean(mean_abs)) if np.isfinite(np.nanmean(mean_abs)) else 0.0
-        kill_flags = sorted(
-            c for c, vals in yearly_sign.items()
-            if min(vals) < -eps and max(vals) > eps
-        )
-
-        params = {k: v for k, v in (mdl.get_params() or {}).items()
-                  if isinstance(v, (int, float, str, bool, type(None)))}
-        config_fp = _canonical_sha({
-            "horizon": HORIZON, "purge_days": HORIZON, "min_train_rows": 200,
-            "features": feat_cols, "scaler": "StandardScaler train-only",
-            "model_id": mid, "params": params,
-            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
-        })
-        # Modelo LINEAL: la huella son los coeficientes ajustados — compromete el
-        # modelo EXACTO que produjo estas atribuciones, no una receta para obtenerlo.
-        model_fp = _canonical_sha({
-            "basis": "fitted_linear_coefficients",
-            "model_id": mid, "params": params,
-            "coef": [float(c) for c in coefs], "intercept": intercept,
-        })
-
-        payload = {
-            "nota": NOTA,
-            "surface": "zoo",
-            "asset": "usdcop",
-            "model_id": mid,
-            "model_type": "linear",
-            "method": "linear_shap_closed_form",
-            "attribution_not_shap": False,
-            "version": version,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "provenance": {
-                "data_fingerprint": data_fp,
-                "code_fingerprint": code_fp,
-                "config_fingerprint": config_fp,
-                "model_fingerprint": model_fp,
-                "model_fingerprint_basis": "fitted_linear_coefficients",
-                "nota": ("la 'version' (ultimo dia del dataset) NO identifica la evidencia: "
-                         "el artifact_id se deriva de estas cuatro huellas mas todo el "
-                         "contenido, y republicar contenido distinto bajo la misma version "
-                         "es un error, no un overwrite"),
-            },
-            "fit": {
-                "scheme": "ultimo fit walk-forward (origen = ultima fila, purga 5d)",
-                "origin": version,
-                "n_fits": 1,
-                "n_train": int(len(Xtr)),
-                "n_train_scheme": ("single_fit: un unico fit, el N no es ambiguo "
-                                   "(no hay folds que sumar)"),
-                "horizon": HORIZON,
-                "purge_days": HORIZON,
-                "scaler": "StandardScaler train-only",
-                "params": params,
-            },
-            "scope": ("phi_j = coef_j*(x_j-mu_j)/sigma_j del ULTIMO fit aplicado a todo el "
-                      "historico de features — diagnostico del modelo congelado, no evidencia "
-                      "OOS ni claim de edge"),
-            "base_value": intercept,
-            "n_rows": int(len(rows)),
-            "n_features": len(feat_cols),
-            "top_features": top_features,
-            "by_year": by_year,
-            "kill_flags_sign_change_by_year": kill_flags,
-        }
-        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
-        paths.append(p)
-        print(f"[zoo] {mid}: {_rel(p)}", flush=True)
-    return paths
-
-
-# ---------------------------------------------------------------------------
-# (c) Zoo COP — TreeSHAP exacto (xgboost / lightgbm / catboost), SOLO test-folds
-# ---------------------------------------------------------------------------
-
-def _tree_shap_backend(model_id: str):
-    """Devuelve (nombre_backend, fn(booster_wrapper, X) -> (phi, bias)) o lanza ImportError.
-
-    Los tres boosters implementan TreeSHAP EXACTO (Lundberg et al.) de forma nativa; la
-    última columna que devuelven es el valor base. No se requiere el paquete `shap`
-    (que aquí ni siquiera importa: su `_tree.py` arrastra pyspark, roto en py3.12).
+    Requiere ``df`` ordenado por fecha, con índice 0..n-1, y las columnas ``date``,
+    ``y5`` y ``feat_cols``. Cada fold publica ``train_idx``/``test_idx`` (índices del
+    ``df``) para que un tercero pueda comprobar la disjunción, no solo creérsela.
     """
-    if model_id == "xgboost":
-        import xgboost as xgb  # noqa: F401 — falla ⇒ backend no disponible
+    folds: list[dict] = []
+    for yr in sorted({int(y) for y in df["date"].dt.year.unique()}):
+        cut = pd.Timestamp(year=yr, month=1, day=1)
+        prev = df[df["date"] < cut]
+        if len(prev) <= HORIZON:
+            continue
+        train = prev.iloc[:-HORIZON]                       # purga: targets 5d no realizados
+        m_ok = train[feat_cols].notna().all(axis=1) & train["y5"].notna()
+        Xtr = train.loc[m_ok, feat_cols].to_numpy(float)
+        ytr = train.loc[m_ok, "y5"].to_numpy(float)
+        test = df[(df["date"] >= cut) & (df["date"] < cut.replace(year=yr + 1))]
+        test = test[test[feat_cols].notna().all(axis=1)]
+        if len(Xtr) < MIN_TRAIN or test.empty:
+            continue
+        folds.append({"year": yr, "Xtr": Xtr, "ytr": ytr, "test": test,
+                      "train_idx": train.loc[m_ok].index.to_numpy(),
+                      "test_idx": test.index.to_numpy(),
+                      "train_start": pd.Timestamp(train.loc[m_ok, "date"].iloc[0]),
+                      "train_end": pd.Timestamp(train.loc[m_ok, "date"].iloc[-1])})
+    return folds
 
-        def fn(mdl, X):
-            raw = np.asarray(
-                mdl._model.get_booster().predict(xgb.DMatrix(X), pred_contribs=True), float)
-            return raw[:, :-1], raw[:, -1]
 
-        return "xgboost.Booster.predict(pred_contribs=True)", fn
+def _fold_meta(fold: dict, n_test: int, base_value: float) -> dict:
+    """Bitácora publicable de un fold (idéntica en las dos rutas).
 
-    if model_id == "lightgbm":
-        import lightgbm  # noqa: F401
+    ``fold_fingerprint`` es la huella del train EXACTO: dos corridas con la misma
+    huella entrenaron sobre las mismas filas, así que un tercero puede verificar
+    QUÉ vio el modelo en vez de fiarse de la prosa del ``scheme``.
+    """
+    return {"year": int(fold["year"]), "n_train": int(len(fold["Xtr"])),
+            "n_test": int(n_test),
+            "train_start": fold["train_start"].date().isoformat(),
+            "train_end": fold["train_end"].date().isoformat(),
+            "base_value": float(base_value),
+            "fold_fingerprint": _canonical_sha({
+                "year": int(fold["year"]),
+                "train_end": fold["train_end"].date().isoformat(),
+                "n_train": int(len(fold["Xtr"])),
+                "X": _sha(np.ascontiguousarray(fold["Xtr"]).tobytes()),
+                "y": _sha(np.ascontiguousarray(fold["ytr"]).tobytes()),
+            })}
 
-        def fn(mdl, X):
-            raw = np.asarray(mdl._model.predict(X, pred_contrib=True), float)
-            return raw[:, :-1], raw[:, -1]
 
-        return "lightgbm.Booster.predict(pred_contrib=True)", fn
-
-    if model_id == "catboost":
-        from catboost import Pool
-
-        def fn(mdl, X):
-            raw = np.asarray(
-                mdl._model.get_feature_importance(Pool(X), type="ShapValues"), float)
-            return raw[:, :-1], raw[:, -1]
-
-        return "catboost.get_feature_importance(type='ShapValues')", fn
-
-    raise ImportError(f"{model_id}: sin backend TreeSHAP nativo registrado")
+def _distinct_train_rows(folds: list[dict]) -> int:
+    """Filas DISTINTAS que algún fit vio (los trains expanding son ANIDADOS: la
+    unión no es la suma, y contar la unión es lo único que da un N real)."""
+    return len(set().union(*(set(f["train_idx"].tolist()) for f in folds)))
 
 
 def _regime_labels(df: pd.DataFrame) -> pd.Series:
@@ -648,7 +536,7 @@ def _sign_change_flags(groups: dict[str, list[dict]], feat_cols: list[str],
                        scale: float) -> list[str]:
     """Kill-flag A.7: mean(phi) que cambia de signo entre grupos con magnitud material.
 
-    MISMA regla que la ruta lineal (eps = 10% de la magnitud media global). Solo FLAG
+    MISMA regla en las dos rutas (eps = 10% de la magnitud media global). Solo FLAG
     diagnóstico: la decisión de rechazar el modelo es humana.
     """
     eps = 0.1 * scale if np.isfinite(scale) else 0.0
@@ -657,6 +545,228 @@ def _sign_change_flags(groups: dict[str, list[dict]], feat_cols: list[str],
         for r in rows:
             per_feat[r["feature"]].append(float(r["mean_shap"]))
     return sorted(c for c, v in per_feat.items() if v and min(v) < -eps and max(v) > eps)
+
+
+def _linear_contributions(mdl, Z: np.ndarray) -> tuple[np.ndarray, float, np.ndarray]:
+    """SHAP lineal EXACTO en las coordenadas que el modelo realmente usa.
+
+    Para un modelo lineal sobre features independientes, el valor SHAP exacto es
+    ``phi_j = coef_j * (z_j - mu_j)``. El matiz que hay que respetar: ``ard``
+    reescala INTERNAMENTE dentro de su ``fit``/``predict``
+    (``src/forecasting/models/ard.py:86``), así que sus ``coef_`` viven en OTRA
+    base que la ``Z`` que se le pasa. Componer ese scaler interno es lo que hace
+    que ``sum(phi) + intercept`` siga siendo la predicción del wrapper también
+    para ARD; ignorarlo daría una atribución que no explica al modelo.
+    """
+    inner = getattr(mdl, "_scaler", None)          # ARD: StandardScaler interno
+    Zi = np.asarray(inner.transform(Z), float) if inner is not None else np.asarray(Z, float)
+    coefs = np.asarray(mdl._model.coef_, dtype=float).ravel()
+    intercept = float(np.asarray(mdl._model.intercept_).ravel()[0])
+    return Zi * coefs, intercept, coefs
+
+
+# ---------------------------------------------------------------------------
+# (a) Zoo COP — SHAP lineal cerrado (ridge / bayesian_ridge / ard), SOLO test-folds
+# ---------------------------------------------------------------------------
+
+def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
+                        *, supersede: bool = False) -> list[Path]:
+    from sklearn.preprocessing import StandardScaler
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+
+    cfg = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
+    df, _ = loader.load_dataset()
+    feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    df["regime"] = _regime_labels(df)
+
+    version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
+
+    # MISMOS folds que la ruta de árbol (una sola implementación compartida): fit
+    # con filas < 1-ene-Y purgadas, atribución SOLO sobre las filas del año Y.
+    folds = _annual_expanding_folds(df, feat_cols)
+    if not folds:
+        raise RuntimeError("zoo lineal: ningún fold anual cumple la guarda de train mínimo")
+    distinct_train_rows = _distinct_train_rows(folds)
+
+    # Huella de los DATOS de entrada (misma para todos los modelos de esta corrida).
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
+    paths: list[Path] = []
+    for mid in model_ids:
+        phi_parts, base_parts, coef_parts, dates, fold_meta = [], [], [], [], []
+        intercepts: list[float] = []
+        add_err = 0.0
+        for f in folds:
+            sc = StandardScaler().fit(f["Xtr"])            # train-only POR FOLD, sin fuga
+            Xte = sc.transform(f["test"][feat_cols].to_numpy(float))
+            mdl = ModelFactory.create(mid)                 # hiperparámetros CONGELADOS (defaults)
+            mdl.fit(sc.transform(f["Xtr"]), f["ytr"])
+            phi_f, intercept, coefs = _linear_contributions(mdl, Xte)
+            if phi_f.shape[1] != len(feat_cols):
+                raise RuntimeError(
+                    f"{mid}: {phi_f.shape[1]} contribuciones vs {len(feat_cols)} features")
+            # Aditividad de la forma cerrada: sum(phi) + intercept == prediccion del
+            # wrapper. Se persiste (no se asume): en lineal exacto ⇒ ~1e-17.
+            raw_pred = np.asarray(mdl.predict(Xte), dtype=float).ravel()
+            add_err = max(add_err,
+                          float(np.nanmax(np.abs(phi_f.sum(axis=1) + intercept - raw_pred))))
+            phi_parts.append(phi_f)
+            base_parts.append(np.full(len(Xte), intercept, dtype=float))
+            coef_parts.append(coefs)
+            intercepts.append(intercept)
+            dates.append(f["test"][["date", "regime"]])
+            fold_meta.append(_fold_meta(f, len(Xte), intercept))
+
+        phi = np.vstack(phi_parts)                         # SOLO filas de test-fold
+        meta = pd.concat(dates, ignore_index=True)
+        base_value = float(np.nanmean(np.concatenate(base_parts)))
+        # El coeficiente ya no es único (un fit por fold): se publica la MEDIA por
+        # fold, y el detalle exacto queda comprometido en model_fingerprint.
+        coef_mean = np.mean(np.vstack(coef_parts), axis=0)
+
+        col = {c: j for j, c in enumerate(feat_cols)}
+        global_rows = _agg_rows(phi, feat_cols, np.ones(len(phi), dtype=bool))
+        top_features = [
+            {"rank": i + 1, "feature": r["feature"],
+             "coef": float(coef_mean[col[r["feature"]]]),
+             "mean_abs_shap": r["mean_abs_shap"], "mean_shap": r["mean_shap"]}
+            for i, r in enumerate(global_rows)
+        ]
+        scale = float(np.nanmean([r["mean_abs_shap"] for r in global_rows]))
+
+        yr_arr = meta["date"].dt.year.to_numpy()
+        by_year = {str(int(y)): _agg_rows(phi, feat_cols, yr_arr == y)
+                   for y in sorted(set(yr_arr))}
+        reg_arr = meta["regime"].to_numpy()
+        by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r)
+                     for r in sorted(set(reg_arr))}
+
+        params = {k: v for k, v in (ModelFactory.create(mid).get_params() or {}).items()
+                  if isinstance(v, (int, float, str, bool, type(None)))}
+        config_fp = _canonical_sha({
+            "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+            "features": feat_cols, "scaler": "StandardScaler train-only por fold",
+            "model_id": mid, "params": params,
+            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+            "regime_gate_config": _file_fingerprint(
+                REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+        })
+        # Modelo LINEAL: la huella son los coeficientes ajustados DE CADA FOLD —
+        # compromete los modelos EXACTOS que produjeron estas atribuciones, no una
+        # receta para obtenerlos.
+        model_fp = _canonical_sha({
+            "basis": "fitted_linear_coefficients_per_fold",
+            "model_id": mid, "params": params,
+            "folds": [m["fold_fingerprint"] for m in fold_meta],
+            "coef": [[float(c) for c in row] for row in coef_parts],
+            "intercept": [float(b) for b in intercepts],
+        })
+
+        payload = {
+            "nota": NOTA,
+            "surface": "zoo",
+            "asset": "usdcop",
+            "model_id": mid,
+            "model_type": "linear",
+            "method": "linear_shap_closed_form",
+            "attribution_not_shap": False,
+            "version": version,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": code_fp,
+                "config_fingerprint": config_fp,
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "fitted_linear_coefficients_per_fold",
+                "nota": ("la 'version' (ultimo dia del dataset) NO identifica la evidencia: "
+                         "el artifact_id se deriva de estas cuatro huellas mas todo el "
+                         "contenido, y republicar contenido distinto bajo la misma version "
+                         "es un error, no un overwrite"),
+            },
+            "additivity_max_abs_err": add_err,
+            "fit": {
+                "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
+                           f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
+                "origin": version,
+                "n_fits": len(fold_meta),
+                **_train_size_summary(fold_meta, distinct_train_rows),
+                "horizon": HORIZON,
+                "purge_days": HORIZON,
+                "scaler": "StandardScaler train-only por fold",
+                "params": params,
+            },
+            "folds": fold_meta,
+            "scope": ("phi_j = coef_j*(z_j-mu_j) EXACTO (forma cerrada) sobre filas OOS: "
+                      "ninguna fila fue vista por el fit que la atribuye. Un fit por fold "
+                      "anual; el 'coef' publicado es la MEDIA por fold (el detalle exacto "
+                      "esta comprometido en model_fingerprint). Hiperparametros = defaults "
+                      "CONGELADOS del ModelFactory, sin tuning ni seleccion; ninguna metrica "
+                      "de acierto computada (0 trials) — diagnostico, no claim de edge."),
+            "base_value": base_value,
+            "n_rows": int(len(phi)),
+            "n_features": len(feat_cols),
+            "n_folds": len(fold_meta),
+            "top_features": top_features,
+            "by_year": by_year,
+            "by_regime": by_regime,
+            "regime_gate": ("gate Hurst congelado de config/execution/smart_simple_v1.yaml "
+                            "evaluado con retornos <= la propia fila (sin look-ahead)"),
+            "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
+            "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
+        }
+        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
+        paths.append(p)
+        print(f"[zoo] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
+              f"add_err={add_err:.2e})", flush=True)
+    return paths
+
+
+# ---------------------------------------------------------------------------
+# (c) Zoo COP — TreeSHAP exacto (xgboost / lightgbm / catboost), SOLO test-folds
+# ---------------------------------------------------------------------------
+
+def _tree_shap_backend(model_id: str):
+    """Devuelve (nombre_backend, fn(booster_wrapper, X) -> (phi, bias)) o lanza ImportError.
+
+    Los tres boosters implementan TreeSHAP EXACTO (Lundberg et al.) de forma nativa; la
+    última columna que devuelven es el valor base. No se requiere el paquete `shap`
+    (que aquí ni siquiera importa: su `_tree.py` arrastra pyspark, roto en py3.12).
+    """
+    if model_id == "xgboost":
+        import xgboost as xgb  # noqa: F401 — falla ⇒ backend no disponible
+
+        def fn(mdl, X):
+            raw = np.asarray(
+                mdl._model.get_booster().predict(xgb.DMatrix(X), pred_contribs=True), float)
+            return raw[:, :-1], raw[:, -1]
+
+        return "xgboost.Booster.predict(pred_contribs=True)", fn
+
+    if model_id == "lightgbm":
+        import lightgbm  # noqa: F401
+
+        def fn(mdl, X):
+            raw = np.asarray(mdl._model.predict(X, pred_contrib=True), float)
+            return raw[:, :-1], raw[:, -1]
+
+        return "lightgbm.Booster.predict(pred_contrib=True)", fn
+
+    if model_id == "catboost":
+        from catboost import Pool
+
+        def fn(mdl, X):
+            raw = np.asarray(
+                mdl._model.get_feature_importance(Pool(X), type="ShapValues"), float)
+            return raw[:, :-1], raw[:, -1]
+
+        return "catboost.get_feature_importance(type='ShapValues')", fn
+
+    raise ImportError(f"{model_id}: sin backend TreeSHAP nativo registrado")
 
 
 def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
@@ -709,34 +819,12 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
     df["regime"] = _regime_labels(df)
 
     version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
-    years = sorted({int(y) for y in df["date"].dt.year.unique()})
 
-    # Folds expanding ANUALES: train = filas < 1-ene-Y (purgadas), test = filas de Y.
-    # Una fila NUNCA se atribuye con un modelo que la vio en su train (invariante A.7).
-    folds: list[dict] = []
-    for yr in years:
-        cut = pd.Timestamp(year=yr, month=1, day=1)
-        prev = df[df["date"] < cut]
-        if len(prev) <= HORIZON:
-            continue
-        train = prev.iloc[:-HORIZON]                       # purga: targets 5d no realizados
-        m_ok = train[feat_cols].notna().all(axis=1) & train["y5"].notna()
-        Xtr = train.loc[m_ok, feat_cols].to_numpy(float)
-        ytr = train.loc[m_ok, "y5"].to_numpy(float)
-        test = df[(df["date"] >= cut) & (df["date"] < cut.replace(year=yr + 1))]
-        test = test[test[feat_cols].notna().all(axis=1)]
-        if len(Xtr) < MIN_TRAIN or test.empty:
-            continue
-        folds.append({"year": yr, "Xtr": Xtr, "ytr": ytr, "test": test,
-                      "train_idx": train.loc[m_ok].index.to_numpy(),
-                      "train_start": pd.Timestamp(train.loc[m_ok, "date"].iloc[0]),
-                      "train_end": pd.Timestamp(train.loc[m_ok, "date"].iloc[-1])})
+    # MISMOS folds que la ruta lineal (una sola implementación compartida).
+    folds = _annual_expanding_folds(df, feat_cols)
     if not folds:
         raise RuntimeError("zoo tree: ningún fold anual cumple la guarda de train mínimo")
-
-    # Filas DISTINTAS que algún fit vio (los trains expanding son anidados, así que
-    # la union NO es la suma — contar la union es lo único que da un N real).
-    distinct_train_rows = len(set().union(*(set(f["train_idx"].tolist()) for f in folds)))
+    distinct_train_rows = _distinct_train_rows(folds)
 
     data_fp = _frame_fingerprint(df, feat_cols + ["close"])
     code_fp = _code_fingerprint()
@@ -777,20 +865,7 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
                 phi_parts.append(phi)
                 base_parts.append(bias)
                 dates.append(f["test"][["date", "regime"]])
-                fold_meta.append({"year": int(f["year"]), "n_train": int(len(f["Xtr"])),
-                                  "n_test": int(len(Xte)),
-                                  "train_start": f["train_start"].date().isoformat(),
-                                  "train_end": f["train_end"].date().isoformat(),
-                                  "base_value": float(np.nanmean(bias)),
-                                  # huella del train EXACTO de este fold: dos corridas
-                                  # con el mismo fold_fingerprint vieron las mismas filas
-                                  "fold_fingerprint": _canonical_sha({
-                                      "year": int(f["year"]),
-                                      "train_end": f["train_end"].date().isoformat(),
-                                      "n_train": int(len(f["Xtr"])),
-                                      "X": _sha(np.ascontiguousarray(f["Xtr"]).tobytes()),
-                                      "y": _sha(np.ascontiguousarray(f["ytr"]).tobytes()),
-                                  })})
+                fold_meta.append(_fold_meta(f, len(Xte), float(np.nanmean(bias))))
 
             phi = np.vstack(phi_parts)
             meta = pd.concat(dates, ignore_index=True)
@@ -1012,7 +1087,7 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",),
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--zoo-models", default=",".join(ZOO_LINEAR_MODELS),
-                    help="modelos LINEALES del zoo (SHAP cerrado): ridge,bayesian_ridge")
+                    help="modelos LINEALES del zoo (SHAP cerrado): ridge,bayesian_ridge,ard")
     ap.add_argument("--tree-models", default=",".join(ZOO_TREE_MODELS),
                     help="modelos de ARBOL del zoo (TreeSHAP nativo): xgboost,lightgbm,catboost")
     ap.add_argument("--rules", default="spx500",

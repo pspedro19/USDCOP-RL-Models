@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -19,6 +20,8 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from scripts.analysis.generate_interpretability import (  # noqa: E402
+    HORIZON,
+    MIN_TRAIN,
     NOTA,
     generate_rule_attribution,
     generate_zoo_linear,
@@ -113,9 +116,15 @@ def test_ridge_linear_shap_shape(artifacts):
     for yr, feats in d["by_year"].items():
         assert int(yr) >= 2020
         assert len(feats) == d["n_features"]
-    # fit walk-forward: train-only + purga declaradas
+    # corte por REGIMEN (gate Hurst congelado), igual que la ruta de arbol
+    assert d["by_regime"], "faltan los cortes por regimen (gate Hurst congelado)"
+    for feats in d["by_regime"].values():
+        assert len(feats) == d["n_features"]
+    assert isinstance(d["kill_flags_sign_change_by_regime"], list)
+    # fit walk-forward: train-only por fold + purga declaradas
     assert d["fit"]["purge_days"] == d["fit"]["horizon"] == 5
-    assert d["fit"]["n_train"] >= 200
+    assert d["fit"]["n_train_last_fit"] >= MIN_TRAIN
+    assert "n_train" not in d["fit"], "n_train a secas es ambiguo en expanding"
 
 
 def test_spx500_rule_attribution_shape(artifacts):
@@ -157,12 +166,16 @@ def test_spx500_rule_attribution_shape(artifacts):
 
 @pytest.fixture(scope="module")
 def ridge_oracle() -> dict:
-    """Oráculo INDEPENDIENTE del artefacto: reconstruye el mismo fit y le pregunta
-    al modelo por sus predicciones (``mdl.predict``), no por sus atribuciones.
+    """Oráculo INDEPENDIENTE del artefacto: reconstruye el MISMO walk-forward
+    (un fit por fold anual) y le pregunta a cada modelo por sus predicciones
+    (``mdl.predict``), no por sus atribuciones.
 
     Es la única forma de tener un juez externo: el artefacto publica agregados de
     phi, así que sin un modelo con el que contrastar cualquier matriz de números
     finitos y ordenados pasa los tests de forma.
+
+    Reconstruye ADEMÁS los folds (índices de train y de test por fold) para poder
+    afirmar la provenance de las filas atribuidas, no solo sus valores.
     """
     from sklearn.preprocessing import StandardScaler
 
@@ -176,66 +189,165 @@ def ridge_oracle() -> dict:
     feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
     df = df.sort_values("date").reset_index(drop=True)
     df["y5"] = df["close"].shift(-gi.HORIZON) / df["close"] - 1.0
+    df["regime"] = gi._regime_labels(df)
 
-    train = df.iloc[:-gi.HORIZON]
-    ok = train[feat_cols].notna().all(axis=1) & train["y5"].notna()
-    Xtr = train.loc[ok, feat_cols].to_numpy(float)
-    ytr = train.loc[ok, "y5"].to_numpy(float)
-    scaler = StandardScaler().fit(Xtr)
-
-    rows = df.loc[df[feat_cols].notna().all(axis=1),
-                  ["date"] + feat_cols].reset_index(drop=True)
-    Z = (rows[feat_cols].to_numpy(float) - scaler.mean_) / scaler.scale_
-
-    mdl = ModelFactory.create("ridge")
-    mdl.fit(scaler.transform(Xtr), ytr)
-    coefs = np.asarray(mdl._model.coef_, dtype=float).ravel()
-    return {
-        "feat_cols": feat_cols,
-        "years": rows["date"].dt.year.to_numpy(),
-        "coefs": coefs,
-        "intercept": float(np.asarray(mdl._model.intercept_).ravel()[0]),
+    folds = gi._annual_expanding_folds(df, feat_cols)
+    phi_parts, pred_parts, base_parts, meta_parts, fingerprints = [], [], [], [], []
+    for f in folds:
+        scaler = StandardScaler().fit(f["Xtr"])
+        Xte = scaler.transform(f["test"][feat_cols].to_numpy(float))
+        mdl = ModelFactory.create("ridge")
+        mdl.fit(scaler.transform(f["Xtr"]), f["ytr"])
+        coefs = np.asarray(mdl._model.coef_, dtype=float).ravel()
+        intercept = float(np.asarray(mdl._model.intercept_).ravel()[0])
+        phi_parts.append(Xte * coefs)
         # predicción CRUDA del modelo — no depende de la forma cerrada de SHAP
-        "pred": np.asarray(mdl.predict(Z), dtype=float).ravel(),
-        "phi": Z * coefs,
+        pred_parts.append(np.asarray(mdl.predict(Xte), dtype=float).ravel())
+        base_parts.append(np.full(len(Xte), intercept, dtype=float))
+        meta_parts.append(f["test"][["date", "regime"]])
+        fingerprints.append(gi._fold_meta(f, len(Xte), intercept)["fold_fingerprint"])
+
+    meta = pd.concat(meta_parts, ignore_index=True)
+    base = np.concatenate(base_parts)
+    return {
+        "df": df,
+        "feat_cols": feat_cols,
+        "folds": folds,
+        "fold_fingerprints": fingerprints,
+        "years": meta["date"].dt.year.to_numpy(),
+        "regimes": meta["regime"].to_numpy(),
+        "base_row": base,                       # intercepto del fold de CADA fila
+        "base_value": float(np.nanmean(base)),  # lo que publica el artefacto
+        "pred": np.concatenate(pred_parts),
+        "phi": np.vstack(phi_parts),
     }
 
 
 def test_linear_shap_contributions_are_additive_to_the_raw_prediction(artifacts,
                                                                       ridge_oracle):
-    # rojo con: `phi = Z * coefs` -> `phi = np.ones_like(Z)` en
-    # scripts/analysis/generate_interpretability.py:467
+    # rojo con: `return Zi * coefs, ...` -> `return np.ones_like(Zi), ...` en
+    # scripts/analysis/generate_interpretability._linear_contributions
+    #
+    # Ahora hay un fit POR FOLD, asi que el "base" no es un escalar unico: cada fila
+    # lleva el intercepto de SU fold y el artefacto publica la media. La identidad se
+    # comprueba con el base por fila (exacta) y con la media en los agregados.
     d = _load_strict(artifacts["ridge"])
     base = float(d["base_value"])
     pred, years, phi = ridge_oracle["pred"], ridge_oracle["years"], ridge_oracle["phi"]
-    assert base == pytest.approx(ridge_oracle["intercept"], abs=1e-12), (
-        "el oraculo no reprodujo el mismo fit — el resto de las aserciones no valdria")
+    base_row = ridge_oracle["base_row"]
+    assert base == pytest.approx(ridge_oracle["base_value"], abs=1e-12), (
+        "el oraculo no reprodujo el mismo walk-forward — el resto no valdria")
+    assert d["n_rows"] == len(phi), "el oraculo no atribuye las mismas filas"
 
-    # (i) FILA A FILA: en la forma cerrada, sum_j phi_ij + base ES la prediccion cruda.
-    row_err = float(np.max(np.abs(phi.sum(axis=1) + base - pred)))
+    # (i) FILA A FILA: en la forma cerrada, sum_j phi_ij + base_i ES la prediccion cruda.
+    row_err = float(np.max(np.abs(phi.sum(axis=1) + base_row - pred)))
     assert row_err < 1e-9, f"la identidad de aditividad no se cumple fila a fila: {row_err:.3g}"
+    # …y el generador PERSISTE su propia medida de esa identidad
+    assert 0.0 <= d["additivity_max_abs_err"] < 1e-9, d["additivity_max_abs_err"]
 
-    # (ii) …y lo PUBLICADO son los agregados por filas de esa misma matriz, así que
-    # hereda la identidad: sum_j mean_shap_j + base == mean(prediccion cruda).
+    # (ii) lo PUBLICADO son los agregados por filas de esa misma matriz, asi que hereda
+    # la identidad: sum_j mean_shap_j + mean(base) == mean(prediccion cruda).
     # Con phi constante = 1.0 el lado izquierdo vale n_features (21) y el derecho ~1e-5.
     total = sum(e["mean_shap"] for e in d["top_features"]) + base
     assert total == pytest.approx(float(pred.mean()), abs=1e-9), (
         f"sum(mean_shap)+base={total:.6g} vs mean(pred)={float(pred.mean()):.6g} — las "
         "contribuciones publicadas no reconstruyen la prediccion del modelo")
 
-    # (iii) la identidad se sostiene por año (cada corte es su propio testigo)
+    # (iii) la identidad se sostiene en cada corte publicado (cada uno es su testigo).
+    # Por año, el corte coincide con un fold ⇒ el base por fila es constante dentro.
     for yr, feats in d["by_year"].items():
         sel = years == int(yr)
         assert sel.any(), f"el artefacto publica el año {yr} que el oraculo no ve"
-        got = sum(f["mean_shap"] for f in feats) + base
+        got = sum(f["mean_shap"] for f in feats) + float(base_row[sel].mean())
         assert got == pytest.approx(float(pred[sel].mean()), abs=1e-9), (
             f"año {yr}: sum(mean_shap)+base={got:.6g} vs mean(pred)={float(pred[sel].mean()):.6g}")
 
+    # …y por REGIMEN, que cruza folds (base por fila, no el global)
+    regimes = ridge_oracle["regimes"]
+    for reg, feats in d["by_regime"].items():
+        sel = regimes == reg
+        assert sel.any(), f"el artefacto publica el regimen {reg} que el oraculo no ve"
+        got = sum(f["mean_shap"] for f in feats) + float(base_row[sel].mean())
+        assert got == pytest.approx(float(pred[sel].mean()), abs=1e-9), (
+            f"regimen {reg}: sum(mean_shap)+base={got:.6g} vs "
+            f"mean(pred)={float(pred[sel].mean()):.6g}")
+
     # (iv) y las magnitudes publicadas son las de ESA matriz, no otras cualesquiera
-    expected_abs = dict(zip(ridge_oracle["feat_cols"], np.abs(phi).mean(axis=0)))
+    expected_abs = dict(zip(ridge_oracle["feat_cols"], np.abs(phi).mean(axis=0), strict=False))
     for entry in d["top_features"]:
         assert entry["mean_abs_shap"] == pytest.approx(
             expected_abs[entry["feature"]], rel=1e-9, abs=1e-18), entry["feature"]
+
+
+def test_linear_attribution_rows_are_test_folds_never_train_rows(artifacts, ridge_oracle):
+    """El header `solo test-folds` tiene que ser CIERTO tambien en la ruta lineal.
+
+    Rojo con: revertir `generate_zoo_linear` al fit unico global (`n_fits: 1`,
+    atribucion sobre "todo el historico con features completas" — 1649 de 1654 filas
+    eran de su propio train). Ese artefacto llevaba el MISMO header que los de arbol,
+    y `test_nota_header_present_and_exact` lo fijaba en los 6: un test sosteniendo
+    una afirmacion falsa.
+
+    Por que ESTAS aserciones y no "comparar numeros": el artefacto no publica las
+    filas atribuidas, asi que la disjuncion train/test no se puede leer de los
+    valores. Se afirma sobre lo unico que la DEMUESTRA:
+      (1) hay mas de un fit — un fit global no puede ser test-fold de nada;
+      (2) las filas atribuidas son EXACTAMENTE la union de los test-folds (n_rows);
+      (3) ningun año fuera de esos test-folds aparece en los cortes publicados
+          (con el esquema viejo salian 2020/2021, que son 100% train);
+      (4) train y test de cada fold son disjuntos y media la purga de H dias;
+      (5) LIGADURA: `fold_fingerprint` es el sha256 de la matriz X/y de train EXACTA,
+          asi que igualarla contra el oraculo demuestra QUE filas vio cada fit —
+          no que el artefacto se describa a si mismo de forma coherente.
+
+    Es ortogonal a los tres candados de `phi`: esos muerden si las contribuciones
+    dejan de ser las del modelo; este muerde si las contribuciones son correctas
+    pero se calculan sobre filas que el modelo ya habia visto.
+    """
+    d = _load_strict(artifacts["ridge"])
+    folds, df = ridge_oracle["folds"], ridge_oracle["df"]
+
+    # (1) walk-forward de verdad: mas de un fit
+    assert d["fit"]["n_fits"] == d["n_folds"] == len(d["folds"]) >= 2, (
+        f"n_fits={d['fit'].get('n_fits')}: con un unico fit sobre todo el historico "
+        "la nota 'solo test-folds' es falsa")
+    assert "EXPANDING ANUAL" in d["fit"]["scheme"]
+
+    # (2) las filas atribuidas son exactamente la union de los test-folds
+    assert d["n_rows"] == sum(f["n_test"] for f in d["folds"]) > 0
+    assert d["n_rows"] == sum(len(f["test_idx"]) for f in folds)
+    assert d["n_rows"] < len(df), (
+        "se atribuyeron TODAS las filas del dataset — no puede haber test-folds si "
+        "no hay filas reservadas para entrenar el primer fold")
+
+    # (3) ningun año fuera de los test-folds
+    assert set(d["by_year"]) == {str(f["year"]) for f in d["folds"]}
+    train_only_years = {int(y) for y in df["date"].dt.year.unique()} - {
+        f["year"] for f in d["folds"]}
+    assert train_only_years, "el fixture necesita algun año que sea 100% train"
+    assert not (set(d["by_year"]) & {str(y) for y in train_only_years}), (
+        f"años {sorted(train_only_years)} son 100% train y aun asi aparecen atribuidos")
+
+    # (4) disjuncion + purga, fold a fold
+    dates = pd.to_datetime(df["date"])
+    for f in folds:
+        train_idx, test_idx = set(f["train_idx"].tolist()), set(f["test_idx"].tolist())
+        assert not (train_idx & test_idx), (
+            f"fold {f['year']}: {len(train_idx & test_idx)} filas atribuidas estaban en "
+            "su propio train")
+        cut = pd.Timestamp(year=f["year"], month=1, day=1)
+        assert f["train_end"] < cut
+        purged = int(((dates > f["train_end"]) & (dates < cut)).sum())
+        assert purged >= HORIZON, (
+            f"fold {f['year']}: solo {purged} filas entre el fin del train y el año de "
+            f"test — la purga de {HORIZON}d no se aplico")
+
+    # (5) ligadura criptografica: los folds publicados son ESTOS folds
+    assert [f["fold_fingerprint"] for f in d["folds"]] == ridge_oracle["fold_fingerprints"], (
+        "los fold_fingerprint publicados no son los de un walk-forward expanding anual "
+        "sobre este dataset: el artefacto no entreno donde dice")
+    assert d["fit"]["n_train_by_fold"] == [f["n_train"] for f in d["folds"]]
+    assert d["fit"]["n_train_last_fit"] == d["folds"][-1]["n_train"]
 
 
 def test_linear_shap_magnitudes_are_not_degenerate(artifacts):

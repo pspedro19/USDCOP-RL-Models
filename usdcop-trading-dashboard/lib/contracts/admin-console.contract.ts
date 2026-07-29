@@ -457,30 +457,54 @@ interface InterpSummaryBase {
   supersedes?: string | null;
 }
 
-/** SHAP lineal cerrado (phi_j = coef_j·(x_j−mu_j)/sigma_j) — ridge / bayesian_ridge. */
+/**
+ * SHAP lineal cerrado (phi_j = coef_j·(z_j−mu_j)) — ridge / bayesian_ridge / ard.
+ *
+ * Atribución SOLO sobre filas OOS del MISMO walk-forward expanding anual que la ruta
+ * de árbol (corrección 2026-07-28: hasta esa fecha esta ruta hacía UN fit global y
+ * atribuía sobre su propio train — 1649 de 1654 filas — mientras el artefacto llevaba
+ * el header "solo test-folds"). De ahí que su forma sea la de `InterpTreeSummary` más
+ * `coef` en `top_features`: con un fit por fold, ese `coef` es la MEDIA por fold y el
+ * detalle exacto vive en `provenance.model_fingerprint`.
+ */
 export interface InterpLinearSummary extends InterpSummaryBase {
   model_type: 'linear';
   method: 'linear_shap_closed_form';
   attribution_not_shap: false;
+  /** max |sum(φ) + base − pred_cruda|: la forma cerrada es exacta ⇒ ~1e-16. */
+  additivity_max_abs_err: number;
+  /**
+   * N de entrenamiento NO ambiguo. En expanding los trains son ANIDADOS: `sum(n_train)`
+   * por folds contaría las mismas filas varias veces, así que la suma no se publica.
+   */
   fit: {
     scheme: string;
     origin: string;
-    /** Un solo fit: aquí `n_train` NO es ambiguo (no hay folds que sumar). */
+    /** Un fit POR FOLD: `n_fits` > 1 es lo que hace CIERTO el header "solo test-folds". */
     n_fits: number;
-    n_train: number;
-    n_train_scheme: string;
+    n_train_last_fit: number;
+    n_train_distinct_rows: number;
+    n_train_by_fold: number[];
+    n_train_note: string;
     horizon: number;
     purge_days: number;
     scaler: string;
     params: Record<string, number | string | boolean | null>;
   };
+  folds: InterpFold[];
   base_value: number;
   n_rows: number;
   n_features: number;
+  n_folds: number;
   top_features: InterpFeatureRow[];
   by_year: Record<string, InterpYearFeatureRow[]>;
+  /** Corte por el gate Hurst CONGELADO, igual que la ruta de árbol. */
+  by_regime: Record<string, InterpYearFeatureRow[]>;
+  regime_gate: string;
   /** Kill-flag A.7 calculado por el GENERADOR: signo del aporte medio que cambia entre años. */
   kill_flags_sign_change_by_year: string[];
+  /** Mismo kill-flag A.7 sobre el corte por régimen. */
+  kill_flags_sign_change_by_regime: string[];
 }
 
 /**
@@ -496,7 +520,11 @@ export interface InterpTreeFeatureRow {
   mean_shap: number;
 }
 
-export interface InterpTreeFold {
+/**
+ * Bitácora de un fold del walk-forward expanding anual. La comparten las DOS rutas
+ * del zoo (lineal y árbol) — desde 2026-07-28 la lineal también refitea por fold.
+ */
+export interface InterpFold {
   year: number;
   n_train: number;
   n_test: number;
@@ -534,7 +562,7 @@ export interface InterpTreeSummary extends InterpSummaryBase {
     scaler: string;
     params: Record<string, number | string | boolean | null>;
   };
-  folds: InterpTreeFold[];
+  folds: InterpFold[];
   base_value: number;
   n_rows: number;
   n_features: number;

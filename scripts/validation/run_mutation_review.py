@@ -191,16 +191,26 @@ MUTATIONS: list[Mutation] = [
     ),
     Mutation(
         bl="BL-20",
-        commit="955374d0",
+        commit="955374d0 + correccion 2026-07-28 (hash del pack nuevo pendiente)",
         cwd=".",
         command="python -m pytest tests/unit/test_interpretability_artifacts.py -q",
-        green="20 passed",
+        green="21 passed",
         path="scripts/analysis/generate_interpretability.py",
-        old="        phi = Z * coefs",
-        new="        phi = np.ones_like(Z)",
-        expected_text="3 failed — aditividad, no-degeneración y acoplamiento al modelo",
+        # La línea histórica `phi = Z * coefs` (fit único global) YA NO EXISTE: la
+        # corrección del 2026-07-28 llevó la ruta lineal al mismo walk-forward expanding
+        # anual que la de árbol y la atribución vive ahora en `_linear_contributions`.
+        # La mutación es la misma idea —FABRICAR las contribuciones— sobre la línea vigente.
+        old="    return Zi * coefs, intercept, coefs",
+        new="    return np.ones_like(Zi), intercept, coefs",
+        expected_text="3 failed, 18 passed — aditividad, no-degeneración y acoplamiento al modelo",
         expected_failed=3,
-        note="muta-2 del MD (rama TreeSHAP) queda MANUAL: es otra línea del mismo fichero, ver dossier.",
+        expected_passed=18,
+        note=(
+            "Dos mutaciones quedan MANUALES (otras líneas del mismo fichero, ver dossier): "
+            "(a) rama TreeSHAP `phi = np.ones_like(phi)`; (b) candado test-folds/provenance — "
+            "`train = prev.iloc[:-HORIZON]` -> `train = prev` quita la purga y deja 1 failed, "
+            "20 passed en test_linear_attribution_rows_are_test_folds_never_train_rows."
+        ),
     ),
     Mutation(
         bl="BL-25",

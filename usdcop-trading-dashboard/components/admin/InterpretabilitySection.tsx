@@ -112,7 +112,9 @@ export function LinearShapPanel({ summary }: { summary: InterpLinearSummary }) {
         badge={<Badge tone={nFlags > 0 ? 'warn' : 'neutral'}>{nFlags}/{summary.n_features}</Badge>}
       >
         <p className={`${TYPE.body} ${COLOR.textPrimary}`}>
-          Diagnóstico del predictor débil: {nFlags} de {summary.n_features} features cambian el
+          Diagnóstico del predictor débil sobre <strong>{summary.n_rows} filas OOS</strong> en{' '}
+          {summary.n_folds} folds anuales expanding (ninguna fila fue vista por el fit que la
+          atribuye): {nFlags} de {summary.n_features} features cambian el
           signo de su aporte medio entre años. Esto <strong>no es importancia para operar</strong> —
           una atribución inestable confirma que el modelo no sostiene una relación estable
           (coherente con R²&lt;0); sirve para rechazar modelos absurdos, no para probar verdades.
@@ -125,15 +127,21 @@ export function LinearShapPanel({ summary }: { summary: InterpLinearSummary }) {
           </ul>
         )}
         <p className={`mt-3 ${TYPE.meta}`}>
-          {summary.scope} · fit: {summary.fit.scheme} · n_train {summary.fit.n_train} ·
-          origen {summary.fit.origin} · {summary.fit.scaler} · H={summary.fit.horizon}
+          {summary.scope}
+        </p>
+        <p className={`mt-2 ${TYPE.meta}`}>
+          fit: {summary.fit.scheme} · {summary.fit.n_fits} fits · n_train del último{' '}
+          {summary.fit.n_train_last_fit} · filas de train distintas{' '}
+          {summary.fit.n_train_distinct_rows} · error máx. de aditividad:{' '}
+          <span className={TYPE.mono}>{summary.additivity_max_abs_err.toExponential(1)}</span>
+          {' '}· origen {summary.fit.origin} · {summary.fit.scaler} · H={summary.fit.horizon}
         </p>
       </Card>
 
       <Card
         title="Aporte por feature (φ, SHAP lineal cerrado)"
         icon={<Microscope className={`w-4 h-4 ${COLOR.accent.text}`} aria-hidden />}
-        info="phi_j = coef_j·(x_j−mu_j)/sigma_j del último fit congelado. Magnitud = mean|φ| en pp del retorno 5d predicho. Sin colores direccionales: el signo es dato, no veredicto."
+        info="phi_j = coef_j·(z_j−mu_j), forma cerrada exacta, sobre filas OOS: un fit por fold anual y el `coef` publicado es la media por fold (el detalle exacto vive en provenance.model_fingerprint). Magnitud = mean|φ| en pp del retorno 5d predicho. Sin colores direccionales: el signo es dato, no veredicto."
       >
         <div role="region" aria-label="aporte por feature" tabIndex={0} className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-xs">

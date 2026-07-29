@@ -57,7 +57,8 @@
         "mean_shap": { "type": "number" }
       }
     },
-    "treeFold": {
+    "foldRow": {
+      "description": "Bitacora de un fold del walk-forward expanding anual. La comparten las DOS rutas del zoo (lineal y arbol): desde 2026-07-28 la lineal tambien refitea por fold y atribuye solo sobre el test-fold, asi que su bitacora es la misma.",
       "type": "object",
       "additionalProperties": false,
       "required": ["year", "n_train", "n_test", "train_start", "train_end", "base_value", "fold_fingerprint"],
@@ -88,14 +89,16 @@
       }
     },
     "linearSummary": {
+      "description": "SHAP lineal cerrado (phi_j = coef_j*(z_j-mu_j)) para ridge/bayesian_ridge/ard, SOLO sobre filas OOS de folds anuales expanding — EL MISMO esquema que treeSummary (2026-07-28: antes esta ruta hacia un unico fit global y atribuia sobre su propio train, contradiciendo el header 'solo test-folds'). De ahi que exija `folds`, `n_folds`, el `fit` de N no ambiguo y `by_regime`, igual que la ruta de arbol. Conserva `coef` en top_features (un arbol no lo tiene): con un fit por fold, es la MEDIA por fold y el detalle exacto vive en provenance.model_fingerprint.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "nota", "surface", "asset", "model_id", "model_type", "method",
         "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
-        "fit", "scope",
-        "base_value", "n_rows", "n_features", "top_features", "by_year",
-        "kill_flags_sign_change_by_year"
+        "additivity_max_abs_err", "fit", "folds", "scope",
+        "base_value", "n_rows", "n_features", "n_folds", "top_features", "by_year",
+        "by_regime", "regime_gate", "kill_flags_sign_change_by_year",
+        "kill_flags_sign_change_by_regime"
       ],
       "properties": {
         "artifact_id": { "type": "string" },
@@ -111,16 +114,21 @@
         "version": { "type": "string" },
         "generated_at": { "type": "string" },
         "scope": { "type": "string" },
+        "regime_gate": { "type": "string" },
+        "additivity_max_abs_err": { "type": "number" },
         "fit": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["scheme", "origin", "n_fits", "n_train", "n_train_scheme", "horizon", "purge_days", "scaler", "params"],
+          "description": "N de entrenamiento NO ambiguo: en expanding los trains son ANIDADOS, asi que la SUMA por folds contaria las mismas filas varias veces y no es un N. Se publica el N del ultimo fit, las filas distintas y el detalle por fold. `n_fits` > 1 es la condicion que hace CIERTO el header 'solo test-folds'.",
+          "required": ["scheme", "origin", "n_fits", "n_train_last_fit", "n_train_distinct_rows", "n_train_by_fold", "n_train_note", "horizon", "purge_days", "scaler", "params"],
           "properties": {
             "scheme": { "type": "string" },
             "origin": { "type": "string" },
             "n_fits": { "type": "number" },
-            "n_train": { "type": "number" },
-            "n_train_scheme": { "type": "string" },
+            "n_train_last_fit": { "type": "number" },
+            "n_train_distinct_rows": { "type": "number" },
+            "n_train_by_fold": { "type": "array", "items": { "type": "number" } },
+            "n_train_note": { "type": "string" },
             "horizon": { "type": "number" },
             "purge_days": { "type": "number" },
             "scaler": { "type": "string" },
@@ -130,9 +138,11 @@
             }
           }
         },
+        "folds": { "type": "array", "items": { "$ref": "#/definitions/foldRow" } },
         "base_value": { "type": "number" },
         "n_rows": { "type": "number" },
         "n_features": { "type": "number" },
+        "n_folds": { "type": "number" },
         "top_features": {
           "type": "array",
           "items": { "$ref": "#/definitions/featureRow" }
@@ -144,7 +154,18 @@
             "items": { "$ref": "#/definitions/yearFeatureRow" }
           }
         },
+        "by_regime": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/yearFeatureRow" }
+          }
+        },
         "kill_flags_sign_change_by_year": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "kill_flags_sign_change_by_regime": {
           "type": "array",
           "items": { "type": "string" }
         }
@@ -202,7 +223,7 @@
             }
           }
         },
-        "folds": { "type": "array", "items": { "$ref": "#/definitions/treeFold" } },
+        "folds": { "type": "array", "items": { "$ref": "#/definitions/foldRow" } },
         "base_value": { "type": "number" },
         "n_rows": { "type": "number" },
         "n_features": { "type": "number" },

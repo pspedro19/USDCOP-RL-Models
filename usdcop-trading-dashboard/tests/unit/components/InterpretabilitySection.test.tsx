@@ -33,8 +33,15 @@ import { REAL_LINEAR, REAL_RULE, trimLinear, trimRule } from '../../support/inte
  * `provenance`, sin `fit.n_fits`/`n_train_scheme` ⇒ 2 errores de `tsc`, y con cifras de PnL
  * de una corrida anterior). Un fixture inventado prueba el render de un artefacto que no existe.
  */
-const FEATURES = ['return_10d', 'high', 'day_of_week'];
-const YEARS = ['2020', '2026'];
+/**
+ * Los años son los TEST-FOLDS del artefacto (2022–2026): desde la corrección del
+ * 2026-07-28 la ruta lineal atribuye solo sobre filas OOS, así que 2020/2021 —que son
+ * 100% train— ya no aparecen en `by_year`. Las tres features preservan el trío
+ * didáctico: flagged y cambia de signo · flagged aunque estable en los años mostrados ·
+ * cambia de signo y NO flagged (magnitud inmaterial).
+ */
+const FEATURES = ['return_10d', 'oil_close_lag1', 'return_1d'];
+const YEARS = ['2022', '2026'];
 const LINEAR = trimLinear(REAL_LINEAR, FEATURES, YEARS);
 const RULE = trimRule(REAL_RULE, 2);
 
@@ -50,27 +57,27 @@ const DIRECTIONAL = '[class*="gm-pos"], [class*="gm-neg"], [class*="emerald"], [
 describe('buildSignMatrix (helper puro — solo formatea el by_year del artefacto)', () => {
   it('deriva el signo por año y marca los kill-flags que trae el artefacto', () => {
     const m = buildSignMatrix(LINEAR);
-    expect(m.years).toEqual(['2020', '2026']);
+    expect(m.years).toEqual(['2022', '2026']);
 
     const r10 = m.rows.find((r) => r.feature === 'return_10d')!;
     expect(r10.flagged).toBe(true);          // viene de kill_flags_sign_change_by_year
-    expect(r10.signs).toEqual([1, -1]);      // + en 2020, − en 2026 (signo inestable)
+    expect(r10.signs).toEqual([1, -1]);      // + en 2022, − en 2026 (signo inestable)
 
     // Los dos controles de que el flag NO se recomputa en el frontend, ambos con los
-    // valores REALES del artefacto (el generador mira los 7 años; aquí se muestran 2):
-    const high = m.rows.find((r) => r.feature === 'high')!;
-    expect(high.signs).toEqual([1, 1]);      // estable en los años mostrados…
-    expect(high.flagged).toBe(true);         // …y aun así flagged por el generador.
+    // valores REALES del artefacto (el generador mira los 5 test-folds; aquí se muestran 2):
+    const oil = m.rows.find((r) => r.feature === 'oil_close_lag1')!;
+    expect(oil.signs).toEqual([1, 1]);       // estable en los años mostrados…
+    expect(oil.flagged).toBe(true);          // …y aun así flagged por el generador (cae en 2025).
 
-    const dow = m.rows.find((r) => r.feature === 'day_of_week')!;
-    expect(dow.signs).toEqual([1, -1]);      // cambia de signo en los años mostrados…
-    expect(dow.flagged).toBe(false);         // …y el generador NO lo flagea (magnitud inmaterial).
+    const r1 = m.rows.find((r) => r.feature === 'return_1d')!;
+    expect(r1.signs).toEqual([1, -1]);       // cambia de signo en los años mostrados…
+    expect(r1.flagged).toBe(false);          // …y el generador NO lo flagea (magnitud inmaterial).
   });
 
   it('feature ausente en un año ⇒ 0 (nunca NaN)', () => {
     const m = buildSignMatrix({
       ...LINEAR,
-      by_year: { '2020': LINEAR.by_year['2020'], '2026': [] },
+      by_year: { '2022': LINEAR.by_year['2022'], '2026': [] },
     });
     expect(m.rows.find((r) => r.feature === 'return_10d')!.signs).toEqual([1, 0]);
   });
@@ -100,7 +107,7 @@ describe('LinearShapPanel (zoo ridge — diagnóstico, no importancia para opera
   it('tabla accesible con la matriz de signos por año (+/− en tinta neutra)', () => {
     render(<LinearShapPanel summary={LINEAR} />);
     const table = screen.getByRole('table', { name: /signo.*por año/i });
-    expect(within(table).getByRole('columnheader', { name: '2020' })).toBeInTheDocument();
+    expect(within(table).getByRole('columnheader', { name: '2022' })).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: '2026' })).toBeInTheDocument();
   });
 
