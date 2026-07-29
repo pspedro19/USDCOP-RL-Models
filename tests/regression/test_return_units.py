@@ -33,6 +33,8 @@ import math
 import os
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -212,6 +214,102 @@ def test_ledger_trade_equity_coheres_with_ytd_pct():
             f"{declared:+.4%}")
         checked += 1
     assert checked > 0, "ledger has no strategy with trades+equity+ret_2026_ytd_pct"
+
+
+# ---------------------------------------------------------------------------
+# Layer 3 — the PRODUCER, not the artifact it already wrote
+# ---------------------------------------------------------------------------
+#
+# Layer 1 reads JSONs that are already committed, so it guards the DATA and leaves the
+# EXPORTER unguarded. Verified by mutation: turning
+#
+#     "total_return_pct": round(total_return, 2)
+#   → "total_return_pct": round(total_return / 100.0, 6)
+#
+# in scripts/pipeline/train_and_export_smart_simple.py::_compute_result_metrics —
+# literally the bug BL-42 exists to forbid — left the whole suite green, because no
+# test ever CALLED the function that computes the number. These do: a synthetic ledger
+# of known compounded return goes in, and the units of what comes out (in memory, before
+# any JSON exists) are pinned.
+
+from scripts.pipeline.train_and_export_smart_simple import (  # noqa: E402
+    _compute_result_metrics,
+)
+
+# 24 trades (>= MIN_TRADES_FOR_STATS = 20, quant-constitution §6 — below that neither
+# Sharpe nor p-value may be reported). The expected return is closed-form and derived
+# OUTSIDE the code under test: prod(1 + p/100) over _LEDGER_PNL_PCT = 1.14461621…
+_LEDGER_PNL_PCT = (
+    [1.8, -1.2, 2.4, 0.9, -0.6, 1.5, -2.1, 3.0, 0.6, -0.9, 1.2, 2.7]
+    + [1.8, -1.2, 2.4, 0.9, -0.6, 1.5, -2.1, 3.0, 0.6, -0.9, 1.2, -2.04]
+)
+EXPECTED_FINAL_EQUITY = 11446.16          # 10_000 · prod(1 + p/100)
+EXPECTED_TOTAL_RETURN_PCT = 14.46         # PERCENTAGE POINTS — never 0.1446
+
+
+def _synthetic_ledger(scale: float = 1.0):
+    """Trade ledger + the equity it compounds to. Scale stretches the same shape."""
+    equity = DEFAULT_INITIAL_CAPITAL
+    trades = []
+    for i, base in enumerate(_LEDGER_PNL_PCT):
+        pnl_pct = round(base * scale, 6)
+        start, equity = equity, equity * (1.0 + pnl_pct / 100.0)
+        trades.append({
+            "pnl_pct": pnl_pct,
+            "pnl_usd": round(equity - start, 6),
+            "side": "LONG" if i % 2 == 0 else "SHORT",
+            "exit_reason": "take_profit" if pnl_pct > 0 else "hard_stop",
+        })
+    return trades, equity
+
+
+def _synthetic_prices(year: int = 2025):
+    """Weekly closes +5% over the year — feeds the buy&hold leg of the metrics."""
+    return pd.DataFrame({
+        "date": pd.date_range(f"{year}-01-06", periods=52, freq="W-MON"),
+        "close": np.linspace(4000.0, 4200.0, 52),
+    })
+
+
+def test_producer_emits_percentage_points_not_a_decimal():
+    # rojo con: `round(total_return, 2)` -> `round(total_return / 100.0, 6)` en
+    # scripts/pipeline/train_and_export_smart_simple.py:1052
+    trades, equity = _synthetic_ledger()
+    metrics = _compute_result_metrics(trades, equity, _synthetic_prices(), 2025)["metrics"]
+
+    assert metrics["final_equity"] == pytest.approx(EXPECTED_FINAL_EQUITY, abs=0.01)
+    assert metrics["total_return_pct"] == pytest.approx(
+        EXPECTED_TOTAL_RETURN_PCT, abs=0.01), (
+        f"total_return_pct={metrics['total_return_pct']} for a ledger that compounds "
+        f"10_000 -> {EXPECTED_FINAL_EQUITY}: expected {EXPECTED_TOTAL_RETURN_PCT} "
+        "PERCENTAGE POINTS (a 0.1446 here is the BL-42 bug at the source)")
+
+    # Same equity<->pct identity layer 1 applies to the written JSON, applied to the
+    # in-memory dict: a decimal disguised as pct misses the implied return by ~99%.
+    assert metrics["final_equity"] / DEFAULT_INITIAL_CAPITAL - 1.0 == pytest.approx(
+        metrics["total_return_pct"] / 100.0, abs=EQUITY_PCT_TOLERANCE)
+
+
+def test_producer_output_survives_the_decimal_disguise_detector():
+    # rojo con: la MISMA mutación /100.0 — la familia total_return_pct cae a
+    # median_abs<0.5 y max_abs<1.0, la firma exacta que el detector persigue
+    runs = [
+        _compute_result_metrics(*_synthetic_ledger(scale), _synthetic_prices(), 2025)["metrics"]
+        for scale in (1.0, 0.25, -0.6, 1.4)
+    ]
+    assert [r["n_trades"] for r in runs] == [len(_LEDGER_PNL_PCT)] * 4
+
+    offenders = _decimal_disguise_offenders(_pct_families({"runs": runs}))
+    assert not offenders, (
+        f"the exporter's own output is a decimal in disguise: {offenders}")
+
+    # …and the detector is NOT vacuous on this surface: the same output with
+    # total_return_pct divided by 100 (the mutation) MUST be caught.
+    disguised = [dict(m, total_return_pct=m["total_return_pct"] / 100.0) for m in runs]
+    caught = _decimal_disguise_offenders(_pct_families({"runs": disguised}))
+    assert any(o.startswith("total_return_pct") for o in caught), (
+        "detector blind to the producer-side decimal disguise — this gate would be "
+        f"vacuous: {caught}")
 
 
 # ---------------------------------------------------------------------------

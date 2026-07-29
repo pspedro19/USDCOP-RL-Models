@@ -11,6 +11,7 @@ import math
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -136,6 +137,197 @@ def test_spx500_rule_attribution_shape(artifacts):
         assert y["n_days"] > 0
         assert y["pnl_gross"] == pytest.approx(
             y["pnl_beta"] + y["pnl_timing_cov_pos_ret"], abs=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# BL-20 remedio-3: las contribuciones tienen que SER las del modelo
+# ---------------------------------------------------------------------------
+#
+# Verificado por mutación: `phi = Z * coefs` -> `phi = np.ones_like(Z)` (contribución
+# constante 1.0 para toda feature y toda fila) dejaba la suite ENTERA en verde. Los
+# tests comprobaban forma, orden descendente (trivial con constantes), header `nota`,
+# finitud y provenance — nunca que phi tuviera relación alguna con el modelo. La
+# aditividad se PERSISTÍA como campo (`additivity_max_abs_err`) y no se comprobaba
+# en ningún sitio (`grep -rn additivity tests/` => 0 aserciones).
+#
+# Los tres tests de abajo cierran eso: (1) identidad de aditividad contra la
+# predicción CRUDA del modelo, (2) no-degeneración de las magnitudes, (3)
+# acoplamiento causal — perturbar un coeficiente tiene que mover el ranking.
+
+
+@pytest.fixture(scope="module")
+def ridge_oracle() -> dict:
+    """Oráculo INDEPENDIENTE del artefacto: reconstruye el mismo fit y le pregunta
+    al modelo por sus predicciones (``mdl.predict``), no por sus atribuciones.
+
+    Es la única forma de tener un juez externo: el artefacto publica agregados de
+    phi, así que sin un modelo con el que contrastar cualquier matriz de números
+    finitos y ordenados pasa los tests de forma.
+    """
+    from sklearn.preprocessing import StandardScaler
+
+    import scripts.analysis.generate_interpretability as gi
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+
+    cfg = ForecastingSSOTConfig.load()
+    df, _ = ForecastingDatasetLoader(cfg, project_root=REPO).load_dataset()
+    feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+    df["y5"] = df["close"].shift(-gi.HORIZON) / df["close"] - 1.0
+
+    train = df.iloc[:-gi.HORIZON]
+    ok = train[feat_cols].notna().all(axis=1) & train["y5"].notna()
+    Xtr = train.loc[ok, feat_cols].to_numpy(float)
+    ytr = train.loc[ok, "y5"].to_numpy(float)
+    scaler = StandardScaler().fit(Xtr)
+
+    rows = df.loc[df[feat_cols].notna().all(axis=1),
+                  ["date"] + feat_cols].reset_index(drop=True)
+    Z = (rows[feat_cols].to_numpy(float) - scaler.mean_) / scaler.scale_
+
+    mdl = ModelFactory.create("ridge")
+    mdl.fit(scaler.transform(Xtr), ytr)
+    coefs = np.asarray(mdl._model.coef_, dtype=float).ravel()
+    return {
+        "feat_cols": feat_cols,
+        "years": rows["date"].dt.year.to_numpy(),
+        "coefs": coefs,
+        "intercept": float(np.asarray(mdl._model.intercept_).ravel()[0]),
+        # predicción CRUDA del modelo — no depende de la forma cerrada de SHAP
+        "pred": np.asarray(mdl.predict(Z), dtype=float).ravel(),
+        "phi": Z * coefs,
+    }
+
+
+def test_linear_shap_contributions_are_additive_to_the_raw_prediction(artifacts,
+                                                                      ridge_oracle):
+    # rojo con: `phi = Z * coefs` -> `phi = np.ones_like(Z)` en
+    # scripts/analysis/generate_interpretability.py:467
+    d = _load_strict(artifacts["ridge"])
+    base = float(d["base_value"])
+    pred, years, phi = ridge_oracle["pred"], ridge_oracle["years"], ridge_oracle["phi"]
+    assert base == pytest.approx(ridge_oracle["intercept"], abs=1e-12), (
+        "el oraculo no reprodujo el mismo fit — el resto de las aserciones no valdria")
+
+    # (i) FILA A FILA: en la forma cerrada, sum_j phi_ij + base ES la prediccion cruda.
+    row_err = float(np.max(np.abs(phi.sum(axis=1) + base - pred)))
+    assert row_err < 1e-9, f"la identidad de aditividad no se cumple fila a fila: {row_err:.3g}"
+
+    # (ii) …y lo PUBLICADO son los agregados por filas de esa misma matriz, así que
+    # hereda la identidad: sum_j mean_shap_j + base == mean(prediccion cruda).
+    # Con phi constante = 1.0 el lado izquierdo vale n_features (21) y el derecho ~1e-5.
+    total = sum(e["mean_shap"] for e in d["top_features"]) + base
+    assert total == pytest.approx(float(pred.mean()), abs=1e-9), (
+        f"sum(mean_shap)+base={total:.6g} vs mean(pred)={float(pred.mean()):.6g} — las "
+        "contribuciones publicadas no reconstruyen la prediccion del modelo")
+
+    # (iii) la identidad se sostiene por año (cada corte es su propio testigo)
+    for yr, feats in d["by_year"].items():
+        sel = years == int(yr)
+        assert sel.any(), f"el artefacto publica el año {yr} que el oraculo no ve"
+        got = sum(f["mean_shap"] for f in feats) + base
+        assert got == pytest.approx(float(pred[sel].mean()), abs=1e-9), (
+            f"año {yr}: sum(mean_shap)+base={got:.6g} vs mean(pred)={float(pred[sel].mean()):.6g}")
+
+    # (iv) y las magnitudes publicadas son las de ESA matriz, no otras cualesquiera
+    expected_abs = dict(zip(ridge_oracle["feat_cols"], np.abs(phi).mean(axis=0)))
+    for entry in d["top_features"]:
+        assert entry["mean_abs_shap"] == pytest.approx(
+            expected_abs[entry["feature"]], rel=1e-9, abs=1e-18), entry["feature"]
+
+
+def test_linear_shap_magnitudes_are_not_degenerate(artifacts):
+    # rojo con: `phi = np.ones_like(Z)` (generate_interpretability.py:467) — todas las
+    # mean_abs_shap valen 1.0 y el orden descendente se cumple trivialmente
+    d = _load_strict(artifacts["ridge"])
+    mean_abs = [e["mean_abs_shap"] for e in d["top_features"]]
+    mean_shap = [e["mean_shap"] for e in d["top_features"]]
+    assert len(mean_abs) > 1
+    assert len({round(v, 12) for v in mean_abs}) > 1, (
+        f"mean_abs_shap constante en las {len(mean_abs)} features ({mean_abs[0]!r}): "
+        "una atribucion que no distingue features no atribuye nada, y el orden "
+        "descendente pasa por construccion")
+    assert len({round(v, 12) for v in mean_shap}) > 1, "mean_shap constante"
+    assert min(mean_abs) > 0.0, "alguna feature con contribucion identicamente nula"
+
+
+def test_linear_shap_ranking_tracks_the_model_coefficients(artifacts, ridge_oracle,
+                                                           tmp_path, monkeypatch):
+    # rojo con: `phi = np.ones_like(Z)` (generate_interpretability.py:467) — phi deja de
+    # depender de `coefs`, así que amplificar un coeficiente no mueve el ranking
+    import scripts.analysis.generate_interpretability as gi
+    import src.forecasting.models.factory as factory_mod
+
+    baseline = _load_strict(artifacts["ridge"])
+    victim = baseline["top_features"][-1]                # la de MENOR magnitud hoy
+    assert victim["mean_abs_shap"] > 0 and victim["coef"] != 0.0
+    j = ridge_oracle["feat_cols"].index(victim["feature"])
+    boost = 1e6
+
+    real_factory = factory_mod.ModelFactory
+
+    class _CoefPerturbingFactory:
+        """Mismo modelo, con UN coeficiente amplificado tras el fit."""
+
+        @staticmethod
+        def create(model_name, params=None, horizon=None):
+            mdl = real_factory.create(model_name, params=params, horizon=horizon)
+            real_fit = mdl.fit
+
+            def fit(X, y, *args, **kwargs):
+                out = real_fit(X, y, *args, **kwargs)
+                coefs = np.asarray(mdl._model.coef_, dtype=float).ravel().copy()
+                coefs[j] *= boost
+                mdl._model.coef_ = coefs
+                return out
+
+            mdl.fit = fit
+            return mdl
+
+    monkeypatch.setattr(factory_mod, "ModelFactory", _CoefPerturbingFactory)
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)       # jamas sobre la evidencia real
+    (path,) = gi.generate_zoo_linear(("ridge",))
+    perturbed = _load_strict(path)
+
+    by_feature = {e["feature"]: e for e in perturbed["top_features"]}
+    # precondicion: la perturbacion llego de verdad al modelo
+    assert by_feature[victim["feature"]]["coef"] == pytest.approx(
+        victim["coef"] * boost, rel=1e-9), "el monkeypatch del factory no se aplico"
+
+    top = perturbed["top_features"][0]["feature"]
+    assert top == victim["feature"], (
+        f"amplificar x{boost:g} el coeficiente de {victim['feature']!r} (la feature MENOS "
+        f"contributiva) no la puso en el rank 1 — sigue mandando {top!r}: las "
+        "contribuciones publicadas no dependen del modelo")
+
+
+def test_tree_shap_route_is_exercised_and_its_additivity_is_asserted(tmp_path, monkeypatch):
+    # rojo con: `phi, bias = shap_fn(mdl, Xte)` + `phi = np.ones_like(phi)` en
+    # scripts/analysis/generate_interpretability.py:770
+    #
+    # La ruta TreeSHAP CALCULA la aditividad y la persiste como campo, pero ningun test
+    # la ejecutaba ni afirmaba su umbral: el campo era decorativo.
+    import scripts.analysis.generate_interpretability as gi
+
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)
+    (path,) = gi.generate_zoo_tree(("catboost",))
+    d = _load_strict(path)
+
+    assert d["method"] == "tree_shap", (
+        f"la ruta degrado a {d.get('status')!r} ({d.get('detail')!r}) — el test no llego "
+        "a ejercitar TreeSHAP")
+    err = d["additivity_max_abs_err"]
+    assert 0.0 <= err < 1e-6, (
+        f"additivity_max_abs_err={err:.3g}: sum(phi)+bias no reproduce la prediccion "
+        "cruda del booster — las contribuciones no explican al modelo")
+
+    mean_abs = [e["mean_abs_shap"] for e in d["top_features"]]
+    assert len({round(v, 12) for v in mean_abs}) > 1, "mean_abs_shap constante (TreeSHAP)"
+    assert d["n_features"] == len(mean_abs) > 1
+    assert d["n_folds"] >= 2 and d["n_rows"] > 0
+    assert d["by_regime"], "faltan los cortes por regimen (gate Hurst congelado)"
 
 
 # ---------------------------------------------------------------------------

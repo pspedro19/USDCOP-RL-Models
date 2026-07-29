@@ -190,6 +190,77 @@ class TestPnlClock:
 
 
 # ---------------------------------------------------------------------------
+# Reloj de PnL — el UMBRAL 3σ anclado (no solo la rama)
+# ---------------------------------------------------------------------------
+#
+# `test_tracking_error_above_3_sigma_triggers_withdrawal` usa `live = paper - 0.02`,
+# una diferencia CONSTANTE: sd(d) queda en ruido de coma flotante (~1e-18) y el
+# z-score sale ~1e16. Eso demuestra que la rama EXISTE, no que el umbral sea 3 —
+# con `TRACKING_ERROR_SIGMA * 1000` (=3000) el test sigue verde porque 1e16 > 3000.
+#
+# Los dos gemelos de abajo tienen dispersión REAL (ruido independiente en live, no
+# `paper − constante`) y están calibrados a ≈3.5σ y ≈2.5σ: el 3 queda ENCERRADO
+# entre ellos, así que mover el umbral en cualquier dirección rompe uno de los dos.
+
+TE_SCENARIO_SEED = 20260728          # semilla fija: los dos gemelos son deterministas
+TE_DRIFT_ABOVE = 0.0012435           # calibrado => te_z ≈ 3.50σ  (debe DISPARAR)
+TE_DRIFT_BELOW = 0.0006830           # calibrado => te_z ≈ 2.47σ  (debe quedar VERDE)
+
+
+def _te_scenario(drift: float, n: int = 52, noise: float = 0.004):
+    """live = paper − drift + ruido INDEPENDIENTE.
+
+    A diferencia de `paper − constante`, aquí sd(d) es una dispersión de verdad
+    (~4e-3), así que `te_z = max_k |cumsum(d)_k| / (sd·√k)` es un z-score con
+    sentido y no una división por el epsilon de la máquina.
+    """
+    rng = np.random.default_rng(TE_SCENARIO_SEED)
+    paper = rng.normal(0.0015, 0.010, n)
+    live = paper - drift + rng.normal(0.0, noise, n)
+    return live, paper
+
+
+class TestPnlClockThresholdIsAnchored:
+    def test_te_scenarios_have_real_dispersion_not_floating_point_noise(self):
+        # rojo si el escenario degenera a `paper − constante`: sd(d) ~1e-18 y el
+        # z-score deja de medir nada (es el defecto que estos gemelos cierran).
+        for drift in (TE_DRIFT_ABOVE, TE_DRIFT_BELOW):
+            live, paper = _te_scenario(drift)
+            sd = float(np.std(live - paper, ddof=1))
+            assert sd > 1e-3, f"sd(d)={sd:.3g} — diferencia casi constante, z-score vacío"
+
+    def test_tracking_error_at_3_5_sigma_triggers_withdrawal(self, engine):
+        # rojo con: TRACKING_ERROR_SIGMA * 1000 en system_health.py:338 (3.5 < 3000)
+        live, paper = _te_scenario(TE_DRIFT_ABOVE)
+        status = engine.evaluate_pnl_clock(live_returns=live, paper_returns=paper)
+
+        te_z = status.metrics["tracking_error_zscore"]
+        assert 3.4 <= te_z <= 3.6, (
+            f"escenario descalibrado: te_z={te_z:.4f} deberia estar ≈3.5σ — sin esa "
+            "calibracion el test no ancla el umbral, solo la rama")
+        assert te_z > TRACKING_ERROR_SIGMA
+        assert status.signal == HealthSignal.ORANGE
+        assert HealthAction.TRIGGER_WITHDRAWAL in status.actions
+        assert any(e.kind == "withdrawal_protocol_triggered" for e in status.events)
+        assert engine.build_snapshot(pnl=status).withdrawal_triggered is True
+
+    def test_tracking_error_at_2_5_sigma_stays_green(self, engine):
+        # rojo con: TRACKING_ERROR_SIGMA / 1000 (o cualquier umbral < 2.47) en system_health.py:338
+        live, paper = _te_scenario(TE_DRIFT_BELOW)
+        status = engine.evaluate_pnl_clock(live_returns=live, paper_returns=paper)
+
+        te_z = status.metrics["tracking_error_zscore"]
+        assert 2.4 <= te_z <= 2.6, (
+            f"escenario descalibrado: te_z={te_z:.4f} deberia estar ≈2.5σ — el gemelo "
+            "por debajo es lo que impide bajar el umbral sin romper nada")
+        assert te_z < TRACKING_ERROR_SIGMA
+        assert status.signal == HealthSignal.GREEN
+        assert HealthAction.TRIGGER_WITHDRAWAL not in status.actions
+        assert not any(e.kind == "withdrawal_protocol_triggered" for e in status.events)
+        assert engine.build_snapshot(pnl=status).withdrawal_triggered is False
+
+
+# ---------------------------------------------------------------------------
 # Reloj de DATOS — fail-closed / QUARANTINE
 # ---------------------------------------------------------------------------
 
