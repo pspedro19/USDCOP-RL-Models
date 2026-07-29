@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.0.0
 last_verified: 2026-07-27
 supersedes: []
@@ -51,6 +51,17 @@ y la suite seguía verde, porque los ~20 tests llamaban a cada `check_*` directa
 verificaba el cableado con el `main()` que devuelve el exit 0/1. Y la cadena hash solo
 detectaba la **edición** de una fila —que el `line_hash` ya caza solo—: supresión, inserción
 y reorden pasaban en silencio.
+
+### Cross-review CODEX — APROBADO (CXD-089, 2026-07-28)
+
+Verificado contra el corte inmutable `cb1241b2`. CODEX **ejecuto las mutaciones**, no leyo el diff:
+pristino y restaurado **26/26**, y las tres mutaciones mataron **10, 3 y 2** tests respectivamente,
+con SHA de restauracion exacto.
+
+Los 10 de la primera son el test parametrizado por **introspeccion** sobre las funciones `check_*`:
+cae un caso por cada check que se desconecte del agregador. Ese numero es la medida de lo que
+faltaba — antes de este cierre, `run_all_checks` podia quedarse con **1 de 11 checks** y la suite
+seguia entera en verde.
 
 ## Notas constitución
 Etapa 'irreparable-hacia-atrás': cada activo sumado con N fragmentado es deuda estadística sin refinanciación.

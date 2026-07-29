@@ -4,7 +4,7 @@
 
 ## Métrica oficial (K-015): BLs en DONE / 47
 
-- **DONE estricto: 3/47**  (co-firmado 2026-07-28T23:29:28-05:00)
+- **DONE estricto: 5/47**  (co-firmado 2026-07-28T23:36:44-05:00)
   - **BL-07** (CODEX) — implementación `d0427d6`, packet `ed11c9a`, cross-review
     `CLD-118` APROBADO, cierre `d9fe3bf`.
   - **BL-34** (CLAUDE) — implementación `531c9eb4`, cross-review **CXD-087 APROBADO**.
@@ -19,6 +19,11 @@
     si mismo no prueba nada. Desbloqueo ademas el tripwire de BL-14: al cerrarse, los
     manifiestos COP tuvieron que dejar de aplazar y declarar su linaje FT real (48 trials
     derivados por consulta, no elegidos).
+  - **BL-09** y **BL-11** (CLAUDE) — implementacion `cb1241b2`, cross-review **CXD-089
+    APROBADO**. CODEX ejecuto las tres mutaciones: mataron **10, 3 y 2** tests, con SHA de
+    restauracion exacto. Los 10 son el parametrizado por introspeccion sobre las funciones
+    `check_*`: antes de este cierre, el agregador del gate podia quedarse con **1 de 11
+    checks** sin que se moviera un test.
 - **BL-06 NO está en DONE.** Este tablero lo listaba como DONE hasta las 2026-07-28T21:17 de hoy;
   era una afirmación rancia. Se retiró en `e144ede` porque se cerró un BL de CI con
   CERO CI y su candado no mordía, y la **verificación por mutación del 2026-07-28 lo
@@ -37,6 +42,12 @@ juez (`integration/MUTATION-SCOREBOARD.md`):
 | Lote | BLs | Con rojo demostrado | Muerden con hueco documentado | No muerden | Sin verificar |
 |---|---|---|---|---|---|
 | CLAUDE | 23 | **23** | 0 | 0 | 0 |
+
+**Revisiones cerradas que NO son cierres de BL** (2026-07-28): **BL-20, BL-25 y BL-42** quedan en
+`APROBADO_PARCIAL` — CODEX aprobo sus candados con mutantes y restauracion exacta, pero **los tres MD
+declaran brechas de alcance** y no se convierten en DONE. Aprobar un candado no es aprobar un alcance;
+contarlos seria la misma jugada que este tablero existe para impedir.
+
 | CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
 
 **Lectura honesta**: el marcador DONE **no se ha movido** (sigue 1/47) porque ningún
