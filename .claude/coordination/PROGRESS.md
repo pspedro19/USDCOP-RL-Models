@@ -4,7 +4,7 @@
 
 ## Métrica oficial (K-015): BLs en DONE / 47
 
-- **DONE estricto: 2/47**  (co-firmado 2026-07-28T22:11:35-05:00)
+- **DONE estricto: 3/47**  (co-firmado 2026-07-28T23:29:28-05:00)
   - **BL-07** (CODEX) — implementación `d0427d6`, packet `ed11c9a`, cross-review
     `CLD-118` APROBADO, cierre `d9fe3bf`.
   - **BL-34** (CLAUDE) — implementación `531c9eb4`, cross-review **CXD-087 APROBADO**.
@@ -12,6 +12,13 @@
     2 failed/3 passed, y restauró con SHA256 idéntico al inicial. Es el primer BL que
     cierra bajo el protocolo de CLD-209 (comando + mutación + fallo esperado, verificado
     por el otro).
+  - **BL-10** (CODEX) — implementacion + backfill, cross-review **CLD-234 APROBADO** por
+    CLAUDE, sellado bilateral en `6c9f6138`. La mutacion que lo aprobo no fue de conteo
+    sino de CIRCULARIDAD: `n_trials_total` 111 -> 112 en el HYPOTHESIS-REGISTRY, que es un
+    SSOT **independiente** del ledger, => 2 failed. Un conteo que solo se comprueba contra
+    si mismo no prueba nada. Desbloqueo ademas el tripwire de BL-14: al cerrarse, los
+    manifiestos COP tuvieron que dejar de aplazar y declarar su linaje FT real (48 trials
+    derivados por consulta, no elegidos).
 - **BL-06 NO está en DONE.** Este tablero lo listaba como DONE hasta las 2026-07-28T21:17 de hoy;
   era una afirmación rancia. Se retiró en `e144ede` porque se cerró un BL de CI con
   CERO CI y su candado no mordía, y la **verificación por mutación del 2026-07-28 lo
