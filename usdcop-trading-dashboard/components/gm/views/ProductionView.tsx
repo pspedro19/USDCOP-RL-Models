@@ -690,9 +690,15 @@ export function ProductionView() {
   // ux-navigation §3.2 / RBAC §8: subscribers/free ven la vista CLIENTE ("Señales")
   // — sin estados de aprobación ni gates (outputs, no internals).
   const t = useGmT(PROD_DICT);
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role ?? 'free';
   const isClientView = role === 'subscriber' || role === 'free';
+  // D1: `useSession()` arranca en 'loading' con data undefined, y el `?? 'free'` de
+  // arriba colapsa "todavía no sé quién eres" con "eres cliente". Para lo cosmético da
+  // igual (se degrada a la vista cliente un instante), pero el estado de aprobación
+  // tiene DOS proyecciones con DOS contratos y el rol decide CUÁL es la correcta
+  // (CXD-057): pedirla antes de saber el rol es pedir un contrato indeterminado.
+  const roleResolved = sessionStatus !== 'loading';
 
   const [selectedSid, setSelectedSid] = useState<string | null>(null);
 
@@ -723,9 +729,14 @@ export function ProductionView() {
   //   · research (admin/developer): `/api/production/approval` = documento íntegro,
   //     gateado a `research:read`, que es lo que alimenta el ApprovalPanel.
   // El fichero estático `/api/data/production/approval_state_<sid>.json` ya NO existe.
+  // El fetch espera a que el rol esté resuelto (`roleResolved`): así se consulta UNA
+  // sola proyección, la que corresponde, y nunca se sirve la sanitizada al panel de
+  // research (ni al revés). Ver nota de `roleResolved` arriba.
   const approvalQ = useGmQuery<ApprovalState>(
-    (isClientView ? '/api/production/status' : '/api/production/approval')
-      + (sidNonDefault ? `?strategy_id=${encodeURIComponent(sidNonDefault)}` : ''),
+    roleResolved
+      ? (isClientView ? '/api/production/status' : '/api/production/approval')
+        + (sidNonDefault ? `?strategy_id=${encodeURIComponent(sidNonDefault)}` : '')
+      : null,
   );
   const liveQ = useGmQuery<LiveProductionResponse>(
     isDefault ? '/api/production/live' : null,

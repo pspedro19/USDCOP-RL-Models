@@ -5,6 +5,17 @@
  * apiFetch (envelope-aware) + abort-on-unmount + optional polling with
  * stale-while-error (a failed refresh keeps the last data). Its return shape
  * plugs 1:1 into <AsyncBoundary state={…}>.
+ *
+ * INVARIANTE (D1, 2026-07-28): `data` PERTENECE a `path`. Cuando `path` cambia, el
+ * estado anterior deja de ser una respuesta de esta consulta y se descarta ANTES de
+ * pintar. Sin eso, un cambio de URL servía la carga útil de la URL vieja bajo el
+ * contrato de la nueva; en /production eso reventaba la página, porque las dos
+ * proyecciones del estado de aprobación (`/api/production/status` sanitizada vs
+ * `/api/production/approval` íntegra, CXD-057) tienen contratos DISTINTOS y el panel
+ * de research leía `gates` de la sanitizada, donde ese campo no existe. El mismo
+ * defecto, en silencio, mostraba los KPIs de la estrategia anterior bajo el nombre de
+ * la recién seleccionada — números publicados equivocados (quant-constitution §7).
+ * `stale-while-error` sigue intacto: es para un REFRESCO fallido del MISMO path.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -21,6 +32,21 @@ export function useGmQuery<T>(
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const hasData = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Ajuste de estado en RENDER (patrón oficial "resetting state when a prop changes"):
+  // se hace aquí y no en un `useEffect` a propósito — un efecto corre DESPUÉS del commit,
+  // así que dejaría pintar un frame con el dato de la URL anterior bajo el contrato de la
+  // nueva, que es exactamente el fallo que esto cierra. React descarta este render y
+  // vuelve a empezar, de modo que ningún render observa `data` de otro `path`.
+  const [syncedPath, setSyncedPath] = useState(path);
+  if (syncedPath !== path) {
+    setSyncedPath(path);
+    setData(null);
+    setError(null);
+    setUpdatedAt(null);
+    hasData.current = false;
+    setLoading(!!path);
+  }
 
   const reload = useCallback(() => {
     if (!path) return;

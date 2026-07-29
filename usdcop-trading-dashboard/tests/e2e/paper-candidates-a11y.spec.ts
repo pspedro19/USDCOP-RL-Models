@@ -1,14 +1,37 @@
 /**
  * BL-05 (remediación CXD-022) — spec E2E del panel Candidatas A/B.
  *
- * ⚠ ESTADO: **NO EJECUTADO** — pendiente de corrida en la ola de pruebas.
- * Orden del operador (2026-07-28): no levantar Docker ni el dashboard en esta
- * sesión. Este archivo es un ENTREGABLE DE CÓDIGO listo para correr; **no existe
- * ninguna evidencia E2E asociada y no debe declararse verde hasta correrlo**.
  * Correrlo: levantar el dashboard con el build que incluya este remedio y
  *   `npx playwright test tests/e2e/paper-candidates-a11y.spec.ts --project=chromium`
  * (BASE_URL por defecto http://localhost:5000). Requiere sesión admin: el panel
  * está oculto para role free/subscriber (ProductionView: `isClientView`).
+ *
+ * ── D2 (2026-07-28): estabilización SIN bajar el listón ────────────────────────
+ * Medición previa: 9 corridas ⇒ 5 passed / 4 failed, con fallos distintos. Dos
+ * causas, ninguna de ellas "timing que se arregla esperando más":
+ *
+ *  (a) DEFECTO DE LA APLICACIÓN, ya corregido: /production reventaba con
+ *      `TypeError: … reading 'filter'` cuando la sesión resolvía a admin DESPUÉS
+ *      de que llegara la proyección de cliente del estado de aprobación. El
+ *      ErrorBoundary lo capturaba y REMONTABA el árbol 2 s después, así que el
+ *      panel podía desaparecer a media prueba además de ensuciar la consola.
+ *      Fix + prueba: components/gm/useGmQuery.ts + ProductionView.tsx,
+ *      tests/unit/components/{useGmQuery.path-identity,ProductionView.approval-projection-race}.test.tsx.
+ *
+ *  (b) CARRERA QUE FABRICABA ESTA MISMA SPEC: hacía login (aterrizando en /hub) y
+ *      navegaba a /production en el instante siguiente. Esa segunda navegación
+ *      ABORTABA el `/api/auth/session` que /hub tenía en vuelo, y next-auth lo
+ *      registra como `[next-auth][error][CLIENT_FETCH_ERROR] Failed to fetch`.
+ *      El aserto "cero errores de consola" contaba entonces un aborto provocado
+ *      por la propia prueba como si fuera un fallo del producto. Se elimina la
+ *      navegación intermedia (`?callbackUrl=/production`): un solo viaje, ninguna
+ *      petición cancelada. NO se relaja el aserto — se deja de fabricar el ruido.
+ *
+ *  (c) El bucle que probaba contraseñas candidatas se retira: cada intento fallido
+ *      cuenta para el lockout de SignalBridge (5 fallos ⇒ 15 min bloqueado,
+ *      services/signalbridge_api/app/core/login_security.py), así que un login
+ *      lento convertía UNA corrida lenta en deuda de bloqueo para las siguientes.
+ *      Una prueba que adivina contraseñas se envenena a sí misma.
  *
  * Cubre exactamente lo que el rechazo pidió y el commit 60d0af8 no probaba:
  *  - viewport móvil real 375px (portrait) y landscape,
@@ -45,28 +68,31 @@ async function solveCaptcha(page: Page) {
   await page.locator('input[placeholder="respuesta"]').fill(String(answer));
 }
 
-async function login(page: Page) {
-  await page.goto('/login');
-  const passwords = [process.env.PW_ADMIN_PASSWORD, 'Admin2026!', 'admin123'].filter(
-    (p): p is string => Boolean(p),
-  );
-  for (const pw of passwords) {
-    await page.locator('input[name="username"]').fill('admin');
-    await page.locator('input[type="password"]').first().fill(pw);
-    await solveCaptcha(page); // se re-emite (nonce one-time) en cada intento
-    await page.locator('button[type="submit"]').first().click();
-    try {
-      await page.waitForURL(/\/(hub|dashboard|production)/, { timeout: 8_000 });
-      return;
-    } catch {
-      /* siguiente candidata */
-    }
+/**
+ * Login que aterriza DIRECTAMENTE en la página bajo prueba (`?callbackUrl=`, honrado
+ * por `loginDestination()` en app/login/page.tsx). Un solo viaje ⇒ ninguna petición
+ * en vuelo abortada ⇒ el aserto de consola mide el producto y no a la prueba. Ver (b).
+ *
+ * UNA credencial y un único intento: los fallos cuentan para el lockout del backend.
+ * Si falla, se levanta el motivo que la propia UI muestra en vez de probar otra clave.
+ */
+async function loginTo(page: Page, dest: string) {
+  await page.goto(`/login?callbackUrl=${encodeURIComponent(dest)}`);
+  await page.locator('input[name="username"]').fill('admin');
+  await page.locator('input[type="password"]').first().fill(process.env.PW_ADMIN_PASSWORD ?? 'Admin2026!');
+  await solveCaptcha(page);
+  await page.locator('button[type="submit"]').first().click();
+  try {
+    await page.waitForURL((u) => u.pathname === dest, { timeout: 30_000 });
+  } catch (e) {
+    const shown = await page.locator('form').innerText().catch(() => '');
+    throw new Error(`login no aterrizó en ${dest}. URL=${page.url()} · formulario dice: ${shown.slice(0, 300)}`);
   }
-  throw new Error('login falló con todas las credenciales candidatas');
 }
 
+/** Login + espera del panel. El `region` es el contrato a11y bajo prueba. */
 async function gotoPanel(page: Page) {
-  await page.goto('/production');
+  await loginTo(page, '/production');
   const region = page.getByRole('region', { name: PANEL_NAME });
   await expect(region).toBeVisible({ timeout: 30_000 });
   return region;
@@ -77,7 +103,6 @@ test.describe('BL-05 paper-candidates a11y móvil (375px portrait)', () => {
 
   test('teclado alcanza la región scrolleable, sin overflow de página ni errores de consola', async ({ page }) => {
     const consoleErrors = armConsoleCapture(page);
-    await login(page);
     const region = await gotoPanel(page);
 
     // La región de scroll es focusable (axe scrollable-region-focusable).
@@ -141,7 +166,6 @@ test.describe('BL-05 paper-candidates a11y móvil (landscape 667x375)', () => {
 
   test('landscape: panel visible, tabla contenida, consola limpia', async ({ page }) => {
     const consoleErrors = armConsoleCapture(page);
-    await login(page);
     const region = await gotoPanel(page);
 
     await expect(region).toHaveAttribute('tabindex', '0');
@@ -160,7 +184,6 @@ test.describe('BL-05 preferencia de tamaño de fuente (WCAG 1.4.4)', () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test('la tabla escala con el font-size del root (rem, no px fijos)', async ({ page }) => {
-    await login(page);
     const region = await gotoPanel(page);
     const table = region.locator('table');
 
