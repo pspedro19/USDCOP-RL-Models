@@ -580,6 +580,174 @@ def test_rule_based_weekly_surface_does_not_claim_the_model_zoo():
     )
 
 
+# ---------------------------------------------------------------------------
+# BL-02 (hueco documentado, 2026-07-28) — EL CANDADO PROTEGÍA UNA RAMA MUERTA.
+#
+# `test_rule_based_weekly_surface_does_not_claim_the_model_zoo` (arriba) y
+# `test_caveat_not_gated_on_any_surface` muerden ante la mutación de BL-02 —envolver el
+# <ForecastDisclaimer/> de la vista GM en `{isModelZoo && (…)}` deja la llave sin
+# balancear y el depth pasa a 1—, pero en RUNTIME esa mutación es un NO-OP: los activos
+# de `lib/contracts/analysis-assets.ts` declaran TODOS `forecast_mode: 'model_zoo'`, así
+# que `isModelZoo` es siempre true, `AssetWeeklyBody` es inalcanzable desde la vista GM y
+# ningún test de render podía notar la diferencia. El candado congelaba una rama que
+# nadie puede ver, y el banner de la superficie `weekly` no estaba verificado por nada
+# ejecutable.
+#
+# INVARIANTE ELEGIDA (y por qué): la rama `weekly_inference` vive en TRES capas —el
+# dato/tipo (SSOT de activos), el código que ramifica (ForecastingView) y los candados que
+# la congelan (este módulo + un test de render)— y las tres se mueven JUNTAS. No se exige
+# que exista un activo que la consuma (eso sería legislar el roadmap del producto), sino
+# que el estado real esté DECLARADO: hoy hay CERO consumidores, así que la rama es deuda
+# declarada y su única prueba de vida es el test de render que INYECTA la SSOT. La
+# alternativa —"la rama debe tener consumidor o se borra"— fallaría hoy y obligaría a
+# borrar código que Oro/BTC volverán a necesitar; la alternativa opuesta —no comprobar
+# nada— es justamente cómo llegamos a un candado sobre código muerto.
+#
+# DEFECTO REAL ENCONTRADO al escribir esto (reportado, NO arreglado aquí — la decisión de
+# qué ES Oro/BTC es de producto): las DOS puertas de forecasting discriminan por criterios
+# DISTINTOS. La vista GM usa `forecast_mode` (todos 'model_zoo' ⇒ zoo para todos), pero
+# `components/legacy/ForecastingLegacy.tsx:121` usa `isUsdcop`, así que /legacy/forecasting
+# monta WeeklyInferenceView (superficie de REGLAS, banner variant="weekly") para Oro, BTC y
+# SPX500. El mismo activo se describe como "9 modelos ML" en /forecasting y como "política
+# basada en REGLAS, sin conjunto de modelos ML" en /legacy/forecasting: dos afirmaciones de
+# hecho contradictorias sobre la naturaleza del producto, que es exactamente la clase de
+# defecto de CXD-032 finding #1, invertida. Este test NO lo tapa: sólo cubre la rama por
+# `forecast_mode`, que es la que está muerta.
+#
+# Se pone ROJO cuando cualquiera de las tres capas se mueve sin las otras:
+#   · borrar la rama del código dejando el candado (o al revés)  → biconditional abajo
+#   · borrar/renombrar el test de render que la mantiene viva    → falta el render lock
+#   · añadir (o quitar) un activo `weekly_inference` sin actualizar la declaración
+#     → el estado real deja de coincidir con lo declarado, y quien lo añade se entera de
+#       que la rama pasó de deuda a producción (y de que la inyección del test de render
+#       ya puede sustituirse por el activo real).
+# ---------------------------------------------------------------------------
+
+#: Estado DECLARADO de la rama a 2026-07-28: ningún activo la consume. Si añades un
+#: activo `weekly_inference`, añádelo aquí — la deuda deja de ser deuda.
+WEEKLY_MODE_DECLARED_CONSUMERS: tuple[str, ...] = ()
+
+#: El test de render que mantiene la rama VIVA inyectando la SSOT de activos.
+WEEKLY_BRANCH_RENDER_LOCK = (
+    ROOT / "usdcop-trading-dashboard" / "tests" / "unit" / "components"
+    / "forecasting-weekly-branch.test.tsx"
+)
+
+_ANALYSIS_ASSETS_SSOT = (
+    ROOT / "usdcop-trading-dashboard" / "lib" / "contracts" / "analysis-assets.ts"
+)
+
+
+def _assets_by_forecast_mode(mode: str) -> list[str]:
+    """asset_ids declared with `forecast_mode: '<mode>'` in the assets SSOT."""
+    src = _ANALYSIS_ASSETS_SSOT.read_text(encoding="utf-8", errors="replace")
+    block = src[src.find("export const ANALYSIS_ASSETS"):]
+    block = block[: block.find("];") + 2]
+    out: list[str] = []
+    for entry in re.findall(r"\{[^{}]*\}", block):
+        aid = re.search(r"asset_id:\s*'([^']+)'", entry)
+        fmode = re.search(r"forecast_mode:\s*'([^']+)'", entry)
+        if aid and fmode and fmode.group(1) == mode:
+            out.append(aid.group(1))
+    return out
+
+
+def test_weekly_branch_and_its_lock_stay_coherent_with_the_data():
+    """BL-02: la rama `weekly_inference` — dato, código y candado — o está entera, o no está.
+
+    ROJO 1: borrar la rama del código (`variant={directionalSelected ? 'directional' :
+      'zoo'}`, o `const isModelZoo = true`) dejando los candados en pie.
+    ROJO 2: borrar del tipo `ForecastMode` el miembro 'weekly_inference' con el código
+      todavía ramificando por él.
+    ROJO 3: borrar/renombrar forecasting-weekly-branch.test.tsx (la única prueba
+      EJECUTABLE de la rama, porque ningún activo real la alcanza).
+    ROJO 4: añadir un activo con `forecast_mode: 'weekly_inference'` (o quitarlo) sin
+      actualizar WEEKLY_MODE_DECLARED_CONSUMERS.
+    """
+    ssot_src = _ANALYSIS_ASSETS_SSOT.read_text(encoding="utf-8", errors="replace")
+    gm_src = FORECASTING_VIEW.read_text(encoding="utf-8", errors="replace")
+
+    # ── capa 1: dato/tipo ──────────────────────────────────────────────────────
+    # El TIPO, no la prosa: el docblock de cabecera también nombra 'weekly_inference',
+    # así que buscarlo en el fichero entero (o hasta ANALYSIS_ASSETS) lo daba por
+    # declarado aunque la unión ya no lo tuviera — comprobado por mutación.
+    mode_union = re.search(r"export\s+type\s+ForecastMode\s*=\s*([^;]*);", ssot_src)
+    mode_declared = bool(mode_union) and "'weekly_inference'" in mode_union.group(1)
+    live_consumers = tuple(_assets_by_forecast_mode("weekly_inference"))
+
+    # ── capa 2: código que ramifica ────────────────────────────────────────────
+    variant = re.search(r"<ForecastDisclaimer\s*\n?\s*variant=\{([^}]*)\}", gm_src)
+    branches_variant = bool(variant) and "'weekly'" in re.sub(r"\s+", " ", variant.group(1))
+    branches_body = bool(
+        re.search(r"const\s+isModelZoo\s*=\s*assetMeta\.forecast_mode\s*===\s*'model_zoo'", gm_src)
+    ) and "<AssetWeeklyBody" in gm_src
+    code_branches = branches_variant and branches_body
+
+    # ── capa 3: candados ───────────────────────────────────────────────────────
+    self_src = Path(__file__).read_text(encoding="utf-8", errors="replace")
+    static_lock = (
+        "def test_rule_based_weekly_surface_does_not_claim_the_model_zoo" in self_src
+        and "def test_caveat_not_gated_on_any_surface" in self_src
+    )
+    render_lock = WEEKLY_BRANCH_RENDER_LOCK.is_file()
+
+    # (a) rama y candado estático viajan juntos — en LOS DOS sentidos.
+    assert code_branches == static_lock, (
+        "Incoherencia rama↔candado en /forecasting: el código ramifica por "
+        f"weekly_inference={code_branches} (variant={branches_variant}, "
+        f"cuerpo={branches_body}) pero el candado estático existe={static_lock}. "
+        "Si borras la rama, borra su candado; si borras el candado, la rama queda sin "
+        "muralla. Un candado sobre código inexistente es verde por vacuidad, y una rama "
+        "sin candado es la regresión que BL-02 existe para bloquear."
+    )
+
+    # (b) si el código ramifica, el TIPO debe seguir declarando el modo (y viceversa).
+    assert code_branches == mode_declared, (
+        f"ForecastingView ramifica por weekly_inference={code_branches} pero el tipo "
+        f"ForecastMode lo declara={mode_declared}. El modo de render es un contrato: el "
+        "tipo y el consumidor no pueden divergir (lib/contracts/analysis-assets.ts)."
+    )
+
+    # (c) una rama sin consumidor real SOLO es admisible si un test la ejercita de verdad.
+    if code_branches and not live_consumers:
+        assert render_lock, (
+            "La rama `weekly_inference` no tiene NINGÚN activo que la consuma en "
+            "ANALYSIS_ASSETS (todos son 'model_zoo'), así que en runtime es inalcanzable "
+            "y los candados estáticos congelan código que nadie puede ver — el hueco "
+            "documentado de BL-02. Su única prueba de vida es "
+            f"{WEEKLY_BRANCH_RENDER_LOCK.relative_to(ROOT).as_posix()}, que inyecta la "
+            "SSOT de activos y renderiza la rama. Ese fichero no existe: o lo repones, o "
+            "borras la rama y sus candados."
+        )
+        lock_src = WEEKLY_BRANCH_RENDER_LOCK.read_text(encoding="utf-8", errors="replace")
+        for token in ("weekly_inference", "@/lib/contracts/analysis-assets",
+                      "FORECAST_DISCLAIMER_WEEKLY_TITLE", "forecasting-weekly-inference"):
+            assert token in lock_src, (
+                f"{WEEKLY_BRANCH_RENDER_LOCK.name} ya no {token!r}: dejó de inyectar la "
+                "SSOT / de afirmar el copy de la rama weekly, así que la rama vuelve a "
+                "ser código muerto sin cobertura ejecutable (BL-02)."
+            )
+
+    # (d) si algún día HAY consumidor, la rama es obligatoria (el copy del zoo sería falso).
+    if live_consumers:
+        assert code_branches, (
+            f"Activos {list(live_consumers)} declaran forecast_mode 'weekly_inference' "
+            "pero ForecastingView ya no ramifica por él: su superficie se renderizaría "
+            "con el copy del model zoo ('9 modelos'), que es literalmente falso sobre una "
+            "política de REGLAS (CXD-032 finding #1)."
+        )
+
+    # (e) el estado real y el declarado no divergen en silencio.
+    assert live_consumers == WEEKLY_MODE_DECLARED_CONSUMERS, (
+        f"Consumidores reales de 'weekly_inference': {list(live_consumers)}; declarados: "
+        f"{list(WEEKLY_MODE_DECLARED_CONSUMERS)}. Actualiza "
+        "WEEKLY_MODE_DECLARED_CONSUMERS. Si acabas de AÑADIR uno, la rama dejó de ser "
+        "deuda declarada y pasó a producción: revisa que el test de render use el activo "
+        "real y no solo la inyección. Si acabas de QUITAR el último, vuelve a ser código "
+        "muerto sostenido únicamente por su test de render."
+    )
+
+
 def test_weekly_early_returns_carry_the_caveat():
     """CXD-032 (2nd rejection, finding #2 — the BTC gap): WeeklyInferenceView leaves
     through TWO early returns before the main JSX (`loading && !data`, and the
@@ -672,6 +840,182 @@ def test_weekly_direction_is_not_rendered_as_an_order_label():
                 f"{name} does not consume {const} — the neutral wording has ONE source "
                 "(lib/ui/forecast-disclaimer.ts), same rule as the caveat copy (BL-04)."
             )
+
+
+# ---------------------------------------------------------------------------
+# BL-03 (hueco documentado, 2026-07-28) — EL CANDADO NO MORDÍA, MORDÍA VITEST.
+#
+# El check de arriba exige las subcadenas `directionLabel(` y `FORECAST_DIRECTION_LABEL_*`
+# en el FICHERO. Ambas las satisface el bloque de `import`. Demostrado por mutación:
+# vaciando el CUERPO de `directionLabel` en WeeklyInferenceView.tsx —
+#
+#     const directionLabel = (dir: string | null | undefined): string => {
+#       const d = String(dir ?? '').toUpperCase();
+#       return d;                       // ← devuelve el token crudo LONG/SHORT
+#     };
+#
+# — el pytest seguía en 29 passed. Sólo caía Vitest ('↑ LONG' en vez de 'Sesgo al alza').
+# Un candado que sobrevive a la mutación que dice bloquear es decoración.
+#
+# SALIDA ELEGIDA: (a) comprobación de COMPORTAMIENTO acotada al CUERPO de la función,
+# no al fichero — es posible sin ejecutar TS y mata la mutación demostrada, mientras que
+# (b) a solas dejaría el pytest sin morder cuando es exactamente lo que se le pide.
+# Se añade ADEMÁS el guard de (b), porque (a) es estructural y NO puede probar el DOM:
+# la cobertura de comportamiento real vive en Vitest y la delegación no puede evaporarse
+# en silencio (`test_direction_label_behaviour_delegation_to_vitest_is_guarded`).
+#
+# LÍMITE HONESTO de (a): comprueba que cada `return` del cuerpo referencia una constante
+# SSOT y que el cuerpo no devuelve su parámetro. NO evalúa la función: un
+# `return FORECAST_DIRECTION_LABEL_UP` para TODA dirección pasaría aquí (y cae en Vitest,
+# que compara etiqueta por fila). Las dos capas juntas son la garantía; ninguna a solas.
+# ---------------------------------------------------------------------------
+
+_DIRECTION_LABEL_CONSTS = re.compile(r"\bFORECAST_DIRECTION_LABEL_(?:UP|DOWN|FLAT|UNKNOWN)\b")
+
+
+def _arrow_function_body(src: str, name: str) -> tuple[str, str]:
+    """`(param_name, body_source)` of `const <name> = (<param>…) => …`.
+
+    Braces/quotes are counted on the MASKED source (S-07) so a `}` inside a string or a
+    comment cannot end the body early. Both shapes are handled: block body `=> { … }` and
+    expression body `=> <expr>;`. Returns `('', '')` when the helper is absent.
+    """
+    masked = _mask_code(src)
+    decl = re.search(rf"const\s+{re.escape(name)}\s*=", masked)
+    if not decl:
+        return "", ""
+    arrow = masked.find("=>", decl.end())
+    if arrow == -1:
+        return "", ""
+    param = re.search(r"\(\s*([A-Za-z_$][\w$]*)", masked[decl.end(): arrow])
+    param_name = param.group(1) if param else ""
+    i = arrow + 2
+    while i < len(masked) and masked[i].isspace():
+        i += 1
+    if i < len(masked) and masked[i] == "{":                     # block body
+        depth = 0
+        for j in range(i, len(masked)):
+            if masked[j] == "{":
+                depth += 1
+            elif masked[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    return param_name, src[i: j + 1]
+        return param_name, src[i:]
+    depth = 0                                                     # expression body
+    for j in range(i, len(masked)):
+        c = masked[j]
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == ";" and depth == 0:
+            return param_name, src[i: j]
+    return param_name, src[i:]
+
+
+def _direction_label_return_exprs(body: str) -> list[str]:
+    """Every returned expression of the helper body (the whole body if it has no
+    `return` — an expression-bodied arrow IS one return)."""
+    masked = _mask_code(body)
+    returns = [
+        body[m.start(1): m.end(1)]
+        for m in re.finditer(r"\breturn\b([^;]*);", masked)
+    ]
+    return returns or [body]
+
+
+def test_direction_label_maps_tokens_to_the_ssot_constants():
+    """BL-03 (a): `directionLabel` debe MAPEAR a las etiquetas neutras, no devolver el
+    token crudo. Comprobado sobre el CUERPO de la función, no sobre el fichero — el
+    bloque de imports satisfacía la versión anterior aunque el cuerpo hiciera `return d`.
+
+    ROJO: en components/forecasting/WeeklyInferenceView.tsx (o en la vista GM), sustituir
+      el cuerpo de `directionLabel` por
+      `{ const d = String(dir ?? '').toUpperCase(); return d; }`.
+    """
+    for name, seg in _weekly_surface_sources().items():
+        param, body = _arrow_function_body(seg, "directionLabel")
+        assert body, (
+            f"{name}: no se encuentra el helper `const directionLabel = (…) => …`. Es el "
+            "único punto donde LONG/SHORT se convierten en sesgo (BL-03 / FABRIC §24.3); "
+            "si cambia de forma, este candado debe cambiar con él, no desaparecer."
+        )
+        for const in (
+            "FORECAST_DIRECTION_LABEL_UP",
+            "FORECAST_DIRECTION_LABEL_DOWN",
+            "FORECAST_DIRECTION_LABEL_FLAT",
+        ):
+            assert const in body, (
+                f"{name}: el CUERPO de directionLabel no referencia {const} (importarlo no "
+                "basta: el import sobrevive a un cuerpo vaciado). La etiqueta neutra tiene "
+                "UNA fuente — lib/ui/forecast-disclaimer.ts (BL-03/BL-04)."
+            )
+        for expr in _direction_label_return_exprs(body):
+            flat = re.sub(r"\s+", " ", expr).strip()
+            assert _DIRECTION_LABEL_CONSTS.search(expr), (
+                f"{name}: directionLabel devuelve {flat!r}, que no es una etiqueta neutra "
+                "del SSOT. Devolver el token del contrato imprime LONG/SHORT —etiquetas "
+                "IMPERATIVAS de orden— en una superficie diagnóstica (BL-03)."
+            )
+            if param:
+                assert not re.search(rf"\b{re.escape(param)}\b", expr), (
+                    f"{name}: directionLabel devuelve una expresión que aún referencia su "
+                    f"parámetro {param!r} ({flat!r}) — el token crudo se filtraría al DOM."
+                )
+
+
+#: Fichero y tests de Vitest a los que se DELEGA la cobertura de comportamiento (el DOM
+#: renderizado). Un comentario que dice "esto lo cubre otro" no es un guard; esto sí.
+_DIRECTION_BEHAVIOUR_VITEST = (
+    ROOT / "usdcop-trading-dashboard" / "tests" / "unit" / "components"
+    / "forecasting-caveat-surfaces.test.tsx"
+)
+_DIRECTION_BEHAVIOUR_VITEST_TITLES = (
+    "BL-03: la dirección NO se muestra como orden (LONG/SHORT) y sigue en tono neutro",
+    "BL-03: la dirección NO se muestra como orden (LONG/SHORT) en la piel GM",
+)
+
+
+def test_direction_label_behaviour_delegation_to_vitest_is_guarded():
+    """BL-03 (b): la comprobación estática de arriba NO ejecuta TypeScript. La cobertura
+    de COMPORTAMIENTO —qué texto acaba en el DOM por fila— está delegada a Vitest:
+    `forecasting-caveat-surfaces.test.tsx`, helper `assertDirectionLabelsAreNotImperative`,
+    tests `BL-03: la dirección NO se muestra como orden (…)` (legacy y piel GM).
+
+    Este test es el guard de esa delegación: si ese fichero, ese helper, esos tests o el
+    aserto que compara la etiqueta esperada desaparecen, la delegación se ha evaporado y
+    aquí sale ROJO — que es la única forma de que "lo cubre otro" siga siendo cierto.
+
+    ROJO: borrar/renombrar forecasting-caveat-surfaces.test.tsx, o quitar de él
+      `assertDirectionLabelsAreNotImperative` o cualquiera de los dos tests nombrados.
+    """
+    assert _DIRECTION_BEHAVIOUR_VITEST.is_file(), (
+        f"{_DIRECTION_BEHAVIOUR_VITEST.relative_to(ROOT).as_posix()} no existe. Es la "
+        "cobertura de comportamiento de directionLabel (el candado Python solo ve el "
+        "fuente). Sin ella, un cuerpo que devuelva SIEMPRE la misma etiqueta pasaría."
+    )
+    src = _DIRECTION_BEHAVIOUR_VITEST.read_text(encoding="utf-8", errors="replace")
+    assert "function assertDirectionLabelsAreNotImperative" in src, (
+        "El helper `assertDirectionLabelsAreNotImperative` desapareció de la suite de "
+        "render: es quien compara, FILA A FILA, la etiqueta neutra esperada contra el DOM."
+    )
+    assert src.count("assertDirectionLabelsAreNotImperative(") >= 3, (
+        "El helper de dirección ya no se INVOCA en la suite de render (definirlo y no "
+        "usarlo es la versión silenciosa de borrarlo)."
+    )
+    missing = [t for t in _DIRECTION_BEHAVIOUR_VITEST_TITLES if t not in src]
+    assert not missing, (
+        f"Los tests de render delegados ya no existen con ese nombre: {missing}. Si los "
+        "renombras, actualiza _DIRECTION_BEHAVIOUR_VITEST_TITLES en el mismo commit — "
+        "una delegación que nadie puede verificar es un comentario, no un guard."
+    )
+    # El aserto concreto: la etiqueta ESPERADA por dirección, no "no dice LONG".
+    assert "expectedFor(w.direction)" in src and "FORECAST_DIRECTION_LABEL_UP" in src, (
+        "El helper de render ya no compara contra la etiqueta neutra esperada por "
+        "dirección (FORECAST_DIRECTION_LABEL_*). Un `not.toMatch(/LONG|SHORT/)` a solas "
+        "pasaría con un mapeo constante o con la celda vacía."
+    )
 
 
 def test_legacy_diagnostic_caveat_wrapper_cannot_hide():
