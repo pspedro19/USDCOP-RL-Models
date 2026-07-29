@@ -1,16 +1,18 @@
 -- Migration 077: portfolio snapshot/allocation/target control plane (BL-26/27/30)
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE SCHEMA IF NOT EXISTS portfolio;
 
 CREATE TABLE IF NOT EXISTS portfolio.snapshot (
-    snapshot_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    snapshot_id UUID PRIMARY KEY,
     cutoff_time TIMESTAMPTZ NOT NULL,
     required_sleeves TEXT[] NOT NULL,
     stale_signals TEXT[] NOT NULL DEFAULT '{}',
     missing_sleeves TEXT[] NOT NULL DEFAULT '{}',
     fallback_applied JSONB NOT NULL DEFAULT '{}'::jsonb,
     max_age_by_sleeve JSONB NOT NULL,
+    missing_policy_by_sleeve JSONB NOT NULL,
     semantic_hash TEXT NOT NULL UNIQUE CHECK (semantic_hash ~ '^sha256:[0-9a-f]{64}$'),
     run_id TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -19,8 +21,31 @@ CREATE TABLE IF NOT EXISTS portfolio.snapshot (
     CHECK (array_position(stale_signals, NULL) IS NULL),
     CHECK (array_position(missing_sleeves, NULL) IS NULL),
     CHECK (jsonb_typeof(fallback_applied) = 'object'),
-    CHECK (jsonb_typeof(max_age_by_sleeve) = 'object')
+    CHECK (jsonb_typeof(max_age_by_sleeve) = 'object'),
+    CHECK (jsonb_typeof(missing_policy_by_sleeve) = 'object')
 );
+
+-- Keep reruns/upgrades fail-closed as well as fresh installs.  An existing
+-- populated table cannot infer the policy for accepted sleeves without
+-- rewriting evidence, so require an explicit backfill instead.
+ALTER TABLE portfolio.snapshot
+    ALTER COLUMN snapshot_id DROP DEFAULT;
+ALTER TABLE portfolio.snapshot
+    ADD COLUMN IF NOT EXISTS missing_policy_by_sleeve JSONB;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM portfolio.snapshot
+        WHERE missing_policy_by_sleeve IS NULL
+    ) THEN
+        RAISE EXCEPTION
+            'portfolio.snapshot requires explicit missing-policy backfill';
+    END IF;
+END;
+$$;
+ALTER TABLE portfolio.snapshot
+    ALTER COLUMN missing_policy_by_sleeve SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS portfolio.snapshot_signal (
     snapshot_id UUID NOT NULL REFERENCES portfolio.snapshot(snapshot_id),
@@ -72,6 +97,37 @@ BEGIN
         RAISE EXCEPTION
             'max_age_by_sleeve keys must exactly match required_sleeves';
     END IF;
+    IF v_policy_keys <> ARRAY(
+        SELECT key FROM jsonb_object_keys(NEW.missing_policy_by_sleeve) AS key
+        ORDER BY key
+    ) THEN
+        RAISE EXCEPTION
+            'missing_policy_by_sleeve keys must exactly match required_sleeves';
+    END IF;
+    IF EXISTS (
+        SELECT 1
+        FROM jsonb_each_text(NEW.missing_policy_by_sleeve) AS policy
+        WHERE policy.value NOT IN (
+            'FLAT', 'KEEP_POSITION_UNTIL_EXPIRY',
+            'EXIT_ONLY', 'USE_LAST_VALID_WITH_MAX_AGE'
+        )
+    ) THEN
+        RAISE EXCEPTION 'missing_policy_by_sleeve contains an invalid policy';
+    END IF;
+    IF EXISTS (
+        SELECT 1
+        FROM jsonb_each_text(NEW.fallback_applied) AS fallback
+        WHERE NEW.missing_policy_by_sleeve ->> fallback.key
+              IS DISTINCT FROM fallback.value
+    ) THEN
+        RAISE EXCEPTION
+            'fallback_applied must match missing_policy_by_sleeve';
+    END IF;
+    IF NEW.snapshot_id IS DISTINCT FROM
+       uuid_generate_v5(uuid_ns_url(), NEW.semantic_hash) THEN
+        RAISE EXCEPTION
+            'snapshot_id must be UUIDv5(namespace_url, semantic_hash)';
+    END IF;
     FOR v_max_age IN
         SELECT key, value
         FROM jsonb_each_text(NEW.max_age_by_sleeve)
@@ -105,10 +161,22 @@ DECLARE
     snapshot_cutoff TIMESTAMPTZ;
     snapshot_required_sleeves TEXT[];
     snapshot_fallbacks JSONB;
+    snapshot_max_ages JSONB;
+    snapshot_missing_policies JSONB;
     expected_fallback TEXT;
 BEGIN
-    SELECT cutoff_time, required_sleeves, fallback_applied
-    INTO snapshot_cutoff, snapshot_required_sleeves, snapshot_fallbacks
+    SELECT
+        cutoff_time,
+        required_sleeves,
+        fallback_applied,
+        max_age_by_sleeve,
+        missing_policy_by_sleeve
+    INTO
+        snapshot_cutoff,
+        snapshot_required_sleeves,
+        snapshot_fallbacks,
+        snapshot_max_ages,
+        snapshot_missing_policies
     FROM portfolio.snapshot
     WHERE snapshot_id = NEW.snapshot_id;
     IF snapshot_cutoff IS NULL THEN
@@ -123,6 +191,18 @@ BEGIN
         RAISE EXCEPTION 'signal available_at % exceeds snapshot cutoff %',
             NEW.signal_available_at, snapshot_cutoff;
     END IF;
+    IF NEW.resolution IN ('ACCEPTED', 'USE_LAST_VALID_WITH_MAX_AGE')
+       AND NEW.signal_valid_until < snapshot_cutoff THEN
+        RAISE EXCEPTION
+            'signal valid_until % precedes snapshot cutoff %',
+            NEW.signal_valid_until, snapshot_cutoff;
+    END IF;
+    IF NEW.resolution IN ('ACCEPTED', 'USE_LAST_VALID_WITH_MAX_AGE')
+       AND EXTRACT(EPOCH FROM snapshot_cutoff - NEW.signal_as_of)
+           > (snapshot_max_ages ->> NEW.sleeve_id)::NUMERIC THEN
+        RAISE EXCEPTION
+            'signal as_of exceeds max_age for sleeve %', NEW.sleeve_id;
+    END IF;
     expected_fallback := snapshot_fallbacks ->> NEW.sleeve_id;
     IF NEW.resolution = 'ACCEPTED' AND expected_fallback IS NOT NULL THEN
         RAISE EXCEPTION 'accepted sleeve cannot declare a fallback';
@@ -130,6 +210,12 @@ BEGIN
           AND expected_fallback IS DISTINCT FROM NEW.resolution THEN
         RAISE EXCEPTION
             'materialized fallback does not match snapshot fallback policy';
+    END IF;
+    IF NEW.resolution <> 'ACCEPTED'
+       AND snapshot_missing_policies ->> NEW.sleeve_id
+           IS DISTINCT FROM NEW.resolution THEN
+        RAISE EXCEPTION
+            'materialized fallback does not match declared missing policy';
     END IF;
     RETURN NEW;
 END;

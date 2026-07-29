@@ -216,16 +216,144 @@ class PortfolioSnapshot:
             "materialized_inputs",
             MappingProxyType(dict(self.materialized_inputs)),
         )
+        self._validate_causal_contract()
         expected_hash = semantic_hash(self.identity_payload())
         if self.semantic_hash != expected_hash:
-            raise SnapshotError(
-                f"semantic_hash mismatch: expected {expected_hash}, got {self.semantic_hash}"
-            )
+            raise SnapshotError("semantic_hash mismatch")
         expected_id = str(uuid.uuid5(uuid.NAMESPACE_URL, expected_hash))
         if self.snapshot_id != expected_id:
-            raise SnapshotError(
-                f"snapshot_id mismatch: expected {expected_id}, got {self.snapshot_id}"
+            raise SnapshotError("snapshot_id mismatch")
+
+    def _validate_causal_contract(self) -> None:
+        cutoff = self.cutoff_time
+        required = set(self.required_sleeves)
+        if (
+            tuple(sorted(self.stale_signals)) != self.stale_signals
+            or len(set(self.stale_signals)) != len(self.stale_signals)
+            or any(
+                not isinstance(signal_id, str) or not signal_id.strip()
+                for signal_id in self.stale_signals
             )
+        ):
+            raise SnapshotError("stale_signals must be sorted, unique signal ids")
+        if (
+            tuple(sorted(self.missing_signals)) != self.missing_signals
+            or len(set(self.missing_signals)) != len(self.missing_signals)
+            or not set(self.missing_signals).issubset(required)
+        ):
+            raise SnapshotError(
+                "missing_signals must be sorted, unique required sleeve ids"
+            )
+
+        accepted_by_sleeve: dict[str, AcceptedSignal] = {}
+        accepted_ids: set[str] = set()
+        for signal in self.accepted_signals:
+            if signal.signal_id in accepted_ids:
+                raise SnapshotError(f"duplicate accepted signal_id: {signal.signal_id}")
+            if signal.sleeve_id not in required:
+                raise SnapshotError(
+                    f"{signal.signal_id}: accepted signal has undeclared sleeve"
+                )
+            if signal.sleeve_id in accepted_by_sleeve:
+                raise SnapshotError(
+                    f"{signal.sleeve_id}: more than one accepted signal"
+                )
+            if signal.as_of > cutoff:
+                raise SnapshotError(f"{signal.signal_id}: as_of exceeds cutoff")
+            if signal.available_at > cutoff:
+                raise SnapshotError(f"{signal.signal_id}: available_at exceeds cutoff")
+            if cutoff - signal.as_of > self.max_age_by_sleeve[signal.sleeve_id]:
+                raise SnapshotError(f"{signal.signal_id}: accepted signal exceeds max_age")
+            if signal.valid_until < cutoff:
+                raise SnapshotError(
+                    f"{signal.signal_id}: accepted signal expired before cutoff"
+                )
+            materialized = self.materialized_inputs[signal.sleeve_id]
+            if materialized.resolution != "ACCEPTED":
+                raise SnapshotError(
+                    f"{signal.sleeve_id}: accepted signal has fallback materialization"
+                )
+            if (
+                materialized.source_signal_id != signal.signal_id
+                or materialized.as_of != signal.as_of
+                or materialized.available_at != signal.available_at
+                or materialized.valid_until != signal.valid_until
+                or materialized.payload != signal.payload
+            ):
+                raise SnapshotError(
+                    f"{signal.sleeve_id}: accepted signal and materialized input differ"
+                )
+            accepted_ids.add(signal.signal_id)
+            accepted_by_sleeve[signal.sleeve_id] = signal
+
+        if tuple(accepted_by_sleeve) != tuple(sorted(accepted_by_sleeve)):
+            raise SnapshotError("accepted_signals must be ordered by sleeve_id")
+        stale_ids = set(self.stale_signals)
+        if accepted_ids & stale_ids:
+            raise SnapshotError("a signal cannot be both accepted and stale")
+
+        fallback_sleeves = required - set(accepted_by_sleeve)
+        if set(self.fallback_applied) != fallback_sleeves:
+            raise SnapshotError(
+                "fallback_applied keys must exactly match non-accepted sleeves"
+            )
+        if not set(self.missing_signals).issubset(fallback_sleeves):
+            raise SnapshotError("an accepted sleeve cannot also be missing")
+        if (
+            len(self.stale_signals) + len(self.missing_signals)
+            != len(fallback_sleeves)
+        ):
+            raise SnapshotError(
+                "accepted/stale/missing classifications must partition required_sleeves"
+            )
+
+        for sleeve in fallback_sleeves:
+            materialized = self.materialized_inputs[sleeve]
+            try:
+                resolution = MissingPolicy(materialized.resolution)
+                applied = MissingPolicy(self.fallback_applied[sleeve])
+            except (TypeError, ValueError) as exc:
+                raise SnapshotError(f"{sleeve}: invalid fallback resolution") from exc
+            declared = self.missing_policy_by_sleeve[sleeve]
+            if resolution is not declared or applied is not declared:
+                raise SnapshotError(
+                    f"{sleeve}: fallback resolution differs from declared policy"
+                )
+            if materialized.as_of is not None and materialized.as_of > cutoff:
+                raise SnapshotError(f"{sleeve}: fallback as_of exceeds cutoff")
+            if (
+                materialized.available_at is not None
+                and materialized.available_at > cutoff
+            ):
+                raise SnapshotError(f"{sleeve}: fallback available_at exceeds cutoff")
+            if resolution is MissingPolicy.USE_LAST_VALID_WITH_MAX_AGE:
+                if (
+                    not materialized.source_signal_id
+                    or materialized.as_of is None
+                    or materialized.available_at is None
+                    or materialized.valid_until is None
+                ):
+                    raise SnapshotError(
+                        f"{sleeve}: last-valid fallback lacks signal evidence"
+                    )
+                if materialized.valid_until < cutoff:
+                    raise SnapshotError(
+                        f"{sleeve}: last-valid fallback expired before cutoff"
+                    )
+                if cutoff - materialized.as_of > self.max_age_by_sleeve[sleeve]:
+                    raise SnapshotError(
+                        f"{sleeve}: last-valid fallback exceeds max_age"
+                    )
+            elif (
+                resolution is MissingPolicy.KEEP_POSITION_UNTIL_EXPIRY
+                and (
+                    materialized.valid_until is None
+                    or materialized.valid_until < cutoff
+                )
+            ):
+                raise SnapshotError(
+                    f"{sleeve}: kept position expired before cutoff"
+                )
 
     def identity_payload(self) -> dict[str, Any]:
         return {

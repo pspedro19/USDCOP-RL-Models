@@ -189,15 +189,135 @@ def test_snapshot_is_deeply_immutable_and_retry_identity_is_deterministic() -> N
     assert first.accepted_signals[0].payload["nested"]["values"] == (1, 2)
     with pytest.raises(TypeError):
         first.fallback_applied["sleeve-1"] = "EXIT_ONLY"
-    with pytest.raises(
-        SnapshotError,
-        match=r"snapshot_id mismatch: expected .+, got whatever-i-want",
-    ):
+    with pytest.raises(SnapshotError, match="snapshot_id mismatch") as id_error:
         replace(first, snapshot_id="whatever-i-want")
-    with pytest.raises(SnapshotError, match="semantic_hash mismatch"):
+    assert first.snapshot_id not in str(id_error.value)
+    with pytest.raises(SnapshotError, match="semantic_hash mismatch") as hash_error:
         replace(first, semantic_hash="sha256:" + "0" * 64)
+    assert first.semantic_hash not in str(hash_error.value)
+    assert "0" * 64 not in str(hash_error.value)
     with pytest.raises(SnapshotError, match="cutoff_time must be timezone-aware"):
         replace(first, cutoff_time=cutoff.replace(tzinfo=None))
+
+
+def test_snapshot_constructor_revalidates_self_consistent_causal_forgery() -> None:
+    import uuid
+
+    from src.identity.canonical import semantic_hash
+    from src.portfolio.snapshot import (
+        AcceptedSignal,
+        MaterializedInput,
+        MissingPolicy,
+        PortfolioSnapshot,
+        SnapshotBuilder,
+        SnapshotError,
+    )
+
+    cutoff = datetime(2026, 1, 5, tzinfo=timezone.utc)
+    signal = AcceptedSignal(
+        signal_id="signal-1",
+        sleeve_id="sleeve-1",
+        as_of=cutoff,
+        available_at=cutoff,
+        valid_until=cutoff + timedelta(days=1),
+        payload={"decision_fingerprint": "sha256:" + "a" * 64},
+    )
+    valid = SnapshotBuilder().build(
+        cutoff_time=cutoff,
+        required_sleeves=["sleeve-1"],
+        signals=[signal],
+        max_age_by_sleeve={"sleeve-1": timedelta(days=2)},
+        missing_policy_by_sleeve={"sleeve-1": MissingPolicy.FLAT},
+    )
+    base_fields = {
+        "cutoff_time": valid.cutoff_time,
+        "required_sleeves": valid.required_sleeves,
+        "accepted_signals": valid.accepted_signals,
+        "stale_signals": valid.stale_signals,
+        "missing_signals": valid.missing_signals,
+        "fallback_applied": valid.fallback_applied,
+        "max_age_by_sleeve": valid.max_age_by_sleeve,
+        "missing_policy_by_sleeve": valid.missing_policy_by_sleeve,
+        "materialized_inputs": valid.materialized_inputs,
+    }
+
+    def forge(payload, **overrides):
+        digest = semantic_hash(payload)
+        return PortfolioSnapshot(
+            **(base_fields | overrides),
+            semantic_hash=digest,
+            snapshot_id=str(uuid.uuid5(uuid.NAMESPACE_URL, digest)),
+        )
+
+    future_available_at = cutoff + timedelta(seconds=1)
+    future_signal = replace(signal, available_at=future_available_at)
+    future_materialized = replace(
+        valid.materialized_inputs["sleeve-1"],
+        available_at=future_available_at,
+    )
+    future_payload = valid.identity_payload()
+    future_payload["accepted_signals"][0]["available_at"] = future_available_at
+    future_payload["materialized_inputs"]["sleeve-1"][
+        "available_at"
+    ] = future_available_at
+    with pytest.raises(SnapshotError, match="available_at exceeds cutoff"):
+        forge(
+            future_payload,
+            accepted_signals=(future_signal,),
+            materialized_inputs={"sleeve-1": future_materialized},
+        )
+
+    old_as_of = cutoff - timedelta(days=400)
+    old_signal = replace(signal, as_of=old_as_of, available_at=old_as_of)
+    old_materialized = MaterializedInput(
+        sleeve_id="sleeve-1",
+        resolution="ACCEPTED",
+        source_signal_id=old_signal.signal_id,
+        as_of=old_as_of,
+        available_at=old_as_of,
+        valid_until=old_signal.valid_until,
+        payload=old_signal.payload,
+    )
+    old_payload = valid.identity_payload()
+    for block in (
+        old_payload["accepted_signals"][0],
+        old_payload["materialized_inputs"]["sleeve-1"],
+    ):
+        block["as_of"] = old_as_of
+        block["available_at"] = old_as_of
+    with pytest.raises(SnapshotError, match="accepted signal exceeds max_age"):
+        forge(
+            old_payload,
+            accepted_signals=(old_signal,),
+            materialized_inputs={"sleeve-1": old_materialized},
+        )
+
+    contradictory_payload = valid.identity_payload()
+    contradictory_payload["missing_signals"] = ["sleeve-1"]
+    with pytest.raises(SnapshotError, match="accepted sleeve cannot also be missing"):
+        forge(contradictory_payload, missing_signals=("sleeve-1",))
+
+
+def test_portfolio_snapshot_ddl_persists_uuid5_identity_and_missing_policy() -> None:
+    import re
+
+    sql = (
+        Path("database") / "migrations" / "077_portfolio_control.sql"
+    ).read_text(encoding="utf-8")
+    snapshot_table = re.search(
+        r"CREATE TABLE IF NOT EXISTS portfolio\.snapshot \((?P<body>.*?)\n\);",
+        sql,
+        flags=re.DOTALL,
+    )
+    assert snapshot_table is not None
+    body = snapshot_table.group("body")
+
+    assert re.search(r"snapshot_id\s+UUID\s+PRIMARY KEY\s*,", body)
+    assert "snapshot_id UUID PRIMARY KEY DEFAULT" not in body
+    assert "missing_policy_by_sleeve JSONB NOT NULL" in body
+    assert "uuid_generate_v5(uuid_ns_url(), NEW.semantic_hash)" in sql
+    assert "signal valid_until % precedes snapshot cutoff %" in sql
+    assert "signal as_of exceeds max_age for sleeve %" in sql
 
 
 def test_snapshot_materializes_fallbacks_instead_of_only_labelling_them() -> None:
