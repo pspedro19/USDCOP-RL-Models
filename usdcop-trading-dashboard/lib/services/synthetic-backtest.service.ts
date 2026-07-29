@@ -553,6 +553,11 @@ export function createSyntheticSSEStream(config: SyntheticBacktestConfig): Reada
       const summary = calculateBacktestSummary(trades, initialEquity);
 
       send('result', {
+        // First-level, POSITIVE declaration that these numbers are FABRICATED.
+        // This service is demo-only: it is reachable exclusively behind an explicit
+        // caller opt-in (`mode=demo`), never as a fallback for a dead backend.
+        synthetic: true,
+        data_origin: 'SYNTHETIC',
         success: true,
         source: 'generated',
         trade_count: trades.length,

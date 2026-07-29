@@ -26,8 +26,14 @@ const BACKEND_URL = process.env.INFERENCE_API_URL || 'http://localhost:8003';
  * - L1: Feature computation (log returns, RSI, ATR, macro features)
  * - L5: Model inference (loads model, computes action)
  *
- * The fallback generates synthetic data for demo/testing when backend unavailable.
- * All modes use SSOT config for consistent metrics calculation.
+ * 3. DEMO (mode=demo) — EXPLICIT caller opt-in ONLY
+ *    Streams fabricated numbers from `synthetic-backtest.service`. Labelled with a
+ *    first-level `synthetic: true` in the `result` event and `X-Data-Origin: SYNTHETIC`.
+ *
+ * **FAIL-CLOSED**: when the backend is unreachable or answers !ok, this route responds
+ * `503` with the real reason and emits NOT ONE fabricated trade. Fabricating a plausible
+ * equity curve on a decision surface (Vote 2 is cast on these numbers) is worse than an
+ * empty screen — see `.claude/rules/quant-constitution.md` §6/§7.
  */
 
 /**
@@ -40,6 +46,48 @@ function parseReplaySpeed(value: string | null): ReplaySpeed {
     return parsed as ReplaySpeed;
   }
   return DEFAULT_REPLAY_SPEED;
+}
+
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream',
+  'Cache-Control': 'no-cache',
+  'Connection': 'keep-alive',
+} as const;
+
+/**
+ * Fail-closed response for a dead/erroring inference backend.
+ *
+ * Nothing has been flushed to the client at this point (the upstream stream is piped
+ * through only on success), so we can still set a real status: `503`. The body carries
+ * the same SSE `error` frame a mid-stream failure would emit, so a consumer reading the
+ * body gets the reason either way.
+ */
+function backendUnavailable(detail: string): Response {
+  console.error(`[Stream] Inference backend unavailable — responding 503: ${detail}`);
+  // `data` is a STRING on purpose: the SSE consumer (`backtest.service.ts`, `case 'error'`)
+  // does `String(event.data)`, so an object would surface to the user as "[object Object]".
+  // The machine-readable code travels alongside it, at the frame's top level.
+  const payload = JSON.stringify({
+    type: 'error',
+    error: 'inference_backend_unavailable',
+    detail,
+    data: `inference_backend_unavailable: ${detail}`,
+  });
+  return new Response(
+    `data: ${payload}\n\n`,
+    {
+      status: 503,
+      headers: { ...SSE_HEADERS, 'X-Data-Origin': 'ERROR' },
+    },
+  );
+}
+
+/** Synthetic stream, reachable ONLY through the explicit `mode=demo` opt-in. */
+function demoStream(config: Parameters<typeof createSyntheticSSEStream>[0]): Response {
+  console.warn('[Stream] mode=demo — serving FABRICATED trades (explicit caller opt-in)');
+  return new Response(createSyntheticSSEStream(config), {
+    headers: { ...SSE_HEADERS, 'X-Data-Origin': 'SYNTHETIC' },
+  });
 }
 
 /**
@@ -81,62 +129,62 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Try backend first
+  // Explicit demo opt-in: fabricated numbers, clearly labelled as such.
+  if (mode === 'demo') {
+    return demoStream({
+      startDate,
+      endDate,
+      modelId,
+      emitBarEvents: true,
+      replaySpeed,
+    });
+  }
+
+  const endpoint = mode === 'replay'
+    ? `${BACKEND_URL}/v1/backtest/replay`
+    : `${BACKEND_URL}/v1/backtest/stream`;
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    // Use replay endpoint for L1+L5 bar-by-bar simulation
-    const endpoint = mode === 'replay'
-      ? `${BACKEND_URL}/v1/backtest/replay`
-      : `${BACKEND_URL}/v1/backtest/stream`;
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify({
-        start_date: startDate,
-        end_date: endDate,
-        model_id: modelId,
-        mode: mode,
-        // For replay mode, emit bar-level events for dynamic equity curve
-        emit_bar_events: mode === 'replay',
-        // Pass speed to backend for replay control
-        replay_speed: replaySpeed,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      // Use replay endpoint for L1+L5 bar-by-bar simulation
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        body: JSON.stringify({
+          start_date: startDate,
+          end_date: endDate,
+          model_id: modelId,
+          mode: mode,
+          // For replay mode, emit bar-level events for dynamic equity curve
+          emit_bar_events: mode === 'replay',
+          // Pass speed to backend for replay control
+          replay_speed: replaySpeed,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.ok && response.body) {
-      return new Response(response.body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
+      return new Response(response.body, { headers: { ...SSE_HEADERS } });
     }
-  } catch {
-    // Backend unavailable, generate synthetic data
+
+    return backendUnavailable(
+      response.ok
+        ? `${endpoint} responded ${response.status} with an empty body`
+        : `${endpoint} responded ${response.status}`,
+    );
+  } catch (error) {
+    // NEVER swallow this: the empty `catch {}` that used to live here is precisely
+    // what allowed fabricated equity curves to be served as real for months.
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return backendUnavailable(`${endpoint} unreachable (${reason})`);
   }
-
-  // Fallback: generate synthetic backtest with fluid, progressive replay
-  const stream = createSyntheticSSEStream({
-    startDate: startDate,
-    endDate: endDate,
-    modelId: modelId,
-    emitBarEvents: mode === 'replay',
-    replaySpeed: replaySpeed,
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
 }
 
 /**
@@ -171,53 +219,54 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Try backend first
+  // Explicit demo opt-in: fabricated numbers, clearly labelled as such.
+  if (body.mode === 'demo' || request.nextUrl.searchParams.get('mode') === 'demo') {
+    return demoStream({
+      startDate: start_date,
+      endDate: end_date,
+      modelId: model_id,
+      emitBarEvents: emit_bar_events ?? true,
+      replaySpeed: speed,
+    });
+  }
+
+  const endpoint = `${BACKEND_URL}/v1/backtest/stream`;
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(`${BACKEND_URL}/v1/backtest/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify({
-        start_date,
-        end_date,
-        model_id,
-        force_regenerate,
-        replay_speed: speed,
-        emit_bar_events: emit_bar_events ?? true,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        body: JSON.stringify({
+          start_date,
+          end_date,
+          model_id,
+          force_regenerate,
+          replay_speed: speed,
+          emit_bar_events: emit_bar_events ?? true,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (response.ok && response.body) {
-      return new Response(response.body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
+      return new Response(response.body, { headers: { ...SSE_HEADERS } });
     }
-  } catch {
-    // Backend unavailable, generate synthetic data
+
+    return backendUnavailable(
+      response.ok
+        ? `${endpoint} responded ${response.status} with an empty body`
+        : `${endpoint} responded ${response.status}`,
+    );
+  } catch (error) {
+    // NEVER swallow this: see the note in GET.
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return backendUnavailable(`${endpoint} unreachable (${reason})`);
   }
-
-  // Fallback: generate synthetic backtest with fluid, progressive replay
-  const stream = createSyntheticSSEStream({
-    startDate: start_date,
-    endDate: end_date,
-    modelId: model_id,
-    emitBarEvents: emit_bar_events ?? true,
-    replaySpeed: speed,
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
 }

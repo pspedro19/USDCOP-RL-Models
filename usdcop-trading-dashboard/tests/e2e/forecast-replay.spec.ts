@@ -103,9 +103,11 @@ test.describe('Forecast Strategy Replay', () => {
     const response = await request.get(
       '/api/backtest/stream?startDate=2025-01-02&endDate=2025-12-30&modelId=fc_invalid_model&speed=16'
     );
-    // Should fall through to backend (not a registered fc_ strategy),
-    // or get synthetic fallback - either way should not crash
-    expect(response.status()).toBeLessThan(500);
+    // Falls through to the backend proxy (not a registered fc_ strategy).
+    // With the inference backend down the route now FAILS CLOSED with 503 instead of
+    // fabricating a synthetic backtest (see tests/unit/api/synthetic-backtest-honesty.test.ts).
+    // Accepted: 404 (registered-but-missing data) or 503 (backend unavailable).
+    expect([404, 503]).toContain(response.status());
   });
 
   test('Dashboard: forecast models appear in model dropdown', async ({ page }) => {

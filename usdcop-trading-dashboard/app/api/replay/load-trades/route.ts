@@ -10,7 +10,15 @@ import { generateSyntheticTrades, calculateBacktestSummary } from '@/lib/service
  *
  * If trades exist in the database → Returns cached trades
  * If trades don't exist → Runs PPO model inference and persists results
- * If inference service unavailable → Falls back to synthetic trades
+ * If inference service unavailable → **503 `inference_backend_unavailable`** (FAIL-CLOSED)
+ *
+ * The replay surface feeds decisions (Vote 2 is cast on these numbers), so it must stay
+ * EMPTY when the backend is down rather than fill itself with a fabricated equity curve
+ * — see `.claude/rules/quant-constitution.md` §6/§7 and the fail-safe doctrine of
+ * `PreTradeGate` (error ⇒ BLOCK) / `RiskCheckChain`.
+ *
+ * Fabricated trades remain reachable ONLY through an explicit caller opt-in
+ * (`{ mode: 'demo' }`), and are labelled `synthetic: true` + `X-Data-Origin: SYNTHETIC`.
  *
  * This endpoint acts as a bridge between the Next.js frontend and the
  * FastAPI inference service running on port 8000.
@@ -104,11 +112,27 @@ function transformTrade(trade: InferenceServiceTrade) {
 }
 
 /**
- * Generate synthetic fallback response when inference service is unavailable.
- * Uses the same synthetic-backtest.service with engineered investor demo metrics.
+ * FAIL-CLOSED response for a dead / erroring inference backend.
+ * Carries the REAL reason — an error that is silenced is an error that survives.
  */
-function buildSyntheticFallback(startDate: string, endDate: string, modelId: string, startTime: number) {
-  console.log(`[Replay API] Inference unavailable, generating synthetic trades for ${startDate} to ${endDate}`);
+function backendUnavailable(detail: string) {
+  console.error(`[Replay API] Inference backend unavailable — responding 503: ${detail}`);
+  return NextResponse.json(
+    {
+      ...createApiResponse(null, 'none', 'inference_backend_unavailable'),
+      detail,
+    },
+    { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } },
+  );
+}
+
+/**
+ * Fabricated trades for demos. Reachable ONLY via the explicit `mode: 'demo'` opt-in —
+ * NEVER as a fallback for a failure. Uses the same synthetic-backtest.service with
+ * engineered investor demo metrics, and says so on the wire.
+ */
+function buildSyntheticDemo(startDate: string, endDate: string, modelId: string, startTime: number) {
+  console.warn(`[Replay API] mode=demo — serving FABRICATED trades for ${startDate} to ${endDate}`);
 
   const trades = generateSyntheticTrades({
     startDate,
@@ -154,13 +178,21 @@ function buildSyntheticFallback(startDate: string, endDate: string, modelId: str
     timestamp: new Date().toISOString(),
   };
 
-  const response = createApiResponse(data, 'fallback');
+  const response = createApiResponse(data, 'demo');
   response.metadata.latency = Date.now() - startTime;
   response.metadata.isRealData = false;
 
-  return NextResponse.json(response, {
-    headers: { 'Cache-Control': 'no-store, max-age=0' },
-  });
+  return NextResponse.json(
+    {
+      // First-level, POSITIVE declaration. `source: 'generated'` cannot carry this
+      // meaning: in the real backend contract (`InferenceServiceResponse.source`) that
+      // very value means "the service RAN the model", i.e. REAL data.
+      synthetic: true,
+      data_origin: 'SYNTHETIC',
+      ...response,
+    },
+    { headers: { 'X-Data-Origin': 'SYNTHETIC', 'Cache-Control': 'no-store, max-age=0' } },
+  );
 }
 
 export const POST = withAuth(async (request) => {
@@ -168,7 +200,7 @@ export const POST = withAuth(async (request) => {
 
   try {
     const body = await request.json();
-    const { startDate, endDate, modelId = 'ppo_v20', forceRegenerate = false } = body;
+    const { startDate, endDate, modelId = 'ppo_v20', forceRegenerate = false, mode } = body;
 
     // Validate required parameters
     if (!startDate || !endDate) {
@@ -185,6 +217,11 @@ export const POST = withAuth(async (request) => {
         createApiResponse(null, 'error', 'Dates must be in YYYY-MM-DD format'),
         { status: 400 }
       );
+    }
+
+    // Explicit demo opt-in: fabricated numbers, labelled as such. Never inferred.
+    if (mode === 'demo') {
+      return buildSyntheticDemo(startDate, endDate, modelId, startTime);
     }
 
     console.log(`[Replay API] Requesting trades: ${startDate} to ${endDate} (model=${modelId}, force=${forceRegenerate})`);
@@ -213,11 +250,11 @@ export const POST = withAuth(async (request) => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Replay API] Inference service error: ${response.status} - ${errorText}`);
-
-        // Fallback to synthetic on server error
-        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
+        const errorText = await response.text().catch(() => '');
+        return backendUnavailable(
+          `${INFERENCE_SERVICE_URL}/api/v1/backtest responded ${response.status}` +
+            (errorText ? `: ${errorText.slice(0, 500)}` : ''),
+        );
       }
 
       const result: InferenceServiceResponse = await response.json();
@@ -254,14 +291,16 @@ export const POST = withAuth(async (request) => {
       clearTimeout(timeoutId);
 
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        console.error('[Replay API] Inference service timeout, falling back to synthetic');
-        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
+        return backendUnavailable(
+          `${INFERENCE_SERVICE_URL}/api/v1/backtest timed out after ${INFERENCE_TIMEOUT_MS}ms`,
+        );
       }
 
-      // Connection refused / fetch failed → synthetic fallback
+      // Connection refused / fetch failed → fail closed, with the real reason.
       const msg = fetchError instanceof Error ? fetchError.message : '';
       if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-        return buildSyntheticFallback(startDate, endDate, modelId, startTime);
+        const reason = fetchError instanceof Error ? `${fetchError.name}: ${msg}` : String(fetchError);
+        return backendUnavailable(`${INFERENCE_SERVICE_URL}/api/v1/backtest unreachable (${reason})`);
       }
 
       throw fetchError;
