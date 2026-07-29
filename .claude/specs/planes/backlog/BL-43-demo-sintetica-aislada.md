@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: Plan Consolidado §7 (final) · **Ola**: 1 · **Esfuerzo**: S · **Trials**: 0
 
 ## Estado actual (as-built/perfil 2026-07-27)
-Entrega parcial: `src/governance/synthetic_isolation.py` y la migración 081 implementan la frontera demo/sintética y ya viajan en checkout limpio. El test unitario no muta todavía el eje `algorithm`, el DDL sólo tiene validación estática y la base viva no tiene `demo.*`; `investor_demo` sigue en el camino de compatibilidad.
+Entrega parcial: `src/governance/synthetic_isolation.py` y la migración 081 implementan la frontera demo/sintética y ya viajan en checkout limpio. El test existente de relación real sí mata la eliminación del guard `algorithm`; añadir ese eje al bucle de la relación demo no aportaría esa prueba. El DDL sólo tiene validación estática y la base viva no tiene `demo.*`; `investor_demo` sigue en el camino de compatibilidad.
 
 ## Qué falta exactamente
-Matar explícitamente la mutación del guard `algorithm`, ejecutar 081 contra PostgreSQL y mover la fila a `demo.*` sin dejarla en superficies de performance reales. La capa visible debe conservar una etiqueta inequívoca mientras exista compatibilidad; CI/Playwright se validarán al final por orden del operador.
+Ejecutar 081 contra PostgreSQL y mover la fila a `demo.*` sin dejarla en superficies de performance reales. La capa visible debe conservar una etiqueta inequívoca mientras exista compatibilidad; CI/Playwright se validarán al final por orden del operador.
 
 ## Impacto frontend
 Si alguna vista lo muestra, gana badge DEMO inequívoco o desaparece.

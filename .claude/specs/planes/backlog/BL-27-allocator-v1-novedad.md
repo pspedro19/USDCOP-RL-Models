@@ -15,10 +15,10 @@ code_anchors:
 **Fuente**: FABRIC §20 + §12 · **Ola**: 5 · **Esfuerzo**: L · **Trials**: 0/+1 por celda si se abre book_allocation
 
 ## Estado actual (as-built verificado 2026-07-27)
-Entrega parcial: `src/portfolio/allocator.py` contiene inverse-vol, multiplicadores, optimización restringida, cuatro niveles de fallback y la función `novelty_gate`. El allocator no carga todavía el SSOT por un constructor `from_config`, no tiene consumidor productivo y el gate de novedad no participa en una promoción real.
+Entrega parcial: `src/portfolio/allocator.py` contiene inverse-vol, multiplicadores, optimización restringida, cuatro niveles de fallback y la función `novelty_gate`. El target-zero final es deliberadamente el kill-path: devuelve todo cero y emite `ALLOCATOR_FALLBACK_4_TARGET_ZERO/CRITICAL`; pasarlo por `_validated_solution` podría lanzar cuando más se necesita aplanar. El allocator no carga todavía el SSOT por un constructor `from_config`, no tiene consumidor productivo y el gate de novedad no participa en una promoción real.
 
 ## Qué falta exactamente
-Atar el código a `config/book/allocator_v1.yaml`, validar también el target-zero final contra las restricciones/turnover o registrar la excepción crítica de forma explícita, y cablear `novelty_gate` al flujo de promoción. Falta la corrida shadow de al menos 26 periodos y el candado que prohíbe `normalize()`.
+Atar el código a `config/book/allocator_v1.yaml` y cablear `novelty_gate` al flujo de promoción, preservando el target-zero CRITICAL fuera de la validación que puede lanzar. Falta la corrida shadow de al menos 26 periodos y el candado que prohíbe `normalize()`.
 
 ## Impacto frontend
 Control Tower: pesos propuestos vs realizados (shadow).

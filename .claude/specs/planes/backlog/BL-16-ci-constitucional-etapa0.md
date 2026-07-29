@@ -14,10 +14,10 @@ code_anchors:
 **Fuente**: FABRIC §8.3, §11.2, §28 E0 · **Ola**: 3 · **Esfuerzo**: M · **Trials**: 0
 
 ## Estado actual (as-built verificado 2026-07-27)
-Entrega parcial: `src/governance/declaration.py`, `src/identity/canonical.py` y la migración 070 implementan la matriz de legalidad y la serialización canónica. La mutación independiente PAPER+FULL demostró que la matriz muerde. No existe todavía una declaración real en manifests/config que consuma `research_state` y `capital_tier`, por lo que el gate constitucional end-to-end sigue sin ser falsable.
+Entrega parcial: `src/governance/declaration.py`, `src/identity/canonical.py` y la migración 070 implementan la matriz de legalidad y la serialización canónica. La mutación independiente PAPER+FULL demostró que la matriz Python muerde. La misma matriz 26/96 está reimplementada por CHECKs SQL, sin prueba de paridad con Python. No existe todavía una declaración real en manifests/config que consuma `research_state` y `capital_tier`, por lo que el gate constitucional end-to-end sigue sin ser falsable.
 
 ## Qué falta exactamente
-Integrar al menos una declaración real, hacer que el gate lea manifests/config y rechace una combinación inválida antes de ejecutar un DAG. Falta también un candado propio para NaN/Inf dentro del lote constitucional y su invocación en CI; la tanda amplia de CI está diferida por orden del operador.
+Integrar al menos una declaración real, hacer que el gate lea manifests/config y rechace una combinación inválida antes de ejecutar un DAG. La matriz Python↔SQL necesita un oráculo único o una prueba exhaustiva de paridad. Falta también un candado propio para NaN/Inf dentro del lote constitucional y su invocación en CI; la tanda amplia de CI está diferida por orden del operador.
 
 ## Impacto frontend
 Ninguno.

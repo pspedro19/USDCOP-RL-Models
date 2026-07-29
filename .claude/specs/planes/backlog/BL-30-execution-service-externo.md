@@ -14,7 +14,7 @@ code_anchors:
 **Fuente**: FABRIC §21 + §30 · **Ola**: 5 · **Esfuerzo**: L · **Trials**: 0
 
 ## Estado actual (as-built verificado 2026-07-27)
-Entrega parcial: `src/execution/service.py` y la migración 078 implementan un coordinador independiente, reconciliación y niveles de kill switch sobre `portfolio_target`. No hay wiring en services/Airflow/scripts; `ExecutionService` no ofrece todavía un `exit_all` independiente de un target vigente y `_pretrade` trata controles ausentes como nominales.
+Entrega parcial: `src/execution/service.py` y la migración 078 implementan un coordinador independiente, reconciliación y niveles de kill switch sobre `portfolio_target`. No hay importadores de `src.execution.service` en services/Airflow/scripts (sí existen clases homónimas ajenas); `ExecutionService` no ofrece todavía un `exit_all` independiente de un target vigente y `_pretrade` trata controles ausentes como nominales.
 
 ## Qué falta exactamente
 Hacer fail-closed la ausencia de controles, añadir cierre total por cuenta sin depender de un target vigente y cablear el servicio real fuera de Airflow. Faltan el simulacro con Airflow apagado, la persistencia/reconciliación PostgreSQL y el retiro del camino económico duplicado de SignalBridge.
