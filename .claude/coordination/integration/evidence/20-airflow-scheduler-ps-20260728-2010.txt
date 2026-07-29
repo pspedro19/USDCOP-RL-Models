@@ -1,0 +1,8 @@
+    PID    PPID %CPU     ELAPSED CMD
+    218       1 1276       58:06 python3 /opt/airflow/scripts/pipeline/generate_weekly_forecasts.py
+  16004     181 64.8       00:03 airflow scheduler - DagFileProcessor /opt/airflow/dags/services/backtest_factory.py
+  16012       0 60.0       00:00 ps -eo pid,ppid,pcpu,etime,cmd --sort=-pcpu
+  16006     181 58.2       00:03 airflow scheduler - DagFileProcessor /opt/airflow/dags/services/__init__.py
+      7       1  5.7       58:30 /usr/local/bin/python /home/airflow/.local/bin/airflow scheduler
+    181       7  2.3       58:12 airflow scheduler -- DagFileProcessorManager
+     46       7  0.3       58:12 airflow executor -- LocalExecutor

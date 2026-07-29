@@ -41,6 +41,87 @@ COT = timezone(timedelta(hours=-5))
 DAG_ID = "core_watchdog"
 
 
+SPAWN_LOCK_DIR = Path(os.environ.get("WATCHDOG_LOCK_DIR", "/tmp/watchdog-locks"))
+
+
+def _pid_is_alive(pid: int) -> bool:
+    """¿Sigue vivo ese PID?
+
+    En POSIX —que es donde corre esto en produccion— la señal 0 no mata: solo pregunta si el
+    proceso existe y es señalizable. En Windows NO existe ese truco: `os.kill(pid, 0)` abre el
+    proceso y llama a `TerminateProcess`, o sea que la "sonda" **mataria** lo que consulta.
+    Por eso el camino Windows se resuelve con `WaitForSingleObject(handle, 0)`, que solo
+    observa. Lo descubrio el propio test de esta guarda al correr en la maquina del operador.
+    """
+    if pid <= 0:
+        return False
+
+    if os.name == "nt":  # pragma: no cover - solo se ejecuta en desarrollo Windows
+        import ctypes
+
+        SYNCHRONIZE = 0x00100000
+        WAIT_TIMEOUT = 0x00000102
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(SYNCHRONIZE, False, pid)
+        if not handle:
+            return False
+        try:
+            # Un proceso vivo NO esta señalizado => WAIT_TIMEOUT. Uno terminado si lo esta.
+            return kernel32.WaitForSingleObject(handle, 0) == WAIT_TIMEOUT
+        finally:
+            kernel32.CloseHandle(handle)
+
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Existe pero es de otro usuario: sigue vivo, que es lo que nos importa.
+        return True
+    return True
+
+
+def _spawn_singleton(name: str, argv: list, log_path: str) -> bool:
+    """Lanza un trabajo pesado en segundo plano SOLO si no hay ya uno corriendo.
+
+    El watchdog corre cada hora y estos trabajos tardan 30-45 min; el
+    `generate_weekly_forecasts` observado el 2026-07-28 llevaba 58 min a 1276% de
+    CPU. Sin esta guarda, una corrida lenta se solapa con la siguiente y las copias
+    se acumulan hasta ahogar el healthcheck del scheduler (10s) y dejar el
+    contenedor `unhealthy` — que es como se encontro, con el huerfano reparentado a
+    PID 1 y sin fila en `task_instance`, o sea invisible desde la UI de Airflow.
+
+    Devuelve True si lanzo el proceso, False si ya habia uno vivo.
+    """
+    SPAWN_LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock = SPAWN_LOCK_DIR / f"{name}.pid"
+
+    if lock.exists():
+        try:
+            previous = int(lock.read_text().strip())
+        except (ValueError, OSError):
+            previous = None
+        if previous is not None and _pid_is_alive(previous):
+            logger.warning(
+                f"[Watchdog] {name}: ya hay una corrida viva (pid={previous}); NO se lanza otra. "
+                f"Si esto se repite, el trabajo tarda mas que el intervalo del watchdog."
+            )
+            return False
+        # Lock huerfano de una corrida que murio sin limpiar: se recicla.
+        logger.info(f"[Watchdog] {name}: lock rancio (pid={previous}) descartado.")
+        lock.unlink(missing_ok=True)
+
+    proc = subprocess.Popen(  # noqa: S603
+        argv,
+        cwd=str(PROJECT_ROOT),
+        stdout=open(log_path, "w"),  # noqa: SIM115
+        stderr=subprocess.STDOUT,
+    )
+    lock.write_text(str(proc.pid))
+    logger.info(f"[Watchdog] {name}: lanzado en segundo plano (pid={proc.pid}).")
+    return True
+
+
 def _get_db_connection():
     """Get DB connection using standard env vars."""
     import psycopg2
@@ -539,34 +620,37 @@ def auto_heal(**context):
                 actions_taken.append("Triggered macro update")
 
             elif action == "run_generate_weekly_forecasts":
-                # Run as subprocess (heavy computation, don't block DAG)
-                subprocess.Popen(
+                # Trabajo pesado en segundo plano, uno como maximo (ver _spawn_singleton).
+                if _spawn_singleton(
+                    "generate_weekly_forecasts",
                     ["python3", str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_forecasts.py")],
-                    cwd=str(PROJECT_ROOT),
-                    stdout=open("/tmp/watchdog_forecasting.log", "w"),  # noqa: SIM115
-                    stderr=subprocess.STDOUT,
-                )
-                actions_taken.append("Started forecasting backfill (background)")
+                    "/tmp/watchdog_forecasting.log",
+                ):
+                    actions_taken.append("Started forecasting backfill (background)")
+                else:
+                    actions_taken.append("Forecasting backfill ya en curso — no se relanza")
 
             elif action == "run_generate_weekly_analysis":
                 # Generate missing week
                 current_week = _current_iso_week()
-                subprocess.Popen(
+                if _spawn_singleton(
+                    "generate_weekly_analysis",
                     [
                         "python3",
                         str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_analysis.py"),
                         "--week",
                         current_week,
                     ],
-                    cwd=str(PROJECT_ROOT),
-                    stdout=open("/tmp/watchdog_analysis.log", "w"),  # noqa: SIM115
-                    stderr=subprocess.STDOUT,
-                )
-                actions_taken.append(f"Started analysis generation for {current_week}")
+                    "/tmp/watchdog_analysis.log",
+                ):
+                    actions_taken.append(f"Started analysis generation for {current_week}")
+                else:
+                    actions_taken.append(f"Analysis generation de {current_week} ya en curso — no se relanza")
 
             elif action == "run_generate_asset_analysis":
                 # Regenerate multi-asset (Gold/BTC) analysis in the background
-                subprocess.Popen(
+                if _spawn_singleton(
+                    "generate_asset_analysis",
                     [
                         "python3",
                         str(PROJECT_ROOT / "scripts" / "pipeline" / "generate_asset_analysis.py"),
@@ -574,11 +658,11 @@ def auto_heal(**context):
                         "--year",
                         str(_current_iso_week().split("-W")[0]),
                     ],
-                    cwd=str(PROJECT_ROOT),
-                    stdout=open("/tmp/watchdog_asset_analysis.log", "w"),  # noqa: SIM115
-                    stderr=subprocess.STDOUT,
-                )
-                actions_taken.append("Started multi-asset (Gold/BTC) analysis generation")
+                    "/tmp/watchdog_asset_analysis.log",
+                ):
+                    actions_taken.append("Started multi-asset (Gold/BTC) analysis generation")
+                else:
+                    actions_taken.append("Multi-asset analysis ya en curso — no se relanza")
 
             elif action == "trigger_h5_l5_signal":
                 client.trigger_dag(dag_id="forecast_h5_l5_weekly_signal", conf={})
