@@ -1,0 +1,85 @@
+# AssetProfile - S&P 500 cash index, daily-only Investing.com price track
+# Contract: CTR-ASSET-PROFILE-001. Investing daily is authoritative and fail-closed.
+asset_id: spx500
+symbol: "SPX/500"
+chart_symbol: "SPX500"
+display_name: "S&P 500"
+asset_class: equity_index
+quote_ccy: USD
+base_ccy: SPX
+price_range: [100.0, 12000.0]
+decimals: 2
+tick_size: 0.01
+
+session:
+  mode: exchange_hours
+  timezone: "America/New_York"
+  daily_close_tz: "America/New_York"
+  daily_close: "16:00"
+  days: [0, 1, 2, 3, 4]
+  open: "09:30"
+  close: "16:00"
+  bars_per_day: 78
+  bars_per_year: 19500
+  trading_days_per_year: 250
+  weekend_flat: true
+  forced_close: friday
+
+data_source:
+  provider: investing
+  provider_symbol: "SPX"
+  interval: "1day"
+  needs_tz_convert: false
+  intraday_enabled: false
+  seed_file: null
+  daily_provider: investing
+  daily_seed_file: "seeds/latest/spx500_daily_ohlcv.parquet"
+  investing_pair_id: 166
+  investing_referer: "https://www.investing.com/indices/us-spx-500-historical-data"
+  authoritative_daily: true
+  fail_closed: true
+  replace_db_symbols: ["SPX/500", "SPX500"]
+  macro_sources: ["VIXCLS", "NFCI", "BAMLH0A0HYM2", "T10Y2Y"]
+
+macro_drivers:
+  - {series_id: "VIXCLS", feature: "vix_level", sign: "-", role: volatility}
+  - {series_id: "NFCI", feature: "financial_conditions", sign: "-", role: liquidity}
+  - {series_id: "BAMLH0A0HYM2", feature: "high_yield_spread", sign: "-", role: credit}
+  - {series_id: "T10Y2Y", feature: "yield_curve", sign: "+", role: growth}
+
+feature_profile:
+  version: "spx500_v1"
+  causal_lag_bars: 1
+  features:
+    - log_ret_1d
+    - realized_vol_20d
+    - realized_vol_60d
+    - trend_ma200_z
+    - momentum_12m
+    - breadth_ma200
+    - breadth_ma8
+    - distribution_days_25
+    - vix_z
+    - financial_conditions_z
+    - high_yield_spread_z
+    - yield_curve_z
+    - position
+  forbidden_features: ["future_return", "macro_stress_lead", "revised_close"]
+
+regime_gate:
+  method: trend_vol_breadth
+  lookback_days: 252
+  hysteresis_dwell_days: 5
+  thresholds_require_fit: true
+
+strategy_id: "spx500_regime_gated_v1"
+base_strategy: "spx500_trend_b2"
+pipeline_type: forecasting
+timeframe: daily
+validation:
+  purged_kfold: true
+  embargo_days: 5
+  cpcv_combinations: 10
+  deflated_sharpe: required
+  pbo: required
+  data_source_status: investing_daily_authoritative
