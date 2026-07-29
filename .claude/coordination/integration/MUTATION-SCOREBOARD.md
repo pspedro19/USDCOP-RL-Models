@@ -29,9 +29,9 @@ orden, forzar una identidad contable a no fallar nunca, o **borrar el panel A/B 
 |---|---|---|
 | **MUERDE limpio** | 7 | BL-01, BL-04, BL-12, BL-15, BL-45, BL-46, BL-47 |
 | **MUERDE con matiz** | 6 | BL-02, BL-03, BL-13, BL-14, BL-31, BL-39 |
-| **NO MUERDE → CERRADO hoy** | 7 | BL-05, BL-09, BL-11, BL-20, BL-25, BL-34, BL-42 |
-| **NO MUERDE — abiertos** | 2 | BL-06, BL-32 |
-| **SIN TEST** | 1 | BL-36 |
+| **NO MUERDE → CERRADO hoy** | 8 | BL-05, BL-09, BL-11, BL-20, BL-25, BL-32, BL-34, BL-42 |
+| **NO MUERDE — abiertos** | 1 | BL-06 |
+| **SIN TEST** | 0 | — (BL-36 cerrado) |
 
 ---
 
@@ -69,6 +69,7 @@ Cada cierre trae su rojo **re-verificado por la raíz**, no solo reportado por q
 | BL-11 | `check_families` se apagaba entera con un `return []` | dos tests de contenido: celda a trial inexistente, `trials_charged` que subcuenta | incluido en el anterior |
 | BL-20 | se podían **fabricar** las contribuciones SHAP; `grep additivity tests/` ⇒ **0 aserciones**. La ruta TreeSHAP no la ejecutaba ningún test | **oráculo** que rehace el fit y pregunta al modelo sus predicciones crudas; identidad anclada en forma agregada (global + por año, 7 testigos) + TreeSHAP ejecutada de verdad | `phi = np.ones_like(Z)` ⇒ 3 failed |
 | BL-25 | el umbral **3σ no estaba anclado**: ×1000 pasaba verde porque el fixture usaba `paper − constante` (`sd(d)` ~1e-18) | gemelos con ruido independiente y semilla fija a **3.50σ** (rojo) y **2.47σ** (verde), + guard de dispersión que falla si alguien vuelve a degenerar el fixture | ×1000 y ÷1000 rompen cada gemelo |
+| BL-32 | recortar los bloques obligatorios de 8 a 3 ⇒ 44 passed idéntico (el fixture del propio test usaba `{}`); vaciar `governance` a `{}` en TS ⇒ 30/30 | los 8 bloques exigidos **uno a uno**; la forma de cada bloque clavada contra las interfaces TS (único sitio donde está declarada); el payload real debe poblar cada campo con un `Sourced` bien formado. Regla: **sin agujeros mudos**, no sin agujeros — `null + pending:"BL-45 …"` es válido, `{}` no | 8 bloques → 3 ⇒ 5 failed |
 | BL-34 | `canPromote = true` montaba el Voto 2 en `/replay` para cualquier rol, y un widget de aprobación nuevo en `app/replay/page.tsx` también pasaba ⇒ **578 passed, rbac:check OK, rbac:test PASS** | perímetro derivado del cierre de imports (29 ficheros) con el **fichero dual exento y auto-verificado**, fijado por tests estructurales + render jsdom en 5 roles × 2 estados, con **control positivo** para no ser verde por vacuidad | `canPromote = true` ⇒ pytest 1 failed + vitest 2 failed |
 | BL-42 | `round(v, 2)` → `round(v / 100.0, 6)` —un decimal bajo sufijo `_pct`— no movía un test: se validaba el **artefacto**, no el productor | ejercita `_compute_result_metrics` con un ledger sintético que compone 10.000 → 11.446,16, o sea **+14,46 pp derivados fuera del código bajo prueba** | `/100.0` ⇒ 2 failed |
 
@@ -76,16 +77,23 @@ Cada cierre trae su rojo **re-verificado por la raíz**, no solo reportado por q
 
 | BL | Mutación que pasa verde | Test que falta |
 |---|---|---|
-| **BL-32** | recortar los bloques obligatorios del passport de 8 a 3 ⇒ 44 passed idéntico (el fixture del propio test usa `{}`); vaciar `governance` a `{}` en TS ⇒ 30/30 | test negativo **por bloque**: `governance` sin `n_trials_total`/`dsr_family`, `identity` sin `strategy_id` |
 | **BL-06** | reescribir el widget como `fetch('/api/produc' + 'tion/approve')` y `<button>Comprar ahora</button>` ⇒ 28 passed | colapsar concatenaciones antes de buscar y normalizar mayúsculas; o prohibir todo `POST/PUT/DELETE` en la superficie sea cual sea la URL |
 
-## SIN TEST
+## BL-36 — cerrado el 2026-07-28
 
-**BL-36** — se puede invertir cualquier decisión de la matriz de verdad, **declarando dos
-escritores para el mismo atributo**, y ningún gate se mueve. `grep db-truth-matrix` solo
-encuentra el generador y prosa. Falta un test que parsee la matriz contra
-`.claude/generated/db-inventory.json` y falle si una tabla tiene más de un escritor, si una
-tabla DEPRECATED conserva lectores, o si una decisión cambia de valor sin ADR.
+Tenía **cero** cobertura: se podía invertir cualquier decisión de la matriz de verdad, declarando dos
+escritores para el mismo atributo, y ningún gate se movía. Ahora 8 tests contrastan **77 claims** (50 de
+columnas W/R + 27 en prosa) contra `.claude/generated/db-inventory.json`, derivando el perímetro de
+lectores por glob sobre 1277 ficheros con las regex del propio generador (K-029, cero listas a mano).
+
+Dos límites declarados: a nivel **atributo** es imposible (la matriz no tiene columna atributo→escritor,
+así que se implementó a nivel tabla); y *"una DEPRECATED no puede tener lectores"* **saldría rojo en
+prístino**, porque §9 declara `bi.fact_*` DEPRECATED y a la vez publica que 7 ficheros la referencian —
+eso es el estado honesto, no el defecto. Se convirtió en: *un retiro propuesto sobre una tabla con
+lectores vivos debe declarar su conteo de referencias*.
+
+**Incoherencias numéricas encontradas: cero.** La matriz estaba bien; lo que no había era nada que lo
+comprobara.
 
 ---
 
