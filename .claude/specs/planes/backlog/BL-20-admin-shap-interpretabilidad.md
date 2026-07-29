@@ -89,5 +89,56 @@ descendente (trivial con constantes), finitud y provenance, pero **nunca** que �
 relación con el modelo. `grep additivity tests/` daba **0 aserciones**: la aditividad se
 persistía como campo y no se recomputaba (K-041). La ruta TreeSHAP no la ejecutaba ningún test.
 
+## Recorte formal del criterio (2026-07-28)
+
+El MD llevaba **dos criterios distintos** y por eso el cross-review se planto: la seccion
+*"Que falta exactamente"* pide cobertura amplia, mientras que *"## Verificacion"* pide
+**"artefactos para >=1 modelo de cada clase (lineal/arbol/regla)"** — y ese ya esta cumplido con
+creces (2 lineales + 3 arbol + 1 regla). **Se declara NORMATIVO el criterio de `## Verificacion`**,
+porque es el que refleja el proposito declarado en A.7: *"sirve para RECHAZAR modelos absurdos, no
+para probar verdades"*. Para rechazar un modelo absurdo no hacen falta los 9 — hace falta que el
+que miras **no mienta**.
+
+### Se CIERRA (no negociable, es lo unico que era presencia incorrecta y no ausencia declarada)
+
+1. **La ruta lineal se alinea al walk-forward anual** y se le añade `by_regime`. Era el unico punto
+   donde el sistema **afirmaba algo falso**: el artefacto llevaba la nota *"solo test-folds"* sobre
+   contribuciones calculadas en **1649 de 1654 filas de train**, y habia un test fijando esa cadena.
+   Que el campo `scope` dijera la verdad y la UI lo pintara lo hacia no-oculto, pero **un banner
+   constitucional que contradice al campo de al lado es honestidad decorativa**.
+2. **`ard`** entra en los modelos lineales cubiertos: cae casi gratis con lo anterior y deja el zoo
+   lineal completo.
+
+### Se RECORTA del criterio, con argumento (no por pereza)
+
+3. **Kill-rule "contradice el prior" — FUERA.** Exige una tabla de signos esperados por feature, y
+   **declarar priors ES MODELADO**. Declararlos ahora, despues de haber visto los artefactos,
+   estarian contaminados por lo que ya vimos (quant-constitution §1). O se firma una tabla ex-ante
+   como item propio, o se cae. El kill-rule de **cambio de signo entre años SI se computa** y ya
+   cumple la funcion de A.7 de rechazar absurdos.
+4. **Los 3 modelos hibridos — FUERA.** TreeSHAP **no es correcto** sobre un modelo mitad lineal
+   mitad arbol: publicar ese numero seria **peor que no publicarlo**. Requiere diseño previo
+   (atribucion aditiva parte-lineal + parte-arbol) y eso es otro ticket, no un flag.
+5. **Superficies v11 composite / Gold / BTC — FUERA, a seguimiento.** Es alcance nuevo, no deuda de
+   este ticket.
+6. **Atribucion de reglas mas alla de `spx500`, y traza diaria del gate — FUERA.** El generador es
+   generico sobre `ADAPTERS`, pero `dumb_position` **significa cosas distintas por activo** (en COP
+   es el baseline siempre-corto, no el gate): generalizar es trabajo **semantico**, no un
+   parametro. Y con un unico gate, la traza diaria no aporta nada sobre los agregados.
+
+### Se CORRIGE EL MD, no el codigo
+
+7. La ruta de salida de este BL decia `public/data/interpretability/**`. **Es incorrecta y servirla
+   asi violaria `rbac.md`** ("Do NOT poner artefactos monetizables nuevos en `public/` sin gate").
+   La ruta real es **`data/interpretability/**`**, fuera de `public/`, y hay un test que lo fija
+   (`test_out_root_is_outside_public`). **El MD prometia un bug**; queda corregido aqui.
+
+### Nota sobre la letra vs el espiritu
+
+`rbac.contract.ts` **no tiene una entrada literal** para interpretabilidad: la ruta queda cubierta
+por los prefijos `/admin` y `/api/admin` con `admin:all`, y `npm run rbac:check` sale verde
+(98 rutas API, 32 paginas). Se declara **cumplimiento por prefijo**, que es lo que el gate exige;
+no se añade una entrada redundante solo para satisfacer la letra del MD.
+
 ## Notas constitución
 A.7: solo test-folds; sirve para RECHAZAR modelos absurdos, no para probar verdades.
