@@ -40,7 +40,7 @@ test('Forecasting Page - Professional Centered Design', async ({ page }) => {
     const main = document.querySelector('main');
     const scrollY = window.scrollY;
 
-    const getInfo = (el: Element | null, name: string) => {
+    const getInfo = (el: Element | null | undefined, name: string) => {
       if (!el) return null;
       const rect = el.getBoundingClientRect();
       const style = window.getComputedStyle(el);

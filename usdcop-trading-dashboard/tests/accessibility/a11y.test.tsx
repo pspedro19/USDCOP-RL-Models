@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { axe, toHaveNoViolations } from 'jest-axe'
@@ -33,12 +34,12 @@ const MockTradingChart = ({
   title = "USDCOP Trading Chart",
   description = "Interactive trading chart showing price movements over time"
 }: any) => (
-  <div role="img" aria-label={title} aria-describedby="chart-description">
+  <figure aria-labelledby="chart-title" aria-describedby="chart-description">
     <div id="chart-description" className="sr-only">
       {description}. Current data shows {data?.length || 0} price points.
     </div>
     <svg width="800" height="400" focusable="false">
-      <title>{title}</title>
+      <title id="chart-title">{title}</title>
       <desc>{description}</desc>
       <g role="presentation">
         <path d="M 10 200 L 790 200" stroke="#333" />
@@ -50,7 +51,7 @@ const MockTradingChart = ({
       <button type="button" aria-label="Zoom out">-</button>
       <button type="button" aria-label="Reset zoom">Reset</button>
     </div>
-  </div>
+  </figure>
 )
 
 const MockDataTable = ({
@@ -92,7 +93,7 @@ const MockOrderForm = () => {
 
   return (
     <form role="form" aria-labelledby="order-form-title">
-      <h2 id="order-form-title">Place Order</h2>
+      <h3 id="order-form-title">Order details</h3>
 
       <fieldset>
         <legend>Order Type</legend>
@@ -185,7 +186,7 @@ const MockOrderForm = () => {
 
       <div className="form-actions">
         <MockButton type="submit" variant="primary" aria-describedby="submit-help">
-          Place Order
+          Submit order
         </MockButton>
         <div id="submit-help" className="help-text">
           Review your order details before submitting
@@ -228,7 +229,6 @@ const MockTradingDashboard = ({ hasErrors = false }: { hasErrors?: boolean }) =>
       <aside
         id="sidebar"
         className={`sidebar ${sidebarExpanded ? 'expanded' : 'collapsed'}`}
-        aria-hidden={!sidebarExpanded}
       >
         <nav role="navigation" aria-label="Secondary navigation">
           <ul>
@@ -701,11 +701,14 @@ describe('Accessibility Testing Suite', () => {
 
       // All interactive elements should be focusable in sequence
       const interactiveElements = [
-        ...screen.getAllByRole('radio'),
+        // Radio groups expose one tab stop; arrow keys move between options.
+        screen.getAllByRole('radio')[0],
         ...screen.getAllByRole('textbox'),
         ...screen.getAllByRole('spinbutton'),
         ...screen.getAllByRole('button')
       ]
+
+      document.body.focus()
 
       // Each element should be reachable via tab navigation
       for (const element of interactiveElements.slice(0, 5)) { // Test first 5 elements

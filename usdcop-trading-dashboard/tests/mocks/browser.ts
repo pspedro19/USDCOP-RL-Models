@@ -1,4 +1,5 @@
 import { setupWorker } from 'msw/browser'
+import { http, HttpResponse } from 'msw'
 import { handlers } from './handlers'
 
 // Setup the mock service worker for browser testing environment
@@ -208,7 +209,10 @@ export function mockCanvas() {
   const canvasProto = HTMLCanvasElement.prototype
   const getContext = canvasProto.getContext
 
-  canvasProto.getContext = function(contextType: string) {
+  // jsdom ships no canvas implementation, so the 2d context is a partial stub. It is
+  // installed with defineProperty (same convention as tests/setup.ts) because it cannot
+  // satisfy the full overload set of the real `getContext`.
+  const mocked = function (this: HTMLCanvasElement, contextType: string) {
     if (contextType === '2d') {
       return {
         fillRect: () => {},
@@ -240,6 +244,12 @@ export function mockCanvas() {
     }
     return getContext.call(this, contextType)
   }
+
+  Object.defineProperty(canvasProto, 'getContext', {
+    configurable: true,
+    writable: true,
+    value: mocked,
+  })
 }
 
 // Performance monitoring mock

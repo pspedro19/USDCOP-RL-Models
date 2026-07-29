@@ -1,6 +1,7 @@
 ---
-kind: protocol
-status: DRAFT_AWAITING_OPERATOR_SIGNATURE
+kind: roadmap
+status: PLANNED
+signature_state: DRAFT_AWAITING_OPERATOR_SIGNATURE
 contract: CTR-QUANT-CONSTITUTION-001
 version: 0.1.0
 date: 2026-07-22

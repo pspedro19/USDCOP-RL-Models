@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-import { injectAxe, checkA11y } from '@axe-core/playwright'
+import AxeBuilder from '@axe-core/playwright'
 
 class TradingDashboardPage {
   constructor(private page: Page) {}
@@ -354,11 +354,10 @@ test.describe('Trading Dashboard E2E Tests', () => {
       await dashboardPage.goto()
       await dashboardPage.waitForChart()
 
-      await injectAxe(page)
-      await checkA11y(page, null, {
-        detailedReport: true,
-        detailedReportOptions: { html: true }
-      })
+      // `@axe-core/playwright` exposes the AxeBuilder class; the injectAxe/checkA11y
+      // pair belongs to the (uninstalled) `axe-playwright` package.
+      const results = await new AxeBuilder({ page }).analyze()
+      expect(results.violations).toEqual([])
     })
 
     test('should support keyboard navigation', async ({ page }) => {
@@ -380,7 +379,7 @@ test.describe('Trading Dashboard E2E Tests', () => {
       await dashboardPage.waitForChart()
 
       // Check for ARIA labels
-      await expect(page.locator('[aria-label]')).toHaveCount.greaterThan(0)
+      expect(await page.locator('[aria-label]').count()).toBeGreaterThan(0)
 
       // Check for proper heading structure
       const headings = await page.locator('h1, h2, h3, h4, h5, h6').count()

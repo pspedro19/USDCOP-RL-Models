@@ -68,18 +68,29 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   value: mockCanvas.getContext,
 })
 
-// Mock WebSocket for real-time testing
-global.WebSocket = vi.fn().mockImplementation(() => ({
-  send: vi.fn(),
-  close: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  readyState: 1, // OPEN
-  CONNECTING: 0,
-  OPEN: 1,
-  CLOSING: 2,
-  CLOSED: 3,
-}))
+// Mock WebSocket for real-time testing.
+// The readyState constants also live on the CONSTRUCTOR in the DOM lib, so they are
+// attached here rather than only on the instance — otherwise the mock is not a
+// structurally valid `typeof WebSocket`.
+global.WebSocket = Object.assign(
+  vi.fn().mockImplementation(() => ({
+    send: vi.fn(),
+    close: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    readyState: 1, // OPEN
+    CONNECTING: 0,
+    OPEN: 1,
+    CLOSING: 2,
+    CLOSED: 3,
+  })),
+  {
+    CONNECTING: 0 as const,
+    OPEN: 1 as const,
+    CLOSING: 2 as const,
+    CLOSED: 3 as const,
+  },
+)
 
 // Mock performance API
 global.performance = {
@@ -91,9 +102,13 @@ global.performance = {
   getEntriesByType: vi.fn(() => []),
 }
 
-// Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn(cb => setTimeout(cb, 16))
-global.cancelAnimationFrame = vi.fn(id => clearTimeout(id))
+// Mock requestAnimationFrame.
+// `window.setTimeout` (DOM) returns a numeric handle; the bare `setTimeout` resolves to
+// the Node overload, whose `Timeout` object is not a valid rAF id.
+global.requestAnimationFrame = vi.fn((cb: FrameRequestCallback) =>
+  window.setTimeout(() => cb(performance.now()), 16),
+)
+global.cancelAnimationFrame = vi.fn((id: number) => window.clearTimeout(id))
 
 // Mock localStorage
 const localStorageMock = {

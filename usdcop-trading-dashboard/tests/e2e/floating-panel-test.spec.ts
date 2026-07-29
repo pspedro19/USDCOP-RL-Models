@@ -71,7 +71,7 @@ test.describe('Floating Experiment Panel', () => {
       console.log(`Found ${options.length} dropdown options`);
 
       for (const opt of options.slice(0, 10)) {
-        const text = await opt.textContent().catch(() => '');
+        const text = (await opt.textContent().catch(() => '')) ?? '';
         console.log(`  Option: "${text.substring(0, 60)}"`);
       }
 

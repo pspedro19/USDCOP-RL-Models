@@ -1,8 +1,9 @@
 ---
-kind: readiness-matrix
+kind: audit
 status: PARTIAL
 version: 1.0.0
 last_verified: 2026-07-28
+supersedes: []
 code_anchors:
   - scripts/validation/validate_fabric_contracts.py
 ---
